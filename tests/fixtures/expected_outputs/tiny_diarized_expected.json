@@ -1,0 +1,71 @@
+{
+  "transcript": "tests/fixtures/data/tiny_diarized.json",
+  "modules": ["stats", "sentiment"],
+  "expected_artifacts": {
+    "stats": {
+      "required_roles": ["data", "summary"],
+      "data": {
+        "type": "json",
+        "schema": {
+          "required_keys": ["speakers_included", "total_word_count", "per_speaker_word_counts"],
+          "invariants": [
+            "speakers_included excludes SPEAKER_XX and unidentified",
+            "total_word_count >= sum(per_speaker_word_counts)"
+          ]
+        }
+      },
+      "summary": {
+        "type": "txt",
+        "contains": ["per-speaker section headers"]
+      }
+    },
+    "sentiment": {
+      "required_roles": ["data", "chart"],
+      "data": {
+        "type": "json",
+        "schema": {
+          "required_keys": ["per_speaker", "rolling_sentiment"],
+          "invariants": [
+            "per_speaker has compound/pos/neu/neg keys",
+            "rolling_sentiment array length == segment count"
+          ]
+        }
+      },
+      "chart": {
+        "type": "png",
+        "valid_png": true
+      }
+    }
+  },
+  "expected_database": {
+    "transcript_file": {
+      "required": true,
+      "hash_matches_input": true
+    },
+    "pipeline_run": {
+      "required": true,
+      "count": 1,
+      "status": "completed",
+      "input_hash_matches_transcript_hash": true
+    },
+    "module_runs": {
+      "required_count": 2,
+      "only_requested_modules": true,
+      "all_pipeline_run_id_match": true
+    },
+    "artifacts": {
+      "all_files_registered": true,
+      "hashes_match_files": true
+    }
+  },
+  "semantic_invariants": {
+    "stats": [
+      "speakers_included excludes unidentified",
+      "total_word_count >= sum(per_speaker_word_counts)"
+    ],
+    "sentiment": [
+      "rolling_sentiment length == segment count",
+      "sentiment scores in valid ranges"
+    ]
+  }
+}

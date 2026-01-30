@@ -1,0 +1,1068 @@
+"""
+Streamlit-based web interface for TranscriptX.
+
+This replaces the Flask/Jinja2 web interface with a simpler, more maintainable
+Streamlit implementation.
+
+To run:
+    streamlit run src/transcriptx/web/app.py
+"""
+
+import streamlit as st
+import pandas as pd
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import List, Optional
+from PIL import Image
+
+# Import existing utilities
+try:
+    from transcriptx.web.utils import (
+        list_available_sessions,
+        load_transcript_data,
+        get_analysis_modules,
+        load_analysis_data,
+        get_all_sessions_statistics,
+        list_charts,
+        extract_analysis_summary,
+    )
+    from transcriptx.web.db_utils import (
+        get_all_speakers,
+        get_speaker_by_id,
+        get_speaker_statistics,
+        get_speaker_conversations,
+        get_speaker_profiles,
+        format_speaker_profile_data,
+    )
+    from transcriptx.web.services import FileService, ArtifactService
+    from transcriptx.web.page_modules.overview import render_overview
+    from transcriptx.web.page_modules.charts import render_charts
+    from transcriptx.web.page_modules.data import render_data
+    from transcriptx.web.page_modules.explorer import render_explorer
+    from transcriptx.web.page_modules.groups import render_groups
+    from transcriptx.web.page_modules.statistics import render_statistics
+    from transcriptx.web.page_modules.search import render_search
+    from transcriptx.web.page_modules.insights import (
+        render_insights,
+        _render_highlights_section,
+        _render_summary_section,
+    )
+    from transcriptx.web.models.search import NavRequest, SegmentRef
+    from transcriptx.web.pages.configuration import render_configuration_page
+    from transcriptx.web.components.exemplars import render_speaker_exemplars
+    from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
+    from transcriptx.core.utils.logger import get_logger
+    from transcriptx.utils.text_utils import format_time_detailed
+except ImportError as e:
+    st.error(f"Import error: {e}")
+    st.stop()
+
+logger = get_logger()
+
+# Page configuration
+st.set_page_config(
+    page_title="TranscriptX",
+    page_icon="🎙️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Custom CSS for better styling
+st.markdown(
+    """
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #1f77b4;
+        margin-bottom: 1rem;
+    }
+    .stat-card {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+    .speaker-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-right: 0.5rem;
+    }
+    /* Style navigation buttons to look like text links */
+    div[data-testid="stButton"] > button[kind="secondary"] {
+        background: transparent;
+        border: none;
+        color: #1f77b4;
+        text-align: left;
+        padding: 0.5rem 0;
+        font-weight: normal;
+        box-shadow: none;
+        width: 100%;
+    }
+    div[data-testid="stButton"] > button[kind="secondary"]:hover {
+        color: #0d5a8a;
+        text-decoration: underline;
+        background: transparent;
+    }
+    div[data-testid="stButton"] > button[kind="secondary"]:focus {
+        box-shadow: none;
+    }
+    /* Scroll to top button */
+    #scroll-to-top-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 50px;
+        height: 50px;
+        background-color: #1f77b4;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        display: none;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    #scroll-to-top-btn:hover {
+        background-color: #0d5a8a;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    #scroll-to-top-btn.show {
+        display: block;
+    }
+</style>
+<script>
+    // Scroll to top button functionality
+    window.addEventListener('DOMContentLoaded', function() {
+        // Create the button
+        const btn = document.createElement('button');
+        btn.id = 'scroll-to-top-btn';
+        btn.innerHTML = '↑';
+        btn.title = 'Return to top';
+        btn.onclick = function() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        };
+        document.body.appendChild(btn);
+        
+        // Show/hide button based on scroll position
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        });
+    });
+</script>
+""",
+    unsafe_allow_html=True,
+)
+
+
+def get_chart_paths(session_name: str, module_name: str) -> List[Path]:
+    """Get local file paths for chart images."""
+    charts = list_charts(session_name, module_name)
+    chart_paths = []
+    module_dir = FileService._resolve_session_dir(session_name) / module_name
+
+    for chart in charts:
+        # Extract filename from path (e.g., "/api/charts/session/module/file.png" -> "file.png")
+        chart_name = chart.get("name", "")
+        if chart_name:
+            chart_path = module_dir / chart_name
+            if chart_path.exists():
+                chart_paths.append(chart_path)
+
+    return chart_paths
+
+
+def _build_session_index():
+    sessions = list_available_sessions()
+    session_map = {}
+    for session in sessions:
+        name = session.get("name", "")
+        if "/" not in name:
+            continue
+        slug, run_id = name.split("/", 1)
+        session_map.setdefault(slug, [])
+        session["run_id"] = run_id
+        session_map[slug].append(session)
+    return session_map
+
+
+def _format_timestamp_range(
+    start: float, end: float, format_key: str, file_mtime: Optional[float]
+) -> str:
+    if format_key == "seconds":
+        return f"{start:.1f}s - {end:.1f}s"
+    if format_key == "real_time":
+        if file_mtime is not None:
+            recording_start = datetime.fromtimestamp(file_mtime)
+            start_dt = recording_start + timedelta(seconds=start)
+            end_dt = recording_start + timedelta(seconds=end)
+            return f"{start_dt:%Y-%m-%d %H:%M:%S} - {end_dt:%H:%M:%S}"
+        format_key = "time"
+    return f"{format_time_detailed(start)} - {format_time_detailed(end)}"
+
+
+def navigate_to_segment(
+    segment_ref: SegmentRef, highlight_query: Optional[str] = None
+) -> None:
+    st.session_state["selected_session"] = segment_ref.transcript_ref.session_slug
+    st.session_state["selected_run_id"] = segment_ref.transcript_ref.run_id
+    st.session_state["page"] = "Transcript"
+    st.session_state["nav_request"] = NavRequest(
+        segment_ref=segment_ref,
+        highlight_query=highlight_query,
+    )
+    st.rerun()
+
+
+def render_transcript_viewer():
+    """Transcript viewer page."""
+    st.markdown(
+        '<div class="main-header">📝 Transcript Viewer</div>', unsafe_allow_html=True
+    )
+
+    st.session_state.setdefault("show_timestamps", True)
+    st.session_state.setdefault("timestamp_format", "seconds")
+
+    try:
+        sessions = list_available_sessions()
+        if not sessions:
+            st.warning("No sessions available")
+            return
+
+        # Session selector - prefer global state if set
+        selected_session = st.session_state.get("selected_session")
+        selected_run_id = st.session_state.get("selected_run_id")
+        if selected_session and selected_run_id:
+            selected = f"{selected_session}/{selected_run_id}"
+        else:
+            session_names = [s["name"] for s in sessions]
+            selected = st.selectbox(
+                "Select Session", session_names, key="transcript_session_selector"
+            )
+
+        if not selected:
+            return
+
+        # Clear state after using it
+        if "selected_session" in st.session_state and "selected_run_id" in st.session_state:
+            del st.session_state["selected_session"]
+            del st.session_state["selected_run_id"]
+
+        # Load transcript
+        with st.spinner(f"Loading transcript for {selected}..."):
+            transcript_data = load_transcript_data(selected)
+
+        if not transcript_data:
+            st.error(f"Transcript not found for session: {selected}")
+            return
+
+        # Display metadata
+        if "metadata" in transcript_data:
+            metadata = transcript_data["metadata"]
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric(
+                    "Duration", f"{metadata.get('duration_seconds', 0) / 60:.1f} min"
+                )
+            with col2:
+                st.metric("Speakers", metadata.get("speaker_count", 0))
+            with col3:
+                st.metric("Segments", len(transcript_data.get("segments", [])))
+            with col4:
+                st.metric("Language", metadata.get("language", "Unknown"))
+
+        # Download buttons - check for files in output folder
+        st.subheader("📥 Download Transcript")
+        download_cols = st.columns(3)
+
+        # Find transcript files in output folder
+        session_output_dir = Path(OUTPUTS_DIR) / selected
+        transcripts_dir = session_output_dir / "transcripts"
+        manifest_path = session_output_dir / ".transcriptx" / "manifest.json"
+        manifest_transcript_path = None
+        base_name = None
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as handle:
+                    manifest = json.load(handle)
+                manifest_transcript_path = manifest.get("transcript_path")
+                if manifest_transcript_path:
+                    base_name = Path(manifest_transcript_path).stem
+            except Exception as e:
+                logger.warning(f"Failed to read manifest for {selected}: {e}")
+
+        if base_name is None:
+            base_name = selected.split("/", 1)[-1]
+
+        # JSON file
+        json_file = None
+        json_paths = []
+        if manifest_transcript_path:
+            json_paths.append(Path(manifest_transcript_path))
+        json_paths.extend(
+            [
+                Path(DIARISED_TRANSCRIPTS_DIR) / f"{base_name}.json",
+                Path(DIARISED_TRANSCRIPTS_DIR)
+                / f"{base_name}_transcript_diarised.json",
+            ]
+        )
+        for path in json_paths:
+            if path.exists():
+                json_file = path
+                break
+
+        # TXT and CSV files
+        txt_file = None
+        csv_file = None
+        if transcripts_dir.exists():
+            txt_files = list(transcripts_dir.glob(f"{base_name}-transcript.txt"))
+            csv_files = list(transcripts_dir.glob(f"{base_name}-transcript.csv"))
+            if txt_files:
+                txt_file = txt_files[0]
+            if csv_files:
+                csv_file = csv_files[0]
+
+        with download_cols[0]:
+            if json_file and json_file.exists():
+                with open(json_file, "rb") as f:
+                    st.download_button(
+                        label="📥 Download JSON",
+                        data=f.read(),
+                        file_name=json_file.name,
+                        mime="application/json",
+                        key="download_json",
+                    )
+            else:
+                # Fallback: generate JSON from current data
+                transcript_json = json.dumps(transcript_data, indent=2, default=str)
+                st.download_button(
+                    label="📥 Download JSON",
+                    data=transcript_json,
+                    file_name=f"{selected}_transcript.json",
+                    mime="application/json",
+                    key="download_json",
+                )
+
+        with download_cols[1]:
+            if txt_file and txt_file.exists():
+                with open(txt_file, "rb") as f:
+                    st.download_button(
+                        label="📥 Download TXT",
+                        data=f.read(),
+                        file_name=txt_file.name,
+                        mime="text/plain",
+                        key="download_txt",
+                    )
+            else:
+                st.info("TXT not available")
+
+        with download_cols[2]:
+            if csv_file and csv_file.exists():
+                with open(csv_file, "rb") as f:
+                    st.download_button(
+                        label="📥 Download CSV",
+                        data=f.read(),
+                        file_name=csv_file.name,
+                        mime="text/csv",
+                        key="download_csv",
+                    )
+            else:
+                st.info("CSV not available")
+
+        st.divider()
+
+        # Resolve speaker names from database
+        from transcriptx.web.utils import resolve_speaker_names_from_db
+
+        segments = transcript_data.get("segments", [])
+        if segments:
+            segments = resolve_speaker_names_from_db(segments, selected)
+
+        source_metadata = transcript_data.get("source", {})
+        if not isinstance(source_metadata, dict):
+            source_metadata = {}
+        file_mtime = source_metadata.get("file_mtime")
+        if not isinstance(file_mtime, (int, float)):
+            file_mtime = None
+
+        nav_request = st.session_state.get("nav_request")
+        highlight_query = None
+        jump_index = None
+        if nav_request:
+            highlight_query = nav_request.highlight_query
+            segment_ref = nav_request.segment_ref
+            if segment_ref.primary_locator == "db_id" and segment_ref.segment_id:
+                try:
+                    from transcriptx.database import get_session
+                    from transcriptx.database.models import TranscriptSegment
+
+                    session = get_session()
+                    try:
+                        segment = (
+                            session.query(TranscriptSegment)
+                            .filter(TranscriptSegment.id == segment_ref.segment_id)
+                            .first()
+                        )
+                    finally:
+                        session.close()
+                    if segment and segment.segment_index is not None:
+                        jump_index = segment.segment_index
+                except Exception as e:
+                    logger.warning(f"Failed to resolve segment by DB id: {e}")
+            elif segment_ref.segment_index is not None:
+                jump_index = segment_ref.segment_index
+            st.session_state["nav_request"] = None
+
+        if not segments:
+            st.info("No segments found in transcript")
+            return
+
+        st.subheader(f"Transcript Segments ({len(segments)} total)")
+
+        # Search in transcript
+        search_text = st.text_input("🔍 Search in transcript", key="transcript_search")
+
+        controls_col, format_col = st.columns(2)
+        with controls_col:
+            show_timestamps = st.checkbox(
+                "Show timestamps",
+                value=st.session_state["show_timestamps"],
+                key="show_timestamps",
+            )
+        with format_col:
+            format_options = ["seconds", "time", "real_time"]
+            format_key = st.selectbox(
+                "Timestamp format",
+                format_options,
+                format_func=lambda value: {
+                    "seconds": "Seconds",
+                    "time": "Time",
+                    "real_time": "Real Time",
+                }.get(value, value),
+                key="timestamp_format",
+                disabled=not show_timestamps,
+            )
+
+        # Filter segments
+        display_segments: List[tuple[int, dict]] = list(enumerate(segments))
+        if search_text:
+            display_segments = [
+                (idx, s)
+                for idx, s in display_segments
+                if search_text.lower() in s.get("text", "").lower()
+            ]
+            st.caption(f"Showing {len(display_segments)} of {len(segments)} segments")
+        elif jump_index is not None:
+            start_idx = max(0, jump_index - 2)
+            end_idx = min(len(segments) - 1, jump_index + 2)
+            display_segments = [
+                (idx, segments[idx]) for idx in range(start_idx, end_idx + 1)
+            ]
+            st.caption("Showing context around selected segment.")
+
+        tab_plain, tab_segmented = st.tabs(["Plain", "Segmented"])
+
+        with tab_plain:
+            for segment_index, segment in display_segments:
+                speaker = segment.get("speaker_display") or segment.get("speaker", "Unknown")
+                text = segment.get("text", "")
+                start = segment.get("start", 0)
+                end = segment.get("end", 0)
+                rendered_text = text
+                if highlight_query and segment_index == jump_index:
+                    spans = []
+                    lower_text = text.lower()
+                    lower_query = highlight_query.lower()
+                    pos = 0
+                    while True:
+                        idx = lower_text.find(lower_query, pos)
+                        if idx == -1:
+                            break
+                        spans.append((idx, idx + len(lower_query)))
+                        pos = idx + len(lower_query)
+                    if spans:
+                        import html
+
+                        rendered_parts = []
+                        cursor = 0
+                        for span_start, span_end in spans:
+                            rendered_parts.append(html.escape(text[cursor:span_start]))
+                            rendered_parts.append(
+                                f"<mark>{html.escape(text[span_start:span_end])}</mark>"
+                            )
+                            cursor = span_end
+                        rendered_parts.append(html.escape(text[cursor:]))
+                        rendered_text = "".join(rendered_parts)
+                if show_timestamps:
+                    timestamp = _format_timestamp_range(
+                        start, end, format_key, file_mtime
+                    )
+                    st.markdown(f"**{speaker}** · ⏱️ {timestamp}")
+                else:
+                    st.markdown(f"**{speaker}**")
+                if rendered_text != text:
+                    st.markdown(rendered_text, unsafe_allow_html=True)
+                else:
+                    st.write(text)
+                st.divider()
+
+        with tab_segmented:
+            speaker_groups = []
+            current_speaker = None
+            current_group = []
+
+            for _, segment in display_segments:
+                speaker = segment.get("speaker_display") or segment.get(
+                    "speaker", "Unknown"
+                )
+                if speaker != current_speaker:
+                    if current_group:
+                        speaker_groups.append((current_speaker, current_group))
+                    current_speaker = speaker
+                    current_group = [segment]
+                else:
+                    current_group.append(segment)
+            if current_group:
+                speaker_groups.append((current_speaker, current_group))
+
+            for speaker_name, group_segments in speaker_groups:
+                # Calculate group timestamp range (from first segment start to last segment end)
+                group_start = group_segments[0].get("start", 0)
+                group_end = group_segments[-1].get("end", 0)
+                
+                # Build expander title with timestamp if enabled
+                if show_timestamps:
+                    group_timestamp = _format_timestamp_range(
+                        group_start, group_end, format_key, file_mtime
+                    )
+                    expander_title = f"🎤 {speaker_name} ({len(group_segments)} segments) · ⏱️ {group_timestamp}"
+                else:
+                    expander_title = f"🎤 {speaker_name} ({len(group_segments)} segments)"
+                
+                with st.expander(expander_title, expanded=True):
+                    for segment in group_segments:
+                        text = segment.get("text", "")
+                        st.write(text)
+                        if "sentiment" in segment:
+                            sentiment = segment["sentiment"]
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.caption(
+                                    f"Sentiment: {sentiment.get('compound', 0):.2f}"
+                                )
+                            with col2:
+                                st.caption(f"Positive: {sentiment.get('pos', 0):.2f}")
+                            with col3:
+                                st.caption(
+                                    f"Negative: {sentiment.get('neg', 0):.2f}"
+                                )
+                        if "emotion" in segment:
+                            st.caption(f"Emotion: {segment['emotion']}")
+
+
+        # Analysis modules
+        modules = get_analysis_modules(selected)
+        if modules:
+            st.divider()
+            st.subheader("📊 Analysis Modules")
+            cols = st.columns(min(len(modules), 4))
+            for idx, module in enumerate(modules):
+                with cols[idx % 4]:
+                    if st.button(
+                        module, key=f"module_{module}", use_container_width=True
+                    ):
+                        st.session_state["analysis_module"] = module
+                        st.session_state["analysis_session"] = selected
+                        st.session_state["page"] = "Analysis"
+                        st.rerun()
+
+        st.divider()
+        with st.expander("✨ Highlights", expanded=False):
+            _render_highlights_section(selected_session, selected_run_id)
+        with st.expander("🧾 Executive Summary", expanded=False):
+            _render_summary_section(selected_session, selected_run_id)
+
+    except Exception as e:
+        logger.error(f"Error loading transcript: {e}", exc_info=True)
+        st.error(f"Error loading transcript: {e}")
+        st.exception(e)
+
+
+def render_analysis_viewer():
+    """Analysis module viewer with charts and visualizations."""
+    st.markdown(
+        '<div class="main-header">📊 Analysis Viewer</div>', unsafe_allow_html=True
+    )
+
+    try:
+        session = st.session_state.get("analysis_session")
+        module = st.session_state.get("analysis_module")
+
+        if not session or not module:
+            st.warning("No analysis selected. Please select from transcript viewer.")
+            if st.button("← Back to Dashboard"):
+                st.session_state["page"] = "Dashboard"
+                st.rerun()
+            return
+
+        # Header with back button
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.info(f"Viewing **{module}** analysis for session: **{session}**")
+        with col2:
+            if st.button("← Back to Transcript"):
+                st.session_state["page"] = "Transcript"
+                st.rerun()
+
+        # Load analysis data
+        with st.spinner(f"Loading {module} analysis..."):
+            analysis_data = load_analysis_data(session, module)
+
+        if not analysis_data:
+            st.error(f"Analysis data not found for {session}/{module}")
+            return
+
+        # Display summary if available
+        try:
+            summary = extract_analysis_summary(module, analysis_data)
+            if summary:
+                st.subheader("📋 Summary")
+                st.write(summary)
+                st.divider()
+        except Exception as e:
+            logger.debug(f"Could not extract summary: {e}")
+
+        # Display charts if available
+        chart_paths = get_chart_paths(session, module)
+        if chart_paths:
+            st.subheader("📈 Visualizations")
+
+            # Display charts in a grid
+            num_cols = 2
+            for i in range(0, len(chart_paths), num_cols):
+                cols = st.columns(num_cols)
+                for j, chart_path in enumerate(chart_paths[i : i + num_cols]):
+                    with cols[j]:
+                        try:
+                            img = Image.open(chart_path)
+                            st.image(
+                                img,
+                                caption=chart_path.name.replace("_", " ").replace(
+                                    ".png", ""
+                                ),
+                                use_container_width=True,
+                            )
+                        except Exception as e:
+                            logger.warning(f"Could not load chart {chart_path}: {e}")
+                            st.error(f"Could not load chart: {chart_path.name}")
+
+            st.divider()
+
+        # Display analysis data
+        st.subheader("📊 Analysis Data")
+
+        # Try to display in a more readable format
+        if isinstance(analysis_data, dict):
+            # Show key metrics if available
+            if "statistics" in analysis_data:
+                st.write("**Statistics:**")
+                st.json(analysis_data["statistics"])
+
+            # Show main results
+            if "results" in analysis_data:
+                st.write("**Results:**")
+                st.json(analysis_data["results"])
+
+            # Show full data in expander
+            with st.expander("View Full Analysis Data (JSON)"):
+                st.json(analysis_data)
+        else:
+            st.json(analysis_data)
+
+        # Export button
+        st.divider()
+        analysis_json = json.dumps(analysis_data, indent=2, default=str)
+        st.download_button(
+            label="📥 Export Analysis Data (JSON)",
+            data=analysis_json,
+            file_name=f"{session}_{module}_analysis.json",
+            mime="application/json",
+        )
+
+    except Exception as e:
+        logger.error(f"Error loading analysis: {e}", exc_info=True)
+        st.error(f"Error loading analysis: {e}")
+        st.exception(e)
+
+
+def render_speakers_list():
+    """Speakers list page."""
+    st.markdown('<div class="main-header">👥 Speakers</div>', unsafe_allow_html=True)
+
+    try:
+        speakers = get_all_speakers()
+
+        if not speakers:
+            st.info("No speakers found in database")
+            return
+
+        st.metric("Total Speakers", len(speakers))
+
+        # Create speakers dataframe
+        speakers_df = pd.DataFrame(
+            [
+                {
+                    "ID": s.get("id"),
+                    "Name": s.get("name", "Unknown"),
+                    "Display Name": s.get("display_name", ""),
+                    "Email": s.get("email", ""),
+                    "Organization": s.get("organization", ""),
+                    "Verified": "✓" if s.get("is_verified") else "✗",
+                }
+                for s in speakers
+            ]
+        )
+
+        # Search
+        search_term = st.text_input("🔍 Search speakers", key="speaker_search")
+        if search_term:
+            speakers_df = speakers_df[
+                speakers_df["Name"].str.contains(search_term, case=False, na=False)
+                | speakers_df["Display Name"].str.contains(
+                    search_term, case=False, na=False
+                )
+            ]
+
+        # Speaker detail selector - use actual speaker names from database alphabetically
+        if speakers:
+            # Sort speakers alphabetically by name
+            sorted_speakers = sorted(speakers, key=lambda s: s.get("name", "").lower())
+            speaker_options = {None: "Select..."}
+            for speaker in sorted_speakers:
+                speaker_id = speaker.get("id")
+                speaker_name = speaker.get("name", "Unknown")
+                display_name = speaker.get("display_name")
+                if display_name and display_name != speaker_name:
+                    label = f"{speaker_name} ({display_name})"
+                else:
+                    label = speaker_name
+                speaker_options[speaker_id] = label
+
+            # Get previous selection if any
+            prev_speaker_id = st.session_state.get("speaker_detail_selector", None)
+
+            selected_id = st.selectbox(
+                "Select a speaker to view",
+                options=list(speaker_options.keys()),
+                format_func=lambda x: speaker_options.get(x, "Select..."),
+                key="speaker_detail_selector",
+            )
+
+            # Check if a speaker was selected (not None) and it's different from previous
+            if selected_id is not None and selected_id != prev_speaker_id:
+                st.session_state["selected_speaker_id"] = selected_id
+                st.session_state["page"] = "Speaker Detail"
+                st.rerun()
+
+            # Display table with selection capability
+            table_key = "speakers_table"
+            selected_rows = st.dataframe(
+                speakers_df,
+                use_container_width=True,
+                hide_index=True,
+                selection_mode="single-row",
+                key=table_key,
+            )
+
+            # Handle row selection
+            try:
+                if table_key in st.session_state:
+                    table_state = st.session_state[table_key]
+                    # Handle different possible state structures
+                    if isinstance(table_state, dict):
+                        selection = table_state.get("selection", {})
+                        if isinstance(selection, dict):
+                            selected_indices = selection.get("rows", [])
+                        elif isinstance(selection, list):
+                            selected_indices = selection
+                        else:
+                            selected_indices = []
+                    else:
+                        selected_indices = []
+
+                    if selected_indices:
+                        selected_idx = selected_indices[0]
+                        if isinstance(selected_idx, dict):
+                            selected_idx = selected_idx.get(
+                                "index", selected_idx.get("row", 0)
+                            )
+                        if selected_idx < len(sorted_speakers):
+                            selected_speaker = sorted_speakers[selected_idx]
+                            selected_id = selected_speaker.get("id")
+                            if selected_id:
+                                st.session_state["selected_speaker_id"] = selected_id
+                                st.session_state["page"] = "Speaker Detail"
+                                # Clear selection to prevent re-triggering
+                                if table_key in st.session_state and isinstance(
+                                    st.session_state[table_key], dict
+                                ):
+                                    st.session_state[table_key]["selection"] = {
+                                        "rows": []
+                                    }
+                                st.rerun()
+            except Exception as e:
+                # If selection handling fails, just continue - dropdown still works
+                logger.debug(f"Row selection handling failed: {e}")
+
+    except Exception as e:
+        logger.error(f"Error loading speakers: {e}", exc_info=True)
+        st.error(f"Error loading speakers: {e}")
+        st.exception(e)
+
+
+def render_speaker_detail():
+    """Speaker detail page."""
+    st.markdown(
+        '<div class="main-header">👤 Speaker Details</div>', unsafe_allow_html=True
+    )
+
+    try:
+        speaker_id = st.session_state.get("selected_speaker_id")
+        if not speaker_id:
+            st.warning("No speaker selected")
+            if st.button("← Back to Speakers"):
+                st.session_state["page"] = "Speakers"
+                st.rerun()
+            return
+
+        # Load speaker data
+        speaker = get_speaker_by_id(speaker_id)
+        if not speaker:
+            st.error(f"Speaker {speaker_id} not found")
+            return
+
+        # Back button
+        if st.button("← Back to Speakers"):
+            st.session_state["page"] = "Speakers"
+            st.rerun()
+
+        # Display speaker info
+        col1, col2 = st.columns([1, 3])
+
+        with col1:
+            st.subheader(speaker.get("name", "Unknown"))
+            if speaker.get("display_name"):
+                st.caption(speaker.get("display_name"))
+            if speaker.get("email"):
+                st.write(f"📧 {speaker.get('email')}")
+            if speaker.get("organization"):
+                st.write(f"🏢 {speaker.get('organization')}")
+            if speaker.get("role"):
+                st.write(f"💼 {speaker.get('role')}")
+            if speaker.get("color"):
+                st.write(f"🎨 Color: {speaker.get('color')}")
+
+        with col2:
+            # Statistics
+            try:
+                stats = get_speaker_statistics(speaker_id)
+                if stats:
+                    st.subheader("Statistics")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric(
+                            "Total Words", f"{stats.get('total_word_count', 0):,}"
+                        )
+                    with col2:
+                        st.metric("Segments", stats.get("total_segment_count", 0))
+                    with col3:
+                        st.metric(
+                            "Speaking Time",
+                            f"{stats.get('total_speaking_time', 0) / 60:.1f} min",
+                        )
+                    with col4:
+                        st.metric(
+                            "Avg Rate",
+                            f"{stats.get('average_speaking_rate', 0):.1f} wpm",
+                        )
+
+                    # Additional stats
+                    if stats.get("average_sentiment_score") is not None:
+                        st.metric(
+                            "Avg Sentiment",
+                            f"{stats.get('average_sentiment_score', 0):.2f}",
+                        )
+                    if stats.get("dominant_emotion"):
+                        st.metric("Dominant Emotion", stats.get("dominant_emotion"))
+            except Exception as e:
+                logger.warning(f"Could not load statistics: {e}")
+                st.warning(f"Could not load statistics: {e}")
+
+        # Profiles
+        try:
+            profiles = get_speaker_profiles(speaker_id)
+            if profiles:
+                st.subheader("📊 Analysis Profiles")
+                formatted_profiles = format_speaker_profile_data(profiles)
+
+                for profile_type, profile_data in formatted_profiles.items():
+                    with st.expander(f"{profile_type.replace('_', ' ').title()}"):
+                        st.json(profile_data)
+        except Exception as e:
+            logger.debug(f"Could not load profiles: {e}")
+
+        # Exemplars
+        try:
+            render_speaker_exemplars(speaker_id)
+        except Exception as e:
+            logger.warning(f"Could not load speaker exemplars: {e}")
+
+        # Conversations
+        try:
+            conversations = get_speaker_conversations(speaker_id)
+            if conversations:
+                st.subheader("💬 Conversations")
+                for conv in conversations:
+                    with st.expander(f"Session: {conv.get('session_name', 'Unknown')}"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write(f"**Words:** {conv.get('word_count', 0):,}")
+                        with col2:
+                            st.write(
+                                f"**Duration:** {conv.get('speaking_time', 0) / 60:.1f} min"
+                            )
+        except Exception as e:
+            logger.warning(f"Could not load conversations: {e}")
+
+    except Exception as e:
+        logger.error(f"Error loading speaker details: {e}", exc_info=True)
+        st.error(f"Error loading speaker details: {e}")
+        st.exception(e)
+
+
+# Main app
+def main():
+    """Main application entry point."""
+
+    # Initialize session state
+    if "page" not in st.session_state:
+        st.session_state["page"] = "Overview"
+
+    session_map = _build_session_index()
+    sessions_list = list_available_sessions()
+    if not sessions_list:
+        st.info("No transcript sessions found. Process transcripts to see them here.")
+        return
+
+    # Sidebar navigation
+    current_page = st.session_state.get("page", "Overview")
+    with st.sidebar:
+        st.title("TranscriptX")
+        st.divider()
+
+        # Global navigation (no subheader)
+        global_pages = [
+            ("Search", "Search"),
+            ("Speakers", "Speakers"),
+            ("Groups", "Groups"),
+            ("Statistics", "Statistics"),
+        ]
+        for page_key, label in global_pages:
+            text = f"**{label}**" if current_page == page_key else label
+            if st.button(
+                text,
+                key=f"nav_{page_key}",
+                use_container_width=True,
+                type="secondary",
+            ):
+                st.session_state["page"] = page_key
+                st.rerun()
+
+        st.divider()
+
+        # Transcript section
+        st.markdown("**Transcript**")
+        session_options = sorted(session_map.keys())
+        selected_session = st.selectbox(
+            "Session", session_options, key="session_selector"
+        )
+        run_options = [s["run_id"] for s in session_map.get(selected_session, [])]
+        selected_run_id = st.selectbox("Run", run_options, key="run_selector")
+
+        st.session_state["selected_session"] = selected_session
+        st.session_state["selected_run_id"] = selected_run_id
+
+        # Transcript-specific navigation
+        transcript_pages = [
+            ("Overview", "Overview"),
+            ("Transcript", "Transcript"),
+            ("Insights", "🛈 Insights"),
+            ("Charts", "Charts"),
+            ("Data", "Data"),
+            ("Explorer", "File List"),
+            ("Configuration", "Configuration"),
+        ]
+        for page_key, label in transcript_pages:
+            text = f"**{label}**" if current_page == page_key else label
+            if st.button(
+                text,
+                key=f"nav_{page_key}",
+                use_container_width=True,
+                type="secondary",
+            ):
+                st.session_state["page"] = page_key
+                st.rerun()
+
+        st.divider()
+        st.caption("Streamlit Studio Interface")
+
+    # Get current page after potential navigation changes
+    current_page = st.session_state.get("page", "Overview")
+
+    # Route to appropriate page
+    try:
+        if current_page == "Overview":
+            render_overview()
+        elif current_page == "Transcript":
+            render_transcript_viewer()
+        elif current_page == "Search":
+            render_search()
+        elif current_page == "Insights":
+            render_insights()
+        elif current_page == "Charts":
+            render_charts()
+        elif current_page == "Data":
+            render_data()
+        elif current_page == "Explorer":
+            render_explorer()
+        elif current_page == "Analysis":
+            render_analysis_viewer()
+        elif current_page == "Speakers":
+            render_speakers_list()
+        elif current_page == "Configuration":
+            render_configuration_page()
+        elif current_page == "Groups":
+            render_groups()
+        elif current_page == "Statistics":
+            render_statistics()
+        elif current_page == "Speaker Detail":
+            render_speaker_detail()
+    except Exception as e:
+        logger.error(f"Error in main app: {e}", exc_info=True)
+        st.error(f"An unexpected error occurred: {e}")
+        st.exception(e)
+
+
+if __name__ == "__main__":
+    main()

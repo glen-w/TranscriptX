@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:03,400
+Hello from speaker one.
+
+2
+00:00:03,500 --> 00:00:05,000
+Second line of dialogue.
+
+3
+00:00:05,200 --> 00:00:07,000
+SPEAKER_01: This line includes a speaker hint.

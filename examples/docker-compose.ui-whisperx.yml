@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  whisperx:
+    image: ghcr.io/jim60105/whisperx:no_model
+    container_name: transcriptx-whisperx
+    entrypoint: ["/bin/bash"]
+    env_file:
+      - ../whisperx.env
+    volumes:
+      - ./data/recordings:/data/input:ro
+      - ./data/transcripts:/data/output
+      - ./transcriptx_output:/data/transcriptx_output
+      - ./transcriptx_data/huggingface_cache:/root/.cache/huggingface
+    environment:
+      - WHISPERX_MODEL=large-v2
+      - WHISPERX_LANGUAGE=en
+      - WHISPERX_COMPUTE_TYPE=float16
+      - WHISPERX_DEVICE=cpu
+      - WHISPERX_DIARIZE=true
+      - HF_TOKEN=${HF_TOKEN}
+    networks:
+      - transcriptx-whisperx-network
+    restart: unless-stopped
+    command: ["-c", "echo 'WhisperX service ready. Use docker exec to run transcriptions.' && tail -f /dev/null"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -d /data/input && test -d /data/output"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    profiles:
+      - whisperx
+
+  ui:
+    build:
+      context: ..
+      dockerfile: Dockerfile.ui
+    container_name: transcriptx-ui
+    ports:
+      - "7860:7860"
+    env_file:
+      - ../.env
+    environment:
+      - TRANSCRIPTX_HUGGINGFACE_TOKEN=${TRANSCRIPTX_HUGGINGFACE_TOKEN}
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - ../data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - whisperx
+    profiles:
+      - ui
+
+networks:
+  transcriptx-whisperx-network:
+    driver: bridge

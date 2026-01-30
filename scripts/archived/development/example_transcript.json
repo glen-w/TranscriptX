@@ -1,0 +1,53 @@
+{
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.5,
+      "speaker": "SPEAKER_01",
+      "text": "Hello everyone, welcome to our team meeting today.",
+      "pause": 0
+    },
+    {
+      "start": 3.5,
+      "end": 7.2,
+      "speaker": "SPEAKER_02",
+      "text": "Thanks for having us. I'm excited to discuss the new project.",
+      "pause": 0
+    },
+    {
+      "start": 7.2,
+      "end": 12.8,
+      "speaker": "SPEAKER_01",
+      "text": "Great! Let's start with the agenda. First, we need to review the quarterly results.",
+      "pause": 2.1
+    },
+    {
+      "start": 12.8,
+      "end": 18.5,
+      "speaker": "SPEAKER_03",
+      "text": "I have the numbers ready. Our Q3 performance exceeded expectations by 15%.",
+      "pause": 0
+    },
+    {
+      "start": 18.5,
+      "end": 22.1,
+      "speaker": "SPEAKER_02",
+      "text": "That's fantastic news! What were the key drivers behind this success?",
+      "pause": 0
+    },
+    {
+      "start": 22.1,
+      "end": 28.7,
+      "speaker": "SPEAKER_03",
+      "text": "The main factors were increased customer retention and our new product launch. The marketing campaign really paid off.",
+      "pause": 1.5
+    },
+    {
+      "start": 28.7,
+      "end": 32.4,
+      "speaker": "SPEAKER_01",
+      "text": "Excellent work everyone. Let's move on to the next topic - the upcoming product release.",
+      "pause": 0
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+FROM python:3.10-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libffi-dev \
+    libssl-dev \
+    pkg-config \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt ./requirements.txt
+COPY pyproject.toml ./pyproject.toml
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN pip install -e ".[ui]"
+
+EXPOSE 7860
+
+CMD ["sh", "-c", "docker version >/dev/null 2>&1 || { echo 'Docker CLI not available or Docker socket not mounted. Mount /var/run/docker.sock into this container.'; exit 1; }; transcriptx ui --host 0.0.0.0 --port 7860 --no-open"]

@@ -1,0 +1,371 @@
+"""
+Shared output structure builder for TranscriptX.
+
+This module provides centralized utilities for creating standardized output
+structures across all analysis modules, eliminating code duplication and
+ensuring consistency in output formats.
+"""
+
+import os
+from typing import Any, Dict, List, Optional
+
+from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.artifact_writer import write_json, write_text
+
+logger = get_logger()
+
+
+class OutputStructureBuilder:
+    """
+    Centralized output structure builder for analysis modules.
+
+    This class provides methods for creating standardized output structures
+    that are consistent across all analysis modules.
+    """
+
+    def __init__(self, module_name: str):
+        """
+        Initialize the output structure builder.
+
+        Args:
+            module_name: Name of the analysis module
+        """
+        self.module_name = module_name
+        self.logger = get_logger()
+
+    def create_standard_output_structure(
+        self, transcript_path: str, base_output_dir: Optional[str] = None
+    ) -> Dict[str, str]:
+        """
+        Create standard output directory structure for an analysis module.
+
+        Args:
+            transcript_path: Path to the transcript file
+            base_output_dir: Optional base output directory (defaults to transcript directory)
+
+        Returns:
+            Dictionary containing paths to output directories
+        """
+        try:
+            # Determine base directory
+            if base_output_dir is None:
+                from transcriptx.core.utils.path_utils import get_transcript_dir
+
+                base_output_dir = get_transcript_dir(transcript_path)
+
+            # Create module-specific directory under the run directory
+            module_dir = os.path.join(base_output_dir, self.module_name)
+
+            # Create standard subdirectories
+            output_structure = {
+                "module_dir": module_dir,
+                "data_dir": os.path.join(module_dir, "data"),
+                "charts_dir": os.path.join(module_dir, "charts"),
+                "global_data_dir": os.path.join(module_dir, "data", "global"),
+                "speaker_data_dir": os.path.join(module_dir, "data", "speakers"),
+                "global_charts_dir": os.path.join(module_dir, "charts", "global"),
+                "speaker_charts_dir": os.path.join(module_dir, "charts", "speakers"),
+            }
+
+            # Create directories
+            for path in output_structure.values():
+                os.makedirs(path, exist_ok=True)
+
+            self.logger.info(f"✅ Created output structure for {self.module_name}")
+            return output_structure
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to create output structure: {e}")
+            raise
+
+    def create_metadata_file(
+        self, output_structure: Dict[str, str], analysis_config: Dict[str, Any]
+    ) -> str:
+        """
+        Create metadata file for the analysis module.
+
+        Args:
+            output_structure: Output directory structure
+            analysis_config: Analysis configuration
+
+        Returns:
+            Path to the created metadata file
+        """
+        try:
+            metadata = {
+                "module": self.module_name,
+                "analysis_config": analysis_config,
+                "output_structure": output_structure,
+                "created_at": self._get_timestamp(),
+                "version": "1.0",
+            }
+
+            metadata_path = os.path.join(
+                output_structure["module_dir"], "metadata.json"
+            )
+
+            write_json(metadata_path, metadata, indent=2, ensure_ascii=False)
+
+            self.logger.info(f"✅ Created metadata file: {metadata_path}")
+            return metadata_path
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to create metadata file: {e}")
+            raise
+
+    def create_readme_file(
+        self, output_structure: Dict[str, str], module_description: str
+    ) -> str:
+        """
+        Create README file for the analysis module output.
+
+        Args:
+            output_structure: Output directory structure
+            module_description: Description of the analysis module
+
+        Returns:
+            Path to the created README file
+        """
+        try:
+            readme_content = f"""# {self.module_name.replace('_', ' ').title()} Analysis Results
+
+## Overview
+{module_description}
+
+## Directory Structure
+- `data/global/` - Global analysis results and summaries
+- `data/speakers/` - Speaker-specific analysis results
+- `charts/global/` - Global visualizations and charts
+- `charts/speakers/` - Speaker-specific visualizations
+
+## Files
+- `metadata.json` - Analysis configuration and metadata
+- `summary.json` - Summary of analysis results
+- `README.md` - This file
+
+## Usage
+Results can be viewed using the TranscriptX web viewer or by examining the JSON files directly.
+
+Generated by TranscriptX on {self._get_timestamp()}
+"""
+
+            readme_path = os.path.join(output_structure["module_dir"], "README.md")
+
+            write_text(readme_path, readme_content)
+
+            self.logger.info(f"✅ Created README file: {readme_path}")
+            return readme_path
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to create README file: {e}")
+            raise
+
+    def save_global_data(
+        self, data: Dict[str, Any], output_structure: Dict[str, str], filename: str
+    ) -> str:
+        """
+        Save global data to the global data directory.
+
+        Args:
+            data: Data to save
+            output_structure: Output directory structure
+            filename: Name of the file to save
+
+        Returns:
+            Path to the saved file
+        """
+        try:
+            file_path = os.path.join(output_structure["global_data_dir"], filename)
+
+            write_json(file_path, data, indent=2, ensure_ascii=False)
+
+            self.logger.info(f"✅ Saved global data: {file_path}")
+            return file_path
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to save global data: {e}")
+            raise
+
+    def save_speaker_data(
+        self, speaker_data: Dict[str, Dict[str, Any]], output_structure: Dict[str, str]
+    ) -> List[str]:
+        """
+        Save speaker-specific data to the speaker data directory.
+
+        Args:
+            speaker_data: Dictionary mapping speaker IDs to their data
+            output_structure: Output directory structure
+
+        Returns:
+            List of paths to saved files
+        """
+        try:
+            saved_files = []
+
+            for speaker_id, data in speaker_data.items():
+                # Sanitize speaker ID for filename
+                safe_speaker_id = self._sanitize_filename(speaker_id)
+                filename = f"{safe_speaker_id}_data.json"
+                file_path = os.path.join(output_structure["speaker_data_dir"], filename)
+
+                write_json(file_path, data, indent=2, ensure_ascii=False)
+
+                saved_files.append(file_path)
+
+            self.logger.info(f"✅ Saved data for {len(saved_files)} speakers")
+            return saved_files
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to save speaker data: {e}")
+            raise
+
+    def save_chart(
+        self,
+        chart_path: str,
+        output_structure: Dict[str, str],
+        chart_type: str = "global",
+        speaker_id: Optional[str] = None,
+    ) -> str:
+        """
+        Save a chart to the appropriate directory.
+
+        Args:
+            chart_path: Path to the chart file
+            output_structure: Output directory structure
+            chart_type: Type of chart ('global' or 'speaker')
+            speaker_id: Speaker ID for speaker-specific charts
+
+        Returns:
+            Path to the saved chart
+        """
+        try:
+            if chart_type == "global":
+                target_dir = output_structure["global_charts_dir"]
+                filename = os.path.basename(chart_path)
+            elif chart_type == "speaker":
+                target_dir = output_structure["speaker_charts_dir"]
+                if speaker_id:
+                    safe_speaker_id = self._sanitize_filename(speaker_id)
+                    base_name = os.path.splitext(os.path.basename(chart_path))[0]
+                    extension = os.path.splitext(chart_path)[1]
+                    filename = f"{safe_speaker_id}_{base_name}{extension}"
+                else:
+                    filename = os.path.basename(chart_path)
+            else:
+                raise ValueError(f"Invalid chart type: {chart_type}")
+
+            target_path = os.path.join(target_dir, filename)
+
+            # Copy the chart file
+            import shutil
+
+            shutil.copy2(chart_path, target_path)
+
+            self.logger.info(f"✅ Saved chart: {target_path}")
+            return target_path
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to save chart: {e}")
+            raise
+
+    def create_summary_file(
+        self, output_structure: Dict[str, str], summary_data: Dict[str, Any]
+    ) -> str:
+        """
+        Create summary file for the analysis results.
+
+        Args:
+            output_structure: Output directory structure
+            summary_data: Summary data to save
+
+        Returns:
+            Path to the created summary file
+        """
+        try:
+            summary_path = os.path.join(output_structure["module_dir"], "summary.json")
+
+            write_json(summary_path, summary_data, indent=2, ensure_ascii=False)
+
+            self.logger.info(f"✅ Created summary file: {summary_path}")
+            return summary_path
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to create summary file: {e}")
+            raise
+
+    def _get_timestamp(self) -> str:
+        """Get current timestamp string."""
+        from datetime import datetime
+
+        return datetime.now().isoformat()
+
+    def _sanitize_filename(self, filename: str) -> str:
+        """Sanitize a string for use as a filename."""
+        import re
+
+        # Remove or replace invalid characters
+        sanitized = re.sub(r'[<>:"/\\|?*]', "_", filename)
+        # Remove leading/trailing spaces and dots
+        sanitized = sanitized.strip(". ")
+        # Limit length
+        if len(sanitized) > 100:
+            sanitized = sanitized[:100]
+        return sanitized
+
+    def cleanup_empty_directories(self, output_structure: Dict[str, str]) -> None:
+        """
+        Clean up empty directories in the output structure.
+
+        Args:
+            output_structure: Output directory structure
+        """
+        try:
+            for path in output_structure.values():
+                if os.path.exists(path) and os.path.isdir(path):
+                    # Check if directory is empty
+                    if not os.listdir(path):
+                        os.rmdir(path)
+                        self.logger.info(f"🗑️ Removed empty directory: {path}")
+        except Exception as e:
+            self.logger.warning(f"⚠️ Failed to cleanup empty directories: {e}")
+
+
+# Convenience functions for backward compatibility
+def create_standard_output_structure(
+    transcript_path: str, module_name: str, base_output_dir: Optional[str] = None
+) -> Dict[str, str]:
+    """Create standard output directory structure."""
+    builder = OutputStructureBuilder(module_name)
+    return builder.create_standard_output_structure(transcript_path, base_output_dir)
+
+
+def save_global_data(
+    data: Dict[str, Any], output_structure: Dict[str, str], filename: str
+) -> str:
+    """Save global data to the global data directory."""
+    builder = OutputStructureBuilder("unknown")
+    return builder.save_global_data(data, output_structure, filename)
+
+
+def save_speaker_data(
+    speaker_data: Dict[str, Dict[str, Any]], output_structure: Dict[str, str]
+) -> List[str]:
+    """Save speaker-specific data to the speaker data directory."""
+    builder = OutputStructureBuilder("unknown")
+    return builder.save_speaker_data(speaker_data, output_structure)
+
+
+def create_readme_file(
+    output_structure: Dict[str, str], module_name: str, module_description: str
+) -> str:
+    """Create README file for the analysis module output."""
+    builder = OutputStructureBuilder(module_name)
+    return builder.create_readme_file(output_structure, module_description)
+
+
+def create_summary_json(
+    summary_data: Dict[str, Any], output_structure: Dict[str, str]
+) -> str:
+    """Create summary file for the analysis results."""
+    builder = OutputStructureBuilder("unknown")
+    return builder.create_summary_file(output_structure, summary_data)

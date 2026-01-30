@@ -1,0 +1,38 @@
+# WhisperX Dockerfile for TranscriptX
+# This creates a custom WhisperX container optimized for the project
+
+FROM python:3.10-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install WhisperX and dependencies
+RUN pip install --no-cache-dir \
+    whisperx \
+    torch \
+    torchaudio \
+    transformers \
+    pyannote.audio \
+    librosa \
+    soundfile
+
+# Create data directories
+RUN mkdir -p /data/input /data/output /data/transcriptx_output
+
+# Set default command
+CMD ["whisperx", "--help"]

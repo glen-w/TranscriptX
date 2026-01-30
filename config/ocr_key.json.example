@@ -1,0 +1,14 @@
+{
+  "_comment": "Example ONLY. Copy to config/ocr_key.json and fill with your real service-account key. The real file is git-ignored.",
+  "type": "service_account",
+  "project_id": "YOUR_GCP_PROJECT_ID",
+  "private_key_id": "REDACTED",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nREDACTED\n-----END PRIVATE KEY-----\n",
+  "client_email": "SERVICE_ACCOUNT_EMAIL@YOUR_PROJECT.iam.gserviceaccount.com",
+  "client_id": "REDACTED",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/SERVICE_ACCOUNT_EMAIL@YOUR_PROJECT.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

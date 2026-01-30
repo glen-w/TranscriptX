@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # WhisperX service for transcription
+  whisperx:
+    image: ghcr.io/jim60105/whisperx:no_model
+    container_name: transcriptx-whisperx
+    entrypoint: ["/bin/bash"]  # Override entrypoint to allow direct command execution
+    env_file:
+      - ./whisperx.env
+    volumes:
+      - ./data/recordings:/data/input:ro  # Input audio files (read-only)
+      - ./data/transcripts:/data/output  # Output transcripts to transcripts directory
+      - ./transcriptx_output:/data/transcriptx_output  # TranscriptX specific output
+      - ./transcriptx_data/huggingface_cache:/root/.cache/huggingface  # Persist Hugging Face model cache
+    environment:
+      - WHISPERX_MODEL=large-v2
+      - WHISPERX_LANGUAGE=en
+      - WHISPERX_COMPUTE_TYPE=float16
+      - WHISPERX_DEVICE=cpu
+      - WHISPERX_DIARIZE=true
+      - HF_TOKEN=${HF_TOKEN}
+    networks:
+      - transcriptx-whisperx-network
+    restart: unless-stopped
+    # Keep container running for API calls
+    command: ["-c", "echo 'WhisperX service ready. Use docker exec to run transcriptions.' && tail -f /dev/null"]
+    profiles:
+      - whisperx
+
+
+volumes:
+  data:
+  outputs:
+  transcriptx_output:
+
+networks:
+  transcriptx-whisperx-network:
+    driver: bridge

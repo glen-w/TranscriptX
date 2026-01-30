@@ -1,0 +1,39 @@
+{
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.5,
+      "speaker": "SPEAKER_01",
+      "text": "Hello everyone, I just got back from New York and it was amazing.",
+      "pause": 0
+    },
+    {
+      "start": 3.5,
+      "end": 7.2,
+      "speaker": "SPEAKER_02",
+      "text": "That sounds great! I'm planning a trip to London next month.",
+      "pause": 0
+    },
+    {
+      "start": 7.2,
+      "end": 12.8,
+      "speaker": "SPEAKER_03",
+      "text": "I love London! I've also been to Paris and Tokyo recently.",
+      "pause": 2.1
+    },
+    {
+      "start": 12.8,
+      "end": 18.5,
+      "speaker": "SPEAKER_01",
+      "text": "I've never been to Tokyo, but I hear it's incredible. What about Sydney?",
+      "pause": 0
+    },
+    {
+      "start": 18.5,
+      "end": 22.1,
+      "speaker": "SPEAKER_02",
+      "text": "Sydney is beautiful! The beaches there are amazing.",
+      "pause": 0
+    }
+  ]
+} 

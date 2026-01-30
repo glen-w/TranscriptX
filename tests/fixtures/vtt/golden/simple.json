@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "type": "vtt",
+    "original_path": "tests/fixtures/vtt/simple.vtt",
+    "imported_at": "2024-01-15T10:30:00Z",
+    "file_hash": "sha256:...",
+    "file_mtime": 1705315800.0
+  },
+  "metadata": {
+    "duration_seconds": 15.75,
+    "segment_count": 3,
+    "speaker_count": 0
+  },
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.5,
+      "speaker": null,
+      "text": "First subtitle text"
+    },
+    {
+      "start": 5.5,
+      "end": 10.0,
+      "text": "Second subtitle text",
+      "speaker": null
+    },
+    {
+      "start": 10.0,
+      "end": 15.75,
+      "text": "Third subtitle with multiple words",
+      "speaker": null
+    }
+  ]
+}
