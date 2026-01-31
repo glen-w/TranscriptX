@@ -236,3 +236,4 @@ transcriptx/
 ## License
 
 MIT (see `LICENSE`).
+# TranscriptX
