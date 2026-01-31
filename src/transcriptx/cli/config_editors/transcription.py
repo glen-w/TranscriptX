@@ -1,7 +1,11 @@
 """Transcription configuration editor."""
 
+from __future__ import annotations
+
 import questionary
 from rich import print as rich_print
+
+from typing import Callable, Optional, cast
 
 from transcriptx.cli.settings import (
     SettingItem,
@@ -14,10 +18,9 @@ from transcriptx.cli.settings import (
 from ._dirty_tracker import is_dirty, mark_dirty
 
 
-def _create_language_editor():
-    """Create a language editor that supports common languages, auto-detect, and custom codes."""
+def _create_language_editor() -> Callable[[SettingItem], str | None]:
+    """Create a language editor for a global, explicit language code."""
     common_languages = [
-        "auto",
         "en",
         "fr",
         "es",
@@ -39,7 +42,7 @@ def _create_language_editor():
 
     def editor(item: SettingItem) -> str | None:
         rich_print(
-            "[dim]Select language for transcription. 'auto' detects automatically, 'custom' allows entering a language code.[/dim]"
+            "[dim]Select a global language for transcription. This is intentionally explicit (no auto-detect). 'custom' allows entering a language code.[/dim]"
         )
         current_value = item.getter()
         selection_choices = [
@@ -48,25 +51,31 @@ def _create_language_editor():
         default_value = (
             current_value
             if current_value in common_languages
-            else ("custom" if current_value else "auto")
+            else ("custom" if current_value else "en")
         )
 
         try:
-            selected = questionary.select(
+            selected = cast(
+                Optional[str],
+                questionary.select(
                 f"Select {item.label.lower()}",
                 choices=selection_choices,
                 default=default_value,
-            ).ask()
+                ).ask(),
+            )
 
             if selected is None:
                 return None
 
             if selected == "custom":
                 # Prompt for custom language code
-                custom_lang = questionary.text(
-                    "Enter language code (e.g., 'cs' for Czech, 'fi' for Finnish)",
-                    default=current_value if current_value not in common_languages else "",
-                ).ask()
+                custom_lang = cast(
+                    Optional[str],
+                    questionary.text(
+                        "Enter language code (e.g., 'cs' for Czech, 'fi' for Finnish)",
+                        default=current_value if current_value not in common_languages else "",
+                    ).ask(),
+                )
                 if custom_lang is None or not custom_lang.strip():
                     return None
                 return custom_lang.strip()
@@ -78,7 +87,7 @@ def _create_language_editor():
     return editor
 
 
-def edit_transcription_config(config):
+def edit_transcription_config(config) -> None:
     """Edit transcription configuration."""
     items = [
         SettingItem(
@@ -107,10 +116,8 @@ def edit_transcription_config(config):
             order=3,
             key="transcription.language",
             label="Language",
-            getter=lambda: config.transcription.language or "auto",
-            setter=lambda value: setattr(
-                config.transcription, "language", value if value != "auto" else None
-            ),
+            getter=lambda: config.transcription.language or "en",
+            setter=lambda value: setattr(config.transcription, "language", value or "en"),
             editor=_create_language_editor(),
         ),
         SettingItem(

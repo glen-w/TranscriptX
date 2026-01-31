@@ -651,6 +651,7 @@ def run_test_analysis_workflow() -> None:
 
                 config = get_config()
                 workflow_config = config.workflow
+                skip_speaker_mapping = True
 
                 # Use quick mode timeout
                 timeout_seconds = workflow_config.timeout_quick_seconds
@@ -829,6 +830,11 @@ def run_analysis_non_interactive(
 
     # Filter modules based on analysis mode
     filtered_modules = filter_modules_by_mode(selected_modules, mode)
+
+    # In non-interactive mode we must not block on speaker mapping prompts.
+    # Speaker IDs (e.g. SPEAKER_00) will be treated as "unnamed" and excluded by
+    # many modules unless the transcript already contains named speakers.
+    skip_speaker_mapping = True
 
     # Update output directory if specified
     if output_dir:

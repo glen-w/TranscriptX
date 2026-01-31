@@ -149,7 +149,8 @@ def preprocess_for_analysis(
     if not text or not text.strip():
         return ""
 
-    # Process with spaCy
+    # Process with spaCy. In offline/CI environments we may be running with a
+    # blank tokenizer-only pipeline; avoid relying on POS/NER annotations.
     doc = _get_nlp_model()(text.lower())
 
     # Define content word POS tags
@@ -162,8 +163,19 @@ def preprocess_for_analysis(
         "ADV",  # Adverbs
     }
 
-    # Use provided pos_filter or content_tags if content_words_only is True
-    if pos_filter is not None:
+    # Use provided pos_filter or content_tags if content_words_only is True.
+    # If the loaded pipeline does not provide POS annotations, disable POS
+    # filtering so we still return meaningful tokens (deterministic/offline).
+    wants_pos_filter = pos_filter is not None or content_words_only
+    has_pos = True
+    try:
+        has_pos = bool(getattr(doc, "has_annotation")("POS"))
+    except Exception:
+        has_pos = True
+
+    if wants_pos_filter and not has_pos:
+        allowed_tags = None
+    elif pos_filter is not None:
         allowed_tags = pos_filter
     elif content_words_only:
         allowed_tags = content_tags

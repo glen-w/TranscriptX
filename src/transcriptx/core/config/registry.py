@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, Optional
 import os
 import copy
 
-from transcriptx.core.utils.config import TranscriptXConfig
+from transcriptx.core.utils.config import TranscriptXConfig  # type: ignore[import-untyped]
 
 
 @dataclass(frozen=True)
@@ -157,7 +157,9 @@ def build_registry() -> Dict[str, FieldMetadata]:
     overview_charts_meta = registry.get("dashboard.overview_charts")
     if overview_charts_meta:
         try:
-            from transcriptx.core.utils.chart_registry import get_chart_registry
+            from transcriptx.core.utils.chart_registry import (  # type: ignore[import-untyped]
+                get_chart_registry,
+            )
 
             chart_choices = sorted(get_chart_registry().keys())
         except Exception:
@@ -169,14 +171,14 @@ def build_registry() -> Dict[str, FieldMetadata]:
         if chart_choices:
             updated["choices"] = chart_choices
         registry["dashboard.overview_charts"] = FieldMetadata(**updated)
-    # Handle transcription.language as str | None (default None means auto-detect)
+    # Handle transcription.language as a string (explicit; default en).
     transcription_language_meta = registry.get("transcription.language")
     if transcription_language_meta:
         registry["transcription.language"] = FieldMetadata(
             **{
                 **transcription_language_meta.__dict__,
                 "type": str,  # Allow str values, None is handled by default=None check
-                "description": "Language code for transcription (e.g., 'en', 'fr'). None means auto-detect.",
+                "description": "Language code for transcription (e.g., 'en', 'fr'). Default is 'en'.",
             }
         )
     return registry

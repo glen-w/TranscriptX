@@ -155,7 +155,13 @@ class TranscriptXConfig:
         if os.getenv("TRANSCRIPTX_LANGUAGE"):
             language = os.getenv("TRANSCRIPTX_LANGUAGE")
             if language:
-                self.transcription.language = language
+                lang_norm = language.strip().lower()
+                # We intentionally avoid WhisperX auto-detect by default. Treat legacy
+                # values like "auto"/"none" as English.
+                if not lang_norm or lang_norm in ("auto", "none"):
+                    self.transcription.language = "en"
+                else:
+                    self.transcription.language = language
 
         hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
         if hf_token:
@@ -418,6 +424,11 @@ class TranscriptXConfig:
                 for key, value in config_data["transcription"].items():
                     if hasattr(self.transcription, key):
                         setattr(self.transcription, key, value)
+                # Back-compat: older configs may store null/"auto" for language.
+                lang = getattr(self.transcription, "language", "en")
+                lang_norm = str(lang).strip().lower() if lang is not None else ""
+                if not lang_norm or lang_norm in ("auto", "none"):
+                    self.transcription.language = "en"
 
             # Update input configuration section
             if "input" in config_data:

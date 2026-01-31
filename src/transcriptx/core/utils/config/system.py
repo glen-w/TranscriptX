@@ -278,7 +278,13 @@ class TranscriptXConfig:
         if os.getenv("TRANSCRIPTX_LANGUAGE"):
             language = os.getenv("TRANSCRIPTX_LANGUAGE")
             if language:
-                self.transcription.language = language
+                lang_norm = language.strip().lower()
+                # We intentionally avoid WhisperX auto-detect by default. Treat legacy
+                # values like "auto"/"none" as English.
+                if not lang_norm or lang_norm in ("auto", "none"):
+                    self.transcription.language = "en"
+                else:
+                    self.transcription.language = language
 
         # Input configuration from environment
         if os.getenv("TRANSCRIPTX_WAV_FOLDERS"):

@@ -6,6 +6,7 @@ CLI and GUI without creating circular dependencies.
 """
 
 import json
+import re
 import shlex
 import shutil
 import subprocess
@@ -39,6 +40,10 @@ from transcriptx.core.transcription_runtime import (
 from transcriptx.core.transcription_diagnostics import (
     check_model_loading_error,
     get_model_error_diagnostics,
+)
+
+_NO_DEFAULT_ALIGN_MODEL_RE = re.compile(
+    r"No default align-model for language:\s*(?P<lang>[a-z]{2})", re.IGNORECASE
 )
 
 
@@ -155,7 +160,7 @@ def _build_whisperx_run_spec(
     # Use config or smart defaults
     if config and hasattr(config, "transcription"):
         model = getattr(config.transcription, "model_name", "large-v2") or "large-v2"
-        language = getattr(config.transcription, "language", "auto") or "auto"
+        language = getattr(config.transcription, "language", "en") or "en"
         compute_type = (
             getattr(config.transcription, "compute_type", "float16") or "float16"
         )
@@ -167,7 +172,7 @@ def _build_whisperx_run_spec(
         hf_token = getattr(config.transcription, "huggingface_token", "") or ""
     else:
         model = "large-v2"
-        language = "auto"
+        language = "en"
         compute_type = "float16"
         diarize = True
         model_download_policy = "anonymous"
@@ -207,8 +212,12 @@ def _build_whisperx_run_spec(
         "--model",
         shlex.quote(str(model)),
     ]
-    if language and str(language).lower() not in ("auto", "none", ""):
-        cmd_parts.extend(["--language", shlex.quote(str(language))])
+    # We intentionally always set language (default: en) to avoid WhisperX
+    # auto-detection being wrong. Language should be changed globally via config/env.
+    language_str = str(language).strip().lower() if language is not None else "en"
+    if not language_str or language_str in ("auto", "none"):
+        language_str = "en"
+    cmd_parts.extend(["--language", shlex.quote(language_str)])
     cmd_parts.extend(["--compute_type", shlex.quote(str(compute_type))])
     cmd_parts.extend(["--device", shlex.quote(str(device))])
     if hf_token:
@@ -506,31 +515,55 @@ def run_whisperx_compose(
 
         # Check if WhisperX actually succeeded
         if result.returncode != 0:
-            # Check for model loading errors specifically
-            is_model_error, error_type = check_model_loading_error(result.stderr or "")
-
-            if is_model_error and error_type:
-                # Provide detailed diagnostics for model errors
-                diagnostics = get_model_error_diagnostics(error_type, model)
-                error_msg = (
-                    f"WhisperX model loading failed (error type: {error_type})\n"
-                    f"Model: {model}\n"
-                    f"Return code: {result.returncode}\n\n"
-                    f"{diagnostics}\n"
-                    f"Raw error output:\n"
-                    f"Stderr: {result.stderr[:500] if result.stderr else 'None'}\n"
-                    f"Stdout: {result.stdout[:500] if result.stdout else 'None'}"
+            # WhisperX can auto-detect and transcribe more languages than it can
+            # phoneme-align with default align-models. When that happens, WhisperX
+            # fails the whole run. Retry without alignment so we still get a transcript.
+            stderr_text = result.stderr or ""
+            no_align_match = _NO_DEFAULT_ALIGN_MODEL_RE.search(stderr_text)
+            if no_align_match and "--no_align" not in whisperx_cmd[-1]:
+                lang = no_align_match.group("lang").lower()
+                logger.warning(
+                    "WhisperX has no default alignment model for detected language "
+                    f"'{lang}'. Retrying transcription with --no_align."
                 )
-            else:
-                # Generic error handling
-                error_msg = f"WhisperX failed with return code {result.returncode}"
-                if result.stderr:
-                    error_msg += f"\nStderr: {result.stderr}"
-                if result.stdout:
-                    error_msg += f"\nStdout: {result.stdout}"
+                retry_cmd = list(whisperx_cmd)
+                retry_cmd[-1] = f"{retry_cmd[-1]} --no_align"
+                retry_result = runtime.exec(retry_cmd, check=False)
+                result = retry_result
+                whisperx_cmd = retry_cmd
 
-            log_error("TRANSCRIPTION", error_msg, f"Audio file: {audio_file_path}")
-            return None
+                # Log retry stdout/stderr too
+                if result.stdout:
+                    logger.info(f"WhisperX stdout (retry --no_align): {result.stdout}")
+                if result.stderr:
+                    logger.warning(f"WhisperX stderr (retry --no_align): {result.stderr}")
+
+            if result.returncode != 0:
+                # Check for model loading errors specifically
+                is_model_error, error_type = check_model_loading_error(result.stderr or "")
+
+                if is_model_error and error_type:
+                    # Provide detailed diagnostics for model errors
+                    diagnostics = get_model_error_diagnostics(error_type, model)
+                    error_msg = (
+                        f"WhisperX model loading failed (error type: {error_type})\n"
+                        f"Model: {model}\n"
+                        f"Return code: {result.returncode}\n\n"
+                        f"{diagnostics}\n"
+                        f"Raw error output:\n"
+                        f"Stderr: {result.stderr[:500] if result.stderr else 'None'}\n"
+                        f"Stdout: {result.stdout[:500] if result.stdout else 'None'}"
+                    )
+                else:
+                    # Generic error handling
+                    error_msg = f"WhisperX failed with return code {result.returncode}"
+                    if result.stderr:
+                        error_msg += f"\nStderr: {result.stderr}"
+                    if result.stdout:
+                        error_msg += f"\nStdout: {result.stdout}"
+
+                log_error("TRANSCRIPTION", error_msg, f"Audio file: {audio_file_path}")
+                return None
 
         # Look for the output file in the transcripts directory (define early for use in copy)
         if spec.output_dir is None:

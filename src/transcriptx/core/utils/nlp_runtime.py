@@ -12,6 +12,13 @@ _nlp_model: Optional[Any] = None
 _nlp_model_name: Optional[str] = None
 _nlp_lock = threading.Lock()
 
+_DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
+
+
+def _downloads_disabled() -> bool:
+    value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
 
 def _resolve_model_name(preferred: Optional[str] = None) -> str:
     if preferred:
@@ -44,6 +51,10 @@ def _ensure_spacy_model(model_name: str) -> None:
         return
     except OSError:
         pass
+
+    if _downloads_disabled():
+        # CI/offline mode: avoid network calls. Caller will fall back to blank("en").
+        return
 
     try:
         from transcriptx.core.utils.notifications import notify_user
@@ -101,8 +112,12 @@ def get_nlp_model(model_name: Optional[str] = None):
         from transcriptx.core.utils.output import suppress_stdout_stderr
 
         with suppress_stdout_stderr():
-            _nlp_model = spacy.load(resolved)
-        _nlp_model_name = resolved
+            try:
+                _nlp_model = spacy.load(resolved)
+                _nlp_model_name = resolved
+            except OSError:
+                _nlp_model = spacy.blank("en")
+                _nlp_model_name = "blank:en"
         return _nlp_model
 
 

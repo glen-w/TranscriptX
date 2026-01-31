@@ -11,6 +11,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from textblob import TextBlob
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.nlp_utils import preprocess_for_sentiment
@@ -28,6 +29,13 @@ from transcriptx.core.utils.viz_ids import (
 from transcriptx.core.viz.specs import LineTimeSeriesSpec
 
 logger = get_logger()
+
+_DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
+
+
+def _downloads_disabled() -> bool:
+    value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
 
 
 def _normalize_transformers_sentiment(
@@ -76,6 +84,9 @@ def _ensure_vader_lexicon():
         try:
             nltk.data.find("sentiment/vader_lexicon.zip")
         except LookupError:
+            if _downloads_disabled():
+                # CI/offline mode: do not attempt network downloads.
+                raise
             # Try to notify user, but don't fail if notify_user isn't available yet
             try:
                 notify_user(
@@ -110,6 +121,21 @@ def _get_sia() -> SentimentIntensityAnalyzer:
         _ensure_vader_lexicon()
         _sia = SentimentIntensityAnalyzer()
     return _sia
+
+
+def _score_sentiment_textblob(text: str) -> Dict[str, float]:
+    """
+    Offline-safe sentiment fallback based on TextBlob polarity.
+
+    Returns the same VADER-like shape (compound, pos, neu, neg).
+    """
+    blob = TextBlob(text)
+    polarity = float(getattr(blob.sentiment, "polarity", 0.0))
+    compound = max(-1.0, min(1.0, polarity))
+    pos = max(0.0, compound)
+    neg = max(0.0, -compound)
+    neu = max(0.0, 1.0 - pos - neg)
+    return {"compound": compound, "pos": pos, "neu": neu, "neg": neg}
 
 
 def _load_sentiment_transformers(model_name: str):
@@ -160,7 +186,10 @@ def score_sentiment(text: str, preprocess: bool = False) -> dict:
         text = preprocess_for_sentiment(text)
         if not text:
             return {"compound": 0.0, "pos": 0.0, "neg": 0.0, "neu": 1.0}
-    return _get_sia().polarity_scores(text)
+    try:
+        return _get_sia().polarity_scores(text)
+    except Exception:
+        return _score_sentiment_textblob(text)
 
 
 class SentimentAnalysis(AnalysisModule):
@@ -191,17 +220,25 @@ class SentimentAnalysis(AnalysisModule):
         self.sia = None
         self._transformers_pipe = None
         if self.sentiment_backend == "vader":
-            _ensure_vader_lexicon()
-            self.sia = _get_sia()
+            try:
+                _ensure_vader_lexicon()
+                self.sia = _get_sia()
+            except Exception:
+                # Offline-safe fallback.
+                self.sentiment_backend = "textblob"
         else:
             self._transformers_pipe = _load_sentiment_transformers(
                 self.sentiment_model_name
             )
             if self._transformers_pipe is None:
-                _ensure_vader_lexicon()
-                self.sia = _get_sia()
-                self.sentiment_backend = "vader"
-                logger.warning("SENTIMENT falling back to VADER")
+                try:
+                    _ensure_vader_lexicon()
+                    self.sia = _get_sia()
+                    self.sentiment_backend = "vader"
+                    logger.warning("SENTIMENT falling back to VADER")
+                except Exception:
+                    self.sentiment_backend = "textblob"
+                    logger.warning("SENTIMENT falling back to TextBlob")
 
     def analyze(
         self, segments: List[Dict[str, Any]], speaker_map: Dict[str, str] = None
@@ -411,7 +448,8 @@ class SentimentAnalysis(AnalysisModule):
         if self.sentiment_backend == "transformers" and self._transformers_pipe:
             raw = self._transformers_pipe(text)[0]
             return _normalize_transformers_sentiment(raw)
-        # VADER
+        if self.sentiment_backend == "textblob" or self.sia is None:
+            return _score_sentiment_textblob(text)
         scores = self.sia.polarity_scores(text)
         return {
             "compound": scores["compound"],

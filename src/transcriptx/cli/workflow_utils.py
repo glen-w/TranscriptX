@@ -6,7 +6,7 @@ vs non-interactive workflow modes.
 """
 
 import os
-from typing import Optional
+from typing import Any, Optional
 
 
 # Global flag for non-interactive mode (can be set by CLI)

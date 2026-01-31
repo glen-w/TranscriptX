@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Get the project root directory (where this file is located, go up to transcriptx root)
@@ -7,8 +8,11 @@ DATA_DIR = PROJECT_ROOT / "data"
 RECORDINGS_DIR = str(DATA_DIR / "recordings")
 READABLE_TRANSCRIPTS_DIR = str(DATA_DIR / "transcripts" / "readable")
 DIARISED_TRANSCRIPTS_DIR = str(DATA_DIR / "transcripts")
-OUTPUTS_DIR = str(DATA_DIR / "outputs")
-GROUP_OUTPUTS_DIR = str(DATA_DIR / "outputs" / "groups")
+_DEFAULT_OUTPUTS_DIR = str(DATA_DIR / "outputs")
+# Allow tests/CI to override outputs location (e.g. tmp_path) to avoid writing into repo.
+# This must be set before importing transcriptx.* modules in the process.
+OUTPUTS_DIR = os.getenv("TRANSCRIPTX_OUTPUT_DIR", _DEFAULT_OUTPUTS_DIR)
+GROUP_OUTPUTS_DIR = str(Path(OUTPUTS_DIR) / "groups")
 WAV_OUTPUT_DIR = str(
     DATA_DIR / "recordings"
 )  # Changed from outputs/recordings to recordings

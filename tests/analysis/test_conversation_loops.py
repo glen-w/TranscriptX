@@ -4,6 +4,9 @@ Tests for conversation loops analysis module.
 This module tests loop detection and pattern recognition.
 """
 
+from __future__ import annotations
+
+from typing import Any
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -14,12 +17,12 @@ class TestConversationLoopDetector:
     """Tests for ConversationLoopDetector."""
     
     @pytest.fixture
-    def detector(self):
+    def detector(self) -> ConversationLoopDetector:
         """Fixture for ConversationLoopDetector instance."""
         return ConversationLoopDetector()
     
     @pytest.fixture
-    def sample_segments(self):
+    def sample_segments(self) -> list[dict[str, Any]]:
         """Fixture for sample transcript segments with conversation loops using database-driven speaker identification."""
         return [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "What do you think?", "start": 0.0, "end": 2.0},
@@ -31,12 +34,18 @@ class TestConversationLoopDetector:
         ]
     
     @pytest.fixture
-    def sample_speaker_map(self):
+    def sample_speaker_map(self) -> dict[str, str]:
         """Fixture for sample speaker map (deprecated, kept for backward compatibility)."""
         return {}
     
-    @patch('transcriptx.core.analysis.conversation_loops.classify_utterance')
-    def test_detect_loops_basic(self, mock_classify, detector, sample_segments, sample_speaker_map):
+    @patch("transcriptx.core.analysis.conversation_loops.analysis.classify_utterance")
+    def test_detect_loops_basic(
+        self,
+        mock_classify: Any,
+        detector: ConversationLoopDetector,
+        sample_segments: list[dict[str, Any]],
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test basic loop detection."""
         # Mock classify_utterance to return appropriate act types
         def mock_classify_func(text):
@@ -56,8 +65,13 @@ class TestConversationLoopDetector:
         assert len(loops) > 0
     
     @pytest.mark.slow
-    @patch('transcriptx.core.analysis.conversation_loops.classify_utterance')
-    def test_detect_loops_no_loops(self, mock_classify, detector, sample_speaker_map):
+    @patch("transcriptx.core.analysis.conversation_loops.analysis.classify_utterance")
+    def test_detect_loops_no_loops(
+        self,
+        mock_classify: Any,
+        detector: ConversationLoopDetector,
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test loop detection with no loops."""
         segments = [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "Hello.", "start": 0.0, "end": 1.0},
@@ -72,8 +86,13 @@ class TestConversationLoopDetector:
         # No loops should be detected
         assert len(loops) == 0
     
-    @patch('transcriptx.core.analysis.conversation_loops.classify_utterance')
-    def test_detect_loops_empty_segments(self, mock_classify, detector, sample_speaker_map):
+    @patch("transcriptx.core.analysis.conversation_loops.analysis.classify_utterance")
+    def test_detect_loops_empty_segments(
+        self,
+        mock_classify: Any,
+        detector: ConversationLoopDetector,
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test loop detection with empty segments."""
         segments = []
         
@@ -82,12 +101,19 @@ class TestConversationLoopDetector:
         assert isinstance(loops, list)
         assert len(loops) == 0
     
-    @patch('transcriptx.core.analysis.conversation_loops.classify_utterance')
-    @patch('transcriptx.core.analysis.conversation_loops.score_sentiment')
-    def test_loop_structure(self, mock_sentiment, mock_classify, detector, sample_segments, sample_speaker_map):
+    @patch("transcriptx.core.analysis.conversation_loops.analysis.classify_utterance")
+    @patch("transcriptx.core.analysis.conversation_loops.analysis.score_sentiment")
+    def test_loop_structure(
+        self,
+        mock_sentiment: Any,
+        mock_classify: Any,
+        detector: ConversationLoopDetector,
+        sample_segments: list[dict[str, Any]],
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test that detected loops have correct structure."""
         mock_classify.return_value = "question"
-        mock_sentiment.return_value = 0.5
+        mock_sentiment.return_value = {"compound": 0.5, "pos": 0.6, "neu": 0.3, "neg": 0.1}
         
         loops = detector.detect_loops(sample_segments, sample_speaker_map)
         
@@ -104,7 +130,7 @@ class TestConversationLoopsAnalysis:
     """Tests for ConversationLoopsAnalysis module."""
     
     @pytest.fixture
-    def sample_segments(self):
+    def sample_segments(self) -> list[dict[str, Any]]:
         """Fixture for sample transcript segments using database-driven speaker identification."""
         return [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "What do you think?", "start": 0.0, "end": 2.0},
@@ -113,12 +139,17 @@ class TestConversationLoopsAnalysis:
         ]
     
     @pytest.fixture
-    def sample_speaker_map(self):
+    def sample_speaker_map(self) -> dict[str, str]:
         """Fixture for sample speaker map (deprecated, kept for backward compatibility)."""
         return {}
     
     @patch('transcriptx.core.analysis.conversation_loops.ConversationLoopDetector')
-    def test_analyze_loops(self, mock_detector_class, sample_segments, sample_speaker_map):
+    def test_analyze_loops(
+        self,
+        mock_detector_class: Any,
+        sample_segments: list[dict[str, Any]],
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test analyze method of ConversationLoopsAnalysis."""
         from transcriptx.core.analysis.conversation_loops import ConversationLoopsAnalysis
         

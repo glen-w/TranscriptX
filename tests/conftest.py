@@ -373,6 +373,9 @@ def clean_environment():
     test_vars = [key for key in os.environ.keys() if key.startswith('TEST_')]
     for var in test_vars:
         del os.environ[var]
+
+    # Default to offline-safe behavior in tests (no implicit model/resource downloads).
+    os.environ.setdefault("TRANSCRIPTX_DISABLE_DOWNLOADS", "1")
     
     yield
     
@@ -399,6 +402,10 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "requires_ffmpeg: Tests that require ffmpeg/ffprobe")
     config.addinivalue_line("markers", "requires_api: Tests that require external API access")
     config.addinivalue_line("markers", "database: Tests that require database setup")
+    config.addinivalue_line("markers", "performance: Performance and benchmark tests")
+    config.addinivalue_line(
+        "markers", "timeout: Tests that may legitimately take longer than 5 minutes"
+    )
 
 
 def _has_ffmpeg() -> bool:

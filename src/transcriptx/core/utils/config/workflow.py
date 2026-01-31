@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal
-from transcriptx.core.utils.paths import (
+from transcriptx.core.utils.paths import (  # type: ignore[import-untyped]
     RECORDINGS_DIR,
     READABLE_TRANSCRIPTS_DIR,
     DIARISED_TRANSCRIPTS_DIR,
@@ -39,13 +39,21 @@ class TranscriptionConfig:
 
     model_name: str = "large-v2"
     compute_type: str = "float16"
-    language: str | None = None  # None means auto-detect (displayed as "auto" in UI)
+    # Default to English. This avoids WhisperX auto-detection picking the wrong
+    # language (e.g., "cy") and makes language changes an explicit global choice
+    # via config/env only.
+    language: str = "en"
     batch_size: int = 16
     diarize: bool = True
     min_speakers: int = 1
     max_speakers: int = 10
     model_download_policy: Literal["anonymous", "require_token"] = "anonymous"
     huggingface_token: str = ""
+
+    def __post_init__(self) -> None:
+        # Back-compat: older configs may store null or "auto".
+        if self.language is None or str(self.language).strip().lower() in {"", "auto", "none"}:
+            self.language = "en"
 
 
 @dataclass
@@ -103,7 +111,7 @@ class DashboardConfig:
             try:
                 from transcriptx.core.utils.chart_registry import (
                     get_default_overview_charts,
-                )
+                )  # type: ignore[import-untyped]
 
                 self.overview_charts = get_default_overview_charts()
             except Exception:

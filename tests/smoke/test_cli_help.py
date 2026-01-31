@@ -8,9 +8,10 @@ import pytest
 
 @pytest.mark.smoke
 def test_cli_help_smoke() -> None:
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[2]
     env = os.environ.copy()
     env["TRANSCRIPTX_USE_EMOJIS"] = "0"
+    env["TRANSCRIPTX_DISABLE_DOWNLOADS"] = "1"
     result = subprocess.run(
         [sys.executable, "-m", "transcriptx.cli.main", "--help"],
         cwd=repo_root,

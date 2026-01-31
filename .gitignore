@@ -47,3 +47,9 @@ node_modules/
 
 # Archived docs site
 scripts/archived/docs_site/
+
+# Local archives (not source-controlled)
+scripts/archive/
+
+# Archived docs (not source-controlled)
+docs/archived/

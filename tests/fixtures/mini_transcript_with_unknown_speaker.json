@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "title": "Mini transcript with unknown speaker fixture",
+    "language": "en",
+    "transcript_uuid": "00000000-0000-0000-0000-000000000003"
+  },
+  "segments": [
+    {
+      "speaker": "Alice",
+      "speaker_db_id": 1,
+      "text": "Let’s start. We are reviewing the release checklist.",
+      "start": 0.0,
+      "end": 2.0
+    },
+    {
+      "speaker": "SPEAKER_XX",
+      "text": "um… uh…",
+      "start": 2.1,
+      "end": 2.6
+    },
+    {
+      "speaker": "Bob",
+      "speaker_db_id": 2,
+      "text": "Checklist looks good. New York is confirmed.",
+      "start": 2.7,
+      "end": 4.5
+    },
+    {
+      "speaker": "unidentified",
+      "text": "noise",
+      "start": 4.6,
+      "end": 4.9
+    },
+    {
+      "speaker": "Alice",
+      "speaker_db_id": 1,
+      "text": "Okay—ship on Friday if tests are green.",
+      "start": 5.0,
+      "end": 6.8
+    }
+  ]
+}
+

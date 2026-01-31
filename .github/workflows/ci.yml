@@ -28,5 +28,6 @@ jobs:
       - name: Run smoke tests (CPU-only)
         env:
           TRANSCRIPTX_USE_EMOJIS: "0"
+          TRANSCRIPTX_DISABLE_DOWNLOADS: "1"
         run: |
           pytest -m smoke
