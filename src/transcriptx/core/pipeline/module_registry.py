@@ -449,6 +449,7 @@ class ModuleRegistry:
         audio_resolver: Optional[Callable[[object], bool]] = None,
         dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
         include_heavy: bool = True,
+        include_excluded_from_default: bool = False,
     ) -> List[str]:
         """Get list of modules used for default analysis runs."""
         audio_available: Optional[bool] = None
@@ -478,7 +479,7 @@ class ModuleRegistry:
 
         selected: list[str] = []
         for name, info in self._modules.items():
-            if info.exclude_from_default:
+            if not include_excluded_from_default and info.exclude_from_default:
                 continue
             if not include_heavy and info.cost_tier == "heavy":
                 continue
@@ -714,6 +715,7 @@ def get_default_modules(
     audio_resolver: Optional[Callable[[object], bool]] = None,
     dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
     include_heavy: bool = True,
+    include_excluded_from_default: bool = False,
 ) -> List[str]:
     """Get list of modules used for default analysis runs."""
     return _module_registry.get_default_modules(
@@ -721,6 +723,7 @@ def get_default_modules(
         audio_resolver=audio_resolver,
         dep_resolver=dep_resolver,
         include_heavy=include_heavy,
+        include_excluded_from_default=include_excluded_from_default,
     )
 
 

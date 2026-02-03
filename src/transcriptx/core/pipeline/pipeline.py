@@ -855,6 +855,7 @@ def get_default_modules(
     audio_resolver: Optional[Callable[[object], bool]] = None,
     dep_resolver: Optional[Callable[[object], bool]] = None,
     include_heavy: bool = True,
+    include_excluded_from_default: bool = False,
 ) -> List[str]:
     """Get list of modules used for default analysis runs."""
     return list(
@@ -863,5 +864,6 @@ def get_default_modules(
             audio_resolver=audio_resolver,
             dep_resolver=dep_resolver,
             include_heavy=include_heavy,
+            include_excluded_from_default=include_excluded_from_default,
         )
     )

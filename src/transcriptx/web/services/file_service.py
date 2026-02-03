@@ -46,11 +46,50 @@ class FileService:
         return Path(OUTPUTS_DIR) / session_id
 
     @staticmethod
+    def resolve_transcript_path(session_name: str) -> Optional[Path]:
+        """
+        Resolve session to the transcript file path (single source of truth).
+
+        Tries: manifest transcript_path, then DIARISED_TRANSCRIPTS_DIR variants.
+
+        Args:
+            session_name: Session identifier (e.g. "slug/run_id")
+
+        Returns:
+            Path to the transcript file, or None if not found
+        """
+        session_dir = FileService._resolve_session_dir(session_name)
+        manifest_path = session_dir / ".transcriptx" / "manifest.json"
+
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as handle:
+                    manifest = json.load(handle)
+                manifest_path_value = manifest.get("transcript_path")
+                if manifest_path_value:
+                    path = Path(manifest_path_value)
+                    if path.exists():
+                        return path
+            except Exception as e:
+                logger.warning(f"Failed to read manifest for {session_name}: {e}")
+
+        for candidate in [
+            Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",
+            Path(DIARISED_TRANSCRIPTS_DIR)
+            / f"{session_name}_transcript_diarised.json",
+        ]:
+            if candidate.exists():
+                return candidate
+
+        return None
+
+    @staticmethod
     def load_transcript_data(session_name: str) -> Optional[Dict[str, Any]]:
         """
         Load transcript from data/transcripts/ or data/outputs/{session}/.
 
-        This function delegates to the I/O service for consistency.
+        Uses resolve_transcript_path for a single source of truth, then loads via
+        transcript service.
 
         Args:
             session_name: Name of the session
@@ -58,44 +97,19 @@ class FileService:
         Returns:
             Transcript data dictionary or None if not found
         """
-        # Try multiple possible locations
-        session_dir = FileService._resolve_session_dir(session_name)
-        manifest_path = session_dir / ".transcriptx" / "manifest.json"
-
-        possible_paths = []
-        if manifest_path.exists():
-            try:
-                with open(manifest_path, "r", encoding="utf-8") as handle:
-                    manifest = json.load(handle)
-                manifest_path_value = manifest.get("transcript_path")
-                if manifest_path_value:
-                    possible_paths.append(Path(manifest_path_value))
-            except Exception as e:
-                logger.warning(f"Failed to read manifest for {session_name}: {e}")
-
-        possible_paths.extend(
-            [
-                Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",
-                Path(DIARISED_TRANSCRIPTS_DIR)
-                / f"{session_name}_transcript_diarised.json",
-            ]
-        )
+        path = FileService.resolve_transcript_path(session_name)
+        if path is None:
+            logger.warning(f"Transcript not found for session: {session_name}")
+            return None
 
         from transcriptx.io.transcript_service import get_transcript_service
 
         service = get_transcript_service()
-
-        for path in possible_paths:
-            if path.exists():
-                try:
-                    # Use service for caching
-                    return service.load_transcript(str(path))
-                except Exception as e:
-                    logger.error(f"Failed to load transcript from {path}: {e}")
-                    continue
-
-        logger.warning(f"Transcript not found for session: {session_name}")
-        return None
+        try:
+            return service.load_transcript(str(path))
+        except Exception as e:
+            logger.error(f"Failed to load transcript from {path}: {e}")
+            return None
 
     @staticmethod
     def load_analysis_data(
@@ -249,6 +263,28 @@ class FileService:
                         "last_updated": last_updated,
                         "analysis_completion": analysis_completion,
                     }
+                    # Populate stats from transcript when available
+                    transcript_data = FileService.load_transcript_data(session_id)
+                    if transcript_data:
+                        segments = transcript_data.get("segments", [])
+                        session_info["segment_count"] = len(segments)
+                        if segments:
+                            duration_sec = max(
+                                seg.get("end", 0) for seg in segments
+                            ) - min(seg.get("start", 0) for seg in segments)
+                            session_info["duration_seconds"] = duration_sec
+                            session_info["duration_minutes"] = round(
+                                duration_sec / 60, 1
+                            )
+                            speakers = set(
+                                seg.get("speaker")
+                                for seg in segments
+                                if seg.get("speaker")
+                            )
+                            session_info["speaker_count"] = len(speakers)
+                            session_info["word_count"] = sum(
+                                len(seg.get("text", "").split()) for seg in segments
+                            )
                     sessions.append(session_info)
                 except Exception as e:
                     logger.warning(f"Failed to load session {run_dir.name}: {e}")

@@ -42,6 +42,15 @@ WebUI:
 
 transcriptx web-viewer
 
+### Run Analysis presets (Web UI)
+
+When you run analysis from the web UI, you choose a **Preset** that determines which analysis modules run:
+
+- **Recommended** — Runs the default set of modules: safe, non-heavy, and runnable for the current transcript (e.g. skips audio-required modules when audio is missing, and heavy/optional-deps modules when not available). Best for most sessions.
+- **All modules** — Runs every available analysis module (subject to mode and pipeline requirements). Use when you want full coverage.
+- **Light modules only** — Runs only modules in the *light* category (fast, low-cost processing). Excludes *medium* and *heavy* modules. Use for quick passes or when you want to avoid slower/heavier analyses.
+- **Custom** — Lets you pick exactly which modules to run from a multiselect. Only modules that are runnable for the current session (e.g. audio/deps satisfied) are listed.
+
 ## Groups (first-class, DB-backed)
 
 Groups are durable user objects that let you analyze multiple transcripts as a single unit.

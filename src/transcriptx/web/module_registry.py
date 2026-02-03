@@ -5,15 +5,63 @@ This module provides dynamic module discovery for the web interface,
 leveraging the core pipeline module registry as the source of truth.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from transcriptx.core.pipeline.module_registry import (
     get_available_modules as get_core_modules,
+    get_description,
     get_module_info,
+    ModuleInfo,
 )
 from transcriptx.core.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def build_module_label(
+    module_name: str,
+    module_info: Optional[Any] = None,
+    context: Optional[dict] = None,
+) -> str:
+    """
+    Build a human-readable label for an analysis module with optional badges.
+
+    Badges: requires_audio, heavy, audio missing, deps missing (when applicable).
+
+    Args:
+        module_name: Module identifier
+        module_info: Optional ModuleInfo from get_module_info(module_name)
+        context: Optional dict with:
+            - audio_available: bool (if False, audio-required modules get "audio missing")
+            - missing_deps: list of str (e.g. voice deps; shown as "deps missing: ...")
+
+    Returns:
+        Label string, e.g. "Sentiment analysis" or "Voice features (requires audio; heavy)"
+    """
+    if module_info is None:
+        module_info = get_module_info(module_name)
+    description = (
+        (module_info.description or module_name)
+        if module_info
+        else (get_description(module_name) or module_name)
+    )
+    if module_info is None:
+        return description
+    badges: List[str] = []
+    if getattr(module_info, "requires_audio", False):
+        badges.append("requires audio")
+        if context:
+            audio_available = context.get("audio_available")
+            if audio_available is False:
+                badges.append("audio missing")
+            missing_deps = context.get("missing_deps") or []
+            if missing_deps:
+                badges.append(f"deps missing: {', '.join(missing_deps)}")
+    if getattr(module_info, "cost_tier", None) == "heavy":
+        badges.append("heavy")
+    if badges:
+        return f"{description} ({'; '.join(badges)})"
+    return description
 
 
 def get_analysis_modules(session_name: str) -> List[str]:

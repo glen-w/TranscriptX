@@ -6,6 +6,10 @@ from transcriptx.core import get_available_modules, get_default_modules
 from transcriptx.core.pipeline.module_registry import get_description, get_module_info
 from transcriptx.core.utils.audio_availability import has_resolvable_audio
 from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
+from transcriptx.core.analysis.selection import (
+    apply_analysis_mode_settings as apply_analysis_mode_settings_core,
+    filter_modules_by_mode,
+)
 
 
 def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
@@ -63,7 +67,9 @@ def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
             if "settings" in selection:
                 edit_config_interactive()
                 continue
-            if "all" in selection:
+            selected_modules = [m for m in selection if m not in ("settings", "all")]
+            if "all" in selection and not selected_modules:
+                # Only "all" checked -> run recommended set from core
                 selected = get_default_modules(
                     transcript_paths,
                     audio_resolver=has_resolvable_audio,
@@ -80,7 +86,9 @@ def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
                         f"[yellow]⚠️ Heavy modules included: {', '.join(heavy)}[/yellow]"
                     )
                 return selected
-            selected_modules = [m for m in selection if m not in ("settings", "all")]
+            if "all" in selection and selected_modules:
+                # "All" and specific modules both checked -> use only the specific ones
+                pass
             if not selected_modules:
                 print("[yellow]No modules selected. Choose at least one or pick 'All modules'.[/yellow]")
                 continue
@@ -127,154 +135,69 @@ def select_analysis_mode() -> str:
     return choice
 
 
-def apply_analysis_mode_settings(mode: str):
-    config = get_config()
+def apply_analysis_mode_settings(mode: str) -> None:
+    """Interactive: prompt for mode (and profile if full), then apply via core."""
     if mode == "quick":
-        settings = config.analysis.quick_analysis_settings
-        config.analysis.analysis_mode = "quick"
-        config.analysis.semantic_similarity_method = settings["semantic_method"]
-        config.analysis.max_segments_for_semantic = settings[
-            "max_segments_for_semantic"
-        ]
-        config.analysis.max_semantic_comparisons = settings["max_semantic_comparisons"]
-        config.analysis.ner_use_light_model = settings["ner_use_light_model"]
-        config.analysis.ner_max_segments = settings["ner_max_segments"]
-        config.analysis.ner_include_geocoding = not settings["skip_geocoding"]
-        config.analysis.quality_filtering_profile = settings["semantic_profile"]
+        apply_analysis_mode_settings_core(mode)
         print(f"\n[dim]Applied {mode} analysis settings to configuration[/dim]")
-    else:
-        settings = config.analysis.full_analysis_settings
-        config.analysis.analysis_mode = "full"
-        config.analysis.semantic_similarity_method = settings["semantic_method"]
-        config.analysis.max_segments_for_semantic = settings[
-            "max_segments_for_semantic"
-        ]
-        config.analysis.max_semantic_comparisons = settings["max_semantic_comparisons"]
-        config.analysis.ner_use_light_model = settings["ner_use_light_model"]
-        config.analysis.ner_max_segments = settings["ner_max_segments"]
-        config.analysis.ner_include_geocoding = not settings["skip_geocoding"]
-        # Apply increased segment limits for full mode
-        if "max_segments_per_speaker" in settings:
-            config.analysis.max_segments_per_speaker = settings["max_segments_per_speaker"]
-        if "max_segments_for_cross_speaker" in settings:
-            config.analysis.max_segments_for_cross_speaker = settings["max_segments_for_cross_speaker"]
-        print("\n[bold cyan]🎯 Semantic Analysis Profile Selection[/bold cyan]")
-        print("[dim]Choose a profile optimized for your conversation type:[/dim]")
-        profile_choice = questionary.select(
-            "Select semantic analysis profile:",
-            choices=[
-                questionary.Choice(
-                    title="⚖️ Balanced (Recommended) - General purpose - good for most conversations",
-                    value="balanced",
-                ),
-                questionary.Choice(
-                    title="🎓 Academic - Optimized for research discussions and presentations",
-                    value="academic",
-                ),
-                questionary.Choice(
-                    title="💼 Business - Focused on meetings and professional discourse",
-                    value="business",
-                ),
-                questionary.Choice(
-                    title="😊 Casual - Suited for informal conversations and chats",
-                    value="casual",
-                ),
-                questionary.Choice(
-                    title="🔧 Technical - Enhanced for technical discussions and troubleshooting",
-                    value="technical",
-                ),
-                questionary.Choice(
-                    title="🎤 Interview - Optimized for job interviews, Q&A sessions, and structured conversations",
-                    value="interview",
-                ),
-            ],
-            default="balanced",
-        ).ask()
-        if profile_choice is None:
-            print("\n[cyan]Cancelled.[/cyan]")
-            raise KeyboardInterrupt()
-        config.analysis.quality_filtering_profile = profile_choice
-        profile_descriptions = {
-            "balanced": "Balanced scoring for general conversations",
-            "academic": "Optimized for academic discussions, research presentations, and debates",
-            "business": "Optimized for business meetings, negotiations, and professional discussions",
-            "casual": "Optimized for casual conversations, social discussions, and informal chats",
-            "technical": "Optimized for technical discussions, code reviews, and troubleshooting sessions",
-            "interview": "Optimized for job interviews, Q&A sessions, and structured conversations",
-        }
-        print(f"\n[green]✅ Selected profile: {profile_choice.title()}[/green]")
-        print(
-            f"[dim]{profile_descriptions.get(profile_choice, 'Unknown profile')}[/dim]"
-        )
-        print(f"\n[dim]Applied {mode} analysis settings to configuration[/dim]")
+        return
+    print("\n[bold cyan]🎯 Semantic Analysis Profile Selection[/bold cyan]")
+    print("[dim]Choose a profile optimized for your conversation type:[/dim]")
+    profile_choice = questionary.select(
+        "Select semantic analysis profile:",
+        choices=[
+            questionary.Choice(
+                title="⚖️ Balanced (Recommended) - General purpose - good for most conversations",
+                value="balanced",
+            ),
+            questionary.Choice(
+                title="🎓 Academic - Optimized for research discussions and presentations",
+                value="academic",
+            ),
+            questionary.Choice(
+                title="💼 Business - Focused on meetings and professional discourse",
+                value="business",
+            ),
+            questionary.Choice(
+                title="😊 Casual - Suited for informal conversations and chats",
+                value="casual",
+            ),
+            questionary.Choice(
+                title="🔧 Technical - Enhanced for technical discussions and troubleshooting",
+                value="technical",
+            ),
+            questionary.Choice(
+                title="🎤 Interview - Optimized for job interviews, Q&A sessions, and structured conversations",
+                value="interview",
+            ),
+        ],
+        default="balanced",
+    ).ask()
+    if profile_choice is None:
+        print("\n[cyan]Cancelled.[/cyan]")
+        raise KeyboardInterrupt()
+    apply_analysis_mode_settings_core(mode, profile=profile_choice)
+    profile_descriptions = {
+        "balanced": "Balanced scoring for general conversations",
+        "academic": "Optimized for academic discussions, research presentations, and debates",
+        "business": "Optimized for business meetings, negotiations, and professional discussions",
+        "casual": "Optimized for casual conversations, social discussions, and informal chats",
+        "technical": "Optimized for technical discussions, code reviews, and troubleshooting sessions",
+        "interview": "Optimized for job interviews, Q&A sessions, and structured conversations",
+    }
+    print(f"\n[green]✅ Selected profile: {profile_choice.title()}[/green]")
+    print(
+        f"[dim]{profile_descriptions.get(profile_choice, 'Unknown profile')}[/dim]"
+    )
+    print(f"\n[dim]Applied {mode} analysis settings to configuration[/dim]")
 
 
-def apply_analysis_mode_settings_non_interactive(mode: str, profile: str | None = None):
+def apply_analysis_mode_settings_non_interactive(mode: str, profile: str | None = None) -> None:
     """
-    Apply analysis mode settings without interactive prompts.
+    Apply analysis mode settings without interactive prompts (delegates to core).
 
     Args:
         mode: Analysis mode - 'quick' or 'full'
-        profile: Semantic profile for full mode - 'balanced', 'academic', 'business',
-                 'casual', 'technical', 'interview' (only used with mode='full')
+        profile: Semantic profile for full mode (only used with mode='full')
     """
-    config = get_config()
-    if mode == "quick":
-        settings = config.analysis.quick_analysis_settings
-        config.analysis.analysis_mode = "quick"
-        config.analysis.semantic_similarity_method = settings["semantic_method"]
-        config.analysis.max_segments_for_semantic = settings[
-            "max_segments_for_semantic"
-        ]
-        config.analysis.max_semantic_comparisons = settings["max_semantic_comparisons"]
-        config.analysis.ner_use_light_model = settings["ner_use_light_model"]
-        config.analysis.ner_max_segments = settings["ner_max_segments"]
-        config.analysis.ner_include_geocoding = not settings["skip_geocoding"]
-        config.analysis.quality_filtering_profile = settings["semantic_profile"]
-    else:
-        settings = config.analysis.full_analysis_settings
-        config.analysis.analysis_mode = "full"
-        config.analysis.semantic_similarity_method = settings["semantic_method"]
-        config.analysis.max_segments_for_semantic = settings[
-            "max_segments_for_semantic"
-        ]
-        config.analysis.max_semantic_comparisons = settings["max_semantic_comparisons"]
-        config.analysis.ner_use_light_model = settings["ner_use_light_model"]
-        config.analysis.ner_max_segments = settings["ner_max_segments"]
-        config.analysis.ner_include_geocoding = not settings["skip_geocoding"]
-        # Apply increased segment limits for full mode
-        if "max_segments_per_speaker" in settings:
-            config.analysis.max_segments_per_speaker = settings["max_segments_per_speaker"]
-        if "max_segments_for_cross_speaker" in settings:
-            config.analysis.max_segments_for_cross_speaker = settings["max_segments_for_cross_speaker"]
-        # Use provided profile or default to balanced
-        profile_choice = profile or "balanced"
-        if profile_choice not in [
-            "balanced",
-            "academic",
-            "business",
-            "casual",
-            "technical",
-            "interview",
-        ]:
-            profile_choice = "balanced"
-        config.analysis.quality_filtering_profile = profile_choice
-
-
-def filter_modules_by_mode(modules: list[str], mode: str) -> list[str]:
-    config = get_config()
-    if mode == "quick":
-        settings = config.analysis.quick_analysis_settings
-        if settings.get("skip_advanced_semantic", True):
-            filtered_modules = [
-                m for m in modules if m != "semantic_similarity_advanced"
-            ]
-            if (
-                "semantic_similarity_advanced" in modules
-                and "semantic_similarity" not in filtered_modules
-            ):
-                filtered_modules.append("semantic_similarity")
-            return filtered_modules
-    else:
-        return modules
-    return modules
+    apply_analysis_mode_settings_core(mode, profile=profile)

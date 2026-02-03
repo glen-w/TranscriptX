@@ -14,7 +14,6 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
-from PIL import Image
 
 # Import existing utilities
 try:
@@ -24,7 +23,6 @@ try:
         get_analysis_modules,
         load_analysis_data,
         get_all_sessions_statistics,
-        list_charts,
         extract_analysis_summary,
     )
     from transcriptx.web.db_utils import (
@@ -54,6 +52,21 @@ try:
     from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
     from transcriptx.core.utils.logger import get_logger
     from transcriptx.utils.text_utils import format_time_detailed
+    from transcriptx.web.module_registry import (
+        get_all_available_modules,
+        build_module_label,
+    )
+    from transcriptx.core.analysis.selection import (
+        apply_analysis_mode_settings,
+        filter_modules_by_mode,
+        get_recommended_modules,
+        VALID_MODES,
+        VALID_PROFILES,
+    )
+    from transcriptx.core.pipeline.module_registry import get_module_info
+    from transcriptx.core import run_analysis_pipeline
+    from transcriptx.core.pipeline.target_resolver import TranscriptRef
+    from transcriptx.core.utils.audio_availability import has_resolvable_audio
 except ImportError as e:
     st.error(f"Import error: {e}")
     st.stop()
@@ -164,23 +177,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-
-def get_chart_paths(session_name: str, module_name: str) -> List[Path]:
-    """Get local file paths for chart images."""
-    charts = list_charts(session_name, module_name)
-    chart_paths = []
-    module_dir = FileService._resolve_session_dir(session_name) / module_name
-
-    for chart in charts:
-        # Extract filename from path (e.g., "/api/charts/session/module/file.png" -> "file.png")
-        chart_name = chart.get("name", "")
-        if chart_name:
-            chart_path = module_dir / chart_name
-            if chart_path.exists():
-                chart_paths.append(chart_path)
-
-    return chart_paths
 
 
 def _build_session_index_from_list(sessions: list) -> dict:
@@ -584,11 +580,37 @@ def render_transcript_viewer():
                             st.caption(f"Emotion: {segment['emotion']}")
 
 
-        # Analysis modules
+        # Analysis modules: view dropdown + button grid (synced via session_state)
+        st.session_state.setdefault("analysis_artifacts_version", 0)
+        st.session_state.setdefault("analysis_run_in_progress", False)
+        artifacts_version = st.session_state.get("analysis_artifacts_version", 0)
         modules = get_analysis_modules(selected)
-        if modules:
-            st.divider()
-            st.subheader("📊 Analysis Modules")
+        st.divider()
+        st.subheader("📊 Analysis Modules")
+        if not modules:
+            st.info(
+                "No analysis modules run yet. Use **Run analysis** below to generate results."
+            )
+        else:
+            # Dropdown: key includes artifacts_version so list refreshes after run
+            select_key = f"analysis_module_select_{selected}_{artifacts_version}"
+            current_module = st.session_state.get("analysis_module")
+            default_index = (
+                modules.index(current_module)
+                if current_module and current_module in modules
+                else 0
+            )
+            chosen = st.selectbox(
+                "View analysis module",
+                options=modules,
+                index=default_index,
+                format_func=lambda m: build_module_label(m),
+                key=select_key,
+            )
+            if chosen:
+                st.session_state["analysis_module"] = chosen
+                st.session_state["analysis_session"] = selected
+            # Button grid: select which module to view (viewing is on Transcript via other pages)
             cols = st.columns(min(len(modules), 4))
             for idx, module in enumerate(modules):
                 with cols[idx % 4]:
@@ -597,8 +619,13 @@ def render_transcript_viewer():
                     ):
                         st.session_state["analysis_module"] = module
                         st.session_state["analysis_session"] = selected
-                        st.session_state["page"] = "Analysis"
                         st.rerun()
+
+        # View-only: run analysis lives on the dedicated "Run Analysis" page (sidebar).
+        if not modules:
+            st.info(
+                "No analysis modules run yet. Go to **Run Analysis** in the sidebar to generate results."
+            )
 
         st.divider()
         with st.expander("✨ Highlights", expanded=False):
@@ -612,111 +639,205 @@ def render_transcript_viewer():
         st.exception(e)
 
 
-def render_analysis_viewer():
-    """Analysis module viewer with charts and visualizations."""
+def render_run_analysis_page():
+    """
+    Dedicated page to run analysis on the session selected in the sidebar.
+
+    Non-goal: This run flow is synchronous and in-process; long-running jobs
+    are not yet queued or resumable.
+    """
     st.markdown(
-        '<div class="main-header">📊 Analysis Viewer</div>', unsafe_allow_html=True
+        '<div class="main-header">▶ Run Analysis</div>', unsafe_allow_html=True
+    )
+    st.caption(
+        "Run the analysis pipeline on the session selected in the sidebar. "
+        "Results will be available in the Transcript view after completion."
     )
 
-    try:
-        session = st.session_state.get("analysis_session")
-        module = st.session_state.get("analysis_module")
-
-        if not session or not module:
-            st.warning("No analysis selected. Please select from transcript viewer.")
-            if st.button("← Back to Dashboard"):
-                st.session_state["page"] = "Dashboard"
-                st.rerun()
-            return
-
-        # Header with back button
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.info(f"Viewing **{module}** analysis for session: **{session}**")
-        with col2:
-            if st.button("← Back to Transcript"):
-                st.session_state["page"] = "Transcript"
-                st.rerun()
-
-        # Load analysis data
-        with st.spinner(f"Loading {module} analysis..."):
-            analysis_data = load_analysis_data(session, module)
-
-        if not analysis_data:
-            st.error(f"Analysis data not found for {session}/{module}")
-            return
-
-        # Display summary if available
-        try:
-            summary = extract_analysis_summary(module, analysis_data)
-            if summary:
-                st.subheader("📋 Summary")
-                st.write(summary)
-                st.divider()
-        except Exception as e:
-            logger.debug(f"Could not extract summary: {e}")
-
-        # Display charts if available
-        chart_paths = get_chart_paths(session, module)
-        if chart_paths:
-            st.subheader("📈 Visualizations")
-
-            # Display charts in a grid
-            num_cols = 2
-            for i in range(0, len(chart_paths), num_cols):
-                cols = st.columns(num_cols)
-                for j, chart_path in enumerate(chart_paths[i : i + num_cols]):
-                    with cols[j]:
-                        try:
-                            img = Image.open(chart_path)
-                            st.image(
-                                img,
-                                caption=chart_path.name.replace("_", " ").replace(
-                                    ".png", ""
-                                ),
-                                width='stretch',
-                            )
-                        except Exception as e:
-                            logger.warning(f"Could not load chart {chart_path}: {e}")
-                            st.error(f"Could not load chart: {chart_path.name}")
-
-            st.divider()
-
-        # Display analysis data
-        st.subheader("📊 Analysis Data")
-
-        # Try to display in a more readable format
-        if isinstance(analysis_data, dict):
-            # Show key metrics if available
-            if "statistics" in analysis_data:
-                st.write("**Statistics:**")
-                st.json(analysis_data["statistics"])
-
-            # Show main results
-            if "results" in analysis_data:
-                st.write("**Results:**")
-                st.json(analysis_data["results"])
-
-            # Show full data in expander
-            with st.expander("View Full Analysis Data (JSON)"):
-                st.json(analysis_data)
-        else:
-            st.json(analysis_data)
-
-        # Export button
-        st.divider()
-        analysis_json = json.dumps(analysis_data, indent=2, default=str)
-        st.download_button(
-            label="📥 Export Analysis Data (JSON)",
-            data=analysis_json,
-            file_name=f"{session}_{module}_analysis.json",
-            mime="application/json",
+    selected_session = st.session_state.get("selected_session")
+    selected_run_id = st.session_state.get("selected_run_id")
+    if not selected_session or not selected_run_id:
+        st.warning(
+            "Select a **Session** and **Run** in the sidebar first, then run analysis here."
         )
+        return
 
-    except Exception as e:
-        logger.error(f"Error loading analysis: {e}", exc_info=True)
-        st.error(f"Error loading analysis: {e}")
-        st.exception(e)
+    selected = f"{selected_session}/{selected_run_id}"
+    transcript_path = FileService.resolve_transcript_path(selected)
+    if transcript_path is None:
+        st.warning(
+            "Could not resolve transcript path for this session. Run analysis is unavailable."
+        )
+        return
+
+    # Build context for module labels (audio + voice deps)
+    try:
+        from transcriptx.core.utils.config import get_config
+        from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
+        _cfg = get_config()
+        _voice_cfg = getattr(getattr(_cfg, "analysis", None), "voice", None)
+        _egemaps = bool(getattr(_voice_cfg, "egemaps_enabled", True))
+        _deps = check_voice_optional_deps(egemaps_enabled=_egemaps)
+        _audio_available = has_resolvable_audio([str(transcript_path)])
+        _missing_deps = (
+            _deps.get("missing_optional_deps", [])
+            if not _deps.get("ok")
+            else []
+        )
+        _context = {
+            "audio_available": _audio_available,
+            "missing_deps": _missing_deps,
+        }
+    except Exception:
+        _context = {}
+
+    run_mode = st.radio(
+        "Mode",
+        options=list(VALID_MODES),
+        format_func=lambda x: "Quick (faster)" if x == "quick" else "Full (comprehensive)",
+        key="run_analysis_mode",
+        horizontal=True,
+    )
+    run_profile = None
+    if run_mode == "full":
+        run_profile = st.selectbox(
+            "Profile",
+            options=list(VALID_PROFILES),
+            format_func=lambda x: x.capitalize(),
+            key="run_analysis_profile",
+        )
+    preset = st.radio(
+        "Preset",
+        options=["recommended", "all", "light_only", "custom"],
+        format_func=lambda x: {
+            "recommended": "Recommended",
+            "all": "All modules",
+            "light_only": "Light modules only",
+            "custom": "Custom",
+        }.get(x, x),
+        key="run_analysis_preset",
+        horizontal=True,
+    )
+    all_available = get_all_available_modules()
+    if preset == "custom":
+        try:
+            _missing = _context.get("missing_deps") or []
+
+            def _dep_resolver(info):
+                if not getattr(info, "requires_audio", False):
+                    return True
+                return not _missing
+
+            _runnable = get_recommended_modules(
+                [str(transcript_path)],
+                audio_resolver=has_resolvable_audio,
+                dep_resolver=_dep_resolver,
+                include_heavy=True,
+                include_excluded_from_default=True,
+            )
+        except Exception:
+            _runnable = get_recommended_modules(
+                [str(transcript_path)],
+                audio_resolver=has_resolvable_audio,
+                include_heavy=True,
+                include_excluded_from_default=True,
+            )
+        _runnable_set = set(_runnable)
+        _unavailable = sorted(m for m in all_available if m not in _runnable_set)
+        _default_custom = [
+            m
+            for m in get_recommended_modules(
+                [str(transcript_path)],
+                audio_resolver=has_resolvable_audio,
+                include_excluded_from_default=True,
+            )[:5]
+            if m in _runnable_set
+        ]
+        custom_options = st.multiselect(
+            "Modules",
+            options=sorted(_runnable_set),
+            default=_default_custom,
+            format_func=lambda m: build_module_label(m, context=_context),
+            key="run_analysis_custom_modules",
+        )
+        if _unavailable:
+            _audio_ok = _context.get("audio_available", None)
+            _deps_ok = not (_context.get("missing_deps") or [])
+            if _audio_ok is False and not _deps_ok:
+                _reason = "audio missing and voice deps missing"
+            elif _audio_ok is False:
+                _reason = "audio missing for this session"
+            elif not _deps_ok:
+                _reason = "voice deps missing"
+            else:
+                _reason = "unavailable for this session"
+            st.caption(
+                f"Unavailable ({_reason}): " + ", ".join(_unavailable)
+            )
+        run_modules = custom_options
+    elif preset == "all":
+        run_modules = all_available
+    elif preset == "light_only":
+        run_modules = [
+            m
+            for m in all_available
+            if get_module_info(m) and get_module_info(m).category == "light"
+        ]
+    else:
+        run_modules = get_recommended_modules(
+            [str(transcript_path)],
+            audio_resolver=has_resolvable_audio,
+        )
+    filtered_modules = filter_modules_by_mode(run_modules, run_mode)
+    open_after = st.checkbox(
+        "Open results after run",
+        value=True,
+        key="run_analysis_open_after",
+    )
+    run_disabled = (
+        st.session_state.get("analysis_run_in_progress", False)
+        or not filtered_modules
+    )
+    run_clicked = st.button(
+        "Run analysis",
+        key="run_analysis_btn",
+        disabled=run_disabled,
+    )
+    if not filtered_modules and preset == "custom":
+        st.caption("Select at least one module to run.")
+    if not filtered_modules and preset == "light_only":
+        st.caption("No light-category modules available for this run.")
+    if run_clicked and filtered_modules:
+        st.session_state["analysis_run_in_progress"] = True
+        apply_analysis_mode_settings(run_mode, profile=run_profile)
+        logger.info(
+            "Run analysis: transcript_path=%s mode=%s profile=%s modules=%s",
+            str(transcript_path),
+            run_mode,
+            run_profile or "",
+            filtered_modules,
+        )
+        try:
+            with st.spinner("Running analysis pipeline…"):
+                run_analysis_pipeline(
+                    target=TranscriptRef(path=str(transcript_path)),
+                    selected_modules=filtered_modules,
+                    skip_speaker_mapping=True,
+                    persist=False,
+                )
+            st.session_state["analysis_artifacts_version"] = (
+                st.session_state.get("analysis_artifacts_version", 0) + 1
+            )
+            if open_after and filtered_modules:
+                st.session_state["analysis_module"] = filtered_modules[0]
+                st.session_state["analysis_session"] = selected
+            st.success("Analysis completed.")
+        except Exception as e:
+            logger.error(f"Run analysis failed: {e}", exc_info=True)
+            st.error(f"Analysis failed: {e}")
+        finally:
+            st.session_state["analysis_run_in_progress"] = False
+        st.rerun()
 
 
 def render_speakers_list():
@@ -971,6 +1092,8 @@ def main():
     # Initialize session state
     if "page" not in st.session_state:
         st.session_state["page"] = "Overview"
+    st.session_state.setdefault("analysis_artifacts_version", 0)
+    st.session_state.setdefault("analysis_run_in_progress", False)
 
     load_error = None
     try:
@@ -1028,8 +1151,9 @@ def main():
         transcript_pages = [
             ("Overview", "Overview"),
             ("Transcript", "Transcript"),
-            ("Insights", "🛈 Insights"),
+            ("Run Analysis", "Run Analysis"),
             ("Charts", "Charts"),
+            ("Insights", "Insights"),
             ("Data", "Data"),
             ("Explorer", "File List"),
             ("Configuration", "Configuration"),
@@ -1074,8 +1198,8 @@ def main():
             render_data()
         elif current_page == "Explorer":
             render_explorer()
-        elif current_page == "Analysis":
-            render_analysis_viewer()
+        elif current_page == "Run Analysis":
+            render_run_analysis_page()
         elif current_page == "Speakers":
             render_speakers_list()
         elif current_page == "Configuration":
