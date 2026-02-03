@@ -1,11 +1,15 @@
 # Highlights
 
+**Highlights intensity:** unknown (n/a)
+
 ## Cold open
-- **Alice**: Opening remark.
+- **Alice**: Opening remark. [-- | Alice]
 
 ## Conflict points
-- **Bob**: I disagree.
+- **Bob**: I disagree. [-- | Bob]
 
 ## Emblematic phrases
 - key phrase
 
+---
+Provenance

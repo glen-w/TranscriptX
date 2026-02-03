@@ -27,6 +27,7 @@ def test_analyze_smoke_outputs(tmp_path: Path) -> None:
         "-m",
         "transcriptx.cli.main",
         "analyze",
+        "--transcript-file",
         str(transcript_path),
         "--modules",
         "stats",

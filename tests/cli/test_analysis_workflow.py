@@ -35,7 +35,7 @@ def test_workflow_single_transcript_runs_pipeline(tmp_path: Path, monkeypatch) -
         analysis_workflow, "apply_analysis_mode_settings", lambda mode: None
     )
     monkeypatch.setattr(
-        analysis_workflow, "select_analysis_modules", lambda: ["sentiment"]
+        analysis_workflow, "select_analysis_modules", lambda *args, **kwargs: ["sentiment"]
     )
     monkeypatch.setattr(
         analysis_workflow, "filter_modules_by_mode", lambda modules, mode: modules

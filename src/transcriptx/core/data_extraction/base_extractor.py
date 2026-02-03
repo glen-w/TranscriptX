@@ -131,6 +131,77 @@ class BaseDataExtractor(ABC):
                 "data": data,
             }
 
+    def get_speaker_segments(
+        self, analysis_results: Dict[str, Any], speaker_id: int | str
+    ) -> List[Dict[str, Any]]:
+        """
+        Return segments belonging to a given speaker.
+
+        This is a lightweight helper used by multiple extractors. It supports both the
+        newer `speaker_db_id` field and older `speaker` string IDs.
+        """
+        segments = analysis_results.get("segments", [])
+        if not isinstance(segments, list):
+            return []
+
+        # Normalize speaker_id to int if possible (for speaker_db_id matching)
+        speaker_id_int: int | None = None
+        try:
+            speaker_id_int = int(speaker_id)  # type: ignore[arg-type]
+        except Exception:
+            speaker_id_int = None
+
+        out: List[Dict[str, Any]] = []
+        for seg in segments:
+            if not isinstance(seg, dict):
+                continue
+
+            if speaker_id_int is not None and seg.get("speaker_db_id") == speaker_id_int:
+                out.append(seg)
+                continue
+
+            if str(seg.get("speaker", "")) == str(speaker_id):
+                out.append(seg)
+                continue
+
+        return out
+
+    def calculate_average(self, values: List[float]) -> float:
+        """Calculate average of numeric values (0.0 for empty)."""
+        if not values:
+            return 0.0
+        try:
+            return float(np.mean(values))
+        except Exception:
+            return 0.0
+
+    def calculate_volatility(self, values: List[float]) -> float:
+        """Calculate volatility (standard deviation; 0.0 for empty/degenerate)."""
+        if not values:
+            return 0.0
+        try:
+            return float(np.std(values))
+        except Exception:
+            return 0.0
+
+    def safe_float(self, value: Any) -> Optional[float]:
+        """Convert to float, returning None on failure."""
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except Exception:
+            return None
+
+    def get_most_frequent(self, items: List[Any]) -> Any:
+        """Return most common item (or None if empty)."""
+        if not items:
+            return None
+        try:
+            return Counter(items).most_common(1)[0][0]
+        except Exception:
+            return None
+
     def _get_timestamp(self) -> str:
         """Get current timestamp string."""
         from datetime import datetime

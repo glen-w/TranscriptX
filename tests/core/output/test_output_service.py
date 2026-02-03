@@ -13,6 +13,7 @@ import pytest
 from transcriptx.core.output.output_service import OutputService
 from transcriptx.core.viz.specs import BarCategoricalSpec
 from transcriptx.core.utils.config import TranscriptXConfig, set_config
+from transcriptx.core.utils._path_core import get_canonical_base_name
 
 
 class TestOutputService:
@@ -29,7 +30,7 @@ class TestOutputService:
         
         assert service.transcript_path == str(temp_transcript_file)
         assert service.module_name == "sentiment"
-        assert service.base_name == "test_transcript"
+        assert service.base_name == get_canonical_base_name(str(temp_transcript_file))
         assert service.output_structure is not None
     
     def test_save_data_json(self, output_service, tmp_path):
@@ -75,6 +76,33 @@ class TestOutputService:
         # Verify subdirectory was used
         call_args = mock_save.call_args[0][1]
         assert "nested" in call_args
+
+    def test_skip_unidentified_override(self, temp_transcript_file):
+        """Include-unidentified override should bypass exclusion."""
+        config = TranscriptXConfig()
+        config.analysis.exclude_unidentified_from_speaker_charts = True
+        set_config(config)
+
+        service = OutputService(
+            str(temp_transcript_file),
+            "sentiment",
+            runtime_flags={
+                "include_unidentified_speakers": False,
+                "named_speaker_keys": {"1"},
+            },
+        )
+        assert service._should_skip_speaker_artifact("1") is False
+        assert service._should_skip_speaker_artifact("2") is True
+
+        override_service = OutputService(
+            str(temp_transcript_file),
+            "sentiment",
+            runtime_flags={
+                "include_unidentified_speakers": True,
+                "named_speaker_keys": {"1"},
+            },
+        )
+        assert override_service._should_skip_speaker_artifact("2") is False
     
     def test_save_chart_global(self, output_service):
         """Test saving global chart."""
@@ -114,7 +142,7 @@ class TestOutputService:
                 module="sentiment",
                 name="test_chart",
                 scope="speaker",
-                speaker="SPEAKER_00",
+                speaker="Alice",
                 chart_intent="bar_categorical",
                 title="Test Chart",
                 x_label="Category",

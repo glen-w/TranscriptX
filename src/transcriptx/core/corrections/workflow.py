@@ -126,6 +126,7 @@ def run_corrections_on_segments(
     config: Optional[Any] = None,
     interactive_review: Optional[bool] = None,
     output_dir: Optional[str] = None,
+    apply_changes: bool = True,
 ) -> Dict[str, Any]:
     config = config or get_config()
     corrections_config = getattr(config.analysis, "corrections", None)
@@ -186,19 +187,20 @@ def run_corrections_on_segments(
 
     candidates = _dedupe_candidates(candidates, rules_by_id=memory.rules)
     suggestions_payload = [candidate.model_dump() for candidate in candidates]
-    output_service.save_data(
+    suggestions_path = output_service.save_data(
         suggestions_payload, "corrections_suggestions", format_type="json"
     )
 
     candidate_by_id = {candidate.candidate_id: candidate for candidate in candidates}
 
     decisions: Optional[List[Decision]] = None
+    decisions_path_saved: Optional[str] = None
     if interactive_review:
         decisions = review_candidates(
             candidates, default_rule_scope=corrections_config.default_rule_scope
         )
         if decisions is not None:
-            output_service.save_data(
+            decisions_path_saved = output_service.save_data(
                 [decision.model_dump() for decision in decisions],
                 "corrections_decisions",
                 format_type="json",
@@ -216,7 +218,9 @@ def run_corrections_on_segments(
 
     updated_segments = segments
     patch_log: List[Dict[str, Any]] = []
-    if apply_candidates:
+    patch_log_path: Optional[str] = None
+    corrected_transcript_path: Optional[str] = None
+    if apply_changes and apply_candidates:
         updated_segments, patch_log = apply_corrections(
             segments=segments,
             candidates=apply_candidates,
@@ -225,9 +229,12 @@ def run_corrections_on_segments(
             rules_by_id=memory.rules,
         )
 
-    output_service.save_data(patch_log, "corrections_patch_log", format_type="json")
+    if apply_changes:
+        patch_log_path = output_service.save_data(
+            patch_log, "corrections_patch_log", format_type="json"
+        )
 
-    if decisions:
+    if decisions and apply_changes:
         for decision in decisions:
             if decision.new_rule:
                 if decision.new_rule.scope in {"global", "project"}:
@@ -244,14 +251,14 @@ def run_corrections_on_segments(
                         rule.confidence = min(1.0, rule.confidence + 0.05)
                         promote_rule(rule, "project", transcript_path=transcript_path)
 
-    if corrections_config.store_corrected_transcript and patch_log:
-        output_service.save_data(
+    if apply_changes and corrections_config.store_corrected_transcript and patch_log:
+        corrected_transcript_path = output_service.save_data(
             {"segments": updated_segments},
             "corrections_transcript",
             format_type="json",
         )
 
-    if corrections_config.write_csv_summary and patch_log:
+    if apply_changes and corrections_config.write_csv_summary and patch_log:
         summary: Dict[str, int] = {}
         for entry in patch_log:
             if "resolution_policy" in entry:
@@ -265,7 +272,7 @@ def run_corrections_on_segments(
         )
 
     return {
-        "status": "success",
+        "status": "success" if apply_changes else "suggestions_only",
         "suggestions_count": len(candidates),
         "applied_count": sum(
             1
@@ -273,9 +280,13 @@ def run_corrections_on_segments(
             if "resolution_policy" not in e
             and e.get("status") not in ("conflict_skipped", "skipped_no_span")
         ),
-        "updated_segments": updated_segments,
+        "updated_segments": updated_segments if apply_changes else None,
         "patch_log": patch_log,
         "artifacts": output_service.get_artifacts(),
+        "suggestions_path": suggestions_path,
+        "decisions_path": decisions_path_saved,
+        "patch_log_path": patch_log_path,
+        "corrected_transcript_path": corrected_transcript_path,
     }
 
 
@@ -287,6 +298,7 @@ def run_corrections_workflow(
     create_backup: Optional[bool] = None,
     config: Optional[Any] = None,
     output_dir: Optional[str] = None,
+    apply_changes: bool = True,
 ) -> Dict[str, Any]:
     config = config or get_config()
     corrections_config = getattr(config.analysis, "corrections", None)
@@ -311,10 +323,12 @@ def run_corrections_workflow(
         config=config,
         interactive_review=interactive,
         output_dir=output_dir,
+        apply_changes=apply_changes,
     )
 
     if (
-        update_original_file
+        apply_changes
+        and update_original_file
         and results.get("status") == "success"
         and results.get("applied_count", 0) > 0
     ):
@@ -325,3 +339,25 @@ def run_corrections_workflow(
             )
 
     return results
+
+
+def write_corrected_transcript(
+    *,
+    transcript_path: str,
+    updated_segments: Optional[List[Dict[str, Any]]],
+    create_backup: bool = True,
+) -> Optional[str]:
+    if not updated_segments:
+        return None
+    backup_path: Optional[str] = None
+    if create_backup:
+        backup_path = _backup_transcript_file(transcript_path)
+
+    transcript_data = load_transcript(transcript_path)
+    if isinstance(transcript_data, dict):
+        transcript_data["segments"] = updated_segments
+        save_json(transcript_data, transcript_path)
+    else:
+        save_json(updated_segments, transcript_path)
+    logger.info(f"Updated transcript file: {transcript_path}")
+    return backup_path

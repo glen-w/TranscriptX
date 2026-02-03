@@ -226,6 +226,8 @@ class AnalysisConfig:
     wordcloud_max_words: int = 100
     wordcloud_min_font_size: int = 8
     wordcloud_stopwords: list[str] = field(default_factory=lambda: DEFAULT_STOPWORDS)
+    # When True, per-speaker charts/data only for named speakers
+    exclude_unidentified_from_speaker_charts: bool = True
 
     # Corrections settings
     corrections: CorrectionsConfig = field(default_factory=CorrectionsConfig)

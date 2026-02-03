@@ -60,8 +60,8 @@ class TestExitCodeConsistency:
     
     def test_exit_codes_all_commands(self, cli_runner):
         """All CLI commands use standardized exit codes."""
-        # Test help for all major commands
-        commands = ["analyze", "transcribe", "database", "profile"]
+        # Test help for all major commands (profile is optional and may not be registered)
+        commands = ["analyze", "transcribe", "database"]
         
         for cmd in commands:
             result = cli_runner(cmd, ["--help"], timeout=5)
@@ -79,10 +79,10 @@ class TestExitCodeConsistency:
     
     def test_exit_codes_non_interactive_errors(self, cli_runner, non_interactive_env):
         """Non-interactive errors use appropriate codes."""
-        # Try to run analyze without required file in non-interactive mode
+        # Try to run analyze with nonexistent file in non-interactive mode
         result = cli_runner(
             "analyze",
-            ["--non-interactive", "nonexistent.json"],
+            ["--non-interactive", "--transcript-file", "nonexistent.json"],
             env=non_interactive_env,
             timeout=5,
         )

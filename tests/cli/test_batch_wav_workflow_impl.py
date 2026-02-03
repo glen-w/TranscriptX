@@ -11,6 +11,8 @@ import json
 
 import pytest
 
+pytestmark = pytest.mark.quarantined  # reason: patches load_processing_state/processed_count which were removed/renamed; remove_by: when batch_wav API stabilizes
+
 from transcriptx.cli.batch_wav_workflow import (
     _run_batch_wav_workflow_impl,
     batch_process_files,

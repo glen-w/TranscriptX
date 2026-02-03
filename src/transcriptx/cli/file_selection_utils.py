@@ -33,6 +33,24 @@ os.environ.setdefault("PROMPT_TOOLKIT_NO_CPR", "1")
 console = Console()
 logger = get_logger()
 
+_TRANSCRIPT_PARENT_EXCLUSIONS = {
+    "outputs",
+    "analysis",
+    "charts",
+    "metadata",
+    "stats",
+    "sentiment",
+    "emotion",
+    "ner",
+    "word_clouds",
+    "networks",
+}
+_TRANSCRIPT_FILENAME_EXCLUSIONS = (
+    "_summary.json",
+    "_manifest.json",
+    "_simplified_transcript.json",
+)
+
 
 def _normalize_allowed_exts(
     allowed_exts: tuple[str, ...] | None,
@@ -58,6 +76,66 @@ def _format_allowed_exts(allowed_exts: tuple[str, ...] | None) -> str:
     if not allowed_exts:
         return "any"
     return ", ".join(sorted(allowed_exts))
+
+
+def _resolve_transcript_discovery_root(root: Path | None) -> Path | None:
+    if root is not None:
+        return Path(root)
+
+    config_obj = get_config()
+    default_folder = Path(config_obj.output.default_transcript_folder)
+    if default_folder.exists():
+        return default_folder
+
+    diarised_dir = Path(DIARISED_TRANSCRIPTS_DIR)
+    if diarised_dir.exists():
+        return diarised_dir
+
+    return None
+
+
+def _is_excluded_transcript_path(path: Path) -> bool:
+    if path.name.endswith(_TRANSCRIPT_FILENAME_EXCLUSIONS):
+        return True
+    for parent in path.parents:
+        if parent.name in _TRANSCRIPT_PARENT_EXCLUSIONS:
+            return True
+    return False
+
+
+def discover_all_transcript_paths(root: Path | None = None) -> list[Path]:
+    """
+    Discover all transcript JSON paths using deterministic rules.
+
+    Root selection:
+      1) provided root
+      2) config.output.default_transcript_folder if it exists
+      3) DIARISED_TRANSCRIPTS_DIR if it exists
+      4) else return []
+    """
+    root_path = _resolve_transcript_discovery_root(root)
+    if root_path is None:
+        return []
+
+    transcripts_subdir = root_path / "transcripts"
+    search_root = transcripts_subdir if transcripts_subdir.exists() else root_path
+
+    resolved_paths: list[Path] = []
+    seen: set[str] = set()
+    for path in search_root.rglob("*.json"):
+        if transcripts_subdir.exists() and transcripts_subdir != search_root:
+            # Defensive: only search within transcripts/ when it exists.
+            continue
+        if not transcripts_subdir.exists() and _is_excluded_transcript_path(path):
+            continue
+        resolved = path.resolve()
+        resolved_key = str(resolved)
+        if resolved_key in seen:
+            continue
+        seen.add(resolved_key)
+        resolved_paths.append(resolved)
+
+    return sorted(resolved_paths, key=lambda p: str(p))
 
 
 def _collect_paths_from_entries(
@@ -290,6 +368,25 @@ def _prompt_file_selection_mode() -> str | None:
     return None
 
 
+def get_file_selection_mode(config=None):
+    """
+    Resolve file selection mode from config or by prompting.
+
+    If config.input.file_selection_mode is "explore" or "direct", use that.
+    If "prompt" or unset, show the selection prompt each time (including
+    "Proceed to default folder", which uses existing default transcript/recording folder settings).
+    Returns "explore", "direct", "default_folder", or None (cancel).
+    """
+    if config is None:
+        config = get_config()
+    mode = getattr(config.input, "file_selection_mode", "prompt")
+    if mode == "explore":
+        return "explore"
+    if mode == "direct":
+        return "direct"
+    return _prompt_file_selection_mode()
+
+
 def get_wav_folder_start_path(config) -> Path:
     """
     Get the first existing WAV folder path from configuration.
@@ -446,10 +543,9 @@ def _has_analysis_outputs(transcript_file: Path) -> bool:
             if item.is_dir() and item.name in analysis_indicators:
                 return True
 
-        # Check for comprehensive summary files (HTML or TXT)
+        # Check for comprehensive summary files (TXT)
         base_name = transcript_file.stem
         summary_files = [
-            f"{base_name}_comprehensive_summary.html",
             f"{base_name}_comprehensive_summary.txt",
         ]
 
@@ -600,7 +696,7 @@ def select_folder_interactive(start_path: Path | None = None) -> Path | None:
 
 def select_audio_file_interactive() -> Path | None:
     audio_extensions = (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg")
-    mode = _prompt_file_selection_mode()
+    mode = get_file_selection_mode()
     if mode is None:
         return None
     if mode == "direct":
@@ -682,10 +778,63 @@ def select_transcript_file_interactive() -> Path | None:
 
     For selecting multiple transcripts, use select_transcript_files_interactive() instead.
     """
-    selected = select_transcript_files_interactive()
-    if selected and len(selected) > 0:
-        return selected[0]
-    return None
+    mode = get_file_selection_mode()
+    if mode is None:
+        return None
+    if mode == "direct":
+        selected = prompt_for_file_path(
+            allowed_exts=(".json", ".vtt", ".srt"),
+            allow_glob=False,
+            prompt_text="Enter transcript file path:",
+        )
+        if not selected:
+            return None
+        processed = _process_transcript_paths([selected])
+        return processed[0] if processed else None
+
+    config_obj = get_config()
+    default_folder = Path(config_obj.output.default_transcript_folder)
+    if not default_folder.exists():
+        default_folder.mkdir(parents=True, exist_ok=True)
+    if mode == "default_folder":
+        folder_path = default_folder
+    else:
+        folder_path = select_folder_interactive(start_path=default_folder)
+        if not folder_path:
+            return None
+    transcript_files = discover_all_transcript_paths(folder_path)
+    transcript_files.extend(list(folder_path.rglob("*.vtt")))
+    transcript_files.extend(list(folder_path.rglob("*.srt")))
+    deduped: list[Path] = []
+    seen: set[str] = set()
+    for path in transcript_files:
+        resolved = path.resolve()
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(resolved)
+    transcript_files = sorted(deduped, key=lambda p: p.name.lower())
+    if not transcript_files:
+        console.print(
+            f"[red]❌ No transcript files (.json/.vtt/.srt) found in {folder_path}[/red]"
+        )
+        return None
+
+    selection_config = FileSelectionConfig(
+        multi_select=False,
+        enable_playback=False,
+        enable_rename=True,
+        title="📄 Transcript File Selection",
+        current_path=folder_path,
+        metadata_formatter=_format_transcript_file_with_analysis,
+    )
+
+    selected = select_files_interactive(transcript_files, selection_config)
+    if not selected or len(selected) == 0:
+        return None
+    processed = _process_transcript_paths(selected)
+    return processed[0] if processed else None
 
 
 def select_transcript_files_interactive() -> list[Path] | None:
@@ -695,7 +844,7 @@ def select_transcript_files_interactive() -> list[Path] | None:
     Returns:
         List of selected transcript file paths, or None if cancelled
     """
-    mode = _prompt_file_selection_mode()
+    mode = get_file_selection_mode()
     if mode is None:
         return None
     if mode == "direct":
@@ -713,16 +862,26 @@ def select_transcript_files_interactive() -> list[Path] | None:
     if not default_folder.exists():
         # Create the directory if it doesn't exist
         default_folder.mkdir(parents=True, exist_ok=True)
-    folder_path = select_folder_interactive(start_path=default_folder)
-    if not folder_path:
-        return None
-    # Include .json, .vtt, and .srt files, search recursively in subdirectories
-    transcript_files = (
-        list(folder_path.rglob("*.json"))
-        + list(folder_path.rglob("*.vtt"))
-        + list(folder_path.rglob("*.srt"))
-    )
-    transcript_files = sorted(transcript_files, key=lambda p: p.name.lower())
+    if mode == "default_folder":
+        folder_path = default_folder
+    else:
+        folder_path = select_folder_interactive(start_path=default_folder)
+        if not folder_path:
+            return None
+    # Include .json via shared discovery rules; add .vtt/.srt for interactive only
+    transcript_files = discover_all_transcript_paths(folder_path)
+    transcript_files.extend(list(folder_path.rglob("*.vtt")))
+    transcript_files.extend(list(folder_path.rglob("*.srt")))
+    deduped: list[Path] = []
+    seen: set[str] = set()
+    for path in transcript_files:
+        resolved = path.resolve()
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(resolved)
+    transcript_files = sorted(deduped, key=lambda p: p.name.lower())
     if not transcript_files:
         console.print(
             f"[red]❌ No transcript files (.json/.vtt/.srt) found in {folder_path}[/red]"
@@ -749,7 +908,7 @@ def select_transcript_files_interactive() -> list[Path] | None:
 
 def select_readable_transcript_file_interactive() -> Path | None:
     """Select a readable transcript file (CSV or TXT) for analysis."""
-    mode = _prompt_file_selection_mode()
+    mode = get_file_selection_mode()
     if mode is None:
         return None
     if mode == "direct":
@@ -812,7 +971,7 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
     from transcriptx.core.utils.config import get_config
 
     audio_extensions = (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg")
-    mode = _prompt_file_selection_mode()
+    mode = get_file_selection_mode()
     if mode is None:
         return None
 
@@ -1075,7 +1234,7 @@ def select_wav_files_interactive(start_path: Path | None = None) -> list[Path] |
     Returns:
         list[Path] | None: List of selected WAV file paths, or None if cancelled
     """
-    mode = _prompt_file_selection_mode()
+    mode = get_file_selection_mode()
     if mode is None:
         return None
     if mode == "direct":
@@ -1215,7 +1374,7 @@ def select_single_audio_file_for_preprocessing(
     Returns:
         Selected file path, or None if cancelled
     """
-    mode = _prompt_file_selection_mode()
+    mode = get_file_selection_mode()
     if mode is None:
         return None
     if mode == "direct":

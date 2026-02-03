@@ -19,15 +19,17 @@ from .workflow import (
     OutputConfig,
     GroupAnalysisConfig,
     DashboardConfig,
+    SpeakerGateConfig,
 )
 from .system import DatabaseConfig, LLMConfig, LoggingConfig, AudioPreprocessingConfig
 from .main import (
     TranscriptXConfig,
-    get_config,
-    set_config,
-    load_config,
     initialize_default_profiles,
 )
+from . import main as _main
+
+# Backward-compatibility alias for tests and callers that expect Config
+Config = TranscriptXConfig
 from .base import (
     EMOTION_CATEGORIES,
     ACT_TYPES,
@@ -37,7 +39,38 @@ from .base import (
     TICS_FILE,
 )
 
+_global_config = None
+
+
+def get_config() -> TranscriptXConfig:
+    """Get the global configuration instance."""
+    global _global_config
+    if _global_config is None:
+        if getattr(_main, "_config", None) is not None:
+            _global_config = _main._config
+        else:
+            _global_config = TranscriptXConfig()
+            initialize_default_profiles()
+    _main.set_config(_global_config)
+    return _global_config
+
+
+def set_config(config: TranscriptXConfig) -> None:
+    """Set the global configuration instance."""
+    global _global_config
+    _global_config = config
+    _main.set_config(config)
+
+
+def load_config(config_file: str) -> TranscriptXConfig:
+    """Load configuration from file and set as global config."""
+    config = TranscriptXConfig(config_file)
+    set_config(config)
+    return config
+
+
 __all__ = [
+    "Config",
     "AnalysisConfig",
     "SpeakerExemplarsConfig",
     "HighlightsConfig",
@@ -56,6 +89,7 @@ __all__ = [
     "OutputConfig",
     "GroupAnalysisConfig",
     "DashboardConfig",
+    "SpeakerGateConfig",
     "DatabaseConfig",
     "LLMConfig",
     "LoggingConfig",

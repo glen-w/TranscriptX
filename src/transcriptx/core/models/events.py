@@ -67,7 +67,7 @@ def generate_event_id(
     time_start: float,
     time_end: float,
     include_time: bool = True,
-    time_precision: int = 1,
+    time_precision: int = 0,
     hash_len: int = 16,
 ) -> str:
     """

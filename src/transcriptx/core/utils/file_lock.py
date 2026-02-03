@@ -18,6 +18,7 @@ try:
     WINDOWS = True
 except ImportError:
     WINDOWS = False
+    msvcrt = None
     try:
         import fcntl
     except ImportError:
@@ -158,9 +159,6 @@ class FileLock:
 
     def is_locked(self) -> bool:
         """Check if file is currently locked."""
-        if not self.lock_file.exists():
-            return False
-
         # Try to acquire lock non-blocking
         try:
             with open(self.lock_file, "w") as f:

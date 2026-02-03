@@ -41,18 +41,16 @@ class TestMLDialogueActClassifier:
         mock_rules.assert_called()
     
     @patch("transcriptx.core.analysis.acts.ml_classifier.TRANSFORMERS_AVAILABLE", True)
-    @patch("transcriptx.core.analysis.acts.ml_classifier.pipeline")
-    def test_classifier_with_transformers(self, mock_pipeline, classifier):
-        """Test classifier with transformers available."""
-        # Mock pipeline
-        mock_pipe = MagicMock()
-        mock_pipe.return_value = [{"label": "statement", "score": 0.9}]
-        mock_pipeline.return_value = mock_pipe
-        
+    def test_classifier_with_transformers(self, classifier):
+        """
+        Transformers availability should not break classification.
+
+        Note: transformer-based dialogue-act classification is intentionally disabled in
+        `MLDialogueActClassifier._initialize_transformer_model()` (untrained base models).
+        """
         result = classifier.classify("This is a test statement.")
-        
-        # Should attempt to use transformers
         assert result is not None
+        assert result.method in {"traditional_ml", "heuristics", "rules", "fallback"}
     
     def test_classifier_empty_text(self, classifier):
         """Test classifier with empty text."""

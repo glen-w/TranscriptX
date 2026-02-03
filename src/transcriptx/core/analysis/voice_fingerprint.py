@@ -149,18 +149,21 @@ class VoiceFingerprintAnalysis(AnalysisModule):
                     f"{speaker}_voice_fingerprint",
                     format_type="json",
                     subdirectory="speakers",
+                    speaker=str(speaker),
                 )
                 output_service.save_data(
                     moments,
                     f"{speaker}_voice_drift_moments",
                     format_type="json",
                     subdirectory="speakers",
+                    speaker=str(speaker),
                 )
                 output_service.save_data(
                     moments,
                     f"{speaker}_voice_drift_moments",
                     format_type="csv",
                     subdirectory="speakers",
+                    speaker=str(speaker),
                 )
 
             summary = {

@@ -21,15 +21,21 @@ class TestModuleIntegration:
         func = get_module_function("sentiment")
         
         if func is not None:
-            # Mock the actual module function to avoid loading ML models
-            with patch('transcriptx.core.analysis.sentiment.analyze_sentiment_from_file') as mock_analyze:
-                mock_analyze.return_value = {"status": "success", "sentiment": "positive"}
-                
-                # Execute via registry
+            # Mock the AnalysisModule entrypoint; registry calls run_from_file()
+            with patch(
+                "transcriptx.core.analysis.sentiment.SentimentAnalysis.run_from_file"
+            ) as mock_run:
+                mock_run.return_value = {
+                    "module": "sentiment",
+                    "transcript_path": str(temp_transcript_file),
+                    "status": "success",
+                    "results": {},
+                }
+
                 result = func(str(temp_transcript_file))
-                
-                # Should call the module function
-                assert result is not None
+                assert isinstance(result, dict)
+                assert result.get("status") == "success"
+                mock_run.assert_called_once()
     
     def test_module_dependency_resolution(self):
         """Test that modules with dependencies are resolved correctly."""

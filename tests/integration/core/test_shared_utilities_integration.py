@@ -7,7 +7,6 @@ output_builder) work correctly when used by multiple analysis modules.
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 

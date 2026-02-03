@@ -27,6 +27,30 @@ logger = get_logger()
 PROCESSING_STATE_FILE = Path(DATA_DIR) / "processing_state.json"
 
 
+def load_processing_state(state_file: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Load processing state from disk.
+
+    Args:
+        state_file: Path to state file (defaults to standard location)
+
+    Returns:
+        Parsed state dict or empty dict if missing/unreadable.
+    """
+    if state_file is None:
+        state_file = PROCESSING_STATE_FILE
+
+    if not state_file.exists():
+        return {}
+
+    try:
+        with open(state_file, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading processing state: {e}")
+        return {}
+
+
 def validate_processing_state(state_file: Optional[Path] = None) -> Dict[str, Any]:
     """
     Validate entire processing state file.
@@ -366,11 +390,9 @@ def get_analysis_history(transcript_path: str) -> Dict[str, Any]:
         Dictionary with analysis history, or None if not found
     """
     try:
-        if not PROCESSING_STATE_FILE.exists():
+        state = load_processing_state()
+        if not state:
             return None
-
-        with open(PROCESSING_STATE_FILE, "r") as f:
-            state = json.load(f)
 
         processed_files = state.get("processed_files", {})
 
@@ -404,10 +426,21 @@ def has_analysis_completed(transcript_path: str, modules: List[str]) -> bool:
             return False
 
         modules_run = set(history.get("modules_run", []))
+        modules_requested = set(history.get("modules_requested", []))
         requested_modules = set(modules)
 
-        # All requested modules must be in modules_run
-        return requested_modules.issubset(modules_run) and len(requested_modules) > 0
+        if not requested_modules:
+            return False
+
+        # All requested modules must be in modules_run if tracked
+        if requested_modules.issubset(modules_run):
+            return True
+
+        # Fallback: completed status with requested coverage
+        if (history.get("completed") or history.get("status") == "completed") and requested_modules.issubset(modules_requested):
+            return True
+
+        return False
     except Exception as e:
         logger.error(f"Error checking analysis completion: {e}")
         return False

@@ -18,9 +18,43 @@ from transcriptx.core.utils.paths import (
 )
 
 
+def normalize_segment_speakers(segments: list) -> None:
+    """
+    Fill missing top-level 'speaker' on segments in place.
+
+    Uses the previous segment's speaker, or the first word-level speaker
+    in the segment, or "unknown" if neither is available. Used by
+    TranscriptService for cache and DB-loaded segments that may not
+    have been through the file loader (which already fills speaker).
+    """
+    prev_speaker: str = "unknown"
+    for segment in segments:
+        if not isinstance(segment, dict):
+            continue
+        if "speaker" in segment and isinstance(segment["speaker"], str):
+            prev_speaker = segment["speaker"]
+            continue
+        # Infer from words if present
+        inferred = prev_speaker
+        words = segment.get("words")
+        if isinstance(words, list):
+            for w in words:
+                if isinstance(w, dict) and w.get("speaker"):
+                    inferred = w["speaker"]
+                    break
+        segment["speaker"] = inferred
+        prev_speaker = inferred
+
+
 def validate_transcript_file(file_path: str) -> bool:
     """
     Validate that a transcript file exists and is in the correct format.
+
+    Uses the same loading path as the pipeline (load_segments) so we validate
+    the exact structure the pipeline will use. That way WhisperX-style
+    segments with only word-level speaker are normalized by the loader
+    before validation, and we avoid requiring raw files to have segment-level
+    "speaker" when the loader would fill it from words.
 
     Args:
         file_path: Path to the transcript file
@@ -43,34 +77,26 @@ def validate_transcript_file(file_path: str) -> bool:
             f"Transcript file must be JSON format, got: {Path(file_path).suffix}"
         )
 
-    # Try to load and validate JSON structure
     try:
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
+        # Use same loader as pipeline so we validate the same structure we run on.
+        # Loader fills segment-level "speaker" from words for WhisperX-style files.
+        from transcriptx.io.transcript_loader import load_segments
 
-        if not isinstance(data, dict):
-            raise ValueError("Transcript file must contain a JSON object")
-
-        if "segments" not in data:
-            raise ValueError("Transcript file must contain 'segments' key")
-
-        if not isinstance(data["segments"], list):
-            raise ValueError("'segments' must be a list")
-
-        if len(data["segments"]) == 0:
+        segments = load_segments(file_path)
+        if not segments:
             log_warning("VALIDATION", "Transcript file contains no segments")
 
-        # Validate segment structure
-        for i, segment in enumerate(data["segments"]):
+        for i, segment in enumerate(segments):
             validate_segment(segment, i)
 
         return True
 
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in transcript file: {e}")
+    except ValueError:
+        raise
     except Exception as e:
-        if not isinstance(e, ValueError):
-            raise ValueError(f"Error validating transcript file: {e}")
+        raise ValueError(f"Error validating transcript file: {e}")
 
 
 def validate_segment(segment: dict[str, Any], index: int) -> bool:

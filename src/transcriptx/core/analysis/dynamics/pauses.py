@@ -64,6 +64,7 @@ class PausesAnalysis(AnalysisModule):
 
         gaps: List[float] = []
         gap_series: List[Dict[str, Any]] = []
+        per_segment_pause_count = [0 for _ in segments]
         speaker_gap_stats = defaultdict(list)
         events: List[Event] = []
 
@@ -100,6 +101,7 @@ class PausesAnalysis(AnalysisModule):
             speaker = None
             curr_info = extract_speaker_info(curr)
             nxt_info = extract_speaker_info(nxt)
+            speaker = None
             if curr_info and nxt_info and curr_info.grouping_key == nxt_info.grouping_key:
                 speaker = get_speaker_display_name(
                     curr_info.grouping_key, [curr], segments
@@ -108,6 +110,7 @@ class PausesAnalysis(AnalysisModule):
                     speaker_gap_stats[speaker].append(gap)
 
             gaps.append(gap)
+            per_segment_pause_count[idx] += 1
             gap_series.append(
                 {
                     "segment_idx": idx,
@@ -115,6 +118,7 @@ class PausesAnalysis(AnalysisModule):
                     "time_start": float(curr_end),
                     "time_end": float(nxt_start),
                     "same_speaker": speaker is not None,
+                    "speaker": speaker,
                 }
             )
 
@@ -226,6 +230,10 @@ class PausesAnalysis(AnalysisModule):
             "stats": stats,
             "speaker_stats": speaker_stats,
             "gap_series": gap_series,
+            "per_segment_pause_count": [
+                {"segment_idx": idx, "pause_count": count}
+                for idx, count in enumerate(per_segment_pause_count)
+            ],
         }
 
     def run_from_context(self, context: "PipelineContext") -> Dict[str, Any]:
@@ -289,6 +297,9 @@ class PausesAnalysis(AnalysisModule):
         stats: Dict[str, Any] = results.get("stats", {})
         speaker_stats: Dict[str, Any] = results.get("speaker_stats", {})
         gap_series: List[Dict[str, Any]] = results.get("gap_series", [])
+        per_segment_pause_count: List[Dict[str, Any]] = results.get(
+            "per_segment_pause_count", []
+        )
 
         # Ensure output directories exist
         os.makedirs(output_structure.global_data_dir, exist_ok=True)
@@ -297,6 +308,11 @@ class PausesAnalysis(AnalysisModule):
 
         save_events_json(events, output_structure, "pauses.events.json")
         save_json(stats, str(output_structure.global_data_dir / "pauses.stats.json"))
+        if per_segment_pause_count:
+            save_json(
+                per_segment_pause_count,
+                str(output_structure.global_data_dir / "pauses.per_segment.json"),
+            )
 
         for speaker, data in speaker_stats.items():
             safe_speaker = sanitize_filename(speaker)

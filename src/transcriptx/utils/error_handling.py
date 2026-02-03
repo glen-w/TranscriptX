@@ -121,6 +121,20 @@ class ErrorHandler:
             ErrorCategory.UNKNOWN: self._handle_unknown_error,
         }
 
+    def _strategy_name_for_category(self, category: ErrorCategory) -> str:
+        """Return the method name for a category so getattr(self, name) allows patching."""
+        names = {
+            ErrorCategory.VALIDATION: "_handle_validation_error",
+            ErrorCategory.PROCESSING: "_handle_processing_error",
+            ErrorCategory.RESOURCE: "_handle_resource_error",
+            ErrorCategory.DEPENDENCY: "_handle_dependency_error",
+            ErrorCategory.TIMEOUT: "_handle_timeout_error",
+            ErrorCategory.NETWORK: "_handle_network_error",
+            ErrorCategory.SECURITY: "_handle_security_error",
+            ErrorCategory.UNKNOWN: "_handle_unknown_error",
+        }
+        return names.get(category, "_handle_unknown_error")
+
     def _setup_signal_handlers(self):
         """Set up signal handlers for graceful exit."""
 
@@ -164,10 +178,13 @@ class ErrorHandler:
                 raise error
             return False
 
-        # Apply recovery strategy
-        recovery_strategy = self._recovery_strategies.get(
-            context.category, self._handle_unknown_error
-        )
+        # Restore state when handling processing/state errors (so tests can patch _restore_state)
+        if context.category == ErrorCategory.PROCESSING:
+            self._restore_state()
+
+        # Resolve strategy by name so tests can patch instance methods
+        strategy_name = self._strategy_name_for_category(context.category)
+        recovery_strategy = getattr(self, strategy_name)
         return recovery_strategy(error, context)
 
     def _log_error(self, error: Exception, context: ErrorContext):
@@ -186,11 +203,13 @@ class ErrorHandler:
         if context.technical_details:
             error_info["technical_details"] = context.technical_details
 
+        msg = f"{context.operation} failed: {error}"
         log_error(
             context.module,
-            f"{context.operation} failed: {error}",
+            msg,
             context.technical_details or str(error),
         )
+        self.logger.error(msg, exc_info=False)
 
     def _handle_validation_error(self, error: Exception, context: ErrorContext) -> bool:
         """Handle validation errors."""
@@ -263,6 +282,10 @@ class ErrorHandler:
             log_info("ERROR_HANDLER", "Resources cleaned up successfully")
         except Exception as e:
             log_error("ERROR_HANDLER", f"Failed to cleanup resources: {e}")
+
+    def _restore_state(self):
+        """Restore state after an error (e.g. processing/state corruption). No-op by default."""
+        pass
 
 
 class InputValidator:

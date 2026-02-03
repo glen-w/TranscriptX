@@ -7,6 +7,9 @@ from types import SimpleNamespace
 
 from transcriptx.core.domain.canonical_transcript import CanonicalTranscript
 from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
+from transcriptx.core.pipeline.target_resolver import GroupRef
+from transcriptx.database.models.transcript import TranscriptFile
+from transcriptx.database.repositories.group import GroupRepository
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
 
 
@@ -66,11 +69,10 @@ def test_run_analysis_pipeline_inits_db_with_persist(temp_transcript_file):
         assert mock_coordinator.call_count == 1
 
 
-def _mock_group_config(persist_groups: bool):
+def _mock_group_config():
     return SimpleNamespace(
         group_analysis=SimpleNamespace(
             enabled=True,
-            persist_groups=persist_groups,
             output_dir="/tmp",
             enable_stats_aggregation=False,
             scaffold_by_session=False,
@@ -98,24 +100,35 @@ def _mock_canonical_map():
     )
 
 
-def test_group_persistence_skips_existing():
-    transcripts = ["first.json", "second.json"]
-    mock_session = MagicMock()
-    mock_set_repo = MagicMock()
-    mock_set_repo.get_by_key.return_value = MagicMock()
-    mock_file_repo = MagicMock()
+def test_group_run_writes_manifest(db_session):
+    transcript_one = TranscriptFile(
+        file_path="/tmp/first.json",
+        file_name="first.json",
+    )
+    transcript_two = TranscriptFile(
+        file_path="/tmp/second.json",
+        file_name="second.json",
+    )
+    db_session.add_all([transcript_one, transcript_two])
+    db_session.commit()
+
+    group_repo = GroupRepository(db_session)
+    group = group_repo.create_group(
+        name="Test Group",
+        group_type="merged_event",
+        transcript_file_ids_ordered=[transcript_one.id, transcript_two.id],
+    )
 
     with patch("transcriptx.core.pipeline.pipeline._run_single_analysis_pipeline") as mock_single, \
-         patch("transcriptx.core.pipeline.pipeline.get_config", return_value=_mock_group_config(True)), \
+         patch("transcriptx.core.pipeline.pipeline.get_config", return_value=_mock_group_config()), \
          patch("transcriptx.core.pipeline.speaker_normalizer.normalize_speakers_across_transcripts", return_value=_mock_canonical_map()), \
          patch("transcriptx.core.analysis.stats.aggregation.aggregate_stats_group", return_value={}), \
          patch("transcriptx.core.analysis.aggregation.sentiment.aggregate_sentiment_group", return_value=None), \
          patch("transcriptx.core.analysis.aggregation.emotion.aggregate_emotion_group", return_value=None), \
          patch("transcriptx.core.analysis.aggregation.interactions.aggregate_interactions_group", return_value=None), \
          patch("transcriptx.core.output.group_output_service.GroupOutputService") as mock_output_service, \
-         patch("transcriptx.database.get_session", return_value=mock_session), \
-         patch("transcriptx.database.repositories.transcript_set.TranscriptSetRepository", return_value=mock_set_repo), \
-         patch("transcriptx.database.repositories.transcript.TranscriptFileRepository", return_value=mock_file_repo):
+         patch("transcriptx.core.pipeline.target_resolver.get_session", return_value=db_session), \
+         patch("transcriptx.core.services.group_service.get_session", return_value=db_session):
 
         mock_single.side_effect = [
             _mock_group_pipeline_result(1),
@@ -123,42 +136,10 @@ def test_group_persistence_skips_existing():
         ]
         mock_output_service.return_value.base_dir = "/tmp"
 
-        run_analysis_pipeline(target=transcripts, selected_modules=["sentiment"])
+        run_analysis_pipeline(
+            target=GroupRef(group_uuid=group.uuid),
+            selected_modules=["sentiment"],
+        )
 
-        mock_set_repo.get_by_key.assert_called_once()
-        mock_set_repo.create_transcript_set.assert_not_called()
-
-
-def test_group_persistence_creates_when_missing():
-    transcripts = ["first.json", "second.json"]
-    mock_session = MagicMock()
-    mock_set_repo = MagicMock()
-    mock_set_repo.get_by_key.return_value = None
-    mock_file_repo = MagicMock()
-    mock_file_repo.get_transcript_file_by_path.side_effect = [
-        SimpleNamespace(id=1),
-        SimpleNamespace(id=2),
-    ]
-
-    with patch("transcriptx.core.pipeline.pipeline._run_single_analysis_pipeline") as mock_single, \
-         patch("transcriptx.core.pipeline.pipeline.get_config", return_value=_mock_group_config(True)), \
-         patch("transcriptx.core.pipeline.speaker_normalizer.normalize_speakers_across_transcripts", return_value=_mock_canonical_map()), \
-         patch("transcriptx.core.analysis.stats.aggregation.aggregate_stats_group", return_value={}), \
-         patch("transcriptx.core.analysis.aggregation.sentiment.aggregate_sentiment_group", return_value=None), \
-         patch("transcriptx.core.analysis.aggregation.emotion.aggregate_emotion_group", return_value=None), \
-         patch("transcriptx.core.analysis.aggregation.interactions.aggregate_interactions_group", return_value=None), \
-         patch("transcriptx.core.output.group_output_service.GroupOutputService") as mock_output_service, \
-         patch("transcriptx.database.get_session", return_value=mock_session), \
-         patch("transcriptx.database.repositories.transcript_set.TranscriptSetRepository", return_value=mock_set_repo), \
-         patch("transcriptx.database.repositories.transcript.TranscriptFileRepository", return_value=mock_file_repo):
-
-        mock_single.side_effect = [
-            _mock_group_pipeline_result(1),
-            _mock_group_pipeline_result(2),
-        ]
-        mock_output_service.return_value.base_dir = "/tmp"
-
-        run_analysis_pipeline(target=transcripts, selected_modules=["sentiment"])
-
-        mock_set_repo.get_by_key.assert_called_once()
-        mock_set_repo.create_transcript_set.assert_called_once()
+        assert mock_output_service.call_args.kwargs["group_uuid"] == group.uuid
+        mock_output_service.return_value.write_group_manifest.assert_called_once()

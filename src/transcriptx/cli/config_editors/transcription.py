@@ -12,6 +12,7 @@ from transcriptx.cli.settings import (
     create_bool_editor,
     create_choice_editor,
     create_int_editor,
+    create_secret_editor,
     create_str_editor,
     settings_menu_loop,
 )
@@ -89,6 +90,9 @@ def _create_language_editor() -> Callable[[SettingItem], str | None]:
 
 def edit_transcription_config(config) -> None:
     """Edit transcription configuration."""
+    def _format_token(value: object) -> str:
+        return "SET" if value else "NOT SET"
+
     items = [
         SettingItem(
             order=1,
@@ -150,7 +154,7 @@ def edit_transcription_config(config) -> None:
             label="Max speakers",
             getter=lambda: config.transcription.max_speakers,
             setter=lambda value: setattr(config.transcription, "max_speakers", value),
-            editor=create_int_editor(min_val=1, hint="Maximum number of speakers."),
+            editor=create_int_editor(min_val=1, hint="Maximum number of speakers; leave empty for no limit.", allow_none=True),
         ),
         SettingItem(
             order=8,
@@ -171,9 +175,10 @@ def edit_transcription_config(config) -> None:
             label="HuggingFace token",
             getter=lambda: config.transcription.huggingface_token,
             setter=lambda value: setattr(config.transcription, "huggingface_token", value),
-            editor=create_str_editor(
+            editor=create_secret_editor(
                 hint="Token for model downloads (required if policy is require_token)."
             ),
+            formatter=_format_token,
         ),
     ]
 

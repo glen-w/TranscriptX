@@ -135,7 +135,7 @@ def _ensure_transcript_uuid(transcript_path: Optional[str]) -> str:
     return uuid
 
 
-def load_processing_state(validate: bool = True) -> Dict[str, Any]:
+def load_processing_state(validate: bool = True, *, skip_migration: bool = False) -> Dict[str, Any]:
     """
     Load processing state from JSON file with optional validation and locking.
 
@@ -191,38 +191,41 @@ def load_processing_state(validate: bool = True) -> Dict[str, Any]:
                                 with open(PROCESSING_STATE_FILE, "r") as f:
                                     state = json.load(f)
 
-                # Check if migration is needed (old format uses path-based keys)
-                processed_files = state.get("processed_files", {})
-                if processed_files:
-                    # Check if any key is not a UUID (old format)
-                    all_keys = list(processed_files.keys())
-                    needs_migration = not all(_is_uuid_format(key) for key in all_keys)
+                if not skip_migration and validate:
+                    # Check if migration is needed (old format uses path-based keys)
+                    processed_files = state.get("processed_files", {})
+                    if processed_files:
+                        # Check if any key is not a UUID (old format)
+                        all_keys = list(processed_files.keys())
+                        needs_migration = not all(_is_uuid_format(key) for key in all_keys)
 
-                    if needs_migration:
-                        logger.info(
-                            "Detected old format (path-based keys), migrating to UUID-based keys..."
-                        )
-                        try:
-                            migration_result = migrate_processing_state_to_uuid_keys()
-                            if migration_result.get("migrated"):
-                                logger.info(
-                                    f"✅ Migration complete: {migration_result['entries_migrated']} entries migrated"
-                                )
-                                # Reload state after migration
-                                with open(PROCESSING_STATE_FILE, "r") as f:
-                                    state = json.load(f)
-                            else:
-                                logger.debug(
-                                    f"Migration skipped: {migration_result.get('reason', 'unknown')}"
-                                )
-                        except Exception as e:
-                            logger.warning(
-                                f"Migration failed, continuing with existing format: {e}"
+                        if needs_migration:
+                            logger.info(
+                                "Detected old format (path-based keys), migrating to UUID-based keys..."
                             )
+                            try:
+                                migration_result = migrate_processing_state_to_uuid_keys()
+                                if migration_result.get("migrated"):
+                                    logger.info(
+                                        f"✅ Migration complete: {migration_result['entries_migrated']} entries migrated"
+                                    )
+                                    # Reload state after migration
+                                    with open(PROCESSING_STATE_FILE, "r") as f:
+                                        state = json.load(f)
+                                else:
+                                    logger.debug(
+                                        f"Migration skipped: {migration_result.get('reason', 'unknown')}"
+                                    )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Migration failed, continuing with existing format: {e}"
+                                )
 
                 return state
     except json.JSONDecodeError as e:
         logger.error(f"State file is corrupted (invalid JSON): {e}")
+        if not validate:
+            return {"processed_files": {}}
         # Try to restore from backup
         from transcriptx.core.utils.state_backup import (
             list_backups,
@@ -445,7 +448,7 @@ def migrate_processing_state_to_uuid_keys() -> Dict[str, Any]:
     """
     from transcriptx.core.utils.state_backup import create_backup
 
-    state = load_processing_state(validate=False)
+    state = load_processing_state(validate=False, skip_migration=True)
     processed_files = state.get("processed_files", {})
 
     if not processed_files:

@@ -13,8 +13,18 @@ logger = logging.getLogger(__name__)
 class PerformanceDataExtractor(BaseDataExtractor):
     """Performance data extractor for speaker-level performance analysis."""
 
+    def __init__(self):
+        super().__init__("performance")
+
+    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+        try:
+            speaker_id_int = int(speaker_id)
+        except Exception:
+            speaker_id_int = speaker_id  # type: ignore[assignment]
+        return self.extract_speaker_data(analysis_results, speaker_id=speaker_id_int)  # type: ignore[arg-type]
+
     def extract_speaker_data(
-        self, analysis_results: Dict[str, Any], speaker_id: int
+        self, analysis_results: Dict[str, Any], speaker_id: int | str
     ) -> Dict[str, Any]:
         """Extract speaker-level performance data from analysis results."""
         self.logger.info(f"Extracting performance data for speaker {speaker_id}")
@@ -31,7 +41,9 @@ class PerformanceDataExtractor(BaseDataExtractor):
 
         for segment in speaker_segments:
             # Extract basic metrics
-            speaking_time = segment.get("duration", 0.0)
+            speaking_time = self.safe_float(segment.get("duration"))
+            if speaking_time is None:
+                speaking_time = 0.0
             word_count = len(segment.get("text", "").split())
 
             speaking_times.append(speaking_time)
@@ -65,7 +77,7 @@ class PerformanceDataExtractor(BaseDataExtractor):
             "strengths": strengths,
         }
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
         """Validate extracted performance data."""
         try:
             return validate_performance_data(data)
@@ -73,7 +85,7 @@ class PerformanceDataExtractor(BaseDataExtractor):
             self.logger.error(f"Performance data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
         """Transform performance data for database storage."""
         return {
             "speaking_style": data.get("speaking_style"),

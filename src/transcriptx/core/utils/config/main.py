@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable, Optional
 from pathlib import Path
 import json
 import os
+try:
+    from dotenv import load_dotenv as _load_dotenv
+except Exception:  # pragma: no cover - optional dependency guard
+    _load_dotenv = None
+
+load_dotenv: Optional[Callable[..., bool]] = _load_dotenv
 from .analysis import AnalysisConfig
 from .workflow import (
     WorkflowConfig,
@@ -73,10 +79,6 @@ class TranscriptXConfig:
         # Active workflow profile
         self.active_workflow_profile: str = "default"
 
-        # Load configuration from environment variables first
-        # Environment variables take highest priority
-        self._load_from_env()
-
         # Load from config file if provided
         # File settings override defaults but not environment variables
         if config_file:
@@ -85,6 +87,10 @@ class TranscriptXConfig:
         # Load active profiles for each module
         # Profile settings override defaults and file settings but not environment variables
         self._load_module_profiles()
+
+        # Load configuration from environment variables last
+        # Environment variables take highest priority
+        self._load_from_env()
 
     def _load_from_env(self):
         """
@@ -203,6 +209,11 @@ class TranscriptXConfig:
                     ]
                     if recordings_folders:
                         self.input.recordings_folders = recordings_folders
+
+        if os.getenv("TRANSCRIPTX_FILE_SELECTION_MODE"):
+            mode = os.getenv("TRANSCRIPTX_FILE_SELECTION_MODE").strip().lower()
+            if mode in ("prompt", "explore", "direct"):
+                self.input.file_selection_mode = mode
 
         # Output configuration from environment
         if os.getenv("TRANSCRIPTX_OUTPUT_DIR"):
@@ -341,6 +352,25 @@ class TranscriptXConfig:
             except ValueError:
                 pass
 
+        speaker_gate = getattr(self.workflow, "speaker_gate", None)
+        if speaker_gate is not None:
+            if os.getenv("TRANSCRIPTX_SPEAKER_GATE_THRESHOLD_VALUE") is not None:
+                speaker_gate.threshold_value = os.getenv(
+                    "TRANSCRIPTX_SPEAKER_GATE_THRESHOLD_VALUE"
+                )
+            if os.getenv("TRANSCRIPTX_SPEAKER_GATE_THRESHOLD_TYPE") is not None:
+                speaker_gate.threshold_type = os.getenv(
+                    "TRANSCRIPTX_SPEAKER_GATE_THRESHOLD_TYPE"
+                )
+            if os.getenv("TRANSCRIPTX_SPEAKER_GATE_MODE") is not None:
+                speaker_gate.mode = os.getenv("TRANSCRIPTX_SPEAKER_GATE_MODE")
+            if os.getenv("TRANSCRIPTX_SPEAKER_GATE_EXEMPLAR_COUNT") is not None:
+                speaker_gate.exemplar_count = os.getenv(
+                    "TRANSCRIPTX_SPEAKER_GATE_EXEMPLAR_COUNT"
+                )
+            if hasattr(speaker_gate, "validate"):
+                speaker_gate.validate()
+
     def _load_from_file(self, config_file: str):
         """
         Load configuration from JSON file.
@@ -366,9 +396,14 @@ class TranscriptXConfig:
             }
         """
         dashboard_migrated = False
+        if not os.path.exists(config_file):
+            return
         try:
             with open(config_file) as f:
                 config_data = json.load(f)
+            # Support project config format: {"schema_version": N, "config": {...}}
+            if isinstance(config_data, dict) and "config" in config_data and "schema_version" in config_data:
+                config_data = config_data["config"]
 
             # Update analysis configuration section
             if "analysis" in config_data:
@@ -495,7 +530,10 @@ class TranscriptXConfig:
             # Update workflow configuration section
             if "workflow" in config_data:
                 for key, value in config_data["workflow"].items():
-                    if hasattr(self.workflow, key):
+                    if key == "speaker_gate" and isinstance(value, dict):
+                        if hasattr(self.workflow, "speaker_gate"):
+                            self._apply_profile_to_config(self.workflow.speaker_gate, value)
+                    elif hasattr(self.workflow, key):
                         self._apply_profile_to_config(self.workflow, {key: value})
 
             # Update group analysis configuration section
@@ -614,6 +652,8 @@ class TranscriptXConfig:
                     except (ValueError, TypeError):
                         pass
                 setattr(config_obj, key, value)
+        if hasattr(config_obj, "validate"):
+            config_obj.validate()
 
     def _config_to_dict(self, config_obj: Any) -> dict[str, Any]:
         """
@@ -652,6 +692,7 @@ class TranscriptXConfig:
                 "wordcloud_max_words": self.analysis.wordcloud_max_words,
                 "wordcloud_min_font_size": self.analysis.wordcloud_min_font_size,
                 "wordcloud_stopwords": self.analysis.wordcloud_stopwords,
+                "exclude_unidentified_from_speaker_charts": self.analysis.exclude_unidentified_from_speaker_charts,
                 "readability_metrics": self.analysis.readability_metrics,
                 "interaction_overlap_threshold": self.analysis.interaction_overlap_threshold,
                 "interaction_min_gap": self.analysis.interaction_min_gap,
@@ -729,6 +770,9 @@ class TranscriptXConfig:
             "input": {
                 "wav_folders": self.input.wav_folders,
                 "recordings_folders": self.input.recordings_folders,
+                "file_selection_mode": getattr(
+                    self.input, "file_selection_mode", "prompt"
+                ),
             },
             "output": {
                 "base_output_dir": self.output.base_output_dir,
@@ -884,9 +928,21 @@ class TranscriptXConfig:
 
 
 # Global configuration instance
-
-# Global configuration instance
 _config: TranscriptXConfig | None = None
+_env_loaded = False
+
+
+def _load_repo_dotenv() -> None:
+    global _env_loaded
+    if _env_loaded:
+        return
+    _env_loaded = True
+    if load_dotenv is None:
+        return
+    repo_root = Path(__file__).resolve().parents[5]
+    env_path = repo_root / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
 
 
 def get_config() -> TranscriptXConfig:
@@ -898,6 +954,7 @@ def get_config() -> TranscriptXConfig:
     """
     global _config
     if _config is None:
+        _load_repo_dotenv()
         _config = TranscriptXConfig()
         # Initialize default profiles if they don't exist
         initialize_default_profiles()
@@ -1053,6 +1110,14 @@ def initialize_default_profiles():
             "subprocess_timeout": 5,
             "mp3_bitrate": "192k",
             "conversion_time_factor": 0.5,
+            "speaker_gate": {
+                "threshold_value": 0.0,
+                "threshold_type": "absolute",
+                "mode": "warn",
+                "exemplar_count": 2,
+            },
+            "cli_pruning_enabled": False,
+            "default_config_save_path": "",
         }
         profile_manager.create_default_profile(
             "workflow", workflow_defaults, "Default workflow profile"

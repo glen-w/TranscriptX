@@ -253,15 +253,17 @@ class SemanticDataExtractor(BaseDataExtractor):
                 return None
 
             # Use the shared semantic consistency calculation
-            return similarity_calculator._calculate_semantic_consistency(speaker_texts)
+            return self._calculate_semantic_consistency_from_texts(speaker_texts)
         except Exception as e:
             self.logger.warning(
                 f"Failed to calculate semantic consistency for {speaker_id}: {e}"
             )
             return None
 
-    def _calculate_semantic_consistency(self, texts: List[str]) -> Optional[float]:
-        """Calculate semantic consistency score."""
+    def _calculate_semantic_consistency_from_texts(
+        self, texts: List[str]
+    ) -> Optional[float]:
+        """Calculate semantic consistency score from text samples."""
         if len(texts) < 2:
             return None
 

@@ -106,6 +106,28 @@ class TestSentimentExtractorErrorHandling:
     def extractor(self):
         """Fixture for SentimentDataExtractor instance."""
         return SentimentDataExtractor()
+
+    @pytest.fixture
+    def sample_analysis_results(self):
+        """Fixture for sample analysis results with sentiment data (shared with basic tests)."""
+        return {
+            "segments": [
+                {
+                    "speaker": "SPEAKER_00",
+                    "text": "I love this!",
+                    "sentiment_score": 0.8,
+                    "sentiment_label": "positive",
+                    "trigger_words": ["love"],
+                },
+                {
+                    "speaker": "SPEAKER_00",
+                    "text": "This is great!",
+                    "sentiment_score": 0.9,
+                    "sentiment_label": "positive",
+                    "trigger_words": ["great"],
+                },
+            ]
+        }
     
     def test_missing_required_analysis_results(self, extractor):
         """Test handling when required analysis results are missing."""

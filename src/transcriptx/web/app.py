@@ -183,8 +183,8 @@ def get_chart_paths(session_name: str, module_name: str) -> List[Path]:
     return chart_paths
 
 
-def _build_session_index():
-    sessions = list_available_sessions()
+def _build_session_index_from_list(sessions: list) -> dict:
+    """Build slug -> [sessions] map from session list (no I/O)."""
     session_map = {}
     for session in sessions:
         name = session.get("name", "")
@@ -192,9 +192,22 @@ def _build_session_index():
             continue
         slug, run_id = name.split("/", 1)
         session_map.setdefault(slug, [])
-        session["run_id"] = run_id
+        session = {**session, "run_id": run_id}
         session_map[slug].append(session)
     return session_map
+
+
+def _build_session_index():
+    sessions = list_available_sessions()
+    return _build_session_index_from_list(sessions)
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _get_cached_session_data():
+    """Return (session_map, sessions_list) so the app does not recompute on every rerun."""
+    sessions_list = list_available_sessions()
+    session_map = _build_session_index_from_list(sessions_list)
+    return session_map, sessions_list
 
 
 def _format_timestamp_range(
@@ -580,7 +593,7 @@ def render_transcript_viewer():
             for idx, module in enumerate(modules):
                 with cols[idx % 4]:
                     if st.button(
-                        module, key=f"module_{module}", use_container_width=True
+                        module, key=f"module_{module}", width='stretch'
                     ):
                         st.session_state["analysis_module"] = module
                         st.session_state["analysis_session"] = selected
@@ -661,7 +674,7 @@ def render_analysis_viewer():
                                 caption=chart_path.name.replace("_", " ").replace(
                                     ".png", ""
                                 ),
-                                use_container_width=True,
+                                width='stretch',
                             )
                         except Exception as e:
                             logger.warning(f"Could not load chart {chart_path}: {e}")
@@ -779,7 +792,7 @@ def render_speakers_list():
             table_key = "speakers_table"
             selected_rows = st.dataframe(
                 speakers_df,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 selection_mode="single-row",
                 key=table_key,
@@ -959,13 +972,17 @@ def main():
     if "page" not in st.session_state:
         st.session_state["page"] = "Overview"
 
-    session_map = _build_session_index()
-    sessions_list = list_available_sessions()
-    if not sessions_list:
-        st.info("No transcript sessions found. Process transcripts to see them here.")
-        return
+    load_error = None
+    try:
+        session_map, sessions_list = _get_cached_session_data()
+    except Exception as e:
+        logger.warning(f"Failed to load session list: {e}", exc_info=True)
+        load_error = str(e)
+        session_map = {}
+        sessions_list = []
+    has_sessions = bool(sessions_list)
 
-    # Sidebar navigation
+    # Always render sidebar first so the menu is visible even with no sessions or on error
     current_page = st.session_state.get("page", "Overview")
     with st.sidebar:
         st.title("TranscriptX")
@@ -983,7 +1000,7 @@ def main():
             if st.button(
                 text,
                 key=f"nav_{page_key}",
-                use_container_width=True,
+                width='stretch',
                 type="secondary",
             ):
                 st.session_state["page"] = page_key
@@ -991,17 +1008,21 @@ def main():
 
         st.divider()
 
-        # Transcript section
+        # Transcript section (session/run selectors only when we have sessions)
         st.markdown("**Transcript**")
-        session_options = sorted(session_map.keys())
-        selected_session = st.selectbox(
-            "Session", session_options, key="session_selector"
-        )
-        run_options = [s["run_id"] for s in session_map.get(selected_session, [])]
-        selected_run_id = st.selectbox("Run", run_options, key="run_selector")
-
-        st.session_state["selected_session"] = selected_session
-        st.session_state["selected_run_id"] = selected_run_id
+        if has_sessions:
+            session_options = sorted(session_map.keys())
+            selected_session = st.selectbox(
+                "Session", session_options, key="session_selector"
+            )
+            run_options = [s["run_id"] for s in session_map.get(selected_session, [])]
+            selected_run_id = st.selectbox("Run", run_options, key="run_selector")
+            st.session_state["selected_session"] = selected_session
+            st.session_state["selected_run_id"] = selected_run_id
+        else:
+            st.caption("No sessions yet")
+            st.session_state["selected_session"] = None
+            st.session_state["selected_run_id"] = None
 
         # Transcript-specific navigation
         transcript_pages = [
@@ -1018,7 +1039,7 @@ def main():
             if st.button(
                 text,
                 key=f"nav_{page_key}",
-                use_container_width=True,
+                width='stretch',
                 type="secondary",
             ):
                 st.session_state["page"] = page_key
@@ -1027,7 +1048,14 @@ def main():
         st.divider()
         st.caption("Streamlit Studio Interface")
 
-    # Get current page after potential navigation changes
+    # Main content: show message if no sessions or load error, otherwise route to page
+    if not has_sessions:
+        if load_error:
+            st.error(f"Could not load session list: {load_error}")
+        else:
+            st.info("No transcript sessions found. Process transcripts to see them here.")
+        return
+
     current_page = st.session_state.get("page", "Overview")
 
     # Route to appropriate page

@@ -135,7 +135,7 @@ def render_overview() -> None:
     with st.container():
         st.dataframe(
             df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             height=min(400, 50 + len(df) * 35),  # Dynamic height based on rows, max 400px
         )

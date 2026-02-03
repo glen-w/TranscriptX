@@ -42,7 +42,7 @@ def render_data() -> None:
 
     if selected.kind == "data_csv":
         df = pd.read_csv(path)
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width='stretch')
     elif selected.kind == "data_json":
         with open(path, "r", encoding="utf-8") as handle:
             data = json.load(handle)

@@ -6,8 +6,10 @@ from pathlib import Path
 import pytest
 
 from transcriptx.core.viz.mpl_renderer import render_mpl
+from transcriptx.core.viz.charts import is_plotly_available, render_plotly
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
+    BoxSpec,
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
     NetworkGraphSpec,
@@ -149,6 +151,35 @@ def test_echoes_chart_specs_render() -> None:
     )
     fig = render_mpl(spec_timeline)
     assert fig is not None
+
+
+def test_box_spec_renders_mpl_and_plotly() -> None:
+    """BoxSpec: render_mpl and (if available) render_plotly do not error."""
+    spec_box = BoxSpec(
+        viz_id="prosody_dashboard.profile_distribution.speaker",
+        module="prosody_dashboard",
+        name="prosody_profile_distribution__speaker__Alice",
+        scope="speaker",
+        speaker="Alice",
+        chart_intent="box_plot",
+        title="Prosody Profile Distribution - Alice",
+        x_label="Feature",
+        y_label="Value",
+        show_points=True,
+        series=[
+            {
+                "name": "features",
+                "x": ["rms_db", "rms_db", "speech_rate_wps", "speech_rate_wps"],
+                "y": [-20.0, -18.5, 2.1, 2.4],
+            }
+        ],
+    )
+    fig = render_mpl(spec_box)
+    assert fig is not None
+
+    if is_plotly_available():
+        fig_plotly = render_plotly(spec_box)
+        assert fig_plotly is not None
 
 
 def test_acts_conversation_loops_echoes_save_chart_roundtrip() -> None:

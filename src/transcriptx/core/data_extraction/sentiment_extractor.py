@@ -23,8 +23,18 @@ class SentimentDataExtractor(BaseDataExtractor):
     sentiment data including average scores, volatility, trends, and trigger words.
     """
 
+    def __init__(self):
+        super().__init__("sentiment")
+
+    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+        try:
+            speaker_id_int = int(speaker_id)
+        except Exception:
+            speaker_id_int = speaker_id  # type: ignore[assignment]
+        return self.extract_speaker_data(analysis_results, speaker_id=speaker_id_int)  # type: ignore[arg-type]
+
     def extract_speaker_data(
-        self, analysis_results: Dict[str, Any], speaker_id: int
+        self, analysis_results: Dict[str, Any], speaker_id: int | str
     ) -> Dict[str, Any]:
         """
         Extract speaker-level sentiment data from analysis results.
@@ -108,7 +118,7 @@ class SentimentDataExtractor(BaseDataExtractor):
 
         return sentiment_data
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
         """
         Validate extracted sentiment data.
 
@@ -127,7 +137,7 @@ class SentimentDataExtractor(BaseDataExtractor):
             self.logger.error(f"Sentiment data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
         """
         Transform sentiment data for database storage.
 

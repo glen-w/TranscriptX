@@ -101,6 +101,8 @@ def run_whisperx_compose(audio_file_path, config=None):
         language = getattr(config.transcription, "language", None) or "auto"
         compute_type = getattr(config.transcription, "compute_type", None) or "float16"
         diarize = getattr(config.transcription, "diarize", True)
+        min_speakers = getattr(config.transcription, "min_speakers", 1)
+        max_speakers = getattr(config.transcription, "max_speakers", None)
         model_download_policy = (
             getattr(config.transcription, "model_download_policy", None) or "anonymous"
         )
@@ -110,8 +112,29 @@ def run_whisperx_compose(audio_file_path, config=None):
         language = "auto"
         compute_type = "float16"
         diarize = True
+        min_speakers = 1
+        max_speakers = None
         model_download_policy = "anonymous"
         hf_token = ""
+
+    # Backstop: accept env vars even if config didn't pick them up.
+    if not hf_token:
+        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+
+    # Normalize speaker bounds (defensive; WhisperX expects min <= max when max is set).
+    try:
+        min_speakers = int(min_speakers)
+    except (TypeError, ValueError):
+        min_speakers = 1
+    if max_speakers is not None:
+        try:
+            max_speakers = int(max_speakers)
+        except (TypeError, ValueError):
+            max_speakers = None
+    if min_speakers < 1:
+        min_speakers = 1
+    if max_speakers is not None and max_speakers < min_speakers:
+        max_speakers = min_speakers
     device = "cpu"  # For now, always CPU
 
     # Auto-adjust compute_type for CPU: float16 is not supported on CPU
@@ -208,6 +231,9 @@ def run_whisperx_compose(audio_file_path, config=None):
         whisperx_cmd.extend(["--hf_token", str(hf_token)])
     if diarize:
         whisperx_cmd.append("--diarize")
+        whisperx_cmd.extend(["--min_speakers", str(min_speakers)])
+        if max_speakers is not None:
+            whisperx_cmd.extend(["--max_speakers", str(max_speakers)])
 
     # Final check - ensure container is ready before executing
     if not _check_whisperx_compose_service_core():
@@ -495,6 +521,8 @@ def run_whisperx_docker(audio_file_path, config=None):
         else "float32"
     )
     diarize = getattr(config.transcription, "diarize", True) if config else True
+    min_speakers = getattr(config.transcription, "min_speakers", 1) if config else 1
+    max_speakers = getattr(config.transcription, "max_speakers", None) if config else None
     model_download_policy = (
         getattr(config.transcription, "model_download_policy", "anonymous")
         if config
@@ -505,6 +533,21 @@ def run_whisperx_docker(audio_file_path, config=None):
         if config
         else ""
     )
+    if not hf_token:
+        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+    try:
+        min_speakers = int(min_speakers)
+    except (TypeError, ValueError):
+        min_speakers = 1
+    if max_speakers is not None:
+        try:
+            max_speakers = int(max_speakers)
+        except (TypeError, ValueError):
+            max_speakers = None
+    if min_speakers < 1:
+        min_speakers = 1
+    if max_speakers is not None and max_speakers < min_speakers:
+        max_speakers = min_speakers
     device = "cpu"  # For now, always CPU
     if model_download_policy == "require_token" and not hf_token:
         console = Console()
@@ -552,6 +595,9 @@ def run_whisperx_docker(audio_file_path, config=None):
         whisperx_cmd.extend(["--hf_token", hf_token])
     if diarize:
         whisperx_cmd.append("--diarize")
+        whisperx_cmd.extend(["--min_speakers", str(min_speakers)])
+        if max_speakers is not None:
+            whisperx_cmd.extend(["--max_speakers", str(max_speakers)])
     try:
         result = subprocess.run(
             whisperx_cmd, capture_output=True, text=True, check=True

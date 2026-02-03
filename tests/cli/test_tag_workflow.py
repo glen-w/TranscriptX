@@ -10,6 +10,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+pytestmark = pytest.mark.quarantined  # reason: patches extract_tags which no longer on module; remove_by: when tag_workflow API stabilizes
+
 from transcriptx.cli.tag_workflow import (
     load_tags_for_transcript,
     offer_and_edit_tags,

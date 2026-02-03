@@ -22,6 +22,12 @@ from transcriptx.utils.error_handling import (
 )
 
 
+@pytest.fixture
+def error_handler():
+    """Shared fixture for ErrorHandler instance (used by TestErrorReporting, TestResourceCleanup)."""
+    return ErrorHandler()
+
+
 class TestErrorCategorization:
     """Tests for error categorization."""
     
@@ -93,12 +99,7 @@ class TestErrorContext:
 
 class TestErrorHandler:
     """Tests for ErrorHandler class."""
-    
-    @pytest.fixture
-    def error_handler(self):
-        """Fixture for ErrorHandler instance."""
-        return ErrorHandler()
-    
+
     def test_handle_error_validation(self, error_handler):
         """Test handling validation errors."""
         error = ValueError("Invalid input")

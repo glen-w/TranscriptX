@@ -101,7 +101,13 @@ def _interactive_speaker_naming(
         if cursor >= len(segments):
             return False
         batch_end = min(cursor + batch_size, len(segments))
-        displayed_indices.extend(range(cursor, batch_end))
+        # Page the view instead of accumulating.
+        #
+        # The UI window that displays lines is a fixed height (10). When we
+        # accumulate indices, newly loaded lines end up below the visible area,
+        # so the user sees "Loaded more lines." but the content appears
+        # unchanged. Paging ensures "More lines" immediately shows new content.
+        displayed_indices = list(range(cursor, batch_end))
         cursor = batch_end
         return True
 
@@ -261,16 +267,11 @@ def _interactive_speaker_naming(
 
     def load_more_lines() -> None:
         nonlocal selected_offset, refresh_counter
-        old_count = len(displayed_indices)
         if not append_batch():
             update_status("No more lines.")
             return
-        # Move selection to the first newly loaded line so user can see the new content
-        new_count = len(displayed_indices)
-        if new_count > old_count:
-            selected_offset = old_count  # Select first new line
-        else:
-            selected_offset = min(selected_offset, max(0, len(displayed_indices) - 1))
+        # Reset selection to top of the newly loaded page.
+        selected_offset = 0
         # Increment refresh counter to force UI control to re-evaluate
         refresh_counter += 1
         update_status("Loaded more lines.")

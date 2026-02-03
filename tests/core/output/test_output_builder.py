@@ -5,7 +5,7 @@ This module tests output structure creation and path resolution.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -54,18 +54,13 @@ class TestSaveCharts:
         transcript_dir.mkdir()
         charts_dir = transcript_dir / "charts" / "global"
         charts_dir.mkdir(parents=True)
-        
+
         chart_data = MagicMock()
         base_name = "test"
         chart_name = "test_chart"
-        
-        with patch('transcriptx.core.utils.output_standards.plt') as mock_plt:
-            file_path = save_global_chart(
-                chart_data, str(charts_dir), base_name, chart_name
-            )
-        
-        # Should return file path
-        assert file_path is not None
+
+        with pytest.raises(NotImplementedError):
+            save_global_chart(chart_data, str(charts_dir), base_name, chart_name)
     
     def test_save_speaker_chart(self, tmp_path):
         """Test saving speaker chart."""
@@ -73,17 +68,13 @@ class TestSaveCharts:
         transcript_dir.mkdir()
         charts_dir = transcript_dir / "charts" / "speakers"
         charts_dir.mkdir(parents=True)
-        
+
         chart_data = MagicMock()
         base_name = "test"
         chart_name = "test_chart"
         speaker_id = "SPEAKER_00"
-        
-        with patch('transcriptx.core.utils.output_standards.plt') as mock_plt:
-            file_path = save_speaker_chart(
+
+        with pytest.raises(NotImplementedError):
+            save_speaker_chart(
                 chart_data, str(charts_dir), base_name, chart_name, speaker_id
             )
-        
-        # Should return file path with speaker ID
-        assert file_path is not None
-        assert speaker_id in file_path

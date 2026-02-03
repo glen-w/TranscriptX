@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
+from transcriptx.core.pipeline.target_resolver import TranscriptRef
 
 
 @pytest.mark.integration
@@ -46,7 +47,7 @@ class TestPipelineStateIntegration:
             mock_get_service.return_value = mock_service
             
             result = run_analysis_pipeline(
-                transcript_path=str(temp_transcript_file),
+                target=TranscriptRef(path=str(temp_transcript_file)),
                 selected_modules=["sentiment"]
             )
             

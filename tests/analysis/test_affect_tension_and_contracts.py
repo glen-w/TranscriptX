@@ -15,6 +15,11 @@ from transcriptx.core.analysis.affect_tension.metrics import (
     emotion_volatility_proxy,
 )
 from transcriptx.core.analysis.sentiment import _normalize_transformers_sentiment
+from transcriptx.core.viz.specs import (
+    BarCategoricalSpec,
+    HeatmapMatrixSpec,
+    LineTimeSeriesSpec,
+)
 
 
 class TestEmotionEntropy:
@@ -251,3 +256,82 @@ class TestTrustLikeScore:
 
     def test_empty_none(self):
         assert trust_like_score({}) is None
+
+
+def test_affect_tension_emits_chart_specs() -> None:
+    from transcriptx.core.analysis.affect_tension import AffectTensionAnalysis
+
+    segments = [
+        {
+            "speaker": "Alice",
+            "speaker_db_id": 1,
+            "text": "Thanks, I really appreciate it.",
+            "start_s": 0.0,
+            "context_emotion_scores": {"joy": 0.7},
+            "context_emotion_primary": "joy",
+            "sentiment_compound_norm": -0.2,
+            "affect_mismatch_posneg": True,
+            "affect_trust_neutral": False,
+            "emotion_entropy": 1.2,
+            "emotion_volatility_proxy": 0.1,
+            "mismatch_type": "posneg_mismatch",
+        },
+        {
+            "speaker": "Bob",
+            "speaker_db_id": 2,
+            "text": "Okay.",
+            "start_s": 1.5,
+            "context_emotion_scores": {"neutral": 0.8},
+            "context_emotion_primary": "neutral",
+            "sentiment_compound_norm": 0.0,
+            "affect_mismatch_posneg": False,
+            "affect_trust_neutral": True,
+            "emotion_entropy": 0.2,
+            "emotion_volatility_proxy": 0.0,
+            "mismatch_type": "trust_neutral",
+        },
+    ]
+    derived_indices = {
+        "global": {
+            "polite_tension_index": 0.4,
+            "suppressed_conflict_score": 0.2,
+            "institutional_tone_affect_delta": 0.1,
+        },
+        "by_speaker": {
+            "Alice": {
+                "polite_tension_index": 0.5,
+                "suppressed_conflict_score": 0.3,
+                "institutional_tone_affect_delta": 0.2,
+            },
+            "Bob": {
+                "polite_tension_index": 0.2,
+                "suppressed_conflict_score": 0.1,
+                "institutional_tone_affect_delta": 0.05,
+            },
+        },
+    }
+    results = {
+        "segments": segments,
+        "derived_indices": derived_indices,
+        "metadata": {},
+    }
+
+    class DummyOutputService:
+        base_name = "fixture"
+
+        def __init__(self) -> None:
+            self.charts: list[object] = []
+
+        def save_data(self, *args, **kwargs) -> None:
+            return None
+
+        def save_chart(self, spec, *args, **kwargs) -> None:
+            self.charts.append(spec)
+
+    output_service = DummyOutputService()
+    module = AffectTensionAnalysis()
+    module._save_results(results, output_service)
+
+    assert any(isinstance(spec, BarCategoricalSpec) for spec in output_service.charts)
+    assert any(isinstance(spec, LineTimeSeriesSpec) for spec in output_service.charts)
+    assert any(isinstance(spec, HeatmapMatrixSpec) for spec in output_service.charts)

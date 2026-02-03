@@ -224,6 +224,20 @@ class CanonicalBaseStrategy(PathResolutionStrategy):
                         strategy=self.name,
                         message=f"Found by canonical base name: {canonical_base}",
                     )
+                # Fallback: search subdirectories for canonical base
+                matches = sorted(
+                    Path(search_dir).rglob(f"{canonical_base}.json"),
+                    key=lambda path: str(path),
+                )
+                if matches:
+                    return PathResolutionResult(
+                        path=str(matches[0].resolve()),
+                        confidence=ResolutionConfidence.MEDIUM,
+                        strategy=self.name,
+                        message=(
+                            f"Found by canonical base in subdir: {canonical_base}"
+                        ),
+                    )
 
             # Try directory for output_dir type
             if file_type == "output_dir":

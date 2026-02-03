@@ -16,7 +16,6 @@ Key Features:
 import os
 import subprocess
 import sys
-import webbrowser
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +27,8 @@ from transcriptx.core import (
     get_default_modules,
     run_analysis_pipeline,
 )
+from transcriptx.core.pipeline.target_resolver import TranscriptRef
+from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger, log_error
 from transcriptx.core.utils.path_utils import get_transcript_dir
 from transcriptx.utils.error_handling import graceful_exit
@@ -110,8 +111,8 @@ def _run_analysis_workflow_impl(
             print(f"\n[dim]Using transcript: {transcript_path.name}[/dim]")
         else:
             # Select transcript files interactively (supports multi-select)
-            transcript_files = select_transcript_files_interactive()
-            if not transcript_files or len(transcript_files) == 0:
+            transcript_files = select_transcript_files_interactive() or []
+            if len(transcript_files) == 0:
                 print(
                     "\n[yellow]⚠️ No transcript files selected. Returning to main menu.[/yellow]"
                 )
@@ -122,7 +123,7 @@ def _run_analysis_workflow_impl(
         apply_analysis_mode_settings(analysis_mode)
 
         # Select analysis modules
-        modules = select_analysis_modules()
+        modules = select_analysis_modules(transcript_files)
 
         # Filter modules based on analysis mode
         filtered_modules = filter_modules_by_mode(modules, analysis_mode)
@@ -181,13 +182,16 @@ def _run_analysis_workflow_impl(
                     else:
                         # Offer to proceed or rerun speaker identification
                         while True:
+                            speaker_gate_mode = get_config().workflow.speaker_gate.mode
+                            choices = [
+                                "🔄 Rerun speaker identification",
+                                "⏭️ Cancel analysis",
+                            ]
+                            if speaker_gate_mode != "enforce":
+                                choices.insert(1, "✅ Proceed with analysis anyway")
                             choice = questionary.select(
                                 "Speaker identification is incomplete. What would you like to do?",
-                                choices=[
-                                    "🔄 Rerun speaker identification",
-                                    "✅ Proceed with analysis anyway",
-                                    "⏭️ Cancel analysis",
-                                ],
+                                choices=choices,
                             ).ask()
                             
                             if choice == "🔄 Rerun speaker identification":
@@ -205,6 +209,8 @@ def _run_analysis_workflow_impl(
                                     # Still incomplete, loop will ask again
                                 else:
                                     # User cancelled speaker identification, ask what to do
+                                    if speaker_gate_mode == "enforce":
+                                        return
                                     if not questionary.confirm(
                                         "Speaker identification was cancelled. Proceed with analysis anyway?"
                                     ).ask():
@@ -215,6 +221,8 @@ def _run_analysis_workflow_impl(
                             else:  # Cancel analysis
                                 return
                 else:
+                    if get_config().workflow.speaker_gate.mode == "enforce":
+                        return
                     if not questionary.confirm(
                         "Speaker identification was cancelled. Proceed with analysis anyway?"
                     ).ask():
@@ -231,8 +239,6 @@ def _run_analysis_workflow_impl(
         # Run analysis with enhanced progress tracking
         try:
             # Get analysis mode to determine timeout
-            from transcriptx.core.utils.config import get_config
-
             config = get_config()
             analysis_mode = config.analysis.analysis_mode
             workflow_config = config.workflow
@@ -260,7 +266,7 @@ def _run_analysis_workflow_impl(
             ) as tracker:
                 with resource_monitor("Analysis pipeline"):
                     results = run_analysis_pipeline(
-                        target=str(transcript_file),
+                        target=TranscriptRef(path=str(transcript_file)),
                         selected_modules=filtered_modules,
                         skip_speaker_mapping=skip_speaker_mapping,
                         persist=False,
@@ -349,7 +355,6 @@ def _show_post_analysis_menu(transcript_file: Path, results: dict[str, Any]) -> 
     analyzed_dir = Path(output_dir)
     stats_dir = analyzed_dir / "stats"
     summary_dir = stats_dir / "summary"
-    html_path = analyzed_dir / f"{analyzed_base}_comprehensive_summary.html"
     txt_path = summary_dir / f"{analyzed_base}_comprehensive_summary.txt"
     outputs_folder = analyzed_dir
 
@@ -374,25 +379,21 @@ def _show_post_analysis_menu(transcript_file: Path, results: dict[str, Any]) -> 
                     menu_choices = [
                         "🔄 Re-run failed/missing modules",
                         "📂 Open outputs folder",
-                        "🌐 Open HTML summary",
                         "📑 Open stats.txt",
                     ]
                 else:
                     menu_choices = [
                         "📂 Open outputs folder",
-                        "🌐 Open HTML summary",
                         "📑 Open stats.txt",
                     ]
             else:
                 menu_choices = [
                     "📂 Open outputs folder",
-                    "🌐 Open HTML summary",
                     "📑 Open stats.txt",
                 ]
         except Exception:
             menu_choices = [
                 "📂 Open outputs folder",
-                "🌐 Open HTML summary",
                 "📑 Open stats.txt",
             ]
 
@@ -419,7 +420,7 @@ def _show_post_analysis_menu(transcript_file: Path, results: dict[str, Any]) -> 
                         f"\n[cyan]Re-running modules: {', '.join(missing_modules)}[/cyan]"
                     )
                     run_analysis_pipeline(
-                        target=transcript_path_str,
+                        target=TranscriptRef(path=transcript_path_str),
                         selected_modules=missing_modules,
                         skip_speaker_mapping=skip_speaker_mapping,
                         persist=False,
@@ -433,8 +434,6 @@ def _show_post_analysis_menu(transcript_file: Path, results: dict[str, Any]) -> 
                 print(f"\n[red]Error re-running modules: {e}[/red]")
         elif next_action == "📂 Open outputs folder":
             _open_file_or_folder(outputs_folder)
-        elif next_action == "🌐 Open HTML summary":
-            _open_html_summary(html_path)
         elif next_action == "📑 Open stats.txt":
             _open_stats_file(txt_path)
         elif next_action == "🔄 Run another analysis module":
@@ -469,25 +468,6 @@ def _open_file_or_folder(path: Path) -> None:
             exception=e,
         )
         print(f"[red]Could not open file/folder: {e}[/red]")
-
-
-def _open_html_summary(html_path: Path) -> None:
-    """Open the HTML summary in the default browser."""
-    if not html_path.exists():
-        print(f"[yellow]HTML summary not found: {html_path}[/yellow]")
-        logger.warning(f"HTML summary not found: {html_path}")
-        return
-
-    try:
-        webbrowser.open(f"file://{html_path}")
-        logger.debug(f"Opened HTML summary: {html_path}")
-    except Exception as e:
-        log_error(
-            "CLI",
-            f"Could not open HTML summary {html_path}: {e}",
-            exception=e,
-        )
-        print(f"[red]Could not open HTML summary: {e}[/red]")
 
 
 def _open_stats_file(txt_path: Path) -> None:
@@ -635,7 +615,7 @@ def run_test_analysis_workflow() -> None:
             )
 
             # Get all available modules
-            all_modules = get_default_modules()
+            all_modules = get_default_modules([str(transcript_file)])
 
             # Apply quick mode settings for faster testing (non-interactive)
             apply_analysis_mode_settings_non_interactive("quick")
@@ -673,7 +653,7 @@ def run_test_analysis_workflow() -> None:
                 ) as tracker:
                     with resource_monitor("Test analysis pipeline"):
                         results = run_analysis_pipeline(
-                            target=str(transcript_file),
+                            target=TranscriptRef(path=str(transcript_file)),
                             selected_modules=filtered_modules,
                             skip_speaker_mapping=skip_speaker_mapping,
                             persist=False,
@@ -759,6 +739,7 @@ def run_analysis_non_interactive(
     profile: str | None = None,
     skip_confirm: bool = False,
     output_dir: Path | str | None = None,
+    speaker_options: "SpeakerRunOptions | None" = None,
     persist: bool = False,
 ) -> dict[str, Any]:
     """
@@ -781,6 +762,7 @@ def run_analysis_non_interactive(
         ValueError: If invalid parameters provided
     """
     from transcriptx.core.utils.config import get_config
+    from transcriptx.core.pipeline.run_options import SpeakerRunOptions
 
     # Convert to Path if string
     if isinstance(transcript_file, str):
@@ -809,7 +791,7 @@ def run_analysis_non_interactive(
 
     # Get available modules
     available_modules = get_available_modules()
-    default_modules = get_default_modules()
+    default_modules = get_default_modules([str(transcript_file)])
 
     # Determine modules to use
     if modules is None:
@@ -835,6 +817,7 @@ def run_analysis_non_interactive(
     # Speaker IDs (e.g. SPEAKER_00) will be treated as "unnamed" and excluded by
     # many modules unless the transcript already contains named speakers.
     skip_speaker_mapping = True
+    speaker_options = speaker_options or SpeakerRunOptions()
 
     # Update output directory if specified
     if output_dir:
@@ -890,9 +873,10 @@ def run_analysis_non_interactive(
         with process_spinner("Running analysis pipeline", progress_config) as tracker:
             with resource_monitor("Analysis pipeline"):
                 results = run_analysis_pipeline(
-                    target=str(transcript_file),
+                    target=TranscriptRef(path=str(transcript_file)),
                     selected_modules=filtered_modules,
                     skip_speaker_mapping=skip_speaker_mapping,
+                    speaker_options=speaker_options,
                     persist=persist,
                 )
 

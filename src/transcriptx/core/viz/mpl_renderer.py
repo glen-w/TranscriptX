@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
+
 from transcriptx.core.utils.lazy_imports import get_matplotlib_pyplot
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
+    BoxSpec,
     ChartSpec,
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
@@ -132,6 +135,79 @@ def render_mpl(spec: ChartSpec) -> Any:
             ax.set_xlabel(spec.x_label)
         if spec.y_label:
             ax.set_ylabel(spec.y_label)
+        fig.tight_layout()
+        return fig
+
+    if isinstance(spec, BoxSpec) or spec.chart_intent == "box_plot":
+        fig, ax = plt.subplots(figsize=(10, 4))
+        series_list = list(spec.series)
+        if not series_list:
+            raise ValueError("BoxSpec requires at least one series")
+
+        # Collect categories from series x-values
+        categories: list[str] = []
+        for series in series_list:
+            xs = [str(x) for x in series.get("x", [])]
+            for x in xs:
+                if x not in categories:
+                    categories.append(x)
+
+        if not categories:
+            # If x not provided, fall back to per-series boxes
+            categories = [series.get("name", f"series_{idx}") for idx, series in enumerate(series_list)]
+
+        base_positions = list(range(len(categories)))
+        width = 0.8 / max(1, len(series_list))
+
+        for idx, series in enumerate(series_list):
+            xs = [str(x) for x in series.get("x", [])]
+            ys = series.get("y", [])
+            # Group y values by category
+            grouped: list[list[float]] = [[] for _ in categories]
+            if xs:
+                for x_val, y_val in zip(xs, ys):
+                    if x_val in categories:
+                        grouped[categories.index(x_val)].append(y_val)
+            else:
+                # If no x-values, treat all ys as one group
+                grouped = [list(ys)]
+
+            filtered = [
+                (cat, vals)
+                for cat, vals in zip(categories, grouped)
+                if vals
+            ]
+            if not filtered:
+                continue
+            positions = [
+                base_positions[categories.index(cat)]
+                + (idx - (len(series_list) - 1) / 2) * width
+                for cat, _ in filtered
+            ]
+            ax.boxplot(
+                [vals for _, vals in filtered],
+                positions=positions,
+                widths=width * 0.9,
+                patch_artist=True,
+                showfliers=True,
+            )
+            if spec.show_points:
+                for pos, (_, vals) in zip(positions, filtered):
+                    jitter = (np.random.rand(len(vals)) - 0.5) * width * 0.6
+                    ax.scatter(
+                        [pos + j for j in jitter],
+                        vals,
+                        alpha=0.6,
+                        s=10,
+                    )
+
+        ax.set_title(spec.title)
+        if spec.x_label:
+            ax.set_xlabel(spec.x_label)
+        if spec.y_label:
+            ax.set_ylabel(spec.y_label)
+        ax.set_xticks(base_positions)
+        ax.set_xticklabels(categories, rotation=30, ha="right")
         fig.tight_layout()
         return fig
 

@@ -16,7 +16,6 @@ from transcriptx.core.analysis.interactions.visualization import (
 )
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.output_standards import (
-    create_readme_file,
     create_standard_output_structure,
     create_summary_json,
     save_global_data,
@@ -128,15 +127,6 @@ def analyze_interactions(
 
     # Create comprehensive summary
     create_analysis_summary(analysis_results, output_structure, base_name)
-
-    # Create README file explaining the output structure
-    create_readme_file(
-        output_structure,
-        "interactions",
-        base_name,
-        "Comprehensive analysis of speaker interactions including interruptions, responses, "
-        "and interaction patterns. Provides both global statistics and per-speaker analysis.",
-    )
 
     return analysis_results
 

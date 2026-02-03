@@ -65,4 +65,4 @@ def render_statistics() -> None:
             "Completion %": s.get("analysis_completion", 0),
         })
     df = pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width='stretch', hide_index=True)

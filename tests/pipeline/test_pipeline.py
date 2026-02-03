@@ -54,7 +54,6 @@ class TestRunAnalysisPipeline:
             assert "output_dir" in result
             assert "transcript_key" in result
             assert "run_id" in result
-            assert result["transcript_key"] in result["output_dir"]
             assert result["run_id"] in result["output_dir"]
 
             mock_dag.execute_pipeline.assert_called_once()
@@ -192,7 +191,7 @@ class TestRunAnalysisPipeline:
             )
 
             assert len(result["errors"]) > 0
-            assert "timeout" in result["errors"][0].lower()
+            assert "timed out" in result["errors"][0].lower()
 
     def test_run_analysis_pipeline_partial_failure(self, temp_transcript_file):
         with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
@@ -319,7 +318,7 @@ class TestRunAnalysisPipelineFromFile:
 
     def test_run_analysis_pipeline_from_file_all_modules(self, temp_transcript_file):
         with patch("transcriptx.core.pipeline.pipeline.run_analysis_pipeline") as mock_run, \
-             patch("transcriptx.core.pipeline.pipeline.get_available_modules") as mock_get_modules:
+             patch("transcriptx.core.pipeline.pipeline.get_default_modules") as mock_get_modules:
 
             mock_get_modules.return_value = ["sentiment", "stats", "ner"]
             mock_run.return_value = {

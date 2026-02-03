@@ -23,8 +23,24 @@ class EntityDataExtractor(BaseDataExtractor):
     entity data including expertise domains, frequently mentioned entities, and networks.
     """
 
+    def __init__(self):
+        """Initialize the entity data extractor."""
+        super().__init__("ner")
+
+    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+        """
+        BaseDataExtractor interface: extract speaker-level data.
+
+        `speaker_id` is a string in the base protocol; we accept numeric strings too.
+        """
+        try:
+            speaker_id_int = int(speaker_id)
+        except Exception:
+            speaker_id_int = speaker_id  # type: ignore[assignment]
+        return self.extract_speaker_data(analysis_results, speaker_id=speaker_id_int)  # type: ignore[arg-type]
+
     def extract_speaker_data(
-        self, analysis_results: Dict[str, Any], speaker_id: int
+        self, analysis_results: Dict[str, Any], speaker_id: int | str
     ) -> Dict[str, Any]:
         """
         Extract speaker-level entity data from analysis results.
@@ -99,7 +115,7 @@ class EntityDataExtractor(BaseDataExtractor):
 
         return entity_data
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
         """
         Validate extracted entity data.
 
@@ -118,7 +134,7 @@ class EntityDataExtractor(BaseDataExtractor):
             self.logger.error(f"Entity data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
         """
         Transform entity data for database storage.
 

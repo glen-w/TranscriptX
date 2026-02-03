@@ -34,8 +34,8 @@ profile_app = typer.Typer(
 
 @profile_app.command("show")
 def show_speaker_profile(
-    speaker_name: str = typer.Argument(
-        ..., help="Name of the speaker to show profile for"
+    speaker_name: str = typer.Option(
+        ..., "--speaker-name", "-n", help="Name of the speaker to show profile for"
     ),
     analysis_type: Optional[str] = typer.Option(
         None, "--type", "-t", help="Specific analysis type to show"
@@ -94,8 +94,8 @@ def show_speaker_profile(
 
 @profile_app.command("compare")
 def compare_speakers(
-    speaker1: str = typer.Argument(..., help="First speaker name"),
-    speaker2: str = typer.Argument(..., help="Second speaker name"),
+    speaker1: str = typer.Option(..., "--speaker1", help="First speaker name"),
+    speaker2: str = typer.Option(..., "--speaker2", help="Second speaker name"),
     analysis_type: Optional[str] = typer.Option(
         None, "--type", "-t", help="Specific analysis type to compare"
     ),
@@ -153,7 +153,7 @@ def compare_speakers(
 
 @profile_app.command("export")
 def export_speaker_data(
-    speaker_name: str = typer.Argument(..., help="Name of the speaker to export"),
+    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to export"),
     format: str = typer.Option(
         "json", "--format", "-f", help="Export format (json, csv)"
     ),
@@ -201,7 +201,7 @@ def export_speaker_data(
 
 @profile_app.command("evolution")
 def analyze_speaker_evolution(
-    speaker_name: str = typer.Argument(..., help="Name of the speaker to analyze"),
+    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to analyze"),
     time_period: str = typer.Option(
         "all", "--period", "-p", help="Time period (all, month, week)"
     ),
@@ -294,7 +294,7 @@ def list_speaker_profiles(
 
 @profile_app.command("update")
 def update_speaker_profile(
-    speaker_name: str = typer.Argument(..., help="Name of the speaker to update"),
+    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to update"),
     force: bool = typer.Option(
         False, "--force", "-f", help="Force update even if data exists"
     ),

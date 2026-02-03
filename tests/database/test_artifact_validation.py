@@ -130,11 +130,15 @@ def test_artifact_registry_registers_roles(
     db_session.add(module_run)
     db_session.commit()
 
-    global_file = outputs_root / "sentiment" / "data" / "global" / "sample.json"
+    from transcriptx.core.utils._path_core import get_canonical_base_name
+
+    transcript_output_dir = outputs_root / get_canonical_base_name(str(temp_transcript_file))
+
+    global_file = transcript_output_dir / "sentiment" / "data" / "global" / "sample.json"
     global_file.parent.mkdir(parents=True, exist_ok=True)
     global_file.write_text('{"ok": true}')
 
-    speaker_file = outputs_root / "sentiment" / "data" / "speakers" / "speaker.json"
+    speaker_file = transcript_output_dir / "sentiment" / "data" / "speakers" / "speaker.json"
     speaker_file.parent.mkdir(parents=True, exist_ok=True)
     speaker_file.write_text('{"speaker": true}')
 

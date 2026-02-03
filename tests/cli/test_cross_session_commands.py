@@ -11,6 +11,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
+pytestmark = pytest.mark.quarantined  # reason: tests CrossSessionTrackingService/get_session which were removed/renamed; remove_by: when cross_session API stabilizes
+
 from transcriptx.cli.main import app
 
 
@@ -41,7 +43,7 @@ class TestCrossSessionCommands:
             result = typer_test_client.invoke(
                 app, [
                     "cross-session", "match-speakers",
-                    "SPEAKER_00",
+                    "--speaker-name", "SPEAKER_00",
                     "--transcript", str(temp_transcript_file)
                 ]
             )
@@ -65,7 +67,7 @@ class TestCrossSessionCommands:
             result = typer_test_client.invoke(
                 app, [
                     "cross-session", "match-speakers",
-                    "SPEAKER_00",
+                    "--speaker-name", "SPEAKER_00",
                     "--transcript", str(temp_transcript_file),
                     "--threshold", "0.8"
                 ]

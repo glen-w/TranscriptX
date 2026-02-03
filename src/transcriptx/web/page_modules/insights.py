@@ -168,5 +168,5 @@ def _render_summary_section(session: str, run_id: str) -> None:
             }
             for item in commitments
         ]
-        st.dataframe(rows, use_container_width=True)
+        st.dataframe(rows, width='stretch')
 

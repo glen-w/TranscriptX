@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Optional
 from transcriptx.core.utils.paths import (  # type: ignore[import-untyped]
     RECORDINGS_DIR,
     READABLE_TRANSCRIPTS_DIR,
@@ -11,6 +11,82 @@ from transcriptx.core.utils.paths import (  # type: ignore[import-untyped]
     OUTPUTS_DIR,
     GROUP_OUTPUTS_DIR,
 )
+
+
+@dataclass
+class SpeakerGateConfig:
+    """Configuration for speaker identification gating."""
+
+    threshold_value: float = 0.0
+    threshold_type: Literal["absolute", "percentage"] = "absolute"
+    mode: Literal["ignore", "warn", "enforce"] = "warn"
+    exemplar_count: int = 2
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        """Normalize and validate speaker gate settings (warn + default on invalid)."""
+        from transcriptx.core.utils.logger import log_warning
+
+        threshold_type = str(self.threshold_type).strip().lower()
+        if threshold_type not in ("absolute", "percentage"):
+            log_warning(
+                "CONFIG",
+                f"Invalid speaker_gate.threshold_type '{self.threshold_type}', using 'absolute'",
+            )
+            threshold_type = "absolute"
+        self.threshold_type = threshold_type  # type: ignore[assignment]
+
+        mode = str(self.mode).strip().lower()
+        if mode not in ("ignore", "warn", "enforce"):
+            log_warning(
+                "CONFIG",
+                f"Invalid speaker_gate.mode '{self.mode}', using 'warn'",
+            )
+            mode = "warn"
+        self.mode = mode  # type: ignore[assignment]
+
+        try:
+            threshold_value = float(self.threshold_value)
+        except (TypeError, ValueError):
+            log_warning(
+                "CONFIG",
+                f"Invalid speaker_gate.threshold_value '{self.threshold_value}', using 0.0",
+            )
+            threshold_value = 0.0
+
+        if threshold_value < 0.0:
+            log_warning(
+                "CONFIG",
+                f"speaker_gate.threshold_value {threshold_value} < 0; clamping to 0.0",
+            )
+            threshold_value = 0.0
+
+        if self.threshold_type == "percentage" and threshold_value > 100.0:
+            log_warning(
+                "CONFIG",
+                f"speaker_gate.threshold_value {threshold_value} > 100; clamping to 100.0",
+            )
+            threshold_value = 100.0
+        self.threshold_value = threshold_value
+
+        try:
+            exemplar_count = int(self.exemplar_count)
+        except (TypeError, ValueError):
+            log_warning(
+                "CONFIG",
+                f"Invalid speaker_gate.exemplar_count '{self.exemplar_count}', using 0",
+            )
+            exemplar_count = 0
+
+        if exemplar_count < 0:
+            log_warning(
+                "CONFIG",
+                f"speaker_gate.exemplar_count {exemplar_count} < 0; clamping to 0",
+            )
+            exemplar_count = 0
+        self.exemplar_count = exemplar_count
 
 
 @dataclass
@@ -32,6 +108,15 @@ class WorkflowConfig:
     mp3_bitrate: str = "192k"
     conversion_time_factor: float = 0.5  # seconds per MB
 
+    # Speaker identification gate
+    speaker_gate: SpeakerGateConfig = field(default_factory=SpeakerGateConfig)
+
+    # CLI post-processing menu: show pruning options (off by default)
+    cli_pruning_enabled: bool = False
+
+    # Default path when saving config from the CLI (empty = use project config path)
+    default_config_save_path: str = ""
+
 
 @dataclass
 class TranscriptionConfig:
@@ -46,8 +131,8 @@ class TranscriptionConfig:
     batch_size: int = 16
     diarize: bool = True
     min_speakers: int = 1
-    max_speakers: int = 10
-    model_download_policy: Literal["anonymous", "require_token"] = "anonymous"
+    max_speakers: Optional[int] = None  # None = no limit
+    model_download_policy: Literal["anonymous", "require_token"] = "require_token"
     huggingface_token: str = ""
 
     def __post_init__(self) -> None:
@@ -65,6 +150,8 @@ class InputConfig:
     )
     recordings_folders: list[str] = field(default_factory=lambda: [RECORDINGS_DIR])
     prefill_rename_with_date_prefix: bool = True
+    # How to choose file selection UI: "prompt" = ask each time; "explore" = file browser; "direct" = type path
+    file_selection_mode: Literal["prompt", "explore", "direct"] = "prompt"
 
 
 @dataclass

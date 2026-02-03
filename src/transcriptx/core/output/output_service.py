@@ -64,6 +64,8 @@ class OutputService:
         output_dir: Optional[str] = None,
         run_id: Optional[str] = None,
         runtime_flags: Optional[Dict[str, Any]] = None,
+        output_namespace: Optional[str] = None,
+        output_version: Optional[str] = None,
     ):
         """
         Initialize the output service for a specific transcript and module.
@@ -77,7 +79,10 @@ class OutputService:
         self.base_name = get_canonical_base_name(transcript_path)
         self.transcript_dir = output_dir or get_transcript_dir(transcript_path)
         self.output_structure = create_standard_output_structure(
-            self.transcript_dir, module_name
+            self.transcript_dir,
+            module_name,
+            output_namespace=output_namespace,
+            output_version=output_version,
         )
         self._artifacts: List[Dict[str, Any]] = []
         self._artifact_metadata: Dict[str, Dict[str, Any]] = {}
@@ -139,6 +144,7 @@ class OutputService:
         filename: str,
         format_type: str = "json",
         subdirectory: Optional[str] = None,
+        speaker: Optional[str] = None,
     ) -> str:
         """
         Save data in the specified format.
@@ -152,6 +158,8 @@ class OutputService:
         Returns:
             Path to the saved file
         """
+        if speaker is not None and self._should_skip_speaker_artifact(speaker):
+            return ""
         if format_type == "json":
             if subdirectory:
                 output_dir = self.output_structure.data_dir / subdirectory
@@ -160,7 +168,7 @@ class OutputService:
                 output_dir = self.output_structure.global_data_dir
 
             file_path = output_dir / f"{self.base_name}_{filename}.json"
-            save_json(data, str(file_path))
+            save_json(self._apply_speaker_mapping_to_json(data), str(file_path))
             self._record_artifact(file_path, "json")
             logger.debug(f"Saved JSON data to: {file_path}")
             return str(file_path)
@@ -181,14 +189,16 @@ class OutputService:
             if isinstance(data, list):
                 # Assume list of dicts
                 if data and isinstance(data[0], dict):
-                    headers = list(data[0].keys())
-                    rows = [list(row.values()) for row in data]
+                    mapped_rows = [self._map_speaker_field(row) for row in data]
+                    headers = list(mapped_rows[0].keys())
+                    rows = [list(row.values()) for row in mapped_rows]
                     save_csv(rows, str(file_path), header=headers)
                 else:
                     save_csv(data, str(file_path))
             elif isinstance(data, dict):
                 # Convert dict to rows
-                rows = [[k, str(v)] for k, v in data.items()]
+                mapped = self._apply_speaker_mapping_to_json(data)
+                rows = [[k, str(v)] for k, v in mapped.items()]
                 save_csv(rows, str(file_path), header=["key", "value"])
 
             logger.debug(f"Saved CSV data to: {file_path}")
@@ -222,6 +232,77 @@ class OutputService:
 
         else:
             raise ValueError(f"Unsupported format type: {format_type}")
+
+    def _should_skip_speaker_artifact(self, speaker: Optional[str]) -> bool:
+        if self._runtime_flags.get("include_unidentified_speakers"):
+            return False
+        if not speaker:
+            return False
+        config = get_config()
+        exclude = getattr(
+            getattr(config, "analysis", None),
+            "exclude_unidentified_from_speaker_charts",
+            False,
+        )
+        if not exclude:
+            return False
+        named_keys = self._runtime_flags.get("named_speaker_keys")
+        if isinstance(named_keys, set):
+            if speaker in named_keys:
+                return False
+            aliases = self._runtime_flags.get("speaker_key_aliases", {})
+            aliased = aliases.get(str(speaker))
+            return aliased not in named_keys
+        return not is_named_speaker(str(speaker))
+
+    def resolve_speaker_display(self, speaker_key: Optional[str]) -> Optional[str]:
+        if speaker_key is None:
+            return None
+        if self._runtime_flags.get("anonymise_speakers"):
+            mapping = self._runtime_flags.get("speaker_anonymisation_map", {})
+            if speaker_key in mapping:
+                return mapping.get(speaker_key, speaker_key)
+            aliases = self._runtime_flags.get("speaker_key_aliases", {})
+            aliased_key = aliases.get(speaker_key)
+            if aliased_key:
+                return mapping.get(aliased_key, speaker_key)
+            return speaker_key
+        return speaker_key
+
+    def _map_speaker_field(self, row: Dict[str, Any]) -> Dict[str, Any]:
+        if "speaker" not in row:
+            return row
+        mapped = dict(row)
+        mapped["speaker"] = self.resolve_speaker_display(str(row.get("speaker")))
+        return mapped
+
+    def _apply_speaker_mapping_to_json(
+        self, data: Union[Dict[str, Any], List[Any], str]
+    ) -> Union[Dict[str, Any], List[Any], str]:
+        mapping = self._runtime_flags.get("speaker_anonymisation_map")
+        if not mapping or not self._runtime_flags.get("anonymise_speakers"):
+            return data
+        if isinstance(data, dict):
+            remapped: Dict[str, Any] = {}
+            for key, value in data.items():
+                mapped_key = mapping.get(str(key), key)
+                if isinstance(value, dict):
+                    remapped_value = self._map_speaker_field(value)
+                elif isinstance(value, list):
+                    remapped_value = [
+                        self._map_speaker_field(item) if isinstance(item, dict) else item
+                        for item in value
+                    ]
+                else:
+                    remapped_value = value
+                remapped[mapped_key] = remapped_value
+            return remapped
+        if isinstance(data, list):
+            return [
+                self._map_speaker_field(item) if isinstance(item, dict) else item
+                for item in data
+            ]
+        return data
 
     def save_text(
         self,
@@ -275,7 +356,7 @@ class OutputService:
         depends_on: List[str] | None = None,
         tags: List[str] | None = None,
         metadata: Dict[str, Any] | None = None,
-    ) -> Path:
+    ) -> Optional[Path]:
         """
         Save an interactive HTML view artifact (not a ChartSpec).
 
@@ -295,9 +376,12 @@ class OutputService:
             Path to the saved HTML file
         """
         if scope == "speaker":
-            if not speaker or not is_named_speaker(speaker):
+            if not speaker:
                 raise ValueError("speaker is required when scope='speaker'")
-            safe_speaker = str(speaker).replace(" ", "_").replace("/", "_")
+            if self._should_skip_speaker_artifact(speaker):
+                return None
+            speaker_display = self.resolve_speaker_display(str(speaker))
+            safe_speaker = str(speaker_display).replace(" ", "_").replace("/", "_")
             view_dir = (
                 Path(self.output_structure.speaker_dynamic_charts_dir)
                 / safe_speaker
@@ -318,7 +402,7 @@ class OutputService:
             "artifact_kind": "view",
             "view_kind": view_kind,
             "scope": scope,
-            "speaker": speaker,
+            "speaker": self.resolve_speaker_display(str(speaker)) if speaker else None,
             "name": name,
             "depends_on": depends_on or [],
             "tags": tags or [],
@@ -381,19 +465,22 @@ class OutputService:
     ) -> Dict[str, Optional[Path]]:
         if spec.scope == "speaker" and not spec.speaker:
             raise ValueError("speaker is required when scope='speaker'")
+        if spec.scope == "speaker" and self._should_skip_speaker_artifact(spec.speaker):
+            return {"static": None, "dynamic": None}
 
         if spec.scope == "speaker":
+            speaker_display = self.resolve_speaker_display(str(spec.speaker))
             static_path = get_speaker_static_chart_path(
                 self.output_structure,
                 None,
-                spec.speaker,
+                speaker_display,
                 spec.name,
                 chart_type,
             )
             dynamic_path = get_speaker_dynamic_chart_path(
                 self.output_structure,
                 None,
-                spec.speaker,
+                speaker_display,
                 spec.name,
                 chart_type,
             )
@@ -415,7 +502,9 @@ class OutputService:
             "module": spec.module,
             "artifact_kind": "chart",
             "scope": spec.scope,
-            "speaker": spec.speaker,
+            "speaker": self.resolve_speaker_display(str(spec.speaker))
+            if spec.speaker
+            else None,
             "name": spec.name,
             "chart_intent": spec.chart_intent,
             "chart_type": chart_type,
@@ -494,19 +583,22 @@ class OutputService:
             raise ValueError("static_fig is required for legacy save_chart() usage")
         if scope == "speaker" and not speaker:
             raise ValueError("speaker is required when scope='speaker'")
+        if scope == "speaker" and self._should_skip_speaker_artifact(speaker):
+            return {"static": None, "dynamic": None}
 
         if scope == "speaker":
+            speaker_display = self.resolve_speaker_display(str(speaker))
             static_path = get_speaker_static_chart_path(
                 self.output_structure,
                 None,
-                speaker,
+                speaker_display,
                 chart_id,
                 chart_type,
             )
             dynamic_path = get_speaker_dynamic_chart_path(
                 self.output_structure,
                 None,
-                speaker,
+                speaker_display,
                 chart_id,
                 chart_type,
             )
@@ -530,7 +622,7 @@ class OutputService:
             "derived": derived_viz_id,
             "module": self.module_name,
             "scope": scope,
-            "speaker": speaker,
+            "speaker": self.resolve_speaker_display(str(speaker)) if speaker else None,
             "chart_id": chart_id,
             "chart_type": chart_type,
             "title": title,
@@ -645,6 +737,8 @@ def create_output_service(
     output_dir: Optional[str] = None,
     run_id: Optional[str] = None,
     runtime_flags: Optional[Dict[str, Any]] = None,
+    output_namespace: Optional[str] = None,
+    output_version: Optional[str] = None,
 ) -> OutputService:
     """
     Create an output service for a transcript and module.
@@ -662,4 +756,6 @@ def create_output_service(
         output_dir=output_dir,
         run_id=run_id,
         runtime_flags=runtime_flags,
+        output_namespace=output_namespace,
+        output_version=output_version,
     )

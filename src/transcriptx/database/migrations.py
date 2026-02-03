@@ -288,8 +288,8 @@ datefmt = %H:%M:%S
             return True
 
         except Exception as e:
-            logger.error(f"❌ Failed to run migrations: {e}")
-            return False
+            logger.exception("❌ Failed to run migrations: %s", e)
+            raise
 
     def rollback_migration(self, target: str) -> bool:
         """

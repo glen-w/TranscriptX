@@ -35,6 +35,9 @@ _DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
 
 def _downloads_disabled() -> bool:
     value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
+    if value == "":
+        # Default to downloads disabled unless explicitly opted in.
+        return True
     return value in {"1", "true", "yes", "on"}
 
 
@@ -415,12 +418,14 @@ class SentimentAnalysis(AnalysisModule):
                 f"{speaker}_sentiment",
                 format_type="json",
                 subdirectory="speakers",
+                speaker=speaker,
             )
             output_service.save_data(
                 speaker_data,
                 f"{speaker}_sentiment",
                 format_type="csv",
                 subdirectory="speakers",
+                speaker=speaker,
             )
 
         # Generate multi-speaker comparison plot only when more than one identified speaker

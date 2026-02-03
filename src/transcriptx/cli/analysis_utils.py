@@ -1,40 +1,93 @@
 import questionary
 from rich import print
 from transcriptx.core.utils.config import get_config
+from transcriptx.cli.config_editor import edit_config_interactive
 from transcriptx.core import get_available_modules, get_default_modules
-from transcriptx.core.pipeline.module_registry import get_description
+from transcriptx.core.pipeline.module_registry import get_description, get_module_info
+from transcriptx.core.utils.audio_availability import has_resolvable_audio
+from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
 
 
-def select_analysis_modules() -> list[str]:
+def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
     available_modules = get_available_modules()
     sorted_modules = sorted(available_modules, key=lambda m: get_description(m) or "")
-    display_to_module = {i: module for i, module in enumerate(sorted_modules, 1)}
 
-    # Build choices for questionary
-    choices = ["all"]
+    audio_available = None
+    if transcript_paths:
+        audio_available = has_resolvable_audio(transcript_paths)
+    voice_cfg = getattr(getattr(get_config(), "analysis", None), "voice", None)
+    egemaps_enabled = bool(getattr(voice_cfg, "egemaps_enabled", True))
+    deps = check_voice_optional_deps(egemaps_enabled=egemaps_enabled)
+    missing_deps = deps.get("missing_optional_deps") if not deps.get("ok") else []
+
+    def _dep_resolver(info):
+        if not info.requires_audio:
+            return True
+        return not missing_deps
+
+    # Build choices for multi-select (checkbox): special options then one per module.
+    # Use checked=True to preselect "All modules"; checkbox does not accept default=[...].
+    choices = [
+        questionary.Choice(title="⚙️ Configure settings", value="settings"),
+        questionary.Choice(
+            title="🚀 All modules (recommended)", value="all", checked=True
+        ),
+    ]
     for i, module in enumerate(sorted_modules, 1):
         description = get_description(module) or module
-        choices.append(f"{i}. {description}")
+        info = get_module_info(module)
+        badges: list[str] = []
+        if info:
+            if info.requires_audio:
+                badges.append("requires audio")
+                if audio_available is False:
+                    badges.append("audio missing")
+                if missing_deps:
+                    badges.append(f"deps missing: {', '.join(missing_deps)}")
+            if info.cost_tier == "heavy":
+                badges.append("heavy")
+        badge_str = f" ({'; '.join(badges)})" if badges else ""
+        choices.append(
+            questionary.Choice(title=f"{i}. {description}{badge_str}", value=module)
+        )
 
     while True:
         try:
-            selection = questionary.select(
-                "\nSelect modules (Use arrow keys)",
+            selection = questionary.checkbox(
+                "\nSelect modules (Space to toggle, Enter to confirm)",
                 choices=choices,
-                default="all",
             ).ask()
-            if selection.lower() == "all":
-                return get_default_modules()
-            display_index = int(selection.split(".")[0])
-            selected_module = display_to_module[display_index]
-            selected_modules = [selected_module]
+            if selection is None:
+                print("\n[cyan]Cancelled. Returning to previous menu.[/cyan]")
+                return []
+            if "settings" in selection:
+                edit_config_interactive()
+                continue
+            if "all" in selection:
+                selected = get_default_modules(
+                    transcript_paths,
+                    audio_resolver=has_resolvable_audio,
+                    dep_resolver=_dep_resolver,
+                )
+                heavy = [
+                    m
+                    for m in selected
+                    if (get_module_info(m) is not None)
+                    and get_module_info(m).cost_tier == "heavy"
+                ]
+                if heavy:
+                    print(
+                        f"[yellow]⚠️ Heavy modules included: {', '.join(heavy)}[/yellow]"
+                    )
+                return selected
+            selected_modules = [m for m in selection if m not in ("settings", "all")]
+            if not selected_modules:
+                print("[yellow]No modules selected. Choose at least one or pick 'All modules'.[/yellow]")
+                continue
             return selected_modules
         except KeyboardInterrupt:
             print("\n[cyan]Cancelled. Returning to previous menu.[/cyan]")
             return []
-        except ValueError:
-            print("[red]❌ Invalid selection. Please choose a valid option.[/red]")
-            continue
 
 
 def select_analysis_mode() -> str:

@@ -88,7 +88,7 @@ def render_explorer() -> None:
                         file_name=path.name,
                         mime=_get_mime_type(path),
                         key=f"download_{path.as_posix().replace('/', '_').replace(' ', '_')}",
-                        use_container_width=True,
+                        width='stretch',
                     )
             except Exception as e:
                 st.error(f"Error: {str(e)[:50]}")

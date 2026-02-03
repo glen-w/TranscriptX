@@ -55,7 +55,7 @@ def _get_speaker_cluster_model():
 
 @app.command()
 def match_speakers(
-    speaker_name: str = typer.Argument(..., help="Name of the speaker to match"),
+    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to match"),
     transcript_file: Path = typer.Option(
         ..., "--transcript", "-t", help="Transcript file path"
     ),
@@ -158,7 +158,7 @@ def match_speakers(
 
 @app.command()
 def track_evolution(
-    speaker_id: int = typer.Argument(..., help="Speaker ID to track"),
+    speaker_id: int = typer.Option(..., "--speaker-id", help="Speaker ID to track"),
     transcript_file: Path = typer.Option(
         ..., "--transcript", "-t", help="Transcript file path"
     ),
@@ -255,7 +255,7 @@ def track_evolution(
 
 @app.command()
 def detect_anomalies(
-    speaker_id: int = typer.Argument(..., help="Speaker ID to analyze"),
+    speaker_id: int = typer.Option(..., "--speaker-id", help="Speaker ID to analyze"),
     transcript_file: Path = typer.Option(
         ..., "--transcript", "-t", help="Transcript file path"
     ),
@@ -358,7 +358,7 @@ def detect_anomalies(
 
 @app.command()
 def create_cluster(
-    name: str = typer.Argument(..., help="Cluster name"),
+    name: str = typer.Option(..., "--name", "-n", help="Cluster name"),
     description: Optional[str] = typer.Option(
         None, "--description", "-d", help="Cluster description"
     ),
@@ -410,8 +410,8 @@ def create_cluster(
 
 @app.command()
 def add_to_cluster(
-    speaker_id: int = typer.Argument(..., help="Speaker ID to add"),
-    cluster_id: int = typer.Argument(..., help="Cluster ID to add to"),
+    speaker_id: int = typer.Option(..., "--speaker-id", "-s", help="Speaker ID to add"),
+    cluster_id: int = typer.Option(..., "--cluster-id", help="Cluster ID to add to"),
     confidence_score: float = typer.Option(
         0.8, "--confidence", "-c", help="Confidence score"
     ),
@@ -462,7 +462,7 @@ def add_to_cluster(
 
 @app.command()
 def show_network(
-    speaker_id: int = typer.Argument(..., help="Speaker ID to analyze"),
+    speaker_id: int = typer.Option(..., "--speaker-id", "-s", help="Speaker ID to analyze"),
     max_depth: int = typer.Option(2, "--depth", "-d", help="Maximum network depth"),
 ):
     """

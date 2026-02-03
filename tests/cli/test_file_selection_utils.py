@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from transcriptx.cli.file_selection_utils import (
+    discover_all_transcript_paths,
     select_folder_interactive,
     select_transcript_file_interactive,
     select_audio_for_whisperx_transcription,
@@ -172,3 +173,35 @@ class TestHasAnalysisOutputs:
         
         # Should return False if only speaker map exists
         assert has_analysis is False
+
+
+class TestDiscoverAllTranscriptPaths:
+    """Tests for discover_all_transcript_paths helper."""
+
+    def test_discover_all_transcript_paths_empty_root(self, tmp_path):
+        """Empty root should return empty list."""
+        results = discover_all_transcript_paths(root=tmp_path)
+        assert results == []
+
+    def test_discover_all_transcript_paths_transcripts_subtree(self, tmp_path):
+        """When transcripts/ exists, search only that subtree."""
+        transcripts_dir = tmp_path / "transcripts"
+        transcripts_dir.mkdir()
+        (transcripts_dir / "a.json").write_text('{"segments": []}')
+        outputs_dir = tmp_path / "outputs"
+        outputs_dir.mkdir()
+        (outputs_dir / "b.json").write_text('{"segments": []}')
+
+        results = discover_all_transcript_paths(root=tmp_path)
+        assert results == [ (transcripts_dir / "a.json").resolve() ]
+
+    def test_discover_all_transcript_paths_exclusions(self, tmp_path):
+        """Exclude known output patterns and directories when no transcripts/ subtree."""
+        (tmp_path / "valid.json").write_text('{"segments": []}')
+        (tmp_path / "test_summary.json").write_text('{"summary": true}')
+        analysis_dir = tmp_path / "analysis"
+        analysis_dir.mkdir()
+        (analysis_dir / "ignored.json").write_text('{"segments": []}')
+
+        results = discover_all_transcript_paths(root=tmp_path)
+        assert results == [ (tmp_path / "valid.json").resolve() ]

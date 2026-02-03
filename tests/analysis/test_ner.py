@@ -4,6 +4,8 @@ Tests for named entity recognition (NER) module.
 This module tests NER logic and geocoding integration.
 """
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -162,3 +164,4 @@ class TestNERAnalysisModule:
         
         assert "entities" in result or "segments" in result
         assert len(result.get("entities", [])) == 0 or len(result.get("segments", [])) == 0
+

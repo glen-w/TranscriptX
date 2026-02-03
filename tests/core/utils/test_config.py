@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
+from transcriptx.core.utils import nlp_runtime
 from transcriptx.core.utils.config import (
     TranscriptXConfig,
     AnalysisConfig,
@@ -385,3 +386,56 @@ class TestSaveConfig:
         assert loaded_config.audio_preprocessing.denoise_mode == "auto"
         assert loaded_config.audio_preprocessing.denoise_strength == "high"
         assert loaded_config.audio_preprocessing.normalize_mode == "suggest"
+
+
+class TestDownloadPolicy:
+    """Tests for downloads-off-by-default behavior."""
+
+    def test_transcription_download_policy_default(self):
+        """Test transcription config defaults to requiring opt-in for downloads."""
+        config = TranscriptXConfig()
+        assert config.transcription.model_download_policy == "require_token"
+
+    def test_downloads_disabled_by_default(self, monkeypatch):
+        """Test downloads are disabled unless explicitly opted in."""
+        monkeypatch.delenv("TRANSCRIPTX_DISABLE_DOWNLOADS", raising=False)
+        assert nlp_runtime._downloads_disabled() is True
+
+    def test_downloads_enabled_with_opt_in(self, monkeypatch):
+        """Test downloads can be enabled explicitly via env var."""
+        monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "0")
+        assert nlp_runtime._downloads_disabled() is False
+
+    def test_downloads_disabled_blocks_spacy_download(self, monkeypatch):
+        """Ensure download path is skipped when downloads are disabled."""
+        monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "1")
+
+        class _FakeSpacy:
+            def load(self, _model):
+                raise OSError("missing model")
+
+            class cli:
+                @staticmethod
+                def download(_model):
+                    raise AssertionError("download should not be called")
+
+        monkeypatch.setattr(nlp_runtime, "_import_spacy", lambda: _FakeSpacy())
+        nlp_runtime._ensure_spacy_model("en_core_web_sm")
+
+    def test_downloads_enabled_allows_spacy_download(self, monkeypatch):
+        """Ensure download path is executed when explicitly enabled."""
+        monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "0")
+        called = {"download": False}
+
+        class _FakeSpacy:
+            def load(self, _model):
+                raise OSError("missing model")
+
+            class cli:
+                @staticmethod
+                def download(_model):
+                    called["download"] = True
+
+        monkeypatch.setattr(nlp_runtime, "_import_spacy", lambda: _FakeSpacy())
+        nlp_runtime._ensure_spacy_model("en_core_web_sm")
+        assert called["download"] is True

@@ -339,20 +339,7 @@ def generate_summary_stats(
     txt_file = os.path.join(stats_dir, f"{base_name}_comprehensive_summary.txt")
     write_text(txt_file, summary_text)
 
-    # Generate enhanced HTML summary
-    generate_enhanced_html_summary(transcript_dir, base_name, module_data, speaker_map)
-
-    # Remove any old HTML summary in stats/summary if it exists
-    old_html = os.path.join(
-        stats_dir, "summary", f"{base_name}_comprehensive_summary.html"
-    )
-    if os.path.exists(old_html):
-        try:
-            os.remove(old_html)
-        except Exception:
-            pass
-
-
+    # HTML summary output removed (superseded by browser GUI)
 def generate_enhanced_html_summary(
     transcript_dir: str, base_name: str, module_data: dict, speaker_map: dict
 ):

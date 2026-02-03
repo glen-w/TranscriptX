@@ -23,8 +23,18 @@ class EmotionDataExtractor(BaseDataExtractor):
     emotion data including dominant emotions, distribution, stability, and transitions.
     """
 
+    def __init__(self):
+        super().__init__("emotion")
+
+    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+        try:
+            speaker_id_int = int(speaker_id)
+        except Exception:
+            speaker_id_int = speaker_id  # type: ignore[assignment]
+        return self.extract_speaker_data(analysis_results, speaker_id=speaker_id_int)  # type: ignore[arg-type]
+
     def extract_speaker_data(
-        self, analysis_results: Dict[str, Any], speaker_id: int
+        self, analysis_results: Dict[str, Any], speaker_id: int | str
     ) -> Dict[str, Any]:
         """
         Extract speaker-level emotion data from analysis results.
@@ -95,7 +105,7 @@ class EmotionDataExtractor(BaseDataExtractor):
 
         return emotion_data
 
-    def validate_data(self, data: Dict[str, Any]) -> bool:
+    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
         """
         Validate extracted emotion data.
 
@@ -114,7 +124,7 @@ class EmotionDataExtractor(BaseDataExtractor):
             self.logger.error(f"Emotion data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
         """
         Transform emotion data for database storage.
 

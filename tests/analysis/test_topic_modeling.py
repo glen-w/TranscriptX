@@ -1,10 +1,13 @@
 """
 Tests for topic modeling analysis module.
 
-This module tests LDA/NMF topic modeling, topic selection, and coherence metrics.
+This module tests LDA/NMF topic modeling and topic selection coherence metrics.
 """
 
+from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
+
 import pytest
 import numpy as np
 
@@ -58,11 +61,12 @@ class TestTopicModelingAnalysis:
         assert "segments" in result or "summary" in result
     
     def test_topic_modeling_empty_segments(self, topic_module, sample_speaker_map):
-        """Test topic modeling with empty segments."""
+        """Test topic modeling with empty segments returns error contract (no exception)."""
         segments = []
-        
-        with pytest.raises((ValueError, IndexError)):
-            topic_module.analyze(segments, sample_speaker_map)
+        result = topic_module.analyze(segments, sample_speaker_map)
+        assert "error" in result
+        assert "topics" in result
+        assert result["topics"] == []
     
     @patch('transcriptx.core.analysis.topic_modeling.CountVectorizer')
     def test_topic_modeling_single_segment(self, mock_vectorizer, topic_module, sample_speaker_map):
@@ -127,3 +131,4 @@ class TestTopicModelingAnalysis:
         except Exception as e:
             # If it fails, it should be a meaningful error
             assert isinstance(e, (ValueError, UnicodeDecodeError, TypeError))
+

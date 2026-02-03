@@ -49,25 +49,27 @@ class TestCheckModuleHasOutputs:
         output_file = data_dir / "test_with_sentiment.json"
         output_file.write_text("{}")
         
-        result = check_module_has_outputs(module_dir, "sentiment")
+        result, warnings = check_module_has_outputs(module_dir, "sentiment")
         
         assert result is True
+        assert warnings == []
     
     def test_returns_false_when_outputs_missing(self, tmp_path):
         """Test that False is returned when outputs are missing."""
         module_dir = tmp_path / "sentiment"
         module_dir.mkdir()
         
-        result = check_module_has_outputs(module_dir, "sentiment")
+        result, warnings = check_module_has_outputs(module_dir, "sentiment")
         
-        assert result is False
+        assert result is True
+        assert warnings
     
     def test_handles_unknown_module(self, tmp_path):
         """Test that unknown modules are handled."""
         module_dir = tmp_path / "unknown_module"
         module_dir.mkdir()
         
-        result = check_module_has_outputs(module_dir, "unknown_module")
+        result, _warnings = check_module_has_outputs(module_dir, "unknown_module")
         
         # Should return False or handle gracefully
         assert isinstance(result, bool)
@@ -85,10 +87,11 @@ class TestValidateModuleOutputs:
         output_file = data_dir / "test_with_sentiment.json"
         output_file.write_text("{}")
         
-        result = validate_module_outputs(module_dir, "sentiment")
+        result = validate_module_outputs(module_dir, ["sentiment"])
         
         assert isinstance(result, dict)
-        assert "valid" in result or "has_outputs" in result
+        assert "sentiment" in result
+        assert isinstance(result["sentiment"], tuple)
     
     def test_detects_missing_required_files(self, tmp_path):
         """Test that missing required files are detected."""
@@ -96,11 +99,12 @@ class TestValidateModuleOutputs:
         module_dir.mkdir()
         # Don't create required files
         
-        result = validate_module_outputs(module_dir, "sentiment")
+        result = validate_module_outputs(module_dir, ["sentiment"])
         
         assert isinstance(result, dict)
-        # Should indicate missing files
-        assert result.get("valid", True) is False or result.get("has_outputs", True) is False
+        assert "sentiment" in result
+        # Should indicate missing files via warnings
+        assert result["sentiment"][1]
 
 
 class TestGetModulesWithWarnings:
@@ -158,7 +162,10 @@ class TestGetValidationSummary:
         result = get_validation_summary(basename_dir, expected_modules)
         
         assert isinstance(result, dict)
-        assert "modules" in result or "summary" in result or "valid" in result
+        assert "total_modules" in result
+        assert "modules_with_warnings" in result
+        assert "modules_without_warnings" in result
+        assert "validation_results" in result
 
 
 class TestModuleValidationRules:

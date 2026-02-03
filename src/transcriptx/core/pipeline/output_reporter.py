@@ -11,11 +11,31 @@ from typing import Any, Dict, List
 
 from rich.console import Console
 
+from transcriptx.core.pipeline.module_registry import get_module_info
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.output_validation import validate_module_outputs
+from transcriptx.core.utils.path_utils import get_transcript_dir
 
 logger = get_logger()
 console = Console()
+
+
+def _get_module_output_dir(basename_dir: Path, module_name: str) -> Path:
+    """
+    Resolve the actual output directory for a module.
+
+    - transcript_output writes to run root (transcripts/ subdir); use basename_dir.
+    - simplified_transcript writes to basename_dir/transcripts/; use that.
+    - Modules with output_namespace and output_version (e.g. voice_charts_core)
+      write to basename_dir / namespace / version.
+    - Others use basename_dir / module_name.
+    """
+    if module_name in ("transcript_output", "simplified_transcript"):
+        return basename_dir / "transcripts"
+    info = get_module_info(module_name)
+    if info and info.output_namespace and info.output_version:
+        return basename_dir / info.output_namespace / info.output_version
+    return basename_dir / module_name
 
 
 class OutputReporter:
@@ -31,7 +51,7 @@ class OutputReporter:
     def __init__(self):
         """Initialize the output reporter."""
         self.logger = get_logger()
-        self.console = Console()
+        self.console = console
 
     def generate_comprehensive_output_summary(
         self,
@@ -55,10 +75,12 @@ class OutputReporter:
         self.logger.debug(f"Generating output summary for: {transcript_path}")
 
         base_name = os.path.splitext(os.path.basename(transcript_path))[0]
-        from transcriptx.core.utils.path_utils import get_transcript_dir
-
         transcript_dir = get_transcript_dir(transcript_path)
         basename_dir = Path(transcript_dir)
+
+        modules_run_set = {m.lower() for m in modules_run}
+        def _ran(mod: str) -> bool:
+            return mod in modules_run or mod.lower() in modules_run_set
 
         summary = {
             "transcript_info": {
@@ -69,9 +91,7 @@ class OutputReporter:
             "analysis_summary": {
                 "modules_requested": selected_modules,
                 "modules_successfully_run": modules_run,
-                "modules_failed": [
-                    mod for mod in selected_modules if mod not in modules_run
-                ],
+                "modules_failed": [mod for mod in selected_modules if not _ran(mod)],
                 "total_modules_requested": len(selected_modules),
                 "total_modules_successful": len(modules_run),
                 "total_modules_failed": len(selected_modules) - len(modules_run),
@@ -96,11 +116,12 @@ class OutputReporter:
         validation_results = validate_module_outputs(basename_dir, selected_modules)
         summary["validation"] = validation_results
 
-        # Scan for all outputs
+        # Scan for all outputs (use _ran for consistent module-name comparison)
         for module_name in selected_modules:
-            module_dir = basename_dir / module_name
+            module_dir = _get_module_output_dir(basename_dir, module_name)
+            in_run = _ran(module_name)
 
-            if module_name in modules_run and module_dir.exists():
+            if in_run and module_dir.exists():
                 # Module was successfully run
                 module_outputs = {
                     "directory": str(module_dir),
@@ -161,22 +182,33 @@ class OutputReporter:
         self.console.print("=" * 80)
 
         # Basic info
-        transcript_info = summary["transcript_info"]
-        analysis_summary = summary["analysis_summary"]
+        transcript_info = summary.get("transcript_info", {})
+        analysis_summary = summary.get("analysis_summary", {})
 
-        self.console.print(f"\n Transcript: {transcript_info['base_name']}")
+        base_name = transcript_info.get("base_name", "Unknown")
+        output_directory = transcript_info.get("output_directory", "Unknown")
+        total_success = analysis_summary.get("total_modules_successful", 0)
+        total_requested = analysis_summary.get(
+            "total_modules_requested",
+            total_success + analysis_summary.get("total_modules_failed", 0),
+        )
+        errors = analysis_summary.get("errors", [])
+
+        self.console.print(f"\n Transcript: {base_name}")
         self.console.print(
-            f"📂 Output Directory: {transcript_info['output_directory']}"
+            f"📂 Output Directory: {output_directory}"
         )
         self.console.print(
-            f"🔄 Analysis Status: {analysis_summary['total_modules_successful']}/{analysis_summary['total_modules_requested']} modules completed"
+            f"🔄 Analysis Status: {total_success}/{total_requested} modules completed"
         )
 
-        if analysis_summary["errors"]:
-            self.console.print(f"⚠️  Errors: {len(analysis_summary['errors'])}")
+        if errors:
+            self.console.print(f"⚠️  Errors: {len(errors)}")
+
+        outputs = summary.get("outputs", {})
 
         # Successful modules
-        successful_modules = summary["outputs"]["successful_modules"]
+        successful_modules = outputs.get("successful_modules", {})
         if successful_modules:
             self.console.print(
                 f"\n✅ SUCCESSFULLY COMPLETED MODULES ({len(successful_modules)}):"
@@ -224,7 +256,7 @@ class OutputReporter:
                         )
 
         # Failed modules
-        failed_modules = summary["outputs"]["failed_modules"]
+        failed_modules = outputs.get("failed_modules", {})
         if failed_modules:
             self.console.print(f"\n❌ FAILED MODULES ({len(failed_modules)}):")
             self.console.print("-" * 30)
@@ -235,7 +267,7 @@ class OutputReporter:
                 self.console.print(f"   ❌ Error: {module_data['error']}")
 
         # Additional files
-        additional_files = summary["outputs"]["additional_files"]
+        additional_files = outputs.get("additional_files", [])
         if additional_files:
             self.console.print(f"\n📄 ADDITIONAL FILES ({len(additional_files)}):")
             self.console.print("-" * 30)

@@ -16,7 +16,7 @@ from .features import (
     compute_pitch_stats,
     compute_rms_db,
     compute_speech_rate_wps,
-    compute_voiced_ratio,
+    compute_vad_runs,
     extract_egemaps,
 )
 from .schema import resolve_segment_id
@@ -152,6 +152,7 @@ def load_or_compute_voice_features(
 
     cached_core_path = _existing_variant(cached_core)
     cached_eg_path = _existing_variant(cached_eg)
+    cached_vad_runs = cache_root / "voice_vad_runs.json"
     cache_hit = bool(cache_meta) and cached_core_path is not None
 
     if cache_hit and cached_core_path is not None:
@@ -162,6 +163,10 @@ def load_or_compute_voice_features(
         if cached_eg_path is not None:
             run_eg_path = run_eg_base.with_suffix(cached_eg_path.suffix)
             _copy_if_needed(cached_eg_path, run_eg_path)
+        run_vad_runs_path: Path | None = None
+        if cached_vad_runs.exists():
+            run_vad_runs_path = run_dir / f"{base_name}_voice_vad_runs.json"
+            _copy_if_needed(cached_vad_runs, run_vad_runs_path)
         # Also copy meta
         run_meta_path = run_dir / f"{base_name}_voice_features_cache_meta.json"
         _copy_if_needed(cache_meta_path, run_meta_path)
@@ -170,6 +175,9 @@ def load_or_compute_voice_features(
             "skipped_reason": None,
             "voice_feature_core_path": str(run_core_path),
             "voice_feature_egemaps_path": str(run_eg_path) if run_eg_path else None,
+            "voice_feature_vad_runs_path": str(run_vad_runs_path)
+            if run_vad_runs_path
+            else None,
             "cache_meta_path": str(run_meta_path),
             "meta": {
                 "audio_path": audio_path,
@@ -197,9 +205,10 @@ def load_or_compute_voice_features(
 
     pd = __import__("pandas")
     rows: list[dict[str, Any]] = []
+    vad_runs: dict[str, dict[str, list[float]]] = {}
     deep_available = False
     deep_errors: list[str] = []
-    for seg in segments_to_use:
+    for idx, seg in enumerate(segments_to_use):
         start = float(seg.get("start", 0.0) or 0.0)
         end = float(seg.get("end", start) or start)
         if end <= start:
@@ -221,7 +230,13 @@ def load_or_compute_voice_features(
             continue
 
         rms_db = compute_rms_db(wave)
-        voiced_ratio = compute_voiced_ratio(wave, sample_rate, vad_mode)
+        voiced_ratio, voiced_runs, silence_runs = compute_vad_runs(
+            wave, sample_rate, vad_mode
+        )
+        vad_runs[str(seg_id)] = {
+            "voiced_runs_s": voiced_runs,
+            "silence_runs_s": silence_runs,
+        }
         f0_mean, f0_std, f0_range = compute_pitch_stats(
             wave, sample_rate, max_seconds=max_pitch
         )
@@ -246,6 +261,7 @@ def load_or_compute_voice_features(
                 deep_payload = {}
 
         row: dict[str, Any] = {
+            "segment_idx": idx,
             "segment_id": seg_id,
             "speaker": speaker,
             "start_s": start,
@@ -274,6 +290,11 @@ def load_or_compute_voice_features(
         egemaps_path=cached_eg if egemaps_enabled else None,
         store_parquet_mode=store_parquet,
     )
+    if vad_runs:
+        cached_vad_runs.write_text(
+            json.dumps(vad_runs, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     # Save cache meta
     meta = {
@@ -308,12 +329,19 @@ def load_or_compute_voice_features(
         _copy_if_needed(cached_eg_path2, run_eg_path2)
     run_meta_path = run_dir / f"{base_name}_voice_features_cache_meta.json"
     _copy_if_needed(cache_meta_path, run_meta_path)
+    run_vad_runs_path: Path | None = None
+    if cached_vad_runs.exists():
+        run_vad_runs_path = run_dir / f"{base_name}_voice_vad_runs.json"
+        _copy_if_needed(cached_vad_runs, run_vad_runs_path)
 
     return {
         "status": "ok",
         "skipped_reason": None,
         "voice_feature_core_path": str(run_core_path2) if run_core_path2 else None,
         "voice_feature_egemaps_path": str(run_eg_path2) if run_eg_path2 else None,
+        "voice_feature_vad_runs_path": str(run_vad_runs_path)
+        if run_vad_runs_path
+        else None,
         "cache_meta_path": str(run_meta_path),
         "meta": {
             "audio_path": audio_path,

@@ -166,7 +166,7 @@ def render_charts() -> None:
                     selected.rel_path,
                 )
                 if path and path.exists():
-                    st.image(Image.open(path), use_container_width=True)
+                    st.image(Image.open(path), width='stretch')
             else:
                 html_payload = ArtifactService.load_html_artifact(session, run_id, selected)
                 if not html_payload:
@@ -267,7 +267,7 @@ def render_charts() -> None:
                                 session, run_id, chart
                             )
                             if thumb_path and Path(thumb_path).exists():
-                                st.image(Image.open(thumb_path), use_container_width=True)
+                                st.image(Image.open(thumb_path), width='stretch')
                             else:
                                 st.write("Thumbnail unavailable")
                         else:
@@ -317,7 +317,7 @@ def render_charts() -> None:
                     if chart.kind == "chart_static":
                         thumb_path = ArtifactService.generate_thumbnail(session, run_id, chart)
                         if thumb_path and Path(thumb_path).exists():
-                            st.image(Image.open(thumb_path), use_container_width=True)
+                            st.image(Image.open(thumb_path), width='stretch')
                         else:
                             st.write("Thumbnail unavailable")
                     else:

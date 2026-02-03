@@ -215,9 +215,6 @@ class NERAnalysis(AnalysisModule):
 
         # Save per-speaker data and charts
         for speaker, ents in entity_counts_per_speaker.items():
-            if not is_named_speaker(speaker):
-                continue
-
             # Speaker is already a display name from segments
             display_name = speaker
 
@@ -228,6 +225,7 @@ class NERAnalysis(AnalysisModule):
                     f"ner-entities-{display_name}",
                     format_type="csv",
                     subdirectory="speakers",
+                    speaker=display_name,
                 )
 
             # Create entity types chart

@@ -137,9 +137,9 @@ def fixture_moved_outputs(tmp_path):
     original_output.mkdir(parents=True, exist_ok=True)
     
     # Create some files in original output
-    (original_output / "sentiment" / "data" / "global_sentiment.json").write_text(
-        json.dumps({"sentiment": "positive"}), parents=True
-    )
+    sentiment_file = original_output / "sentiment" / "data" / "global_sentiment.json"
+    sentiment_file.parent.mkdir(parents=True, exist_ok=True)
+    sentiment_file.write_text(json.dumps({"sentiment": "positive"}))
     
     # Move the output directory
     moved_output = tmp_path / "archived" / "meeting_2024_01_15"

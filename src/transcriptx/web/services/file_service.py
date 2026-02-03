@@ -197,8 +197,13 @@ class FileService:
             return sessions
 
         # Load index to get transcript_key for slug-based folders
+        from datetime import datetime
+
         from transcriptx.core.utils.slug_manager import get_transcript_key_for_slug
-        from transcriptx.web.module_registry import get_analysis_modules as _get_analysis_modules
+        from transcriptx.web.module_registry import (
+            get_analysis_modules as _get_analysis_modules,
+            get_total_module_count,
+        )
 
         for transcript_dir in outputs_dir.iterdir():
             if not transcript_dir.is_dir() or transcript_dir.name.startswith("."):
@@ -210,17 +215,24 @@ class FileService:
                 # Skip if not in index (shouldn't happen for valid slug-based folders)
                 continue
 
+            total_modules = get_total_module_count()
             for run_dir in transcript_dir.iterdir():
                 if not run_dir.is_dir() or run_dir.name.startswith("."):
                     continue
                 try:
                     session_id = f"{transcript_dir.name}/{run_dir.name}"
                     modules = _get_analysis_modules(session_id)
-                    
-                    # Lazy import to avoid circular dependency
-                    from transcriptx.web.services.statistics_service import StatisticsService
-                    stats = StatisticsService.get_session_statistics(session_id)
-                    
+                    module_count = len(modules)
+                    analysis_completion = (
+                        int((module_count / total_modules) * 100)
+                        if total_modules > 0
+                        else 0
+                    )
+                    try:
+                        mtime = run_dir.stat().st_mtime
+                        last_updated = datetime.fromtimestamp(mtime).isoformat()
+                    except Exception:
+                        last_updated = None
                     session_info = {
                         "name": session_id,
                         "slug": transcript_dir.name,  # Human-readable slug
@@ -228,22 +240,18 @@ class FileService:
                         "run_id": run_dir.name,
                         "path": str(run_dir),
                         "modules": modules,
-                        "module_count": len(modules),
-                        "duration_seconds": stats["duration_seconds"],
-                        "duration_minutes": (
-                            round(stats["duration_seconds"] / 60, 1)
-                            if stats["duration_seconds"] > 0
-                            else 0
-                        ),
-                        "speaker_count": stats["speaker_count"],
-                        "word_count": stats["word_count"],
-                        "segment_count": stats["segment_count"],
-                        "last_updated": stats["last_updated"],
-                        "analysis_completion": stats["analysis_completion"],
+                        "module_count": module_count,
+                        "duration_seconds": 0,
+                        "duration_minutes": 0,
+                        "speaker_count": 0,
+                        "word_count": 0,
+                        "segment_count": 0,
+                        "last_updated": last_updated,
+                        "analysis_completion": analysis_completion,
                     }
                     sessions.append(session_info)
                 except Exception as e:
                     logger.warning(f"Failed to load session {run_dir.name}: {e}")
                     continue
 
-        return sorted(sessions, key=lambda x: x.get("last_updated", ""), reverse=True)
+        return sorted(sessions, key=lambda x: x.get("last_updated") or "", reverse=True)

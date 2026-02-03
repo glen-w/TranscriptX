@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "run_id": "run-1",
+  "run_metadata": {
+    "transcript_key": "transcript-key",
+    "audio_rel_path": null,
+    "modules_enabled": [
+      "stats"
+    ],
+    "version_hash": {
+      "stats": "<hash>"
+    },
+    "config_effective_path": ".transcriptx/run_config_effective.json",
+    "config_hash": "<hash>",
+    "config_schema_version": 1,
+    "config_source": "project"
+  },
+  "artifacts": [
+    {
+      "id": "<id>",
+      "kind": "config",
+      "module": ".transcriptx",
+      "rel_path": ".transcriptx/run_config_effective.json",
+      "mime": "application/json",
+      "tags": [
+        ".transcriptx"
+      ],
+      "title": "Run Config Effective"
+    },
+    {
+      "id": "<id>",
+      "kind": "chart_static",
+      "module": "stats",
+      "scope": "global",
+      "rel_path": "stats/charts/global/static/demo.png",
+      "mime": "image/png",
+      "tags": [
+        "stats"
+      ],
+      "title": "Demo",
+      "produced_by": "stats",
+      "preview": {
+        "thumbnail": null
+      }
+    },
+    {
+      "id": "<id>",
+      "kind": "data_csv",
+      "module": "stats",
+      "scope": "global",
+      "rel_path": "stats/data/global/demo.csv",
+      "mime": "text/csv",
+      "tags": [
+        "stats"
+      ],
+      "title": "Demo",
+      "produced_by": "stats"
+    },
+    {
+      "id": "<id>",
+      "kind": "data_json",
+      "module": "stats",
+      "scope": "global",
+      "rel_path": "stats/data/global/demo.json",
+      "mime": "application/json",
+      "tags": [
+        "stats"
+      ],
+      "title": "Demo",
+      "produced_by": "stats"
+    }
+  ]
+}

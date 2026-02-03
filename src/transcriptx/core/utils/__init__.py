@@ -51,10 +51,10 @@ def get_paths():
 
 
 def get_simplify_transcript():
-    """Lazy import for simplify_transcript module."""
-    from . import simplify_transcript
+    """Lazy import for simplified_transcript analysis module (TranscriptSimplifier)."""
+    from transcriptx.core.analysis import simplified_transcript
 
-    return simplify_transcript
+    return simplified_transcript
 
 
 def get_transcript_output():

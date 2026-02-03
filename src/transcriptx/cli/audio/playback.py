@@ -131,8 +131,6 @@ def play_audio_file(audio_path: Path) -> Optional[subprocess.Popen]:
                         stderr=subprocess.PIPE,
                         start_new_session=True,
                     )
-                    # Use debug level to avoid interfering with prompt_toolkit UI
-                    logger.debug(f"Started playback of {audio_path.name} using ffplay")
                     return process
             except FileNotFoundError:
                 # Fall through to afplay on macOS
@@ -151,8 +149,6 @@ def play_audio_file(audio_path: Path) -> Optional[subprocess.Popen]:
                     stderr=subprocess.PIPE,
                     start_new_session=True,
                 )
-                # Use debug level to avoid interfering with prompt_toolkit UI
-                logger.debug(f"Started playback of {audio_path.name} using afplay")
                 return process
             except FileNotFoundError:
                 console.print(
@@ -246,10 +242,6 @@ def play_audio_file_from_position(
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
         )
-        # Use debug level to avoid interfering with prompt_toolkit UI
-        logger.debug(
-            f"Started playback of {audio_path.name} from position {start_position}s using ffplay"
-        )
         return process
 
     except Exception as e:
@@ -297,8 +289,6 @@ def stop_audio_playback(process: Optional[subprocess.Popen]) -> bool:
                 else:
                     process.kill()
                 process.wait()
-            # Use debug level to avoid interfering with prompt_toolkit UI
-            logger.debug("Stopped audio playback")
             return True
         else:
             # Process already finished
@@ -888,23 +878,16 @@ class SegmentPlayer:
                 return None
 
             self._temp_clip = temp_path
-            logger.debug(
-                f"Created temp clip: {temp_path} ({temp_path.stat().st_size} bytes)"
-            )
             proc = play_audio_file(temp_path)
-            if proc:
-                logger.debug(f"Started playback of temp clip using {sys.platform}")
             return proc
         except subprocess.TimeoutExpired:
-            logger.debug("ffmpeg temp-clip creation timed out")
             try:
                 if "temp_path" in locals():
                     temp_path.unlink()
             except OSError:
                 pass
             return None
-        except Exception as exc:
-            logger.debug(f"temp clip playback failed: {exc}")
+        except Exception:
             return None
 
     def _cleanup_temp_clip(self) -> None:

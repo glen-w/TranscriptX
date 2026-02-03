@@ -9,6 +9,12 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 
+def get_session():
+    from transcriptx.database import get_session as db_get_session
+
+    return db_get_session()
+
+
 class PerformanceEstimator:
     """
     Estimates execution time based on historical performance logs.
@@ -35,7 +41,6 @@ class PerformanceEstimator:
         start_date: datetime,
         attributes_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        from transcriptx.database import get_session
         from transcriptx.database.repositories import PerformanceSpanRepository
 
         session = get_session()

@@ -90,7 +90,7 @@ def _render_results_section(
             if st.button(
                 "Jump to segment",
                 key=f"jump_{result.session_slug}_{result.run_id}_{result.segment_index}_{title}",
-                use_container_width=False,
+                width='content',
             ):
                 from transcriptx.web.app import navigate_to_segment
 

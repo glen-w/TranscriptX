@@ -25,6 +25,7 @@ from transcriptx.cli.processing_state import (
     save_processing_state,
 )
 from transcriptx.core import get_default_modules, run_analysis_pipeline
+from transcriptx.core.pipeline.target_resolver import TranscriptRef
 from transcriptx.core.utils.file_rename import rename_transcript_after_speaker_mapping
 from transcriptx.core.utils.logger import get_logger, log_error
 from transcriptx.core.utils.path_utils import resolve_file_path
@@ -235,13 +236,14 @@ def run_batch_speaker_identification(transcript_paths: List[str]) -> None:
     print(f"[red]❌ Failed:[/red] {len(failed)}")
     print("=" * 60)
 
-    # Offer batch analysis pipeline
-    if successful:
+    # Offer batch analysis pipeline on all transcripts that are ready (successful + skipped)
+    ready_for_analysis = successful + skipped
+    if ready_for_analysis:
         print("\n[bold cyan]🔍 Analysis Pipeline[/bold cyan]")
         if questionary.confirm(
-            f"Would you like to run the analysis pipeline on {len(successful)} transcript(s)?"
+            f"Would you like to run the analysis pipeline on {len(ready_for_analysis)} transcript(s)?"
         ).ask():
-            run_batch_analysis_pipeline(successful)
+            run_batch_analysis_pipeline(ready_for_analysis)
 
 
 def run_batch_analysis_pipeline(
@@ -249,6 +251,8 @@ def run_batch_analysis_pipeline(
     analysis_mode: str | None = None,
     selected_modules: List[str] | None = None,
     skip_speaker_gate: bool = False,
+    speaker_options: "SpeakerRunOptions | None" = None,
+    persist: bool = False,
 ) -> None:
     """
     Run analysis pipeline sequentially for all transcripts from batch processing.
@@ -264,6 +268,8 @@ def run_batch_analysis_pipeline(
         selected_modules: Optional pre-selected analysis modules.
                          If None, user will be prompted to select.
         skip_speaker_gate: Skip speaker identification gate if already handled upstream.
+        speaker_options: Run-level speaker options for anonymisation and inclusion.
+        persist: Persist run metadata and artifacts to DB.
     """
     if not transcript_paths:
         print("\n[yellow]⚠️ No transcripts to process for analysis.[/yellow]")
@@ -285,25 +291,13 @@ def run_batch_analysis_pipeline(
 
     # Get all available modules (or allow selection) if not provided
     if selected_modules is None:
+        from transcriptx.cli.analysis_utils import select_analysis_modules
+
         print("\n[bold]Select analysis modules:[/bold]")
-        module_choice = questionary.select(
-            "Run all analysis modules or select specific ones?",
-            choices=[
-                "🚀 All modules (recommended)",
-                "✋ Select specific modules",
-            ],
-            default="🚀 All modules (recommended)",
-        ).ask()
-
-        if module_choice == "✋ Select specific modules":
-            from transcriptx.cli.analysis_utils import select_analysis_modules
-
-            selected_modules = select_analysis_modules()
-            if not selected_modules:
-                print("\n[cyan]Analysis cancelled. Returning to main menu.[/cyan]")
-                return
-        else:
-            selected_modules = get_default_modules()
+        selected_modules = select_analysis_modules(transcript_paths)
+        if not selected_modules:
+            print("\n[cyan]Analysis cancelled. Returning to main menu.[/cyan]")
+            return
 
     # Resolve all paths upfront to handle renamed files and filter out invalid paths
     resolved_transcript_paths = []
@@ -333,6 +327,9 @@ def run_batch_analysis_pipeline(
         print("\n[yellow]⚠️ No valid transcripts to process for analysis.[/yellow]")
         return
 
+    from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+
+    speaker_options = speaker_options or SpeakerRunOptions()
     decision = SpeakerGateDecision.PROCEED
     needs_identification: List[str] = []
     already_identified: List[str] = []
@@ -526,9 +523,11 @@ def run_batch_analysis_pipeline(
             # State will be updated automatically by the pipeline
             skip_speaker_mapping = skip_speaker_mapping_by_path.get(resolved_path, True)
             run_analysis_pipeline(
-                target=resolved_path,
+                target=TranscriptRef(path=resolved_path),
                 selected_modules=selected_modules,
                 skip_speaker_mapping=skip_speaker_mapping,
+                speaker_options=speaker_options,
+                persist=persist,
                 rerun_mode=rerun_mode,
             )
 

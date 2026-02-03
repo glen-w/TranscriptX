@@ -62,6 +62,12 @@ _span_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
 _STACKTRACE_LIMIT = 4000
 
 
+def get_session():
+    from transcriptx.database import get_session as db_get_session
+
+    return db_get_session()
+
+
 class PerformanceLogger:
     """
     Singleton logger for performance spans.
@@ -84,7 +90,6 @@ class PerformanceLogger:
         transcript_file_id: Optional[int] = None,
     ) -> None:
         with self._write_lock:
-            from transcriptx.database import get_session
             from transcriptx.database.repositories import PerformanceSpanRepository
 
             session = get_session()
@@ -113,7 +118,6 @@ class PerformanceLogger:
         events_patch: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         with self._write_lock:
-            from transcriptx.database import get_session
             from transcriptx.database.repositories import PerformanceSpanRepository
 
             session = get_session()
@@ -137,7 +141,6 @@ class PerformanceLogger:
         events_patch: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         with self._write_lock:
-            from transcriptx.database import get_session
             from transcriptx.database.repositories import PerformanceSpanRepository
 
             session = get_session()
@@ -167,7 +170,6 @@ class PerformanceLogger:
             attributes_patch: Dictionary of attributes to merge into existing attributes
         """
         with self._write_lock:
-            from transcriptx.database import get_session
             from transcriptx.database.repositories import PerformanceSpanRepository
 
             session = get_session()

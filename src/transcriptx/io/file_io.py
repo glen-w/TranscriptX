@@ -204,8 +204,12 @@ def write_transcript_files(
         # Get speaker name - segments should already have display name in 'speaker' field
         speaker_field = seg.get("speaker", "")
 
+        speaker_key = str(speaker_field)
+        # Legacy fallback: use speaker_map if provided
+        if speaker_map and speaker_key in speaker_map:
+            name = speaker_map[speaker_key]
         # Use speaker field directly if it looks like a display name
-        if speaker_field and (
+        elif speaker_field and (
             not use_speaker_extraction or is_named_speaker(str(speaker_field))
         ):
             name = str(speaker_field)
@@ -218,10 +222,6 @@ def write_transcript_files(
                 )
             else:
                 name = str(speaker_field) if speaker_field else "Unknown"
-        elif speaker_map:
-            # Legacy fallback: use speaker_map if provided
-            speaker_key = str(speaker_field)
-            name = speaker_map.get(speaker_key, speaker_key)
         else:
             name = str(speaker_field) if speaker_field else "Unknown"
 

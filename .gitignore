@@ -37,6 +37,7 @@ nltk_data/
 test_timeouts.log
 importtime_baseline.txt
 importtime_results.txt
+*MagicMock*.json
 
 # Ad hoc/local docs and scratch files
 /README backup.md
@@ -50,6 +51,7 @@ scripts/archived/docs_site/
 
 # Local archives (not source-controlled)
 scripts/archive/
+transcriptx*backup/
 
 # Archived docs (not source-controlled)
 docs/archived/

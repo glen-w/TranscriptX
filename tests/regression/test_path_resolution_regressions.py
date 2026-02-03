@@ -99,12 +99,20 @@ class TestAmbiguousDuplicatesResolution:
     """Tests for ambiguous duplicate resolution."""
     
     def test_ambiguous_duplicates_same_basename_different_dirs(
-        self, fixture_ambiguous_duplicates
+        self, fixture_ambiguous_duplicates, monkeypatch
     ):
         """When same basename exists in multiple directories, verify which one is chosen."""
         fixture = fixture_ambiguous_duplicates
         base_name = fixture["base_name"]
         
+        from pathlib import Path
+        from transcriptx.core.utils import paths
+
+        transcripts_root = Path(fixture["directories"][0]).parent
+        outputs_root = Path(fixture["directories"][2]).parent
+        monkeypatch.setattr(paths, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+        monkeypatch.setattr(paths, "OUTPUTS_DIR", str(outputs_root))
+
         resolver = PathResolver()
         
         # Try to resolve - should pick one based on strategy order
@@ -126,8 +134,11 @@ class TestAmbiguousDuplicatesResolution:
         base_name = fixture["base_name"]
         
         # Monkeypatch directories
+        from pathlib import Path
         from transcriptx.core.utils import paths
-        monkeypatch.setattr(paths, "DIARISED_TRANSCRIPTS_DIR", str(fixture["directories"][0].parent))
+
+        transcripts_root = Path(fixture["directories"][0]).parent
+        monkeypatch.setattr(paths, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
         
         resolver = PathResolver()
         trace = resolver.resolve_with_trace(base_name, "transcript", validate_state=False)
@@ -150,8 +161,11 @@ class TestAmbiguousDuplicatesResolution:
         base_name = fixture["base_name"]
         
         # Monkeypatch directories
+        from pathlib import Path
         from transcriptx.core.utils import paths
-        monkeypatch.setattr(paths, "DIARISED_TRANSCRIPTS_DIR", str(fixture["directories"][0].parent))
+
+        transcripts_root = Path(fixture["directories"][0]).parent
+        monkeypatch.setattr(paths, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
         
         resolver = PathResolver()
         trace = resolver.resolve_with_trace(base_name, "transcript", validate_state=False)
@@ -189,12 +203,20 @@ class TestResolutionTraceSnapshot:
         assert loaded["strategies_tried"] == trace["strategies_tried"]
     
     def test_resolution_trace_multiple_candidates(
-        self, fixture_ambiguous_duplicates
+        self, fixture_ambiguous_duplicates, monkeypatch
     ):
         """Trace when multiple candidates exist."""
         fixture = fixture_ambiguous_duplicates
         base_name = fixture["base_name"]
         
+        from pathlib import Path
+        from transcriptx.core.utils import paths
+
+        transcripts_root = Path(fixture["directories"][0]).parent
+        outputs_root = Path(fixture["directories"][2]).parent
+        monkeypatch.setattr(paths, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+        monkeypatch.setattr(paths, "OUTPUTS_DIR", str(outputs_root))
+
         resolver = PathResolver()
         trace = resolver.resolve_with_trace(base_name, "transcript")
         

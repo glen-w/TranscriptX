@@ -16,9 +16,6 @@ from transcriptx.core.analysis.ner import extract_named_entities
 from transcriptx.core.analysis.sentiment import score_sentiment
 from transcriptx.core.utils.nlp_utils import preprocess_for_sentiment
 from transcriptx.utils.text_utils import is_named_speaker
-from transcriptx.core.utils.output_standards import (
-    create_readme_file,
-)
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.core.utils.viz_ids import (
     VIZ_ENTITY_SENTIMENT_HEATMAP,
@@ -367,16 +364,19 @@ class EntitySentimentAnalysis(AnalysisModule):
 
         # Save per-speaker data
         for speaker, data in speaker_entity_data.items():
-            if not is_named_speaker(speaker):
-                continue
             output_service.save_data(
-                data, "entity_sentiment", format_type="csv", subdirectory="speakers"
+                data,
+                "entity_sentiment",
+                format_type="csv",
+                subdirectory="speakers",
+                speaker=speaker,
             )
             output_service.save_data(
                 {"entities": data},
                 "entity_sentiment",
                 format_type="json",
                 subdirectory="speakers",
+                speaker=speaker,
             )
 
         # Generate visualizations using existing functions
@@ -394,15 +394,6 @@ class EntitySentimentAnalysis(AnalysisModule):
         # Create comprehensive summary
         self._create_analysis_summary(
             results, output_structure, base_name, output_service
-        )
-
-        # Create README file
-        create_readme_file(
-            output_structure,
-            "entity_sentiment",
-            base_name,
-            "Analysis of sentiment framing for named entities (PERSON, ORG, GPE, LOC). "
-            "Provides sentiment scores, mention counts, and example segments for each entity.",
         )
 
     def _create_sentiment_heatmap(

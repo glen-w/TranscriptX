@@ -56,18 +56,25 @@ class ArtifactValidationService:
             report.p0_errors.append(f"Transcript not found: {transcript_identifier}")
             return report
 
-        artifact_root = Path(get_transcript_dir(transcript.file_path))
+        default_root = Path(get_transcript_dir(transcript.file_path))
         expected_records = self._load_artifact_records(transcript.id, pipeline_run_id)
         report.checked_records = len(expected_records)
 
-        expected_paths = {record.relative_path for record in expected_records}
-        file_paths = self._collect_files(artifact_root)
-        report.checked_files = len(file_paths)
+        expected_by_root: dict[Path, Set[str]] = {}
+        for record in expected_records:
+            record_root = Path(record.artifact_root) if record.artifact_root else default_root
+            expected_by_root.setdefault(record_root, set()).add(record.relative_path)
+
+        file_paths_by_root: dict[Path, List[str]] = {}
+        for root in expected_by_root.keys() or {default_root}:
+            file_paths_by_root[root] = self._collect_files(root)
+        report.checked_files = sum(len(paths) for paths in file_paths_by_root.values())
 
         # Missing files and hash mismatch
         for record in expected_records:
             file_path = (
-                Path(record.artifact_root or artifact_root) / record.relative_path
+                (Path(record.artifact_root) if record.artifact_root else default_root)
+                / record.relative_path
             )
             if not file_path.exists():
                 report.p0_errors.append(f"Missing file: {record.relative_path}")
@@ -100,27 +107,32 @@ class ArtifactValidationService:
             seen_keys.add(key)
 
         # Orphan files (no DB record)
-        orphan_files = [path for path in file_paths if path not in expected_paths]
-        for orphan in orphan_files:
-            report.p1_errors.append(f"Orphan file: {orphan}")
+        for root, file_paths in file_paths_by_root.items():
+            expected_paths = expected_by_root.get(root, set())
+            orphan_files = [path for path in file_paths if path not in expected_paths]
+            for orphan in orphan_files:
+                report.p1_errors.append(f"Orphan file: {orphan}")
 
         # Warnings: naming + unknown types
         base_name = get_canonical_base_name(transcript.file_path)
-        for relative_path in file_paths:
-            if base_name not in Path(relative_path).name:
-                report.warnings.append(f"Suspicious filename: {relative_path}")
-            suffix = Path(relative_path).suffix.lower().lstrip(".")
-            if suffix and suffix not in {
-                "json",
-                "csv",
-                "png",
-                "jpg",
-                "jpeg",
-                "svg",
-                "html",
-                "txt",
-            }:
-                report.warnings.append(f"Unrecognized artifact type: {relative_path}")
+        for file_paths in file_paths_by_root.values():
+            for relative_path in file_paths:
+                if base_name not in Path(relative_path).name:
+                    report.warnings.append(f"Suspicious filename: {relative_path}")
+                suffix = Path(relative_path).suffix.lower().lstrip(".")
+                if suffix and suffix not in {
+                    "json",
+                    "csv",
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "svg",
+                    "html",
+                    "txt",
+                }:
+                    report.warnings.append(
+                        f"Unrecognized artifact type: {relative_path}"
+                    )
 
         logger.info(
             f"Artifact validation: {report.checked_records} records, {report.checked_files} files"

@@ -1,3 +1,12 @@
+"""Test package marker for reliable intra-test imports."""
+"""
+Test package marker.
+
+This file prevents Python from treating `tests` as a namespace package across multiple
+checkouts on `sys.path`, which can cause pytest to import and execute the wrong test
+modules when another `tests/` directory exists elsewhere on the machine.
+"""
+
 """
 Test suite for TranscriptX.
 

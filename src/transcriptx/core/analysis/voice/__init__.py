@@ -7,12 +7,18 @@ This package provides:
 - Aggregations for mismatch, tension curve, and speaker drift
 """
 
-from .schema import VoiceFeatureRow, VoiceFeatureTable, resolve_segment_id
+from .schema import (
+    EGEMAPS_CANONICAL_FIELDS,
+    VoiceFeatureRow,
+    VoiceFeatureTable,
+    resolve_segment_id,
+)
 from .extract import load_or_compute_voice_features
 
 __all__ = [
     "VoiceFeatureRow",
     "VoiceFeatureTable",
+    "EGEMAPS_CANONICAL_FIELDS",
     "resolve_segment_id",
     "load_or_compute_voice_features",
 ]

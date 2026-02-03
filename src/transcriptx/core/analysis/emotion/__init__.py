@@ -30,11 +30,23 @@ from transcriptx.core.viz.specs import BarCategoricalSpec
 
 logger = get_logger()
 
+_DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
+
+
+def _downloads_disabled() -> bool:
+    value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
+    if value == "":
+        # Default to downloads disabled unless explicitly opted in.
+        return True
+    return value in {"1", "true", "yes", "on"}
+
 
 # Initialize NRCLex with automatic resource download
 def _ensure_textblob_corpora():
     """Ensure TextBlob corpora are downloaded before initializing NRCLex."""
     try:
+        if _downloads_disabled():
+            raise RuntimeError("Downloads disabled (TRANSCRIPTX_DISABLE_DOWNLOADS)")
         from textblob.download_corpora import download_all
 
         try:
@@ -92,6 +104,9 @@ def _load_nrclex():
 
 def _load_emotion_model(model_name: str | None = None):
     try:
+        if _downloads_disabled():
+            log_warning("EMOTION", "Downloads disabled; skipping contextual emotion model load")
+            return None
         from transcriptx.core.utils.lazy_imports import get_transformers
 
         if model_name is None:
@@ -328,9 +343,6 @@ class EmotionAnalysis(AnalysisModule):
 
         # Save per-speaker data and charts
         for speaker, scores in nrc_scores.items():
-            if not is_named_speaker(speaker):
-                continue
-
             speaker_safe = speaker.replace(" ", "_")
 
             # Save speaker data
@@ -339,6 +351,7 @@ class EmotionAnalysis(AnalysisModule):
                 f"{speaker_safe}_nrc_emotion",
                 format_type="json",
                 subdirectory="speakers",
+                speaker=speaker,
             )
 
             # Save CSV
@@ -348,6 +361,7 @@ class EmotionAnalysis(AnalysisModule):
                 f"{speaker_safe}_nrc_emotion",
                 format_type="csv",
                 subdirectory="speakers",
+                speaker=speaker,
             )
 
             if scores:

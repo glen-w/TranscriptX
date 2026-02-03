@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-serve docs-clean help
+.PHONY: docs-gen docs docs-serve docs-clean help test-smoke test-fast test-all test-contracts test-integration-core test-optional
 
 help:
 	@echo "TranscriptX Makefile"
@@ -11,6 +11,12 @@ help:
 	@echo "  docs         Generate and build documentation"
 	@echo "  docs-serve   Generate, build, and serve documentation with live reload"
 	@echo "  docs-clean   Clean documentation build and generated files"
+	@echo ""
+	@echo "Testing targets:"
+	@echo "  test-smoke       Run CI smoke gate"
+	@echo "  test-fast        Run fast core (Gate B)"
+	@echo "  test-contracts   Run offline contract tests"
+	@echo "  test-all         Run full test suite (may be slow)"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make docs-serve    # Start local documentation server"
@@ -39,3 +45,26 @@ docs-clean:
 	@rm -rf docs/_build docs/generated docs/api/generated
 	@$(MAKE) -C docs clean
 	@echo "Documentation cleaned!"
+
+test-smoke:
+	@echo "Running CI smoke gate..."
+	@pytest -m smoke
+
+test-fast:
+	@echo "Running fast core tests (Gate B)..."
+	@pytest -m "not integration and not slow and not requires_models and not requires_docker and not requires_ffmpeg and not requires_api and not quarantined"
+
+test-contracts:
+	@echo "Running contract tests..."
+	@pytest tests/contracts -m "not quarantined"
+
+test-integration-core:
+	@echo "Running integration core tests..."
+	@pytest -m integration_core
+
+test-optional:
+	@echo "Running optional capability tests..."
+	@pytest -m "slow or requires_models or requires_docker or requires_ffmpeg"
+
+test-all:
+	@pytest

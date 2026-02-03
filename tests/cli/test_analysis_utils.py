@@ -20,51 +20,58 @@ from transcriptx.cli.analysis_utils import (
 class TestSelectAnalysisModules:
     """Tests for select_analysis_modules function."""
     
-    @patch('transcriptx.cli.analysis_utils.questionary.select')
+    @patch('transcriptx.cli.analysis_utils.questionary.checkbox')
     @patch('transcriptx.cli.analysis_utils.get_available_modules')
-    def test_select_all_modules(self, mock_get_modules, mock_select):
+    @patch('transcriptx.cli.analysis_utils.get_default_modules')
+    def test_select_all_modules(self, mock_get_default, mock_get_modules, mock_checkbox):
         """Test selecting all modules."""
         mock_get_modules.return_value = ["sentiment", "stats", "ner"]
-        mock_select.return_value.ask.return_value = "all"
+        mock_get_default.return_value = ["sentiment", "stats", "ner"]
+        mock_checkbox.return_value.ask.return_value = ["all"]
         
         result = select_analysis_modules()
         
         assert result == ["sentiment", "stats", "ner"]
-        mock_select.assert_called_once()
+        mock_checkbox.assert_called_once()
     
-    @patch('transcriptx.cli.analysis_utils.questionary.select')
+    @patch('transcriptx.cli.analysis_utils.questionary.checkbox')
     @patch('transcriptx.cli.analysis_utils.get_available_modules')
     @patch('transcriptx.cli.analysis_utils.get_description')
-    def test_select_single_module(self, mock_get_desc, mock_get_modules, mock_select):
+    def test_select_single_module(self, mock_get_desc, mock_get_modules, mock_checkbox):
         """Test selecting a single module."""
         mock_get_modules.return_value = ["sentiment", "stats"]
         mock_get_desc.return_value = "Sentiment Analysis"
-        mock_select.return_value.ask.return_value = "1. Sentiment Analysis"
+        mock_checkbox.return_value.ask.return_value = ["sentiment"]
         
         result = select_analysis_modules()
         
         assert result == ["sentiment"]
-        mock_select.assert_called_once()
+        mock_checkbox.assert_called_once()
     
-    @patch('transcriptx.cli.analysis_utils.questionary.select')
+    @patch('transcriptx.cli.analysis_utils.questionary.checkbox')
     @patch('transcriptx.cli.analysis_utils.get_available_modules')
-    def test_select_modules_cancel(self, mock_get_modules, mock_select):
+    def test_select_modules_cancel(self, mock_get_modules, mock_checkbox):
         """Test canceling module selection."""
         mock_get_modules.return_value = ["sentiment"]
-        mock_select.return_value.ask.side_effect = KeyboardInterrupt()
+        mock_checkbox.return_value.ask.return_value = None
         
         result = select_analysis_modules()
         
         assert result == []
     
-    @patch('transcriptx.cli.analysis_utils.questionary.select')
+    @patch('transcriptx.cli.analysis_utils.questionary.checkbox')
     @patch('transcriptx.cli.analysis_utils.get_available_modules')
-    def test_select_modules_invalid_selection(self, mock_get_modules, mock_select):
+    @patch('transcriptx.cli.analysis_utils.edit_config_interactive')
+    @patch('transcriptx.cli.analysis_utils.get_default_modules')
+    def test_select_modules_invalid_selection(
+        self, mock_get_default, mock_edit_config, mock_get_modules, mock_checkbox
+    ):
         """Test handling invalid selection."""
         mock_get_modules.return_value = ["sentiment"]
-        mock_select.return_value.ask.side_effect = [
-            "invalid",  # Invalid selection
-            "all"       # Then select all
+        mock_get_default.return_value = ["sentiment"]
+        mock_checkbox.return_value.ask.side_effect = [
+            ["settings"],
+            ["all"],
         ]
         
         with patch('transcriptx.cli.analysis_utils.print'):
@@ -108,7 +115,9 @@ class TestApplyAnalysisModeSettings:
         mock_config.analysis.quick_analysis_settings = {
             "semantic_method": "simple",
             "max_segments_for_semantic": 100,
+            "max_semantic_comparisons": 1000,
             "ner_use_light_model": True,
+            "ner_max_segments": 200,
             "skip_geocoding": True,
             "semantic_profile": "balanced"
         }
@@ -129,7 +138,9 @@ class TestApplyAnalysisModeSettings:
         mock_config.analysis.full_analysis_settings = {
             "semantic_method": "advanced",
             "max_segments_for_semantic": 500,
+            "max_semantic_comparisons": 5000,
             "ner_use_light_model": False,
+            "ner_max_segments": 500,
             "skip_geocoding": False,
             "semantic_profile": "balanced"
         }

@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter, defaultdict
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -43,6 +44,17 @@ from transcriptx.core.viz.charts import is_plotly_available
 plt = lazy_pyplot()
 
 _ACTIVE_OUTPUT_SERVICE = None
+
+
+@contextmanager
+def use_output_service(service):
+    global _ACTIVE_OUTPUT_SERVICE
+    previous = _ACTIVE_OUTPUT_SERVICE
+    _ACTIVE_OUTPUT_SERVICE = service
+    try:
+        yield
+    finally:
+        _ACTIVE_OUTPUT_SERVICE = previous
 
 
 def _save_chart_global(fig, filename, dpi=300, chart_type=None):
@@ -153,11 +165,15 @@ def _save_terms_json(
 ) -> str | None:
     if not _ACTIVE_OUTPUT_SERVICE:
         return None
-    if speaker and is_named_speaker(speaker):
+    if speaker:
         safe_speaker = str(speaker).replace(" ", "_").replace("/", "_")
         name = f"{safe_speaker}_{filename}.terms"
         return _ACTIVE_OUTPUT_SERVICE.save_data(
-            payload, name, format_type="json", subdirectory="speakers"
+            payload,
+            name,
+            format_type="json",
+            subdirectory="speakers",
+            speaker=speaker,
         )
     name = f"{filename}.terms"
     return _ACTIVE_OUTPUT_SERVICE.save_data(payload, name, format_type="json")
@@ -454,7 +470,7 @@ def group_texts_by_speaker(segments: list) -> dict:
     grouped = defaultdict(list)
     for grouping_key, segs in grouped_segments.items():
         display_name = get_speaker_display_name(grouping_key, segs, segments)
-        if display_name and is_named_speaker(display_name):
+        if display_name:
             texts = [seg.get("text", "") for seg in segs if seg.get("text")]
             if texts:
                 grouped[display_name].extend(texts)
@@ -548,6 +564,15 @@ def generate_wordcloud(
 def save_freq_json_csv(
     freq: dict[str, int], output_structure, prefix: str, speaker: str
 ) -> None:
+    if speaker != "ALL":
+        config = get_config()
+        exclude = getattr(
+            getattr(config, "analysis", None),
+            "exclude_unidentified_from_speaker_charts",
+            False,
+        )
+        if exclude and not is_named_speaker(speaker):
+            return
     safe = speaker.replace(" ", "_").replace("/", "_")
 
     if speaker == "ALL":
@@ -627,8 +652,13 @@ def generate_bigram_wordclouds(
 def generate_tfidf_wordclouds(
     grouped: dict[str, list[str]], output_structure, base_name: str
 ) -> None:
-    # Only use named speakers
-    speakers = [s for s in grouped if is_named_speaker(s)]
+    config = get_config()
+    exclude = getattr(
+        getattr(config, "analysis", None),
+        "exclude_unidentified_from_speaker_charts",
+        False,
+    )
+    speakers = [s for s in grouped if is_named_speaker(s)] if exclude else list(grouped.keys())
     documents = [" ".join(grouped[s]) for s in speakers]
     filtered_docs = [" ".join(tokenize_and_filter(doc)) for doc in documents]
 
@@ -643,8 +673,6 @@ def generate_tfidf_wordclouds(
         return
 
     try:
-        from transcriptx.core.utils.config import get_config
-
         from sklearn.feature_extraction.text import TfidfVectorizer
 
         vector_config = get_config().analysis.vectorization
@@ -790,8 +818,6 @@ def generate_bigram_tfidf_wordclouds(
         return
 
     try:
-        from transcriptx.core.utils.config import get_config
-
         from sklearn.feature_extraction.text import TfidfVectorizer
 
         vector_config = get_config().analysis.vectorization
@@ -926,9 +952,14 @@ def generate_bigram_tfidf_wordclouds(
 def generate_tic_wordclouds(
     grouped: dict[str, list[str]], output_structure, base_name: str
 ) -> None:
-    # Only use named speakers for per-speaker tics
+    config = get_config()
+    exclude = getattr(
+        getattr(config, "analysis", None),
+        "exclude_unidentified_from_speaker_charts",
+        False,
+    )
     for speaker, texts in grouped.items():
-        if not is_named_speaker(speaker):
+        if exclude and not is_named_speaker(speaker):
             continue
         tics = extract_tics_from_text(" ".join(texts))
         freq = Counter(tics)
@@ -1036,6 +1067,76 @@ def generate_pos_wordclouds(
             source_terms_path=_relative_to_transcript(terms_path) if terms_path else None,
             thumbnail_path=_relative_to_transcript(chart_path) if chart_path else None,
         )
+
+
+def run_group_wordclouds(
+    grouped: Dict[str, List[str]],
+    group_base_dir: str | Path,
+    base_name: str,
+    run_id: str,
+    tic_list: list[str] | None = None,
+) -> None:
+    from transcriptx.core.utils.logger import get_logger
+
+    logger = get_logger()
+    if not grouped:
+        logger.warning("[WORDCLOUDS] No grouped text for group wordclouds.")
+        return
+
+    output_structure = create_standard_output_structure(str(group_base_dir), "wordclouds")
+    virtual_path = str(Path(group_base_dir) / f"{base_name}.virtual")
+    output_service = create_output_service(
+        virtual_path,
+        "wordclouds",
+        output_dir=str(group_base_dir),
+        run_id=run_id,
+    )
+
+    def _normalize_chunk(text: str) -> str:
+        return " ".join(text.split())
+
+    grouped_joined: Dict[str, str] = {}
+    for speaker, chunks in grouped.items():
+        cleaned = [_normalize_chunk(chunk) for chunk in chunks if chunk and chunk.strip()]
+        if not cleaned:
+            continue
+        grouped_joined[speaker] = "\n".join(cleaned)
+
+    if not grouped_joined:
+        logger.warning("[WORDCLOUDS] No non-empty text for group wordclouds.")
+        return
+
+    with use_output_service(output_service):
+        for speaker, joined in grouped_joined.items():
+            freq = generate_wordcloud(
+                joined,
+                output_structure,
+                base_name,
+                speaker,
+                "wordcloud",
+                chart_type="basic",
+                title=f"{speaker}",
+            )
+            if freq:
+                save_freq_json_csv(freq, output_structure, f"{base_name}-basic", speaker)
+
+        all_text = "\n".join(grouped_joined.values())
+        if all_text.strip():
+            global_freq = generate_wordcloud(
+                all_text,
+                output_structure,
+                base_name,
+                "wordcloud-ALL",
+                "wordcloud",
+                chart_type="basic",
+                title="All Speakers",
+            )
+            if global_freq:
+                save_freq_json_csv(
+                    global_freq, output_structure, f"{base_name}-basic", "ALL"
+                )
+        else:
+            logger.warning("[WORDCLOUDS] No text content for global wordcloud")
 
 
 def run_all_wordclouds(

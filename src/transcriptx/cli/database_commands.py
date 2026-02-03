@@ -277,7 +277,7 @@ def status():
 
 @app.command()
 def migrate(
-    target: Optional[str] = typer.Argument(None, help="Target migration revision"),
+    target: Optional[str] = typer.Option(None, "--target", "-t", help="Target migration revision"),
     create: bool = typer.Option(False, "--create", "-c", help="Create new migration"),
     message: Optional[str] = typer.Option(
         None, "--message", "-m", help="Migration message"
@@ -372,7 +372,7 @@ def history():
 
 @app.command()
 def profile_speaker(
-    name: str = typer.Argument(..., help="Speaker name"),
+    name: str = typer.Option(..., "--name", "-n", help="Speaker name"),
     transcript_file: Path = typer.Option(
         ..., "--transcript", "-t", help="Transcript file path"
     ),
@@ -645,7 +645,7 @@ def speakers_list():
 
 
 @app.command()
-def speakers_show(speaker_id: int = typer.Argument(..., help="Speaker ID to show")):
+def speakers_show(speaker_id: int = typer.Option(..., "--speaker-id", "-s", help="Speaker ID to show")):
     """Show detailed information about a speaker."""
     try:
         _init_database()
@@ -709,10 +709,10 @@ def speakers_show(speaker_id: int = typer.Argument(..., help="Speaker ID to show
 
 @app.command()
 def speakers_merge(
-    source_id: int = typer.Argument(
-        ..., help="Source speaker ID (will be merged into target)"
+    source_id: int = typer.Option(
+        ..., "--source-id", "-s", help="Source speaker ID (will be merged into target)"
     ),
-    target_id: int = typer.Argument(..., help="Target speaker ID (will keep this one)"),
+    target_id: int = typer.Option(..., "--target-id", "-t", help="Target speaker ID (will keep this one)"),
 ):
     """Merge two speakers into one."""
     try:

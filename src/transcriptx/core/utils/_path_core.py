@@ -121,18 +121,18 @@ def get_module_output_dir(transcript_path: str, module_name: str) -> str:
     return os.path.join(transcript_dir, module_name)
 
 
-def get_group_output_dir(group_key: str, run_id: str) -> str:
+def get_group_output_dir(group_uuid: str, run_id: str) -> str:
     """
     Get the group output directory path.
 
     Args:
-        group_key: Stable identifier for the TranscriptSet
+        group_uuid: Stable identifier for the Group (UUID)
         run_id: Group analysis run identifier
 
     Returns:
         Path to the group output directory in outputs/groups
     """
-    return os.path.join(GROUP_OUTPUTS_DIR, group_key, run_id)
+    return os.path.join(GROUP_OUTPUTS_DIR, group_uuid, run_id)
 
 
 def get_module_data_file(transcript_path: str, module_name: str, filename: str) -> str:

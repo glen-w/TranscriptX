@@ -29,6 +29,13 @@ from transcriptx.core.utils.performance_estimator import (
     PerformanceEstimator,
     format_time_estimate,
 )
+from transcriptx.core.pipeline.pipeline_context import PipelineContext, ReadOnlyPipelineContext
+
+
+def get_module_registry():
+    from transcriptx.core.pipeline.module_registry import ModuleRegistry
+
+    return ModuleRegistry()
 
 # Note: load_or_create_speaker_map is imported lazily inside functions to avoid circular dependency
 
@@ -108,8 +115,8 @@ class DAGPipeline:
             List of modules in execution order with dependencies included
         """
         # Add all dependencies for selected modules (recursively)
-        modules_to_run = set(selected_modules)
-        modules_to_process = set(selected_modules)
+        modules_to_run = {module for module in selected_modules if module in self.nodes}
+        modules_to_process = set(modules_to_run)
 
         # Recursively resolve all transitive dependencies
         while modules_to_process:
@@ -119,13 +126,13 @@ class DAGPipeline:
                     node = self.nodes[module_name]
                     # Add explicit dependencies
                     for dep in node.dependencies:
-                        if dep not in modules_to_run:
+                        if dep in self.nodes and dep not in modules_to_run:
                             modules_to_run.add(dep)
                             new_modules.add(dep)
                     # Add implicit dependencies
                     implicit_deps = self._check_implicit_dependencies(module_name)
                     for dep in implicit_deps:
-                        if dep not in modules_to_run:
+                        if dep in self.nodes and dep not in modules_to_run:
                             modules_to_run.add(dep)
                             new_modules.add(dep)
             modules_to_process = new_modules
@@ -486,7 +493,9 @@ class DAGPipeline:
         self,
         transcript_path: str,
         selected_modules: List[str],
+        speaker_map: Optional[Dict[str, str]] = None,
         skip_speaker_mapping: bool = False,
+        speaker_options: "SpeakerRunOptions | None" = None,
         parallel: bool = False,
         max_workers: int = 4,
         db_coordinator: Optional[Any] = None,
@@ -509,6 +518,9 @@ class DAGPipeline:
         Returns:
             Dictionary with execution results
         """
+        from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+
+        speaker_options = speaker_options or SpeakerRunOptions()
         self.logger.info(
             f"Starting DAG pipeline for {transcript_path} (parallel={parallel})"
         )
@@ -524,6 +536,20 @@ class DAGPipeline:
             )
             parallel = False
 
+        # Initialize results early to allow graceful validation failures
+        results: Dict[str, Any] = {
+            "transcript_path": transcript_path,
+            "modules_requested": selected_modules,
+            "selected_modules": selected_modules,  # Alias for compatibility
+            "modules_run": [],
+            "skipped_modules": [],
+            "errors": [],
+            "start_time": time.time(),
+            "execution_order": [],
+            "cache_hits": [],
+            "module_results": {},
+        }
+
         # Validate inputs
         try:
             validate_transcript_file(transcript_path)
@@ -532,7 +558,11 @@ class DAGPipeline:
             )
         except Exception as e:
             self.logger.error(f"Validation failed: {e}")
-            raise
+            results["errors"].append(str(e))
+            results["status"] = "failed"
+            results["end_time"] = time.time()
+            results["duration"] = results["end_time"] - results["start_time"]
+            return results
 
         # Finalize registry if not already done
         if not self._finalized:
@@ -565,19 +595,8 @@ class DAGPipeline:
         )
         self._log_execution_plan(execution_plan, output_dir)
 
-        # Initialize results
-        results: Dict[str, Any] = {
-            "transcript_path": transcript_path,
-            "modules_requested": selected_modules,
-            "selected_modules": selected_modules,  # Alias for compatibility
-            "modules_run": [],
-            "skipped_modules": [],
-            "errors": [],
-            "start_time": time.time(),
-            "execution_order": execution_order,
-            "cache_hits": [],
-            "module_results": {},
-        }
+        # Update execution order in results
+        results["execution_order"] = execution_order
 
         # Create PipelineContext for efficient data passing
         # This loads transcript data once and caches it for all modules
@@ -587,7 +606,10 @@ class DAGPipeline:
 
             context = PipelineContext(
                 transcript_path,
+                speaker_map=speaker_map,
                 skip_speaker_mapping=skip_speaker_mapping,
+                include_unidentified_speakers=speaker_options.include_unidentified,
+                anonymise_speakers=speaker_options.anonymise,
                 batch_mode=True,
                 use_db=bool(db_coordinator),
                 output_dir=output_dir,
@@ -857,7 +879,7 @@ class DAGPipeline:
                                     module_result.get("error", "Unknown error")
                                 )
                         elif hasattr(
-                            node.function, "run_from_context"
+                            type(node.function), "run_from_context"
                         ) and not isinstance(node.function, type):
                             # It's an AnalysisModule instance
                             module_result = node.function.run_from_context(
@@ -1043,18 +1065,13 @@ def create_dag_pipeline() -> DAGPipeline:
     Returns:
         Configured DAG pipeline
     """
-    from transcriptx.core.pipeline.module_registry import (
-        get_available_modules,
-        get_module_info,
-        get_module_function,
-    )
-
     dag = DAGPipeline()
+    registry = get_module_registry()
 
     # Add all modules to the DAG
-    for module_name in get_available_modules():
-        module_info = get_module_info(module_name)
-        module_function = get_module_function(module_name)
+    for module_name in registry.get_available_modules():
+        module_info = registry.get_module_info(module_name)
+        module_function = registry.get_module_function(module_name)
 
         if module_info and module_function:
             dag.add_module(
@@ -1075,6 +1092,7 @@ def run_dag_pipeline(
     transcript_path: str,
     selected_modules: List[str],
     skip_speaker_mapping: bool = False,
+    speaker_options: "SpeakerRunOptions | None" = None,
 ) -> Dict[str, Any]:
     """
     Convenience function to run the DAG pipeline.
@@ -1094,4 +1112,5 @@ def run_dag_pipeline(
         transcript_path=transcript_path,
         selected_modules=selected_modules,
         skip_speaker_mapping=skip_speaker_mapping,
+        speaker_options=speaker_options,
     )

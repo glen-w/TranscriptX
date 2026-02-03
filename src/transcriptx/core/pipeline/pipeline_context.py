@@ -15,6 +15,7 @@ Key Features:
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.io.transcript_service import TranscriptService
 
 logger = get_logger()
@@ -45,6 +46,8 @@ class PipelineContext:
         transcript_path: str,
         speaker_map: Optional[Dict[str, str]] = None,
         skip_speaker_mapping: bool = False,
+        include_unidentified_speakers: bool = False,
+        anonymise_speakers: bool = False,
         batch_mode: bool = False,
         auto_import: bool | None = None,
         strict_db: bool | None = None,
@@ -59,6 +62,8 @@ class PipelineContext:
         Args:
             transcript_path: Path to the transcript file
             skip_speaker_mapping: Skip speaker mapping if already done (deprecated, kept for compatibility)
+            include_unidentified_speakers: Include unidentified speakers in per-speaker outputs
+            anonymise_speakers: Anonymise speaker display names in outputs
             batch_mode: Whether running in batch mode
 
         Raises:
@@ -124,7 +129,22 @@ class PipelineContext:
 
         # Cache for analysis results (keyed by module name)
         self._analysis_results: Dict[str, Any] = {}
-        self.runtime_flags: Dict[str, Any] = {}
+        self.runtime_flags: Dict[str, Any] = {
+            "include_unidentified_speakers": include_unidentified_speakers,
+            "anonymise_speakers": anonymise_speakers,
+        }
+
+        if anonymise_speakers:
+            self.runtime_flags["speaker_anonymisation_map"] = (
+                self.build_speaker_anonymisation_map(self.segments)
+            )
+
+        self.runtime_flags["named_speaker_keys"] = self._collect_named_speaker_keys(
+            self.segments
+        )
+        self.runtime_flags["speaker_key_aliases"] = self._build_speaker_key_aliases(
+            self.speaker_map
+        )
 
         # Cache for computed values that can be reused
         self._computed_values: Dict[str, Any] = {}
@@ -271,13 +291,85 @@ class PipelineContext:
     def get_runtime_flags(self) -> Dict[str, Any]:
         return self.runtime_flags
 
-    def get_speaker_display_name(self, speaker_label: str) -> str:
-        if (
-            self._speaker_map_metadata
-            and speaker_label in self._speaker_map_metadata
-        ):
-            return f"{self._speaker_map_metadata[speaker_label]} ({speaker_label})"
-        return speaker_label
+    def _collect_named_speaker_keys(self, segments: List[Dict[str, Any]]) -> set[str]:
+        named_keys: set[str] = set()
+        for segment in segments:
+            label = segment.get("speaker")
+            if label and is_named_speaker(str(label)):
+                key = self.get_speaker_key_from_segment(segment)
+                if key:
+                    named_keys.add(key)
+        return named_keys
+
+    def _build_speaker_key_aliases(
+        self, speaker_map: Dict[Any, Any]
+    ) -> Dict[str, str]:
+        aliases: Dict[str, str] = {}
+        collisions: set[str] = set()
+        for key, display in speaker_map.items():
+            if display is None:
+                continue
+            display_str = str(display).strip()
+            key_str = str(key).strip()
+            if not display_str or not key_str:
+                continue
+            if display_str in aliases and aliases[display_str] != key_str:
+                collisions.add(display_str)
+                continue
+            aliases[display_str] = key_str
+        for display in collisions:
+            aliases.pop(display, None)
+        return aliases
+
+    def get_speaker_key_from_segment(self, segment: Dict[str, Any]) -> Optional[str]:
+        key = segment.get("speaker_db_id")
+        if key:
+            return str(key).strip() or None
+        key = segment.get("speaker_key") or segment.get("grouping_key")
+        if key:
+            return str(key).strip() or None
+        key = segment.get("speaker")
+        if key:
+            return str(key).strip() or None
+        return None
+
+    def get_speaker_key(self, speaker_like: Any) -> Optional[str]:
+        if speaker_like is None:
+            return None
+        if isinstance(speaker_like, dict):
+            return self.get_speaker_key_from_segment(speaker_like)
+        key = str(speaker_like).strip()
+        return key or None
+
+    def iter_speaker_keys_in_order(self, segments: List[Dict[str, Any]]) -> List[str]:
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for segment in segments:
+            key = self.get_speaker_key_from_segment(segment)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            ordered.append(key)
+        return ordered
+
+    def build_speaker_anonymisation_map(
+        self, segments: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        ordered_keys = self.iter_speaker_keys_in_order(segments)
+        mapping: Dict[str, str] = {}
+        for index, key in enumerate(ordered_keys, start=1):
+            mapping[key] = f"Speaker {index:02d}"
+        return mapping
+
+    def get_speaker_display_name(self, speaker_key: Optional[str]) -> Optional[str]:
+        if speaker_key is None:
+            return None
+        if self.runtime_flags.get("anonymise_speakers"):
+            mapping = self.runtime_flags.get("speaker_anonymisation_map", {})
+            return mapping.get(speaker_key, speaker_key)
+        if self._speaker_map_metadata and speaker_key in self._speaker_map_metadata:
+            return f"{self._speaker_map_metadata[speaker_key]} ({speaker_key})"
+        return speaker_key
 
     def set_segments(self, segments: List[Dict[str, Any]]) -> None:
         """
@@ -427,8 +519,17 @@ class ReadOnlyPipelineContext:
     def get_runtime_flags(self) -> Dict[str, Any]:
         return self._context.get_runtime_flags()
 
-    def get_speaker_display_name(self, speaker_label: str) -> str:
-        return self._context.get_speaker_display_name(speaker_label)
+    def get_speaker_key_from_segment(self, segment: Dict[str, Any]) -> Optional[str]:
+        return self._context.get_speaker_key_from_segment(segment)
+
+    def get_speaker_key(self, speaker_like: Any) -> Optional[str]:
+        return self._context.get_speaker_key(speaker_like)
+
+    def iter_speaker_keys_in_order(self, segments: List[Dict[str, Any]]) -> List[str]:
+        return self._context.iter_speaker_keys_in_order(segments)
+
+    def get_speaker_display_name(self, speaker_key: Optional[str]) -> Optional[str]:
+        return self._context.get_speaker_display_name(speaker_key)
 
     def get_analysis_result(self, module_name: str) -> Optional[Any]:
         """Get stored analysis result."""

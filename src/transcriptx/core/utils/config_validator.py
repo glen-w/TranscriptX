@@ -195,14 +195,14 @@ class ConfigValidator:
 
         transcription = config.transcription
 
-        # Validate max_speakers
-        if hasattr(transcription, "max_speakers"):
+        # Validate max_speakers (None = no limit; otherwise must be positive int)
+        if hasattr(transcription, "max_speakers") and transcription.max_speakers is not None:
             if (
                 not isinstance(transcription.max_speakers, int)
                 or transcription.max_speakers < 1
             ):
                 result.add_error(
-                    "transcription.max_speakers", "Must be a positive integer"
+                    "transcription.max_speakers", "Must be a positive integer or unset (no limit)"
                 )
 
     def _validate_logging_config(

@@ -256,6 +256,18 @@ def edit_analysis_config(config: Any) -> None:
         ),
         SettingItem(
             order=15,
+            key="analysis.exclude_unidentified_from_speaker_charts",
+            label="Exclude unidentified speakers from charts",
+            getter=lambda: config.analysis.exclude_unidentified_from_speaker_charts,
+            setter=lambda value: setattr(
+                config.analysis, "exclude_unidentified_from_speaker_charts", value
+            ),
+            editor=create_bool_editor(
+                hint="When enabled, per-speaker charts/data only include named speakers."
+            ),
+        ),
+        SettingItem(
+            order=16,
             key="analysis.readability_metrics",
             label="Readability metrics",
             getter=lambda: config.analysis.readability_metrics,
@@ -267,7 +279,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=16,
+            order=17,
             key="analysis.output_formats",
             label="Output formats",
             getter=lambda: config.analysis.output_formats,
@@ -277,7 +289,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=17,
+            order=18,
             key="analysis.use_emojis",
             label="Use emojis",
             getter=lambda: getattr(config, "use_emojis", True),
@@ -286,7 +298,7 @@ def edit_analysis_config(config: Any) -> None:
         ),
         # Semantic / repetition limits (performance and coverage)
         SettingItem(
-            order=18,
+            order=19,
             key="analysis.max_segments_per_speaker",
             label="Max segments per speaker (repetition)",
             getter=lambda: config.analysis.max_segments_per_speaker,
@@ -299,7 +311,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=19,
+            order=20,
             key="analysis.max_segments_for_cross_speaker",
             label="Max segments for cross-speaker analysis",
             getter=lambda: config.analysis.max_segments_for_cross_speaker,
@@ -312,7 +324,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=20,
+            order=21,
             key="analysis.max_segments_for_semantic",
             label="Max segments for semantic analysis",
             getter=lambda: config.analysis.max_segments_for_semantic,
@@ -325,7 +337,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=21,
+            order=22,
             key="analysis.use_quality_filtering",
             label="Use quality filtering for segments",
             getter=lambda: config.analysis.use_quality_filtering,
@@ -337,7 +349,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=22,
+            order=23,
             key="analysis.semantic_similarity_threshold",
             label="Semantic similarity threshold (within-speaker)",
             getter=lambda: config.analysis.semantic_similarity_threshold,
@@ -351,7 +363,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=23,
+            order=24,
             key="analysis.cross_speaker_similarity_threshold",
             label="Cross-speaker similarity threshold",
             getter=lambda: config.analysis.cross_speaker_similarity_threshold,
@@ -365,7 +377,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=24,
+            order=25,
             key="analysis.ner_use_light_model",
             label="NER use light model",
             getter=lambda: config.analysis.ner_use_light_model,
@@ -377,7 +389,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=25,
+            order=26,
             key="analysis.ner_max_segments",
             label="NER max segments",
             getter=lambda: config.analysis.ner_max_segments,
@@ -388,7 +400,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=26,
+            order=27,
             key="analysis.interaction_min_interactions",
             label="Interaction min interactions",
             getter=lambda: config.analysis.interaction_min_interactions,
@@ -401,7 +413,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=27,
+            order=28,
             key="analysis.interaction_time_window",
             label="Interaction time window (seconds)",
             getter=lambda: config.analysis.interaction_time_window,
@@ -414,7 +426,7 @@ def edit_analysis_config(config: Any) -> None:
             ),
         ),
         SettingItem(
-            order=28,
+            order=29,
             key="analysis.quality_filtering_profiles",
             label="Quality filtering profiles",
             getter=lambda: "Manage",
@@ -422,7 +434,7 @@ def edit_analysis_config(config: Any) -> None:
             editor=lambda _: (edit_quality_filtering_config(config), None)[1],
         ),
         SettingItem(
-            order=29,
+            order=30,
             key="analysis.voice",
             label="Voice settings",
             getter=lambda: "Manage",
@@ -430,7 +442,7 @@ def edit_analysis_config(config: Any) -> None:
             editor=lambda _: (edit_voice_config(config), None)[1],
         ),
         SettingItem(
-            order=30,
+            order=31,
             key="analysis.highlights",
             label="Highlights settings",
             getter=lambda: "Manage",
@@ -438,7 +450,7 @@ def edit_analysis_config(config: Any) -> None:
             editor=lambda _: (edit_highlights_config(config), None)[1],
         ),
         SettingItem(
-            order=31,
+            order=32,
             key="analysis.summary",
             label="Summary settings",
             getter=lambda: "Manage",

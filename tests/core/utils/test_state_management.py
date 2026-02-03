@@ -135,7 +135,7 @@ class TestGetAnalysisHistory:
             history = get_analysis_history(transcript_path)
             
             assert isinstance(history, dict)
-            assert "analysis_modules_requested" in history or "modules" in history
+        assert "modules_requested" in history or "modules" in history
 
 
 class TestHasAnalysisCompleted:

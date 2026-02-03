@@ -5,6 +5,16 @@ from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.lazy_imports import optional_import  # type: ignore[import-untyped]
 
+# Canonical eGeMAPS feature keys (short names used in eg_* columns)
+EGEMAPS_CANONICAL_FIELDS: tuple[str, ...] = (
+    "hnr_db",
+    "jitter",
+    "shimmer_db",
+    "alpha_ratio",
+    "hammarberg",
+    "loudness",
+)
+
 
 def resolve_segment_id(segment: Dict[str, Any], transcript_key: str) -> str:
     """

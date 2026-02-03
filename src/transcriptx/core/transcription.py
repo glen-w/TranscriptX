@@ -6,6 +6,7 @@ CLI and GUI without creating circular dependencies.
 """
 
 import json
+import os
 import re
 import shlex
 import shutil
@@ -157,6 +158,32 @@ def _build_whisperx_run_spec(
     audio_file_path: Path, config=None, *, device: str = "cpu"
 ) -> WhisperXRunSpec:
     audio_file_name = audio_file_path.name
+    def _coerce_int(value: object, default: int) -> int:
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            try:
+                return int(value.strip())
+            except ValueError:
+                return default
+        return default
+
+    def _coerce_optional_int(value: object, default: Optional[int]) -> Optional[int]:
+        if value is None:
+            return default
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value if value >= 1 else default
+        if isinstance(value, str):
+            s = value.strip()
+            if s.lower() in ("", "none", "auto"):
+                return default
+            try:
+                n = int(s)
+                return n if n >= 1 else default
+            except ValueError:
+                return default
+        return default
+
     # Use config or smart defaults
     if config and hasattr(config, "transcription"):
         model = getattr(config.transcription, "model_name", "large-v2") or "large-v2"
@@ -170,6 +197,10 @@ def _build_whisperx_run_spec(
             or "anonymous"
         )
         hf_token = getattr(config.transcription, "huggingface_token", "") or ""
+        min_speakers = _coerce_int(getattr(config.transcription, "min_speakers", 1), 1)
+        max_speakers = _coerce_optional_int(
+            getattr(config.transcription, "max_speakers", None), None
+        )
     else:
         model = "large-v2"
         language = "en"
@@ -177,6 +208,18 @@ def _build_whisperx_run_spec(
         diarize = True
         model_download_policy = "anonymous"
         hf_token = ""
+        min_speakers = 1
+        max_speakers = None
+
+    # Backstop: accept env vars even if config didn't pick them up.
+    if not hf_token:
+        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+
+    # Normalize speaker bounds (defensive; WhisperX expects min <= max when max is set).
+    if min_speakers < 1:
+        min_speakers = 1
+    if max_speakers is not None and max_speakers < min_speakers:
+        max_speakers = min_speakers
 
     # If diarization is requested but no HF token is configured, proceed without diarization.
     # WhisperX diarization relies on gated models (e.g., pyannote) which require authentication.
@@ -224,6 +267,9 @@ def _build_whisperx_run_spec(
         cmd_parts.extend(["--hf_token", shlex.quote(str(hf_token))])
     if diarize:
         cmd_parts.append("--diarize")
+        cmd_parts.extend(["--min_speakers", shlex.quote(str(min_speakers))])
+        if max_speakers is not None:
+            cmd_parts.extend(["--max_speakers", shlex.quote(str(max_speakers))])
 
     whisperx_cmd = [
         "docker",

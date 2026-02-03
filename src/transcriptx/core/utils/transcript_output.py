@@ -14,15 +14,10 @@ from transcriptx.core.utils.logger import (
     log_analysis_error,
     log_analysis_start,
 )
-from transcriptx.core.utils.output_standards import (
-    create_readme_file,
-    create_standard_output_structure,
-)
 from transcriptx.utils.text_utils import format_time
 from transcriptx.core.utils.notifications import notify_user
 from transcriptx.io import load_segments
 from transcriptx.io.file_io import write_transcript_files
-from transcriptx.core.utils.artifact_writer import write_json
 from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
 
 
@@ -71,11 +66,6 @@ def generate_human_friendly_transcript(
         )
         transcript_dir = os.path.join(OUTPUTS_DIR, base_name)
 
-    # Create standardized output structure
-    output_structure = create_standard_output_structure(
-        transcript_dir, "transcript_output"
-    )
-
     try:
         # Generate the transcript files to the transcripts subdirectory
         transcripts_dir = os.path.join(transcript_dir, "transcripts")
@@ -103,24 +93,6 @@ def generate_human_friendly_transcript(
                 max(seg.get("end", 0) for seg in segments) / 60 if segments else 0
             ),
         }
-
-        # Save summary data
-        summary_path = os.path.join(
-            output_structure.data_dir, f"{base_name}_transcript_output_summary.json"
-        )
-        os.makedirs(os.path.dirname(summary_path), exist_ok=True)
-        write_json(summary_path, summary_data, indent=2, ensure_ascii=False)
-
-        # Create README file
-        create_readme_file(
-            output_structure,
-            "transcript_output",
-            base_name,
-            "Human-friendly transcript generation. Creates formatted text and CSV files "
-            "with speaker names, timestamps, and properly formatted conversation text.",
-        )
-
-        # Files are now written only under outputs/<session>/transcripts
 
         logger.info(f"Human-friendly transcript generated successfully: {txt_path}")
         notify_user(

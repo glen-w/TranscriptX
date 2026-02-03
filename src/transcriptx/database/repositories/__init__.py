@@ -21,6 +21,7 @@ from .pipeline import (
     ArtifactIndexRepository,
 )
 from .transcript_set import TranscriptSetRepository
+from .group import GroupRepository
 
 __all__ = [
     "BaseRepository",
@@ -40,4 +41,5 @@ __all__ = [
     "PerformanceSpanRepository",
     "ArtifactIndexRepository",
     "TranscriptSetRepository",
+    "GroupRepository",
 ]

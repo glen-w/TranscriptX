@@ -17,6 +17,9 @@ _DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
 
 def _downloads_disabled() -> bool:
     value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
+    if value == "":
+        # Default to downloads disabled unless explicitly opted in.
+        return True
     return value in {"1", "true", "yes", "on"}
 
 

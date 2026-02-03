@@ -8,3 +8,4 @@ from .pipeline import *
 from .file_tracking import *
 from .clustering import *
 from .vocabulary import *
+from .group import *

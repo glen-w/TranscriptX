@@ -185,6 +185,27 @@ def create_str_editor(
     return editor
 
 
+def create_secret_editor(
+    hint: Optional[str] = None,
+    allow_none: bool = False,
+) -> Callable[[SettingItem], Optional[Any]]:
+    def editor(item: SettingItem) -> Optional[Any]:
+        if hint:
+            rich_print(f"[dim]{hint}[/dim]")
+        prompt = f"Enter {item.label.lower()}"
+        try:
+            value = questionary.password(prompt).ask()
+        except KeyboardInterrupt:
+            return None
+        if value is None:
+            return None
+        if allow_none and value.strip() == "":
+            return NONE_SENTINEL
+        return value
+
+    return editor
+
+
 def create_choice_editor(
     choices: list[Any],
     hint: Optional[str] = None,

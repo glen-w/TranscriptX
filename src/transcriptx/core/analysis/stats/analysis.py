@@ -12,7 +12,7 @@ logger = get_logger()
 
 
 from .data_loader import load_module_data
-from .summary import create_comprehensive_summary, generate_enhanced_html_summary
+from .summary import create_comprehensive_summary
 from .stats_report import (
     build_stats_payload,
     render_stats_markdown,
@@ -209,11 +209,6 @@ class StatsAnalysis(AnalysisModule):
                 {"scope": "global", "format": "txt", "title": "Overall stats (TXT)"},
             )
 
-            # Generate enhanced HTML summary
-            self._generate_enhanced_html_summary(
-                transcript_dir, base_name, module_data, speaker_map, output_service
-            )
-
             # Store result in context
             context.store_analysis_result(self.module_name, results)
 
@@ -287,25 +282,9 @@ class StatsAnalysis(AnalysisModule):
             results: Analysis results dictionary
             output_service: OutputService instance
         """
-        # Stats module saves summary text and HTML, which are handled in run_from_context
+        # Stats module saves summary text, which is handled in run_from_context
         # This method is called by the base class but stats handles saving differently
         pass
-
-    def _generate_enhanced_html_summary(
-        self,
-        transcript_dir: str,
-        base_name: str,
-        module_data: dict,
-        speaker_map: dict,
-        output_service: "OutputService",
-    ) -> None:
-        """Generate enhanced HTML summary using output service."""
-        # This is a simplified version - full implementation would use output_service
-        # For now, delegate to the existing function
-        generate_enhanced_html_summary(
-            transcript_dir, base_name, module_data, speaker_map
-        )
-
 
 def _load_config_hash(transcript_dir: str) -> str | None:
     try:

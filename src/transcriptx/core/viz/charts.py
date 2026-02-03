@@ -13,6 +13,7 @@ from transcriptx.core.utils.lazy_imports import optional_import
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
+    BoxSpec,
     ChartSpec,
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
@@ -115,12 +116,15 @@ def render_plotly(spec: ChartSpec) -> Any | None:
     if isinstance(spec, LineTimeSeriesSpec) or spec.chart_intent == "line_timeseries":
         fig = go.Figure()
         for series in spec.series:
+            text = series.get("text")
             fig.add_trace(
                 go.Scatter(
                     x=series.get("x", []),
                     y=series.get("y", []),
                     mode="lines+markers" if spec.markers else "lines",
                     name=series.get("name"),
+                    text=text,
+                    hoverinfo="text" if text else None,
                 )
             )
         fig.update_layout(
@@ -200,6 +204,29 @@ def render_plotly(spec: ChartSpec) -> Any | None:
             title=spec.title,
             xaxis_title=spec.x_label,
             yaxis_title=spec.y_label,
+        )
+        return fig
+
+    if isinstance(spec, BoxSpec) or spec.chart_intent == "box_plot":
+        fig = go.Figure()
+        series_list = list(spec.series)
+        for series in series_list:
+            x_vals = series.get("x", [])
+            y_vals = series.get("y", [])
+            fig.add_trace(
+                go.Box(
+                    x=x_vals,
+                    y=y_vals,
+                    name=series.get("name"),
+                    boxpoints="all" if spec.show_points else False,
+                    jitter=0.3 if spec.show_points else 0,
+                )
+            )
+        fig.update_layout(
+            title=spec.title,
+            xaxis_title=spec.x_label,
+            yaxis_title=spec.y_label,
+            boxmode="group",
         )
         return fig
 

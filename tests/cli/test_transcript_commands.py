@@ -85,7 +85,7 @@ class TestTranscriptCommands:
             }
             mock_manager_class.return_value = mock_manager
             
-            result = typer_test_client.invoke(app, ["transcript", "show", "1"])
+            result = typer_test_client.invoke(app, ["transcript", "show", "--conversation-id", "1"])
             
             # Should show conversation details
             assert result.exit_code in [0, 1]
@@ -97,7 +97,7 @@ class TestTranscriptCommands:
             mock_manager.get_conversation.return_value = None
             mock_manager_class.return_value = mock_manager
             
-            result = typer_test_client.invoke(app, ["transcript", "show", "999"])
+            result = typer_test_client.invoke(app, ["transcript", "show", "--conversation-id", "999"])
             
             assert result.exit_code in [0, 1]
     
@@ -109,7 +109,7 @@ class TestTranscriptCommands:
             mock_manager_class.return_value = mock_manager
             
             result = typer_test_client.invoke(
-                app, ["transcript", "delete", "1", "--yes"]
+                app, ["transcript", "delete", "--conversation-id", "1", "--force"]
             )
             
             # Should delete conversation
@@ -125,7 +125,7 @@ class TestTranscriptCommands:
             mock_manager_class.return_value = mock_manager
             mock_confirm.return_value = False  # User cancels
             
-            result = typer_test_client.invoke(app, ["transcript", "delete", "1"])
+            result = typer_test_client.invoke(app, ["transcript", "delete", "--conversation-id", "1"])
             
             # Should not delete if not confirmed
             mock_manager.delete_conversation.assert_not_called()
@@ -144,7 +144,7 @@ class TestTranscriptCommands:
             mock_manager_class.return_value = mock_manager
             
             result = typer_test_client.invoke(
-                app, ["transcript", "export", "1", "--output", str(export_file)]
+                app, ["transcript", "export", "--conversation-id", "1", "--output", str(export_file)]
             )
             
             # Should export conversation
@@ -161,7 +161,7 @@ class TestTranscriptCommands:
             }
             mock_manager_class.return_value = mock_manager
             
-            result = typer_test_client.invoke(app, ["transcript", "export", "1"])
+            result = typer_test_client.invoke(app, ["transcript", "export", "--conversation-id", "1"])
             
             # Should use default output
             assert result.exit_code in [0, 1]

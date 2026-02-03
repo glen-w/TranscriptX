@@ -16,12 +16,18 @@ from rich import print
 
 from transcriptx.io import load_segments
 from transcriptx.io.speaker_mapping import build_speaker_map
+from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.file_rename import rename_transcript_after_speaker_mapping
+from transcriptx.core.utils.logger import log_info
 from transcriptx.cli.processing_state import get_current_transcript_path_from_state
 from transcriptx.database.services.transcript_store_policy import (
     store_transcript_after_speaker_identification,
 )
 from transcriptx.utils.text_utils import is_named_speaker
+
+_MAX_SNIPPET_LENGTH = 80
+_MAX_BATCH_EXEMPLAR_SPEAKERS = 6
+_MAX_BATCH_EXEMPLAR_SNIPPETS = 2
 
 
 class SpeakerGateDecision(str, Enum):
@@ -168,6 +174,181 @@ def _collect_segment_labels(
                 canonical_id_map[speaker_id].append(label)
 
 
+def _collapse_whitespace(text: str) -> str:
+    return " ".join(text.split()).strip()
+
+
+def _truncate_snippet(text: str, max_length: int = _MAX_SNIPPET_LENGTH) -> str:
+    if len(text) <= max_length:
+        return text
+    return text[: max_length - 3].rstrip() + "..."
+
+
+def _tokenize_lightweight(text: str) -> List[str]:
+    tokens: List[str] = []
+    for raw in text.split():
+        stripped = raw.strip(".,!?;:\"'()[]{}<>")
+        stripped = stripped.strip("-_")
+        if not stripped:
+            continue
+        tokens.append(stripped)
+    return tokens
+
+
+def _uniqueness_score(text: str) -> float:
+    tokens = _tokenize_lightweight(text)
+    if not tokens:
+        return 0.0
+    return float(len(set(tokens)) + 0.1 * len(tokens))
+
+
+def get_unidentified_speaker_exemplars(
+    transcript_path: str,
+    missing_ids: List[str],
+    exemplar_count: int = 2,
+    *,
+    segments: Optional[Iterable[Dict[str, Any]]] = None,
+) -> Dict[str, List[str]]:
+    """
+    Return short, distinctive snippet exemplars for unidentified speakers.
+
+    - Uses only simple token splits (no NLP deps).
+    - Dedupe identical snippet texts per speaker.
+    - Handles empty/punctuation-only text by skipping.
+    """
+    if exemplar_count <= 0 or not missing_ids:
+        return {}
+
+    missing_set = set(missing_ids)
+    if segments is None:
+        segments = load_segments(str(transcript_path))
+
+    candidates: Dict[str, List[tuple[float, str]]] = defaultdict(list)
+    seen_texts: Dict[str, set[str]] = defaultdict(set)
+
+    for seg in segments:
+        if not isinstance(seg, dict):
+            continue
+        speaker_id = _segment_speaker_id(seg)
+        if not speaker_id or speaker_id not in missing_set:
+            continue
+        text = _collapse_whitespace(str(seg.get("text", "")))
+        if not text:
+            continue
+        if text in seen_texts[speaker_id]:
+            continue
+        score = _uniqueness_score(text)
+        if score <= 0.0:
+            continue
+        seen_texts[speaker_id].add(text)
+        candidates[speaker_id].append((score, text))
+
+    exemplars: Dict[str, List[str]] = {}
+    for speaker_id, items in candidates.items():
+        items.sort(key=lambda item: (item[0], len(item[1])), reverse=True)
+        snippets: List[str] = []
+        for _, text in items:
+            snippet = _truncate_snippet(text)
+            if snippet in snippets:
+                continue
+            snippets.append(snippet)
+            if len(snippets) >= exemplar_count:
+                break
+        if snippets:
+            exemplars[speaker_id] = snippets
+
+    return exemplars
+
+
+def _speaker_gate_choice_specs(
+    mode: str, *, batch: bool
+) -> List[tuple[str, SpeakerGateDecision]]:
+    identify_label = (
+        "✅ Identify missing speakers first (recommended)"
+        if batch
+        else "✅ Identify speakers first (recommended)"
+    )
+    choices: List[tuple[str, SpeakerGateDecision]] = [
+        (identify_label, SpeakerGateDecision.IDENTIFY),
+    ]
+    if mode != "enforce":
+        choices.append(("⚠️ Proceed with analysis anyway", SpeakerGateDecision.PROCEED))
+    choices.append(("⏭️ Skip analysis", SpeakerGateDecision.SKIP))
+    return choices
+
+
+def _within_speaker_gate_threshold_counts(
+    segment_total_count: int,
+    segment_named_count: int,
+    config: Any,
+) -> bool:
+    if segment_total_count == 0:
+        return True
+    missing_segments = max(0, segment_total_count - segment_named_count)
+    if config.threshold_type == "percentage":
+        return (missing_segments / segment_total_count) * 100 <= config.threshold_value
+    threshold_value = int(config.threshold_value)
+    return missing_segments <= threshold_value
+
+
+def _within_speaker_gate_threshold(status: SpeakerIdStatus, config: Any) -> bool:
+    """
+    Threshold is applied to unidentified segment count (segment_total_count - segment_named_count),
+    not to the number of unidentified speakers.
+    """
+    return _within_speaker_gate_threshold_counts(
+        status.segment_total_count,
+        status.segment_named_count,
+        config,
+    )
+
+
+def _log_speaker_gate_skip(
+    segment_total_count: int,
+    segment_named_count: int,
+    config: Any,
+) -> None:
+    missing_segments = max(0, segment_total_count - segment_named_count)
+    if config.threshold_type == "percentage":
+        pct = 0.0 if segment_total_count == 0 else (missing_segments / segment_total_count) * 100
+        message = (
+            "Speaker gate: within threshold "
+            f"({missing_segments}/{segment_total_count} segments, "
+            f"{pct:.1f}% <= {config.threshold_value:.1f}%); proceeding without prompt."
+        )
+    else:
+        threshold_value = int(config.threshold_value)
+        message = (
+            "Speaker gate: within threshold "
+            f"({missing_segments}/{segment_total_count} segments, "
+            f"absolute <= {threshold_value}); proceeding without prompt."
+        )
+    log_info("SPEAKER_GATE", message)
+
+
+def _print_exemplars(
+    exemplars: Dict[str, List[str]],
+    *,
+    header: Optional[str] = None,
+    max_speakers: Optional[int] = None,
+    max_snippets: Optional[int] = None,
+) -> None:
+    if not exemplars:
+        return
+    if header:
+        print(header)
+    speaker_ids = list(exemplars.keys())
+    if max_speakers is not None:
+        speaker_ids = speaker_ids[:max_speakers]
+    for speaker_id in speaker_ids:
+        snippets = exemplars.get(speaker_id, [])
+        if max_snippets is not None:
+            snippets = snippets[:max_snippets]
+        if not snippets:
+            continue
+        joined = " ".join(f"\"{snippet}\"" for snippet in snippets)
+        print(f"  {speaker_id}: {joined}")
+
 def has_named_speakers(transcript_path: Path | str) -> bool:
     """Check if transcript has at least one named speaker (public API)."""
     status = check_speaker_identification_status(transcript_path)
@@ -280,12 +461,23 @@ def check_speaker_gate(
         (decision, status) - decision and status for caller to use
     """
     status = check_speaker_identification_status(transcript_path)
+    config = get_config().workflow.speaker_gate
 
     # Proceed silently only if complete OR no speakers found (treat as single-speaker)
     if status.is_complete or status.total_count == 0:
         return (SpeakerGateDecision.PROCEED, status)
 
     if force_non_interactive:
+        if config.mode == "enforce":
+            return (SpeakerGateDecision.SKIP, status)
+        return (SpeakerGateDecision.PROCEED, status)
+
+    if config.mode == "ignore" and _within_speaker_gate_threshold(status, config):
+        _log_speaker_gate_skip(
+            status.segment_total_count,
+            status.segment_named_count,
+            config,
+        )
         return (SpeakerGateDecision.PROCEED, status)
 
     name = transcript_name or Path(transcript_path).name
@@ -297,21 +489,21 @@ def check_speaker_gate(
     else:
         msg = f"Speakers not yet identified for {name} ({status.total_count} speakers found)."
 
+    if config.exemplar_count > 0 and status.missing_ids:
+        exemplars = get_unidentified_speaker_exemplars(
+            transcript_path,
+            status.missing_ids,
+            config.exemplar_count,
+        )
+        _print_exemplars(exemplars, header="[dim]Unidentified speaker samples:[/dim]")
+
     choice = questionary.select(
         f"{msg} What would you like to do?",
         choices=[
-            questionary.Choice(
-                "✅ Identify speakers first (recommended)",
-                value=SpeakerGateDecision.IDENTIFY,
-            ),
-            questionary.Choice(
-                "⚠️ Proceed with analysis anyway",
-                value=SpeakerGateDecision.PROCEED,
-            ),
-            questionary.Choice(
-                "⏭️ Skip analysis",
-                value=SpeakerGateDecision.SKIP,
-            ),
+            questionary.Choice(label, value=decision)
+            for label, decision in _speaker_gate_choice_specs(
+                config.mode, batch=False
+            )
         ],
         default=SpeakerGateDecision.IDENTIFY,
     ).ask()
@@ -361,8 +553,32 @@ def check_batch_speaker_gate(
     if not needs_identification:
         return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
 
+    config = get_config().workflow.speaker_gate
+
     if force_non_interactive:
+        if config.mode == "enforce":
+            return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
         return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+
+    if config.mode == "ignore":
+        total_segments = sum(
+            statuses[path].segment_total_count for path in needs_identification
+        )
+        total_named_segments = sum(
+            statuses[path].segment_named_count for path in needs_identification
+        )
+        if _within_speaker_gate_threshold_counts(
+            total_segments,
+            total_named_segments,
+            config,
+        ):
+            _log_speaker_gate_skip(total_segments, total_named_segments, config)
+            return (
+                SpeakerGateDecision.PROCEED,
+                needs_identification,
+                already_identified,
+                statuses,
+            )
 
     print("\n[bold]Speaker Identification Status:[/bold]")
     print(f"  ✅ Already identified: {len(already_identified)}")
@@ -376,6 +592,31 @@ def check_batch_speaker_gate(
     total_named_segments = sum(statuses[path].segment_named_count for path in needs_identification)
     total_missing_segments = max(0, total_segments - total_named_segments)
 
+    if config.exemplar_count > 0:
+        for path in needs_identification:
+            status = statuses[path]
+            if not status.missing_ids:
+                continue
+            exemplars = get_unidentified_speaker_exemplars(
+                path,
+                status.missing_ids,
+                config.exemplar_count,
+            )
+            if not exemplars:
+                continue
+            header = f"[dim]{Path(path).name} - Unidentified speaker samples:[/dim]"
+            missing_order = [
+                speaker_id for speaker_id in status.missing_ids if speaker_id in exemplars
+            ]
+            capped_ids = missing_order[:_MAX_BATCH_EXEMPLAR_SPEAKERS]
+            capped_exemplars = {speaker_id: exemplars[speaker_id] for speaker_id in capped_ids}
+            _print_exemplars(
+                capped_exemplars,
+                header=header,
+                max_speakers=_MAX_BATCH_EXEMPLAR_SPEAKERS,
+                max_snippets=_MAX_BATCH_EXEMPLAR_SNIPPETS,
+            )
+
     choice = questionary.select(
         f"{len(needs_identification)} transcript(s) need speaker identification "
         f"(speakers: {total_named_speakers}/{total_speakers} identified, "
@@ -383,18 +624,10 @@ def check_batch_speaker_gate(
         f"segments: {total_named_segments}/{total_segments} identified, "
         f"{total_missing_segments} missing). What would you like to do?",
         choices=[
-            questionary.Choice(
-                "✅ Identify missing speakers first (recommended)",
-                value=SpeakerGateDecision.IDENTIFY,
-            ),
-            questionary.Choice(
-                "⚠️ Proceed with analysis anyway",
-                value=SpeakerGateDecision.PROCEED,
-            ),
-            questionary.Choice(
-                "⏭️ Skip analysis",
-                value=SpeakerGateDecision.SKIP,
-            ),
+            questionary.Choice(label, value=decision)
+            for label, decision in _speaker_gate_choice_specs(
+                config.mode, batch=True
+            )
         ],
         default=SpeakerGateDecision.IDENTIFY,
     ).ask()

@@ -9,6 +9,30 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+def _get_module_output_dir(basename_dir: Path, module_name: str) -> Path:
+    """
+    Resolve the actual output directory for a module (must match output_reporter).
+
+    - Modules with output_namespace/output_version (e.g. voice_charts_core) use
+      basename_dir / namespace / version.
+    - transcript_output writes to run root (transcripts/ subdir); use basename_dir.
+    - simplified_transcript writes to basename_dir/transcripts/; use that.
+    - Others use basename_dir / module_name.
+    """
+    if module_name == "transcript_output":
+        return basename_dir
+    if module_name == "simplified_transcript":
+        return basename_dir / "transcripts"
+    try:
+        from transcriptx.core.pipeline.module_registry import get_module_info
+        info = get_module_info(module_name)
+        if info and getattr(info, "output_namespace", None) and getattr(info, "output_version", None):
+            return basename_dir / info.output_namespace / info.output_version
+    except Exception:
+        pass
+    return basename_dir / module_name
+
+
 @dataclass
 class ModuleValidationRule:
     """Validation rule for a specific module's outputs."""
@@ -104,9 +128,15 @@ MODULE_VALIDATION_RULES = {
         file_extensions={".txt", ".html"},
     ),
     "transcript_output": ModuleValidationRule(
-        required_files=["*_transcript_output_summary.json"],  # Actual file pattern used
-        required_dirs=["data"],  # Just check for data directory
-        min_files=1,  # At least 1 summary file
+        required_files=["transcripts/*.txt", "transcripts/*.csv"],
+        required_dirs=["transcripts"],
+        min_files=1,  # At least one transcript file (txt or csv)
+        file_extensions={".txt", ".csv"},
+    ),
+    "simplified_transcript": ModuleValidationRule(
+        required_files=["*_simplified_transcript.json", "*_simplified_transcript_summary.json"],
+        required_dirs=[],  # writes under transcripts/, no data/ subdir
+        min_files=1,
         file_extensions={".json"},
     ),
     "tics": ModuleValidationRule(
@@ -221,7 +251,7 @@ def validate_module_outputs(
     results = {}
 
     for module_name in expected_modules:
-        module_dir = basename_dir / module_name
+        module_dir = _get_module_output_dir(basename_dir, module_name)
         is_valid, warnings = check_module_has_outputs(module_dir, module_name)
         results[module_name] = (is_valid, warnings)
 

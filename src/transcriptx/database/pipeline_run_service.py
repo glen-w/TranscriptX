@@ -26,8 +26,35 @@ from transcriptx.database.repositories import (
 from transcriptx.database.transcript_ingestion import TranscriptIngestionService
 from transcriptx.database.artifact_registry import ArtifactRegistry
 from transcriptx.database.migrations import require_up_to_date_schema
+from transcriptx.core.models.events import Event
 
 logger = get_logger()
+
+
+def _make_json_serializable(obj: Any) -> Any:
+    """Recursively convert values so they are JSON-serializable for outputs_json."""
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return {k: _make_json_serializable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_make_json_serializable(x) for x in obj]
+    if isinstance(obj, Event):
+        return obj.to_dict()
+    # NumPy scalar/array types are not JSON-serializable by default
+    try:
+        import numpy as np
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return [_make_json_serializable(x) for x in obj.tolist()]
+    except ImportError:
+        pass
+    return obj
 
 
 def _hash_payload(payload: Dict[str, Any]) -> str:
@@ -198,9 +225,11 @@ class PipelineRunCoordinator:
     ) -> None:
         if module_failed:
             if module_result:
-                module_run.outputs_json = module_result
+                module_run.outputs_json = _make_json_serializable(module_result)
                 if isinstance(module_result, dict) and module_result.get("metrics"):
-                    module_run.metrics_json = module_result.get("metrics", {})
+                    module_run.metrics_json = _make_json_serializable(
+                        module_result.get("metrics", {})
+                    )
                 self.session.flush()
             self.module_repo.update_completion(
                 module_run.id,
@@ -217,9 +246,11 @@ class PipelineRunCoordinator:
             transcript_file_id=self.transcript_file.id,
         )
         if module_result:
-            module_run.outputs_json = module_result
+            module_run.outputs_json = _make_json_serializable(module_result)
             if isinstance(module_result, dict) and module_result.get("metrics"):
-                module_run.metrics_json = module_result.get("metrics", {})
+                module_run.metrics_json = _make_json_serializable(
+                    module_result.get("metrics", {})
+                )
             self.session.flush()
         output_hash = self._compute_output_hash(artifacts, module_run)
         self.module_repo.update_completion(

@@ -118,20 +118,14 @@ class SpeakerProfileAggregator:
             "recommendations": [],
         }
 
-        # Aggregate each profile type
-        for profile_type, model_class in self.profile_types.items():
-            try:
-                profile_data = self._get_profile_data(speaker_id, model_class)
-                if profile_data:
-                    aggregated_profile["profile_summary"][profile_type] = profile_data
-                    aggregated_profile["confidence_scores"][profile_type] = (
-                        self._calculate_confidence(profile_type, profile_data)
-                    )
-
-            except Exception as e:
-                self.logger.warning(
-                    f"Failed to aggregate {profile_type} profile for speaker {speaker_id}: {str(e)}"
-                )
+        profiles = self._get_speaker_profiles(speaker_id)
+        for profile_type, profile_data in profiles.items():
+            if not profile_data:
+                continue
+            aggregated_profile["profile_summary"][profile_type] = profile_data
+            aggregated_profile["confidence_scores"][profile_type] = self._calculate_confidence(
+                profile_type, profile_data
+            )
 
         # Generate cross-analysis insights
         aggregated_profile["cross_analysis_insights"] = (
@@ -200,6 +194,18 @@ class SpeakerProfileAggregator:
         except Exception as e:
             self.logger.error(f"Error getting profile data: {str(e)}")
             return None
+
+    def _get_speaker_profiles(self, speaker_id: int) -> Dict[str, Any]:
+        """Return per-type profile data for a speaker."""
+        profiles: Dict[str, Any] = {}
+        for profile_type, model_class in self.profile_types.items():
+            try:
+                profiles[profile_type] = self._get_profile_data(speaker_id, model_class)
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to aggregate {profile_type} profile for speaker {speaker_id}: {str(e)}"
+                )
+        return profiles
 
     def _serialize_profile(self, profile) -> Dict[str, Any]:
         """

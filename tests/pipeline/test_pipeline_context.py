@@ -176,6 +176,50 @@ class TestPipelineContext:
             assert context.get_speaker_map() == {"SPEAKER_00": "Alice"}
             assert context.get_speaker_display_name("SPEAKER_00") == "Alice (SPEAKER_00)"
 
+    def test_anonymisation_keyed_by_db_id_not_display_name(self, tmp_path):
+        """Anonymisation should be keyed by stable speaker_db_id, not display name."""
+        transcript_path = tmp_path / "test.json"
+        transcript_path.write_text('{"segments": []}')
+
+        segments = [
+            {
+                "speaker": "Rana",
+                "speaker_db_id": 7,
+                "text": "Hello",
+                "start": 0.0,
+                "end": 1.0,
+            },
+            {
+                "speaker": "Rana Adib",
+                "speaker_db_id": 7,
+                "text": "Hi",
+                "start": 1.0,
+                "end": 2.0,
+            },
+        ]
+
+        mock_service = MagicMock()
+        mock_service.load_transcript_data.return_value = (
+            segments,
+            "test",
+            str(tmp_path),
+            {},
+        )
+
+        with patch(
+            "transcriptx.core.pipeline.pipeline_context.TranscriptService",
+            return_value=mock_service,
+        ):
+            context = PipelineContext(
+                transcript_path=str(transcript_path),
+                skip_speaker_mapping=True,
+                anonymise_speakers=True,
+            )
+
+        mapping = context.get_runtime_flags().get("speaker_anonymisation_map", {})
+        assert list(mapping.keys()) == ["7"]
+        assert context.get_speaker_display_name("7") == "Speaker 01"
+
     def test_pipeline_context_close_clears_caches(self, pipeline_context_factory):
         """Test close clears cached data."""
         context = pipeline_context_factory()

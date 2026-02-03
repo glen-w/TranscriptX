@@ -8,6 +8,9 @@ corrections review and suggestions.
 from __future__ import annotations
 
 from pathlib import Path
+import os
+import shutil
+import sys
 
 import questionary
 from rich import print
@@ -15,6 +18,7 @@ from rich.panel import Panel
 
 from transcriptx.core.corrections.workflow import (  # type: ignore[import-untyped]
     run_corrections_workflow as run_corrections_postprocessing,
+    write_corrected_transcript as write_corrected_transcript_file,
 )
 from transcriptx.core.utils.config import get_config  # type: ignore[import-untyped]
 from transcriptx.core.utils.logger import get_logger  # type: ignore[import-untyped]
@@ -30,21 +34,28 @@ from transcriptx.database.models import TranscriptFile  # type: ignore[import-un
 from transcriptx.utils.error_handling import graceful_exit  # type: ignore[import-untyped]
 from transcriptx.core.utils.paths import OUTPUTS_DIR  # type: ignore[import-untyped]
 
-from .file_selection_utils import select_transcript_files_interactive
+from .file_selection_utils import (
+    select_transcript_file_interactive,
+    select_transcript_files_interactive,
+)
 
 logger = get_logger()
+
+DELETE_ALL_CONFIRM_PHRASE = "DELETE ALL"
 
 
 def run_corrections_workflow(interactive: bool = True) -> None:
     with graceful_exit():
         print("\n[bold cyan]✏️ Corrections Workflow[/bold cyan]")
+        print(
+            "[dim]We’ll suggest fixes; you choose what to apply. The original file stays unchanged unless you later opt in to update it.[/dim]"
+        )
         if interactive:
             shortcut_help = "\n".join(
                 [
                     "[a] Apply all",
                     "[s] Select occurrences",
-                    "[c] Apply all + add rule with conditions",
-                    "[l] Apply all + add rule (no conditions)",
+                    "[l] Learn as project rule",
                     "[r] Reject suggestion",
                     "[k] Skip suggestion",
                 ]
@@ -57,51 +68,100 @@ def run_corrections_workflow(interactive: bool = True) -> None:
                 )
             )
 
-        transcript_files = select_transcript_files_interactive()
-        if not transcript_files:
+        transcript_path = None
+        if not sys.stdin.isatty():
             print(
-                "\n[yellow]⚠️ No transcript files selected. Returning to menu.[/yellow]"
+                "\n[yellow]⚠️ Non-interactive mode detected. Running suggestions only (no review, no apply, no write-back).[/yellow]"
+            )
+            interactive = False
+            transcript_path = os.environ.get("TRANSCRIPTX_TRANSCRIPT_PATH")
+            if transcript_path:
+                transcript_path = str(Path(transcript_path).expanduser())
+        if transcript_path is None:
+            if not sys.stdin.isatty():
+                print(
+                    "\n[yellow]⚠️ Non-interactive mode requires TRANSCRIPTX_TRANSCRIPT_PATH to be set. Returning.[/yellow]"
+                )
+                return
+            transcript_path = select_transcript_file_interactive()
+        if not transcript_path:
+            print(
+                "\n[yellow]⚠️ No transcript file selected. Returning to menu.[/yellow]"
             )
             return
 
         config = get_config()
         config.analysis.corrections.enabled = True
+        path_obj = Path(transcript_path)
+        if not path_obj.exists():
+            print(f"\n[red]❌ Transcript file not found: {path_obj}[/red]")
+            return
 
-        update_original = questionary.confirm(
-            "Update original transcript file with applied corrections?",
-            default=config.analysis.corrections.update_original_file,
-        ).ask()
-        create_backup = True
-        if update_original:
-            create_backup = questionary.confirm(
-                "Create a backup before updating the transcript?",
-                default=config.analysis.corrections.create_backup,
-            ).ask()
+        mode_label = "review" if interactive else "suggestions"
+        print(f"\n[dim]Running corrections ({mode_label}) for {path_obj.name}[/dim]")
+        try:
+            results = run_corrections_postprocessing(
+                transcript_path=str(path_obj),
+                interactive=interactive,
+                apply_changes=interactive,
+                update_original_file=False,
+                create_backup=True,
+                config=config,
+            )
+            suggestions = results.get("suggestions_count", 0)
+            applied = results.get("applied_count", 0)
+            decisions_path = results.get("decisions_path")
+            patch_log_path = results.get("patch_log_path")
+            corrected_path = results.get("corrected_transcript_path")
+            suggestions_path = results.get("suggestions_path")
 
-        for transcript_path in transcript_files:
-            path_obj = Path(transcript_path)
-            if not path_obj.exists():
-                print(f"\n[red]❌ Transcript file not found: {path_obj}[/red]")
-                continue
+            if suggestions_path:
+                print(f"[dim]Suggestions: {suggestions_path}[/dim]")
+            if decisions_path:
+                print(f"[dim]Decisions: {decisions_path}[/dim]")
+            if patch_log_path:
+                print(f"[dim]Patch log: {patch_log_path}[/dim]")
+            if corrected_path:
+                print(f"[dim]Corrected transcript: {corrected_path}[/dim]")
 
-            mode_label = "review" if interactive else "suggest"
-            print(f"\n[dim]Running corrections ({mode_label}) for {path_obj.name}[/dim]")
-            try:
-                results = run_corrections_postprocessing(
-                    transcript_path=str(path_obj),
-                    interactive=interactive,
-                    update_original_file=bool(update_original),
-                    create_backup=bool(create_backup),
-                    config=config,
-                )
-                suggestions = results.get("suggestions_count", 0)
-                applied = results.get("applied_count", 0)
-                print(
-                    f"[green]✅ Corrections complete: {suggestions} suggestion(s), {applied} applied.[/green]"
-                )
-            except Exception as exc:
-                logger.warning(f"Corrections workflow failed: {exc}", exc_info=True)
-                print(f"[red]Corrections workflow failed: {exc}[/red]")
+            print(
+                f"[green]✅ Corrections complete: {suggestions} suggestion(s), {applied} applied.[/green]"
+            )
+
+            if interactive and applied > 0:
+                update_original = questionary.confirm(
+                    "Update original transcript file with these corrections?",
+                    default=False,
+                ).ask()
+                if update_original:
+                    backup_path = write_corrected_transcript_file(
+                        transcript_path=str(path_obj),
+                        updated_segments=results.get("updated_segments"),
+                        create_backup=True,
+                    )
+                    if backup_path:
+                        print(f"[dim]Backup created: {backup_path}[/dim]")
+        except Exception as exc:
+            logger.warning(f"Corrections workflow failed: {exc}", exc_info=True)
+            print(f"[red]Corrections workflow failed: {exc}[/red]")
+
+
+def _build_post_processing_choices() -> list[str]:
+    """Build post-processing menu choices; prune options only if enabled in settings."""
+    choices = [
+        "✏️ Corrections Review",
+        "📝 Corrections Suggestions Only",
+    ]
+    if get_config().workflow.cli_pruning_enabled:
+        choices.extend([
+            "🧹 Prune old runs (DB only)",
+            "🧹 Prune old runs (DB + outputs)",
+        ])
+    choices.extend([
+        "🗑️ Delete all artefacts",
+        "⬅️ Back to main menu",
+    ])
+    return choices
 
 
 def _show_post_processing_menu() -> None:
@@ -110,13 +170,7 @@ def _show_post_processing_menu() -> None:
         try:
             choice = questionary.select(
                 "Post-processing Options",
-                choices=[
-                    "✏️ Corrections Review",
-                    "📝 Corrections Suggestions Only",
-                    "🧹 Prune old runs (DB only)",
-                    "🧹 Prune old runs (DB + outputs)",
-                    "⬅️ Back to main menu",
-                ],
+                choices=_build_post_processing_choices(),
             ).ask()
         except KeyboardInterrupt:
             print("\n[cyan]Returning to main menu...[/cyan]")
@@ -130,6 +184,8 @@ def _show_post_processing_menu() -> None:
             _run_prune_old_runs(delete_files=False)
         elif choice == "🧹 Prune old runs (DB + outputs)":
             _run_prune_old_runs(delete_files=True)
+        elif choice == "🗑️ Delete all artefacts":
+            _run_delete_all_artefacts()
         elif choice == "⬅️ Back to main menu":
             break
 
@@ -315,6 +371,113 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
             Panel.fit(
                 "\n".join(summary_lines),
                 title="[green]✅ Prune complete[/green]",
+                border_style="green",
+            )
+        )
+
+
+def _run_delete_all_artefacts() -> None:
+    """Delete all artefact files and run directories under the outputs root.
+
+    Flow: dry run (show what would be deleted), y/n gate, then require typing
+    DELETE ALL to proceed.
+    """
+    with graceful_exit():
+        outputs_dir = Path(OUTPUTS_DIR).resolve()
+        if not outputs_dir.exists():
+            print(
+                Panel.fit(
+                    f"Outputs directory does not exist: {outputs_dir}\nNothing to delete.",
+                    title="🗑️ Delete all artefacts",
+                    border_style="yellow",
+                )
+            )
+            return
+
+        # Dry run: collect what would be deleted
+        slug_dirs: list[Path] = []
+        total_dirs = 0
+        for slug_dir in sorted(outputs_dir.iterdir()):
+            if not slug_dir.is_dir() or slug_dir.name.startswith("."):
+                continue
+            slug_dirs.append(slug_dir)
+            run_count = sum(1 for p in slug_dir.iterdir() if p.is_dir() and not p.name.startswith("."))
+            total_dirs += run_count
+
+        summary_lines = [
+            f"Outputs root: {outputs_dir}",
+            f"Slug directories: {len(slug_dirs)}",
+            f"Run directories (total): {total_dirs}",
+            "",
+            "All run directories under each slug would be removed.",
+            "Database rows are NOT deleted; run 'Prune old runs' if you want to clean the DB.",
+        ]
+        if slug_dirs:
+            summary_lines.append("")
+            summary_lines.append("Examples (first 5 slugs):")
+            for slug_dir in slug_dirs[:5]:
+                runs = [p.name for p in slug_dir.iterdir() if p.is_dir() and not p.name.startswith(".")]
+                summary_lines.append(f"  {slug_dir.name}: {len(runs)} run(s)")
+
+        print(
+            Panel.fit(
+                "\n".join(summary_lines),
+                title="🗑️ Delete all artefacts (dry run)",
+                border_style="yellow",
+            )
+        )
+
+        if not slug_dirs:
+            print("\n[green]✅ No artefact directories to delete.[/green]")
+            return
+
+        proceed = questionary.confirm(
+            "Proceed with deletion? (y/n)",
+            default=False,
+        ).ask()
+        if not proceed:
+            print("\n[dim]No changes made.[/dim]")
+            return
+
+        typed = questionary.text(
+            f"Type {DELETE_ALL_CONFIRM_PHRASE!r} (exactly) to confirm:",
+            default="",
+        ).ask()
+        if typed is None or (typed or "").strip() != DELETE_ALL_CONFIRM_PHRASE:
+            print("\n[red]Confirmation phrase did not match. No changes made.[/red]")
+            return
+
+        # Perform deletion: remove each slug's run directories (and their contents)
+        deleted_slugs = 0
+        deleted_runs = 0
+        errors: list[str] = []
+        for slug_dir in slug_dirs:
+            for run_dir in list(slug_dir.iterdir()):
+                if not run_dir.is_dir() or run_dir.name.startswith("."):
+                    continue
+                try:
+                    shutil.rmtree(run_dir)
+                    deleted_runs += 1
+                except Exception as e:
+                    errors.append(f"{run_dir}: {e}")
+            if not any(run_dir.is_dir() for run_dir in slug_dir.iterdir()):
+                deleted_slugs += 1
+
+        result_lines = [
+            f"Run directories deleted: {deleted_runs}",
+            f"Slug directories now empty: {deleted_slugs}",
+        ]
+        if errors:
+            result_lines.append("")
+            result_lines.append(f"Errors ({len(errors)}):")
+            result_lines.extend(f"  {e}" for e in errors[:10])
+            if len(errors) > 10:
+                result_lines.append(f"  ... and {len(errors) - 10} more")
+
+        print(
+            Panel.fit(
+                "\n".join(result_lines),
+                title="[green]✅ Delete all artefacts complete[/green]",
                 border_style="green",
             )
         )

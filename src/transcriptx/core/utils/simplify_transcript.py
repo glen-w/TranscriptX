@@ -32,7 +32,9 @@ class TranscriptSimplifier:
             agreement_words.update(clean_phrase(agr).split())
         return all(word in agreement_words for word in words) and words != []
 
-    def simplify(self, transcript: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def simplify(
+        self, transcript: list[dict[str, Any]], verbose: bool = False
+    ) -> list[dict[str, Any]]:
         simplified = []
         prev_text = None
         for turn in transcript:
@@ -41,10 +43,10 @@ class TranscriptSimplifier:
             cleaned = self.clean_utterance(text)
             # Remove all punctuation for agreement/empty check
             cleaned_no_punct = re.sub(r"[^\w\s]", "", cleaned).strip()
-            # Debug print
-            print(
-                f"ORIG: {text!r} | CLEAN: {cleaned!r} | NOPUNCT: {cleaned_no_punct!r}"
-            )
+            if verbose:
+                print(
+                    f"ORIG: {text!r} | CLEAN: {cleaned!r} | NOPUNCT: {cleaned_no_punct!r}"
+                )
             # Skip if empty or only punctuation after cleaning
             if not cleaned_no_punct or not re.search(r"\w", cleaned_no_punct):
                 continue

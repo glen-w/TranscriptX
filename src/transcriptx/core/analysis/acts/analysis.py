@@ -220,13 +220,13 @@ class ActsAnalysis(AnalysisModule):
 
         # Save per-speaker data
         for speaker, counts in act_counts_per_speaker.items():
-            if is_named_speaker(speaker):
-                output_service.save_data(
-                    counts,
-                    f"acts_{speaker}",
-                    format_type="json",
-                    subdirectory="speakers",
-                )
+            output_service.save_data(
+                counts,
+                f"acts_{speaker}",
+                format_type="json",
+                subdirectory="speakers",
+                speaker=speaker,
+            )
 
         # Save method-specific results if both methods were used
         if self.act_config.method == ClassificationMethod.BOTH:

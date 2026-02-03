@@ -19,7 +19,6 @@ import networkx as nx
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.acts import classify_utterance
 from transcriptx.core.utils.output_standards import (
-    create_readme_file,
     create_standard_output_structure,
     save_global_data,
     save_speaker_data,
@@ -423,15 +422,6 @@ class ConversationLoopsAnalysis(AnalysisModule):
             results, output_structure, base_name, output_service
         )
 
-        # Create README file
-        create_readme_file(
-            output_structure,
-            "conversation_loops",
-            base_name,
-            "Detection and analysis of 3-turn conversation loops. Identifies patterns where "
-            "Speaker A asks a question/directive, Speaker B responds, and Speaker A responds again.",
-        )
-
     def _create_loop_network(
         self,
         analysis_results: Dict[str, Any],
@@ -556,15 +546,6 @@ def analyze_conversation_loops(
 
     # Create comprehensive summary
     create_analysis_summary(analysis_results, output_structure, base_name)
-
-    # Create README file
-    create_readme_file(
-        output_structure,
-        "conversation_loops",
-        base_name,
-        "Detection and analysis of 3-turn conversation loops. Identifies patterns where "
-        "Speaker A asks a question/directive, Speaker B responds, and Speaker A responds again.",
-    )
 
     return analysis_results
 

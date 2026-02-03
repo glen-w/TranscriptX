@@ -4,22 +4,25 @@ Tests for tag extraction analysis module.
 This module tests tag extraction from transcripts.
 """
 
+from __future__ import annotations
+
+from typing import Any
 from unittest.mock import MagicMock, patch
 import pytest
 
-from transcriptx.core.analysis.tag_extraction import TagExtractor, TAG_PATTERNS
+from transcriptx.core.analysis.tag_extraction import TagExtractor, TAG_PATTERNS  # type: ignore[import-untyped]
 
 
 class TestTagExtractor:
     """Tests for TagExtractor."""
     
     @pytest.fixture
-    def tag_extractor(self):
+    def tag_extractor(self) -> TagExtractor:
         """Fixture for TagExtractor instance."""
         return TagExtractor()
     
     @pytest.fixture
-    def sample_segments(self):
+    def sample_segments(self) -> list[dict[str, Any]]:
         """Fixture for sample transcript segments using database-driven speaker identification."""
         return [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "I have an idea for a new project.", "start": 0.0, "end": 2.0},
@@ -28,18 +31,30 @@ class TestTagExtractor:
         ]
     
     @pytest.fixture
-    def sample_speaker_map(self):
+    def sample_speaker_map(self) -> dict[str, str]:
         """Fixture for sample speaker map (deprecated, kept for backward compatibility)."""
         return {}
     
-    def test_tag_extraction_basic(self, tag_extractor, sample_segments, sample_speaker_map):
+    def test_tag_extraction_basic(
+        self,
+        tag_extractor: TagExtractor,
+        sample_segments: list[dict[str, Any]],
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test basic tag extraction."""
         result = tag_extractor.analyze(sample_segments, sample_speaker_map)
         
-        assert "tags" in result or "extracted_tags" in result
-        assert "confidence" in result or "summary" in result
+        assert "tags" in result
+        assert "tag_details" in result
+        assert isinstance(result["tags"], list)
+        assert isinstance(result["tag_details"], dict)
+        assert all(
+            isinstance(v, dict) and "confidence" in v for v in result["tag_details"].values()
+        )
     
-    def test_tag_extraction_idea_tag(self, tag_extractor, sample_speaker_map):
+    def test_tag_extraction_idea_tag(
+        self, tag_extractor: TagExtractor, sample_speaker_map: dict[str, str]
+    ) -> None:
         """Test extraction of 'idea' tag."""
         segments = [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "I have an idea for a new feature.", "start": 0.0, "end": 2.0},
@@ -55,7 +70,9 @@ class TestTagExtractor:
         elif isinstance(tags, dict):
             assert "idea" in tags or any("idea" in str(k).lower() for k in tags.keys())
     
-    def test_tag_extraction_meeting_tag(self, tag_extractor, sample_speaker_map):
+    def test_tag_extraction_meeting_tag(
+        self, tag_extractor: TagExtractor, sample_speaker_map: dict[str, str]
+    ) -> None:
         """Test extraction of 'meeting' tag."""
         segments = [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "Let's discuss this in our meeting today.", "start": 0.0, "end": 2.0},
@@ -71,7 +88,9 @@ class TestTagExtractor:
         elif isinstance(tags, dict):
             assert "meeting" in tags or any("meeting" in str(k).lower() for k in tags.keys())
     
-    def test_tag_extraction_question_tag(self, tag_extractor, sample_speaker_map):
+    def test_tag_extraction_question_tag(
+        self, tag_extractor: TagExtractor, sample_speaker_map: dict[str, str]
+    ) -> None:
         """Test extraction of 'question' tag."""
         segments = [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "What do you think about this?", "start": 0.0, "end": 2.0},
@@ -87,16 +106,20 @@ class TestTagExtractor:
         elif isinstance(tags, dict):
             assert "question" in tags or any("question" in str(k).lower() for k in tags.keys())
     
-    def test_tag_extraction_empty_segments(self, tag_extractor, sample_speaker_map):
+    def test_tag_extraction_empty_segments(
+        self, tag_extractor: TagExtractor, sample_speaker_map: dict[str, str]
+    ) -> None:
         """Test tag extraction with empty segments."""
-        segments = []
+        segments: list[dict[str, Any]] = []
         
         result = tag_extractor.analyze(segments, sample_speaker_map)
         
         assert result is not None
-        assert "tags" in result or "extracted_tags" in result
+        assert "tags" in result
     
-    def test_tag_extraction_early_window(self, tag_extractor, sample_speaker_map):
+    def test_tag_extraction_early_window(
+        self, tag_extractor: TagExtractor, sample_speaker_map: dict[str, str]
+    ) -> None:
         """Test that tag extraction focuses on early segments."""
         segments = [
             {"speaker": "Alice", "speaker_db_id": 1, "text": "I have an idea.", "start": 0.0, "end": 2.0},
@@ -109,12 +132,18 @@ class TestTagExtractor:
         # Should extract tags from early segments
         assert result is not None
     
-    def test_tag_extraction_confidence_scoring(self, tag_extractor, sample_segments, sample_speaker_map):
+    def test_tag_extraction_confidence_scoring(
+        self,
+        tag_extractor: TagExtractor,
+        sample_segments: list[dict[str, Any]],
+        sample_speaker_map: dict[str, str],
+    ) -> None:
         """Test that tags include confidence scores."""
         result = tag_extractor.analyze(sample_segments, sample_speaker_map)
         
         # Should include confidence information
-        assert "confidence" in result or any(
-            isinstance(tag, dict) and "confidence" in tag 
-            for tag in result.get("tags", result.get("extracted_tags", []))
+        assert "tag_details" in result
+        assert any(
+            isinstance(details, dict) and "confidence" in details
+            for details in result["tag_details"].values()
         )

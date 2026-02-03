@@ -14,7 +14,6 @@ from transcriptx.core.analysis.interactions.visualization import (
     create_interaction_network,
     create_interaction_network_graph,
 )
-from transcriptx.core.utils.output_standards import create_readme_file
 
 
 class InteractionsAnalysis(AnalysisModule):
@@ -123,15 +122,6 @@ class InteractionsAnalysis(AnalysisModule):
 
         # Create comprehensive summary
         self._create_analysis_summary(results, output_structure, base_name, output_service)
-
-        # Create README file
-        create_readme_file(
-            output_structure,
-            "interactions",
-            base_name,
-            "Comprehensive analysis of speaker interactions including interruptions, "
-            "responses, and interaction patterns.",
-        )
 
     def _create_interaction_network(
         self,

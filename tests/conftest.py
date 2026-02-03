@@ -8,15 +8,53 @@ sample transcript data, temporary files, and mocks for external dependencies.
 import json
 import os
 import sys
-import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Ensure local repo paths win for imports.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+# If a different `tests` package is already imported (e.g., from another checkout),
+# purge it so pytest imports this workspace's `tests/*`.
+_repo_tests_dir = (_REPO_ROOT / "tests").resolve()
+_loaded_tests = sys.modules.get("tests")
+try:
+    loaded_tests_file = getattr(_loaded_tests, "__file__", None)
+    loaded_tests_paths = list(getattr(_loaded_tests, "__path__", []))  # namespace pkgs
+
+    is_ours = False
+    if loaded_tests_file:
+        is_ours = str(Path(loaded_tests_file).resolve()).startswith(str(_repo_tests_dir))
+    elif loaded_tests_paths:
+        is_ours = any(str(Path(p).resolve()).startswith(str(_repo_tests_dir)) for p in loaded_tests_paths)
+
+    if _loaded_tests is not None and not is_ours:
+        for name in list(sys.modules.keys()):
+            if name == "tests" or name.startswith("tests."):
+                sys.modules.pop(name, None)
+except Exception:
+    pass
+
+from tests.capabilities import has_convokit, has_docker, has_ffmpeg, has_models
+
+# Put `src/` first so `import transcriptx` uses workspace code.
+sys.path.insert(0, str(_REPO_ROOT / "src"))
+# Put repo root early so `import tests.*` resolves locally.
+sys.path.insert(1, str(_REPO_ROOT))
+
+# Force-import local `tests` package after sys.path ordering is corrected.
+try:
+    import importlib
+
+    importlib.invalidate_caches()
+    importlib.import_module("tests")
+except Exception:
+    pass
 
 
 # ============================================================================
@@ -408,56 +446,30 @@ def pytest_configure(config):
     )
 
 
-def _has_ffmpeg() -> bool:
-    return shutil.which("ffprobe") is not None or shutil.which("ffmpeg") is not None
-
-
-def _has_docker() -> bool:
-    if shutil.which("docker") is None:
-        return False
-    if os.getenv("DOCKER_HOST"):
-        return True
-    return os.path.exists("/var/run/docker.sock")
-
-
-def _has_models() -> bool:
-    if os.getenv("TRANSCRIPTX_TEST_MODELS") == "1":
-        return True
-    try:
-        import importlib.util
-
-        if importlib.util.find_spec("spacy") is None:
-            return False
-        if importlib.util.find_spec("en_core_web_sm") is not None:
-            return True
-    except Exception:
-        return False
-    return False
-
-
-def _has_convokit() -> bool:
-    if os.getenv("TRANSCRIPTX_TEST_MODELS") == "1":
-        return True
-    try:
-        import importlib.util
-
-        return importlib.util.find_spec("convokit") is not None
-    except Exception:
-        return False
-
-
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to add markers based on test paths and names."""
-    has_models = _has_models()
-    has_docker = _has_docker()
-    has_ffmpeg = _has_ffmpeg()
-    has_convokit = _has_convokit()
+    has_models_enabled = has_models()
+    has_docker_enabled = has_docker()
+    has_ffmpeg_enabled = has_ffmpeg()
+    has_convokit_enabled = has_convokit()
 
     for item in items:
         path_str = str(item.fspath).lower()
         
-        # Add integration marker to tests in integration/ directory
-        if "integration" in path_str:
+        # Add integration markers by path
+        if "/tests/integration/core/" in path_str:
+            if not any(marker.name == "integration" for marker in item.iter_markers()):
+                item.add_marker(pytest.mark.integration)
+            if not any(marker.name == "integration_core" for marker in item.iter_markers()):
+                item.add_marker(pytest.mark.integration_core)
+        elif "/tests/integration/extended/" in path_str or "/tests/integration/" in path_str:
+            if not any(marker.name == "integration" for marker in item.iter_markers()):
+                item.add_marker(pytest.mark.integration)
+            if not any(marker.name == "integration_extended" for marker in item.iter_markers()):
+                item.add_marker(pytest.mark.integration_extended)
+
+        # Treat CLI workflow tests as integration-level by default (they exercise orchestration).
+        if "/tests/cli/" in path_str:
             if not any(marker.name == "integration" for marker in item.iter_markers()):
                 item.add_marker(pytest.mark.integration)
         
@@ -481,7 +493,12 @@ def pytest_collection_modifyitems(config, items):
             if not any(marker.name == "slow" for marker in item.iter_markers()):
                 item.add_marker(pytest.mark.slow)
         
-        # Add requires_models marker for model-heavy areas
+        # Contract tests are offline/deterministic by path (no name heuristics).
+        is_contract_path = "/tests/contracts/" in path_str
+        if is_contract_path and not any(marker.name == "contract" for marker in item.iter_markers()):
+            item.add_marker(pytest.mark.contract)
+
+        # Add requires_models marker for model-heavy areas (skip for contract path)
         if any(keyword in path_str for keyword in [
             "ner",
             "topic_modeling",
@@ -490,7 +507,7 @@ def pytest_collection_modifyitems(config, items):
             "entity_sentiment",
             "semantic_similarity_advanced",
             "convokit",
-        ]):
+        ]) and not is_contract_path:
             if not any(marker.name == "requires_models" for marker in item.iter_markers()):
                 item.add_marker(pytest.mark.requires_models)
 
@@ -511,17 +528,17 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(pytest.mark.performance)
 
         # Apply skips for missing capabilities
-        if item.get_closest_marker("requires_models") and not has_models:
+        if item.get_closest_marker("requires_models") and not has_models_enabled:
             reason = "requires_models: set TRANSCRIPTX_TEST_MODELS=1 and install models"
             item.add_marker(pytest.mark.skip(reason=reason))
 
-        if item.get_closest_marker("requires_docker") and not has_docker:
+        if item.get_closest_marker("requires_docker") and not has_docker_enabled:
             item.add_marker(pytest.mark.skip(reason="requires_docker: Docker not available"))
 
-        if item.get_closest_marker("requires_ffmpeg") and not has_ffmpeg:
+        if item.get_closest_marker("requires_ffmpeg") and not has_ffmpeg_enabled:
             item.add_marker(pytest.mark.skip(reason="requires_ffmpeg: ffmpeg/ffprobe not available"))
 
-        if item.get_closest_marker("requires_models") and "convokit" in path_str and not has_convokit:
+        if item.get_closest_marker("requires_models") and "convokit" in path_str and not has_convokit_enabled:
             item.add_marker(pytest.mark.skip(reason="requires_models: convokit not installed"))
 
 

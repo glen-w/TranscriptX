@@ -736,6 +736,7 @@ class TranscriptXConfig:
                 "wordcloud_max_words": self.analysis.wordcloud_max_words,
                 "wordcloud_min_font_size": self.analysis.wordcloud_min_font_size,
                 "wordcloud_stopwords": self.analysis.wordcloud_stopwords,
+                "exclude_unidentified_from_speaker_charts": self.analysis.exclude_unidentified_from_speaker_charts,
                 "readability_metrics": self.analysis.readability_metrics,
                 "interaction_overlap_threshold": self.analysis.interaction_overlap_threshold,
                 "interaction_min_gap": self.analysis.interaction_min_gap,
@@ -1123,6 +1124,7 @@ def initialize_default_profiles():
             "subprocess_timeout": 5,
             "mp3_bitrate": "192k",
             "conversion_time_factor": 0.5,
+            "default_config_save_path": "",
         }
         profile_manager.create_default_profile(
             "workflow", workflow_defaults, "Default workflow profile"

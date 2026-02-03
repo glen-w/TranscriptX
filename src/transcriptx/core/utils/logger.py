@@ -69,12 +69,11 @@ def setup_logging(
     """
     global _logger
 
-    # Return existing logger if already configured
-    if _logger is not None:
-        return _logger
-
     # Create logger with the transcriptx namespace
     logger = logging.getLogger("transcriptx")
+    logger.disabled = False
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
     logger.setLevel(getattr(logging, level.upper()))
 
     # Create formatter for consistent log message formatting
@@ -150,6 +149,11 @@ def log_error(
         logger.error(message, exc_info=True)
     else:
         logger.error(message)
+    for handler in logger.handlers:
+        try:
+            handler.flush()
+        except Exception:
+            continue
 
 
 def log_warning(module: str, warning: str, context: str = "") -> None:
@@ -446,4 +450,7 @@ def reset_logging() -> None:
     the logging system from scratch.
     """
     global _logger
+    logger = logging.getLogger("transcriptx")
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
     _logger = None

@@ -479,7 +479,8 @@ def select_files_interactive(
                 try:
                     selected_indices = getattr(checkbox_list, "_selected_rows", set())
                     if selected_indices:
-                        for i in selected_indices:
+                        # _selected_rows is a set; sort for deterministic ordering.
+                        for i in sorted(selected_indices):
                             if i < len(choices):
                                 value = choices[i][0]
                                 if isinstance(value, Path):
@@ -584,8 +585,11 @@ def select_files_interactive(
             try:
                 selected_indices = getattr(checkbox_list, "_selected_rows", set())
                 if selected_indices:
+                    # _selected_rows is a set; sort for deterministic ordering.
                     selected_values = [
-                        choices[i][0] for i in selected_indices if i < len(choices)
+                        choices[i][0]
+                        for i in sorted(selected_indices)
+                        if i < len(choices)
                     ]
             except (AttributeError, IndexError, TypeError):
                 pass
@@ -627,6 +631,14 @@ def select_files_interactive(
             logger.debug(f"Error in confirm handler: {e}")
             event.app.exit(result=[])
 
+    # In multi-select mode, Enter should also confirm (common expectation).
+    if config.multi_select:
+
+        @kb.add("enter", eager=True)
+        @kb.add("c-m", eager=True)  # Enter (control-m on some terminals)
+        def confirm_selection_enter(event):
+            confirm_selection(event)
+
     # Build help text with keyboard shortcuts
     shortcuts = [
         ("☑️", "Select", "[Space]"),
@@ -650,7 +662,7 @@ def select_files_interactive(
         shortcuts.append(
             ("👁️", config.toggle_hidden_label, f"[{config.toggle_hidden_key}]")
         )
-    confirm_key = "[Enter/f]" if not config.multi_select else "[f]"
+    confirm_key = "[Enter/f]"
     shortcuts.extend(
         [
             ("🗑️", "Delete", "[Delete/Ctrl+D]"),

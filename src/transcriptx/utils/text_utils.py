@@ -59,6 +59,8 @@ def is_named_speaker(name: str) -> bool:
     # Check for system-generated names
     system_patterns = [
         r"^speaker_\d+$",
+        r"^speaker\s*\d+",  # "Speaker 10", "Speaker_10 (Speaker_10)"
+        r"^\d+$",  # pure numeric placeholder, e.g. "10"
         r"^unidentified.*$",
         r"^unknown$",
         r"^unknown_speaker$",

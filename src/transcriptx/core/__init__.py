@@ -24,6 +24,7 @@ Available Analysis Modules:
 - contagion: Emotional contagion detection
 - wordclouds: Word cloud generation with various approaches
 - transcript_output: Human-readable transcript generation
+- simplified_transcript: Simplified transcript (tics/agreements/repetitions removed)
 
 """
 

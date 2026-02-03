@@ -18,6 +18,7 @@ from transcriptx.cli.config_editors import (
     edit_group_analysis_config,
     edit_logging_config,
     edit_dashboard_config,
+    edit_workflow_config,
     show_current_config,
     save_config_interactive,
 )
@@ -41,6 +42,7 @@ def edit_config_interactive() -> None:
                 "👥 Group Analysis Settings",
                 "🌐 Dashboard Settings",
                 "📝 Logging Settings",
+                "⚙️  Workflow / CLI Settings",
                 "⚙️  Profile Management",
                 "👀 View Current Configuration",
                 "💾 Save Configuration",
@@ -65,6 +67,8 @@ def edit_config_interactive() -> None:
                 edit_dashboard_config(config)
             elif choice == "📝 Logging Settings":
                 edit_logging_config(config)
+            elif choice == "⚙️  Workflow / CLI Settings":
+                edit_workflow_config(config)
             elif choice == "⚙️  Profile Management":
                 from transcriptx.cli.profile_manager_ui import manage_profiles_interactive
 

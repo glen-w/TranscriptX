@@ -490,38 +490,6 @@ def tag_acts(
         base_name,
     )
 
-    # --- README for acts output structure ---
-    readme_path = os.path.join(output_structure.module_dir, "README.md")
-    readme_content = f"""# Acts Analysis Output Structure
-
-## Overview
-This directory contains dialogue act classification analysis for the transcript.
-
-## Files
-- **Data files**: acts/data/
-  - `{base_name}_with_acts.json` - Transcript with dialogue acts and confidence scores
-  - `{base_name}_acts_summary.json` - Summary statistics per speaker
-  - `{base_name}_acts_summary.csv` - CSV format summary
-  - `{base_name}_acts_confidence.json` - Confidence analysis for each act type
-
-- **Charts**: acts/charts/
-  - **Bar charts**: acts/charts/bar/
-  - **Pie charts**: acts/charts/pie/
-  - **Temporal plots**: acts/charts/temporal/
-
-## Act Types
-The system classifies utterances into the following dialogue act types:
-- question, suggestion, agreement, disagreement, clarification, feedback
-- response, greeting, farewell, acknowledgement, command, apology
-- gratitude, statement, interruption, hesitation, emphasis, uncertainty
-
-## Confidence Scoring
-Each classification includes a confidence score (0.0-1.0) indicating the reliability of the classification.
-
-Generated for transcript: {base_name}
-"""
-    write_text(readme_path, readme_content)
-
     # Aggregate per-speaker stats
     speaker_stats = {
         speaker: dict(counter) for speaker, counter in act_counts_per_speaker.items()

@@ -58,7 +58,7 @@ def doctor(
 
 @audit_app.callback()
 def audit(
-    run_id: int = typer.Argument(..., help="PipelineRun ID to audit"),
+    run_id: int = typer.Option(..., "--run-id", "-r", help="PipelineRun ID to audit"),
     json_output: bool = typer.Option(False, "--json", help="Emit JSON report"),
 ) -> None:
     """Audit a PipelineRun for artifact integrity and manifest coverage."""

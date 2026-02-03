@@ -33,12 +33,6 @@ def prompt_for_audio_file(audio_dir=None):
         if audio_dir is None:
             config = get_config()
             audio_dir = str(get_recordings_folder_start_path(config))
-        elif audio_dir == RECORDINGS_DIR:
-            # If default is used, check if config has custom folders
-            config = get_config()
-            if config.input.recordings_folders:
-                audio_dir = str(get_recordings_folder_start_path(config))
-
         audio_exts = (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg")
         files = []
 

@@ -18,6 +18,7 @@ class ChartSpec:
         "line_timeseries",
         "heatmap_matrix",
         "bar_categorical",
+        "box_plot",
         "network_graph",
         "scatter",
         "scatter_events",
@@ -83,6 +84,20 @@ class BarCategoricalSpec(ChartSpec):
         super().validate()
         if self.series is None and (not self.categories or not self.values):
             raise ValueError("categories and values are required for bar_categorical charts")
+
+
+@dataclass
+class BoxSpec(ChartSpec):
+    """Spec for box plots."""
+
+    series: Sequence[dict[str, Any]] = ()
+    orientation: Literal["vertical", "horizontal"] = "vertical"
+    show_points: bool = False
+
+    def validate(self) -> None:
+        super().validate()
+        if not self.series:
+            raise ValueError("series is required for box_plot charts")
 
 
 @dataclass

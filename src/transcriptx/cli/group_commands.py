@@ -4,76 +4,95 @@ Group analysis CLI commands.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich import print
 
-from transcriptx.core.pipeline.pipeline import run_analysis_pipeline  # type: ignore[import]
-from transcriptx.core.pipeline.module_registry import get_default_modules  # type: ignore[import]
-from transcriptx.core.utils.group_resolver import (  # type: ignore[import]
-    resolve_group,
-    to_domain_transcript_set,
-)
-from transcriptx.database import get_session  # type: ignore[import]
-from transcriptx.database.repositories.transcript_set import (  # type: ignore[import]
-    TranscriptSetRepository,
-)
-
+from transcriptx.core.pipeline.module_registry import get_default_modules
+from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
+from transcriptx.core.pipeline.target_resolver import GroupRef
+from transcriptx.core.services.group_service import GroupService
 
 app = typer.Typer(help="Group analysis commands")
 
 
-@app.command("list")
-def list_groups() -> None:
-    """List persisted TranscriptSets."""
-    session = get_session()
-    try:
-        repo = TranscriptSetRepository(session)
-        groups = repo.list_sets()
-    finally:
-        session.close()
+def _split_csv(value: str) -> List[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
 
+
+@app.command("create")
+def create_group(
+    name: Optional[str] = typer.Option(None, "--name", help="Group name"),
+    group_type: str = typer.Option(
+        "merged_event",
+        "--type",
+        help="Group type: merged_event|baseline|comparison|other",
+    ),
+    transcripts: str = typer.Option(
+        ...,
+        "--transcripts",
+        help="Comma-separated transcript paths or transcript_file UUIDs",
+    ),
+    description: Optional[str] = typer.Option(None, "--description"),
+) -> None:
+    """Create a group (or return existing by deterministic key)."""
+    transcript_refs = _split_csv(transcripts)
+    GroupService.validate_transcripts_exist(transcript_refs)
+    group = GroupService.create_or_get_group(
+        name=name,
+        group_type=group_type,
+        transcript_refs=transcript_refs,
+        description=description,
+    )
+    print(
+        f"[green]Group:[/green] {group.uuid} | key={group.key} | "
+        f"{len(group.transcript_file_uuids)} transcripts"
+    )
+
+
+@app.command("list")
+def list_groups(
+    group_type: Optional[str] = typer.Option(None, "--type", help="Filter by type")
+) -> None:
+    """List persisted groups."""
+    groups = GroupService.list_groups(group_type=group_type)
     if not groups:
-        print("[yellow]No TranscriptSets found.[/yellow]")
+        print("[yellow]No groups found.[/yellow]")
         return
 
-    print("[bold]TranscriptSets[/bold]")
+    print("[bold]Groups[/bold]")
     for group in groups:
         name = group.name or "(unnamed)"
-        count = len(group.transcript_ids or [])
-        created = group.created_at.isoformat() if group.created_at else "unknown"
-        print(f"- {group.uuid} | {name} | {count} transcripts | {created}")
+        count = len(group.transcript_file_uuids or [])
+        updated = group.updated_at.isoformat() if group.updated_at else "unknown"
+        key_prefix = group.key[:12]
+        print(f"- {group.uuid} | {name} | {group.type} | {count} | {key_prefix} | {updated}")
 
 
 @app.command("show")
-def show_group(identifier: str = typer.Argument(..., help="UUID, key, or name")) -> None:
-    """Show details for a TranscriptSet."""
-    group = resolve_group(identifier)
-
-    session = get_session()
-    try:
-        repo = TranscriptSetRepository(session)
-        members = repo.resolve_members(group)
-    finally:
-        session.close()
+def show_group(
+    identifier: str = typer.Option(..., "--identifier", "-i", help="UUID, key, or name")
+) -> None:
+    """Show details for a group."""
+    group = GroupService.resolve_group_identifier(identifier)
+    members = GroupService.get_members(group.id) if group.id is not None else []
 
     print(f"[bold]Group:[/bold] {group.uuid}")
     if group.name:
         print(f"Name: {group.name}")
-    print(f"Transcript IDs: {len(group.transcript_ids or [])}")
+    print(f"Type: {group.type}")
+    print(f"Key: {group.key}")
+    print(f"Transcript count: {len(group.transcript_file_uuids or [])}")
     if members:
         print("Transcript files:")
         for member in members:
             print(f"- {member.file_path}")
-    else:
-        for transcript_id in group.transcript_ids or []:
-            print(f"- {transcript_id}")
 
 
-@app.command("analyze")
-def analyze_group(
-    identifier: str = typer.Argument(..., help="UUID, key, or name"),
+@app.command("run")
+def run_group(
+    identifier: str = typer.Option(..., "--identifier", "-i", help="UUID, key, or name"),
     modules: str = typer.Option(
         "all", "--modules", help="Comma-separated list of modules or 'all'"
     ),
@@ -81,17 +100,18 @@ def analyze_group(
         False, "--persist", help="Persist run metadata and artifacts to DB"
     ),
 ) -> None:
-    """Run analysis for a persisted TranscriptSet."""
-    group = resolve_group(identifier)
-    transcript_set = to_domain_transcript_set(group)
+    """Run analysis for a persisted group."""
+    group = GroupService.resolve_group_identifier(identifier)
+    members = GroupService.get_members(group.id) if group.id is not None else []
+    transcript_paths = [m.file_path for m in members if m.file_path]
 
     if modules.lower() == "all":
-        selected_modules = get_default_modules()
+        selected_modules = get_default_modules(transcript_paths)
     else:
         selected_modules = [m.strip() for m in modules.split(",") if m.strip()]
 
     run_analysis_pipeline(
-        target=transcript_set,
+        target=GroupRef(group_uuid=group.uuid),
         selected_modules=selected_modules,
         persist=persist,
     )
@@ -99,31 +119,21 @@ def analyze_group(
 
 @app.command("delete")
 def delete_group(
-    identifier: str = typer.Argument(..., help="UUID, key, or name"),
+    identifier: str = typer.Option(..., "--identifier", "-i", help="UUID, key, or name"),
     force: bool = typer.Option(
         False, "--force", "-f", help="Delete without confirmation"
     ),
 ) -> None:
-    """Delete a persisted TranscriptSet."""
-    group = resolve_group(identifier)
-    group_uuid = group.uuid
+    """Delete a group."""
+    group = GroupService.resolve_group_identifier(identifier)
     if not force:
-        confirm = typer.confirm(
-            f"Delete TranscriptSet {group_uuid}? This is permanent."
-        )
+        confirm = typer.confirm(f"Delete group {group.uuid}? This is permanent.")
         if not confirm:
             print("[yellow]Delete cancelled.[/yellow]")
             return
 
-    session = get_session()
-    try:
-        repo = TranscriptSetRepository(session)
-        refreshed = repo.get_by_uuid(group_uuid)
-        if refreshed is None:
-            print("[yellow]TranscriptSet not found.[/yellow]")
-            return
-        repo.delete_transcript_set(refreshed)
-    finally:
-        session.close()
-
-    print("[green]TranscriptSet deleted.[/green]")
+    deleted = GroupService.delete_group(group.uuid)
+    if deleted:
+        print("[green]Group deleted.[/green]")
+    else:
+        print("[yellow]Group not found.[/yellow]")

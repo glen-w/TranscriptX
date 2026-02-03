@@ -9,14 +9,18 @@ from transcriptx.core.analysis.summary import (  # type: ignore[import-untyped]
 from transcriptx.core.pipeline.pipeline_context import (  # type: ignore[import-untyped]
     PipelineContext,
 )
+from transcriptx.core.utils import output_standards as output_standards_module
+from transcriptx.core.utils import paths as paths_module
 
 
-def test_highlights_summary_outputs(tmp_path) -> None:
+def test_highlights_summary_outputs(tmp_path, monkeypatch) -> None:
+    # Ensure outputs are written under tmp_path for the test
+    monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(tmp_path))
+    monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(tmp_path))
     transcript_path = (
-        Path(__file__).resolve().parent.parent
+        Path(__file__).resolve().parents[2]
         / "fixtures"
-        / "data"
-        / "tiny_diarized.json"
+        / "mini_transcript.json"
     )
     context = PipelineContext(
         transcript_path=str(transcript_path),

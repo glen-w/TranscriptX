@@ -4,6 +4,8 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 
+from transcriptx.core.analysis.voice.schema import EGEMAPS_CANONICAL_FIELDS
+
 from transcriptx.core.utils.lazy_imports import optional_import
 
 
@@ -59,6 +61,74 @@ def compute_voiced_ratio(
     if total == 0:
         return None
     return float(voiced / total)
+
+
+def compute_vad_runs(
+    wave: np.ndarray, sample_rate: int, vad_mode: int
+) -> tuple[float | None, list[float], list[float]]:
+    """
+    Compute voiced/silence run lengths (in seconds) and voiced ratio.
+    """
+    try:
+        webrtcvad = optional_import("webrtcvad", "voice activity detection")
+    except ImportError:
+        return (None, [], [])
+
+    if sample_rate not in {8000, 16000, 32000, 48000}:
+        return (None, [], [])
+
+    vad = webrtcvad.Vad(int(vad_mode))
+    pcm = np.clip(wave, -1.0, 1.0)
+    pcm16 = (pcm * 32767.0).astype(np.int16, copy=False)
+    pcm_bytes = pcm16.tobytes()
+
+    frame_ms = 20
+    frame_len = int(sample_rate * frame_ms / 1000)
+    bytes_per_frame = frame_len * 2
+    if bytes_per_frame <= 0:
+        return (None, [], [])
+
+    voiced_runs: list[float] = []
+    silence_runs: list[float] = []
+    total_frames = 0
+    voiced_frames = 0
+    current_state: bool | None = None
+    current_len = 0
+
+    for i in range(0, len(pcm_bytes) - bytes_per_frame + 1, bytes_per_frame):
+        frame = pcm_bytes[i : i + bytes_per_frame]
+        total_frames += 1
+        try:
+            is_voiced = bool(vad.is_speech(frame, sample_rate))
+        except Exception:
+            is_voiced = False
+        if is_voiced:
+            voiced_frames += 1
+        if current_state is None:
+            current_state = is_voiced
+            current_len = 1
+            continue
+        if is_voiced == current_state:
+            current_len += 1
+        else:
+            run_seconds = (current_len * frame_ms) / 1000.0
+            if current_state:
+                voiced_runs.append(run_seconds)
+            else:
+                silence_runs.append(run_seconds)
+            current_state = is_voiced
+            current_len = 1
+
+    if current_state is not None and current_len > 0:
+        run_seconds = (current_len * frame_ms) / 1000.0
+        if current_state:
+            voiced_runs.append(run_seconds)
+        else:
+            silence_runs.append(run_seconds)
+
+    if total_frames == 0:
+        return (None, voiced_runs, silence_runs)
+    return (float(voiced_frames / total_frames), voiced_runs, silence_runs)
 
 
 def compute_pitch_stats(
@@ -170,6 +240,8 @@ def extract_egemaps(wave: np.ndarray, sample_rate: int) -> Dict[str, float]:
     out: Dict[str, float] = {}
     for col, short in EGEMAPS_FIELDS.items():
         if col not in row:
+            continue
+        if short not in EGEMAPS_CANONICAL_FIELDS:
             continue
         val = row.get(col)
         try:

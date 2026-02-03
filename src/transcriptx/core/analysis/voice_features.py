@@ -21,6 +21,8 @@ from transcriptx.core.utils.module_result import (  # type: ignore[import-untype
 from transcriptx.core.analysis.voice.extract import (  # type: ignore[import-untyped]
     load_or_compute_voice_features,
 )
+from transcriptx.core.analysis.voice.deps import check_voice_optional_deps  # type: ignore[import-untyped]
+from transcriptx.core.utils.config import get_config  # type: ignore[import-untyped]
 
 logger = get_logger()
 
@@ -55,6 +57,38 @@ class VoiceFeaturesAnalysis(AnalysisModule):
                 runtime_flags=context.get_runtime_flags(),
             )
 
+            voice_cfg = getattr(getattr(get_config(), "analysis", None), "voice", None)
+            egemaps_enabled = bool(getattr(voice_cfg, "egemaps_enabled", True))
+            deps = check_voice_optional_deps(egemaps_enabled=egemaps_enabled)
+            if not deps.get("ok"):
+                payload = {
+                    "status": "skipped",
+                    "skipped_reason": "missing_optional_deps",
+                    "missing_optional_deps": deps.get("missing_optional_deps", []),
+                    "install_hint": deps.get("install_hint"),
+                }
+                output_service.save_data(
+                    payload, "voice_features_locator", format_type="json"
+                )
+                try:
+                    context.store_analysis_result(self.module_name, payload)
+                except Exception:
+                    pass
+                log_analysis_complete(self.module_name, context.transcript_path)
+                return build_module_result(
+                    module_name=self.module_name,
+                    status="success",
+                    started_at=started_at,
+                    finished_at=now_iso(),
+                    artifacts=output_service.get_artifacts(),
+                    metrics={
+                        "skipped_reason": payload["skipped_reason"],
+                        "missing_optional_deps": payload["missing_optional_deps"],
+                    },
+                    payload_type="analysis_results",
+                    payload=payload,
+                )
+
             locator = load_or_compute_voice_features(
                 context=context,
                 output_service=output_service,
@@ -67,6 +101,7 @@ class VoiceFeaturesAnalysis(AnalysisModule):
             for key, artifact_type in (
                 ("voice_feature_core_path", "data"),
                 ("voice_feature_egemaps_path", "data"),
+                ("voice_feature_vad_runs_path", "data"),
                 ("cache_meta_path", "json"),
             ):
                 path = locator.get(key)

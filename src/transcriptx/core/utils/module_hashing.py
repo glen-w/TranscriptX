@@ -10,9 +10,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from transcriptx.core.pipeline.module_registry import get_module_function
-
-
 def _hash_payload(payload: Dict[str, Any]) -> str:
     serialized = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True
@@ -22,6 +19,8 @@ def _hash_payload(payload: Dict[str, Any]) -> str:
 
 def compute_module_source_hash(module_name: str) -> str:
     """Compute hash of a module's source file contents."""
+    from transcriptx.core.pipeline.module_registry import get_module_function
+
     module_func = get_module_function(module_name)
     if module_func is None:
         return ""

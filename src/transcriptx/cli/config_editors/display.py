@@ -48,7 +48,7 @@ def show_current_config(config):
     print(strip_emojis(msg) if not config.use_emojis else msg)
     msg = f"  • Min speakers: {config.transcription.min_speakers}"
     print(strip_emojis(msg) if not config.use_emojis else msg)
-    msg = f"  • Max speakers: {config.transcription.max_speakers}"
+    msg = f"  • Max speakers: {config.transcription.max_speakers if config.transcription.max_speakers is not None else 'no limit'}"
     print(strip_emojis(msg) if not config.use_emojis else msg)
 
     print("\n[bold]Output Settings:[/bold]")

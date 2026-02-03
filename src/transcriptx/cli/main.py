@@ -48,8 +48,9 @@ from rich import print
 
 # Import core TranscriptX functionality
 from transcriptx.core.utils.config import load_config, get_config
+from transcriptx.core.config.persistence import get_project_config_path
 from transcriptx.core.utils.logger import get_logger, setup_logging, log_error
-from transcriptx.core.utils.simplify_transcript import TranscriptSimplifier
+from transcriptx.core.analysis.simplified_transcript import TranscriptSimplifier
 from transcriptx.core.utils.paths import ensure_data_dirs
 
 # Import enhanced error handling
@@ -163,10 +164,23 @@ def _spinner_print_guard():
             SpinnerManager.resume_spinner()
 
     builtins.print = spinner_safe_print
+    main_mod = sys.modules.get("__main__")
+    had_spinner = main_mod is not None and hasattr(main_mod, "spinner_safe_print")
+    old_spinner = getattr(main_mod, "spinner_safe_print", None) if main_mod else None
+    if main_mod is not None:
+        main_mod.spinner_safe_print = spinner_safe_print
     try:
         yield
     finally:
         builtins.print = original_print
+        if main_mod is not None:
+            if had_spinner:
+                main_mod.spinner_safe_print = old_spinner
+            else:
+                try:
+                    delattr(main_mod, "spinner_safe_print")
+                except AttributeError:
+                    pass
 
 
 def main(
@@ -400,6 +414,70 @@ def _check_and_install_streamlit(*, allow_install: bool = False) -> bool:
         print("[yellow]⚠️  Could not install Streamlit automatically.[/yellow]")
         print("[dim]Install manually with: pip install streamlit>=1.28.0[/dim]")
         logger.warning(f"Error checking/installing Streamlit: {e}", exc_info=True)
+        return False
+
+
+def _check_and_install_gradio(
+    *, allow_install: bool = False, prompt_if_missing: bool = True
+) -> bool:
+    """
+    Check if Gradio is available and install it on first request if missing.
+    Used for the Gradio UI (menu and `transcriptx ui`).
+    """
+    try:
+        try:
+            import gradio  # type: ignore  # noqa: F401
+            logger.info("Gradio is available for UI")
+            return True
+        except ImportError:
+            pass
+
+        if not allow_install:
+            print("[yellow]Gradio is not installed. Install it with: pip install -e \".[ui]\"[/yellow]")
+            logger.info("Gradio missing; auto-install disabled in non-interactive mode")
+            return False
+
+        if prompt_if_missing and not questionary.confirm(
+            "Gradio is not installed. Install it now?", default=True
+        ).ask():
+            print("[yellow]⚠️  Gradio install skipped.[/yellow]")
+            return False
+
+        print("[cyan]📦 Installing Gradio for UI...[/cyan]")
+        logger.info("Gradio not available, attempting to install gradio>=4")
+        install_cmd = [sys.executable, "-m", "pip", "install", "gradio>=4"]
+        result = subprocess.run(
+            install_cmd, capture_output=True, text=True, timeout=180
+        )
+
+        if result.returncode == 0:
+            try:
+                import gradio  # type: ignore  # noqa: F401
+                print("[green]✅ Gradio installed successfully[/green]")
+                logger.info("Gradio installed successfully")
+                return True
+            except ImportError:
+                print(
+                    "[yellow]⚠️  Gradio installation completed but import failed. Please restart the application.[/yellow]"
+                )
+                logger.warning("Gradio installation completed but import failed")
+                return False
+        else:
+            print("[yellow]⚠️  Could not install Gradio automatically.[/yellow]")
+            print("[dim]Install manually with: pip install -e \".[ui]\"[/dim]")
+            if result.stderr:
+                logger.warning(f"Gradio installation failed: {result.stderr}")
+            return False
+
+    except subprocess.TimeoutExpired:
+        print("[yellow]⚠️  Gradio installation timed out.[/yellow]")
+        print("[dim]Install manually with: pip install -e \".[ui]\"[/dim]")
+        logger.warning("Gradio installation timed out")
+        return False
+    except Exception as e:
+        print("[yellow]⚠️  Could not install Gradio automatically.[/yellow]")
+        print("[dim]Install manually with: pip install -e \".[ui]\"[/dim]")
+        logger.warning(f"Error checking/installing Gradio: {e}", exc_info=True)
         return False
 
 
@@ -756,12 +834,9 @@ def _show_browser_menu() -> None:
 def _show_gradio_ui_menu() -> None:
     """Launch the local Gradio UI (same as `transcriptx ui`)."""
     try:
-        try:
-            import gradio  # type: ignore  # noqa: F401
-        except ImportError:
+        if not _check_and_install_gradio(allow_install=True, prompt_if_missing=True):
             print(
-                "[yellow]Gradio is not installed. Install it with: "
-                "pip install -e \".[ui]\"[/yellow]"
+                "[dim]Install manually with: pip install -e \".[ui]\"[/dim]"
             )
             return
 
@@ -996,6 +1071,15 @@ def _main_impl(
             )
             print(f"[red]Failed to load configuration: {e}[/red]")
             raise CliExit.config_error(f"Failed to load configuration: {e}")
+    else:
+        # Load project config by default so .transcriptx/config.json is used (e.g. Hugging Face token)
+        project_config_path = get_project_config_path()
+        if project_config_path.exists():
+            try:
+                load_config(str(project_config_path))
+                logger.info(f"Loaded configuration from {project_config_path}")
+            except Exception:
+                pass  # fall back to defaults + env
 
     # Update output directory if specified
     if output_dir and not hasattr(output_dir, "default"):
@@ -1011,6 +1095,7 @@ def _main_impl(
     # - Audio playback: checked in play_audio_file() when playback needed
     # - librosa: checked/installed in deduplication_workflow when duplicate detection needed
     # - Streamlit: checked/installed in _show_browser_menu() when web interface needed
+    # - Gradio: checked/installed on first request in _show_gradio_ui_menu() or `transcriptx ui`
 
     while True:
         try:
@@ -1021,6 +1106,7 @@ def _main_impl(
                     "🔧 Preprocessing",
                     "🎤 Transcribe",
                     "🗣️  Manage Speakers",
+                    "👥 Groups",
                     "✏️  Post-processing",
                     "📊 Analyze",
                     "🧪 Test Analysis",
@@ -1060,6 +1146,11 @@ def _main_impl(
             from .speaker_management import _show_speaker_management_menu
 
             _show_speaker_management_menu()
+
+        elif choice == "👥 Groups":
+            from .group_management import _show_group_management_menu
+
+            _show_group_management_menu()
 
         elif choice == "🗄️  Batch Process":
             from .batch_wav_workflow import run_batch_wav_workflow
@@ -1158,9 +1249,7 @@ def ui(
 ):
     """Launch the local Gradio UI."""
     try:
-        try:
-            import gradio  # type: ignore  # noqa: F401
-        except ImportError:
+        if not _check_and_install_gradio(allow_install=True, prompt_if_missing=False):
             print(
                 "[yellow]Gradio is not installed. Install it with: "
                 "pip install -e \".[ui]\"[/yellow]"
@@ -1180,13 +1269,18 @@ def ui(
 
 @app.command()
 def analyze(
-    transcript_file: Path | None = typer.Argument(
-        None, help="Path to transcript JSON file"
+    transcript_file: Path | None = typer.Option(
+        None, "--transcript-file", "-t", help="Path to transcript JSON file"
     ),
     transcripts: list[Path] | None = typer.Option(
         None,
         "--transcripts",
         help="Analyze multiple transcripts as a group (repeat flag for each file)",
+    ),
+    all_transcripts: bool = typer.Option(
+        False,
+        "--all-transcripts",
+        help="Analyze all available transcript JSON files",
     ),
     mode: str = typer.Option(
         "quick", "--mode", "-m", help="Analysis mode: quick or full"
@@ -1205,6 +1299,21 @@ def analyze(
     output_dir: Path | None = typer.Option(
         None, "--output-dir", "-o", help="Custom output directory"
     ),
+    include_unidentified_speakers: bool = typer.Option(
+        False,
+        "--include-unidentified-speakers",
+        help="Include unidentified speakers in per-speaker outputs",
+    ),
+    anonymise_speakers: bool = typer.Option(
+        False,
+        "--anonymise-speakers",
+        help="Anonymise speaker display names in outputs",
+    ),
+    skip_speaker_identification: bool = typer.Option(
+        False,
+        "--skip-speaker-identification",
+        help="Skip the speaker identification gate",
+    ),
     non_interactive: bool = typer.Option(
         False,
         "--non-interactive",
@@ -1220,8 +1329,15 @@ def analyze(
     from .analysis_workflow import run_analysis_non_interactive
     from .analysis_utils import apply_analysis_mode_settings_non_interactive
     from .workflow_utils import set_non_interactive_mode
-    from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
     from transcriptx.core.pipeline.module_registry import get_default_modules
+    from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+    from transcriptx.cli.batch_workflows import run_batch_analysis_pipeline
+    from transcriptx.cli.file_selection_utils import discover_all_transcript_paths
+
+    if all_transcripts and (transcript_file is not None or transcripts):
+        raise CliExit.error(
+            "--all-transcripts cannot be combined with --transcript-file or --transcripts"
+        )
 
     # Set non-interactive mode if requested
     if non_interactive:
@@ -1233,18 +1349,37 @@ def analyze(
     else:
         module_list = [m.strip() for m in modules.split(",") if m.strip()]
 
+    speaker_options = SpeakerRunOptions(
+        include_unidentified=include_unidentified_speakers,
+        anonymise=anonymise_speakers,
+        skip_identification=skip_speaker_identification,
+    )
+
     try:
+        if all_transcripts:
+            discovered = discover_all_transcript_paths()
+            if not discovered:
+                raise CliExit.error(
+                    "No transcript files found in configured transcript folders."
+                )
+            transcripts = discovered
+
         if transcripts:
             ordered = list(transcripts)
             if transcript_file is not None:
                 ordered.insert(0, transcript_file)
             apply_analysis_mode_settings_non_interactive(mode, profile)
             selected_modules = (
-                get_default_modules() if module_list is None else module_list
+                get_default_modules([str(path) for path in ordered])
+                if module_list is None
+                else module_list
             )
-            run_analysis_pipeline(
-                target=[str(path) for path in ordered],
+            run_batch_analysis_pipeline(
+                [str(path) for path in ordered],
+                analysis_mode=mode,
                 selected_modules=selected_modules,
+                skip_speaker_gate=speaker_options.skip_identification,
+                speaker_options=speaker_options,
                 persist=persist,
             )
             return
@@ -1259,6 +1394,7 @@ def analyze(
             profile=profile,
             skip_confirm=skip_confirm,
             output_dir=output_dir,
+            speaker_options=speaker_options,
             persist=persist,
         )
 
@@ -1267,16 +1403,13 @@ def analyze(
         elif result.get("status") == "failed":
             exit_error("Analysis failed")
     except (FileNotFoundError, ValueError) as e:
-        if print_output_json_path:
-            print(f"Error: {e}", file=sys.stderr)
-            raise CliExit.error()
         print(f"[red]❌ Error: {e}[/red]")
         raise CliExit.error(str(e))
 
 
 @app.command()
 def transcribe(
-    audio_file: Path = typer.Argument(..., help="Path to audio file"),
+    audio_file: Path = typer.Option(..., "--audio-file", "-a", help="Path to audio file"),
     engine: str = typer.Option(
         "auto",
         "--engine",
@@ -1372,7 +1505,7 @@ def transcribe(
 
 @app.command("identify-speakers")
 def identify_speakers(
-    transcript_file: Path = typer.Argument(..., help="Path to transcript JSON file"),
+    transcript_file: Path = typer.Option(..., "--transcript-file", "-t", help="Path to transcript JSON file"),
     overwrite: bool = typer.Option(
         False,
         "--overwrite",
@@ -1511,7 +1644,7 @@ def process_wav_merge(
 
 @app.command("preprocess")
 def preprocess_audio(
-    file: Path = typer.Argument(..., help="Path to audio file (MP3, WAV, etc.)"),
+    file: Path = typer.Option(..., "--file", "-f", help="Path to audio file (MP3, WAV, etc.)"),
     output: Path | None = typer.Option(
         None, "--output", "-o", help="Output path (default: same dir, stem_preprocessed.<ext>)"
     ),
@@ -1586,7 +1719,7 @@ def process_wav_compress(
 
 @app.command("batch-process")
 def batch_process(
-    folder: Path = typer.Argument(..., help="Path to folder containing WAV files"),
+    folder: Path = typer.Option(..., "--folder", help="Path to folder containing WAV files"),
     size_filter: str = typer.Option(
         "all",
         "--size-filter",
@@ -1652,7 +1785,7 @@ def batch_process(
 
 @app.command()
 def deduplicate(
-    folder: Path = typer.Argument(..., help="Path to folder to scan for duplicates"),
+    folder: Path = typer.Option(..., "--folder", help="Path to folder to scan for duplicates"),
     files: str | None = typer.Option(
         None, "--files", "-f", help="Comma-separated list of specific files to delete"
     ),
@@ -1699,12 +1832,14 @@ def deduplicate(
 
 @app.command()
 def simplify_transcript(
-    input_file: Path = typer.Argument(
+    input_file: Path = typer.Option(
         ...,
+        "--input-file",
+        "-i",
         help="Path to input transcript JSON file (list of dicts with 'speaker' and 'text')",
     ),
-    output_file: Path = typer.Argument(
-        ..., help="Path to output simplified transcript JSON file"
+    output_file: Path = typer.Option(
+        ..., "--output-file", "-o", help="Path to output simplified transcript JSON file"
     ),
     tics_file: Path | None = typer.Option(
         None, help="Path to JSON file with list of tics/hesitations"
@@ -1758,6 +1893,167 @@ def interactive_cmd(
         _configure_nltk_data_path()
         with _spinner_print_guard():
             _main_impl(config_file, log_level, output_dir)
+
+
+@app.command("settings")
+def settings_cmd(
+    show: bool = typer.Option(False, "--show", help="Show current configuration"),
+    edit: bool = typer.Option(False, "--edit", help="Open interactive config editor"),
+    save: bool = typer.Option(False, "--save", help="Save configuration"),
+):
+    """Manage settings via flags (show/edit/save)."""
+    from transcriptx.cli.config_editor import (
+        edit_config_interactive,
+        show_current_config,
+        save_config_interactive,
+    )
+    config = get_config()
+    if show:
+        show_current_config(config)
+    if edit:
+        edit_config_interactive()
+    if save:
+        save_config_interactive(config)
+    if not (show or edit or save):
+        edit_config_interactive()
+
+
+@app.command("test-analysis")
+def test_analysis_cmd(
+    transcript_file: Path | None = typer.Option(
+        None, "--transcript", "-t", help="Path to transcript JSON file"
+    ),
+    mode: str = typer.Option(
+        "quick", "--mode", "-m", help="Analysis mode: quick or full"
+    ),
+    modules: str = typer.Option(
+        "all", "--modules", help="Comma-separated list of modules or 'all'"
+    ),
+    profile: str | None = typer.Option(
+        None,
+        "--profile",
+        help="Semantic profile for full mode",
+    ),
+    skip_confirm: bool = typer.Option(
+        True, "--skip-confirm", help="Skip confirmation prompts"
+    ),
+    output_dir: Path | None = typer.Option(
+        None, "--output-dir", "-o", help="Custom output directory"
+    ),
+):
+    """Run test analysis via flags (non-interactive)."""
+    from .analysis_workflow import run_analysis_non_interactive, run_test_analysis_workflow
+
+    if transcript_file is None:
+        run_test_analysis_workflow()
+        return
+
+    module_list = None if modules.lower() == "all" else [
+        m.strip() for m in modules.split(",") if m.strip()
+    ]
+    run_analysis_non_interactive(
+        transcript_file=transcript_file,
+        mode=mode,
+        modules=module_list,
+        profile=profile,
+        skip_confirm=skip_confirm,
+        output_dir=output_dir,
+        persist=False,
+    )
+
+
+@app.command("whisperx-web-gui")
+def whisperx_web_gui_cmd(
+    action: str = typer.Option(
+        "start", "--action", help="Action: start or stop"
+    ),
+    open_browser: bool = typer.Option(
+        False, "--open-browser", help="Open local URL in browser after start"
+    ),
+):
+    """Manage WhisperX Web GUI stack via flags."""
+    project_root = Path(__file__).parent.parent.parent.parent
+    compose_file = project_root / "examples" / "docker-compose.ui-whisperx.yml"
+    if not compose_file.exists():
+        print(
+            f"[red]Compose file not found: {compose_file}[/red]\n"
+            "[yellow]Expected: examples/docker-compose.ui-whisperx.yml[/yellow]"
+        )
+        raise typer.Exit(1)
+
+    compose_cmd = _get_docker_compose_command()
+    if compose_cmd is None:
+        print(
+            "[red]Docker Compose not found.[/red]\n"
+            "[dim]Install Docker Desktop (includes docker compose) or docker-compose v1.[/dim]"
+        )
+        raise typer.Exit(1)
+
+    action = action.lower().strip()
+    if action not in {"start", "stop"}:
+        print("[red]Invalid --action. Use 'start' or 'stop'.[/red]")
+        raise typer.Exit(1)
+
+    try:
+        if action == "stop":
+            cmd = [
+                *compose_cmd,
+                "-f",
+                str(compose_file),
+                "--profile",
+                "whisperx",
+                "--profile",
+                "ui",
+                "down",
+            ]
+            result = subprocess.run(
+                cmd, cwd=str(project_root), capture_output=True, text=True, check=False
+            )
+            if result.returncode == 0:
+                print("[green]✅ WhisperX Web GUI stack stopped[/green]")
+            else:
+                print("[red]❌ Failed to stop stack[/red]")
+                if result.stderr:
+                    print(f"[dim]{result.stderr.strip()}[/dim]")
+            return
+
+        cmd = [
+            *compose_cmd,
+            "-f",
+            str(compose_file),
+            "--profile",
+            "whisperx",
+            "--profile",
+            "ui",
+            "up",
+            "-d",
+            "whisperx",
+            "ui",
+        ]
+        print("[cyan]Starting WhisperX Web GUI stack in background...[/cyan]")
+        result = subprocess.run(
+            cmd, cwd=str(project_root), capture_output=True, text=True, check=False
+        )
+        if result.returncode != 0:
+            print("[red]❌ Failed to start stack[/red]")
+            if result.stderr:
+                print(f"[dim]{result.stderr.strip()}[/dim]")
+            return
+
+        port = 7860
+        local_url = f"http://127.0.0.1:{port}"
+        lan_url = f"http://{_guess_lan_ip()}:{port}"
+
+        print("[green]✅ WhisperX Web GUI stack started[/green]")
+        print(f"[cyan]Local:[/cyan] {local_url}")
+        print(f"[cyan]LAN:[/cyan]   {lan_url}")
+
+        if open_browser:
+            webbrowser.open(local_url)
+    except Exception as e:
+        log_error("CLI", f"Failed to manage WhisperX Web GUI stack: {e}", exception=e)
+        print(f"[red]Failed to manage WhisperX Web GUI stack: {e}[/red]")
+        raise typer.Exit(1)
 
 
 # Make the main menu the default when no subcommand is given

@@ -16,7 +16,6 @@ from transcriptx.core.utils.output_builder import (
     create_standard_output_structure,
     save_global_data,
     save_speaker_data,
-    create_readme_file,
     create_summary_json,
 )
 
@@ -171,19 +170,6 @@ class TestOutputBuilderAdvanced:
             metadata = json.load(f)
             assert metadata["analysis_config"] == complex_config
     
-    def test_readme_generation(self, builder, output_structure):
-        """Test README file generation."""
-        description = "This is a test module for testing purposes."
-        readme_path = builder.create_readme_file(output_structure, description)
-        
-        assert Path(readme_path).exists()
-        with open(readme_path) as f:
-            content = f.read()
-            # Module name is converted to title case with spaces
-            assert "test module" in content.lower() or "test_module" in content.lower()
-            assert description in content
-            assert "Directory Structure" in content
-    
     def test_chart_organization(self, builder, output_structure, tmp_path):
         """Test chart organization and saving."""
         # Create a dummy chart file
@@ -326,19 +312,6 @@ class TestOutputBuilderAdvanced:
 
 class TestConvenienceFunctions:
     """Tests for convenience functions."""
-    
-    def test_create_readme_file_function(self, tmp_path):
-        """Test create_readme_file convenience function."""
-        output_structure = {
-            "module_dir": str(tmp_path / "module")
-        }
-        Path(output_structure["module_dir"]).mkdir(parents=True)
-        
-        readme_path = create_readme_file(
-            output_structure, "test_module", "Test description"
-        )
-        
-        assert Path(readme_path).exists()
     
     def test_create_summary_json_function(self, tmp_path):
         """Test create_summary_json convenience function."""

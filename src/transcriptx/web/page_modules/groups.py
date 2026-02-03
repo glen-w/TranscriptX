@@ -9,21 +9,14 @@ from pathlib import Path
 
 import streamlit as st
 
-from transcriptx.core.domain.transcript_set import (  # type: ignore[import]
-    TranscriptSet as DomainTranscriptSet,
-)
 from transcriptx.core.pipeline.module_registry import get_default_modules  # type: ignore[import]
 from transcriptx.core.pipeline.pipeline import run_analysis_pipeline  # type: ignore[import]
+from transcriptx.core.pipeline.target_resolver import GroupRef
 from transcriptx.core.utils.paths import GROUP_OUTPUTS_DIR  # type: ignore[import]
 from transcriptx.web.services.group_service import GroupService  # type: ignore[import]
 
-
-def _group_key(transcript_ids: list[str]) -> str:
-    return str(DomainTranscriptSet.create(transcript_ids=transcript_ids).key)
-
-
-def _list_group_runs(group_key: str) -> list[Path]:
-    base_dir = Path(GROUP_OUTPUTS_DIR) / group_key
+def _list_group_runs(group_uuid: str) -> list[Path]:
+    base_dir = Path(GROUP_OUTPUTS_DIR) / group_uuid
     if not base_dir.exists():
         return []
     return sorted(
@@ -64,7 +57,7 @@ def render_groups() -> None:
 
     options = {g.uuid: g for g in groups}
     labels = {
-        g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_ids or [])} transcripts"
+        g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
         for g in groups
     }
 
@@ -79,14 +72,13 @@ def render_groups() -> None:
     st.write(f"**UUID:** {group.uuid}")
     if group.name:
         st.write(f"**Name:** {group.name}")
-    st.write(f"**Transcript count:** {len(group.transcript_ids or [])}")
+    st.write(f"**Type:** {group.type}")
+    st.write(f"**Transcript count:** {len(group.transcript_file_uuids or [])}")
+    st.write(f"**Group key:** {group.key}")
 
-    key = _group_key(list(group.transcript_ids or []))
-    st.write(f"**Group key:** {key}")
-
-    with st.expander("Transcript IDs", expanded=False):
-        for transcript_id in group.transcript_ids or []:
-            st.write(f"- {transcript_id}")
+    with st.expander("Transcript UUIDs", expanded=False):
+        for transcript_uuid in group.transcript_file_uuids or []:
+            st.write(f"- {transcript_uuid}")
 
     members = GroupService.get_members(group)
     if members:
@@ -98,13 +90,12 @@ def render_groups() -> None:
     with col1:
         if st.button("Re-analyze group"):
             with st.spinner("Running group analysis..."):
+                transcript_paths = (
+                    [m.file_path for m in members if m.file_path] if members else []
+                )
                 run_analysis_pipeline(
-                    target=DomainTranscriptSet.create(
-                        transcript_ids=list(group.transcript_ids or []),
-                        name=group.name,
-                        metadata=dict(group.set_metadata or {}),
-                    ),
-                    selected_modules=get_default_modules(),
+                    target=GroupRef(group_uuid=group.uuid),
+                    selected_modules=get_default_modules(transcript_paths),
                 )
             st.success("Group analysis completed.")
     with col2:
@@ -114,7 +105,7 @@ def render_groups() -> None:
             st.rerun()
 
     st.subheader("Group Runs")
-    runs = _list_group_runs(key)
+    runs = _list_group_runs(group.uuid)
     if not runs:
         st.info("No group runs found for this TranscriptSet.")
         return

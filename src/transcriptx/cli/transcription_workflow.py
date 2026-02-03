@@ -13,6 +13,7 @@ Key Features:
 - Integration with centralized path utilities
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from transcriptx.core import (
     get_default_modules,
     run_analysis_pipeline,
 )
+from transcriptx.core.pipeline.target_resolver import TranscriptRef
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger, log_error
 from transcriptx.utils.error_handling import graceful_exit
@@ -46,6 +48,15 @@ from .transcription_common import transcribe_with_whisperx
 from transcriptx.core.transcription_runtime import check_whisperx_compose_service
 
 logger = get_logger()
+
+
+def _has_hf_token(config: object | None) -> bool:
+    token = ""
+    if config and hasattr(config, "transcription"):
+        token = getattr(config.transcription, "huggingface_token", "") or ""
+    if not token:
+        token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+    return bool(token.strip())
 
 
 def run_transcription_workflow() -> None:
@@ -173,13 +184,16 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
                 else:
                     # Offer to proceed or rerun speaker identification
                     while True:
+                        speaker_gate_mode = get_config().workflow.speaker_gate.mode
+                        choices = [
+                            "🔄 Rerun speaker identification",
+                            "⏭️ Cancel analysis",
+                        ]
+                        if speaker_gate_mode != "enforce":
+                            choices.insert(1, "✅ Proceed with analysis anyway")
                         choice = questionary.select(
                             "Speaker identification is incomplete. What would you like to do?",
-                            choices=[
-                                "🔄 Rerun speaker identification",
-                                "✅ Proceed with analysis anyway",
-                                "⏭️ Cancel analysis",
-                            ],
+                            choices=choices,
                         ).ask()
 
                         if choice == "🔄 Rerun speaker identification":
@@ -197,6 +211,8 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
                                 # Still incomplete, loop will ask again
                             else:
                                 # User cancelled speaker identification, ask what to do
+                                if speaker_gate_mode == "enforce":
+                                    return
                                 if not questionary.confirm(
                                     "Speaker identification was cancelled. Proceed with analysis anyway?"
                                 ).ask():
@@ -207,6 +223,8 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
                         else:  # Cancel analysis
                             return
             else:
+                if get_config().workflow.speaker_gate.mode == "enforce":
+                    return
                 if not questionary.confirm(
                     "Speaker identification was cancelled. Proceed with analysis anyway?"
                 ).ask():
@@ -227,10 +245,10 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
             return
 
         # Get all available modules
-        all_modules = get_default_modules()
+        all_modules = get_default_modules([transcript_path])
         try:
             run_analysis_pipeline(
-                target=transcript_path,
+                target=TranscriptRef(path=transcript_path),
                 selected_modules=all_modules,
                 skip_speaker_mapping=skip_speaker_mapping,
                 persist=False,
@@ -319,13 +337,37 @@ def run_transcription_non_interactive(
     print(f"\n[bold]Transcribing with WhisperX:[/bold] {audio_file.name}")
     logger.info(f"Starting WhisperX transcription for audio: {audio_file}")
 
+    diarize_restore = None
+    if getattr(config.transcription, "diarize", True) and not _has_hf_token(config):
+        if skip_confirm:
+            logger.warning(
+                "No Hugging Face token set; proceeding without diarization."
+            )
+            diarize_restore = config.transcription.diarize
+            config.transcription.diarize = False
+        else:
+            from rich.prompt import Confirm
+
+            if not Confirm.ask(
+                "No Hugging Face token set. Proceed without diarization?"
+            ):
+                return {"status": "cancelled"}
+            diarize_restore = config.transcription.diarize
+            config.transcription.diarize = False
+
     if not skip_confirm:
         from rich.prompt import Confirm
 
         if not Confirm.ask("Proceed with transcription?"):
             return {"status": "cancelled"}
 
-    result = transcribe_with_whisperx(audio_file, config)
+    try:
+        result = transcribe_with_whisperx(
+            audio_file, config, prompt_for_diarization=False
+        )
+    finally:
+        if diarize_restore is not None:
+            config.transcription.diarize = diarize_restore
 
     if not result:
         log_error("CLI", f"WhisperX returned no result for {audio_file}")
@@ -347,7 +389,7 @@ def run_transcription_non_interactive(
         try:
             # Get available modules
             available_modules = get_available_modules()
-            default_modules = get_default_modules()
+            default_modules = get_default_modules([transcript_path])
 
             # Determine modules to use
             if analysis_modules is None:
@@ -386,7 +428,7 @@ def run_transcription_non_interactive(
 
             # Run analysis pipeline
             analysis_results = run_analysis_pipeline(
-                target=result,
+                target=TranscriptRef(path=result),
                 selected_modules=filtered_modules,
                 skip_speaker_mapping=True,
                 persist=False,

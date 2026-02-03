@@ -21,6 +21,7 @@ from transcriptx.core.utils.path_utils import (
     get_canonical_base_name,
     get_transcript_dir,
 )
+from transcriptx.core.utils.validation import normalize_segment_speakers
 from transcriptx.io.transcript_loader import load_segments, load_transcript
 
 logger = get_logger()
@@ -95,6 +96,7 @@ class TranscriptService:
             ]
             if self._is_cache_valid(transcript_path, cached_hash):
                 logger.debug(f"Using cached segments for {transcript_path}")
+                normalize_segment_speakers(cached_segments)
                 return cached_segments
 
         # Attempt DB load only if explicitly requested
@@ -107,6 +109,7 @@ class TranscriptService:
                     strict_db=bool(db_strict),
                 )
                 if segments:
+                    normalize_segment_speakers(segments)
                     return segments
             except Exception as e:
                 logger.warning(f"DB transcript load failed, falling back to JSON: {e}")
@@ -126,6 +129,7 @@ class TranscriptService:
 
         # Load from file
         segments = load_segments(transcript_path)
+        normalize_segment_speakers(segments)
 
         # Cache the result
         if use_cache and self.enable_cache:

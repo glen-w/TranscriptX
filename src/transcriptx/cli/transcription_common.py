@@ -5,6 +5,7 @@ This module provides shared transcription functionality that can be used
 by both single-file and batch workflows to ensure consistency and code reuse.
 """
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -19,7 +20,18 @@ from transcriptx.cli.transcription_utils_compose import wait_for_whisperx_servic
 logger = get_logger()
 
 
-def transcribe_with_whisperx(audio_file: Path, config) -> Optional[str]:
+def _has_hf_token(config: object | None) -> bool:
+    token = ""
+    if config and hasattr(config, "transcription"):
+        token = getattr(config.transcription, "huggingface_token", "") or ""
+    if not token:
+        token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+    return bool(token.strip())
+
+
+def transcribe_with_whisperx(
+    audio_file: Path, config: object, *, prompt_for_diarization: bool = True
+) -> Optional[str]:
     """
     Common transcription function used by both single-file and batch workflows.
 
@@ -70,9 +82,27 @@ def transcribe_with_whisperx(audio_file: Path, config) -> Optional[str]:
             )
             return None
 
+        # If diarization is requested but no HF token is available, ask user.
+        diarize_restore = None
+        if config and getattr(config.transcription, "diarize", True) and not _has_hf_token(config):
+            if prompt_for_diarization:
+                import questionary
+
+                proceed = questionary.confirm(
+                    "No Hugging Face token set. Proceed without diarization?"
+                ).ask()
+                if not proceed:
+                    return None
+            diarize_restore = config.transcription.diarize
+            config.transcription.diarize = False
+
         # Run transcription
         logger.info(f"Starting WhisperX transcription for: {audio_file.name}")
-        transcript_path = run_whisperx_compose(audio_file, config)
+        try:
+            transcript_path = run_whisperx_compose(audio_file, config)
+        finally:
+            if diarize_restore is not None:
+                config.transcription.diarize = diarize_restore
 
         if not transcript_path:
             log_error(

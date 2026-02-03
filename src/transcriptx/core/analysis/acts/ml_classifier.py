@@ -105,6 +105,7 @@ class MLDialogueActClassifier:
         self.random_forest = None
         self.context_window = 3  # Number of previous utterances to consider
         self.ml_available = False
+        self._logged_untrained_rf = False  # Log once when falling back due to untrained RF
 
         # Initialize models with error handling
         self._initialize_models()
@@ -225,22 +226,21 @@ class MLDialogueActClassifier:
             if not self.tfidf_vectorizer or not self.random_forest:
                 return None
 
-            # Check if the model has been trained (has estimators_ attribute)
-            # For untrained models, estimators_ doesn't exist
-            if not hasattr(self.random_forest, "estimators_"):
-                # Model is not trained - use heuristic classification instead
-                logger.debug(
-                    "RandomForest model not trained, using heuristic classification"
-                )
-                return self._classify_with_heuristics(text)
-            
-            # Additional check: if estimators_ exists but is empty
-            estimators = self.random_forest.estimators_
-            if not estimators:
-                # Model is not properly trained - use heuristic classification instead
-                logger.debug(
-                    "RandomForest model not properly trained, using heuristic classification"
-                )
+            # Check if the model has been trained (estimators_ only exists after fit).
+            # Use try/except so we never raise on unfitted models (some sklearn/env
+            # combinations can raise when accessing estimators_).
+            try:
+                estimators = getattr(self.random_forest, "estimators_", None)
+                is_trained = estimators is not None and len(estimators) > 0
+            except (AttributeError, TypeError, ValueError):
+                is_trained = False
+
+            if not is_trained:
+                if not self._logged_untrained_rf:
+                    self._logged_untrained_rf = True
+                    logger.debug(
+                        "RandomForest model not trained, using heuristic classification"
+                    )
                 return self._classify_with_heuristics(text)
 
             # For now, return a simple classification based on text features
@@ -284,7 +284,11 @@ class MLDialogueActClassifier:
             # Don't log warnings for expected AttributeError about untrained models
             error_msg = str(e)
             if "estimators_" in error_msg and "no attribute" in error_msg.lower():
-                logger.debug(f"Traditional ML classification skipped (untrained model): {e}")
+                if not self._logged_untrained_rf:
+                    self._logged_untrained_rf = True
+                    logger.debug(
+                        "Traditional ML classification skipped (untrained model); using heuristics"
+                    )
             else:
                 logger.warning(f"Traditional ML classification failed: {e}")
             return None

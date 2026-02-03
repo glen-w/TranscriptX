@@ -180,6 +180,44 @@ class AffectTensionAnalysis(AnalysisModule):
                 format_type="csv",
             )
 
+        # Charts (spec build and save guarded separately)
+        try:
+            from transcriptx.core.analysis.affect_tension.output import (
+                build_derived_indices_charts,
+                build_dynamics_timeseries_charts,
+                build_tension_summary_heatmap,
+            )
+        except Exception as e:
+            logger.warning("affect_tension charts: failed to import helpers: %s", e)
+            return
+
+        derived_indices = results.get("derived_indices", {})
+        chart_specs = []
+        try:
+            chart_specs.extend(
+                build_derived_indices_charts(derived_indices, segments, base_name)
+            )
+        except Exception as e:
+            logger.warning("affect_tension charts: failed to build bar specs: %s", e)
+        try:
+            chart_specs.extend(
+                build_dynamics_timeseries_charts(segments, base_name)
+            )
+        except Exception as e:
+            logger.warning("affect_tension charts: failed to build timeseries specs: %s", e)
+        try:
+            heatmap = build_tension_summary_heatmap(derived_indices, segments, base_name)
+            if heatmap:
+                chart_specs.append(heatmap)
+        except Exception as e:
+            logger.warning("affect_tension charts: failed to build heatmap spec: %s", e)
+
+        for spec in chart_specs:
+            try:
+                output_service.save_chart(spec)
+            except Exception as e:
+                logger.warning("affect_tension charts: failed to save chart: %s", e)
+
     def run_from_context(self, context: Any) -> Dict[str, Any]:
         from transcriptx.core.utils.module_result import (
             build_module_result,

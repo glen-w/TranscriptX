@@ -6,6 +6,7 @@ from rich import print
 from transcriptx.cli.settings import (
     SettingItem,
     create_bool_editor,
+    create_choice_editor,
     settings_menu_loop,
 )
 from ._dirty_tracker import is_dirty, mark_dirty
@@ -75,6 +76,19 @@ def edit_input_config(config):
             ),
             editor=create_bool_editor(
                 hint="Controls whether rename inputs start with a date prefix."
+            ),
+        ),
+        SettingItem(
+            order=4,
+            key="input.file_selection_mode",
+            label="File selection preference",
+            getter=lambda: getattr(config.input, "file_selection_mode", "prompt"),
+            setter=lambda value: setattr(
+                config.input, "file_selection_mode", value
+            ),
+            editor=create_choice_editor(
+                choices=["prompt", "explore", "direct"],
+                hint="prompt = ask each time; explore = file browser by default; direct = type path by default.",
             ),
         ),
     ]

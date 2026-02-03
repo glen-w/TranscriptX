@@ -15,6 +15,7 @@ Key Features:
 from pathlib import Path
 from typing import Any
 
+import questionary  # kept for backward compatibility (tests patch this)
 from rich import print
 
 from transcriptx.core.utils.config import get_config
@@ -81,7 +82,11 @@ def _run_speaker_identification_workflow_impl() -> None:
             return f"✨ {name}" if not has_named_speakers(path) else name
 
         selection_config = FileSelectionConfig(
-            multi_select=False,
+            # Users commonly want to tag multiple transcripts in one pass.
+            # Even if the UI is used in "single select", the checkbox list can
+            # still yield multiple selections (via the 'f' confirm handler),
+            # so the workflow should robustly handle multiple returned paths.
+            multi_select=True,
             enable_playback=False,
             enable_rename=False,
             title="🗣️ Identify Speakers",
@@ -89,46 +94,76 @@ def _run_speaker_identification_workflow_impl() -> None:
             metadata_formatter=_format_transcript_for_speaker_id,
         )
         selected = select_files_interactive(transcript_files, selection_config)
+
+        # Fallback: in some environments (e.g. non-interactive tests, terminal conflicts),
+        # prompt_toolkit UI may not be available. Use questionary as a simple fallback.
+        if selected is None:
+            label_to_path: dict[str, Path] = {
+                _format_transcript_for_speaker_id(p): p for p in transcript_files
+            }
+            chosen_label = questionary.select(
+                "Select a transcript to identify speakers for:",
+                choices=list(label_to_path.keys()),
+            ).ask()
+            if not chosen_label:
+                return
+            selected = [label_to_path[chosen_label]]
+
         if not selected or len(selected) == 0:
             return
 
-        transcript_file = selected[0]
+        # Process in a stable order for predictable UX.
+        selected_files = sorted(selected, key=lambda p: p.name.lower())
 
-        # Run the speaker identification pipeline
-        print(f"[cyan]Running speaker identification for {transcript_file.name}...[/cyan]")
-        try:
-            segments = load_segments(str(transcript_file))
-            # Use build_speaker_map for database-driven speaker identification
-            speaker_map = build_speaker_map(
-                segments,
-                speaker_map_path=None,  # No JSON file path needed
-                transcript_path=str(transcript_file),
-                batch_mode=False,
-                auto_generate=False,
-                persist_speaker_records=False,
+        for idx, transcript_file in enumerate(selected_files, 1):
+            print(
+                f"\n[bold]Processing transcript {idx} of {len(selected_files)}:[/bold] {transcript_file.name}"
             )
-            if speaker_map:
-                print(
-                    f"[green]✅ Speaker identification completed for {transcript_file.name}![/green]"
+
+            # Run the speaker identification pipeline
+            print(
+                f"[cyan]Running speaker identification for {transcript_file.name}...[/cyan]"
+            )
+            try:
+                segments = load_segments(str(transcript_file))
+                # Use build_speaker_map for database-driven speaker identification
+                speaker_map = build_speaker_map(
+                    segments,
+                    speaker_map_path=None,  # No JSON file path needed
+                    transcript_path=str(transcript_file),
+                    batch_mode=False,
+                    auto_generate=False,
+                    persist_speaker_records=False,
                 )
-                # Prompt for rename after speaker mapping is completed
-                rename_transcript_after_speaker_mapping(str(transcript_file))
-                final_path = (
-                    get_current_transcript_path_from_state(str(transcript_file))
-                    or str(transcript_file)
-                )
-                if Path(final_path).exists():
-                    store_transcript_after_speaker_identification(final_path)
-                else:
-                    logger.warning(
-                        f"Transcript path not found after rename: {final_path}"
+                if speaker_map:
+                    print(
+                        f"[green]✅ Speaker identification completed for {transcript_file.name}![/green]"
                     )
-            else:
+                    # Prompt for rename after speaker mapping is completed
+                    rename_transcript_after_speaker_mapping(str(transcript_file))
+                    final_path = (
+                        get_current_transcript_path_from_state(str(transcript_file))
+                        or str(transcript_file)
+                    )
+                    if Path(final_path).exists():
+                        store_transcript_after_speaker_identification(final_path)
+                    else:
+                        logger.warning(
+                            f"Transcript path not found after rename: {final_path}"
+                        )
+                else:
+                    print(
+                        f"[yellow]⏭️ Speaker identification cancelled for {transcript_file.name}[/yellow]"
+                    )
+            except KeyboardInterrupt:
                 print(
-                    f"[yellow]⏭️ Speaker identification cancelled for {transcript_file.name}[/yellow]"
+                    f"\n[yellow]⚠️ Cancelled during speaker identification for {transcript_file.name}[/yellow]"
                 )
-        except Exception as e:
-            print(f"[red]❌ Speaker identification failed: {e}[/red]")
+                return
+            except Exception as e:
+                print(
+                    f"[red]❌ Speaker identification failed for {transcript_file.name}: {e}[/red]"
+                )
 
     except KeyboardInterrupt:
         print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")

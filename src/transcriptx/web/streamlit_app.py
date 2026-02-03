@@ -147,7 +147,7 @@ def render_dashboard():
             st.rerun()
 
         # Display table
-        st.dataframe(sessions_df, use_container_width=True, hide_index=True)
+        st.dataframe(sessions_df, width='stretch', hide_index=True)
 
     except Exception as e:
         st.error(f"Error loading dashboard: {e}")
@@ -375,7 +375,7 @@ def render_speakers_list():
             ]
 
         # Display table
-        st.dataframe(speakers_df, use_container_width=True, hide_index=True)
+        st.dataframe(speakers_df, width='stretch', hide_index=True)
 
         # Speaker detail selector
         speaker_ids = [s.get("id") for s in speakers if s.get("id")]

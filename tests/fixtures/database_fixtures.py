@@ -7,6 +7,7 @@ independence and prevent data pollution.
 """
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import Generator, Optional
@@ -79,11 +80,10 @@ def test_database_engine(test_database_url: str):
     Base.metadata.drop_all(engine)
     engine.dispose()
     
-    # Remove database file
+    # Remove database directory (handles WAL/shm files)
     db_path = Path(test_database_url.replace("sqlite:///", ""))
-    if db_path.exists():
-        db_path.unlink()
-        db_path.parent.rmdir()
+    if db_path.parent.exists():
+        shutil.rmtree(db_path.parent, ignore_errors=True)
 
 
 @pytest.fixture

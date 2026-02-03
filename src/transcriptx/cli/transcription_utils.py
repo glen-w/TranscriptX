@@ -33,6 +33,25 @@ def run_whisperx_docker(audio_file_path, config=None):
         if config
         else ""
     )
+    if not hf_token:
+        hf_token = (
+            os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+        )
+    min_speakers = getattr(config.transcription, "min_speakers", 1) if config else 1
+    max_speakers = getattr(config.transcription, "max_speakers", None) if config else None
+    try:
+        min_speakers = int(min_speakers)
+    except (TypeError, ValueError):
+        min_speakers = 1
+    if max_speakers is not None:
+        try:
+            max_speakers = int(max_speakers)
+        except (TypeError, ValueError):
+            max_speakers = None
+    if min_speakers < 1:
+        min_speakers = 1
+    if max_speakers is not None and max_speakers < min_speakers:
+        max_speakers = min_speakers
     device = "cpu"  # For now, always CPU
     whisperx_cmd = [
         "docker",
@@ -85,6 +104,9 @@ def run_whisperx_docker(audio_file_path, config=None):
         whisperx_cmd.extend(["--hf_token", hf_token])
     if diarize:
         whisperx_cmd.append("--diarize")
+        whisperx_cmd.extend(["--min_speakers", str(min_speakers)])
+        if max_speakers is not None:
+            whisperx_cmd.extend(["--max_speakers", str(max_speakers)])
     try:
         result = subprocess.run(
             whisperx_cmd, capture_output=True, text=True, check=True
