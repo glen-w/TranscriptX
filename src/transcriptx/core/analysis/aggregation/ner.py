@@ -23,6 +23,7 @@ from transcriptx.core.utils.path_utils import (  # type: ignore[import]
     get_canonical_base_name,
 )
 from transcriptx.io.transcript_service import TranscriptService  # type: ignore[import]
+from transcriptx.io.transcript_loader import extract_ignored_speakers_from_transcript
 
 
 def _canonicalize_entity(text: str) -> str:
@@ -74,6 +75,7 @@ def aggregate_ner_group(
         segments = transcript_service.load_segments(transcript_path, use_cache=True)
         if not segments:
             continue
+        ignored_ids = set(extract_ignored_speakers_from_transcript(transcript_path))
 
         transcript_file_id = _extract_transcript_file_id(segments)
         session_id = transcript_file_id or get_canonical_base_name(transcript_path)
@@ -86,7 +88,7 @@ def aggregate_ner_group(
 
             seg_id = _segment_id(session_id, segment, idx)
             speaker_info = resolve_canonical_speaker(
-                segment, transcript_path, canonical_speaker_map
+                segment, transcript_path, canonical_speaker_map, ignored_ids
             )
             speaker_display = speaker_info[1] if speaker_info else None
 

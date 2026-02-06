@@ -33,7 +33,7 @@ from transcriptx.database.services.transcript_store_policy import (
     store_transcript_after_speaker_identification,
 )
 from transcriptx.io.speaker_mapping import build_speaker_map
-from transcriptx.io.transcript_loader import load_segments
+from transcriptx.io.transcript_loader import load_segments, extract_speaker_map_from_transcript
 from transcriptx.cli.speaker_utils import (
     SpeakerGateDecision,
     check_batch_speaker_gate,
@@ -82,7 +82,10 @@ def _ensure_transcript_uuid(transcript_path: str) -> str:
     return processing_state._ensure_transcript_uuid(transcript_path)
 
 
-def run_batch_speaker_identification(transcript_paths: List[str]) -> None:
+def run_batch_speaker_identification(
+    transcript_paths: List[str],
+    from_gate: bool = False,
+) -> None:
     """
     Run speaker identification sequentially for all transcripts from batch processing.
 
@@ -90,8 +93,12 @@ def run_batch_speaker_identification(transcript_paths: List[str]) -> None:
     identify speakers for each transcript. It provides progress tracking and
     allows users to skip individual transcripts or cancel the entire batch.
 
+    When from_gate is True (invoked from a "speaker ID needed" step), only
+    unidentified speakers are shown per transcript; already-named speakers are skipped.
+
     Args:
         transcript_paths: List of transcript file paths to process
+        from_gate: If True, only show unidentified speakers (used when entering from gate).
     """
     if not transcript_paths:
         print(
@@ -158,9 +165,16 @@ def run_batch_speaker_identification(transcript_paths: List[str]) -> None:
                 print(
                     f"[cyan]Running speaker identification for {transcript_name}...[/cyan]"
                 )
+                existing_map = (
+                    extract_speaker_map_from_transcript(resolved_path)
+                    if from_gate
+                    else None
+                )
                 speaker_map = build_speaker_map(
                     segments,
                     speaker_map_path=None,  # No JSON file path needed
+                    review_mode="unidentified only" if from_gate else "all",
+                    existing_map=existing_map,
                     transcript_path=resolved_path,
                     batch_mode=False,  # Use interactive mode for batch processing
                     auto_generate=False,
@@ -235,6 +249,11 @@ def run_batch_speaker_identification(transcript_paths: List[str]) -> None:
     print(f"[yellow]⏭️ Skipped:[/yellow] {len(skipped)}")
     print(f"[red]❌ Failed:[/red] {len(failed)}")
     print("=" * 60)
+
+    # When from_gate=True, the caller (e.g. group or batch analysis) will continue with the
+    # full set of transcripts; do not offer analysis on only this subset.
+    if from_gate:
+        return
 
     # Offer batch analysis pipeline on all transcripts that are ready (successful + skipped)
     ready_for_analysis = successful + skipped
@@ -342,7 +361,7 @@ def run_batch_analysis_pipeline(
         if decision == SpeakerGateDecision.SKIP:
             return
         if decision == SpeakerGateDecision.IDENTIFY and needs_identification:
-            run_batch_speaker_identification(needs_identification)
+            run_batch_speaker_identification(needs_identification, from_gate=True)
             updated_paths: List[str] = []
             for path in resolved_transcript_paths:
                 if path in needs_identification:

@@ -10,9 +10,6 @@ import questionary
 from rich import print
 from rich.table import Table
 
-from transcriptx.core.pipeline.module_registry import get_default_modules
-from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
-from transcriptx.core.pipeline.target_resolver import GroupRef
 from transcriptx.core.services.group_service import GroupService
 from transcriptx.database import init_database
 from transcriptx.cli.file_selection_utils import select_transcript_files_interactive
@@ -112,32 +109,6 @@ def _show_group_details() -> None:
             print(f"- {member.file_path}")
 
 
-def _run_group() -> None:
-    identifier = _choose_group_identifier("Select a group to run analysis:")
-    if not identifier:
-        return
-    group = GroupService.resolve_group_identifier(identifier)
-    members = GroupService.get_members(group.id) if group.id is not None else []
-    transcript_paths = [m.file_path for m in members if m.file_path]
-    modules_choice = questionary.select(
-        "Modules:",
-        choices=["all", "custom"],
-    ).ask()
-    if modules_choice == "custom":
-        modules_input = questionary.text(
-            "Comma-separated module names:"
-        ).ask() or ""
-        selected_modules = [m.strip() for m in modules_input.split(",") if m.strip()]
-    else:
-        selected_modules = get_default_modules(transcript_paths)
-    persist = questionary.confirm("Persist run metadata to DB?").ask()
-    run_analysis_pipeline(
-        target=GroupRef(group_uuid=group.uuid),
-        selected_modules=selected_modules,
-        persist=bool(persist),
-    )
-
-
 def _delete_group() -> None:
     identifier = _choose_group_identifier("Select a group to delete:")
     if not identifier:
@@ -167,7 +138,6 @@ def _show_group_management_menu() -> None:
                     "📋 List Groups",
                     "➕ Create Group",
                     "🔍 Show Group",
-                    "▶️ Run Group Analysis",
                     "🗑️ Delete Group",
                     "⬅️ Back to main menu",
                 ],
@@ -182,8 +152,6 @@ def _show_group_management_menu() -> None:
             _create_group()
         elif choice == "🔍 Show Group":
             _show_group_details()
-        elif choice == "▶️ Run Group Analysis":
-            _run_group()
         elif choice == "🗑️ Delete Group":
             _delete_group()
         elif choice == "⬅️ Back to main menu":

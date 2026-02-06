@@ -16,7 +16,12 @@ from rich import print
 
 from transcriptx.io import load_segments
 from transcriptx.io.speaker_mapping import build_speaker_map
+from transcriptx.io.transcript_loader import (
+    extract_ignored_speakers_from_transcript,
+    extract_speaker_map_from_transcript,
+)
 from transcriptx.core.utils.config import get_config
+from transcriptx.core.pipeline.target_resolver import resolve_transcript_paths
 from transcriptx.core.utils.file_rename import rename_transcript_after_speaker_mapping
 from transcriptx.core.utils.logger import log_info
 from transcriptx.cli.processing_state import get_current_transcript_path_from_state
@@ -44,7 +49,9 @@ class SpeakerIdStatus:
 
     is_ok: bool
     is_complete: bool
+    ignored_count: int
     named_count: int
+    resolved_count: int
     total_count: int
     segment_named_count: int
     segment_total_count: int
@@ -52,19 +59,23 @@ class SpeakerIdStatus:
 
     def __post_init__(self) -> None:
         """Validate consistency of status fields (tolerant of filtered/corrupted IDs)."""
+        assert self.resolved_count == (
+            self.named_count + self.ignored_count
+        ), "resolved_count must equal named + ignored"
         assert 0 <= self.named_count <= self.total_count
+        assert 0 <= self.ignored_count <= self.total_count
         assert 0 <= self.segment_named_count <= self.segment_total_count
         # Missing IDs should be unique and not exceed the gap (tolerant of filtered IDs)
         assert len(set(self.missing_ids)) == len(self.missing_ids), "missing_ids must be unique"
         assert (
-            self.named_count + len(self.missing_ids) <= self.total_count
-        ), "named + missing should not exceed total"
-        # is_complete: all named and at least one speaker exists
+            self.resolved_count + len(self.missing_ids) == self.total_count
+        ), "resolved + missing must equal total"
+        # is_complete: all resolved OR no speakers
         assert self.is_complete == (
-            self.named_count == self.total_count and self.total_count > 0
+            self.total_count == 0 or self.resolved_count == self.total_count
         )
-        # is_ok: at least one named OR no speakers at all (treat as single-speaker)
-        assert self.is_ok == (self.named_count > 0 or self.total_count == 0)
+        # is_ok: gate decision mirrors completion
+        assert self.is_ok == self.is_complete
 
 
 def _normalize_speaker_id(value: Any) -> Optional[str]:
@@ -352,7 +363,7 @@ def _print_exemplars(
 def has_named_speakers(transcript_path: Path | str) -> bool:
     """Check if transcript has at least one named speaker (public API)."""
     status = check_speaker_identification_status(transcript_path)
-    return status.is_ok
+    return status.named_count > 0
 
 
 def check_speaker_identification_status(
@@ -372,13 +383,14 @@ def check_speaker_identification_status(
     Note:
         - Computes missing_ids from actual segments, not just speaker_map
         - Uses is_named_speaker() as the single authority for what counts as "named"
-        - Handles "no speakers" case: total_count=0, is_ok=True, is_complete=False
+        - Handles "no speakers" case: total_count=0, is_ok=True, is_complete=True
     """
     segments = load_segments(str(transcript_path))
     transcript_data = _load_transcript_json(transcript_path)
     speaker_map = transcript_data.get("speaker_map", {})
     if not isinstance(speaker_map, dict):
         speaker_map = {}
+    ignored_ids = set(extract_ignored_speakers_from_transcript(transcript_path))
 
     segment_total_count = 0
     segment_named_count = 0
@@ -405,8 +417,10 @@ def check_speaker_identification_status(
     if total_count == 0:
         return SpeakerIdStatus(
             is_ok=True,
-            is_complete=False,
+            is_complete=True,
+            ignored_count=0,
             named_count=0,
+            resolved_count=0,
             total_count=0,
             segment_named_count=segment_named_count,
             segment_total_count=segment_total_count,
@@ -429,19 +443,25 @@ def check_speaker_identification_status(
                 label = Counter(candidates).most_common(1)[0][0]
         if not label:
             label = speaker_id
+        if speaker_id in ignored_ids:
+            continue
         if is_label_named(label):
             named_ids.append(speaker_id)
         else:
             missing_ids.append(speaker_id)
 
     named_count = len(named_ids)
-    is_ok = named_count > 0
-    is_complete = named_count == total_count and total_count > 0
+    ignored_count = sum(1 for speaker_id in speaker_ids if speaker_id in ignored_ids)
+    resolved_count = named_count + ignored_count
+    is_complete = total_count == 0 or resolved_count == total_count
+    is_ok = is_complete
 
     return SpeakerIdStatus(
         is_ok=is_ok,
         is_complete=is_complete,
+        ignored_count=ignored_count,
         named_count=named_count,
+        resolved_count=resolved_count,
         total_count=total_count,
         segment_named_count=segment_named_count,
         segment_total_count=segment_total_count,
@@ -650,21 +670,94 @@ def check_batch_speaker_gate(
     return (decision, needs_identification, already_identified, statuses)
 
 
+def check_group_speaker_preflight(
+    member_transcript_ids: List[int],
+    force_non_interactive: bool = False,
+) -> tuple[SpeakerGateDecision, List[str], List[str], dict[str, SpeakerIdStatus]]:
+    """
+    Check speaker identification for group members by transcript ID.
+    """
+    try:
+        resolved_paths = [str(path) for path in resolve_transcript_paths(member_transcript_ids)]
+    except ValueError as exc:
+        print(f"\n[red]❌ {exc}[/red]")
+        return (SpeakerGateDecision.SKIP, [], [], {})
+
+    needs_identification: List[str] = []
+    already_identified: List[str] = []
+    statuses: dict[str, SpeakerIdStatus] = {}
+
+    for path in resolved_paths:
+        try:
+            status = check_speaker_identification_status(path)
+        except Exception as exc:
+            print(f"\n[red]❌ Failed to parse transcript: {path} ({exc})[/red]")
+            return (SpeakerGateDecision.SKIP, [], [], {})
+        statuses[path] = status
+        if status.is_complete or status.total_count == 0:
+            already_identified.append(path)
+        else:
+            needs_identification.append(path)
+
+    if not needs_identification:
+        return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+
+    if force_non_interactive:
+        config = get_config().workflow.speaker_gate
+        if config.mode == "enforce":
+            return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
+        return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+
+    print("\n[bold]Speaker Identification Status:[/bold]")
+    print(f"  ✅ Already identified: {len(already_identified)}")
+    print(f"  ⚠️  Need identification: {len(needs_identification)}")
+
+    choices: List[questionary.Choice] = [
+        questionary.Choice(
+            "🔄 Run speaker mapping for missing now", SpeakerGateDecision.IDENTIFY
+        ),
+    ]
+    if get_config().workflow.speaker_gate.mode != "enforce":
+        choices.append(
+            questionary.Choice(
+                "✅ Continue analysis anyway (unidentified speakers largely ignored in outputs)",
+                SpeakerGateDecision.PROCEED,
+            )
+        )
+    choices.append(questionary.Choice("⏭️ Cancel analysis", SpeakerGateDecision.SKIP))
+
+    choice = questionary.select(
+        f"{len(needs_identification)} transcript(s) need speaker identification. What would you like to do?",
+        choices=choices,
+        default=SpeakerGateDecision.IDENTIFY,
+    ).ask()
+    if not choice:
+        return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
+    return (choice, needs_identification, already_identified, statuses)
+
+
 def run_speaker_identification_for_transcript(
     transcript_path: str,
     batch_mode: bool = False,
+    from_gate: bool = False,
 ) -> tuple[bool, str]:
     """
     Run speaker identification for a specific transcript and return updated path.
+
+    When from_gate is True (invoked from a "speaker ID needed" step), only
+    unidentified speakers are shown; already-named speakers are skipped.
 
     Returns:
         (success, updated_path)
     """
     path = Path(transcript_path)
     segments = load_segments(str(path))
+    existing_map = extract_speaker_map_from_transcript(str(path)) if from_gate else None
     speaker_map = build_speaker_map(
         segments,
         speaker_map_path=None,
+        review_mode="unidentified only" if from_gate else "all",
+        existing_map=existing_map,
         transcript_path=str(path),
         batch_mode=batch_mode,
         auto_generate=False,

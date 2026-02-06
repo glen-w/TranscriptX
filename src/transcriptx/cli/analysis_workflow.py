@@ -42,8 +42,9 @@ from transcriptx.cli.speaker_utils import (
 
 # Import CLI utilities
 from .exit_codes import CliExit
-from .file_selection_utils import select_transcript_files_interactive
+from .analysis_target_picker import select_analysis_target_interactive
 from .analysis_utils import (
+    format_modules_columns,
     select_analysis_modules,
     select_analysis_mode,
     apply_analysis_mode_settings,
@@ -110,11 +111,10 @@ def _run_analysis_workflow_impl(
             transcript_files = [transcript_path]
             print(f"\n[dim]Using transcript: {transcript_path.name}[/dim]")
         else:
-            # Select transcript files interactively (supports multi-select)
-            transcript_files = select_transcript_files_interactive() or []
-            if len(transcript_files) == 0:
+            selection = select_analysis_target_interactive()
+            if selection is None:
                 print(
-                    "\n[yellow]⚠️ No transcript files selected. Returning to main menu.[/yellow]"
+                    "\n[yellow]⚠️ No analysis target selected. Returning to main menu.[/yellow]"
                 )
                 return
 
@@ -123,10 +123,58 @@ def _run_analysis_workflow_impl(
         apply_analysis_mode_settings(analysis_mode)
 
         # Select analysis modules
-        modules = select_analysis_modules(transcript_files)
+        if transcript_path:
+            transcript_files = [transcript_path]
+            modules = select_analysis_modules(transcript_files)
+        else:
+            if selection.kind == "paths":
+                transcript_files = selection.paths or []
+                if not transcript_files:
+                    print(
+                        "\n[yellow]⚠️ No transcript files selected. Returning to main menu.[/yellow]"
+                    )
+                    return
+                modules = select_analysis_modules(transcript_files)
+            else:
+                try:
+                    member_paths = selection.get_member_paths()
+                except ValueError as exc:
+                    print(f"\n[red]❌ {exc}[/red]")
+                    return
+                modules = select_analysis_modules(member_paths, for_group=True)
 
         # Filter modules based on analysis mode
         filtered_modules = filter_modules_by_mode(modules, analysis_mode)
+
+        # Handle group target
+        if not transcript_path and selection.kind == "group":
+            from transcriptx.cli.speaker_utils import check_group_speaker_preflight
+            from transcriptx.cli.batch_workflows import run_batch_speaker_identification
+
+            member_ids = selection.member_transcript_ids or []
+            decision, needs_identification, already_identified, statuses = (
+                check_group_speaker_preflight(member_ids)
+            )
+            if decision == SpeakerGateDecision.SKIP:
+                return
+            if decision == SpeakerGateDecision.IDENTIFY and needs_identification:
+                run_batch_speaker_identification(needs_identification, from_gate=True)
+                decision, needs_identification, already_identified, statuses = (
+                    check_group_speaker_preflight(member_ids)
+                )
+                if decision == SpeakerGateDecision.SKIP or needs_identification:
+                    return
+
+            print("\n[bold]Selected modules:[/bold]")
+            print(format_modules_columns(filtered_modules, columns=4))
+            if not questionary.confirm("Proceed with analysis?").ask():
+                return
+            run_analysis_pipeline(
+                target=selection.group_ref,
+                selected_modules=filtered_modules,
+                persist=False,
+            )
+            return
 
         # Handle multiple transcripts using batch analysis pipeline
         if len(transcript_files) > 1:
@@ -138,7 +186,8 @@ def _run_analysis_workflow_impl(
             )
 
             # Confirm analysis
-            print(f"\n[bold]Selected modules:[/bold] {', '.join(filtered_modules)}")
+            print("\n[bold]Selected modules:[/bold]")
+            print(format_modules_columns(filtered_modules, columns=4))
             print(f"[bold]Transcripts to analyze:[/bold]")
             for idx, tf in enumerate(transcript_files, 1):
                 print(f"  {idx}. {tf.name}")
@@ -173,6 +222,7 @@ def _run_analysis_workflow_impl(
                 success, updated_path = run_speaker_identification_for_transcript(
                     str(transcript_file),
                     batch_mode=False,
+                    from_gate=True,
                 )
                 if success:
                     transcript_file = Path(updated_path)
@@ -199,6 +249,7 @@ def _run_analysis_workflow_impl(
                                 success, updated_path = run_speaker_identification_for_transcript(
                                     str(transcript_file),
                                     batch_mode=False,
+                                    from_gate=True,
                                 )
                                 if success:
                                     transcript_file = Path(updated_path)
@@ -231,7 +282,8 @@ def _run_analysis_workflow_impl(
                 skip_speaker_mapping = True
 
         # Confirm analysis
-        print(f"\n[bold]Selected modules:[/bold] {', '.join(filtered_modules)}")
+        print("\n[bold]Selected modules:[/bold]")
+        print(format_modules_columns(filtered_modules, columns=4))
 
         if not questionary.confirm("Proceed with analysis?").ask():
             return
@@ -839,7 +891,8 @@ def run_analysis_non_interactive(
 
     # Confirm if not skipped
     if not skip_confirm:
-        print(f"\n[bold]Selected modules:[/bold] {', '.join(filtered_modules)}")
+        print("\n[bold]Selected modules:[/bold]")
+        print(format_modules_columns(filtered_modules, columns=4))
         from rich.prompt import Confirm
 
         if not Confirm.ask("Proceed with analysis?"):

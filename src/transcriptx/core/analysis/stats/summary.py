@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from html import escape as html_escape
 
-from transcriptx.utils.text_utils import format_time, is_named_speaker
+from transcriptx.utils.text_utils import format_time, is_eligible_named_speaker
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.artifact_writer import write_text
@@ -19,6 +19,9 @@ def create_comprehensive_summary(
     speaker_stats: list,
     sentiment_summary: dict,
     module_data: dict,
+    *,
+    ignored_ids: set[str] | None = None,
+    speaker_key_aliases: dict[str, str] | None = None,
 ) -> str:
     """
     Create a comprehensive summary incorporating data from all modules.
@@ -39,6 +42,14 @@ def create_comprehensive_summary(
     summary_lines.append(f"📊 COMPREHENSIVE ANALYSIS SUMMARY: {base_name}")
     summary_lines.append("=" * 60)
     summary_lines.append("")
+
+    def _eligible(display_name: str) -> bool:
+        key = (
+            speaker_key_aliases.get(display_name, display_name)
+            if speaker_key_aliases
+            else display_name
+        )
+        return is_eligible_named_speaker(display_name, key, ignored_ids or set())
 
     # Basic Statistics
     summary_lines.append("🎯 BASIC STATISTICS")
@@ -69,7 +80,7 @@ def create_comprehensive_summary(
         )
         summary_lines.append("-" * 70)
         for speaker, scores in sentiment_summary.items():
-            if not is_named_speaker(speaker):
+            if not _eligible(speaker):
                 continue
             compound = scores.get("compound", 0)
             pos = scores.get("pos", 0)
@@ -85,7 +96,7 @@ def create_comprehensive_summary(
         summary_lines.append("🗣️ DIALOGUE ACTS")
         summary_lines.append("-" * 15)
         for speaker, acts in module_data["acts"].items():
-            if not is_named_speaker(speaker):
+            if not _eligible(speaker):
                 continue
             summary_lines.append(f"{speaker}:")
             for act, count in sorted(acts.items(), key=lambda x: x[1], reverse=True):
@@ -103,7 +114,7 @@ def create_comprehensive_summary(
         if "speaker_summary" in module_data["interactions"]:
             for speaker_data in module_data["interactions"]["speaker_summary"]:
                 speaker = speaker_data.get("speaker", "Unknown")
-                if not is_named_speaker(speaker):
+                if not _eligible(speaker):
                     continue
                 interruptions_init = speaker_data.get("interruptions_initiated", 0)
                 interruptions_rec = speaker_data.get("interruptions_received", 0)
@@ -130,7 +141,7 @@ def create_comprehensive_summary(
         summary_lines.append("-" * 18)
         if "speaker_emotions" in module_data["emotion"]:
             for speaker, emotions in module_data["emotion"]["speaker_emotions"].items():
-                if not is_named_speaker(speaker):
+                if not _eligible(speaker):
                     continue
                 summary_lines.append(f"{speaker}:")
                 for emotion, score in sorted(
@@ -148,7 +159,7 @@ def create_comprehensive_summary(
         summary_lines.append("🏷️ NAMED ENTITIES")
         summary_lines.append("-" * 16)
         for speaker, entities in module_data["ner"].items():
-            if not is_named_speaker(speaker):
+            if not _eligible(speaker):
                 continue
             summary_lines.append(f"{speaker}:")
             for entity, count in sorted(
@@ -166,7 +177,7 @@ def create_comprehensive_summary(
         summary_lines.append("🎯 ENTITY SENTIMENT ANALYSIS")
         summary_lines.append("-" * 26)
         for speaker, entities in module_data["entity_sentiment"].items():
-            if not is_named_speaker(speaker):
+            if not _eligible(speaker):
                 continue
             summary_lines.append(f"{speaker}:")
             for entity, sentiment in sorted(
@@ -263,7 +274,7 @@ def create_comprehensive_summary(
         if "speaker_emotions" in module_data["emotion"]:
             emotion_scores = {}
             for speaker, emotions in module_data["emotion"]["speaker_emotions"].items():
-                if not is_named_speaker(speaker):
+                if not _eligible(speaker):
                     continue
                 emotion_scores[speaker] = sum(emotions.values())
 
@@ -292,7 +303,13 @@ def create_comprehensive_summary(
 
 
 def generate_summary_stats(
-    segments: list, base_name: str, transcript_dir: str, speaker_map: dict
+    segments: list,
+    base_name: str,
+    transcript_dir: str,
+    speaker_map: dict,
+    *,
+    ignored_ids: set[str] | None = None,
+    speaker_key_aliases: dict[str, str] | None = None,
 ):
     """
     Generate comprehensive summary statistics from transcript segments.
@@ -307,12 +324,20 @@ def generate_summary_stats(
     stats_dir = os.path.join(transcript_dir, "stats")
     os.makedirs(stats_dir, exist_ok=True)
 
+    def _eligible(display_name: str) -> bool:
+        key = (
+            speaker_key_aliases.get(display_name, display_name)
+            if speaker_key_aliases
+            else display_name
+        )
+        return is_eligible_named_speaker(display_name, key, ignored_ids or set())
+
     # Group text by speaker
     grouped = {}
     for seg in segments:
         raw_id = seg.get("speaker")
         name = speaker_map.get(raw_id, raw_id)
-        if not is_named_speaker(name):
+        if not _eligible(str(name)):
             continue
         grouped.setdefault(name, []).append(seg.get("text", ""))
 
@@ -324,7 +349,7 @@ def generate_summary_stats(
 
     # Compute speaker statistics
     speaker_stats, sentiment_summary = compute_speaker_stats(
-        grouped, segments, speaker_map, tic_list
+        grouped, segments, speaker_map, tic_list, ignored_ids=ignored_ids
     )
 
     # Load module data
@@ -332,7 +357,13 @@ def generate_summary_stats(
 
     # Create comprehensive summary text
     summary_text = create_comprehensive_summary(
-        transcript_dir, base_name, speaker_stats, sentiment_summary, module_data
+        transcript_dir,
+        base_name,
+        speaker_stats,
+        sentiment_summary,
+        module_data,
+        ignored_ids=ignored_ids,
+        speaker_key_aliases=speaker_key_aliases,
     )
 
     # Save summary text

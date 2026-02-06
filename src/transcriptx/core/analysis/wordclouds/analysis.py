@@ -35,7 +35,7 @@ from transcriptx.core.utils.speaker_extraction import (
     group_segments_by_speaker,
     get_speaker_display_name,
 )
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 from transcriptx.core.utils.notifications import notify_user
 from transcriptx.io import load_segments
 from transcriptx.core.utils.lazy_imports import lazy_pyplot, get_wordcloud
@@ -44,6 +44,22 @@ from transcriptx.core.viz.charts import is_plotly_available
 plt = lazy_pyplot()
 
 _ACTIVE_OUTPUT_SERVICE = None
+
+
+def _get_ignored_ids() -> set[str]:
+    if not _ACTIVE_OUTPUT_SERVICE:
+        return set()
+    ignored = _ACTIVE_OUTPUT_SERVICE._runtime_flags.get("ignored_speaker_ids")
+    return ignored if isinstance(ignored, set) else set()
+
+
+def _resolve_speaker_key(speaker: str) -> str:
+    if not _ACTIVE_OUTPUT_SERVICE:
+        return speaker
+    aliases = _ACTIVE_OUTPUT_SERVICE._runtime_flags.get("speaker_key_aliases", {})
+    if isinstance(aliases, dict):
+        return aliases.get(str(speaker), str(speaker))
+    return str(speaker)
 
 
 @contextmanager
@@ -461,16 +477,19 @@ def group_texts_by_speaker(segments: list) -> dict:
     Returns:
         Dictionary mapping speaker display name to list of text strings
     """
-    from transcriptx.utils.text_utils import is_named_speaker
-
     # Group segments by speaker using database-driven approach
     grouped_segments = group_segments_by_speaker(segments)
 
     # Extract texts grouped by display name
     grouped = defaultdict(list)
+    ignored_ids = _get_ignored_ids()
     for grouping_key, segs in grouped_segments.items():
         display_name = get_speaker_display_name(grouping_key, segs, segments)
         if display_name:
+            if not is_eligible_named_speaker(
+                display_name, str(grouping_key), ignored_ids
+            ):
+                continue
             texts = [seg.get("text", "") for seg in segs if seg.get("text")]
             if texts:
                 grouped[display_name].extend(texts)
@@ -571,7 +590,9 @@ def save_freq_json_csv(
             "exclude_unidentified_from_speaker_charts",
             False,
         )
-        if exclude and not is_named_speaker(speaker):
+        if exclude and not is_eligible_named_speaker(
+            speaker, _resolve_speaker_key(speaker), _get_ignored_ids()
+        ):
             return
     safe = speaker.replace(" ", "_").replace("/", "_")
 
@@ -658,7 +679,17 @@ def generate_tfidf_wordclouds(
         "exclude_unidentified_from_speaker_charts",
         False,
     )
-    speakers = [s for s in grouped if is_named_speaker(s)] if exclude else list(grouped.keys())
+    speakers = (
+        [
+            s
+            for s in grouped
+            if is_eligible_named_speaker(
+                s, _resolve_speaker_key(s), _get_ignored_ids()
+            )
+        ]
+        if exclude
+        else list(grouped.keys())
+    )
     documents = [" ".join(grouped[s]) for s in speakers]
     filtered_docs = [" ".join(tokenize_and_filter(doc)) for doc in documents]
 
@@ -959,7 +990,9 @@ def generate_tic_wordclouds(
         False,
     )
     for speaker, texts in grouped.items():
-        if exclude and not is_named_speaker(speaker):
+        if exclude and not is_eligible_named_speaker(
+            speaker, _resolve_speaker_key(speaker), _get_ignored_ids()
+        ):
             continue
         tics = extract_tics_from_text(" ".join(texts))
         freq = Counter(tics)

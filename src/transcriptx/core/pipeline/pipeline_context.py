@@ -15,7 +15,7 @@ Key Features:
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 from transcriptx.io.transcript_service import TranscriptService
 
 logger = get_logger()
@@ -108,10 +108,17 @@ class PipelineContext:
             get_unique_speakers,
             set_speaker_display_map,
         )
-        from transcriptx.io.transcript_loader import extract_speaker_map_from_transcript
+        from transcriptx.io.transcript_loader import (
+            extract_ignored_speakers_from_transcript,
+            extract_speaker_map_from_transcript,
+        )
 
         self.speaker_map = get_unique_speakers(self.segments)
         logger.debug(f"Extracted {len(self.speaker_map)} speakers from segments")
+
+        self.ignored_speaker_ids = set(
+            extract_ignored_speakers_from_transcript(transcript_path)
+        )
 
         from transcriptx.core.utils.canonicalization import (
             compute_transcript_identity_hash,
@@ -132,6 +139,7 @@ class PipelineContext:
         self.runtime_flags: Dict[str, Any] = {
             "include_unidentified_speakers": include_unidentified_speakers,
             "anonymise_speakers": anonymise_speakers,
+            "ignored_speaker_ids": self.ignored_speaker_ids,
         }
 
         if anonymise_speakers:
@@ -295,9 +303,11 @@ class PipelineContext:
         named_keys: set[str] = set()
         for segment in segments:
             label = segment.get("speaker")
-            if label and is_named_speaker(str(label)):
-                key = self.get_speaker_key_from_segment(segment)
-                if key:
+            key = self.get_speaker_key_from_segment(segment)
+            if key and label:
+                if is_eligible_named_speaker(
+                    str(label), str(key), self.ignored_speaker_ids
+                ):
                     named_keys.add(key)
         return named_keys
 

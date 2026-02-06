@@ -39,7 +39,7 @@ from transcriptx.core.viz.charts import (
     is_plotly_available,
     warn_missing_plotly_once,
 )
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 from transcriptx.core.viz.mpl_renderer import render_mpl
 from transcriptx.core.viz.charts import render_plotly
 from transcriptx.core.viz.specs import ChartSpec
@@ -246,14 +246,17 @@ class OutputService:
         )
         if not exclude:
             return False
-        named_keys = self._runtime_flags.get("named_speaker_keys")
-        if isinstance(named_keys, set):
-            if speaker in named_keys:
-                return False
-            aliases = self._runtime_flags.get("speaker_key_aliases", {})
-            aliased = aliases.get(str(speaker))
-            return aliased not in named_keys
-        return not is_named_speaker(str(speaker))
+        ignored_ids = self._runtime_flags.get("ignored_speaker_ids")
+        if not isinstance(ignored_ids, set):
+            ignored_ids = set()
+        speaker_str = str(speaker)
+        aliases = self._runtime_flags.get("speaker_key_aliases", {})
+        speaker_key = aliases.get(speaker_str, speaker_str)
+        return not is_eligible_named_speaker(
+            display_name=speaker_str,
+            speaker_id=speaker_key,
+            ignored_ids=ignored_ids,
+        )
 
     def resolve_speaker_display(self, speaker_key: Optional[str]) -> Optional[str]:
         if speaker_key is None:

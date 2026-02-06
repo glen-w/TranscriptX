@@ -12,8 +12,16 @@ from transcriptx.core.utils.path_utils import get_group_output_dir  # type: igno
 from transcriptx.core.utils.artifact_writer import write_text  # type: ignore[import]
 from transcriptx.io import save_json, save_csv  # type: ignore[import]
 from transcriptx.core.utils.logger import get_logger  # type: ignore[import]
+from importlib import metadata
 
 logger = get_logger()
+
+
+def _resolve_version() -> Optional[str]:
+    try:
+        return metadata.version("transcriptx")
+    except Exception:
+        return None
 
 
 class GroupOutputService:
@@ -79,6 +87,34 @@ class GroupOutputService:
         path = self.base_dir / "combined" / f"{name}.csv"
         save_csv(rows, str(path))
         logger.debug(f"Saved combined CSV to {path}")
+        return str(path)
+
+    def write_group_run_metadata(
+        self,
+        *,
+        group_uuid: str,
+        group_name_at_run: Optional[str],
+        group_key: Optional[str],
+        member_transcript_ids: List[int],
+        member_display_names: Optional[List[str]],
+        selected_modules: List[str],
+    ) -> str:
+        payload = {
+            "schema_version": 1,
+            "group_uuid": group_uuid,
+            "group_name_at_run": group_name_at_run,
+            "group_key": group_key,
+            "member_transcript_ids": list(member_transcript_ids),
+            "member_display_names": list(member_display_names or []),
+            "member_count": len(member_transcript_ids),
+            "selected_modules": list(selected_modules),
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "run_id": self.run_id,
+            "tx_version": _resolve_version(),
+        }
+        path = self.base_dir / "group_run_metadata.json"
+        save_json(payload, str(path))
+        logger.debug(f"Saved group run metadata to {path}")
         return str(path)
 
     def write_group_manifest(

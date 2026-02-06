@@ -12,7 +12,48 @@ from transcriptx.core.analysis.selection import (
 )
 
 
-def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
+def _module_display_name(module_id: str) -> str:
+    """Return user-facing name: underscores as spaces (display only)."""
+    return module_id.replace("_", " ")
+
+
+def format_modules_columns(modules: list[str], columns: int = 4) -> str:
+    """Format a list of module names in columns for clearer display (e.g. 4 columns)."""
+    if not modules:
+        return ""
+    modules = sorted(modules)
+    display = [_module_display_name(m) for m in modules]
+    n = len(display)
+    rows = (n + columns - 1) // columns
+    # Distribute into columns: col 0 = first `rows` items, col 1 = next `rows`, etc.
+    cols: list[list[str]] = []
+    for c in range(columns):
+        start = c * rows
+        end = min(start + rows, n)
+        cols.append(display[start:end])
+    # Pad each column to max width within that column
+    for c in range(columns):
+        if cols[c]:
+            width = max(len(x) for x in cols[c])
+            cols[c] = [x.ljust(width) for x in cols[c]]
+    # Pad column lengths so we can zip
+    max_len = max(len(col) for col in cols)
+    for c in range(columns):
+        while len(cols[c]) < max_len:
+            cols[c].append("")
+    # Format row by row
+    lines = []
+    for r in range(max_len):
+        line = "  ".join(cols[c][r] for c in range(columns)).rstrip()
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def select_analysis_modules(
+    transcript_paths: list | None = None,
+    *,
+    for_group: bool = False,
+) -> list[str]:
     available_modules = get_available_modules()
     sorted_modules = sorted(available_modules, key=lambda m: get_description(m) or "")
 
@@ -29,15 +70,33 @@ def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
             return True
         return not missing_deps
 
+    def _eligible(info):
+        if for_group and not info.supports_group:
+            return False
+        if info.requires_audio and audio_available is False:
+            return False
+        if not _dep_resolver(info):
+            return False
+        return True
+
+    eligible_modules: list[str] = []
+    for module in sorted_modules:
+        info = get_module_info(module)
+        if info and _eligible(info):
+            eligible_modules.append(module)
+
     # Build choices for multi-select (checkbox): special options then one per module.
     # Use checked=True to preselect "All modules"; checkbox does not accept default=[...].
     choices = [
         questionary.Choice(title="⚙️ Configure settings", value="settings"),
         questionary.Choice(
-            title="🚀 All modules (recommended)", value="all", checked=True
+            title="⭐ Recommended modules (default set)", value="recommended", checked=True
+        ),
+        questionary.Choice(
+            title="📚 All eligible modules", value="all_eligible"
         ),
     ]
-    for i, module in enumerate(sorted_modules, 1):
+    for i, module in enumerate(eligible_modules, 1):
         description = get_description(module) or module
         info = get_module_info(module)
         badges: list[str] = []
@@ -67,13 +126,16 @@ def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
             if "settings" in selection:
                 edit_config_interactive()
                 continue
-            selected_modules = [m for m in selection if m not in ("settings", "all")]
-            if "all" in selection and not selected_modules:
-                # Only "all" checked -> run recommended set from core
+            selected_modules = [
+                m for m in selection if m not in ("settings", "recommended", "all_eligible")
+            ]
+            if "recommended" in selection and not selected_modules:
+                # Only "recommended" checked -> run recommended set from core
                 selected = get_default_modules(
                     transcript_paths,
                     audio_resolver=has_resolvable_audio,
                     dep_resolver=_dep_resolver,
+                    for_group=for_group,
                 )
                 heavy = [
                     m
@@ -86,11 +148,12 @@ def select_analysis_modules(transcript_paths: list | None = None) -> list[str]:
                         f"[yellow]⚠️ Heavy modules included: {', '.join(heavy)}[/yellow]"
                     )
                 return selected
-            if "all" in selection and selected_modules:
-                # "All" and specific modules both checked -> use only the specific ones
-                pass
+            if "all_eligible" in selection and not selected_modules:
+                return list(eligible_modules)
             if not selected_modules:
-                print("[yellow]No modules selected. Choose at least one or pick 'All modules'.[/yellow]")
+                print(
+                    "[yellow]No modules selected. Choose at least one or pick 'Recommended'/'All eligible'.[/yellow]"
+                )
                 continue
             return selected_modules
         except KeyboardInterrupt:

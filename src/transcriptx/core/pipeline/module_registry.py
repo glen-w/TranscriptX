@@ -32,8 +32,10 @@ class ModuleInfo:
     function: Optional[Callable] = None
     timeout_seconds: int = 600
     exclude_from_default: bool = False
+    post_processing_only: bool = False  # Not offered in analysis module list; run via post-processing
     requires_audio: bool = False
     supports_audio: bool = False
+    supports_group: bool = True
     output_namespace: Optional[str] = None
     output_version: Optional[str] = None
     cost_tier: str = "normal"
@@ -65,6 +67,7 @@ class ModuleRegistry:
                 "requirements": [Requirement.SEGMENTS],
                 "enhancements": [],
                 "exclude_from_default": True,
+                "post_processing_only": True,
             },
             "acts": {
                 "description": "Dialogue Act Classification",
@@ -413,6 +416,7 @@ class ModuleRegistry:
                 "requires_audio": True,
                 "supports_audio": True,
                 "exclude_from_default": True,
+                "supports_group": False,
                 "output_namespace": "voice",
                 "output_version": "v1",
                 "cost_tier": "heavy",
@@ -430,8 +434,10 @@ class ModuleRegistry:
                 requirements=info.get("requirements", default_requirements),
                 enhancements=info.get("enhancements", []),
                 exclude_from_default=info.get("exclude_from_default", False),
+                post_processing_only=info.get("post_processing_only", False),
                 requires_audio=info.get("requires_audio", False),
                 supports_audio=info.get("supports_audio", False),
+                supports_group=info.get("supports_group", True),
                 output_namespace=info.get("output_namespace"),
                 output_version=info.get("output_version"),
                 cost_tier=info.get("cost_tier", "normal"),
@@ -439,8 +445,12 @@ class ModuleRegistry:
             )
 
     def get_available_modules(self) -> List[str]:
-        """Get list of available analysis modules."""
-        return list(self._modules.keys())
+        """Get list of available analysis modules (excludes post-processing-only tools)."""
+        return [
+            name
+            for name, info in self._modules.items()
+            if not info.post_processing_only
+        ]
 
     def get_default_modules(
         self,
@@ -450,6 +460,7 @@ class ModuleRegistry:
         dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
         include_heavy: bool = True,
         include_excluded_from_default: bool = False,
+        for_group: bool = False,
     ) -> List[str]:
         """Get list of modules used for default analysis runs."""
         audio_available: Optional[bool] = None
@@ -484,6 +495,8 @@ class ModuleRegistry:
             if not include_heavy and info.cost_tier == "heavy":
                 continue
             if info.requires_audio and audio_available is False:
+                continue
+            if for_group and not info.supports_group:
                 continue
             if dep_resolver is not None and not dep_resolver(info):
                 continue
@@ -716,6 +729,7 @@ def get_default_modules(
     dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
     include_heavy: bool = True,
     include_excluded_from_default: bool = False,
+    for_group: bool = False,
 ) -> List[str]:
     """Get list of modules used for default analysis runs."""
     return _module_registry.get_default_modules(
@@ -724,6 +738,7 @@ def get_default_modules(
         dep_resolver=dep_resolver,
         include_heavy=include_heavy,
         include_excluded_from_default=include_excluded_from_default,
+        for_group=for_group,
     )
 
 

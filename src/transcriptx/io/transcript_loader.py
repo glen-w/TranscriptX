@@ -9,13 +9,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.domain.canonical_transcript import CanonicalTranscript
-from transcriptx.core.domain.canonical_transcript import CanonicalTranscript
-
-# Import here to avoid circular imports
-
-logger = get_logger()
+# Avoid importing from transcriptx.core at top level to prevent circular import
+# (core -> pipeline -> pipeline_context -> transcript_service -> transcript_loader).
+# CanonicalTranscript is imported inside load_canonical_transcript().
 
 
 def load_segments(path: str) -> List[Dict[str, Any]]:
@@ -61,8 +57,9 @@ def load_segments(path: str) -> List[Dict[str, Any]]:
     if not path_obj.exists():
         try:
             from transcriptx.core.utils._path_resolution import resolve_file_path
+            from transcriptx.core.utils.logger import get_logger
             resolved_path = resolve_file_path(path, file_type="transcript")
-            logger.debug(f"Resolved transcript path: {path} -> {resolved_path}")
+            get_logger().debug(f"Resolved transcript path: {path} -> {resolved_path}")
         except FileNotFoundError:
             # If resolution fails, raise the original error with the original path
             raise FileNotFoundError(f"Transcript file not found: {path}")
@@ -135,21 +132,34 @@ def extract_speaker_map_from_transcript(transcript_path: str) -> Dict[str, str]:
         return {}
 
 
-def load_canonical_transcript(path: str) -> CanonicalTranscript:
+def extract_ignored_speakers_from_transcript(transcript_path: str | Path) -> List[str]:
+    """
+    Extract ignored speaker IDs from transcript JSON metadata.
+
+    Returns a unique, stable-order list of string IDs.
+    """
+    try:
+        data = load_transcript(str(transcript_path))
+    except (json.JSONDecodeError, OSError):
+        return []
+    if not isinstance(data, dict):
+        return []
+    raw_ids = data.get("ignored_speakers") or []
+    if not isinstance(raw_ids, list):
+        return []
+    normalized = [str(item) for item in raw_ids if item is not None]
+    return list(dict.fromkeys(normalized))
+
+
+def load_canonical_transcript(path: str) -> "CanonicalTranscript":
     """
     Load a transcript file and return a CanonicalTranscript instance.
 
     This does not change behavior for existing callers; it simply wraps
     load_segments() into the canonical in-memory representation.
     """
-    segments = load_segments(path)
-    return CanonicalTranscript.from_segments(segments)
+    from transcriptx.core.domain.canonical_transcript import CanonicalTranscript
 
-
-def load_canonical_transcript(path: str) -> CanonicalTranscript:
-    """
-    Load a transcript from JSON and return a CanonicalTranscript object.
-    """
     segments = load_segments(path)
     if not segments:
         raise ValueError(f"No segments found in transcript: {path}")

@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
-from typing import List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 from transcriptx.core.services.group_service import GroupService  # type: ignore[import]
 from transcriptx.database import get_session  # type: ignore[import]
@@ -118,3 +118,44 @@ def resolve_analysis_target(
             session.close()
 
     raise TypeError("Unsupported analysis target ref.")
+
+
+def resolve_group_member_ids(group_ref: GroupRef) -> List[int]:
+    """
+    Resolve ordered transcript_file IDs for a GroupRef.
+    """
+    identifier = group_ref.group_uuid or group_ref.group_key or group_ref.group_name or ""
+    group = GroupService.resolve_group_identifier(identifier)
+    if group.id is None:
+        raise ValueError("Group identifier did not resolve to a persisted group.")
+    session = get_session()
+    try:
+        repo = GroupRepository(session)
+        members = repo.resolve_members(group.id)
+        if not members:
+            raise ValueError("Group has no members.")
+        return [record.id for record in members]
+    finally:
+        session.close()
+
+
+def resolve_transcript_paths(transcript_ids: Iterable[int]) -> List[Path]:
+    """
+    Resolve transcript file paths from ordered transcript_file IDs.
+    """
+    session = get_session()
+    try:
+        repo = TranscriptFileRepository(session)
+        paths: List[Path] = []
+        missing: List[int] = []
+        for file_id in transcript_ids:
+            record = repo.get_transcript_file_by_id(file_id)
+            if record is None:
+                missing.append(file_id)
+                continue
+            paths.append(Path(record.file_path))
+        if missing:
+            raise ValueError(f"Transcript files not found for IDs: {missing}")
+        return paths
+    finally:
+        session.close()

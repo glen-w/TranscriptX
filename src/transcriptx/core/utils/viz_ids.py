@@ -62,9 +62,7 @@ VIZ_VOICE_HESITATION_MAP_GLOBAL = "voice.hesitation_map.global"
 VIZ_VOICE_RHYTHM_COMPARE_GLOBAL = "voice.rhythm_compare.global"
 VIZ_VOICE_RHYTHM_SCATTER_GLOBAL = "voice.rhythm_scatter.global"
 VIZ_VOICE_F0_CONTOURS_SPEAKER = "voice.f0_contours.speaker"
-VIZ_VOICE_F0_SLOPE_DISTRIBUTION_GLOBAL = "voice.f0_slope_distribution.global"
-
-# Prosody dashboard
+VIZ_VOICE_F0_SLOPE_DISTRIBUTION_GLOBAL = "voice.f0_slope_distribution.global"# Prosody dashboard
 VIZ_PROSODY_PROFILE_DISTRIBUTION_SPEAKER = "prosody_dashboard.profile_distribution.speaker"
 VIZ_PROSODY_PROFILE_CORR_SPEAKER = "prosody_dashboard.profile_corr.speaker"
 VIZ_PROSODY_TIMELINE_GLOBAL = "prosody_dashboard.timeline.global"

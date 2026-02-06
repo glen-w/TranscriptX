@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 import os
 
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 from transcriptx.core.utils.config import get_config
 from transcriptx.io import save_csv, save_json
 from transcriptx.core.utils.artifact_writer import write_text
@@ -190,6 +190,7 @@ def save_speaker_data(
     speaker: str,
     filename: str,
     file_type: str = "json",
+    ignored_ids: set[str] | None = None,
 ) -> Path | None:
     """
     Save per-speaker data to standardized location.
@@ -214,7 +215,9 @@ def save_speaker_data(
         "exclude_unidentified_from_speaker_charts",
         False,
     )
-    if exclude and not is_named_speaker(speaker):
+    if exclude and not is_eligible_named_speaker(
+        speaker, speaker, ignored_ids or set()
+    ):
         return None
     safe_speaker = str(speaker).replace(" ", "_").replace("/", "_")
     file_path = (
@@ -274,8 +277,9 @@ def get_speaker_static_chart_path(
     speaker: str,
     filename: str,
     chart_type: str | None,
+    ignored_ids: set[str] | None = None,
 ) -> Path | None:
-    if not is_named_speaker(speaker):
+    if not is_eligible_named_speaker(speaker, speaker, ignored_ids or set()):
         return None
     safe_speaker = str(speaker).replace(" ", "_").replace("/", "_")
     chart_dir = output_structure.speaker_static_charts_dir / safe_speaker / "static"
@@ -292,8 +296,9 @@ def get_speaker_dynamic_chart_path(
     speaker: str,
     filename: str,
     chart_type: str | None,
+    ignored_ids: set[str] | None = None,
 ) -> Path | None:
-    if not is_named_speaker(speaker):
+    if not is_eligible_named_speaker(speaker, speaker, ignored_ids or set()):
         return None
     safe_speaker = str(speaker).replace(" ", "_").replace("/", "_")
     chart_dir = output_structure.speaker_dynamic_charts_dir / safe_speaker / "dynamic"

@@ -175,6 +175,7 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
             success, updated_path = run_speaker_identification_for_transcript(
                 transcript_path,
                 batch_mode=False,
+                from_gate=True,
             )
             if success:
                 transcript_path = updated_path
@@ -201,6 +202,7 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
                             success, updated_path = run_speaker_identification_for_transcript(
                                 transcript_path,
                                 batch_mode=False,
+                                from_gate=True,
                             )
                             if success:
                                 transcript_path = updated_path

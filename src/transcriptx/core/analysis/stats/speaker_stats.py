@@ -1,6 +1,6 @@
 """Stats analysis module."""
 
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.analysis.sentiment import score_sentiment
@@ -9,7 +9,11 @@ logger = get_logger()
 
 
 def compute_speaker_stats(
-    grouped: dict, segments: list, speaker_map: dict = None, tic_list: list = None
+    grouped: dict,
+    segments: list,
+    speaker_map: dict = None,
+    tic_list: list = None,
+    ignored_ids: set[str] | None = None,
 ):
     """
     Computes per-speaker metrics including word count, tic rate, segment count, duration, etc.
@@ -33,10 +37,14 @@ def compute_speaker_stats(
 
     # Create mapping from display name to grouped segments
     speaker_segments_map = {}
+    speaker_key_map: dict[str, str] = {}
     for grouping_key, segs in grouped_segments.items():
         display_name = get_speaker_display_name(grouping_key, segs, segments)
-        if display_name and is_named_speaker(display_name):
+        if display_name and is_eligible_named_speaker(
+            display_name, str(grouping_key), ignored_ids or set()
+        ):
             speaker_segments_map[display_name] = segs
+            speaker_key_map[display_name] = str(grouping_key)
 
     stats = []
     sentiment_summary = {}
@@ -45,7 +53,10 @@ def compute_speaker_stats(
         tic_list = []
 
     for name, texts in grouped.items():
-        if not is_named_speaker(name):
+        speaker_key = speaker_key_map.get(name, name)
+        if not is_eligible_named_speaker(
+            name, speaker_key, ignored_ids or set()
+        ):
             continue
 
         word_count = sum(len(t.split()) for t in texts)

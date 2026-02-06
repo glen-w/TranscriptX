@@ -19,13 +19,17 @@ def _status(
     total_speakers: int = 1,
     named_speakers: int = 1,
 ) -> SpeakerIdStatus:
-    is_complete = named_speakers == total_speakers and total_speakers > 0
-    is_ok = named_speakers > 0 or total_speakers == 0
+    ignored_count = 0
+    resolved_count = named_speakers + ignored_count
+    is_complete = total_speakers == 0 or resolved_count == total_speakers
+    is_ok = is_complete
     missing_ids = [] if named_speakers == total_speakers else ["SPEAKER_00"]
     return SpeakerIdStatus(
         is_ok=is_ok,
         is_complete=is_complete,
+        ignored_count=ignored_count,
         named_count=named_speakers,
+        resolved_count=resolved_count,
         total_count=total_speakers,
         segment_named_count=segment_named_count,
         segment_total_count=segment_total_count,

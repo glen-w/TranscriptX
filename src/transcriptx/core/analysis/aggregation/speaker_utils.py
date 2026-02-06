@@ -12,13 +12,14 @@ from transcriptx.core.pipeline.speaker_normalizer import (  # type: ignore[impor
 from transcriptx.core.utils.speaker_extraction import (  # type: ignore[import]
     extract_speaker_info,
 )
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import]
+from transcriptx.utils.text_utils import is_eligible_named_speaker  # type: ignore[import]
 
 
 def resolve_canonical_speaker(
     segment: Dict[str, Any],
     transcript_path: str,
     canonical_speaker_map: CanonicalSpeakerMap,
+    ignored_ids: set[str] | None = None,
 ) -> Optional[Tuple[int, str]]:
     """
     Return (canonical_id, display_name) for a segment or None when unidentified.
@@ -31,7 +32,9 @@ def resolve_canonical_speaker(
         return None
 
     display_name = info.display_name or str(info.grouping_key)
-    if not is_named_speaker(display_name):
+    if not is_eligible_named_speaker(
+        display_name, str(info.grouping_key), ignored_ids or set()
+    ):
         return None
 
     local_to_canonical = canonical_speaker_map.transcript_to_speakers.get(

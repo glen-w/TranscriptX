@@ -215,6 +215,16 @@ def run_analysis_pipeline(
         scaffold_by_speaker=group_config.group_analysis.scaffold_by_speaker,
         scaffold_comparisons=group_config.group_analysis.scaffold_comparisons,
     )
+    member_transcript_ids = [member.id for member in members]
+    member_display_names = [member.file_name for member in members]
+    group_output_service.write_group_run_metadata(
+        group_uuid=group_uuid,
+        group_name_at_run=scope.display_name,
+        group_key=group_key,
+        member_transcript_ids=member_transcript_ids,
+        member_display_names=member_display_names,
+        selected_modules=selected_modules,
+    )
 
     stats_group_results = {}
     if group_config.group_analysis.enable_stats_aggregation:
@@ -856,6 +866,7 @@ def get_default_modules(
     dep_resolver: Optional[Callable[[object], bool]] = None,
     include_heavy: bool = True,
     include_excluded_from_default: bool = False,
+    for_group: bool = False,
 ) -> List[str]:
     """Get list of modules used for default analysis runs."""
     return list(
@@ -865,5 +876,6 @@ def get_default_modules(
             dep_resolver=dep_resolver,
             include_heavy=include_heavy,
             include_excluded_from_default=include_excluded_from_default,
+            for_group=for_group,
         )
     )

@@ -95,7 +95,7 @@ def render_groups() -> None:
                 )
                 run_analysis_pipeline(
                     target=GroupRef(group_uuid=group.uuid),
-                    selected_modules=get_default_modules(transcript_paths),
+                    selected_modules=get_default_modules(transcript_paths, for_group=True),
                 )
             st.success("Group analysis completed.")
     with col2:

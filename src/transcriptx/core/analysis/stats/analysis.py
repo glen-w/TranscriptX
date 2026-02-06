@@ -3,7 +3,7 @@
 from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.analysis.tics import extract_tics_and_top_words
@@ -50,7 +50,10 @@ class StatsAnalysis(AnalysisModule):
         )
 
     def analyze(
-        self, segments: List[Dict[str, Any]], speaker_map: Dict[str, str] = None
+        self,
+        segments: List[Dict[str, Any]],
+        speaker_map: Dict[str, str] = None,
+        ignored_ids: set[str] | None = None,
     ) -> Dict[str, Any]:
         """
         Perform statistical analysis on transcript segments (pure logic, no I/O).
@@ -83,7 +86,9 @@ class StatsAnalysis(AnalysisModule):
             if speaker_info is None:
                 continue
             name = get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
-            if not name or not is_named_speaker(name):
+            if not name or not is_eligible_named_speaker(
+                name, str(speaker_info.grouping_key), ignored_ids or set()
+            ):
                 continue
             grouped.setdefault(name, []).append(seg.get("text", ""))
 
@@ -94,7 +99,7 @@ class StatsAnalysis(AnalysisModule):
 
         # Compute speaker statistics
         speaker_stats, sentiment_summary = compute_speaker_stats(
-            grouped, segments, speaker_map, tic_list
+            grouped, segments, speaker_map, tic_list, ignored_ids=ignored_ids
         )
 
         return {
@@ -130,7 +135,12 @@ class StatsAnalysis(AnalysisModule):
             transcript_dir = context.get_transcript_dir()
 
             # Perform analysis
-            results = self.analyze(segments, speaker_map)
+            ignored_ids = context.get_runtime_flags().get("ignored_speaker_ids")
+            results = self.analyze(
+                segments,
+                speaker_map,
+                ignored_ids=ignored_ids if isinstance(ignored_ids, set) else None,
+            )
 
             # Try to load module data from context first (cached results)
             module_data = self._load_module_data_from_context(context)
@@ -146,6 +156,12 @@ class StatsAnalysis(AnalysisModule):
                 results["speaker_stats"],
                 results["sentiment_summary"],
                 module_data,
+                ignored_ids=(
+                    ignored_ids if isinstance(ignored_ids, set) else set()
+                ),
+                speaker_key_aliases=context.get_runtime_flags().get(
+                    "speaker_key_aliases", {}
+                ),
             )
 
             # Create output service and save results

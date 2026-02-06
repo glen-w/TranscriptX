@@ -1,7 +1,7 @@
 """Speaker mapping module."""
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, NamedTuple, Literal, Union, cast
 
 from prompt_toolkit import Application
 from prompt_toolkit.key_binding import KeyBindings
@@ -41,6 +41,16 @@ GO_BACK_SENTINEL = "__GO_BACK__"
 # Sentinel value to indicate "exit speaker mapping"
 EXIT_SENTINEL = "__EXIT__"
 
+ActionType = Literal["name", "ignore", "skip"]
+
+
+class SpeakerChoice(NamedTuple):
+    action: ActionType
+    value: Optional[str] = None
+
+
+SpeakerSelection = Union[SpeakerChoice, str]
+
 from .utils import SegmentRef, _format_lines_for_display, _parse_user_input
 from transcriptx.cli.audio import SegmentPlayer
 
@@ -50,7 +60,7 @@ def _interactive_speaker_naming(
     segments: List[SegmentRef],
     existing_name: Optional[str],
     audio_path: Optional[Path],
-) -> Optional[str]:
+) -> SpeakerSelection:
     """Interactive speaker naming with batch review and playback shortcuts."""
     playback_enabled = bool(audio_path and audio_path.exists())
     if playback_enabled:
@@ -158,6 +168,7 @@ def _interactive_speaker_naming(
             ("⌨️", "Toggle focus", "[Tab]"),
             ("⌨️", "Focus lines", "[Shift+Tab]"),
             ("⬅️", "Previous speaker", "[Ctrl+b/p] or [p]"),
+            ("🚫", "Ignore speaker", "[i]"),
             ("🚪", "Exit mapping", "[Ctrl+e]"),
             ("✅", "Confirm", "[Enter]"),
             ("❌", "Cancel", "[Esc/Q]"),
@@ -398,7 +409,7 @@ def _interactive_speaker_naming(
         action, value = _parse_user_input(name_input.text)
         if action == "name" and value:
             player.cleanup()
-            event.app.exit(result=value)
+            event.app.exit(result=SpeakerChoice("name", value))
             return
         if action == "more":
             load_more_lines()
@@ -407,7 +418,7 @@ def _interactive_speaker_naming(
             return
         if existing_name:
             player.cleanup()
-            event.app.exit(result="")
+            event.app.exit(result=SpeakerChoice("skip", None))
             return
         if cursor < len(segments):
             load_more_lines()
@@ -415,18 +426,24 @@ def _interactive_speaker_naming(
             event.app.invalidate()
             return
         player.cleanup()
-        event.app.exit(result="")
+        event.app.exit(result=SpeakerChoice("skip", None))
 
     @kb.add("escape")
     @kb.add("q")
     def cancel(event):
         player.cleanup()
-        event.app.exit(result=None)
+        event.app.exit(result=SpeakerChoice("skip", None))
 
     @kb.add("c-c")
     def cancel_ctrl(event):
         player.cleanup()
-        event.app.exit(result=None)
+        event.app.exit(result=SpeakerChoice("skip", None))
+
+    @kb.add("i", filter=~has_focus(name_input))
+    def ignore_speaker(event):
+        """Ignore this speaker and continue."""
+        player.cleanup()
+        event.app.exit(result=SpeakerChoice("ignore", None))
 
     lines_window = Window(lines_control, height=10)
     layout = Layout(
@@ -443,7 +460,7 @@ def _interactive_speaker_naming(
     # Default focus on the transcript lines so navigation shortcuts work immediately.
     layout.focus(lines_window)
     app = Application(layout=layout, key_bindings=kb, full_screen=False)
-    result = app.run()
+    result = cast(SpeakerSelection, app.run())
     player.cleanup()
     return result
 
@@ -453,7 +470,7 @@ def _select_name_with_playback(
     segments: List[SegmentRef],
     existing_name: Optional[str],
     audio_path: Optional[Path],
-) -> Optional[str]:
+) -> SpeakerSelection:
     """Interactive prompt_toolkit UI to pick a name with playback controls."""
     return _interactive_speaker_naming(
         speaker_id=speaker_id,

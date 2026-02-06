@@ -106,7 +106,7 @@ def run_group(
     transcript_paths = [m.file_path for m in members if m.file_path]
 
     if modules.lower() == "all":
-        selected_modules = get_default_modules(transcript_paths)
+        selected_modules = get_default_modules(transcript_paths, for_group=True)
     else:
         selected_modules = [m.strip() for m in modules.split(",") if m.strip()]
 

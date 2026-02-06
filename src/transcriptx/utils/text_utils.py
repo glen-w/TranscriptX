@@ -76,6 +76,23 @@ def is_named_speaker(name: str) -> bool:
     return True
 
 
+def is_eligible_named_speaker(
+    display_name: str | None,
+    speaker_id: str | None,
+    ignored_ids: set[str] | None = None,
+) -> bool:
+    """
+    Return True when a speaker is eligible for per-speaker artifacts.
+
+    This is the single blessed predicate for gating per-speaker charts/JSON/filenames.
+    """
+    if not display_name or not speaker_id:
+        return False
+    if ignored_ids and str(speaker_id) in ignored_ids:
+        return False
+    return is_named_speaker(str(display_name))
+
+
 def format_time(seconds: float) -> str:
     """
     Format a float number of seconds into M:SS format for display.

@@ -15,7 +15,7 @@ from transcriptx.core.utils.speaker_extraction import (
     get_speaker_display_name,
     group_segments_by_speaker,
 )
-from transcriptx.utils.text_utils import format_time, is_named_speaker
+from transcriptx.utils.text_utils import format_time, is_eligible_named_speaker
 from transcriptx.core.presentation import (
     build_md_provenance,
     render_intensity_line,
@@ -118,11 +118,20 @@ def build_stats_payload(
         if display_name:
             display_map[str(grouping_key)] = display_name
 
+    ignored_ids = set(getattr(context, "ignored_speaker_ids", set()))
     named_speakers = sorted(
-        [name for name in display_map.values() if is_named_speaker(name)]
+        [
+            name
+            for key, name in display_map.items()
+            if is_eligible_named_speaker(name, key, ignored_ids)
+        ]
     )
     total_speakers = sorted(display_map.values())
-    excluded_speakers = [name for name in total_speakers if name not in named_speakers]
+    excluded_speakers = [
+        name
+        for key, name in display_map.items()
+        if not is_eligible_named_speaker(name, key, ignored_ids)
+    ]
 
     speaker_stats = stats_results.get("speaker_stats") or []
     sentiment_summary = stats_results.get("sentiment_summary") or {}
@@ -147,7 +156,7 @@ def build_stats_payload(
         "exclusions": [
             {
                 "type": "unnamed_speakers",
-                "rule": "is_named_speaker",
+                "rule": "is_eligible_named_speaker",
                 "excluded_speakers": excluded_speakers,
                 "why": "non-attributed speaker",
             }
@@ -172,6 +181,7 @@ def build_stats_payload(
         sentiment_summary,
         total_words_named,
         total_duration_named,
+        ignored_ids=ignored_ids,
     )
 
     sentiment_payload, sentiment_warnings = _build_sentiment_payload(segments)
@@ -530,12 +540,13 @@ def _build_speakers_payload(
     sentiment_summary: Dict[str, Dict[str, float]],
     total_words: int,
     total_duration: float,
+    ignored_ids: set[str] | None = None,
 ) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for duration, name, word_count, segment_count, tic_rate, avg_segment_len in (
         speaker_stats or []
     ):
-        if not is_named_speaker(name):
+        if not is_eligible_named_speaker(name, name, ignored_ids or set()):
             continue
         duration_sec = float(duration or 0)
         word_count = int(word_count or 0)

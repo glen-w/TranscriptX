@@ -10,6 +10,8 @@ from rich.console import Console
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.path_utils import resolve_file_path
+from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.io.transcript_loader import extract_ignored_speakers_from_transcript
 
 # Lazy imports to avoid circular dependencies:
 # - choose_mapping_action imported in load_or_create_speaker_map
@@ -34,7 +36,12 @@ logger = get_logger()
 
 
 from .utils import SegmentRef, _extract_segment_times, _is_test_environment
-from .interactive import _select_name_with_playback, GO_BACK_SENTINEL, EXIT_SENTINEL
+from .interactive import (
+    _select_name_with_playback,
+    GO_BACK_SENTINEL,
+    EXIT_SENTINEL,
+    SpeakerChoice,
+)
 from .database import _create_or_link_speaker_with_disambiguation
 
 
@@ -42,6 +49,7 @@ def update_transcript_json_with_speaker_names(
     transcript_path: str,
     speaker_map: Dict[str, str],
     speaker_id_to_db_id: Optional[Dict[str, int]] = None,
+    ignored_speakers: Optional[List[str]] = None,
 ) -> None:
     """
     Update transcript JSON segments with speaker display names and optional DB IDs.
@@ -65,6 +73,12 @@ def update_transcript_json_with_speaker_names(
                 seg["speaker_db_id"] = speaker_id_to_db_id[speaker_id]
 
     data["speaker_map"] = speaker_map
+    if ignored_speakers is not None:
+        existing = data.get("ignored_speakers") or []
+        if not isinstance(existing, list):
+            existing = []
+        combined = list(dict.fromkeys([str(item) for item in existing] + ignored_speakers))
+        data["ignored_speakers"] = combined
 
     try:
         with open(transcript_path, "w") as f:
@@ -163,6 +177,13 @@ def build_speaker_map(
 
     speaker_map = existing_map or {}
     new_map = {}
+    existing_ignored = (
+        extract_ignored_speakers_from_transcript(transcript_path)
+        if transcript_path
+        else []
+    )
+    ignored_speakers = set(existing_ignored)
+    new_ignored: list[str] = []
 
     # Group text by speaker for review
     speaker_to_lines: Dict[str, List[SegmentRef]] = defaultdict(list)
@@ -198,15 +219,13 @@ def build_speaker_map(
         color = COLOR_CYCLE[i % len(COLOR_CYCLE)]
         existing_name = speaker_map.get(speaker_id)
 
-        raw_system_name = str(speaker_id)
-
         # Skip speakers that don't need review in "unidentified only" mode
         if review_mode == "unidentified only":
-            is_system_named = raw_system_name.lower().startswith(
-                "unidentified"
-            ) or raw_system_name.upper().startswith("SPEAKER_")
-            has_been_renamed = speaker_map.get(speaker_id) != raw_system_name
-            if not is_system_named or has_been_renamed:
+            if speaker_id in ignored_speakers:
+                i += 1
+                continue
+            display_label = str(speaker_map.get(speaker_id) or speaker_id)
+            if is_named_speaker(display_label):
                 i += 1
                 continue
 
@@ -218,31 +237,30 @@ def build_speaker_map(
             console.print(
                 f"{color}\n📄 Speaker {speaker_id} — {total} lines (showing 10 at a time, press 'm' for more, 't' to toggle sort):{Style.RESET_ALL}"
             )
-            name = _select_name_with_playback(
+            choice = _select_name_with_playback(
                 speaker_id=str(speaker_id),
                 segments=lines,
                 existing_name=None,
                 audio_path=audio_path,
             )
             # Handle "exit" request
-            if name == EXIT_SENTINEL:
+            if choice == EXIT_SENTINEL:
                 console.print("[yellow]Exiting speaker mapping. Returning to menu...[/yellow]")
                 return None
             # Handle "go back" request
-            if name == GO_BACK_SENTINEL:
+            if choice == GO_BACK_SENTINEL:
                 if i > 0:
                     # Find the previous speaker that needs review
                     i -= 1
                     # Continue to previous speaker, but need to skip backwards through any skipped speakers
                     while i >= 0:
                         prev_speaker_id = speaker_ids[i]
-                        prev_raw_name = str(prev_speaker_id)
                         if review_mode == "unidentified only":
-                            prev_is_system_named = prev_raw_name.lower().startswith(
-                                "unidentified"
-                            ) or prev_raw_name.upper().startswith("SPEAKER_")
-                            prev_has_been_renamed = speaker_map.get(prev_speaker_id) != prev_raw_name
-                            if not prev_is_system_named or prev_has_been_renamed:
+                            if prev_speaker_id in ignored_speakers:
+                                i -= 1
+                                continue
+                            prev_label = str(speaker_map.get(prev_speaker_id) or prev_speaker_id)
+                            if is_named_speaker(prev_label):
                                 i -= 1
                                 continue
                         # Found a valid previous speaker
@@ -256,11 +274,12 @@ def build_speaker_map(
                     # Already at first speaker
                     console.print("[yellow]⚠️ Already at first speaker.[/yellow]")
                     continue
-            elif name is None:
-                new_map[speaker_id] = speaker_id
+            if isinstance(choice, SpeakerChoice) and choice.action == "ignore":
+                new_ignored.append(str(speaker_id))
+                ignored_speakers.add(speaker_id)
                 i += 1
-            elif name.strip():
-                display_name = name.strip()
+            elif isinstance(choice, SpeakerChoice) and choice.action == "name" and choice.value:
+                display_name = choice.value.strip()
                 db_id = None
                 if persist_speaker_records:
                     db_id, display_name = _create_or_link_speaker_with_disambiguation(
@@ -282,31 +301,30 @@ def build_speaker_map(
             console.print(
                 f"{color}\n📄 Review: Speaker {speaker_id} — {total} lines (showing 10 at a time, press 'm' for more, 't' to toggle sort):{Style.RESET_ALL}"
             )
-            name = _select_name_with_playback(
+            choice = _select_name_with_playback(
                 speaker_id=str(speaker_id),
                 segments=lines,
                 existing_name=existing_name,
                 audio_path=audio_path,
             )
             # Handle "exit" request
-            if name == EXIT_SENTINEL:
+            if choice == EXIT_SENTINEL:
                 console.print("[yellow]Exiting speaker mapping. Returning to menu...[/yellow]")
                 return None
             # Handle "go back" request
-            if name == GO_BACK_SENTINEL:
+            if choice == GO_BACK_SENTINEL:
                 if i > 0:
                     # Find the previous speaker that needs review
                     i -= 1
                     # Continue to previous speaker, but need to skip backwards through any skipped speakers
                     while i >= 0:
                         prev_speaker_id = speaker_ids[i]
-                        prev_raw_name = str(prev_speaker_id)
                         if review_mode == "unidentified only":
-                            prev_is_system_named = prev_raw_name.lower().startswith(
-                                "unidentified"
-                            ) or prev_raw_name.upper().startswith("SPEAKER_")
-                            prev_has_been_renamed = speaker_map.get(prev_speaker_id) != prev_raw_name
-                            if not prev_is_system_named or prev_has_been_renamed:
+                            if prev_speaker_id in ignored_speakers:
+                                i -= 1
+                                continue
+                            prev_label = str(speaker_map.get(prev_speaker_id) or prev_speaker_id)
+                            if is_named_speaker(prev_label):
                                 i -= 1
                                 continue
                         # Found a valid previous speaker
@@ -320,11 +338,15 @@ def build_speaker_map(
                     # Already at first speaker
                     console.print("[yellow]⚠️ Already at first speaker.[/yellow]")
                     continue
-            elif name is None or not name.strip():
+            if isinstance(choice, SpeakerChoice) and choice.action == "ignore":
+                new_ignored.append(str(speaker_id))
+                ignored_speakers.add(speaker_id)
+                i += 1
+            elif isinstance(choice, SpeakerChoice) and choice.action == "skip":
                 new_map[speaker_id] = existing_name or speaker_id
                 i += 1
-            else:
-                display_name = name.strip()
+            elif isinstance(choice, SpeakerChoice) and choice.action == "name" and choice.value:
+                display_name = choice.value.strip()
                 db_id = None
                 if persist_speaker_records:
                     db_id, display_name = _create_or_link_speaker_with_disambiguation(
@@ -337,16 +359,25 @@ def build_speaker_map(
                     f"[green]✅ {speaker_id} → {display_name} (saved)[/green]"
                 )
                 i += 1
+            else:
+                new_map[speaker_id] = existing_name or speaker_id
+                i += 1
+
+    # Merge existing map with newly identified so we preserve already-named speakers
+    final_map = {**(existing_map or {}), **new_map}
 
     # Always update transcript JSON if transcript_path is provided and we have a map
     # This ensures speaker names are persisted even when speaker_map_path is None
-    if transcript_path and new_map:
+    if transcript_path and final_map:
         update_transcript_json_with_speaker_names(
-            transcript_path, new_map, speaker_id_to_db_id
+            transcript_path,
+            final_map,
+            speaker_id_to_db_id,
+            ignored_speakers=list(dict.fromkeys(existing_ignored + new_ignored)),
         )
         logger.debug(f"Updated transcript JSON with speaker names: {transcript_path}")
 
-    return new_map
+    return final_map
 
 
 def save_speaker_map(*args, **kwargs) -> None:
