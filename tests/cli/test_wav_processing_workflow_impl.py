@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytestmark = pytest.mark.quarantined  # reason: patches select_folder_interactive which no longer on module; remove_by: when wav_processing API stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: patches select_folder_interactive which no longer on module; owner: cli; remove_by: when wav_processing API stabilizes
 
 from transcriptx.cli.wav_processing_workflow import (
     _run_wav_processing_workflow_impl,

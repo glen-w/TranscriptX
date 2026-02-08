@@ -111,7 +111,11 @@ def format_generic_file(file_path: Path) -> str:
         Formatted string with file name and size
     """
     try:
-        size_mb = file_path.stat().st_size / (1024 * 1024)
+        size_bytes = file_path.stat().st_size
+        size_mb = size_bytes / (1024 * 1024)
+        if size_mb < 1:
+            size_kb = size_bytes / 1024
+            return f"📄 {file_path.name} ({size_kb:.1f} KB)"
         return f"📄 {file_path.name} ({size_mb:.1f} MB)"
     except Exception:
         return f"📄 {file_path.name}"
@@ -119,18 +123,5 @@ def format_generic_file(file_path: Path) -> str:
 
 def is_audio_file(file_path: Path) -> bool:
     """Check if a file is an audio file based on extension."""
-    audio_extensions = {
-        ".wav",
-        ".mp3",
-        ".m4a",
-        ".flac",
-        ".aac",
-        ".ogg",
-        ".WAV",
-        ".MP3",
-        ".M4A",
-        ".FLAC",
-        ".AAC",
-        ".OGG",
-    }
-    return file_path.suffix in audio_extensions
+    audio_extensions = {".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg"}
+    return file_path.suffix.lower() in audio_extensions

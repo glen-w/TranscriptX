@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import locale
+import os
 import platform
 import subprocess
 import sys
@@ -24,6 +25,16 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Pre-parse to set test output dir before transcriptx imports.
+_pre_parser = argparse.ArgumentParser(add_help=False)
+_pre_parser.add_argument("--test-output", action="store_true")
+_pre_args, _ = _pre_parser.parse_known_args()
+if _pre_args.test_output and not os.getenv("TRANSCRIPTX_OUTPUT_DIR"):
+    _repo_root = Path(__file__).resolve().parent.parent
+    _test_outputs_dir = _repo_root / ".test_outputs"
+    _test_outputs_dir.mkdir(parents=True, exist_ok=True)
+    os.environ["TRANSCRIPTX_OUTPUT_DIR"] = str(_test_outputs_dir)
 
 try:
     import spacy
@@ -625,6 +636,11 @@ def main():
         "--rerun-check",
         action="store_true",
         help="Run analysis twice to check idempotency",
+    )
+    parser.add_argument(
+        "--test-output",
+        action="store_true",
+        help="Write outputs under .test_outputs (sets TRANSCRIPTX_OUTPUT_DIR)",
     )
     parser.add_argument(
         "--output",

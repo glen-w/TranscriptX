@@ -45,6 +45,15 @@ class RunManifest:
     source_basename: Optional[str] = None
     source_path: Optional[str] = None
     run_id: Optional[str] = None
+    config_snapshot_hash: Optional[str] = None
+    config_snapshot: Optional[Dict[str, Any]] = None
+    module_metadata: Optional[Dict[str, Any]] = None
+    artifacts: Optional[List[Dict[str, Any]]] = None
+    execution_order: Optional[List[str]] = None
+    modules_run: Optional[List[str]] = None
+    errors: Optional[List[str]] = None
+    output_dir: Optional[str] = None
+    rerun_mode: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert manifest to dictionary."""
@@ -135,13 +144,13 @@ def get_transcriptx_version() -> str:
 
 
 def create_run_manifest(
-    transcript_hash: str,
-    transcript_file_hash: Optional[str],
-    transcript_identity_hash: Optional[str],
-    transcript_content_hash_full: Optional[str],
-    canonical_schema_version: str,
-    selected_modules: List[str],
-    artifact_index: List[Dict[str, Any]],
+    transcript_hash: Optional[str] = None,
+    canonical_schema_version: str = "1.0",
+    selected_modules: Optional[List[str]] = None,
+    artifact_index: Optional[List[Dict[str, Any]]] = None,
+    transcript_file_hash: Optional[str] = None,
+    transcript_identity_hash: Optional[str] = None,
+    transcript_content_hash_full: Optional[str] = None,
     config_hash: Optional[str] = None,
     config_effective_path: Optional[str] = None,
     config_override_path: Optional[str] = None,
@@ -151,6 +160,11 @@ def create_run_manifest(
     source_basename: Optional[str] = None,
     source_path: Optional[str] = None,
     run_id: Optional[str] = None,
+    execution_order: Optional[List[str]] = None,
+    modules_run: Optional[List[str]] = None,
+    errors: Optional[List[str]] = None,
+    output_dir: Optional[str] = None,
+    rerun_mode: Optional[str] = None,
 ) -> RunManifest:
     """
     Create a run manifest for an analysis run.
@@ -171,7 +185,16 @@ def create_run_manifest(
     Returns:
         RunManifest object
     """
+    selected_modules = selected_modules or []
+    artifact_index = artifact_index or []
+
+    if transcript_hash is None and transcript_path:
+        transcript_hash = compute_file_hash(Path(transcript_path)) or "sha256:unknown"
+    elif transcript_hash is None:
+        transcript_hash = "sha256:unknown"
+
     # Compute config hash if not provided
+    config_snapshot: Optional[Dict[str, Any]] = None
     if config_hash is None:
         try:
             config = get_config()
@@ -228,6 +251,15 @@ def create_run_manifest(
         source_basename=source_basename,
         source_path=source_path,
         run_id=run_id,
+        config_snapshot_hash=config_hash,
+        config_snapshot=config_snapshot,
+        module_metadata=module_versions,
+        artifacts=artifact_index,
+        execution_order=execution_order,
+        modules_run=modules_run,
+        errors=errors,
+        output_dir=output_dir,
+        rerun_mode=rerun_mode,
     )
 
     return manifest

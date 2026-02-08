@@ -10,6 +10,7 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
+import inspect
 from typing import Any, Dict, List, Optional, Callable
 
 # Suppress tokenizer warnings about parallelism to prevent console spam
@@ -21,6 +22,7 @@ from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.dag_pipeline import create_dag_pipeline
 from transcriptx.core.pipeline.preprocessing import validate_transcript
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
+from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
 from transcriptx.core.pipeline.target_resolver import (
     AnalysisTargetRef,
     TranscriptRef,
@@ -155,6 +157,17 @@ def run_analysis_pipeline(
         group_uuid = scope.uuid
         metadata["group_uuid"] = scope.uuid
         metadata["group_key"] = scope.key
+    transcript_id_map: Dict[str, int] = {}
+    transcript_uuid_map: Dict[str, str] = {}
+    for member in members:
+        if getattr(member, "file_path", None) and getattr(member, "id", None) is not None:
+            transcript_id_map[str(member.file_path)] = int(member.id)
+        if getattr(member, "file_path", None) and getattr(member, "uuid", None):
+            transcript_uuid_map[str(member.file_path)] = str(member.uuid)
+    if transcript_id_map:
+        metadata["transcript_id_map"] = transcript_id_map
+    if transcript_uuid_map:
+        metadata["transcript_uuid_map"] = transcript_uuid_map
     transcript_set = TranscriptSet.create(
         transcript_ids=resolved_paths,
         name=scope.display_name,
@@ -183,25 +196,12 @@ def run_analysis_pipeline(
     )
 
     # Phase 2: group aggregation
-    from transcriptx.core.analysis.stats.aggregation import aggregate_stats_group
-    from transcriptx.core.analysis.aggregation.sentiment import (
-        aggregate_sentiment_group,
-    )
-    from transcriptx.core.analysis.aggregation.ner import aggregate_ner_group
-    from transcriptx.core.analysis.aggregation.entity_sentiment import (
-        aggregate_entity_sentiment_group,
-    )
-    from transcriptx.core.analysis.aggregation.topics import aggregate_topics_group
-    from transcriptx.core.analysis.aggregation.emotion import aggregate_emotion_group
-    from transcriptx.core.analysis.aggregation.interactions import (
-        aggregate_interactions_group,
-    )
+    from transcriptx.core.analysis.aggregation.registry import build_registry
+    from transcriptx.core.analysis.aggregation.schema import get_transcript_id
+    from transcriptx.core.analysis.aggregation.warnings import build_warning
     from transcriptx.core.output.group_output_service import GroupOutputService
-    from transcriptx.core.utils.group_output_utils import (
-        get_group_module_dir,
-        write_group_module_json,
-        write_group_module_csv,
-    )
+    from transcriptx.core.output.group_row_writer import write_row_outputs
+    from transcriptx.io import save_json
 
     group_run_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     member_uuids = [member.uuid for member in members]
@@ -215,6 +215,8 @@ def run_analysis_pipeline(
         scaffold_by_speaker=group_config.group_analysis.scaffold_by_speaker,
         scaffold_comparisons=group_config.group_analysis.scaffold_comparisons,
     )
+    transcript_set.metadata["group_output_dir"] = str(group_output_service.base_dir)
+    transcript_set.metadata["group_run_id"] = group_run_id
     member_transcript_ids = [member.id for member in members]
     member_display_names = [member.file_name for member in members]
     group_output_service.write_group_run_metadata(
@@ -226,169 +228,164 @@ def run_analysis_pipeline(
         selected_modules=selected_modules,
     )
 
-    stats_group_results = {}
-    if group_config.group_analysis.enable_stats_aggregation:
-        stats_group_results = aggregate_stats_group(
-            per_transcript_results, canonical_speaker_map, transcript_set
-        )
+    def _topo_sort(entries: List[Any]) -> List[Any]:
+        entry_map = {entry.agg_id: entry for entry in entries}
+        incoming = {entry.agg_id: 0 for entry in entries}
+        for entry in entries:
+            for dep in entry.deps:
+                if dep in incoming:
+                    incoming[entry.agg_id] += 1
+        ready = sorted([key for key, count in incoming.items() if count == 0])
+        ordered: List[Any] = []
+        while ready:
+            current = ready.pop(0)
+            ordered.append(entry_map[current])
+            for entry in entries:
+                if current in entry.deps:
+                    incoming[entry.agg_id] -= 1
+                    if incoming[entry.agg_id] == 0:
+                        ready.append(entry.agg_id)
+                        ready.sort()
+        if len(ordered) != len(entries):
+            raise ValueError("Aggregation registry has cyclic dependencies.")
+        return ordered
 
-    if stats_group_results:
-        group_output_service.save_session_table(stats_group_results["session_table"])
-        group_output_service.save_combined_json(
-            stats_group_results, name="stats_group_summary"
-        )
-        group_output_service.save_combined_csv(
-            stats_group_results["speaker_aggregates"], name="speaker_aggregates"
-        )
+    def _attach_session_identity(
+        session_rows: List[Dict[str, Any]],
+        per_transcript_results: List[PerTranscriptResult],
+        transcript_set: TranscriptSet,
+    ) -> List[Dict[str, Any]]:
+        by_path = {r.transcript_path: r for r in per_transcript_results}
+        by_key = {r.transcript_key: r for r in per_transcript_results if r.transcript_key}
+        by_index = {r.order_index: r for r in per_transcript_results}
+        for row in session_rows:
+            result = None
+            if "transcript_path" in row and row["transcript_path"] in by_path:
+                result = by_path[row["transcript_path"]]
+            elif "session_path" in row and row["session_path"] in by_path:
+                result = by_path[row["session_path"]]
+            elif "transcript_key" in row and row["transcript_key"] in by_key:
+                result = by_key[row["transcript_key"]]
+            elif "order_index" in row and row["order_index"] in by_index:
+                result = by_index[row["order_index"]]
+            if result:
+                row.setdefault("order_index", result.order_index)
+                row.setdefault("transcript_id", get_transcript_id(result, transcript_set))
+        return session_rows
 
-    sentiment_group_results = aggregate_sentiment_group(
-        per_transcript_results, canonical_speaker_map, transcript_set
+    def _call_aggregate_fn(
+        aggregate_fn: Callable[..., Dict[str, Any] | None],
+        per_transcript_results: List[PerTranscriptResult],
+        canonical_speaker_map: CanonicalSpeakerMap,
+        transcript_set: TranscriptSet,
+        aggregations: Dict[str, Any],
+    ) -> Dict[str, Any] | None:
+        try:
+            signature = inspect.signature(aggregate_fn)
+        except (TypeError, ValueError):
+            return aggregate_fn(
+                per_transcript_results, canonical_speaker_map, transcript_set
+            )
+        parameters = list(signature.parameters.values())
+        if any(param.kind == param.VAR_POSITIONAL for param in parameters):
+            return aggregate_fn(
+                per_transcript_results, canonical_speaker_map, transcript_set, aggregations
+            )
+        if len(parameters) >= 4:
+            return aggregate_fn(
+                per_transcript_results, canonical_speaker_map, transcript_set, aggregations
+            )
+        return aggregate_fn(per_transcript_results, canonical_speaker_map, transcript_set)
+
+    ROW_KEYS = {"session_rows", "speaker_rows", "metrics_spec"}
+    WRITER_EXTRA_KEYS = {"content_rows", "content_rows_name", "drop_csv_keys"}
+
+    def _row_payload(outcome: Dict[str, Any]) -> Dict[str, Any]:
+        allowed_keys = ROW_KEYS | WRITER_EXTRA_KEYS
+        return {key: outcome[key] for key in allowed_keys if key in outcome}
+
+    aggregation_warnings: List[Dict[str, Any]] = []
+    aggregations: Dict[str, Any] = {}
+    completed: set[str] = set()
+    registry = build_registry()
+    ordered = _topo_sort(registry)
+    for entry in ordered:
+        if not entry.selector(selected_modules):
+            continue
+        missing_deps = [dep for dep in entry.deps if dep not in completed]
+        if missing_deps:
+            aggregation_warnings.append(
+                build_warning(
+                    code="MISSING_DEP",
+                    message=f"Missing dependencies: {', '.join(missing_deps)}",
+                    aggregation_key=entry.agg_id,
+                    missing_deps=missing_deps,
+                    details={"missing_keys": missing_deps},
+                )
+            )
+            continue
+
+        outcome = _call_aggregate_fn(
+            entry.aggregate_fn,
+            per_transcript_results,
+            canonical_speaker_map,
+            transcript_set,
+            aggregations,
+        )
+        if outcome is None:
+            continue
+        if isinstance(outcome, dict) and outcome.get("warning"):
+            aggregation_warnings.append(outcome["warning"])
+            continue
+
+        if entry.output_type == "blob":
+            blob_name = outcome.get("blob_name", "summary")
+            blob_payload = outcome.get("blob_payload", {})
+            blob_dir = Path(group_output_service.base_dir) / entry.agg_id
+            blob_dir.mkdir(parents=True, exist_ok=True)
+            save_json(blob_payload, str(blob_dir / f"{blob_name}.json"))
+            stored = dict(outcome)
+            stored["output_type"] = "blob"
+            stored["artifact"] = str(blob_dir / f"{blob_name}.json")
+            aggregations[entry.agg_id] = stored
+            completed.add(entry.agg_id)
+            continue
+
+        row_payload = _row_payload(outcome)
+        session_rows = row_payload.get("session_rows", [])
+        speaker_rows = row_payload.get("speaker_rows", [])
+        metrics_spec = row_payload.get("metrics_spec")
+        content_rows = row_payload.get("content_rows")
+        content_rows_name = row_payload.get("content_rows_name")
+        drop_csv_keys = row_payload.get("drop_csv_keys")
+
+        session_rows = _attach_session_identity(
+            session_rows, per_transcript_results, transcript_set
+        )
+        written, warning = write_row_outputs(
+            base_dir=Path(group_output_service.base_dir),
+            agg_id=entry.agg_id,
+            session_rows=session_rows,
+            speaker_rows=speaker_rows,
+            metrics_spec=metrics_spec,
+            content_rows=content_rows,
+            content_rows_name=content_rows_name,
+            bundle=True,
+            drop_csv_keys=drop_csv_keys,
+        )
+        if warning:
+            aggregation_warnings.append(warning)
+            continue
+        stored = dict(outcome)
+        stored["output_type"] = "rows"
+        aggregations[entry.agg_id] = stored
+        completed.add(entry.agg_id)
+
+    aggregation_warnings.sort(
+        key=lambda w: (w.get("aggregation_key", ""), w.get("code", ""))
     )
-    if sentiment_group_results:
-        group_output_service.save_combined_json(
-            sentiment_group_results, name="sentiment_group_summary"
-        )
-        group_output_service.save_combined_csv(
-            sentiment_group_results["session_table"], name="sentiment_session_table"
-        )
-        group_output_service.save_combined_csv(
-            sentiment_group_results["speaker_aggregates"],
-            name="sentiment_speaker_aggregates",
-        )
-
-    ner_summary = None
-    ner_mentions_index = None
-    if "ner" in selected_modules:
-        ner_results = aggregate_ner_group(
-            per_transcript_results, canonical_speaker_map, transcript_set
-        )
-        if ner_results is not None:
-            ner_tables, ner_summary, ner_mentions_index = ner_results
-            ner_dir = get_group_module_dir(group_output_service.base_dir, "ner")
-            write_group_module_json(ner_dir, "ner_group_summary", ner_summary)
-            write_group_module_csv(
-                ner_dir, "by_session", "ner_session_entities", ner_tables["by_session"]
-            )
-            write_group_module_csv(
-                ner_dir, "by_speaker", "ner_speaker_entities", ner_tables["by_speaker"]
-            )
-
-    entity_sentiment_summary = None
-    if "entity_sentiment" in selected_modules:
-        if ner_mentions_index:
-            entity_sentiment_results = aggregate_entity_sentiment_group(
-                per_transcript_results,
-                canonical_speaker_map,
-                transcript_set,
-                ner_mentions_index,
-            )
-            if entity_sentiment_results is not None:
-                entity_sentiment_tables, entity_sentiment_summary = (
-                    entity_sentiment_results
-                )
-                es_dir = get_group_module_dir(
-                    group_output_service.base_dir, "entity_sentiment"
-                )
-                write_group_module_json(
-                    es_dir,
-                    "entity_sentiment_group_summary",
-                    entity_sentiment_summary,
-                )
-                write_group_module_csv(
-                    es_dir,
-                    "by_session",
-                    "entity_sentiment_session",
-                    entity_sentiment_tables["by_session"],
-                )
-                write_group_module_csv(
-                    es_dir,
-                    "by_speaker",
-                    "entity_sentiment_speaker",
-                    entity_sentiment_tables["by_speaker"],
-                )
-        else:
-            logger.warning(
-                "[GROUP] entity_sentiment requested but NER mentions are missing; skipping."
-            )
-
-    topic_modeling_summary = None
-    if "topic_modeling" in selected_modules:
-        topic_results = aggregate_topics_group(
-            per_transcript_results, canonical_speaker_map, transcript_set
-        )
-        if topic_results is not None:
-            topic_tables, topic_modeling_summary = topic_results
-            topics_dir = get_group_module_dir(
-                group_output_service.base_dir, "topic_modeling"
-            )
-            write_group_module_json(
-                topics_dir, "topic_modeling_group_summary", topic_modeling_summary
-            )
-            write_group_module_csv(
-                topics_dir,
-                "by_session",
-                "topic_modeling_session",
-                topic_tables["by_session"],
-            )
-            write_group_module_csv(
-                topics_dir,
-                "by_speaker",
-                "topic_modeling_speaker",
-                topic_tables["by_speaker"],
-            )
-
-    emotion_group_results = aggregate_emotion_group(
-        per_transcript_results, canonical_speaker_map, transcript_set
-    )
-    if emotion_group_results:
-        group_output_service.save_combined_json(
-            emotion_group_results, name="emotion_group_summary"
-        )
-        group_output_service.save_combined_csv(
-            emotion_group_results["session_table"], name="emotion_session_table"
-        )
-        group_output_service.save_combined_csv(
-            emotion_group_results["speaker_aggregates"],
-            name="emotion_speaker_aggregates",
-        )
-
-    interactions_group_results = aggregate_interactions_group(
-        per_transcript_results, canonical_speaker_map, transcript_set
-    )
-    if interactions_group_results:
-        group_output_service.save_combined_json(
-            interactions_group_results, name="interactions_group_summary"
-        )
-        group_output_service.save_combined_csv(
-            interactions_group_results["session_table"],
-            name="interactions_session_table",
-        )
-        group_output_service.save_combined_csv(
-            interactions_group_results["speaker_aggregates"],
-            name="interactions_speaker_aggregates",
-        )
-
-    wordclouds_summary = None
-    if "wordclouds" in selected_modules:
-        from transcriptx.core.analysis.aggregation.wordclouds import (
-            aggregate_wordclouds_group,
-        )
-        from transcriptx.core.analysis.wordclouds.analysis import run_group_wordclouds
-
-        grouped, wordclouds_summary = aggregate_wordclouds_group(
-            per_transcript_results, canonical_speaker_map
-        )
-        if wordclouds_summary is not None:
-            wordclouds_summary["transcript_set_key"] = transcript_set.key
-            wordclouds_summary["transcript_set_name"] = transcript_set.name
-        if grouped:
-            base_name = group_uuid
-            run_group_wordclouds(
-                grouped,
-                group_output_service.base_dir,
-                base_name,
-                group_run_id,
-            )
+    warnings_path = Path(group_output_service.base_dir) / "aggregation_warnings.json"
+    save_json(aggregation_warnings, str(warnings_path))
 
     summary_text = (
         f"Group key: {transcript_set.key}\n"
@@ -403,6 +400,13 @@ def run_analysis_pipeline(
         transcript_paths=resolved_paths,
         run_id=group_run_id,
     )
+    # Build lightweight output manifest for group runs (native UI contract).
+    write_output_manifest(
+        run_dir=Path(group_output_service.base_dir),
+        run_id=group_run_id,
+        transcript_key=group_uuid,
+        modules_enabled=selected_modules,
+    )
 
     group_results: Dict[str, Any] = {
         "status": "completed",
@@ -413,19 +417,13 @@ def run_analysis_pipeline(
         "transcript_set": transcript_set.to_dict(),
         "transcripts": [result.to_dict() for result in per_transcript_results],
         "errors": group_errors,
-        "aggregations": {
-            "stats": stats_group_results,
-            "sentiment": sentiment_group_results,
-            "ner": ner_summary,
-            "entity_sentiment": entity_sentiment_summary,
-            "topic_modeling": topic_modeling_summary,
-            "emotion": emotion_group_results,
-            "interactions": interactions_group_results,
-            "wordclouds": wordclouds_summary,
-        },
+        "aggregations": aggregations,
         "canonical_speaker_map": {
             "transcript_to_speakers": canonical_speaker_map.transcript_to_speakers,
             "canonical_to_display": canonical_speaker_map.canonical_to_display,
+        },
+        "meta": {
+            "warnings_count": len(aggregation_warnings),
         },
     }
 

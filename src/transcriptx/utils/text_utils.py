@@ -88,7 +88,9 @@ def is_eligible_named_speaker(
     """
     if not display_name or not speaker_id:
         return False
-    if ignored_ids and str(speaker_id) in ignored_ids:
+    if ignored_ids and (
+        str(speaker_id) in ignored_ids or str(display_name) in ignored_ids
+    ):
         return False
     return is_named_speaker(str(display_name))
 

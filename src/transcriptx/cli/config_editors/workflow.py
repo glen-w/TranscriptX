@@ -23,7 +23,7 @@ def edit_workflow_config(config: Any) -> None:
             getter=lambda: config.workflow.cli_pruning_enabled,
             setter=lambda value: setattr(config.workflow, "cli_pruning_enabled", value),
             editor=create_bool_editor(
-                hint="When ON, the Post-processing menu shows 'Prune old runs (DB only)' and 'Prune old runs (DB + outputs)'. Off by default.",
+                hint="When ON, the Post-processing menu shows 'Prune old runs (DB only)', 'Prune old runs (DB + outputs)', and 'Delete all artefacts'. Off by default.",
             ),
         ),
         SettingItem(

@@ -7,9 +7,12 @@ This service handles calculation of session and aggregate statistics.
 from datetime import datetime
 from typing import Any, Dict
 
+from pathlib import Path
+
 from transcriptx.web.module_registry import get_analysis_modules, get_total_module_count
 from transcriptx.web.services.file_service import FileService
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.paths import OUTPUTS_DIR
 
 logger = get_logger()
 
@@ -68,7 +71,7 @@ class StatisticsService:
         )
 
         # Get last updated time from directory
-        session_dir = FileService._resolve_session_dir(session_name)
+        session_dir = Path(OUTPUTS_DIR) / session_name
         if session_dir.exists():
             try:
                 mtime = session_dir.stat().st_mtime

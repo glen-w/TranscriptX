@@ -14,11 +14,9 @@ import streamlit as st
 
 from transcriptx.core.pipeline.manifest_builder import build_output_manifest
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.web.models.artifact import (
     Artifact,
     ArtifactFilters,
-    RunDescriptor,
     filter_artifacts,
 )
 
@@ -31,10 +29,6 @@ MAX_FULLSCREEN_HTML_BYTES = 10 * 1024 * 1024
 
 class ArtifactService:
     """Service for run and artifact access."""
-
-    @staticmethod
-    def _resolve_run_dir(session: str, run_id: str) -> Path:
-        return Path(OUTPUTS_DIR) / session / run_id
 
     @staticmethod
     def _load_manifest(run_dir: Path) -> Optional[Dict]:
@@ -62,58 +56,49 @@ class ArtifactService:
         return candidate
 
     @staticmethod
-    def get_run(session: str, run_id: str) -> RunDescriptor:
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
-        manifest = ArtifactService._load_manifest(run_dir)
-        manifest_path = run_dir / "manifest.json" if manifest else None
-        return RunDescriptor.from_manifest(
-            session=session,
-            run_id=run_id,
-            run_dir=run_dir,
-            manifest_path=manifest_path,
-            manifest=manifest,
-        )
-
     @staticmethod
     def list_artifacts(
-        session: str, run_id: str, filters: Optional[ArtifactFilters] = None
+        run_root: Path, filters: Optional[ArtifactFilters] = None
     ) -> List[Artifact]:
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
-        manifest_path = run_dir / "manifest.json"
+        run_dir = run_root
+        manifest_path = run_root / "manifest.json"
+        if not manifest_path.exists():
+            logger.warning(
+                "Legacy run detected (manifest.json missing): %s",
+                str(run_root),
+            )
         mtime = manifest_path.stat().st_mtime if manifest_path.exists() else 0
-        artifacts_payload = _cached_artifacts(session, run_id, mtime)
+        artifacts_payload = _cached_artifacts(str(run_root), mtime)
         artifacts = [Artifact.from_dict(item) for item in artifacts_payload]
         return filter_artifacts(artifacts, filters)
 
     @staticmethod
-    def get_artifact_bytes(session: str, run_id: str, artifact_id: str) -> Optional[bytes]:
-        artifacts = ArtifactService.list_artifacts(session, run_id)
+    def get_artifact_bytes(run_root: Path, artifact_id: str) -> Optional[bytes]:
+        artifacts = ArtifactService.list_artifacts(run_root)
         match = next((a for a in artifacts if a.id == artifact_id), None)
         if not match:
             return None
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
-        path = ArtifactService._resolve_safe_path(run_dir, match.rel_path)
+        path = ArtifactService._resolve_safe_path(run_root, match.rel_path)
         if path is None or not path.exists():
             return None
         return path.read_bytes()
 
     @staticmethod
-    def zip_artifacts(session: str, run_id: str, artifact_ids: List[str]) -> Optional[Path]:
-        artifacts = ArtifactService.list_artifacts(session, run_id)
+    def zip_artifacts(run_root: Path, artifact_ids: List[str]) -> Optional[Path]:
+        artifacts = ArtifactService.list_artifacts(run_root)
         selected = [a for a in artifacts if a.id in artifact_ids]
         if not selected:
             return None
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
         total_bytes = sum(a.bytes for a in selected)
         if total_bytes > HARD_CAP_BYTES:
             raise ValueError("Export exceeds hard cap.")
 
         temp_dir = Path(tempfile.mkdtemp(prefix="transcriptx_export_"))
-        zip_path = temp_dir / f"{session}_{run_id}_export.zip"
+        zip_path = temp_dir / f"{run_root.name}_export.zip"
         with tempfile.TemporaryDirectory() as staging:
             staging_dir = Path(staging)
             for artifact in selected:
-                path = ArtifactService._resolve_safe_path(run_dir, artifact.rel_path)
+                path = ArtifactService._resolve_safe_path(run_root, artifact.rel_path)
                 if path is None or not path.exists():
                     continue
                 target = staging_dir / artifact.rel_path
@@ -130,11 +115,10 @@ class ArtifactService:
         return path.read_bytes()
 
     @staticmethod
-    def generate_thumbnail(session: str, run_id: str, artifact: Artifact) -> Optional[Path]:
+    def generate_thumbnail(run_root: Path, artifact: Artifact) -> Optional[Path]:
         if artifact.kind != "chart_static":
             return None
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
-        source = ArtifactService._resolve_safe_path(run_dir, artifact.rel_path)
+        source = ArtifactService._resolve_safe_path(run_root, artifact.rel_path)
         if source is None or not source.exists():
             return None
         thumb_dir = source.parent / ".thumbnails"
@@ -159,13 +143,10 @@ class ArtifactService:
             return None
 
     @staticmethod
-    def load_html_artifact(
-        session: str, run_id: str, artifact: Artifact
-    ) -> Optional[Dict[str, object]]:
+    def load_html_artifact(run_root: Path, artifact: Artifact) -> Optional[Dict[str, object]]:
         if artifact.kind != "chart_dynamic":
             return None
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
-        path = ArtifactService._resolve_safe_path(run_dir, artifact.rel_path)
+        path = ArtifactService._resolve_safe_path(run_root, artifact.rel_path)
         if path is None or not path.exists():
             return None
         size = path.stat().st_size
@@ -173,12 +154,12 @@ class ArtifactService:
         return {"content": content, "bytes": size, "path": path}
 
     @staticmethod
-    def check_run_health(session: str, run_id: str) -> Dict[str, object]:
-        run_dir = ArtifactService._resolve_run_dir(session, run_id)
+    def check_run_health(run_root: Path) -> Dict[str, object]:
+        run_dir = run_root
         manifest = ArtifactService._load_manifest(run_dir)
         manifest_path = run_dir / "manifest.json"
         manifest_mtime = manifest_path.stat().st_mtime if manifest_path.exists() else 0
-        return _cached_health(session, run_id, manifest_mtime, bool(manifest))
+        return _cached_health(str(run_root), manifest_mtime, bool(manifest))
 
 
 @st.cache_data(show_spinner=False)
@@ -192,8 +173,8 @@ def _cached_manifest(manifest_path: str, mtime: float) -> Optional[Dict]:
 
 
 @st.cache_data(show_spinner=False)
-def _cached_artifacts(session: str, run_id: str, manifest_mtime: float) -> List[Dict]:
-    run_dir = Path(OUTPUTS_DIR) / session / run_id
+def _cached_artifacts(run_root: str, manifest_mtime: float) -> List[Dict]:
+    run_dir = Path(run_root)
     manifest = None
     manifest_path = run_dir / "manifest.json"
     if manifest_path.exists():
@@ -201,7 +182,7 @@ def _cached_artifacts(session: str, run_id: str, manifest_mtime: float) -> List[
     if manifest is None:
         manifest = build_output_manifest(
             run_dir=run_dir,
-            run_id=run_id,
+            run_id=run_dir.name,
             transcript_key="unknown",
             modules_enabled=[],
         )
@@ -210,9 +191,9 @@ def _cached_artifacts(session: str, run_id: str, manifest_mtime: float) -> List[
 
 @st.cache_data(show_spinner=False)
 def _cached_health(
-    session: str, run_id: str, manifest_mtime: float, manifest_exists: bool
+    run_root: str, manifest_mtime: float, manifest_exists: bool
 ) -> Dict[str, object]:
-    run_dir = Path(OUTPUTS_DIR) / session / run_id
+    run_dir = Path(run_root)
     errors: List[str] = []
     warnings: List[str] = []
 

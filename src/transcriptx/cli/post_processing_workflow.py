@@ -156,11 +156,9 @@ def _build_post_processing_choices() -> list[str]:
         choices.extend([
             "🧹 Prune old runs (DB only)",
             "🧹 Prune old runs (DB + outputs)",
+            "🗑️ Delete all artefacts",
         ])
-    choices.extend([
-        "🗑️ Delete all artefacts",
-        "⬅️ Back to main menu",
-    ])
+    choices.append("⬅️ Back to main menu")
     return choices
 
 
@@ -379,8 +377,8 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
 def _run_delete_all_artefacts() -> None:
     """Delete all artefact files and run directories under the outputs root.
 
-    Flow: dry run (show what would be deleted), y/n gate, then require typing
-    DELETE ALL to proceed.
+    Flow: dry run (show what would be deleted), y/n gate, require typing
+    DELETE ALL, then a final y/n before performing deletion.
     """
     with graceful_exit():
         outputs_dir = Path(OUTPUTS_DIR).resolve()
@@ -445,6 +443,14 @@ def _run_delete_all_artefacts() -> None:
         ).ask()
         if typed is None or (typed or "").strip() != DELETE_ALL_CONFIRM_PHRASE:
             print("\n[red]Confirmation phrase did not match. No changes made.[/red]")
+            return
+
+        final_confirm = questionary.confirm(
+            "Last chance: permanently delete all artefact directories? (y/n)",
+            default=False,
+        ).ask()
+        if not final_confirm:
+            print("\n[dim]No changes made.[/dim]")
             return
 
         # Perform deletion: remove each slug's run directories (and their contents)

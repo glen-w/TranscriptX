@@ -6,6 +6,7 @@ from typing import Any
 
 from transcriptx.core.utils.lazy_imports import optional_import  # type: ignore[import-untyped]
 from transcriptx.core.utils.paths import DATA_DIR  # type: ignore[import-untyped]
+from transcriptx.core.utils.artifact_writer import write_json, write_jsonl
 
 
 def get_voice_cache_root() -> Path:
@@ -15,23 +16,23 @@ def get_voice_cache_root() -> Path:
 
 
 def _write_jsonl(df: Any, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for _, row in df.iterrows():
-            record: dict[str, Any] = {}
-            for col in df.columns:
-                val = row[col]
-                if val is None:
-                    record[col] = None
-                else:
-                    # Convert numpy scalars to Python types where possible
-                    try:
-                        if hasattr(val, "item"):
-                            val = val.item()
-                    except Exception:
-                        pass
-                    record[col] = val
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    records: list[dict[str, Any]] = []
+    for _, row in df.iterrows():
+        record: dict[str, Any] = {}
+        for col in df.columns:
+            val = row[col]
+            if val is None:
+                record[col] = None
+            else:
+                # Convert numpy scalars to Python types where possible
+                try:
+                    if hasattr(val, "item"):
+                        val = val.item()
+                except Exception:
+                    pass
+                record[col] = val
+        records.append(record)
+    write_jsonl(path, records, ensure_ascii=False)
 
 
 def _read_jsonl(path: Path):  # -> pandas.DataFrame
@@ -47,8 +48,7 @@ def _read_jsonl(path: Path):  # -> pandas.DataFrame
 
 
 def save_cache_meta(path: Path, meta: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(path, meta, indent=2, ensure_ascii=False)
 
 
 def load_cache_meta(path: Path) -> dict[str, Any] | None:

@@ -12,6 +12,8 @@ Key Features:
 - Integration with centralized path utilities
 """
 
+import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -93,7 +95,9 @@ def _run_speaker_identification_workflow_impl() -> None:
             current_path=folder_path,
             metadata_formatter=_format_transcript_for_speaker_id,
         )
-        selected = select_files_interactive(transcript_files, selection_config)
+        selected = None
+        if not os.environ.get("PYTEST_CURRENT_TEST") and sys.stdin.isatty():
+            selected = select_files_interactive(transcript_files, selection_config)
 
         # Fallback: in some environments (e.g. non-interactive tests, terminal conflicts),
         # prompt_toolkit UI may not be available. Use questionary as a simple fallback.

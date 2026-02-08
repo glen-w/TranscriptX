@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytestmark = pytest.mark.quarantined  # reason: patches workflow entrypoints that were removed/renamed (select_transcript_file, process_wav_file, etc.); remove_by: when workflows API stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: patches workflow entrypoints that were removed/renamed (select_transcript_file, process_wav_file, etc.); owner: cli; remove_by: when workflows API stabilizes
 
 from transcriptx.cli.workflow_modules import (
     run_single_analysis_workflow,

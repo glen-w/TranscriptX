@@ -252,6 +252,9 @@ class OutputService:
         speaker_str = str(speaker)
         aliases = self._runtime_flags.get("speaker_key_aliases", {})
         speaker_key = aliases.get(speaker_str, speaker_str)
+        named_keys = self._runtime_flags.get("named_speaker_keys")
+        if isinstance(named_keys, set):
+            return speaker_key not in named_keys
         return not is_eligible_named_speaker(
             display_name=speaker_str,
             speaker_id=speaker_key,
@@ -720,6 +723,10 @@ class OutputService:
         if summary_path:
             self._record_artifact(Path(summary_path), "json", artifact_role="summary")
         return summary_path
+
+    def record_file(self, path: Path, artifact_type: str = "pdf") -> None:
+        """Record an existing file as an artifact (e.g. a PDF built outside save_*)."""
+        self._record_artifact(Path(path), artifact_type)
 
     def get_artifacts(self) -> List[Dict[str, Any]]:
         return list(self._artifacts)

@@ -362,3 +362,33 @@ def get_convokit() -> Any:
     """Get the convokit module with runtime installation support."""
     return optional_import("convokit", "ConvoKit analysis", "convokit", auto_install=True)
 
+
+def get_reportlab() -> Any:
+    """
+    Get the reportlab package for PDF generation (e.g. summary all-charts PDF).
+    Lazy-loaded; attempts auto-install if missing.
+    """
+    return optional_import("reportlab", "PDF generation (summary charts)", None, auto_install=True)
+
+
+def ensure_pdf_ready(silent: bool = False) -> bool:
+    """
+    Ensure reportlab (and thus PDF deps) are available, installing into the
+    active venv if missing. Can be called at startup so summary PDF works later.
+
+    Args:
+        silent: If True, do not print success messages (only warnings on failure).
+
+    Returns:
+        True if reportlab is importable (or was installed), False otherwise.
+    """
+    try:
+        get_reportlab()
+        if not silent:
+            print("PDF dependencies: ready for summary charts.")
+        return True
+    except ImportError as e:
+        if not silent:
+            print(f"Warning: PDF dependencies not available: {e}")
+        return False
+

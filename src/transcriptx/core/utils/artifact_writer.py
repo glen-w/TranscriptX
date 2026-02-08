@@ -47,6 +47,18 @@ def write_json(
     return write_text(path, payload)
 
 
+def write_jsonl(
+    path: str | Path, rows: Iterable[Any], ensure_ascii: bool = False
+) -> Path:
+    lines = [
+        json.dumps(row, ensure_ascii=ensure_ascii, default=str) for row in rows
+    ]
+    payload = "\n".join(lines)
+    if payload:
+        payload += "\n"
+    return write_text(path, payload)
+
+
 def write_csv(
     path: str | Path,
     rows: Iterable[Iterable[Any]],

@@ -33,7 +33,7 @@ try:
         get_speaker_profiles,
         format_speaker_profile_data,
     )
-    from transcriptx.web.services import FileService, ArtifactService
+    from transcriptx.web.services import FileService, ArtifactService, RunIndex, SubjectService
     from transcriptx.web.page_modules.overview import render_overview
     from transcriptx.web.page_modules.charts import render_charts
     from transcriptx.web.page_modules.data import render_data
@@ -49,6 +49,7 @@ try:
     from transcriptx.web.models.search import NavRequest, SegmentRef
     from transcriptx.web.pages.configuration import render_configuration_page
     from transcriptx.web.components.exemplars import render_speaker_exemplars
+    from transcriptx.web.components.subject_header import render_subject_header
     from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
     from transcriptx.core.utils.logger import get_logger
     from transcriptx.utils.text_utils import format_time_detailed
@@ -224,8 +225,9 @@ def _format_timestamp_range(
 def navigate_to_segment(
     segment_ref: SegmentRef, highlight_query: Optional[str] = None
 ) -> None:
-    st.session_state["selected_session"] = segment_ref.transcript_ref.session_slug
-    st.session_state["selected_run_id"] = segment_ref.transcript_ref.run_id
+    st.session_state["subject_type"] = "transcript"
+    st.session_state["subject_id"] = segment_ref.transcript_ref.session_slug
+    st.session_state["run_id"] = segment_ref.transcript_ref.run_id
     st.session_state["page"] = "Transcript"
     st.session_state["nav_request"] = NavRequest(
         segment_ref=segment_ref,
@@ -244,29 +246,22 @@ def render_transcript_viewer():
     st.session_state.setdefault("timestamp_format", "seconds")
 
     try:
-        sessions = list_available_sessions()
-        if not sessions:
-            st.warning("No sessions available")
+        subject = SubjectService.resolve_current_subject(st.session_state)
+        run_id = st.session_state.get("run_id")
+        if not subject or not run_id:
+            st.info("Select a subject and run to view the transcript.")
             return
-
-        # Session selector - prefer global state if set
-        selected_session = st.session_state.get("selected_session")
-        selected_run_id = st.session_state.get("selected_run_id")
-        if selected_session and selected_run_id:
-            selected = f"{selected_session}/{selected_run_id}"
-        else:
-            session_names = [s["name"] for s in sessions]
-            selected = st.selectbox(
-                "Select Session", session_names, key="transcript_session_selector"
-            )
-
-        if not selected:
+        if subject.subject_type != "transcript":
+            st.info("Transcript view is available for transcript subjects only.")
             return
-
-        # Clear state after using it
-        if "selected_session" in st.session_state and "selected_run_id" in st.session_state:
-            del st.session_state["selected_session"]
-            del st.session_state["selected_run_id"]
+        selected_session = subject.subject_id
+        selected_run_id = run_id
+        selected = f"{selected_session}/{selected_run_id}"
+        run_root = RunIndex.get_run_root(
+            subject.scope,
+            run_id,
+            subject_id=subject.subject_id,
+        )
 
         # Load transcript
         with st.spinner(f"Loading transcript for {selected}..."):
@@ -296,7 +291,7 @@ def render_transcript_viewer():
         download_cols = st.columns(3)
 
         # Find transcript files in output folder
-        session_output_dir = Path(OUTPUTS_DIR) / selected
+        session_output_dir = run_root
         transcripts_dir = session_output_dir / "transcripts"
         manifest_path = session_output_dir / ".transcriptx" / "manifest.json"
         manifest_transcript_path = None
@@ -629,9 +624,9 @@ def render_transcript_viewer():
 
         st.divider()
         with st.expander("✨ Highlights", expanded=False):
-            _render_highlights_section(selected_session, selected_run_id)
+            _render_highlights_section(run_root)
         with st.expander("🧾 Executive Summary", expanded=False):
-            _render_summary_section(selected_session, selected_run_id)
+            _render_summary_section(run_root)
 
     except Exception as e:
         logger.error(f"Error loading transcript: {e}", exc_info=True)
@@ -654,19 +649,23 @@ def render_run_analysis_page():
         "Results will be available in the Transcript view after completion."
     )
 
-    selected_session = st.session_state.get("selected_session")
-    selected_run_id = st.session_state.get("selected_run_id")
-    if not selected_session or not selected_run_id:
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    if not subject:
         st.warning(
-            "Select a **Session** and **Run** in the sidebar first, then run analysis here."
+            "Select a **Subject** in the sidebar first, then run analysis here."
         )
         return
-
-    selected = f"{selected_session}/{selected_run_id}"
-    transcript_path = FileService.resolve_transcript_path(selected)
-    if transcript_path is None:
+    transcript_path = None
+    member_paths: List[str] = []
+    if subject.subject_type == "transcript":
+        if subject.members:
+            transcript_path = Path(subject.members[0].file_path)
+            member_paths = [str(transcript_path)]
+    else:
+        member_paths = [m.file_path for m in subject.members if m.file_path]
+    if subject.subject_type == "transcript" and transcript_path is None:
         st.warning(
-            "Could not resolve transcript path for this session. Run analysis is unavailable."
+            "Could not resolve transcript path for this subject. Run analysis is unavailable."
         )
         return
 
@@ -678,7 +677,7 @@ def render_run_analysis_page():
         _voice_cfg = getattr(getattr(_cfg, "analysis", None), "voice", None)
         _egemaps = bool(getattr(_voice_cfg, "egemaps_enabled", True))
         _deps = check_voice_optional_deps(egemaps_enabled=_egemaps)
-        _audio_available = has_resolvable_audio([str(transcript_path)])
+        _audio_available = has_resolvable_audio(member_paths)
         _missing_deps = (
             _deps.get("missing_optional_deps", [])
             if not _deps.get("ok")
@@ -729,7 +728,7 @@ def render_run_analysis_page():
                 return not _missing
 
             _runnable = get_recommended_modules(
-                [str(transcript_path)],
+                member_paths,
                 audio_resolver=has_resolvable_audio,
                 dep_resolver=_dep_resolver,
                 include_heavy=True,
@@ -737,7 +736,7 @@ def render_run_analysis_page():
             )
         except Exception:
             _runnable = get_recommended_modules(
-                [str(transcript_path)],
+                member_paths,
                 audio_resolver=has_resolvable_audio,
                 include_heavy=True,
                 include_excluded_from_default=True,
@@ -747,7 +746,7 @@ def render_run_analysis_page():
         _default_custom = [
             m
             for m in get_recommended_modules(
-                [str(transcript_path)],
+                member_paths,
                 audio_resolver=has_resolvable_audio,
                 include_excluded_from_default=True,
             )[:5]
@@ -785,7 +784,7 @@ def render_run_analysis_page():
         ]
     else:
         run_modules = get_recommended_modules(
-            [str(transcript_path)],
+            member_paths,
             audio_resolver=has_resolvable_audio,
         )
     filtered_modules = filter_modules_by_mode(run_modules, run_mode)
@@ -811,8 +810,9 @@ def render_run_analysis_page():
         st.session_state["analysis_run_in_progress"] = True
         apply_analysis_mode_settings(run_mode, profile=run_profile)
         logger.info(
-            "Run analysis: transcript_path=%s mode=%s profile=%s modules=%s",
-            str(transcript_path),
+            "Run analysis: subject_type=%s subject_id=%s mode=%s profile=%s modules=%s",
+            subject.subject_type,
+            subject.subject_id,
             run_mode,
             run_profile or "",
             filtered_modules,
@@ -820,7 +820,7 @@ def render_run_analysis_page():
         try:
             with st.spinner("Running analysis pipeline…"):
                 run_analysis_pipeline(
-                    target=TranscriptRef(path=str(transcript_path)),
+                    target=subject.ref,
                     selected_modules=filtered_modules,
                     skip_speaker_mapping=True,
                     persist=False,
@@ -830,7 +830,7 @@ def render_run_analysis_page():
             )
             if open_after and filtered_modules:
                 st.session_state["analysis_module"] = filtered_modules[0]
-                st.session_state["analysis_session"] = selected
+                st.session_state["analysis_session"] = subject.subject_id
             st.success("Analysis completed.")
         except Exception as e:
             logger.error(f"Run analysis failed: {e}", exc_info=True)
@@ -1103,7 +1103,6 @@ def main():
         load_error = str(e)
         session_map = {}
         sessions_list = []
-    has_sessions = bool(sessions_list)
 
     # Always render sidebar first so the menu is visible even with no sessions or on error
     current_page = st.session_state.get("page", "Overview")
@@ -1131,23 +1130,73 @@ def main():
 
         st.divider()
 
-        # Transcript section (session/run selectors only when we have sessions)
-        st.markdown("**Transcript**")
-        if has_sessions:
-            session_options = sorted(session_map.keys())
-            selected_session = st.selectbox(
-                "Session", session_options, key="session_selector"
-            )
-            run_options = [s["run_id"] for s in session_map.get(selected_session, [])]
-            selected_run_id = st.selectbox("Run", run_options, key="run_selector")
-            st.session_state["selected_session"] = selected_session
-            st.session_state["selected_run_id"] = selected_run_id
-        else:
-            st.caption("No sessions yet")
-            st.session_state["selected_session"] = None
-            st.session_state["selected_run_id"] = None
+        # Subject selection (transcript or group)
+        st.markdown("**Subject**")
+        subject_type_label = st.radio(
+            "Type",
+            ["Transcript", "Group"],
+            index=0,
+            horizontal=True,
+            key="subject_type_selector",
+        )
+        subject_type = "transcript" if subject_type_label == "Transcript" else "group"
+        st.session_state["subject_type"] = subject_type
 
-        # Transcript-specific navigation
+        if subject_type == "transcript":
+            if not sessions_list:
+                st.caption("No transcripts yet")
+                st.session_state["subject_id"] = None
+            else:
+                session_options = sorted(session_map.keys())
+                selected_session = st.selectbox(
+                    "Transcript", session_options, key="subject_id_selector"
+                )
+                st.session_state["subject_id"] = selected_session
+        else:
+            try:
+                from transcriptx.web.services.group_service import GroupService
+
+                groups = GroupService.list_groups()
+            except Exception:
+                groups = []
+            if not groups:
+                st.caption("No groups yet")
+                st.session_state["subject_id"] = None
+            else:
+                options = {g.uuid: g for g in groups}
+                labels = {
+                    g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
+                    for g in groups
+                }
+                selected_group = st.selectbox(
+                    "Group",
+                    list(options.keys()),
+                    format_func=lambda key: labels.get(key, key),
+                    key="subject_id_selector",
+                )
+                st.session_state["subject_id"] = selected_group
+
+        subject = SubjectService.resolve_current_subject(st.session_state)
+        if subject:
+            runs = RunIndex.list_runs(subject.scope, subject_id=subject.subject_id)
+            run_options = [r.run_id for r in runs]
+            if run_options:
+                current_run = st.session_state.get("run_id")
+                index = run_options.index(current_run) if current_run in run_options else 0
+                selected_run_id = st.selectbox(
+                    "Run",
+                    run_options,
+                    index=index,
+                    key="run_selector",
+                )
+                st.session_state["run_id"] = selected_run_id
+            else:
+                st.caption("No runs yet")
+                st.session_state["run_id"] = None
+        else:
+            st.session_state["run_id"] = None
+
+        # Viewer navigation
         transcript_pages = [
             ("Overview", "Overview"),
             ("Transcript", "Transcript"),
@@ -1172,18 +1221,28 @@ def main():
         st.divider()
         st.caption("Streamlit Studio Interface")
 
-    # Main content: show message if no sessions or load error, otherwise route to page
-    if not has_sessions:
-        if load_error:
-            st.error(f"Could not load session list: {load_error}")
-        else:
-            st.info("No transcript sessions found. Process transcripts to see them here.")
-        return
+    # Main content: show load error if present, then route to page
+    if load_error:
+        st.error(f"Could not load session list: {load_error}")
 
     current_page = st.session_state.get("page", "Overview")
 
     # Route to appropriate page
     try:
+        viewer_pages = {
+            "Overview",
+            "Transcript",
+            "Run Analysis",
+            "Charts",
+            "Insights",
+            "Data",
+            "Explorer",
+            "Configuration",
+        }
+        if current_page in viewer_pages:
+            subject = SubjectService.resolve_current_subject(st.session_state)
+            if subject:
+                render_subject_header(subject)
         if current_page == "Overview":
             render_overview()
         elif current_page == "Transcript":

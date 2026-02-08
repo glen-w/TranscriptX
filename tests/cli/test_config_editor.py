@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-pytestmark = pytest.mark.quarantined  # reason: patches settings_menu_loop which no longer exists; remove_by: when config_editor API stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: patches settings_menu_loop which no longer exists; owner: cli; remove_by: when config_editor API stabilizes
 
 from transcriptx.cli.config_editor import edit_config_interactive
 from transcriptx.cli.config_editors import (

@@ -5,6 +5,7 @@ from transcriptx.core.utils.config import get_config
 import json
 import os
 import platform
+import sys
 from rich.console import Console
 from transcriptx.core.utils.paths import (
     RECORDINGS_DIR,
@@ -384,6 +385,8 @@ def get_file_selection_mode(config=None):
         return "explore"
     if mode == "direct":
         return "direct"
+    if os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty():
+        return "default_folder"
     return _prompt_file_selection_mode()
 
 
@@ -689,6 +692,18 @@ def select_folder_interactive(start_path: Path | None = None) -> Path | None:
                 current_path = current_path.parent
             elif isinstance(selection, Path):
                 current_path = selection
+                try:
+                    if not any(Path(entry.path).is_dir() for entry in os.scandir(current_path)):
+                        return current_path
+                except Exception:
+                    pass
+            elif isinstance(selection, str):
+                current_path = Path(selection)
+                try:
+                    if not any(Path(entry.path).is_dir() for entry in os.scandir(current_path)):
+                        return current_path
+                except Exception:
+                    pass
         except KeyboardInterrupt:
             console.print("\n[cyan]Cancelled. Returning to previous menu.[/cyan]")
             return None

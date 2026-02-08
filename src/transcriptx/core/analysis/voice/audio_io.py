@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import subprocess
+import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -168,12 +168,6 @@ def read_audio_segment(
 
 
 def shutil_which(binary: str) -> str | None:
-    """
-    Minimal shutil.which() clone to avoid importing shutil at module import time.
-    """
-    for p in os.environ.get("PATH", "").split(os.pathsep):
-        candidate = Path(p) / binary
-        if candidate.exists() and os.access(candidate, os.X_OK):
-            return str(candidate)
-    return None
+    """Wrapper around shutil.which to avoid env lookups here."""
+    return shutil.which(binary)
 

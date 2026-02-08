@@ -9,7 +9,7 @@ from datetime import datetime
 import streamlit as st
 import pandas as pd
 
-from transcriptx.web.services import ArtifactService
+from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 
 
 def _parse_run_datetime(run_id: str) -> str:
@@ -30,11 +30,16 @@ def _parse_run_datetime(run_id: str) -> str:
 
 
 def render_overview() -> None:
-    session = st.session_state.get("selected_session")
-    run_id = st.session_state.get("selected_run_id")
-    if not session or not run_id:
-        st.info("Select a session and run to view the overview.")
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+    if not subject or not run_id:
+        st.info("Select a subject and run to view the overview.")
         return
+    run_root = RunIndex.get_run_root(
+        subject.scope,
+        run_id,
+        subject_id=subject.subject_id,
+    )
 
     # Display run date/time at the top in small text
     run_datetime = _parse_run_datetime(run_id)
@@ -43,12 +48,12 @@ def render_overview() -> None:
         unsafe_allow_html=True,
     )
 
-    artifacts = ArtifactService.list_artifacts(session, run_id)
+    artifacts = ArtifactService.list_artifacts(run_root)
     if not artifacts:
         st.warning("No artifacts found for this run.")
         return
 
-    health = ArtifactService.check_run_health(session, run_id)
+    health = ArtifactService.check_run_health(run_root)
     status = health.get("status")
     has_errors = bool(health.get("errors"))
     has_warnings = bool(health.get("warnings"))
@@ -91,7 +96,7 @@ def render_overview() -> None:
 
     st.divider()
     st.subheader("Per-Module Summary")
-    module_map = {}
+    module_map: dict[str, dict[str, object]] = {}
     for artifact in artifacts:
         module = artifact.module or "other"
         module_map.setdefault(module, {"charts": 0, "data": 0, "last": None})
@@ -169,7 +174,9 @@ def render_overview() -> None:
     elif export_mode == "Custom Selection":
         options = {a.id: a.rel_path for a in artifacts}
         chosen = st.multiselect(
-            "Artifacts", list(options.keys()), format_func=options.get
+            "Artifacts",
+            list(options.keys()),
+            format_func=lambda key: options.get(key, key),
         )
         selected_artifacts = [a for a in artifacts if a.id in chosen]
 
@@ -190,7 +197,7 @@ def render_overview() -> None:
 
     if st.button("Create Export", disabled=not confirm_large):
         export_path = ArtifactService.zip_artifacts(
-            session, run_id, [a.id for a in selected_artifacts]
+            run_root, [a.id for a in selected_artifacts]
         )
         if export_path:
             try:

@@ -42,7 +42,12 @@ class GroupOutputService:
     ):
         self.group_uuid = group_uuid
         self.run_id = run_id
-        self.base_dir = Path(output_dir or get_group_output_dir(group_uuid, run_id))
+        # When output_dir is set (e.g. GROUP_OUTPUTS_DIR), it is the base for all groups;
+        # we must append group_uuid and run_id so the UI can find runs under GROUP_OUTPUTS_DIR / group_uuid.
+        if output_dir:
+            self.base_dir = Path(output_dir) / group_uuid / run_id
+        else:
+            self.base_dir = Path(get_group_output_dir(group_uuid, run_id))
         self._ensure_structure(
             scaffold_by_session=scaffold_by_session,
             scaffold_by_speaker=scaffold_by_speaker,

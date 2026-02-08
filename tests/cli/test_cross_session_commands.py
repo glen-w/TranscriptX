@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-pytestmark = pytest.mark.quarantined  # reason: tests CrossSessionTrackingService/get_session which were removed/renamed; remove_by: when cross_session API stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: tests CrossSessionTrackingService/get_session which were removed/renamed; owner: cli; remove_by: when cross_session API stabilizes
 
 from transcriptx.cli.main import app
 

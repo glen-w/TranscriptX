@@ -135,7 +135,12 @@ def _ensure_transcript_uuid(transcript_path: Optional[str]) -> str:
     return uuid
 
 
-def load_processing_state(validate: bool = True, *, skip_migration: bool = False) -> Dict[str, Any]:
+def load_processing_state(
+    state_file: str | Path | None = None,
+    validate: bool = True,
+    *,
+    skip_migration: bool = False,
+) -> Dict[str, Any]:
     """
     Load processing state from JSON file with optional validation and locking.
 
@@ -149,16 +154,17 @@ def load_processing_state(validate: bool = True, *, skip_migration: bool = False
 
     try:
         # Clean up stale locks
-        cleanup_stale_locks(PROCESSING_STATE_FILE.with_suffix(".lock"))
+        target_file = Path(state_file) if state_file else PROCESSING_STATE_FILE
+        cleanup_stale_locks(target_file.with_suffix(".lock"))
 
-        if PROCESSING_STATE_FILE.exists():
-            with FileLock(PROCESSING_STATE_FILE, timeout=5, blocking=False) as lock:
+        if target_file.exists():
+            with FileLock(target_file, timeout=5, blocking=False) as lock:
                 if not lock.acquired:
                     logger.warning("State file is locked, using cached or empty state")
                     # Return empty state if locked (read-only access)
                     return {"processed_files": {}}
 
-                with open(PROCESSING_STATE_FILE, "r") as f:
+                with open(target_file, "r") as f:
                     state = json.load(f)
 
                 # Auto-validate if requested
@@ -167,7 +173,7 @@ def load_processing_state(validate: bool = True, *, skip_migration: bool = False
                         validate_processing_state,
                     )
 
-                    validation_result = validate_processing_state(PROCESSING_STATE_FILE)
+                    validation_result = validate_processing_state(target_file)
 
                     if not validation_result["valid"]:
                         logger.warning(
@@ -188,7 +194,7 @@ def load_processing_state(validate: bool = True, *, skip_migration: bool = False
                                     f"Auto-repaired state file: {repair_result['entries_repaired']} entries"
                                 )
                                 # Reload after repair
-                                with open(PROCESSING_STATE_FILE, "r") as f:
+                                with open(target_file, "r") as f:
                                     state = json.load(f)
 
                 if not skip_migration and validate:
@@ -210,7 +216,7 @@ def load_processing_state(validate: bool = True, *, skip_migration: bool = False
                                         f"✅ Migration complete: {migration_result['entries_migrated']} entries migrated"
                                     )
                                     # Reload state after migration
-                                    with open(PROCESSING_STATE_FILE, "r") as f:
+                                    with open(target_file, "r") as f:
                                         state = json.load(f)
                                 else:
                                     logger.debug(
@@ -237,7 +243,7 @@ def load_processing_state(validate: bool = True, *, skip_migration: bool = False
             logger.info("Attempting to restore from backup...")
             if restore_from_backup(Path(backups[0]["path"])):
                 logger.info("State restored from backup")
-                return load_processing_state(validate=False)
+                return load_processing_state(state_file=state_file, validate=False)
         return {"processed_files": {}}
     except Exception as e:
         log_error(
@@ -247,7 +253,7 @@ def load_processing_state(validate: bool = True, *, skip_migration: bool = False
     return {"processed_files": {}}
 
 
-def save_processing_state(state: Dict[str, Any]) -> None:
+def save_processing_state(state: Dict[str, Any], state_file: str | Path | None = None) -> None:
     """
     Save processing state to JSON file with atomic write, automatic backup, and locking.
 
@@ -262,25 +268,26 @@ def save_processing_state(state: Dict[str, Any]) -> None:
     from transcriptx.core.utils.file_lock import FileLock
 
     try:
-        PROCESSING_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        target_file = Path(state_file) if state_file else PROCESSING_STATE_FILE
+        target_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Acquire lock before writing
-        with FileLock(PROCESSING_STATE_FILE, timeout=30) as lock:
+        with FileLock(target_file, timeout=30) as lock:
             if not lock.acquired:
                 raise RuntimeError("Could not acquire lock for state file")
 
             # Create backup before updating (if file exists)
-            if PROCESSING_STATE_FILE.exists():
-                create_backup(PROCESSING_STATE_FILE)
+            if target_file.exists():
+                create_backup(target_file)
 
             # Write to temporary file first
-            temp_file = PROCESSING_STATE_FILE.with_suffix(".tmp")
+            temp_file = target_file.with_suffix(".tmp")
             try:
                 with open(temp_file, "w") as f:
                     json.dump(state, f, indent=2)
 
                 # Atomic rename (this is atomic on most filesystems)
-                temp_file.replace(PROCESSING_STATE_FILE)
+                temp_file.replace(target_file)
             except Exception as e:
                 # Clean up temp file on error
                 if temp_file.exists():
@@ -348,21 +355,21 @@ def is_file_processed(file_path: Path, state: Optional[Dict[str, Any]] = None) -
         # Check if audio_path matches (for UUID-based keys)
         if entry_audio_path == file_key:
             # Check if processing was completed successfully
-            return entry.get("status") == "completed"
+            return entry.get("status") in ("completed", "processed")
         # Also check if key itself is the path (backward compatibility with old format)
         if key == file_key:
-            return entry.get("status") == "completed"
+            return entry.get("status") in ("completed", "processed")
 
     # Also check by filename (for portability)
     filename = file_path.name
     for key, entry in processed_files.items():
         entry_audio_path = entry.get("audio_path", "")
         if entry_audio_path and Path(entry_audio_path).name == filename:
-            if entry.get("status") == "completed":
+            if entry.get("status") in ("completed", "processed"):
                 return True
         # Backward compatibility: check if key is a path with matching filename
         if not _is_uuid_format(key) and Path(key).name == filename:
-            if entry.get("status") == "completed":
+            if entry.get("status") in ("completed", "processed"):
                 return True
 
     return False
@@ -422,8 +429,11 @@ def mark_file_processed(file_path: Path, metadata: Dict[str, Any]) -> None:
     if transcript_path:
         entry = enrich_state_entry(entry, transcript_path)
 
-    # Use UUID as key instead of file_path
+    # Use UUID as primary key, but also preserve legacy path key
     state["processed_files"][transcript_uuid] = entry
+    path_key = str(file_path.resolve())
+    if path_key not in state["processed_files"]:
+        state["processed_files"][path_key] = entry
 
     # Save to JSON (backward compatibility - can be removed in future)
     save_processing_state(state)
@@ -565,6 +575,17 @@ def get_current_transcript_path_from_state(transcript_path: str) -> Optional[str
         Current transcript path from processing state if found, None otherwise
     """
     try:
+        # Backward compatibility: scan state entries for current_transcript_path
+        state = load_processing_state(validate=False)
+        processed_files = state.get("processed_files", {})
+        for entry in processed_files.values():
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("transcript_path") == transcript_path:
+                return entry.get("current_transcript_path") or entry.get("transcript_path")
+            if entry.get("current_transcript_path") == transcript_path:
+                return entry.get("current_transcript_path")
+
         # Use unified resolution function
         resolved = resolve_file_path(
             transcript_path, file_type="transcript", validate_state=True

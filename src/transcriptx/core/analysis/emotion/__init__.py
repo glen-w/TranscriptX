@@ -17,6 +17,7 @@ import numpy as np
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.config import EMOTION_CATEGORIES
 from transcriptx.core.utils.logger import get_logger, log_info, log_warning
+from transcriptx.core.utils.downloads import downloads_disabled
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
@@ -30,22 +31,11 @@ from transcriptx.core.viz.specs import BarCategoricalSpec
 
 logger = get_logger()
 
-_DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
-
-
-def _downloads_disabled() -> bool:
-    value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
-    if value == "":
-        # Default to downloads disabled unless explicitly opted in.
-        return True
-    return value in {"1", "true", "yes", "on"}
-
-
 # Initialize NRCLex with automatic resource download
 def _ensure_textblob_corpora():
     """Ensure TextBlob corpora are downloaded before initializing NRCLex."""
     try:
-        if _downloads_disabled():
+        if downloads_disabled():
             raise RuntimeError("Downloads disabled (TRANSCRIPTX_DISABLE_DOWNLOADS)")
         from textblob.download_corpora import download_all
 
@@ -104,7 +94,7 @@ def _load_nrclex():
 
 def _load_emotion_model(model_name: str | None = None):
     try:
-        if _downloads_disabled():
+        if downloads_disabled():
             log_warning("EMOTION", "Downloads disabled; skipping contextual emotion model load")
             return None
         from transcriptx.core.utils.lazy_imports import get_transformers

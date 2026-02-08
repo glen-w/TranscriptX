@@ -5,11 +5,11 @@ Generate a small deterministic fake outputs tree for dashboard testing.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Dict
 
 from transcriptx.core.pipeline.manifest_builder import build_output_manifest
-from transcriptx.core.utils.paths import OUTPUTS_DIR
 
 
 def _write_text(path: Path, content: str) -> None:
@@ -24,6 +24,8 @@ def _write_json(path: Path, payload: Dict) -> None:
 
 
 def generate_fake_outputs() -> Path:
+    from transcriptx.core.utils.paths import OUTPUTS_DIR
+
     session = "fake_session"
     run_id = "00000000_test"
     run_dir = Path(OUTPUTS_DIR) / session / run_id
@@ -95,5 +97,10 @@ def generate_fake_outputs() -> Path:
 
 
 if __name__ == "__main__":
+    repo_root = Path(__file__).resolve().parents[2]
+    test_outputs_dir = repo_root / ".test_outputs"
+    test_outputs_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("TRANSCRIPTX_OUTPUT_DIR", str(test_outputs_dir))
+
     path = generate_fake_outputs()
     print(f"Fake outputs generated at {path}")

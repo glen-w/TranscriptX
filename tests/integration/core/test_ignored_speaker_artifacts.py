@@ -9,6 +9,7 @@ from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
 from transcriptx.core.pipeline.target_resolver import TranscriptRef
 from transcriptx.core.utils import output_standards as output_standards_module
 from transcriptx.core.utils import paths as paths_module
+from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils import transcript_output as transcript_output_module
 
 
@@ -50,7 +51,8 @@ def test_ignored_speaker_creates_no_speaker_artifacts(
 
     assert result["errors"] == []
     output_dir = Path(result["output_dir"])
-    stats_json = output_dir / f"{transcript_path.stem}_stats.json"
+    base_name = get_canonical_base_name(str(transcript_path))
+    stats_json = output_dir / f"{base_name}_stats.json"
     assert stats_json.exists()
     payload = json.loads(stats_json.read_text(encoding="utf-8"))
 

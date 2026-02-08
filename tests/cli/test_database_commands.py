@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-pytestmark = pytest.mark.quarantined  # reason: db_reset_command module missing; CLI exit codes/args changed; remove_by: when database CLI stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: db_reset_command module missing; CLI exit codes/args changed; owner: cli; remove_by: when database CLI stabilizes
 
 from transcriptx.cli.main import app
 

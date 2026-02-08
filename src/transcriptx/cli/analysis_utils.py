@@ -71,6 +71,8 @@ def select_analysis_modules(
         return not missing_deps
 
     def _eligible(info):
+        if getattr(info, "post_processing_only", False):
+            return False
         if for_group and not info.supports_group:
             return False
         if info.requires_audio and audio_available is False:
@@ -87,13 +89,22 @@ def select_analysis_modules(
 
     # Build choices for multi-select (checkbox): special options then one per module.
     # Use checked=True to preselect "All modules"; checkbox does not accept default=[...].
+    # Disable shortcut_key to avoid questionary IndexError when choices exceed its ~36 shortcut keys.
     choices = [
-        questionary.Choice(title="⚙️ Configure settings", value="settings"),
         questionary.Choice(
-            title="⭐ Recommended modules (default set)", value="recommended", checked=True
+            title="⚙️ Configure settings", value="settings", shortcut_key=False
         ),
         questionary.Choice(
-            title="📚 All eligible modules", value="all_eligible"
+            title="⭐ Recommended modules (default set)",
+            value="recommended",
+            checked=True,
+            shortcut_key=False,
+        ),
+        questionary.Choice(
+            title="📚 All eligible modules", value="all_eligible", shortcut_key=False
+        ),
+        questionary.Choice(
+            title="📚 All eligible modules (legacy)", value="all", shortcut_key=False
         ),
     ]
     for i, module in enumerate(eligible_modules, 1):
@@ -111,7 +122,11 @@ def select_analysis_modules(
                 badges.append("heavy")
         badge_str = f" ({'; '.join(badges)})" if badges else ""
         choices.append(
-            questionary.Choice(title=f"{i}. {description}{badge_str}", value=module)
+            questionary.Choice(
+                title=f"{i}. {description}{badge_str}",
+                value=module,
+                shortcut_key=False,
+            )
         )
 
     while True:
@@ -127,7 +142,9 @@ def select_analysis_modules(
                 edit_config_interactive()
                 continue
             selected_modules = [
-                m for m in selection if m not in ("settings", "recommended", "all_eligible")
+                m
+                for m in selection
+                if m not in ("settings", "recommended", "all_eligible", "all")
             ]
             if "recommended" in selection and not selected_modules:
                 # Only "recommended" checked -> run recommended set from core
@@ -148,8 +165,8 @@ def select_analysis_modules(
                         f"[yellow]⚠️ Heavy modules included: {', '.join(heavy)}[/yellow]"
                     )
                 return selected
-            if "all_eligible" in selection and not selected_modules:
-                return list(eligible_modules)
+            if ("all_eligible" in selection or "all" in selection) and not selected_modules:
+                return [m for m in available_modules if m in eligible_modules]
             if not selected_modules:
                 print(
                     "[yellow]No modules selected. Choose at least one or pick 'Recommended'/'All eligible'.[/yellow]"
@@ -200,6 +217,9 @@ def select_analysis_mode() -> str:
 
 def apply_analysis_mode_settings(mode: str) -> None:
     """Interactive: prompt for mode (and profile if full), then apply via core."""
+    config = get_config()
+    if hasattr(config, "analysis"):
+        config.analysis.analysis_mode = mode
     if mode == "quick":
         apply_analysis_mode_settings_core(mode)
         print(f"\n[dim]Applied {mode} analysis settings to configuration[/dim]")

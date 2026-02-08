@@ -428,6 +428,11 @@ def clean_environment():
 
 def pytest_configure(config):
     """Configure pytest with custom markers."""
+    if not os.getenv("TRANSCRIPTX_OUTPUT_DIR"):
+        test_outputs_dir = _REPO_ROOT / ".test_outputs"
+        test_outputs_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["TRANSCRIPTX_OUTPUT_DIR"] = str(test_outputs_dir)
+
     config.addinivalue_line(
         "markers",
         "smoke: fast, deterministic, no external services/models; required for CI",

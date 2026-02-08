@@ -22,7 +22,7 @@ from transcriptx.web.db_utils import (
     get_transcript_file_for_run,
     get_transcript_revision_signal,
 )
-from transcriptx.web.services import FileService
+from transcriptx.web.services import RunIndex, SubjectService
 
 logger = get_logger()
 
@@ -92,19 +92,22 @@ def _compute_cached(
 
 
 def render_speaker_exemplars(speaker_id: int) -> None:
-    session_slug = st.session_state.get("selected_session")
-    run_id = st.session_state.get("selected_run_id")
-    if not session_slug or not run_id:
-        st.info("Select a session to view speaker exemplars.")
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+    if not subject or not run_id:
+        st.info("Select a subject to view speaker exemplars.")
+        return
+    if subject.subject_type != "transcript":
+        st.info("Speaker exemplars are available for transcript subjects only.")
         return
 
-    run_dir = FileService._resolve_session_dir(f"{session_slug}/{run_id}")
+    run_dir = RunIndex.get_run_root(subject.scope, run_id, subject_id=subject.subject_id)
     resolved = resolve_effective_config(run_dir=run_dir)
     config = resolved.effective_config.analysis.speaker_exemplars
     if not config.enabled:
         return
 
-    transcript_file = get_transcript_file_for_run(session_slug, run_id)
+    transcript_file = get_transcript_file_for_run(subject.subject_id, run_id)
     if not transcript_file:
         st.info("Transcript file not found for this run.")
         return

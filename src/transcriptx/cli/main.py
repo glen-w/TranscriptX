@@ -334,7 +334,7 @@ def _ensure_playwright_ready():
     """
     try:
         from transcriptx.core.utils.lazy_imports import ensure_playwright_ready
-        
+
         # Silently check and install if needed (only shows warnings on failure)
         if ensure_playwright_ready(silent=True):
             logger.info("Playwright: Ready for NER location map rendering")
@@ -343,6 +343,22 @@ def _ensure_playwright_ready():
     except Exception as e:
         # Don't fail startup if check fails
         logger.debug(f"Playwright check skipped: {e}")
+
+
+def _ensure_pdf_ready():
+    """
+    Ensure PDF dependencies (reportlab) are installed in the active venv.
+    Lazy-loaded; installs on first use so summary all-charts PDF works when needed.
+    """
+    try:
+        from transcriptx.core.utils.lazy_imports import ensure_pdf_ready
+
+        if ensure_pdf_ready(silent=True):
+            logger.debug("PDF deps: ready for summary charts")
+        else:
+            logger.debug("PDF deps: not available (summary all-charts PDF will be skipped)")
+    except Exception as e:
+        logger.debug(f"PDF deps check skipped: {e}")
 
 
 def _check_and_install_streamlit(*, allow_install: bool = False) -> bool:
@@ -1086,6 +1102,9 @@ def _main_impl(
         config = get_config()
         config.output.base_output_dir = str(output_dir)
         logger.info(f"Updated output directory to: {output_dir}")
+
+    # Ensure optional deps available (install into venv if missing); lazy-loaded when used
+    _ensure_pdf_ready()
 
     # Show banner
     show_banner()

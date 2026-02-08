@@ -14,6 +14,7 @@ Key Features:
 """
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +46,11 @@ from .analysis_utils import (
     filter_modules_by_mode,
 )
 from .transcription_common import transcribe_with_whisperx
-from transcriptx.core.transcription_runtime import check_whisperx_compose_service
+from transcriptx.cli.transcription_utils_compose import (
+    check_whisperx_compose_service,
+    start_whisperx_compose_service,
+    wait_for_whisperx_service,
+)
 
 logger = get_logger()
 
@@ -89,10 +94,21 @@ def _run_transcription_workflow_impl() -> None:
         audio_files = select_audio_for_whisperx_transcription()
         if not audio_files:
             return
+        if isinstance(audio_files, (str, Path)):
+            audio_files = [Path(audio_files)]
 
         # Handle single file selection
         if len(audio_files) == 1:
             audio_file = audio_files[0]
+            # Ensure WhisperX service is available before transcription
+            if not check_whisperx_compose_service():
+                if not start_whisperx_compose_service():
+                    log_error("CLI", "Failed to start WhisperX service")
+                    return
+                if not wait_for_whisperx_service(timeout=60):
+                    log_error("CLI", "WhisperX service did not become ready")
+                    return
+
             # Transcribe the audio file using shared transcription function
             print(f"\n[bold]Transcribing with WhisperX:[/bold] {audio_file.name}")
             logger.info(f"Starting WhisperX transcription for audio: {audio_file}")
@@ -110,7 +126,7 @@ def _run_transcription_workflow_impl() -> None:
             if questionary.confirm(
                 "Transcription completed! Would you like to analyze the transcript?"
             ).ask():
-                _run_post_transcription_analysis(result)
+                _run_post_transcription_analysis(result, skip_confirm=True)
         else:
             # Handle multiple file selection - transcribe all without asking for analysis
             print(f"\n[bold]Transcribing {len(audio_files)} files with WhisperX[/bold]")
@@ -120,6 +136,15 @@ def _run_transcription_workflow_impl() -> None:
             failed_transcriptions = []
             
             for idx, audio_file in enumerate(audio_files, 1):
+                if not check_whisperx_compose_service():
+                    if not start_whisperx_compose_service():
+                        log_error("CLI", "Failed to start WhisperX service")
+                        failed_transcriptions.append(audio_file.name)
+                        continue
+                    if not wait_for_whisperx_service(timeout=60):
+                        log_error("CLI", "WhisperX service did not become ready")
+                        failed_transcriptions.append(audio_file.name)
+                        continue
                 print(f"\n[bold][{idx}/{len(audio_files)}] Transcribing:[/bold] {audio_file.name}")
                 logger.info(f"Starting WhisperX transcription for audio [{idx}/{len(audio_files)}]: {audio_file}")
                 
@@ -154,7 +179,9 @@ def _run_transcription_workflow_impl() -> None:
         print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
 
 
-def _run_post_transcription_analysis(transcript_path: str) -> None:
+def _run_post_transcription_analysis(
+    transcript_path: str, *, skip_confirm: bool = False
+) -> None:
     """
     Run analysis on the newly transcribed file.
 
@@ -163,10 +190,18 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
     """
     try:
         # Select analysis mode
-        analysis_mode = select_analysis_mode()
-        apply_analysis_mode_settings(analysis_mode)
+        non_interactive = os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty()
+        if non_interactive:
+            analysis_mode = "quick"
+            apply_analysis_mode_settings_non_interactive(analysis_mode)
+        else:
+            analysis_mode = select_analysis_mode()
+            apply_analysis_mode_settings(analysis_mode)
 
-        decision, status = check_speaker_gate(transcript_path)
+        force_non_interactive = os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty()
+        decision, status = check_speaker_gate(
+            transcript_path, force_non_interactive=bool(force_non_interactive)
+        )
         if decision == SpeakerGateDecision.SKIP:
             return
 
@@ -243,14 +278,15 @@ def _run_post_transcription_analysis(transcript_path: str) -> None:
             f"Starting full analysis pipeline for transcribed file: {transcript_path}"
         )
 
-        if not questionary.confirm("Proceed with full analysis?").ask():
-            return
+        if not skip_confirm:
+            if not questionary.confirm("Proceed with full analysis?").ask():
+                return
 
         # Get all available modules
         all_modules = get_default_modules([transcript_path])
         try:
             run_analysis_pipeline(
-                target=TranscriptRef(path=transcript_path),
+                transcript_path=transcript_path,
                 selected_modules=all_modules,
                 skip_speaker_mapping=skip_speaker_mapping,
                 persist=False,

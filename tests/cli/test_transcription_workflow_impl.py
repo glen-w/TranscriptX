@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytestmark = pytest.mark.quarantined  # reason: patches select_audio_file/validate_transcript_file/start_whisperx_compose_service; API uses target not transcript_path; remove_by: when transcription_workflow API stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: patches select_audio_file/validate_transcript_file/start_whisperx_compose_service; API uses target not transcript_path; owner: cli; remove_by: when transcription_workflow API stabilizes
 
 from transcriptx.cli.transcription_workflow import (
     _run_transcription_workflow_impl,

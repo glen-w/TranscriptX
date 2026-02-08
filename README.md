@@ -89,19 +89,21 @@ transcriptx group delete --identifier <uuid-or-key-or-name> --force
 Group runs write outputs under `outputs/groups/<group_uuid>/<run_id>/` and include
 `group_manifest.json` with the exact membership and key used at run time.
 
-### Group aggregations (v1)
+### Group aggregations (v2 rows)
 
-Group runs can produce aggregation modules under:
-`outputs/groups/<group_uuid>/<run_id>/<module_name>/`.
+Group runs write standardized row outputs under:
+`outputs/groups/<group_uuid>/<run_id>/<agg_id>/`.
 
-v1 group-level aggregation modules:
-- NER registry (`ner/`): cross-session entity tables by session and speaker.
-- Entity sentiment (`entity_sentiment/`): sentiment framing per entity by session/speaker.
-- Topic modeling (`topic_modeling/`): cross-session themes by session and speaker.
+Each row-based aggregation writes:
+- `session_rows.json` / `session_rows.csv` (per transcript)
+- `speaker_rows.json` / `speaker_rows.csv` (per canonical speaker)
+- optional `metrics_spec.json`
+- optional content rows (e.g. `highlight_rows.json` / `moment_rows.json`)
+- `aggregation.json` bundle (rows + spec)
 
-Note: v1 recomputes NER at group time to obtain entity types and segment-level
-mapping. A future enhancement will store per-segment NER artifacts per transcript
-so group aggregation can reuse them directly.
+Warnings are recorded once at the end of a group run in
+`aggregation_warnings.json` with structured codes (e.g. `MISSING_DEP`,
+`PAYLOAD_SHAPE_UNSUPPORTED`, `MISSING_ARTIFACT`, `SCHEMA_VALIDATION_FAILED`).
 
 ## What TranscriptX does today
 

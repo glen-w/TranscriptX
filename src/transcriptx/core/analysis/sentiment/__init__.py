@@ -16,6 +16,7 @@ from textblob import TextBlob
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.nlp_utils import preprocess_for_sentiment
 from transcriptx.core.utils.logger import get_logger, log_info, log_warning
+from transcriptx.core.utils.downloads import downloads_disabled
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
@@ -29,17 +30,6 @@ from transcriptx.core.utils.viz_ids import (
 from transcriptx.core.viz.specs import LineTimeSeriesSpec
 
 logger = get_logger()
-
-_DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
-
-
-def _downloads_disabled() -> bool:
-    value = os.getenv(_DISABLE_DOWNLOADS_ENV, "").strip().lower()
-    if value == "":
-        # Default to downloads disabled unless explicitly opted in.
-        return True
-    return value in {"1", "true", "yes", "on"}
-
 
 def _normalize_transformers_sentiment(
     result: List[Dict[str, Any]],
@@ -87,7 +77,7 @@ def _ensure_vader_lexicon():
         try:
             nltk.data.find("sentiment/vader_lexicon.zip")
         except LookupError:
-            if _downloads_disabled():
+            if downloads_disabled():
                 # CI/offline mode: do not attempt network downloads.
                 raise
             # Try to notify user, but don't fail if notify_user isn't available yet

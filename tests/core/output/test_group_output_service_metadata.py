@@ -18,7 +18,7 @@ def test_group_run_metadata_written(tmp_path) -> None:
         selected_modules=["stats", "sentiment"],
     )
 
-    path = tmp_path / "group_run_metadata.json"
+    path = service.base_dir / "group_run_metadata.json"
     assert path.exists()
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["schema_version"] == 1

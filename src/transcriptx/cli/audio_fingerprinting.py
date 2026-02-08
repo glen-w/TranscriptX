@@ -195,7 +195,9 @@ def batch_compare_audio_group(
     # Compare all pairs
     for i, file1 in enumerate(files):
         for file2 in files[i + 1 :]:
-            is_dup, similarity = compare_audio_files(file1, file2, threshold, use_cache)
+            is_dup, similarity = compare_audio_files(
+                file1, file2, threshold=threshold, use_cache=use_cache
+            )
             similarity_matrix[(file1, file2)] = similarity
 
             if is_dup:
@@ -256,7 +258,9 @@ def is_librosa_available() -> bool:
     """
     global LIBROSA_AVAILABLE, librosa
 
-    # If already available, return True
+    # Respect explicit overrides
+    if LIBROSA_AVAILABLE is False:
+        return False
     if LIBROSA_AVAILABLE:
         return True
 

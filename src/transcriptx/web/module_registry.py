@@ -5,6 +5,7 @@ This module provides dynamic module discovery for the web interface,
 leveraging the core pipeline module registry as the source of truth.
 """
 
+from pathlib import Path
 from typing import Any, List, Optional
 
 from transcriptx.core.pipeline.module_registry import (
@@ -14,6 +15,7 @@ from transcriptx.core.pipeline.module_registry import (
     ModuleInfo,
 )
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.paths import OUTPUTS_DIR
 
 logger = get_logger()
 
@@ -78,11 +80,8 @@ def get_analysis_modules(session_name: str) -> List[str]:
     Returns:
         List of module names that have output for this session
     """
-    # Import here to avoid circular dependency
-    from transcriptx.web.services.file_service import FileService
-    
     modules = []
-    session_dir = FileService._resolve_session_dir(session_name)
+    session_dir = Path(OUTPUTS_DIR) / session_name
 
     if not session_dir.exists():
         return modules

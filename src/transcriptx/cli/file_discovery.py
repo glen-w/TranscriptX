@@ -145,8 +145,24 @@ def find_duplicate_files_by_size(files: List[Path]) -> Dict[int, List[Path]]:
             logger.warning(f"Could not get size for {file}: {e}")
             continue
 
-    # Return only groups with duplicates (2+ files)
-    return {size: group for size, group in size_groups.items() if len(group) > 1}
+    # Return only groups with duplicates (2+ files) that share identical content.
+    duplicate_groups: Dict[int, List[Path]] = {}
+    for size, group in size_groups.items():
+        if len(group) < 2:
+            continue
+        content_groups: Dict[bytes, List[Path]] = {}
+        for file in group:
+            try:
+                content = file.read_bytes()
+            except OSError as e:
+                logger.warning(f"Could not read {file}: {e}")
+                continue
+            content_groups.setdefault(content, []).append(file)
+        for matches in content_groups.values():
+            if len(matches) > 1:
+                duplicate_groups[size] = matches
+                break
+    return duplicate_groups
 
 
 def find_duplicate_files_by_size_and_content(

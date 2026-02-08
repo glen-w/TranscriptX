@@ -7,6 +7,10 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from transcriptx.core.analysis.aggregation.rows import (
+    _fallback_canonical_id,
+    session_row_from_result,
+)
 from transcriptx.core.analysis.aggregation.speaker_utils import (  # type: ignore[import]
     resolve_canonical_speaker,
 )
@@ -43,7 +47,8 @@ def aggregate_topics_group(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
     transcript_set: TranscriptSet,
-) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Any]] | None:
+    aggregations: Dict[str, Any] | None = None,
+) -> Dict[str, Any] | None:
     """
     Fit a group-level topic model and aggregate by session and speaker.
     """
@@ -56,6 +61,13 @@ def aggregate_topics_group(
     speakers: List[str | None] = []
     time_labels: List[float] = []
 
+    session_meta: Dict[str, Dict[str, Any]] = {}
+    path_meta: Dict[str, Dict[str, Any]] = {}
+    display_to_canonical_global = {
+        display: canonical_id
+        for canonical_id, display in canonical_speaker_map.canonical_to_display.items()
+    }
+
     for result in per_transcript_results:
         transcript_path = result.transcript_path
         segments = transcript_service.load_segments(transcript_path, use_cache=True)
@@ -65,6 +77,14 @@ def aggregate_topics_group(
 
         transcript_file_id = _extract_transcript_file_id(segments)
         session_id = transcript_file_id or get_canonical_base_name(transcript_path)
+        session_meta.setdefault(
+            session_id,
+            session_row_from_result(result, transcript_set, session_path=transcript_path),
+        )
+        path_meta.setdefault(
+            transcript_path,
+            session_row_from_result(result, transcript_set, session_path=transcript_path),
+        )
 
         for idx, segment in enumerate(segments):
             text = segment.get("text", "")
@@ -209,4 +229,39 @@ def aggregate_topics_group(
         "by_speaker": speaker_rows,
     }
 
-    return tables, summary
+    canonical_session_rows: List[Dict[str, Any]] = []
+    for entry in session_rows:
+        row = dict(entry)
+        meta = session_meta.get(entry["session_id"]) or path_meta.get(
+            entry.get("session_path", "")
+        )
+        if meta:
+            row.setdefault("transcript_id", meta.get("transcript_id"))
+            row.setdefault("order_index", meta.get("order_index"))
+            row.setdefault("run_relpath", meta.get("run_relpath"))
+        canonical_session_rows.append(row)
+
+    canonical_speaker_rows: List[Dict[str, Any]] = []
+    for entry in speaker_rows:
+        row = dict(entry)
+        speaker = row.pop("speaker", None)
+        canonical_id = display_to_canonical_global.get(
+            speaker, _fallback_canonical_id(str(speaker))
+        )
+        row["canonical_speaker_id"] = canonical_id
+        row["display_name"] = canonical_speaker_map.canonical_to_display.get(
+            canonical_id, speaker
+        )
+        canonical_speaker_rows.append(row)
+
+    canonical_session_rows.sort(
+        key=lambda row: (row.get("order_index", 0), -row.get("topic_share", 0.0))
+    )
+    canonical_speaker_rows.sort(
+        key=lambda row: (row.get("display_name", ""), -row.get("topic_share", 0.0))
+    )
+
+    return {
+        "session_rows": canonical_session_rows,
+        "speaker_rows": canonical_speaker_rows,
+    }

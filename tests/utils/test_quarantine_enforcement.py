@@ -17,6 +17,8 @@ def test_quarantined_requires_strict_xfail_or_quarantine_folder() -> None:
     offenders: list[str] = []
 
     for path in tests_root.rglob("test_*.py"):
+        if path.name in {"test_quarantine_enforcement.py", "test_quarantine_metadata.py"}:
+            continue
         rel = path.as_posix()
         content = path.read_text(encoding="utf-8")
         lines = content.splitlines()

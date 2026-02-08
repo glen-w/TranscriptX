@@ -42,6 +42,8 @@ class ManifestArtifact:
     module: Optional[str]
     scope: Optional[str]
     speaker: Optional[str]
+    subview: Optional[str]
+    slice_id: Optional[str]
     rel_path: str
     bytes: int
     mtime: str
@@ -59,6 +61,8 @@ class ManifestArtifact:
             "module": self.module,
             "scope": self.scope,
             "speaker": self.speaker,
+            "subview": self.subview,
+            "slice_id": self.slice_id,
             "rel_path": self.rel_path,
             "bytes": self.bytes,
             "mtime": self.mtime,
@@ -103,6 +107,19 @@ def _infer_scope_and_speaker(parts: List[str]) -> tuple[Optional[str], Optional[
         return "speaker", speaker
     if "global" in parts:
         return "global", None
+    return None, None
+
+
+def _infer_subview_and_slice(parts: List[str]) -> tuple[Optional[str], Optional[str]]:
+    if not parts:
+        return None, None
+    for token in ("combined", "comparisons", "by_session", "by_speaker"):
+        if token in parts:
+            idx = parts.index(token)
+            slice_id = None
+            if token in {"by_session", "by_speaker"} and idx + 1 < len(parts):
+                slice_id = parts[idx + 1]
+            return token, slice_id
     return None, None
 
 
@@ -277,6 +294,11 @@ def build_output_manifest(
             speaker = meta.get("speaker") if scope == "speaker" else None
         else:
             scope, speaker = _infer_scope_and_speaker(parts)
+        if isinstance(meta, dict) and "subview" in meta:
+            subview = meta.get("subview")
+            slice_id = meta.get("slice_id")
+        else:
+            subview, slice_id = _infer_subview_and_slice(parts)
         kind = _infer_kind(rel_path, parts, artifact_meta=meta)
         stats = path.stat()
         total_size += stats.st_size
@@ -297,6 +319,8 @@ def build_output_manifest(
             module=module,
             scope=scope,
             speaker=speaker,
+            subview=subview,
+            slice_id=slice_id,
             rel_path=rel_path,
             bytes=stats.st_size,
             mtime=datetime.utcfromtimestamp(stats.st_mtime).isoformat() + "Z",

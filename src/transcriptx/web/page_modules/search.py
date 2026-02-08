@@ -11,6 +11,7 @@ import streamlit as st
 from transcriptx.web.db_utils import get_all_speakers
 from transcriptx.web.models.search import SearchFilters, SearchResponse, SearchResult
 from transcriptx.web.services.search_service import SearchService
+from transcriptx.web.services.subject_service import SubjectService
 
 
 def _render_highlighted_text(text: str, spans: List[Tuple[int, int]]) -> str:
@@ -165,9 +166,9 @@ def render_search() -> None:
     # Build filters to check if they changed
     session_slugs = None
     if scope == "Current transcript":
-        selected_session = st.session_state.get("selected_session")
-        if selected_session:
-            session_slugs = [selected_session]
+        subject = SubjectService.resolve_current_subject(st.session_state)
+        if subject and subject.subject_type == "transcript":
+            session_slugs = [subject.subject_id]
     filters = SearchFilters(speaker_keys=speaker_keys, session_slugs=session_slugs)
     
     # Check if filters changed (by comparing relevant fields)

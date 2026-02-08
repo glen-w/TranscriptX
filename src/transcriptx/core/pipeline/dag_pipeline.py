@@ -137,6 +137,23 @@ class DAGPipeline:
                             new_modules.add(dep)
             modules_to_process = new_modules
 
+        # Detect missing dependencies explicitly for clearer errors
+        missing_deps: Dict[str, List[str]] = {}
+        for module_name in modules_to_run:
+            if module_name not in self.nodes:
+                continue
+            node = self.nodes[module_name]
+            deps = list(node.dependencies)
+            deps.extend(self._check_implicit_dependencies(module_name))
+            missing = [dep for dep in deps if dep not in self.nodes]
+            if missing:
+                missing_deps[module_name] = missing
+        if missing_deps:
+            details = "; ".join(
+                f"{module}: {', '.join(deps)}" for module, deps in sorted(missing_deps.items())
+            )
+            raise ValueError(f"Missing dependencies for module(s): {details}")
+
         # Build execution order using topological sort
         execution_order = self._topological_sort(list(modules_to_run))
 
@@ -586,7 +603,15 @@ class DAGPipeline:
             # Continue anyway - modules may have optional dependencies
 
         # Resolve dependencies and get execution order
-        execution_order = self.resolve_dependencies(selected_modules)
+        try:
+            execution_order = self.resolve_dependencies(selected_modules)
+        except ValueError as e:
+            self.logger.error(str(e))
+            results["errors"].append(str(e))
+            results["status"] = "failed"
+            results["end_time"] = time.time()
+            results["duration"] = results["end_time"] - results["start_time"]
+            return results
         self.logger.info(f"Execution order: {', '.join(execution_order)}")
 
         # Create and log execution plan

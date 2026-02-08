@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytestmark = pytest.mark.quarantined  # reason: patches extract_tags_from_transcript which no longer exists on module; remove_by: when file_processor API stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: patches extract_tags_from_transcript which no longer exists on module; owner: cli; remove_by: when file_processor API stabilizes
 
 from transcriptx.cli.file_processor import process_single_file
 

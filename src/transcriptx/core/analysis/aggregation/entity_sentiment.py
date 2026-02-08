@@ -4,10 +4,12 @@ Group aggregation for entity-based sentiment.
 
 from __future__ import annotations
 
-from collections import defaultdict
-from statistics import pvariance
 from typing import Any, Dict, List, Tuple
 
+from transcriptx.core.analysis.aggregation.rows import (
+    _fallback_canonical_id,
+    session_row_from_result,
+)
 from transcriptx.core.analysis.sentiment import score_sentiment  # type: ignore[import]
 from transcriptx.core.domain.transcript_set import TranscriptSet  # type: ignore[import]
 from transcriptx.core.pipeline.result_envelope import (  # type: ignore[import]
@@ -87,11 +89,12 @@ def aggregate_entity_sentiment_group(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
     transcript_set: TranscriptSet,
-    mentions_index: Dict[Tuple[str, str], Dict[str, Any]],
-) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Any]] | None:
+    aggregations: Dict[str, Any] | None = None,
+) -> Dict[str, Any] | None:
     """
     Aggregate sentiment for entities across transcripts.
     """
+    mentions_index = ((aggregations or {}).get("ner") or {}).get("mentions_index")
     if not mentions_index:
         return None
 
@@ -99,12 +102,26 @@ def aggregate_entity_sentiment_group(
 
     sentiment_by_segment: Dict[Tuple[str, str], Dict[str, Any]] = {}
     session_paths: Dict[str, str] = {}
+    session_meta: Dict[str, Dict[str, Any]] = {}
+    path_meta: Dict[str, Dict[str, Any]] = {}
+    display_to_canonical_global = {
+        display: canonical_id
+        for canonical_id, display in canonical_speaker_map.canonical_to_display.items()
+    }
 
     for result in per_transcript_results:
         session_id, session_path, sentiment_map = _build_sentiment_map(
             result, transcript_service
         )
         session_paths[session_id] = session_path
+        session_meta.setdefault(
+            session_id,
+            session_row_from_result(result, transcript_set, session_path=session_path),
+        )
+        path_meta.setdefault(
+            session_path,
+            session_row_from_result(result, transcript_set, session_path=session_path),
+        )
         sentiment_by_segment.update(sentiment_map)
 
     if not sentiment_by_segment:
@@ -113,10 +130,6 @@ def aggregate_entity_sentiment_group(
     by_session: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
     by_speaker: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
     global_agg: Dict[Tuple[str, str], Dict[str, Any]] = {}
-    per_entity_speaker: Dict[str, Dict[str, List[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-
     for (session_id, segment_id), payload in mentions_index.items():
         sentiment = sentiment_by_segment.get((session_id, segment_id))
         if not sentiment:
@@ -190,8 +203,6 @@ def aggregate_entity_sentiment_group(
                 speaker_entry["sum_neu"] += sentiment["neu"]
                 speaker_entry["sum_neg"] += sentiment["neg"]
 
-                per_entity_speaker[entity][speaker].append(sentiment["compound"])
-
     if not global_agg:
         return None
 
@@ -214,71 +225,39 @@ def aggregate_entity_sentiment_group(
             "entity_type": entry["entity_type"],
         }
         base.update(_row_from_entry(entry))
+        meta = session_meta.get(entry["session_id"]) or path_meta.get(
+            entry["session_path"]
+        )
+        if meta:
+            base.setdefault("transcript_id", meta.get("transcript_id"))
+            base.setdefault("order_index", meta.get("order_index"))
+            base.setdefault("run_relpath", meta.get("run_relpath"))
         session_rows.append(base)
 
     speaker_rows: List[Dict[str, Any]] = []
     for entry in by_speaker.values():
+        speaker = entry["speaker"]
+        canonical_id = display_to_canonical_global.get(
+            speaker, _fallback_canonical_id(str(speaker))
+        )
         base = {
-            "speaker": entry["speaker"],
+            "canonical_speaker_id": canonical_id,
+            "display_name": canonical_speaker_map.canonical_to_display.get(
+                canonical_id, speaker
+            ),
             "entity": entry["entity"],
             "entity_type": entry["entity_type"],
         }
         base.update(_row_from_entry(entry))
         speaker_rows.append(base)
-
-    global_rows: List[Dict[str, Any]] = []
-    for entry in global_agg.values():
-        base = {"entity": entry["entity"], "entity_type": entry["entity_type"]}
-        base.update(_row_from_entry(entry))
-        global_rows.append(base)
-
     session_rows.sort(
-        key=lambda row: (row["session_id"], -row["mentions"], row["entity"])
+        key=lambda row: (row.get("order_index", 0), -row["mentions"], row["entity"])
     )
     speaker_rows.sort(
-        key=lambda row: (row["speaker"], -row["mentions"], row["entity"])
+        key=lambda row: (row.get("display_name", ""), -row["mentions"], row["entity"])
     )
-    global_rows.sort(key=lambda row: (-row["mentions"], row["entity"]))
 
-    most_positive = sorted(
-        global_rows, key=lambda row: row["mean_sentiment"], reverse=True
-    )[:10]
-    most_negative = sorted(
-        global_rows, key=lambda row: row["mean_sentiment"]
-    )[:10]
-    emotionally_loaded = sorted(
-        global_rows,
-        key=lambda row: abs(row["mean_sentiment"]) * row["mentions"],
-        reverse=True,
-    )[:10]
-
-    variance_rows: List[Dict[str, Any]] = []
-    for entity, speakers in per_entity_speaker.items():
-        if len(speakers) < 2:
-            continue
-        speaker_means = [
-            sum(values) / len(values) for values in speakers.values() if values
-        ]
-        if len(speaker_means) < 2:
-            continue
-        variance_rows.append(
-            {"entity": entity, "variance": pvariance(speaker_means)}
-        )
-    variance_rows.sort(key=lambda row: row["variance"], reverse=True)
-
-    summary = {
-        "top_positive": most_positive,
-        "top_negative": most_negative,
-        "most_emotionally_loaded": emotionally_loaded,
-        "highest_variance_across_speakers": variance_rows[:10],
-        "group_uuid": transcript_set.metadata.get("group_uuid"),
-        "transcript_set_key": transcript_set.key,
-        "transcript_set_name": transcript_set.name,
+    return {
+        "session_rows": session_rows,
+        "speaker_rows": speaker_rows,
     }
-
-    tables: Dict[str, List[Dict[str, Any]]] = {
-        "by_session": session_rows,
-        "by_speaker": speaker_rows,
-    }
-
-    return tables, summary

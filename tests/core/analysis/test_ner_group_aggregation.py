@@ -1,6 +1,10 @@
 from typing import Any
 
 from transcriptx.core.analysis.aggregation import ner as ner_aggregation  # type: ignore[import]
+from transcriptx.core.analysis.aggregation.schema import (
+    validate_session_rows,
+    validate_speaker_rows,
+)
 from transcriptx.core.pipeline.result_envelope import (  # type: ignore[import]
     PerTranscriptResult,
 )
@@ -75,19 +79,23 @@ def test_aggregate_ner_group_canonical_and_unidentified(monkeypatch: Any) -> Non
 
     transcript_set = TranscriptSet.create(["a.json", "b.json"], name="Group")
 
-    tables, summary, mentions_index = ner_aggregation.aggregate_ner_group(
-        results, canonical_map, transcript_set
-    )
+    outcome = ner_aggregation.aggregate_ner_group(results, canonical_map, transcript_set)
+    assert outcome is not None
+    mentions_index = outcome["mentions_index"]
 
-    speaker_rows = tables["by_speaker"]
-    assert all(row["speaker"] == "Alice" for row in speaker_rows)
-    assert all(row["speaker"] != "SPEAKER_00" for row in speaker_rows)
+    speaker_rows = outcome["speaker_rows"]
+    ok_speakers, _ = validate_speaker_rows(speaker_rows)
+    assert ok_speakers
+    assert all(row["display_name"] == "Alice" for row in speaker_rows)
+    assert all(row["display_name"] != "SPEAKER_00" for row in speaker_rows)
 
     apple_row = next(
         row for row in speaker_rows if row["entity"] == "apple" and row["entity_type"] == "ORG"
     )
     assert apple_row["mentions"] == 2
 
-    assert summary["excluded_unidentified_mentions"] > 0
+    session_rows = outcome["session_rows"]
+    ok_sessions, _ = validate_session_rows(session_rows)
+    assert ok_sessions
     assert ("a", "s1") in mentions_index
     assert mentions_index[("a", "s1")]["speaker"] == "Alice"

@@ -8,6 +8,10 @@ import re
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from transcriptx.core.analysis.aggregation.rows import (
+    _fallback_canonical_id,
+    session_row_from_result,
+)
 from transcriptx.core.analysis.aggregation.speaker_utils import (  # type: ignore[import]
     resolve_canonical_speaker,
 )
@@ -53,7 +57,8 @@ def aggregate_ner_group(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
     transcript_set: TranscriptSet,
-) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Any], Dict[Tuple[str, str], Dict[str, Any]]] | None:
+    aggregations: Dict[str, Any] | None = None,
+) -> Dict[str, Any] | None:
     """
     Aggregate NER across transcripts into overall/session/speaker tables.
 
@@ -70,6 +75,13 @@ def aggregate_ner_group(
     excluded_unidentified_mentions = 0
     entity_type_counts: Dict[str, int] = defaultdict(int)
 
+    session_meta: Dict[str, Dict[str, Any]] = {}
+    path_meta: Dict[str, Dict[str, Any]] = {}
+    display_to_canonical_global = {
+        display: canonical_id
+        for canonical_id, display in canonical_speaker_map.canonical_to_display.items()
+    }
+
     for result in per_transcript_results:
         transcript_path = result.transcript_path
         segments = transcript_service.load_segments(transcript_path, use_cache=True)
@@ -80,6 +92,14 @@ def aggregate_ner_group(
         transcript_file_id = _extract_transcript_file_id(segments)
         session_id = transcript_file_id or get_canonical_base_name(transcript_path)
         session_path = transcript_path
+        session_meta.setdefault(
+            session_id,
+            session_row_from_result(result, transcript_set, session_path=session_path),
+        )
+        path_meta.setdefault(
+            session_path,
+            session_row_from_result(result, transcript_set, session_path=session_path),
+        )
 
         for idx, segment in enumerate(segments):
             text = segment.get("text", "")
@@ -167,68 +187,39 @@ def aggregate_ner_group(
     if not overall:
         return None
 
-    overall_rows: List[Dict[str, Any]] = []
-    for entry in overall.values():
-        overall_rows.append(
-            {
-                "entity": entry["entity"],
-                "entity_type": entry["entity_type"],
-                "mentions": entry["mentions"],
-                "sessions_count": len(entry["sessions"]),
-                "speakers_count": len(entry["speakers"]),
-            }
-        )
-
     session_rows: List[Dict[str, Any]] = []
     for entry in by_session.values():
-        session_rows.append(
-            {
-                "session_id": entry["session_id"],
-                "session_path": entry["session_path"],
-                "entity": entry["entity"],
-                "entity_type": entry["entity_type"],
-                "mentions": entry["mentions"],
-                "unique_segments": len(entry["segments"]),
-            }
+        row = dict(entry)
+        meta = session_meta.get(entry["session_id"]) or path_meta.get(
+            entry["session_path"]
         )
+        if meta:
+            row.setdefault("transcript_id", meta.get("transcript_id"))
+            row.setdefault("order_index", meta.get("order_index"))
+            row.setdefault("run_relpath", meta.get("run_relpath"))
+        session_rows.append(row)
 
     speaker_rows: List[Dict[str, Any]] = []
     for entry in by_speaker.values():
-        speaker_rows.append(
-            {
-                "speaker": entry["speaker"],
-                "entity": entry["entity"],
-                "entity_type": entry["entity_type"],
-                "mentions": entry["mentions"],
-                "unique_segments": len(entry["segments"]),
-            }
+        row = dict(entry)
+        speaker = row.pop("speaker", None)
+        canonical_id = display_to_canonical_global.get(
+            speaker, _fallback_canonical_id(str(speaker))
         )
+        row["canonical_speaker_id"] = canonical_id
+        row["display_name"] = canonical_speaker_map.canonical_to_display.get(
+            canonical_id, speaker
+        )
+        speaker_rows.append(row)
 
-    overall_rows.sort(key=lambda row: (-row["mentions"], row["entity"], row["entity_type"]))
-    session_rows.sort(
-        key=lambda row: (row["session_id"], -row["mentions"], row["entity"])
-    )
+    session_rows.sort(key=lambda row: (row.get("order_index", 0), row.get("entity", "")))
     speaker_rows.sort(
-        key=lambda row: (row["speaker"], -row["mentions"], row["entity"])
+        key=lambda row: (row.get("display_name", ""), row.get("entity", ""))
     )
 
-    top_entities = overall_rows[:10]
-    total_mentions = sum(row["mentions"] for row in overall_rows)
-
-    summary = {
-        "top_entities": top_entities,
-        "entity_counts_by_type": dict(sorted(entity_type_counts.items())),
-        "total_mentions": total_mentions,
-        "excluded_unidentified_mentions": excluded_unidentified_mentions,
-        "group_uuid": transcript_set.metadata.get("group_uuid"),
-        "transcript_set_key": transcript_set.key,
-        "transcript_set_name": transcript_set.name,
+    return {
+        "session_rows": session_rows,
+        "speaker_rows": speaker_rows,
+        "metrics_spec": None,
+        "mentions_index": mentions_index,
     }
-
-    tables: Dict[str, List[Dict[str, Any]]] = {
-        "overall": overall_rows,
-        "by_session": session_rows,
-        "by_speaker": speaker_rows,
-    }
-
-    return tables, summary, mentions_index

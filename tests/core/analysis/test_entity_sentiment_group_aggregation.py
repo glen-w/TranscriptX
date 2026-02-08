@@ -3,6 +3,10 @@ from typing import Any
 from transcriptx.core.analysis.aggregation.entity_sentiment import (  # type: ignore[import]
     aggregate_entity_sentiment_group,
 )
+from transcriptx.core.analysis.aggregation.schema import (
+    validate_session_rows,
+    validate_speaker_rows,
+)
 from transcriptx.core.domain.transcript_set import TranscriptSet  # type: ignore[import]
 from transcriptx.core.pipeline.result_envelope import (  # type: ignore[import]
     PerTranscriptResult,
@@ -62,14 +66,19 @@ def test_entity_sentiment_aggregation_excludes_unidentified() -> None:
     )
     transcript_set = TranscriptSet.create(["a.json", "b.json"], name="Group")
 
-    tables, summary = aggregate_entity_sentiment_group(
-        results, canonical_map, transcript_set, mentions_index
+    outcome = aggregate_entity_sentiment_group(
+        results, canonical_map, transcript_set, {"ner": {"mentions_index": mentions_index}}
     )
+    assert outcome is not None
 
-    speaker_rows = tables["by_speaker"]
-    assert all(row["speaker"] == "Alice" for row in speaker_rows)
+    speaker_rows = outcome["speaker_rows"]
+    ok_speakers, _ = validate_speaker_rows(speaker_rows)
+    assert ok_speakers
+    assert all(row["display_name"] == "Alice" for row in speaker_rows)
 
     apple_row = next(row for row in speaker_rows if row["entity"] == "apple")
     assert apple_row["mentions"] == 2
     assert abs(apple_row["mean_sentiment"] - 0.0) < 1e-6
-    assert summary["top_positive"]
+    session_rows = outcome["session_rows"]
+    ok_sessions, _ = validate_session_rows(session_rows)
+    assert ok_sessions

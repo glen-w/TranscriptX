@@ -106,6 +106,40 @@ def select_files_interactive(
         console.print("[yellow]⚠️ No files available for selection[/yellow]")
         return None
 
+    # Fast-path: simple selection via questionary for non-advanced configs.
+    if (
+        not config.enable_playback
+        and not config.enable_rename
+        and not config.enable_select_all
+        and not config.toggle_hidden_files
+        and not config.auto_exit_when_one_remains
+    ):
+        visible_files = list(files)
+        if config.validator:
+            visible_files = [
+                f for f in visible_files if config.validator(f)[0]
+            ]
+        if not visible_files:
+            return None
+        if config.metadata_formatter is None:
+            config.metadata_formatter = format_generic_file
+        if config.multi_select:
+            selection = questionary.checkbox(
+                "Select files:", choices=[f.name for f in visible_files]
+            ).ask()
+            if selection is None:
+                return None
+            return [f for f in visible_files if f.name in selection]
+        selection = questionary.select(
+            "Select file:", choices=[f.name for f in visible_files]
+        ).ask()
+        if selection is None:
+            return None
+        for f in visible_files:
+            if f.name == selection:
+                return [f]
+        return None
+
     # Auto-detect audio files and enable playback if not explicitly set
     # Only auto-enable if all files are audio files
     if all(is_audio_file(f) for f in files):

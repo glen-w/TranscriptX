@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-pytestmark = pytest.mark.quarantined  # reason: patches removed/renamed CLI APIs (select_transcript_file_interactive, generate_stats_from_file, validate_transcript_file); remove_by: when CLI stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: patches removed/renamed CLI APIs (select_transcript_file_interactive, generate_stats_from_file, validate_transcript_file); owner: cli; remove_by: when CLI stabilizes
 
 from transcriptx.cli.analysis_workflow import _run_analysis_workflow_impl, _show_post_analysis_menu
 

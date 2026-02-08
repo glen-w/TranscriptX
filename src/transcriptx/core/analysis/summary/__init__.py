@@ -38,6 +38,7 @@ from transcriptx.core.presentation import (
     render_no_signal_md,
     render_provenance_footer_md,
 )
+from transcriptx.core.analysis.summary.charts_pdf import build_charts_pdf
 
 logger = get_logger()
 
@@ -108,6 +109,14 @@ class SummaryAnalysis(AnalysisModule):
             output_service.save_data(summary_payload, "summary", format_type="json")
             markdown = render_summary_markdown(summary_payload)
             output_service.save_text(markdown, "summary", ext=".md")
+
+            # All-charts PDF: collect charts from run root, one section per module
+            run_root = Path(context.get_transcript_dir())
+            output_structure = output_service.get_output_structure()
+            pdf_path = output_structure.module_dir / "all_charts.pdf"
+            built = build_charts_pdf(run_root, pdf_path)
+            if built is not None:
+                output_service.record_file(built, "pdf")
 
             context.store_analysis_result(self.module_name, summary_payload)
             log_analysis_complete(self.module_name, context.transcript_path)

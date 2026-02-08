@@ -27,7 +27,7 @@ class TestSelectAnalysisModules:
         """Test selecting all modules."""
         mock_get_modules.return_value = ["sentiment", "stats", "ner"]
         mock_get_default.return_value = ["sentiment", "stats", "ner"]
-        mock_checkbox.return_value.ask.return_value = ["all"]
+        mock_checkbox.return_value.ask.return_value = ["all_eligible"]
         
         result = select_analysis_modules()
         
@@ -71,7 +71,7 @@ class TestSelectAnalysisModules:
         mock_get_default.return_value = ["sentiment"]
         mock_checkbox.return_value.ask.side_effect = [
             ["settings"],
-            ["all"],
+            ["all_eligible"],
         ]
         
         with patch('transcriptx.cli.analysis_utils.print'):

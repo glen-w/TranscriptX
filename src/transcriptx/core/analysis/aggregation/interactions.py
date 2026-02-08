@@ -4,17 +4,16 @@ Group aggregation for interactions module.
 
 from __future__ import annotations
 
-import hashlib
 from typing import Any, Dict, List
 
+from transcriptx.core.analysis.aggregation.rows import (
+    _build_display_to_canonical,
+    _fallback_canonical_id,
+    session_row_from_result,
+)
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
-
-
-def _fallback_canonical_id(label: str) -> int:
-    digest = hashlib.sha256(label.encode("utf-8")).hexdigest()
-    return int(digest[:8], 16)
 
 
 def _extract_interactions_payload(module_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -23,22 +22,6 @@ def _extract_interactions_payload(module_results: Dict[str, Any]) -> Dict[str, A
         return {}
     payload = interactions_result.get("payload") or interactions_result.get("results") or {}
     return payload if isinstance(payload, dict) else {}
-
-
-def _build_display_to_canonical(
-    transcript_path: str, canonical_speaker_map: CanonicalSpeakerMap
-) -> Dict[str, int]:
-    local_to_canonical = canonical_speaker_map.transcript_to_speakers.get(
-        transcript_path, {}
-    )
-    local_to_display = canonical_speaker_map.transcript_to_display.get(
-        transcript_path, {}
-    )
-    display_to_canonical: Dict[str, int] = {}
-    for local_id, canonical_id in local_to_canonical.items():
-        display_name = local_to_display.get(local_id, local_id)
-        display_to_canonical[display_name] = canonical_id
-    return display_to_canonical
 
 
 def _merge_counts(
@@ -55,7 +38,7 @@ def _merge_counts(
         entry = aggregate.setdefault(
             canonical_id,
             {
-                "canonical_id": canonical_id,
+                "canonical_speaker_id": canonical_id,
                 "display_name": canonical_speaker_map.canonical_to_display.get(
                     canonical_id, speaker
                 ),
@@ -80,7 +63,7 @@ def aggregate_interactions_group(
 
     Returns None when interactions results are missing for all transcripts.
     """
-    session_table: List[Dict[str, Any]] = []
+    session_rows: List[Dict[str, Any]] = []
     speaker_aggregates: Dict[int, Dict[str, Any]] = {}
 
     for result in per_transcript_results:
@@ -132,7 +115,7 @@ def aggregate_interactions_group(
             entry = speaker_aggregates.setdefault(
                 canonical_id,
                 {
-                    "canonical_id": canonical_id,
+                "canonical_speaker_id": canonical_id,
                     "display_name": canonical_speaker_map.canonical_to_display.get(
                         canonical_id, speaker
                     ),
@@ -147,18 +130,17 @@ def aggregate_interactions_group(
             entry["dominance_score_total"] += value
             entry["dominance_score_count"] += 1
 
-        session_table.append(
-            {
-                "order_index": result.order_index,
-                "transcript_path": result.transcript_path,
-                "transcript_key": result.transcript_key,
-                "run_id": result.run_id,
-                "total_interactions": payload.get("total_interactions_count", 0),
-                "unique_speakers": payload.get("unique_speakers", 0),
-            }
+        session_rows.append(
+            session_row_from_result(
+                result,
+                transcript_set,
+                run_id=result.run_id,
+                total_interactions=payload.get("total_interactions_count", 0),
+                unique_speakers=payload.get("unique_speakers", 0),
+            )
         )
 
-    if not session_table:
+    if not session_rows:
         return None
 
     speaker_rows: List[Dict[str, Any]] = []
@@ -166,7 +148,7 @@ def aggregate_interactions_group(
         count = aggregate["dominance_score_count"] or 1
         speaker_rows.append(
             {
-                "canonical_id": aggregate["canonical_id"],
+                "canonical_speaker_id": aggregate["canonical_speaker_id"],
                 "display_name": aggregate["display_name"],
                 "interruptions_initiated": aggregate["interruptions_initiated"],
                 "interruptions_received": aggregate["interruptions_received"],
@@ -176,10 +158,9 @@ def aggregate_interactions_group(
             }
         )
 
-    session_table.sort(key=lambda row: row["order_index"])
+    session_rows.sort(key=lambda row: row["order_index"])
 
     return {
-        "transcript_set": transcript_set.to_dict(),
-        "session_table": session_table,
-        "speaker_aggregates": speaker_rows,
+        "session_rows": session_rows,
+        "speaker_rows": speaker_rows,
     }

@@ -21,7 +21,7 @@ from transcriptx.core.utils.chart_registry import (
     select_preferred_artifacts,
 )
 from transcriptx.web.models.artifact import Artifact, ArtifactFilters
-from transcriptx.web.services import ArtifactService, FileService
+from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 from transcriptx.web.services.artifact_service import (
     MAX_INLINE_HTML_BYTES,
     MAX_FULLSCREEN_HTML_BYTES,
@@ -45,16 +45,21 @@ def _resolve_overview_artifacts(
 
 
 def render_charts() -> None:
-    session = st.session_state.get("selected_session")
-    run_id = st.session_state.get("selected_run_id")
-    if not session or not run_id:
-        st.info("Select a session and run to view charts.")
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+    if not subject or not run_id:
+        st.info("Select a subject and run to view charts.")
         return
+    run_root = RunIndex.get_run_root(
+        subject.scope,
+        run_id,
+        subject_id=subject.subject_id,
+    )
 
     st.subheader("Charts Gallery")
 
     # Get ALL charts first (without filters) for the overview section
-    all_artifacts = ArtifactService.list_artifacts(session, run_id)
+    all_artifacts = ArtifactService.list_artifacts(run_root)
     all_charts = [a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}]
 
     if not all_charts:
@@ -72,6 +77,7 @@ def render_charts() -> None:
     modules = sorted({a.module for a in all_charts if a.module})
     scopes = sorted({a.scope for a in all_charts if a.scope})
     tags = sorted({tag for a in all_charts for tag in a.tags})
+    subviews = sorted({a.subview for a in all_charts if a.subview})
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -101,6 +107,39 @@ def render_charts() -> None:
         st.session_state["filter_tags"] = st.multiselect(
             "Tags", tags, default=tag_filter
         )
+
+    if subviews:
+        tab = st.radio(
+            "Subview",
+            ["All"] + subviews,
+            index=0,
+            horizontal=True,
+            key="charts_subview_tabs",
+        )
+        st.session_state["filter_subview"] = None if tab == "All" else tab
+        selected_subview = st.session_state.get("filter_subview")
+        if selected_subview in {"by_session", "by_speaker"}:
+            slice_ids = sorted(
+                {
+                    a.slice_id
+                    for a in all_charts
+                    if a.subview == selected_subview and a.slice_id
+                }
+            )
+            if slice_ids:
+                slice_choice = st.selectbox(
+                    "Slice",
+                    ["All"] + slice_ids,
+                    index=0,
+                    key="charts_slice_selector",
+                )
+                st.session_state["filter_slice_id"] = (
+                    None if slice_choice == "All" else slice_choice
+                )
+            else:
+                st.session_state["filter_slice_id"] = None
+        else:
+            st.session_state["filter_slice_id"] = None
 
     # Toggle controls under filter selection
     toggle_col1, toggle_col2 = st.columns(2)
@@ -148,6 +187,8 @@ def render_charts() -> None:
                 scope=st.session_state["filter_scope"],
                 kind=kind_filter,
                 tags=st.session_state["filter_tags"] or None,
+                subview=st.session_state.get("filter_subview"),
+                slice_id=st.session_state.get("filter_slice_id"),
             ).matches(a)
         ]
 
@@ -161,14 +202,11 @@ def render_charts() -> None:
                 st.session_state["full_screen_artifact"] = None
                 st.rerun()
             if selected.kind == "chart_static":
-                path = ArtifactService._resolve_safe_path(
-                    ArtifactService._resolve_run_dir(session, run_id),
-                    selected.rel_path,
-                )
+                path = ArtifactService._resolve_safe_path(run_root, selected.rel_path)
                 if path and path.exists():
                     st.image(Image.open(path), width='stretch')
             else:
-                html_payload = ArtifactService.load_html_artifact(session, run_id, selected)
+                html_payload = ArtifactService.load_html_artifact(run_root, selected)
                 if not html_payload:
                     st.error("Unable to load HTML chart.")
                 else:
@@ -186,7 +224,7 @@ def render_charts() -> None:
     # Identify overview charts using ALL charts (not filtered)
     # Use effective config resolution to load from project config file
     # This ensures we get config from .transcriptx/config.json if it exists
-    run_dir = FileService._resolve_session_dir(f"{session}/{run_id}")
+    run_dir = run_root
     resolved = resolve_effective_config(run_dir=run_dir) if run_dir and run_dir.exists() else resolve_effective_config(run_dir=None)
     if resolved:
         config = resolved.effective_config
@@ -264,7 +302,7 @@ def render_charts() -> None:
                         st.caption(chart.title or chart.rel_path)
                         if chart.kind == "chart_static":
                             thumb_path = ArtifactService.generate_thumbnail(
-                                session, run_id, chart
+                                run_root, chart
                             )
                             if thumb_path and Path(thumb_path).exists():
                                 st.image(Image.open(thumb_path), width='stretch')
@@ -273,7 +311,7 @@ def render_charts() -> None:
                         else:
                             st.info("Dynamic chart (HTML)")
                             html_payload = ArtifactService.load_html_artifact(
-                                session, run_id, chart
+                                run_root, chart
                             )
                             if html_payload:
                                 size = html_payload["bytes"]
@@ -315,14 +353,14 @@ def render_charts() -> None:
                 with cols[idx % 3]:
                     st.caption(chart.title or chart.rel_path)
                     if chart.kind == "chart_static":
-                        thumb_path = ArtifactService.generate_thumbnail(session, run_id, chart)
+                        thumb_path = ArtifactService.generate_thumbnail(run_root, chart)
                         if thumb_path and Path(thumb_path).exists():
                             st.image(Image.open(thumb_path), width='stretch')
                         else:
                             st.write("Thumbnail unavailable")
                     else:
                         st.info("Dynamic chart (HTML)")
-                        html_payload = ArtifactService.load_html_artifact(session, run_id, chart)
+                        html_payload = ArtifactService.load_html_artifact(run_root, chart)
                         if html_payload:
                             size = html_payload["bytes"]
                             if size <= MAX_INLINE_HTML_BYTES:

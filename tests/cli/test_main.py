@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-pytestmark = pytest.mark.quarantined  # reason: app.commands/run_single_analysis_workflow/exit codes changed; remove_by: when main CLI stabilizes
+pytestmark = [pytest.mark.quarantined, pytest.mark.xfail(strict=True, reason="quarantined")]  # reason: app.commands/run_single_analysis_workflow/exit codes changed; owner: cli; remove_by: when main CLI stabilizes
 
 from transcriptx.cli.main import app
 

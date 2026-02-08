@@ -15,6 +15,8 @@ def test_quarantined_markers_have_metadata() -> None:
     tests_root = Path(__file__).resolve().parents[1]
     matches = []
     for path in tests_root.rglob("test_*.py"):
+        if path.name in {"test_quarantine_enforcement.py", "test_quarantine_metadata.py"}:
+            continue
         content = path.read_text(encoding="utf-8")
         for line in content.splitlines():
             if "pytest.mark.quarantined" in line:

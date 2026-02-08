@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Tuple
 
 from transcriptx.core.utils.config import get_config  # type: ignore[import-untyped]
 from transcriptx.core.utils.logger import get_logger  # type: ignore[import-untyped]
+from transcriptx.core.utils.artifact_writer import write_json
 
 from .audio_io import compute_audio_fingerprint, ensure_cached_wav, read_audio_segment, resolve_audio_path
 from .cache import get_voice_cache_root, load_cache_meta, save_cache_meta, save_voice_features
@@ -291,10 +292,7 @@ def load_or_compute_voice_features(
         store_parquet_mode=store_parquet,
     )
     if vad_runs:
-        cached_vad_runs.write_text(
-            json.dumps(vad_runs, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        write_json(cached_vad_runs, vad_runs, indent=2, ensure_ascii=False)
 
     # Save cache meta
     meta = {

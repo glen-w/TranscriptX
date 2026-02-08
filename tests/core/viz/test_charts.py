@@ -9,11 +9,17 @@ from transcriptx.core.utils.output_standards import (
     get_speaker_static_chart_path,
     get_speaker_dynamic_chart_path,
 )
-from transcriptx.core.utils.paths import OUTPUTS_DIR
+from transcriptx.core.utils import output_standards as output_standards_module
+from transcriptx.core.utils import paths as paths_module
 
 
-def test_global_chart_paths_created():
-    transcript_dir = Path(OUTPUTS_DIR) / "test_outputs"
+def test_global_chart_paths_created(tmp_path, monkeypatch):
+    outputs_root = tmp_path / "outputs"
+    monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
+    monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
+    monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
+
+    transcript_dir = outputs_root / "test_outputs"
     output_structure = create_standard_output_structure(
         str(transcript_dir), "sentiment"
     )
@@ -31,8 +37,13 @@ def test_global_chart_paths_created():
     assert dynamic_path.parent.exists()
 
 
-def test_speaker_chart_paths_created():
-    transcript_dir = Path(OUTPUTS_DIR) / "test_outputs_speaker"
+def test_speaker_chart_paths_created(tmp_path, monkeypatch):
+    outputs_root = tmp_path / "outputs"
+    monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
+    monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
+    monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
+
+    transcript_dir = outputs_root / "test_outputs_speaker"
     output_structure = create_standard_output_structure(
         str(transcript_dir), "sentiment"
     )

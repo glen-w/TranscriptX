@@ -30,6 +30,8 @@ class Artifact:
     module: Optional[str]
     scope: Optional[str]
     speaker: Optional[str]
+    subview: Optional[str]
+    slice_id: Optional[str]
     rel_path: str
     bytes: int
     mtime: str
@@ -49,6 +51,8 @@ class Artifact:
             module=data.get("module"),
             scope=data.get("scope"),
             speaker=data.get("speaker"),
+            subview=data.get("subview"),
+            slice_id=data.get("slice_id"),
             rel_path=data["rel_path"],
             bytes=data.get("bytes", 0),
             mtime=data.get("mtime", ""),
@@ -76,6 +80,8 @@ class ArtifactFilters:
     scope: Optional[str] = None
     kind: Optional[str] = None
     speaker: Optional[str] = None
+    subview: Optional[str] = None
+    slice_id: Optional[str] = None
     tags: Optional[List[str]] = None
 
     def matches(self, artifact: Artifact) -> bool:
@@ -86,6 +92,10 @@ class ArtifactFilters:
         if self.kind and artifact.kind != self.kind:
             return False
         if self.speaker and artifact.speaker != self.speaker:
+            return False
+        if self.subview and artifact.subview != self.subview:
+            return False
+        if self.slice_id and artifact.slice_id != self.slice_id:
             return False
         if self.tags:
             for tag in self.tags:

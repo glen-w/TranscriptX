@@ -93,6 +93,9 @@ def aggregate_wordclouds_group(
 
             info = extract_speaker_info(segment)
             if info is None:
+                speaker_label = segment.get("speaker")
+                if speaker_label and not is_named_speaker(str(speaker_label)):
+                    excluded_speakers.add(str(speaker_label))
                 excluded_chunks += 1
                 excluded_chars += len(cleaned_text)
                 continue

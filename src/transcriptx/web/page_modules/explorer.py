@@ -8,17 +8,20 @@ from pathlib import Path
 
 import streamlit as st
 
-from transcriptx.web.services import ArtifactService
+from transcriptx.web.services import RunIndex, SubjectService
 
 
 def render_explorer() -> None:
-    session = st.session_state.get("selected_session")
-    run_id = st.session_state.get("selected_run_id")
-    if not session or not run_id:
-        st.info("Select a session and run to view files.")
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+    if not subject or not run_id:
+        st.info("Select a subject and run to view files.")
         return
-
-    run_dir = ArtifactService._resolve_run_dir(session, run_id)
+    run_dir = RunIndex.get_run_root(
+        subject.scope,
+        run_id,
+        subject_id=subject.subject_id,
+    )
     if not run_dir.exists():
         st.error("Run directory not found.")
         return

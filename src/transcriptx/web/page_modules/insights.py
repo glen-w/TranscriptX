@@ -9,27 +9,34 @@ import streamlit as st
 
 from typing import cast
 
-from transcriptx.web.services import ArtifactService  # type: ignore[import-untyped]
+from transcriptx.web.services import ArtifactService, RunIndex, SubjectService  # type: ignore[import-untyped]
 from transcriptx.utils.text_utils import (  # type: ignore[import-untyped]
     format_time_detailed,
 )
 
 
 def render_insights() -> None:
-    session = st.session_state.get("selected_session")
-    run_id = st.session_state.get("selected_run_id")
-    if not session or not run_id:
-        st.info("Select a session and run to view insights.")
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+    if not subject or not run_id:
+        st.info("Select a subject and run to view insights.")
         return
+    run_root = RunIndex.get_run_root(
+        subject.scope,
+        run_id,
+        subject_id=subject.subject_id,
+    )
 
     st.markdown("## 🛈 Insights")
-    _render_highlights_section(session, run_id)
+    _render_highlights_section(run_root)
     st.divider()
-    _render_summary_section(session, run_id)
+    _render_summary_section(run_root)
 
 
-def _load_artifact_json(session: str, run_id: str, module: str, suffix: str) -> Optional[Dict[str, Any]]:
-    artifacts = ArtifactService.list_artifacts(session, run_id)
+def _load_artifact_json(
+    run_root: Path, module: str, suffix: str
+) -> Optional[Dict[str, Any]]:
+    artifacts = ArtifactService.list_artifacts(run_root)
     match = next(
         (
             a
@@ -42,15 +49,16 @@ def _load_artifact_json(session: str, run_id: str, module: str, suffix: str) -> 
     )
     if not match:
         return None
-    run_dir = ArtifactService._resolve_run_dir(session, run_id)
-    path = ArtifactService._resolve_safe_path(run_dir, match.rel_path)
+    path = ArtifactService._resolve_safe_path(run_root, match.rel_path)
     if path is None or not path.exists():
         return None
     return cast(Dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
-def _load_artifact_text(session: str, run_id: str, module: str, suffix: str) -> Optional[str]:
-    artifacts = ArtifactService.list_artifacts(session, run_id)
+def _load_artifact_text(
+    run_root: Path, module: str, suffix: str
+) -> Optional[str]:
+    artifacts = ArtifactService.list_artifacts(run_root)
     match = next(
         (
             a
@@ -61,16 +69,15 @@ def _load_artifact_text(session: str, run_id: str, module: str, suffix: str) -> 
     )
     if not match:
         return None
-    run_dir = ArtifactService._resolve_run_dir(session, run_id)
-    path = ArtifactService._resolve_safe_path(run_dir, match.rel_path)
+    path = ArtifactService._resolve_safe_path(run_root, match.rel_path)
     if path is None or not path.exists():
         return None
     return cast(str, path.read_text(encoding="utf-8", errors="ignore"))
 
 
-def _render_highlights_section(session: str, run_id: str) -> None:
+def _render_highlights_section(run_root: Path) -> None:
     st.subheader("Highlights")
-    highlights = _load_artifact_json(session, run_id, "highlights", "_highlights.json")
+    highlights = _load_artifact_json(run_root, "highlights", "_highlights.json")
     if not highlights:
         st.info("Run the `highlights` module to populate this view.")
         return
@@ -142,10 +149,10 @@ def _render_highlights_section(session: str, run_id: str) -> None:
             st.json(item["breakdown"])
 
 
-def _render_summary_section(session: str, run_id: str) -> None:
+def _render_summary_section(run_root: Path) -> None:
     st.subheader("Executive Summary")
-    summary = _load_artifact_json(session, run_id, "summary", "_summary.json")
-    md = _load_artifact_text(session, run_id, "summary", "_summary.md")
+    summary = _load_artifact_json(run_root, "summary", "_summary.json")
+    md = _load_artifact_text(run_root, "summary", "_summary.md")
     if md:
         st.markdown(md)
     elif summary:

@@ -21,16 +21,16 @@ from transcriptx.core.config import (
     resolve_effective_config,
     validate_config,
 )
-from transcriptx.web.services import FileService
+from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import render_config_form, render_config_diff
 
 
 def _get_run_dir() -> Optional[Path]:
-    session = st.session_state.get("selected_session")
-    run_id = st.session_state.get("selected_run_id")
-    if not session or not run_id:
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+    if not subject or not run_id:
         return None
-    return FileService._resolve_session_dir(f"{session}/{run_id}")
+    return RunIndex.get_run_root(subject.scope, run_id, subject_id=subject.subject_id)
 
 
 def _load_effective_config(run_dir: Optional[Path]) -> Dict[str, Any]:
