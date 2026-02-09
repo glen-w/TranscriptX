@@ -8,26 +8,9 @@ from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.module_result import build_module_result, now_iso
-from transcriptx.core.utils.speaker_extraction import (
-    extract_speaker_info,
-    get_speaker_display_name,
-)
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.core.utils.speaker_extraction import count_named_speakers
 
 from .analyzers import SemanticSimilarityAnalyzer, AdvancedSemanticSimilarityAnalyzer
-
-
-def _count_named_speakers(segments: List[Dict[str, Any]]) -> int:
-    """Return the number of distinct identified (named) speakers in segments."""
-    names = set()
-    for seg in segments:
-        info = extract_speaker_info(seg)
-        if info is None:
-            continue
-        name = get_speaker_display_name(info.grouping_key, [seg], segments)
-        if name and is_named_speaker(name):
-            names.add(name)
-    return len(names)
 
 
 class SemanticSimilarityAnalysis(AnalysisModule):
@@ -57,7 +40,7 @@ class SemanticSimilarityAnalysis(AnalysisModule):
         from transcriptx.core.utils.logger import log_analysis_complete, log_analysis_start
 
         segments = context.get_segments()
-        if _count_named_speakers(segments) <= 1:
+        if count_named_speakers(segments) <= 1:
             log_analysis_start(self.module_name, context.transcript_path)
             context.store_analysis_result(self.module_name, {})
             log_analysis_complete(self.module_name, context.transcript_path)
@@ -108,22 +91,39 @@ class SemanticSimilarityAdvancedAnalysis(AnalysisModule):
 
     def run_from_context(self, context: "PipelineContext") -> Dict[str, Any]:
         """Skip analysis when only one identified speaker (no cross-speaker comparison)."""
+        from transcriptx.core.output.output_service import create_output_service
         from transcriptx.core.utils.logger import log_analysis_complete, log_analysis_start
 
         segments = context.get_segments()
-        if _count_named_speakers(segments) <= 1:
+        if count_named_speakers(segments) <= 1:
             log_analysis_start(self.module_name, context.transcript_path)
             context.store_analysis_result(self.module_name, {})
+            # Write minimal output so the module directory exists and reporter/validation pass
+            output_service = create_output_service(
+                context.transcript_path,
+                self.module_name,
+                output_dir=context.get_transcript_dir(),
+                run_id=context.get_run_id(),
+                runtime_flags=context.get_runtime_flags(),
+            )
+            payload = {"skipped": True, "reason": "single_identified_speaker"}
+            output_service.save_data(
+                payload, "semantic_similarity_advanced", format_type="json"
+            )
+            global_stats = {"total_repetitions": 0, "unique_patterns": 0}
+            output_service.save_summary(
+                global_stats, {}, analysis_metadata={"skipped": True, "reason": "single_identified_speaker"}
+            )
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(
                 module_name=self.module_name,
                 status="success",
                 started_at=now_iso(),
                 finished_at=now_iso(),
-                artifacts=[],
+                artifacts=output_service.get_artifacts(),
                 metrics={"skipped": True, "reason": "single_identified_speaker"},
                 payload_type="analysis_results",
-                payload={},
+                payload=payload,
             )
         return super().run_from_context(context)
 

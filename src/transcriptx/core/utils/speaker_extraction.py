@@ -79,6 +79,47 @@ def extract_speaker_info(segment: Dict[str, Any]) -> Optional[SpeakerInfo]:
     return None
 
 
+def count_named_speakers(
+    segments: List[Dict[str, Any]],
+    *,
+    ignored_speaker_ids: Optional[set[Union[str, int]]] = None,
+) -> int:
+    """
+    Count distinct named speakers using stable identifiers when available.
+
+    Args:
+        segments: Transcript segments to inspect.
+        ignored_speaker_ids: Optional set of speaker IDs to exclude from the count.
+
+    Returns:
+        Number of distinct named speakers.
+    """
+    ignored = ignored_speaker_ids or set()
+    named_speaker_ids: set[Union[str, int]] = set()
+
+    for segment in segments:
+        info = extract_speaker_info(segment)
+        if info is None:
+            continue
+
+        display_name = get_speaker_display_name(
+            info.grouping_key, [segment], segments
+        )
+        if not display_name or not is_named_speaker(display_name):
+            continue
+
+        speaker_id = info.db_id if info.db_id is not None else info.grouping_key
+        if speaker_id in ignored or str(speaker_id) in ignored:
+            continue
+
+        if speaker_id is None:
+            speaker_id = display_name
+
+        named_speaker_ids.add(speaker_id)
+
+    return len(named_speaker_ids)
+
+
 def get_unique_speakers(segments: List[Dict[str, Any]]) -> Dict[Union[str, int], str]:
     """
     Get unique speakers from segments.

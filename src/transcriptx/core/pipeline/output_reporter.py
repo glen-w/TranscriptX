@@ -7,7 +7,7 @@ providing centralized reporting functionality.
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from rich.console import Console
 
@@ -59,6 +59,7 @@ class OutputReporter:
         selected_modules: List[str],
         modules_run: List[str],
         errors: List[str],
+        skipped_modules: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         Generate a comprehensive summary of all outputs generated during analysis.
@@ -82,6 +83,15 @@ class OutputReporter:
         def _ran(mod: str) -> bool:
             return mod in modules_run or mod.lower() in modules_run_set
 
+        skipped_by_module = {
+            entry["module"]: entry for entry in (skipped_modules or [])
+        }
+        modules_failed = [
+            mod
+            for mod in selected_modules
+            if not _ran(mod) and mod not in skipped_by_module
+        ]
+
         summary = {
             "transcript_info": {
                 "file_path": transcript_path,
@@ -91,14 +101,15 @@ class OutputReporter:
             "analysis_summary": {
                 "modules_requested": selected_modules,
                 "modules_successfully_run": modules_run,
-                "modules_failed": [mod for mod in selected_modules if not _ran(mod)],
+                "modules_failed": modules_failed,
                 "total_modules_requested": len(selected_modules),
                 "total_modules_successful": len(modules_run),
-                "total_modules_failed": len(selected_modules) - len(modules_run),
+                "total_modules_failed": len(modules_failed),
                 "errors": errors,
             },
             "outputs": {
                 "successful_modules": {},
+                "skipped_modules": {},
                 "failed_modules": {},
                 "additional_files": [],
             },
@@ -146,6 +157,14 @@ class OutputReporter:
                         module_outputs["subdirectories"].append(str(relative_path))
 
                 summary["outputs"]["successful_modules"][module_name] = module_outputs
+            elif module_name in skipped_by_module:
+                summary["outputs"]["skipped_modules"][module_name] = {
+                    "directory": str(module_dir),
+                    "exists": module_dir.exists(),
+                    "reason": skipped_by_module[module_name].get(
+                        "reason", "Skipped"
+                    ),
+                }
             else:
                 # Module failed or wasn't run
                 summary["outputs"]["failed_modules"][module_name] = {
@@ -255,6 +274,19 @@ class OutputReporter:
                             f"      ... and {len(validation_warnings) - 3} more warnings"
                         )
 
+        # Skipped modules
+        skipped_modules = outputs.get("skipped_modules", {})
+        if skipped_modules:
+            self.console.print(
+                f"\n⏭️  SKIPPED MODULES ({len(skipped_modules)}):"
+            )
+            self.console.print("-" * 30)
+
+            for module_name, module_data in skipped_modules.items():
+                self.console.print(f"\n⏭️  {module_name.upper()}")
+                self.console.print(f"   📁 Directory: {module_data['directory']}")
+                self.console.print(f"   ⚠️  Reason: {module_data['reason']}")
+
         # Failed modules
         failed_modules = outputs.get("failed_modules", {})
         if failed_modules:
@@ -312,10 +344,11 @@ def generate_comprehensive_output_summary(
     selected_modules: List[str],
     modules_run: List[str],
     errors: List[str],
+    skipped_modules: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Generate a comprehensive summary of all outputs generated during analysis."""
     return _output_reporter.generate_comprehensive_output_summary(
-        transcript_path, selected_modules, modules_run, errors
+        transcript_path, selected_modules, modules_run, errors, skipped_modules
     )
 
 

@@ -75,43 +75,70 @@ def lazy_import(module_name: str) -> Any:
 
 def _try_install_package(
     package_name: str, module_name: str, purpose: str, extra: Optional[str] = None
-) -> bool:
+) -> tuple[bool, str]:
     """
     Attempt to install a package at runtime if import fails.
-    
+    Uses sys.executable so the package is installed into the current interpreter (e.g. active venv).
+
     Args:
         package_name: Name of the package to install (e.g., "convokit")
         module_name: Name of the module to import (e.g., "convokit")
         purpose: Description of what the package is used for
         extra: Optional extra name for pip install transcriptx[extra]
-    
+
     Returns:
-        True if installation succeeded and module can now be imported, False otherwise
+        (True, "") if installation succeeded and module can be imported,
+        (False, error_detail) otherwise (error_detail is pip stderr or exception message).
     """
     try:
         # Try importing first to see if it's already available
         importlib.import_module(module_name)
-        return True
+        return (True, "")
     except ImportError:
         pass  # Package not available, will try to install
-    
-    # Try to install the package
-    try:
-        install_cmd = [sys.executable, "-m", "pip", "install", package_name]
-        result = subprocess.run(
-            install_cmd, capture_output=True, text=True, timeout=300  # 5 minute timeout
-        )
-        
-        if result.returncode == 0:
-            # Verify installation by trying to import
+
+    def _run_install(target: str | list[str]) -> tuple[bool, str]:
+        if isinstance(target, list):
+            cmd = [sys.executable, "-m", "pip", "install", *target]
+        else:
+            cmd = [sys.executable, "-m", "pip", "install", target]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=300
+            )
+            if result.returncode != 0:
+                err = (result.stderr or result.stdout or "").strip() or f"pip exit code {result.returncode}"
+                return (False, err)
+            importlib.invalidate_caches()
             try:
                 importlib.import_module(module_name)
-                return True
-            except ImportError:
-                return False
-        return False
-    except Exception:
-        return False
+                return (True, "")
+            except ImportError as e:
+                return (False, f"Import after install failed: {e}")
+        except subprocess.TimeoutExpired:
+            return (False, "pip install timed out after 5 minutes")
+        except Exception as e:
+            return (False, str(e))
+
+    # Prefer transcriptx[extra] so we use project-pinned optional deps
+    if extra:
+        install_target = f"transcriptx[{extra}]"
+    else:
+        install_target = package_name
+
+    print(f"Installing {install_target} into current environment ({sys.executable})...")
+    ok, err = _run_install(install_target)
+    if ok:
+        return (True, "")
+    # If extra was used and install "succeeded" but import failed, transcriptx may already
+    # be installed (e.g. editable) and pip may not install the extra. Fallback to package name.
+    if extra and "Import after install failed" in err:
+        print(f"Retrying with pip install {package_name}...")
+        ok2, err2 = _run_install(package_name)
+        if ok2:
+            return (True, "")
+        return (False, err2 or err)
+    return (False, err)
 
 
 def optional_import(
@@ -135,22 +162,22 @@ def optional_import(
     try:
         return lazy_import(module_name)
     except ImportError as exc:
-        # Try auto-installation if enabled
+        extra_install_msg = ""
         if auto_install:
-            # Use module_name as package_name by default, but handle special cases
             package_name = module_name.split(".")[0]  # e.g., "playwright.sync_api" -> "playwright"
-            if _try_install_package(package_name, module_name, purpose, extra):
-                # Retry import after installation
+            ok, install_err = _try_install_package(package_name, module_name, purpose, extra)
+            if ok:
                 try:
                     return lazy_import(module_name)
                 except ImportError:
-                    pass  # Fall through to error message
-        
+                    pass
+            elif install_err:
+                extra_install_msg = f" Auto-install failed: {install_err}"
         extra_msg = (
             f" Install with: pip install transcriptx[{extra}]" if extra else ""
         )
         raise ImportError(
-            f"{module_name} is required for {purpose}.{extra_msg}"
+            f"{module_name} is required for {purpose}.{extra_msg}{extra_install_msg}"
         ) from exc
 
 

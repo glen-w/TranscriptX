@@ -78,6 +78,37 @@ class TestOutputReporter:
         
         assert summary["analysis_summary"]["total_modules_failed"] == 1
         assert len(summary["analysis_summary"]["errors"]) == 1
+
+    def test_generate_comprehensive_output_summary_with_skips(
+        self, output_reporter, sample_transcript_path, tmp_path
+    ):
+        """Skipped modules should not be reported as failed."""
+        output_dir = tmp_path / "test_transcript"
+        output_dir.mkdir()
+        (output_dir / "sentiment").mkdir()
+
+        with patch(
+            'transcriptx.core.pipeline.output_reporter.get_transcript_dir',
+            return_value=str(output_dir)
+        ), patch(
+            'transcriptx.core.pipeline.output_reporter.validate_module_outputs'
+        ) as mock_validate:
+            mock_validate.return_value = {}
+
+            summary = output_reporter.generate_comprehensive_output_summary(
+                transcript_path=sample_transcript_path,
+                selected_modules=["sentiment", "interactions"],
+                modules_run=["sentiment"],
+                errors=[],
+                skipped_modules=[{
+                    "module": "interactions",
+                    "reason": "requires at least 2 named speakers",
+                }],
+            )
+
+        assert summary["analysis_summary"]["total_modules_failed"] == 0
+        assert "interactions" in summary["outputs"]["skipped_modules"]
+        assert "interactions" not in summary["outputs"]["failed_modules"]
     
     def test_generate_comprehensive_output_summary_no_output_dir(
         self, output_reporter, sample_transcript_path, tmp_path

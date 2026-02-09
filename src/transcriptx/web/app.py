@@ -60,14 +60,17 @@ try:
     from transcriptx.core.analysis.selection import (
         apply_analysis_mode_settings,
         filter_modules_by_mode,
+        filter_modules_for_speaker_count,
         get_recommended_modules,
         VALID_MODES,
         VALID_PROFILES,
     )
+    from transcriptx.core.utils.speaker_extraction import count_named_speakers
     from transcriptx.core.pipeline.module_registry import get_module_info
     from transcriptx.core import run_analysis_pipeline
     from transcriptx.core.pipeline.target_resolver import TranscriptRef
     from transcriptx.core.utils.audio_availability import has_resolvable_audio
+    from transcriptx.io import load_segments
 except ImportError as e:
     st.error(f"Import error: {e}")
     st.stop()
@@ -248,11 +251,46 @@ def render_transcript_viewer():
     try:
         subject = SubjectService.resolve_current_subject(st.session_state)
         run_id = st.session_state.get("run_id")
-        if not subject or not run_id:
+        if not subject:
             st.info("Select a subject and run to view the transcript.")
+            return
+        if subject.subject_type == "group":
+            st.subheader("Group transcripts")
+            if not subject.members:
+                st.info("This group has no transcripts.")
+                return
+            st.caption("Select a transcript to open its viewer.")
+            sessions = FileService.list_available_sessions()
+            for index, member in enumerate(subject.members, start=1):
+                display_name = (
+                    member.file_name
+                    or (Path(member.file_path).name if member.file_path else None)
+                    or "(unknown)"
+                )
+                numbered_name = f"{index}. {display_name}"
+                session_info = FileService.resolve_session_for_transcript_path(
+                    member.file_path, sessions
+                )
+                if session_info:
+                    session_slug, session_run_id = session_info
+                    member_key = member.uuid or f"index_{index}"
+                    if st.button(
+                        f"View: {numbered_name}",
+                        key=f"group_member_transcript_{member_key}",
+                    ):
+                        st.session_state["subject_type"] = "transcript"
+                        st.session_state["subject_id"] = session_slug
+                        st.session_state["run_id"] = session_run_id
+                        st.session_state["page"] = "Transcript"
+                        st.rerun()
+                else:
+                    st.caption(f"{numbered_name} (session not found)")
             return
         if subject.subject_type != "transcript":
             st.info("Transcript view is available for transcript subjects only.")
+            return
+        if not run_id:
+            st.info("Select a subject and run to view the transcript.")
             return
         selected_session = subject.subject_id
         selected_run_id = run_id
@@ -717,7 +755,26 @@ def render_run_analysis_page():
         key="run_analysis_preset",
         horizontal=True,
     )
+    named_speaker_count = None
+    if member_paths:
+        counts: list[int] = []
+        for path in member_paths:
+            if not path:
+                continue
+            try:
+                if not Path(path).exists():
+                    continue
+                segments = load_segments(path)
+                counts.append(count_named_speakers(segments))
+            except Exception:
+                continue
+        if counts:
+            named_speaker_count = min(counts)
     all_available = get_all_available_modules()
+    if named_speaker_count is not None:
+        all_available = filter_modules_for_speaker_count(
+            all_available, named_speaker_count
+        )
     if preset == "custom":
         try:
             _missing = _context.get("missing_deps") or []
@@ -741,6 +798,10 @@ def render_run_analysis_page():
                 include_heavy=True,
                 include_excluded_from_default=True,
             )
+        if named_speaker_count is not None:
+            _runnable = filter_modules_for_speaker_count(
+                _runnable, named_speaker_count
+            )
         _runnable_set = set(_runnable)
         _unavailable = sorted(m for m in all_available if m not in _runnable_set)
         _default_custom = [
@@ -752,6 +813,10 @@ def render_run_analysis_page():
             )[:5]
             if m in _runnable_set
         ]
+        if named_speaker_count is not None:
+            _default_custom = filter_modules_for_speaker_count(
+                _default_custom, named_speaker_count
+            )
         custom_options = st.multiselect(
             "Modules",
             options=sorted(_runnable_set),
@@ -786,6 +851,10 @@ def render_run_analysis_page():
         run_modules = get_recommended_modules(
             member_paths,
             audio_resolver=has_resolvable_audio,
+        )
+    if named_speaker_count is not None:
+        run_modules = filter_modules_for_speaker_count(
+            run_modules, named_speaker_count
         )
     filtered_modules = filter_modules_by_mode(run_modules, run_mode)
     open_after = st.checkbox(

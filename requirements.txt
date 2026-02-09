@@ -133,7 +133,6 @@ reportlab>=4.0.0
 # Web Framework
 # ============================================================================
 streamlit>=1.29.0
-# flask>=2.3.0  # Archived - replaced by Streamlit (see src/transcriptx/web/archived/)
 
 # ============================================================================
 # Development and Testing (for core functionality)

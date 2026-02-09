@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from transcriptx.core.pipeline.dag_pipeline import DAGPipeline, DAGNode, create_dag_pipeline
+from transcriptx.core.pipeline.module_registry import ModuleInfo
 
 
 class TestDAGPipeline:
@@ -206,6 +207,73 @@ class TestDAGPipeline:
         # Module should be in errors
         assert len(result["errors"]) > 0
         assert "test_module" in str(result["errors"][0]).lower() or "error" in str(result["errors"][0]).lower()
+
+    def test_execute_pipeline_skips_multi_speaker_module(
+        self, temp_transcript_file, sample_speaker_map
+    ):
+        """Multi-speaker-only modules should be skipped for single-speaker transcripts."""
+        pipeline = DAGPipeline()
+        interactions_fn = MagicMock()
+        sentiment_fn = MagicMock(return_value={"status": "success"})
+
+        pipeline.add_module("interactions", "Interactions", "medium", [], interactions_fn)
+        pipeline.add_module("sentiment", "Sentiment", "medium", [], sentiment_fn)
+
+        mock_context = MagicMock()
+        mock_context.get_segments.return_value = [
+            {"speaker": "Alice", "text": "Test segment", "speaker_db_id": 1}
+        ]
+        mock_context.get_speaker_map.return_value = sample_speaker_map
+        mock_context.get_base_name.return_value = "test"
+        mock_context.validate.return_value = True
+
+        def _mock_module_info(name: str):
+            if name == "interactions":
+                return ModuleInfo(
+                    name="interactions",
+                    description="Interactions",
+                    category="medium",
+                    dependencies=[],
+                    determinism_tier="T0",
+                    requirements=[],
+                    enhancements=[],
+                    requires_multiple_speakers=True,
+                )
+            if name == "sentiment":
+                return ModuleInfo(
+                    name="sentiment",
+                    description="Sentiment",
+                    category="medium",
+                    dependencies=[],
+                    determinism_tier="T0",
+                    requirements=[],
+                    enhancements=[],
+                    requires_multiple_speakers=False,
+                )
+            return None
+
+        with patch(
+            "transcriptx.core.pipeline.pipeline_context.PipelineContext",
+            return_value=mock_context,
+        ), patch(
+            "transcriptx.core.pipeline.module_registry.get_module_info",
+            side_effect=_mock_module_info,
+        ):
+            result = pipeline.execute_pipeline(
+                transcript_path=str(temp_transcript_file),
+                selected_modules=["interactions", "sentiment"],
+                speaker_map=sample_speaker_map,
+                skip_speaker_mapping=True,
+            )
+
+        assert "sentiment" in result["modules_run"]
+        assert "interactions" not in result["modules_run"]
+        assert any(
+            entry.get("module") == "interactions"
+            for entry in result.get("skipped_modules", [])
+        )
+        interactions_fn.assert_not_called()
+        sentiment_fn.assert_called()
 
     def test_execute_pipeline_missing_dependency_error_message(self, temp_transcript_file):
         """Test missing dependency errors include module context."""

@@ -13,8 +13,9 @@ from transcriptx.cli.analysis_utils import (
     select_analysis_modules,
     select_analysis_mode,
     apply_analysis_mode_settings,
-    filter_modules_by_mode
+    filter_modules_by_mode,
 )
+from transcriptx.core.pipeline.module_registry import ModuleInfo
 
 
 class TestSelectAnalysisModules:
@@ -79,6 +80,65 @@ class TestSelectAnalysisModules:
         
         # Should eventually return valid result
         assert result == ["sentiment"]
+
+    @patch('transcriptx.cli.analysis_utils.questionary.checkbox')
+    @patch('transcriptx.cli.analysis_utils.get_available_modules')
+    @patch('transcriptx.cli.analysis_utils.get_description')
+    @patch('transcriptx.cli.analysis_utils.load_segments')
+    @patch('transcriptx.cli.analysis_utils.count_named_speakers')
+    @patch('transcriptx.cli.analysis_utils.get_module_info')
+    def test_select_modules_group_min_counts(
+        self,
+        mock_get_module_info,
+        mock_count_named_speakers,
+        mock_load_segments,
+        mock_get_desc,
+        mock_get_modules,
+        mock_checkbox,
+    ):
+        """Group selection uses min(counts) to filter multi-speaker modules."""
+        mock_get_modules.return_value = ["interactions", "sentiment"]
+        mock_get_desc.return_value = "Module"
+        mock_checkbox.return_value.ask.return_value = ["all_eligible"]
+        mock_load_segments.side_effect = [
+            [{"speaker": "Alice", "speaker_db_id": 1}],
+            [{"speaker": "Bob", "speaker_db_id": 2}],
+        ]
+        mock_count_named_speakers.side_effect = [2, 1]
+
+        def _module_info(name: str):
+            if name == "interactions":
+                return ModuleInfo(
+                    name="interactions",
+                    description="Interactions",
+                    category="medium",
+                    dependencies=[],
+                    determinism_tier="T0",
+                    requirements=[],
+                    enhancements=[],
+                    requires_multiple_speakers=True,
+                )
+            if name == "sentiment":
+                return ModuleInfo(
+                    name="sentiment",
+                    description="Sentiment",
+                    category="medium",
+                    dependencies=[],
+                    determinism_tier="T0",
+                    requirements=[],
+                    enhancements=[],
+                    requires_multiple_speakers=False,
+                )
+            return None
+
+        mock_get_module_info.side_effect = _module_info
+
+        result = select_analysis_modules(
+            transcript_paths=["/tmp/one.json", "/tmp/two.json"]
+        )
+
+        assert "sentiment" in result
+        assert "interactions" not in result
 
 
 class TestSelectAnalysisMode:

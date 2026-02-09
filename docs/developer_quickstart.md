@@ -79,6 +79,8 @@ TranscriptX uses env-first configuration. Unknown speakers are excluded from mos
 
 Modules are loosely grouped into light, medium, and heavy. Heavy modules should be gated and degrade gracefully if optional dependencies are missing.
 
+**BERTopic status:** BERTopic is currently unwired due to dependency conflicts (scikit-learn/transformers/sentence-transformers/huggingface_hub). The code is retained under `core/analysis/bertopic/` and `core/analysis/aggregation/bertopic.py`. Re-enabling requires re-registering the module and aggregation, restoring a `bertopic` extra, and verifying the dependency stack in a dedicated environment.
+
 ## 8. Development workflow
 
 Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging.

@@ -69,9 +69,7 @@ VIZ_PROSODY_TIMELINE_GLOBAL = "prosody_dashboard.timeline.global"
 VIZ_PROSODY_COMPARE_SPEAKERS_GLOBAL = "prosody_dashboard.compare_speakers.global"
 VIZ_PROSODY_FINGERPRINT_SCATTER_GLOBAL = "prosody_dashboard.fingerprint_scatter.global"
 VIZ_PROSODY_EGEMAPS_DISTRIBUTION_SPEAKER = "prosody_dashboard.egemaps_distribution.speaker"
-VIZ_PROSODY_QUALITY_SCATTER_GLOBAL = "prosody_dashboard.quality_scatter.global"
-
-# Affect tension
+VIZ_PROSODY_QUALITY_SCATTER_GLOBAL = "prosody_dashboard.quality_scatter.global"# Affect tension
 VIZ_AFFECT_TENSION_DERIVED_POLITE_TENSION_GLOBAL = (
     "affect_tension.derived_polite_tension.global"
 )

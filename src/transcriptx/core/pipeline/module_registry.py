@@ -34,11 +34,18 @@ class ModuleInfo:
     exclude_from_default: bool = False
     post_processing_only: bool = False  # Not offered in analysis module list; run via post-processing
     requires_audio: bool = False
+    requires_multiple_speakers: bool = False  # Skip when transcript has ≤1 named speaker
+    min_named_speakers: int = 1  # Future-proof; default allows single-speaker
     supports_audio: bool = False
     supports_group: bool = True
     output_namespace: Optional[str] = None
     output_version: Optional[str] = None
     cost_tier: str = "normal"
+
+
+def effective_min_named_speakers(info: ModuleInfo) -> int:
+    """Return the effective minimum named speaker count for a module."""
+    return max(info.min_named_speakers, 2 if info.requires_multiple_speakers else 1)
 
 
 class ModuleRegistry:
@@ -84,6 +91,7 @@ class ModuleRegistry:
                 "determinism_tier": "T0",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "contagion": {
                 "description": "Emotional Contagion Detection",
@@ -92,6 +100,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "convokit": {
                 "description": "ConvoKit Coordination and Accommodation Analysis",
@@ -100,6 +109,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "emotion": {
                 "description": "Emotion Analysis",
@@ -132,6 +142,7 @@ class ModuleRegistry:
                 "determinism_tier": "T0",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "ner": {
                 "description": "Named Entity Recognition",
@@ -148,6 +159,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": default_requirements,
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "semantic_similarity_advanced": {
                 "description": "Advanced Semantic Similarity with Analysis Integration",
@@ -156,6 +168,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": default_requirements,
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "sentiment": {
                 "description": "Sentiment Analysis",
@@ -240,6 +253,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "pauses": {
                 "description": "Silence and Timing Analysis",
@@ -260,6 +274,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "requires_multiple_speakers": True,
             },
             "momentum": {
                 "description": "Stall/Flow Index Analysis",
@@ -436,6 +451,10 @@ class ModuleRegistry:
                 exclude_from_default=info.get("exclude_from_default", False),
                 post_processing_only=info.get("post_processing_only", False),
                 requires_audio=info.get("requires_audio", False),
+                requires_multiple_speakers=bool(
+                    info.get("requires_multiple_speakers", False)
+                ),
+                min_named_speakers=int(info.get("min_named_speakers", 1)),
                 supports_audio=info.get("supports_audio", False),
                 supports_group=info.get("supports_group", True),
                 output_namespace=info.get("output_namespace"),

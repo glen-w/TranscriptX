@@ -184,6 +184,18 @@ class SummaryConfig:
 
 
 @dataclass
+class BERTopicConfig:
+    """Configuration for BERTopic analysis."""
+
+    embedding_model: str = "all-MiniLM-L6-v2"
+    min_topic_size: int = 5
+    nr_topics: str = "auto"
+    top_n_words: int = 10
+    label_words: int = 3
+    calculate_probabilities: bool = False
+
+
+@dataclass
 class AnalysisConfig:
     """
     Configuration for analysis modules.
@@ -811,6 +823,7 @@ class AnalysisConfig:
     topic_modeling: TopicModelingConfig = field(
         default_factory=lambda: TopicModelingConfig()
     )
+    bertopic: BERTopicConfig = field(default_factory=lambda: BERTopicConfig())
     acts: ActsConfig = field(default_factory=lambda: ActsConfig())
     tag_extraction: TagExtractionConfig = field(
         default_factory=lambda: TagExtractionConfig()

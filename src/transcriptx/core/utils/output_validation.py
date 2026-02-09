@@ -7,6 +7,7 @@ have generated proper outputs.
 
 from dataclasses import dataclass
 from pathlib import Path
+import json
 
 
 def _get_module_output_dir(basename_dir: Path, module_name: str) -> Path:

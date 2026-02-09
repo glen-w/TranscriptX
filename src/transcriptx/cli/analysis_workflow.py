@@ -546,12 +546,26 @@ def _open_stats_file(txt_path: Path) -> None:
         print(f"[red]Could not open stats.txt: {e}[/red]")
 
 
+# Filenames excluded from test-analysis "smallest transcript" selection
+# (e.g. placeholder/test artifacts like WhisperX default output name)
+TEST_ANALYSIS_EXCLUDED_FILENAMES = frozenset({"audio.json"})
+
+# Minimum segment count for a file to count as a real transcript in test analysis
+# (more than 50 segments so test artifacts / tiny stubs are excluded)
+TEST_ANALYSIS_MIN_SEGMENTS = 51
+
+# Minimum file size (bytes) when segment count is unavailable
+TEST_ANALYSIS_MIN_FILE_SIZE = 200
+
+
 def find_smallest_transcript() -> Path | None:
     """
     Find the smallest available transcript file for testing.
 
     Searches the default transcript folder recursively for JSON transcript files
     and returns the one with the smallest file size (or segment count if available).
+    Excludes known test/placeholder artifacts (e.g. audio.json) and requires a
+    minimal bar (min segment count or min file size) so stub files are not used.
 
     Returns:
         Path to the smallest transcript file, or None if no transcripts found
@@ -572,8 +586,12 @@ def find_smallest_transcript() -> Path | None:
         logger.warning(f"Transcript folder does not exist: {default_folder}")
         return None
 
-    # Find all JSON transcript files recursively
-    transcript_files = list(default_folder.rglob("*.json"))
+    # Find all JSON transcript files recursively, excluding test-artifact filenames
+    transcript_files = [
+        p
+        for p in default_folder.rglob("*.json")
+        if p.name not in TEST_ANALYSIS_EXCLUDED_FILENAMES
+    ]
 
     if not transcript_files:
         logger.warning(f"No transcript files found in {default_folder}")
@@ -595,6 +613,9 @@ def find_smallest_transcript() -> Path | None:
                     data = json.load(f)
                     if isinstance(data, dict) and "segments" in data:
                         segment_count = len(data["segments"])
+                        # Require minimum segment count for test analysis
+                        if segment_count < TEST_ANALYSIS_MIN_SEGMENTS:
+                            continue
                         # Prefer segment count over file size
                         if segment_count < smallest_segment_count:
                             smallest_segment_count = segment_count
@@ -604,8 +625,8 @@ def find_smallest_transcript() -> Path | None:
             except (json.JSONDecodeError, OSError, KeyError):
                 pass  # Fall back to file size
 
-            # Use file size if segment count not available
-            if file_size < smallest_size:
+            # Use file size if segment count not available; require minimum size
+            if file_size >= TEST_ANALYSIS_MIN_FILE_SIZE and file_size < smallest_size:
                 smallest_size = file_size
                 smallest_file = transcript_file
         except OSError:
@@ -614,6 +635,10 @@ def find_smallest_transcript() -> Path | None:
     if smallest_file:
         logger.info(
             f"Found smallest transcript: {smallest_file} ({smallest_size} bytes, {smallest_segment_count if smallest_segment_count != float('inf') else 'N/A'} segments)"
+        )
+    elif transcript_files:
+        logger.warning(
+            f"No transcript met the minimum for test analysis (min {TEST_ANALYSIS_MIN_SEGMENTS} segments or {TEST_ANALYSIS_MIN_FILE_SIZE} bytes; excludes {sorted(TEST_ANALYSIS_EXCLUDED_FILENAMES)})"
         )
 
     return smallest_file
@@ -632,11 +657,15 @@ def run_test_analysis_workflow() -> None:
             print("\n[bold cyan]🧪 Test Analysis[/bold cyan]")
             print("[dim]Finding smallest available transcript for testing...[/dim]")
 
-            # Find the smallest transcript
+            # Find the smallest transcript (excludes test artifacts, requires min segments/size)
             transcript_file = find_smallest_transcript()
             if not transcript_file:
                 print(
-                    "\n[red]❌ No transcript files found. Please ensure transcripts are available in the default transcript folder.[/red]"
+                    "\n[red]❌ No suitable transcript found for test analysis.[/red]"
+                )
+                print(
+                    "[dim]Ensure the default transcript folder has a real transcript with more than 50 segments. "
+                    "Test artifacts and small stubs are excluded.[/dim]"
                 )
                 logger.warning("No transcripts found for test analysis")
                 return

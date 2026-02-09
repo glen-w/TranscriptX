@@ -51,6 +51,10 @@ When you run analysis from the web UI, you choose a **Preset** that determines w
 - **Light modules only** — Runs only modules in the *light* category (fast, low-cost processing). Excludes *medium* and *heavy* modules. Use for quick passes or when you want to avoid slower/heavier analyses.
 - **Custom** — Lets you pick exactly which modules to run from a multiselect. Only modules that are runnable for the current session (e.g. audio/deps satisfied) are listed.
 
+### Single-speaker behavior
+
+Some analysis modules require multiple named speakers (e.g. conversation loops, contagion, interactions, semantic similarity, Q&A, echoes). When a transcript has only one named speaker, these modules are automatically skipped and are not shown in the selection menu. For group runs, the module list is filtered using the minimum named speaker count across member transcripts to avoid offering modules that would be skipped for part of the group.
+
 ## Groups (first-class, DB-backed)
 
 Groups are durable user objects that let you analyze multiple transcripts as a single unit.

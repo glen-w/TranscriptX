@@ -6,7 +6,7 @@ This service handles loading transcript and analysis data from files.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
 from transcriptx.core.utils.logger import get_logger
@@ -81,6 +81,40 @@ class FileService:
             if candidate.exists():
                 return candidate
 
+        return None
+
+    @staticmethod
+    def resolve_session_for_transcript_path(
+        file_path: str,
+        sessions: Optional[List[Dict[str, Any]]] = None,
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Resolve a transcript file path to a (slug, run_id) session tuple.
+
+        Uses list_available_sessions + resolve_transcript_path to match paths.
+        """
+        if not file_path:
+            return None
+
+        try:
+            target_path = Path(file_path).resolve()
+        except Exception:
+            return None
+
+        sessions_list = sessions if sessions is not None else FileService.list_available_sessions()
+        for session_info in sessions_list:
+            session_name = session_info.get("name", "")
+            if "/" not in session_name:
+                continue
+            resolved_path = FileService.resolve_transcript_path(session_name)
+            if resolved_path is None:
+                continue
+            try:
+                if resolved_path.resolve() == target_path:
+                    slug, run_id = session_name.split("/", 1)
+                    return slug, run_id
+            except Exception:
+                continue
         return None
 
     @staticmethod

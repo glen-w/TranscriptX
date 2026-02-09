@@ -9,7 +9,10 @@ from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
 from transcriptx.core.analysis.selection import (
     apply_analysis_mode_settings as apply_analysis_mode_settings_core,
     filter_modules_by_mode,
+    filter_modules_for_speaker_count,
 )
+from transcriptx.core.utils.speaker_extraction import count_named_speakers
+from transcriptx.io import load_segments
 
 
 def _module_display_name(module_id: str) -> str:
@@ -58,8 +61,18 @@ def select_analysis_modules(
     sorted_modules = sorted(available_modules, key=lambda m: get_description(m) or "")
 
     audio_available = None
+    named_speaker_count = None
     if transcript_paths:
         audio_available = has_resolvable_audio(transcript_paths)
+        counts: list[int] = []
+        for path in transcript_paths:
+            try:
+                segments = load_segments(path)
+                counts.append(count_named_speakers(segments))
+            except Exception:
+                continue
+        if counts:
+            named_speaker_count = min(counts)
     voice_cfg = getattr(getattr(get_config(), "analysis", None), "voice", None)
     egemaps_enabled = bool(getattr(voice_cfg, "egemaps_enabled", True))
     deps = check_voice_optional_deps(egemaps_enabled=egemaps_enabled)
@@ -86,6 +99,10 @@ def select_analysis_modules(
         info = get_module_info(module)
         if info and _eligible(info):
             eligible_modules.append(module)
+    if named_speaker_count is not None:
+        eligible_modules = filter_modules_for_speaker_count(
+            eligible_modules, named_speaker_count
+        )
 
     # Build choices for multi-select (checkbox): special options then one per module.
     # Use checked=True to preselect "All modules"; checkbox does not accept default=[...].
@@ -102,9 +119,6 @@ def select_analysis_modules(
         ),
         questionary.Choice(
             title="📚 All eligible modules", value="all_eligible", shortcut_key=False
-        ),
-        questionary.Choice(
-            title="📚 All eligible modules (legacy)", value="all", shortcut_key=False
         ),
     ]
     for i, module in enumerate(eligible_modules, 1):
@@ -144,7 +158,7 @@ def select_analysis_modules(
             selected_modules = [
                 m
                 for m in selection
-                if m not in ("settings", "recommended", "all_eligible", "all")
+                if m not in ("settings", "recommended", "all_eligible")
             ]
             if "recommended" in selection and not selected_modules:
                 # Only "recommended" checked -> run recommended set from core
@@ -154,6 +168,10 @@ def select_analysis_modules(
                     dep_resolver=_dep_resolver,
                     for_group=for_group,
                 )
+                if named_speaker_count is not None:
+                    selected = filter_modules_for_speaker_count(
+                        selected, named_speaker_count
+                    )
                 heavy = [
                     m
                     for m in selected
@@ -165,7 +183,7 @@ def select_analysis_modules(
                         f"[yellow]⚠️ Heavy modules included: {', '.join(heavy)}[/yellow]"
                     )
                 return selected
-            if ("all_eligible" in selection or "all" in selection) and not selected_modules:
+            if "all_eligible" in selection and not selected_modules:
                 return [m for m in available_modules if m in eligible_modules]
             if not selected_modules:
                 print(

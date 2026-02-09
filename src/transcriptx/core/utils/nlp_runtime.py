@@ -9,6 +9,23 @@ import threading
 from typing import Optional, Any
 
 _nlp_model: Optional[Any] = None
+
+
+def _patch_transformers_for_spacy() -> None:
+    """Patch transformers so spacy_transformers entry point can load on transformers 5.x.
+
+    When spaCy loads any model, it loads all registered pipeline entry points, including
+    spacy_transformers. spacy_transformers 1.x imports BatchEncoding from
+    transformers.tokenization_utils, but in transformers 5.x that class lives in
+    tokenization_utils_base. This patch adds the alias so the import succeeds.
+    """
+    try:
+        import transformers.tokenization_utils as tu  # noqa: PLC0415
+        if not hasattr(tu, "BatchEncoding"):
+            from transformers.tokenization_utils_base import BatchEncoding  # noqa: PLC0415
+            tu.BatchEncoding = BatchEncoding
+    except Exception:
+        pass
 _nlp_model_name: Optional[str] = None
 _nlp_lock = threading.Lock()
 
@@ -108,6 +125,7 @@ def get_nlp_model(model_name: Optional[str] = None):
         if _nlp_model is not None:
             return _nlp_model
 
+        _patch_transformers_for_spacy()
         resolved = _resolve_model_name(model_name)
         _ensure_spacy_model(resolved)
 

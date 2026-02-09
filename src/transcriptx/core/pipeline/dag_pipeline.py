@@ -626,6 +626,7 @@ class DAGPipeline:
         # Create PipelineContext for efficient data passing
         # This loads transcript data once and caches it for all modules
         context = None
+        named_speaker_count: Optional[int] = None
         try:
             from transcriptx.core.pipeline.pipeline_context import PipelineContext
 
@@ -653,6 +654,14 @@ class DAGPipeline:
                 self.logger.debug(
                     f"Created PipelineContext with {len(context.get_segments())} segments"
                 )
+                try:
+                    from transcriptx.core.utils.speaker_extraction import (
+                        count_named_speakers,
+                    )
+
+                    named_speaker_count = count_named_speakers(context.get_segments())
+                except Exception:
+                    named_speaker_count = None
         except Exception as e:
             self.logger.warning(
                 f"Failed to create PipelineContext, falling back to legacy mode: {e}"
@@ -759,6 +768,53 @@ class DAGPipeline:
                             reason=reason_text,
                         )
                     continue
+
+            if named_speaker_count is None and context is not None:
+                try:
+                    from transcriptx.core.utils.speaker_extraction import (
+                        count_named_speakers,
+                    )
+
+                    named_speaker_count = count_named_speakers(context.get_segments())
+                except Exception:
+                    named_speaker_count = None
+
+            if named_speaker_count is not None:
+                try:
+                    from transcriptx.core.pipeline.module_registry import (
+                        effective_min_named_speakers,
+                        get_module_info,
+                    )
+
+                    module_info = get_module_info(module_name)
+                    if module_info:
+                        min_required = effective_min_named_speakers(module_info)
+                        if named_speaker_count < min_required:
+                            reason_text = (
+                                "requires at least "
+                                f"{min_required} named speakers"
+                            )
+                            results["skipped_modules"].append(
+                                {
+                                    "module": module_name,
+                                    "reason": reason_text,
+                                    "requires_multiple_speakers": (
+                                        module_info.requires_multiple_speakers
+                                    ),
+                                    "named_speaker_count": named_speaker_count,
+                                }
+                            )
+                            if run_report:
+                                from transcriptx.core.utils.run_report import ModuleResult
+
+                                run_report.record_module(
+                                    module_name=module_name,
+                                    status=ModuleResult.SKIP,
+                                    reason=reason_text,
+                                )
+                            continue
+                except Exception:
+                    pass
 
             # Execute module
             try:

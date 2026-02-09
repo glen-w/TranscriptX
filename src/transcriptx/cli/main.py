@@ -433,70 +433,6 @@ def _check_and_install_streamlit(*, allow_install: bool = False) -> bool:
         return False
 
 
-def _check_and_install_gradio(
-    *, allow_install: bool = False, prompt_if_missing: bool = True
-) -> bool:
-    """
-    Check if Gradio is available and install it on first request if missing.
-    Used for the Gradio UI (menu and `transcriptx ui`).
-    """
-    try:
-        try:
-            import gradio  # type: ignore  # noqa: F401
-            logger.info("Gradio is available for UI")
-            return True
-        except ImportError:
-            pass
-
-        if not allow_install:
-            print("[yellow]Gradio is not installed. Install it with: pip install -e \".[ui]\"[/yellow]")
-            logger.info("Gradio missing; auto-install disabled in non-interactive mode")
-            return False
-
-        if prompt_if_missing and not questionary.confirm(
-            "Gradio is not installed. Install it now?", default=True
-        ).ask():
-            print("[yellow]⚠️  Gradio install skipped.[/yellow]")
-            return False
-
-        print("[cyan]📦 Installing Gradio for UI...[/cyan]")
-        logger.info("Gradio not available, attempting to install gradio>=4")
-        install_cmd = [sys.executable, "-m", "pip", "install", "gradio>=4"]
-        result = subprocess.run(
-            install_cmd, capture_output=True, text=True, timeout=180
-        )
-
-        if result.returncode == 0:
-            try:
-                import gradio  # type: ignore  # noqa: F401
-                print("[green]✅ Gradio installed successfully[/green]")
-                logger.info("Gradio installed successfully")
-                return True
-            except ImportError:
-                print(
-                    "[yellow]⚠️  Gradio installation completed but import failed. Please restart the application.[/yellow]"
-                )
-                logger.warning("Gradio installation completed but import failed")
-                return False
-        else:
-            print("[yellow]⚠️  Could not install Gradio automatically.[/yellow]")
-            print("[dim]Install manually with: pip install -e \".[ui]\"[/dim]")
-            if result.stderr:
-                logger.warning(f"Gradio installation failed: {result.stderr}")
-            return False
-
-    except subprocess.TimeoutExpired:
-        print("[yellow]⚠️  Gradio installation timed out.[/yellow]")
-        print("[dim]Install manually with: pip install -e \".[ui]\"[/dim]")
-        logger.warning("Gradio installation timed out")
-        return False
-    except Exception as e:
-        print("[yellow]⚠️  Could not install Gradio automatically.[/yellow]")
-        print("[dim]Install manually with: pip install -e \".[ui]\"[/dim]")
-        logger.warning(f"Error checking/installing Gradio: {e}", exc_info=True)
-        return False
-
-
 def _check_and_install_librosa(*, allow_install: bool = False) -> bool:
     """
     Check if librosa is available and install it if missing.
@@ -847,45 +783,6 @@ def _show_browser_menu() -> None:
         )
 
 
-def _show_gradio_ui_menu() -> None:
-    """Launch the local Gradio UI (same as `transcriptx ui`)."""
-    try:
-        if not _check_and_install_gradio(allow_install=True, prompt_if_missing=True):
-            print(
-                "[dim]Install manually with: pip install -e \".[ui]\"[/dim]"
-            )
-            return
-
-        host = (
-            questionary.text("Gradio host", default="127.0.0.1").ask() or "127.0.0.1"
-        )
-        port_text = questionary.text("Gradio port", default="7860").ask() or "7860"
-        try:
-            port = int(port_text)
-        except ValueError:
-            print(f"[yellow]⚠️ Invalid port '{port_text}', using 7860.[/yellow]")
-            port = 7860
-
-        open_browser = bool(
-            questionary.confirm("Open UI in browser?", default=True).ask()
-        )
-
-        print(
-            f"[green]Starting Gradio UI on http://{host}:{port}[/green]\n"
-            "[dim]Press Ctrl+C to stop and return to the main menu.[/dim]"
-        )
-
-        from transcriptx.ui.app import main as ui_main
-
-        ui_main(host=host, port=port, open_browser=open_browser)
-    except KeyboardInterrupt:
-        print("\n[cyan]Returning to main menu...[/cyan]")
-        return
-    except Exception as e:
-        log_error("CLI", f"Failed to start Gradio UI: {e}", exception=e)
-        print(f"[red]Failed to start Gradio UI: {e}[/red]")
-
-
 def _get_docker_compose_command() -> list[str] | None:
     """Return docker compose command as argv list (v1 or v2)."""
     try:
@@ -928,117 +825,14 @@ def _guess_lan_ip() -> str:
     return "127.0.0.1"
 
 
-def _show_whisperx_web_gui_menu() -> None:
-    """
-    Launch the WhisperX-backed Web UI stack for LAN access.
-
-    This starts the docker-compose stack in `examples/docker-compose.ui-whisperx.yml`,
-    which runs the UI bound to 0.0.0.0:7860 on the host.
-    """
-    project_root = Path(__file__).parent.parent.parent.parent
-    compose_file = project_root / "examples" / "docker-compose.ui-whisperx.yml"
-    if not compose_file.exists():
-        print(
-            f"[red]Compose file not found: {compose_file}[/red]\n"
-            "[yellow]Expected: examples/docker-compose.ui-whisperx.yml[/yellow]"
-        )
-        return
-
-    compose_cmd = _get_docker_compose_command()
-    if compose_cmd is None:
-        print(
-            "[red]Docker Compose not found.[/red]\n"
-            "[dim]Install Docker Desktop (includes docker compose) or docker-compose v1.[/dim]"
-        )
-        return
-
-    action = questionary.select(
-        "WhisperX Web GUI (LAN)",
-        choices=[
-            "▶ Start (background)",
-            "⏹ Stop (docker compose down)",
-            "⬅️ Back",
-        ],
-    ).ask()
-
-    if action in (None, "⬅️ Back"):
-        return
-
-    try:
-        if action == "⏹ Stop (docker compose down)":
-            cmd = [
-                *compose_cmd,
-                "-f",
-                str(compose_file),
-                "--profile",
-                "whisperx",
-                "--profile",
-                "ui",
-                "down",
-            ]
-            result = subprocess.run(
-                cmd, cwd=str(project_root), capture_output=True, text=True, check=False
-            )
-            if result.returncode == 0:
-                print("[green]✅ WhisperX Web GUI stack stopped[/green]")
-            else:
-                print("[red]❌ Failed to stop stack[/red]")
-                if result.stderr:
-                    print(f"[dim]{result.stderr.strip()}[/dim]")
-            return
-
-        # Start
-        cmd = [
-            *compose_cmd,
-            "-f",
-            str(compose_file),
-            "--profile",
-            "whisperx",
-            "--profile",
-            "ui",
-            "up",
-            "-d",
-            "whisperx",
-            "ui",
-        ]
-        print("[cyan]Starting WhisperX Web GUI stack in background...[/cyan]")
-        result = subprocess.run(
-            cmd, cwd=str(project_root), capture_output=True, text=True, check=False
-        )
-        if result.returncode != 0:
-            print("[red]❌ Failed to start stack[/red]")
-            if result.stderr:
-                print(f"[dim]{result.stderr.strip()}[/dim]")
-            return
-
-        port = 7860
-        local_url = f"http://127.0.0.1:{port}"
-        lan_url = f"http://{_guess_lan_ip()}:{port}"
-
-        print("[green]✅ WhisperX Web GUI stack started[/green]")
-        print(f"[cyan]Local:[/cyan] {local_url}")
-        print(f"[cyan]LAN:[/cyan]   {lan_url}")
-
-        if questionary.confirm("Open in browser now (local URL)?", default=True).ask():
-            webbrowser.open(local_url)
-    except KeyboardInterrupt:
-        print("\n[cyan]Returning to main menu...[/cyan]")
-        return
-    except Exception as e:
-        log_error("CLI", f"Failed to manage WhisperX Web GUI stack: {e}", exception=e)
-        print(f"[red]Failed to manage WhisperX Web GUI stack: {e}[/red]")
-
-
 def _show_interface_menu() -> None:
-    """Interface submenu: Streamlit, Gradio, and WhisperX LAN GUI."""
+    """Interface submenu: Streamlit browser UI (expandable later)."""
     while True:
         try:
             choice = questionary.select(
                 "Interface Options",
                 choices=[
                     "🌐 Browser (Streamlit)",
-                    "🖥️ UI (Gradio)",
-                    "🌐 WhisperX Web GUI (LAN)",
                     "⬅️ Back to main menu",
                 ],
             ).ask()
@@ -1050,10 +844,6 @@ def _show_interface_menu() -> None:
             return
         if choice == "🌐 Browser (Streamlit)":
             _show_browser_menu()
-        elif choice == "🖥️ UI (Gradio)":
-            _show_gradio_ui_menu()
-        elif choice == "🌐 WhisperX Web GUI (LAN)":
-            _show_whisperx_web_gui_menu()
 
 
 def _main_impl(
@@ -1114,7 +904,6 @@ def _main_impl(
     # - Audio playback: checked in play_audio_file() when playback needed
     # - librosa: checked/installed in deduplication_workflow when duplicate detection needed
     # - Streamlit: checked/installed in _show_browser_menu() when web interface needed
-    # - Gradio: checked/installed on first request in _show_gradio_ui_menu() or `transcriptx ui`
 
     while True:
         try:
@@ -1256,34 +1045,6 @@ def web_viewer(
         log_error("CLI", f"Failed to start web viewer: {e}", exception=e)
         print(f"[red]Failed to start web viewer: {e}[/red]")
         raise CliExit.error(f"Failed to start web viewer: {e}")
-
-
-@app.command("ui")
-def ui(
-    host: str = typer.Option("127.0.0.1", help="Host to bind to"),
-    port: int = typer.Option(7860, help="Port to run on (Gradio default: 7860)"),
-    open_browser: bool = typer.Option(
-        True, "--open/--no-open", help="Open UI in browser"
-    ),
-):
-    """Launch the local Gradio UI."""
-    try:
-        if not _check_and_install_gradio(allow_install=True, prompt_if_missing=False):
-            print(
-                "[yellow]Gradio is not installed. Install it with: "
-                "pip install -e \".[ui]\"[/yellow]"
-            )
-            raise CliExit.error()
-
-        from transcriptx.ui.app import main as ui_main
-
-        ui_main(host=host, port=port, open_browser=open_browser)
-    except CliExit:
-        raise
-    except Exception as e:
-        log_error("CLI", f"Failed to start Gradio UI: {e}", exception=e)
-        print(f"[red]Failed to start Gradio UI: {e}[/red]")
-        raise CliExit.error(f"Failed to start Gradio UI: {e}")
 
 
 @app.command()

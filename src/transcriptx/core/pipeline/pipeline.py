@@ -679,6 +679,7 @@ def _run_single_analysis_pipeline(
             selected_modules=selected_modules,
             modules_run=results.get("modules_run", []),
             errors=results.get("errors", []),
+            skipped_modules=results.get("skipped_modules", []),
         )
 
         # Build lightweight output manifest for the run

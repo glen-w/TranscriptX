@@ -123,6 +123,9 @@ def _run_transcription_workflow_impl() -> None:
             logger.info(f"WhisperX transcription completed successfully for: {audio_file}")
 
             # Ask if user wants to analyze the transcript (only for single file)
+            if not Path(result).exists():
+                logger.warning(f"Transcript output not found: {result}")
+                return
             if questionary.confirm(
                 "Transcription completed! Would you like to analyze the transcript?"
             ).ask():

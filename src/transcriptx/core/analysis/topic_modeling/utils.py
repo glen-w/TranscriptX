@@ -111,7 +111,12 @@ def _create_output_structure(transcript_dir: str, module_name: str) -> dict[str,
     }
 
 
-def prepare_text_data(segments: list[dict]) -> tuple[list[str], list[str], list[float]]:
+def prepare_text_data(
+    segments: list[dict], return_indices: bool = False
+) -> (
+    tuple[list[str], list[str], list[float]]
+    | tuple[list[str], list[str], list[float], list[int]]
+):
     """
     Prepare text data for topic modeling from transcript segments.
 
@@ -121,15 +126,16 @@ def prepare_text_data(segments: list[dict]) -> tuple[list[str], list[str], list[
         segments: List of transcript segments
 
     Returns:
-        Tuple of (texts, speaker_labels, time_labels)
+        Tuple of (texts, speaker_labels, time_labels) by default.
+        If return_indices is True, also returns segment_indices for each text.
     """
     from transcriptx.core.utils.speaker_extraction import (
         extract_speaker_info,
         get_speaker_display_name,
     )
 
-    texts, speaker_labels, time_labels = [], [], []
-    for seg in segments:
+    texts, speaker_labels, time_labels, segment_indices = [], [], [], []
+    for idx, seg in enumerate(segments):
         text = seg.get("text", "").strip()
         # Check if segment has meaningful content using topic modeling preprocessing
         if not has_meaningful_content(
@@ -150,6 +156,10 @@ def prepare_text_data(segments: list[dict]) -> tuple[list[str], list[str], list[
         texts.append(preprocessed_text)
         speaker_labels.append(display_name)
         time_labels.append(seg.get("start", 0))
+        if return_indices:
+            segment_indices.append(idx)
+    if return_indices:
+        return texts, speaker_labels, time_labels, segment_indices
     return texts, speaker_labels, time_labels
 
 

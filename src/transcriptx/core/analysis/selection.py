@@ -15,6 +15,7 @@ from typing import Any, Callable, Iterable, List, Optional
 
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.pipeline.module_registry import (
+    effective_min_named_speakers,
     get_default_modules,
     get_module_info,
     ModuleInfo,
@@ -91,6 +92,22 @@ def filter_modules_by_mode(modules: List[str], mode: str) -> List[str]:
                 filtered.append("semantic_similarity")
             return filtered
     return list(modules)
+
+
+def filter_modules_for_speaker_count(
+    modules: List[str], named_speaker_count: int
+) -> List[str]:
+    """Filter modules that require more named speakers than available."""
+    filtered: list[str] = []
+    for module in modules:
+        info = get_module_info(module)
+        if info is None:
+            filtered.append(module)
+            continue
+        if named_speaker_count < effective_min_named_speakers(info):
+            continue
+        filtered.append(module)
+    return filtered
 
 
 def get_recommended_modules(
