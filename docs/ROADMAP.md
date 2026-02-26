@@ -1,12 +1,13 @@
-# TranscriptX Roadmap (Next 6 Months)
+# TranscriptX Roadmap
 
-**Cadence:** 2‑week sprints (12 sprints)  
-**North star:** ship a credible **v0.1 → v0.2** core transcription + analysis toolkit with stable contracts, great UX, and a safe path to extensibility.
+**Current version:** 0.42
+
+**North star:** ship a credible **beta → v0.42** core transcription + analysis toolkit with stable contracts, great UX, and a safe path to extensibility.
 
 > **Status legend (GitHub-style):**  
 > - [ ] planned / not started  
 > - [x] done  
-> - [~] in progress (use `[ ]` plus “(in progress)” if you prefer strict GitHub rendering)
+> - [~] in progress
 
 ---
 
@@ -16,22 +17,101 @@
 - Stability over novelty: contracts + tests before new features
 - Observable outputs: every module produces machine-readable artifacts
 - Deferred platformisation: adapters/plugins are designed, not prematurely built
-- Low-regret UX: CLI + WebUI remain first-class
+- Low-regret UX: CLI is the canonical execution surface; Web Viewer is first-class for read-only exploration (see [CLI/GUI Strategy](CLI_GUI_STRATEGY.md))
 
 ---
 
-## Milestones
+## Product direction (CLI-first)
 
-- **M1:** `v0.1.0` — frozen, stable, public release (Sprint 1)
-- **M2:** `UX v1` — CLI experience is fast, predictable, and pleasant (Sprint 2)
-- **M3:** Longitudinal speaker identity `v1` — speakers persist across runs (Sprint 4)
-- **M4:** `v0.2.0` — calmer second release with stronger architecture (Sprint 12)
+The CLI remains the canonical execution surface; the Web Viewer is a read-only gallery. See [CLI/GUI Strategy](CLI_GUI_STRATEGY.md) for boundaries and guardrails. The following horizons guide prioritization without adding new product commitments.
+
+**Near-term (v0.1 – v0.42)**
+
+- Harden CLI experience
+- Improve run summaries and explainability
+- Improve speaker identification workflow
+- Improve installation reliability
+- Stabilize output contracts
+
+**Later (v0.3+)**
+
+- Enhanced Web Viewer capabilities: run comparison, artifact filtering, group-level browsing
+- Potential GUI for complex editing workflows (e.g. advanced speaker curation)
+- No commitment to full GUI replacement of CLI
 
 ---
 
-## Sprint plan
+## Phases (priority order)
 
-### Sprint 1 (Weeks 1–2) — **v0.1 Freeze + Release**
+### Phase 1 — Beta-ready (now)
+
+**Goal:** Install, core flows, and docs work for a beta user with no bugs.
+
+- Install path: one canonical sequence (venv → requirements.txt → pip install -e .); script and README aligned
+- Core flows: interactive CLI, web-viewer, analyze (single + non-interactive), groups — all run and produce outputs
+- Docs: README Quickstart, manual install, verify-install step, env vars, troubleshooting
+- Dependencies: version consistency (requirements.txt, lock, launcher, CI)
+- CI: smoke, contracts, fast gates pass; build_sanity validates “install then run”
+
+**No new features;** stability and “it works” for a first-time clone/install.
+
+---
+
+### Phase 2 — UX + stability (next)
+
+**Goal:** CLI and Web Viewer feel intentional; outputs and contracts are solid.
+
+- UX v1: CLI ergonomics (fast file selection, progress, clear errors)
+- Web Viewer parity and guardrails (probe-gated startup, canonical paths, read-only viewer)
+- Stats consolidation (unified stats MD/JSON, module status table)
+- Contract tests and output schema stability
+- Internal cleanup: error types, pipeline failure semantics, config/secrets via env only
+
+---
+
+### Phase 3 — Optional / advanced (later)
+
+**Goal:** Richer analysis and tooling without blocking beta or stability.
+
+- **Longitudinal speaker tracking v1 and v2** — including **web visualization** (speaker-over-time charts, cross-session views). Current `transcriptx cross-session` and `transcriptx database` commands remain **CLI-only**; no Web Viewer for speaker-over-time or DB-backed analytics yet.
+- Emotion/sentiment convergence (multi-label, tension metrics, divergence summaries)
+- NER-driven insight (entity–sentiment, concordance, timelines)
+- Interaction and network analysis (graphs, network outputs)
+- Adapters and plugins (design only; no marketplace)
+- Architecture cleanup and module contract docs
+
+---
+
+## Deferred to post-beta
+
+The following are explicitly **not** part of the beta-ready scope; they are planned for a later release:
+
+- **Longitudinal speaker identity with web visualization** — speaker-over-time charts, cross-session views, and richer DB-backed analytics in the Web Viewer. The CLI commands (`transcriptx cross-session`, `transcriptx database`) exist and are CLI-only; visualization and full DB UX are deferred.
+- Database and cross-session speaker commands are available today (CLI only). Speaker-over-time **visualization** and full database-backed analytics are planned for a later release.
+
+### ConvoKit analysis (archived)
+
+**ConvoKit** coordination/accommodation analysis is **archived** (not removed) due to **dependency conflicts** with the current stack. Re-enablement is planned for later once version constraints are resolved.
+
+**Dependency issues:** convokit 3.5.0 requires `numpy>=2.0.0`, `spacy>=3.8.2`, and `thinc>=8.3.0,<8.4.0`. These conflict with current project pins (e.g. numpy 1.26.4, spacy 3.7.5, thinc 8.2.5) used by NER and other modules. Pip’s resolver reports these conflicts when convokit is installed.
+
+**Archived implementation:** `archived/convokit/` (and tests in `tests/archived/test_convokit.py`). To re-enable: resolve convokit/numpy/spacy/thinc versions, restore the module under `src/transcriptx/core/analysis/convokit/`, and re-wire the pipeline module registry, analysis config, aggregation registry, and lazy imports. See `archived/convokit/README.md` for details.
+
+---
+
+## Milestones (reference)
+
+- **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
+- **M2:** UX v1 — CLI and Web Viewer parity (Phase 2)
+- **M3:** v0.42 — current release; calmer architecture (Phase 2 + selected Phase 3 items)
+
+---
+
+## Sprint plan (legacy / backlog)
+
+The following sprint plan is kept for reference. **Sprints 4 and 10 (Longitudinal Speaker Tracking)** are moved to Phase 3 / backlog; focus is Phase 1 then Phase 2.
+
+### Sprint 1 (Weeks 1–2) — **v0.1 Freeze + Release** (done)
 **Goal:** lock correctness, contracts, and ship `v0.1.0` without churn.
 
 **Outputs & contracts**
@@ -56,7 +136,7 @@
 - [ ] README consolidation (single canonical public doc)
 - [ ] Archive `docs/` (no Sphinx coupling for v0.1)
 - [ ] Minimal contract tests for transcript + stats JSON schemas
-- [ ] Tag `v0.1.0` and write `RELEASE_NOTES.md`
+- [x] Tag `v0.1.0` and write `RELEASE_NOTES.md`
 
 **Milestone:** `v0.1.0`
 
@@ -80,8 +160,8 @@
 
 ---
 
-### Sprint 3 (Weeks 5–6) — **WebUI Parity + Guardrails**
-**Goal:** WebUI mirrors CLI capabilities safely (no surprise subprocesses).
+### Sprint 3 (Weeks 5–6) — **Web Viewer Parity + Guardrails**
+**Goal:** Web Viewer mirrors CLI capabilities safely (no surprise subprocesses).
 
 - [ ] Engine forcing (`auto | whisperx`) wired end-to-end (not cosmetic)
 - [ ] Probe-gated startup (if WhisperX unavailable, show start command; don’t spawn)
@@ -90,8 +170,8 @@
 
 ---
 
-### Sprint 4 (Weeks 7–8) — **Longitudinal Speaker Tracking v1 (Foundational)**
-**Goal:** track speakers *across transcripts*, conservatively and reversibly.
+### Sprint 4 (Weeks 7–8) — **Longitudinal Speaker Tracking v1 (Backlog / Phase 3)**
+**Goal:** track speakers *across transcripts*, conservatively and reversibly. **Deferred:** CLI layer exists; **web visualization** (speaker-over-time, cross-session views) is planned for later.
 
 **Data model + storage**
 - [ ] Define persistent `SpeakerIdentity` model (stable ID across runs)
@@ -103,7 +183,7 @@
 - [ ] Implement conservative cross-run resolution (opt-in) with clear “unknown” outcomes
 - [ ] Export speaker registry + per-run mapping artifacts
 
-**Milestone:** Longitudinal identity layer v1
+**Milestone:** Longitudinal identity layer v1 (when prioritized)
 
 ---
 
@@ -162,34 +242,34 @@
 
 ---
 
-### Sprint 10 (Weeks 19–20) — **Longitudinal Speaker Tracking v2 (Strengthening)**
-**Goal:** make identity usable *and* safe (no silent data corruption).
+### Sprint 10 (Weeks 19–20) — **Longitudinal Speaker Tracking v2 (Backlog / Phase 3)**
+**Goal:** make identity usable *and* safe; **web visualization** (speaker-over-time, uncertain matches) deferred to later.
 
 - [ ] Manual merge/split tooling (CLI + optional UI hooks)
 - [ ] Confidence scoring + provenance (why a match was made)
 - [ ] Stats aggregation per speaker over time
-- [ ] Visual indicators for uncertain matches
+- [ ] Visual indicators for uncertain matches (CLI first; Web Viewer later)
 
 ---
 
-### Sprint 11 (Weeks 21–22) — **v0.2 Hardening**
-**Goal:** prepare a calm second release.
+### Sprint 11 (Weeks 21–22) — **v0.42 Hardening**
+**Goal:** prepare a calm release (current version 0.42).
 
 - [ ] Expanded contract tests (outputs + module invariants)
 - [ ] Performance regression checks (file selection, pipeline runtime)
-- [ ] Migration notes: `v0.1 → v0.2`
-- [ ] `v0.2.0-rc` tagging / release candidate checklist
+- [ ] Migration notes: `v0.1 → v0.42`
+- [ ] Release candidate checklist when preparing next tag
 
 ---
 
-### Sprint 12 (Weeks 23–24) — **v0.2 Release**
-**Goal:** ship `v0.2.0`.
+### Sprint 12 (Weeks 23–24) — **v0.42 Release**
+**Goal:** ship current version as tagged release.
 
 - [ ] Final README updates (features + stability notes)
-- [ ] Tag `v0.2.0`
+- [ ] Tag `v0.42`
 - [ ] Publish release notes + known issues
 
-**Milestone:** `v0.2.0`
+**Milestone:** `v0.42` (current)
 
 ---
 
@@ -208,6 +288,5 @@
 - A serious researcher can trust the outputs and cite the artifacts
 - Stats outputs are coherent (MD + JSON) and stable across versions
 - Adding a new analysis module feels low-risk
-- Longitudinal speaker analysis works **without** corrupting data
+- CLI and DB layer for speaker identity exist and do not corrupt data; **visualization** (speaker-over-time, cross-session views in Web Viewer) is deferred to a later release
 - You still enjoy working on the codebase
-

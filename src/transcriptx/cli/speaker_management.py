@@ -232,7 +232,7 @@ def _edit_speaker_info(speaker) -> None:
             # Refresh speaker from database
             speaker = speaker_repo.get_speaker_by_id(speaker.id)
             if not speaker:
-                print(f"[red]❌ Speaker not found[/red]")
+                print("[red]❌ Speaker not found[/red]")
                 return
 
             print(f"\n[bold cyan]Editing: {speaker.name}[/bold cyan]")
@@ -302,7 +302,7 @@ def _edit_speaker_info(speaker) -> None:
             updated_speaker = speaker_repo.update_speaker(speaker.id, **update_data)
 
             if updated_speaker:
-                print(f"\n[green]✅ Speaker updated successfully![/green]")
+                print("\n[green]✅ Speaker updated successfully![/green]")
                 print(f"[cyan]Name: {updated_speaker.name}[/cyan]")
             else:
                 print("[red]❌ Failed to update speaker[/red]")
@@ -587,7 +587,7 @@ def _add_new_speaker() -> None:
             )
 
             if new_speaker:
-                print(f"\n[green]✅ Speaker created successfully![/green]")
+                print("\n[green]✅ Speaker created successfully![/green]")
                 print(f"[cyan]Name: {new_speaker.name}[/cyan]")
                 print(f"[cyan]ID: {new_speaker.id}[/cyan]")
             else:

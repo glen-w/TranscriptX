@@ -54,6 +54,7 @@ class TestNERContracts:
         sample_speaker_map: dict[str, str],
     ) -> None:
         """Assert NER analyze() result has full output contract."""
+
         # Deterministic entities: no spaCy required
         def side_effect(text: str) -> list[tuple[str, str]]:
             if "New York" in text and "Google" in text:

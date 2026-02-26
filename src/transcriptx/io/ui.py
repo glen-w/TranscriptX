@@ -5,7 +5,6 @@ from pathlib import Path
 import questionary
 from rich.console import Console
 from colorama import Fore
-from transcriptx.core.utils.paths import RECORDINGS_DIR
 from transcriptx.core.utils.config import get_config
 from transcriptx.cli.file_selection_utils import get_recordings_folder_start_path
 

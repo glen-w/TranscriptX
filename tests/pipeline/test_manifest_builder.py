@@ -37,7 +37,10 @@ def test_build_output_manifest_basic(tmp_path: Path, monkeypatch) -> None:
     assert manifest["schema_version"] == 1
     assert manifest["run_id"] == "run-1"
     assert manifest["run_metadata"]["transcript_key"] == "tkey"
-    assert any(a["rel_path"].endswith("sample_sentiment_summary.json") for a in manifest["artifacts"])
+    assert any(
+        a["rel_path"].endswith("sample_sentiment_summary.json")
+        for a in manifest["artifacts"]
+    )
 
 
 def test_manifest_is_deterministic(tmp_path: Path, monkeypatch) -> None:

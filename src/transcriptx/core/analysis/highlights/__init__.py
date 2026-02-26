@@ -1,4 +1,5 @@
 """Highlights analysis package."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -8,7 +9,11 @@ from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.highlights.core import compute_highlights
 from transcriptx.core.analysis.insights_normalization import normalize_segments
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.module_result import build_module_result, capture_exception, now_iso
+from transcriptx.core.utils.module_result import (
+    build_module_result,
+    capture_exception,
+    now_iso,
+)
 from transcriptx.core.analysis.common import (
     log_analysis_start,
     log_analysis_complete,
@@ -35,7 +40,9 @@ class HighlightsAnalysis(AnalysisModule):
         self.module_name = "highlights"
 
     def analyze(
-        self, segments: List[Dict[str, Any]], speaker_map: Optional[Dict[str, str]] = None
+        self,
+        segments: List[Dict[str, Any]],
+        speaker_map: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         config = get_config()
         normalized = normalize_segments(
@@ -141,11 +148,10 @@ class HighlightsAnalysis(AnalysisModule):
         output_service.save_data(results, "highlights", format_type="json")
         markdown = render_highlights_markdown(results)
         output_service.save_text(markdown, "highlights", ext=".md")
-        if (
-            conflict_rows
-            and get_config().analysis.highlights.output.write_conflict_csv
-        ):
-            output_service.save_data(conflict_rows, "conflict_events", format_type="csv")
+        if conflict_rows and get_config().analysis.highlights.output.write_conflict_csv:
+            output_service.save_data(
+                conflict_rows, "conflict_events", format_type="csv"
+            )
 
 
 def render_highlights_markdown(results: Dict[str, Any]) -> str:
@@ -187,7 +193,11 @@ def render_highlights_markdown(results: Dict[str, Any]) -> str:
         lines.append(
             render_no_signal_md(
                 "No standout quotes or conflict spikes passed the current thresholds.",
-                looked_for=["high-intensity quotes", "conflict windows", "emblematic phrases"],
+                looked_for=[
+                    "high-intensity quotes",
+                    "conflict windows",
+                    "emblematic phrases",
+                ],
             ).rstrip()
         )
         lines.append("")
@@ -199,9 +209,7 @@ def render_highlights_markdown(results: Dict[str, Any]) -> str:
     lines.append("## Cold open")
     for item in cold_open.get("items", []):
         anchor = _anchor_for_quote(item)
-        lines.append(
-            f"- **{item.get('speaker','')}**: {item.get('quote','')} {anchor}"
-        )
+        lines.append(f"- **{item.get('speaker','')}**: {item.get('quote','')} {anchor}")
     lines.append("")
 
     lines.append("## Conflict points")

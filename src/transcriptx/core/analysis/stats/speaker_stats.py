@@ -54,9 +54,7 @@ def compute_speaker_stats(
 
     for name, texts in grouped.items():
         speaker_key = speaker_key_map.get(name, name)
-        if not is_eligible_named_speaker(
-            name, speaker_key, ignored_ids or set()
-        ):
+        if not is_eligible_named_speaker(name, speaker_key, ignored_ids or set()):
             continue
 
         word_count = sum(len(t.split()) for t in texts)

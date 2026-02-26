@@ -371,6 +371,8 @@ def generate_summary_stats(
     write_text(txt_file, summary_text)
 
     # HTML summary output removed (superseded by browser GUI)
+
+
 def generate_enhanced_html_summary(
     transcript_dir: str, base_name: str, module_data: dict, speaker_map: dict
 ):
@@ -853,7 +855,7 @@ def create_enhanced_html_content(
         '<div class="main-container">',
         # Header
         '<div class="header-section">',
-        f'<h1><i class="fas fa-chart-line me-3"></i>Comprehensive Analysis Summary</h1>',
+        '<h1><i class="fas fa-chart-line me-3"></i>Comprehensive Analysis Summary</h1>',
         f'<div class="subtitle">Meeting: {html_escape(base_name)}</div>',
         f'<div class="subtitle">Generated: {timestamp}</div>',
         "</div>",
@@ -868,12 +870,12 @@ def create_enhanced_html_content(
     # Add TOC links
     for module_id, info in modules_info.items():
         if module_id in module_images and module_images[module_id]:
-            html_parts.append(f'<div class="col-md-6 col-lg-4">')
+            html_parts.append('<div class="col-md-6 col-lg-4">')
             html_parts.append(f'<a href="#{module_id}" class="nav-link">')
             html_parts.append(
                 f'<i class="fas fa-chevron-right me-2"></i>{info["name"]}'
             )
-            html_parts.append(f"</a></div>")
+            html_parts.append("</a></div>")
 
     html_parts.extend(
         [

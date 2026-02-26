@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable
 
 import numpy as np
 
@@ -35,6 +35,7 @@ from transcriptx.core.utils.viz_ids import (  # type: ignore[import-untyped]
     VIZ_PROSODY_QUALITY_SCATTER_GLOBAL,
     VIZ_PROSODY_TIMELINE_GLOBAL,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import (  # type: ignore[import-untyped]
     BoxSpec,
     HeatmapMatrixSpec,
@@ -102,7 +103,9 @@ def _zscore(values: Iterable[float]) -> tuple[np.ndarray, float, float]:
     return (arr - mean) / std, mean, std
 
 
-def _scale_sizes(values: Iterable[float], min_size: float = 6.0, max_size: float = 18.0) -> list[float]:
+def _scale_sizes(
+    values: Iterable[float], min_size: float = 6.0, max_size: float = 18.0
+) -> list[float]:
     arr = np.asarray(list(values), dtype=np.float64)
     if arr.size == 0 or not np.any(np.isfinite(arr)):
         return [] if arr.size == 0 else [float(min_size) for _ in arr]
@@ -121,18 +124,32 @@ def _build_hover_text(row: Any) -> str:
     snippet = row.get("text_snippet") or ""
     fields = [
         f"speaker: {speaker}",
-        f"start_s: {start_s:.2f}" if isinstance(start_s, (int, float)) else "start_s: n/a",
+        (
+            f"start_s: {start_s:.2f}"
+            if isinstance(start_s, (int, float))
+            else "start_s: n/a"
+        ),
         f"end_s: {end_s:.2f}" if isinstance(end_s, (int, float)) else "end_s: n/a",
-        f"rms_db: {row.get('rms_db'):.2f}" if isinstance(row.get("rms_db"), (int, float)) else "rms_db: n/a",
-        f"f0_range_semitones: {row.get('f0_range_semitones'):.2f}"
-        if isinstance(row.get("f0_range_semitones"), (int, float))
-        else "f0_range_semitones: n/a",
-        f"speech_rate_wps: {row.get('speech_rate_wps'):.2f}"
-        if isinstance(row.get("speech_rate_wps"), (int, float))
-        else "speech_rate_wps: n/a",
-        f"voiced_ratio: {row.get('voiced_ratio'):.2f}"
-        if isinstance(row.get("voiced_ratio"), (int, float))
-        else "voiced_ratio: n/a",
+        (
+            f"rms_db: {row.get('rms_db'):.2f}"
+            if isinstance(row.get("rms_db"), (int, float))
+            else "rms_db: n/a"
+        ),
+        (
+            f"f0_range_semitones: {row.get('f0_range_semitones'):.2f}"
+            if isinstance(row.get("f0_range_semitones"), (int, float))
+            else "f0_range_semitones: n/a"
+        ),
+        (
+            f"speech_rate_wps: {row.get('speech_rate_wps'):.2f}"
+            if isinstance(row.get("speech_rate_wps"), (int, float))
+            else "speech_rate_wps: n/a"
+        ),
+        (
+            f"voiced_ratio: {row.get('voiced_ratio'):.2f}"
+            if isinstance(row.get("voiced_ratio"), (int, float))
+            else "voiced_ratio: n/a"
+        ),
     ]
     if snippet:
         fields.append(f"text: {snippet}")
@@ -157,15 +174,24 @@ def _prepare_data(context: Any, locator: Dict[str, Any]) -> _ProsodyData:
         egemaps_path=__import__("pathlib").Path(eg_path) if eg_path else None,
     )
     if "duration_s" not in df.columns and {"start_s", "end_s"} <= set(df.columns):
-        df = df.assign(duration_s=df["end_s"].astype(float) - df["start_s"].astype(float))
-    if "segment_midpoint_time" not in df.columns and {"start_s", "end_s"} <= set(df.columns):
         df = df.assign(
-            segment_midpoint_time=(df["start_s"].astype(float) + df["end_s"].astype(float)) / 2.0
+            duration_s=df["end_s"].astype(float) - df["start_s"].astype(float)
+        )
+    if "segment_midpoint_time" not in df.columns and {"start_s", "end_s"} <= set(
+        df.columns
+    ):
+        df = df.assign(
+            segment_midpoint_time=(
+                df["start_s"].astype(float) + df["end_s"].astype(float)
+            )
+            / 2.0
         )
 
     segment_meta = resolve_segment_metadata(context)
     if "segment_id" in df.columns and "segment_id" in segment_meta.columns:
-        df_hover = df.merge(segment_meta[["segment_id", "text_snippet"]], on="segment_id", how="left")
+        df_hover = df.merge(
+            segment_meta[["segment_id", "text_snippet"]], on="segment_id", how="left"
+        )
     else:
         df_hover = df.copy()
         df_hover["text_snippet"] = None
@@ -233,7 +259,9 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                     "missing_optional_deps": locator.get("missing_optional_deps", []),
                     "install_hint": locator.get("install_hint"),
                 }
-                output_service.save_data(payload, "prosody_dashboard_locator", format_type="json")
+                output_service.save_data(
+                    payload, "prosody_dashboard_locator", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -264,12 +292,7 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                 for feature in CORE_FEATURES:
                     if feature not in speaker_df.columns:
                         continue
-                    vals = (
-                        speaker_df[feature]
-                        .dropna()
-                        .astype(float)
-                        .tolist()
-                    )
+                    vals = speaker_df[feature].dropna().astype(float).tolist()
                     x_vals.extend([feature] * len(vals))
                     y_vals.extend(vals)
                 if y_vals:
@@ -320,6 +343,8 @@ class ProsodyDashboardAnalysis(AnalysisModule):
             timeline_df = df_hover.copy()
             if "segment_midpoint_time" in timeline_df.columns:
                 timeline_df = timeline_df.sort_values("segment_midpoint_time")
+            x_times = timeline_df["segment_midpoint_time"].astype(float).tolist()
+            x_display, timeline_x_label = time_axis_display(x_times)
             series: list[dict[str, Any]] = []
             for feature in CORE_FEATURES:
                 if feature not in timeline_df.columns:
@@ -331,14 +356,16 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                 series.append(
                     {
                         "name": feature,
-                        "x": timeline_df["segment_midpoint_time"].astype(float).tolist(),
+                        "x": x_display,
                         "y": z_vals.tolist(),
-                        "text": [
-                            _build_hover_text(row)
-                            for _, row in timeline_df.iterrows()
-                        ]
-                        if "text_snippet" in timeline_df.columns
-                        else None,
+                        "text": (
+                            [
+                                _build_hover_text(row)
+                                for _, row in timeline_df.iterrows()
+                            ]
+                            if "text_snippet" in timeline_df.columns
+                            else None
+                        ),
                     }
                 )
             if series:
@@ -349,7 +376,7 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                     scope="global",
                     chart_intent="line_timeseries",
                     title="Prosody Timeline (z-scored, global)",
-                    x_label="Time (seconds)",
+                    x_label=timeline_x_label,
                     y_label="Z-score",
                     markers=False,
                     series=series,
@@ -424,13 +451,25 @@ class ProsodyDashboardAnalysis(AnalysisModule):
             cfg = get_config()
             voice_cfg = getattr(getattr(cfg, "analysis", None), "voice", None)
             if bool(getattr(voice_cfg, "egemaps_enabled", True)):
-                eg_columns = [f"eg_{name}" for name in EGEMAPS_CANONICAL_FIELDS if f"eg_{name}" in df.columns]
-                missing = [name for name in EGEMAPS_CANONICAL_FIELDS if f"eg_{name}" not in df.columns]
+                eg_columns = [
+                    f"eg_{name}"
+                    for name in EGEMAPS_CANONICAL_FIELDS
+                    if f"eg_{name}" in df.columns
+                ]
+                missing = [
+                    name
+                    for name in EGEMAPS_CANONICAL_FIELDS
+                    if f"eg_{name}" not in df.columns
+                ]
                 if missing:
                     logger.warning(f"[PROSODY] Missing eGeMAPS columns: {missing}")
                 if eg_columns:
-                    for speaker in sorted({str(s) for s in df_named["speaker"].dropna()}):
-                        speaker_df = df_named[df_named["speaker"].astype(str) == speaker]
+                    for speaker in sorted(
+                        {str(s) for s in df_named["speaker"].dropna()}
+                    ):
+                        speaker_df = df_named[
+                            df_named["speaker"].astype(str) == speaker
+                        ]
                         if speaker_df.empty:
                             continue
                         safe_speaker = _safe_speaker_name(speaker)
@@ -457,13 +496,19 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                                 show_points=True,
                                 series=[{"name": "egemaps", "x": x_vals, "y": y_vals}],
                             )
-                            output_service.save_chart(spec_eg_dist, chart_type="prosody_dashboard")
+                            output_service.save_chart(
+                                spec_eg_dist, chart_type="prosody_dashboard"
+                            )
 
                     # Quality scatter (hnr_db vs rms_db)
                     if "eg_hnr_db" in df_hover.columns and "rms_db" in df_hover.columns:
                         scatter_series = []
-                        for speaker in sorted({str(s) for s in df_named["speaker"].dropna()}):
-                            speaker_df = df_hover[df_hover["speaker"].astype(str) == speaker]
+                        for speaker in sorted(
+                            {str(s) for s in df_named["speaker"].dropna()}
+                        ):
+                            speaker_df = df_hover[
+                                df_hover["speaker"].astype(str) == speaker
+                            ]
                             if speaker_df.empty:
                                 continue
                             scatter_series.append(
@@ -471,7 +516,10 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                                     name=speaker,
                                     x=speaker_df["eg_hnr_db"].astype(float).tolist(),
                                     y=speaker_df["rms_db"].astype(float).tolist(),
-                                    text=[_build_hover_text(r) for _, r in speaker_df.iterrows()],
+                                    text=[
+                                        _build_hover_text(r)
+                                        for _, r in speaker_df.iterrows()
+                                    ],
                                     marker={"opacity": 0.6, "size": 8},
                                 )
                             )
@@ -488,7 +536,9 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                                 series=scatter_series,
                                 mode="markers",
                             )
-                            output_service.save_chart(spec_quality, chart_type="prosody_dashboard")
+                            output_service.save_chart(
+                                spec_quality, chart_type="prosody_dashboard"
+                            )
 
             summary = {
                 "speakers": len({str(s) for s in df_named["speaker"].dropna()}),

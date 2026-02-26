@@ -44,6 +44,7 @@ def _make_json_serializable(obj: Any) -> Any:
     # NumPy scalar/array types are not JSON-serializable by default
     try:
         import numpy as np
+
         if isinstance(obj, np.integer):
             return int(obj)
         if isinstance(obj, np.floating):

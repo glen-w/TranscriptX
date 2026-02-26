@@ -86,5 +86,3 @@ def validate_transcript(transcript_path: str) -> None:
 def prepare_transcript_data(transcript_path: str) -> Tuple[Dict[str, Any], str]:
     """Prepare transcript data for analysis."""
     return _preprocessing_service.prepare_transcript_data(transcript_path)
-
-

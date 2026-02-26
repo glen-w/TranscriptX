@@ -5,13 +5,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
+from typing import Dict, List, Optional, Protocol, Tuple
 import re
 
 import streamlit as st
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.web.models.search import (
     SearchFilters,
     SearchResponse,
@@ -94,7 +93,9 @@ def _build_transcript_index(
     if not isinstance(source, dict):
         source = {}
     original_path = source.get("original_path") or transcript_path
-    transcript_slug = Path(original_path).stem if original_path else session_name.split("/")[-1]
+    transcript_slug = (
+        Path(original_path).stem if original_path else session_name.split("/")[-1]
+    )
     text_parts: List[str] = []
     vocab: set[str] = set()
     for segment in segments:
@@ -145,8 +146,7 @@ def _resolve_transcript_mtime(session_name: str) -> Optional[float]:
 class SearchBackend(Protocol):
     def search_substring(
         self, query: str, filters: Optional[SearchFilters] = None
-    ) -> Tuple[List[SearchResult], int]:
-        ...
+    ) -> Tuple[List[SearchResult], int]: ...
 
 
 class DbSearchBackend:
@@ -154,7 +154,11 @@ class DbSearchBackend:
 
     def __init__(self) -> None:
         from transcriptx.database import get_session
-        from transcriptx.database.models import Speaker, TranscriptFile, TranscriptSegment
+        from transcriptx.database.models import (
+            Speaker,
+            TranscriptFile,
+            TranscriptSegment,
+        )
 
         self._get_session = get_session
         self._TranscriptSegment = TranscriptSegment
@@ -200,7 +204,9 @@ class DbSearchBackend:
         try:
             like_query, mode = self._build_text_query(query)
             q = (
-                session.query(self._TranscriptSegment, self._TranscriptFile, self._Speaker)
+                session.query(
+                    self._TranscriptSegment, self._TranscriptFile, self._Speaker
+                )
                 .join(self._TranscriptFile)
                 .outerjoin(self._Speaker)
             )
@@ -265,11 +271,14 @@ class FileSearchBackend:
                 continue
             transcript_path = _resolve_transcript_path(session_name) or session_name
             transcript_mtime = _resolve_transcript_mtime(session_name)
-            index = _build_transcript_index(session_name, transcript_path, transcript_mtime)
+            index = _build_transcript_index(
+                session_name, transcript_path, transcript_mtime
+            )
             if not index:
                 continue
             # Lazy import to avoid circular dependency
             from transcriptx.web.utils import resolve_speaker_names_from_db
+
             segments = resolve_speaker_names_from_db(index.segments, session_name)
             for idx, segment in enumerate(segments):
                 text = segment.get("text", "")
@@ -426,10 +435,14 @@ class SearchService:
                 continue
             transcript_path = _resolve_transcript_path(session_name) or session_name
             transcript_mtime = _resolve_transcript_mtime(session_name)
-            index = _build_transcript_index(session_name, transcript_path, transcript_mtime)
+            index = _build_transcript_index(
+                session_name, transcript_path, transcript_mtime
+            )
             if not index:
                 continue
-            if any(token in index.text_blob or token in index.vocab for token in tokens):
+            if any(
+                token in index.text_blob or token in index.vocab for token in tokens
+            ):
                 candidates.append(index)
         return candidates
 
@@ -446,6 +459,7 @@ class SearchService:
         results: List[SearchResult] = []
         # Lazy import to avoid circular dependency
         from transcriptx.web.utils import resolve_speaker_names_from_db
+
         for index in candidates:
             session_slug, run_id = index.session_name.split("/", 1)
             segments = resolve_speaker_names_from_db(index.segments, index.session_name)

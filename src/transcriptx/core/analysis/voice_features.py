@@ -40,7 +40,9 @@ class VoiceFeaturesAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "voice_features"
 
-    def analyze(self, segments: list[dict[str, Any]], speaker_map: Dict[str, str] | None = None) -> Dict[str, Any]:
+    def analyze(
+        self, segments: list[dict[str, Any]], speaker_map: Dict[str, str] | None = None
+    ) -> Dict[str, Any]:
         # Not used; this module runs via run_from_context to access transcript_path/output_dir.
         return {}
 
@@ -95,7 +97,9 @@ class VoiceFeaturesAnalysis(AnalysisModule):
             )
 
             # Persist the locator payload (small)
-            output_service.save_data(locator, "voice_features_locator", format_type="json")
+            output_service.save_data(
+                locator, "voice_features_locator", format_type="json"
+            )
 
             # Record feature table artifacts if present (they're written directly to disk)
             for key, artifact_type in (
@@ -148,4 +152,3 @@ class VoiceFeaturesAnalysis(AnalysisModule):
                 payload={},
                 error=capture_exception(exc),
             )
-

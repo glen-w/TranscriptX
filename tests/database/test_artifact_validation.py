@@ -2,15 +2,22 @@
 Artifact index contract tests for DB ↔ FS integrity.
 """
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from transcriptx.core.utils.canonicalization import SCHEMA_VERSION, SENTENCE_SCHEMA_VERSION
+from transcriptx.core.utils.canonicalization import (
+    SCHEMA_VERSION,
+    SENTENCE_SCHEMA_VERSION,
+)
 from transcriptx.database.artifact_registry import ArtifactRegistry
 from transcriptx.database.artifact_validation import ArtifactValidationService
-from transcriptx.database.models import ArtifactIndex, ModuleRun, PipelineRun, TranscriptFile
+from transcriptx.database.models import (
+    ArtifactIndex,
+    ModuleRun,
+    PipelineRun,
+    TranscriptFile,
+)
 
 
 @pytest.mark.database
@@ -21,6 +28,7 @@ def test_artifact_validation_detects_missing_and_orphan_files(
     outputs_root.mkdir()
 
     from transcriptx.core.utils import _path_core
+
     monkeypatch.setattr(_path_core, "OUTPUTS_DIR", str(outputs_root))
 
     transcript = TranscriptFile(
@@ -76,7 +84,9 @@ def test_artifact_validation_detects_missing_and_orphan_files(
     orphan_path.parent.mkdir(parents=True, exist_ok=True)
     orphan_path.write_text('{"orphan": true}')
 
-    with patch('transcriptx.database.artifact_validation.get_session', return_value=db_session):
+    with patch(
+        "transcriptx.database.artifact_validation.get_session", return_value=db_session
+    ):
         service = ArtifactValidationService()
         report = service.validate(str(temp_transcript_file))
         service.close()
@@ -93,6 +103,7 @@ def test_artifact_registry_registers_roles(
     outputs_root.mkdir()
 
     from transcriptx.core.utils import _path_core
+
     monkeypatch.setattr(_path_core, "OUTPUTS_DIR", str(outputs_root))
 
     transcript = TranscriptFile(
@@ -132,17 +143,25 @@ def test_artifact_registry_registers_roles(
 
     from transcriptx.core.utils._path_core import get_canonical_base_name
 
-    transcript_output_dir = outputs_root / get_canonical_base_name(str(temp_transcript_file))
+    transcript_output_dir = outputs_root / get_canonical_base_name(
+        str(temp_transcript_file)
+    )
 
-    global_file = transcript_output_dir / "sentiment" / "data" / "global" / "sample.json"
+    global_file = (
+        transcript_output_dir / "sentiment" / "data" / "global" / "sample.json"
+    )
     global_file.parent.mkdir(parents=True, exist_ok=True)
     global_file.write_text('{"ok": true}')
 
-    speaker_file = transcript_output_dir / "sentiment" / "data" / "speakers" / "speaker.json"
+    speaker_file = (
+        transcript_output_dir / "sentiment" / "data" / "speakers" / "speaker.json"
+    )
     speaker_file.parent.mkdir(parents=True, exist_ok=True)
     speaker_file.write_text('{"speaker": true}')
 
-    with patch('transcriptx.database.artifact_registry.get_session', return_value=db_session):
+    with patch(
+        "transcriptx.database.artifact_registry.get_session", return_value=db_session
+    ):
         registry = ArtifactRegistry()
         artifacts = registry.register_module_artifacts(
             transcript_path=str(temp_transcript_file),

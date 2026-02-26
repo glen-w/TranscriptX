@@ -14,7 +14,12 @@ from transcriptx.core.corrections.detect import (
     detect_memory_hits,
 )
 from transcriptx.core.corrections.memory import load_memory, promote_rule
-from transcriptx.core.corrections.models import Candidate, CorrectionRule, Decision, Occurrence
+from transcriptx.core.corrections.models import (
+    Candidate,
+    CorrectionRule,
+    Decision,
+    Occurrence,
+)
 from transcriptx.core.utils.canonicalization import compute_transcript_identity_hash
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.config import get_config
@@ -73,7 +78,11 @@ def _dedupe_candidates(
         seen: set = set()
         merged_occ: List[Occurrence] = []
         for occ in existing.occurrences + c.occurrences:
-            span_key = (occ.segment_id, occ.span[0] if occ.span else None, occ.span[1] if occ.span else None)
+            span_key = (
+                occ.segment_id,
+                occ.span[0] if occ.span else None,
+                occ.span[1] if occ.span else None,
+            )
             if span_key in seen:
                 continue
             seen.add(span_key)
@@ -149,17 +158,21 @@ def run_corrections_on_segments(
         transcript_path, "corrections", output_dir=output_dir
     )
     output_dir_path = output_service.get_output_structure().global_data_dir
-    decisions_path = output_dir_path / f"{output_service.base_name}_corrections_decisions.json"
+    decisions_path = (
+        output_dir_path / f"{output_service.base_name}_corrections_decisions.json"
+    )
 
     memory = load_memory(
         transcript_path=transcript_path,
-        transcript_decisions_path=str(decisions_path)
-        if decisions_path.exists()
-        else None,
+        transcript_decisions_path=(
+            str(decisions_path) if decisions_path.exists() else None
+        ),
     )
 
     candidates: List[Candidate] = []
-    candidates.extend(detect_memory_hits(segments, transcript_key, memory.rules.values()))
+    candidates.extend(
+        detect_memory_hits(segments, transcript_key, memory.rules.values())
+    )
     candidates.extend(
         detect_acronym_candidates(
             segments,
@@ -307,7 +320,9 @@ def run_corrections_workflow(
         return {"status": "skipped", "suggestions_count": 0, "applied_count": 0}
 
     if update_original_file is None:
-        update_original_file = getattr(corrections_config, "update_original_file", False)
+        update_original_file = getattr(
+            corrections_config, "update_original_file", False
+        )
     if create_backup is None:
         create_backup = getattr(corrections_config, "create_backup", True)
 

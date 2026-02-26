@@ -66,7 +66,9 @@ class SpeakerIdStatus:
         assert 0 <= self.ignored_count <= self.total_count
         assert 0 <= self.segment_named_count <= self.segment_total_count
         # Missing IDs should be unique and not exceed the gap (tolerant of filtered IDs)
-        assert len(set(self.missing_ids)) == len(self.missing_ids), "missing_ids must be unique"
+        assert len(set(self.missing_ids)) == len(
+            self.missing_ids
+        ), "missing_ids must be unique"
         assert (
             self.resolved_count + len(self.missing_ids) == self.total_count
         ), "resolved + missing must equal total"
@@ -94,11 +96,14 @@ def _load_transcript_json(transcript_path: Path | str) -> Dict[str, Any]:
     if not path.exists():
         try:
             from transcriptx.core.utils._path_resolution import resolve_file_path
-            resolved_path = Path(resolve_file_path(str(transcript_path), file_type="transcript"))
+
+            resolved_path = Path(
+                resolve_file_path(str(transcript_path), file_type="transcript")
+            )
         except FileNotFoundError:
             # If resolution fails, continue with original path to get proper error
             pass
-    
+
     try:
         with resolved_path.open("r") as handle:
             data = json.load(handle)
@@ -125,14 +130,18 @@ def _segment_speaker_id(seg: Dict[str, Any]) -> Optional[str]:
     raw_id = (
         seg.get("speaker_id")
         if seg.get("speaker_id") is not None
-        else seg.get("speaker_db_id")
-        if seg.get("speaker_db_id") is not None
-        else seg.get("speaker")
+        else (
+            seg.get("speaker_db_id")
+            if seg.get("speaker_db_id") is not None
+            else seg.get("speaker")
+        )
     )
     return _normalize_speaker_id(raw_id)
 
 
-def _segment_speaker_label(seg: Dict[str, Any], speaker_map: Dict[str, str]) -> Optional[str]:
+def _segment_speaker_label(
+    seg: Dict[str, Any], speaker_map: Dict[str, str]
+) -> Optional[str]:
     """
     Best-effort label resolution for a single segment.
 
@@ -168,9 +177,11 @@ def _collect_segment_labels(
         raw_id = (
             seg.get("speaker_id")
             if seg.get("speaker_id") is not None
-            else seg.get("speaker_db_id")
-            if seg.get("speaker_db_id") is not None
-            else seg.get("speaker")
+            else (
+                seg.get("speaker_db_id")
+                if seg.get("speaker_db_id") is not None
+                else seg.get("speaker")
+            )
         )
         speaker_id = _normalize_speaker_id(raw_id)
         if not speaker_id:
@@ -321,7 +332,11 @@ def _log_speaker_gate_skip(
 ) -> None:
     missing_segments = max(0, segment_total_count - segment_named_count)
     if config.threshold_type == "percentage":
-        pct = 0.0 if segment_total_count == 0 else (missing_segments / segment_total_count) * 100
+        pct = (
+            0.0
+            if segment_total_count == 0
+            else (missing_segments / segment_total_count) * 100
+        )
         message = (
             "Speaker gate: within threshold "
             f"({missing_segments}/{segment_total_count} segments, "
@@ -357,8 +372,9 @@ def _print_exemplars(
             snippets = snippets[:max_snippets]
         if not snippets:
             continue
-        joined = " ".join(f"\"{snippet}\"" for snippet in snippets)
+        joined = " ".join(f'"{snippet}"' for snippet in snippets)
         print(f"  {speaker_id}: {joined}")
+
 
 def has_named_speakers(transcript_path: Path | str) -> bool:
     """Check if transcript has at least one named speaker (public API)."""
@@ -521,9 +537,7 @@ def check_speaker_gate(
         f"{msg} What would you like to do?",
         choices=[
             questionary.Choice(label, value=decision)
-            for label, decision in _speaker_gate_choice_specs(
-                config.mode, batch=False
-            )
+            for label, decision in _speaker_gate_choice_specs(config.mode, batch=False)
         ],
         default=SpeakerGateDecision.IDENTIFY,
     ).ask()
@@ -571,14 +585,29 @@ def check_batch_speaker_gate(
             needs_identification.append(path)
 
     if not needs_identification:
-        return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+        return (
+            SpeakerGateDecision.PROCEED,
+            needs_identification,
+            already_identified,
+            statuses,
+        )
 
     config = get_config().workflow.speaker_gate
 
     if force_non_interactive:
         if config.mode == "enforce":
-            return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
-        return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+            return (
+                SpeakerGateDecision.SKIP,
+                needs_identification,
+                already_identified,
+                statuses,
+            )
+        return (
+            SpeakerGateDecision.PROCEED,
+            needs_identification,
+            already_identified,
+            statuses,
+        )
 
     if config.mode == "ignore":
         total_segments = sum(
@@ -605,11 +634,17 @@ def check_batch_speaker_gate(
     print(f"  ⚠️  Need identification: {len(needs_identification)}")
 
     total_speakers = sum(statuses[path].total_count for path in needs_identification)
-    total_named_speakers = sum(statuses[path].named_count for path in needs_identification)
+    total_named_speakers = sum(
+        statuses[path].named_count for path in needs_identification
+    )
     total_missing_speakers = max(0, total_speakers - total_named_speakers)
 
-    total_segments = sum(statuses[path].segment_total_count for path in needs_identification)
-    total_named_segments = sum(statuses[path].segment_named_count for path in needs_identification)
+    total_segments = sum(
+        statuses[path].segment_total_count for path in needs_identification
+    )
+    total_named_segments = sum(
+        statuses[path].segment_named_count for path in needs_identification
+    )
     total_missing_segments = max(0, total_segments - total_named_segments)
 
     if config.exemplar_count > 0:
@@ -626,10 +661,14 @@ def check_batch_speaker_gate(
                 continue
             header = f"[dim]{Path(path).name} - Unidentified speaker samples:[/dim]"
             missing_order = [
-                speaker_id for speaker_id in status.missing_ids if speaker_id in exemplars
+                speaker_id
+                for speaker_id in status.missing_ids
+                if speaker_id in exemplars
             ]
             capped_ids = missing_order[:_MAX_BATCH_EXEMPLAR_SPEAKERS]
-            capped_exemplars = {speaker_id: exemplars[speaker_id] for speaker_id in capped_ids}
+            capped_exemplars = {
+                speaker_id: exemplars[speaker_id] for speaker_id in capped_ids
+            }
             _print_exemplars(
                 capped_exemplars,
                 header=header,
@@ -645,15 +684,18 @@ def check_batch_speaker_gate(
         f"{total_missing_segments} missing). What would you like to do?",
         choices=[
             questionary.Choice(label, value=decision)
-            for label, decision in _speaker_gate_choice_specs(
-                config.mode, batch=True
-            )
+            for label, decision in _speaker_gate_choice_specs(config.mode, batch=True)
         ],
         default=SpeakerGateDecision.IDENTIFY,
     ).ask()
 
     if not choice:
-        return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
+        return (
+            SpeakerGateDecision.SKIP,
+            needs_identification,
+            already_identified,
+            statuses,
+        )
 
     decision = choice
 
@@ -678,7 +720,9 @@ def check_group_speaker_preflight(
     Check speaker identification for group members by transcript ID.
     """
     try:
-        resolved_paths = [str(path) for path in resolve_transcript_paths(member_transcript_ids)]
+        resolved_paths = [
+            str(path) for path in resolve_transcript_paths(member_transcript_ids)
+        ]
     except ValueError as exc:
         print(f"\n[red]❌ {exc}[/red]")
         return (SpeakerGateDecision.SKIP, [], [], {})
@@ -700,13 +744,28 @@ def check_group_speaker_preflight(
             needs_identification.append(path)
 
     if not needs_identification:
-        return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+        return (
+            SpeakerGateDecision.PROCEED,
+            needs_identification,
+            already_identified,
+            statuses,
+        )
 
     if force_non_interactive:
         config = get_config().workflow.speaker_gate
         if config.mode == "enforce":
-            return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
-        return (SpeakerGateDecision.PROCEED, needs_identification, already_identified, statuses)
+            return (
+                SpeakerGateDecision.SKIP,
+                needs_identification,
+                already_identified,
+                statuses,
+            )
+        return (
+            SpeakerGateDecision.PROCEED,
+            needs_identification,
+            already_identified,
+            statuses,
+        )
 
     print("\n[bold]Speaker Identification Status:[/bold]")
     print(f"  ✅ Already identified: {len(already_identified)}")
@@ -732,7 +791,12 @@ def check_group_speaker_preflight(
         default=SpeakerGateDecision.IDENTIFY,
     ).ask()
     if not choice:
-        return (SpeakerGateDecision.SKIP, needs_identification, already_identified, statuses)
+        return (
+            SpeakerGateDecision.SKIP,
+            needs_identification,
+            already_identified,
+            statuses,
+        )
     return (choice, needs_identification, already_identified, statuses)
 
 

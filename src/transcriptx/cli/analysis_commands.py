@@ -13,7 +13,9 @@ app = typer.Typer(name="analysis", help="Analysis commands", no_args_is_help=Tru
 
 @app.command("run")
 def run(
-    transcript: str = typer.Option(..., "--transcript", "-t", help="Path to transcript JSON"),
+    transcript: str = typer.Option(
+        ..., "--transcript", "-t", help="Path to transcript JSON"
+    ),
     modules: Optional[str] = typer.Option(
         None, "--modules", "-m", help="Comma-separated module names"
     ),

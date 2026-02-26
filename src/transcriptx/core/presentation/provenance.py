@@ -19,7 +19,10 @@ def _dedupe(items: Iterable[str]) -> List[str]:
 
 
 def build_md_provenance(
-    module_name: str, *, context: Any | None = None, payload: Dict[str, Any] | None = None
+    module_name: str,
+    *,
+    context: Any | None = None,
+    payload: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     provenance: Dict[str, Any] = {
         "module": module_name,

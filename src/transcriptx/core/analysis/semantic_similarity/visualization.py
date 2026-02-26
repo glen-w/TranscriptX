@@ -22,7 +22,9 @@ def create_visualizations_advanced(
         speaker_stats = results.get("summary", {}).get("speaker_statistics", {})
         if speaker_stats:
             speakers = list(speaker_stats.keys())
-            repetition_counts = [stats["repetitions"] for stats in speaker_stats.values()]
+            repetition_counts = [
+                stats["repetitions"] for stats in speaker_stats.values()
+            ]
             avg_similarities = [
                 stats["average_similarity"] for stats in speaker_stats.values()
             ]
@@ -55,7 +57,9 @@ def create_visualizations_advanced(
             )
             created_files.append(output_service.save_chart(sim_spec)["static"])
 
-        breakdown = results.get("summary", {}).get("agreement_disagreement_breakdown", {})
+        breakdown = results.get("summary", {}).get(
+            "agreement_disagreement_breakdown", {}
+        )
         if breakdown:
             categories = list(breakdown.keys())
             counts = list(breakdown.values())
@@ -85,8 +89,7 @@ def create_visualizations_advanced(
         if all_similarities:
             counts, bin_edges = np.histogram(all_similarities, bins=20)
             categories = [
-                f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}"
-                for i in range(len(counts))
+                f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(counts))
             ]
             spec = BarCategoricalSpec(
                 viz_id="semantic_similarity.similarity_distribution.global",
@@ -170,8 +173,7 @@ def create_visualizations_basic(
         if similarities:
             counts, bin_edges = np.histogram(similarities, bins=20)
             categories = [
-                f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}"
-                for i in range(len(counts))
+                f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(counts))
             ]
             spec = BarCategoricalSpec(
                 viz_id="semantic_similarity.similarity_distribution.global",

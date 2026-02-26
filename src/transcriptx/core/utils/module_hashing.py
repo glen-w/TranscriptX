@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+
 def _hash_payload(payload: Dict[str, Any]) -> str:
     serialized = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True

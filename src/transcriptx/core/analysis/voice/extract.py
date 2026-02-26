@@ -5,14 +5,24 @@ import json
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from transcriptx.core.utils.config import get_config  # type: ignore[import-untyped]
 from transcriptx.core.utils.logger import get_logger  # type: ignore[import-untyped]
 from transcriptx.core.utils.artifact_writer import write_json
 
-from .audio_io import compute_audio_fingerprint, ensure_cached_wav, read_audio_segment, resolve_audio_path
-from .cache import get_voice_cache_root, load_cache_meta, save_cache_meta, save_voice_features
+from .audio_io import (
+    compute_audio_fingerprint,
+    ensure_cached_wav,
+    read_audio_segment,
+    resolve_audio_path,
+)
+from .cache import (
+    get_voice_cache_root,
+    load_cache_meta,
+    save_cache_meta,
+    save_voice_features,
+)
 from .features import (
     compute_pitch_stats,
     compute_rms_db,
@@ -35,7 +45,9 @@ def compute_segments_timing_hash(
         end = float(seg.get("end", seg.get("end_time", start)) or start)
         speaker = str(seg.get("speaker") or "")
         items.append((seg_id, start, end, speaker))
-    payload = json.dumps(items, ensure_ascii=True, separators=(",", ":"), sort_keys=False)
+    payload = json.dumps(
+        items, ensure_ascii=True, separators=(",", ":"), sort_keys=False
+    )
     return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -49,7 +61,9 @@ def compute_voice_config_hash(config: Any) -> str:
         "max_seconds_for_pitch": getattr(voice, "max_seconds_for_pitch", 20.0),
         "egemaps_enabled": getattr(voice, "egemaps_enabled", True),
         "deep_mode": getattr(voice, "deep_mode", False),
-        "deep_model_name": getattr(voice, "deep_model_name", "superb/wav2vec2-base-superb-er"),
+        "deep_model_name": getattr(
+            voice, "deep_model_name", "superb/wav2vec2-base-superb-er"
+        ),
         "deep_max_seconds": getattr(voice, "deep_max_seconds", 12.0),
         "store_parquet": getattr(voice, "store_parquet", "auto"),
         "strict_audio_hash": getattr(voice, "strict_audio_hash", False),
@@ -176,18 +190,24 @@ def load_or_compute_voice_features(
             "skipped_reason": None,
             "voice_feature_core_path": str(run_core_path),
             "voice_feature_egemaps_path": str(run_eg_path) if run_eg_path else None,
-            "voice_feature_vad_runs_path": str(run_vad_runs_path)
-            if run_vad_runs_path
-            else None,
+            "voice_feature_vad_runs_path": (
+                str(run_vad_runs_path) if run_vad_runs_path else None
+            ),
             "cache_meta_path": str(run_meta_path),
             "meta": {
                 "audio_path": audio_path,
                 "audio_fingerprint": audio_fingerprint,
-                "fingerprint_method": "content_sha256" if strict_audio_hash else "fast_size_mtime",
+                "fingerprint_method": (
+                    "content_sha256" if strict_audio_hash else "fast_size_mtime"
+                ),
                 "segments_hash": segments_hash,
                 "voice_config_hash": voice_config_hash,
                 "cache_hit": True,
-                "row_count": cache_meta.get("row_count") if isinstance(cache_meta, dict) else None,
+                "row_count": (
+                    cache_meta.get("row_count")
+                    if isinstance(cache_meta, dict)
+                    else None
+                ),
                 "duration_seconds": time.time() - started,
             },
         }
@@ -298,7 +318,9 @@ def load_or_compute_voice_features(
     meta = {
         "audio_path": audio_path,
         "audio_fingerprint": audio_fingerprint,
-        "fingerprint_method": "content_sha256" if strict_audio_hash else "fast_size_mtime",
+        "fingerprint_method": (
+            "content_sha256" if strict_audio_hash else "fast_size_mtime"
+        ),
         "segments_hash": segments_hash,
         "voice_config_hash": voice_config_hash,
         "cache_hit": False,
@@ -315,7 +337,9 @@ def load_or_compute_voice_features(
     # Copy cached artifacts into run directory
     core_saved = saved_paths.get("core")
     eg_saved = saved_paths.get("egemaps")
-    cached_core_path2: Path | None = Path(core_saved) if isinstance(core_saved, str) else None
+    cached_core_path2: Path | None = (
+        Path(core_saved) if isinstance(core_saved, str) else None
+    )
     cached_eg_path2: Path | None = Path(eg_saved) if isinstance(eg_saved, str) else None
     run_core_path2: Path | None = None
     run_eg_path2: Path | None = None
@@ -337,14 +361,16 @@ def load_or_compute_voice_features(
         "skipped_reason": None,
         "voice_feature_core_path": str(run_core_path2) if run_core_path2 else None,
         "voice_feature_egemaps_path": str(run_eg_path2) if run_eg_path2 else None,
-        "voice_feature_vad_runs_path": str(run_vad_runs_path)
-        if run_vad_runs_path
-        else None,
+        "voice_feature_vad_runs_path": (
+            str(run_vad_runs_path) if run_vad_runs_path else None
+        ),
         "cache_meta_path": str(run_meta_path),
         "meta": {
             "audio_path": audio_path,
             "audio_fingerprint": audio_fingerprint,
-            "fingerprint_method": "content_sha256" if strict_audio_hash else "fast_size_mtime",
+            "fingerprint_method": (
+                "content_sha256" if strict_audio_hash else "fast_size_mtime"
+            ),
             "segments_hash": segments_hash,
             "voice_config_hash": voice_config_hash,
             "cache_hit": False,
@@ -352,4 +378,3 @@ def load_or_compute_voice_features(
             "duration_seconds": time.time() - started,
         },
     }
-

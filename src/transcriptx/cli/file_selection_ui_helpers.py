@@ -26,6 +26,7 @@ def build_help_text(
     Returns:
         FormattedTextControl with the help text
     """
+
     def truncate_to_width(text: str, max_width: int) -> str:
         """Truncate text by display width (handles wide unicode)."""
         if max_width <= 0:
@@ -78,7 +79,7 @@ def build_help_text(
     # Group shortcuts into columns with proper spacing and alignment
     for row in range(items_per_column):
         line_parts = []
-        
+
         for col in range(num_columns):
             idx = col * items_per_column + row
             if idx < len(shortcuts):
@@ -101,12 +102,12 @@ def build_help_text(
                     item = f"{emoji_prefix}{action_display}{action_pad}  {key}"
             else:
                 item = ""
-            
+
             # Pad item to column width
             pad = max(0, column_width - get_cwidth(item))
             item_padded = item + (" " * pad)
             line_parts.append(item_padded)
-            
+
             # Add separator between columns (not after last)
             if col < num_columns - 1:
                 line_parts.append(separator)
@@ -118,7 +119,7 @@ def build_help_text(
             content = content + (" " * (available_width - content_w))
         elif content_w > available_width:
             content = truncate_to_width(content, available_width)
-        
+
         help_lines.append("│  " + content + "  │")
 
     help_lines.append("└" + "─" * box_width + "┘")

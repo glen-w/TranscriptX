@@ -54,7 +54,10 @@ def get_transcript_candidates_for_language(
 
 def transcript_exists_for_language(base_name: str, language: str | None) -> bool:
     """Return True if any transcript exists for the given language."""
-    return any(path.exists() for path in get_transcript_candidates_for_language(base_name, language))
+    return any(
+        path.exists()
+        for path in get_transcript_candidates_for_language(base_name, language)
+    )
 
 
 def ensure_parent_dir(path: Path) -> None:

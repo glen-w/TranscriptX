@@ -1,1 +1,3 @@
-numpy==1.26.4
+# Constrain setuptools so llvmlite (numba) can build when pip uses build isolation.
+# setuptools>=70 removes spawn(dry_run=...), which llvmlite's setup.py uses.
+setuptools>=64,<70

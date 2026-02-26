@@ -30,39 +30,48 @@ logger = get_logger()
 console = Console()
 
 
-def discover_wav_files(folder_path: Path) -> List[Path]:
+def discover_audio_files(
+    folder_path: Path,
+    extensions: tuple[str, ...] = (".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac"),
+) -> List[Path]:
     """
-    Discover all WAV files in a folder.
+    Discover all audio files in a folder with the given extensions.
 
     Args:
         folder_path: Path to folder to search
+        extensions: Tuple of allowed suffixes (e.g. (".wav", ".mp3", ".ogg"))
 
     Returns:
-        List of WAV file paths (excluding hidden files starting with '.')
+        List of audio file paths (excluding hidden files starting with '.')
     """
-    wav_files = []
+    ext_set = {e.lower() if e.startswith(".") else f".{e}".lower() for e in extensions}
 
+    files = []
     try:
-        # Use os.scandir() which is more efficient than glob() on network mounts
-        # and only checks files in the current directory, not subdirectories
         with os.scandir(folder_path) as entries:
             for entry in entries:
                 if entry.is_file() and not entry.name.startswith("."):
                     name_lower = entry.name.lower()
-                    if name_lower.endswith(".wav"):
-                        wav_files.append(Path(entry.path))
+                    if any(name_lower.endswith(ext) for ext in ext_set):
+                        files.append(Path(entry.path))
 
-        # Sort by name for consistent ordering
-        wav_files = sorted(wav_files, key=lambda p: p.name.lower())
+        files = sorted(files, key=lambda p: p.name.lower())
 
     except Exception as e:
         log_error(
             "FILE_DISCOVERY",
-            f"Error discovering WAV files in {folder_path}: {e}",
+            f"Error discovering audio files in {folder_path}: {e}",
             exception=e,
         )
 
-    return wav_files
+    return files
+
+
+def discover_wav_files(folder_path: Path) -> List[Path]:
+    """
+    Discover all WAV files in a folder. Thin wrapper around discover_audio_files.
+    """
+    return discover_audio_files(folder_path, (".wav",))
 
 
 def filter_new_files(wav_files: List[Path]) -> List[Path]:
@@ -394,13 +403,13 @@ def review_and_delete_duplicates(files: List[Path]) -> List[Path]:
 
         # Prompt user to select which files to delete
         selection = questionary.select(
-            f"\nSelect file(s) to delete from this group (or keep all):",
+            "\nSelect file(s) to delete from this group (or keep all):",
             choices=choices,
             default=choices[-1],  # Default to "Keep all"
         ).ask()
 
         if not selection or selection == "Keep all files":
-            print(f"[cyan]Keeping all files in this group[/cyan]")
+            print("[cyan]Keeping all files in this group[/cyan]")
             continue
 
         # Parse selection - extract file index
@@ -429,12 +438,12 @@ def review_and_delete_duplicates(files: List[Path]) -> List[Path]:
                     print(f"[cyan]Cancelled deletion of {file_to_delete.name}[/cyan]")
         except (ValueError, IndexError) as e:
             logger.warning(f"Could not parse selection: {selection}, error: {e}")
-            print(f"[yellow]⚠️ Invalid selection, skipping this group[/yellow]")
+            print("[yellow]⚠️ Invalid selection, skipping this group[/yellow]")
 
     if deleted_files:
         print(f"\n[green]✅ Deleted {len(deleted_files)} duplicate file(s)[/green]")
     else:
-        print(f"\n[cyan]No files were deleted[/cyan]")
+        print("\n[cyan]No files were deleted[/cyan]")
 
     return deleted_files
 
@@ -453,6 +462,7 @@ def select_files_interactive(wav_files: List[Path]) -> List[Path]:
         return []
 
     # Use the new generic selection interface
+    config = get_config()
     selection_config = FileSelectionConfig(
         multi_select=True,
         enable_playback=True,
@@ -461,6 +471,8 @@ def select_files_interactive(wav_files: List[Path]) -> List[Path]:
         title="🎵 WAV File Selection",
         metadata_formatter=format_audio_file,
         validator=validate_wav_file,
+        skip_seconds_short=config.input.playback_skip_seconds_short,
+        skip_seconds_long=config.input.playback_skip_seconds_long,
     )
 
     selected = select_files_with_interface(wav_files, selection_config)

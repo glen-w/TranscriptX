@@ -67,7 +67,9 @@ def list_groups(
         count = len(group.transcript_file_uuids or [])
         updated = group.updated_at.isoformat() if group.updated_at else "unknown"
         key_prefix = group.key[:12]
-        print(f"- {group.uuid} | {name} | {group.type} | {count} | {key_prefix} | {updated}")
+        print(
+            f"- {group.uuid} | {name} | {group.type} | {count} | {key_prefix} | {updated}"
+        )
 
 
 @app.command("show")
@@ -92,7 +94,9 @@ def show_group(
 
 @app.command("run")
 def run_group(
-    identifier: str = typer.Option(..., "--identifier", "-i", help="UUID, key, or name"),
+    identifier: str = typer.Option(
+        ..., "--identifier", "-i", help="UUID, key, or name"
+    ),
     modules: str = typer.Option(
         "all", "--modules", help="Comma-separated list of modules or 'all'"
     ),
@@ -119,7 +123,9 @@ def run_group(
 
 @app.command("delete")
 def delete_group(
-    identifier: str = typer.Option(..., "--identifier", "-i", help="UUID, key, or name"),
+    identifier: str = typer.Option(
+        ..., "--identifier", "-i", help="UUID, key, or name"
+    ),
     force: bool = typer.Option(
         False, "--force", "-f", help="Delete without confirmation"
     ),

@@ -15,7 +15,9 @@ def test_speaker_workflow_success(tmp_path: Path, monkeypatch, capsys) -> None:
         speaker_workflow, "select_folder_interactive", lambda start_path: tmp_path
     )
     monkeypatch.setattr(
-        speaker_workflow, "select_files_interactive", lambda files, config: [transcript_file]
+        speaker_workflow,
+        "select_files_interactive",
+        lambda files, config: [transcript_file],
     )
     monkeypatch.setattr(
         speaker_workflow, "load_segments", lambda path: [{"speaker": "A", "text": "hi"}]
@@ -24,13 +26,19 @@ def test_speaker_workflow_success(tmp_path: Path, monkeypatch, capsys) -> None:
         speaker_workflow, "build_speaker_map", lambda *args, **kwargs: {"A": "A"}
     )
     monkeypatch.setattr(
-        speaker_workflow, "rename_transcript_after_speaker_mapping", lambda *args, **kwargs: None
+        speaker_workflow,
+        "rename_transcript_after_speaker_mapping",
+        lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
-        speaker_workflow, "get_current_transcript_path_from_state", lambda path: str(transcript_file)
+        speaker_workflow,
+        "get_current_transcript_path_from_state",
+        lambda path: str(transcript_file),
     )
     monkeypatch.setattr(
-        speaker_workflow, "store_transcript_after_speaker_identification", lambda *args, **kwargs: None
+        speaker_workflow,
+        "store_transcript_after_speaker_identification",
+        lambda *args, **kwargs: None,
     )
 
     speaker_workflow._run_speaker_identification_workflow_impl()

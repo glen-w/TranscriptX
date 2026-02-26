@@ -1,0 +1,91 @@
+# TranscriptX: recommended way to run with Docker (primary install route).
+# Default: docker compose up starts CLI (foreground), WhisperX, and web viewer.
+# Volume layout: mount ./data so container sees /data/transcripts, /data/outputs, etc.
+
+services:
+  transcriptx:
+    build: .
+    image: transcriptx:latest
+    init: true
+    tty: true
+    stdin_open: true
+    restart: "no"
+    depends_on:
+      - whisperx
+    # Run as root so the CLI can access the mounted Docker socket (see docs/docker.md).
+    user: "0:0"
+    working_dir: /data
+    # Docker socket mounted by default so CLI can drive WhisperX (docker exec).
+    volumes:
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-1}
+    # ENTRYPOINT is transcriptx; pass subcommand and args (no leading "transcriptx")
+    command: ["interactive"]
+    # One-off: docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm
+
+  transcriptx-web:
+    build: .
+    image: transcriptx:latest
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    # Streamlit + libs need writable dirs; point all to /tmp so read_only stays safe (pitfall #3)
+    # Use a writable volume for /tmp/data so ensure_data_dirs() can create recordings, cache, etc.;
+    # then overlay read-only bind mounts for transcripts and outputs.
+    environment:
+      - HOME=/tmp/streamlit_home
+      - MPLCONFIGDIR=/tmp/mpl
+      - HF_HOME=/tmp/hf
+      - TRANSCRIPTX_CACHE_DIR=/tmp/transcriptx_cache
+      - TRANSCRIPTX_DATA_DIR=/tmp/data
+      - TRANSCRIPTX_PROFILES_DIR=/tmp/profiles
+      - NLTK_DATA=/tmp/nltk
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-1}
+    volumes:
+      - transcriptx_web_data:/tmp/data
+      - ./data/transcripts:/tmp/data/transcripts:ro
+      - ./data/outputs:/tmp/data/outputs:ro
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    # ENTRYPOINT is transcriptx; viewer runs Streamlit (override command)
+    command: ["web-viewer", "--host", "0.0.0.0"]
+
+  whisperx:
+    image: ghcr.io/jim60105/whisperx:no_model
+    container_name: transcriptx-whisperx
+    entrypoint: ["/bin/bash"]
+    env_file:
+      - ./whisperx.env
+    volumes:
+      - ./data/recordings:/data/input:ro
+      - ./data/transcripts:/data/output
+      - whisperx_hf_cache:/root/.cache/huggingface
+    environment:
+      - WHISPERX_MODEL=large-v2
+      - WHISPERX_LANGUAGE=en
+      - WHISPERX_COMPUTE_TYPE=float16
+      - WHISPERX_DEVICE=cpu
+      - WHISPERX_DIARIZE=true
+      - HF_TOKEN=${HF_TOKEN}
+    networks:
+      - transcriptx-net
+    command: ["-c", "echo 'WhisperX ready. Use docker exec to run transcriptions.' && tail -f /dev/null"]
+
+volumes:
+  whisperx_hf_cache:
+  transcriptx_web_data:
+
+networks:
+  transcriptx-net:
+    driver: bridge

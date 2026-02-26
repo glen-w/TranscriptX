@@ -4,7 +4,7 @@ import hashlib
 import subprocess
 import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 from transcriptx.core.utils.lazy_imports import optional_import  # type: ignore[import-untyped]
 from transcriptx.core.utils.run_manifest import compute_file_hash  # type: ignore[import-untyped]
@@ -113,8 +113,12 @@ def ensure_cached_wav(
         return str(target), meta
 
     # Fallback: librosa full decode then write wav via soundfile
-    librosa = optional_import("librosa", "audio decoding for voice features")
-    sf = optional_import("soundfile", "audio decoding for voice features")
+    librosa = optional_import(
+        "librosa", "audio decoding for voice features", "voice", auto_install=True
+    )
+    sf = optional_import(
+        "soundfile", "audio decoding for voice features", "voice", auto_install=True
+    )
     y, sr = librosa.load(str(src), sr=sample_rate, mono=True)
     sf.write(str(target), y, sample_rate)
     meta["decoder"] = "librosa"
@@ -136,7 +140,9 @@ def read_audio_segment(
     """
     import numpy as np
 
-    sf = optional_import("soundfile", "voice feature extraction")
+    sf = optional_import(
+        "soundfile", "voice feature extraction", "voice", auto_install=True
+    )
     p = Path(wav_path)
     if not p.exists():
         raise FileNotFoundError(f"Audio file not found: {wav_path}")
@@ -161,7 +167,9 @@ def read_audio_segment(
         audio = audio[:, 0]
 
     if src_sr != sample_rate:
-        librosa = optional_import("librosa", "resampling for voice features")
+        librosa = optional_import(
+            "librosa", "resampling for voice features", "voice", auto_install=True
+        )
         audio = librosa.resample(audio, orig_sr=src_sr, target_sr=sample_rate)
 
     return audio.astype("float32", copy=False)
@@ -170,4 +178,3 @@ def read_audio_segment(
 def shutil_which(binary: str) -> str | None:
     """Wrapper around shutil.which to avoid env lookups here."""
     return shutil.which(binary)
-

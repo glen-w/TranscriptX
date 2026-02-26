@@ -31,6 +31,7 @@ may change, but the public API remains stable.
 from transcriptx.core.utils._path_core import (
     get_canonical_base_name,
     get_base_name,
+    is_canonical_transcript_filename,
     get_transcript_dir,
     get_group_output_dir,
     get_module_output_dir,
@@ -63,6 +64,7 @@ __all__ = [
     # Core path utilities
     "get_canonical_base_name",
     "get_base_name",
+    "is_canonical_transcript_filename",
     "get_transcript_dir",
     "get_group_output_dir",
     "get_module_output_dir",

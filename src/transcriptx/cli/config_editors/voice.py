@@ -26,4 +26,3 @@ def edit_voice_config(config: Any) -> None:
         dirty_tracker=is_dirty,
         mark_dirty=mark_dirty,
     )
-

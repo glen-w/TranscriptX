@@ -14,7 +14,11 @@ import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.io.events_io import save_events_json
-from transcriptx.core.models.events import Event, generate_event_id, sort_events_deterministically
+from transcriptx.core.models.events import (
+    Event,
+    generate_event_id,
+    sort_events_deterministically,
+)
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.core.utils.similarity_utils import SimilarityCalculator
@@ -23,6 +27,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_ECHOES_HEATMAP,
     VIZ_ECHOES_TIMELINE,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import HeatmapMatrixSpec, LineTimeSeriesSpec
 
 plt = lazy_pyplot()
@@ -73,7 +78,9 @@ class EchoesAnalysis(AnalysisModule):
                 return True
         return False
 
-    def _speaker_for_segment(self, segment: Dict[str, Any], segments: List[Dict[str, Any]]) -> str:
+    def _speaker_for_segment(
+        self, segment: Dict[str, Any], segments: List[Dict[str, Any]]
+    ) -> str:
         from transcriptx.core.utils.speaker_extraction import (
             extract_speaker_info,
             get_speaker_display_name,
@@ -120,12 +127,8 @@ class EchoesAnalysis(AnalysisModule):
         lookback_seconds = float(getattr(self.config, "lookback_seconds", 240.0))
         max_candidates = int(getattr(self.config, "max_candidates", 50))
         min_tokens = int(getattr(self.config, "min_tokens", 5))
-        lexical_threshold = float(
-            getattr(self.config, "lexical_echo_threshold", 0.6)
-        )
-        paraphrase_threshold = float(
-            getattr(self.config, "paraphrase_threshold", 0.75)
-        )
+        lexical_threshold = float(getattr(self.config, "lexical_echo_threshold", 0.6))
+        paraphrase_threshold = float(getattr(self.config, "paraphrase_threshold", 0.75))
         explicit_quote_weight = float(
             getattr(self.config, "explicit_quote_weight", 1.0)
         )
@@ -176,7 +179,11 @@ class EchoesAnalysis(AnalysisModule):
                         severity=min(1.0, explicit_quote_weight),
                         score=explicit_quote_weight,
                         evidence=[
-                            {"source": "echoes", "feature": "explicit_quote", "value": explicit_match}
+                            {
+                                "source": "echoes",
+                                "feature": "explicit_quote",
+                                "value": explicit_match,
+                            }
                         ],
                         links=[
                             {"type": "segment", "idx": target_idx},
@@ -193,7 +200,10 @@ class EchoesAnalysis(AnalysisModule):
             for cand_idx in candidates:
                 cand_seg = segments[cand_idx]
                 cand_text = (cand_seg.get("text") or "").strip()
-                if self._is_trivial(cand_text) or self._token_count(cand_text) < min_tokens:
+                if (
+                    self._is_trivial(cand_text)
+                    or self._token_count(cand_text) < min_tokens
+                ):
                     continue
                 cand_speaker = self._speaker_for_segment(cand_seg, segments)
                 if cand_speaker == speaker:
@@ -245,7 +255,11 @@ class EchoesAnalysis(AnalysisModule):
                     severity=min(1.0, score),
                     score=float(score),
                     evidence=[
-                        {"source": "echoes", "feature": "lexical_similarity", "value": float(score)}
+                        {
+                            "source": "echoes",
+                            "feature": "lexical_similarity",
+                            "value": float(score),
+                        }
                     ],
                     links=[
                         {"type": "segment", "idx": cand_idx},
@@ -262,21 +276,31 @@ class EchoesAnalysis(AnalysisModule):
                 model = self._get_embedding_model()
                 if model:
                     embeddings = model.encode(
-                        [text] + [
-                            (segments[c].get("text") or "").strip() for c in candidates
-                        ],
+                        [text]
+                        + [(segments[c].get("text") or "").strip() for c in candidates],
                         show_progress_bar=False,
                     )
                     query_emb = embeddings[0]
-                    for cand_idx, cand_emb in zip(candidates, embeddings[1:], strict=False):
+                    for cand_idx, cand_emb in zip(
+                        candidates, embeddings[1:], strict=False
+                    ):
                         cand_seg = segments[cand_idx]
                         cand_text = (cand_seg.get("text") or "").strip()
-                        if self._is_trivial(cand_text) or self._token_count(cand_text) < min_tokens:
+                        if (
+                            self._is_trivial(cand_text)
+                            or self._token_count(cand_text) < min_tokens
+                        ):
                             continue
                         cand_speaker = self._speaker_for_segment(cand_seg, segments)
                         if cand_speaker == speaker:
                             continue
-                        sim = float(np.dot(query_emb, cand_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(cand_emb) + 1e-8))
+                        sim = float(
+                            np.dot(query_emb, cand_emb)
+                            / (
+                                np.linalg.norm(query_emb) * np.linalg.norm(cand_emb)
+                                + 1e-8
+                            )
+                        )
                         if sim >= paraphrase_threshold:
                             event = Event(
                                 event_id=generate_event_id(
@@ -296,7 +320,11 @@ class EchoesAnalysis(AnalysisModule):
                                 severity=min(1.0, sim),
                                 score=sim,
                                 evidence=[
-                                    {"source": "echoes", "feature": "semantic_similarity", "value": sim}
+                                    {
+                                        "source": "echoes",
+                                        "feature": "semantic_similarity",
+                                        "value": sim,
+                                    }
                                 ],
                                 links=[
                                     {"type": "segment", "idx": cand_idx},
@@ -306,7 +334,9 @@ class EchoesAnalysis(AnalysisModule):
                             events.append(event)
                             counts_by_kind[event.kind] += 1
                             counts_by_speaker[speaker][event.kind] += 1
-                            echo_edges[(cand_speaker, speaker)].append(event.score or 0.0)
+                            echo_edges[(cand_speaker, speaker)].append(
+                                event.score or 0.0
+                            )
 
         # Echo burst detection
         burst_events = self._detect_echo_bursts(events, transcript_hash)
@@ -337,14 +367,18 @@ class EchoesAnalysis(AnalysisModule):
 
         return {"events": events, "stats": stats, "echo_network": echo_network_rows}
 
-    def _detect_echo_bursts(self, events: List[Event], transcript_hash: str) -> List[Event]:
+    def _detect_echo_bursts(
+        self, events: List[Event], transcript_hash: str
+    ) -> List[Event]:
         window_seconds = float(getattr(self.config, "echo_burst_window_seconds", 25.0))
         min_events = int(getattr(self.config, "echo_burst_min_events", 3))
         percentile_threshold = float(
             getattr(self.config, "echo_burst_percentile_threshold", 0.95)
         )
 
-        echo_events = [e for e in events if e.kind in {"echo", "paraphrase", "explicit_quote"}]
+        echo_events = [
+            e for e in events if e.kind in {"echo", "paraphrase", "explicit_quote"}
+        ]
         if not echo_events:
             return []
 
@@ -354,16 +388,16 @@ class EchoesAnalysis(AnalysisModule):
             window_end = event.time_start + window_seconds
             count = sum(1 for e in echo_events[idx:] if e.time_start <= window_end)
             counts.append(count)
-        count_threshold = max(min_events, int(np.percentile(counts, percentile_threshold * 100)))
+        count_threshold = max(
+            min_events, int(np.percentile(counts, percentile_threshold * 100))
+        )
 
         bursts: List[Event] = []
         idx = 0
         while idx < len(echo_events):
             window_start = echo_events[idx].time_start
             window_end = window_start + window_seconds
-            window_events = [
-                e for e in echo_events[idx:] if e.time_start <= window_end
-            ]
+            window_events = [e for e in echo_events[idx:] if e.time_start <= window_end]
             if len(window_events) >= count_threshold:
                 burst_start = window_events[0].time_start
                 burst_end = window_events[-1].time_end
@@ -485,9 +519,7 @@ class EchoesAnalysis(AnalysisModule):
 
         # Heatmap chart
         speakers = sorted(
-            {
-                row["from_speaker"] for row in echo_network
-            }
+            {row["from_speaker"] for row in echo_network}
             | {row["to_speaker"] for row in echo_network}
         )
         if speakers:
@@ -513,9 +545,12 @@ class EchoesAnalysis(AnalysisModule):
             output_service.save_chart(spec, chart_type="heatmap")
 
         # Timeline chart
-        timeline_events = [e for e in events if e.kind in {"echo", "paraphrase", "explicit_quote"}]
+        timeline_events = [
+            e for e in events if e.kind in {"echo", "paraphrase", "explicit_quote"}
+        ]
         if timeline_events:
             xs = [e.time_start for e in timeline_events]
+            x_display, x_label = time_axis_display(xs)
             ys = [e.score or e.severity for e in timeline_events]
             spec = LineTimeSeriesSpec(
                 viz_id=VIZ_ECHOES_TIMELINE,
@@ -524,10 +559,10 @@ class EchoesAnalysis(AnalysisModule):
                 scope="global",
                 chart_intent="line_timeseries",
                 title="Echo Timeline",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Score",
                 markers=True,
-                series=[{"name": "Echo", "x": xs, "y": ys}],
+                series=[{"name": "Echo", "x": x_display, "y": ys}],
             )
             output_service.save_chart(spec, chart_type="timeline")
 

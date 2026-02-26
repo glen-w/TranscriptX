@@ -16,7 +16,9 @@ class InteractionDataExtractor(BaseDataExtractor):
     def __init__(self):
         super().__init__("interactions")
 
-    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+    def extract_data(
+        self, analysis_results: Dict[str, Any], speaker_id: str
+    ) -> Dict[str, Any]:
         try:
             speaker_id_int = int(speaker_id)
         except Exception:
@@ -78,7 +80,9 @@ class InteractionDataExtractor(BaseDataExtractor):
             "collaboration_score": collaboration_score,
         }
 
-    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
+    def validate_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> bool:
         """Validate extracted interaction data."""
         try:
             return validate_interaction_data(data)
@@ -86,7 +90,9 @@ class InteractionDataExtractor(BaseDataExtractor):
             self.logger.error(f"Interaction data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
+    def transform_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> Dict[str, Any]:
         """Transform interaction data for database storage."""
         return {
             "interaction_style": data.get("interaction_style"),

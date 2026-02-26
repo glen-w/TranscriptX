@@ -11,12 +11,9 @@ from pathlib import Path
 from typing import Any
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.paths import DATA_DIR
+from transcriptx.core.utils.paths import PROFILES_DIR
 
 logger = get_logger()
-
-# Profile storage directory
-PROFILES_DIR = Path(DATA_DIR) / "profiles"
 
 
 class ProfileManager:

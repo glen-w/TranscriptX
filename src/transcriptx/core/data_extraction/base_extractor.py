@@ -156,7 +156,10 @@ class BaseDataExtractor(ABC):
             if not isinstance(seg, dict):
                 continue
 
-            if speaker_id_int is not None and seg.get("speaker_db_id") == speaker_id_int:
+            if (
+                speaker_id_int is not None
+                and seg.get("speaker_db_id") == speaker_id_int
+            ):
                 out.append(seg)
                 continue
 

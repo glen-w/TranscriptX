@@ -21,9 +21,7 @@ def generate_repetition_summary_advanced(
         cross_speaker_repetitions = results.get("cross_speaker_repetitions", [])
         clusters = results.get("clusters", [])
 
-        total_self_repetitions = sum(
-            len(reps) for reps in speaker_repetitions.values()
-        )
+        total_self_repetitions = sum(len(reps) for reps in speaker_repetitions.values())
         total_cross_repetitions = len(cross_speaker_repetitions)
         total_repetitions = total_self_repetitions + total_cross_repetitions
 
@@ -36,9 +34,7 @@ def generate_repetition_summary_advanced(
         ]
 
         avg_self_similarity = np.mean(self_similarities) if self_similarities else 0
-        avg_cross_similarity = (
-            np.mean(cross_similarities) if cross_similarities else 0
-        )
+        avg_cross_similarity = np.mean(cross_similarities) if cross_similarities else 0
 
         speaker_stats = {}
         for speaker, reps in speaker_repetitions.items():

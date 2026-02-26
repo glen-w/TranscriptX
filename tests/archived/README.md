@@ -2,6 +2,8 @@
 
 This directory is reserved for archiving unused or deprecated tests. Currently, most deprecated tests have already been removed from the codebase.
 
+- **test_convokit.py** — archived with the ConvoKit analysis module (see [docs/ROADMAP.md](../../docs/ROADMAP.md) and [archived/convokit/](../../archived/convokit/)). These tests reference the archived ConvoKit implementation and will not run until the module is restored.
+
 ## Test Cleanup History
 
 ### Removed Tests (Already Deleted)

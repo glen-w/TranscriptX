@@ -36,8 +36,8 @@ src/transcriptx/
 │   ├── analysis/ — Analysis modules (primary extension surface)  
 │   ├── pipeline/ — DAG construction & execution  
 │   ├── output/ — Artifact writing & manifest tracking  
-│   ├── transcript/ — Canonical transcript structures  
-│   └── config/ — Configuration resolution  
+│   ├── config/ — Configuration resolution  
+│   └── domain/ — Canonical transcript and group structures  
 ├── web/ — Streamlit WebUI (reads run outputs)  
 
 data/  
@@ -57,15 +57,19 @@ Each module declares its dependencies. The pipeline builds a DAG, sorts it, and 
 
 Failures stop dependent modules but preserve completed artifacts.
 
-## 4. Adding a new analysis module
+## 4. Adding a new analysis module (worked example)
 
-1. Create a new module under src/transcriptx/core/analysis/.
-2. Define a module class inheriting from AnalysisModule.
-3. Implement run_from_context(context, output).
-4. Read inputs from context.
-5. Write artifacts via output.
-6. Register the module in the module registry.
-7. Add a minimal test under tests/analysis/.
+**1. Create the module** under `src/transcriptx/core/analysis/<module_name>/`. Define a class inheriting from `AnalysisModule`, set `self.module_name = "<module_name>"`, and implement `run_from_context(self, context)`.
+
+**2. Requirements and optional deps.** In your module, use `context.get_segments()` and other context APIs. If the module needs speaker labels or audio, declare `Requirement.SPEAKER_LABELS` or use the pipeline’s requirement resolver. For optional heavy deps (e.g. voice, NLP), use `optional_import("package_name", "Description", "package_name", auto_install=False)` and skip or degrade when missing. Add an extra in `pyproject.toml` (e.g. `[voice]`, `[nlp]`) and document it so installs stay deterministic.
+
+**3. Output contract.** Do not build paths by hand. Use `create_output_service(context.transcript_path, self.module_name, run_id=..., output_dir=..., runtime_flags=...)` from the pipeline’s output helpers, then `output_service.save_data(payload, base_name, format_type="json")` or `save_text(...)`. For versioned namespaces (e.g. `voice/v1/`), set `output_namespace` and `output_version` in the registry entry so the run root gets `<namespace>/<version>/` (see `docs/output_conventions.md`).
+
+**4. Registry entry.** In `src/transcriptx/core/pipeline/module_registry.py`, inside `_setup_modules()`, add an entry to `module_definitions` with at least: `description`, `dependencies` (list of other module names or `[]`), `category` (`"light"` | `"medium"` | `"heavy"`), `determinism_tier` (e.g. `"T0"`), `requirements` (e.g. `[Requirement.SEGMENTS]` or `[Requirement.SEGMENTS, Requirement.SPEAKER_LABELS]`), `enhancements` (often `[]`). Optionally: `requires_audio`, `requires_multiple_speakers`, `exclude_from_default`, `output_namespace`, `output_version`. Then add the module’s lazy loader to the `module_definitions` → `ModuleInfo` construction (see existing entries for the pattern: `function` is a callable that imports and returns the module class or run function).
+
+**5. Test.** Add a test under `tests/analysis/` or `tests/contracts/` that either mocks the pipeline and checks your module’s `analyze()` output shape, or runs the pipeline with `selected_modules=["<module_name>"]` on `tests/fixtures/mini_transcript.json` and asserts expected files under the run dir (see `tests/contracts/test_run_results_and_manifest_contracts.py` for a pipeline run + manifest check).
+
+**6. Validate registry.** Run `python scripts/validate_registry.py` to ensure no duplicate names, valid categories, and every dependency is a registered module.
 
 ## 5. Outputs and artifacts
 
@@ -85,6 +89,12 @@ Modules are loosely grouped into light, medium, and heavy. Heavy modules should 
 
 Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging.
 
+**Docker:** The image uses `ENTRYPOINT ["transcriptx"]` and expects the host data tree mounted at `/data` (same layout as the repo: `data/recordings`, `data/transcripts`, `data/outputs`). When changing the Dockerfile or dependency constraints, build and run a quick smoke (e.g. `docker run ... analyze -t /data/transcripts/... --modules stats --skip-confirm`) to avoid "works locally, fails in container" drift. The builder stage installs with `-c constraints.txt`; do not add pip installs in the runtime stage or without constraints. Full details: [docker.md](docker.md) and the [Architecture](ARCHITECTURE.md#docker-runtime--deployment) Docker section.
+
 ## 9. What not to do
 
 Do not write directly to disk, mutate canonical transcripts, rely on global state, or introduce undeclared cross-module coupling.
+
+## 10. Follow-up / technical debt
+
+- **CLI duplication:** Batch workflows, file selection, and `analysis_workflow` share repeated patterns (progress, skip/confirm, path resolution). The WAV workflow refactor (`wav_processing_workflow/` + `wav_workflow_ui`) is the template for extracting shared helpers; consider auditing other CLI entry points and consolidating where it hurts most.

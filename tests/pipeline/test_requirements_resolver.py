@@ -31,7 +31,11 @@ def test_should_not_skip_when_requirements_met() -> None:
     )
     resolver = ModuleRequirementsResolver(capabilities=capabilities, has_db=True)
     should_skip, reasons = resolver.should_skip(
-        [Requirement.SEGMENTS, Requirement.SEGMENT_TIMESTAMPS, Requirement.SPEAKER_LABELS]
+        [
+            Requirement.SEGMENTS,
+            Requirement.SEGMENT_TIMESTAMPS,
+            Requirement.SPEAKER_LABELS,
+        ]
     )
     assert should_skip is False
     assert reasons == []

@@ -37,9 +37,27 @@ class TestEmotionAnalysisModule:
     def sample_segments(self):
         """Fixture for sample transcript segments with database-driven speaker identification."""
         return [
-            {"speaker": "Alice", "speaker_db_id": 1, "text": "I'm so happy about this!", "start": 0.0, "end": 2.0},
-            {"speaker": "Bob", "speaker_db_id": 2, "text": "This makes me angry.", "start": 2.0, "end": 4.0},
-            {"speaker": "Alice", "speaker_db_id": 1, "text": "I feel sad about the situation.", "start": 4.0, "end": 6.0}
+            {
+                "speaker": "Alice",
+                "speaker_db_id": 1,
+                "text": "I'm so happy about this!",
+                "start": 0.0,
+                "end": 2.0,
+            },
+            {
+                "speaker": "Bob",
+                "speaker_db_id": 2,
+                "text": "This makes me angry.",
+                "start": 2.0,
+                "end": 4.0,
+            },
+            {
+                "speaker": "Alice",
+                "speaker_db_id": 1,
+                "text": "I feel sad about the situation.",
+                "start": 4.0,
+                "end": 6.0,
+            },
         ]
 
     @pytest.fixture
@@ -49,21 +67,33 @@ class TestEmotionAnalysisModule:
 
     def test_emotion_analysis_basic(self, sample_segments, sample_speaker_map):
         """Test basic emotion detection."""
-        emotion_module = _emotion_module_with_mock_model([{"label": "joy", "score": 0.9}])
+        emotion_module = _emotion_module_with_mock_model(
+            [{"label": "joy", "score": 0.9}]
+        )
         result = emotion_module.analyze(sample_segments, sample_speaker_map)
         assert "segments" in result or "emotions" in result
         # New contract: segments have context_emotion_primary, context_emotion_scores, context_emotion_source
         for seg in sample_segments:
             assert "context_emotion_primary" in seg
             assert "context_emotion_scores" in seg
-            assert seg.get("context_emotion") == seg.get("context_emotion_primary")  # backward compat
+            assert seg.get("context_emotion") == seg.get(
+                "context_emotion_primary"
+            )  # backward compat
 
     def test_emotion_analysis_happy_text(self, sample_speaker_map):
         """Test emotion detection on happy text."""
         segments = [
-            {"speaker": "Alice", "speaker_db_id": 1, "text": "I'm so happy and excited!", "start": 0.0, "end": 2.0}
+            {
+                "speaker": "Alice",
+                "speaker_db_id": 1,
+                "text": "I'm so happy and excited!",
+                "start": 0.0,
+                "end": 2.0,
+            }
         ]
-        emotion_module = _emotion_module_with_mock_model([{"label": "joy", "score": 0.95}])
+        emotion_module = _emotion_module_with_mock_model(
+            [{"label": "joy", "score": 0.95}]
+        )
         result = emotion_module.analyze(segments, sample_speaker_map)
         assert "segments" in result or "emotions" in result
         assert segments[0].get("context_emotion_primary") == "joy"
@@ -71,9 +101,17 @@ class TestEmotionAnalysisModule:
     def test_emotion_analysis_angry_text(self, sample_speaker_map):
         """Test emotion detection on angry text."""
         segments = [
-            {"speaker": "Alice", "speaker_db_id": 1, "text": "This is infuriating!", "start": 0.0, "end": 2.0}
+            {
+                "speaker": "Alice",
+                "speaker_db_id": 1,
+                "text": "This is infuriating!",
+                "start": 0.0,
+                "end": 2.0,
+            }
         ]
-        emotion_module = _emotion_module_with_mock_model([{"label": "anger", "score": 0.9}])
+        emotion_module = _emotion_module_with_mock_model(
+            [{"label": "anger", "score": 0.9}]
+        )
         result = emotion_module.analyze(segments, sample_speaker_map)
         assert "segments" in result or "emotions" in result
         assert segments[0].get("context_emotion_primary") == "anger"
@@ -81,17 +119,29 @@ class TestEmotionAnalysisModule:
     def test_emotion_analysis_sad_text(self, sample_speaker_map):
         """Test emotion detection on sad text."""
         segments = [
-            {"speaker": "Alice", "speaker_db_id": 1, "text": "I feel really sad about this.", "start": 0.0, "end": 2.0}
+            {
+                "speaker": "Alice",
+                "speaker_db_id": 1,
+                "text": "I feel really sad about this.",
+                "start": 0.0,
+                "end": 2.0,
+            }
         ]
-        emotion_module = _emotion_module_with_mock_model([{"label": "sadness", "score": 0.85}])
+        emotion_module = _emotion_module_with_mock_model(
+            [{"label": "sadness", "score": 0.85}]
+        )
         result = emotion_module.analyze(segments, sample_speaker_map)
         assert "segments" in result or "emotions" in result
         assert segments[0].get("context_emotion_primary") == "sadness"
 
     def test_emotion_analysis_empty_segments(self, sample_speaker_map):
         """Test emotion analysis with empty segments."""
-        emotion_module = _emotion_module_with_mock_model([{"label": "joy", "score": 0.9}])
+        emotion_module = _emotion_module_with_mock_model(
+            [{"label": "joy", "score": 0.9}]
+        )
         segments = []
         result = emotion_module.analyze(segments, sample_speaker_map)
         assert "segments" in result or "emotions" in result
-        assert len(result.get("segments", [])) == 0 or len(result.get("emotions", [])) == 0
+        assert (
+            len(result.get("segments", [])) == 0 or len(result.get("emotions", [])) == 0
+        )

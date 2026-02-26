@@ -3,7 +3,6 @@
 import tempfile
 from pathlib import Path
 
-import pytest
 
 from transcriptx.core.viz.mpl_renderer import render_mpl
 from transcriptx.core.viz.charts import is_plotly_available, render_plotly
@@ -136,7 +135,7 @@ def test_echoes_chart_specs_render() -> None:
     fig = render_mpl(spec_heatmap)
     assert fig is not None
 
-    # Echo timeline
+    # Echo timeline (x in minutes for short timelines)
     spec_timeline = LineTimeSeriesSpec(
         viz_id="echoes.echo_timeline.global",
         module="echoes",
@@ -144,10 +143,16 @@ def test_echoes_chart_specs_render() -> None:
         scope="global",
         chart_intent="line_timeseries",
         title="Echo Timeline",
-        x_label="Time (seconds)",
+        x_label="Time (minutes)",
         y_label="Score",
         markers=True,
-        series=[{"name": "Echo", "x": [10.0, 20.0, 30.0], "y": [0.8, 0.6, 0.9]}],
+        series=[
+            {
+                "name": "Echo",
+                "x": [10.0 / 60, 20.0 / 60, 30.0 / 60],
+                "y": [0.8, 0.6, 0.9],
+            }
+        ],
     )
     fig = render_mpl(spec_timeline)
     assert fig is not None

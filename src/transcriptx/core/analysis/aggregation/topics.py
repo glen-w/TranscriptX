@@ -5,7 +5,7 @@ Group aggregation for topic modeling.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from transcriptx.core.analysis.aggregation.rows import (
     _fallback_canonical_id,
@@ -79,11 +79,15 @@ def aggregate_topics_group(
         session_id = transcript_file_id or get_canonical_base_name(transcript_path)
         session_meta.setdefault(
             session_id,
-            session_row_from_result(result, transcript_set, session_path=transcript_path),
+            session_row_from_result(
+                result, transcript_set, session_path=transcript_path
+            ),
         )
         path_meta.setdefault(
             transcript_path,
-            session_row_from_result(result, transcript_set, session_path=transcript_path),
+            session_row_from_result(
+                result, transcript_set, session_path=transcript_path
+            ),
         )
 
         for idx, segment in enumerate(segments):
@@ -198,9 +202,7 @@ def aggregate_topics_group(
     for row in session_rows:
         top_sessions_per_topic[row["topic_id"]].append(row)
     top_sessions_per_topic = {
-        topic_id: sorted(
-            rows, key=lambda r: r["topic_share"], reverse=True
-        )[:3]
+        topic_id: sorted(rows, key=lambda r: r["topic_share"], reverse=True)[:3]
         for topic_id, rows in top_sessions_per_topic.items()
     }
 
@@ -208,9 +210,7 @@ def aggregate_topics_group(
     for row in speaker_rows:
         top_speakers_per_topic[row["topic_id"]].append(row)
     top_speakers_per_topic = {
-        topic_id: sorted(
-            rows, key=lambda r: r["topic_share"], reverse=True
-        )[:3]
+        topic_id: sorted(rows, key=lambda r: r["topic_share"], reverse=True)[:3]
         for topic_id, rows in top_speakers_per_topic.items()
     }
 

@@ -156,9 +156,7 @@ class StatsAnalysis(AnalysisModule):
                 results["speaker_stats"],
                 results["sentiment_summary"],
                 module_data,
-                ignored_ids=(
-                    ignored_ids if isinstance(ignored_ids, set) else set()
-                ),
+                ignored_ids=(ignored_ids if isinstance(ignored_ids, set) else set()),
                 speaker_key_aliases=context.get_runtime_flags().get(
                     "speaker_key_aliases", {}
                 ),
@@ -301,6 +299,7 @@ class StatsAnalysis(AnalysisModule):
         # Stats module saves summary text, which is handled in run_from_context
         # This method is called by the base class but stats handles saving differently
         pass
+
 
 def _load_config_hash(transcript_dir: str) -> str | None:
     try:

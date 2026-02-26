@@ -31,29 +31,34 @@ def render_explorer() -> None:
 
     files = [p for p in run_dir.rglob("*") if p.is_file()]
     files = sorted(files)
-    
+
     if not files:
         st.info("No files found in this run directory.")
         return
-    
+
     total_files = len(files)
     st.metric("Total Files", total_files)
-    
+
     # Search/filter
     search_term = st.text_input("🔍 Search files", key="file_search")
     if search_term:
-        files = [f for f in files if search_term.lower() in f.name.lower() or search_term.lower() in str(f.relative_to(run_dir)).lower()]
+        files = [
+            f
+            for f in files
+            if search_term.lower() in f.name.lower()
+            or search_term.lower() in str(f.relative_to(run_dir)).lower()
+        ]
         st.caption(f"Showing {len(files)} of {total_files} files")
-    
+
     st.divider()
-    
+
     # Display files with download/open buttons
     for path in files:
         rel = path.relative_to(run_dir).as_posix()
-        
+
         # Create columns for file info and action button
         col1, col2 = st.columns([4, 1])
-        
+
         with col1:
             # Display file path with icon based on extension
             file_ext = path.suffix.lower()
@@ -70,7 +75,7 @@ def render_explorer() -> None:
                 icon = "🎵"
             elif file_ext in [".html", ".htm"]:
                 icon = "🌐"
-            
+
             st.markdown(f"{icon} **{rel}**")
             file_size = path.stat().st_size
             size_str = f"{file_size:,} bytes"
@@ -79,7 +84,7 @@ def render_explorer() -> None:
             if file_size > 1024 * 1024:
                 size_str = f"{file_size / (1024 * 1024):.1f} MB"
             st.caption(f"Size: {size_str}")
-        
+
         with col2:
             # Download button that allows opening the file
             try:
@@ -91,11 +96,11 @@ def render_explorer() -> None:
                         file_name=path.name,
                         mime=_get_mime_type(path),
                         key=f"download_{path.as_posix().replace('/', '_').replace(' ', '_')}",
-                        width='stretch',
+                        width="stretch",
                     )
             except Exception as e:
                 st.error(f"Error: {str(e)[:50]}")
-        
+
         st.divider()
 
 

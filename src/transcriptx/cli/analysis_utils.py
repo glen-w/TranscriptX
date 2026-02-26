@@ -1,11 +1,20 @@
+from pathlib import Path
+
 import questionary
 from rich import print
 from transcriptx.core.utils.config import get_config
 from transcriptx.cli.config_editor import edit_config_interactive
-from transcriptx.core import get_available_modules, get_default_modules
-from transcriptx.core.pipeline.module_registry import get_description, get_module_info
+from transcriptx.core import (
+    get_available_modules,
+    get_default_modules,
+    is_extra_available,
+)
+from transcriptx.core.pipeline.module_registry import (
+    effective_min_named_speakers,
+    get_description,
+    get_module_info,
+)
 from transcriptx.core.utils.audio_availability import has_resolvable_audio
-from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
 from transcriptx.core.analysis.selection import (
     apply_analysis_mode_settings as apply_analysis_mode_settings_core,
     filter_modules_by_mode,
@@ -13,6 +22,87 @@ from transcriptx.core.analysis.selection import (
 )
 from transcriptx.core.utils.speaker_extraction import count_named_speakers
 from transcriptx.io import load_segments
+from transcriptx.io.transcript_loader import extract_speaker_map_from_transcript
+from transcriptx.cli.speaker_workflow import run_speaker_identification_on_paths
+
+# Selection intent: "recommended" | "all_eligible" | "manual". Used to re-resolve
+# modules after speaker identification so newly eligible modules are included.
+MODULE_SELECTION_RECOMMENDED = "recommended"
+MODULE_SELECTION_ALL_ELIGIBLE = "all_eligible"
+MODULE_SELECTION_MANUAL = "manual"
+
+
+def _named_speaker_count_for_path(path) -> int:
+    """
+    Return named speaker count for a transcript file, applying the file's
+    speaker_map so SPEAKER_XX segment labels count as named when mapped.
+    """
+    path_str = str(path)
+    segments = load_segments(path_str)
+    speaker_map = extract_speaker_map_from_transcript(path_str)
+    resolved = [dict(seg) for seg in segments]
+    for seg in resolved:
+        speaker = seg.get("speaker")
+        if speaker is not None and speaker in speaker_map:
+            seg["speaker"] = speaker_map[speaker]
+    return count_named_speakers(resolved)
+
+
+def resolve_modules_for_selection_kind(
+    transcript_paths: list,
+    selection_kind: str,
+    *,
+    for_group: bool = False,
+) -> list[str]:
+    """
+    Return the module list for a given selection kind using current transcript state.
+    Use after speaker identification to re-evaluate eligibility (e.g. more named speakers).
+    """
+    if selection_kind not in (
+        MODULE_SELECTION_RECOMMENDED,
+        MODULE_SELECTION_ALL_ELIGIBLE,
+    ):
+        return []
+    available_modules = get_available_modules()
+    audio_available = has_resolvable_audio(transcript_paths)
+    counts: list[int] = []
+    for path in transcript_paths:
+        try:
+            counts.append(_named_speaker_count_for_path(path))
+        except Exception:
+            continue
+    named_speaker_count = min(counts) if counts else None
+
+    def _eligible(info):
+        if getattr(info, "post_processing_only", False):
+            return False
+        if for_group and not info.supports_group:
+            return False
+        if info.requires_audio and audio_available is False:
+            return False
+        return True
+
+    if selection_kind == MODULE_SELECTION_RECOMMENDED:
+        selected = get_default_modules(
+            transcript_paths,
+            audio_resolver=has_resolvable_audio,
+            for_group=for_group,
+        )
+        if named_speaker_count is not None:
+            selected = filter_modules_for_speaker_count(selected, named_speaker_count)
+        return selected
+    # all_eligible
+    sorted_modules = sorted(available_modules, key=lambda m: get_description(m) or "")
+    eligible_modules: list[str] = []
+    for module in sorted_modules:
+        info = get_module_info(module)
+        if info and _eligible(info):
+            eligible_modules.append(module)
+    if named_speaker_count is not None:
+        eligible_modules = filter_modules_for_speaker_count(
+            eligible_modules, named_speaker_count
+        )
+    return [m for m in available_modules if m in eligible_modules]
 
 
 def _module_display_name(module_id: str) -> str:
@@ -56,32 +146,25 @@ def select_analysis_modules(
     transcript_paths: list | None = None,
     *,
     for_group: bool = False,
-) -> list[str]:
+) -> tuple[list[str], str]:
     available_modules = get_available_modules()
     sorted_modules = sorted(available_modules, key=lambda m: get_description(m) or "")
 
     audio_available = None
     named_speaker_count = None
+    per_file_counts: list[tuple[str, int]] = []
+    blocking_files: list[str] = []
     if transcript_paths:
         audio_available = has_resolvable_audio(transcript_paths)
-        counts: list[int] = []
         for path in transcript_paths:
             try:
-                segments = load_segments(path)
-                counts.append(count_named_speakers(segments))
+                count = _named_speaker_count_for_path(path)
+                per_file_counts.append((str(path), count))
             except Exception:
-                continue
-        if counts:
-            named_speaker_count = min(counts)
-    voice_cfg = getattr(getattr(get_config(), "analysis", None), "voice", None)
-    egemaps_enabled = bool(getattr(voice_cfg, "egemaps_enabled", True))
-    deps = check_voice_optional_deps(egemaps_enabled=egemaps_enabled)
-    missing_deps = deps.get("missing_optional_deps") if not deps.get("ok") else []
-
-    def _dep_resolver(info):
-        if not info.requires_audio:
-            return True
-        return not missing_deps
+                per_file_counts.append((str(path), 0))
+        if per_file_counts:
+            named_speaker_count = min(c for _, c in per_file_counts)
+            blocking_files = [Path(p).name for p, c in per_file_counts if c == 0]
 
     def _eligible(info):
         if getattr(info, "post_processing_only", False):
@@ -89,8 +172,6 @@ def select_analysis_modules(
         if for_group and not info.supports_group:
             return False
         if info.requires_audio and audio_available is False:
-            return False
-        if not _dep_resolver(info):
             return False
         return True
 
@@ -104,68 +185,107 @@ def select_analysis_modules(
             eligible_modules, named_speaker_count
         )
 
-    # Build choices for multi-select (checkbox): special options then one per module.
-    # Use checked=True to preselect "All modules"; checkbox does not accept default=[...].
-    # Disable shortcut_key to avoid questionary IndexError when choices exceed its ~36 shortcut keys.
-    choices = [
-        questionary.Choice(
-            title="⚙️ Configure settings", value="settings", shortcut_key=False
-        ),
+    # Modules to show in the list: all non–post-processing (and group-compatible if for_group).
+    # Full list is always shown; ineligible ones are disabled with a reason.
+    def _show_in_list(info):
+        if not info:
+            return True
+        if getattr(info, "post_processing_only", False):
+            return False
+        if for_group and not info.supports_group:
+            return False
+        return True
+
+    modules_to_display: list[str] = []
+    for module in sorted_modules:
+        info = get_module_info(module)
+        if info and _show_in_list(info):
+            modules_to_display.append(module)
+        elif not info:
+            modules_to_display.append(module)
+
+    def _disabled_reason(module: str) -> str | None:
+        """Return reason string if module is not runnable, else None."""
+        info = get_module_info(module)
+        if not info:
+            return None
+        if info.requires_audio and audio_available is False:
+            return "requires audio"
+        missing_extras = [
+            e for e in (info.required_extras or []) if not is_extra_available(e)
+        ]
+        if missing_extras:
+            return f"requires {', '.join(missing_extras)} (installs on first run)"
+        if named_speaker_count is not None:
+            min_required = effective_min_named_speakers(info)
+            if named_speaker_count < min_required:
+                if blocking_files:
+                    return f"needs {min_required}+ named speakers (caused by: {', '.join(blocking_files)})"
+                return f"needs {min_required}+ named speakers"
+        return None
+
+    # Diagnostic: per-file named speaker counts and blocking files (before module selection prompt).
+    if transcript_paths and len(per_file_counts) >= 1:
+        lines = ["Named speaker counts (file-based):"]
+        for p, c in per_file_counts:
+            display_name = Path(p).name
+            suffix = "  <-- blocks modules requiring named speakers" if c == 0 else ""
+            lines.append(f"  {display_name}: {c}{suffix}")
+        lines.append("")
+        lines.append(f"Effective named speaker count (min): {named_speaker_count}")
+        if named_speaker_count == 0:
+            lines.append(
+                "Result: modules requiring >=1 named speaker will be disabled."
+            )
+        print("\n".join(lines))
+    if blocking_files and named_speaker_count is not None and named_speaker_count < 1:
+        print(
+            f"To enable per-speaker modules, run: Analyze → Speaker mapping on: {', '.join(blocking_files)}"
+        )
+
+    # Full paths for transcripts with 0 named speakers (for "run speaker mapping" option).
+    blocking_paths = [p for (p, c) in per_file_counts if c == 0]
+
+    # First ask scope with a single-choice menu so "Recommended" and "All eligible" are mutually exclusive.
+    scope_choices = [
         questionary.Choice(
             title="⭐ Recommended modules (default set)",
             value="recommended",
-            checked=True,
             shortcut_key=False,
         ),
         questionary.Choice(
-            title="📚 All eligible modules", value="all_eligible", shortcut_key=False
+            title="📚 All eligible modules",
+            value="all_eligible",
+            shortcut_key=False,
+        ),
+        questionary.Choice(
+            title="✏️ Choose modules manually",
+            value="manual",
+            shortcut_key=False,
         ),
     ]
-    for i, module in enumerate(eligible_modules, 1):
-        description = get_description(module) or module
-        info = get_module_info(module)
-        badges: list[str] = []
-        if info:
-            if info.requires_audio:
-                badges.append("requires audio")
-                if audio_available is False:
-                    badges.append("audio missing")
-                if missing_deps:
-                    badges.append(f"deps missing: {', '.join(missing_deps)}")
-            if info.cost_tier == "heavy":
-                badges.append("heavy")
-        badge_str = f" ({'; '.join(badges)})" if badges else ""
-        choices.append(
+    if blocking_paths:
+        scope_choices.append(
             questionary.Choice(
-                title=f"{i}. {description}{badge_str}",
-                value=module,
+                title="🗣️ Map speakers on transcript(s) without names (unlock full modules)",
+                value="run_speaker_mapping",
                 shortcut_key=False,
             )
         )
-
     while True:
         try:
-            selection = questionary.checkbox(
-                "\nSelect modules (Space to toggle, Enter to confirm)",
-                choices=choices,
+            scope = questionary.select(
+                "\nHow do you want to select modules?",
+                choices=scope_choices,
+                default="recommended",
             ).ask()
-            if selection is None:
-                print("\n[cyan]Cancelled. Returning to previous menu.[/cyan]")
-                return []
-            if "settings" in selection:
-                edit_config_interactive()
-                continue
-            selected_modules = [
-                m
-                for m in selection
-                if m not in ("settings", "recommended", "all_eligible")
-            ]
-            if "recommended" in selection and not selected_modules:
-                # Only "recommended" checked -> run recommended set from core
+            if scope is None:
+                print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
+                return ([], MODULE_SELECTION_MANUAL)
+            if scope == "recommended":
                 selected = get_default_modules(
                     transcript_paths,
                     audio_resolver=has_resolvable_audio,
-                    dep_resolver=_dep_resolver,
                     for_group=for_group,
                 )
                 if named_speaker_count is not None:
@@ -182,18 +302,77 @@ def select_analysis_modules(
                     print(
                         f"[yellow]⚠️ Heavy modules included: {', '.join(heavy)}[/yellow]"
                     )
-                return selected
-            if "all_eligible" in selection and not selected_modules:
-                return [m for m in available_modules if m in eligible_modules]
+                return (selected, MODULE_SELECTION_RECOMMENDED)
+            if scope == "all_eligible":
+                return (
+                    [m for m in available_modules if m in eligible_modules],
+                    MODULE_SELECTION_ALL_ELIGIBLE,
+                )
+            if scope == "run_speaker_mapping":
+                updated_blocking = run_speaker_identification_on_paths(blocking_paths)
+                updated_map = dict(zip(blocking_paths, updated_blocking))
+                updated_transcript_paths = [
+                    updated_map.get(str(p), str(p)) for p in transcript_paths
+                ]
+                return select_analysis_modules(
+                    updated_transcript_paths, for_group=for_group
+                )
+            # scope == "manual": show checkbox with Configure settings + module list only
+            break
+        except KeyboardInterrupt:
+            print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
+            return ([], MODULE_SELECTION_MANUAL)
+
+    # Build choices for manual multi-select: settings then full module list.
+    # Disable shortcut_key to avoid questionary IndexError when choices exceed its ~36 shortcut keys.
+    manual_choices: list = [
+        questionary.Choice(
+            title="⚙️ Configure settings", value="settings", shortcut_key=False
+        ),
+    ]
+    for i, module in enumerate(modules_to_display, 1):
+        description = get_description(module) or module
+        info = get_module_info(module)
+        badges: list[str] = []
+        if info:
+            if info.requires_audio:
+                badges.append("requires audio")
+                if audio_available is False:
+                    badges.append("audio missing")
+                if missing_deps:
+                    badges.append(f"deps missing: {', '.join(missing_deps)}")
+            if info.cost_tier == "heavy":
+                badges.append("heavy")
+        badge_str = f" ({'; '.join(badges)})" if badges else ""
+        title = f"{i}. {description}{badge_str}"
+        disabled_reason = _disabled_reason(module)
+        choice_kw: dict = {"title": title, "value": module, "shortcut_key": False}
+        if disabled_reason:
+            choice_kw["disabled"] = disabled_reason
+        manual_choices.append(questionary.Choice(**choice_kw))
+
+    while True:
+        try:
+            selection = questionary.checkbox(
+                "\nSelect modules (Space to toggle, Enter to confirm)",
+                choices=manual_choices,
+            ).ask()
+            if selection is None:
+                print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
+                return ([], MODULE_SELECTION_MANUAL)
+            if "settings" in selection:
+                edit_config_interactive()
+                continue
+            selected_modules = [m for m in selection if m != "settings"]
             if not selected_modules:
                 print(
-                    "[yellow]No modules selected. Choose at least one or pick 'Recommended'/'All eligible'.[/yellow]"
+                    "[yellow]No modules selected. Choose at least one (or use 'Configure settings' then try again).[/yellow]"
                 )
                 continue
-            return selected_modules
+            return (selected_modules, MODULE_SELECTION_MANUAL)
         except KeyboardInterrupt:
-            print("\n[cyan]Cancelled. Returning to previous menu.[/cyan]")
-            return []
+            print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
+            return ([], MODULE_SELECTION_MANUAL)
 
 
 def select_analysis_mode() -> str:
@@ -287,13 +466,13 @@ def apply_analysis_mode_settings(mode: str) -> None:
         "interview": "Optimized for job interviews, Q&A sessions, and structured conversations",
     }
     print(f"\n[green]✅ Selected profile: {profile_choice.title()}[/green]")
-    print(
-        f"[dim]{profile_descriptions.get(profile_choice, 'Unknown profile')}[/dim]"
-    )
+    print(f"[dim]{profile_descriptions.get(profile_choice, 'Unknown profile')}[/dim]")
     print(f"\n[dim]Applied {mode} analysis settings to configuration[/dim]")
 
 
-def apply_analysis_mode_settings_non_interactive(mode: str, profile: str | None = None) -> None:
+def apply_analysis_mode_settings_non_interactive(
+    mode: str, profile: str | None = None
+) -> None:
     """
     Apply analysis mode settings without interactive prompts (delegates to core).
 

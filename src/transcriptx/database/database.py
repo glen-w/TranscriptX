@@ -99,12 +99,12 @@ class DatabaseManager:
             logger.info("📋 Using database URL from configuration")
             return config.database_url
 
-        # Default to SQLite in project directory
-        from transcriptx.core.utils.paths import PROJECT_ROOT
+        # Default to SQLite in data directory (respects TRANSCRIPTX_DATA_DIR in Docker)
+        from transcriptx.core.utils.paths import DATA_DIR
 
-        data_dir = PROJECT_ROOT / "transcriptx_data"
-        data_dir.mkdir(parents=True, exist_ok=True)
-        default_url = f"sqlite:///{data_dir / 'transcriptx.db'}"
+        db_dir = DATA_DIR / "transcriptx_data"
+        db_dir.mkdir(parents=True, exist_ok=True)
+        default_url = f"sqlite:///{db_dir / 'transcriptx.db'}"
 
         logger.info(f"📋 Using default SQLite database: {default_url}")
         return default_url

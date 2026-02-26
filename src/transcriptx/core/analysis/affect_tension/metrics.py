@@ -28,7 +28,12 @@ POSITIVE_EMOTION_LABELS = frozenset(
 
 # Labels that contribute to "trust-like" when trust is missing
 TRUST_LIKE_LABELS = {"approval", "gratitude", "admiration", "optimism"}
-TRUST_LIKE_WEIGHTS = {"approval": 0.3, "gratitude": 0.3, "admiration": 0.2, "optimism": 0.2}
+TRUST_LIKE_WEIGHTS = {
+    "approval": 0.3,
+    "gratitude": 0.3,
+    "admiration": 0.2,
+    "optimism": 0.2,
+}
 
 
 def emotion_entropy(scores: Dict[str, float]) -> Optional[float]:
@@ -124,7 +129,9 @@ def emotion_volatility_proxy(
     """
     if window <= 0 or segment_index <= 0 or not primary_labels:
         return 0.0
-    current = primary_labels[segment_index] if segment_index < len(primary_labels) else ""
+    current = (
+        primary_labels[segment_index] if segment_index < len(primary_labels) else ""
+    )
     start = max(0, segment_index - window)
     count = 0
     diff = 0
@@ -156,9 +163,7 @@ def compute_derived_indices(
     w_entropy = weights.get("weight_entropy", 0.15)
     w_vol = weights.get("weight_volatility", 0.15)
 
-    primary_labels = [
-        seg.get("context_emotion_primary") or "" for seg in segments
-    ]
+    primary_labels = [seg.get("context_emotion_primary") or "" for seg in segments]
 
     def segment_scores(inds: List[int]) -> Dict[str, float]:
         polite = 0.0
@@ -177,9 +182,7 @@ def compute_derived_indices(
             mismatch = affect_mismatch_posneg(
                 compound, scores, pos_emotion_th, mismatch_compound
             )
-            trust_neutral = affect_trust_neutral(
-                compound, trust, trust_like_th
-            )
+            trust_neutral = affect_trust_neutral(compound, trust, trust_like_th)
             ent = emotion_entropy(scores)
             vol = emotion_volatility_proxy(i, primary_labels, 5)
             # Polite tension: mismatch or trust_neutral

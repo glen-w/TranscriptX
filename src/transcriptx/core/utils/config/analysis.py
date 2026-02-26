@@ -836,7 +836,6 @@ class AnalysisConfig:
     echoes: EchoesConfig = field(default_factory=lambda: EchoesConfig())
     momentum: MomentumConfig = field(default_factory=lambda: MomentumConfig())
     moments: MomentsConfig = field(default_factory=lambda: MomentsConfig())
-    convokit: ConvokitConfig = field(default_factory=lambda: ConvokitConfig())
     vectorization: VectorizationConfig = field(
         default_factory=lambda: VectorizationConfig()
     )
@@ -948,18 +947,6 @@ class QAAnalysisConfig:
 
 
 @dataclass
-class ConvokitConfig:
-    """Configuration for ConvoKit coordination analysis."""
-
-    exclude_unidentified: bool = True
-    min_tokens_per_utterance: int = 1
-    max_utterances: Optional[int] = None
-    reply_linking_strategy: str = "prev_diff_speaker"
-    response_threshold: float = 2.0
-    enable_politeness: bool = False
-
-
-@dataclass
 class TemporalDynamicsConfig:
     """Configuration for temporal dynamics analysis."""
 
@@ -1067,6 +1054,7 @@ class MomentsConfig:
             "post_question_silence": 0.5,
             "momentum_cliff": 0.4,
             "echo_burst": 0.3,
+            "stall_zone": 0.35,
             "emotion_switch": 0.4,
             "unanswered_question": 0.5,
         }
@@ -1074,6 +1062,9 @@ class MomentsConfig:
     diversity_bonus: float = 0.2
     multi_speaker_bonus: float = 0.15
     write_markdown: bool = False
+    excerpt_max_chars: int = 200
+    excerpt_max_segments: int = 2
+    max_span_seconds: float = 120.0
 
 
 @dataclass

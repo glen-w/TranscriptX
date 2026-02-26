@@ -196,13 +196,17 @@ class ConfigValidator:
         transcription = config.transcription
 
         # Validate max_speakers (None = no limit; otherwise must be positive int)
-        if hasattr(transcription, "max_speakers") and transcription.max_speakers is not None:
+        if (
+            hasattr(transcription, "max_speakers")
+            and transcription.max_speakers is not None
+        ):
             if (
                 not isinstance(transcription.max_speakers, int)
                 or transcription.max_speakers < 1
             ):
                 result.add_error(
-                    "transcription.max_speakers", "Must be a positive integer or unset (no limit)"
+                    "transcription.max_speakers",
+                    "Must be a positive integer or unset (no limit)",
                 )
 
     def _validate_logging_config(
@@ -292,7 +296,7 @@ def validate_config_and_raise(config: Optional[TranscriptXConfig] = None) -> Non
     if not result.is_valid:
         error_messages = [str(error) for error in result.errors]
         raise ValueError(
-            f"Configuration validation failed:\n" + "\n".join(error_messages)
+            "Configuration validation failed:\n" + "\n".join(error_messages)
         )
 
     # Log warnings

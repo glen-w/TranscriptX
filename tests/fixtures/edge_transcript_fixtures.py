@@ -17,9 +17,7 @@ def edge_transcript_empty() -> Dict[str, Any]:
 @pytest.fixture
 def edge_transcript_ultrashort() -> Dict[str, Any]:
     return {
-        "segments": [
-            {"speaker": "SPEAKER_00", "text": "Hi", "start": 0.0, "end": 0.2}
-        ]
+        "segments": [{"speaker": "SPEAKER_00", "text": "Hi", "start": 0.0, "end": 0.2}]
     }
 
 

@@ -285,11 +285,11 @@ def repair_processing_state(
                     # This prevents validation errors while keeping the entry valid
                     if mp3_path is not None:
                         entry["mp3_path"] = None
-                        changes.append(f"Set mp3_path to None (audio file not found)")
+                        changes.append("Set mp3_path to None (audio file not found)")
                     elif "mp3_path" not in entry:
                         entry["mp3_path"] = None
                         changes.append(
-                            f"Set missing mp3_path to None (audio file not found)"
+                            "Set missing mp3_path to None (audio file not found)"
                         )
                     # Log as info since this is expected for some transcripts
                     logger.debug(
@@ -437,7 +437,9 @@ def has_analysis_completed(transcript_path: str, modules: List[str]) -> bool:
             return True
 
         # Fallback: completed status with requested coverage
-        if (history.get("completed") or history.get("status") == "completed") and requested_modules.issubset(modules_requested):
+        if (
+            history.get("completed") or history.get("status") == "completed"
+        ) and requested_modules.issubset(modules_requested):
             return True
 
         return False

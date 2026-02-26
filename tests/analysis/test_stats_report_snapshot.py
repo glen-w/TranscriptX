@@ -68,7 +68,9 @@ def test_stats_report_markdown_sections_order(tmp_path: Path) -> None:
     sentiment_out.mkdir(parents=True)
     (sentiment_out / f"{base_name}_sentiment_summary.json").write_text("{}")
 
-    context = DummyContext(base_name, tmp_path, results={"sentiment": {"status": "success"}})
+    context = DummyContext(
+        base_name, tmp_path, results={"sentiment": {"status": "success"}}
+    )
     payload = build_stats_payload(
         context,
         _make_segments_with_warning(),

@@ -105,7 +105,9 @@ class MLDialogueActClassifier:
         self.random_forest = None
         self.context_window = 3  # Number of previous utterances to consider
         self.ml_available = False
-        self._logged_untrained_rf = False  # Log once when falling back due to untrained RF
+        self._logged_untrained_rf = (
+            False  # Log once when falling back due to untrained RF
+        )
 
         # Initialize models with error handling
         self._initialize_models()

@@ -101,7 +101,9 @@ def render_speaker_exemplars(speaker_id: int) -> None:
         st.info("Speaker exemplars are available for transcript subjects only.")
         return
 
-    run_dir = RunIndex.get_run_root(subject.scope, run_id, subject_id=subject.subject_id)
+    run_dir = RunIndex.get_run_root(
+        subject.scope, run_id, subject_id=subject.subject_id
+    )
     resolved = resolve_effective_config(run_dir=run_dir)
     config = resolved.effective_config.analysis.speaker_exemplars
     if not config.enabled:
@@ -151,9 +153,7 @@ def render_speaker_exemplars(speaker_id: int) -> None:
     combined = results.get("combined", [])
     per_method = results.get("per_method", {})
 
-    tabs = ["Combined"] + [
-        name.replace("_", " ").title() for name in per_method.keys()
-    ]
+    tabs = ["Combined"] + [name.replace("_", " ").title() for name in per_method.keys()]
     tab_objs = st.tabs(tabs) if tabs else []
     if not tab_objs:
         st.info("No exemplars available.")
@@ -171,9 +171,7 @@ def render_speaker_exemplars(speaker_id: int) -> None:
             scores = item.get("method_scores") or {}
             if scores:
                 st.caption(
-                    " · ".join(
-                        f"{name}: {score:.2f}" for name, score in scores.items()
-                    )
+                    " · ".join(f"{name}: {score:.2f}" for name, score in scores.items())
                 )
             st.divider()
 

@@ -8,6 +8,7 @@ import streamlit as st
 
 from transcriptx.web.services.group_service import GroupService  # type: ignore[import]
 
+
 def render_groups() -> None:
     st.markdown('<div class="main-header">Groups</div>', unsafe_allow_html=True)
 

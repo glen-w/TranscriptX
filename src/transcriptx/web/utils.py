@@ -8,10 +8,8 @@ DEPRECATED: This module is maintained for backward compatibility.
 New code should import from transcriptx.web.services directly.
 """
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.web.services import FileService, StatisticsService, SummaryService
 
@@ -34,7 +32,7 @@ def get_session_statistics(session_name: str) -> Dict[str, Any]:
 def list_available_sessions() -> List[Dict[str, Any]]:
     """
     Scan data/outputs/<slug>/<run_id> for available runs.
-    
+
     This function delegates to FileService to avoid circular dependencies.
     """
     return FileService.list_available_sessions()
@@ -64,6 +62,7 @@ def get_analysis_modules(session_name: str) -> List[str]:
         List of module names
     """
     from transcriptx.web.module_registry import get_analysis_modules
+
     return get_analysis_modules(session_name)
 
 

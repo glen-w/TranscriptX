@@ -22,4 +22,3 @@ def test_sentiment_module_smoke_contract() -> None:
     first = result["segments_with_sentiment"][0]
     assert "sentiment" in first
     assert {"compound", "pos", "neu", "neg"}.issubset(set(first["sentiment"].keys()))
-

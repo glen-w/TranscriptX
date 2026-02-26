@@ -5,6 +5,7 @@ Overview dashboard page for TranscriptX Studio.
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 import streamlit as st
 import pandas as pd
@@ -12,9 +13,22 @@ import pandas as pd
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 
 
+def _load_run_results(run_root: Path | str) -> dict | None:
+    """Load run_results.json if present (run-level summary: modules run / skipped / why)."""
+    path = Path(run_root) / "run_results.json"
+    if not path.exists():
+        return None
+    try:
+        import json
+
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
 def _parse_run_datetime(run_id: str) -> str:
     """Parse run_id to extract and format date/time.
-    
+
     Run ID format: YYYYMMDD_HHMMSS_<hash>
     Returns formatted string like: "2026-01-24 08:19:59"
     """
@@ -58,7 +72,7 @@ def render_overview() -> None:
     has_errors = bool(health.get("errors"))
     has_warnings = bool(health.get("warnings"))
     has_issues = status in ("error", "warning") or has_errors or has_warnings
-    
+
     if status == "error":
         st.error("🔴 Errors detected in this run.")
     elif status == "warning":
@@ -78,6 +92,25 @@ def render_overview() -> None:
         with st.expander("Warnings"):
             for item in health["warnings"]:
                 st.write(f"- {item}")
+
+    # Run-level results summary (skipped modules and why, preset explanation)
+    run_results = _load_run_results(run_root)
+    if run_results:
+        skipped = run_results.get("modules_skipped") or []
+        preset_explanation = run_results.get("preset_explanation")
+        if skipped or preset_explanation:
+            with st.expander(
+                "Run summary (included / excluded)", expanded=bool(skipped)
+            ):
+                if preset_explanation:
+                    st.caption("Preset explanation")
+                    st.text(preset_explanation)
+                if skipped:
+                    st.caption("Skipped modules (reason)")
+                    for s in skipped:
+                        mod = s.get("module", "?")
+                        reason = s.get("reason", "")
+                        st.write(f"- **{mod}**: {reason}")
 
     total_files = len(artifacts)
     chart_count = len([a for a in artifacts if a.kind.startswith("chart")])
@@ -111,15 +144,17 @@ def render_overview() -> None:
     # Create DataFrame for table display
     table_data = []
     for module, stats in sorted(module_map.items()):
-        table_data.append({
-            "Module": module,
-            "Charts": stats["charts"],
-            "Data Files": stats["data"],
-            "Last Updated": stats["last"] if stats["last"] else "N/A"
-        })
-    
+        table_data.append(
+            {
+                "Module": module,
+                "Charts": stats["charts"],
+                "Data Files": stats["data"],
+                "Last Updated": stats["last"] if stats["last"] else "N/A",
+            }
+        )
+
     df = pd.DataFrame(table_data)
-    
+
     # Display in a scrollable container
     st.markdown(
         """
@@ -134,15 +169,17 @@ def render_overview() -> None:
         }
         </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
-    
+
     with st.container():
         st.dataframe(
             df,
-            width='stretch',
+            width="stretch",
             hide_index=True,
-            height=min(400, 50 + len(df) * 35),  # Dynamic height based on rows, max 400px
+            height=min(
+                400, 50 + len(df) * 35
+            ),  # Dynamic height based on rows, max 400px
         )
 
     st.divider()

@@ -70,7 +70,9 @@ def edit_config_interactive() -> None:
             elif choice == "⚙️  Workflow / CLI Settings":
                 edit_workflow_config(config)
             elif choice == "⚙️  Profile Management":
-                from transcriptx.cli.profile_manager_ui import manage_profiles_interactive
+                from transcriptx.cli.profile_manager_ui import (
+                    manage_profiles_interactive,
+                )
 
                 manage_profiles_interactive()
             elif choice == "👀 View Current Configuration":

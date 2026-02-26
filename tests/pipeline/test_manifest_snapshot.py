@@ -12,7 +12,9 @@ from transcriptx.core.pipeline.manifest_builder import (  # type: ignore[import]
 )
 
 
-def test_manifest_output_paths_snapshot(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+def test_manifest_output_paths_snapshot(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
     run_dir = tmp_path / "run"
     run_dir.mkdir()
 
@@ -44,9 +46,9 @@ def test_manifest_output_paths_snapshot(tmp_path: Path, monkeypatch: MonkeyPatch
     )
 
     expected_paths = json.loads(
-        (Path(__file__).parent.parent / "fixtures" / "manifest_expected_paths.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            Path(__file__).parent.parent / "fixtures" / "manifest_expected_paths.json"
+        ).read_text(encoding="utf-8")
     )
     actual_paths = sorted(artifact["rel_path"] for artifact in manifest["artifacts"])
     assert actual_paths == expected_paths

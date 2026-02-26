@@ -13,8 +13,8 @@ from colorama import Fore, init
 from rich.console import Console
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.cli.audio import SegmentPlayer
 
+# SegmentPlayer imported lazily where used to avoid circular import (cli.audio -> core -> io.speaker_mapping -> cli.audio).
 # Lazy imports to avoid circular dependencies:
 # - choose_mapping_action imported in load_or_create_speaker_map
 # - offer_and_edit_tags imported in load_or_create_speaker_map
@@ -52,7 +52,6 @@ class SpeakerChoice(NamedTuple):
 SpeakerSelection = Union[SpeakerChoice, str]
 
 from .utils import SegmentRef, _format_lines_for_display, _parse_user_input
-from transcriptx.cli.audio import SegmentPlayer
 
 
 def _interactive_speaker_naming(
@@ -74,6 +73,8 @@ def _interactive_speaker_naming(
                 f"Audio playback disabled: ffplay and ffmpeg not available. {ffplay_err or ffmpeg_err}"
             )
             playback_enabled = False
+    from transcriptx.cli.audio import SegmentPlayer
+
     player = SegmentPlayer(audio_path=audio_path)
     status_message = "Ready."
     batch_size = 10
@@ -94,7 +95,10 @@ def _interactive_speaker_naming(
     def sort_by_time(items: List[SegmentRef]) -> List[SegmentRef]:
         return sorted(
             items,
-            key=lambda seg: (seg.start is None, seg.start if seg.start is not None else 0.0),
+            key=lambda seg: (
+                seg.start is None,
+                seg.start if seg.start is not None else 0.0,
+            ),
         )
 
     def apply_sort_mode() -> None:
@@ -144,8 +148,10 @@ def _interactive_speaker_naming(
     lines_control = FormattedTextControl(
         text=lambda: (
             refresh_counter,  # Reference refresh_counter to force re-evaluation
-            _format_lines_for_display(segments, displayed_indices, selected_offset)
-        )[1]  # Return the formatted lines, but evaluate refresh_counter first
+            _format_lines_for_display(segments, displayed_indices, selected_offset),
+        )[
+            1
+        ]  # Return the formatted lines, but evaluate refresh_counter first
     )
     status_control = FormattedTextControl(text=lambda: f"[{status_message}]")
 
@@ -233,9 +239,7 @@ def _interactive_speaker_naming(
                     # Process is running - audio should be playing
                     # Note: Removed debug log to avoid interfering with menu display
                     # Status message already provides feedback to user
-                    update_status(
-                        f"▶️ Playing ({seg.start:.1f}s - {seg.end:.1f}s)"
-                    )
+                    update_status(f"▶️ Playing ({seg.start:.1f}s - {seg.end:.1f}s)")
                 else:
                     # Process exited immediately - playback failed
                     exit_code = (
@@ -247,9 +251,7 @@ def _interactive_speaker_naming(
                     )
                     update_status(error_msg)
             elif player.is_playing:
-                update_status(
-                    f"▶️ Playing ({seg.start:.1f}s - {seg.end:.1f}s)"
-                )
+                update_status(f"▶️ Playing ({seg.start:.1f}s - {seg.end:.1f}s)")
             else:
                 # No process was created - check what's available
                 from transcriptx.cli.audio import (
@@ -385,13 +387,13 @@ def _interactive_speaker_naming(
         """Go back to previous speaker (Ctrl+B - works globally)."""
         player.cleanup()
         event.app.exit(result=GO_BACK_SENTINEL)
-    
+
     @kb.add("c-p")
     def go_back_ctrl_p(event):
         """Go back to previous speaker (Ctrl+P - alternative if Ctrl+B doesn't work)."""
         player.cleanup()
         event.app.exit(result=GO_BACK_SENTINEL)
-    
+
     @kb.add("p", filter=~has_focus(name_input))
     def go_back_p(event):
         """Go back to previous speaker (P key - works when name field is not focused)."""

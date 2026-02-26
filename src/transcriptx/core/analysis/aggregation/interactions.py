@@ -20,7 +20,9 @@ def _extract_interactions_payload(module_results: Dict[str, Any]) -> Dict[str, A
     interactions_result = module_results.get("interactions", {})
     if not isinstance(interactions_result, dict):
         return {}
-    payload = interactions_result.get("payload") or interactions_result.get("results") or {}
+    payload = (
+        interactions_result.get("payload") or interactions_result.get("results") or {}
+    )
     return payload if isinstance(payload, dict) else {}
 
 
@@ -115,7 +117,7 @@ def aggregate_interactions_group(
             entry = speaker_aggregates.setdefault(
                 canonical_id,
                 {
-                "canonical_speaker_id": canonical_id,
+                    "canonical_speaker_id": canonical_id,
                     "display_name": canonical_speaker_map.canonical_to_display.get(
                         canonical_id, speaker
                     ),

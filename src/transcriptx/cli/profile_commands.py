@@ -153,7 +153,9 @@ def compare_speakers(
 
 @profile_app.command("export")
 def export_speaker_data(
-    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to export"),
+    speaker_name: str = typer.Option(
+        ..., "--speaker-name", "-n", help="Name of the speaker to export"
+    ),
     format: str = typer.Option(
         "json", "--format", "-f", help="Export format (json, csv)"
     ),
@@ -201,7 +203,9 @@ def export_speaker_data(
 
 @profile_app.command("evolution")
 def analyze_speaker_evolution(
-    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to analyze"),
+    speaker_name: str = typer.Option(
+        ..., "--speaker-name", "-n", help="Name of the speaker to analyze"
+    ),
     time_period: str = typer.Option(
         "all", "--period", "-p", help="Time period (all, month, week)"
     ),
@@ -294,7 +298,9 @@ def list_speaker_profiles(
 
 @profile_app.command("update")
 def update_speaker_profile(
-    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to update"),
+    speaker_name: str = typer.Option(
+        ..., "--speaker-name", "-n", help="Name of the speaker to update"
+    ),
     force: bool = typer.Option(
         False, "--force", "-f", help="Force update even if data exists"
     ),
@@ -437,7 +443,7 @@ def convert_to_csv(export_data: Dict[str, Any]) -> str:
 
     # Add profile data
     for profile_type, profile_data in export_data.get("profiles", {}).items():
-        csv_lines.append(f"")
+        csv_lines.append("")
         csv_lines.append(f"{profile_type}_profile,")
         for field, value in profile_data.items():
             csv_lines.append(f"{profile_type}_{field},{value}")

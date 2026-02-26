@@ -153,11 +153,13 @@ def _build_post_processing_choices() -> list[str]:
         "📝 Corrections Suggestions Only",
     ]
     if get_config().workflow.cli_pruning_enabled:
-        choices.extend([
-            "🧹 Prune old runs (DB only)",
-            "🧹 Prune old runs (DB + outputs)",
-            "🗑️ Delete all artefacts",
-        ])
+        choices.extend(
+            [
+                "🧹 Prune old runs (DB only)",
+                "🧹 Prune old runs (DB + outputs)",
+                "🗑️ Delete all artefacts",
+            ]
+        )
     choices.append("⬅️ Back to main menu")
     return choices
 
@@ -252,7 +254,9 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
                         f"\n[yellow]⚠️ {len(missing)} selected file(s) are not in the DB and will be skipped.[/yellow]"
                     )
                 if not transcript_ids:
-                    print("\n[yellow]⚠️ None of the selected files exist in the DB. Returning.[/yellow]")
+                    print(
+                        "\n[yellow]⚠️ None of the selected files exist in the DB. Returning.[/yellow]"
+                    )
                     return
             finally:
                 try:
@@ -290,10 +294,10 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
             )
         else:
             summary_lines.append("Artifact file deletion: OFF")
-        
+
         # Add disk-only run information (always show, even if 0)
         summary_lines.append("")
-        summary_lines.append(f"Disk-only runs (not in DB):")
+        summary_lines.append("Disk-only runs (not in DB):")
         summary_lines.append(f"  Slugs scanned: {report.disk_only_slugs_scanned}")
         summary_lines.append(f"  Runs found: {report.disk_only_runs_found}")
         summary_lines.append(f"  Runs to delete: {report.disk_only_runs_to_delete}")
@@ -301,9 +305,13 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
             summary_lines.append("")
             summary_lines.append("  Examples:")
             for slug, delete_runs, keep_run in report.disk_only_plan[:3]:
-                summary_lines.append(f"    {slug}: delete {len(delete_runs)} runs, keep {keep_run}")
+                summary_lines.append(
+                    f"    {slug}: delete {len(delete_runs)} runs, keep {keep_run}"
+                )
             if len(report.disk_only_plan) > 3:
-                summary_lines.append(f"    ...and {len(report.disk_only_plan) - 3} more slugs")
+                summary_lines.append(
+                    f"    ...and {len(report.disk_only_plan) - 3} more slugs"
+                )
 
         print(
             Panel.fit(
@@ -313,7 +321,10 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
             )
         )
 
-        if report.transcripts_with_deletions == 0 and report.disk_only_runs_to_delete == 0:
+        if (
+            report.transcripts_with_deletions == 0
+            and report.disk_only_runs_to_delete == 0
+        ):
             print("\n[green]✅ Nothing to prune.[/green]")
             return
 
@@ -359,11 +370,13 @@ def _run_prune_old_runs(*, delete_files: bool) -> None:
             summary_lines.append(
                 f"Files deleted: {applied.files_deleted} (skipped={applied.files_skipped}, missing={applied.files_missing}, unsafe={applied.files_unsafe_outside_outputs})"
             )
-        
+
         # Add disk-only run deletion results
         if applied.disk_only_runs_deleted > 0:
             summary_lines.append("")
-            summary_lines.append(f"Disk-only run directories deleted: {applied.disk_only_runs_deleted}")
+            summary_lines.append(
+                f"Disk-only run directories deleted: {applied.disk_only_runs_deleted}"
+            )
 
         print(
             Panel.fit(
@@ -399,7 +412,11 @@ def _run_delete_all_artefacts() -> None:
             if not slug_dir.is_dir() or slug_dir.name.startswith("."):
                 continue
             slug_dirs.append(slug_dir)
-            run_count = sum(1 for p in slug_dir.iterdir() if p.is_dir() and not p.name.startswith("."))
+            run_count = sum(
+                1
+                for p in slug_dir.iterdir()
+                if p.is_dir() and not p.name.startswith(".")
+            )
             total_dirs += run_count
 
         summary_lines = [
@@ -414,7 +431,11 @@ def _run_delete_all_artefacts() -> None:
             summary_lines.append("")
             summary_lines.append("Examples (first 5 slugs):")
             for slug_dir in slug_dirs[:5]:
-                runs = [p.name for p in slug_dir.iterdir() if p.is_dir() and not p.name.startswith(".")]
+                runs = [
+                    p.name
+                    for p in slug_dir.iterdir()
+                    if p.is_dir() and not p.name.startswith(".")
+                ]
                 summary_lines.append(f"  {slug_dir.name}: {len(runs)} run(s)")
 
         print(

@@ -29,8 +29,14 @@ def test_golden_config_roundtrip(tmp_path: Any, monkeypatch: Any) -> None:
     resolved = resolve_effective_config(run_id=None)
     # Resolver may normalize/coerce some values (e.g., ranges) while preserving semantics.
     # Contract: project defaults should survive resolution for core top-level keys.
-    assert resolved.effective_dict_nested["active_workflow_profile"] == defaults["active_workflow_profile"]
-    assert resolved.effective_dict_nested["analysis"]["analysis_mode"] == defaults["analysis"]["analysis_mode"]
+    assert (
+        resolved.effective_dict_nested["active_workflow_profile"]
+        == defaults["active_workflow_profile"]
+    )
+    assert (
+        resolved.effective_dict_nested["analysis"]["analysis_mode"]
+        == defaults["analysis"]["analysis_mode"]
+    )
 
     dotmap = flatten(defaults)
     rebuilt = unflatten(dotmap)

@@ -57,9 +57,7 @@ def aggregate_stats_group(
             total_segments += segment_count
             total_duration += duration
 
-            canonical_id = display_to_canonical.get(
-                name, _fallback_canonical_id(name)
-            )
+            canonical_id = display_to_canonical.get(name, _fallback_canonical_id(name))
             aggregate = speaker_aggregates.setdefault(
                 canonical_id,
                 {
@@ -71,7 +69,12 @@ def aggregate_stats_group(
                     "total_word_count": 0,
                     "total_segment_count": 0,
                     "total_tic_count": 0.0,
-                    "sentiment_weighted": {"compound": 0.0, "pos": 0.0, "neu": 0.0, "neg": 0.0},
+                    "sentiment_weighted": {
+                        "compound": 0.0,
+                        "pos": 0.0,
+                        "neu": 0.0,
+                        "neg": 0.0,
+                    },
                     "sentiment_weight": 0.0,
                 },
             )
@@ -83,9 +86,9 @@ def aggregate_stats_group(
 
             sentiment = sentiment_summary.get(name, {})
             weight = segment_count if segment_count else 1
-            aggregate["sentiment_weighted"]["compound"] += sentiment.get(
-                "compound", 0.0
-            ) * weight
+            aggregate["sentiment_weighted"]["compound"] += (
+                sentiment.get("compound", 0.0) * weight
+            )
             aggregate["sentiment_weighted"]["pos"] += sentiment.get("pos", 0.0) * weight
             aggregate["sentiment_weighted"]["neu"] += sentiment.get("neu", 0.0) * weight
             aggregate["sentiment_weighted"]["neg"] += sentiment.get("neg", 0.0) * weight

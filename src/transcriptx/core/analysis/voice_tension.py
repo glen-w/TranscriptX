@@ -17,7 +17,11 @@ from transcriptx.core.utils.module_result import (  # type: ignore[import-untype
 )
 from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
 
-from transcriptx.core.analysis.voice.aggregate import compute_arousal_raw, compute_tension_curve, robust_stats
+from transcriptx.core.analysis.voice.aggregate import (
+    compute_arousal_raw,
+    compute_tension_curve,
+    robust_stats,
+)
 from transcriptx.core.analysis.voice.cache import load_voice_features
 from transcriptx.core.analysis.voice.charts import tension_curve_spec
 
@@ -48,7 +52,9 @@ class VoiceTensionAnalysis(AnalysisModule):
             if locator.get("status") != "ok":
                 skipped_reason = locator.get("skipped_reason") or "no_voice_features"
                 payload = {"status": "skipped", "skipped_reason": skipped_reason}
-                output_service.save_data(payload, "voice_tension_locator", format_type="json")
+                output_service.save_data(
+                    payload, "voice_tension_locator", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -72,13 +78,21 @@ class VoiceTensionAnalysis(AnalysisModule):
             voice_cfg = getattr(getattr(cfg, "analysis", None), "voice", None)
             bin_seconds = float(getattr(voice_cfg, "bin_seconds", 30.0))
             smoothing_alpha = float(getattr(voice_cfg, "smoothing_alpha", 0.25))
-            include_unnamed = bool(getattr(voice_cfg, "include_unnamed_in_global_curves", True))
+            include_unnamed = bool(
+                getattr(voice_cfg, "include_unnamed_in_global_curves", True)
+            )
 
             # Compute arousal per segment if missing
             if "arousal_raw" not in df.columns:
-                global_stats_energy = robust_stats(df["rms_db"].astype(float).to_numpy())
-                global_stats_pitch = robust_stats(df["f0_range_semitones"].astype(float).to_numpy())
-                global_stats_rate = robust_stats(df["speech_rate_wps"].astype(float).to_numpy())
+                global_stats_energy = robust_stats(
+                    df["rms_db"].astype(float).to_numpy()
+                )
+                global_stats_pitch = robust_stats(
+                    df["f0_range_semitones"].astype(float).to_numpy()
+                )
+                global_stats_rate = robust_stats(
+                    df["speech_rate_wps"].astype(float).to_numpy()
+                )
 
                 arousals = []
                 for _, r in df.iterrows():
@@ -95,7 +109,9 @@ class VoiceTensionAnalysis(AnalysisModule):
                 df = df.assign(arousal_raw=arousals)
 
             if not include_unnamed and "speaker" in df.columns:
-                df = df[df["speaker"].apply(lambda s: bool(s) and is_named_speaker(str(s)))]
+                df = df[
+                    df["speaker"].apply(lambda s: bool(s) and is_named_speaker(str(s)))
+                ]
 
             curve_rows = compute_tension_curve(
                 df=df,
@@ -103,8 +119,12 @@ class VoiceTensionAnalysis(AnalysisModule):
                 smoothing_alpha=smoothing_alpha,
             )
 
-            output_service.save_data(curve_rows, "voice_tension_curve", format_type="json")
-            output_service.save_data(curve_rows, "voice_tension_curve", format_type="csv")
+            output_service.save_data(
+                curve_rows, "voice_tension_curve", format_type="json"
+            )
+            output_service.save_data(
+                curve_rows, "voice_tension_curve", format_type="csv"
+            )
 
             spec = tension_curve_spec(curve_rows)
             if spec:
@@ -141,4 +161,3 @@ class VoiceTensionAnalysis(AnalysisModule):
                 payload={},
                 error=capture_exception(exc),
             )
-

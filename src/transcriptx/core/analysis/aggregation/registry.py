@@ -44,7 +44,9 @@ class AggregationEntry:
     output_type: str = "rows"  # "rows" or "blob"
 
 
-def _extract_payload(module_results: Dict[str, Any], module_name: str) -> Dict[str, Any]:
+def _extract_payload(
+    module_results: Dict[str, Any], module_name: str
+) -> Dict[str, Any]:
     result = module_results.get(module_name, {})
     if not isinstance(result, dict):
         return {}
@@ -82,9 +84,7 @@ def _build_rows_from_stats(
     return {"session_rows": [session_row], "speaker_rows": speaker_rows}
 
 
-def _warning_payload_shape(
-    agg_id: str, expected_keys: List[str]
-) -> Dict[str, Any]:
+def _warning_payload_shape(agg_id: str, expected_keys: List[str]) -> Dict[str, Any]:
     return {
         "warning": build_warning(
             code="PAYLOAD_SHAPE_UNSUPPORTED",
@@ -322,28 +322,6 @@ def _aggregate_contagion(
     return {"session_rows": session_rows, "speaker_rows": speaker_rows}
 
 
-def _aggregate_convokit(
-    per_transcript_results: List[PerTranscriptResult],
-    canonical_speaker_map: CanonicalSpeakerMap,
-    transcript_set: TranscriptSet,
-) -> Dict[str, Any] | None:
-    session_rows: List[Dict[str, Any]] = []
-    for result in per_transcript_results:
-        payload = _extract_payload(result.module_results, "convokit")
-        if not payload:
-            continue
-        summary = payload.get("coordination_summary") or {}
-        reply = payload.get("reply_linking") or {}
-        if not isinstance(summary, dict) or not isinstance(reply, dict):
-            return _warning_payload_shape("convokit", ["coordination_summary", "reply_linking"])
-        session_row = _session_row_base(result, transcript_set)
-        session_row.update({"coordination_summary": summary, "reply_linking": reply})
-        session_rows.append(session_row)
-    if not session_rows:
-        return None
-    return {"session_rows": session_rows, "speaker_rows": []}
-
-
 def _aggregate_conversation_loops(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
@@ -489,7 +467,9 @@ def _aggregate_highlights(
         items = _extract_highlight_items(payload)
         transcript_id = get_transcript_id(result, transcript_set)
         session_rows.append(_session_row_base(result, transcript_set))
-        source_rel = _artifact_relpath(result.module_results.get("highlights", {}), "highlights")
+        source_rel = _artifact_relpath(
+            result.module_results.get("highlights", {}), "highlights"
+        )
         for item in items:
             start = item.get("start")
             end = item.get("end")
@@ -517,13 +497,17 @@ def _aggregate_highlights(
             )
     if not highlight_rows:
         return None
-    highlight_rows.sort(key=lambda row: (row.get("order_index", 0), row.get("start_time") or 0))
+    highlight_rows.sort(
+        key=lambda row: (row.get("order_index", 0), row.get("start_time") or 0)
+    )
     return {
         "session_rows": session_rows,
         "speaker_rows": [],
         "content_rows": highlight_rows,
         "content_rows_name": "highlight_rows",
-        "metrics_spec": [{"name": "score", "format": "float", "description": "Highlight score"}],
+        "metrics_spec": [
+            {"name": "score", "format": "float", "description": "Highlight score"}
+        ],
     }
 
 
@@ -543,7 +527,9 @@ def _aggregate_moments(
             return _warning_payload_shape("moments", ["moments"])
         transcript_id = get_transcript_id(result, transcript_set)
         session_rows.append(_session_row_base(result, transcript_set))
-        source_rel = _artifact_relpath(result.module_results.get("moments", {}), "moments")
+        source_rel = _artifact_relpath(
+            result.module_results.get("moments", {}), "moments"
+        )
         for moment in moments:
             if not isinstance(moment, dict):
                 continue
@@ -581,7 +567,9 @@ def _aggregate_moments(
         "speaker_rows": [],
         "content_rows": moment_rows,
         "content_rows_name": "moment_rows",
-        "metrics_spec": [{"name": "score", "format": "float", "description": "Moment score"}],
+        "metrics_spec": [
+            {"name": "score", "format": "float", "description": "Moment score"}
+        ],
     }
 
 
@@ -695,7 +683,9 @@ def _aggregate_prosody(
 
 def build_registry() -> List[AggregationEntry]:
     from transcriptx.core.analysis.stats.aggregation import aggregate_stats_group
-    from transcriptx.core.analysis.aggregation.sentiment import aggregate_sentiment_group
+    from transcriptx.core.analysis.aggregation.sentiment import (
+        aggregate_sentiment_group,
+    )
     from transcriptx.core.analysis.aggregation.ner import aggregate_ner_group
     from transcriptx.core.analysis.aggregation.entity_sentiment import (
         aggregate_entity_sentiment_group,
@@ -801,12 +791,6 @@ def build_registry() -> List[AggregationEntry]:
             aggregate_fn=_aggregate_contagion,
         ),
         AggregationEntry(
-            agg_id="convokit",
-            selector=any_of(["convokit"]),
-            deps=[],
-            aggregate_fn=_aggregate_convokit,
-        ),
-        AggregationEntry(
             agg_id="conversation_loops",
             selector=any_of(["conversation_loops"]),
             deps=[],
@@ -851,7 +835,9 @@ def build_registry() -> List[AggregationEntry]:
         ),
         AggregationEntry(
             agg_id="prosody",
-            selector=any_of(["voice_features", "voice_charts_core", "prosody_dashboard"]),
+            selector=any_of(
+                ["voice_features", "voice_charts_core", "prosody_dashboard"]
+            ),
             deps=[],
             aggregate_fn=_aggregate_prosody,
         ),

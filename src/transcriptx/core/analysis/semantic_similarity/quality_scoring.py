@@ -65,9 +65,9 @@ class BasicQualityScorer:
                     score += weights.get("exact_repetition_penalty", -5.0)
                 else:
                     overlap_threshold = thresholds.get("overlap_threshold", 0.7)
-                    word_overlap = len(set(text.split()) & set(prev_text.split())) / len(
-                        text.split()
-                    )
+                    word_overlap = len(
+                        set(text.split()) & set(prev_text.split())
+                    ) / len(text.split())
                     if word_overlap > overlap_threshold:
                         score += weights.get("high_overlap_penalty", -3.0)
 
@@ -109,9 +109,7 @@ class AdvancedQualityScorer:
                                 )
                                 score += sentiment_score * 0.15
                 except Exception as exc:
-                    log_warning(
-                        self.log_tag, f"Sentiment integration failed: {exc}"
-                    )
+                    log_warning(self.log_tag, f"Sentiment integration failed: {exc}")
 
             if "emotion" in analysis_results:
                 try:
@@ -123,7 +121,9 @@ class AdvancedQualityScorer:
                             if "emotion_scores" in speaker_emotion:
                                 emotion_scores = speaker_emotion["emotion_scores"]
                                 max_emotion = (
-                                    max(emotion_scores.values()) if emotion_scores else 0
+                                    max(emotion_scores.values())
+                                    if emotion_scores
+                                    else 0
                                 )
                                 score += max_emotion * 0.15
                 except Exception as exc:

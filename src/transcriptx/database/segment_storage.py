@@ -87,9 +87,9 @@ class SegmentStorageService:
             metadata = transcript_data.get("metadata")
             if isinstance(metadata, dict):
                 file_metadata.update(metadata)
-            transcript_uuid = file_metadata.get("transcript_uuid") or transcript_data.get(
+            transcript_uuid = file_metadata.get(
                 "transcript_uuid"
-            )
+            ) or transcript_data.get("transcript_uuid")
 
             # Calculate metadata
             duration_seconds = (

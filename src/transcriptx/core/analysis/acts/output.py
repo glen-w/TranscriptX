@@ -7,7 +7,6 @@ from pathlib import Path
 from collections import Counter, defaultdict
 from typing import Any
 
-import numpy as np
 
 from transcriptx.core.analysis.acts.classification import classify_utterance
 from transcriptx.core.analysis.acts.config import (
@@ -47,9 +46,7 @@ def generate_acts_charts(
         get_speaker_display_name,
     )
 
-    speakers = sorted(
-        [s for s in act_counts_per_speaker.keys() if is_named_speaker(s)]
-    )
+    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_named_speaker(s)])
 
     # Per-speaker pie + bar charts
     for speaker, counter in act_counts_per_speaker.items():
@@ -349,7 +346,9 @@ def tag_acts(
 
         # Update conversation context
         conversation_context["previous_utterances"].append(text)
-        if len(conversation_context["previous_utterances"]) > 10:  # Keep last 10 utterances
+        if (
+            len(conversation_context["previous_utterances"]) > 10
+        ):  # Keep last 10 utterances
             conversation_context["previous_utterances"] = conversation_context[
                 "previous_utterances"
             ][-10:]
@@ -663,7 +662,9 @@ def _generate_comparison_summary(
     if disagreements_list:
         f_txt.write("SAMPLE DISAGREEMENTS:\n")
         f_txt.write("-" * 20 + "\n")
-        for i, item in enumerate(disagreements_list[:10]):  # Show first 10 disagreements
+        for i, item in enumerate(
+            disagreements_list[:10]
+        ):  # Show first 10 disagreements
             f_txt.write(f"{i+1}. Text: \"{item.get('text', '')[:50]}...\"\n")
             f_txt.write(
                 f"   ML: {item.get('ml_act', '')} (conf: {item.get('ml_confidence', 0):.2f})\n"

@@ -28,24 +28,35 @@ from transcriptx.core.utils._path_cache import (
 def _validate_file_type(file_path: Path, file_type: str) -> bool:
     """
     Validate that a file path matches the expected file type.
-    
+
     Args:
         file_path: Path to validate
     file_type: Expected file type ("transcript", "audio", "output_dir")
-    
+
     Returns:
         True if file type matches, False otherwise
     """
     suffix_lower = file_path.suffix.lower()
-    
+
     if file_type == "audio":
-        audio_extensions = {".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg", ".opus", ".mp4", ".m4v", ".webm"}
+        audio_extensions = {
+            ".mp3",
+            ".wav",
+            ".m4a",
+            ".flac",
+            ".aac",
+            ".ogg",
+            ".opus",
+            ".mp4",
+            ".m4v",
+            ".webm",
+        }
         return suffix_lower in audio_extensions
     elif file_type == "transcript":
         return suffix_lower == ".json"
     elif file_type == "output_dir":
         return file_path.is_dir()
-    
+
     # Unknown file type - accept any file
     return True
 

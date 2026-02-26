@@ -30,11 +30,14 @@ def test_edit_dashboard_config_marks_checked_choices():
 
         return Dummy()
 
-    with patch(
-        "transcriptx.cli.config_editors.dashboard.questionary.select"
-    ) as mock_select, patch(
-        "transcriptx.cli.config_editors.dashboard.questionary.checkbox"
-    ) as mock_checkbox:
+    with (
+        patch(
+            "transcriptx.cli.config_editors.dashboard.questionary.select"
+        ) as mock_select,
+        patch(
+            "transcriptx.cli.config_editors.dashboard.questionary.checkbox"
+        ) as mock_checkbox,
+    ):
         mock_select.return_value.ask.side_effect = ["add_remove", "back"]
         mock_checkbox.side_effect = fake_checkbox
 

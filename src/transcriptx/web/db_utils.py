@@ -610,6 +610,7 @@ def get_speakers_for_transcript(transcript_file_id: int) -> List[Dict[str, Any]]
     """
     try:
         from transcriptx.database.models import TranscriptSegment
+
         session = get_session()
         try:
             # Get unique speaker IDs from segments

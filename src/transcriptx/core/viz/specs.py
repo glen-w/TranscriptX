@@ -83,7 +83,9 @@ class BarCategoricalSpec(ChartSpec):
     def validate(self) -> None:
         super().validate()
         if self.series is None and (not self.categories or not self.values):
-            raise ValueError("categories and values are required for bar_categorical charts")
+            raise ValueError(
+                "categories and values are required for bar_categorical charts"
+            )
 
 
 @dataclass
@@ -104,8 +106,12 @@ class BoxSpec(ChartSpec):
 class NetworkGraphSpec(ChartSpec):
     """Spec for network graph charts."""
 
-    nodes: Sequence[dict[str, Any]] = ()  # List of node dicts with 'id', 'label', optionally 'size', 'color'
-    edges: Sequence[dict[str, Any]] = ()  # List of edge dicts with 'source', 'target', optionally 'weight', 'label'
+    nodes: Sequence[
+        dict[str, Any]
+    ] = ()  # List of node dicts with 'id', 'label', optionally 'size', 'color'
+    edges: Sequence[
+        dict[str, Any]
+    ] = ()  # List of edge dicts with 'source', 'target', optionally 'weight', 'label'
     node_positions: dict[str, tuple[float, float]] | None = None
 
     def validate(self) -> None:

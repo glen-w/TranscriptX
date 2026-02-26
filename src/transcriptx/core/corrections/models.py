@@ -64,9 +64,7 @@ class Occurrence(BaseModel):
     @model_validator(mode="after")
     def ensure_occurrence_id(self) -> "Occurrence":
         if not self.occurrence_id:
-            span_value = (
-                f"{self.span[0]}:{self.span[1]}" if self.span else "no-span"
-            )
+            span_value = f"{self.span[0]}:{self.span[1]}" if self.span else "no-span"
             signature = f"{self.segment_id}:{span_value}:{self.snippet}"
             self.occurrence_id = _stable_sha1(signature)
         return self

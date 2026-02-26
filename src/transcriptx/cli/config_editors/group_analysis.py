@@ -33,7 +33,9 @@ def edit_group_analysis_config(config):
             key="group_analysis.persist_groups",
             label="Persist groups",
             getter=lambda: config.group_analysis.persist_groups,
-            setter=lambda value: setattr(config.group_analysis, "persist_groups", value),
+            setter=lambda value: setattr(
+                config.group_analysis, "persist_groups", value
+            ),
             editor=create_bool_editor(
                 hint="Persist TranscriptSets to database by default."
             ),

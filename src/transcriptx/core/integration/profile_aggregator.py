@@ -123,8 +123,8 @@ class SpeakerProfileAggregator:
             if not profile_data:
                 continue
             aggregated_profile["profile_summary"][profile_type] = profile_data
-            aggregated_profile["confidence_scores"][profile_type] = self._calculate_confidence(
-                profile_type, profile_data
+            aggregated_profile["confidence_scores"][profile_type] = (
+                self._calculate_confidence(profile_type, profile_data)
             )
 
         # Generate cross-analysis insights

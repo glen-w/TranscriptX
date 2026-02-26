@@ -420,7 +420,7 @@ class PathResolver:
                         final_result = result
                 else:
                     candidates_found[strategy_name] = []
-            except Exception as e:
+            except Exception:
                 candidates_found[strategy_name] = []
 
         execution_time_ms = (time.time() - start_time) * 1000

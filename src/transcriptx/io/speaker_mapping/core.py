@@ -35,7 +35,12 @@ console = Console()
 logger = get_logger()
 
 
-from .utils import SegmentRef, _extract_segment_times, _is_test_environment
+from .utils import (
+    SegmentRef,
+    _extract_segment_times,
+    _is_test_environment,
+    compute_speaker_stats_from_segments,
+)
 from .interactive import (
     _select_name_with_playback,
     GO_BACK_SENTINEL,
@@ -50,9 +55,16 @@ def update_transcript_json_with_speaker_names(
     speaker_map: Dict[str, str],
     speaker_id_to_db_id: Optional[Dict[str, int]] = None,
     ignored_speakers: Optional[List[str]] = None,
+    rewrite_segment_speakers: bool = True,
+    speaker_map_source: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
-    Update transcript JSON segments with speaker display names and optional DB IDs.
+    Update transcript JSON with speaker_map and optionally segment speaker names/DB IDs.
+
+    When rewrite_segment_speakers is True (default), segment["speaker"] and
+    segment["speaker_db_id"] are updated from speaker_map and speaker_id_to_db_id.
+    When False, only top-level speaker_map (and ignored_speakers, speaker_map_source)
+    are written; segment fields are left unchanged (e.g. for DB export map-only mode).
     """
     try:
         with open(transcript_path, "r") as f:
@@ -62,7 +74,7 @@ def update_transcript_json_with_speaker_names(
         return
 
     segments = data.get("segments", [])
-    if isinstance(segments, list):
+    if rewrite_segment_speakers and isinstance(segments, list):
         for seg in segments:
             speaker_id = seg.get("speaker")
             if speaker_id is None:
@@ -77,8 +89,12 @@ def update_transcript_json_with_speaker_names(
         existing = data.get("ignored_speakers") or []
         if not isinstance(existing, list):
             existing = []
-        combined = list(dict.fromkeys([str(item) for item in existing] + ignored_speakers))
+        combined = list(
+            dict.fromkeys([str(item) for item in existing] + ignored_speakers)
+        )
         data["ignored_speakers"] = combined
+    if speaker_map_source is not None:
+        data["speaker_map_source"] = speaker_map_source
 
     try:
         with open(transcript_path, "w") as f:
@@ -138,16 +154,16 @@ def build_speaker_map(
         ]
         if not segments_with_speaker:
             console.print(
-                f"❌ No speaker information found in transcript. All segments have speaker: None or missing speaker field.",
+                "❌ No speaker information found in transcript. All segments have speaker: None or missing speaker field.",
                 style="red",
             )
             console.print(
-                f"   This transcript may not have been diarized. Please run speaker diarization first.",
+                "   This transcript may not have been diarized. Please run speaker diarization first.",
                 style="yellow",
             )
         else:
             console.print(
-                f"❌ No speakers found in transcript. Speaker map will not be created.",
+                "❌ No speakers found in transcript. Speaker map will not be created.",
                 style="red",
             )
         return {}
@@ -171,7 +187,7 @@ def build_speaker_map(
             )
             logger.debug(
                 f"Updated transcript JSON with speaker names: {transcript_path}"
-                )
+            )
 
         return new_map
 
@@ -245,7 +261,9 @@ def build_speaker_map(
             )
             # Handle "exit" request
             if choice == EXIT_SENTINEL:
-                console.print("[yellow]Exiting speaker mapping. Returning to menu...[/yellow]")
+                console.print(
+                    "[yellow]Exiting speaker mapping. Returning to menu...[/yellow]"
+                )
                 return None
             # Handle "go back" request
             if choice == GO_BACK_SENTINEL:
@@ -259,7 +277,9 @@ def build_speaker_map(
                             if prev_speaker_id in ignored_speakers:
                                 i -= 1
                                 continue
-                            prev_label = str(speaker_map.get(prev_speaker_id) or prev_speaker_id)
+                            prev_label = str(
+                                speaker_map.get(prev_speaker_id) or prev_speaker_id
+                            )
                             if is_named_speaker(prev_label):
                                 i -= 1
                                 continue
@@ -278,7 +298,11 @@ def build_speaker_map(
                 new_ignored.append(str(speaker_id))
                 ignored_speakers.add(speaker_id)
                 i += 1
-            elif isinstance(choice, SpeakerChoice) and choice.action == "name" and choice.value:
+            elif (
+                isinstance(choice, SpeakerChoice)
+                and choice.action == "name"
+                and choice.value
+            ):
                 display_name = choice.value.strip()
                 db_id = None
                 if persist_speaker_records:
@@ -309,7 +333,9 @@ def build_speaker_map(
             )
             # Handle "exit" request
             if choice == EXIT_SENTINEL:
-                console.print("[yellow]Exiting speaker mapping. Returning to menu...[/yellow]")
+                console.print(
+                    "[yellow]Exiting speaker mapping. Returning to menu...[/yellow]"
+                )
                 return None
             # Handle "go back" request
             if choice == GO_BACK_SENTINEL:
@@ -323,7 +349,9 @@ def build_speaker_map(
                             if prev_speaker_id in ignored_speakers:
                                 i -= 1
                                 continue
-                            prev_label = str(speaker_map.get(prev_speaker_id) or prev_speaker_id)
+                            prev_label = str(
+                                speaker_map.get(prev_speaker_id) or prev_speaker_id
+                            )
                             if is_named_speaker(prev_label):
                                 i -= 1
                                 continue
@@ -345,7 +373,11 @@ def build_speaker_map(
             elif isinstance(choice, SpeakerChoice) and choice.action == "skip":
                 new_map[speaker_id] = existing_name or speaker_id
                 i += 1
-            elif isinstance(choice, SpeakerChoice) and choice.action == "name" and choice.value:
+            elif (
+                isinstance(choice, SpeakerChoice)
+                and choice.action == "name"
+                and choice.value
+            ):
                 display_name = choice.value.strip()
                 db_id = None
                 if persist_speaker_records:
@@ -366,16 +398,77 @@ def build_speaker_map(
     # Merge existing map with newly identified so we preserve already-named speakers
     final_map = {**(existing_map or {}), **new_map}
 
+    # Speaker Mapping Summary (before persist): use true final_map so UI matches persisted data
+    ignored_set = set(dict.fromkeys(existing_ignored + new_ignored))
+    stats = compute_speaker_stats_from_segments(segments)
+    mapped_ids = [
+        sid
+        for sid in speaker_ids
+        if sid not in ignored_set and final_map.get(sid, sid) != sid
+    ]
+    unmapped_ids = [
+        sid
+        for sid in speaker_ids
+        if sid not in ignored_set and final_map.get(sid, sid) == sid
+    ]
+
+    console.print("\n[bold]Speaker Mapping Summary[/bold]")
+    console.print("-" * 50)
+    for sid in sorted(mapped_ids):
+        s = stats.get(sid, {})
+        name = final_map.get(sid, sid)
+        count = s.get("segment_count", 0)
+        dur = s.get("total_duration", 0.0)
+        pct = s.get("percent", 0.0)
+        if dur > 0:
+            console.print(
+                f"  [green]{sid}[/green] → {name}: {count} segments, "
+                f"{dur:.1f}s ({pct:.1f}%)"
+            )
+        else:
+            console.print(
+                f"  [green]{sid}[/green] → {name}: {count} segments ({pct:.1f}%)"
+            )
+    if unmapped_ids:
+        console.print("[dim]Unmapped:[/dim]")
+        for sid in sorted(unmapped_ids):
+            s = stats.get(sid, {})
+            count = s.get("segment_count", 0)
+            dur = s.get("total_duration", 0.0)
+            pct = s.get("percent", 0.0)
+            if dur > 0:
+                console.print(
+                    f"  [yellow]{sid}[/yellow]: {count} segments, "
+                    f"{dur:.1f}s ({pct:.1f}%)"
+                )
+            else:
+                console.print(
+                    f"  [yellow]{sid}[/yellow]: {count} segments ({pct:.1f}%)"
+                )
+    console.print(
+        "\n[dim]Note: Unmapped speakers will be excluded from most per-speaker "
+        "analyses (sentiment, emotion, word clouds, stats-by-speaker). "
+        "They may still appear in raw transcript outputs and NER/global "
+        "outputs if configured.[/dim]\n"
+    )
+
     # Always update transcript JSON if transcript_path is provided and we have a map
-    # This ensures speaker names are persisted even when speaker_map_path is None
     if transcript_path and final_map:
         update_transcript_json_with_speaker_names(
             transcript_path,
             final_map,
             speaker_id_to_db_id,
-            ignored_speakers=list(dict.fromkeys(existing_ignored + new_ignored)),
+            ignored_speakers=list(ignored_set),
         )
         logger.debug(f"Updated transcript JSON with speaker names: {transcript_path}")
+        console.print(f"[dim]Persistence path: {transcript_path}[/dim]")
+        console.print(f"[green]✔ Speaker mapping saved to: {transcript_path}[/green]")
+        console.print(
+            "[dim]Future runs will reuse this mapping unless overridden.[/dim]"
+        )
+        console.print(
+            "[dim]Mapping is stored in the transcript file (no sidecar mapping file).[/dim]"
+        )
 
     return final_map
 
@@ -405,4 +498,3 @@ def load_speaker_map(*args, **kwargs) -> Dict[str, str] | None:
         "Use extract_speaker_map_from_transcript() to read from transcript JSON, "
         "or get speaker info from segments directly."
     )
-

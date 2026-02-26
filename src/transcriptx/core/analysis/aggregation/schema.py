@@ -72,7 +72,7 @@ def get_transcript_id(
 
 
 def validate_session_rows(
-    rows: Iterable[Dict[str, Any]]
+    rows: Iterable[Dict[str, Any]],
 ) -> Tuple[bool, List[Dict[str, Any]]]:
     """
     Validate required keys/types for session rows.
@@ -92,7 +92,9 @@ def validate_session_rows(
             errors.append(
                 {
                     "row_index": idx,
-                    "invalid_keys": {"order_index": type(row.get("order_index")).__name__},
+                    "invalid_keys": {
+                        "order_index": type(row.get("order_index")).__name__
+                    },
                 }
             )
         transcript_id = row.get("transcript_id")
@@ -107,7 +109,7 @@ def validate_session_rows(
 
 
 def validate_speaker_rows(
-    rows: Iterable[Dict[str, Any]]
+    rows: Iterable[Dict[str, Any]],
 ) -> Tuple[bool, List[Dict[str, Any]]]:
     """
     Validate required keys/types for speaker rows.
@@ -126,9 +128,7 @@ def validate_speaker_rows(
             errors.append(
                 {
                     "row_index": idx,
-                    "invalid_keys": {
-                        "canonical_speaker_id": type(speaker_id).__name__
-                    },
+                    "invalid_keys": {"canonical_speaker_id": type(speaker_id).__name__},
                 }
             )
     return (len(errors) == 0, errors)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any, Tuple
 
 import numpy as np
 
@@ -48,7 +47,9 @@ def compute_arousal_raw(
     stats_pitch_range: dict[str, float],
     stats_rate: dict[str, float],
 ) -> float:
-    z_energy = robust_z(rms_db, median=stats_energy["median"], sigma=stats_energy["sigma"])
+    z_energy = robust_z(
+        rms_db, median=stats_energy["median"], sigma=stats_energy["sigma"]
+    )
     z_pitch = robust_z(
         f0_range_semitones,
         median=stats_pitch_range["median"],
@@ -79,7 +80,9 @@ def compute_valence_proxy(
     if hnr is None or jitter is None or shimmer is None or alpha is None:
         return None
     hnr_z = robust_z(hnr, median=stats_hnr["median"], sigma=stats_hnr["sigma"])
-    jitter_z = robust_z(jitter, median=stats_jitter["median"], sigma=stats_jitter["sigma"])
+    jitter_z = robust_z(
+        jitter, median=stats_jitter["median"], sigma=stats_jitter["sigma"]
+    )
     shimmer_z = robust_z(
         shimmer, median=stats_shimmer["median"], sigma=stats_shimmer["sigma"]
     )
@@ -160,7 +163,9 @@ def compute_tension_curve(
         if prev is None:
             smooth = tension_raw
         else:
-            smooth = float(smoothing_alpha * tension_raw + (1.0 - smoothing_alpha) * prev)
+            smooth = float(
+                smoothing_alpha * tension_raw + (1.0 - smoothing_alpha) * prev
+            )
         prev = smooth
         rows.append(
             {
@@ -212,18 +217,28 @@ def compute_speaker_fingerprints_and_drift(
 
         # Compute drift score per segment (max abs z)
         z_energy = g["rms_db"].apply(
-            lambda x: abs(robust_z(x, median=stats_energy["median"], sigma=stats_energy["sigma"]))
+            lambda x: abs(
+                robust_z(x, median=stats_energy["median"], sigma=stats_energy["sigma"])
+            )
         )
         z_pitch = g["f0_range_semitones"].apply(
-            lambda x: abs(robust_z(x, median=stats_pitch["median"], sigma=stats_pitch["sigma"]))
+            lambda x: abs(
+                robust_z(x, median=stats_pitch["median"], sigma=stats_pitch["sigma"])
+            )
         )
         z_rate = g["speech_rate_wps"].apply(
-            lambda x: abs(robust_z(x, median=stats_rate["median"], sigma=stats_rate["sigma"]))
+            lambda x: abs(
+                robust_z(x, median=stats_rate["median"], sigma=stats_rate["sigma"])
+            )
         )
-        drift_score = np.maximum.reduce([z_energy.to_numpy(), z_pitch.to_numpy(), z_rate.to_numpy()])
+        drift_score = np.maximum.reduce(
+            [z_energy.to_numpy(), z_pitch.to_numpy(), z_rate.to_numpy()]
+        )
         g = g.assign(drift_score=drift_score)
         candidates = g[g["drift_score"] >= float(drift_threshold)]
-        candidates = candidates.sort_values("drift_score", ascending=False).head(int(top_k))
+        candidates = candidates.sort_values("drift_score", ascending=False).head(
+            int(top_k)
+        )
         moments: list[dict[str, Any]] = []
         for rank, (_, row) in enumerate(candidates.iterrows(), start=1):
             moments.append(
@@ -242,4 +257,3 @@ def compute_speaker_fingerprints_and_drift(
         drift[str(speaker)] = moments
 
     return fingerprints, drift
-

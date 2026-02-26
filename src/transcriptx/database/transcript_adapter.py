@@ -9,7 +9,11 @@ from typing import Any, Dict, List
 from transcriptx.core.utils.canonicalization import normalize_text, normalize_timestamp
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.database import get_session
-from transcriptx.database.models import TranscriptFile, TranscriptSegment, TranscriptSpeaker
+from transcriptx.database.models import (
+    TranscriptFile,
+    TranscriptSegment,
+    TranscriptSpeaker,
+)
 
 logger = get_logger()
 
@@ -36,7 +40,9 @@ class TranscriptDbAdapter:
             if combined:
                 return combined
 
-        transcript_speaker = transcript_speakers.get(segment.transcript_speaker_id or -1)
+        transcript_speaker = transcript_speakers.get(
+            segment.transcript_speaker_id or -1
+        )
         if transcript_speaker:
             return transcript_speaker.display_name or transcript_speaker.speaker_label
 

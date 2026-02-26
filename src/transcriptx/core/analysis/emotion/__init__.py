@@ -17,7 +17,10 @@ import numpy as np
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.config import EMOTION_CATEGORIES
 from transcriptx.core.utils.logger import get_logger, log_info, log_warning
-from transcriptx.core.utils.downloads import downloads_disabled
+from transcriptx.core.utils.downloads import (
+    downloads_disabled,
+    downloads_disabled_failfast_message,
+)
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
@@ -31,12 +34,18 @@ from transcriptx.core.viz.specs import BarCategoricalSpec
 
 logger = get_logger()
 
+
 # Initialize NRCLex with automatic resource download
 def _ensure_textblob_corpora():
     """Ensure TextBlob corpora are downloaded before initializing NRCLex."""
     try:
         if downloads_disabled():
-            raise RuntimeError("Downloads disabled (TRANSCRIPTX_DISABLE_DOWNLOADS)")
+            raise RuntimeError(
+                downloads_disabled_failfast_message(
+                    "TextBlob corpora (required for emotion analysis)",
+                    "Alternatively run: python -m textblob.download_corpora",
+                )
+            )
         from textblob.download_corpora import download_all
 
         try:
@@ -95,7 +104,9 @@ def _load_nrclex():
 def _load_emotion_model(model_name: str | None = None):
     try:
         if downloads_disabled():
-            log_warning("EMOTION", "Downloads disabled; skipping contextual emotion model load")
+            log_warning(
+                "EMOTION", "Downloads disabled; skipping contextual emotion model load"
+            )
             return None
         from transcriptx.core.utils.lazy_imports import get_transformers
 
@@ -109,7 +120,10 @@ def _load_emotion_model(model_name: str | None = None):
                 "bhadresh-savani/distilbert-base-uncased-emotion",
             )
 
-        with suppress_stdout_stderr(), spinner("🔮 Loading contextual emotion model..."):
+        with (
+            suppress_stdout_stderr(),
+            spinner("🔮 Loading contextual emotion model..."),
+        ):
             transformers = get_transformers()
             emotion_model = transformers.pipeline(
                 "text-classification",
@@ -446,9 +460,7 @@ class EmotionAnalysis(AnalysisModule):
         primary = max(scores_dict, key=scores_dict.get)
         if self.emotion_output_mode == "multilabel":
             threshold = self.emotion_score_threshold
-            scores_dict = {
-                k: v for k, v in scores_dict.items() if v >= threshold
-            }
+            scores_dict = {k: v for k, v in scores_dict.items() if v >= threshold}
         else:
             # top1: keep only primary score (or all for optional storage)
             scores_dict = {primary: scores_dict[primary]}

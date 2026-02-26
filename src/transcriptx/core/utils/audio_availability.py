@@ -10,7 +10,9 @@ from transcriptx.core.utils.file_rename import find_original_audio_file
 if TYPE_CHECKING:
     from transcriptx.core.pipeline.pipeline_context import PipelineContext
 
-AudioTarget = Union[str, Path, "PipelineContext", Iterable[Union[str, Path, "PipelineContext"]]]
+AudioTarget = Union[
+    str, Path, "PipelineContext", Iterable[Union[str, Path, "PipelineContext"]]
+]
 
 
 def has_resolvable_audio(
@@ -44,7 +46,9 @@ def has_resolvable_audio(
         return _has_audio_for_path(transcript_path, output_dir=context_output_dir)
 
     # Plain path
-    return _has_audio_for_path(str(cast(Union[str, Path], target)), output_dir=output_dir)
+    return _has_audio_for_path(
+        str(cast(Union[str, Path], target)), output_dir=output_dir
+    )
 
 
 def _has_audio_for_path(transcript_path: str, *, output_dir: Optional[str]) -> bool:

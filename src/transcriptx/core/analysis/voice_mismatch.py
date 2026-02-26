@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, cast
 
-import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule  # type: ignore[import-untyped]
 from transcriptx.core.analysis.sentiment import score_sentiment  # type: ignore[import-untyped]
@@ -66,19 +65,21 @@ class VoiceMismatchAnalysis(AnalysisModule):
             if locator.get("status") != "ok":
                 skipped_reason = locator.get("skipped_reason") or "no_voice_features"
                 payload = {"status": "skipped", "skipped_reason": skipped_reason}
-                output_service.save_data(payload, "voice_mismatch_locator", format_type="json")
+                output_service.save_data(
+                    payload, "voice_mismatch_locator", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return cast(
                     Dict[str, Any],
                     build_module_result(
-                    module_name=self.module_name,
-                    status="success",
-                    started_at=started_at,
-                    finished_at=now_iso(),
-                    artifacts=output_service.get_artifacts(),
-                    metrics={"skipped_reason": skipped_reason},
-                    payload_type="analysis_results",
-                    payload=payload,
+                        module_name=self.module_name,
+                        status="success",
+                        started_at=started_at,
+                        finished_at=now_iso(),
+                        artifacts=output_service.get_artifacts(),
+                        metrics={"skipped_reason": skipped_reason},
+                        payload_type="analysis_results",
+                        payload=payload,
                     ),
                 )
 
@@ -120,18 +121,28 @@ class VoiceMismatchAnalysis(AnalysisModule):
 
             pd = __import__("pandas")
             seg_df = pd.DataFrame(seg_rows)
-            work = df.merge(seg_df[["segment_id", "text", "vader_compound"]], on="segment_id", how="left")
+            work = df.merge(
+                seg_df[["segment_id", "text", "vader_compound"]],
+                on="segment_id",
+                how="left",
+            )
 
             cfg = get_config()
             voice_cfg = getattr(getattr(cfg, "analysis", None), "voice", None)
             mismatch_threshold = float(getattr(voice_cfg, "mismatch_threshold", 0.6))
             top_k = int(getattr(voice_cfg, "top_k_moments", 30))
-            include_unnamed = bool(getattr(voice_cfg, "include_unnamed_in_global_curves", True))
+            include_unnamed = bool(
+                getattr(voice_cfg, "include_unnamed_in_global_curves", True)
+            )
 
             # Compute global baseline (fallback for unnamed speakers)
             global_stats_energy = robust_stats(work["rms_db"].astype(float).to_numpy())
-            global_stats_pitch = robust_stats(work["f0_range_semitones"].astype(float).to_numpy())
-            global_stats_rate = robust_stats(work["speech_rate_wps"].astype(float).to_numpy())
+            global_stats_pitch = robust_stats(
+                work["f0_range_semitones"].astype(float).to_numpy()
+            )
+            global_stats_rate = robust_stats(
+                work["speech_rate_wps"].astype(float).to_numpy()
+            )
 
             # Optional egemaps stats if columns exist
             has_hnr = "eg_hnr_db" in work.columns
@@ -147,15 +158,21 @@ class VoiceMismatchAnalysis(AnalysisModule):
                     continue
                 speaker_stats[str(spk)] = {
                     "energy": robust_stats(g["rms_db"].astype(float).to_numpy()),
-                    "pitch": robust_stats(g["f0_range_semitones"].astype(float).to_numpy()),
+                    "pitch": robust_stats(
+                        g["f0_range_semitones"].astype(float).to_numpy()
+                    ),
                     "rate": robust_stats(g["speech_rate_wps"].astype(float).to_numpy()),
                 }
                 if has_hnr and has_jitter and has_shimmer and has_alpha:
                     speaker_eg_stats[str(spk)] = {
                         "hnr": robust_stats(g["eg_hnr_db"].astype(float).to_numpy()),
                         "jitter": robust_stats(g["eg_jitter"].astype(float).to_numpy()),
-                        "shimmer": robust_stats(g["eg_shimmer_db"].astype(float).to_numpy()),
-                        "alpha": robust_stats(g["eg_alpha_ratio"].astype(float).to_numpy()),
+                        "shimmer": robust_stats(
+                            g["eg_shimmer_db"].astype(float).to_numpy()
+                        ),
+                        "alpha": robust_stats(
+                            g["eg_alpha_ratio"].astype(float).to_numpy()
+                        ),
                     }
 
             # Compute arousal/valence/mismatch per row
@@ -168,9 +185,17 @@ class VoiceMismatchAnalysis(AnalysisModule):
                 spk_key = "" if spk is None else str(spk)
                 stats = speaker_stats.get(spk_key)
                 if stats is None:
-                    stats_energy, stats_pitch, stats_rate = global_stats_energy, global_stats_pitch, global_stats_rate
+                    stats_energy, stats_pitch, stats_rate = (
+                        global_stats_energy,
+                        global_stats_pitch,
+                        global_stats_rate,
+                    )
                 else:
-                    stats_energy, stats_pitch, stats_rate = stats["energy"], stats["pitch"], stats["rate"]
+                    stats_energy, stats_pitch, stats_rate = (
+                        stats["energy"],
+                        stats["pitch"],
+                        stats["rate"],
+                    )
 
                 arousal = compute_arousal_raw(
                     rms_db=r.get("rms_db"),
@@ -186,7 +211,12 @@ class VoiceMismatchAnalysis(AnalysisModule):
                 valence = r.get("valence_raw")
                 if valence is None:
                     eg = {}
-                    for col in ("eg_hnr_db", "eg_jitter", "eg_shimmer_db", "eg_alpha_ratio"):
+                    for col in (
+                        "eg_hnr_db",
+                        "eg_jitter",
+                        "eg_shimmer_db",
+                        "eg_alpha_ratio",
+                    ):
                         if col in work.columns and r.get(col) is not None:
                             eg[col.removeprefix("eg_")] = float(r.get(col))
 
@@ -210,14 +240,24 @@ class VoiceMismatchAnalysis(AnalysisModule):
                     )
                 )
 
-            work = work.assign(arousal_raw=arousals, valence_raw=valences, mismatch_score=mismatch_scores)
+            work = work.assign(
+                arousal_raw=arousals,
+                valence_raw=valences,
+                mismatch_score=mismatch_scores,
+            )
 
             # Ranked moments table (exclude unnamed speakers by default)
             ranked = work.copy()
-            ranked["speaker_is_named"] = ranked["speaker"].apply(lambda s: bool(s) and is_named_speaker(str(s)))
+            ranked["speaker_is_named"] = ranked["speaker"].apply(
+                lambda s: bool(s) and is_named_speaker(str(s))
+            )
             ranked_table = ranked[ranked["speaker_is_named"]].copy()
-            ranked_table = ranked_table[ranked_table["mismatch_score"] >= mismatch_threshold]
-            ranked_table = ranked_table.sort_values("mismatch_score", ascending=False).head(top_k)
+            ranked_table = ranked_table[
+                ranked_table["mismatch_score"] >= mismatch_threshold
+            ]
+            ranked_table = ranked_table.sort_values(
+                "mismatch_score", ascending=False
+            ).head(top_k)
 
             moments: list[dict[str, Any]] = []
             for rank, (_, row) in enumerate(ranked_table.iterrows(), start=1):
@@ -236,8 +276,12 @@ class VoiceMismatchAnalysis(AnalysisModule):
                     }
                 )
 
-            output_service.save_data(moments, "voice_mismatch_moments", format_type="json")
-            output_service.save_data(moments, "voice_mismatch_moments", format_type="csv")
+            output_service.save_data(
+                moments, "voice_mismatch_moments", format_type="json"
+            )
+            output_service.save_data(
+                moments, "voice_mismatch_moments", format_type="csv"
+            )
 
             # Global scatter points (optionally include unnamed)
             curve_df = work if include_unnamed else work[work["speaker_is_named"]]
@@ -272,8 +316,15 @@ class VoiceMismatchAnalysis(AnalysisModule):
                 "top_k": top_k,
                 "valence_method": (
                     "deep_model"
-                    if ("deep_emotion_label" in work.columns and work["deep_emotion_label"].notna().any())
-                    else ("egemaps_proxy" if (has_hnr and has_jitter and has_shimmer and has_alpha) else "none")
+                    if (
+                        "deep_emotion_label" in work.columns
+                        and work["deep_emotion_label"].notna().any()
+                    )
+                    else (
+                        "egemaps_proxy"
+                        if (has_hnr and has_jitter and has_shimmer and has_alpha)
+                        else "none"
+                    )
                 ),
             }
             output_service.save_summary(summary, {}, analysis_metadata={})
@@ -282,14 +333,14 @@ class VoiceMismatchAnalysis(AnalysisModule):
             return cast(
                 Dict[str, Any],
                 build_module_result(
-                module_name=self.module_name,
-                status="success",
-                started_at=started_at,
-                finished_at=now_iso(),
-                artifacts=output_service.get_artifacts(),
-                metrics={"moments_count": len(moments)},
-                payload_type="analysis_results",
-                payload={"summary": summary, "moments": moments},
+                    module_name=self.module_name,
+                    status="success",
+                    started_at=started_at,
+                    finished_at=now_iso(),
+                    artifacts=output_service.get_artifacts(),
+                    metrics={"moments_count": len(moments)},
+                    payload_type="analysis_results",
+                    payload={"summary": summary, "moments": moments},
                 ),
             )
         except Exception as exc:
@@ -297,15 +348,14 @@ class VoiceMismatchAnalysis(AnalysisModule):
             return cast(
                 Dict[str, Any],
                 build_module_result(
-                module_name=self.module_name,
-                status="error",
-                started_at=started_at,
-                finished_at=now_iso(),
-                artifacts=[],
-                metrics={},
-                payload_type="analysis_results",
-                payload={},
-                error=capture_exception(exc),
+                    module_name=self.module_name,
+                    status="error",
+                    started_at=started_at,
+                    finished_at=now_iso(),
+                    artifacts=[],
+                    metrics={},
+                    payload_type="analysis_results",
+                    payload={},
+                    error=capture_exception(exc),
                 ),
             )
-

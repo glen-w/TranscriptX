@@ -1,8 +1,8 @@
 """Core summary computation (pure logic, no I/O)."""
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import re
 
 from transcriptx.core.analysis.highlights.core import (  # type: ignore[import-untyped]
@@ -34,8 +34,8 @@ def _build_overview(
     total_quotes = len(
         highlights.get("sections", {}).get("cold_open", {}).get("items", [])
     )
-    phrases = highlights.get("sections", {}).get("emblematic_phrases", {}).get(
-        "phrases", []
+    phrases = (
+        highlights.get("sections", {}).get("emblematic_phrases", {}).get("phrases", [])
     )
     top_phrases = [p.get("phrase") for p in phrases[:3] if p.get("phrase")]
     phrase_text = ", ".join(top_phrases) if top_phrases else "key themes"
@@ -43,15 +43,15 @@ def _build_overview(
         f"This session surfaces {total_quotes} notable opening moments across "
         f"{total_speakers} named speakers, centering on {phrase_text}."
     )
-    supporting_quotes = highlights.get("sections", {}).get("cold_open", {}).get(
-        "items", []
-    )[:2]
+    supporting_quotes = (
+        highlights.get("sections", {}).get("cold_open", {}).get("items", [])[:2]
+    )
     return {"paragraph": paragraph, "supporting_quotes": supporting_quotes}
 
 
 def _build_key_themes(highlights: Dict[str, Any], cfg: Any) -> List[Dict[str, Any]]:
-    phrases = highlights.get("sections", {}).get("emblematic_phrases", {}).get(
-        "phrases", []
+    phrases = (
+        highlights.get("sections", {}).get("emblematic_phrases", {}).get("phrases", [])
     )
     bullets = []
     for phrase in phrases[: cfg.counts.theme_bullets]:
@@ -65,14 +65,10 @@ def _build_key_themes(highlights: Dict[str, Any], cfg: Any) -> List[Dict[str, An
 
 
 def _build_tension_points(highlights: Dict[str, Any], cfg: Any) -> List[Dict[str, Any]]:
-    events = highlights.get("sections", {}).get("conflict_points", {}).get(
-        "events", []
-    )
+    events = highlights.get("sections", {}).get("conflict_points", {}).get("events", [])
     bullets = []
     for event in events[: cfg.counts.tension_bullets]:
-        participants = [
-            p.get("speaker_display") for p in event.get("participants", [])
-        ]
+        participants = [p.get("speaker_display") for p in event.get("participants", [])]
         participants_text = ", ".join([p for p in participants if p])
         text = f"Tension spike involving {participants_text}."
         bullets.append(
@@ -115,12 +111,12 @@ def _extract_commitments(segments: List[SegmentLite], cfg: Any) -> List[Dict[str
                     "end": segment.end,
                     "quote": segment.text,
                     "segment_refs": {
-                        "segment_db_ids": [segment.segment_db_id]
-                        if segment.segment_db_id
-                        else [],
-                        "segment_uuids": [segment.segment_uuid]
-                        if segment.segment_uuid
-                        else [],
+                        "segment_db_ids": (
+                            [segment.segment_db_id] if segment.segment_db_id else []
+                        ),
+                        "segment_uuids": (
+                            [segment.segment_uuid] if segment.segment_uuid else []
+                        ),
                         "segment_indexes": [segment.segment_index],
                     },
                 },

@@ -32,7 +32,16 @@ print_error() {
     echo -e "${RED}[TranscriptX]${NC} $1"
 }
 
-# Function to setup environment
+# Write install profile marker for deterministic core_mode resolution (~/.config/transcriptx/install_profile)
+write_install_profile() {
+    local profile="$1"
+    local config_dir="${TRANSCRIPTX_CONFIG_DIR:-$HOME/.config/transcriptx}"
+    mkdir -p "$config_dir"
+    echo "$profile" > "$config_dir/install_profile"
+    print_success "Wrote install_profile=$profile to $config_dir"
+}
+
+# Function to setup environment (full install)
 setup_environment() {
     print_status "Setting up TranscriptX environment..."
     
@@ -57,6 +66,11 @@ setup_environment() {
     print_status "Upgrading pip..."
     pip install --upgrade pip
 
+    # Avoid llvmlite build failure: use setuptools<70 and prefer llvmlite wheel
+    print_status "Installing setuptools and llvmlite (wheels) for compatibility..."
+    pip install "setuptools>=64,<70"
+    pip install --prefer-binary "llvmlite>=0.41.0,<0.46" || true
+
     # Install numpy first (pinned to 1.26.4 for compatibility with ML modules)
     print_status "Installing numpy (pinned to 1.26.4 for compatibility)..."
     pip install "numpy==1.26.4"
@@ -74,10 +88,6 @@ setup_environment() {
     print_status "Reinstalling critical ML packages..."
     pip install --force-reinstall --no-deps pyannote.audio
     pip install --force-reinstall --no-deps asteroid-filterbanks
-
-    # Install transformers with proper version
-    print_status "Installing transformers (>=4.40.0)..."
-    pip install "transformers>=4.40.0"
 
     # Install enhanced error handling and user feedback dependencies
     print_status "Installing enhanced error handling and user feedback dependencies..."
@@ -99,9 +109,13 @@ setup_environment() {
     pip install "marshmallow>=3.20.0"  # Serialization and validation
     pip install "jsonschema>=4.17.0"  # JSON schema validation
 
-    # Install all other dependencies
+    # Install all other dependencies (use constraints so build isolation gets setuptools<70)
     print_status "Installing remaining dependencies..."
-    pip install -r requirements.txt
+    if [ -f "constraints.txt" ]; then
+        pip install -r requirements.txt -c constraints.txt
+    else
+        pip install -r requirements.txt
+    fi
 
     # Install transcriptx package in development mode (after dependencies)
     print_status "Installing transcriptx package in development mode..."
@@ -189,6 +203,7 @@ except ImportError:
 print('✅ All core dependencies installed successfully!')
 "
 
+    write_install_profile "full"
     print_success "Environment setup complete!"
     echo ""
     echo "✨ Enhanced Features Available:"
@@ -201,6 +216,26 @@ print('✅ All core dependencies installed successfully!')
     echo "  🚪 Graceful exit handling with Ctrl+C support"
     echo "  🌐 Streamlit web interface (transcriptx web-viewer)"
     echo ""
+}
+
+# Core-only install when TRANSCRIPTX_CORE=1 (minimal deps, no torch/spacy/pyannote/etc.)
+setup_environment_core() {
+    print_status "Setting up TranscriptX environment (core only)..."
+    if ! command -v python3.10 &> /dev/null; then
+        print_error "Python 3.10 is required but not found."
+        exit 1
+    fi
+    if [ ! -d ".transcriptx" ]; then
+        print_status "Creating Python 3.10 virtual environment..."
+        python3.10 -m venv .transcriptx
+    fi
+    source .transcriptx/bin/activate
+    print_status "Upgrading pip..."
+    pip install --upgrade pip
+    print_status "Installing transcriptx with core dependencies only..."
+    pip install -e . --use-pep517
+    write_install_profile "core"
+    print_success "Core environment setup complete."
 }
 
 # Main execution logic
@@ -217,8 +252,13 @@ main() {
 
     # Check for virtual environment
     if [ ! -d ".transcriptx" ]; then
-        print_warning "Virtual environment .transcriptx not found. Setting up environment..."
-        setup_environment
+        if [ "$TRANSCRIPTX_CORE" = "1" ]; then
+            print_warning "Virtual environment not found. Setting up core-only environment (TRANSCRIPTX_CORE=1)..."
+            setup_environment_core
+        else
+            print_warning "Virtual environment .transcriptx not found. Setting up environment (full)..."
+            setup_environment
+        fi
     fi
 
     # Activate the virtual environment
@@ -264,7 +304,19 @@ main() {
     else
         print_success "Core dependencies already installed"
     fi
-    
+
+    # Ensure default spaCy model when not in core mode and auto-download not disabled
+    if [ "$TRANSCRIPTX_CORE" = "1" ] || [ "$TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD" = "1" ]; then
+        SPACY_MODEL=$(python -c "from transcriptx.core.utils.nlp_runtime import _resolve_model_name; print(_resolve_model_name(None))" 2>/dev/null) || SPACY_MODEL="en_core_web_md"
+        print_warning "To install the spaCy model manually: python -m spacy download $SPACY_MODEL"
+    else
+        SPACY_MODEL=$(python -c "from transcriptx.core.utils.nlp_runtime import _resolve_model_name; print(_resolve_model_name(None))" 2>/dev/null) || SPACY_MODEL="en_core_web_md"
+        if ! python -c "import spacy; spacy.load('$SPACY_MODEL')" 2>/dev/null; then
+            print_status "Installing spaCy model $SPACY_MODEL (required for NLP analysis)..."
+            python -m spacy download "$SPACY_MODEL" || true
+        fi
+    fi
+
     if [ "$CHECK_EXTRAS" -eq 1 ]; then
         # Optional dependency checks (extras)
         print_status "Checking Streamlit (web interface)..."
@@ -294,13 +346,19 @@ main() {
         fi
     fi
 
+    # Suppress macOS MallocStackLogging notice (overlays speaker UI, harmless)
+    # stderr is filtered so only that line is dropped; other errors still show
+    run_python() {
+        python "$@" 2> >(grep -v 'MallocStackLogging' >&2)
+    }
+
     # If no arguments, launch interactive CLI; else, pass arguments to CLI
     if [ ${#CLEAN_ARGS[@]} -eq 0 ]; then
         print_status "Starting TranscriptX interactive CLI..."
-        python -m transcriptx.cli.main interactive
+        run_python -m transcriptx.cli.main interactive
     else
         print_status "Running TranscriptX with arguments: ${CLEAN_ARGS[*]}"
-        python -m transcriptx.cli.main "${CLEAN_ARGS[@]}"
+        run_python -m transcriptx.cli.main "${CLEAN_ARGS[@]}"
     fi
 }
 

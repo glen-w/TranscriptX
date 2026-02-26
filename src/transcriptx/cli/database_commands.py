@@ -277,7 +277,9 @@ def status():
 
 @app.command()
 def migrate(
-    target: Optional[str] = typer.Option(None, "--target", "-t", help="Target migration revision"),
+    target: Optional[str] = typer.Option(
+        None, "--target", "-t", help="Target migration revision"
+    ),
     create: bool = typer.Option(False, "--create", "-c", help="Create new migration"),
     message: Optional[str] = typer.Option(
         None, "--message", "-m", help="Migration message"
@@ -503,6 +505,7 @@ def list_speakers():
         console.print(Panel.fit("👥 Speaker List", style="bold blue"))
 
         from transcriptx.database.repositories import SpeakerRepository
+
         session = _get_session()
         speaker_repo = SpeakerRepository(session)
 
@@ -645,7 +648,9 @@ def speakers_list():
 
 
 @app.command()
-def speakers_show(speaker_id: int = typer.Option(..., "--speaker-id", "-s", help="Speaker ID to show")):
+def speakers_show(
+    speaker_id: int = typer.Option(..., "--speaker-id", "-s", help="Speaker ID to show")
+):
     """Show detailed information about a speaker."""
     try:
         _init_database()
@@ -676,7 +681,7 @@ def speakers_show(speaker_id: int = typer.Option(..., "--speaker-id", "-s", help
         console.print(f"  Active: {'Yes' if speaker.is_active else 'No'}")
 
         if stats:
-            console.print(f"\n[bold cyan]Statistics:[/bold cyan]")
+            console.print("\n[bold cyan]Statistics:[/bold cyan]")
             console.print(
                 f"  Total Speaking Time: {(stats.total_speaking_time or 0) / 60:.1f} minutes"
             )
@@ -694,7 +699,7 @@ def speakers_show(speaker_id: int = typer.Option(..., "--speaker-id", "-s", help
 
         if report.get("participation"):
             participation = report["participation"]
-            console.print(f"\n[bold cyan]Participation:[/bold cyan]")
+            console.print("\n[bold cyan]Participation:[/bold cyan]")
             console.print(
                 f"  Conversations: {participation.get('conversation_count', 0)}"
             )
@@ -712,7 +717,9 @@ def speakers_merge(
     source_id: int = typer.Option(
         ..., "--source-id", "-s", help="Source speaker ID (will be merged into target)"
     ),
-    target_id: int = typer.Option(..., "--target-id", "-t", help="Target speaker ID (will keep this one)"),
+    target_id: int = typer.Option(
+        ..., "--target-id", "-t", help="Target speaker ID (will keep this one)"
+    ),
 ):
     """Merge two speakers into one."""
     try:
@@ -734,15 +741,15 @@ def speakers_merge(
             return
 
         if source_id == target_id:
-            console.print(f"[red]Cannot merge speaker with itself[/red]")
+            console.print("[red]Cannot merge speaker with itself[/red]")
             return
 
         # Confirm merge
-        console.print(f"\n[yellow]This will merge:[/yellow]")
+        console.print("\n[yellow]This will merge:[/yellow]")
         console.print(f"  Source: {source_speaker.name} (ID: {source_id})")
         console.print(f"  Target: {target_speaker.name} (ID: {target_id})")
         console.print(
-            f"\n[yellow]All data from source will be moved to target.[/yellow]"
+            "\n[yellow]All data from source will be moved to target.[/yellow]"
         )
 
         confirm = typer.confirm("Are you sure you want to proceed?")
@@ -810,7 +817,7 @@ def speakers_stats():
         )
         avg_words = total_words / total_speakers if total_speakers > 0 else 0
 
-        console.print(f"\n[bold cyan]Aggregate Speaker Statistics[/bold cyan]")
+        console.print("\n[bold cyan]Aggregate Speaker Statistics[/bold cyan]")
         console.print(f"  Total Speakers: {total_speakers}")
         console.print(f"  Total Speaking Time: {total_speaking_time / 60:.1f} minutes")
         console.print(f"  Total Word Count: {total_words:,}")
@@ -826,7 +833,7 @@ def speakers_stats():
         )[:5]
 
         if top_speakers:
-            console.print(f"\n[bold cyan]Top 5 Speakers by Speaking Time:[/bold cyan]")
+            console.print("\n[bold cyan]Top 5 Speakers by Speaking Time:[/bold cyan]")
             table = Table(show_header=True, header_style="bold magenta")
             table.add_column("Name", style="green")
             table.add_column("Speaking Time (min)", justify="right")
@@ -848,6 +855,106 @@ def speakers_stats():
     except Exception as e:
         logger.error(f"❌ Failed to get speaker statistics: {e}")
         console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command("export-speaker-maps")
+def export_speaker_maps(
+    dry_run: bool = typer.Option(
+        True,
+        "--dry-run/--no-dry-run",
+        help="Report only; do not modify files (default when --write is not set)",
+    ),
+    write: bool = typer.Option(
+        False,
+        "--write",
+        "-w",
+        help="Actually update transcript JSON files with speaker_map and optional segment rewrites",
+    ),
+    only_missing: bool = typer.Option(
+        False,
+        "--only-missing",
+        help="Skip files that already have at least one named speaker",
+    ),
+    limit: Optional[int] = typer.Option(
+        None,
+        "--limit",
+        "-n",
+        help="Process at most N transcript files",
+    ),
+    path_like: Optional[str] = typer.Option(
+        None,
+        "--path-like",
+        "-p",
+        help="Restrict to transcript file_path matching this glob (e.g. *braindump*)",
+    ),
+    rewrite_segment_speakers: bool = typer.Option(
+        False,
+        "--rewrite-segment-speakers",
+        help="Also set segment speaker and speaker_db_id; when unset, only speaker_map and provenance are written",
+    ),
+):
+    """
+    Export speaker identity from the database into transcript JSON files.
+
+    Writes top-level speaker_map (and optional segment speaker names) so that
+    file-only CLI logic (e.g. module availability) sees named speakers.
+    Use --dry-run first to see what would be done; pass --write to apply changes.
+    """
+    try:
+        _init_database()
+        from transcriptx.cli.export_speaker_maps import run_export_speaker_maps
+
+        actually_write = write and not dry_run
+        rows = run_export_speaker_maps(
+            dry_run=not actually_write,
+            write=write,
+            only_missing=only_missing,
+            limit=limit,
+            path_like=path_like,
+            rewrite_segment_speakers=rewrite_segment_speakers,
+        )
+        table = Table(
+            title="Export speaker maps",
+            show_header=True,
+            header_style="bold cyan",
+        )
+        table.add_column("Path", style="dim", overflow="fold")
+        table.add_column("Strategy", style="yellow")
+        table.add_column("Named before", justify="right")
+        table.add_column("Named after", justify="right")
+        table.add_column("Write", justify="center")
+        table.add_column("Align", justify="center")
+        table.add_column("Error", style="red", overflow="fold")
+
+        for r in rows:
+            align_str = ""
+            if r.alignment_ok is not None:
+                align_str = "yes" if r.alignment_ok else "no"
+            table.add_row(
+                r.path,
+                r.strategy,
+                str(r.named_before),
+                str(r.named_after),
+                "yes" if r.would_write else "no",
+                align_str,
+                r.error or "",
+            )
+        console.print(table)
+        if not write:
+            console.print(
+                "[dim]No files modified (dry run). Use --write to apply.[/dim]"
+            )
+        else:
+            written = sum(
+                1
+                for r in rows
+                if r.would_write
+                and r.strategy in ("case1", "case2a_alignment", "case2b_reconstruction")
+            )
+            console.print(f"[green]Updated {written} file(s).[/green]")
+    except Exception as e:
+        logger.error(f"export-speaker-maps failed: {e}")
+        raise CliExit.error()
 
 
 if __name__ == "__main__":

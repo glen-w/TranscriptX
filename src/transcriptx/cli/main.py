@@ -34,7 +34,6 @@ Usage Patterns:
 import contextlib
 import json
 import logging
-import os
 import socket
 import subprocess
 import sys
@@ -84,6 +83,7 @@ from .artifact_commands import app as artifact_app
 from .group_commands import app as group_app
 from .perf_commands import app as perf_app
 from .analysis_commands import app as analysis_app
+from .deps_commands import app as deps_app
 from .diagnostics_commands import doctor_app, audit_app
 
 # Initialize the Typer application
@@ -118,6 +118,9 @@ app.add_typer(group_app, name="group", help="TranscriptSet group commands")
 # Add performance commands as a subcommand
 app.add_typer(perf_app, name="perf", help="Performance span queries")
 app.add_typer(analysis_app, name="analysis", help="Analysis commands")
+app.add_typer(
+    deps_app, name="deps", help="Optional dependency status and install (extras)"
+)
 
 # Add diagnostics commands
 app.add_typer(doctor_app, name="doctor", help="Diagnostics commands")
@@ -151,38 +154,6 @@ def _configure_nltk_data_path() -> None:
         return
 
 
-@contextlib.contextmanager
-def _spinner_print_guard():
-    """Patch print temporarily so it synchronizes with the spinner."""
-    original_print = builtins.print
-
-    def spinner_safe_print(*args, **kwargs):
-        SpinnerManager.pause_spinner()
-        try:
-            original_print(*args, **kwargs)
-        finally:
-            SpinnerManager.resume_spinner()
-
-    builtins.print = spinner_safe_print
-    main_mod = sys.modules.get("__main__")
-    had_spinner = main_mod is not None and hasattr(main_mod, "spinner_safe_print")
-    old_spinner = getattr(main_mod, "spinner_safe_print", None) if main_mod else None
-    if main_mod is not None:
-        main_mod.spinner_safe_print = spinner_safe_print
-    try:
-        yield
-    finally:
-        builtins.print = original_print
-        if main_mod is not None:
-            if had_spinner:
-                main_mod.spinner_safe_print = old_spinner
-            else:
-                try:
-                    delattr(main_mod, "spinner_safe_print")
-                except AttributeError:
-                    pass
-
-
 def main(
     ctx: typer.Context,
     config_file: Path | None = typer.Option(
@@ -202,6 +173,16 @@ def main(
         "-o",
         help="Custom output directory",
     ),
+    core: bool | None = typer.Option(
+        None,
+        "--core",
+        help="Force core mode (only core modules, no auto-install of optional deps)",
+    ),
+    no_core: bool | None = typer.Option(
+        None,
+        "--no-core",
+        help="Disable core mode (all modules, allow auto-install)",
+    ),
 ):
     """
     Main TranscriptX CLI with enhanced error handling and user feedback.
@@ -211,20 +192,27 @@ def main(
     """
     ensure_data_dirs()
     _configure_nltk_data_path()
+    # Resolve config (CLI > env > config file > install marker)
+    if config_file and not hasattr(config_file, "default"):
+        try:
+            load_config(str(config_file))
+        except Exception:
+            pass
+    cfg = get_config()
+    if core is True:
+        cfg.core_mode = True
+    if no_core is True:
+        cfg.core_mode = False
+    if output_dir and not hasattr(output_dir, "default"):
+        try:
+            cfg.output.base_output_dir = str(output_dir)
+        except Exception:
+            pass
     # When a subcommand is invoked (e.g. preprocess, process-wav convert), apply global options then let the subcommand run
     if ctx.invoked_subcommand is not None:
-        if config_file and not hasattr(config_file, "default"):
-            try:
-                load_config(str(config_file))
-            except Exception:
-                pass
-        if output_dir and not hasattr(output_dir, "default"):
-            try:
-                cfg = get_config()
-                cfg.output.base_output_dir = str(output_dir)
-            except Exception:
-                pass
         return
+    from .startup import _spinner_print_guard
+
     with graceful_exit():
         with _spinner_print_guard():
             _main_impl(config_file, log_level, output_dir)
@@ -234,152 +222,58 @@ def run_interactive():
     """Entry point for the interactive CLI."""
     ensure_data_dirs()
     _configure_nltk_data_path()
+    from .startup import _spinner_print_guard
+
     with _spinner_print_guard():
         _main_impl()
 
 
-def _initialize_whisperx_service():
-    """
-    Initialize WhisperX Docker Compose service on startup.
-    This ensures the service is ready when the user wants to transcribe.
-    Waits until container is confirmed ready before showing menu.
-    """
-    try:
-        from .transcription_utils_compose import (
-            check_whisperx_compose_service,
-            start_whisperx_compose_service,
-            wait_for_whisperx_service,
-        )
-
-        # Check if WhisperX service is already running and ready
-        if check_whisperx_compose_service():
-            # Verify it's actually ready with a test exec
-            if wait_for_whisperx_service(timeout=5):
-                logger.info(
-                    "WhisperX Docker Compose service is already running and ready"
-                )
-                return True
-            # Container exists but not ready, will start below
-
-        # Try to start the service
-        print("\n[cyan]🔧 Initializing WhisperX service...[/cyan]")
-        logger.info("Starting WhisperX Docker Compose service on startup")
-
-        if start_whisperx_compose_service():
-            logger.info("WhisperX Docker Compose service started successfully")
-            return True
-        else:
-            print(
-                "[yellow]⚠️  WhisperX service could not be started. You can start it manually when needed.[/yellow]"
-            )
-            logger.warning("Failed to start WhisperX Docker Compose service on startup")
-            return False
-
-    except Exception as e:
-        # Don't fail startup if WhisperX can't be started
-        print(
-            "[yellow]⚠️  Could not initialize WhisperX service. You can start it manually when needed.[/yellow]"
-        )
-        logger.warning(f"Error initializing WhisperX service: {e}", exc_info=True)
-        return False
+# Re-export startup helpers for tests and any code that imports from main
+from .startup import (
+    _check_audio_playback_dependencies,
+    _ensure_pdf_ready,
+    _ensure_playwright_ready,
+    _initialize_whisperx_service,
+    _spinner_print_guard,
+)
 
 
-def _check_audio_playback_dependencies():
-    """
-    Check audio playback dependencies on startup.
-    Informs user about available features (basic playback vs. seeking support).
-    """
-    import sys
-    import shutil
-
-    try:
-        from .audio import check_ffplay_available
-
-        # Check for ffplay (enables seeking support)
-        ffplay_available, ffplay_error = check_ffplay_available()
-
-        # Check for afplay (macOS built-in, basic playback only)
-        is_macos = sys.platform == "darwin"
-        afplay_available = is_macos and shutil.which("afplay") is not None
-
-        if ffplay_available:
-            logger.info(
-                "Audio playback: ffplay available (full features including seeking)"
-            )
-            # Don't print anything - ffplay is available, all features work
-        elif afplay_available:
-            logger.info(
-                "Audio playback: afplay available (basic playback only, no seeking)"
-            )
-            print(
-                "[dim]ℹ️  Audio playback: Basic playback available. Install ffmpeg (ffplay) for skip forward/backward controls.[/dim]"
-            )
-        else:
-            logger.warning("Audio playback: No playback tools available")
-            print(
-                "[yellow]⚠️  Audio playback: No playback tools found. Install ffmpeg (ffplay) for audio playback features.[/yellow]"
-            )
-
-    except Exception as e:
-        # Don't fail startup if check fails
-        logger.warning(
-            f"Error checking audio playback dependencies: {e}", exc_info=True
-        )
-
-
-def _ensure_playwright_ready():
-    """
-    Ensure Playwright package and browser are ready for use.
-    This proactively installs Playwright if needed, avoiding warnings during NER analysis.
-    """
-    try:
-        from transcriptx.core.utils.lazy_imports import ensure_playwright_ready
-
-        # Silently check and install if needed (only shows warnings on failure)
-        if ensure_playwright_ready(silent=True):
-            logger.info("Playwright: Ready for NER location map rendering")
-        else:
-            logger.debug("Playwright: Not available (NER location maps will be HTML-only)")
-    except Exception as e:
-        # Don't fail startup if check fails
-        logger.debug(f"Playwright check skipped: {e}")
-
-
-def _ensure_pdf_ready():
-    """
-    Ensure PDF dependencies (reportlab) are installed in the active venv.
-    Lazy-loaded; installs on first use so summary all-charts PDF works when needed.
-    """
-    try:
-        from transcriptx.core.utils.lazy_imports import ensure_pdf_ready
-
-        if ensure_pdf_ready(silent=True):
-            logger.debug("PDF deps: ready for summary charts")
-        else:
-            logger.debug("PDF deps: not available (summary all-charts PDF will be skipped)")
-    except Exception as e:
-        logger.debug(f"PDF deps check skipped: {e}")
+def run_startup_checks() -> None:
+    """Run startup checks in order. Implementations live in startup.py."""
+    _initialize_whisperx_service()
+    _check_audio_playback_dependencies()
+    _ensure_playwright_ready()
+    _ensure_pdf_ready()
 
 
 def _check_and_install_streamlit(*, allow_install: bool = False) -> bool:
     """
     Check if Streamlit is available and install it if missing.
     Ensures the web interface is available.
+    Uses a subprocess to avoid importing Streamlit in the CLI process, which
+    would trigger "No runtime found" / "missing ScriptRunContext" warnings
+    and a misleading "run with: streamlit run .../main.py" message.
     """
     try:
-        # Directly check if streamlit can be imported
+        # Check via subprocess so we don't import streamlit in this process
         try:
-            import streamlit  # type: ignore  # noqa: F401
-
-            logger.info("Streamlit is available for web interface")
-            return True
-        except ImportError:
-            pass  # Streamlit not available, will try to install
+            result = subprocess.run(
+                [sys.executable, "-c", "import streamlit"],
+                capture_output=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                logger.info("Streamlit is available for web interface")
+                return True
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass  # Streamlit not available or check failed, will try to install
 
         if not allow_install:
             print("[yellow]⚠️  Streamlit is not available.[/yellow]")
             print("[dim]Install manually with: pip install streamlit>=1.29.0[/dim]")
-            logger.info("Streamlit missing; auto-install disabled in non-interactive mode")
+            logger.info(
+                "Streamlit missing; auto-install disabled in non-interactive mode"
+            )
             return False
 
         if not questionary.confirm(
@@ -399,19 +293,21 @@ def _check_and_install_streamlit(*, allow_install: bool = False) -> bool:
         )
 
         if result.returncode == 0:
-            # Verify installation by trying to import
-            try:
-                import streamlit  # type: ignore  # noqa: F401
-
+            # Verify via subprocess (same as presence check above)
+            verify = subprocess.run(
+                [sys.executable, "-c", "import streamlit"],
+                capture_output=True,
+                timeout=10,
+            )
+            if verify.returncode == 0:
                 print("[green]✅ Streamlit installed successfully[/green]")
                 logger.info("Streamlit installed successfully")
                 return True
-            except ImportError:
-                print(
-                    "[yellow]⚠️  Streamlit installation completed but import failed. Please restart the application.[/yellow]"
-                )
-                logger.warning("Streamlit installation completed but import failed")
-                return False
+            print(
+                "[yellow]⚠️  Streamlit installation completed but import failed. Please restart the application.[/yellow]"
+            )
+            logger.warning("Streamlit installation completed but import failed")
+            return False
         else:
             print("[yellow]⚠️  Could not install Streamlit automatically.[/yellow]")
             print("[dim]Install manually with: pip install streamlit>=1.29.0[/dim]")
@@ -453,7 +349,9 @@ def _check_and_install_librosa(*, allow_install: bool = False) -> bool:
         if not allow_install:
             print("[yellow]⚠️  librosa is not available.[/yellow]")
             print("[dim]Install manually with: pip install librosa>=0.10.0[/dim]")
-            logger.info("librosa missing; auto-install disabled in non-interactive mode")
+            logger.info(
+                "librosa missing; auto-install disabled in non-interactive mode"
+            )
             return False
 
         if not questionary.confirm(
@@ -579,7 +477,9 @@ def _show_preprocessing_menu() -> None:
             from .wav_processing_workflow import run_preprocess_single_file
 
             print("\n[bold cyan]🔧 Preprocess single audio file[/bold cyan]")
-            print("[dim]Select an MP3, WAV, or other audio file to run preprocessing.[/dim]")
+            print(
+                "[dim]Select an MP3, WAV, or other audio file to run preprocessing.[/dim]"
+            )
             file_path = select_single_audio_file_for_preprocessing()
             if not file_path:
                 print("\n[yellow]No file selected. Returning to menu.[/yellow]")
@@ -717,7 +617,7 @@ def _show_browser_menu() -> None:
 
         # Launch Streamlit in subprocess
         print(f"[green]Starting Streamlit web interface on {url}[/green]")
-        print(f"[cyan]Opening browser...[/cyan]")
+        print("[cyan]Opening browser...[/cyan]")
 
         # Start Streamlit process
         process = subprocess.Popen(
@@ -745,12 +645,10 @@ def _show_browser_menu() -> None:
 
         # Open browser
         webbrowser.open(url)
-        print(f"[green]✓ Web interface opened in your browser[/green]")
+        print("[green]✓ Web interface opened in your browser[/green]")
+        print("[dim]Note: Keep this CLI session open to keep the server running.[/dim]")
         print(
-            f"[dim]Note: Keep this CLI session open to keep the server running.[/dim]"
-        )
-        print(
-            f"[dim]Press Enter to stop the server and return to the main menu...[/dim]"
+            "[dim]Press Enter to stop the server and return to the main menu...[/dim]"
         )
 
         # Wait for user to press Enter
@@ -773,13 +671,13 @@ def _show_browser_menu() -> None:
             exception=None,
         )
         print(
-            f"[red]Streamlit not found. Please install it with: pip install streamlit[/red]"
+            "[red]Streamlit not found. Please install it with: pip install streamlit[/red]"
         )
     except Exception as e:
         log_error("CLI", f"Failed to start web viewer: {e}", exception=e)
         print(f"[red]Failed to start web viewer: {e}[/red]")
         print(
-            f"[yellow]You can also start it manually with: transcriptx web-viewer[/yellow]"
+            "[yellow]You can also start it manually with: transcriptx web-viewer[/yellow]"
         )
 
 
@@ -893,8 +791,7 @@ def _main_impl(
         config.output.base_output_dir = str(output_dir)
         logger.info(f"Updated output directory to: {output_dir}")
 
-    # Ensure optional deps available (install into venv if missing); lazy-loaded when used
-    _ensure_pdf_ready()
+    run_startup_checks()
 
     # Show banner
     show_banner()
@@ -1036,7 +933,7 @@ def web_viewer(
             exception=None,
         )
         print(
-            f"[red]Streamlit not found. Please install it with: pip install streamlit[/red]"
+            "[red]Streamlit not found. Please install it with: pip install streamlit[/red]"
         )
         raise CliExit.error(
             "Streamlit not found. Please install it with: pip install streamlit"
@@ -1102,6 +999,11 @@ def analyze(
     persist: bool = typer.Option(
         False, "--persist", help="Persist run metadata and artifacts to DB"
     ),
+    accept_noncanonical: bool = typer.Option(
+        False,
+        "--accept-noncanonical",
+        help="Allow analyzing transcript files that do not use the canonical filename (*_transcriptx.json). Use only when the file is already in TranscriptX schema.",
+    ),
 ):
     """
     Analyze a transcript file with specified modules and settings.
@@ -1111,6 +1013,7 @@ def analyze(
     from .workflow_utils import set_non_interactive_mode
     from transcriptx.core.pipeline.module_registry import get_default_modules
     from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+    from transcriptx.core.utils.path_utils import is_canonical_transcript_filename
     from transcriptx.cli.batch_workflows import run_batch_analysis_pipeline
     from transcriptx.cli.file_selection_utils import discover_all_transcript_paths
 
@@ -1135,6 +1038,16 @@ def analyze(
         skip_identification=skip_speaker_identification,
     )
 
+    def _check_canonical(path: Path, accept: bool) -> None:
+        if accept:
+            return
+        if not is_canonical_transcript_filename(path):
+            raise CliExit.error(
+                f"Transcript file does not use the canonical filename: {path.name}\n"
+                "Canonical files must end with *_transcriptx.json (or *_canonical.json for migration).\n"
+                "Run an import/normalize step (e.g. transcriptx import-whisperx) or pass --accept-noncanonical to analyze this file anyway."
+            )
+
     try:
         if all_transcripts:
             discovered = discover_all_transcript_paths()
@@ -1148,6 +1061,10 @@ def analyze(
             ordered = list(transcripts)
             if transcript_file is not None:
                 ordered.insert(0, transcript_file)
+            for p in ordered:
+                _check_canonical(
+                    Path(p) if isinstance(p, str) else p, accept_noncanonical
+                )
             apply_analysis_mode_settings_non_interactive(mode, profile)
             selected_modules = (
                 get_default_modules([str(path) for path in ordered])
@@ -1167,6 +1084,7 @@ def analyze(
         if transcript_file is None:
             raise CliExit.error("Missing transcript file or --transcripts list")
 
+        _check_canonical(transcript_file, accept_noncanonical)
         result = run_analysis_non_interactive(  # type: ignore[call-arg]
             transcript_file=transcript_file,
             mode=mode,
@@ -1189,7 +1107,9 @@ def analyze(
 
 @app.command()
 def transcribe(
-    audio_file: Path = typer.Option(..., "--audio-file", "-a", help="Path to audio file"),
+    audio_file: Path = typer.Option(
+        ..., "--audio-file", "-a", help="Path to audio file"
+    ),
     engine: str = typer.Option(
         "auto",
         "--engine",
@@ -1285,7 +1205,9 @@ def transcribe(
 
 @app.command("identify-speakers")
 def identify_speakers(
-    transcript_file: Path = typer.Option(..., "--transcript-file", "-t", help="Path to transcript JSON file"),
+    transcript_file: Path = typer.Option(
+        ..., "--transcript-file", "-t", help="Path to transcript JSON file"
+    ),
     overwrite: bool = typer.Option(
         False,
         "--overwrite",
@@ -1319,14 +1241,19 @@ def identify_speakers(
 
 
 # Create process-wav command group
-process_wav_app = typer.Typer(help="Process WAV files: convert, merge, or compress")
+process_wav_app = typer.Typer(
+    help="Process audio files: convert, merge, or compress (WAV, MP3, OGG, etc.)"
+)
 app.add_typer(process_wav_app, name="process-wav")
 
 
 @process_wav_app.command("convert")
 def process_wav_convert(
     files: str = typer.Option(
-        ..., "--files", "-f", help="Comma-separated list of WAV file paths"
+        ...,
+        "--files",
+        "-f",
+        help="Comma-separated list of audio file paths (WAV, MP3, OGG, etc.)",
     ),
     output_dir: Path | None = typer.Option(
         None, "--output-dir", "-o", help="Output directory for MP3 files"
@@ -1344,22 +1271,19 @@ def process_wav_convert(
     ),
 ):
     """
-    Convert WAV files to MP3.
+    Convert audio files (WAV, MP3, OGG, etc.) to MP3.
     """
-    from .wav_processing_workflow import run_wav_convert_non_interactive
+    from .commands.wav import do_wav_convert
 
-    # Parse file paths
     file_paths = [Path(f.strip()) for f in files.split(",") if f.strip()]
-
     try:
-        result = run_wav_convert_non_interactive(
-            files=file_paths,
+        result = do_wav_convert(
+            file_paths=file_paths,
             output_dir=output_dir,
             move_wavs=move_wavs,
             auto_rename=auto_rename,
             skip_confirm=skip_confirm,
         )
-
         if result.get("status") == "cancelled":
             exit_user_cancel()
         elif result.get("status") == "failed":
@@ -1375,7 +1299,7 @@ def process_wav_merge(
         ...,
         "--files",
         "-f",
-        help="Comma-separated list of WAV file paths in merge order (minimum 2)",
+        help="Comma-separated list of audio file paths (WAV, MP3, OGG, etc.) in merge order (minimum 2)",
     ),
     output_file: str | None = typer.Option(
         None, "--output-file", "-o", help="Output MP3 filename"
@@ -1396,23 +1320,20 @@ def process_wav_merge(
     ),
 ):
     """
-    Merge multiple WAV files into one MP3 file.
+    Merge multiple audio files (WAV, MP3, OGG, etc.) into one MP3 file.
     """
-    from .wav_processing_workflow import run_wav_merge_non_interactive
+    from .commands.wav import do_wav_merge
 
-    # Parse file paths
     file_paths = [Path(f.strip()) for f in files.split(",") if f.strip()]
-
     try:
-        result = run_wav_merge_non_interactive(
-            files=file_paths,
+        result = do_wav_merge(
+            file_paths=file_paths,
             output_file=output_file,
             output_dir=output_dir,
             backup_wavs=backup_wavs,
             overwrite=overwrite,
             skip_confirm=skip_confirm,
         )
-
         if result.get("status") == "cancelled":
             exit_user_cancel()
         elif result.get("status") == "failed":
@@ -1424,9 +1345,14 @@ def process_wav_merge(
 
 @app.command("preprocess")
 def preprocess_audio(
-    file: Path = typer.Option(..., "--file", "-f", help="Path to audio file (MP3, WAV, etc.)"),
+    file: Path = typer.Option(
+        ..., "--file", "-f", help="Path to audio file (MP3, WAV, etc.)"
+    ),
     output: Path | None = typer.Option(
-        None, "--output", "-o", help="Output path (default: same dir, stem_preprocessed.<ext>)"
+        None,
+        "--output",
+        "-o",
+        help="Output path (default: same dir, stem_preprocessed.<ext>)",
     ),
     skip_confirm: bool = typer.Option(
         False, "--skip-confirm", help="Skip confirmation if output exists"
@@ -1442,7 +1368,9 @@ def preprocess_audio(
 
     suffix = file.suffix.lower()
     if suffix not in (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg"):
-        print(f"[yellow]⚠️  Unusual extension {suffix}; pydub may still support it.[/yellow]")
+        print(
+            f"[yellow]⚠️  Unusual extension {suffix}; pydub may still support it.[/yellow]"
+        )
 
     result = run_preprocess_single_file(
         file_path=file, output_path=output, skip_confirm=skip_confirm
@@ -1479,15 +1407,14 @@ def process_wav_compress(
     """
     Compress WAV files in backups directory into zip archives.
     """
-    from .wav_processing_workflow import run_wav_compress_non_interactive
+    from .commands.wav import do_wav_compress
 
     try:
-        result = run_wav_compress_non_interactive(
+        result = do_wav_compress(
             delete_originals=delete_originals,
             storage_dir=storage_dir,
             skip_confirm=skip_confirm,
         )
-
         if result.get("status") == "cancelled":
             exit_user_cancel()
         elif result.get("status") == "failed":
@@ -1499,7 +1426,11 @@ def process_wav_compress(
 
 @app.command("batch-process")
 def batch_process(
-    folder: Path = typer.Option(..., "--folder", help="Path to folder containing WAV files"),
+    folder: Path = typer.Option(
+        ...,
+        "--folder",
+        help="Path to folder containing audio files (WAV, MP3, OGG, etc.)",
+    ),
     size_filter: str = typer.Option(
         "all",
         "--size-filter",
@@ -1531,7 +1462,7 @@ def batch_process(
     ),
 ):
     """
-    Batch process WAV files: convert, transcribe, detect type, and extract tags.
+    Batch process audio files: convert to MP3, transcribe, detect type, and extract tags.
     """
     from .batch_wav_workflow import run_batch_process_non_interactive
 
@@ -1565,7 +1496,9 @@ def batch_process(
 
 @app.command()
 def deduplicate(
-    folder: Path = typer.Option(..., "--folder", help="Path to folder to scan for duplicates"),
+    folder: Path = typer.Option(
+        ..., "--folder", help="Path to folder to scan for duplicates"
+    ),
     files: str | None = typer.Option(
         None, "--files", "-f", help="Comma-separated list of specific files to delete"
     ),
@@ -1619,7 +1552,10 @@ def simplify_transcript(
         help="Path to input transcript JSON file (list of dicts with 'speaker' and 'text')",
     ),
     output_file: Path = typer.Option(
-        ..., "--output-file", "-o", help="Path to output simplified transcript JSON file"
+        ...,
+        "--output-file",
+        "-o",
+        help="Path to output simplified transcript JSON file",
     ),
     tics_file: Path | None = typer.Option(
         None, help="Path to JSON file with list of tics/hesitations"
@@ -1687,6 +1623,7 @@ def settings_cmd(
         show_current_config,
         save_config_interactive,
     )
+
     config = get_config()
     if show:
         show_current_config(config)
@@ -1722,15 +1659,20 @@ def test_analysis_cmd(
     ),
 ):
     """Run test analysis via flags (non-interactive)."""
-    from .analysis_workflow import run_analysis_non_interactive, run_test_analysis_workflow
+    from .analysis_workflow import (
+        run_analysis_non_interactive,
+        run_test_analysis_workflow,
+    )
 
     if transcript_file is None:
         run_test_analysis_workflow()
         return
 
-    module_list = None if modules.lower() == "all" else [
-        m.strip() for m in modules.split(",") if m.strip()
-    ]
+    module_list = (
+        None
+        if modules.lower() == "all"
+        else [m.strip() for m in modules.split(",") if m.strip()]
+    )
     run_analysis_non_interactive(
         transcript_file=transcript_file,
         mode=mode,
@@ -1744,9 +1686,7 @@ def test_analysis_cmd(
 
 @app.command("whisperx-web-gui")
 def whisperx_web_gui_cmd(
-    action: str = typer.Option(
-        "start", "--action", help="Action: start or stop"
-    ),
+    action: str = typer.Option("start", "--action", help="Action: start or stop"),
     open_browser: bool = typer.Option(
         False, "--open-browser", help="Open local URL in browser after start"
     ),

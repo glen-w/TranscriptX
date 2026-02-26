@@ -26,7 +26,9 @@ except ImportError:
 try:
     # Suppress pkg_resources deprecation warning from webrtcvad
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning, message=".*pkg_resources.*")
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, message=".*pkg_resources.*"
+        )
         import webrtcvad
 
     WEBRTCVAD_AVAILABLE = True
@@ -376,9 +378,20 @@ class SegmentPlayer:
         if audio_path is None or not audio_path.exists():
             self._warn_once("Audio file not found; playback disabled.")
             return
-        
+
         # Validate that the file is actually an audio file, not a JSON or other file
-        audio_extensions = {".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg", ".opus", ".mp4", ".m4v", ".webm"}
+        audio_extensions = {
+            ".mp3",
+            ".wav",
+            ".m4a",
+            ".flac",
+            ".aac",
+            ".ogg",
+            ".opus",
+            ".mp4",
+            ".m4v",
+            ".webm",
+        }
         if audio_path.suffix.lower() not in audio_extensions:
             logger.warning(
                 f"File is not an audio file (extension: {audio_path.suffix}): {audio_path}. "
@@ -734,8 +747,10 @@ class SegmentPlayer:
                 logger.debug("ffmpeg path not found")
                 return None
 
-            logger.debug(f"Creating temp clip: segment {start:.2f}s-{start+duration:.2f}s from {audio_path.name}")
-            
+            logger.debug(
+                f"Creating temp clip: segment {start:.2f}s-{start+duration:.2f}s from {audio_path.name}"
+            )
+
             base_flags = [
                 ffmpeg_path,
                 "-hide_banner",
@@ -802,7 +817,7 @@ class SegmentPlayer:
                     str(temp_path),
                 ],
             ]
-            
+
             result = None
             last_error = None
             for i, cmd in enumerate(commands_to_try, 1):
@@ -820,37 +835,73 @@ class SegmentPlayer:
                     # Extract meaningful error message (skip version banner, get actual error)
                     error_parts = []
                     if result.stderr:
-                        stderr_lines = result.stderr.split('\n')
+                        stderr_lines = result.stderr.split("\n")
                         # Skip version banner (usually first few lines)
                         # Look for actual error messages (lines with "Error", "error", "failed", etc.)
                         for line in stderr_lines:
                             line_lower = line.lower()
-                            if any(keyword in line_lower for keyword in ['error', 'failed', 'invalid', 'cannot', 'unable']):
+                            if any(
+                                keyword in line_lower
+                                for keyword in [
+                                    "error",
+                                    "failed",
+                                    "invalid",
+                                    "cannot",
+                                    "unable",
+                                ]
+                            ):
                                 error_parts.append(line.strip())
                         # If no obvious error keywords, take last non-empty lines (actual errors usually at end)
                         if not error_parts:
-                            error_parts = [line.strip() for line in stderr_lines[-10:] if line.strip() and 'version' not in line.lower() and 'copyright' not in line.lower()]
+                            error_parts = [
+                                line.strip()
+                                for line in stderr_lines[-10:]
+                                if line.strip()
+                                and "version" not in line.lower()
+                                and "copyright" not in line.lower()
+                            ]
                     if result.stdout:
-                        stdout_lines = result.stdout.split('\n')
+                        stdout_lines = result.stdout.split("\n")
                         for line in stdout_lines:
                             line_lower = line.lower()
-                            if any(keyword in line_lower for keyword in ['error', 'failed', 'invalid', 'cannot', 'unable']):
+                            if any(
+                                keyword in line_lower
+                                for keyword in [
+                                    "error",
+                                    "failed",
+                                    "invalid",
+                                    "cannot",
+                                    "unable",
+                                ]
+                            ):
                                 error_parts.append(line.strip())
-                    
+
                     # Combine error parts or use full stderr if nothing extracted
                     if error_parts:
-                        error_msg = ' | '.join(error_parts[:5])  # Limit to first 5 error lines
+                        error_msg = " | ".join(
+                            error_parts[:5]
+                        )  # Limit to first 5 error lines
                     else:
                         # Fallback: get last 500 chars of stderr (errors usually at end)
-                        error_msg = (result.stderr[-500:] if result.stderr else "Unknown error").strip()
+                        error_msg = (
+                            result.stderr[-500:] if result.stderr else "Unknown error"
+                        ).strip()
                         if not error_msg or len(error_msg) < 10:
-                            error_msg = result.stderr[:500] if result.stderr else "Unknown error"
-                    
+                            error_msg = (
+                                result.stderr[:500]
+                                if result.stderr
+                                else "Unknown error"
+                            )
+
                     last_error = (result.returncode, error_msg)
-                    logger.debug(f"ffmpeg temp-clip method {i} failed (exit {result.returncode}): {error_msg[:300]}")
-            
+                    logger.debug(
+                        f"ffmpeg temp-clip method {i} failed (exit {result.returncode}): {error_msg[:300]}"
+                    )
+
             if result is None or result.returncode != 0:
-                error_code, error_msg = last_error if last_error else (0, "Unknown error")
+                error_code, error_msg = (
+                    last_error if last_error else (0, "Unknown error")
+                )
                 # Show the extracted error message
                 logger.warning(
                     f"ffmpeg temp-clip failed (exit {error_code}): {error_msg}"
@@ -859,7 +910,9 @@ class SegmentPlayer:
                 if audio_path.exists():
                     try:
                         file_size = audio_path.stat().st_size
-                        logger.debug(f"Audio file: {audio_path}, size: {file_size} bytes, segment: {start:.2f}s-{start+duration:.2f}s")
+                        logger.debug(
+                            f"Audio file: {audio_path}, size: {file_size} bytes, segment: {start:.2f}s-{start+duration:.2f}s"
+                        )
                     except OSError:
                         pass
                 try:

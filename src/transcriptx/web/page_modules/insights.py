@@ -1,9 +1,10 @@
 """Highlights and Summary insights viewer."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import streamlit as st
 
@@ -55,15 +56,15 @@ def _load_artifact_json(
     return cast(Dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
-def _load_artifact_text(
-    run_root: Path, module: str, suffix: str
-) -> Optional[str]:
+def _load_artifact_text(run_root: Path, module: str, suffix: str) -> Optional[str]:
     artifacts = ArtifactService.list_artifacts(run_root)
     match = next(
         (
             a
             for a in artifacts
-            if a.module == module and a.kind == "data_txt" and a.rel_path.endswith(suffix)
+            if a.module == module
+            and a.kind == "data_txt"
+            and a.rel_path.endswith(suffix)
         ),
         None,
     )
@@ -85,7 +86,11 @@ def _render_highlights_section(run_root: Path) -> None:
     items = []
     sections = highlights.get("sections", {})
     for section_name, payload in sections.items():
-        for item in payload.get("items", []) if section_name == "cold_open" else payload.get("events", []):
+        for item in (
+            payload.get("items", [])
+            if section_name == "cold_open"
+            else payload.get("events", [])
+        ):
             if section_name == "conflict_points":
                 anchor = item.get("anchor_quote", {})
                 items.append(
@@ -95,7 +100,9 @@ def _render_highlights_section(run_root: Path) -> None:
                         "start": anchor.get("start", 0.0),
                         "end": anchor.get("end", 0.0),
                         "quote": anchor.get("quote", ""),
-                        "score": item.get("score_breakdown", {}).get("window_spike_score", {}).get("raw_window_score", 0.0),
+                        "score": item.get("score_breakdown", {})
+                        .get("window_spike_score", {})
+                        .get("raw_window_score", 0.0),
                         "breakdown": item.get("score_breakdown", {}),
                     }
                 )
@@ -140,10 +147,10 @@ def _render_highlights_section(run_root: Path) -> None:
         return
 
     for item in filtered:
-        time_range = f"{format_time_detailed(item['start'])}-{format_time_detailed(item['end'])}"
-        st.markdown(
-            f"**{item['speaker']}** · {time_range} · score {item['score']:.3f}"
+        time_range = (
+            f"{format_time_detailed(item['start'])}-{format_time_detailed(item['end'])}"
         )
+        st.markdown(f"**{item['speaker']}** · {time_range} · score {item['score']:.3f}")
         st.write(item["quote"])
         with st.expander("Score breakdown"):
             st.json(item["breakdown"])
@@ -175,5 +182,4 @@ def _render_summary_section(run_root: Path) -> None:
             }
             for item in commitments
         ]
-        st.dataframe(rows, width='stretch')
-
+        st.dataframe(rows, width="stretch")

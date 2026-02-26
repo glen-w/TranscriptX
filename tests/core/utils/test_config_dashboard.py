@@ -38,5 +38,7 @@ def test_load_config_migrates_dashboard(tmp_path):
 
     config = load_config(str(config_path))
 
-    assert "sentiment.multi_speaker_sentiment.global" in config.dashboard.overview_charts
+    assert (
+        "sentiment.multi_speaker_sentiment.global" in config.dashboard.overview_charts
+    )
     assert config.dashboard.schema_version == 2

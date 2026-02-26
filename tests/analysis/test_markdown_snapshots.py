@@ -22,9 +22,7 @@ def test_highlights_markdown_snapshot() -> None:
                 ]
             },
             "conflict_points": {
-                "events": [
-                    {"anchor_quote": {"speaker": "Bob", "quote": "I disagree."}}
-                ]
+                "events": [{"anchor_quote": {"speaker": "Bob", "quote": "I disagree."}}]
             },
             "emblematic_phrases": {"phrases": [{"phrase": "key phrase"}]},
         }

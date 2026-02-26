@@ -102,9 +102,7 @@ def count_named_speakers(
         if info is None:
             continue
 
-        display_name = get_speaker_display_name(
-            info.grouping_key, [segment], segments
-        )
+        display_name = get_speaker_display_name(info.grouping_key, [segment], segments)
         if not display_name or not is_named_speaker(display_name):
             continue
 

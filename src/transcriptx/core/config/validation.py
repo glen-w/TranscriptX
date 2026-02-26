@@ -19,11 +19,11 @@ def _is_valid_type(value: Any, expected_type: type, allow_none: bool = False) ->
     # Handle type(None) - this means the field can be None
     if expected_type is type(None):
         return value is None
-    
+
     # Allow None if explicitly allowed (for optional fields)
     if value is None:
         return allow_none
-    
+
     if expected_type is bool:
         return isinstance(value, bool)
     if expected_type is int:
@@ -47,7 +47,7 @@ def _is_valid_type(value: Any, expected_type: type, allow_none: bool = False) ->
 
 def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
     errors: List[ValidationError] = []
-    
+
     # Handle None values - allow if default is None or type is None
     if value is None:
         # Allow None if the default is None (optional field) or type is None
@@ -61,7 +61,7 @@ def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
             )
         )
         return errors
-    
+
     # For optional fields (default is None), allow both the specified type and None
     # But we've already handled None above, so here we just check the type
     # Special case: if type is type(None) but we have a non-None value, and default is None,
@@ -89,11 +89,13 @@ def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
             )
         )
         return errors
-    
+
     # For optional fields (default is None), allow both the type and None
     # This handles cases like transcription.language which is str | None
     allow_none = field_meta.default is None
-    if field_meta.type is not type(None) and not _is_valid_type(value, field_meta.type, allow_none=allow_none):
+    if field_meta.type is not type(None) and not _is_valid_type(
+        value, field_meta.type, allow_none=allow_none
+    ):
         errors.append(
             ValidationError(
                 field_meta.key,
@@ -105,16 +107,12 @@ def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
     if field_meta.min is not None and isinstance(value, (int, float)):
         if value < field_meta.min:
             errors.append(
-                ValidationError(
-                    field_meta.key, f"Value must be >= {field_meta.min}."
-                )
+                ValidationError(field_meta.key, f"Value must be >= {field_meta.min}.")
             )
     if field_meta.max is not None and isinstance(value, (int, float)):
         if value > field_meta.max:
             errors.append(
-                ValidationError(
-                    field_meta.key, f"Value must be <= {field_meta.max}."
-                )
+                ValidationError(field_meta.key, f"Value must be <= {field_meta.max}.")
             )
     if field_meta.choices is not None:
         if isinstance(value, (list, tuple)):

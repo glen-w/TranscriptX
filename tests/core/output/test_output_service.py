@@ -18,60 +18,64 @@ from transcriptx.core.utils._path_core import get_canonical_base_name
 
 class TestOutputService:
     """Tests for OutputService class."""
-    
+
     @pytest.fixture
     def output_service(self, temp_transcript_file):
         """Fixture for OutputService instance."""
         return OutputService(str(temp_transcript_file), "sentiment")
-    
+
     def test_output_service_initialization(self, temp_transcript_file):
         """Test OutputService initialization."""
         service = OutputService(str(temp_transcript_file), "sentiment")
-        
+
         assert service.transcript_path == str(temp_transcript_file)
         assert service.module_name == "sentiment"
         assert service.base_name == get_canonical_base_name(str(temp_transcript_file))
         assert service.output_structure is not None
-    
+
     def test_save_data_json(self, output_service, tmp_path):
         """Test saving JSON data."""
         data = {"result": "test", "value": 42}
-        
-        with patch('transcriptx.core.output.output_service.save_json') as mock_save:
-            file_path = output_service.save_data(data, "test_results", format_type="json")
-        
+
+        with patch("transcriptx.core.output.output_service.save_json") as mock_save:
+            file_path = output_service.save_data(
+                data, "test_results", format_type="json"
+            )
+
         assert file_path is not None
         mock_save.assert_called_once()
-    
+
     def test_save_data_csv(self, output_service):
         """Test saving CSV data."""
         data = [{"col1": "val1", "col2": "val2"}]
-        
-        with patch('transcriptx.core.output.output_service.save_csv') as mock_save:
-            file_path = output_service.save_data(data, "test_results", format_type="csv")
-        
+
+        with patch("transcriptx.core.output.output_service.save_csv") as mock_save:
+            file_path = output_service.save_data(
+                data, "test_results", format_type="csv"
+            )
+
         assert file_path is not None
         mock_save.assert_called_once()
-    
+
     def test_save_data_txt(self, output_service, tmp_path):
         """Test saving text data."""
         data = "Simple text content"
-        
+
         file_path = output_service.save_data(data, "test_results", format_type="txt")
-        
+
         # Should create file
         assert Path(file_path).exists()
         assert Path(file_path).read_text() == data
-    
+
     def test_save_data_with_subdirectory(self, output_service):
         """Test saving data to subdirectory."""
         data = {"result": "test"}
-        
-        with patch('transcriptx.core.output.output_service.save_json') as mock_save:
+
+        with patch("transcriptx.core.output.output_service.save_json") as mock_save:
             file_path = output_service.save_data(
                 data, "test_results", format_type="json", subdirectory="nested"
             )
-        
+
         assert file_path is not None
         # Verify subdirectory was used
         call_args = mock_save.call_args[0][1]
@@ -103,7 +107,7 @@ class TestOutputService:
             },
         )
         assert override_service._should_skip_speaker_artifact("2") is False
-    
+
     def test_save_chart_global(self, output_service):
         """Test saving global chart."""
         with patch(
@@ -166,7 +170,9 @@ class TestOutputService:
         with patch(
             "transcriptx.core.output.output_service.create_summary_json"
         ) as mock_create:
-            summary_path = output_service.save_summary(results, {}, analysis_metadata={})
+            summary_path = output_service.save_summary(
+                results, {}, analysis_metadata={}
+            )
 
         assert summary_path is not None
         mock_create.assert_called_once()
@@ -177,14 +183,18 @@ class TestOutputService:
         config.output.dynamic_charts = "auto"
         set_config(config)
 
-        with patch(
-            "transcriptx.core.output.output_service.is_plotly_available",
-            return_value=True,
-        ), patch(
-            "transcriptx.core.output.output_service.save_dynamic_chart"
-        ) as mock_dynamic, patch(
-            "transcriptx.core.output.output_service.save_static_chart"
-        ) as mock_static:
+        with (
+            patch(
+                "transcriptx.core.output.output_service.is_plotly_available",
+                return_value=True,
+            ),
+            patch(
+                "transcriptx.core.output.output_service.save_dynamic_chart"
+            ) as mock_dynamic,
+            patch(
+                "transcriptx.core.output.output_service.save_static_chart"
+            ) as mock_static,
+        ):
             mock_static.return_value = Path("static.png")
             mock_dynamic.return_value = Path("dynamic.html")
             spec = BarCategoricalSpec(
@@ -199,12 +209,15 @@ class TestOutputService:
                 categories=["a"],
                 values=[1],
             )
-            with patch(
-                "transcriptx.core.output.output_service.render_mpl",
-                return_value=MagicMock(),
-            ), patch(
-                "transcriptx.core.output.output_service.render_plotly",
-                return_value=MagicMock(),
+            with (
+                patch(
+                    "transcriptx.core.output.output_service.render_mpl",
+                    return_value=MagicMock(),
+                ),
+                patch(
+                    "transcriptx.core.output.output_service.render_plotly",
+                    return_value=MagicMock(),
+                ),
             ):
                 result = output_service.save_chart(spec)
 
@@ -217,11 +230,14 @@ class TestOutputService:
         config.output.dynamic_charts = "off"
         set_config(config)
 
-        with patch(
-            "transcriptx.core.output.output_service.save_dynamic_chart"
-        ) as mock_dynamic, patch(
-            "transcriptx.core.output.output_service.save_static_chart"
-        ) as mock_static:
+        with (
+            patch(
+                "transcriptx.core.output.output_service.save_dynamic_chart"
+            ) as mock_dynamic,
+            patch(
+                "transcriptx.core.output.output_service.save_static_chart"
+            ) as mock_static,
+        ):
             mock_static.return_value = Path("static.png")
             spec = BarCategoricalSpec(
                 viz_id="sentiment.test_chart.global",
@@ -250,16 +266,21 @@ class TestOutputService:
         config.output.dynamic_charts = "auto"
         set_config(config)
 
-        with patch(
-            "transcriptx.core.output.output_service.is_plotly_available",
-            return_value=False,
-        ), patch(
-            "transcriptx.core.output.output_service.warn_missing_plotly_once"
-        ) as mock_warn, patch(
-            "transcriptx.core.output.output_service.save_dynamic_chart"
-        ) as mock_dynamic, patch(
-            "transcriptx.core.output.output_service.save_static_chart"
-        ) as mock_static:
+        with (
+            patch(
+                "transcriptx.core.output.output_service.is_plotly_available",
+                return_value=False,
+            ),
+            patch(
+                "transcriptx.core.output.output_service.warn_missing_plotly_once"
+            ) as mock_warn,
+            patch(
+                "transcriptx.core.output.output_service.save_dynamic_chart"
+            ) as mock_dynamic,
+            patch(
+                "transcriptx.core.output.output_service.save_static_chart"
+            ) as mock_static,
+        ):
             mock_static.return_value = Path("static.png")
             spec = BarCategoricalSpec(
                 viz_id="sentiment.test_chart.global",
@@ -282,11 +303,11 @@ class TestOutputService:
         assert result["dynamic"] is None
         mock_warn.assert_called_once()
         mock_dynamic.assert_not_called()
-    
+
     def test_output_structure_creation(self, temp_transcript_file):
         """Test that output structure is created correctly."""
         service = OutputService(str(temp_transcript_file), "sentiment")
-        
+
         assert service.output_structure.data_dir is not None
         assert service.output_structure.global_data_dir is not None
         assert service.output_structure.charts_dir is not None

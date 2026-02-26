@@ -23,9 +23,10 @@ def write_transcript_files(segments, speaker_map, base_name, out_dir):
     transcript_path = os.path.join(out_dir, f"{base_name}-transcript.txt")
     csv_path = os.path.join(out_dir, f"{base_name}-transcript.csv")
 
-    with open(transcript_path, "w", encoding="utf-8") as f_txt, open(
-        csv_path, "w", newline="", encoding="utf-8"
-    ) as f_csv:
+    with (
+        open(transcript_path, "w", encoding="utf-8") as f_txt,
+        open(csv_path, "w", newline="", encoding="utf-8") as f_csv,
+    ):
         writer = csv.writer(f_csv)
         writer.writerow(["Speaker", "Timestamp", "Text"])
 
@@ -61,7 +62,10 @@ def write_transcript_files(segments, speaker_map, base_name, out_dir):
 
     # Copy the text file to the readable transcripts directory
     os.makedirs(READABLE_TRANSCRIPTS_DIR, exist_ok=True)
-    shutil.copy(transcript_path, os.path.join(READABLE_TRANSCRIPTS_DIR, os.path.basename(transcript_path)))
+    shutil.copy(
+        transcript_path,
+        os.path.join(READABLE_TRANSCRIPTS_DIR, os.path.basename(transcript_path)),
+    )
 
     return transcript_path, csv_path
 
@@ -76,7 +80,9 @@ def main():
 
     # Load speaker map if it exists
     base_name = Path(transcript_path).stem
-    speaker_map_path = os.path.join(OUTPUTS_DIR, base_name, f"{base_name}_speaker_map.json")
+    speaker_map_path = os.path.join(
+        OUTPUTS_DIR, base_name, f"{base_name}_speaker_map.json"
+    )
 
     speaker_map = {}
     if os.path.exists(speaker_map_path):

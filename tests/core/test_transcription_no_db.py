@@ -24,7 +24,9 @@ def test_transcription_no_db_calls(monkeypatch, tmp_path) -> None:
     def fail_store(*args, **kwargs):
         raise AssertionError("DB store should not be called during transcription")
 
-    monkeypatch.setattr(transcription, "verify_model_availability", lambda *_: (True, None))
+    monkeypatch.setattr(
+        transcription, "verify_model_availability", lambda *_: (True, None)
+    )
     monkeypatch.setattr(transcription, "check_whisperx_compose_service", lambda: True)
     monkeypatch.setattr(transcription, "check_container_responsive", lambda: True)
     monkeypatch.setattr(transcription.time, "sleep", lambda *_: None)
@@ -58,12 +60,16 @@ def test_transcription_retries_without_alignment_when_language_has_no_default_al
     monkeypatch.setattr(transcription, "RECORDINGS_DIR", str(tmp_path))
     monkeypatch.setattr(transcript_languages, "DIARISED_TRANSCRIPTS_DIR", str(tmp_path))
 
-    expected_path = transcript_languages.get_transcript_path_for_language(audio_file.stem, "auto")
+    expected_path = transcript_languages.get_transcript_path_for_language(
+        audio_file.stem, "auto"
+    )
     expected_path.parent.mkdir(parents=True, exist_ok=True)
     expected_path.write_text('{"segments":[{"text":"Hello"}]}')
 
     # Avoid external environment dependencies
-    monkeypatch.setattr(transcription, "verify_model_availability", lambda *_: (True, None))
+    monkeypatch.setattr(
+        transcription, "verify_model_availability", lambda *_: (True, None)
+    )
     monkeypatch.setattr(transcription, "check_whisperx_compose_service", lambda: True)
     monkeypatch.setattr(transcription, "check_container_responsive", lambda: True)
     monkeypatch.setattr(transcription.time, "sleep", lambda *_: None)

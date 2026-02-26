@@ -7,11 +7,17 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import hashlib
 import json
+import os
 
 from transcriptx.core.utils.paths import PROJECT_ROOT
 
 CONFIG_SCHEMA_VERSION = 1
-CONFIG_DIR = Path(PROJECT_ROOT) / ".transcriptx"
+_config_dir_env = os.getenv("TRANSCRIPTX_CONFIG_DIR")
+CONFIG_DIR = (
+    Path(_config_dir_env).expanduser()
+    if _config_dir_env
+    else Path(PROJECT_ROOT) / ".transcriptx"
+)
 CONFIG_DRAFTS_DIR = CONFIG_DIR / "drafts"
 
 
@@ -109,5 +115,7 @@ def save_run_effective(run_dir: Path, config_dict: Dict[str, Any]) -> None:
 
 
 def compute_config_hash(config_dict: Dict[str, Any]) -> str:
-    payload = json.dumps(config_dict, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    payload = json.dumps(
+        config_dict, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
     return f"sha256:{hashlib.sha256(payload.encode('utf-8')).hexdigest()}"

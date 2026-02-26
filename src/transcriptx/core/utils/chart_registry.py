@@ -88,9 +88,7 @@ def get_artifact_format(artifact) -> Optional[str]:
     return suffix or None
 
 
-def select_preferred_artifacts(
-    artifacts: List, chart_def: ChartDefinition
-) -> List:
+def select_preferred_artifacts(artifacts: List, chart_def: ChartDefinition) -> List:
     if not artifacts:
         return []
 
@@ -483,7 +481,7 @@ CHART_DEFINITIONS: List[ChartDefinition] = [
     ),
     ChartDefinition(
         viz_id="temporal_dynamics.temporal_dashboard.global",
-        label="Temporal Dynamics Dashboard",
+        label="Temporal Dynamics Dashboard (Turn Frequency & Segments)",
         rank_default=190,
         kind="chart",
         module="temporal_dynamics",

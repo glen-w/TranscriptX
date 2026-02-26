@@ -14,7 +14,6 @@ import os
 from transcriptx.utils.text_utils import is_eligible_named_speaker
 from transcriptx.core.utils.config import get_config
 from transcriptx.io import save_csv, save_json
-from transcriptx.core.utils.artifact_writer import write_text
 from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
 from transcriptx.core.utils.logger import get_logger
 
@@ -319,8 +318,6 @@ def save_speaker_chart(*args: Any, **kwargs: Any) -> Path:
     raise NotImplementedError(
         "save_speaker_chart() has been removed. Use OutputService.save_chart() instead."
     )
-
-
 
 
 def create_summary_json(

@@ -15,9 +15,17 @@ def test_pipeline_run_coordinator_close_cleans_resources():
     mock_session = MagicMock()
     mock_ingestion = MagicMock()
 
-    with patch('transcriptx.database.pipeline_run_service.get_session', return_value=mock_session), \
-         patch('transcriptx.database.pipeline_run_service.TranscriptIngestionService', return_value=mock_ingestion), \
-         patch('transcriptx.database.pipeline_run_service.require_up_to_date_schema'):
+    with (
+        patch(
+            "transcriptx.database.pipeline_run_service.get_session",
+            return_value=mock_session,
+        ),
+        patch(
+            "transcriptx.database.pipeline_run_service.TranscriptIngestionService",
+            return_value=mock_ingestion,
+        ),
+        patch("transcriptx.database.pipeline_run_service.require_up_to_date_schema"),
+    ):
         coordinator = PipelineRunCoordinator(
             transcript_path="/tmp/test.json",
             selected_modules=["sentiment"],

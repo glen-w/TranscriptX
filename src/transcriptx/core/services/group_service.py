@@ -15,8 +15,7 @@ from transcriptx.database.repositories.transcript import TranscriptFileRepositor
 logger = get_logger()
 
 _UUID_RE = re.compile(
-    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-" r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
 _KEY_RE = re.compile(r"^grp_v1_[0-9a-f]{64}$")
 

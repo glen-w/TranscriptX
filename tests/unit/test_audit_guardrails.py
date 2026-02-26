@@ -1,17 +1,28 @@
 import re
 from pathlib import Path
 
-from transcriptx.core.pipeline.module_registry import get_available_modules, get_determinism_tier
+from transcriptx.core.pipeline.module_registry import (
+    get_available_modules,
+    get_determinism_tier,
+)
 from transcriptx.core.utils.run_manifest import create_run_manifest
 
 
 def _analysis_files() -> list[Path]:
-    root = Path(__file__).resolve().parents[2] / "src" / "transcriptx" / "core" / "analysis"
+    root = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "transcriptx"
+        / "core"
+        / "analysis"
+    )
     return [path for path in root.rglob("*.py") if path.name != "__init__.py"]
 
 
 def test_analysis_modules_do_not_write_files_directly():
-    write_open_pattern = re.compile(r"open\([^\\n]*[\"']w[\"']|open\([^\\n]*[\"']a[\"']|open\([^\\n]*[\"']x[\"']")
+    write_open_pattern = re.compile(
+        r"open\([^\\n]*[\"']w[\"']|open\([^\\n]*[\"']a[\"']|open\([^\\n]*[\"']x[\"']"
+    )
     path_write_pattern = re.compile(r"\.write_text\(|\.write_bytes\(")
     offenders = []
     for path in _analysis_files():
@@ -56,7 +67,9 @@ def test_run_manifest_includes_required_fields(tmp_path: Path):
 
     manifest_dict = manifest.to_dict()
     assert manifest_dict.get("transcript_hash")
-    assert manifest_dict.get("config_snapshot_hash") or manifest_dict.get("config_snapshot")
+    assert manifest_dict.get("config_snapshot_hash") or manifest_dict.get(
+        "config_snapshot"
+    )
     assert manifest_dict.get("module_metadata")
     assert manifest_dict.get("artifacts") is not None
     assert manifest_dict.get("rerun_mode") == "reuse-existing-run"

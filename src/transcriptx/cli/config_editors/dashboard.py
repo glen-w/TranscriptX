@@ -86,7 +86,8 @@ def edit_dashboard_config(config) -> None:
                 questionary.Choice(
                     title=_format_chart_title(chart_def),
                     value=chart_def.viz_id,
-                    checked=chart_def.viz_id in (config.dashboard.overview_charts or []),
+                    checked=chart_def.viz_id
+                    in (config.dashboard.overview_charts or []),
                 )
                 for chart_def in registry
             ]
@@ -178,7 +179,9 @@ def edit_dashboard_config(config) -> None:
             continue
 
         if choice == "preview":
-            _print_overview_preview(config.dashboard.overview_charts or [], registry_map)
+            _print_overview_preview(
+                config.dashboard.overview_charts or [], registry_map
+            )
             continue
 
         if choice == "missing_behavior":

@@ -26,6 +26,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_QA_QUESTION_TYPE_BREAKDOWN,
     VIZ_QA_RESPONSE_TIME_ANALYSIS,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import BarCategoricalSpec, LineTimeSeriesSpec
 
 logger = get_logger()
@@ -937,6 +938,8 @@ class QAAnalysis(AnalysisModule):
         answer_times = [
             p["answer"]["timestamp"] for p in matched_pairs if p.get("answer")
         ]
+        q_disp, x_label = time_axis_display(question_times)
+        a_disp = time_axis_display(answer_times)[0] if answer_times else []
         spec = LineTimeSeriesSpec(
             viz_id=VIZ_QA_TIMELINE,
             module=self.module_name,
@@ -944,12 +947,12 @@ class QAAnalysis(AnalysisModule):
             scope="global",
             chart_intent="line_timeseries",
             title="Question-Answer Timeline",
-            x_label="Time (seconds)",
+            x_label=x_label,
             y_label="Event",
             markers=True,
             series=[
-                {"name": "Questions", "x": question_times, "y": [1] * len(question_times)},
-                {"name": "Answers", "x": answer_times, "y": [0.5] * len(answer_times)},
+                {"name": "Questions", "x": q_disp, "y": [1] * len(question_times)},
+                {"name": "Answers", "x": a_disp, "y": [0.5] * len(answer_times)},
             ],
         )
         output_service.save_chart(spec)
@@ -968,8 +971,7 @@ class QAAnalysis(AnalysisModule):
 
         counts, bin_edges = np.histogram(quality_scores, bins=20)
         categories = [
-            f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}"
-            for i in range(len(counts))
+            f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(counts))
         ]
         spec = BarCategoricalSpec(
             viz_id=VIZ_QA_RESPONSE_QUALITY,
@@ -1024,10 +1026,16 @@ class QAAnalysis(AnalysisModule):
             return
 
         response_times = [p["answer"]["response_time"] for p in matched_pairs]
-
         counts, bin_edges = np.histogram(response_times, bins=20)
+        max_rt = max(response_times)
+        if max_rt > 3600.0:
+            edges_display = bin_edges / 3600.0
+            x_label = "Response Time (hours)"
+        else:
+            edges_display = bin_edges / 60.0
+            x_label = "Response Time (minutes)"
         categories = [
-            f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}"
+            f"{edges_display[i]:.2f}-{edges_display[i + 1]:.2f}"
             for i in range(len(counts))
         ]
         spec = BarCategoricalSpec(
@@ -1037,7 +1045,7 @@ class QAAnalysis(AnalysisModule):
             scope="global",
             chart_intent="bar_categorical",
             title="Response Time Distribution",
-            x_label="Response Time (seconds)",
+            x_label=x_label,
             y_label="Frequency",
             categories=categories,
             values=counts.tolist(),

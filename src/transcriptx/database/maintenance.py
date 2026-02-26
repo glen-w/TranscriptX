@@ -57,7 +57,9 @@ class PruneOldRunsReport:
     disk_only_runs_found: int = 0
     disk_only_runs_to_delete: int = 0
     disk_only_runs_deleted: int = 0
-    disk_only_plan: List[tuple[str, List[str], str]] = field(default_factory=list)  # (slug, runs_to_delete, keep_run)
+    disk_only_plan: List[tuple[str, List[str], str]] = field(
+        default_factory=list
+    )  # (slug, runs_to_delete, keep_run)
 
 
 def _choose_keep_run(runs: List[PipelineRun]) -> PipelineRun:
@@ -191,7 +193,9 @@ def prune_old_pipeline_runs(
             continue
 
         tf: Optional[TranscriptFile] = (
-            session.query(TranscriptFile).filter(TranscriptFile.id == transcript_file_id).first()
+            session.query(TranscriptFile)
+            .filter(TranscriptFile.id == transcript_file_id)
+            .first()
         )
 
         report.transcripts_with_deletions += 1
@@ -236,13 +240,17 @@ def prune_old_pipeline_runs(
     module_run_ids_to_delete: Set[int] = set()
     artifact_paths: Dict[Tuple[str, str], Path] = {}
     if delete_files and run_ids_to_delete:
-        module_run_ids_to_delete, artifact_paths = _gather_artifact_candidates_for_deleted_pipeline_runs(
-            session, run_ids_to_delete
+        module_run_ids_to_delete, artifact_paths = (
+            _gather_artifact_candidates_for_deleted_pipeline_runs(
+                session, run_ids_to_delete
+            )
         )
         report.artifact_candidates = len(artifact_paths)
 
     if run_ids_to_delete:
-        session.execute(delete(PipelineRun).where(PipelineRun.id.in_(run_ids_to_delete)))
+        session.execute(
+            delete(PipelineRun).where(PipelineRun.id.in_(run_ids_to_delete))
+        )
     session.commit()
     report.pipeline_runs_deleted = len(run_ids_to_delete)
 
@@ -277,12 +285,12 @@ def prune_old_pipeline_runs(
 def _is_valid_run_id(run_id: str) -> bool:
     """
     Check if a string is a valid run_id format.
-    
+
     Run ID format: YYYYMMDD_HHMMSS_hex8 (24 characters total)
     """
     if len(run_id) != 24:
         return False
-    if run_id[8] != '_' or run_id[15] != '_':
+    if run_id[8] != "_" or run_id[15] != "_":
         return False
     try:
         date_part = run_id[:8]  # YYYYMMDD
@@ -299,7 +307,7 @@ def _is_valid_run_id(run_id: str) -> bool:
 def _extract_run_id_from_path(path: Path) -> Optional[str]:
     """
     Extract run_id from a path like outputs/<slug>/<run_id>/...
-    
+
     Returns the run_id if the path matches the expected structure, None otherwise.
     Run ID format: YYYYMMDD_HHMMSS_hex8 (24 characters total)
     """
@@ -315,23 +323,25 @@ def _extract_run_id_from_path(path: Path) -> Optional[str]:
     return None
 
 
-def _get_db_run_ids_for_slug(session: Session, slug: str, outputs_root: Path) -> Set[str]:
+def _get_db_run_ids_for_slug(
+    session: Session, slug: str, outputs_root: Path
+) -> Set[str]:
     """
     Get all run_ids that are referenced in the database for a given slug.
-    
+
     This checks artifact_root paths in ArtifactIndex to find which run_ids
     are tracked in the database.
     """
     run_ids: Set[str] = set()
     slug_path = outputs_root / slug
-    
+
     # Query all artifact_root paths that contain this slug
     artifact_rows = (
         session.query(ArtifactIndex.artifact_root)
         .filter(ArtifactIndex.artifact_root.isnot(None))
         .all()
     )
-    
+
     for row in artifact_rows:
         if not row.artifact_root:
             continue
@@ -346,7 +356,7 @@ def _get_db_run_ids_for_slug(session: Session, slug: str, outputs_root: Path) ->
         except ValueError:
             # Path is not under this slug directory
             continue
-    
+
     return run_ids
 
 
@@ -357,35 +367,37 @@ def _find_disk_only_runs(
 ) -> Dict[str, List[str]]:
     """
     Find run directories on disk that are not tracked in the database.
-    
+
     Note: When transcript_file_ids is provided, we still scan all slugs since
     disk-only runs aren't in the DB and can't be filtered by transcript_file_id.
-    
+
     Returns:
         Dictionary mapping slug to list of run_ids that exist on disk but not in DB
     """
     disk_only_runs: Dict[str, List[str]] = {}
-    
+
     if not outputs_root.exists():
         return disk_only_runs
-    
+
     # Scan all slug directories
     # Note: We scan all slugs regardless of transcript_file_ids filter because
     # disk-only runs aren't in the DB and can't be matched to transcript_file_ids
     for slug_dir in outputs_root.iterdir():
-        if not slug_dir.is_dir() or slug_dir.name.startswith('.'):
+        if not slug_dir.is_dir() or slug_dir.name.startswith("."):
             continue
-        
+
         slug = slug_dir.name
-        
+
         # Get all run directories for this slug
-        run_dirs = [p for p in slug_dir.iterdir() if p.is_dir() and not p.name.startswith('.')]
+        run_dirs = [
+            p for p in slug_dir.iterdir() if p.is_dir() and not p.name.startswith(".")
+        ]
         if len(run_dirs) <= 1:
             continue
-        
+
         # Get run_ids tracked in DB for this slug
         db_run_ids = _get_db_run_ids_for_slug(session, slug, outputs_root)
-        
+
         # Find run_ids on disk that aren't in DB
         disk_run_ids = []
         for run_dir in run_dirs:
@@ -393,10 +405,10 @@ def _find_disk_only_runs(
             # Validate it looks like a run_id (format: YYYYMMDD_HHMMSS_hex8)
             if _is_valid_run_id(run_id) and run_id not in db_run_ids:
                 disk_run_ids.append(run_id)
-        
+
         if disk_run_ids:
             disk_only_runs[slug] = sorted(disk_run_ids)
-    
+
     return disk_only_runs
 
 
@@ -409,27 +421,27 @@ def _prune_disk_only_runs(
 ) -> None:
     """
     Prune disk-only runs (runs that exist on disk but not in the database).
-    
+
     For each slug with multiple disk-only runs, keeps the most recent (by run_id timestamp)
     and marks the rest for deletion.
     """
     disk_only_runs = _find_disk_only_runs(session, outputs_root, transcript_file_ids)
     report.disk_only_slugs_scanned = len(disk_only_runs)
-    
+
     for slug, run_ids in disk_only_runs.items():
         report.disk_only_runs_found += len(run_ids)
-        
+
         if len(run_ids) <= 1:
             continue
-        
+
         # Sort by run_id (which contains timestamp, so most recent is last)
         sorted_runs = sorted(run_ids)
         keep_run = sorted_runs[-1]  # Keep the most recent
         delete_runs = sorted_runs[:-1]  # Delete all others
-        
+
         report.disk_only_runs_to_delete += len(delete_runs)
         report.disk_only_plan.append((slug, delete_runs, keep_run))
-        
+
         if apply:
             slug_dir = outputs_root / slug
             for run_id in delete_runs:
@@ -437,8 +449,8 @@ def _prune_disk_only_runs(
                 if run_dir.exists() and _is_relative_to(run_dir, outputs_root):
                     try:
                         import shutil
+
                         shutil.rmtree(run_dir)
                         report.disk_only_runs_deleted += 1
                     except Exception:
                         pass
-

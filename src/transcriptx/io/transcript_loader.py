@@ -7,73 +7,25 @@ from various sources and formats, with consistent validation and error handling.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 # Avoid importing from transcriptx.core at top level to prevent circular import
 # (core -> pipeline -> pipeline_context -> transcript_service -> transcript_loader).
 # CanonicalTranscript is imported inside load_canonical_transcript().
 
 
-def load_segments(path: str) -> List[Dict[str, Any]]:
+def _process_segments_from_data(data: Any) -> List[Dict[str, Any]]:
     """
-    Load and extract segments from a transcript JSON file.
-
-    This function handles different JSON structures that might be present
-    in transcript files. It can process both direct segment lists and
-    nested structures with a 'segments' key. Also handles WhisperX format
-    with words arrays.
-
-    Args:
-        path: Path to the transcript JSON file
-
-    Returns:
-        List of segment dictionaries containing transcript data
-
-    Note:
-        The function is flexible and can handle:
-        - Files with {"segments": [...]} structure
-        - Files that are direct lists of segments
-        - WhisperX format with words arrays (extracts speaker from words)
-        - Returns empty list for invalid formats
-
-        This flexibility allows TranscriptX to work with transcripts
-        from different sources and formats without requiring strict
-        standardization of the input files.
-
-        IMPORTANT: This function only handles JSON files. VTT files should
-        be converted to JSON via transcript_importer.ensure_json_artifact()
-        before reaching this function.
+    Extract and process segments from a transcript data structure.
+    Handles dict with 'segments' key, direct list of segments, and WhisperX words.
+    Shared by load_segments() for both file and in-memory data.
     """
-    # Ensure we're only handling JSON files
-    path_obj = Path(path)
-    if path_obj.suffix.lower() != ".json":
-        raise ValueError(
-            f"load_segments() only handles JSON files, got: {path_obj.suffix}. "
-            f"VTT files should be converted to JSON via transcript_importer.ensure_json_artifact() first."
-        )
-
-    # Try to resolve path if file doesn't exist (handles renamed files)
-    resolved_path = path
-    if not path_obj.exists():
-        try:
-            from transcriptx.core.utils._path_resolution import resolve_file_path
-            from transcriptx.core.utils.logger import get_logger
-            resolved_path = resolve_file_path(path, file_type="transcript")
-            get_logger().debug(f"Resolved transcript path: {path} -> {resolved_path}")
-        except FileNotFoundError:
-            # If resolution fails, raise the original error with the original path
-            raise FileNotFoundError(f"Transcript file not found: {path}")
-
-    with open(resolved_path) as f:
-        data = json.load(f)
-
     segments = []
     if isinstance(data, dict):
         segments = data.get("segments", [])
     elif isinstance(data, list):
         segments = data  # assume it's already a list of segments
 
-    # Process segments to handle WhisperX format with words arrays
     processed_segments = []
     for segment in segments:
         if isinstance(segment, dict):
@@ -114,6 +66,72 @@ def load_segments(path: str) -> List[Dict[str, Any]]:
             processed_segments.append(segment)
 
     return processed_segments
+
+
+def load_segments(path: str, data: Optional[Any] = None) -> List[Dict[str, Any]]:
+    """
+    Load and extract segments from a transcript JSON file.
+
+    This function handles different JSON structures that might be present
+    in transcript files. It can process both direct segment lists and
+    nested structures with a 'segments' key. Also handles WhisperX format
+    with words arrays.
+
+    Args:
+        path: Path to the transcript JSON file (used for file read when data is None;
+            when data is provided, path is still required for API consistency and
+            optional resolution logic).
+        data: Optional pre-loaded transcript dict. When provided, the file is not
+            read; segments are extracted from this dict using the same logic as
+            when loading from file. Use to avoid double-loading when the caller
+            already has the parsed JSON.
+
+    Returns:
+        List of segment dictionaries containing transcript data
+
+    Note:
+        The function is flexible and can handle:
+        - Files with {"segments": [...]} structure
+        - Files that are direct lists of segments
+        - WhisperX format with words arrays (extracts speaker from words)
+        - Returns empty list for invalid formats
+
+        This flexibility allows TranscriptX to work with transcripts
+        from different sources and formats without requiring strict
+        standardization of the input files.
+
+        IMPORTANT: This function only handles JSON files. VTT files should
+        be converted to JSON via transcript_importer.ensure_json_artifact()
+        before reaching this function.
+    """
+    if data is not None:
+        return _process_segments_from_data(data)
+
+    # Ensure we're only handling JSON files
+    path_obj = Path(path)
+    if path_obj.suffix.lower() != ".json":
+        raise ValueError(
+            f"load_segments() only handles JSON files, got: {path_obj.suffix}. "
+            f"VTT files should be converted to JSON via transcript_importer.ensure_json_artifact() first."
+        )
+
+    # Try to resolve path if file doesn't exist (handles renamed files)
+    resolved_path = path
+    if not path_obj.exists():
+        try:
+            from transcriptx.core.utils._path_resolution import resolve_file_path
+            from transcriptx.core.utils.logger import get_logger
+
+            resolved_path = resolve_file_path(path, file_type="transcript")
+            get_logger().debug(f"Resolved transcript path: {path} -> {resolved_path}")
+        except FileNotFoundError:
+            # If resolution fails, raise the original error with the original path
+            raise FileNotFoundError(f"Transcript file not found: {path}")
+
+    with open(resolved_path) as f:
+        file_data = json.load(f)
+
+    return _process_segments_from_data(file_data)
 
 
 def extract_speaker_map_from_transcript(transcript_path: str) -> Dict[str, str]:

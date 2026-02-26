@@ -9,11 +9,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import matplotlib as mpl
-import seaborn as sns
 
 from collections import defaultdict
-
 
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.core.utils.artifact_writer import write_json
@@ -21,11 +18,6 @@ from transcriptx.core.utils.nlp_utils import (
     has_meaningful_content,
     preprocess_for_topic_modeling,
 )
-
-mpl.rcdefaults()
-sns.reset_defaults()
-sns.set_theme(style="whitegrid")
-
 from transcriptx.utils.text_utils import is_named_speaker
 
 

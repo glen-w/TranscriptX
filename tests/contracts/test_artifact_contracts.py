@@ -22,7 +22,9 @@ def test_output_folder_contract(tmp_path, monkeypatch) -> None:
     transcript_dir = outputs_root / "demo"
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
     monkeypatch.setattr(
-        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(tmp_path / "transcripts")
+        output_standards_module,
+        "DIARISED_TRANSCRIPTS_DIR",
+        str(tmp_path / "transcripts"),
     )
 
     structure = create_standard_output_structure(str(transcript_dir), "sentiment")
@@ -40,7 +42,9 @@ def test_exclude_unknown_speaker_artifacts(tmp_path, monkeypatch) -> None:
     transcript_dir = outputs_root / "demo"
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
     monkeypatch.setattr(
-        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(tmp_path / "transcripts")
+        output_standards_module,
+        "DIARISED_TRANSCRIPTS_DIR",
+        str(tmp_path / "transcripts"),
     )
 
     structure = create_standard_output_structure(str(transcript_dir), "sentiment")

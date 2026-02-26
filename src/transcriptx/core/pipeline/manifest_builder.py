@@ -123,7 +123,9 @@ def _infer_subview_and_slice(parts: List[str]) -> tuple[Optional[str], Optional[
     return None, None
 
 
-def _infer_kind(rel_path: str, parts: List[str], artifact_meta: Optional[Dict[str, Any]] = None) -> str:
+def _infer_kind(
+    rel_path: str, parts: List[str], artifact_meta: Optional[Dict[str, Any]] = None
+) -> str:
     suffix = Path(rel_path).suffix.lower()
     if rel_path.startswith(".transcriptx/") and suffix == ".json":
         return "config"
@@ -248,7 +250,11 @@ def _load_config_metadata(run_dir: Path) -> Dict[str, Optional[str]]:
                 schema_version = payload.get("schema_version")
                 if schema_version is not None:
                     meta["config_schema_version"] = schema_version
-                config_body = payload.get("config") if isinstance(payload.get("config"), dict) else None
+                config_body = (
+                    payload.get("config")
+                    if isinstance(payload.get("config"), dict)
+                    else None
+                )
                 if config_body is not None:
                     meta["config_hash"] = compute_config_hash(config_body)
         except Exception:
@@ -359,11 +365,93 @@ def write_output_manifest(
     modules_enabled: List[str],
 ) -> Optional[Path]:
     try:
-        manifest = build_output_manifest(run_dir, run_id, transcript_key, modules_enabled)
+        manifest = build_output_manifest(
+            run_dir, run_id, transcript_key, modules_enabled
+        )
         output_path = run_dir / "manifest.json"
         write_json(output_path, manifest, indent=2, ensure_ascii=False)
         logger.info(f"Saved output manifest to {output_path}")
         return output_path
     except Exception as exc:
         logger.warning(f"Failed to build output manifest: {exc}")
+        return None
+
+
+def _normalize_skipped_modules(
+    skipped_modules: List[Any],
+) -> List[Dict[str, str]]:
+    """Normalize skipped_modules to list of {module, reason} dicts."""
+    out: List[Dict[str, str]] = []
+    for entry in skipped_modules or []:
+        if isinstance(entry, dict) and "module" in entry:
+            out.append(
+                {
+                    "module": str(entry["module"]),
+                    "reason": str(entry.get("reason", "Skipped")),
+                }
+            )
+        elif isinstance(entry, str):
+            out.append({"module": entry, "reason": "Not in registry"})
+    return out
+
+
+def build_run_results_summary(
+    run_id: str,
+    transcript_key: str,
+    modules_enabled: List[str],
+    modules_run: List[str],
+    skipped_modules: List[Any],
+    errors: List[str],
+    preset_explanation: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Build run-level results summary for machine and human consumption."""
+    skipped = _normalize_skipped_modules(skipped_modules)
+    modules_run_set = {m for m in modules_run}
+    failed = [
+        m
+        for m in modules_enabled
+        if m not in modules_run_set and not any(s["module"] == m for s in skipped)
+    ]
+    payload: Dict[str, Any] = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "transcript_key": transcript_key,
+        "modules_enabled": modules_enabled,
+        "modules_run": modules_run,
+        "modules_skipped": skipped,
+        "modules_failed": failed,
+        "errors": errors,
+    }
+    if preset_explanation:
+        payload["preset_explanation"] = preset_explanation
+    return payload
+
+
+def write_run_results_summary(
+    run_dir: Path,
+    run_id: str,
+    transcript_key: str,
+    modules_enabled: List[str],
+    modules_run: List[str],
+    skipped_modules: List[Any],
+    errors: List[str],
+    preset_explanation: Optional[str] = None,
+) -> Optional[Path]:
+    """Write run_results.json so CLI and Web UI can show run/skip/fail and why."""
+    try:
+        payload = build_run_results_summary(
+            run_id=run_id,
+            transcript_key=transcript_key,
+            modules_enabled=modules_enabled,
+            modules_run=modules_run,
+            skipped_modules=skipped_modules,
+            errors=errors,
+            preset_explanation=preset_explanation,
+        )
+        output_path = Path(run_dir).resolve() / "run_results.json"
+        write_json(output_path, payload, indent=2, ensure_ascii=False)
+        logger.info(f"Saved run results summary to {output_path}")
+        return output_path
+    except Exception as exc:
+        logger.warning(f"Failed to write run results summary: {exc}")
         return None

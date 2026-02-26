@@ -16,7 +16,13 @@ from .preprocessing import (
     denoise_audio,
     apply_preprocessing,
 )
-from .conversion import estimate_conversion_time, convert_wav_to_mp3, merge_wav_files
+from .conversion import (
+    estimate_conversion_time,
+    convert_wav_to_mp3,
+    convert_audio_to_mp3,
+    merge_wav_files,
+    merge_audio_files,
+)
 from .cache import AudioCacheManager
 from .clip_cache import ClipCache
 from .persistent_player import MPVPlayer, check_mpv_available
@@ -24,6 +30,7 @@ from .slicing import slice_wav_pcm
 from .backup import (
     backup_wav_after_processing,
     backup_wav_files_after_processing,
+    backup_audio_files_to_storage,
     get_mp3_name_for_wav_backup,
     check_wav_backup_exists,
     move_wav_to_storage,
@@ -54,7 +61,9 @@ __all__ = [
     "apply_preprocessing",
     "estimate_conversion_time",
     "convert_wav_to_mp3",
+    "convert_audio_to_mp3",
     "merge_wav_files",
+    "merge_audio_files",
     "AudioCacheManager",
     "ClipCache",
     "MPVPlayer",
@@ -62,6 +71,7 @@ __all__ = [
     "slice_wav_pcm",
     "backup_wav_after_processing",
     "backup_wav_files_after_processing",
+    "backup_audio_files_to_storage",
     "get_mp3_name_for_wav_backup",
     "check_wav_backup_exists",
     "move_wav_to_storage",

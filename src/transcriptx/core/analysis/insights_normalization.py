@@ -1,7 +1,8 @@
 """Shared normalization for highlights/summary (SegmentLite contract)."""
+
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from transcriptx.core.analysis.highlights.core import (  # type: ignore[import-untyped]
     SegmentLite,
@@ -17,7 +18,10 @@ def _segment_lookup_key(segment: Dict[str, Any]) -> str:
 
 
 def _segment_key_from_parts(
-    transcript_key: str, segment_db_id: Optional[int], segment_uuid: Optional[str], segment_index: int
+    transcript_key: str,
+    segment_db_id: Optional[int],
+    segment_uuid: Optional[str],
+    segment_index: int,
 ) -> str:
     if segment_db_id is not None:
         return f"db:{segment_db_id}"

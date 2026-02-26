@@ -12,7 +12,10 @@ from transcriptx.core.analysis.aggregation.schema import (
     validate_session_rows,
     validate_speaker_rows,
 )
-from transcriptx.core.analysis.aggregation.warnings import AggregationWarning, build_warning
+from transcriptx.core.analysis.aggregation.warnings import (
+    AggregationWarning,
+    build_warning,
+)
 from transcriptx.core.utils.artifact_writer import write_csv, write_json
 
 
@@ -23,7 +26,9 @@ def _sort_header(required: List[str], keys: Iterable[str]) -> List[str]:
 
 
 def _rows_to_csv(
-    rows: List[Dict[str, Any]], required: List[str], drop_keys: Optional[List[str]] = None
+    rows: List[Dict[str, Any]],
+    required: List[str],
+    drop_keys: Optional[List[str]] = None,
 ) -> Tuple[List[List[Any]], List[str]]:
     drop_set = set(drop_keys or [])
     keys = set()
@@ -71,8 +76,12 @@ def write_row_outputs(
     agg_dir = base_dir / agg_id
     agg_dir.mkdir(parents=True, exist_ok=True)
 
-    write_json(agg_dir / "session_rows.json", session_rows, indent=2, ensure_ascii=False)
-    write_json(agg_dir / "speaker_rows.json", speaker_rows, indent=2, ensure_ascii=False)
+    write_json(
+        agg_dir / "session_rows.json", session_rows, indent=2, ensure_ascii=False
+    )
+    write_json(
+        agg_dir / "speaker_rows.json", speaker_rows, indent=2, ensure_ascii=False
+    )
 
     session_csv_rows, session_header = _rows_to_csv(
         session_rows, required=["transcript_id", "order_index"], drop_keys=drop_csv_keys
@@ -86,7 +95,9 @@ def write_row_outputs(
     write_csv(agg_dir / "speaker_rows.csv", speaker_csv_rows, header=speaker_header)
 
     if metrics_spec is not None:
-        write_json(agg_dir / "metrics_spec.json", metrics_spec, indent=2, ensure_ascii=False)
+        write_json(
+            agg_dir / "metrics_spec.json", metrics_spec, indent=2, ensure_ascii=False
+        )
 
     if content_rows is not None and content_rows_name:
         write_json(
@@ -114,6 +125,8 @@ def write_row_outputs(
         }
         if content_rows is not None and content_rows_name:
             bundle_payload[content_rows_name] = content_rows
-        write_json(agg_dir / "aggregation.json", bundle_payload, indent=2, ensure_ascii=False)
+        write_json(
+            agg_dir / "aggregation.json", bundle_payload, indent=2, ensure_ascii=False
+        )
 
     return True, None

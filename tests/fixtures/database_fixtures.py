@@ -6,11 +6,10 @@ models, and integrations. All fixtures use isolated test databases to ensure tes
 independence and prevent data pollution.
 """
 
-import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,13 +22,6 @@ from transcriptx.database.models import (
     SpeakerProfile,
     Conversation,
     AnalysisResult,
-    Session,
-    BehavioralFingerprint,
-    TranscriptFile,
-    TranscriptSegment,
-    TranscriptSentence,
-    SpeakerVocabularyWord,
-    SpeakerResolutionEvent,
 )
 
 
@@ -37,10 +29,10 @@ from transcriptx.database.models import (
 def test_database_url() -> str:
     """
     Create a temporary database URL for testing.
-    
+
     Returns:
         SQLite database URL pointing to a temporary file
-        
+
     Note:
         The database file is created in a temporary directory and will be
         cleaned up after all tests complete.
@@ -54,13 +46,13 @@ def test_database_url() -> str:
 def test_database_engine(test_database_url: str):
     """
     Create a test database engine.
-    
+
     Args:
         test_database_url: Database URL for test database
-        
+
     Yields:
         SQLAlchemy engine instance
-        
+
     Note:
         Creates all tables before tests and drops them after.
     """
@@ -68,18 +60,18 @@ def test_database_engine(test_database_url: str):
         test_database_url,
         connect_args={"check_same_thread": False},
         poolclass=None,  # Use default pool
-        echo=False  # Set to True for SQL debugging
+        echo=False,  # Set to True for SQL debugging
     )
-    
+
     # Create all tables
     Base.metadata.create_all(engine)
-    
+
     yield engine
-    
+
     # Cleanup: drop all tables
     Base.metadata.drop_all(engine)
     engine.dispose()
-    
+
     # Remove database directory (handles WAL/shm files)
     db_path = Path(test_database_url.replace("sqlite:///", ""))
     if db_path.parent.exists():
@@ -90,25 +82,25 @@ def test_database_engine(test_database_url: str):
 def db_session(test_database_engine) -> Generator[DBSession, None, None]:
     """
     Create a database session for testing.
-    
+
     Args:
         test_database_engine: Test database engine
-        
+
     Yields:
         SQLAlchemy session instance
-        
+
     Note:
         Automatically rolls back all changes after each test to ensure
         test isolation. Each test gets a fresh database state.
     """
     connection = test_database_engine.connect()
     transaction = connection.begin()
-    
+
     SessionLocal = sessionmaker(bind=connection)
     session = SessionLocal()
-    
+
     yield session
-    
+
     # Rollback all changes
     session.close()
     transaction.rollback()
@@ -119,10 +111,10 @@ def db_session(test_database_engine) -> Generator[DBSession, None, None]:
 def sample_speaker(db_session: DBSession) -> Speaker:
     """
     Create a sample speaker for testing.
-    
+
     Args:
         db_session: Database session
-        
+
     Returns:
         Speaker instance with test data
     """
@@ -131,7 +123,7 @@ def sample_speaker(db_session: DBSession) -> Speaker:
         display_name="Test Display Name",
         email="test@example.com",
         organization="Test Org",
-        role="Test Role"
+        role="Test Role",
     )
     db_session.add(speaker)
     db_session.commit()
@@ -140,14 +132,16 @@ def sample_speaker(db_session: DBSession) -> Speaker:
 
 
 @pytest.fixture
-def sample_speaker_profile(db_session: DBSession, sample_speaker: Speaker) -> SpeakerProfile:
+def sample_speaker_profile(
+    db_session: DBSession, sample_speaker: Speaker
+) -> SpeakerProfile:
     """
     Create a sample speaker profile for testing.
-    
+
     Args:
         db_session: Database session
         sample_speaker: Speaker instance
-        
+
     Returns:
         SpeakerProfile instance with test data
     """
@@ -158,9 +152,9 @@ def sample_speaker_profile(db_session: DBSession, sample_speaker: Speaker) -> Sp
             "avg_sentiment": 0.5,
             "avg_emotion": "neutral",
             "speaking_rate": 150.0,
-            "interruption_rate": 0.1
+            "interruption_rate": 0.1,
         },
-        confidence_score=0.85
+        confidence_score=0.85,
     )
     db_session.add(profile)
     db_session.commit()
@@ -172,17 +166,17 @@ def sample_speaker_profile(db_session: DBSession, sample_speaker: Speaker) -> Sp
 def sample_conversation(db_session: DBSession) -> Conversation:
     """
     Create a sample conversation for testing.
-    
+
     Args:
         db_session: Database session
-        
+
     Returns:
         Conversation instance with test data
     """
     conversation = Conversation(
         conversation_id="test_conversation_1",
         transcript_path="/test/path/transcript.json",
-        metadata={"duration": 3600.0, "language": "en"}
+        metadata={"duration": 3600.0, "language": "en"},
     )
     db_session.add(conversation)
     db_session.commit()
@@ -191,14 +185,16 @@ def sample_conversation(db_session: DBSession) -> Conversation:
 
 
 @pytest.fixture
-def sample_analysis_result(db_session: DBSession, sample_conversation: Conversation) -> AnalysisResult:
+def sample_analysis_result(
+    db_session: DBSession, sample_conversation: Conversation
+) -> AnalysisResult:
     """
     Create a sample analysis result for testing.
-    
+
     Args:
         db_session: Database session
         sample_conversation: Conversation instance
-        
+
     Returns:
         AnalysisResult instance with test data
     """
@@ -206,7 +202,7 @@ def sample_analysis_result(db_session: DBSession, sample_conversation: Conversat
         conversation_id=sample_conversation.conversation_id,
         module_name="sentiment",
         result_data={"overall_sentiment": "positive", "score": 0.7},
-        status="completed"
+        status="completed",
     )
     db_session.add(result)
     db_session.commit()
@@ -218,10 +214,10 @@ def sample_analysis_result(db_session: DBSession, sample_conversation: Conversat
 def multiple_speakers(db_session: DBSession) -> list[Speaker]:
     """
     Create multiple speakers for testing.
-    
+
     Args:
         db_session: Database session
-        
+
     Returns:
         List of Speaker instances
     """
@@ -230,15 +226,15 @@ def multiple_speakers(db_session: DBSession) -> list[Speaker]:
         speaker = Speaker(
             name=f"Speaker {i}",
             display_name=f"Display Name {i}",
-            email=f"speaker{i}@example.com"
+            email=f"speaker{i}@example.com",
         )
         db_session.add(speaker)
         speakers.append(speaker)
-    
+
     db_session.commit()
     for speaker in speakers:
         db_session.refresh(speaker)
-    
+
     return speakers
 
 
@@ -246,19 +242,19 @@ def multiple_speakers(db_session: DBSession) -> list[Speaker]:
 def mock_database_manager():
     """
     Mock database manager for testing without actual database.
-    
+
     Yields:
         Mock DatabaseManager instance
     """
-    with patch('transcriptx.database.database.DatabaseManager') as mock_manager:
+    with patch("transcriptx.database.database.DatabaseManager") as mock_manager:
         mock_instance = MagicMock()
         mock_manager.return_value = mock_instance
-        
+
         # Mock common methods
         mock_instance.get_session.return_value = MagicMock()
         mock_instance.init_database.return_value = True
         mock_instance.close.return_value = None
-        
+
         yield mock_instance
 
 
@@ -266,28 +262,27 @@ def mock_database_manager():
 def isolated_database(tmp_path: Path) -> Generator[str, None, None]:
     """
     Create an isolated database in a temporary directory.
-    
+
     Args:
         tmp_path: Temporary directory path
-        
+
     Yields:
         Database URL string
-        
+
     Note:
         Database is automatically cleaned up after test completes.
     """
     db_path = tmp_path / "isolated_test.db"
     db_url = f"sqlite:///{db_path}"
-    
+
     # Create engine and tables
     engine = create_engine(db_url, connect_args={"check_same_thread": False})
     Base.metadata.create_all(engine)
-    
+
     yield db_url
-    
+
     # Cleanup
     Base.metadata.drop_all(engine)
     engine.dispose()
     if db_path.exists():
         db_path.unlink()
-

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from PIL import Image, ImageOps
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel

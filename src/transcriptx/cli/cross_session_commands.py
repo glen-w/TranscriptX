@@ -55,7 +55,9 @@ def _get_speaker_cluster_model():
 
 @app.command()
 def match_speakers(
-    speaker_name: str = typer.Option(..., "--speaker-name", "-n", help="Name of the speaker to match"),
+    speaker_name: str = typer.Option(
+        ..., "--speaker-name", "-n", help="Name of the speaker to match"
+    ),
     transcript_file: Path = typer.Option(
         ..., "--transcript", "-t", help="Transcript file path"
     ),
@@ -396,7 +398,7 @@ def create_cluster(
             progress.update(task, description="✅ Speaker cluster created")
 
         # Display results
-        console.print(f"\n✅ Created speaker cluster:")
+        console.print("\n✅ Created speaker cluster:")
         console.print(f"   Name: {cluster.name}")
         console.print(f"   Type: {cluster.cluster_type}")
         console.print(f"   Description: {cluster.description or 'N/A'}")
@@ -462,7 +464,9 @@ def add_to_cluster(
 
 @app.command()
 def show_network(
-    speaker_id: int = typer.Option(..., "--speaker-id", "-s", help="Speaker ID to analyze"),
+    speaker_id: int = typer.Option(
+        ..., "--speaker-id", "-s", help="Speaker ID to analyze"
+    ),
     max_depth: int = typer.Option(2, "--depth", "-d", help="Maximum network depth"),
 ):
     """
@@ -534,7 +538,7 @@ def show_network(
 
         # Show network metrics
         metrics = network["network_metrics"]
-        console.print(f"\n📈 Network Metrics:")
+        console.print("\n📈 Network Metrics:")
         console.print(f"   Total Connections: {metrics['total_connections']}")
         console.print(
             f"   High Confidence Connections: {metrics['high_confidence_connections']}"

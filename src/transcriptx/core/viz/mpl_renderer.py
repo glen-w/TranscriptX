@@ -62,14 +62,19 @@ def render_mpl(spec: ChartSpec) -> Any:
         fig.tight_layout()
         return fig
 
-    if isinstance(spec, ScatterSpec) or spec.chart_intent in ("scatter", "scatter_events"):
+    if isinstance(spec, ScatterSpec) or spec.chart_intent in (
+        "scatter",
+        "scatter_events",
+    ):
         fig, ax = plt.subplots(figsize=(10, 4))
         series_list = spec.get_series()
         for series in series_list:
             marker = series.marker or {}
             scatter_kwargs = _scatter_kwargs(marker)
             if spec.mode in ("markers", "lines+markers"):
-                ax.scatter(series.x, series.y, label=series.name or None, **scatter_kwargs)
+                ax.scatter(
+                    series.x, series.y, label=series.name or None, **scatter_kwargs
+                )
             if spec.mode in ("lines", "lines+markers"):
                 line_kwargs: dict[str, Any] = {}
                 color = marker.get("color")
@@ -154,7 +159,10 @@ def render_mpl(spec: ChartSpec) -> Any:
 
         if not categories:
             # If x not provided, fall back to per-series boxes
-            categories = [series.get("name", f"series_{idx}") for idx, series in enumerate(series_list)]
+            categories = [
+                series.get("name", f"series_{idx}")
+                for idx, series in enumerate(series_list)
+            ]
 
         base_positions = list(range(len(categories)))
         width = 0.8 / max(1, len(series_list))
@@ -172,11 +180,7 @@ def render_mpl(spec: ChartSpec) -> Any:
                 # If no x-values, treat all ys as one group
                 grouped = [list(ys)]
 
-            filtered = [
-                (cat, vals)
-                for cat, vals in zip(categories, grouped)
-                if vals
-            ]
+            filtered = [(cat, vals) for cat, vals in zip(categories, grouped) if vals]
             if not filtered:
                 continue
             positions = [
@@ -213,44 +217,50 @@ def render_mpl(spec: ChartSpec) -> Any:
 
     if isinstance(spec, NetworkGraphSpec) or spec.chart_intent == "network_graph":
         import networkx as nx
-        
+
         # Create networkx graph
         G = nx.Graph()
         for node in spec.nodes:
             G.add_node(node.get("id", node.get("label")))
         for edge in spec.edges:
             G.add_edge(edge["source"], edge["target"], weight=edge.get("weight", 1))
-        
+
         if G.number_of_nodes() == 0:
             raise ValueError("Network graph must have at least one node")
-        
+
         fig, ax = plt.subplots(figsize=(12, 10))
-        
+
         # Calculate layout
         pos = spec.node_positions
         if not pos:
             pos = nx.spring_layout(G, k=1, iterations=50)
-        
+
         # Draw edges
         edges = list(G.edges())
-        weights = [G[u][v].get("weight", 1) if "weight" in G[u][v] else 1 for u, v in edges]
+        weights = [
+            G[u][v].get("weight", 1) if "weight" in G[u][v] else 1 for u, v in edges
+        ]
         nx.draw_networkx_edges(
             G, pos, edgelist=edges, width=[w / 2 for w in weights], alpha=0.7, ax=ax
         )
-        
+
         # Draw nodes
-        node_sizes = [node.get("size", G.degree(node.get("id", node.get("label"))) * 200 + 500) 
-                     for node in spec.nodes]
+        node_sizes = [
+            node.get("size", G.degree(node.get("id", node.get("label"))) * 200 + 500)
+            for node in spec.nodes
+        ]
         node_colors = [node.get("color", "lightblue") for node in spec.nodes]
         nx.draw_networkx_nodes(
             G, pos, node_color=node_colors, node_size=node_sizes, alpha=0.8, ax=ax
         )
-        
+
         # Draw labels
-        labels = {node.get("id", node.get("label")): node.get("label", node.get("id", "")) 
-                 for node in spec.nodes}
+        labels = {
+            node.get("id", node.get("label")): node.get("label", node.get("id", ""))
+            for node in spec.nodes
+        }
         nx.draw_networkx_labels(G, pos, labels, font_size=10, font_weight="bold", ax=ax)
-        
+
         # Draw edge labels - use edge data from spec instead of graph
         edge_labels = {}
         for edge in spec.edges:
@@ -260,8 +270,10 @@ def render_mpl(spec: ChartSpec) -> Any:
             if weight > 0:
                 label = edge.get("label", f"res:{int(weight)}")
                 edge_labels[(source, target)] = label
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8, ax=ax)
-        
+        nx.draw_networkx_edge_labels(
+            G, pos, edge_labels=edge_labels, font_size=8, ax=ax
+        )
+
         ax.set_title(spec.title)
         ax.axis("off")
         fig.tight_layout()

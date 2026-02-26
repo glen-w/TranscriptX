@@ -134,7 +134,10 @@ def render_plotly(spec: ChartSpec) -> Any | None:
         )
         return fig
 
-    if isinstance(spec, ScatterSpec) or spec.chart_intent in ("scatter", "scatter_events"):
+    if isinstance(spec, ScatterSpec) or spec.chart_intent in (
+        "scatter",
+        "scatter_events",
+    ):
         fig = go.Figure()
         series_list = spec.get_series()
         for series in series_list:
@@ -195,8 +198,16 @@ def render_plotly(spec: ChartSpec) -> Any | None:
         else:
             fig.add_trace(
                 go.Bar(
-                    x=spec.categories if spec.orientation == "vertical" else spec.values,
-                    y=spec.values if spec.orientation == "vertical" else spec.categories,
+                    x=(
+                        spec.categories
+                        if spec.orientation == "vertical"
+                        else spec.values
+                    ),
+                    y=(
+                        spec.values
+                        if spec.orientation == "vertical"
+                        else spec.categories
+                    ),
                     orientation="h" if spec.orientation == "horizontal" else "v",
                 )
             )
@@ -234,28 +245,28 @@ def render_plotly(spec: ChartSpec) -> Any | None:
         # Use plotly's network graph capabilities
         # We'll use scatter plots for nodes and lines for edges
         import networkx as nx
-        
+
         # Create networkx graph for layout calculation
         G = nx.Graph()
         for node in spec.nodes:
             G.add_node(node.get("id", node.get("label")))
         for edge in spec.edges:
             G.add_edge(edge["source"], edge["target"], weight=edge.get("weight", 1))
-        
+
         # Calculate layout
         if G.number_of_nodes() == 0:
             return None
         pos = spec.node_positions
         if not pos:
             pos = nx.spring_layout(G, k=1, iterations=50)
-        
+
         # Extract node positions
         node_x = []
         node_y = []
         node_text = []
         node_sizes = []
         node_colors = []
-        
+
         for node in spec.nodes:
             node_id = node.get("id", node.get("label"))
             if node_id in pos:
@@ -266,12 +277,12 @@ def render_plotly(spec: ChartSpec) -> Any | None:
                 size = node.get("size", G.degree(node_id) * 10 + 20)
                 node_sizes.append(size)
                 node_colors.append(node.get("color", "lightblue"))
-        
+
         # Create edge traces
         edge_x = []
         edge_y = []
         edge_info = []
-        
+
         for edge in spec.edges:
             source = edge["source"]
             target = edge["target"]
@@ -281,73 +292,87 @@ def render_plotly(spec: ChartSpec) -> Any | None:
                 edge_x.extend([x0, x1, None])
                 edge_y.extend([y0, y1, None])
                 weight = edge.get("weight", 1)
-                label = edge.get("label", f"res:{int(weight)}" if isinstance(weight, (int, float)) else "")
-                edge_info.append({
-                    "source": source,
-                    "target": target,
-                    "weight": weight,
-                    "label": label,
-                    "mid_x": (x0 + x1) / 2,
-                    "mid_y": (y0 + y1) / 2,
-                })
-        
+                label = edge.get(
+                    "label",
+                    f"res:{int(weight)}" if isinstance(weight, (int, float)) else "",
+                )
+                edge_info.append(
+                    {
+                        "source": source,
+                        "target": target,
+                        "weight": weight,
+                        "label": label,
+                        "mid_x": (x0 + x1) / 2,
+                        "mid_y": (y0 + y1) / 2,
+                    }
+                )
+
         fig = go.Figure()
-        
+
         # Add edges
         if edge_x:
-            fig.add_trace(go.Scatter(
-                x=edge_x,
-                y=edge_y,
-                mode='lines',
-                line=dict(width=1, color='#888'),
-                hoverinfo='none',
-                showlegend=False,
-            ))
-        
+            fig.add_trace(
+                go.Scatter(
+                    x=edge_x,
+                    y=edge_y,
+                    mode="lines",
+                    line=dict(width=1, color="#888"),
+                    hoverinfo="none",
+                    showlegend=False,
+                )
+            )
+
         # Add edge labels
         for info in edge_info:
             if info["label"]:
-                fig.add_trace(go.Scatter(
-                    x=[info["mid_x"]],
-                    y=[info["mid_y"]],
-                    mode='text',
-                    text=[info["label"]],
-                    textfont=dict(size=10),
-                    showlegend=False,
-                    hoverinfo='skip',
-                ))
-        
+                fig.add_trace(
+                    go.Scatter(
+                        x=[info["mid_x"]],
+                        y=[info["mid_y"]],
+                        mode="text",
+                        text=[info["label"]],
+                        textfont=dict(size=10),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    )
+                )
+
         # Add nodes
-        fig.add_trace(go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode='markers+text',
-            marker=dict(
-                size=node_sizes,
-                color=node_colors,
-                line=dict(width=2, color='darkblue'),
-            ),
-            text=node_text,
-            textposition="middle center",
-            textfont=dict(size=12, color='black'),
-            hoverinfo='text',
-            hovertext=[f"Speaker: {text}" for text in node_text],
-            showlegend=False,
-        ))
-        
+        fig.add_trace(
+            go.Scatter(
+                x=node_x,
+                y=node_y,
+                mode="markers+text",
+                marker=dict(
+                    size=node_sizes,
+                    color=node_colors,
+                    line=dict(width=2, color="darkblue"),
+                ),
+                text=node_text,
+                textposition="middle center",
+                textfont=dict(size=12, color="black"),
+                hoverinfo="text",
+                hovertext=[f"Speaker: {text}" for text in node_text],
+                showlegend=False,
+            )
+        )
+
         fig.update_layout(
             title=spec.title,
             showlegend=False,
-            hovermode='closest',
+            hovermode="closest",
             margin=dict(b=20, l=5, r=5, t=40),
             annotations=[
                 dict(
                     text="",
                     showarrow=False,
-                    xref="paper", yref="paper",
-                    x=0.005, y=-0.002,
-                    xanchor="left", yanchor="bottom",
-                    font=dict(color="#888", size=12)
+                    xref="paper",
+                    yref="paper",
+                    x=0.005,
+                    y=-0.002,
+                    xanchor="left",
+                    yanchor="bottom",
+                    font=dict(color="#888", size=12),
                 )
             ],
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),

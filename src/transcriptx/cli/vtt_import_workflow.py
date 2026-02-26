@@ -126,8 +126,8 @@ def _run_vtt_import_workflow_impl() -> None:
             metadata = document.get("metadata", {})
             source = document.get("source", {})
 
-            print(f"\n[green]✅ Successfully imported VTT file![/green]")
-            print(f"\n[bold]Summary:[/bold]")
+            print("\n[green]✅ Successfully imported VTT file![/green]")
+            print("\n[bold]Summary:[/bold]")
             print(f"  📄 JSON file: {json_path.name}")
             print(f"  📊 Segments: {metadata.get('segment_count', 0)}")
             print(f"  ⏱️  Duration: {metadata.get('duration_seconds', 0):.2f} seconds")

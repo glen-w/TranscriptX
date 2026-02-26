@@ -12,7 +12,9 @@ import pytest
 from transcriptx.core.analysis.emotion import EmotionAnalysis
 
 
-def _emotion_module_with_mock_model(emotion_list: list[dict[str, Any]]) -> EmotionAnalysis:
+def _emotion_module_with_mock_model(
+    emotion_list: list[dict[str, Any]],
+) -> EmotionAnalysis:
     """Create EmotionAnalysis with mocked model and NRC lexicon."""
     mock_model = MagicMock()
     # pipeline(text) returns list of sequences; code uses pipeline(text)[0]
@@ -64,7 +66,9 @@ class TestEmotionContracts:
         sample_speaker_map: dict[str, str],
     ) -> None:
         """Assert EmotionAnalysis returns required keys and segment annotations."""
-        emotion_module = _emotion_module_with_mock_model([{"label": "joy", "score": 0.9}])
+        emotion_module = _emotion_module_with_mock_model(
+            [{"label": "joy", "score": 0.9}]
+        )
         result = emotion_module.analyze(sample_segments, sample_speaker_map)
 
         # Top-level keys

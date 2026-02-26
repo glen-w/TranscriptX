@@ -173,9 +173,7 @@ class SemanticSimilarityAnalyzer:
                     ),
                     max_segments_per_speaker=min(
                         len(segments_list),
-                        getattr(
-                            self.config.analysis, "max_segments_per_speaker", 300
-                        ),
+                        getattr(self.config.analysis, "max_segments_per_speaker", 300),
                     ),
                     filter_segments_fn=self.quality_scorer.filter_segments,
                     log_tag="SEMANTIC",
@@ -206,6 +204,7 @@ class SemanticSimilarityAnalyzer:
                 )
 
             if results["speaker_repetitions"] or results["cross_speaker_repetitions"]:
+
                 def embedding_fn(text: str):
                     return get_text_embedding(
                         text,
@@ -226,9 +225,9 @@ class SemanticSimilarityAnalyzer:
                 results["repetition_clusters"] = clusters
 
             results["summary"] = generate_repetition_summary_basic(results)
-            results["performance_metrics"]["comparisons_made"] = (
-                self.comparison_state.comparison_count
-            )
+            results["performance_metrics"][
+                "comparisons_made"
+            ] = self.comparison_state.comparison_count
             return results
         except Exception as exc:
             log_error("SEMANTIC", f"Semantic analysis failed: {exc}")
@@ -250,7 +249,9 @@ class SemanticSimilarityAnalyzer:
     def create_visualizations(
         self, results: dict[str, Any], output_service: Any, base_name: str
     ) -> list[str]:
-        return create_visualizations_basic(results, output_service, base_name, "SEMANTIC")
+        return create_visualizations_basic(
+            results, output_service, base_name, "SEMANTIC"
+        )
 
 
 class AdvancedSemanticSimilarityAnalyzer:
@@ -287,7 +288,9 @@ class AdvancedSemanticSimilarityAnalyzer:
             self.similarity_calculator = SemanticSimilarityCalculator(
                 self.model_manager, self.embedding_cache, "SEMANTIC_ADVANCED"
             )
-            self.quality_scorer = AdvancedQualityScorer(self.config, "SEMANTIC_ADVANCED")
+            self.quality_scorer = AdvancedQualityScorer(
+                self.config, "SEMANTIC_ADVANCED"
+            )
 
             self.comparison_state = ComparisonState(0, self.max_comparisons)
             self._limit_exceeded_warning_logged = False
@@ -322,7 +325,9 @@ class AdvancedSemanticSimilarityAnalyzer:
         start_time = time.time()
         analysis_results: dict[str, Any] = {}
         if transcript_path and self.method == "advanced":
-            analysis_results = load_analysis_results(transcript_path, "SEMANTIC_ADVANCED")
+            analysis_results = load_analysis_results(
+                transcript_path, "SEMANTIC_ADVANCED"
+            )
 
         try:
             if self.method == "advanced" and analysis_results:

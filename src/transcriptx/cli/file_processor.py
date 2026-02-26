@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from transcriptx.cli.audio import (
-    convert_wav_to_mp3,
+    convert_audio_to_mp3,
     backup_wav_after_processing,
     get_mp3_name_for_wav_backup,
 )
@@ -166,11 +166,12 @@ def process_single_file(
                     size_bytes = stat.st_size
                     mtime = datetime.fromtimestamp(stat.st_mtime)
 
-                    # Create original artifact
+                    # Create original artifact (file_type from suffix: wav, mp3, ogg, etc.)
+                    file_type = wav_path.suffix.lstrip(".").lower() or "wav"
                     original_artifact = tracking_service.create_artifact(
                         file_entity_id=file_entity_id,
                         path=str(wav_path.resolve()),
-                        file_type="wav",
+                        file_type=file_type,
                         role="original",
                         size_bytes=size_bytes,
                         mtime=mtime,
@@ -200,18 +201,17 @@ def process_single_file(
             file_entity_id = None
             # Continue processing even if fingerprinting fails
 
-        # Step 1: Convert WAV to MP3
+        # Step 1: Convert audio to MP3
         logger.info(f"Converting {wav_path.name} to MP3...")
         output_dir = Path(RECORDINGS_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Get preprocessing decisions for this file if provided
         file_preprocessing_decisions = None
         if preprocessing_decisions and wav_path in preprocessing_decisions:
             file_preprocessing_decisions = preprocessing_decisions[wav_path]
 
         try:
-            mp3_path = convert_wav_to_mp3(
+            mp3_path = convert_audio_to_mp3(
                 wav_path,
                 output_dir,
                 preprocessing_decisions=file_preprocessing_decisions,
@@ -347,7 +347,9 @@ def process_single_file(
             segments = load_segments(transcript_path)
             speaker_count = len(set(segment.get("speaker", "") for segment in segments))
 
-            from transcriptx.core.analysis.conversation_type import detect_conversation_type
+            from transcriptx.core.analysis.conversation_type import (
+                detect_conversation_type,
+            )
 
             type_result = detect_conversation_type(segments, speaker_count)
             result["steps"]["detect_type"] = {

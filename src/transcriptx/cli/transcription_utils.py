@@ -28,17 +28,13 @@ def run_whisperx_docker(audio_file_path, config=None):
         if config
         else "anonymous"
     )
-    hf_token = (
-        getattr(config.transcription, "huggingface_token", "")
-        if config
-        else ""
-    )
-    if not hf_token:
-        hf_token = (
-            os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
-        )
+    from transcriptx.core.utils.hf_token import resolve_hf_token
+
+    hf_token = resolve_hf_token(config)
     min_speakers = getattr(config.transcription, "min_speakers", 1) if config else 1
-    max_speakers = getattr(config.transcription, "max_speakers", None) if config else None
+    max_speakers = (
+        getattr(config.transcription, "max_speakers", None) if config else None
+    )
     try:
         min_speakers = int(min_speakers)
     except (TypeError, ValueError):
@@ -81,9 +77,7 @@ def run_whisperx_docker(audio_file_path, config=None):
     )
     if model_download_policy == "require_token" and not hf_token:
         console = Console()
-        console.print(
-            "[red]Hugging Face token required to download models.[/red]"
-        )
+        console.print("[red]Hugging Face token required to download models.[/red]")
         console.print(
             "[dim]Set TRANSCRIPTX_HUGGINGFACE_TOKEN or HF_TOKEN "
             "(or transcription.huggingface_token), or switch "

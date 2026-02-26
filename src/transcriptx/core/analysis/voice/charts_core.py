@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -28,6 +28,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_VOICE_RHYTHM_COMPARE_GLOBAL,
     VIZ_VOICE_RHYTHM_SCATTER_GLOBAL,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
     BoxSpec,
@@ -70,7 +71,9 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "voice_charts_core"
 
-    def analyze(self, segments: list[dict[str, Any]], speaker_map=None) -> Dict[str, Any]:
+    def analyze(
+        self, segments: list[dict[str, Any]], speaker_map=None
+    ) -> Dict[str, Any]:
         return {}
 
     def run_from_context(self, context: Any) -> Dict[str, Any]:
@@ -91,7 +94,8 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
             if locator.get("status") != "ok":
                 payload = {
                     "status": "skipped",
-                    "skipped_reason": locator.get("skipped_reason") or "no_voice_features",
+                    "skipped_reason": locator.get("skipped_reason")
+                    or "no_voice_features",
                     "missing_optional_deps": locator.get("missing_optional_deps", []),
                     "install_hint": locator.get("install_hint"),
                 }
@@ -113,7 +117,8 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
             core_path = locator.get("voice_feature_core_path")
             eg_path = locator.get("voice_feature_egemaps_path")
             df = load_voice_features(
-                core_path=Path(core_path), egemaps_path=Path(eg_path) if eg_path else None
+                core_path=Path(core_path),
+                egemaps_path=Path(eg_path) if eg_path else None,
             )
             vad_runs = _load_vad_runs(locator.get("voice_feature_vad_runs_path"))
 
@@ -130,7 +135,9 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
             }
 
             # Pause distribution (global + per speaker)
-            gaps = [entry["gap_seconds"] for entry in gap_series if "gap_seconds" in entry]
+            gaps = [
+                entry["gap_seconds"] for entry in gap_series if "gap_seconds" in entry
+            ]
             if gaps:
                 counts, bin_edges = np.histogram(gaps, bins=20)
                 categories = [
@@ -157,7 +164,9 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
                     speaker = entry.get("speaker")
                     if not speaker or not is_named_speaker(speaker):
                         continue
-                    by_speaker.setdefault(str(speaker), []).append(entry.get("gap_seconds", 0.0))
+                    by_speaker.setdefault(str(speaker), []).append(
+                        entry.get("gap_seconds", 0.0)
+                    )
                 for speaker, gaps_s in by_speaker.items():
                     counts_s, bin_edges_s = np.histogram(gaps_s, bins=20)
                     categories_s = [
@@ -181,9 +190,16 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
 
             # Pause timeline
             if gap_series:
-                xs = [entry.get("time_start") for entry in gap_series if "time_start" in entry]
-                ys = [entry.get("gap_seconds") for entry in gap_series if "gap_seconds" in entry]
-                if xs and ys:
+                valid = [
+                    (float(e["time_start"]), e["gap_seconds"])
+                    for e in gap_series
+                    if e.get("time_start") is not None
+                    and e.get("gap_seconds") is not None
+                ]
+                if valid:
+                    xs = [t for t, _ in valid]
+                    ys = [g for _, g in valid]
+                    x_display, x_label = time_axis_display(xs)
                     spec = LineTimeSeriesSpec(
                         viz_id=VIZ_VOICE_PAUSES_TIMELINE_GLOBAL,
                         module=self.module_name,
@@ -191,19 +207,23 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
                         scope="global",
                         chart_intent="line_timeseries",
                         title="Pause Timeline",
-                        x_label="Time (seconds)",
+                        x_label=x_label,
                         y_label="Gap (seconds)",
                         markers=True,
-                        series=[{"name": "Pause", "x": xs, "y": ys}],
+                        series=[{"name": "Pause", "x": x_display, "y": ys}],
                     )
                     output_service.save_chart(spec, chart_type="pauses_timeline")
 
             # Hesitation map (pause_count vs speech_rate_wps)
             if per_segment_pause and "segment_idx" in df.columns:
-                pause_map = {p["segment_idx"]: p["pause_count"] for p in per_segment_pause}
+                pause_map = {
+                    p["segment_idx"]: p["pause_count"] for p in per_segment_pause
+                }
                 df_filtered = df.copy()
                 df_filtered["pause_count"] = df_filtered["segment_idx"].map(pause_map)
-                df_filtered = df_filtered.dropna(subset=["pause_count", "speech_rate_wps"])
+                df_filtered = df_filtered.dropna(
+                    subset=["pause_count", "speech_rate_wps"]
+                )
                 if not df_filtered.empty:
                     # Cap by speaker and total (deterministic: lowest segment_idx)
                     df_filtered = df_filtered.sort_values("segment_idx")
@@ -253,9 +273,9 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
                     if not runs:
                         continue
                     by_speaker_runs.setdefault(str(speaker), []).extend(runs)
-                    by_speaker_duration[str(speaker)] = by_speaker_duration.get(str(speaker), 0.0) + float(
-                        row.get("duration_s", 0.0) or 0.0
-                    )
+                    by_speaker_duration[str(speaker)] = by_speaker_duration.get(
+                        str(speaker), 0.0
+                    ) + float(row.get("duration_s", 0.0) or 0.0)
 
                 for speaker, runs in by_speaker_runs.items():
                     if not runs:
@@ -296,7 +316,9 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
                         if str(row.get("speaker")) != speaker:
                             continue
                         seg_id = str(row.get("segment_id"))
-                        silence_runs.extend(vad_runs.get(seg_id, {}).get("silence_runs_s", []))
+                        silence_runs.extend(
+                            vad_runs.get(seg_id, {}).get("silence_runs_s", [])
+                        )
                     rhythm_rows.append(
                         SpeakerRhythm(
                             speaker=speaker,

@@ -106,8 +106,8 @@ def _run_srt_import_workflow_impl() -> None:
             metadata = document.get("metadata", {})
             source = document.get("source", {})
 
-            print(f"\n[green]✅ Successfully imported SRT file![/green]")
-            print(f"\n[bold]Summary:[/bold]")
+            print("\n[green]✅ Successfully imported SRT file![/green]")
+            print("\n[bold]Summary:[/bold]")
             print(f"  📄 JSON file: {json_path.name}")
             print(f"  📊 Segments: {metadata.get('segment_count', 0)}")
             print(f"  ⏱️  Duration: {metadata.get('duration_seconds', 0):.2f} seconds")
@@ -146,16 +146,8 @@ def _run_srt_import_workflow_impl() -> None:
 SRT import workflow for TranscriptX.
 """
 
-from pathlib import Path
-from rich import print
 from rich.console import Console
 
-from transcriptx.cli.file_selection_utils import select_folder_interactive
-from transcriptx.core.utils.config import get_config
-from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
-from transcriptx.io.segment_coalescer import CoalesceConfig
-from transcriptx.io.transcript_importer import import_transcript
-from transcriptx.utils.error_handling import graceful_exit
 
 console = Console()
 
@@ -243,8 +235,8 @@ def _run_srt_import_workflow_impl() -> None:
         metadata = document.get("metadata", {})
         source = document.get("source", {})
 
-        print(f"\n[green]✅ Successfully imported SRT file![/green]")
-        print(f"\n[bold]Summary:[/bold]")
+        print("\n[green]✅ Successfully imported SRT file![/green]")
+        print("\n[bold]Summary:[/bold]")
         print(f"  📄 JSON file: {json_path.name}")
         print(f"  📊 Segments: {metadata.get('segment_count', 0)}")
         print(f"  ⏱️  Duration: {metadata.get('duration_seconds', 0):.2f} seconds")

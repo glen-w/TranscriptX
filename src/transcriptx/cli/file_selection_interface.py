@@ -73,6 +73,18 @@ class FileSelectionConfig:
     toggle_hidden_label: str = "Show transcribed"
     toggle_hidden_key: str = "t"
 
+    # Playback skip amounts (seconds): short skip (,/.) and long skip ([/])
+    skip_seconds_short: float = 10.0
+    skip_seconds_long: float = 60.0
+
+
+def _format_skip_label(seconds: float, sign: str) -> str:
+    """Format skip amount for help text, e.g. 10 -> '10s', 60 -> '1m'."""
+    abs_s = abs(seconds)
+    if abs_s >= 60 and abs_s % 60 == 0:
+        return f"Skip {sign}{int(abs_s // 60)}m"
+    return f"Skip {sign}{int(abs_s)}s"
+
 
 # Re-export formatter functions for backward compatibility
 # These are now implemented in file_metadata_formatters module
@@ -116,9 +128,7 @@ def select_files_interactive(
     ):
         visible_files = list(files)
         if config.validator:
-            visible_files = [
-                f for f in visible_files if config.validator(f)[0]
-            ]
+            visible_files = [f for f in visible_files if config.validator(f)[0]]
         if not visible_files:
             return None
         if config.metadata_formatter is None:
@@ -375,13 +385,21 @@ def select_files_interactive(
 
         @kb.add(",", eager=True)
         @kb.add("<", eager=True)
-        def skip_backward(event):
-            playback_controller.skip(-10.0)
+        def skip_backward_short(event):
+            playback_controller.skip(-config.skip_seconds_short)
 
         @kb.add(".", eager=True)
         @kb.add(">", eager=True)
-        def skip_forward(event):
-            playback_controller.skip(10.0)
+        def skip_forward_short(event):
+            playback_controller.skip(config.skip_seconds_short)
+
+        @kb.add("[", eager=True)
+        def skip_backward_long(event):
+            playback_controller.skip(-config.skip_seconds_long)
+
+        @kb.add("]", eager=True)
+        def skip_forward_long(event):
+            playback_controller.skip(config.skip_seconds_long)
 
     # Add rename key binding if enabled
     if config.enable_rename:
@@ -537,7 +555,9 @@ def select_files_interactive(
 
                 # Restore selected values
                 try:
-                    value_to_index = {value: idx for idx, (value, _) in enumerate(choices)}
+                    value_to_index = {
+                        value: idx for idx, (value, _) in enumerate(choices)
+                    }
                     new_selected_rows = {
                         value_to_index[value]
                         for value in selected_values
@@ -682,12 +702,15 @@ def select_files_interactive(
         ("🔄", "Reverse", "[o]"),
     ]
     if config.enable_playback:
+        short_s, long_s = config.skip_seconds_short, config.skip_seconds_long
         shortcuts.extend(
             [
                 ("▶️", "Play", "[→]"),
                 ("⏸️", "Stop", "[←]"),
-                ("⏪", "Skip -10s", "[,/<]"),
-                ("⏩", "Skip +10s", "[./>]"),
+                ("⏪", _format_skip_label(short_s, "-"), "[,/<]"),
+                ("⏩", _format_skip_label(short_s, "+"), "[./>]"),
+                ("⏪", _format_skip_label(long_s, "-"), "[[]"),
+                ("⏩", _format_skip_label(long_s, "+"), "[]]"),
             ]
         )
     if config.enable_rename:
@@ -727,6 +750,7 @@ def select_files_interactive(
 
     async def refresh_full_metadata(app: Application) -> None:
         """Load full metadata in the background and refresh labels."""
+
         def load_full_labels() -> dict[Path, str]:
             updated_labels: dict[Path, str] = {}
             for file_path in all_files:
@@ -734,9 +758,7 @@ def select_files_interactive(
                     updated_labels[file_path] = full_metadata_formatter(file_path)
                 except Exception as e:
                     updated_labels[file_path] = f"📄 {file_path.name}"
-                    logger.debug(
-                        f"Failed to load metadata for {file_path}: {e}"
-                    )
+                    logger.debug(f"Failed to load metadata for {file_path}: {e}")
             return updated_labels
 
         updated_labels = await asyncio.to_thread(load_full_labels)
@@ -775,20 +797,28 @@ def select_files_interactive(
             except (OSError, ValueError, KeyError) as e:
                 # These errors often occur due to terminal/event loop conflicts
                 # Log the error and provide a fallback
-                logger.error(f"Error running prompt_toolkit application (terminal conflict?): {e}", exc_info=True)
+                logger.error(
+                    f"Error running prompt_toolkit application (terminal conflict?): {e}",
+                    exc_info=True,
+                )
                 if playback_controller:
                     playback_controller.stop()
                 # Return None to trigger fallback in calling code
-                console.print("[yellow]⚠️ Interactive menu unavailable. Using fallback selection...[/yellow]")
+                console.print(
+                    "[yellow]⚠️ Interactive menu unavailable. Using fallback selection...[/yellow]"
+                )
                 return None
             except Exception as e:
                 # Log other errors for debugging
-                logger.error(f"Unexpected error running prompt_toolkit application: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error running prompt_toolkit application: {e}",
+                    exc_info=True,
+                )
                 if playback_controller:
                     playback_controller.stop()
                 # Re-raise to be caught by outer exception handler
                 raise
-            
+
             if result is None:
                 if playback_controller:
                     playback_controller.stop()
@@ -813,7 +843,9 @@ def select_files_interactive(
                                     extract_date_prefix_from_filename,
                                 )
 
-                                date_prefix = extract_date_prefix_from_filename(old_name)
+                                date_prefix = extract_date_prefix_from_filename(
+                                    old_name
+                                )
                                 default_name = date_prefix if date_prefix else old_name
 
                             # Perform rename

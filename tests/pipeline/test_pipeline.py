@@ -3,13 +3,15 @@ Tests for the main analysis pipeline orchestrator.
 """
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from transcriptx.core.domain.canonical_transcript import CanonicalTranscript
-from transcriptx.core.pipeline.pipeline import run_analysis_pipeline, run_analysis_pipeline_from_file
+from transcriptx.core.pipeline.pipeline import (
+    run_analysis_pipeline,
+    run_analysis_pipeline_from_file,
+)
 
 
 def _mock_canonical(segments=None):
@@ -20,11 +22,23 @@ def _mock_canonical(segments=None):
 
 class TestRunAnalysisPipeline:
     def test_run_analysis_pipeline_success(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -69,7 +83,9 @@ class TestRunAnalysisPipeline:
         invalid_file = tmp_path / "invalid.json"
         invalid_file.write_text("invalid json")
 
-        with patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate:
+        with patch(
+            "transcriptx.core.pipeline.pipeline.validate_transcript"
+        ) as mock_validate:
             mock_validate.side_effect = ValueError("Invalid transcript")
             with pytest.raises(ValueError, match="Invalid transcript"):
                 run_analysis_pipeline(
@@ -78,11 +94,23 @@ class TestRunAnalysisPipeline:
                 )
 
     def test_run_analysis_pipeline_with_errors(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -105,11 +133,23 @@ class TestRunAnalysisPipeline:
             assert len(result["modules_run"]) == 1
 
     def test_run_analysis_pipeline_parallel(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -136,16 +176,33 @@ class TestRunAnalysisPipeline:
 
     def test_run_analysis_pipeline_large_transcript(self, temp_transcript_file):
         large_segments = [
-            {"speaker": f"SPEAKER_{i%5:02d}", "text": f"Segment {i}", "start": float(i), "end": float(i + 1)}
+            {
+                "speaker": f"SPEAKER_{i%5:02d}",
+                "text": f"Segment {i}",
+                "start": float(i),
+                "end": float(i + 1),
+            }
             for i in range(1000)
         ]
         temp_transcript_file.write_text(json.dumps({"segments": large_segments}))
 
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -167,11 +224,23 @@ class TestRunAnalysisPipeline:
             assert result["modules_run"] == ["sentiment"]
 
     def test_run_analysis_pipeline_module_timeout(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -194,11 +263,23 @@ class TestRunAnalysisPipeline:
             assert "timed out" in result["errors"][0].lower()
 
     def test_run_analysis_pipeline_partial_failure(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -221,12 +302,26 @@ class TestRunAnalysisPipeline:
             assert len(result["errors"]) == 1
 
     def test_run_analysis_pipeline_performance_estimation(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript") as mock_validate, \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary") as mock_summary, \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user") as mock_display, \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical, \
-             patch("transcriptx.core.pipeline.pipeline.PerformanceEstimator") as mock_estimator:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+            ) as mock_create_dag,
+            patch(
+                "transcriptx.core.pipeline.pipeline.validate_transcript"
+            ) as mock_validate,
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary"
+            ) as mock_summary,
+            patch(
+                "transcriptx.core.pipeline.pipeline.display_output_summary_to_user"
+            ) as mock_display,
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+            patch(
+                "transcriptx.core.pipeline.pipeline.PerformanceEstimator"
+            ) as mock_estimator,
+        ):
 
             mock_dag = MagicMock()
             mock_dag.execute_pipeline.return_value = {
@@ -240,7 +335,9 @@ class TestRunAnalysisPipeline:
             mock_load_canonical.return_value = _mock_canonical()
 
             mock_est_instance = MagicMock()
-            mock_est_instance.estimate_pipeline_time.return_value = {"estimated_seconds": 120}
+            mock_est_instance.estimate_pipeline_time.return_value = {
+                "estimated_seconds": 120
+            }
             mock_estimator.return_value = mock_est_instance
 
             run_analysis_pipeline(
@@ -251,7 +348,9 @@ class TestRunAnalysisPipeline:
 
             mock_estimator.assert_called_once()
 
-    def test_run_analysis_pipeline_includes_execution_metadata(self, temp_transcript_file):
+    def test_run_analysis_pipeline_includes_execution_metadata(
+        self, temp_transcript_file
+    ):
         mock_pipeline = MagicMock()
         mock_pipeline.execute_pipeline.return_value = {
             "modules_run": ["sentiment"],
@@ -260,11 +359,21 @@ class TestRunAnalysisPipeline:
             "cache_hits": ["sentiment"],
         }
 
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline", return_value=mock_pipeline), \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary", return_value={"summary": "ok"}), \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"), \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript"), \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline",
+                return_value=mock_pipeline,
+            ),
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary",
+                return_value={"summary": "ok"},
+            ),
+            patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"),
+            patch("transcriptx.core.pipeline.pipeline.validate_transcript"),
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
             mock_load_canonical.return_value = _mock_canonical()
             result = run_analysis_pipeline(
                 transcript_path=str(temp_transcript_file),
@@ -283,11 +392,21 @@ class TestRunAnalysisPipeline:
             "cache_hits": [],
         }
 
-        with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline", return_value=mock_pipeline), \
-             patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary", return_value={"summary": "ok"}), \
-             patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"), \
-             patch("transcriptx.core.pipeline.pipeline.validate_transcript"), \
-             patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.create_dag_pipeline",
+                return_value=mock_pipeline,
+            ),
+            patch(
+                "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary",
+                return_value={"summary": "ok"},
+            ),
+            patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"),
+            patch("transcriptx.core.pipeline.pipeline.validate_transcript"),
+            patch(
+                "transcriptx.io.transcript_loader.load_canonical_transcript"
+            ) as mock_load_canonical,
+        ):
             mock_load_canonical.return_value = _mock_canonical()
             run_analysis_pipeline(
                 transcript_path=str(temp_transcript_file),
@@ -300,7 +419,9 @@ class TestRunAnalysisPipeline:
 
 class TestRunAnalysisPipelineFromFile:
     def test_run_analysis_pipeline_from_file_with_modules(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.run_analysis_pipeline") as mock_run:
+        with patch(
+            "transcriptx.core.pipeline.pipeline.run_analysis_pipeline"
+        ) as mock_run:
             mock_run.return_value = {
                 "transcript_path": str(temp_transcript_file),
                 "selected_modules": ["sentiment"],
@@ -317,8 +438,14 @@ class TestRunAnalysisPipelineFromFile:
             assert result["modules_run"] == ["sentiment"]
 
     def test_run_analysis_pipeline_from_file_all_modules(self, temp_transcript_file):
-        with patch("transcriptx.core.pipeline.pipeline.run_analysis_pipeline") as mock_run, \
-             patch("transcriptx.core.pipeline.pipeline.get_default_modules") as mock_get_modules:
+        with (
+            patch(
+                "transcriptx.core.pipeline.pipeline.run_analysis_pipeline"
+            ) as mock_run,
+            patch(
+                "transcriptx.core.pipeline.pipeline.get_default_modules"
+            ) as mock_get_modules,
+        ):
 
             mock_get_modules.return_value = ["sentiment", "stats", "ner"]
             mock_run.return_value = {

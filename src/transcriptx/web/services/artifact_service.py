@@ -133,7 +133,7 @@ class ArtifactService:
                 # Use higher resolution and high-quality resampling for crisp thumbnails
                 img.thumbnail((1024, 768), resample=Image.Resampling.LANCZOS)
                 # Save with high quality settings
-                if thumb_path.suffix.lower() in ('.jpg', '.jpeg'):
+                if thumb_path.suffix.lower() in (".jpg", ".jpeg"):
                     img.save(thumb_path, quality=95, optimize=True)
                 else:
                     img.save(thumb_path, optimize=True)
@@ -143,7 +143,9 @@ class ArtifactService:
             return None
 
     @staticmethod
-    def load_html_artifact(run_root: Path, artifact: Artifact) -> Optional[Dict[str, object]]:
+    def load_html_artifact(
+        run_root: Path, artifact: Artifact
+    ) -> Optional[Dict[str, object]]:
         if artifact.kind != "chart_dynamic":
             return None
         path = ArtifactService._resolve_safe_path(run_root, artifact.rel_path)

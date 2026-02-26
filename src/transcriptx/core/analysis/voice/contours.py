@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule  # type: ignore[import-untyped]
-from transcriptx.core.analysis.voice.audio_io import resolve_audio_path, read_audio_segment
+from transcriptx.core.analysis.voice.audio_io import (
+    resolve_audio_path,
+    read_audio_segment,
+)
 from transcriptx.core.analysis.voice.cache import load_voice_features  # type: ignore[import-untyped]
 from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
 from transcriptx.core.output.output_service import create_output_service  # type: ignore[import-untyped]
@@ -32,7 +34,9 @@ MAX_TOTAL_SECONDS = 180.0
 MIN_DURATION_SECONDS = 3.0
 
 
-def _compute_f0_contour(wave: np.ndarray, sample_rate: int) -> tuple[list[float], list[float]]:
+def _compute_f0_contour(
+    wave: np.ndarray, sample_rate: int
+) -> tuple[list[float], list[float]]:
     try:
         import librosa
     except Exception:
@@ -83,7 +87,9 @@ class VoiceContoursAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "voice_contours"
 
-    def analyze(self, segments: list[dict[str, Any]], speaker_map=None) -> Dict[str, Any]:
+    def analyze(
+        self, segments: list[dict[str, Any]], speaker_map=None
+    ) -> Dict[str, Any]:
         return {}
 
     def run_from_context(self, context: Any) -> Dict[str, Any]:
@@ -110,7 +116,9 @@ class VoiceContoursAnalysis(AnalysisModule):
                     "missing_optional_deps": deps.get("missing_optional_deps", []),
                     "install_hint": deps.get("install_hint"),
                 }
-                output_service.save_data(payload, "voice_contours_summary", format_type="json")
+                output_service.save_data(
+                    payload, "voice_contours_summary", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -127,11 +135,14 @@ class VoiceContoursAnalysis(AnalysisModule):
             if locator.get("status") != "ok":
                 payload = {
                     "status": "skipped",
-                    "skipped_reason": locator.get("skipped_reason") or "no_voice_features",
+                    "skipped_reason": locator.get("skipped_reason")
+                    or "no_voice_features",
                     "missing_optional_deps": locator.get("missing_optional_deps", []),
                     "install_hint": locator.get("install_hint"),
                 }
-                output_service.save_data(payload, "voice_contours_summary", format_type="json")
+                output_service.save_data(
+                    payload, "voice_contours_summary", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -147,7 +158,8 @@ class VoiceContoursAnalysis(AnalysisModule):
             core_path = locator.get("voice_feature_core_path")
             eg_path = locator.get("voice_feature_egemaps_path")
             df = load_voice_features(
-                core_path=Path(core_path), egemaps_path=Path(eg_path) if eg_path else None
+                core_path=Path(core_path),
+                egemaps_path=Path(eg_path) if eg_path else None,
             )
 
             audio_path = resolve_audio_path(
@@ -156,7 +168,9 @@ class VoiceContoursAnalysis(AnalysisModule):
             )
             if not audio_path:
                 payload = {"status": "skipped", "skipped_reason": "no_audio"}
-                output_service.save_data(payload, "voice_contours_summary", format_type="json")
+                output_service.save_data(
+                    payload, "voice_contours_summary", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -185,8 +199,13 @@ class VoiceContoursAnalysis(AnalysisModule):
                 if total_seconds >= MAX_TOTAL_SECONDS:
                     break
             if not selected_rows:
-                payload = {"status": "skipped", "skipped_reason": "no_segments_selected"}
-                output_service.save_data(payload, "voice_contours_summary", format_type="json")
+                payload = {
+                    "status": "skipped",
+                    "skipped_reason": "no_segments_selected",
+                }
+                output_service.save_data(
+                    payload, "voice_contours_summary", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -230,7 +249,11 @@ class VoiceContoursAnalysis(AnalysisModule):
                 if slope is not None:
                     slopes_by_speaker.setdefault(speaker, []).append(slope)
                     summary["f0_slopes"].append(
-                        {"speaker": speaker, "segment_id": row.get("segment_id"), "slope": slope}
+                        {
+                            "speaker": speaker,
+                            "segment_id": row.get("segment_id"),
+                            "slope": slope,
+                        }
                     )
                 contours_by_speaker.setdefault(speaker, []).append(
                     {"name": str(row.get("segment_id")), "x": times, "y": f0}
@@ -270,7 +293,9 @@ class VoiceContoursAnalysis(AnalysisModule):
                 )
                 output_service.save_chart(spec, chart_type="f0_slope_distribution")
 
-            output_service.save_data(summary, "voice_contours_summary", format_type="json")
+            output_service.save_data(
+                summary, "voice_contours_summary", format_type="json"
+            )
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(
                 module_name=self.module_name,

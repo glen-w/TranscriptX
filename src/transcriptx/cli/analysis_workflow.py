@@ -43,6 +43,7 @@ from transcriptx.cli.speaker_utils import (
 # Import CLI utilities
 from .exit_codes import CliExit
 from .analysis_target_picker import select_analysis_target_interactive
+from .processing_state import get_current_transcript_path_from_state
 from .analysis_utils import (
     format_modules_columns,
     select_analysis_modules,
@@ -50,6 +51,9 @@ from .analysis_utils import (
     apply_analysis_mode_settings,
     apply_analysis_mode_settings_non_interactive,
     filter_modules_by_mode,
+    resolve_modules_for_selection_kind,
+    MODULE_SELECTION_RECOMMENDED,
+    MODULE_SELECTION_ALL_ELIGIBLE,
 )
 
 logger = get_logger()
@@ -125,7 +129,7 @@ def _run_analysis_workflow_impl(
         # Select analysis modules
         if transcript_path:
             transcript_files = [transcript_path]
-            modules = select_analysis_modules(transcript_files)
+            modules, selection_kind = select_analysis_modules(transcript_files)
         else:
             if selection.kind == "paths":
                 transcript_files = selection.paths or []
@@ -134,14 +138,29 @@ def _run_analysis_workflow_impl(
                         "\n[yellow]⚠️ No transcript files selected. Returning to main menu.[/yellow]"
                     )
                     return
-                modules = select_analysis_modules(transcript_files)
+                modules, selection_kind = select_analysis_modules(transcript_files)
             else:
                 try:
                     member_paths = selection.get_member_paths()
                 except ValueError as exc:
                     print(f"\n[red]❌ {exc}[/red]")
                     return
-                modules = select_analysis_modules(member_paths, for_group=True)
+                modules, selection_kind = select_analysis_modules(
+                    member_paths, for_group=True
+                )
+
+        # Resolve paths in case speaker mapping renamed files (e.g. from module-selection menu).
+        if transcript_path or selection.kind == "paths":
+            transcript_files = [
+                Path(get_current_transcript_path_from_state(str(p)) or str(p))
+                for p in transcript_files
+            ]
+
+        if not modules:
+            print(
+                "\n[yellow]⚠️ No analysis modules selected. Returning to main menu.[/yellow]"
+            )
+            return
 
         # Filter modules based on analysis mode
         filtered_modules = filter_modules_by_mode(modules, analysis_mode)
@@ -156,6 +175,7 @@ def _run_analysis_workflow_impl(
                 check_group_speaker_preflight(member_ids)
             )
             if decision == SpeakerGateDecision.SKIP:
+                print("\n[cyan]Returning to main menu.[/cyan]")
                 return
             if decision == SpeakerGateDecision.IDENTIFY and needs_identification:
                 run_batch_speaker_identification(needs_identification, from_gate=True)
@@ -163,11 +183,13 @@ def _run_analysis_workflow_impl(
                     check_group_speaker_preflight(member_ids)
                 )
                 if decision == SpeakerGateDecision.SKIP or needs_identification:
+                    print("\n[cyan]Returning to main menu.[/cyan]")
                     return
 
             print("\n[bold]Selected modules:[/bold]")
             print(format_modules_columns(filtered_modules, columns=4))
             if not questionary.confirm("Proceed with analysis?").ask():
+                print("\n[cyan]Returning to main menu.[/cyan]")
                 return
             run_analysis_pipeline(
                 target=selection.group_ref,
@@ -188,11 +210,12 @@ def _run_analysis_workflow_impl(
             # Confirm analysis
             print("\n[bold]Selected modules:[/bold]")
             print(format_modules_columns(filtered_modules, columns=4))
-            print(f"[bold]Transcripts to analyze:[/bold]")
+            print("[bold]Transcripts to analyze:[/bold]")
             for idx, tf in enumerate(transcript_files, 1):
                 print(f"  {idx}. {tf.name}")
 
             if not questionary.confirm("Proceed with batch analysis?").ask():
+                print("\n[cyan]Returning to main menu.[/cyan]")
                 return
 
             # Use batch analysis pipeline for multiple transcripts
@@ -217,6 +240,7 @@ def _run_analysis_workflow_impl(
         if not skip_speaker_gate:
             decision, status = check_speaker_gate(str(transcript_file))
             if decision == SpeakerGateDecision.SKIP:
+                print("\n[cyan]Returning to main menu.[/cyan]")
                 return
             if decision == SpeakerGateDecision.IDENTIFY:
                 success, updated_path = run_speaker_identification_for_transcript(
@@ -243,17 +267,21 @@ def _run_analysis_workflow_impl(
                                 "Speaker identification is incomplete. What would you like to do?",
                                 choices=choices,
                             ).ask()
-                            
+
                             if choice == "🔄 Rerun speaker identification":
                                 # Rerun speaker identification
-                                success, updated_path = run_speaker_identification_for_transcript(
-                                    str(transcript_file),
-                                    batch_mode=False,
-                                    from_gate=True,
+                                success, updated_path = (
+                                    run_speaker_identification_for_transcript(
+                                        str(transcript_file),
+                                        batch_mode=False,
+                                        from_gate=True,
+                                    )
                                 )
                                 if success:
                                     transcript_file = Path(updated_path)
-                                    status = check_speaker_identification_status(str(transcript_file))
+                                    status = check_speaker_identification_status(
+                                        str(transcript_file)
+                                    )
                                     if status.is_complete or status.total_count == 0:
                                         skip_speaker_mapping = False
                                         break  # Exit loop, proceed with analysis
@@ -281,11 +309,24 @@ def _run_analysis_workflow_impl(
             else:
                 skip_speaker_mapping = True
 
+        # Re-resolve "Recommended" / "All eligible" after speaker identification so
+        # modules that became eligible (e.g. 2+ named speakers) are included.
+        if selection_kind in (
+            MODULE_SELECTION_RECOMMENDED,
+            MODULE_SELECTION_ALL_ELIGIBLE,
+        ):
+            modules = resolve_modules_for_selection_kind(
+                [str(transcript_file)], selection_kind
+            )
+            if modules:
+                filtered_modules = filter_modules_by_mode(modules, analysis_mode)
+
         # Confirm analysis
         print("\n[bold]Selected modules:[/bold]")
         print(format_modules_columns(filtered_modules, columns=4))
 
         if not questionary.confirm("Proceed with analysis?").ask():
+            print("\n[cyan]Returning to main menu.[/cyan]")
             return
 
         # Run analysis with enhanced progress tracking
@@ -349,7 +390,7 @@ def _run_analysis_workflow_impl(
                                 f"[dim]Failed modules: {', '.join(modules_failed)}[/dim]"
                             )
                     elif status == "failed":
-                        print(f"\n[red]❌ Analysis failed[/red]")
+                        print("\n[red]❌ Analysis failed[/red]")
                     else:
                         print(f"\n[yellow]⚠️ Analysis status: {status}[/yellow]")
 
@@ -376,7 +417,7 @@ def _run_analysis_workflow_impl(
             # Show post-analysis menu
             _show_post_analysis_menu(transcript_file, results)
 
-        except CliExit as e:
+        except CliExit:
             # CliExit is used for controlled exits, re-raise it
             raise
         except Exception as e:
@@ -405,9 +446,8 @@ def _show_post_analysis_menu(transcript_file: Path, results: dict[str, Any]) -> 
     if not output_dir:
         output_dir = get_transcript_dir(transcript_path_str)
     analyzed_dir = Path(output_dir)
-    stats_dir = analyzed_dir / "stats"
-    summary_dir = stats_dir / "summary"
-    txt_path = summary_dir / f"{analyzed_base}_comprehensive_summary.txt"
+    # Pipeline writes comprehensive summary to stats/data/global/ (OutputService).
+    txt_path = analyzed_dir / "stats" / "data" / "global" / f"{analyzed_base}_comprehensive_summary.txt"
     outputs_folder = analyzed_dir
 
     # Only show viewer option if result is defined and not None
@@ -660,9 +700,7 @@ def run_test_analysis_workflow() -> None:
             # Find the smallest transcript (excludes test artifacts, requires min segments/size)
             transcript_file = find_smallest_transcript()
             if not transcript_file:
-                print(
-                    "\n[red]❌ No suitable transcript found for test analysis.[/red]"
-                )
+                print("\n[red]❌ No suitable transcript found for test analysis.[/red]")
                 print(
                     "[dim]Ensure the default transcript folder has a real transcript with more than 50 segments. "
                     "Test artifacts and small stubs are excluded.[/dim]"
@@ -767,7 +805,7 @@ def run_test_analysis_workflow() -> None:
                                     f"[dim]Failed modules: {', '.join(modules_failed)}[/dim]"
                                 )
                         elif status == "failed":
-                            print(f"\n[red]❌ Test analysis failed[/red]")
+                            print("\n[red]❌ Test analysis failed[/red]")
                         else:
                             print(
                                 f"\n[yellow]⚠️ Test analysis status: {status}[/yellow]"
@@ -985,7 +1023,7 @@ def run_analysis_non_interactive(
                     if modules_failed:
                         print(f"[dim]Failed modules: {', '.join(modules_failed)}[/dim]")
                 elif status == "failed":
-                    print(f"\n[red]❌ Analysis failed[/red]")
+                    print("\n[red]❌ Analysis failed[/red]")
                 else:
                     print(f"\n[yellow]⚠️ Analysis status: {status}[/yellow]")
 

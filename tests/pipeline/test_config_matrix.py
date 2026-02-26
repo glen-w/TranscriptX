@@ -40,7 +40,9 @@ def _build_pipeline(module_names):
         (["sentiment", "stats"], {"sentiment", "stats"}, [("stats", "sentiment")]),
     ],
 )
-def test_dependency_resolution_config_matrix(requested, expected_includes, ordering_checks):
+def test_dependency_resolution_config_matrix(
+    requested, expected_includes, ordering_checks
+):
     """Ensure module selection honors dependencies across config variants."""
     pipeline = _build_pipeline(expected_includes)
     execution_order = pipeline.resolve_dependencies(requested)

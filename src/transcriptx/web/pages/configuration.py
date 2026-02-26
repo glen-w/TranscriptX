@@ -104,9 +104,10 @@ def render_configuration_page() -> None:
     else:
         base_config = draft or {}
 
-    if "config_draft" not in st.session_state or st.session_state.get(
-        "config_scope_cache"
-    ) != scope:
+    if (
+        "config_draft" not in st.session_state
+        or st.session_state.get("config_scope_cache") != scope
+    ):
         st.session_state["config_draft"] = copy.deepcopy(base_config)
         st.session_state["config_scope_cache"] = scope
 

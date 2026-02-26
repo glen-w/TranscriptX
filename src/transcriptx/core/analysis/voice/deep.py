@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -20,7 +20,12 @@ def _get_audio_cls_pipeline(model_name: str) -> Any:
     if _PIPELINE is not None and _PIPELINE_MODEL == model_name:
         return _PIPELINE
 
-    transformers = optional_import("transformers", "deep-mode voice emotion inference")
+    transformers = optional_import(
+        "transformers",
+        "deep-mode voice emotion inference",
+        "emotion",
+        auto_install=True,
+    )
     pipeline = getattr(transformers, "pipeline", None)
     if pipeline is None:
         raise ImportError("transformers.pipeline is unavailable")
@@ -93,9 +98,16 @@ def infer_deep_emotion_and_valence(
     # transformers pipelines accept either a dict {array, sampling_rate} or kwargs.
     outputs: List[Dict[str, Any]]
     try:
-        outputs = pipe({"array": np.asarray(wave, dtype=np.float32), "sampling_rate": int(sample_rate)})
+        outputs = pipe(
+            {
+                "array": np.asarray(wave, dtype=np.float32),
+                "sampling_rate": int(sample_rate),
+            }
+        )
     except Exception:
-        outputs = pipe(np.asarray(wave, dtype=np.float32), sampling_rate=int(sample_rate))
+        outputs = pipe(
+            np.asarray(wave, dtype=np.float32), sampling_rate=int(sample_rate)
+        )
 
     if not outputs:
         return {
@@ -124,4 +136,3 @@ def infer_deep_emotion_and_valence(
         "valence_raw": valence,
         "valence_method": method,
     }
-

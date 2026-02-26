@@ -96,20 +96,14 @@ class GroupRepository(BaseRepository):
         return self._to_domain(group, ordered_records)
 
     def get_by_id(self, group_id: int) -> Optional[DomainGroup]:
-        model = (
-            self.session.query(GroupModel)
-            .filter(GroupModel.id == group_id)
-            .first()
-        )
+        model = self.session.query(GroupModel).filter(GroupModel.id == group_id).first()
         if model is None:
             return None
         return self._to_domain(model)
 
     def get_by_uuid(self, group_uuid: str) -> Optional[DomainGroup]:
         model = (
-            self.session.query(GroupModel)
-            .filter(GroupModel.uuid == group_uuid)
-            .first()
+            self.session.query(GroupModel).filter(GroupModel.uuid == group_uuid).first()
         )
         if model is None:
             return None
@@ -148,11 +142,7 @@ class GroupRepository(BaseRepository):
         )
 
     def rename_group(self, group_id: int, name: str) -> Optional[DomainGroup]:
-        model = (
-            self.session.query(GroupModel)
-            .filter(GroupModel.id == group_id)
-            .first()
-        )
+        model = self.session.query(GroupModel).filter(GroupModel.id == group_id).first()
         if model is None:
             return None
         model.name = name
@@ -162,11 +152,7 @@ class GroupRepository(BaseRepository):
     def update_group_metadata(
         self, group_id: int, metadata: Dict[str, Any]
     ) -> Optional[DomainGroup]:
-        model = (
-            self.session.query(GroupModel)
-            .filter(GroupModel.id == group_id)
-            .first()
-        )
+        model = self.session.query(GroupModel).filter(GroupModel.id == group_id).first()
         if model is None:
             return None
         model.metadata_json = metadata
@@ -176,11 +162,7 @@ class GroupRepository(BaseRepository):
     def update_membership(
         self, group_id: int, transcript_file_ids_ordered: List[int]
     ) -> Optional[DomainGroup]:
-        model = (
-            self.session.query(GroupModel)
-            .filter(GroupModel.id == group_id)
-            .first()
-        )
+        model = self.session.query(GroupModel).filter(GroupModel.id == group_id).first()
         if model is None:
             return None
 
@@ -206,11 +188,7 @@ class GroupRepository(BaseRepository):
         return self._to_domain(model, ordered_records)
 
     def delete_group(self, group_id: int) -> bool:
-        model = (
-            self.session.query(GroupModel)
-            .filter(GroupModel.id == group_id)
-            .first()
-        )
+        model = self.session.query(GroupModel).filter(GroupModel.id == group_id).first()
         if model is None:
             return False
         self.session.delete(model)

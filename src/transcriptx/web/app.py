@@ -33,7 +33,12 @@ try:
         get_speaker_profiles,
         format_speaker_profile_data,
     )
-    from transcriptx.web.services import FileService, ArtifactService, RunIndex, SubjectService
+    from transcriptx.web.services import (
+        FileService,
+        ArtifactService,
+        RunIndex,
+        SubjectService,
+    )
     from transcriptx.web.page_modules.overview import render_overview
     from transcriptx.web.page_modules.charts import render_charts
     from transcriptx.web.page_modules.data import render_data
@@ -53,24 +58,7 @@ try:
     from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
     from transcriptx.core.utils.logger import get_logger
     from transcriptx.utils.text_utils import format_time_detailed
-    from transcriptx.web.module_registry import (
-        get_all_available_modules,
-        build_module_label,
-    )
-    from transcriptx.core.analysis.selection import (
-        apply_analysis_mode_settings,
-        filter_modules_by_mode,
-        filter_modules_for_speaker_count,
-        get_recommended_modules,
-        VALID_MODES,
-        VALID_PROFILES,
-    )
-    from transcriptx.core.utils.speaker_extraction import count_named_speakers
-    from transcriptx.core.pipeline.module_registry import get_module_info
-    from transcriptx.core import run_analysis_pipeline
-    from transcriptx.core.pipeline.target_resolver import TranscriptRef
-    from transcriptx.core.utils.audio_availability import has_resolvable_audio
-    from transcriptx.io import load_segments
+    from transcriptx.web.module_registry import build_module_label
 except ImportError as e:
     st.error(f"Import error: {e}")
     st.stop()
@@ -517,7 +505,9 @@ def render_transcript_viewer():
 
         with tab_plain:
             for segment_index, segment in display_segments:
-                speaker = segment.get("speaker_display") or segment.get("speaker", "Unknown")
+                speaker = segment.get("speaker_display") or segment.get(
+                    "speaker", "Unknown"
+                )
                 text = segment.get("text", "")
                 start = segment.get("start", 0)
                 end = segment.get("end", 0)
@@ -582,7 +572,7 @@ def render_transcript_viewer():
                 # Calculate group timestamp range (from first segment start to last segment end)
                 group_start = group_segments[0].get("start", 0)
                 group_end = group_segments[-1].get("end", 0)
-                
+
                 # Build expander title with timestamp if enabled
                 if show_timestamps:
                     group_timestamp = _format_timestamp_range(
@@ -590,8 +580,10 @@ def render_transcript_viewer():
                     )
                     expander_title = f"🎤 {speaker_name} ({len(group_segments)} segments) · ⏱️ {group_timestamp}"
                 else:
-                    expander_title = f"🎤 {speaker_name} ({len(group_segments)} segments)"
-                
+                    expander_title = (
+                        f"🎤 {speaker_name} ({len(group_segments)} segments)"
+                    )
+
                 with st.expander(expander_title, expanded=True):
                     for segment in group_segments:
                         text = segment.get("text", "")
@@ -606,12 +598,9 @@ def render_transcript_viewer():
                             with col2:
                                 st.caption(f"Positive: {sentiment.get('pos', 0):.2f}")
                             with col3:
-                                st.caption(
-                                    f"Negative: {sentiment.get('neg', 0):.2f}"
-                                )
+                                st.caption(f"Negative: {sentiment.get('neg', 0):.2f}")
                         if "emotion" in segment:
                             st.caption(f"Emotion: {segment['emotion']}")
-
 
         # Analysis modules: view dropdown + button grid (synced via session_state)
         st.session_state.setdefault("analysis_artifacts_version", 0)
@@ -647,17 +636,14 @@ def render_transcript_viewer():
             cols = st.columns(min(len(modules), 4))
             for idx, module in enumerate(modules):
                 with cols[idx % 4]:
-                    if st.button(
-                        module, key=f"module_{module}", width='stretch'
-                    ):
+                    if st.button(module, key=f"module_{module}", width="stretch"):
                         st.session_state["analysis_module"] = module
                         st.session_state["analysis_session"] = selected
                         st.rerun()
 
-        # View-only: run analysis lives on the dedicated "Run Analysis" page (sidebar).
         if not modules:
             st.info(
-                "No analysis modules run yet. Go to **Run Analysis** in the sidebar to generate results."
+                "No analysis modules run yet. To run analysis, use the CLI: `transcriptx analyze`"
             )
 
         st.divider()
@@ -674,239 +660,12 @@ def render_transcript_viewer():
 
 def render_run_analysis_page():
     """
-    Dedicated page to run analysis on the session selected in the sidebar.
-
-    Non-goal: This run flow is synchronous and in-process; long-running jobs
-    are not yet queued or resumable.
+    Stub: Run creation is CLI-only (v0.1). The Web Viewer is read-only.
     """
-    st.markdown(
-        '<div class="main-header">▶ Run Analysis</div>', unsafe_allow_html=True
+    st.markdown('<div class="main-header">Run Analysis</div>', unsafe_allow_html=True)
+    st.info(
+        "The Web Viewer is read-only. To run analysis, use the CLI: `transcriptx analyze`"
     )
-    st.caption(
-        "Run the analysis pipeline on the session selected in the sidebar. "
-        "Results will be available in the Transcript view after completion."
-    )
-
-    subject = SubjectService.resolve_current_subject(st.session_state)
-    if not subject:
-        st.warning(
-            "Select a **Subject** in the sidebar first, then run analysis here."
-        )
-        return
-    transcript_path = None
-    member_paths: List[str] = []
-    if subject.subject_type == "transcript":
-        if subject.members:
-            transcript_path = Path(subject.members[0].file_path)
-            member_paths = [str(transcript_path)]
-    else:
-        member_paths = [m.file_path for m in subject.members if m.file_path]
-    if subject.subject_type == "transcript" and transcript_path is None:
-        st.warning(
-            "Could not resolve transcript path for this subject. Run analysis is unavailable."
-        )
-        return
-
-    # Build context for module labels (audio + voice deps)
-    try:
-        from transcriptx.core.utils.config import get_config
-        from transcriptx.core.analysis.voice.deps import check_voice_optional_deps
-        _cfg = get_config()
-        _voice_cfg = getattr(getattr(_cfg, "analysis", None), "voice", None)
-        _egemaps = bool(getattr(_voice_cfg, "egemaps_enabled", True))
-        _deps = check_voice_optional_deps(egemaps_enabled=_egemaps)
-        _audio_available = has_resolvable_audio(member_paths)
-        _missing_deps = (
-            _deps.get("missing_optional_deps", [])
-            if not _deps.get("ok")
-            else []
-        )
-        _context = {
-            "audio_available": _audio_available,
-            "missing_deps": _missing_deps,
-        }
-    except Exception:
-        _context = {}
-
-    run_mode = st.radio(
-        "Mode",
-        options=list(VALID_MODES),
-        format_func=lambda x: "Quick (faster)" if x == "quick" else "Full (comprehensive)",
-        key="run_analysis_mode",
-        horizontal=True,
-    )
-    run_profile = None
-    if run_mode == "full":
-        run_profile = st.selectbox(
-            "Profile",
-            options=list(VALID_PROFILES),
-            format_func=lambda x: x.capitalize(),
-            key="run_analysis_profile",
-        )
-    preset = st.radio(
-        "Preset",
-        options=["recommended", "all", "light_only", "custom"],
-        format_func=lambda x: {
-            "recommended": "Recommended",
-            "all": "All modules",
-            "light_only": "Light modules only",
-            "custom": "Custom",
-        }.get(x, x),
-        key="run_analysis_preset",
-        horizontal=True,
-    )
-    named_speaker_count = None
-    if member_paths:
-        counts: list[int] = []
-        for path in member_paths:
-            if not path:
-                continue
-            try:
-                if not Path(path).exists():
-                    continue
-                segments = load_segments(path)
-                counts.append(count_named_speakers(segments))
-            except Exception:
-                continue
-        if counts:
-            named_speaker_count = min(counts)
-    all_available = get_all_available_modules()
-    if named_speaker_count is not None:
-        all_available = filter_modules_for_speaker_count(
-            all_available, named_speaker_count
-        )
-    if preset == "custom":
-        try:
-            _missing = _context.get("missing_deps") or []
-
-            def _dep_resolver(info):
-                if not getattr(info, "requires_audio", False):
-                    return True
-                return not _missing
-
-            _runnable = get_recommended_modules(
-                member_paths,
-                audio_resolver=has_resolvable_audio,
-                dep_resolver=_dep_resolver,
-                include_heavy=True,
-                include_excluded_from_default=True,
-            )
-        except Exception:
-            _runnable = get_recommended_modules(
-                member_paths,
-                audio_resolver=has_resolvable_audio,
-                include_heavy=True,
-                include_excluded_from_default=True,
-            )
-        if named_speaker_count is not None:
-            _runnable = filter_modules_for_speaker_count(
-                _runnable, named_speaker_count
-            )
-        _runnable_set = set(_runnable)
-        _unavailable = sorted(m for m in all_available if m not in _runnable_set)
-        _default_custom = [
-            m
-            for m in get_recommended_modules(
-                member_paths,
-                audio_resolver=has_resolvable_audio,
-                include_excluded_from_default=True,
-            )[:5]
-            if m in _runnable_set
-        ]
-        if named_speaker_count is not None:
-            _default_custom = filter_modules_for_speaker_count(
-                _default_custom, named_speaker_count
-            )
-        custom_options = st.multiselect(
-            "Modules",
-            options=sorted(_runnable_set),
-            default=_default_custom,
-            format_func=lambda m: build_module_label(m, context=_context),
-            key="run_analysis_custom_modules",
-        )
-        if _unavailable:
-            _audio_ok = _context.get("audio_available", None)
-            _deps_ok = not (_context.get("missing_deps") or [])
-            if _audio_ok is False and not _deps_ok:
-                _reason = "audio missing and voice deps missing"
-            elif _audio_ok is False:
-                _reason = "audio missing for this session"
-            elif not _deps_ok:
-                _reason = "voice deps missing"
-            else:
-                _reason = "unavailable for this session"
-            st.caption(
-                f"Unavailable ({_reason}): " + ", ".join(_unavailable)
-            )
-        run_modules = custom_options
-    elif preset == "all":
-        run_modules = all_available
-    elif preset == "light_only":
-        run_modules = [
-            m
-            for m in all_available
-            if get_module_info(m) and get_module_info(m).category == "light"
-        ]
-    else:
-        run_modules = get_recommended_modules(
-            member_paths,
-            audio_resolver=has_resolvable_audio,
-        )
-    if named_speaker_count is not None:
-        run_modules = filter_modules_for_speaker_count(
-            run_modules, named_speaker_count
-        )
-    filtered_modules = filter_modules_by_mode(run_modules, run_mode)
-    open_after = st.checkbox(
-        "Open results after run",
-        value=True,
-        key="run_analysis_open_after",
-    )
-    run_disabled = (
-        st.session_state.get("analysis_run_in_progress", False)
-        or not filtered_modules
-    )
-    run_clicked = st.button(
-        "Run analysis",
-        key="run_analysis_btn",
-        disabled=run_disabled,
-    )
-    if not filtered_modules and preset == "custom":
-        st.caption("Select at least one module to run.")
-    if not filtered_modules and preset == "light_only":
-        st.caption("No light-category modules available for this run.")
-    if run_clicked and filtered_modules:
-        st.session_state["analysis_run_in_progress"] = True
-        apply_analysis_mode_settings(run_mode, profile=run_profile)
-        logger.info(
-            "Run analysis: subject_type=%s subject_id=%s mode=%s profile=%s modules=%s",
-            subject.subject_type,
-            subject.subject_id,
-            run_mode,
-            run_profile or "",
-            filtered_modules,
-        )
-        try:
-            with st.spinner("Running analysis pipeline…"):
-                run_analysis_pipeline(
-                    target=subject.ref,
-                    selected_modules=filtered_modules,
-                    skip_speaker_mapping=True,
-                    persist=False,
-                )
-            st.session_state["analysis_artifacts_version"] = (
-                st.session_state.get("analysis_artifacts_version", 0) + 1
-            )
-            if open_after and filtered_modules:
-                st.session_state["analysis_module"] = filtered_modules[0]
-                st.session_state["analysis_session"] = subject.subject_id
-            st.success("Analysis completed.")
-        except Exception as e:
-            logger.error(f"Run analysis failed: {e}", exc_info=True)
-            st.error(f"Analysis failed: {e}")
-        finally:
-            st.session_state["analysis_run_in_progress"] = False
-        st.rerun()
 
 
 def render_speakers_list():
@@ -982,7 +741,7 @@ def render_speakers_list():
             table_key = "speakers_table"
             selected_rows = st.dataframe(
                 speakers_df,
-                width='stretch',
+                width="stretch",
                 hide_index=True,
                 selection_mode="single-row",
                 key=table_key,
@@ -1191,7 +950,7 @@ def main():
             if st.button(
                 text,
                 key=f"nav_{page_key}",
-                width='stretch',
+                width="stretch",
                 type="secondary",
             ):
                 st.session_state["page"] = page_key
@@ -1251,7 +1010,9 @@ def main():
             run_options = [r.run_id for r in runs]
             if run_options:
                 current_run = st.session_state.get("run_id")
-                index = run_options.index(current_run) if current_run in run_options else 0
+                index = (
+                    run_options.index(current_run) if current_run in run_options else 0
+                )
                 selected_run_id = st.selectbox(
                     "Run",
                     run_options,
@@ -1269,7 +1030,6 @@ def main():
         transcript_pages = [
             ("Overview", "Overview"),
             ("Transcript", "Transcript"),
-            ("Run Analysis", "Run Analysis"),
             ("Charts", "Charts"),
             ("Insights", "Insights"),
             ("Data", "Data"),
@@ -1281,7 +1041,7 @@ def main():
             if st.button(
                 text,
                 key=f"nav_{page_key}",
-                width='stretch',
+                width="stretch",
                 type="secondary",
             ):
                 st.session_state["page"] = page_key
@@ -1301,7 +1061,6 @@ def main():
         viewer_pages = {
             "Overview",
             "Transcript",
-            "Run Analysis",
             "Charts",
             "Insights",
             "Data",
@@ -1327,6 +1086,7 @@ def main():
         elif current_page == "Explorer":
             render_explorer()
         elif current_page == "Run Analysis":
+            # Stale session state: Viewer is read-only; show CLI hint.
             render_run_analysis_page()
         elif current_page == "Speakers":
             render_speakers_list()

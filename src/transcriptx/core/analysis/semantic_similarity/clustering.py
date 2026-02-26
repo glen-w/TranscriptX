@@ -158,9 +158,7 @@ def cluster_repetitions_basic(
                 continue
 
             cluster_repetitions = [
-                text_to_repetition[text]
-                for text in texts
-                if text in text_to_repetition
+                text_to_repetition[text] for text in texts if text in text_to_repetition
             ]
 
             clusters.append(

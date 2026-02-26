@@ -18,7 +18,11 @@ from transcriptx.core.analysis.affect_tension.metrics import (
     compute_derived_indices,
 )
 from transcriptx.core.utils.config import get_config
-from transcriptx.core.utils.logger import get_logger, log_analysis_start, log_analysis_complete
+from transcriptx.core.utils.logger import (
+    get_logger,
+    log_analysis_start,
+    log_analysis_complete,
+)
 from transcriptx.utils.text_utils import is_named_speaker
 
 logger = get_logger()
@@ -64,18 +68,14 @@ class AffectTensionAnalysis(AnalysisModule):
                 "weight_volatility": 0.15,
             }
         else:
-            mismatch_compound = getattr(
-                at_cfg, "mismatch_compound_threshold", -0.1
-            )
+            mismatch_compound = getattr(at_cfg, "mismatch_compound_threshold", -0.1)
             trust_like_th = getattr(at_cfg, "trust_like_threshold", 0.3)
             pos_emotion_th = getattr(at_cfg, "pos_emotion_threshold", 0.3)
             weights = {
                 "weight_posneg_mismatch": getattr(
                     at_cfg, "weight_posneg_mismatch", 0.4
                 ),
-                "weight_trust_neutral": getattr(
-                    at_cfg, "weight_trust_neutral", 0.3
-                ),
+                "weight_trust_neutral": getattr(at_cfg, "weight_trust_neutral", 0.3),
                 "weight_entropy": getattr(at_cfg, "weight_entropy", 0.15),
                 "weight_volatility": getattr(at_cfg, "weight_volatility", 0.15),
             }
@@ -85,9 +85,7 @@ class AffectTensionAnalysis(AnalysisModule):
             "pos_emotion_threshold": pos_emotion_th,
         }
 
-        primary_labels = [
-            seg.get("context_emotion_primary") or "" for seg in segments
-        ]
+        primary_labels = [seg.get("context_emotion_primary") or "" for seg in segments]
         speaker_segment_indexes: Dict[str, List[int]] = {}
         excluded_count = 0
 
@@ -163,17 +161,19 @@ class AffectTensionAnalysis(AnalysisModule):
         if segments:
             rows = []
             for i, seg in enumerate(segments):
-                rows.append({
-                    "index": i,
-                    "start": seg.get("start"),
-                    "text": (seg.get("text") or "")[:200],
-                    "affect_mismatch_posneg": seg.get("affect_mismatch_posneg"),
-                    "affect_trust_neutral": seg.get("affect_trust_neutral"),
-                    "emotion_entropy": seg.get("emotion_entropy"),
-                    "emotion_volatility_proxy": seg.get("emotion_volatility_proxy"),
-                    "context_emotion_primary": seg.get("context_emotion_primary"),
-                    "sentiment_compound_norm": seg.get("sentiment_compound_norm"),
-                })
+                rows.append(
+                    {
+                        "index": i,
+                        "start": seg.get("start"),
+                        "text": (seg.get("text") or "")[:200],
+                        "affect_mismatch_posneg": seg.get("affect_mismatch_posneg"),
+                        "affect_trust_neutral": seg.get("affect_trust_neutral"),
+                        "emotion_entropy": seg.get("emotion_entropy"),
+                        "emotion_volatility_proxy": seg.get("emotion_volatility_proxy"),
+                        "context_emotion_primary": seg.get("context_emotion_primary"),
+                        "sentiment_compound_norm": seg.get("sentiment_compound_norm"),
+                    }
+                )
             output_service.save_data(
                 rows,
                 f"{base_name}_affect_tension_segments",
@@ -200,13 +200,15 @@ class AffectTensionAnalysis(AnalysisModule):
         except Exception as e:
             logger.warning("affect_tension charts: failed to build bar specs: %s", e)
         try:
-            chart_specs.extend(
-                build_dynamics_timeseries_charts(segments, base_name)
-            )
+            chart_specs.extend(build_dynamics_timeseries_charts(segments, base_name))
         except Exception as e:
-            logger.warning("affect_tension charts: failed to build timeseries specs: %s", e)
+            logger.warning(
+                "affect_tension charts: failed to build timeseries specs: %s", e
+            )
         try:
-            heatmap = build_tension_summary_heatmap(derived_indices, segments, base_name)
+            heatmap = build_tension_summary_heatmap(
+                derived_indices, segments, base_name
+            )
             if heatmap:
                 chart_specs.append(heatmap)
         except Exception as e:
@@ -238,7 +240,10 @@ class AffectTensionAnalysis(AnalysisModule):
             segments = context.get_segments()
             if not segments:
                 payload = {
-                    "metadata": {"version": AFFECT_TENSION_VERSION, "skipped": "no_segments"},
+                    "metadata": {
+                        "version": AFFECT_TENSION_VERSION,
+                        "skipped": "no_segments",
+                    },
                     "derived_indices": {"global": {}, "by_speaker": {}},
                 }
                 output_service.save_data(
@@ -272,7 +277,11 @@ class AffectTensionAnalysis(AnalysisModule):
             )
         except Exception as e:
             logger.exception("affect_tension failed: %s", e)
-            from transcriptx.core.utils.module_result import build_module_result, now_iso
+            from transcriptx.core.utils.module_result import (
+                build_module_result,
+                now_iso,
+            )
+
             return build_module_result(
                 module_name=self.module_name,
                 status="error",

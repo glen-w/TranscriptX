@@ -42,7 +42,9 @@ def _candidate_priority(kind: str) -> int:
     return priority.get(kind, 0)
 
 
-def _context_any_matches(segment_text: str, context_any: List[str], case_sensitive: bool, word_boundary: bool) -> bool:
+def _context_any_matches(
+    segment_text: str, context_any: List[str], case_sensitive: bool, word_boundary: bool
+) -> bool:
     """Return True if segment_text contains at least one of the context terms."""
     if not context_any:
         return True
@@ -122,7 +124,11 @@ def apply_corrections(
     """
     decision_map = _resolve_decision_applications(candidates, decisions)
     rules_by_id = rules_by_id or {}
-    patch_log: List[Dict] = [{"resolution_policy": "longest_span > confidence > kind_priority > left_to_right"}]
+    patch_log: List[Dict] = [
+        {
+            "resolution_policy": "longest_span > confidence > kind_priority > left_to_right"
+        }
+    ]
 
     planned: List[PlannedReplacement] = []
     for idx, segment in enumerate(segments):
@@ -161,7 +167,9 @@ def apply_corrections(
                                 "candidate_id": candidate.candidate_id,
                                 "segment_id": segment_id,
                                 "speaker": segment.get("speaker"),
-                                "time_start": segment.get("start", segment.get("start_time")),
+                                "time_start": segment.get(
+                                    "start", segment.get("start_time")
+                                ),
                                 "time_end": segment.get("end", segment.get("end_time")),
                                 "before": text,
                                 "after": text,

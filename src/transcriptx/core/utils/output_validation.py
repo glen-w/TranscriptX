@@ -7,7 +7,6 @@ have generated proper outputs.
 
 from dataclasses import dataclass
 from pathlib import Path
-import json
 
 
 def _get_module_output_dir(basename_dir: Path, module_name: str) -> Path:
@@ -26,8 +25,13 @@ def _get_module_output_dir(basename_dir: Path, module_name: str) -> Path:
         return basename_dir / "transcripts"
     try:
         from transcriptx.core.pipeline.module_registry import get_module_info
+
         info = get_module_info(module_name)
-        if info and getattr(info, "output_namespace", None) and getattr(info, "output_version", None):
+        if (
+            info
+            and getattr(info, "output_namespace", None)
+            and getattr(info, "output_version", None)
+        ):
             return basename_dir / info.output_namespace / info.output_version
     except Exception:
         pass
@@ -135,7 +139,10 @@ MODULE_VALIDATION_RULES = {
         file_extensions={".txt", ".csv"},
     ),
     "simplified_transcript": ModuleValidationRule(
-        required_files=["*_simplified_transcript.json", "*_simplified_transcript_summary.json"],
+        required_files=[
+            "*_simplified_transcript.json",
+            "*_simplified_transcript_summary.json",
+        ],
         required_dirs=[],  # writes under transcripts/, no data/ subdir
         min_files=1,
         file_extensions={".json"},

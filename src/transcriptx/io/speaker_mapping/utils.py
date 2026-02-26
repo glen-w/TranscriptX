@@ -44,6 +44,51 @@ class SegmentRef:
         return self.start is not None and self.end is not None
 
 
+def compute_speaker_stats_from_segments(
+    segments: List[Dict[str, Any]],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Compute per-speaker stats in one pass over segments.
+
+    For each segment, _extract_segment_times is called once. Segment missing
+    end (or invalid times) is ignored for duration but still counts as a segment.
+    Percent uses duration if total_duration > 0 else segment count.
+
+    Returns:
+        Dict mapping speaker_id to {segment_count, total_duration, percent}.
+    """
+    by_speaker: Dict[str, Dict[str, Any]] = {}
+    total_duration: float = 0.0
+    total_segments: int = 0
+
+    for seg in segments:
+        speaker_id = seg.get("speaker")
+        if speaker_id is None:
+            continue
+        if speaker_id not in by_speaker:
+            by_speaker[speaker_id] = {"segment_count": 0, "total_duration": 0.0}
+        by_speaker[speaker_id]["segment_count"] += 1
+        total_segments += 1
+
+        start, end = _extract_segment_times(seg)
+        if start is not None and end is not None and end >= start:
+            dur = end - start
+            by_speaker[speaker_id]["total_duration"] += dur
+            total_duration += dur
+
+    for data in by_speaker.values():
+        if total_duration > 0:
+            data["percent"] = 100.0 * data["total_duration"] / total_duration
+        else:
+            data["percent"] = (
+                100.0 * data["segment_count"] / total_segments
+                if total_segments
+                else 0.0
+            )
+
+    return by_speaker
+
+
 def _extract_segment_times(
     segment: Dict[str, Any],
 ) -> tuple[Optional[float], Optional[float]]:

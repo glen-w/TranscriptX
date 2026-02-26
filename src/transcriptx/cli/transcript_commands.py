@@ -124,7 +124,11 @@ def list(
 
 
 @app.command()
-def show(conversation_id: int = typer.Option(..., "--conversation-id", "-c", help="Conversation ID to show")):
+def show(
+    conversation_id: int = typer.Option(
+        ..., "--conversation-id", "-c", help="Conversation ID to show"
+    )
+):
     """Show detailed information about a conversation."""
     try:
         # Initialize database
@@ -223,7 +227,9 @@ def show(conversation_id: int = typer.Option(..., "--conversation-id", "-c", hel
 
 @app.command()
 def delete(
-    conversation_id: int = typer.Option(..., "--conversation-id", "-c", help="Conversation ID to delete"),
+    conversation_id: int = typer.Option(
+        ..., "--conversation-id", "-c", help="Conversation ID to delete"
+    ),
     force: bool = typer.Option(
         False, "--force", "-f", help="Force deletion without confirmation"
     ),
@@ -274,7 +280,9 @@ def delete(
 
 @app.command()
 def export(
-    conversation_id: int = typer.Option(..., "--conversation-id", "-c", help="Conversation ID to export"),
+    conversation_id: int = typer.Option(
+        ..., "--conversation-id", "-c", help="Conversation ID to export"
+    ),
     output_file: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Output file path"
     ),
@@ -310,7 +318,9 @@ def export(
 
 @app.command()
 def store(
-    transcript_path: Path = typer.Option(..., "--transcript-path", help="Path to transcript JSON file"),
+    transcript_path: Path = typer.Option(
+        ..., "--transcript-path", help="Path to transcript JSON file"
+    ),
     title: Optional[str] = typer.Option(
         None, "--title", "-t", help="Custom conversation title"
     ),
@@ -341,7 +351,7 @@ def store(
                 transcript_path=str(transcript_path), metadata=metadata
             )
 
-        console.print(f"✅ Successfully stored transcript in database")
+        console.print("✅ Successfully stored transcript in database")
         console.print(f"   - Conversation ID: {conversation.id}")
         console.print(f"   - Title: {conversation.title}")
         console.print(f"   - Speakers: {len(speakers)}")

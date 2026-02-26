@@ -7,10 +7,18 @@ import pytest
 from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
 from transcriptx.database import get_session
 from transcriptx.database.migrations import run_migrations
-from transcriptx.database.models import ArtifactIndex, ModuleRun, PipelineRun, TranscriptFile, TranscriptSegment, TranscriptSentence
+from transcriptx.database.models import (
+    ArtifactIndex,
+    ModuleRun,
+    TranscriptFile,
+    TranscriptSegment,
+    TranscriptSentence,
+)
 
 
-FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "vtt" / "golden" / "simple.json"
+FIXTURE_PATH = (
+    Path(__file__).resolve().parents[1] / "fixtures" / "vtt" / "golden" / "simple.json"
+)
 
 
 def _configure_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -23,13 +31,17 @@ def _configure_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("TRANSCRIPTX_OUTPUT_DIR", str(tmp_path / "outputs"))
 
     import transcriptx.database.database as db_module
+
     db_module._db_manager = None
 
     import transcriptx.core.utils.config as config_module
+
     config_module._config = None
 
 
-def test_pipeline_idempotent_cache_and_artifacts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_pipeline_idempotent_cache_and_artifacts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     _configure_env(monkeypatch, tmp_path)
     run_migrations()
 
@@ -64,7 +76,10 @@ def test_pipeline_idempotent_cache_and_artifacts(monkeypatch: pytest.MonkeyPatch
         assert artifact is not None
         assert artifact.module_run is not None
         assert artifact.module_run.pipeline_run is not None
-        assert artifact.module_run.pipeline_run.transcript_file_id == artifact.transcript_file_id
+        assert (
+            artifact.module_run.pipeline_run.transcript_file_id
+            == artifact.transcript_file_id
+        )
 
         artifact_path = Path(artifact.artifact_root) / artifact.relative_path
         assert artifact_path.exists()
@@ -72,7 +87,9 @@ def test_pipeline_idempotent_cache_and_artifacts(monkeypatch: pytest.MonkeyPatch
         session.close()
 
 
-def test_failed_module_creates_failed_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_failed_module_creates_failed_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     _configure_env(monkeypatch, tmp_path)
     run_migrations()
 
@@ -82,8 +99,10 @@ def test_failed_module_creates_failed_run(monkeypatch: pytest.MonkeyPatch, tmp_p
 
     def _fail_module(name: str) -> object:
         if name == "transcript_output":
+
             def _raise(*args, **kwargs) -> None:
                 raise RuntimeError("forced failure")
+
             return _raise
         return original_get_module_function(name)
 
@@ -99,12 +118,19 @@ def test_failed_module_creates_failed_run(monkeypatch: pytest.MonkeyPatch, tmp_p
     try:
         failed_run = (
             session.query(ModuleRun)
-            .filter(ModuleRun.module_name == "transcript_output", ModuleRun.status == "failed")
+            .filter(
+                ModuleRun.module_name == "transcript_output",
+                ModuleRun.status == "failed",
+            )
             .order_by(ModuleRun.created_at.desc())
             .first()
         )
         assert failed_run is not None
-        artifacts = session.query(ArtifactIndex).filter(ArtifactIndex.module_run_id == failed_run.id).all()
+        artifacts = (
+            session.query(ArtifactIndex)
+            .filter(ArtifactIndex.module_run_id == failed_run.id)
+            .all()
+        )
         assert artifacts == []
     finally:
         session.close()

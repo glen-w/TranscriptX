@@ -17,6 +17,7 @@ from transcriptx.core.viz.specs import (
     LineTimeSeriesSpec,
 )
 
+from transcriptx.core.analysis.topic_modeling.utils import _safe_numpy_array
 from transcriptx.core.utils.artifact_writer import write_text
 from transcriptx.core.utils.lazy_imports import (
     lazy_pyplot,
@@ -342,7 +343,12 @@ def create_discourse_analysis_charts(
 
 
 def create_enhanced_global_heatmaps(
-    lda_results, nmf_results, base_name, output_structure, html_imgs=None, output_service=None
+    lda_results,
+    nmf_results,
+    base_name,
+    output_structure,
+    html_imgs=None,
+    output_service=None,
 ):
     """
     Create enhanced global heatmaps with topic labels and coherence scores.
@@ -715,7 +721,9 @@ def create_topic_evolution_timeline(
             for topic in topic_counts.columns:
                 series.append(
                     {
-                        "name": format_topic_display(int(topic), label_map, max_label_len=30),
+                        "name": format_topic_display(
+                            int(topic), label_map, max_label_len=30
+                        ),
                         "x": list(topic_counts.index),
                         "y": topic_counts[topic].tolist(),
                     }
@@ -778,7 +786,9 @@ def create_speaker_topic_engagement_heatmap(
             )
             result = output_service.save_chart(spec, chart_type="heatmap")
             if result.get("static"):
-                print(f"[TOPICS] Created speaker-topic engagement heatmap: {result['static']}")
+                print(
+                    f"[TOPICS] Created speaker-topic engagement heatmap: {result['static']}"
+                )
             return result.get("static")
     except Exception as e:
         print(f"[ERROR] Exception in create_speaker_topic_engagement_heatmap: {e}")
@@ -802,9 +812,12 @@ def create_expected_topic_proportions_bar(
             .value_counts(normalize=True)
             .sort_values(ascending=False)
         )
-        label_map = _build_topic_label_map(lda_topics if isinstance(lda_topics, list) else None)
+        label_map = _build_topic_label_map(
+            lda_topics if isinstance(lda_topics, list) else None
+        )
         topic_labels = [
-            format_topic_display(int(i), label_map, max_label_len=28) for i in topic_props.index
+            format_topic_display(int(i), label_map, max_label_len=28)
+            for i in topic_props.index
         ]
         if output_service:
             spec = BarCategoricalSpec(

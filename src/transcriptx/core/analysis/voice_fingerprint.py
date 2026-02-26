@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import numpy as np
 
@@ -50,7 +50,9 @@ class VoiceFingerprintAnalysis(AnalysisModule):
             if locator.get("status") != "ok":
                 skipped_reason = locator.get("skipped_reason") or "no_voice_features"
                 payload = {"status": "skipped", "skipped_reason": skipped_reason}
-                output_service.save_data(payload, "voice_fingerprint_locator", format_type="json")
+                output_service.save_data(
+                    payload, "voice_fingerprint_locator", format_type="json"
+                )
                 log_analysis_complete(self.module_name, context.transcript_path)
                 return build_module_result(
                     module_name=self.module_name,
@@ -84,7 +86,9 @@ class VoiceFingerprintAnalysis(AnalysisModule):
                     continue
                 g = g.copy()
                 stats_energy = robust_stats(g["rms_db"].astype(float).to_numpy())
-                stats_pitch = robust_stats(g["f0_range_semitones"].astype(float).to_numpy())
+                stats_pitch = robust_stats(
+                    g["f0_range_semitones"].astype(float).to_numpy()
+                )
                 stats_rate = robust_stats(g["speech_rate_wps"].astype(float).to_numpy())
 
                 fingerprints[str(speaker)] = {
@@ -99,15 +103,31 @@ class VoiceFingerprintAnalysis(AnalysisModule):
 
                 # Drift score per segment (max abs robust z)
                 z_energy = g["rms_db"].apply(
-                    lambda x: abs(robust_z(x, median=stats_energy["median"], sigma=stats_energy["sigma"]))
+                    lambda x: abs(
+                        robust_z(
+                            x,
+                            median=stats_energy["median"],
+                            sigma=stats_energy["sigma"],
+                        )
+                    )
                 )
                 z_pitch = g["f0_range_semitones"].apply(
-                    lambda x: abs(robust_z(x, median=stats_pitch["median"], sigma=stats_pitch["sigma"]))
+                    lambda x: abs(
+                        robust_z(
+                            x, median=stats_pitch["median"], sigma=stats_pitch["sigma"]
+                        )
+                    )
                 )
                 z_rate = g["speech_rate_wps"].apply(
-                    lambda x: abs(robust_z(x, median=stats_rate["median"], sigma=stats_rate["sigma"]))
+                    lambda x: abs(
+                        robust_z(
+                            x, median=stats_rate["median"], sigma=stats_rate["sigma"]
+                        )
+                    )
                 )
-                drift_score = np.maximum.reduce([z_energy.to_numpy(), z_pitch.to_numpy(), z_rate.to_numpy()])
+                drift_score = np.maximum.reduce(
+                    [z_energy.to_numpy(), z_pitch.to_numpy(), z_rate.to_numpy()]
+                )
                 g = g.assign(drift_score=drift_score)
 
                 # Save per-speaker timeline chart (full series)
@@ -182,7 +202,11 @@ class VoiceFingerprintAnalysis(AnalysisModule):
                 artifacts=output_service.get_artifacts(),
                 metrics={"speakers": len(fingerprints)},
                 payload_type="analysis_results",
-                payload={"summary": summary, "fingerprints": fingerprints, "drift_moments": drift_moments},
+                payload={
+                    "summary": summary,
+                    "fingerprints": fingerprints,
+                    "drift_moments": drift_moments,
+                },
             )
         except Exception as exc:
             log_analysis_error(self.module_name, context.transcript_path, str(exc))
@@ -197,4 +221,3 @@ class VoiceFingerprintAnalysis(AnalysisModule):
                 payload={},
                 error=capture_exception(exc),
             )
-

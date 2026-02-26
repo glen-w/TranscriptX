@@ -258,7 +258,9 @@ def _apply_length_prior(
     weighted = []
     for segment, score in zip(segments, scores):
         wc = segment.word_count or _word_count(segment.text)
-        weight = _length_prior(wc, config.length_prior_center, config.length_prior_sigma)
+        weight = _length_prior(
+            wc, config.length_prior_center, config.length_prior_sigma
+        )
         weighted.append(score * weight)
     return weighted
 
@@ -279,8 +281,7 @@ def _compute_unique_scores(
     k = 1.0
 
     token_surprisals = [
-        -math.log((counts[token] + k) / (total + k * vocab))
-        for token in all_tokens
+        -math.log((counts[token] + k) / (total + k * vocab)) for token in all_tokens
     ]
     cap = _percentile(token_surprisals, 95.0)
 
@@ -353,7 +354,10 @@ def compute_speaker_exemplars(
             )
         )
 
-    if config.max_segments_considered and len(filtered) > config.max_segments_considered:
+    if (
+        config.max_segments_considered
+        and len(filtered) > config.max_segments_considered
+    ):
         filtered = filtered[: config.max_segments_considered]
 
     merged = _merge_adjacent(filtered, config)
@@ -404,13 +408,9 @@ def compute_speaker_exemplars(
         method_norm[method_name] = normalized
 
     available = {
-        name: scores
-        for name, scores in method_norm.items()
-        if scores is not None
+        name: scores for name, scores in method_norm.items() if scores is not None
     }
-    weight_sum = sum(
-        config.weights.get(name, 0.0) for name in available.keys()
-    )
+    weight_sum = sum(config.weights.get(name, 0.0) for name in available.keys())
     combined_scores = [0.0] * len(deduped)
     if available and weight_sum > 0:
         for method_name, method_scores in available.items():
@@ -439,7 +439,11 @@ def compute_speaker_exemplars(
         )
 
     combined_items.sort(
-        key=lambda item: (-item.combined_score, item.segment_index, str(item.segment_id))
+        key=lambda item: (
+            -item.combined_score,
+            item.segment_index,
+            str(item.segment_id),
+        )
     )
     combined_items = combined_items[: config.count]
 
@@ -463,7 +467,11 @@ def compute_speaker_exemplars(
                 )
             )
         items.sort(
-            key=lambda item: (-item.combined_score, item.segment_index, str(item.segment_id))
+            key=lambda item: (
+                -item.combined_score,
+                item.segment_index,
+                str(item.segment_id),
+            )
         )
         per_method[method_name] = items[: config.count]
 

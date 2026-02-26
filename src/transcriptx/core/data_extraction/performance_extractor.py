@@ -16,7 +16,9 @@ class PerformanceDataExtractor(BaseDataExtractor):
     def __init__(self):
         super().__init__("performance")
 
-    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+    def extract_data(
+        self, analysis_results: Dict[str, Any], speaker_id: str
+    ) -> Dict[str, Any]:
         try:
             speaker_id_int = int(speaker_id)
         except Exception:
@@ -77,7 +79,9 @@ class PerformanceDataExtractor(BaseDataExtractor):
             "strengths": strengths,
         }
 
-    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
+    def validate_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> bool:
         """Validate extracted performance data."""
         try:
             return validate_performance_data(data)
@@ -85,7 +89,9 @@ class PerformanceDataExtractor(BaseDataExtractor):
             self.logger.error(f"Performance data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
+    def transform_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> Dict[str, Any]:
         """Transform performance data for database storage."""
         return {
             "speaking_style": data.get("speaking_style"),

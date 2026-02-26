@@ -81,11 +81,76 @@ jobs:
           python -m venv .venv-build
           . .venv-build/bin/activate
           python -m pip install -U pip
-          pip install .
+          pip install -r requirements.txt
           pip install dist/*.whl
           python -c "import transcriptx; print(transcriptx.__version__)"
           transcriptx --help
           transcriptx analyze --help
+      - name: Run minimal analysis (install verification)
+        env:
+          TRANSCRIPTX_USE_EMOJIS: "0"
+          TRANSCRIPTX_DISABLE_DOWNLOADS: "1"
+        run: |
+          . .venv-build/bin/activate
+          transcriptx analyze -t tests/fixtures/mini_transcriptx.json --modules stats --skip-confirm
+
+  docker_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Docker buildx
+        run: docker buildx version || true
+
+      - name: Build transcriptx image
+        run: |
+          VERSION=$(grep -E '^version\s*=' pyproject.toml | sed -E 's/.*=\s*["\"]?([^"\"]+)["\"]?/\1/')
+          docker build \
+            --build-arg GIT_SHA=$(git rev-parse HEAD) \
+            --build-arg TRANSCRIPTX_VERSION="${VERSION}" \
+            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t transcriptx:smoke \
+            .
+
+      - name: Docker run smoke (minimal analysis)
+        env:
+          TRANSCRIPTX_USE_EMOJIS: "0"
+          TRANSCRIPTX_DISABLE_DOWNLOADS: "1"
+        run: |
+          docker run --rm \
+            -v "$PWD/tests/fixtures:/fixtures:ro" \
+            -e TRANSCRIPTX_USE_EMOJIS=0 \
+            -e TRANSCRIPTX_DISABLE_DOWNLOADS=1 \
+            transcriptx:smoke \
+            analyze -t /fixtures/mini_transcriptx.json --modules stats --skip-confirm
+
+  docker_compose_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build transcriptx image
+        run: docker build -t transcriptx:latest .
+
+      - name: Prepare data layout for compose
+        run: |
+          mkdir -p data/transcripts data/outputs
+          cp tests/fixtures/mini_transcriptx.json data/transcripts/
+
+      - name: Compose smoke (one service, one analyze)
+        env:
+          TRANSCRIPTX_USE_EMOJIS: "0"
+          TRANSCRIPTX_DISABLE_DOWNLOADS: "1"
+        run: |
+          docker compose run --rm \
+            -e TRANSCRIPTX_USE_EMOJIS=0 \
+            -e TRANSCRIPTX_DISABLE_DOWNLOADS=1 \
+            transcriptx \
+            analyze -t /data/transcripts/mini_transcriptx.json --modules stats --skip-confirm
 
   security_scan:
     runs-on: ubuntu-latest

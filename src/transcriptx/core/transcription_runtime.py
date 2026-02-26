@@ -4,6 +4,7 @@ Runtime interfaces and Docker-backed implementations for transcription.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,9 +17,17 @@ WHISPERX_CONTAINER_NAME = "transcriptx-whisperx"
 COMPOSE_FILE = "docker-compose.whisperx.yml"
 
 
+def _likely_inside_docker() -> bool:
+    """True if this process is likely running inside a Docker container."""
+    if Path("/.dockerenv").exists():
+        return True
+    if os.environ.get("TRANSCRIPTX_DATA_DIR") == "/data":
+        return True
+    return False
+
+
 class ContainerRuntime(Protocol):
-    def ensure_ready(self) -> bool:
-        ...
+    def ensure_ready(self) -> bool: ...
 
     def exec(
         self,
@@ -26,13 +35,80 @@ class ContainerRuntime(Protocol):
         *,
         timeout: Optional[int] = None,
         check: bool = False,
-    ) -> subprocess.CompletedProcess:
-        ...
+    ) -> subprocess.CompletedProcess: ...
 
     def copy_out(
         self, *, container_path: str, host_path: Path, timeout: Optional[int] = None
-    ) -> subprocess.CompletedProcess:
-        ...
+    ) -> subprocess.CompletedProcess: ...
+
+
+_DOCKER_SOCKET = Path("/var/run/docker.sock")
+_DOCKER_DOCS = "See docs/docker.md for setup and troubleshooting."
+
+
+def get_docker_whisperx_status() -> tuple[str, str]:
+    """
+    Determine why WhisperX is not available for user-facing messages.
+
+    Returns:
+        Tuple of (status, user_message). status is one of:
+        - "ready": WhisperX container is running.
+        - "docker_unavailable": Docker is not installed or not running.
+        - "container_not_running": Docker is available but WhisperX container is not running.
+    """
+    # Socket not mounted
+    if not _DOCKER_SOCKET.exists():
+        return (
+            "docker_unavailable",
+            "Docker socket not mounted. Mount it (e.g. -v /var/run/docker.sock:/var/run/docker.sock) "
+            f"and ensure your process can access it. {_DOCKER_DOCS}",
+        )
+    # Socket mounted but permission denied
+    if not os.access(str(_DOCKER_SOCKET), os.R_OK | os.W_OK):
+        return (
+            "docker_unavailable",
+            "Docker socket is mounted but permission denied (check access / run as root). "
+            f"{_DOCKER_DOCS}",
+        )
+    # Try docker info; distinguish CLI missing vs daemon unreachable
+    try:
+        subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+        )
+    except FileNotFoundError:
+        return (
+            "docker_unavailable",
+            "Docker CLI not installed or not in PATH.",
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return (
+            "docker_unavailable",
+            "Docker daemon unreachable or not running. "
+            f"{_DOCKER_DOCS}",
+        )
+    result = subprocess.run(
+        [
+            "docker",
+            "ps",
+            "--filter",
+            f"name={WHISPERX_CONTAINER_NAME}",
+            "--format",
+            "{{.Names}}",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if WHISPERX_CONTAINER_NAME not in (result.stdout or ""):
+        return (
+            "container_not_running",
+            "WhisperX container is not running. Start it with:\n  docker compose -f docker-compose.whisperx.yml --profile whisperx up -d whisperx",
+        )
+    return ("ready", "")
 
 
 def check_whisperx_compose_service() -> bool:
@@ -42,30 +118,8 @@ def check_whisperx_compose_service() -> bool:
     Returns:
         bool: True if the container is running, False otherwise
     """
-    try:
-        # Check if Docker is available
-        subprocess.run(
-            ["docker", "--version"], capture_output=True, text=True, check=True
-        )
-
-        # Check if the container is running
-        result = subprocess.run(
-            [
-                "docker",
-                "ps",
-                "--filter",
-                f"name={WHISPERX_CONTAINER_NAME}",
-                "--format",
-                "{{.Names}}",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        return WHISPERX_CONTAINER_NAME in result.stdout
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+    status, _ = get_docker_whisperx_status()
+    return status == "ready"
 
 
 def check_container_responsive() -> bool:
@@ -88,7 +142,11 @@ def check_container_responsive() -> bool:
             test_cmd, capture_output=True, text=True, timeout=5, check=False
         )
         return result.returncode == 0 and "ok" in result.stdout
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+    ):
         return False
 
 

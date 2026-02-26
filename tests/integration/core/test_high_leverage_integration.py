@@ -32,12 +32,18 @@ def test_pipeline_stats_module_produces_artifacts(tmp_path, monkeypatch) -> None
     monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
     monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(transcript_output_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(pipeline_module, "OUTPUTS_DIR", str(outputs_root))
 
-    fixture_path = Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
+    fixture_path = (
+        Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
+    )
     if not fixture_path.exists():
         pytest.skip("fixtures/mini_transcript.json not found")
 
@@ -58,7 +64,9 @@ def test_pipeline_stats_module_produces_artifacts(tmp_path, monkeypatch) -> None
 
 
 @pytest.mark.integration_core
-def test_pipeline_transcript_output_module_produces_files(tmp_path, monkeypatch) -> None:
+def test_pipeline_transcript_output_module_produces_files(
+    tmp_path, monkeypatch
+) -> None:
     """Run pipeline with 'transcript_output' on mini transcript; assert txt/csv outputs."""
     outputs_root = tmp_path / "outputs"
     transcripts_root = tmp_path / "transcripts"
@@ -69,12 +77,18 @@ def test_pipeline_transcript_output_module_produces_files(tmp_path, monkeypatch)
     monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
     monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(transcript_output_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(pipeline_module, "OUTPUTS_DIR", str(outputs_root))
 
-    fixture_path = Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
+    fixture_path = (
+        Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
+    )
     if not fixture_path.exists():
         pytest.skip("fixtures/mini_transcript.json not found")
 

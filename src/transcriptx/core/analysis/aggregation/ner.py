@@ -212,7 +212,9 @@ def aggregate_ner_group(
         )
         speaker_rows.append(row)
 
-    session_rows.sort(key=lambda row: (row.get("order_index", 0), row.get("entity", "")))
+    session_rows.sort(
+        key=lambda row: (row.get("order_index", 0), row.get("entity", ""))
+    )
     speaker_rows.sort(
         key=lambda row: (row.get("display_name", ""), row.get("entity", ""))
     )

@@ -45,7 +45,9 @@ def show_current_config(config):
     print(f"  • Batch size: {config.transcription.batch_size}")
     print(f"  • Diarization: {config.transcription.diarize}")
     print(f"  • Min speakers: {config.transcription.min_speakers}")
-    print(f"  • Max speakers: {config.transcription.max_speakers if config.transcription.max_speakers is not None else 'no limit'}")
+    print(
+        f"  • Max speakers: {config.transcription.max_speakers if config.transcription.max_speakers is not None else 'no limit'}"
+    )
     print("\n[bold]Output Settings:[/bold]")
     print(f"  • Output directory: {config.output.base_output_dir}")
     print(f"  • Create subdirectories: {config.output.create_subdirectories}")

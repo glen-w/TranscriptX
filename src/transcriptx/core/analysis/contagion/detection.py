@@ -25,9 +25,7 @@ def build_emotion_timeline(
         speaker_info = extract_speaker_info(seg)
         if speaker_info is None:
             continue
-        speaker = get_speaker_display_name(
-            speaker_info.grouping_key, [seg], segments
-        )
+        speaker = get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
         if not speaker or not is_named_speaker(speaker):
             continue
 
@@ -51,8 +49,10 @@ def build_emotion_timeline(
 
 
 def detect_contagion(
-    timeline: List[Tuple[str, str]]
-) -> Tuple[List[Dict[str, Any]], Dict[Tuple[str, str, str], int], Dict[str, Dict[str, int]]]:
+    timeline: List[Tuple[str, str]],
+) -> Tuple[
+    List[Dict[str, Any]], Dict[Tuple[str, str, str], int], Dict[str, Dict[str, int]]
+]:
     """Detect contagion events based on timeline."""
     contagion_events = []
     contagion_counts = Counter()

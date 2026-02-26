@@ -203,14 +203,18 @@ def load_processing_state(
                     if processed_files:
                         # Check if any key is not a UUID (old format)
                         all_keys = list(processed_files.keys())
-                        needs_migration = not all(_is_uuid_format(key) for key in all_keys)
+                        needs_migration = not all(
+                            _is_uuid_format(key) for key in all_keys
+                        )
 
                         if needs_migration:
                             logger.info(
                                 "Detected old format (path-based keys), migrating to UUID-based keys..."
                             )
                             try:
-                                migration_result = migrate_processing_state_to_uuid_keys()
+                                migration_result = (
+                                    migrate_processing_state_to_uuid_keys()
+                                )
                                 if migration_result.get("migrated"):
                                     logger.info(
                                         f"✅ Migration complete: {migration_result['entries_migrated']} entries migrated"
@@ -253,7 +257,9 @@ def load_processing_state(
     return {"processed_files": {}}
 
 
-def save_processing_state(state: Dict[str, Any], state_file: str | Path | None = None) -> None:
+def save_processing_state(
+    state: Dict[str, Any], state_file: str | Path | None = None
+) -> None:
     """
     Save processing state to JSON file with atomic write, automatic backup, and locking.
 
@@ -288,7 +294,7 @@ def save_processing_state(state: Dict[str, Any], state_file: str | Path | None =
 
                 # Atomic rename (this is atomic on most filesystems)
                 temp_file.replace(target_file)
-            except Exception as e:
+            except Exception:
                 # Clean up temp file on error
                 if temp_file.exists():
                     try:
@@ -582,7 +588,9 @@ def get_current_transcript_path_from_state(transcript_path: str) -> Optional[str
             if not isinstance(entry, dict):
                 continue
             if entry.get("transcript_path") == transcript_path:
-                return entry.get("current_transcript_path") or entry.get("transcript_path")
+                return entry.get("current_transcript_path") or entry.get(
+                    "transcript_path"
+                )
             if entry.get("current_transcript_path") == transcript_path:
                 return entry.get("current_transcript_path")
 

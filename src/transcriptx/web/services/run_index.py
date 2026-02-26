@@ -54,9 +54,7 @@ class RunIndex:
         return runs
 
     @staticmethod
-    def get_run_root(
-        scope: Any, run_id: str, subject_id: Optional[str] = None
-    ) -> Path:
+    def get_run_root(scope: Any, run_id: str, subject_id: Optional[str] = None) -> Path:
         if scope.scope_type == "transcript":
             if not subject_id:
                 raise ValueError("subject_id (slug) is required for transcript runs.")

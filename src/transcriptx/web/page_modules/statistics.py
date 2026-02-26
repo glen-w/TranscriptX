@@ -24,7 +24,9 @@ def render_statistics() -> None:
 
     sessions = list_available_sessions()
     if not sessions:
-        st.info("No transcript sessions found. Process transcripts to see statistics here.")
+        st.info(
+            "No transcript sessions found. Process transcripts to see statistics here."
+        )
         return
 
     stats = get_all_sessions_statistics()
@@ -56,13 +58,15 @@ def render_statistics() -> None:
 
     rows = []
     for s in sessions:
-        rows.append({
-            "Session": s.get("name", ""),
-            "Duration (min)": s.get("duration_minutes", 0),
-            "Words": s.get("word_count", 0),
-            "Segments": s.get("segment_count", 0),
-            "Speakers": s.get("speaker_count", 0),
-            "Completion %": s.get("analysis_completion", 0),
-        })
+        rows.append(
+            {
+                "Session": s.get("name", ""),
+                "Duration (min)": s.get("duration_minutes", 0),
+                "Words": s.get("word_count", 0),
+                "Segments": s.get("segment_count", 0),
+                "Speakers": s.get("speaker_count", 0),
+                "Completion %": s.get("analysis_completion", 0),
+            }
+        )
     df = pd.DataFrame(rows)
-    st.dataframe(df, width='stretch', hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)

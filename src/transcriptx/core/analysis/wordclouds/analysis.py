@@ -100,7 +100,9 @@ def _save_chart_speaker(fig, speaker, filename, dpi=300, chart_type=None):
     return result.get("static")
 
 
-def save_global_chart(fig, output_structure, base_name, filename, dpi=300, chart_type=None):
+def save_global_chart(
+    fig, output_structure, base_name, filename, dpi=300, chart_type=None
+):
     return _save_chart_global(fig, filename, dpi=dpi, chart_type=chart_type)
 
 
@@ -134,7 +136,9 @@ def _relative_to_transcript(path: str | Path) -> str:
         return str(path)
     path_obj = Path(path)
     try:
-        return path_obj.relative_to(Path(_ACTIVE_OUTPUT_SERVICE.transcript_dir)).as_posix()
+        return path_obj.relative_to(
+            Path(_ACTIVE_OUTPUT_SERVICE.transcript_dir)
+        ).as_posix()
     except ValueError:
         return path_obj.as_posix()
 
@@ -156,7 +160,9 @@ def _build_terms_payload(
         for idx, (term, value) in enumerate(sorted_items)
     ]
     run_id = _ACTIVE_OUTPUT_SERVICE.run_id if _ACTIVE_OUTPUT_SERVICE else None
-    transcript_key = _ACTIVE_OUTPUT_SERVICE.base_name if _ACTIVE_OUTPUT_SERVICE else None
+    transcript_key = (
+        _ACTIVE_OUTPUT_SERVICE.base_name if _ACTIVE_OUTPUT_SERVICE else None
+    )
     payload = WordcloudTerms(
         source="wordclouds",
         variant=variant,
@@ -658,13 +664,17 @@ def generate_bigram_wordclouds(
             ngram=2,
             metric="count",
         )
-        terms_path = _save_terms_json(payload, filename="wordcloud-bigrams", speaker=speaker)
+        terms_path = _save_terms_json(
+            payload, filename="wordcloud-bigrams", speaker=speaker
+        )
         _save_wordcloud_view(
             payload,
             title=f"{speaker} – Bigrams Only",
             filename="wordcloud-bigrams",
             speaker=speaker,
-            source_terms_path=_relative_to_transcript(terms_path) if terms_path else None,
+            source_terms_path=(
+                _relative_to_transcript(terms_path) if terms_path else None
+            ),
             thumbnail_path=_relative_to_transcript(chart_path) if chart_path else None,
         )
         save_freq_json_csv(freq, output_structure, f"{base_name}-bigrams", speaker)
@@ -683,9 +693,7 @@ def generate_tfidf_wordclouds(
         [
             s
             for s in grouped
-            if is_eligible_named_speaker(
-                s, _resolve_speaker_key(s), _get_ignored_ids()
-            )
+            if is_eligible_named_speaker(s, _resolve_speaker_key(s), _get_ignored_ids())
         ]
         if exclude
         else list(grouped.keys())
@@ -772,7 +780,9 @@ def generate_tfidf_wordclouds(
             title=f"{speaker} – TF-IDF Keywords",
             filename="tfidf",
             speaker=speaker,
-            source_terms_path=_relative_to_transcript(terms_path) if terms_path else None,
+            source_terms_path=(
+                _relative_to_transcript(terms_path) if terms_path else None
+            ),
             thumbnail_path=_relative_to_transcript(chart_path) if chart_path else None,
         )
 
@@ -913,13 +923,17 @@ def generate_bigram_tfidf_wordclouds(
             ngram=2,
             metric="tfidf",
         )
-        terms_path = _save_terms_json(payload, filename="tfidf-bigrams", speaker=speaker)
+        terms_path = _save_terms_json(
+            payload, filename="tfidf-bigrams", speaker=speaker
+        )
         _save_wordcloud_view(
             payload,
             title=f"{speaker} – TF-IDF Bigrams",
             filename="tfidf-bigrams",
             speaker=speaker,
-            source_terms_path=_relative_to_transcript(terms_path) if terms_path else None,
+            source_terms_path=(
+                _relative_to_transcript(terms_path) if terms_path else None
+            ),
             thumbnail_path=_relative_to_transcript(chart_path) if chart_path else None,
         )
 
@@ -1029,13 +1043,17 @@ def generate_tic_wordclouds(
             ngram=1,
             metric="count",
         )
-        terms_path = _save_terms_json(payload, filename="wordcloud-tics", speaker=speaker)
+        terms_path = _save_terms_json(
+            payload, filename="wordcloud-tics", speaker=speaker
+        )
         _save_wordcloud_view(
             payload,
             title=f"{speaker} – Verbal Tics",
             filename="wordcloud-tics",
             speaker=speaker,
-            source_terms_path=_relative_to_transcript(terms_path) if terms_path else None,
+            source_terms_path=(
+                _relative_to_transcript(terms_path) if terms_path else None
+            ),
             thumbnail_path=_relative_to_transcript(chart_path) if chart_path else None,
         )
 
@@ -1097,7 +1115,9 @@ def generate_pos_wordclouds(
             title=f"{speaker} – {pos_filter.title()}s",
             filename=f"wordcloud-{pos_filter}",
             speaker=speaker,
-            source_terms_path=_relative_to_transcript(terms_path) if terms_path else None,
+            source_terms_path=(
+                _relative_to_transcript(terms_path) if terms_path else None
+            ),
             thumbnail_path=_relative_to_transcript(chart_path) if chart_path else None,
         )
 
@@ -1116,7 +1136,9 @@ def run_group_wordclouds(
         logger.warning("[WORDCLOUDS] No grouped text for group wordclouds.")
         return
 
-    output_structure = create_standard_output_structure(str(group_base_dir), "wordclouds")
+    output_structure = create_standard_output_structure(
+        str(group_base_dir), "wordclouds"
+    )
     virtual_path = str(Path(group_base_dir) / f"{base_name}.virtual")
     output_service = create_output_service(
         virtual_path,
@@ -1130,7 +1152,9 @@ def run_group_wordclouds(
 
     grouped_joined: Dict[str, str] = {}
     for speaker, chunks in grouped.items():
-        cleaned = [_normalize_chunk(chunk) for chunk in chunks if chunk and chunk.strip()]
+        cleaned = [
+            _normalize_chunk(chunk) for chunk in chunks if chunk and chunk.strip()
+        ]
         if not cleaned:
             continue
         grouped_joined[speaker] = "\n".join(cleaned)
@@ -1151,7 +1175,9 @@ def run_group_wordclouds(
                 title=f"{speaker}",
             )
             if freq:
-                save_freq_json_csv(freq, output_structure, f"{base_name}-basic", speaker)
+                save_freq_json_csv(
+                    freq, output_structure, f"{base_name}-basic", speaker
+                )
 
         all_text = "\n".join(grouped_joined.values())
         if all_text.strip():
@@ -1358,12 +1384,12 @@ def run_all_wordclouds(
                     title="All Speakers – Bigrams Only",
                     filename="wordcloud-bigrams-ALL",
                     speaker=None,
-                    source_terms_path=_relative_to_transcript(terms_path)
-                    if terms_path
-                    else None,
-                    thumbnail_path=_relative_to_transcript(chart_path)
-                    if chart_path
-                    else None,
+                    source_terms_path=(
+                        _relative_to_transcript(terms_path) if terms_path else None
+                    ),
+                    thumbnail_path=(
+                        _relative_to_transcript(chart_path) if chart_path else None
+                    ),
                 )
     except Exception as e:
         logger.error(
@@ -1458,12 +1484,12 @@ def run_all_wordclouds(
                     title=f"All Speakers – {pos_filter.title()}s",
                     filename=f"wordcloud-{pos_filter}-ALL",
                     speaker=None,
-                    source_terms_path=_relative_to_transcript(terms_path)
-                    if terms_path
-                    else None,
-                    thumbnail_path=_relative_to_transcript(chart_path)
-                    if chart_path
-                    else None,
+                    source_terms_path=(
+                        _relative_to_transcript(terms_path) if terms_path else None
+                    ),
+                    thumbnail_path=(
+                        _relative_to_transcript(chart_path) if chart_path else None
+                    ),
                 )
         except Exception as e:
             logger.error(

@@ -4,7 +4,6 @@ Lightweight fuzz tests for transcript invariants.
 
 import json
 import random
-from pathlib import Path
 
 import pytest
 

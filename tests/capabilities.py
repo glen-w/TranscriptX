@@ -24,11 +24,6 @@ def has_ffmpeg() -> bool:
     return shutil.which("ffprobe") is not None or shutil.which("ffmpeg") is not None
 
 
-def has_convokit() -> bool:
-    """Check if convokit tests are enabled."""
-    return os.getenv("TRANSCRIPTX_TEST_MODELS") == "1"
-
-
 def has_package(module_name: str) -> bool:
     """Check if a Python package can be imported."""
     try:
@@ -52,7 +47,6 @@ def get_optional_packages() -> Dict[str, bool]:
         "folium": has_package("folium"),
         "geopy": has_package("geopy"),
         "playwright": has_package("playwright"),
-        "convokit": has_package("convokit"),
         "torch": has_package("torch"),
         "transformers": has_package("transformers"),
         "spacy": has_package("spacy"),
@@ -67,7 +61,6 @@ def get_capabilities_snapshot() -> Dict[str, Any]:
             "has_models": has_models(),
             "has_docker": has_docker(),
             "has_ffmpeg": has_ffmpeg(),
-            "has_convokit": has_convokit(),
         },
         "packages": get_optional_packages(),
         "environment": {

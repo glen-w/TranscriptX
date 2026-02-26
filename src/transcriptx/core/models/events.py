@@ -78,7 +78,9 @@ def generate_event_id(
     """
     idx_str = f"{segment_start_idx if segment_start_idx is not None else 'none'}-{segment_end_idx if segment_end_idx is not None else 'none'}"
     if include_time:
-        time_str = f"{round(time_start, time_precision)}-{round(time_end, time_precision)}"
+        time_str = (
+            f"{round(time_start, time_precision)}-{round(time_end, time_precision)}"
+        )
         fingerprint = f"{transcript_hash}:{kind}:{idx_str}:{time_str}"
     else:
         fingerprint = f"{transcript_hash}:{kind}:{idx_str}"

@@ -15,10 +15,12 @@ OLD_RECORDINGS_DIR = PROJECT_ROOT / "data" / "outputs" / "recordings"
 NEW_RECORDINGS_DIR = PROJECT_ROOT / "data" / "recordings"
 
 
-def move_with_conflict_handling(src: Path, dst: Path, overwrite: bool, dry_run: bool) -> None:
+def move_with_conflict_handling(
+    src: Path, dst: Path, overwrite: bool, dry_run: bool
+) -> None:
     """
     Move file with conflict handling.
-    
+
     Args:
         src: Source file path
         dst: Destination file path
@@ -27,7 +29,7 @@ def move_with_conflict_handling(src: Path, dst: Path, overwrite: bool, dry_run: 
     """
     dst.parent.mkdir(parents=True, exist_ok=True)
     final_dst = dst
-    
+
     if dst.exists() and not overwrite:
         stem = dst.stem
         suffix = dst.suffix
@@ -38,11 +40,11 @@ def move_with_conflict_handling(src: Path, dst: Path, overwrite: bool, dry_run: 
                 final_dst = candidate
                 break
             i += 1
-    
+
     if dry_run:
         print(f"DRY-RUN: {src} -> {final_dst}")
         return
-    
+
     shutil.move(str(src), str(final_dst))
     print(f"Moved: {src} -> {final_dst}")
 
@@ -50,7 +52,7 @@ def move_with_conflict_handling(src: Path, dst: Path, overwrite: bool, dry_run: 
 def migrate_mp3_files(overwrite: bool = False, dry_run: bool = False) -> None:
     """
     Migrate all MP3 files from data/outputs/recordings/ to data/recordings/.
-    
+
     Args:
         overwrite: If True, overwrite existing destination files
         dry_run: If True, only print what would be done without moving files
@@ -58,38 +60,38 @@ def migrate_mp3_files(overwrite: bool = False, dry_run: bool = False) -> None:
     if not OLD_RECORDINGS_DIR.exists():
         print(f"Old recordings directory does not exist: {OLD_RECORDINGS_DIR}")
         return
-    
+
     # Ensure target directory exists
     NEW_RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     migrated_count = 0
     skipped_count = 0
-    
+
     # Find all MP3 files in the old directory
     mp3_files = list(OLD_RECORDINGS_DIR.glob("*.mp3"))
-    
+
     if not mp3_files:
         print(f"No MP3 files found in {OLD_RECORDINGS_DIR}")
         return
-    
+
     for mp3_file in sorted(mp3_files):
         if not mp3_file.is_file():
             continue
-        
+
         target_file = NEW_RECORDINGS_DIR / mp3_file.name
-        
+
         if target_file.exists() and not overwrite:
             print(f"SKIP: {mp3_file} (target exists: {target_file})")
             skipped_count += 1
             continue
-        
+
         move_with_conflict_handling(mp3_file, target_file, overwrite, dry_run)
         migrated_count += 1
-    
-    print(f"\nMigration complete:")
+
+    print("\nMigration complete:")
     print(f"  Migrated: {migrated_count}")
     print(f"  Skipped: {skipped_count}")
-    
+
     # If all files were migrated and directory is empty, optionally remove it
     if not dry_run and migrated_count > 0:
         remaining_files = list(OLD_RECORDINGS_DIR.glob("*"))
@@ -106,20 +108,15 @@ def main() -> None:
         description="Migrate MP3 files from data/outputs/recordings/ to data/recordings/"
     )
     parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Overwrite existing destination files"
+        "--overwrite", action="store_true", help="Overwrite existing destination files"
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print actions without moving files"
+        "--dry-run", action="store_true", help="Print actions without moving files"
     )
     args = parser.parse_args()
-    
+
     migrate_mp3_files(overwrite=args.overwrite, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
     main()
-

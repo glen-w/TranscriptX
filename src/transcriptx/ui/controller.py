@@ -36,7 +36,9 @@ def list_recordings() -> list[tuple[str, str]]:
     return entries
 
 
-def _resolve_input_path(uploaded_file, selected_path: str | None) -> tuple[Path, list[str]]:
+def _resolve_input_path(
+    uploaded_file, selected_path: str | None
+) -> tuple[Path, list[str]]:
     warnings: list[str] = []
     if uploaded_file is not None:
         saved_path, warnings = save_uploaded_file(uploaded_file)

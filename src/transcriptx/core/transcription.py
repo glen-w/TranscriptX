@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Protocol, Tuple
+from typing import Optional, Protocol, Tuple
 from uuid import uuid4
 
 from transcriptx.core.utils.paths import RECORDINGS_DIR, DIARISED_TRANSCRIPTS_DIR
@@ -36,7 +36,6 @@ from transcriptx.core.transcription_runtime import (
     WHISPERX_CONTAINER_NAME,
     check_container_responsive,
     check_whisperx_compose_service,
-    start_whisperx_compose_service,
 )
 from transcriptx.core.transcription_diagnostics import (
     check_model_loading_error,
@@ -84,8 +83,7 @@ class WhisperXRunSpec:
 
 
 class AudioMetadataProbe(Protocol):
-    def duration_seconds(self, audio_path: Path) -> Optional[float]:
-        ...
+    def duration_seconds(self, audio_path: Path) -> Optional[float]: ...
 
 
 def _log_transcription_error(
@@ -158,6 +156,7 @@ def _build_whisperx_run_spec(
     audio_file_path: Path, config=None, *, device: str = "cpu"
 ) -> WhisperXRunSpec:
     audio_file_name = audio_file_path.name
+
     def _coerce_int(value: object, default: int) -> int:
         if isinstance(value, int) and not isinstance(value, bool):
             return value
@@ -196,7 +195,9 @@ def _build_whisperx_run_spec(
             getattr(config.transcription, "model_download_policy", "anonymous")
             or "anonymous"
         )
-        hf_token = getattr(config.transcription, "huggingface_token", "") or ""
+        from transcriptx.core.utils.hf_token import resolve_hf_token
+
+        hf_token = resolve_hf_token(config)
         min_speakers = _coerce_int(getattr(config.transcription, "min_speakers", 1), 1)
         max_speakers = _coerce_optional_int(
             getattr(config.transcription, "max_speakers", None), None
@@ -211,9 +212,11 @@ def _build_whisperx_run_spec(
         min_speakers = 1
         max_speakers = None
 
-    # Backstop: accept env vars even if config didn't pick them up.
+    # Backstop: unified token resolution (config, env, *_FILE).
     if not hf_token:
-        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+        from transcriptx.core.utils.hf_token import resolve_hf_token
+
+        hf_token = resolve_hf_token(config)
 
     # Normalize speaker bounds (defensive; WhisperX expects min <= max when max is set).
     if min_speakers < 1:
@@ -469,7 +472,9 @@ def run_whisperx_compose(
             file_size_mb = target_audio_path.stat().st_size / (1024 * 1024)
             if audio_probe is not None:
                 try:
-                    audio_duration_seconds = audio_probe.duration_seconds(target_audio_path)
+                    audio_duration_seconds = audio_probe.duration_seconds(
+                        target_audio_path
+                    )
                 except Exception:
                     audio_duration_seconds = None
     except Exception:
@@ -582,11 +587,15 @@ def run_whisperx_compose(
                 if result.stdout:
                     logger.info(f"WhisperX stdout (retry --no_align): {result.stdout}")
                 if result.stderr:
-                    logger.warning(f"WhisperX stderr (retry --no_align): {result.stderr}")
+                    logger.warning(
+                        f"WhisperX stderr (retry --no_align): {result.stderr}"
+                    )
 
             if result.returncode != 0:
                 # Check for model loading errors specifically
-                is_model_error, error_type = check_model_loading_error(result.stderr or "")
+                is_model_error, error_type = check_model_loading_error(
+                    result.stderr or ""
+                )
 
                 if is_model_error and error_type:
                     # Provide detailed diagnostics for model errors
@@ -653,8 +662,8 @@ def run_whisperx_compose(
             find_temp = runtime.exec(find_temp_cmd, timeout=30, check=False)
         except subprocess.TimeoutExpired:
             logger.warning(
-                f"Find command timed out. Container may be unresponsive. "
-                f"Trying alternative method to locate transcript files."
+                "Find command timed out. Container may be unresponsive. "
+                "Trying alternative method to locate transcript files."
             )
             # Try a simpler ls command as fallback
             ls_temp_cmd = [
@@ -744,7 +753,7 @@ def run_whisperx_compose(
                     )
                 except subprocess.TimeoutExpired:
                     logger.error(
-                        f"Copy command timed out. File may be too large or container unresponsive."
+                        "Copy command timed out. File may be too large or container unresponsive."
                     )
                     copy_result = subprocess.CompletedProcess(
                         ["docker", "cp", matching_temp_file, str(host_target_file)],

@@ -49,7 +49,9 @@ def test_group_resolve_by_uuid_key_and_name(db_session):
         transcript_file_ids_ordered=[transcript.id],
     )
 
-    with patch("transcriptx.core.services.group_service.get_session", return_value=db_session):
+    with patch(
+        "transcriptx.core.services.group_service.get_session", return_value=db_session
+    ):
         assert GroupService.resolve_group_identifier(group.uuid).uuid == group.uuid
         assert GroupService.resolve_group_identifier(group.key).uuid == group.uuid
         assert GroupService.resolve_group_identifier("ResolveTest").uuid == group.uuid
@@ -68,8 +70,10 @@ def test_group_resolve_ambiguous_name():
         key="grp_v1_" + "b" * 64,
         transcript_file_uuids=["bbb"],
     )
-    with patch("transcriptx.core.services.group_service.get_session") as mock_session, \
-         patch("transcriptx.core.services.group_service.GroupRepository") as mock_repo:
+    with (
+        patch("transcriptx.core.services.group_service.get_session") as mock_session,
+        patch("transcriptx.core.services.group_service.GroupRepository") as mock_repo,
+    ):
         mock_repo.return_value.get_by_uuid.return_value = None
         mock_repo.return_value.get_by_key.return_value = None
         mock_repo.return_value.list_by_name.return_value = [group_one, group_two]

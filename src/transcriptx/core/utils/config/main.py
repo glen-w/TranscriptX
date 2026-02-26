@@ -6,13 +6,31 @@ from typing import Any, Callable, Optional
 from pathlib import Path
 import json
 import os
+
 try:
     from dotenv import load_dotenv as _load_dotenv
 except Exception:  # pragma: no cover - optional dependency guard
     _load_dotenv = None
 
 load_dotenv: Optional[Callable[..., bool]] = _load_dotenv
+from pathlib import Path as _Path
 from .analysis import AnalysisConfig
+
+
+def get_install_profile() -> Optional[str]:
+    """Return install profile from marker file: 'core', 'full', or None if absent. Used for core_mode resolution."""
+    config_dir = os.environ.get("TRANSCRIPTX_CONFIG_DIR")
+    if not config_dir:
+        config_dir = os.path.join(os.path.expanduser("~"), ".config", "transcriptx")
+    path = _Path(config_dir) / "install_profile"
+    if path.exists():
+        try:
+            return path.read_text(encoding="utf-8").strip() or None
+        except Exception:
+            return None
+    return None
+
+
 from .workflow import (
     WorkflowConfig,
     TranscriptionConfig,
@@ -76,6 +94,12 @@ class TranscriptXConfig:
         self.mode = "simple"  # 'simple' or 'advanced' - controls UI complexity
         self.use_emojis = True  # Enable/disable emojis globally in output
 
+        # Core mode: if True, only core modules and no auto-install of optional deps. Resolve: CLI > env > config file > install marker.
+        self.core_mode: bool = True
+        profile = get_install_profile()
+        if profile == "full":
+            self.core_mode = False
+
         # Active workflow profile
         self.active_workflow_profile: str = "default"
 
@@ -113,7 +137,14 @@ class TranscriptXConfig:
         - TRANSCRIPTX_OUTPUT_DIR: Base output directory
         - TRANSCRIPTX_LOG_LEVEL: Logging level
         - TRANSCRIPTX_USE_EMOJIS: Enable/disable emojis (1/true/yes/on or 0/false/no/off)
+        - TRANSCRIPTX_CORE: Core mode (1/true/yes/on = core mode on, 0/false/no/off = off)
         """
+
+        # Core mode from environment (overrides config file and install marker)
+        core_env = os.getenv("TRANSCRIPTX_CORE")
+        if core_env is not None:
+            v = str(core_env).strip().lower()
+            self.core_mode = v in ("1", "true", "yes", "on")
 
         # Analysis configuration from environment
         if os.getenv("TRANSCRIPTX_SENTIMENT_WINDOW_SIZE"):
@@ -169,7 +200,9 @@ class TranscriptXConfig:
                 else:
                     self.transcription.language = language
 
-        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
+        from transcriptx.core.utils.hf_token import resolve_hf_token
+
+        hf_token = resolve_hf_token(self)
         if hf_token:
             self.transcription.huggingface_token = hf_token
 
@@ -402,7 +435,11 @@ class TranscriptXConfig:
             with open(config_file) as f:
                 config_data = json.load(f)
             # Support project config format: {"schema_version": N, "config": {...}}
-            if isinstance(config_data, dict) and "config" in config_data and "schema_version" in config_data:
+            if (
+                isinstance(config_data, dict)
+                and "config" in config_data
+                and "schema_version" in config_data
+            ):
                 config_data = config_data["config"]
 
             # Update analysis configuration section
@@ -532,7 +569,9 @@ class TranscriptXConfig:
                 for key, value in config_data["workflow"].items():
                     if key == "speaker_gate" and isinstance(value, dict):
                         if hasattr(self.workflow, "speaker_gate"):
-                            self._apply_profile_to_config(self.workflow.speaker_gate, value)
+                            self._apply_profile_to_config(
+                                self.workflow.speaker_gate, value
+                            )
                     elif hasattr(self.workflow, key):
                         self._apply_profile_to_config(self.workflow, {key: value})
 
@@ -549,6 +588,10 @@ class TranscriptXConfig:
             # Update global emoji configuration
             if "use_emojis" in config_data:
                 self.use_emojis = bool(config_data["use_emojis"])
+
+            # Update core_mode (config file overrides install marker)
+            if "core_mode" in config_data:
+                self.core_mode = bool(config_data["core_mode"])
 
             if dashboard_migrated:
                 try:
@@ -773,6 +816,12 @@ class TranscriptXConfig:
                 "file_selection_mode": getattr(
                     self.input, "file_selection_mode", "prompt"
                 ),
+                "playback_skip_seconds_short": getattr(
+                    self.input, "playback_skip_seconds_short", 10.0
+                ),
+                "playback_skip_seconds_long": getattr(
+                    self.input, "playback_skip_seconds_long", 60.0
+                ),
             },
             "output": {
                 "base_output_dir": self.output.base_output_dir,
@@ -817,7 +866,8 @@ class TranscriptXConfig:
             "group_analysis": self._config_to_dict(self.group_analysis),
             "dashboard": self._config_to_dict(self.dashboard),
             "active_workflow_profile": self.active_workflow_profile,
-            "use_emojis": self.use_emojis,  # New: save emoji config
+            "use_emojis": self.use_emojis,
+            "core_mode": self.core_mode,
         }
 
     def save_to_file(self, config_file: str):

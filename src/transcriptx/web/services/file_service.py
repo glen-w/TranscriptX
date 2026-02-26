@@ -75,8 +75,7 @@ class FileService:
 
         for candidate in [
             Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",
-            Path(DIARISED_TRANSCRIPTS_DIR)
-            / f"{session_name}_transcript_diarised.json",
+            Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}_transcript_diarised.json",
         ]:
             if candidate.exists():
                 return candidate
@@ -101,7 +100,9 @@ class FileService:
         except Exception:
             return None
 
-        sessions_list = sessions if sessions is not None else FileService.list_available_sessions()
+        sessions_list = (
+            sessions if sessions is not None else FileService.list_available_sessions()
+        )
         for session_info in sessions_list:
             session_name = session_info.get("name", "")
             if "/" not in session_name:

@@ -49,7 +49,9 @@ def settings_menu_loop(
     mark_dirty = mark_dirty or (lambda: None)
 
     while True:
-        dirty_suffix = " (unsaved changes)" if (dirty_tracker and dirty_tracker()) else ""
+        dirty_suffix = (
+            " (unsaved changes)" if (dirty_tracker and dirty_tracker()) else ""
+        )
         menu_title = f"{title}{dirty_suffix}"
         choices = [
             questionary.Choice(title=item.display_title(), value=item.key)
@@ -153,7 +155,9 @@ def create_float_editor(
     return editor
 
 
-def create_bool_editor(hint: Optional[str] = None) -> Callable[[SettingItem], Optional[Any]]:
+def create_bool_editor(
+    hint: Optional[str] = None,
+) -> Callable[[SettingItem], Optional[Any]]:
     def editor(item: SettingItem) -> Optional[Any]:
         if hint:
             rich_print(f"[dim]{hint}[/dim]")
@@ -219,7 +223,9 @@ def create_choice_editor(
             questionary.Choice(title=str(choice), value=choice) for choice in choices
         ]
         if allow_none:
-            selection_choices.insert(0, questionary.Choice(title="—", value=NONE_SENTINEL))
+            selection_choices.insert(
+                0, questionary.Choice(title="—", value=NONE_SENTINEL)
+            )
         current_value = item.getter()
         if allow_none and current_value is None:
             default_value = NONE_SENTINEL
@@ -260,7 +266,7 @@ def create_multiselect_editor(
         current_values = item.getter() or []
         # Get all valid choice values as a set for fast lookup
         choice_value_set = {choice.value for choice in selection_choices}
-        
+
         # Create a mapping for normalized comparison (handles type mismatches)
         # Map both the original value and string representation to the original value
         choice_value_map: dict[str, Any] = {}
@@ -269,7 +275,7 @@ def create_multiselect_editor(
             choice_value_map[str(v).strip()] = v
             if v is not None:
                 choice_value_map[str(v).lower()] = v
-        
+
         # Filter current values to only include those that exactly match choice values
         # Try exact match first, then normalized match for type flexibility
         valid_defaults: list[Any] = []
@@ -285,16 +291,16 @@ def create_multiselect_editor(
                 if normalized and normalized in choice_value_map:
                     # Use the original choice value to ensure type consistency
                     matched_value = choice_value_map[normalized]
-            
+
             # Only add if we found a match and haven't seen it before
             if matched_value is not None and matched_value not in seen_values:
                 valid_defaults.append(matched_value)
                 seen_values.add(matched_value)
-        
+
         # questionary.checkbox doesn't accept empty list as default - use None instead
         # Also ensure we only pass values that are in the choice set
         default_value: list[Any] | None = valid_defaults if valid_defaults else None
-        
+
         try:
             selected = questionary.checkbox(
                 f"Select {item.label.lower()}",

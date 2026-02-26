@@ -345,7 +345,7 @@ def rename_profile_interactive(module_name: str):
         if profile_manager.rename_profile(module_name, old_name, new_name):
             print(f"[green]✓ Renamed profile '{old_name}' to '{new_name}'[/green]")
         else:
-            print(f"[red]✗ Failed to rename profile[/red]")
+            print("[red]✗ Failed to rename profile[/red]")
 
 
 def export_profile_interactive(module_name: str):
@@ -374,7 +374,7 @@ def export_profile_interactive(module_name: str):
         if profile_manager.export_profile(module_name, selected, export_path_obj):
             print(f"[green]✓ Exported profile to: {export_path}[/green]")
         else:
-            print(f"[red]✗ Failed to export profile[/red]")
+            print("[red]✗ Failed to export profile[/red]")
 
 
 def import_profile_interactive(module_name: str):
@@ -417,7 +417,7 @@ def import_profile_interactive(module_name: str):
     ):
         print(f"[green]✓ Imported profile: {profile_name}[/green]")
     else:
-        print(f"[red]✗ Failed to import profile[/red]")
+        print("[red]✗ Failed to import profile[/red]")
 
 
 # Helper functions

@@ -20,18 +20,33 @@ def _mock_canonical():
 
 
 def test_run_analysis_pipeline_does_not_init_db_by_default(temp_transcript_file):
-    with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-         patch("transcriptx.core.pipeline.pipeline.validate_transcript"), \
-         patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary", return_value={"summary": "ok"}), \
-         patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"), \
-         patch("transcriptx.core.pipeline.pipeline.save_run_report"), \
-         patch("transcriptx.core.pipeline.pipeline.save_run_manifest"), \
-         patch("transcriptx.core.pipeline.pipeline.create_run_manifest"), \
-         patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical, \
-         patch("transcriptx.database.pipeline_run_service.PipelineRunCoordinator") as mock_coordinator:
+    with (
+        patch(
+            "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+        ) as mock_create_dag,
+        patch("transcriptx.core.pipeline.pipeline.validate_transcript"),
+        patch(
+            "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary",
+            return_value={"summary": "ok"},
+        ),
+        patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"),
+        patch("transcriptx.core.pipeline.pipeline.save_run_report"),
+        patch("transcriptx.core.pipeline.pipeline.save_run_manifest"),
+        patch("transcriptx.core.pipeline.pipeline.create_run_manifest"),
+        patch(
+            "transcriptx.io.transcript_loader.load_canonical_transcript"
+        ) as mock_load_canonical,
+        patch(
+            "transcriptx.database.pipeline_run_service.PipelineRunCoordinator"
+        ) as mock_coordinator,
+    ):
 
         mock_pipeline = MagicMock()
-        mock_pipeline.execute_pipeline.return_value = {"modules_run": [], "errors": [], "execution_order": []}
+        mock_pipeline.execute_pipeline.return_value = {
+            "modules_run": [],
+            "errors": [],
+            "execution_order": [],
+        }
         mock_create_dag.return_value = mock_pipeline
         mock_load_canonical.return_value = _mock_canonical()
 
@@ -44,18 +59,33 @@ def test_run_analysis_pipeline_does_not_init_db_by_default(temp_transcript_file)
 
 
 def test_run_analysis_pipeline_inits_db_with_persist(temp_transcript_file):
-    with patch("transcriptx.core.pipeline.pipeline.create_dag_pipeline") as mock_create_dag, \
-         patch("transcriptx.core.pipeline.pipeline.validate_transcript"), \
-         patch("transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary", return_value={"summary": "ok"}), \
-         patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"), \
-         patch("transcriptx.core.pipeline.pipeline.save_run_report"), \
-         patch("transcriptx.core.pipeline.pipeline.save_run_manifest"), \
-         patch("transcriptx.core.pipeline.pipeline.create_run_manifest"), \
-         patch("transcriptx.io.transcript_loader.load_canonical_transcript") as mock_load_canonical, \
-         patch("transcriptx.database.pipeline_run_service.PipelineRunCoordinator") as mock_coordinator:
+    with (
+        patch(
+            "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
+        ) as mock_create_dag,
+        patch("transcriptx.core.pipeline.pipeline.validate_transcript"),
+        patch(
+            "transcriptx.core.pipeline.pipeline.generate_comprehensive_output_summary",
+            return_value={"summary": "ok"},
+        ),
+        patch("transcriptx.core.pipeline.pipeline.display_output_summary_to_user"),
+        patch("transcriptx.core.pipeline.pipeline.save_run_report"),
+        patch("transcriptx.core.pipeline.pipeline.save_run_manifest"),
+        patch("transcriptx.core.pipeline.pipeline.create_run_manifest"),
+        patch(
+            "transcriptx.io.transcript_loader.load_canonical_transcript"
+        ) as mock_load_canonical,
+        patch(
+            "transcriptx.database.pipeline_run_service.PipelineRunCoordinator"
+        ) as mock_coordinator,
+    ):
 
         mock_pipeline = MagicMock()
-        mock_pipeline.execute_pipeline.return_value = {"modules_run": [], "errors": [], "execution_order": []}
+        mock_pipeline.execute_pipeline.return_value = {
+            "modules_run": [],
+            "errors": [],
+            "execution_order": [],
+        }
         mock_create_dag.return_value = mock_pipeline
         mock_load_canonical.return_value = _mock_canonical()
         mock_coordinator.return_value = MagicMock()
@@ -119,16 +149,46 @@ def test_group_run_writes_manifest(db_session):
         transcript_file_ids_ordered=[transcript_one.id, transcript_two.id],
     )
 
-    with patch("transcriptx.core.pipeline.pipeline._run_single_analysis_pipeline") as mock_single, \
-         patch("transcriptx.core.pipeline.pipeline.get_config", return_value=_mock_group_config()), \
-         patch("transcriptx.core.pipeline.speaker_normalizer.normalize_speakers_across_transcripts", return_value=_mock_canonical_map()), \
-         patch("transcriptx.core.analysis.stats.aggregation.aggregate_stats_group", return_value={}), \
-         patch("transcriptx.core.analysis.aggregation.sentiment.aggregate_sentiment_group", return_value=None), \
-         patch("transcriptx.core.analysis.aggregation.emotion.aggregate_emotion_group", return_value=None), \
-         patch("transcriptx.core.analysis.aggregation.interactions.aggregate_interactions_group", return_value=None), \
-         patch("transcriptx.core.output.group_output_service.GroupOutputService") as mock_output_service, \
-         patch("transcriptx.core.pipeline.target_resolver.get_session", return_value=db_session), \
-         patch("transcriptx.core.services.group_service.get_session", return_value=db_session):
+    with (
+        patch(
+            "transcriptx.core.pipeline.pipeline._run_single_analysis_pipeline"
+        ) as mock_single,
+        patch(
+            "transcriptx.core.pipeline.pipeline.get_config",
+            return_value=_mock_group_config(),
+        ),
+        patch(
+            "transcriptx.core.pipeline.speaker_normalizer.normalize_speakers_across_transcripts",
+            return_value=_mock_canonical_map(),
+        ),
+        patch(
+            "transcriptx.core.analysis.stats.aggregation.aggregate_stats_group",
+            return_value={},
+        ),
+        patch(
+            "transcriptx.core.analysis.aggregation.sentiment.aggregate_sentiment_group",
+            return_value=None,
+        ),
+        patch(
+            "transcriptx.core.analysis.aggregation.emotion.aggregate_emotion_group",
+            return_value=None,
+        ),
+        patch(
+            "transcriptx.core.analysis.aggregation.interactions.aggregate_interactions_group",
+            return_value=None,
+        ),
+        patch(
+            "transcriptx.core.output.group_output_service.GroupOutputService"
+        ) as mock_output_service,
+        patch(
+            "transcriptx.core.pipeline.target_resolver.get_session",
+            return_value=db_session,
+        ),
+        patch(
+            "transcriptx.core.services.group_service.get_session",
+            return_value=db_session,
+        ),
+    ):
 
         mock_single.side_effect = [
             _mock_group_pipeline_result(1),

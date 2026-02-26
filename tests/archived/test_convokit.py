@@ -132,6 +132,4 @@ class TestConvoKitAnalysis:
 
         assert result["status"] == "success"
         assert result["payload"]["skipped"] is True
-        assert any(
-            os.path.exists(artifact["path"]) for artifact in result["artifacts"]
-        )
+        assert any(os.path.exists(artifact["path"]) for artifact in result["artifacts"])

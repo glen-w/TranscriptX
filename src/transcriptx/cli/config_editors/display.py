@@ -66,9 +66,7 @@ def show_current_config(config):
     print(strip_emojis(msg) if not config.use_emojis else msg)
     msg = f"  • Persist groups: {config.group_analysis.persist_groups}"
     print(strip_emojis(msg) if not config.use_emojis else msg)
-    msg = (
-        f"  • Stats aggregation: {config.group_analysis.enable_stats_aggregation}"
-    )
+    msg = f"  • Stats aggregation: {config.group_analysis.enable_stats_aggregation}"
     print(strip_emojis(msg) if not config.use_emojis else msg)
     msg = f"  • Scaffold by_session: {config.group_analysis.scaffold_by_session}"
     print(strip_emojis(msg) if not config.use_emojis else msg)

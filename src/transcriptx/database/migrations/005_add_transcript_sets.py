@@ -22,9 +22,7 @@ def upgrade():
         sa.Column("set_metadata", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=True),
     )
-    op.create_index(
-        "idx_transcript_set_created_at", "transcript_sets", ["created_at"]
-    )
+    op.create_index("idx_transcript_set_created_at", "transcript_sets", ["created_at"])
 
     op.create_table(
         "transcript_set_members",
@@ -60,7 +58,9 @@ def downgrade():
     op.drop_constraint(
         "uq_transcript_set_member", "transcript_set_members", type_="unique"
     )
-    op.drop_index("idx_transcript_set_member_order", table_name="transcript_set_members")
+    op.drop_index(
+        "idx_transcript_set_member_order", table_name="transcript_set_members"
+    )
     op.drop_table("transcript_set_members")
     op.drop_index("idx_transcript_set_created_at", table_name="transcript_sets")
     op.drop_table("transcript_sets")

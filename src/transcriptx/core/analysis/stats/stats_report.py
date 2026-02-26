@@ -153,16 +153,18 @@ def build_stats_payload(
         "segment_count": len(segments),
         "speaker_count_total": len(total_speakers),
         "speaker_count_named": len(named_speakers),
-        "exclusions": [
-            {
-                "type": "unnamed_speakers",
-                "rule": "is_eligible_named_speaker",
-                "excluded_speakers": excluded_speakers,
-                "why": "non-attributed speaker",
-            }
-        ]
-        if excluded_speakers
-        else [],
+        "exclusions": (
+            [
+                {
+                    "type": "unnamed_speakers",
+                    "rule": "is_eligible_named_speaker",
+                    "excluded_speakers": excluded_speakers,
+                    "why": "non-attributed speaker",
+                }
+            ]
+            if excluded_speakers
+            else []
+        ),
     }
 
     modules_payload = _build_modules_payload(
@@ -256,12 +258,8 @@ def render_stats_markdown(payload: Dict[str, Any]) -> str:
     lines.append("")
 
     lines.append("## Provenance")
-    lines.append(
-        f"- Input source: {provenance.get('input_source', 'unknown')}"
-    )
-    lines.append(
-        f"- Segments: {provenance.get('segment_count', 0)}"
-    )
+    lines.append(f"- Input source: {provenance.get('input_source', 'unknown')}")
+    lines.append(f"- Segments: {provenance.get('segment_count', 0)}")
     lines.append(
         f"- Speakers (named / total): {provenance.get('speaker_count_named', 0)} / {provenance.get('speaker_count_total', 0)}"
     )
@@ -291,9 +289,7 @@ def render_stats_markdown(payload: Dict[str, Any]) -> str:
         lines.append(
             "| Speaker | Words | Segments | Duration | Words/Min | Avg Seg Len | Avg Seg Dur | % Words | % Duration | Tic Rate |"
         )
-        lines.append(
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
-        )
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
         for speaker in speakers:
             lines.append(
                 "| {name} | {words} | {segments} | {duration_hhmmss} | {wpm:.2f} | {avg_len:.2f} | {avg_dur:.2f} | {pct_words:.0%} | {pct_dur:.0%} | {tic:.2%} |".format(
@@ -317,9 +313,7 @@ def render_stats_markdown(payload: Dict[str, Any]) -> str:
         lines.append(f"- Mean compound: {sentiment.get('mean_compound', 0):.3f}")
         spread = sentiment.get("spread", {})
         if "std_compound" in spread:
-            lines.append(
-                f"- Spread (std): {spread.get('std_compound', 0):.3f}"
-            )
+            lines.append(f"- Spread (std): {spread.get('std_compound', 0):.3f}")
         delta = sentiment.get("opening_vs_closing_delta", {})
         if "delta_by_time" in delta:
             lines.append(
@@ -430,13 +424,9 @@ def render_stats_txt(payload: Dict[str, Any]) -> str:
             lines.append(f"  Spread (std): {spread.get('std_compound', 0):.3f}")
         delta = sentiment.get("opening_vs_closing_delta", {})
         if "delta_by_time" in delta:
-            lines.append(
-                f"  Delta by time: {delta.get('delta_by_time', 0):.3f}"
-            )
+            lines.append(f"  Delta by time: {delta.get('delta_by_time', 0):.3f}")
         if "delta_by_count" in delta:
-            lines.append(
-                f"  Delta by count: {delta.get('delta_by_count', 0):.3f}"
-            )
+            lines.append(f"  Delta by count: {delta.get('delta_by_count', 0):.3f}")
         lines.append("")
 
     insights = payload.get("insights", [])
@@ -552,12 +542,8 @@ def _build_speakers_payload(
         word_count = int(word_count or 0)
         segment_count = int(segment_count or 0)
         avg_segment_len = float(avg_segment_len or 0)
-        avg_segment_duration = (
-            duration_sec / segment_count if segment_count else 0.0
-        )
-        words_per_min = (
-            word_count / (duration_sec / 60) if duration_sec > 0 else 0.0
-        )
+        avg_segment_duration = duration_sec / segment_count if segment_count else 0.0
+        words_per_min = word_count / (duration_sec / 60) if duration_sec > 0 else 0.0
         sentiment = sentiment_summary.get(name, {})
         rows.append(
             {
@@ -589,7 +575,7 @@ def _build_speakers_payload(
 
 
 def _build_sentiment_payload(
-    segments: List[Dict[str, Any]]
+    segments: List[Dict[str, Any]],
 ) -> Tuple[Optional[Dict[str, Any]], List[str]]:
     sentiments: List[Dict[str, Any]] = []
     warnings: List[str] = []
@@ -737,14 +723,20 @@ def _build_insights_payload(
 
     severity_rank = {"high": 3, "medium": 2, "low": 1, "info": 0}
     insights.sort(
-        key=lambda item: (-severity_rank.get(item.get("severity", "low"), 1), item["id"])
+        key=lambda item: (
+            -severity_rank.get(item.get("severity", "low"), 1),
+            item["id"],
+        )
     )
     return insights
 
 
 def _resolve_input_source(segments: List[Dict[str, Any]]) -> str:
     for seg in segments:
-        if seg.get("speaker_db_id") is not None or seg.get("transcript_file_id") is not None:
+        if (
+            seg.get("speaker_db_id") is not None
+            or seg.get("transcript_file_id") is not None
+        ):
             return "db"
     return "json"
 
@@ -775,7 +767,7 @@ def _segment_quality_stats(segments: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _resolve_generator_metadata(
-    overrides: Optional[Dict[str, Any]] = None
+    overrides: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     metadata = {"name": "transcriptx", "version": None, "git_sha": None}
     try:

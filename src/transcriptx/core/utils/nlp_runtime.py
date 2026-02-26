@@ -1,12 +1,19 @@
 """
 Centralized spaCy model runtime loading with thread-safe caching.
+
+spaCy model auto-download is allowed by default when not in core mode, unless
+TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1. Model name is resolved via TRANSCRIPTX_SPACY_MODEL
+(default en_core_web_md) or config (e.g. ner_use_light_model).
 """
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from typing import Optional, Any
+
+logger = logging.getLogger(__name__)
 
 _nlp_model: Optional[Any] = None
 
@@ -21,15 +28,22 @@ def _patch_transformers_for_spacy() -> None:
     """
     try:
         import transformers.tokenization_utils as tu  # noqa: PLC0415
+
         if not hasattr(tu, "BatchEncoding"):
-            from transformers.tokenization_utils_base import BatchEncoding  # noqa: PLC0415
+            from transformers.tokenization_utils_base import (
+                BatchEncoding,
+            )  # noqa: PLC0415
+
             tu.BatchEncoding = BatchEncoding
     except Exception:
         pass
+
+
 _nlp_model_name: Optional[str] = None
 _nlp_lock = threading.Lock()
 
 _DISABLE_DOWNLOADS_ENV = "TRANSCRIPTX_DISABLE_DOWNLOADS"
+_DISABLE_SPACY_DOWNLOAD_ENV = "TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD"
 
 
 def _downloads_disabled() -> bool:
@@ -38,6 +52,27 @@ def _downloads_disabled() -> bool:
         # Default to downloads disabled unless explicitly opted in.
         return True
     return value in {"1", "true", "yes", "on"}
+
+
+def _spacy_download_disabled() -> bool:
+    """True only when TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD is set to 1/true/yes/on. Unset = allow."""
+    value = os.getenv(_DISABLE_SPACY_DOWNLOAD_ENV, "").strip().lower()
+    if value == "":
+        return False
+    return value in {"1", "true", "yes", "on"}
+
+
+def _core_mode() -> bool:
+    """True if core mode is on (no download, hint only)."""
+    env_val = os.getenv("TRANSCRIPTX_CORE")
+    if env_val is not None:
+        return str(env_val).strip().lower() in ("1", "true", "yes", "on")
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        return get_config().core_mode
+    except Exception:
+        return True
 
 
 def _resolve_model_name(preferred: Optional[str] = None) -> str:
@@ -60,44 +95,61 @@ def _resolve_model_name(preferred: Optional[str] = None) -> str:
     return "en_core_web_md"
 
 
-def _ensure_spacy_model(model_name: str) -> None:
-    """Ensure spaCy model is available before loading."""
+def ensure_spacy_model(model_name: Optional[str] = None) -> None:
+    """
+    Ensure the given spaCy model is available. Single helper for the nlp layer.
+
+    Model name is resolved via _resolve_model_name (TRANSCRIPTX_SPACY_MODEL, config;
+    default en_core_web_md). We only hard-fail before attempting download when
+    TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1 or core_mode; otherwise we try download
+    and raise only if download fails (e.g. offline), with a message including
+    the manual command and how to disable.
+    """
+    resolved = _resolve_model_name(model_name)
     spacy = _import_spacy()
     try:
         from transcriptx.core.utils.output import suppress_stdout_stderr
 
         with suppress_stdout_stderr():
-            spacy.load(model_name)
+            spacy.load(resolved)
         return
     except OSError:
         pass
 
-    if _downloads_disabled():
-        # CI/offline mode: avoid network calls. Caller will fall back to blank("en").
-        return
+    if _core_mode():
+        raise OSError(
+            f"spaCy model '{resolved}' is not installed. "
+            f"Install NLP extra and download the model: pip install 'transcriptx[nlp]' && python -m spacy download {resolved}"
+        )
+
+    if _spacy_download_disabled():
+        raise OSError(
+            f"spaCy model '{resolved}' is not installed and auto-download is disabled "
+            f"(TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1). "
+            f"Install manually: python -m spacy download {resolved}"
+        )
 
     try:
         from transcriptx.core.utils.notifications import notify_user
 
         notify_user(
-            f"📥 Downloading spaCy model '{model_name}' (required for NLP analysis)...",
+            f"📥 Downloading spaCy model '{resolved}' (required for NLP analysis)...",
             technical=True,
             section="ner",
         )
     except Exception:
-        print(
-            f"📥 Downloading spaCy model '{model_name}' (required for NLP analysis)..."
-        )
+        print(f"📥 Downloading spaCy model '{resolved}' (required for NLP analysis)...")
 
     try:
         from transcriptx.core.utils.output import suppress_stdout_stderr
 
         with suppress_stdout_stderr():
-            spacy.cli.download(model_name)
+            spacy.cli.download(resolved)
     except Exception as exc:
         error_msg = (
-            f"⚠️ Could not download spaCy model '{model_name}': {exc}. "
-            f"Please run: python -m spacy download {model_name}"
+            f"spaCy model '{resolved}' auto-download was attempted but failed: {exc}. "
+            f"To install manually run: python -m spacy download {resolved} "
+            f"(to disable auto-download set TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1)."
         )
         try:
             from transcriptx.core.utils.notifications import notify_user
@@ -105,13 +157,71 @@ def _ensure_spacy_model(model_name: str) -> None:
             notify_user(error_msg, technical=True, section="ner")
         except Exception:
             print(error_msg)
-        raise
+        raise OSError(error_msg) from exc
+
+
+def _ensure_spacy_model(model_name: Optional[str] = None) -> None:
+    """Internal: ensure model available; logs and returns when TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1 (caller may fall back to blank('en'))."""
+    resolved = _resolve_model_name(model_name)
+    spacy = _import_spacy()
+    try:
+        from transcriptx.core.utils.output import suppress_stdout_stderr
+
+        with suppress_stdout_stderr():
+            spacy.load(resolved)
+        return
+    except OSError:
+        pass
+
+    if _core_mode():
+        raise OSError(
+            f"spaCy model '{resolved}' is not installed. "
+            f"Install NLP extra and download the model: pip install 'transcriptx[nlp]' && python -m spacy download {resolved}"
+        )
+
+    if _spacy_download_disabled():
+        logger.info(
+            "spaCy model auto-download skipped (TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1). "
+            "Install manually: python -m spacy download %s",
+            resolved,
+        )
+        return
+
+    try:
+        from transcriptx.core.utils.notifications import notify_user
+
+        notify_user(
+            f"📥 Downloading spaCy model '{resolved}' (required for NLP analysis)...",
+            technical=True,
+            section="ner",
+        )
+    except Exception:
+        print(f"📥 Downloading spaCy model '{resolved}' (required for NLP analysis)...")
+
+    try:
+        from transcriptx.core.utils.output import suppress_stdout_stderr
+
+        with suppress_stdout_stderr():
+            spacy.cli.download(resolved)
+    except Exception as exc:
+        error_msg = (
+            f"spaCy model '{resolved}' auto-download was attempted but failed: {exc}. "
+            f"To install manually run: python -m spacy download {resolved} "
+            f"(to disable auto-download set TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1)."
+        )
+        try:
+            from transcriptx.core.utils.notifications import notify_user
+
+            notify_user(error_msg, technical=True, section="ner")
+        except Exception:
+            print(error_msg)
+        raise OSError(error_msg) from exc
 
 
 def _import_spacy():
-    import spacy
+    from transcriptx.core.utils.lazy_imports import optional_import
 
-    return spacy
+    return optional_import("spacy", "NLP (NER, etc.)", "nlp", auto_install=True)
 
 
 def get_nlp_model(model_name: Optional[str] = None):
@@ -144,4 +254,3 @@ def get_nlp_model(model_name: Optional[str] = None):
 
 def get_nlp_model_name() -> Optional[str]:
     return _nlp_model_name
-

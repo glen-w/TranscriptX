@@ -70,7 +70,9 @@ class InteractionsAnalysis(AnalysisModule):
         analysis_results["turn_taking"] = {
             "responses_initiated": analysis_results.get("responses_initiated", {}),
             "responses_received": analysis_results.get("responses_received", {}),
-            "interruptions_initiated": analysis_results.get("interruption_initiated", {}),
+            "interruptions_initiated": analysis_results.get(
+                "interruption_initiated", {}
+            ),
             "interruptions_received": analysis_results.get("interruption_received", {}),
             "total_interactions": analysis_results.get("total_interactions_count", 0),
         }
@@ -121,7 +123,9 @@ class InteractionsAnalysis(AnalysisModule):
             self._create_interaction_charts(results, output_service, base_name)
 
         # Create comprehensive summary
-        self._create_analysis_summary(results, output_structure, base_name, output_service)
+        self._create_analysis_summary(
+            results, output_structure, base_name, output_service
+        )
 
     def _create_interaction_network(
         self,

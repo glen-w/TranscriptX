@@ -19,6 +19,7 @@ from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.io import save_csv, save_json
 from transcriptx.core.utils.viz_ids import VIZ_MOMENTUM_TIMESERIES
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import LineTimeSeriesSpec
 
 plt = lazy_pyplot()
@@ -115,9 +116,7 @@ class MomentumAnalysis(AnalysisModule):
         min_stall_duration = float(
             getattr(self.config, "min_stall_duration_seconds", 30.0)
         )
-        cliff_threshold = float(
-            getattr(self.config, "momentum_cliff_threshold", -0.2)
-        )
+        cliff_threshold = float(getattr(self.config, "momentum_cliff_threshold", -0.2))
         novelty_lookback = int(getattr(self.config, "novelty_lookback_windows", 3))
         weights = getattr(self.config, "weights", {}) or {}
 
@@ -135,7 +134,9 @@ class MomentumAnalysis(AnalysisModule):
 
         loops = []
         if loops_data:
-            loops = loops_data.get("loops", []) or loops_data.get("conversation_loops", [])
+            loops = loops_data.get("loops", []) or loops_data.get(
+                "conversation_loops", []
+            )
 
         # Sentiment map
         sentiment_map = {}
@@ -194,7 +195,9 @@ class MomentumAnalysis(AnalysisModule):
             turn_energy = self._calculate_turn_energy(window_segments)
 
             # Novelty
-            novelty = self._calculate_novelty(window_segments, novelty_history[-novelty_lookback:])
+            novelty = self._calculate_novelty(
+                window_segments, novelty_history[-novelty_lookback:]
+            )
             window_tokens = set()
             for seg in window_segments:
                 window_tokens.update(self._tokenize(seg.get("text", "")))
@@ -222,7 +225,8 @@ class MomentumAnalysis(AnalysisModule):
 
             score = (
                 weights.get("pause_rate", -0.3) * metrics["pause_rate"]
-                + weights.get("repetition_rate", -0.3) * min(1.0, metrics["repetition_rate"])
+                + weights.get("repetition_rate", -0.3)
+                * min(1.0, metrics["repetition_rate"])
                 + weights.get("loop_rate", -0.2) * min(1.0, metrics["loop_rate"])
                 + weights.get("novelty", 0.4) * metrics["novelty"]
                 + weights.get("turn_energy", 0.3) * metrics["turn_energy"]
@@ -239,7 +243,9 @@ class MomentumAnalysis(AnalysisModule):
             scores.append(score)
 
         # Detect stall zones
-        stall_threshold = float(np.percentile(scores, stall_percentile * 100)) if scores else 0.0
+        stall_threshold = (
+            float(np.percentile(scores, stall_percentile * 100)) if scores else 0.0
+        )
         zones = []
         current_zone = None
         for window in timeseries:
@@ -262,16 +268,14 @@ class MomentumAnalysis(AnalysisModule):
             zones.append(current_zone)
 
         # Filter by min duration
-        zones = [
-            z
-            for z in zones
-            if (z["end"] - z["start"]) >= min_stall_duration
-        ]
+        zones = [z for z in zones if (z["end"] - z["start"]) >= min_stall_duration]
 
         # Detect cliffs
         cliffs = []
         for prev, curr in zip(timeseries, timeseries[1:], strict=False):
-            delta = curr["metrics"]["momentum_score"] - prev["metrics"]["momentum_score"]
+            delta = (
+                curr["metrics"]["momentum_score"] - prev["metrics"]["momentum_score"]
+            )
             if delta <= cliff_threshold:
                 cliffs.append(
                     {
@@ -372,7 +376,9 @@ class MomentumAnalysis(AnalysisModule):
             pauses_result = context.get_analysis_result("pauses")
             echoes_result = context.get_analysis_result("echoes")
             loops_result = context.get_analysis_result("conversation_loops")
-            similarity_result = context.get_analysis_result("semantic_similarity_advanced") or context.get_analysis_result("semantic_similarity")
+            similarity_result = context.get_analysis_result(
+                "semantic_similarity_advanced"
+            ) or context.get_analysis_result("semantic_similarity")
             sentiment_result = context.get_analysis_result("sentiment")
 
             results = self.analyze(
@@ -439,10 +445,7 @@ class MomentumAnalysis(AnalysisModule):
 
         if zones:
             save_csv(
-                [
-                    [z["start"], z["end"], float(np.mean(z["scores"]))]
-                    for z in zones
-                ],
+                [[z["start"], z["end"], float(np.mean(z["scores"]))] for z in zones],
                 str(output_structure.global_data_dir / "stall_zones.csv"),
                 header=["start", "end", "avg_score"],
             )
@@ -450,6 +453,7 @@ class MomentumAnalysis(AnalysisModule):
         # Chart
         if timeseries:
             xs = [w["window_start"] for w in timeseries]
+            x_display, x_label = time_axis_display(xs)
             ys = [w["metrics"]["momentum_score"] for w in timeseries]
             spec = LineTimeSeriesSpec(
                 viz_id=VIZ_MOMENTUM_TIMESERIES,
@@ -458,10 +462,10 @@ class MomentumAnalysis(AnalysisModule):
                 scope="global",
                 chart_intent="line_timeseries",
                 title="Momentum Over Time",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Momentum Score",
                 markers=False,
-                series=[{"name": "Momentum", "x": xs, "y": ys}],
+                series=[{"name": "Momentum", "x": x_display, "y": ys}],
             )
             output_service.save_chart(spec, chart_type="timeseries")
 

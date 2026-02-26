@@ -96,20 +96,21 @@ def print_section_break(module: str | None = "default", force: bool = False) -> 
         force: If True, print section break even if it's the same module
     """
     global _current_module
-    
+
     # Skip if this is the same module and not forced
     if not force and module == _current_module:
         return
-    
+
     # Check if emojis are enabled
     try:
         from transcriptx.core.utils.config import get_config
+
         config = get_config()
         use_emojis = getattr(config, "use_emojis", True)
     except ImportError:
         # Fallback to defaults if config is not available
         use_emojis = True
-    
+
     # Get color for the module (handle None case)
     module_key = module if module else "default"
     color = MODULE_COLOR_MAP.get(module_key, MODULE_COLOR_MAP["default"])
@@ -138,7 +139,7 @@ def print_section_break(module: str | None = "default", force: bool = False) -> 
     else:
         console.print()  # Blank line for spacing
         console.print("─" * 60, style=Style(color=color))
-    
+
     # Resume spinner if it was active
     if spinner_was_active:
         SpinnerManager.resume_spinner()
@@ -194,7 +195,7 @@ def notify_user(
 
     # Strip emojis if disabled
     display_msg = msg if use_emojis else strip_emojis(msg)
-    
+
     # If there's an active spinner, pause it before printing to avoid cluttering the same line
     spinner_was_active = SpinnerManager._active_spinner is not None
     if spinner_was_active:
@@ -205,7 +206,7 @@ def notify_user(
         SpinnerManager.resume_spinner()
     else:
         console.print(display_msg)
-    
+
     # Add blank line after completion messages for visual spacing
     if section and ("Completed" in msg or "✅" in msg):
         console.print()

@@ -7,7 +7,7 @@ from __future__ import annotations
 import warnings
 from typing import Any, Callable, Optional
 
-from transcriptx.core.utils.logger import log_error, log_info
+from transcriptx.core.utils.logger import log_error, log_info, log_warning
 from transcriptx.core.utils.lazy_imports import get_torch, get_transformers
 
 
@@ -28,15 +28,29 @@ class SemanticModelManager:
         self.progress_context = progress_context
         self.progress_logger = progress_logger
 
-        self.torch = get_torch()
-        self.device = self.torch.device(
-            "cuda" if self.torch.cuda.is_available() else "cpu"
-        )
+        self.torch: Any = None
+        self.device: Any = None
         self.model = None
         self.tokenizer = None
 
     def initialize(self) -> None:
-        """Initialize transformer model and tokenizer."""
+        """Initialize transformer model and tokenizer. Uses TF-IDF fallback if PyTorch is missing."""
+        try:
+            self.torch = get_torch()
+            self.device = self.torch.device(
+                "cuda" if self.torch.cuda.is_available() else "cpu"
+            )
+        except ImportError as exc:
+            log_warning(
+                self.log_tag,
+                "PyTorch not installed; semantic similarity will use TF-IDF fallback. "
+                "For transformer-based similarity, install with: pip install transcriptx[emotion]",
+            )
+            log_error(self.log_tag, f"PyTorch unavailable: {exc}", exception=exc)
+            self.model = None
+            self.tokenizer = None
+            return
+
         try:
             transformers = get_transformers()
             # Suppress FutureWarning about resume_download deprecation in huggingface_hub
@@ -54,9 +68,12 @@ class SemanticModelManager:
                         self.model = transformers.AutoModel.from_pretrained(
                             self.model_name
                         ).to(self.device)
-                        self.model.eval()
+                        if self.model is not None:
+                            self.model.eval()
                     if self.progress_logger:
-                        self.progress_logger(f"Loaded semantic model: {self.model_name}")
+                        self.progress_logger(
+                            f"Loaded semantic model: {self.model_name}"
+                        )
                 else:
                     self.tokenizer = transformers.AutoTokenizer.from_pretrained(
                         self.model_name
@@ -64,9 +81,17 @@ class SemanticModelManager:
                     self.model = transformers.AutoModel.from_pretrained(
                         self.model_name
                     ).to(self.device)
-                    self.model.eval()
+                    if self.model is not None:
+                        self.model.eval()
                     log_info(self.log_tag, f"Loaded semantic model: {self.model_name}")
         except Exception as exc:
+            msg = str(exc).lower()
+            if "pytorch" in msg or "torch" in msg:
+                log_warning(
+                    self.log_tag,
+                    "PyTorch not available; using TF-IDF fallback. "
+                    "Install with: pip install transcriptx[emotion]",
+                )
             log_error(
                 self.log_tag, f"Failed to load semantic model: {exc}", exception=exc
             )

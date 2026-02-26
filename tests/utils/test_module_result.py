@@ -4,7 +4,11 @@ Tests for module result error classification.
 
 import pytest
 
-from transcriptx.core.utils.module_result import build_module_result, capture_exception, now_iso
+from transcriptx.core.utils.module_result import (
+    build_module_result,
+    capture_exception,
+    now_iso,
+)
 
 
 @pytest.mark.unit

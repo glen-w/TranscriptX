@@ -14,6 +14,7 @@ from ._dirty_tracker import is_dirty, mark_dirty
 
 def edit_input_config(config):
     """Edit input configuration."""
+
     def _edit_folder_list(title: str, current_list: list[str]) -> list[str] | None:
         print(f"\n[bold]{title}[/bold]")
         print(
@@ -83,9 +84,7 @@ def edit_input_config(config):
             key="input.file_selection_mode",
             label="File selection preference",
             getter=lambda: getattr(config.input, "file_selection_mode", "prompt"),
-            setter=lambda value: setattr(
-                config.input, "file_selection_mode", value
-            ),
+            setter=lambda value: setattr(config.input, "file_selection_mode", value),
             editor=create_choice_editor(
                 choices=["prompt", "explore", "direct"],
                 hint="prompt = ask each time; explore = file browser by default; direct = type path by default.",

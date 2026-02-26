@@ -9,7 +9,6 @@ from .analysis import (
     TagExtractionConfig,
     QAAnalysisConfig,
     TemporalDynamicsConfig,
-    ConvokitConfig,
     VectorizationConfig,
     VoiceConfig,
 )
@@ -70,6 +69,17 @@ def load_config(config_file: str) -> TranscriptXConfig:
     return config
 
 
+def reset_config_for_tests() -> None:
+    """
+    Clear the global config so tests do not leak state across modules.
+    For use in fixtures or teardown only.
+    """
+    global _global_config
+    _global_config = None
+    if hasattr(_main, "_config"):
+        _main._config = None
+
+
 __all__ = [
     "Config",
     "AnalysisConfig",
@@ -82,7 +92,6 @@ __all__ = [
     "TagExtractionConfig",
     "QAAnalysisConfig",
     "TemporalDynamicsConfig",
-    "ConvokitConfig",
     "VectorizationConfig",
     "VoiceConfig",
     "WorkflowConfig",
@@ -100,6 +109,7 @@ __all__ = [
     "get_config",
     "set_config",
     "load_config",
+    "reset_config_for_tests",
     "initialize_default_profiles",
     "EMOTION_CATEGORIES",
     "ACT_TYPES",

@@ -4,6 +4,10 @@ ConvoKit analysis module for TranscriptX.
 This module converts diarized transcript segments into a ConvoKit Corpus and
 computes coordination/accommodation metrics between speakers. It complements
 existing interaction and temporal analyses by providing ConvoKit-native metrics.
+
+ARCHIVED: This code was moved from src/transcriptx/core/analysis/convokit/ due to
+dependency conflicts (convokit 3.5.0 vs current numpy/spacy/thinc pins). See
+archived/convokit/README.md and docs/ROADMAP.md.
 """
 
 from __future__ import annotations
@@ -335,7 +339,9 @@ class ConvoKitAnalysis(AnalysisModule):
             total_utterances=len(sorted_utts),
             reply_links=reply_links,
             strategy=strategy,
-            response_threshold=response_threshold if strategy == "threshold_gap" else None,
+            response_threshold=(
+                response_threshold if strategy == "threshold_gap" else None
+            ),
         )
 
     def _compute_coordination(self, convokit, corpus):
@@ -378,8 +384,8 @@ class ConvoKitAnalysis(AnalysisModule):
                 continue
 
             source = record.get("speaker") or record.get("source") or record.get("from")
-            target = record.get("target") or record.get("to") or record.get(
-                "target_speaker"
+            target = (
+                record.get("target") or record.get("to") or record.get("target_speaker")
             )
             score = (
                 record.get("coordination")
@@ -460,10 +466,12 @@ class ConvoKitAnalysis(AnalysisModule):
         for speaker in set(outgoing.keys()) | set(incoming.keys()):
             per_speaker[speaker] = {
                 "coordination_to_others": (
-                    sum(outgoing.get(speaker, [])) / len(outgoing.get(speaker, []) or [1])
+                    sum(outgoing.get(speaker, []))
+                    / len(outgoing.get(speaker, []) or [1])
                 ),
                 "others_coordinate_to_them": (
-                    sum(incoming.get(speaker, [])) / len(incoming.get(speaker, []) or [1])
+                    sum(incoming.get(speaker, []))
+                    / len(incoming.get(speaker, []) or [1])
                 ),
             }
 
@@ -507,9 +515,7 @@ class ConvoKitAnalysis(AnalysisModule):
     ) -> None:
         skipped = results.get("skipped", False)
         if skipped:
-            output_service.save_data(
-                results, "convokit_summary", format_type="json"
-            )
+            output_service.save_data(results, "convokit_summary", format_type="json")
             return
 
         output_service.save_data(
@@ -540,4 +546,3 @@ class ConvoKitAnalysis(AnalysisModule):
                 "convokit_politeness_summary",
                 format_type="json",
             )
-

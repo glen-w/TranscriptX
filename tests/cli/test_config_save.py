@@ -4,7 +4,6 @@ Tests for config save utilities (default path, no interactive prompts).
 
 from unittest.mock import MagicMock
 
-import pytest
 
 from transcriptx.cli.config_editors.save import _default_save_path
 from transcriptx.core.config.persistence import get_project_config_path

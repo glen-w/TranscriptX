@@ -1,4 +1,5 @@
 """Summary configuration editor."""
+
 from typing import Any
 
 from transcriptx.cli.settings import settings_menu_loop  # type: ignore[import-untyped]
@@ -15,9 +16,7 @@ def edit_summary_config(config: Any) -> None:
     if summary_cfg is None:
         return
 
-    items = build_setting_items_from_dataclass(
-        summary_cfg, prefix="analysis.summary"
-    )
+    items = build_setting_items_from_dataclass(summary_cfg, prefix="analysis.summary")
     settings_menu_loop(
         title="🧾 Summary Settings",
         items=items,

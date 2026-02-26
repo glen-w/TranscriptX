@@ -16,7 +16,10 @@ from textblob import TextBlob
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.nlp_utils import preprocess_for_sentiment
 from transcriptx.core.utils.logger import get_logger, log_info, log_warning
-from transcriptx.core.utils.downloads import downloads_disabled
+from transcriptx.core.utils.downloads import (
+    downloads_disabled,
+    downloads_disabled_failfast_message,
+)
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
@@ -30,6 +33,7 @@ from transcriptx.core.utils.viz_ids import (
 from transcriptx.core.viz.specs import LineTimeSeriesSpec
 
 logger = get_logger()
+
 
 def _normalize_transformers_sentiment(
     result: List[Dict[str, Any]],
@@ -48,7 +52,9 @@ def _normalize_transformers_sentiment(
             "label": "",
             "score": 0.0,
         }
-    scores_by_label: Dict[str, float] = {item["label"].lower(): float(item["score"]) for item in result}
+    scores_by_label: Dict[str, float] = {
+        item["label"].lower(): float(item["score"]) for item in result
+    }
     pos = scores_by_label.get("positive", 0.0)
     neg = scores_by_label.get("negative", 0.0)
     neu = scores_by_label.get("neutral", 0.0)
@@ -78,8 +84,12 @@ def _ensure_vader_lexicon():
             nltk.data.find("sentiment/vader_lexicon.zip")
         except LookupError:
             if downloads_disabled():
-                # CI/offline mode: do not attempt network downloads.
-                raise
+                raise RuntimeError(
+                    downloads_disabled_failfast_message(
+                        "NLTK vader_lexicon (required for sentiment analysis)",
+                        "Or run once: python -c \"import nltk; nltk.download('vader_lexicon')\"",
+                    )
+                )
             # Try to notify user, but don't fail if notify_user isn't available yet
             try:
                 notify_user(

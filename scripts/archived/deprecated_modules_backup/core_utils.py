@@ -35,7 +35,11 @@ import warnings
 # Import from new locations
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.core.utils.speaker import get_display_speaker_name
-from transcriptx.core.utils.notifications import notify_user, print_section_break, MODULE_COLOR_MAP
+from transcriptx.core.utils.notifications import (
+    notify_user,
+    print_section_break,
+    MODULE_COLOR_MAP,
+)
 from transcriptx.utils.text_utils import (
     strip_emojis,
     is_named_speaker,
@@ -52,7 +56,7 @@ def _deprecation_warning(func_name: str, new_location: str):
         f"transcriptx.core_utils.{func_name} is deprecated and will be removed in v0.3.0. "
         f"Use {new_location} instead.",
         DeprecationWarning,
-        stacklevel=3
+        stacklevel=3,
     )
 
 

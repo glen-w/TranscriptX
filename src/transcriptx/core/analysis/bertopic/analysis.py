@@ -120,17 +120,14 @@ class BERTopicAnalysis(AnalysisModule):
         topic_assignments, topic_probs = model.fit_transform(texts)
 
         doc_extra_fields = [
-            {"segment_index": int(segment_index)}
-            for segment_index in segment_indices
+            {"segment_index": int(segment_index)} for segment_index in segment_indices
         ]
         topics = build_topic_objects(
             model,
-            top_n_words=getattr(bertopic_cfg, "top_n_words", 10)
-            if bertopic_cfg
-            else 10,
-            label_words=getattr(bertopic_cfg, "label_words", 3)
-            if bertopic_cfg
-            else 3,
+            top_n_words=(
+                getattr(bertopic_cfg, "top_n_words", 10) if bertopic_cfg else 10
+            ),
+            label_words=getattr(bertopic_cfg, "label_words", 3) if bertopic_cfg else 3,
             include_outlier=any(int(t) == -1 for t in topic_assignments),
         )
         doc_topic_data, meta = build_doc_topic_data(
@@ -160,7 +157,9 @@ class BERTopicAnalysis(AnalysisModule):
                 "message": results.get("message"),
                 "meta": results.get("meta", {}),
             }
-            output_service.save_data(error_payload, "bertopic_error", format_type="json")
+            output_service.save_data(
+                error_payload, "bertopic_error", format_type="json"
+            )
             return
 
         topics = results.get("topics", [])
@@ -193,9 +192,7 @@ class BERTopicAnalysis(AnalysisModule):
 
         config = get_config()
         bertopic_cfg = getattr(config.analysis, "bertopic", None)
-        top_n_words = (
-            getattr(bertopic_cfg, "top_n_words", 10) if bertopic_cfg else 10
-        )
+        top_n_words = getattr(bertopic_cfg, "top_n_words", 10) if bertopic_cfg else 10
 
         first_words = topics_filtered[0].get("words") or []
         if not first_words:
@@ -237,7 +234,9 @@ class BERTopicAnalysis(AnalysisModule):
         if total <= 0:
             return
         topic_labels = {
-            int(topic.get("topic_id")): topic.get("label", f"Topic {topic.get('topic_id')}")
+            int(topic.get("topic_id")): topic.get(
+                "label", f"Topic {topic.get('topic_id')}"
+            )
             for topic in topics_filtered
         }
         categories = []

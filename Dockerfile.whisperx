@@ -1,27 +1,33 @@
 # WhisperX Dockerfile for TranscriptX
-# This creates a custom WhisperX container optimized for the project
+# This creates a custom WhisperX container optimized for the project.
+#
+# Model strategy: Do not bake model weights into the image. At runtime, mount a
+# volume for caches and set env vars so downloads go to the mount, e.g.:
+#   HF_HOME=/models/hf
+#   TORCH_HOME=/models/torch
+# See docs/docker.md for volume layout. Default compose uses ghcr.io image + named volume.
 
-FROM python:3.10-slim
+# -----------------------------------------------------------------------------
+# Builder: build deps + pip install into venv
+# -----------------------------------------------------------------------------
+FROM python:3.10-slim AS builder
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     git \
-    ffmpeg \
-    libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Install WhisperX and dependencies
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 RUN pip install --no-cache-dir \
     whisperx \
     torch \
@@ -31,8 +37,25 @@ RUN pip install --no-cache-dir \
     librosa \
     soundfile
 
-# Create data directories
+# -----------------------------------------------------------------------------
+# Runtime: only runtime libs, no build tools; copy venv
+# -----------------------------------------------------------------------------
+FROM python:3.10-slim AS production
+
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
+
 RUN mkdir -p /data/input /data/output /data/transcriptx_output
 
-# Set default command
+# Optional: set at run time to store models on a mounted volume instead of in image
+# ENV HF_HOME=/models/hf
+# ENV TORCH_HOME=/models/torch
+
 CMD ["whisperx", "--help"]

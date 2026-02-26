@@ -1,8 +1,9 @@
 """Core highlight computation (pure logic, no I/O)."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 import math
 
 from transcriptx.utils.text_utils import is_named_speaker, count_words
@@ -62,7 +63,9 @@ def _minmax_normalize(values: List[float]) -> List[float]:
     return [(v - vmin) / (vmax - vmin) for v in values]
 
 
-def _normalize_scores(records: List[SegmentRecord], raw_scores: List[float]) -> List[float]:
+def _normalize_scores(
+    records: List[SegmentRecord], raw_scores: List[float]
+) -> List[float]:
     ranked = _rank_normalize(records, raw_scores)
     if ranked is not None:
         return ranked
@@ -153,9 +156,7 @@ def _merge_adjacent_segments(
                     else None
                 ),
                 emotion_dist=_aggregate_emotion_dist(current_emotions),
-                context_emotion=next(
-                    (v for v in current_context if v), None
-                ),
+                context_emotion=next((v for v in current_context if v), None),
             )
         )
 
@@ -348,17 +349,19 @@ def _format_segment_key(segment: SegmentLite) -> str:
     return segment.segment_key
 
 
-def _assign_quote_ids(quotes: List[Dict[str, Any]], candidates: List[QuoteCandidate]) -> None:
+def _assign_quote_ids(
+    quotes: List[Dict[str, Any]], candidates: List[QuoteCandidate]
+) -> None:
     for quote, candidate in zip(quotes, candidates):
         anchor_key = _format_segment_key(
             SegmentLite(
                 segment_key=candidate.segment_keys[0],
-                segment_db_id=candidate.segment_db_ids[0]
-                if candidate.segment_db_ids
-                else None,
-                segment_uuid=candidate.segment_uuids[0]
-                if candidate.segment_uuids
-                else None,
+                segment_db_id=(
+                    candidate.segment_db_ids[0] if candidate.segment_db_ids else None
+                ),
+                segment_uuid=(
+                    candidate.segment_uuids[0] if candidate.segment_uuids else None
+                ),
                 segment_index=candidate.segment_indexes[0],
                 speaker_display=candidate.speaker_display,
                 speaker_id=candidate.speaker_id,
@@ -528,9 +531,9 @@ def compute_highlights(segments: List[SegmentLite], cfg: Any) -> Dict[str, Any]:
             "cold_open": {
                 "window": {"start": window_start, "end": window_end},
                 "window_policy": window_policy,
-                "first_named_segment_index": named_segments[0].segment_index
-                if named_segments
-                else None,
+                "first_named_segment_index": (
+                    named_segments[0].segment_index if named_segments else None
+                ),
                 "items": cold_open_payload,
             },
             "conflict_points": {
@@ -572,21 +575,26 @@ def _compute_conflict_events(
             seg for seg in segments if seg.start >= cursor and seg.start <= window_end
         ]
         if window_segments:
-            conflict_raw = [_conflict_score(QuoteCandidate(
-                segment_keys=[seg.segment_key],
-                segment_db_ids=[seg.segment_db_id] if seg.segment_db_id else [],
-                segment_uuids=[seg.segment_uuid] if seg.segment_uuid else [],
-                segment_indexes=[seg.segment_index],
-                speaker_display=seg.speaker_display,
-                speaker_id=seg.speaker_id,
-                start=seg.start,
-                end=seg.end,
-                text=seg.text,
-                word_count=count_words(seg.text),
-                sentiment_compound=seg.sentiment_compound,
-                emotion_dist=seg.emotion_dist,
-                context_emotion=seg.context_emotion,
-            )) for seg in window_segments]
+            conflict_raw = [
+                _conflict_score(
+                    QuoteCandidate(
+                        segment_keys=[seg.segment_key],
+                        segment_db_ids=[seg.segment_db_id] if seg.segment_db_id else [],
+                        segment_uuids=[seg.segment_uuid] if seg.segment_uuid else [],
+                        segment_indexes=[seg.segment_index],
+                        speaker_display=seg.speaker_display,
+                        speaker_id=seg.speaker_id,
+                        start=seg.start,
+                        end=seg.end,
+                        text=seg.text,
+                        word_count=count_words(seg.text),
+                        sentiment_compound=seg.sentiment_compound,
+                        emotion_dist=seg.emotion_dist,
+                        context_emotion=seg.context_emotion,
+                    )
+                )
+                for seg in window_segments
+            ]
             avg_conflict = sum(conflict_raw) / len(conflict_raw)
             turn_taking = _turn_taking_rate(window_segments)
             window_spike = avg_conflict + 0.2 * turn_taking
@@ -700,7 +708,9 @@ def _participants(segments: List[SegmentLite]) -> List[Dict[str, Any]]:
     ]
 
 
-def _merge_windows(windows: List[Dict[str, Any]], max_gap: float) -> List[Dict[str, Any]]:
+def _merge_windows(
+    windows: List[Dict[str, Any]], max_gap: float
+) -> List[Dict[str, Any]]:
     if not windows:
         return []
     windows.sort(key=lambda w: w["start"])
@@ -786,7 +796,9 @@ def _compute_emblematic_phrases(
     min_freq = cfg.thresholds.min_phrase_frequency
 
     docs = [seg.text.lower() for seg in segments if seg.text.strip()]
-    vectorizer_scores = _compute_tfidf_scores(docs, max_features=1000, ngram_range=(1, 2))
+    vectorizer_scores = _compute_tfidf_scores(
+        docs, max_features=1000, ngram_range=(1, 2)
+    )
 
     phrase_stats: Dict[str, Dict[str, Any]] = {}
     for idx, seg in enumerate(segments):
@@ -856,13 +868,20 @@ def _compute_emblematic_phrases(
         )
 
     phrases.sort(
-        key=lambda p: (-p["score"]["total"], -len(p["phrase"]), p["first_seen"], p["phrase"])
+        key=lambda p: (
+            -p["score"]["total"],
+            -len(p["phrase"]),
+            p["first_seen"],
+            p["phrase"],
+        )
     )
     phrases = _dedupe_phrases(phrases)
     return phrases[: cfg.counts.emblematic_phrases]
 
 
-def _select_phrase_examples(examples: List[tuple[int, SegmentLite]]) -> List[Dict[str, Any]]:
+def _select_phrase_examples(
+    examples: List[tuple[int, SegmentLite]],
+) -> List[Dict[str, Any]]:
     if not examples:
         return []
     sorted_examples = sorted(examples, key=lambda item: item[0])
@@ -903,7 +922,10 @@ def _dedupe_phrases(phrases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             if not tokens or not existing_tokens:
                 continue
             overlap = len(tokens & existing_tokens) / len(tokens | existing_tokens)
-            contains = phrase["phrase"] in existing["phrase"] or existing["phrase"] in phrase["phrase"]
+            contains = (
+                phrase["phrase"] in existing["phrase"]
+                or existing["phrase"] in phrase["phrase"]
+            )
             if overlap >= 0.85 or contains:
                 score_diff = abs(phrase["score"]["total"] - existing["score"]["total"])
                 if score_diff <= 0.05:

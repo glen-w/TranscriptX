@@ -18,9 +18,7 @@ def test_highlights_summary_outputs(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(tmp_path))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(tmp_path))
     transcript_path = (
-        Path(__file__).resolve().parents[2]
-        / "fixtures"
-        / "mini_transcript.json"
+        Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
     )
     context = PipelineContext(
         transcript_path=str(transcript_path),

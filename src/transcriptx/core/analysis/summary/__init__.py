@@ -1,4 +1,5 @@
 """Summary analysis package."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -51,10 +52,14 @@ class SummaryAnalysis(AnalysisModule):
         self.module_name = "summary"
 
     def analyze(
-        self, segments: List[Dict[str, Any]], speaker_map: Optional[Dict[str, str]] = None
+        self,
+        segments: List[Dict[str, Any]],
+        speaker_map: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         config = get_config()
-        normalized = normalize_segments(segments, context=None, transcript_key="unknown")
+        normalized = normalize_segments(
+            segments, context=None, transcript_key="unknown"
+        )
         highlights = compute_highlights(normalized, config.analysis.highlights)
         return compute_summary(highlights, normalized, config.analysis.summary)
 
@@ -93,7 +98,9 @@ class SummaryAnalysis(AnalysisModule):
                     "inputs": {
                         "used_highlights": bool(highlights_result),
                         "highlights_source": highlights_source,
-                        "used_sentiment": bool(context.get_analysis_result("sentiment")),
+                        "used_sentiment": bool(
+                            context.get_analysis_result("sentiment")
+                        ),
                         "used_emotion": bool(context.get_analysis_result("emotion")),
                     },
                 }
@@ -215,10 +222,7 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
     commitments = summary_payload.get("commitments", {}).get("items", [])
 
     has_content = bool(
-        overview.get("paragraph")
-        or key_themes
-        or tension_points
-        or commitments
+        overview.get("paragraph") or key_themes or tension_points or commitments
     )
     intensity_value = None
     if has_content:
@@ -231,7 +235,9 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
         f"Generated from: highlights {highlights_flag} / sentiment {sentiment_flag} / emotion {emotion_flag}"
     )
     if highlights_source == "computed_by_summary":
-        lines.append("Note: Highlights were computed implicitly by the summary module for this run.")
+        lines.append(
+            "Note: Highlights were computed implicitly by the summary module for this run."
+        )
     lines.append("")
 
     if not has_content:

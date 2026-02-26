@@ -1,7 +1,9 @@
 from typing import Any
 
 from transcriptx.core.analysis.aggregation.emotion import aggregate_emotion_group
-from transcriptx.core.analysis.aggregation.interactions import aggregate_interactions_group
+from transcriptx.core.analysis.aggregation.interactions import (
+    aggregate_interactions_group,
+)
 from transcriptx.core.analysis.aggregation.schema import (
     validate_session_rows,
     validate_speaker_rows,
@@ -52,7 +54,9 @@ def test_stats_group_contract() -> None:
             },
         )
     ]
-    outcome = aggregate_stats_group(results, _build_canonical_map(), _build_transcript_set())
+    outcome = aggregate_stats_group(
+        results, _build_canonical_map(), _build_transcript_set()
+    )
     assert outcome is not None
     ok_sessions, _ = validate_session_rows(outcome["session_rows"])
     ok_speakers, _ = validate_speaker_rows(outcome["speaker_rows"])
@@ -120,7 +124,9 @@ def test_emotion_group_contract() -> None:
             },
         )
     ]
-    outcome = aggregate_emotion_group(results, _build_canonical_map(), _build_transcript_set())
+    outcome = aggregate_emotion_group(
+        results, _build_canonical_map(), _build_transcript_set()
+    )
     assert outcome is not None
     ok_sessions, _ = validate_session_rows(outcome["session_rows"])
     ok_speakers, _ = validate_speaker_rows(outcome["speaker_rows"])
@@ -171,7 +177,9 @@ def test_topic_modeling_group_contract(monkeypatch: Any) -> None:
             {"speaker": "Alice", "text": "gamma delta", "start": 2.0},
         ]
 
-    def fake_lda_analysis(texts: list[str], speakers: list[str | None], time_labels: list[float]) -> dict:
+    def fake_lda_analysis(
+        texts: list[str], speakers: list[str | None], time_labels: list[float]
+    ) -> dict:
         return {
             "topics": [{"topic_id": 0, "words": ["alpha", "beta"]}],
             "doc_topics": [[0.7], [0.2], [0.1]],
@@ -193,7 +201,9 @@ def test_topic_modeling_group_contract(monkeypatch: Any) -> None:
             module_results={},
         )
     ]
-    outcome = aggregate_topics_group(results, _build_canonical_map(), _build_transcript_set())
+    outcome = aggregate_topics_group(
+        results, _build_canonical_map(), _build_transcript_set()
+    )
     assert outcome is not None
     ok_sessions, _ = validate_session_rows(outcome["session_rows"])
     ok_speakers, _ = validate_speaker_rows(outcome["speaker_rows"])

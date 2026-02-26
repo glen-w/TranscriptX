@@ -35,6 +35,22 @@ logger = get_logger()
 PROCESSING_STATE_FILE = Path(DATA_DIR) / "processing_state.json"
 
 
+def _looks_like_uuid(key: str) -> bool:
+    """Return True if key looks like a UUID (e.g. state uses UUID-based keys)."""
+    if not key or len(key) != 36:
+        return False
+    parts = key.split("-")
+    return (
+        len(parts) == 5
+        and len(parts[0]) == 8
+        and len(parts[1]) == 4
+        and len(parts[2]) == 4
+        and len(parts[3]) == 4
+        and len(parts[4]) == 12
+        and all(p.isalnum() for p in parts)
+    )
+
+
 def extract_date_prefix_from_filename(filename: str) -> str:
     """
     Extract date prefix (YYMMDD_) from filename.
@@ -140,7 +156,9 @@ def extract_date_prefix_from_transcript(transcript_path: str | Path) -> str:
             return date_prefix
 
         if not transcript_file.exists():
-            logger.info(f"Transcript file not found for date extraction: {transcript_path}")
+            logger.info(
+                f"Transcript file not found for date extraction: {transcript_path}"
+            )
             return ""
 
         mtime = transcript_file.stat().st_mtime
@@ -177,33 +195,76 @@ def find_original_audio_file(transcript_path: str) -> Optional[Path]:
             processed_files = state.get("processed_files", {})
 
             # Search for transcript path in processing state
-            for original_audio_path, metadata in processed_files.items():
-                if metadata.get("transcript_path") == transcript_path:
-                    audio_path = Path(original_audio_path)
-                    if audio_path.exists():
-                        return audio_path
-                    mp3_path = metadata.get("mp3_path")
-                    if mp3_path:
-                        candidate = Path(mp3_path)
-                        if candidate.exists():
-                            return candidate
-                    convert_step = metadata.get("convert", {})
-                    step_mp3 = convert_step.get("mp3_path")
-                    if step_mp3:
-                        candidate = Path(step_mp3)
-                        if candidate.exists():
-                            return candidate
-                    steps = metadata.get("steps", {})
-                    legacy_convert = steps.get("convert", {})
-                    legacy_step_mp3 = legacy_convert.get("mp3_path")
-                    if legacy_step_mp3:
-                        candidate = Path(legacy_step_mp3)
-                        if candidate.exists():
-                            return candidate
-                    logger.info(
-                        "Original audio file from state not found; "
-                        f"speaker identification will continue without playback: {original_audio_path}"
+            for file_key, metadata in processed_files.items():
+                if metadata.get("transcript_path") != transcript_path:
+                    continue
+                # State may be keyed by UUID (after migration) or by path; get audio path from metadata first
+                audio_path = None
+                if metadata.get("audio_path"):
+                    audio_path = Path(metadata["audio_path"])
+                if audio_path and audio_path.exists():
+                    return audio_path
+                # Legacy: key may be the original audio path (path-based state)
+                if not _looks_like_uuid(file_key):
+                    path_candidate = Path(file_key)
+                    if path_candidate.exists():
+                        return path_candidate
+                mp3_path = metadata.get("mp3_path")
+                if mp3_path:
+                    candidate = Path(mp3_path)
+                    if candidate.exists():
+                        return candidate
+                convert_step = metadata.get("convert", {})
+                step_mp3 = convert_step.get("mp3_path")
+                if step_mp3:
+                    candidate = Path(step_mp3)
+                    if candidate.exists():
+                        return candidate
+                steps = metadata.get("steps", {})
+                legacy_convert = steps.get("convert", {})
+                legacy_step_mp3 = legacy_convert.get("mp3_path")
+                if legacy_step_mp3:
+                    candidate = Path(legacy_step_mp3)
+                    if candidate.exists():
+                        return candidate
+                # State had no usable path (e.g. UUID key without audio_path); try resolver/recordings before logging
+                try:
+                    resolved = resolve_file_path(
+                        transcript_path, file_type="audio", validate_state=False
                     )
+                    if Path(resolved).exists():
+                        return Path(resolved)
+                except FileNotFoundError:
+                    pass
+                # Try recordings: use canonical_base_name from state, then full base, then base without _N suffix
+                transcript_base = get_base_name(transcript_path)
+                canonical_base = metadata.get("canonical_base_name") or transcript_base
+                base_without_suffix = (
+                    transcript_base.rsplit("_", 1)[0]
+                    if "_" in transcript_base
+                    else transcript_base
+                )
+                recordings_dirs = [
+                    Path(DATA_DIR) / "recordings",
+                    Path(OUTPUTS_DIR) / "recordings",
+                ]
+                exts = [".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg"]
+                for base in (canonical_base, transcript_base, base_without_suffix):
+                    for dir_path in recordings_dirs:
+                        if not dir_path.exists():
+                            continue
+                        for ext in exts:
+                            candidate = dir_path / f"{base}{ext}"
+                            if candidate.exists():
+                                return candidate
+                # Nothing worked for this entry
+                path_ref = metadata.get("audio_path") or (
+                    file_key if not _looks_like_uuid(file_key) else None
+                )
+                logger.info(
+                    "Original audio file from state not found; "
+                    f"speaker identification will continue without playback: {path_ref or file_key}"
+                )
 
         # If not found in state, try resolver first (handles canonical base matching)
         try:
@@ -217,13 +278,13 @@ def find_original_audio_file(transcript_path: str) -> Optional[Path]:
             pass
 
         # If not found in state, try to infer from transcript name
-        # Transcript names often match audio file names (e.g., 20251216203350_8.json -> 20251216203350.wav)
+        # Try full base name first (e.g. 260224_CSE), then suffix-stripped (e.g. 260223_team_facilitation from 260223_team_facilitation_8)
         transcript_base = get_base_name(transcript_path)
-        # Remove suffix like "_8" if present
-        if "_" in transcript_base:
-            base_without_suffix = transcript_base.rsplit("_", 1)[0]
-        else:
-            base_without_suffix = transcript_base
+        base_without_suffix = (
+            transcript_base.rsplit("_", 1)[0]
+            if "_" in transcript_base
+            else transcript_base
+        )
 
         # Try resolver with suffix-stripped base name
         try:
@@ -236,28 +297,26 @@ def find_original_audio_file(transcript_path: str) -> Optional[Path]:
         except FileNotFoundError:
             pass
 
-        # Try common audio extensions
+        # Try common audio extensions: full base first, then base without _N suffix
         audio_extensions = [".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg"]
-        for ext in audio_extensions:
-            # Check in recordings directory
-            recordings_dir = Path(DATA_DIR) / "recordings"
-            if recordings_dir.exists():
-                audio_file = recordings_dir / f"{base_without_suffix}{ext}"
-                if audio_file.exists():
-                    return audio_file
-
-            # Check in outputs/recordings directory
-            outputs_recordings = Path(OUTPUTS_DIR) / "recordings"
-            if outputs_recordings.exists():
-                audio_file = outputs_recordings / f"{base_without_suffix}{ext}"
-                if audio_file.exists():
-                    return audio_file
+        recordings_dirs = [
+            Path(DATA_DIR) / "recordings",
+            Path(OUTPUTS_DIR) / "recordings",
+        ]
+        for base in (transcript_base, base_without_suffix):
+            for recordings_dir in recordings_dirs:
+                if not recordings_dir.exists():
+                    continue
+                for ext in audio_extensions:
+                    audio_file = recordings_dir / f"{base}{ext}"
+                    if audio_file.exists():
+                        return audio_file
 
         # If still not found, use transcript file modification time as fallback
         transcript_file = Path(transcript_path)
         if transcript_file.exists():
             logger.info(
-                f"Using transcript file modification time as fallback for date extraction"
+                "Using transcript file modification time as fallback for date extraction"
             )
             return transcript_file
 
@@ -862,7 +921,7 @@ def prompt_for_rename(transcript_path: str, default_name: str) -> Optional[str]:
     try:
         old_name = get_base_name(transcript_path)
 
-        console.print(f"\n[bold cyan]📝 Rename Transcript[/bold cyan]")
+        console.print("\n[bold cyan]📝 Rename Transcript[/bold cyan]")
         console.print(f"[dim]Current name: {old_name}[/dim]")
 
         prompt_msg = "Enter new name for transcript (or press Enter to skip):"
@@ -922,7 +981,7 @@ def rename_mp3_file(mp3_path: Path, default_name: str = "") -> Optional[Path]:
 
         old_name = mp3_path.stem
 
-        console.print(f"\n[bold cyan]📝 Rename MP3 File[/bold cyan]")
+        console.print("\n[bold cyan]📝 Rename MP3 File[/bold cyan]")
         console.print(f"[dim]Current name: {old_name}[/dim]")
 
         prompt_msg = "Enter new name for MP3 file (or press Enter to skip):"

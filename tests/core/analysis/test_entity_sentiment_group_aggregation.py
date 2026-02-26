@@ -1,5 +1,3 @@
-from typing import Any
-
 from transcriptx.core.analysis.aggregation.entity_sentiment import (  # type: ignore[import]
     aggregate_entity_sentiment_group,
 )
@@ -33,11 +31,23 @@ def test_entity_sentiment_aggregation_excludes_unidentified() -> None:
     }
 
     sentiment_a = [
-        {"id": "s1", "text": "Apple", "sentiment": {"compound": 0.5, "pos": 0.6, "neu": 0.3, "neg": 0.1}},
-        {"id": "s2", "text": "Acme", "sentiment": {"compound": -0.2, "pos": 0.1, "neu": 0.4, "neg": 0.5}},
+        {
+            "id": "s1",
+            "text": "Apple",
+            "sentiment": {"compound": 0.5, "pos": 0.6, "neu": 0.3, "neg": 0.1},
+        },
+        {
+            "id": "s2",
+            "text": "Acme",
+            "sentiment": {"compound": -0.2, "pos": 0.1, "neu": 0.4, "neg": 0.5},
+        },
     ]
     sentiment_b = [
-        {"id": "s3", "text": "Apple", "sentiment": {"compound": -0.5, "pos": 0.1, "neu": 0.3, "neg": 0.6}},
+        {
+            "id": "s3",
+            "text": "Apple",
+            "sentiment": {"compound": -0.5, "pos": 0.1, "neu": 0.3, "neg": 0.6},
+        },
     ]
 
     results = [
@@ -67,7 +77,10 @@ def test_entity_sentiment_aggregation_excludes_unidentified() -> None:
     transcript_set = TranscriptSet.create(["a.json", "b.json"], name="Group")
 
     outcome = aggregate_entity_sentiment_group(
-        results, canonical_map, transcript_set, {"ner": {"mentions_index": mentions_index}}
+        results,
+        canonical_map,
+        transcript_set,
+        {"ner": {"mentions_index": mentions_index}},
     )
     assert outcome is not None
 

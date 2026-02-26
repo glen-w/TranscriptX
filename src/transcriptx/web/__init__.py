@@ -8,4 +8,4 @@ The Flask/Jinja2 interface has been archived. See archived/ directory for
 historical reference.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.42"

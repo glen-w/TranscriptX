@@ -5,7 +5,6 @@ This module tests: Analysis results → Output service → File generation.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -33,9 +32,7 @@ class TestOutputServiceIntegration:
     def sample_analysis_results(self):
         """Fixture for sample analysis results."""
         return {
-            "segments": [
-                {"speaker": "SPEAKER_00", "sentiment_score": 0.8}
-            ],
+            "segments": [{"speaker": "SPEAKER_00", "sentiment_score": 0.8}],
             "summary": {"average_sentiment": 0.8},
         }
 

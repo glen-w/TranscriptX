@@ -77,9 +77,7 @@ def build_app() -> "gr.Blocks":
         start = gr.Button("Start Transcription", variant="primary")
 
         logs = gr.Textbox(label="Logs", lines=14, interactive=False)
-        transcript_path = gr.Textbox(
-            label="Transcript JSON Path", interactive=False
-        )
+        transcript_path = gr.Textbox(label="Transcript JSON Path", interactive=False)
         preview = gr.Textbox(label="Preview", lines=12, interactive=False)
         notes = gr.Textbox(label="Notes", lines=4, interactive=False)
 

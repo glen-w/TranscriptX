@@ -18,7 +18,9 @@ def upgrade():
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("uuid", sa.String(length=36), unique=True, nullable=False),
         sa.Column("name", sa.String(length=500), nullable=True),
-        sa.Column("type", sa.String(length=50), nullable=False, server_default="merged_event"),
+        sa.Column(
+            "type", sa.String(length=50), nullable=False, server_default="merged_event"
+        ),
         sa.Column("key", sa.String(length=72), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("metadata_json", sa.JSON(), nullable=True),
@@ -65,12 +67,8 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_constraint(
-        "uq_group_member_transcript", "group_members", type_="unique"
-    )
-    op.drop_constraint(
-        "uq_group_member_position", "group_members", type_="unique"
-    )
+    op.drop_constraint("uq_group_member_transcript", "group_members", type_="unique")
+    op.drop_constraint("uq_group_member_position", "group_members", type_="unique")
     op.drop_index("idx_group_member_position", table_name="group_members")
     op.drop_table("group_members")
 

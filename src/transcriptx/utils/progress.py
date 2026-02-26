@@ -47,10 +47,8 @@ This module provides decorators and utilities for implementing retry logic
 with exponential backoff, timeout handling, and graceful degradation.
 """
 
-import time
 import functools
 from typing import Callable, Any, Optional, Type, Union, Tuple
-from transcriptx.core.utils.logger import log_warning, log_error
 
 
 def retry_on_failure(
@@ -221,7 +219,7 @@ def retry_with_circuit_breaker(
                         result = func(*args, **kwargs)
                         failure_count = 0  # Reset on success
                         return result
-                    except exceptions as retry_e:
+                    except exceptions:
                         failure_count += 1
                         last_failure_time = time.time()
 
@@ -278,7 +276,7 @@ def timeout_handler(
                 signal.alarm(0)  # Cancel alarm
                 return result
 
-            except TimeoutError as e:
+            except TimeoutError:
                 log_warning(
                     "TIMEOUT", f"Operation {func.__name__} timed out after {timeout}s"
                 )
@@ -683,10 +681,31 @@ def process_spinner(
             print("✅ Completed")
 
 
+def _resource_sampler(
+    process: "psutil.Process",
+    resources: dict,
+    stop_event: threading.Event,
+    interval: float = 1.0,
+) -> None:
+    """Background thread: sample CPU and memory periodically and update peak values."""
+    # First call to cpu_percent() returns 0.0; subsequent calls return % since last call.
+    process.cpu_percent()
+    while not stop_event.wait(timeout=interval):
+        try:
+            cpu = process.cpu_percent()
+            mem = process.memory_info().rss
+            resources["peak_cpu"] = max(resources["peak_cpu"], cpu)
+            resources["peak_memory"] = max(resources["peak_memory"], mem)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            break
+
+
 @contextmanager
 def resource_monitor(description: str = "Monitoring resources"):
     """
     Context manager for monitoring system resources during operations.
+    Samples CPU and memory in a background thread so peak values are meaningful
+    (psutil's cpu_percent() returns 0.0 on first call with interval=None).
 
     Args:
         description: Description of the operation
@@ -696,24 +715,31 @@ def resource_monitor(description: str = "Monitoring resources"):
     """
     process = psutil.Process(os.getpid())
     start_memory = process.memory_info().rss
-    start_cpu = process.cpu_percent()
     start_time = time.time()
 
     resources = {
         "start_memory": start_memory,
-        "start_cpu": start_cpu,
         "start_time": start_time,
         "peak_memory": start_memory,
-        "peak_cpu": start_cpu,
+        "peak_cpu": 0.0,
     }
+
+    stop_event = threading.Event()
+    sampler = threading.Thread(
+        target=_resource_sampler,
+        args=(process, resources, stop_event),
+        daemon=True,
+    )
+    sampler.start()
 
     try:
         yield resources
     finally:
+        stop_event.set()
+        sampler.join(timeout=2.5)
+
         end_time = time.time()
         end_memory = process.memory_info().rss
-        end_cpu = process.cpu_percent()
-
         duration = end_time - start_time
         memory_increase = end_memory - start_memory
 

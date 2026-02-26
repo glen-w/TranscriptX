@@ -46,7 +46,9 @@ def build_setting_items_from_dataclass(
     overrides: Optional[dict[str, SettingItem]] = None,
 ) -> list[SettingItem]:
     if not is_dataclass(instance):
-        raise TypeError("build_setting_items_from_dataclass expects a dataclass instance")
+        raise TypeError(
+            "build_setting_items_from_dataclass expects a dataclass instance"
+        )
 
     overrides = overrides or {}
     items: list[SettingItem] = []
@@ -88,22 +90,32 @@ def build_setting_items_from_dataclass(
         editor = None
 
         if choices:
-            editor = create_choice_editor(list(choices), hint=hint, allow_none=is_optional)
+            editor = create_choice_editor(
+                list(choices), hint=hint, allow_none=is_optional
+            )
         elif get_origin(inner_type) is Literal:
             literal_choices = list(get_args(inner_type))
-            editor = create_choice_editor(literal_choices, hint=hint, allow_none=is_optional)
+            editor = create_choice_editor(
+                literal_choices, hint=hint, allow_none=is_optional
+            )
         elif _is_enum_type(inner_type):
             enum_choices = list(inner_type)
-            editor = create_choice_editor(enum_choices, hint=hint, allow_none=is_optional)
+            editor = create_choice_editor(
+                enum_choices, hint=hint, allow_none=is_optional
+            )
         elif inner_type is bool:
             if is_optional:
                 editor = create_choice_editor([True, False], hint=hint, allow_none=True)
             else:
                 editor = create_bool_editor(hint=hint)
         elif inner_type is int:
-            editor = create_int_editor(min_val=min_val, max_val=max_val, hint=hint, allow_none=is_optional)
+            editor = create_int_editor(
+                min_val=min_val, max_val=max_val, hint=hint, allow_none=is_optional
+            )
         elif inner_type is float:
-            editor = create_float_editor(min_val=min_val, max_val=max_val, hint=hint, allow_none=is_optional)
+            editor = create_float_editor(
+                min_val=min_val, max_val=max_val, hint=hint, allow_none=is_optional
+            )
         elif inner_type is str:
             editor = create_str_editor(hint=hint, allow_none=is_optional)
         else:

@@ -51,7 +51,9 @@ def _build_config_from_dict(config_dict: Dict[str, Any]) -> TranscriptXConfig:
     tmp_path = None
     try:
         config = TranscriptXConfig()
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as handle:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as handle:
             json.dump(config_dict, handle, indent=2)
             tmp_path = handle.name
         config._load_from_file(tmp_path)

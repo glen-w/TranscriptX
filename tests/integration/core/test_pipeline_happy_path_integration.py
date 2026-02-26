@@ -19,12 +19,18 @@ def test_pipeline_happy_path_minimal(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
     monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(transcript_output_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(pipeline_module, "OUTPUTS_DIR", str(outputs_root))
 
-    fixture_path = Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
+    fixture_path = (
+        Path(__file__).resolve().parents[2] / "fixtures" / "mini_transcript.json"
+    )
     result = run_analysis_pipeline(
         target=TranscriptRef(path=str(fixture_path)),
         selected_modules=["transcript_output"],

@@ -11,7 +11,6 @@ from transcriptx.cli.settings import (  # type: ignore[import-untyped]
     create_float_editor,
     create_int_editor,
     create_list_editor,
-    create_str_editor,
     settings_menu_loop,
 )
 from ._dirty_tracker import is_dirty, mark_dirty
@@ -59,7 +58,9 @@ def _sentiment_model_editor(item: SettingItem) -> Optional[Any]:
     if selected == CUSTOM_SENTIMENT_MODEL_LABEL:
         custom = questionary.text(
             "Enter Hugging Face model id",
-            default=current_value if current_value not in SENTIMENT_MODEL_CHOICES else "",
+            default=(
+                current_value if current_value not in SENTIMENT_MODEL_CHOICES else ""
+            ),
         ).ask()
         if custom is None:
             return None
@@ -112,7 +113,9 @@ def edit_analysis_config(config: Any) -> None:
             key="analysis.sentiment_window_size",
             label="Sentiment window size",
             getter=lambda: config.analysis.sentiment_window_size,
-            setter=lambda value: setattr(config.analysis, "sentiment_window_size", value),
+            setter=lambda value: setattr(
+                config.analysis, "sentiment_window_size", value
+            ),
             editor=create_int_editor(min_val=1, hint="Positive integer window size."),
         ),
         SettingItem(
@@ -157,7 +160,9 @@ def edit_analysis_config(config: Any) -> None:
             key="analysis.emotion_min_confidence",
             label="Emotion min confidence",
             getter=lambda: config.analysis.emotion_min_confidence,
-            setter=lambda value: setattr(config.analysis, "emotion_min_confidence", value),
+            setter=lambda value: setattr(
+                config.analysis, "emotion_min_confidence", value
+            ),
             editor=create_float_editor(
                 min_val=0.0, max_val=1.0, hint="Range: 0.0 to 1.0"
             ),
@@ -175,9 +180,7 @@ def edit_analysis_config(config: Any) -> None:
             key="analysis.emotion_output_mode",
             label="Emotion output mode",
             getter=lambda: getattr(config.analysis, "emotion_output_mode", "top1"),
-            setter=lambda value: setattr(
-                config.analysis, "emotion_output_mode", value
-            ),
+            setter=lambda value: setattr(config.analysis, "emotion_output_mode", value),
             editor=create_choice_editor(
                 ["top1", "multilabel"],
                 hint="top1 = single label; multilabel = all above threshold.",
@@ -223,7 +226,9 @@ def edit_analysis_config(config: Any) -> None:
             key="analysis.ner_include_geocoding",
             label="NER geocoding",
             getter=lambda: config.analysis.ner_include_geocoding,
-            setter=lambda value: setattr(config.analysis, "ner_include_geocoding", value),
+            setter=lambda value: setattr(
+                config.analysis, "ner_include_geocoding", value
+            ),
             editor=create_bool_editor(hint="Include geocoding for location entities."),
         ),
         SettingItem(
@@ -249,9 +254,7 @@ def edit_analysis_config(config: Any) -> None:
             key="analysis.wordcloud_stopwords",
             label="Word cloud stopwords",
             getter=lambda: config.analysis.wordcloud_stopwords,
-            setter=lambda value: setattr(
-                config.analysis, "wordcloud_stopwords", value
-            ),
+            setter=lambda value: setattr(config.analysis, "wordcloud_stopwords", value),
             editor=create_list_editor(hint="Comma-separated list of stopwords."),
         ),
         SettingItem(
@@ -381,9 +384,7 @@ def edit_analysis_config(config: Any) -> None:
             key="analysis.ner_use_light_model",
             label="NER use light model",
             getter=lambda: config.analysis.ner_use_light_model,
-            setter=lambda value: setattr(
-                config.analysis, "ner_use_light_model", value
-            ),
+            setter=lambda value: setattr(config.analysis, "ner_use_light_model", value),
             editor=create_bool_editor(
                 hint="Use lighter NER model for faster processing.",
             ),

@@ -61,7 +61,9 @@ def classify_agreement_disagreement_advanced(
         return "neutral"
 
 
-def classify_agreement_disagreement_basic(text1: str, text2: str, similarity: float) -> str:
+def classify_agreement_disagreement_basic(
+    text1: str, text2: str, similarity: float
+) -> str:
     """Classification used by basic analyzer."""
     agreement_words = {
         "agree",

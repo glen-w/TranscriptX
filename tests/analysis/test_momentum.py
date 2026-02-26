@@ -4,9 +4,24 @@ from transcriptx.core.models.events import Event
 
 def test_momentum_computes_timeseries_and_novelty():
     segments = [
-        {"speaker": "Alice", "text": "We should ship tomorrow.", "start": 0.0, "end": 2.0},
-        {"speaker": "Bob", "text": "I agree with shipping.", "start": 10.0, "end": 12.0},
-        {"speaker": "Alice", "text": "Let's finalize the plan.", "start": 40.0, "end": 42.0},
+        {
+            "speaker": "Alice",
+            "text": "We should ship tomorrow.",
+            "start": 0.0,
+            "end": 2.0,
+        },
+        {
+            "speaker": "Bob",
+            "text": "I agree with shipping.",
+            "start": 10.0,
+            "end": 12.0,
+        },
+        {
+            "speaker": "Alice",
+            "text": "Let's finalize the plan.",
+            "start": 40.0,
+            "end": 42.0,
+        },
     ]
     pauses_data = {
         "events": [

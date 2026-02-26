@@ -13,7 +13,6 @@ from transcriptx.cli.settings import (
     create_choice_editor,
     create_int_editor,
     create_secret_editor,
-    create_str_editor,
     settings_menu_loop,
 )
 from ._dirty_tracker import is_dirty, mark_dirty
@@ -59,9 +58,9 @@ def _create_language_editor() -> Callable[[SettingItem], str | None]:
             selected = cast(
                 Optional[str],
                 questionary.select(
-                f"Select {item.label.lower()}",
-                choices=selection_choices,
-                default=default_value,
+                    f"Select {item.label.lower()}",
+                    choices=selection_choices,
+                    default=default_value,
                 ).ask(),
             )
 
@@ -74,7 +73,11 @@ def _create_language_editor() -> Callable[[SettingItem], str | None]:
                     Optional[str],
                     questionary.text(
                         "Enter language code (e.g., 'cs' for Czech, 'fi' for Finnish)",
-                        default=current_value if current_value not in common_languages else "",
+                        default=(
+                            current_value
+                            if current_value not in common_languages
+                            else ""
+                        ),
                     ).ask(),
                 )
                 if custom_lang is None or not custom_lang.strip():
@@ -90,6 +93,7 @@ def _create_language_editor() -> Callable[[SettingItem], str | None]:
 
 def edit_transcription_config(config) -> None:
     """Edit transcription configuration."""
+
     def _format_token(value: object) -> str:
         return "SET" if value else "NOT SET"
 
@@ -121,7 +125,9 @@ def edit_transcription_config(config) -> None:
             key="transcription.language",
             label="Language",
             getter=lambda: config.transcription.language or "en",
-            setter=lambda value: setattr(config.transcription, "language", value or "en"),
+            setter=lambda value: setattr(
+                config.transcription, "language", value or "en"
+            ),
             editor=_create_language_editor(),
         ),
         SettingItem(
@@ -154,7 +160,11 @@ def edit_transcription_config(config) -> None:
             label="Max speakers",
             getter=lambda: config.transcription.max_speakers,
             setter=lambda value: setattr(config.transcription, "max_speakers", value),
-            editor=create_int_editor(min_val=1, hint="Maximum number of speakers; leave empty for no limit.", allow_none=True),
+            editor=create_int_editor(
+                min_val=1,
+                hint="Maximum number of speakers; leave empty for no limit.",
+                allow_none=True,
+            ),
         ),
         SettingItem(
             order=8,
@@ -174,7 +184,9 @@ def edit_transcription_config(config) -> None:
             key="transcription.huggingface_token",
             label="HuggingFace token",
             getter=lambda: config.transcription.huggingface_token,
-            setter=lambda value: setattr(config.transcription, "huggingface_token", value),
+            setter=lambda value: setattr(
+                config.transcription, "huggingface_token", value
+            ),
             editor=create_secret_editor(
                 hint="Token for model downloads (required if policy is require_token)."
             ),

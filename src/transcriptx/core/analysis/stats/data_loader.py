@@ -31,7 +31,11 @@ def load_module_data(transcript_dir: str, base_name: str) -> dict:
     module_data["acts"] = _load_first_json(
         [
             os.path.join(
-                transcript_dir, "acts", "data", "global", f"{base_name}_acts_summary.json"
+                transcript_dir,
+                "acts",
+                "data",
+                "global",
+                f"{base_name}_acts_summary.json",
             ),
             os.path.join(
                 transcript_dir, "acts", "data", f"{base_name}_acts_summary.json"
@@ -131,7 +135,10 @@ def load_module_data(transcript_dir: str, base_name: str) -> dict:
     module_data["contagion"] = _load_first_json(
         [
             os.path.join(
-                transcript_dir, "contagion", "data", f"{base_name}_contagion_summary.json"
+                transcript_dir,
+                "contagion",
+                "data",
+                f"{base_name}_contagion_summary.json",
             )
         ]
     )

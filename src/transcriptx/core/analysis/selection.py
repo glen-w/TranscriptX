@@ -50,25 +50,39 @@ def apply_analysis_mode_settings(
         settings = config.analysis.quick_analysis_settings
         config.analysis.analysis_mode = "quick"
         config.analysis.semantic_similarity_method = settings["semantic_method"]
-        config.analysis.max_segments_for_semantic = settings["max_segments_for_semantic"]
+        config.analysis.max_segments_for_semantic = settings[
+            "max_segments_for_semantic"
+        ]
         config.analysis.max_semantic_comparisons = settings["max_semantic_comparisons"]
         config.analysis.ner_use_light_model = settings["ner_use_light_model"]
         config.analysis.ner_max_segments = settings["ner_max_segments"]
-        config.analysis.ner_include_geocoding = not settings.get("skip_geocoding", False)
-        config.analysis.quality_filtering_profile = settings.get("semantic_profile", "balanced")
+        config.analysis.ner_include_geocoding = not settings.get(
+            "skip_geocoding", False
+        )
+        config.analysis.quality_filtering_profile = settings.get(
+            "semantic_profile", "balanced"
+        )
     else:
         settings = config.analysis.full_analysis_settings
         config.analysis.analysis_mode = "full"
         config.analysis.semantic_similarity_method = settings["semantic_method"]
-        config.analysis.max_segments_for_semantic = settings["max_segments_for_semantic"]
+        config.analysis.max_segments_for_semantic = settings[
+            "max_segments_for_semantic"
+        ]
         config.analysis.max_semantic_comparisons = settings["max_semantic_comparisons"]
         config.analysis.ner_use_light_model = settings["ner_use_light_model"]
         config.analysis.ner_max_segments = settings["ner_max_segments"]
-        config.analysis.ner_include_geocoding = not settings.get("skip_geocoding", False)
+        config.analysis.ner_include_geocoding = not settings.get(
+            "skip_geocoding", False
+        )
         if "max_segments_per_speaker" in settings:
-            config.analysis.max_segments_per_speaker = settings["max_segments_per_speaker"]
+            config.analysis.max_segments_per_speaker = settings[
+                "max_segments_per_speaker"
+            ]
         if "max_segments_for_cross_speaker" in settings:
-            config.analysis.max_segments_for_cross_speaker = settings["max_segments_for_cross_speaker"]
+            config.analysis.max_segments_for_cross_speaker = settings[
+                "max_segments_for_cross_speaker"
+            ]
         profile_choice = profile or "balanced"
         if profile_choice not in VALID_PROFILES:
             profile_choice = "balanced"
@@ -88,7 +102,10 @@ def filter_modules_by_mode(modules: List[str], mode: str) -> List[str]:
         settings = getattr(config.analysis, "quick_analysis_settings", None) or {}
         if settings.get("skip_advanced_semantic", True):
             filtered = [m for m in modules if m != "semantic_similarity_advanced"]
-            if "semantic_similarity_advanced" in modules and "semantic_similarity" not in filtered:
+            if (
+                "semantic_similarity_advanced" in modules
+                and "semantic_similarity" not in filtered
+            ):
                 filtered.append("semantic_similarity")
             return filtered
     return list(modules)

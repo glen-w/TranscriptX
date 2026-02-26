@@ -15,7 +15,9 @@ class InteractionEvent:
     timestamp: float  # When the interaction occurred
     speaker_a: str  # First speaker in the interaction
     speaker_b: str  # Second speaker in the interaction
-    interaction_type: str  # Type: 'interruption_overlap', 'interruption_gap', 'response'
+    interaction_type: (
+        str  # Type: 'interruption_overlap', 'interruption_gap', 'response'
+    )
     speaker_a_text: str  # Text from speaker A
     speaker_b_text: str  # Text from speaker B
     gap_before: float  # Gap before interaction (seconds)

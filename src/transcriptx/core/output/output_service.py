@@ -44,7 +44,7 @@ from transcriptx.core.viz.mpl_renderer import render_mpl
 from transcriptx.core.viz.charts import render_plotly
 from transcriptx.core.viz.specs import ChartSpec
 from transcriptx.io import save_json, save_csv
-from transcriptx.core.utils.artifact_writer import write_text, write_json
+from transcriptx.core.utils.artifact_writer import write_json
 
 logger = get_logger()
 
@@ -296,7 +296,11 @@ class OutputService:
                     remapped_value = self._map_speaker_field(value)
                 elif isinstance(value, list):
                     remapped_value = [
-                        self._map_speaker_field(item) if isinstance(item, dict) else item
+                        (
+                            self._map_speaker_field(item)
+                            if isinstance(item, dict)
+                            else item
+                        )
                         for item in value
                     ]
                 else:
@@ -508,9 +512,11 @@ class OutputService:
             "module": spec.module,
             "artifact_kind": "chart",
             "scope": spec.scope,
-            "speaker": self.resolve_speaker_display(str(spec.speaker))
-            if spec.speaker
-            else None,
+            "speaker": (
+                self.resolve_speaker_display(str(spec.speaker))
+                if spec.speaker
+                else None
+            ),
             "name": spec.name,
             "chart_intent": spec.chart_intent,
             "chart_type": chart_type,
@@ -542,7 +548,9 @@ class OutputService:
                 # Always close render_mpl-created figures to avoid accumulating open figures
                 # during batch analysis runs (which can trigger matplotlib's max_open_warning).
                 try:
-                    from transcriptx.core.utils.lazy_imports import get_matplotlib_pyplot
+                    from transcriptx.core.utils.lazy_imports import (
+                        get_matplotlib_pyplot,
+                    )
 
                     plt = get_matplotlib_pyplot()
                     plt.close(static_fig)
@@ -651,7 +659,9 @@ class OutputService:
                 # Close legacy matplotlib figures after saving to prevent figure buildup
                 # in long-running batch processes.
                 try:
-                    from transcriptx.core.utils.lazy_imports import get_matplotlib_pyplot
+                    from transcriptx.core.utils.lazy_imports import (
+                        get_matplotlib_pyplot,
+                    )
 
                     plt = get_matplotlib_pyplot()
                     plt.close(static_fig)

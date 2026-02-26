@@ -16,7 +16,9 @@ def test_transcript_hash_stable_for_whitespace_changes() -> None:
     segments_b = [
         {"start": 0.0, "end": 1.2345, "speaker": "SPEAKER_00", "text": "Hello world"},
     ]
-    assert compute_transcript_content_hash(segments_a) == compute_transcript_content_hash(segments_b)
+    assert compute_transcript_content_hash(
+        segments_a
+    ) == compute_transcript_content_hash(segments_b)
 
 
 def test_transcript_hash_changes_on_text_change() -> None:
@@ -26,4 +28,6 @@ def test_transcript_hash_changes_on_text_change() -> None:
     segments_b = [
         {"start": 0.0, "end": 1.2345, "speaker": "SPEAKER_00", "text": "Hello there"},
     ]
-    assert compute_transcript_content_hash(segments_a) != compute_transcript_content_hash(segments_b)
+    assert compute_transcript_content_hash(
+        segments_a
+    ) != compute_transcript_content_hash(segments_b)

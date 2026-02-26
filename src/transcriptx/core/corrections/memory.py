@@ -4,11 +4,15 @@ import json
 import os
 import platform
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, Optional
 
 import yaml
 
-from transcriptx.core.corrections.models import CorrectionMemory, CorrectionRule, Decision
+from transcriptx.core.corrections.models import (
+    CorrectionMemory,
+    CorrectionRule,
+    Decision,
+)
 from transcriptx.core.utils.logger import get_logger
 
 logger = get_logger()
@@ -54,7 +58,9 @@ def resolve_project_root(transcript_path: Optional[str] = None) -> Optional[Path
 def _get_global_memory_path() -> Path:
     home = Path.home()
     if platform.system() == "Darwin":
-        return home / "Library" / "Application Support" / "transcriptx" / "corrections.yml"
+        return (
+            home / "Library" / "Application Support" / "transcriptx" / "corrections.yml"
+        )
     return home / ".config" / "transcriptx" / "corrections.yml"
 
 

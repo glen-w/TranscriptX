@@ -140,12 +140,12 @@ def load_voice_features(
     if egemaps_path is None:
         return core_df
     # If no egemaps file exists, just return core
-    if not egemaps_path.with_suffix(".parquet").exists() and not egemaps_path.with_suffix(
-        ".jsonl"
-    ).exists():
+    if (
+        not egemaps_path.with_suffix(".parquet").exists()
+        and not egemaps_path.with_suffix(".jsonl").exists()
+    ):
         return core_df
     eg_df = _load_one(egemaps_path)
     if "segment_id" in core_df.columns and "segment_id" in eg_df.columns:
         return core_df.merge(eg_df, on="segment_id", how="left")
     return core_df
-

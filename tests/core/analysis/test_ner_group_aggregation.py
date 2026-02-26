@@ -44,7 +44,9 @@ def test_aggregate_ner_group_canonical_and_unidentified(monkeypatch: Any) -> Non
         return entities
 
     monkeypatch.setattr(TranscriptService, "load_segments", fake_load_segments)
-    monkeypatch.setattr(ner_aggregation, "extract_named_entities", fake_extract_named_entities)
+    monkeypatch.setattr(
+        ner_aggregation, "extract_named_entities", fake_extract_named_entities
+    )
 
     results = [
         PerTranscriptResult(
@@ -79,7 +81,9 @@ def test_aggregate_ner_group_canonical_and_unidentified(monkeypatch: Any) -> Non
 
     transcript_set = TranscriptSet.create(["a.json", "b.json"], name="Group")
 
-    outcome = ner_aggregation.aggregate_ner_group(results, canonical_map, transcript_set)
+    outcome = ner_aggregation.aggregate_ner_group(
+        results, canonical_map, transcript_set
+    )
     assert outcome is not None
     mentions_index = outcome["mentions_index"]
 
@@ -90,7 +94,9 @@ def test_aggregate_ner_group_canonical_and_unidentified(monkeypatch: Any) -> Non
     assert all(row["display_name"] != "SPEAKER_00" for row in speaker_rows)
 
     apple_row = next(
-        row for row in speaker_rows if row["entity"] == "apple" and row["entity_type"] == "ORG"
+        row
+        for row in speaker_rows
+        if row["entity"] == "apple" and row["entity_type"] == "ORG"
     )
     assert apple_row["mentions"] == 2
 

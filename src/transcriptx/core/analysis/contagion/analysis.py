@@ -204,7 +204,9 @@ class ContagionAnalysis(AnalysisModule):
             if emotion_result and isinstance(emotion_result, dict):
                 segments_with_emotion = emotion_result.get("segments_with_emotion", [])
                 if segments_with_emotion:
-                    sample_seg = segments_with_emotion[0] if segments_with_emotion else {}
+                    sample_seg = (
+                        segments_with_emotion[0] if segments_with_emotion else {}
+                    )
                     if (
                         "context_emotion" not in sample_seg
                         and "nrc_emotion" not in sample_seg
@@ -260,7 +262,9 @@ class ContagionAnalysis(AnalysisModule):
                     )
 
                     if segments_with_emotion:
-                        sample_seg = segments_with_emotion[0] if segments_with_emotion else {}
+                        sample_seg = (
+                            segments_with_emotion[0] if segments_with_emotion else {}
+                        )
                         logger.debug(
                             "[CONTAGION] Sample segment_with_emotion keys: "
                             f"{list(sample_seg.keys())}"

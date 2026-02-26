@@ -2,6 +2,14 @@
 # This file includes all dependencies for complete functionality
 
 # ============================================================================
+# Build environment (install first to avoid llvmlite/numba build failures)
+# ============================================================================
+# setuptools>=70 drops spawn(dry_run=...), which llvmlite's setup.py uses
+setuptools>=64,<70
+# Pin to 0.45.x: 0.46+ may have no wheel on some platforms and then builds from source (setuptools 70+ breaks build)
+llvmlite>=0.41.0,<0.46
+
+# ============================================================================
 # CLI and User Interface
 # ============================================================================
 typer[all]==0.16.0
@@ -10,7 +18,7 @@ questionary==2.0.1
 yaspin==2.1.0
 colorama==0.4.6
 textstat==0.7.12
-prompt-toolkit<=3.0.36
+prompt-toolkit>=3.0.0,<=3.0.51
 
 # ============================================================================
 # Basic Data Handling
@@ -70,6 +78,7 @@ matplotlib==3.7.2
 # ============================================================================
 # Deep Learning
 # ============================================================================
+# Keep transformers<4.32 so PyTorch 2.2.x works; transformers>=4.45 requires PyTorch>=2.4
 torch>=2.0.1
 torchvision>=0.15.0
 torchaudio>=2.2.0

@@ -74,7 +74,9 @@ def normalize_speakers_across_transcripts(
     transcript_to_display: Dict[str, Dict[str, str]] = {}
 
     for result in per_transcript_results:
-        segments = transcript_service.load_segments(result.transcript_path, use_cache=True)
+        segments = transcript_service.load_segments(
+            result.transcript_path, use_cache=True
+        )
         speaker_map = get_unique_speakers(segments)
         local_to_canonical: Dict[str, int] = {}
         local_to_display: Dict[str, str] = {}
@@ -105,9 +107,7 @@ def normalize_speakers_across_transcripts(
                     )
                     canonical_id = int(speaker.id)
                 except Exception as e:
-                    logger.debug(
-                        f"Speaker resolution failed for {local_id_str}: {e}"
-                    )
+                    logger.debug(f"Speaker resolution failed for {local_id_str}: {e}")
 
             if canonical_id is None:
                 canonical_id = _fallback_canonical_id(display_name or local_id_str)

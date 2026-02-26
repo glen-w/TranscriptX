@@ -37,7 +37,10 @@ class SemanticSimilarityAnalysis(AnalysisModule):
 
     def run_from_context(self, context: "PipelineContext") -> Dict[str, Any]:
         """Skip analysis when only one identified speaker (no cross-speaker comparison)."""
-        from transcriptx.core.utils.logger import log_analysis_complete, log_analysis_start
+        from transcriptx.core.utils.logger import (
+            log_analysis_complete,
+            log_analysis_start,
+        )
 
         segments = context.get_segments()
         if count_named_speakers(segments) <= 1:
@@ -92,7 +95,10 @@ class SemanticSimilarityAdvancedAnalysis(AnalysisModule):
     def run_from_context(self, context: "PipelineContext") -> Dict[str, Any]:
         """Skip analysis when only one identified speaker (no cross-speaker comparison)."""
         from transcriptx.core.output.output_service import create_output_service
-        from transcriptx.core.utils.logger import log_analysis_complete, log_analysis_start
+        from transcriptx.core.utils.logger import (
+            log_analysis_complete,
+            log_analysis_start,
+        )
 
         segments = context.get_segments()
         if count_named_speakers(segments) <= 1:
@@ -112,7 +118,12 @@ class SemanticSimilarityAdvancedAnalysis(AnalysisModule):
             )
             global_stats = {"total_repetitions": 0, "unique_patterns": 0}
             output_service.save_summary(
-                global_stats, {}, analysis_metadata={"skipped": True, "reason": "single_identified_speaker"}
+                global_stats,
+                {},
+                analysis_metadata={
+                    "skipped": True,
+                    "reason": "single_identified_speaker",
+                },
             )
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(

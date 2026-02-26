@@ -28,23 +28,27 @@ def test_workflow_single_transcript_runs_pipeline(tmp_path: Path, monkeypatch) -
     transcript_path = tmp_path / "sample.json"
     transcript_path.write_text('{"segments": []}')
 
-    monkeypatch.setattr(
-        analysis_workflow, "select_analysis_mode", lambda: "quick"
-    )
+    monkeypatch.setattr(analysis_workflow, "select_analysis_mode", lambda: "quick")
     monkeypatch.setattr(
         analysis_workflow, "apply_analysis_mode_settings", lambda mode: None
     )
     monkeypatch.setattr(
-        analysis_workflow, "select_analysis_modules", lambda *args, **kwargs: ["sentiment"]
+        analysis_workflow,
+        "select_analysis_modules",
+        lambda *args, **kwargs: ["sentiment"],
     )
     monkeypatch.setattr(
         analysis_workflow, "filter_modules_by_mode", lambda modules, mode: modules
     )
     monkeypatch.setattr(
-        analysis_workflow, "check_speaker_gate", lambda path: (analysis_workflow.SpeakerGateDecision.PROCEED, None)
+        analysis_workflow,
+        "check_speaker_gate",
+        lambda path: (analysis_workflow.SpeakerGateDecision.PROCEED, None),
     )
     monkeypatch.setattr(
-        analysis_workflow, "questionary", type("Q", (), {"confirm": lambda *args, **kwargs: _ConfirmStub(True)})
+        analysis_workflow,
+        "questionary",
+        type("Q", (), {"confirm": lambda *args, **kwargs: _ConfirmStub(True)}),
     )
 
     called = {"value": False}

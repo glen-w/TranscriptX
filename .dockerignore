@@ -1,0 +1,43 @@
+# Git and env
+.git
+.gitignore
+.env
+.env.*
+*.env
+!whisperx.env
+
+# Python
+.venv
+venv
+__pycache__
+*.py[cod]
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+.eggs
+dist
+build
+
+# Data and outputs (not needed for image build)
+data/
+outputs/
+runs/
+models/
+tmp/
+
+# IDE and OS
+.idea
+.vscode
+*.swp
+.DS_Store
+
+# Docs and tests (not needed for runtime image; keep if builder needs them)
+docs/
+tests/
+examples/
+
+# CI and plans
+.github
+.cursor

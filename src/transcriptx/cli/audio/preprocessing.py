@@ -20,7 +20,9 @@ except ImportError:
 try:
     # Suppress pkg_resources deprecation warning from webrtcvad
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning, message=".*pkg_resources.*")
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, message=".*pkg_resources.*"
+        )
         import webrtcvad
 
     WEBRTCVAD_AVAILABLE = True

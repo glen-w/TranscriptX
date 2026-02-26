@@ -36,7 +36,9 @@ class Group(Base):
     metadata_json: Mapped[Dict[str, Any]] = Column(JSONType, default=dict)
 
     created_at: Mapped[datetime] = Column(DateTime, default=func.now())
-    updated_at: Mapped[datetime] = Column(DateTime, default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = Column(
+        DateTime, default=func.now(), onupdate=func.now()
+    )
 
     members: Mapped[List["GroupMember"]] = relationship(
         "GroupMember", back_populates="group", cascade="all, delete"

@@ -27,9 +27,7 @@ def get_group_module_dir(base_dir: Path, module_name: str) -> Path:
     return module_dir
 
 
-def write_group_module_json(
-    module_dir: Path, name: str, data: Dict[str, Any]
-) -> str:
+def write_group_module_json(module_dir: Path, name: str, data: Dict[str, Any]) -> str:
     path = module_dir / "combined" / f"{name}.json"
     save_json(data, str(path))
     return str(path)

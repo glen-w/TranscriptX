@@ -117,9 +117,11 @@ def run_whisperx_compose(audio_file_path, config=None):
         model_download_policy = "anonymous"
         hf_token = ""
 
-    # Backstop: accept env vars even if config didn't pick them up.
+    # Backstop: unified token resolution (config, env, *_FILE).
     if not hf_token:
-        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+        from transcriptx.core.utils.hf_token import resolve_hf_token
+
+        hf_token = resolve_hf_token(config)
 
     # Normalize speaker bounds (defensive; WhisperX expects min <= max when max is set).
     try:
@@ -193,7 +195,7 @@ def run_whisperx_compose(audio_file_path, config=None):
         not target_audio_path.exists()
         or target_audio_path.resolve() != audio_file_path.resolve()
     ):
-        console.print(f"[cyan]Copying audio file to recordings directory...[/cyan]")
+        console.print("[cyan]Copying audio file to recordings directory...[/cyan]")
         try:
             shutil.copy2(audio_file_path, target_audio_path)
         except Exception as e:
@@ -371,16 +373,16 @@ def run_whisperx_compose(audio_file_path, config=None):
 
             # Show output
             if stdout_output:
-                console.print(f"[yellow]STDOUT:[/yellow]")
+                console.print("[yellow]STDOUT:[/yellow]")
                 console.print(f"{stdout_output}")
             if stderr_output:
-                console.print(f"[red]STDERR:[/red]")
+                console.print("[red]STDERR:[/red]")
                 console.print(f"{stderr_output}")
 
             # If no output, provide helpful message
             if not stdout_output and not stderr_output:
                 console.print(
-                    f"[yellow]No error output available. Container may have crashed or timed out.[/yellow]"
+                    "[yellow]No error output available. Container may have crashed or timed out.[/yellow]"
                 )
                 console.print(
                     f"[dim]Check logs: docker logs {WHISPERX_CONTAINER_NAME}[/dim]"
@@ -416,7 +418,7 @@ def run_whisperx_compose(audio_file_path, config=None):
         for name in possible_names:
             candidate = output_dir / name
             if candidate.exists():
-                console.print(f"[green]✅ Transcription completed![/green]")
+                console.print("[green]✅ Transcription completed![/green]")
                 return str(candidate)
 
         # If no exact match, search for files that start with the base name
@@ -436,7 +438,7 @@ def run_whisperx_compose(audio_file_path, config=None):
         # If we found matching files, use the most recently modified one
         if matching_files:
             most_recent = max(matching_files, key=lambda p: p.stat().st_mtime)
-            console.print(f"[green]✅ Transcription completed![/green]")
+            console.print("[green]✅ Transcription completed![/green]")
             return str(most_recent)
 
         # Search for recently created JSON files (created in last 5 minutes)
@@ -455,7 +457,7 @@ def run_whisperx_compose(audio_file_path, config=None):
         # If we found recently created files, use the most recently modified one
         if recent_json_files:
             most_recent = max(recent_json_files, key=lambda p: p.stat().st_mtime)
-            console.print(f"[green]✅ Transcription completed![/green]")
+            console.print("[green]✅ Transcription completed![/green]")
             return str(most_recent)
 
         # If still not found, check container output directory directly
@@ -477,14 +479,14 @@ def run_whisperx_compose(audio_file_path, config=None):
                 # Check if it exists on the host
                 host_file = output_dir / container_filename
                 if host_file.exists():
-                    console.print(f"[green]✅ Transcription completed![/green]")
+                    console.print("[green]✅ Transcription completed![/green]")
                     return str(host_file)
         except Exception as e:
             console.print(f"[dim]Could not find files in container: {e}[/dim]")
 
         # File not found
         console.print(
-            f"[yellow]Warning: No transcript file found at expected location[/yellow]"
+            "[yellow]Warning: No transcript file found at expected location[/yellow]"
         )
         console.print(f"[dim]Searched for: {possible_names}[/dim]")
         console.print(
@@ -496,7 +498,7 @@ def run_whisperx_compose(audio_file_path, config=None):
         import traceback
 
         console.print(f"[red]Error running WhisperX via Docker Compose: {e}[/red]")
-        console.print(f"[dim]Full traceback:[/dim]")
+        console.print("[dim]Full traceback:[/dim]")
         console.print(f"[dim]{traceback.format_exc()}[/dim]")
         return None
 
@@ -522,19 +524,17 @@ def run_whisperx_docker(audio_file_path, config=None):
     )
     diarize = getattr(config.transcription, "diarize", True) if config else True
     min_speakers = getattr(config.transcription, "min_speakers", 1) if config else 1
-    max_speakers = getattr(config.transcription, "max_speakers", None) if config else None
+    max_speakers = (
+        getattr(config.transcription, "max_speakers", None) if config else None
+    )
     model_download_policy = (
         getattr(config.transcription, "model_download_policy", "anonymous")
         if config
         else "anonymous"
     )
-    hf_token = (
-        getattr(config.transcription, "huggingface_token", "")
-        if config
-        else ""
-    )
-    if not hf_token:
-        hf_token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
+    from transcriptx.core.utils.hf_token import resolve_hf_token
+
+    hf_token = resolve_hf_token(config)
     try:
         min_speakers = int(min_speakers)
     except (TypeError, ValueError):
@@ -551,9 +551,7 @@ def run_whisperx_docker(audio_file_path, config=None):
     device = "cpu"  # For now, always CPU
     if model_download_policy == "require_token" and not hf_token:
         console = Console()
-        console.print(
-            "[red]Hugging Face token required to download models.[/red]"
-        )
+        console.print("[red]Hugging Face token required to download models.[/red]")
         console.print(
             "[dim]Set TRANSCRIPTX_HUGGINGFACE_TOKEN or HF_TOKEN "
             "(or transcription.huggingface_token), or switch "
@@ -562,9 +560,7 @@ def run_whisperx_docker(audio_file_path, config=None):
         return None
     if diarize and not hf_token:
         console = Console()
-        console.print(
-            "[red]Hugging Face token required for diarization.[/red]"
-        )
+        console.print("[red]Hugging Face token required for diarization.[/red]")
         console.print(
             "[dim]Set TRANSCRIPTX_HUGGINGFACE_TOKEN or HF_TOKEN "
             "(or transcription.huggingface_token) before running.[/dim]"

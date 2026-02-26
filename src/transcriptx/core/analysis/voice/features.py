@@ -140,7 +140,9 @@ def compute_pitch_stats(
     Guardrail: only analyze up to max_seconds of audio.
     """
     try:
-        librosa = optional_import("librosa", "pitch estimation for voice features")
+        librosa = optional_import(
+            "librosa", "pitch estimation for voice features", "voice", auto_install=True
+        )
     except ImportError:
         return (None, None, None)
 
@@ -199,7 +201,9 @@ def build_opensmile_extractor() -> Any | None:
     if _OPENSMILE_EXTRACTOR is not None:
         return _OPENSMILE_EXTRACTOR
     try:
-        opensmile = optional_import("opensmile", "openSMILE eGeMAPS voice features")
+        opensmile = optional_import(
+            "opensmile", "openSMILE eGeMAPS voice features", "voice", auto_install=True
+        )
     except ImportError:
         return None
 
@@ -251,4 +255,3 @@ def extract_egemaps(wave: np.ndarray, sample_rate: int) -> Dict[str, float]:
         except Exception:
             continue
     return out
-

@@ -16,7 +16,9 @@ class TicDataExtractor(BaseDataExtractor):
     def __init__(self):
         super().__init__("tics")
 
-    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+    def extract_data(
+        self, analysis_results: Dict[str, Any], speaker_id: str
+    ) -> Dict[str, Any]:
         try:
             speaker_id_int = int(speaker_id)
         except Exception:
@@ -71,7 +73,9 @@ class TicDataExtractor(BaseDataExtractor):
             "tic_confidence_indicators": tic_confidence_indicators,
         }
 
-    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
+    def validate_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> bool:
         """Validate extracted tic data."""
         try:
             return validate_tic_data(data)
@@ -79,7 +83,9 @@ class TicDataExtractor(BaseDataExtractor):
             self.logger.error(f"Tic data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
+    def transform_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> Dict[str, Any]:
         """Transform tic data for database storage."""
         return {
             "tic_frequency": data.get("tic_frequency", {}),

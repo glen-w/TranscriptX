@@ -54,10 +54,11 @@ def edit_audio_preprocessing_config(config):
 
     def make_mode_editor(label: str, is_global: bool = False):
         def editor(item: SettingItem):
-            if not is_global and config.audio_preprocessing.preprocessing_mode != "selected":
-                print(
-                    "[yellow]⚠️  Global mode overrides per-step settings[/yellow]"
-                )
+            if (
+                not is_global
+                and config.audio_preprocessing.preprocessing_mode != "selected"
+            ):
+                print("[yellow]⚠️  Global mode overrides per-step settings[/yellow]")
             return create_choice_editor(
                 global_choices if is_global else preprocessing_choices,
                 hint=label,
@@ -83,7 +84,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.convert_to_mono",
             label="Convert to mono mode",
             getter=lambda: config.audio_preprocessing.convert_to_mono,
-            setter=lambda value: setattr(config.audio_preprocessing, "convert_to_mono", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "convert_to_mono", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always convert | Suggest: Assess and suggest | Off: Never convert"
             ),
@@ -93,7 +96,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.downsample",
             label="Downsample mode",
             getter=lambda: config.audio_preprocessing.downsample,
-            setter=lambda value: setattr(config.audio_preprocessing, "downsample", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "downsample", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always downsample | Suggest: Assess and suggest | Off: Never downsample"
             ),
@@ -106,7 +111,9 @@ def edit_audio_preprocessing_config(config):
             setter=lambda value: setattr(
                 config.audio_preprocessing, "target_sample_rate", value
             ),
-            editor=create_int_editor(min_val=1, hint="Sample rate in Hz (e.g., 16000)."),
+            editor=create_int_editor(
+                min_val=1, hint="Sample rate in Hz (e.g., 16000)."
+            ),
         ),
         SettingItem(
             order=5,
@@ -123,7 +130,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.normalize_mode",
             label="Normalize mode",
             getter=lambda: config.audio_preprocessing.normalize_mode,
-            setter=lambda value: setattr(config.audio_preprocessing, "normalize_mode", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "normalize_mode", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always normalize | Suggest: Assess and suggest | Off: Never normalize"
             ),
@@ -133,7 +142,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.target_lufs",
             label="Target LUFS",
             getter=lambda: config.audio_preprocessing.target_lufs,
-            setter=lambda value: setattr(config.audio_preprocessing, "target_lufs", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "target_lufs", value
+            ),
             editor=create_float_editor(
                 min_val=-20.0, max_val=-16.0, hint="Range: -20 to -16."
             ),
@@ -163,7 +174,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.denoise_mode",
             label="Denoise mode",
             getter=lambda: config.audio_preprocessing.denoise_mode,
-            setter=lambda value: setattr(config.audio_preprocessing, "denoise_mode", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "denoise_mode", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always denoise | Suggest: Assess and suggest | Off: Never denoise"
             ),
@@ -185,7 +198,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.highpass_mode",
             label="High-pass mode",
             getter=lambda: config.audio_preprocessing.highpass_mode,
-            setter=lambda value: setattr(config.audio_preprocessing, "highpass_mode", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "highpass_mode", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always apply | Suggest: Assess and suggest | Off: Never apply"
             ),
@@ -205,7 +220,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.lowpass_mode",
             label="Low-pass mode",
             getter=lambda: config.audio_preprocessing.lowpass_mode,
-            setter=lambda value: setattr(config.audio_preprocessing, "lowpass_mode", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "lowpass_mode", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always apply | Suggest: Assess and suggest | Off: Never apply"
             ),
@@ -225,7 +242,9 @@ def edit_audio_preprocessing_config(config):
             key="audio_preprocessing.bandpass_mode",
             label="Band-pass mode",
             getter=lambda: config.audio_preprocessing.bandpass_mode,
-            setter=lambda value: setattr(config.audio_preprocessing, "bandpass_mode", value),
+            setter=lambda value: setattr(
+                config.audio_preprocessing, "bandpass_mode", value
+            ),
             editor=make_mode_editor(
                 "Auto: Always apply | Suggest: Assess and suggest | Off: Never apply"
             ),

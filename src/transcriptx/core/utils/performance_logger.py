@@ -41,6 +41,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from functools import wraps
 
+import sqlalchemy.exc
+
 from transcriptx.core.utils.span_attributes import (
     FILE_NAME,
     SPAN_KIND_INTERNAL,
@@ -66,6 +68,17 @@ def get_session():
     from transcriptx.database import get_session as db_get_session
 
     return db_get_session()
+
+
+def _log_db_error(operation: str, err: Exception) -> None:
+    """Log a non-fatal DB error for performance/telemetry (so pipeline can continue)."""
+    from transcriptx.core.utils.logger import get_logger
+
+    get_logger().warning(
+        "Performance logging skipped (%s): %s. Pipeline will continue.",
+        operation,
+        err,
+    )
 
 
 class PerformanceLogger:
@@ -107,6 +120,8 @@ class PerformanceLogger:
                     module_run_id=module_run_id,
                     transcript_file_id=transcript_file_id,
                 )
+            except sqlalchemy.exc.OperationalError as e:
+                _log_db_error("start_span", e)
             finally:
                 session.close()
 
@@ -129,6 +144,8 @@ class PerformanceLogger:
                     attributes_patch=attributes_patch,
                     events_patch=events_patch,
                 )
+            except (sqlalchemy.exc.OperationalError, ValueError) as e:
+                _log_db_error("end_span_ok", e)
             finally:
                 session.close()
 
@@ -153,6 +170,8 @@ class PerformanceLogger:
                     attributes_patch=attributes_patch,
                     events_patch=events_patch,
                 )
+            except (sqlalchemy.exc.OperationalError, ValueError) as e:
+                _log_db_error("end_span_error", e)
             finally:
                 session.close()
 
@@ -179,6 +198,8 @@ class PerformanceLogger:
                     span_id=span_id,
                     attributes_patch=attributes_patch,
                 )
+            except sqlalchemy.exc.OperationalError as e:
+                _log_db_error("update_span_attributes", e)
             finally:
                 session.close()
 

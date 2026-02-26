@@ -61,6 +61,26 @@ This directory contains scripts that have been archived because they are:
 **Date Archived**: 2025-01-09  
 **Note**: `transcriptx.sh` already handles interactive CLI launch via `python -m transcriptx.cli.main`
 
+### `assess_speaker_map_usage.py`
+**Reason**: One-off assessment to catalog speaker_map usage for migration planning  
+**Status**: Migration planning complete - no longer needed  
+**Date Archived**: 2025-02-26  
+
+### `compare_audio_quality.py`
+**Reason**: Ad hoc utility to compare two audio files (metrics, frequency, noise)  
+**Status**: One-off / occasional use - archived for organization  
+**Date Archived**: 2025-02-26  
+
+### `dedup_output_folders.py`
+**Reason**: One-off script to merge output folders with `__N` suffixes when safe  
+**Status**: Maintenance completed - can be restored if needed  
+**Date Archived**: 2025-02-26  
+
+### `clean_outputs_except_speaker_maps.py`
+**Reason**: One-off script to delete outputs subfolders except speaker map JSONs  
+**Status**: One-off cleanup - no longer needed  
+**Date Archived**: 2025-02-26  
+
 ## Current Active Scripts
 
 The following scripts remain in the main `scripts/` directory and are actively used:
@@ -75,6 +95,13 @@ The following scripts remain in the main `scripts/` directory and are actively u
 - `scripts/cleanup.sh` - Codebase cleanup utility
 - `scripts/docker-clean.sh` - Docker cleanup utility
 - `scripts/docker-data-setup.sh` - Docker data directory setup
+- `scripts/test_analysis_assess.py` - Test analysis assessment (see README_test_analysis_assess.md)
+- `scripts/validate_dependencies.py` - Dependency validation
+- `scripts/validate_registry.py` - Analysis module registry validation
+- `scripts/generate_docs.py` - Documentation generation
+- `scripts/run_tests_with_timeout.py` - Tests with timeout
+- `scripts/prune_old_pipeline_runs.py` - DB cleanup (one-off style but reusable)
+- `scripts/migrate_speaker_maps.py` - Speaker map migration (run when needed)
 
 ## Restoration
 

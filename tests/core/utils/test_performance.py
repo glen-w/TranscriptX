@@ -35,10 +35,14 @@ class TestPerformanceLogger:
 
     def test_logs_span_execution(self, db_session_factory):
         """Test that TimedJob writes a span record."""
+
         def _session():
             return db_session_factory()
 
-        with patch("transcriptx.core.utils.performance_logger.get_session", side_effect=_session):
+        with patch(
+            "transcriptx.core.utils.performance_logger.get_session",
+            side_effect=_session,
+        ):
             with TimedJob("test_job", "test.wav") as job:
                 job.add_metadata({"model": "tiny"})
 
@@ -56,10 +60,14 @@ class TestPerformanceLogger:
 
     def test_logs_exception_event(self, db_session_factory):
         """Test that exceptions are recorded as span events."""
+
         def _session():
             return db_session_factory()
 
-        with patch("transcriptx.core.utils.performance_logger.get_session", side_effect=_session):
+        with patch(
+            "transcriptx.core.utils.performance_logger.get_session",
+            side_effect=_session,
+        ):
             with pytest.raises(ValueError):
                 with TimedJob("test_job", "test.wav"):
                     raise ValueError("boom")
@@ -111,7 +119,12 @@ class TestPerformanceEstimator:
         def _session():
             return db_session_factory()
 
-        with patch("transcriptx.core.utils.performance_estimator.get_session", side_effect=_session):
+        with patch(
+            "transcriptx.core.utils.performance_estimator.get_session",
+            side_effect=_session,
+        ):
             estimator = PerformanceEstimator()
-            estimate = estimator.estimate_conversion_time(file_size_mb=10.0, bitrate="192k")
+            estimate = estimator.estimate_conversion_time(
+                file_size_mb=10.0, bitrate="192k"
+            )
             assert estimate["estimated_seconds"] is not None

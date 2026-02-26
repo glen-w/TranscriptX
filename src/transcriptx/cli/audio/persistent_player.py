@@ -43,9 +43,7 @@ class MPVPlayer:
     """Manage a persistent mpv process and control it via IPC."""
 
     def __init__(self, ipc_path: Optional[Path] = None) -> None:
-        self._ipc_path = Path(
-            ipc_path or f"/tmp/transcriptx-mpv-{os.getpid()}.sock"
-        )
+        self._ipc_path = Path(ipc_path or f"/tmp/transcriptx-mpv-{os.getpid()}.sock")
         self._proc: Optional[subprocess.Popen] = None
         self._current_file: Optional[Path] = None
         self._stop_timer: Optional[threading.Timer] = None

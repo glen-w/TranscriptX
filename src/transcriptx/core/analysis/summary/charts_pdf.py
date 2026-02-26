@@ -1,4 +1,5 @@
 """Build a single PDF of all run charts with subheadings per module."""
+
 from __future__ import annotations
 
 import re
@@ -23,8 +24,7 @@ def _natural_sort_key(path: Path) -> Tuple[Any, ...]:
     """Sort key that orders filenames naturally (e.g. chart_2 before chart_10)."""
     s = path.name
     return tuple(
-        int(part) if part.isdigit() else part.lower()
-        for part in re.split(r"(\d+)", s)
+        int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", s)
     )
 
 
@@ -191,7 +191,11 @@ def build_charts_pdf(run_root: Path, output_pdf_path: Path) -> Path | None:
     flowables.append(Spacer(1, 0.3 * inch))
     flowables.append(Paragraph(f"Run: {run_name}", normal_style))
     flowables.append(Paragraph(f"Generated: {ts}", normal_style))
-    flowables.append(Paragraph(f"Modules: {len(module_names)} — Charts: {total_charts}", normal_style))
+    flowables.append(
+        Paragraph(
+            f"Modules: {len(module_names)} — Charts: {total_charts}", normal_style
+        )
+    )
     flowables.append(Spacer(1, 0.5 * inch))
     flowables.append(PageBreak())
 
@@ -213,7 +217,11 @@ def build_charts_pdf(run_root: Path, output_pdf_path: Path) -> Path | None:
                         caption_text = rel.as_posix()
                     except ValueError:
                         caption_text = path.name
-                    caption_text = caption_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    caption_text = (
+                        caption_text.replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                    )
                     flowables.append(Paragraph(caption_text, caption_style))
                     flowables.append(Spacer(1, 0.15 * inch))
             except Exception as e:
@@ -253,9 +261,7 @@ def _module_display_name(module: str) -> str:
     return replacements.get(module, module.replace("_", " ").title())
 
 
-def _image_flowable(
-    image_path: Path, max_width_pts: float, rl_image_class: Any
-) -> Any:
+def _image_flowable(image_path: Path, max_width_pts: float, rl_image_class: Any) -> Any:
     """Create a reportlab Image flowable that fits within max_width_pts (PDF points).
 
     Uses Pillow to read DPI when present and converts pixels to points correctly.
@@ -266,6 +272,7 @@ def _image_flowable(
         return None
     try:
         from PIL import Image as PILImage
+
         pil = PILImage.open(path)
         width_px, height_px = pil.size
         dpi = pil.info.get("dpi")

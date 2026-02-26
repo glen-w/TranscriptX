@@ -12,7 +12,6 @@ from transcriptx.core.pipeline.module_registry import (
     get_available_modules as get_core_modules,
     get_description,
     get_module_info,
-    ModuleInfo,
 )
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import OUTPUTS_DIR

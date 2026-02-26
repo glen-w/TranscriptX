@@ -170,7 +170,7 @@ def _run_deduplication_workflow_impl() -> None:
                 f"\n[green]✅ Deleted {total_deleted} duplicate file(s) in total[/green]"
             )
         else:
-            print(f"\n[cyan]No files were deleted[/cyan]")
+            print("\n[cyan]No files were deleted[/cyan]")
 
     except KeyboardInterrupt:
         print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
@@ -340,6 +340,7 @@ def _review_duplicate_group(
     # Title with warning - keep concise to fit in header
     title = f"🔍 Duplicate Group {group_idx}/{total_groups} - Select files to delete (⚠️  Will be permanently deleted!)"
 
+    config = get_config()
     selection_config = FileSelectionConfig(
         multi_select=True,
         enable_playback=are_audio_files,
@@ -349,6 +350,8 @@ def _review_duplicate_group(
         title=title,
         current_path=folder_path,
         metadata_formatter=formatter,
+        skip_seconds_short=config.input.playback_skip_seconds_short,
+        skip_seconds_long=config.input.playback_skip_seconds_long,
     )
 
     # Note: Don't print before select_files_interactive as it interferes with prompt_toolkit

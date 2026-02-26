@@ -23,5 +23,5 @@ def test_varco_basic_sequence() -> None:
     values = [1.0, 2.0, 3.0]
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
-    expected = 100.0 * (variance ** 0.5) / mean
+    expected = 100.0 * (variance**0.5) / mean
     assert varco(values) == expected

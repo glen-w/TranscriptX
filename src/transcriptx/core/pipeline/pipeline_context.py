@@ -92,7 +92,7 @@ class PipelineContext:
                     output_dir=output_dir,
                 )
             )
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             logger.error(f"Transcript file not found: {transcript_path}")
             raise
         except ValueError as e:
@@ -311,9 +311,7 @@ class PipelineContext:
                     named_keys.add(key)
         return named_keys
 
-    def _build_speaker_key_aliases(
-        self, speaker_map: Dict[Any, Any]
-    ) -> Dict[str, str]:
+    def _build_speaker_key_aliases(self, speaker_map: Dict[Any, Any]) -> Dict[str, str]:
         aliases: Dict[str, str] = {}
         collisions: set[str] = set()
         for key, display in speaker_map.items():

@@ -31,6 +31,7 @@ from transcriptx.cli.audio import (
     check_ffmpeg_available,
     move_wav_to_storage,
     backup_wav_after_processing,
+    backup_audio_files_to_storage,
     get_mp3_name_for_wav_backup,
     check_wav_backup_exists,
     PYDUB_AVAILABLE,
@@ -47,7 +48,7 @@ from transcriptx.cli.batch_workflows import (
     run_batch_speaker_identification,
 )
 from transcriptx.cli.file_discovery import (
-    discover_wav_files,
+    discover_audio_files,
     filter_files_by_size,
     filter_new_files,
     select_files_interactive,
@@ -57,6 +58,7 @@ from transcriptx.cli.file_selection_utils import (
     select_folder_interactive,
     get_wav_folder_start_path,
     get_recordings_folder_start_path,
+    AUDIO_EXTENSIONS,
 )
 from transcriptx.cli.processing_state import get_current_transcript_path_from_state
 from transcriptx.core.transcription_runtime import (
@@ -90,7 +92,7 @@ def run_batch_wav_workflow() -> None:
 def _run_batch_wav_workflow_impl() -> None:
     """Internal implementation of the batch WAV workflow."""
     try:
-        print("\n[bold cyan]🔄 Batch Process WAV Folder[/bold cyan]")
+        print("\n[bold cyan]🔄 Batch Process Audio Folder[/bold cyan]")
         print(
             "[dim]Automated pipeline: Convert → Transcribe → Detect Type → Extract Tags[/dim]"
         )
@@ -138,7 +140,7 @@ def _run_batch_wav_workflow_impl() -> None:
             return
 
         # Step 1: Select folder location
-        print("\n[bold]Step 1: Select folder containing WAV files[/bold]")
+        print("\n[bold]Step 1: Select folder containing audio files[/bold]")
         config = get_config()
         start_path = get_wav_folder_start_path(config)
         location = select_folder_interactive(start_path=start_path)
@@ -146,15 +148,15 @@ def _run_batch_wav_workflow_impl() -> None:
             print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
             return
 
-        # Step 2: Discover WAV files
-        print(f"\n[bold]Step 2: Discovering WAV files in {location}[/bold]")
-        wav_files = discover_wav_files(location)
+        # Step 2: Discover audio files
+        print(f"\n[bold]Step 2: Discovering audio files in {location}[/bold]")
+        wav_files = discover_audio_files(location, AUDIO_EXTENSIONS)
 
         if not wav_files:
-            print(f"\n[yellow]⚠️ No WAV files found in {location}[/yellow]")
+            print(f"\n[yellow]⚠️ No audio files found in {location}[/yellow]")
             return
 
-        print(f"[green]✅ Found {len(wav_files)} WAV file(s)[/green]")
+        print(f"[green]✅ Found {len(wav_files)} audio file(s)[/green]")
 
         # Step 3: Filter new files (not yet processed)
         print("\n[bold]Step 3: Checking processing status...[/bold]")
@@ -162,7 +164,7 @@ def _run_batch_wav_workflow_impl() -> None:
 
         if not new_files:
             print(
-                f"\n[yellow]⚠️ All {len(wav_files)} WAV files have already been processed.[/yellow]"
+                f"\n[yellow]⚠️ All {len(wav_files)} audio files have already been processed.[/yellow]"
             )
             if questionary.confirm("Would you like to reprocess them?").ask():
                 new_files = wav_files
@@ -203,7 +205,7 @@ def _run_batch_wav_workflow_impl() -> None:
             )
 
         if not size_filtered_files:
-            print(f"\n[yellow]⚠️ No files match the selected size filter.[/yellow]")
+            print("\n[yellow]⚠️ No files match the selected size filter.[/yellow]")
             return
 
         # Step 5: Select processing mode
@@ -375,7 +377,7 @@ def _assess_and_suggest_preprocessing(
                 files_needing_preprocessing[step].append(wav_file)
 
     # Show summary
-    print(f"\n[bold]Preprocessing Assessment Summary:[/bold]")
+    print("\n[bold]Preprocessing Assessment Summary:[/bold]")
     print("-" * 80)
 
     total_suggestions = 0
@@ -410,8 +412,8 @@ def _assess_and_suggest_preprocessing(
 
     # Ask user to confirm (unless skip_confirm is True)
     if skip_confirm:
-        print(f"\n[dim]Skipping user confirmation (non-interactive mode).[/dim]")
-        print(f"[dim]For 'suggest' mode steps, preprocessing will be skipped.[/dim]")
+        print("\n[dim]Skipping user confirmation (non-interactive mode).[/dim]")
+        print("[dim]For 'suggest' mode steps, preprocessing will be skipped.[/dim]")
         # Initialize decisions with all False (skip all suggested steps)
         for wav_file in wav_files:
             preprocessing_decisions[wav_file] = {
@@ -490,7 +492,7 @@ def batch_process_files(
 
     if resume_info.get("can_resume"):
         # Ask user if they want to resume
-        print(f"\n[yellow]Found previous batch checkpoint:[/yellow]")
+        print("\n[yellow]Found previous batch checkpoint:[/yellow]")
         print(
             f"  Processed: {resume_info['processed_count']}/{resume_info['total_count']}"
         )
@@ -574,7 +576,9 @@ def batch_process_files(
         TextColumn("[progress.description]{task.description}"),
         console=console,
     ) as progress:
-        task = progress.add_task("[cyan]Processing WAV files...", total=len(wav_files))
+        task = progress.add_task(
+            "[cyan]Processing audio files...", total=len(wav_files)
+        )
 
         for wav_file in wav_files:
             try:
@@ -694,16 +698,15 @@ def _show_summary(results: Dict[str, Any], skip_prompts: bool = False) -> None:
 
     print("\n" + "=" * 60)
 
-    # Prompt user about moving/deleting original WAV files after all processing is complete
+    # Prompt user about moving/deleting original audio files after all processing is complete
     if results["successful"]:
         wav_mp3_pairs = []
         for result in results["successful"]:
             wav_file_path = Path(result["file"])
-            # Only include files that still exist and are WAV files
-            if wav_file_path.exists() and wav_file_path.suffix.lower() in [
-                ".wav",
-                ".WAV",
-            ]:
+            if (
+                wav_file_path.exists()
+                and wav_file_path.suffix.lower() in AUDIO_EXTENSIONS
+            ):
                 # Get MP3 path from processing result or state
                 mp3_path = None
                 convert_step = result.get("steps", {}).get("convert", {})
@@ -728,23 +731,27 @@ def _show_summary(results: Dict[str, Any], skip_prompts: bool = False) -> None:
                 wav_mp3_pairs.append((wav_file_path, mp3_path))
 
         if wav_mp3_pairs:
-            print(f"\n[bold cyan]📁 WAV File Management[/bold cyan]")
+            print("\n[bold cyan]📁 Audio File Management[/bold cyan]")
             print(
-                f"[dim]You have {len(wav_mp3_pairs)} original WAV file(s) that can be moved to storage.[/dim]"
+                f"[dim]You have {len(wav_mp3_pairs)} original audio file(s) that can be moved to storage.[/dim]"
             )
 
-            # Check which files have already been backed up
             backed_up_files = []
             not_backed_up_files = []
-            for wav_file, mp3_path in wav_mp3_pairs:
-                if wav_file.exists():
-                    existing_backup = check_wav_backup_exists(
-                        wav_file, mp3_path=mp3_path
-                    )
-                    if existing_backup:
-                        backed_up_files.append((wav_file, mp3_path, existing_backup))
+            for orig_file, mp3_path in wav_mp3_pairs:
+                if orig_file.exists():
+                    if orig_file.suffix.lower() == ".wav":
+                        existing_backup = check_wav_backup_exists(
+                            orig_file, mp3_path=mp3_path
+                        )
+                        if existing_backup:
+                            backed_up_files.append(
+                                (orig_file, mp3_path, existing_backup)
+                            )
+                        else:
+                            not_backed_up_files.append((orig_file, mp3_path))
                     else:
-                        not_backed_up_files.append((wav_file, mp3_path))
+                        not_backed_up_files.append((orig_file, mp3_path))
 
             # Inform user about backup status
             if backed_up_files:
@@ -765,38 +772,38 @@ def _show_summary(results: Dict[str, Any], skip_prompts: bool = False) -> None:
                 should_move_wavs = False
             else:
                 should_move_wavs = questionary.confirm(
-                    f"Move {len(wav_mp3_pairs)} WAV file(s) to storage and delete originals?",
+                    f"Move {len(wav_mp3_pairs)} audio file(s) to storage and delete originals?",
                     default=False,
                 ).ask()
 
             if should_move_wavs:
-                print(f"\n[bold]Moving WAV files to storage...[/bold]")
+                print("\n[bold]Moving audio files to storage...[/bold]")
                 moved_count = 0
                 failed_count = 0
                 skipped_count = 0
 
-                for wav_file, mp3_path in wav_mp3_pairs:
-                    if wav_file.exists():  # Check if file still exists
-                        # Check if already backed up
+                for orig_file, mp3_path in wav_mp3_pairs:
+                    if not orig_file.exists():
+                        print(f"  ⚠️  {orig_file.name} no longer exists, skipping")
+                        continue
+                    if orig_file.suffix.lower() == ".wav":
                         existing_backup = check_wav_backup_exists(
-                            wav_file, mp3_path=mp3_path
+                            orig_file, mp3_path=mp3_path
                         )
                         if existing_backup:
-                            # File already backed up, just delete original
                             try:
-                                wav_file.unlink()
+                                orig_file.unlink()
                                 moved_count += 1
                                 skipped_count += 1
                                 print(
-                                    f"  ✅ Deleted {wav_file.name} (already backed up as {existing_backup.name})"
+                                    f"  ✅ Deleted {orig_file.name} (already backed up as {existing_backup.name})"
                                 )
                             except Exception as e:
                                 failed_count += 1
-                                print(f"  ❌ Failed to delete {wav_file.name}: {e}")
+                                print(f"  ❌ Failed to delete {orig_file.name}: {e}")
                         else:
-                            # Use centralized backup function with MP3 path (if available)
                             backup_path = backup_wav_after_processing(
-                                wav_file,
+                                orig_file,
                                 mp3_path=mp3_path,
                                 target_name=None,
                                 delete_original=True,
@@ -804,29 +811,40 @@ def _show_summary(results: Dict[str, Any], skip_prompts: bool = False) -> None:
                             if backup_path:
                                 moved_count += 1
                                 print(
-                                    f"  ✅ Moved {wav_file.name} → {backup_path.name}"
+                                    f"  ✅ Moved {orig_file.name} → {backup_path.name}"
                                 )
                             else:
                                 failed_count += 1
-                                print(f"  ❌ Failed to move {wav_file.name}")
+                                print(f"  ❌ Failed to move {orig_file.name}")
                     else:
-                        print(f"  ⚠️  {wav_file.name} no longer exists, skipping")
+                        base = mp3_path.stem if mp3_path else orig_file.stem
+                        backup_paths = backup_audio_files_to_storage(
+                            [orig_file], base_name=base, delete_original=True
+                        )
+                        if backup_paths:
+                            moved_count += 1
+                            print(
+                                f"  ✅ Moved {orig_file.name} → {backup_paths[0].name}"
+                            )
+                        else:
+                            failed_count += 1
+                            print(f"  ❌ Failed to move {orig_file.name}")
 
                 if moved_count > 0:
                     if skipped_count > 0:
                         print(
-                            f"\n[green]✅ Successfully processed {moved_count} WAV file(s) ({skipped_count} already backed up, {moved_count - skipped_count} newly backed up)[/green]"
+                            f"\n[green]✅ Successfully processed {moved_count} audio file(s) ({skipped_count} already backed up, {moved_count - skipped_count} newly backed up)[/green]"
                         )
                     else:
                         print(
-                            f"\n[green]✅ Successfully moved {moved_count} WAV file(s) to storage[/green]"
+                            f"\n[green]✅ Successfully moved {moved_count} audio file(s) to storage[/green]"
                         )
                 if failed_count > 0:
                     print(
-                        f"\n[yellow]⚠️  Failed to process {failed_count} WAV file(s)[/yellow]"
+                        f"\n[yellow]⚠️  Failed to process {failed_count} audio file(s)[/yellow]"
                     )
             else:
-                print(f"\n[cyan]Keeping original WAV files[/cyan]")
+                print("\n[cyan]Keeping original audio files[/cyan]")
 
     # Offer batch speaker identification
     if results["successful"]:
@@ -939,12 +957,12 @@ def run_batch_process_non_interactive(
             if not wav_file.exists():
                 raise FileNotFoundError(f"WAV file not found: {wav_file}")
     else:
-        # Discover WAV files in folder
-        print(f"\n[bold]Discovering WAV files in {folder}[/bold]")
-        wav_files = discover_wav_files(folder)
+        # Discover audio files in folder
+        print(f"\n[bold]Discovering audio files in {folder}[/bold]")
+        wav_files = discover_audio_files(folder, AUDIO_EXTENSIONS)
 
         if not wav_files:
-            print(f"\n[yellow]⚠️ No WAV files found in {folder}[/yellow]")
+            print(f"\n[yellow]⚠️ No audio files found in {folder}[/yellow]")
             return {
                 "status": "completed",
                 "total_files": 0,
@@ -953,7 +971,7 @@ def run_batch_process_non_interactive(
                 "skipped": [],
             }
 
-        print(f"[green]✅ Found {len(wav_files)} WAV file(s)[/green]")
+        print(f"[green]✅ Found {len(wav_files)} audio file(s)[/green]")
 
         # Filter new files (not yet processed)
         print("\n[bold]Checking processing status...[/bold]")
@@ -961,7 +979,7 @@ def run_batch_process_non_interactive(
 
         if not new_files:
             print(
-                f"\n[yellow]⚠️ All {len(wav_files)} WAV files have already been processed.[/yellow]"
+                f"\n[yellow]⚠️ All {len(wav_files)} audio files have already been processed.[/yellow]"
             )
             if not skip_confirm:
                 from rich.prompt import Confirm
@@ -1000,7 +1018,7 @@ def run_batch_process_non_interactive(
             )
 
         if not wav_files:
-            print(f"\n[yellow]⚠️ No files match the selected size filter.[/yellow]")
+            print("\n[yellow]⚠️ No files match the selected size filter.[/yellow]")
             return {
                 "status": "completed",
                 "total_files": 0,
@@ -1013,7 +1031,7 @@ def run_batch_process_non_interactive(
     if resume:
         resume_info = resume_batch_processing(wav_files)
         if resume_info.get("can_resume"):
-            print(f"\n[yellow]Found previous batch checkpoint:[/yellow]")
+            print("\n[yellow]Found previous batch checkpoint:[/yellow]")
             print(
                 f"  Processed: {resume_info['processed_count']}/{resume_info['total_count']}"
             )
@@ -1044,30 +1062,46 @@ def run_batch_process_non_interactive(
 
     # Handle post-processing options
     if results["successful"]:
-        # Move WAV files if requested
+        # Move audio files to storage if requested
         if move_wavs:
-            wav_files_to_manage = []
+            files_to_manage = []
             for result in results["successful"]:
-                wav_file_path = Path(result["file"])
-                if wav_file_path.exists() and wav_file_path.suffix.lower() in [
-                    ".wav",
-                    ".WAV",
-                ]:
-                    wav_files_to_manage.append(wav_file_path)
+                orig_path = Path(result["file"])
+                if orig_path.exists() and orig_path.suffix.lower() in AUDIO_EXTENSIONS:
+                    mp3_path = None
+                    convert_step = result.get("steps", {}).get("convert", {})
+                    if convert_step.get("status") == "success":
+                        mp3_path_str = convert_step.get("mp3_path")
+                        if mp3_path_str:
+                            mp3_path = Path(mp3_path_str)
+                    files_to_manage.append((orig_path, mp3_path))
 
-            if wav_files_to_manage:
-                print(f"\n[bold]Moving WAV files to storage...[/bold]")
+            if files_to_manage:
+                print("\n[bold]Moving audio files to storage...[/bold]")
                 moved_count = 0
                 failed_count = 0
 
-                for wav_file in wav_files_to_manage:
-                    if wav_file.exists():
-                        if move_wav_to_storage(wav_file):
+                for orig_path, mp3_path in files_to_manage:
+                    if not orig_path.exists():
+                        continue
+                    if orig_path.suffix.lower() == ".wav":
+                        if move_wav_to_storage(orig_path):
                             moved_count += 1
-                            print(f"  ✅ Moved {wav_file.name}")
+                            print(f"  ✅ Moved {orig_path.name}")
                         else:
                             failed_count += 1
-                            print(f"  ❌ Failed to move {wav_file.name}")
+                            print(f"  ❌ Failed to move {orig_path.name}")
+                    else:
+                        base = mp3_path.stem if mp3_path else orig_path.stem
+                        backup_paths = backup_audio_files_to_storage(
+                            [orig_path], base_name=base, delete_original=True
+                        )
+                        if backup_paths:
+                            moved_count += 1
+                            print(f"  ✅ Moved {orig_path.name}")
+                        else:
+                            failed_count += 1
+                            print(f"  ❌ Failed to move {orig_path.name}")
 
         # Run speaker identification if requested
         if identify_speakers:
@@ -1090,7 +1124,7 @@ def run_batch_process_non_interactive(
                             transcript_paths.append(transcript_path)
 
             if transcript_paths:
-                print(f"\n[bold cyan]🗣️ Speaker Identification[/bold cyan]")
+                print("\n[bold cyan]🗣️ Speaker Identification[/bold cyan]")
                 print(
                     f"[dim]Running speaker identification for {len(transcript_paths)} transcript(s)...[/dim]"
                 )
@@ -1117,7 +1151,7 @@ def run_batch_process_non_interactive(
                             transcript_paths.append(transcript_path)
 
             if transcript_paths:
-                print(f"\n[bold cyan]📊 Analysis Pipeline[/bold cyan]")
+                print("\n[bold cyan]📊 Analysis Pipeline[/bold cyan]")
                 print(
                     f"[dim]Running analysis for {len(transcript_paths)} transcript(s)...[/dim]"
                 )

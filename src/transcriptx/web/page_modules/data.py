@@ -75,7 +75,9 @@ def render_data() -> None:
         return
 
     options = {a.id: f"{a.module or 'other'} • {a.rel_path}" for a in data_artifacts}
-    selected_id = st.selectbox("Select data artifact", list(options.keys()), format_func=options.get)
+    selected_id = st.selectbox(
+        "Select data artifact", list(options.keys()), format_func=options.get
+    )
     selected = next(a for a in data_artifacts if a.id == selected_id)
 
     path = ArtifactService._resolve_safe_path(run_root, selected.rel_path)
@@ -87,7 +89,7 @@ def render_data() -> None:
 
     if selected.kind == "data_csv":
         df = pd.read_csv(path)
-        st.dataframe(df, width='stretch')
+        st.dataframe(df, width="stretch")
     elif selected.kind == "data_json":
         with open(path, "r", encoding="utf-8") as handle:
             data = json.load(handle)

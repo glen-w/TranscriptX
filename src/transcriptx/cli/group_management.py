@@ -4,7 +4,7 @@ Interactive group management menu.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 import questionary
 from rich import print

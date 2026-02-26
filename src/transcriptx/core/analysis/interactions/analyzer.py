@@ -122,7 +122,9 @@ class SpeakerInteractionAnalyzer:
             # Calculate gap and overlap between segments
             gap = next_start - current_end
             overlap = (
-                min(current_end, next_end) - next_start if next_start < current_end else 0
+                min(current_end, next_end) - next_start
+                if next_start < current_end
+                else 0
             )
 
             # Detect interruption types based on overlap and gap thresholds

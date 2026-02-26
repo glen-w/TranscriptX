@@ -9,7 +9,6 @@ import pytest
 from transcriptx.core.analysis.affect_tension.metrics import (
     emotion_entropy,
     trust_like_score,
-    is_positive_emotion,
     affect_mismatch_posneg,
     affect_trust_neutral,
     emotion_volatility_proxy,
@@ -52,49 +51,67 @@ class TestMismatchRuleLogic:
     """Tests for affect_mismatch_posneg and affect_trust_neutral."""
 
     def test_posneg_mismatch_positive_emotion_negative_sentiment(self):
-        assert affect_mismatch_posneg(
-            sentiment_compound_norm=-0.5,
-            emotion_scores={"joy": 0.8},
-            pos_emotion_threshold=0.3,
-            mismatch_compound_threshold=-0.1,
-        ) is True
+        assert (
+            affect_mismatch_posneg(
+                sentiment_compound_norm=-0.5,
+                emotion_scores={"joy": 0.8},
+                pos_emotion_threshold=0.3,
+                mismatch_compound_threshold=-0.1,
+            )
+            is True
+        )
 
     def test_posneg_no_mismatch_positive_sentiment(self):
-        assert affect_mismatch_posneg(
-            sentiment_compound_norm=0.5,
-            emotion_scores={"joy": 0.8},
-            pos_emotion_threshold=0.3,
-            mismatch_compound_threshold=-0.1,
-        ) is False
+        assert (
+            affect_mismatch_posneg(
+                sentiment_compound_norm=0.5,
+                emotion_scores={"joy": 0.8},
+                pos_emotion_threshold=0.3,
+                mismatch_compound_threshold=-0.1,
+            )
+            is False
+        )
 
     def test_posneg_no_mismatch_negative_emotion(self):
-        assert affect_mismatch_posneg(
-            sentiment_compound_norm=-0.5,
-            emotion_scores={"anger": 0.8},
-            pos_emotion_threshold=0.3,
-            mismatch_compound_threshold=-0.1,
-        ) is False
+        assert (
+            affect_mismatch_posneg(
+                sentiment_compound_norm=-0.5,
+                emotion_scores={"anger": 0.8},
+                pos_emotion_threshold=0.3,
+                mismatch_compound_threshold=-0.1,
+            )
+            is False
+        )
 
     def test_trust_neutral_none_when_no_trust_like(self):
-        assert affect_trust_neutral(
-            sentiment_compound_norm=0.0,
-            trust_like=None,
-            trust_like_threshold=0.3,
-        ) is None
+        assert (
+            affect_trust_neutral(
+                sentiment_compound_norm=0.0,
+                trust_like=None,
+                trust_like_threshold=0.3,
+            )
+            is None
+        )
 
     def test_trust_neutral_true_when_neutral_sentiment_high_trust(self):
-        assert affect_trust_neutral(
-            sentiment_compound_norm=0.0,
-            trust_like=0.5,
-            trust_like_threshold=0.3,
-        ) is True
+        assert (
+            affect_trust_neutral(
+                sentiment_compound_norm=0.0,
+                trust_like=0.5,
+                trust_like_threshold=0.3,
+            )
+            is True
+        )
 
     def test_trust_neutral_false_when_negative_sentiment(self):
-        assert affect_trust_neutral(
-            sentiment_compound_norm=-0.5,
-            trust_like=0.5,
-            trust_like_threshold=0.3,
-        ) is False
+        assert (
+            affect_trust_neutral(
+                sentiment_compound_norm=-0.5,
+                trust_like=0.5,
+                trust_like_threshold=0.3,
+            )
+            is False
+        )
 
 
 class TestTransformersSentimentNormalization:
@@ -153,8 +170,13 @@ class TestEmotionParsingSingleLabel:
         cfg.analysis.emotion_output_mode = "top1"
         cfg.analysis.emotion_score_threshold = 0.30
         with patch("transcriptx.core.utils.config.get_config", return_value=cfg):
-            with patch("transcriptx.core.analysis.emotion._load_nrclex", return_value=None):
-                with patch("transcriptx.core.analysis.emotion._load_emotion_model", return_value=None):
+            with patch(
+                "transcriptx.core.analysis.emotion._load_nrclex", return_value=None
+            ):
+                with patch(
+                    "transcriptx.core.analysis.emotion._load_emotion_model",
+                    return_value=None,
+                ):
                     module = EmotionAnalysis()
         return module
 
@@ -192,8 +214,13 @@ class TestEmotionParsingMultilabel:
         cfg.analysis.emotion_output_mode = "multilabel"
         cfg.analysis.emotion_score_threshold = 0.30
         with patch("transcriptx.core.utils.config.get_config", return_value=cfg):
-            with patch("transcriptx.core.analysis.emotion._load_nrclex", return_value=None):
-                with patch("transcriptx.core.analysis.emotion._load_emotion_model", return_value=None):
+            with patch(
+                "transcriptx.core.analysis.emotion._load_nrclex", return_value=None
+            ):
+                with patch(
+                    "transcriptx.core.analysis.emotion._load_emotion_model",
+                    return_value=None,
+                ):
                     module = EmotionAnalysis()
         return module
 

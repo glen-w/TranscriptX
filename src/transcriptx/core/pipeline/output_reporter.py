@@ -80,6 +80,7 @@ class OutputReporter:
         basename_dir = Path(transcript_dir)
 
         modules_run_set = {m.lower() for m in modules_run}
+
         def _ran(mod: str) -> bool:
             return mod in modules_run or mod.lower() in modules_run_set
 
@@ -161,9 +162,7 @@ class OutputReporter:
                 summary["outputs"]["skipped_modules"][module_name] = {
                     "directory": str(module_dir),
                     "exists": module_dir.exists(),
-                    "reason": skipped_by_module[module_name].get(
-                        "reason", "Skipped"
-                    ),
+                    "reason": skipped_by_module[module_name].get("reason", "Skipped"),
                 }
             else:
                 # Module failed or wasn't run
@@ -188,6 +187,82 @@ class OutputReporter:
                 summary["outputs"]["additional_files"].append(file_info)
 
         return summary
+
+    def print_review_before_run(self, review: Dict[str, Any]) -> None:
+        """Print compact Review before run: transcript name, output dir, modules that will run, modules skipped."""
+        transcript_name = review.get("transcript_name", "?")
+        output_dir = review.get("output_dir", "?")
+        will_run = review.get("modules_will_run", [])
+        skipped = review.get("modules_skipped", [])
+        self.console.print("\n" + "---")
+        self.console.print("[bold]Review before run[/bold]")
+        self.console.print("---")
+        self.console.print(f"  Transcript: {transcript_name}")
+        self.console.print(f"  Outputs:    {output_dir}")
+        self.console.print("  Modules that will run:")
+        for m in sorted(will_run):
+            self.console.print(f"    • {m}")
+        if skipped:
+            self.console.print("  Modules skipped:")
+            for entry in skipped:
+                mod = entry.get("module", "?")
+                reason = entry.get("reason", "—")
+                self.console.print(f"    • {mod} ({reason})")
+        self.console.print("---\n")
+
+    def print_compact_post_run_summary(
+        self,
+        output_dir: str,
+        results: Dict[str, Any],
+    ) -> None:
+        """Print compact post-run summary: status, path, executed/skipped/failed, viewer hint."""
+        modules_run = results.get("modules_run", [])
+        skipped_raw = results.get("skipped_modules", [])
+        errors = results.get("errors", [])
+        requested = results.get(
+            "modules_requested", results.get("selected_modules", [])
+        )
+        status = results.get("status")
+        if status is None:
+            if errors and len(modules_run) == 0:
+                status = "failed"
+            elif modules_run and (errors or skipped_raw):
+                status = "partial"
+            else:
+                status = "completed"
+        display_status = "completed" if status == "completed" else status
+        skipped_set = {e.get("module") for e in skipped_raw if isinstance(e, dict)}
+        failed_modules = [
+            m for m in requested if m not in modules_run and m not in skipped_set
+        ]
+        self.console.print("\n---")
+        self.console.print("[bold]Run summary[/bold]")
+        self.console.print("---")
+        self.console.print(f"  Status:   {display_status}")
+        self.console.print(f"  Outputs:  {output_dir}")
+        if modules_run:
+            self.console.print("  Executed:")
+            for m in sorted(modules_run):
+                self.console.print(f"    • {m}")
+        if skipped_raw:
+            self.console.print("  Skipped:")
+            for entry in skipped_raw:
+                mod = (
+                    entry.get("module", "?") if isinstance(entry, dict) else str(entry)
+                )
+                reason = entry.get("reason", "—") if isinstance(entry, dict) else "—"
+                self.console.print(f"    • {mod} ({reason})")
+        if failed_modules or errors:
+            self.console.print("  Failed:")
+            for m in sorted(failed_modules):
+                self.console.print(f"    • {m}")
+            for err in errors[:5]:
+                short = err.split("\n")[0][:80] if err else "—"
+                self.console.print(f"    • {short}")
+            if len(errors) > 5:
+                self.console.print(f"    • ... and {len(errors) - 5} more errors")
+        self.console.print("  To explore results: transcriptx web-viewer")
+        self.console.print("---\n")
 
     def display_output_summary_to_user(self, summary: Dict[str, Any]) -> None:
         """
@@ -214,9 +289,7 @@ class OutputReporter:
         errors = analysis_summary.get("errors", [])
 
         self.console.print(f"\n Transcript: {base_name}")
-        self.console.print(
-            f"📂 Output Directory: {output_directory}"
-        )
+        self.console.print(f"📂 Output Directory: {output_directory}")
         self.console.print(
             f"🔄 Analysis Status: {total_success}/{total_requested} modules completed"
         )
@@ -277,9 +350,7 @@ class OutputReporter:
         # Skipped modules
         skipped_modules = outputs.get("skipped_modules", {})
         if skipped_modules:
-            self.console.print(
-                f"\n⏭️  SKIPPED MODULES ({len(skipped_modules)}):"
-            )
+            self.console.print(f"\n⏭️  SKIPPED MODULES ({len(skipped_modules)}):")
             self.console.print("-" * 30)
 
             for module_name, module_data in skipped_modules.items():
@@ -355,3 +426,13 @@ def generate_comprehensive_output_summary(
 def display_output_summary_to_user(summary: Dict[str, Any]) -> None:
     """Display a user-friendly summary of all outputs to the console."""
     _output_reporter.display_output_summary_to_user(summary)
+
+
+def print_review_before_run(review: Dict[str, Any]) -> None:
+    """Print the compact Review before run block (transcript, output dir, modules run/skipped)."""
+    _output_reporter.print_review_before_run(review)
+
+
+def print_compact_post_run_summary(output_dir: str, results: Dict[str, Any]) -> None:
+    """Print compact post-run summary (status, path, executed/skipped/failed, viewer hint)."""
+    _output_reporter.print_compact_post_run_summary(output_dir, results)

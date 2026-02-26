@@ -1,36 +1,106 @@
 """
 Moments analysis module for TranscriptX.
 
-Aggregates events from multiple modules into ranked "Moments Worth Revisiting".
+Aggregates candidate events from pauses, echoes, momentum, and qa_analysis into
+merged spans ("moments"), ranks them by score, and enriches each moment with
+transcript-based revisit hooks (segment_refs, speakers, excerpt). Outputs
+include JSON/CSV/stats, a timeline chart (scatter by time, marker size = duration),
+and an explainable score_breakdown per moment.
+
+How to interpret:
+- Moments are time intervals [time_start, time_end] worth revisiting.
+- The timeline chart shows them in chronological order; marker size reflects duration.
+- score_breakdown: score_base (from event kinds/severity), diversity_bonus (multiple
+  sources), multi_speaker_bonus (multiple speakers in span), score_total.
+- segment_refs are transcript segment indices overlapping the span (for "click to segment").
 """
 
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List, Optional
-
-import numpy as np
+from typing import Any, Dict, List, Optional, Tuple
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.io.events_io import save_events_json
 from transcriptx.core.models.events import Event, generate_event_id
 from transcriptx.core.utils.config import get_config
-from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.core.utils.artifact_writer import write_text
 from transcriptx.io import save_csv, save_json
 from transcriptx.core.utils.viz_ids import VIZ_MOMENTS_TIMELINE
-from transcriptx.core.viz.specs import LineTimeSeriesSpec
+from transcriptx.core.viz.axis_utils import time_axis_display
+from transcriptx.core.viz.specs import ScatterSpec, ScatterSeries
 
-plt = lazy_pyplot()
+# Default weight for candidate kinds not in weight_map
+DEFAULT_WEIGHT = 0.2
+
+
+def _overlapping_segments(
+    segments: List[Dict[str, Any]], t0: float, t1: float
+) -> List[Tuple[int, Dict[str, Any]]]:
+    """Return (index, segment) for each segment overlapping [t0, t1].
+
+    Overlap condition: seg.start < t1 and seg.end > t0.
+    Uses 'start'/'end' or 'start_time'/'end_time' on segment dicts.
+    """
+    out: List[Tuple[int, Dict[str, Any]]] = []
+    for i, seg in enumerate(segments):
+        start = seg.get("start", seg.get("start_time"))
+        end = seg.get("end", seg.get("end_time"))
+        if start is None or end is None:
+            continue
+        if start < t1 and end > t0:
+            out.append((i, seg))
+    return out
 
 
 class MomentsAnalysis(AnalysisModule):
-    """Aggregate events into ranked moments."""
+    """Aggregate events into ranked moments with transcript enrichment and score breakdown."""
 
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
         self.module_name = "moments"
         self.config = get_config().analysis.moments
+
+    def _build_timeline_spec(
+        self, moments: List[Dict[str, Any]]
+    ) -> Optional[ScatterSpec]:
+        """Build a scatter timeline spec from moments (time-sorted, markers only, size = duration).
+
+        Callers should pass moments sorted by time_start so the chart is chronological.
+        Preserves viz_id and chart slug for registry compatibility.
+        """
+        if not moments:
+            return None
+        moments_sorted = sorted(moments, key=lambda m: m["time_start"])
+        xs = [m["time_start"] for m in moments_sorted]
+        x_display, x_label = time_axis_display(xs)
+        ys = [m["score"] for m in moments_sorted]
+        durations = [max(0.0, m["time_end"] - m["time_start"]) for m in moments_sorted]
+        # Scale marker size: normalize to a reasonable range (e.g. 20–200)
+        max_dur = max(durations) if durations else 1.0
+        if max_dur <= 0:
+            max_dur = 1.0
+        sizes = [20.0 + 180.0 * (d / max_dur) for d in durations]
+        return ScatterSpec(
+            viz_id=VIZ_MOMENTS_TIMELINE,
+            module=self.module_name,
+            name="moments_timeline",
+            scope="global",
+            chart_intent="scatter_events",
+            title="Moments Timeline",
+            x_label=x_label,
+            y_label="Score",
+            notes="Marker size = duration.",
+            series=[
+                ScatterSeries(
+                    name="Moment",
+                    x=x_display,
+                    y=ys,
+                    marker={"size": sizes},
+                )
+            ],
+            mode="markers",
+        )
 
     def _normalize_events(self, events: List[Any]) -> List[Event]:
         normalized = []
@@ -59,9 +129,12 @@ class MomentsAnalysis(AnalysisModule):
 
         merge_seconds = float(getattr(self.config, "merge_seconds", 20.0))
         top_n = int(getattr(self.config, "top_n", 20))
+        max_span_seconds = float(getattr(self.config, "max_span_seconds", 120.0))
         weight_map = getattr(self.config, "weight_map", {}) or {}
         diversity_bonus = float(getattr(self.config, "diversity_bonus", 0.2))
         multi_speaker_bonus = float(getattr(self.config, "multi_speaker_bonus", 0.15))
+        excerpt_max_chars = int(getattr(self.config, "excerpt_max_chars", 200))
+        excerpt_max_segments = int(getattr(self.config, "excerpt_max_segments", 2))
 
         candidates: List[Dict[str, Any]] = []
 
@@ -78,7 +151,11 @@ class MomentsAnalysis(AnalysisModule):
                     "kind": event.kind,
                     "reason": reason,
                     "source": source,
-                    "severity": severity_override if severity_override is not None else event.severity,
+                    "severity": (
+                        severity_override
+                        if severity_override is not None
+                        else event.severity
+                    ),
                     "score": event.score,
                     "speakers": [event.speaker] if event.speaker else [],
                     "segment_refs": [
@@ -126,11 +203,11 @@ class MomentsAnalysis(AnalysisModule):
                             "value": True,
                         }
                     ],
-                    links=[
-                        {"type": "segment", "idx": unanswered.get("segment_idx")}
-                    ]
-                    if unanswered.get("segment_idx") is not None
-                    else [],
+                    links=(
+                        [{"type": "segment", "idx": unanswered.get("segment_idx")}]
+                        if unanswered.get("segment_idx") is not None
+                        else []
+                    ),
                 )
                 add_candidate(event, "unanswered question", "qa_analysis")
 
@@ -159,45 +236,127 @@ class MomentsAnalysis(AnalysisModule):
         if current:
             spans.append(current)
 
-        moments = []
+        # Chain-merge prevention: split spans exceeding max_span_seconds
+        expanded_spans: List[Dict[str, Any]] = []
         for span in spans:
+            start, end = span["start"], span["end"]
             span_candidates = span["candidates"]
-            sources = {c["source"] for c in span_candidates}
-            speakers = set()
-            segment_refs = set()
+            if (end - start) <= max_span_seconds:
+                expanded_spans.append(span)
+                continue
+            # Split into time chunks of max_span_seconds
+            t = start
+            while t < end:
+                chunk_end = min(t + max_span_seconds, end)
+                chunk_candidates = [
+                    c
+                    for c in span_candidates
+                    if c["time_start"] < chunk_end and c["time_end"] > t
+                ]
+                if chunk_candidates:
+                    expanded_spans.append(
+                        {
+                            "start": t,
+                            "end": chunk_end,
+                            "candidates": chunk_candidates,
+                        }
+                    )
+                t = chunk_end
+
+        moments = []
+        for span in expanded_spans:
+            span_candidates = span["candidates"]
+            t0, t1 = span["start"], span["end"]
+
+            # Enrichment from transcript (before scoring): segment_refs, speakers, excerpt
+            candidate_refs = set()
             for c in span_candidates:
-                speakers.update([s for s in c["speakers"] if s])
-                segment_refs.update(c["segment_refs"])
+                candidate_refs.update(c["segment_refs"])
+            segment_refs: List[int] = []
+            speakers_list: List[str] = []
+            excerpt = ""
+            if segments:
+                overlapping = _overlapping_segments(segments, t0, t1)
+                if overlapping:
+                    segment_refs = sorted(idx for idx, _ in overlapping)
+                    speakers_set = set()
+                    texts: List[str] = []
+                    for idx, seg in overlapping[:excerpt_max_segments]:
+                        sp = seg.get("speaker")
+                        if sp and str(sp).strip():
+                            speakers_set.add(str(sp).strip())
+                        txt = seg.get("text") or ""
+                        if isinstance(txt, str) and txt.strip():
+                            texts.append(txt.strip())
+                    speakers_list = sorted(speakers_set)
+                    if texts:
+                        joined = " ".join(texts)
+                        excerpt = joined[:excerpt_max_chars] + (
+                            "..." if len(joined) > excerpt_max_chars else ""
+                        )
+            if not segment_refs:
+                segment_refs = sorted(candidate_refs)
+            if not speakers_list:
+                speakers_list = sorted(
+                    s for c in span_candidates for s in c["speakers"] if s
+                )
 
-            base_score = sum(
-                weight_map.get(c["kind"], 0.2) * c["severity"]
-                for c in span_candidates
+            # sources_included: use "unknown" when source missing so diversity is stable
+            sources_included = set(
+                (c.get("source") or "unknown") for c in span_candidates
             )
-            diversity = diversity_bonus * max(0, len(sources) - 1)
-            multi_speaker = multi_speaker_bonus if len(speakers) > 1 else 0.0
-            score = float(base_score + diversity + multi_speaker)
 
-            # Build explanation
+            # Score breakdown
+            per_kind: Dict[str, float] = {}
+            for c in span_candidates:
+                kind = c["kind"]
+                w = weight_map.get(kind, DEFAULT_WEIGHT)
+                contrib = w * (c.get("severity") or 0.0)
+                per_kind[kind] = per_kind.get(kind, 0.0) + contrib
+            score_base = sum(per_kind.values())
+            score_diversity_bonus = diversity_bonus * max(0, len(sources_included) - 1)
+            score_multi_speaker_bonus = (
+                multi_speaker_bonus if len(speakers_list) > 1 else 0.0
+            )
+            score_total = float(
+                score_base + score_diversity_bonus + score_multi_speaker_bonus
+            )
+            score_breakdown = {
+                "score_total": score_total,
+                "score_base": score_base,
+                "score_diversity_bonus": score_diversity_bonus,
+                "score_multi_speaker_bonus": score_multi_speaker_bonus,
+                "per_kind_contributions": per_kind,
+                "sources_included": sorted(sources_included),
+                "event_count": len(span_candidates),
+            }
+
+            # Build explanation (evidence)
             evidence_items = []
-            for c in sorted(span_candidates, key=lambda x: x["severity"], reverse=True):
+            for c in sorted(
+                span_candidates, key=lambda x: x.get("severity") or 0, reverse=True
+            ):
                 evidence_items.append(
                     {
-                        "reason": c["reason"],
-                        "source": c["source"],
-                        "severity": c["severity"],
-                        "evidence": c["evidence"],
+                        "reason": c.get("reason", ""),
+                        "source": c.get("source") or "unknown",
+                        "severity": c.get("severity", 0),
+                        "evidence": c.get("evidence", []),
                     }
                 )
 
             moments.append(
                 {
-                    "time_start": span["start"],
-                    "time_end": span["end"],
-                    "score": score,
-                    "sources": sorted(sources),
-                    "speakers": sorted(speakers),
-                    "segment_refs": sorted(segment_refs),
+                    "time_start": t0,
+                    "time_end": t1,
+                    "score": score_total,
+                    "sources": sorted(sources_included),
+                    "speakers": speakers_list,
+                    "segment_refs": segment_refs,
+                    "segment_count": len(segment_refs),
+                    "excerpt": excerpt,
                     "evidence": evidence_items[:3],
+                    "score_breakdown": score_breakdown,
                 }
             )
 
@@ -206,10 +365,19 @@ class MomentsAnalysis(AnalysisModule):
         moments = moments[:top_n]
 
         max_score = max([m["score"] for m in moments], default=1.0)
+        if max_score <= 0:
+            max_score = 1.0
         events: List[Event] = []
         for rank, moment in enumerate(moments, start=1):
-            segment_start = moment["segment_refs"][0] if moment["segment_refs"] else None
-            segment_end = moment["segment_refs"][-1] if moment["segment_refs"] else None
+            seg_refs = moment["segment_refs"]
+            segment_start = seg_refs[0] if seg_refs else None
+            segment_end = seg_refs[-1] if seg_refs else None
+            severity = min(1.0, moment["score"] / max_score)
+            evidence_with_breakdown = list(moment.get("evidence", []))
+            if moment.get("score_breakdown"):
+                evidence_with_breakdown.append(
+                    {"source": "moments", "score_breakdown": moment["score_breakdown"]}
+                )
             events.append(
                 Event(
                     event_id=generate_event_id(
@@ -226,9 +394,9 @@ class MomentsAnalysis(AnalysisModule):
                     speaker=None,
                     segment_start_idx=segment_start,
                     segment_end_idx=segment_end,
-                    severity=min(1.0, moment["score"] / max_score),
+                    severity=severity,
                     score=moment["score"],
-                    evidence=moment["evidence"],
+                    evidence=evidence_with_breakdown,
                     links=[
                         {"type": "segment", "idx": idx}
                         for idx in moment["segment_refs"]
@@ -335,6 +503,11 @@ class MomentsAnalysis(AnalysisModule):
                 str(output_structure.global_data_dir / "moments.csv"),
                 header=["rank", "score", "time_start", "time_end", "speakers"],
             )
+            # Full moments list with enrichment and score_breakdown
+            save_json(
+                moments,
+                str(output_structure.global_data_dir / "moments.moments.json"),
+            )
 
         if moments and getattr(self.config, "write_markdown", False):
             lines = ["# Moments Worth Revisiting\n"]
@@ -346,21 +519,8 @@ class MomentsAnalysis(AnalysisModule):
             md_path = output_structure.global_data_dir / "moments.md"
             write_text(md_path, "\n".join(lines))
 
-        if events:
-            xs = [e.time_start for e in events]
-            ys = [e.score or e.severity for e in events]
-            spec = LineTimeSeriesSpec(
-                viz_id=VIZ_MOMENTS_TIMELINE,
-                module=self.module_name,
-                name="moments_timeline",
-                scope="global",
-                chart_intent="line_timeseries",
-                title="Moments Timeline",
-                x_label="Time (seconds)",
-                y_label="Score",
-                markers=True,
-                series=[{"name": "Moment", "x": xs, "y": ys}],
-            )
+        spec = self._build_timeline_spec(moments)
+        if spec is not None:
             output_service.save_chart(spec, chart_type="timeline")
 
         output_service.save_summary(stats, {}, analysis_metadata={})

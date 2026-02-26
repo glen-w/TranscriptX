@@ -8,7 +8,9 @@ import streamlit as st
 from transcriptx.core.config.registry import flatten
 
 
-def render_config_diff(base_config: Dict[str, Any], modified_config: Dict[str, Any]) -> None:
+def render_config_diff(
+    base_config: Dict[str, Any], modified_config: Dict[str, Any]
+) -> None:
     """Render a simple diff between two config dicts."""
     base = flatten(base_config)
     modified = flatten(modified_config)

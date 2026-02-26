@@ -21,7 +21,7 @@ def test_capabilities_snapshot_shape() -> None:
 
     runtime = snapshot["runtime"]
     assert isinstance(runtime, dict)
-    assert set(runtime.keys()) == {"has_models", "has_docker", "has_ffmpeg", "has_convokit"}
+    assert set(runtime.keys()) == {"has_models", "has_docker", "has_ffmpeg"}
     assert all(isinstance(v, bool) for v in runtime.values())
 
     packages = snapshot["packages"]

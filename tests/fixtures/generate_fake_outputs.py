@@ -60,7 +60,9 @@ def generate_fake_outputs() -> Path:
 
     # Create a large HTML artifact (over 10MB)
     large_html = "<html><body>" + ("x" * (11 * 1024 * 1024)) + "</body></html>"
-    _write_text(run_dir / "emotion" / "charts" / "global" / "huge_chart.html", large_html)
+    _write_text(
+        run_dir / "emotion" / "charts" / "global" / "huge_chart.html", large_html
+    )
 
     # Transcript output
     _write_text(

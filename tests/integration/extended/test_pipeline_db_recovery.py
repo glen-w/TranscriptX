@@ -27,6 +27,7 @@ def test_pipeline_run_reuse_existing_state(
     outputs_root.mkdir()
 
     from transcriptx.core.utils import _path_core
+
     monkeypatch.setattr(_path_core, "OUTPUTS_DIR", str(outputs_root))
 
     content_hash = compute_transcript_content_hash(sample_transcript_data["segments"])
@@ -49,15 +50,32 @@ def test_pipeline_run_reuse_existing_state(
         "quality_profile": "standard",
     }
 
-    with patch('transcriptx.database.pipeline_run_service.get_session', return_value=db_session), \
-         patch('transcriptx.database.artifact_registry.get_session', return_value=db_session), \
-         patch('transcriptx.database.transcript_ingestion.get_session', return_value=db_session), \
-         patch('transcriptx.database.sentence_storage.get_session', return_value=db_session), \
-         patch('transcriptx.database.pipeline_run_service.require_up_to_date_schema'), \
-         patch('transcriptx.database.transcript_ingestion.require_up_to_date_schema'), \
-         patch('transcriptx.database.pipeline_run_service.TranscriptIngestionService') as mock_ingestion:
+    with (
+        patch(
+            "transcriptx.database.pipeline_run_service.get_session",
+            return_value=db_session,
+        ),
+        patch(
+            "transcriptx.database.artifact_registry.get_session",
+            return_value=db_session,
+        ),
+        patch(
+            "transcriptx.database.transcript_ingestion.get_session",
+            return_value=db_session,
+        ),
+        patch(
+            "transcriptx.database.sentence_storage.get_session", return_value=db_session
+        ),
+        patch("transcriptx.database.pipeline_run_service.require_up_to_date_schema"),
+        patch("transcriptx.database.transcript_ingestion.require_up_to_date_schema"),
+        patch(
+            "transcriptx.database.pipeline_run_service.TranscriptIngestionService"
+        ) as mock_ingestion,
+    ):
 
-        mock_ingestion.return_value = MagicMock(ingest_transcript=MagicMock(), close=MagicMock())
+        mock_ingestion.return_value = MagicMock(
+            ingest_transcript=MagicMock(), close=MagicMock()
+        )
 
         coordinator = PipelineRunCoordinator(
             transcript_path=str(temp_transcript_file),
@@ -77,7 +95,12 @@ def test_pipeline_run_reuse_existing_state(
         assert cached is False
         assert module_run is not None
 
-        module_dir = Path(get_transcript_dir(str(temp_transcript_file))) / "sentiment" / "data" / "global"
+        module_dir = (
+            Path(get_transcript_dir(str(temp_transcript_file)))
+            / "sentiment"
+            / "data"
+            / "global"
+        )
         module_dir.mkdir(parents=True, exist_ok=True)
         artifact_path = module_dir / f"{temp_transcript_file.stem}_results.json"
         artifact_path.write_text('{"ok": true}')

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+(No changes yet.)
+
+## [0.42] - 2026-02-26
+
 ### Added
 - **ConvoKit Analysis Module**: Added `convokit` module for coordination/accommodation metrics with reply-linking heuristics and standardized artifacts.
 
@@ -65,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created archive structure at `scripts/archived/deprecated_code/`
   - Documents deprecated code and migration paths
   - Preserves history while keeping codebase clean
+- **Version**: Bumped to 0.42 across pyproject.toml, package __init__, web __init__, setup.py, ROADMAP, and this changelog.
 
 ## [0.1.0] - 2026-01-30
 
@@ -229,7 +234,8 @@ Initial stable release with core functionality:
 
 ## Version History
 
-- **v0.2.0** (Current): Codebase cleanup, import optimization, deprecation management
+- **v0.42** (Current): Speaker map migration, module consolidation, run manifest, current release baseline
+- **v0.2.0**: Codebase cleanup, import optimization, deprecation management
 - **v0.1.0**: Initial stable release
 
 

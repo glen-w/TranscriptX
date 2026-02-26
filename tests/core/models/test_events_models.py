@@ -1,4 +1,8 @@
-from transcriptx.core.models.events import Event, generate_event_id, sort_events_deterministically
+from transcriptx.core.models.events import (
+    Event,
+    generate_event_id,
+    sort_events_deterministically,
+)
 
 
 def test_generate_event_id_deterministic():

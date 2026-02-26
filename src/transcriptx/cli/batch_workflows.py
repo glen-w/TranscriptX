@@ -24,7 +24,7 @@ from transcriptx.cli.processing_state import (
     load_processing_state,
     save_processing_state,
 )
-from transcriptx.core import get_default_modules, run_analysis_pipeline
+from transcriptx.core import run_analysis_pipeline
 from transcriptx.core.pipeline.target_resolver import TranscriptRef
 from transcriptx.core.utils.file_rename import rename_transcript_after_speaker_mapping
 from transcriptx.core.utils.logger import get_logger, log_error
@@ -33,7 +33,10 @@ from transcriptx.database.services.transcript_store_policy import (
     store_transcript_after_speaker_identification,
 )
 from transcriptx.io.speaker_mapping import build_speaker_map
-from transcriptx.io.transcript_loader import load_segments, extract_speaker_map_from_transcript
+from transcriptx.io.transcript_loader import (
+    load_segments,
+    extract_speaker_map_from_transcript,
+)
 from transcriptx.cli.speaker_utils import (
     SpeakerGateDecision,
     check_batch_speaker_gate,
@@ -124,7 +127,7 @@ def run_batch_speaker_identification(
     # All transcripts need processing (speaker identification is database-driven)
     transcripts_to_process = resolved_transcript_paths
 
-    print(f"\n[bold cyan]🗣️ Batch Speaker Identification[/bold cyan]")
+    print("\n[bold cyan]🗣️ Batch Speaker Identification[/bold cyan]")
     print(f"[dim]Processing {len(transcripts_to_process)} transcript(s)...[/dim]")
 
     successful = []
@@ -294,7 +297,7 @@ def run_batch_analysis_pipeline(
         print("\n[yellow]⚠️ No transcripts to process for analysis.[/yellow]")
         return
 
-    print(f"\n[bold cyan]🔍 Batch Analysis Pipeline[/bold cyan]")
+    print("\n[bold cyan]🔍 Batch Analysis Pipeline[/bold cyan]")
     print(f"[dim]Processing {len(transcript_paths)} transcript(s)...[/dim]")
 
     # Select analysis mode once for all transcripts (if not provided)
@@ -313,7 +316,7 @@ def run_batch_analysis_pipeline(
         from transcriptx.cli.analysis_utils import select_analysis_modules
 
         print("\n[bold]Select analysis modules:[/bold]")
-        selected_modules = select_analysis_modules(transcript_paths)
+        selected_modules, _ = select_analysis_modules(transcript_paths)
         if not selected_modules:
             print("\n[cyan]Analysis cancelled. Returning to main menu.[/cyan]")
             return
@@ -401,8 +404,10 @@ def run_batch_analysis_pipeline(
     transcripts_already_completed: List[str] = []
     rerun_modes: dict[str, str] = {}  # Map transcript_path -> rerun_mode
 
-    print(f"\n[cyan]Checking analysis status for {len(resolved_transcript_paths)} transcript(s)...[/cyan]")
-    
+    print(
+        f"\n[cyan]Checking analysis status for {len(resolved_transcript_paths)} transcript(s)...[/cyan]"
+    )
+
     for transcript_path in resolved_transcript_paths:
         try:
             # Ensure state entry exists before checking
@@ -465,27 +470,35 @@ def run_batch_analysis_pipeline(
                 logger.warning(f"Could not ensure state entry exists: {e}")
 
             # Check if analysis already completed
-            already_completed = has_analysis_completed(transcript_path, selected_modules)
-            
+            already_completed = has_analysis_completed(
+                transcript_path, selected_modules
+            )
+
             if already_completed:
                 transcripts_already_completed.append(transcript_path)
-                rerun_modes[transcript_path] = "reuse-existing-run"  # Default, may be changed
+                rerun_modes[transcript_path] = (
+                    "reuse-existing-run"  # Default, may be changed
+                )
             else:
                 transcripts_needing_analysis.append(transcript_path)
                 rerun_modes[transcript_path] = "reuse-existing-run"
         except Exception as e:
             # If check fails, assume it needs analysis
-            logger.debug(f"Could not check analysis completion status for {transcript_path}: {e}")
+            logger.debug(
+                f"Could not check analysis completion status for {transcript_path}: {e}"
+            )
             transcripts_needing_analysis.append(transcript_path)
             rerun_modes[transcript_path] = "reuse-existing-run"
 
     # Handle already-completed transcripts upfront
     skip_choice: Optional[str] = None
     if transcripts_already_completed:
-        print(f"\n[yellow]⚠️ Found {len(transcripts_already_completed)} transcript(s) with completed analysis:[/yellow]")
+        print(
+            f"\n[yellow]⚠️ Found {len(transcripts_already_completed)} transcript(s) with completed analysis:[/yellow]"
+        )
         for path in transcripts_already_completed:
             print(f"  - {Path(path).name}")
-        
+
         skip_choice = questionary.select(
             f"What would you like to do with these {len(transcripts_already_completed)} already-analyzed transcript(s)?",
             choices=[
@@ -513,7 +526,9 @@ def run_batch_analysis_pipeline(
             print("\n[cyan]Batch analysis cancelled.[/cyan]")
             return
     else:
-        print("\n[yellow]⚠️ No transcripts need analysis (all are already completed or skipped).[/yellow]")
+        print(
+            "\n[yellow]⚠️ No transcripts need analysis (all are already completed or skipped).[/yellow]"
+        )
         return
 
     successful = []
@@ -521,7 +536,11 @@ def run_batch_analysis_pipeline(
     failed = []
 
     # Add already-completed transcripts that were skipped to the skipped list
-    if transcripts_already_completed and skip_choice and skip_choice == "⏭️ Skip all already-analyzed transcripts":
+    if (
+        transcripts_already_completed
+        and skip_choice
+        and skip_choice == "⏭️ Skip all already-analyzed transcripts"
+    ):
         for path in transcripts_already_completed:
             skipped.append(path)
 

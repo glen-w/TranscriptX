@@ -34,7 +34,6 @@ from transcriptx.core.viz.specs import (
 )
 
 
-
 @dataclass
 class ConversationLoop:
     """

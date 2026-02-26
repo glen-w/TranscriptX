@@ -51,9 +51,7 @@ def save_uploaded_file(uploaded_file) -> tuple[Path, list[str]]:
     warnings: list[str] = []
     suffix = source_path.suffix.lower()
     if suffix and suffix not in ALLOWED_AUDIO_EXTENSIONS:
-        warnings.append(
-            f"Unrecognized extension '{suffix}'. Proceeding anyway."
-        )
+        warnings.append(f"Unrecognized extension '{suffix}'. Proceeding anyway.")
 
     upload_dir = UPLOADS_DIR / str(uuid4())
     upload_dir.mkdir(parents=True, exist_ok=True)

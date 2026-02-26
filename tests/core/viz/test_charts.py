@@ -1,7 +1,5 @@
 """Tests for chart path helpers and saving utilities."""
 
-from pathlib import Path
-
 from transcriptx.core.utils.output_standards import (
     create_standard_output_structure,
     get_global_static_chart_path,

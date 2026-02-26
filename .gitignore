@@ -25,6 +25,7 @@ whisperx.env
 whisperx.env.*
 !whisperx.env.example
 config/ocr_key.json
+secrets/
 
 # Local data and outputs
 data/
@@ -36,6 +37,7 @@ nltk_data/
 
 # Logs and temp
 test_timeouts.log
+code_size.log
 importtime_baseline.txt
 importtime_results.txt
 *MagicMock*.json
@@ -50,9 +52,12 @@ node_modules/
 # Archived docs site
 scripts/archived/docs_site/
 
-# Local archives (not source-controlled)
+# Local archives (not source-controlled). Note: scripts/archived/ is tracked.
 scripts/archive/
 transcriptx*backup/
 
 # Archived docs (not source-controlled)
 docs/archived/
+
+# Pre-release build artifact
+pre-release

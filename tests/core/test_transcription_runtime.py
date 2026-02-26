@@ -18,7 +18,9 @@ def test_fake_runtime_records_copy_out() -> None:
     runtime = FakeRuntime()
     target = Path("/tmp/transcript.json")
 
-    result = runtime.copy_out(container_path="/tmp/output.json", host_path=target, timeout=30)
+    result = runtime.copy_out(
+        container_path="/tmp/output.json", host_path=target, timeout=30
+    )
 
     assert result.returncode == 0
     assert runtime.copy_calls == [("/tmp/output.json", target, 30)]

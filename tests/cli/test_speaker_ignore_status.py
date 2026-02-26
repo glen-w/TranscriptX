@@ -29,7 +29,9 @@ def test_ignored_speakers_reduce_missing_ids(tmp_path: Path) -> None:
 
 def test_all_ignored_speakers_mark_complete(tmp_path: Path) -> None:
     transcript = tmp_path / "all_ignored.json"
-    _write_transcript(transcript, ["SPEAKER_00", "SPEAKER_01"], ["SPEAKER_00", "SPEAKER_01"])
+    _write_transcript(
+        transcript, ["SPEAKER_00", "SPEAKER_01"], ["SPEAKER_00", "SPEAKER_01"]
+    )
 
     status = check_speaker_identification_status(transcript)
 

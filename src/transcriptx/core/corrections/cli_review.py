@@ -86,12 +86,9 @@ def _impact_label(candidate: Candidate) -> str:
 
 def _build_rule_from_candidate(candidate: Candidate, scope: str) -> CorrectionRule:
     # Set is_person_name for rules that introduce a person name (fuzzy speaker correction, or name capitalization)
-    is_person_name = (
-        candidate.kind == "fuzzy"
-        or (
-            candidate.kind in ("token", "phrase")
-            and is_named_speaker(candidate.proposed_right)
-        )
+    is_person_name = candidate.kind == "fuzzy" or (
+        candidate.kind in ("token", "phrase")
+        and is_named_speaker(candidate.proposed_right)
     )
     return CorrectionRule(
         type="phrase" if " " in candidate.proposed_wrong else "token",
@@ -114,7 +111,9 @@ def review_candidates(
     for candidate in candidates:
         print("\n---")
         print(f"Suggest: '{candidate.proposed_wrong}' → '{candidate.proposed_right}'")
-        print(f"Reason: {_reason_label(candidate)} (impact: {_impact_label(candidate)})")
+        print(
+            f"Reason: {_reason_label(candidate)} (impact: {_impact_label(candidate)})"
+        )
         _print_occurrence_examples(candidate)
         action = _prompt_action()
 

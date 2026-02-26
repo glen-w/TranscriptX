@@ -77,9 +77,7 @@ def format_segment_anchor(
     start_text = format_timecode(start)
     end_text = format_timecode(end)
     if start_text != "--" or end_text != "--":
-        time_part = (
-            start_text if end_text == "--" else f"{start_text}-{end_text}"
-        )
+        time_part = start_text if end_text == "--" else f"{start_text}-{end_text}"
     else:
         time_part = "--"
 

@@ -36,7 +36,11 @@ def reconstruct_emotion_data(
         logger.debug("[CONTAGION] Reconstructing emotion data from contextual_all...")
         speaker_emotion_lists = {}
         for speaker, emotion_list in contextual_all.items():
-            if emotion_list and isinstance(emotion_list, list) and len(emotion_list) > 0:
+            if (
+                emotion_list
+                and isinstance(emotion_list, list)
+                and len(emotion_list) > 0
+            ):
                 speaker_emotion_lists[speaker] = emotion_list
 
         if speaker_emotion_lists:
@@ -88,9 +92,14 @@ def reconstruct_emotion_data(
                     normalized_text = text.strip().lower()
                     if normalized_text:
                         if (speaker, normalized_text) not in text_to_emotion:
-                            text_to_emotion[(speaker, normalized_text)] = (emotion, score)
+                            text_to_emotion[(speaker, normalized_text)] = (
+                                emotion,
+                                score,
+                            )
                         else:
-                            existing_score = text_to_emotion[(speaker, normalized_text)][1]
+                            existing_score = text_to_emotion[
+                                (speaker, normalized_text)
+                            ][1]
                             if score > existing_score:
                                 text_to_emotion[(speaker, normalized_text)] = (
                                     emotion,

@@ -38,7 +38,7 @@ def progress(message: str = "Processing...") -> Generator[None, None, None]:
             try:
                 yield
                 sp.ok("✅")
-            except Exception as e:
+            except Exception:
                 sp.fail("❌")
                 raise
     else:

@@ -4,7 +4,10 @@ from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.domain.transcript_set import TranscriptSet as DomainTranscriptSet
-from transcriptx.database.models.transcript_set import TranscriptSet, TranscriptSetMember
+from transcriptx.database.models.transcript_set import (
+    TranscriptSet,
+    TranscriptSetMember,
+)
 from transcriptx.database.models.transcript import TranscriptFile
 
 logger = get_logger()
@@ -44,9 +47,7 @@ class TranscriptSetRepository:
 
     def get_by_id(self, set_id: int) -> Optional[TranscriptSet]:
         return (
-            self.session.query(TranscriptSet)
-            .filter(TranscriptSet.id == set_id)
-            .first()
+            self.session.query(TranscriptSet).filter(TranscriptSet.id == set_id).first()
         )
 
     def get_by_uuid(self, set_uuid: str) -> Optional[TranscriptSet]:

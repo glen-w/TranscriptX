@@ -57,20 +57,23 @@ import json
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import questionary
 from colorama import Fore, Style, init
 from rich.console import Console
 
-from transcriptx.core.utils.config import get_config
-from transcriptx.utils.text_utils import is_named_speaker, strip_emojis
+from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.io.ui import choose_mapping_action
-from transcriptx.core.utils.paths import OUTPUTS_DIR
-from transcriptx.core.utils.path_utils import get_base_name, get_transcript_dir, get_speaker_map_path, find_existing_speaker_map as find_existing_speaker_map_core
+from transcriptx.core.utils.path_utils import (
+    get_base_name,
+    get_transcript_dir,
+    get_speaker_map_path,
+    find_existing_speaker_map as find_existing_speaker_map_core,
+)
+
 # Note: extract_tags is imported lazily inside load_or_create_speaker_map to avoid circular dependency
-from transcriptx.cli.tag_workflow import offer_and_edit_tags, store_tags_in_database
-from transcriptx.core.utils.file_rename import rename_transcript_after_speaker_mapping
+from transcriptx.cli.tag_workflow import offer_and_edit_tags
 
 # Initialize colorama for cross-platform colored output
 # This ensures consistent colored output across different operating systems
@@ -118,13 +121,13 @@ def get_segments(path: str) -> list[dict[str, Any]]:
     """
     with open(path) as f:
         data = json.load(f)
-    
+
     segments = []
     if isinstance(data, dict):
         segments = data.get("segments", [])
     elif isinstance(data, list):
         segments = data  # assume it's already a list of segments
-    
+
     # Process segments to handle WhisperX format with words arrays
     processed_segments = []
     for segment in segments:
@@ -140,10 +143,12 @@ def get_segments(path: str) -> list[dict[str, Any]]:
                         if isinstance(word, dict) and "speaker" in word:
                             speaker = word["speaker"]
                             speaker_counts[speaker] = speaker_counts.get(speaker, 0) + 1
-                    
+
                     # Use the most common speaker
                     if speaker_counts:
-                        most_common_speaker = max(speaker_counts, key=speaker_counts.get)
+                        most_common_speaker = max(
+                            speaker_counts, key=speaker_counts.get
+                        )
                         # Create a new segment with speaker field
                         processed_segment = segment.copy()
                         processed_segment["speaker"] = most_common_speaker
@@ -160,7 +165,7 @@ def get_segments(path: str) -> list[dict[str, Any]]:
                     processed_segments.append(processed_segment)
             else:
                 processed_segments.append(segment)
-    
+
     return processed_segments
 
 
@@ -232,13 +237,13 @@ def extract_speaker_text(
 def find_existing_speaker_map(transcript_path: str) -> str | None:
     """
     Find existing speaker map in outputs directory.
-    
+
     This function delegates to the core path_utils implementation
     which includes improved search logic for renamed transcripts.
-    
+
     Args:
         transcript_path: Path to the transcript JSON file
-        
+
     Returns:
         Path to existing speaker map if found, None otherwise
     """
@@ -249,16 +254,16 @@ def find_existing_speaker_map(transcript_path: str) -> str | None:
 def get_default_speaker_map_path(transcript_path):
     """
     Get the default speaker map path for a transcript.
-    
+
     This function first checks for existing speaker maps in the outputs directory,
     then falls back to the standard location next to the transcript file.
-    
+
     Args:
         transcript_path: Path to the transcript JSON file
-        
+
     Returns:
         Path to the speaker map file in the correct location
-        
+
     Example:
         Input: /path/to/meeting.json
         Output: /path/to/meeting/meeting_speaker_map.json
@@ -267,9 +272,8 @@ def get_default_speaker_map_path(transcript_path):
     existing_path = find_existing_speaker_map(transcript_path)
     if existing_path:
         return existing_path
-    
+
     # Fall back to the standard location
-    from transcriptx.core.utils.path_utils import get_base_name, get_transcript_dir
     base_name = get_base_name(transcript_path)
     transcript_dir = get_transcript_dir(transcript_path)
     return os.path.join(transcript_dir, f"{base_name}_speaker_map.json")
@@ -278,17 +282,17 @@ def get_default_speaker_map_path(transcript_path):
 def validate_speaker_map_path(speaker_map_path: str, transcript_path: str) -> str:
     """
     Validate and correct speaker map path to ensure it's in the right location.
-    
+
     This function first checks for existing speaker maps in the outputs directory,
     then falls back to the standard location next to the transcript file.
-    
+
     Args:
         speaker_map_path: Current speaker map path
         transcript_path: Path to the transcript file
-        
+
     Returns:
         Corrected speaker map path
-        
+
     Raises:
         ValueError: If the path is invalid or cannot be corrected
     """
@@ -296,37 +300,37 @@ def validate_speaker_map_path(speaker_map_path: str, transcript_path: str) -> st
     existing_path = find_existing_speaker_map(transcript_path)
     if existing_path:
         return existing_path
-    
+
     # Fall back to the standard location
     expected_path = get_speaker_map_path(transcript_path)
-    
+
     # If the current path is already correct, return it
     if speaker_map_path == expected_path:
         return speaker_map_path
-    
+
     # If the current path exists and is not empty, warn about potential conflict
     if os.path.exists(speaker_map_path):
         try:
-            with open(speaker_map_path, 'r') as f:
+            with open(speaker_map_path, "r") as f:
                 content = f.read().strip()
-                if content and content != '{}':
-                    console.print(f"⚠️ WARNING: Found existing speaker map at {speaker_map_path}")
+                if content and content != "{}":
+                    console.print(
+                        f"⚠️ WARNING: Found existing speaker map at {speaker_map_path}"
+                    )
                     console.print(f"   Expected location: {expected_path}")
-                    console.print(f"   This may indicate a path construction bug.")
+                    console.print("   This may indicate a path construction bug.")
         except Exception:
             pass
-    
+
     # Return the correct path
     return expected_path
 
 
-
-
 def load_or_create_speaker_map(
-    segments: list[dict[str, Any]], 
-    speaker_map_path: str, 
+    segments: list[dict[str, Any]],
+    speaker_map_path: str,
     transcript_path: str | None = None,
-    batch_mode: bool = False
+    batch_mode: bool = False,
 ) -> dict[str, str] | None:
     """
     Handle speaker name mapping with intelligent reuse and revision.
@@ -366,8 +370,12 @@ def load_or_create_speaker_map(
         speaker_map_path = validate_speaker_map_path(speaker_map_path, transcript_path)
     else:
         # Fallback validation for when transcript_path is not available
-        if not speaker_map_path.endswith("_speaker_map.json") and not os.path.exists(speaker_map_path):
-            console.print(f"⚠️ WARNING: Cannot validate speaker map path without transcript_path")
+        if not speaker_map_path.endswith("_speaker_map.json") and not os.path.exists(
+            speaker_map_path
+        ):
+            console.print(
+                "⚠️ WARNING: Cannot validate speaker map path without transcript_path"
+            )
             console.print(f"   Current path: {speaker_map_path}")
 
     if os.path.exists(speaker_map_path):
@@ -378,13 +386,17 @@ def load_or_create_speaker_map(
     # Skip prompt in batch mode since user has already confirmed they want speaker identification
     if not os.path.exists(speaker_map_path):
         if not batch_mode:
-            console.print(f"❌ No speaker map found at {speaker_map_path}.", style="red")
+            console.print(
+                f"❌ No speaker map found at {speaker_map_path}.", style="red"
+            )
             console.print("A speaker map is required to proceed with analysis.")
             create_now = questionary.confirm(
                 "Would you like to identify speakers now (interactive mapping)?"
             ).ask()
             if not create_now:
-                console.print("[yellow]Returning to main menu. Speaker mapping is required before analysis.[/yellow]")
+                console.print(
+                    "[yellow]Returning to main menu. Speaker mapping is required before analysis.[/yellow]"
+                )
                 return None
         # In batch mode or after user confirms, proceed to build speaker map interactively
 
@@ -396,6 +408,7 @@ def load_or_create_speaker_map(
         try:
             # Lazy import to avoid circular dependency
             from transcriptx.core.analysis.tag_extraction import extract_tags
+
             tag_result = extract_tags(segments)
             auto_tags = tag_result.get("tags", [])
             tag_details = tag_result.get("tag_details", {})
@@ -430,7 +443,9 @@ def load_or_create_speaker_map(
 
         # Get user action choice
         # Present options based on the current state of speaker identification
-        action = choose_mapping_action(unidentified_count, batch_mode=batch_mode, has_tags=has_tags)
+        action = choose_mapping_action(
+            unidentified_count, batch_mode=batch_mode, has_tags=has_tags
+        )
 
         # Handle different action choices
         # Process the user's selection and take appropriate action
@@ -448,14 +463,14 @@ def load_or_create_speaker_map(
                 review_mode="unidentified only",
                 existing_map=speaker_map,
             )
-        elif "manage tags" in action.lower() or "🏷️" in action or "tags" in action.lower():
+        elif (
+            "manage tags" in action.lower() or "🏷️" in action or "tags" in action.lower()
+        ):
             # Show tag management interface using centralized workflow
             # auto_prompt=False since we're already in a menu
             if transcript_path:
                 tag_result = offer_and_edit_tags(
-                    transcript_path,
-                    batch_mode=batch_mode,
-                    auto_prompt=False
+                    transcript_path, batch_mode=batch_mode, auto_prompt=False
                 )
                 if tag_result:
                     final_tags = tag_result.get("tags", [])
@@ -467,6 +482,7 @@ def load_or_create_speaker_map(
             try:
                 # Lazy import to avoid circular dependency
                 from transcriptx.core.analysis.tag_extraction import extract_tags
+
                 tag_result = extract_tags(segments)
                 auto_tags = tag_result.get("tags", [])
                 tag_details = tag_result.get("tag_details", {})
@@ -483,9 +499,7 @@ def load_or_create_speaker_map(
     if not batch_mode and transcript_path:
         # Use centralized workflow (auto_prompt=True to show prompt)
         tag_result = offer_and_edit_tags(
-            transcript_path,
-            batch_mode=batch_mode,
-            auto_prompt=True
+            transcript_path, batch_mode=batch_mode, auto_prompt=True
         )
         if tag_result:
             final_tags = tag_result.get("tags", [])
@@ -556,7 +570,10 @@ def build_speaker_map(
     # Extract unique speaker IDs from segments
     speaker_ids = sorted(set(seg["speaker"] for seg in segments if "speaker" in seg))
     if not speaker_ids:
-        console.print(f"❌ No speakers found in transcript. Speaker map will not be created.", style="red")
+        console.print(
+            "❌ No speakers found in transcript. Speaker map will not be created.",
+            style="red",
+        )
         return {}
 
     speaker_map = existing_map or {}
@@ -680,34 +697,43 @@ def build_speaker_map(
     if speaker_map_path:
         # CRITICAL FIX: Ensure directory exists and path is valid
         os.makedirs(os.path.dirname(speaker_map_path), exist_ok=True)
-        
+
         # Validate the speaker map before saving to prevent corruption
         if new_map:
             with open(speaker_map_path, "w") as f:
                 json.dump(new_map, f, indent=2)
             console.print(f"✅ Speaker map saved to: {speaker_map_path}")
-            
+
             # Update processing state if we can determine transcript path
             # Try to infer from speaker_map_path
             try:
                 from transcriptx.core.utils.path_utils import get_canonical_base_name
                 from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
-                canonical_base = get_canonical_base_name(speaker_map_path.replace("_speaker_map.json", ""))
+
+                canonical_base = get_canonical_base_name(
+                    speaker_map_path.replace("_speaker_map.json", "")
+                )
                 # Try to find transcript path
                 transcript_candidates = [
                     Path(DIARISED_TRANSCRIPTS_DIR) / f"{canonical_base}.json",
-                    Path(DIARISED_TRANSCRIPTS_DIR) / f"{canonical_base}_transcript_diarised.json",
+                    Path(DIARISED_TRANSCRIPTS_DIR)
+                    / f"{canonical_base}_transcript_diarised.json",
                 ]
                 for candidate in transcript_candidates:
                     if candidate.exists():
-                        from transcriptx.io.speaker_mapping import _update_state_with_speaker_map
+                        from transcriptx.io.speaker_mapping import (
+                            _update_state_with_speaker_map,
+                        )
+
                         _update_state_with_speaker_map(str(candidate), speaker_map_path)
                         break
             except Exception:
                 # If we can't update state, that's okay - it's not critical
                 pass
         else:
-            console.print(f"⚠️ WARNING: Attempting to save empty speaker map to: {speaker_map_path}")
+            console.print(
+                f"⚠️ WARNING: Attempting to save empty speaker map to: {speaker_map_path}"
+            )
             # Don't save empty maps to prevent corruption
     return new_map
 
@@ -799,7 +825,7 @@ def save_transcript(data: list, path: str) -> None:
     """
     # Ensure the directory exists before writing the file
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    
+
     if isinstance(data, list):
         content = {"segments": data}
     else:
@@ -837,10 +863,11 @@ def save_csv(rows: list[list], path: str, header: list[str] | None = None) -> No
 # Please migrate to transcriptx.io module (see migration guide above)
 import warnings
 
+
 def _deprecation_warning(func_name: str):
     """
     Issue deprecation warning for functions being moved to transcriptx.io.
-    
+
     This function is called for all deprecated re-exported functions to warn
     developers about the upcoming removal in v0.3.0.
     """
@@ -848,42 +875,56 @@ def _deprecation_warning(func_name: str):
         f"transcriptx.io_utils.{func_name} is deprecated and will be removed in v0.3.0. "
         f"Use transcriptx.io.{func_name} instead.",
         DeprecationWarning,
-        stacklevel=3
+        stacklevel=3,
     )
+
 
 # Re-export key functions with deprecation warnings
 def load_segments(path: str) -> list[dict[str, Any]]:
     """DEPRECATED: Use transcriptx.io.load_segments instead"""
     _deprecation_warning("load_segments")
     from transcriptx.io import load_segments as _load_segments
+
     return _load_segments(path)
+
 
 def load_transcript(path: str) -> Any:
     """DEPRECATED: Use transcriptx.io.load_transcript instead"""
     _deprecation_warning("load_transcript")
     from transcriptx.io import load_transcript as _load_transcript
+
     return _load_transcript(path)
 
-def load_transcript_data(transcript_path: str) -> tuple[list[dict[str, Any]], str, str, dict[str, str]]:
+
+def load_transcript_data(
+    transcript_path: str,
+) -> tuple[list[dict[str, Any]], str, str, dict[str, str]]:
     """DEPRECATED: Use transcriptx.io.load_transcript_data instead"""
     _deprecation_warning("load_transcript_data")
     from transcriptx.io import load_transcript_data as _load_transcript_data
+
     return _load_transcript_data(transcript_path)
+
 
 def load_speaker_map(transcript_path: str) -> dict[str, str]:
     """DEPRECATED: Use transcriptx.io.load_speaker_map instead"""
     _deprecation_warning("load_speaker_map")
     from transcriptx.io import load_speaker_map as _load_speaker_map
+
     return _load_speaker_map(transcript_path)
+
 
 def save_json(data: dict, path: str):
     """DEPRECATED: Use transcriptx.io.save_json instead"""
     _deprecation_warning("save_json")
     from transcriptx.io import save_json as _save_json
+
     return _save_json(data, path)
+
 
 def save_csv(rows: list[list], path: str, header: list[str] | None = None) -> None:
     """DEPRECATED: Use transcriptx.io.save_csv instead"""
     _deprecation_warning("save_csv")
     from transcriptx.io import save_csv as _save_csv
+
     return _save_csv(rows, path, header)

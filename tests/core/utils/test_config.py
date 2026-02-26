@@ -5,8 +5,6 @@ This module tests config loading, validation, defaults, and environment variable
 """
 
 import json
-import os
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -25,42 +23,39 @@ from transcriptx.core.utils.config import (
 
 class TestAnalysisConfig:
     """Tests for AnalysisConfig dataclass."""
-    
+
     def test_default_values(self):
         """Test that default values are set correctly."""
         config = AnalysisConfig()
-        
+
         assert config.sentiment_window_size == 10
         assert config.sentiment_min_confidence == 0.1
         assert config.emotion_min_confidence == 0.3
         assert isinstance(config.ner_labels, list)
         assert len(config.ner_labels) > 0
-    
+
     def test_custom_values(self):
         """Test that custom values can be set."""
-        config = AnalysisConfig(
-            sentiment_window_size=20,
-            sentiment_min_confidence=0.5
-        )
-        
+        config = AnalysisConfig(sentiment_window_size=20, sentiment_min_confidence=0.5)
+
         assert config.sentiment_window_size == 20
         assert config.sentiment_min_confidence == 0.5
-    
+
     def test_ner_labels_default(self):
         """Test that NER labels have default values."""
         config = AnalysisConfig()
-        
+
         assert "PERSON" in config.ner_labels
         assert "ORG" in config.ner_labels
 
 
 class TestOutputConfig:
     """Tests for OutputConfig dataclass."""
-    
+
     def test_default_values(self):
         """Test that default values are set correctly."""
         config = OutputConfig()
-        
+
         assert config.base_output_dir is not None
         assert config.default_audio_folder is not None
         assert config.default_transcript_folder is not None
@@ -68,11 +63,11 @@ class TestOutputConfig:
 
 class TestAudioPreprocessingConfig:
     """Tests for AudioPreprocessingConfig dataclass."""
-    
+
     def test_default_values(self):
         """Test that default values are set correctly."""
         config = AudioPreprocessingConfig()
-        
+
         assert config.preprocessing_mode == "selected"
         assert config.convert_to_mono == "auto"
         assert config.downsample == "auto"
@@ -91,7 +86,7 @@ class TestAudioPreprocessingConfig:
         assert config.bandpass_mode == "off"
         assert config.bandpass_low == 300
         assert config.bandpass_high == 3400
-    
+
     def test_custom_values(self):
         """Test that custom values can be set."""
         config = AudioPreprocessingConfig(
@@ -101,9 +96,9 @@ class TestAudioPreprocessingConfig:
             normalize_mode="suggest",
             target_lufs=-16.0,
             denoise_mode="auto",
-            denoise_strength="high"
+            denoise_strength="high",
         )
-        
+
         assert config.preprocessing_mode == "auto"
         assert config.convert_to_mono == "off"
         assert config.target_sample_rate == 22050
@@ -111,7 +106,7 @@ class TestAudioPreprocessingConfig:
         assert config.target_lufs == -16.0
         assert config.denoise_mode == "auto"
         assert config.denoise_strength == "high"
-    
+
     def test_three_mode_values(self):
         """Test that all preprocessing steps support three modes."""
         config = AudioPreprocessingConfig(
@@ -121,9 +116,9 @@ class TestAudioPreprocessingConfig:
             denoise_mode="suggest",
             highpass_mode="auto",
             lowpass_mode="suggest",
-            bandpass_mode="off"
+            bandpass_mode="off",
         )
-        
+
         assert config.convert_to_mono == "suggest"
         assert config.downsample == "off"
         assert config.normalize_mode == "auto"
@@ -131,16 +126,16 @@ class TestAudioPreprocessingConfig:
         assert config.highpass_mode == "auto"
         assert config.lowpass_mode == "suggest"
         assert config.bandpass_mode == "off"
-    
+
     def test_global_mode_override(self):
         """Test that global preprocessing_mode can override per-step settings."""
         config = AudioPreprocessingConfig(
             preprocessing_mode="auto",
             convert_to_mono="suggest",
             downsample="off",
-            normalize_mode="suggest"
+            normalize_mode="suggest",
         )
-        
+
         # Global mode should be set
         assert config.preprocessing_mode == "auto"
         # Per-step modes are still stored, but will be overridden by global mode
@@ -151,74 +146,71 @@ class TestAudioPreprocessingConfig:
 
 class TestConfig:
     """Tests for Config class."""
-    
+
     def test_initialization(self):
         """Test Config initialization."""
         config = TranscriptXConfig()
-        
+
         assert isinstance(config.analysis, AnalysisConfig)
         assert isinstance(config.output, OutputConfig)
         assert isinstance(config.audio_preprocessing, AudioPreprocessingConfig)
-    
+
     def test_custom_analysis_config(self):
         """Test that custom analysis config can be provided."""
         analysis_config = AnalysisConfig(sentiment_window_size=15)
         config = TranscriptXConfig()
         config.analysis = analysis_config
-        
+
         assert config.analysis.sentiment_window_size == 15
 
 
 class TestLoadConfig:
     """Tests for load_config function."""
-    
+
     def test_loads_from_file(self, tmp_path):
         """Test loading configuration from file."""
         config_file = tmp_path / "config.json"
         config_data = {
-            "analysis": {
-                "sentiment_window_size": 20,
-                "sentiment_min_confidence": 0.5
-            }
+            "analysis": {"sentiment_window_size": 20, "sentiment_min_confidence": 0.5}
         }
         config_file.write_text(json.dumps(config_data))
-        
+
         config = load_config(str(config_file))
-        
+
         assert config.analysis.sentiment_window_size == 20
         assert config.analysis.sentiment_min_confidence == 0.5
-    
+
     def test_uses_defaults_when_file_not_exists(self, tmp_path):
         """Test that defaults are used when file doesn't exist."""
         config_file = tmp_path / "nonexistent.json"
-        
+
         config = load_config(str(config_file))
-        
+
         # Should use defaults
         assert config.analysis.sentiment_window_size == 10
-    
+
     def test_handles_invalid_json(self, tmp_path):
         """Test that invalid JSON is handled."""
         config_file = tmp_path / "config.json"
         config_file.write_text("invalid json")
-        
+
         # Should use defaults or raise error
         with pytest.raises((json.JSONDecodeError, ValueError)):
             load_config(str(config_file))
-    
+
     def test_environment_variable_overrides(self, tmp_path, monkeypatch):
         """Test that environment variables override file settings."""
         config_file = tmp_path / "config.json"
         config_data = {"analysis": {"sentiment_window_size": 20}}
         config_file.write_text(json.dumps(config_data))
-        
+
         monkeypatch.setenv("TRANSCRIPTX_SENTIMENT_WINDOW_SIZE", "30")
-        
+
         config = load_config(str(config_file))
-        
+
         # Environment variable should override
         assert config.analysis.sentiment_window_size == 30
-    
+
     def test_loads_audio_preprocessing_from_file(self, tmp_path):
         """Test loading audio preprocessing configuration from file."""
         config_file = tmp_path / "config.json"
@@ -228,19 +220,19 @@ class TestLoadConfig:
                 "target_sample_rate": 22050,
                 "normalize_mode": "suggest",
                 "denoise_mode": "auto",
-                "denoise_strength": "high"
+                "denoise_strength": "high",
             }
         }
         config_file.write_text(json.dumps(config_data))
-        
+
         config = load_config(str(config_file))
-        
+
         assert config.audio_preprocessing.convert_to_mono == "off"
         assert config.audio_preprocessing.target_sample_rate == 22050
         assert config.audio_preprocessing.normalize_mode == "suggest"
         assert config.audio_preprocessing.denoise_mode == "auto"
         assert config.audio_preprocessing.denoise_strength == "high"
-    
+
     def test_loads_audio_preprocessing_backward_compatibility(self, tmp_path):
         """Test backward compatibility: loading old boolean configs."""
         config_file = tmp_path / "config.json"
@@ -251,13 +243,13 @@ class TestLoadConfig:
                 "normalize_enabled": True,  # Old boolean format
                 "denoise_enabled": False,  # Old boolean format
                 "highpass_enabled": True,  # Old boolean format
-                "denoise_strength": "high"
+                "denoise_strength": "high",
             }
         }
         config_file.write_text(json.dumps(config_data))
-        
+
         config = load_config(str(config_file))
-        
+
         # Should be migrated to new mode format
         assert config.audio_preprocessing.convert_to_mono == "off"  # False -> "off"
         assert config.audio_preprocessing.normalize_mode == "auto"  # True -> "auto"
@@ -265,33 +257,37 @@ class TestLoadConfig:
         assert config.audio_preprocessing.highpass_mode == "auto"  # True -> "auto"
         assert config.audio_preprocessing.target_sample_rate == 22050
         assert config.audio_preprocessing.denoise_strength == "high"
-    
-    def test_audio_preprocessing_environment_variable_overrides(self, tmp_path, monkeypatch):
+
+    def test_audio_preprocessing_environment_variable_overrides(
+        self, tmp_path, monkeypatch
+    ):
         """Test that environment variables override audio preprocessing file settings."""
         config_file = tmp_path / "config.json"
         config_data = {"audio_preprocessing": {"target_sample_rate": 16000}}
         config_file.write_text(json.dumps(config_data))
-        
+
         monkeypatch.setenv("TRANSCRIPTX_AUDIO_TARGET_SAMPLE_RATE", "22050")
         monkeypatch.setenv("TRANSCRIPTX_AUDIO_DENOISE_MODE", "auto")
-        
+
         config = load_config(str(config_file))
-        
+
         # Environment variable should override
         assert config.audio_preprocessing.target_sample_rate == 22050
         assert config.audio_preprocessing.denoise_mode == "auto"
-    
-    def test_audio_preprocessing_environment_variable_legacy_boolean(self, tmp_path, monkeypatch):
+
+    def test_audio_preprocessing_environment_variable_legacy_boolean(
+        self, tmp_path, monkeypatch
+    ):
         """Test backward compatibility: legacy boolean environment variables."""
         config_file = tmp_path / "config.json"
         config_data = {"audio_preprocessing": {"target_sample_rate": 16000}}
         config_file.write_text(json.dumps(config_data))
-        
+
         monkeypatch.setenv("TRANSCRIPTX_AUDIO_DENOISE_ENABLED", "true")
         monkeypatch.setenv("TRANSCRIPTX_AUDIO_NORMALIZE_ENABLED", "false")
-        
+
         config = load_config(str(config_file))
-        
+
         # Legacy boolean should be converted to mode
         assert config.audio_preprocessing.denoise_mode == "auto"  # true -> "auto"
         assert config.audio_preprocessing.normalize_mode == "off"  # false -> "off"
@@ -299,21 +295,21 @@ class TestLoadConfig:
 
 class TestGetConfig:
     """Tests for get_config function."""
-    
+
     def test_returns_singleton_instance(self):
         """Test that get_config returns singleton instance."""
-        with patch('transcriptx.core.utils.config._global_config', None):
+        with patch("transcriptx.core.utils.config._global_config", None):
             config1 = get_config()
             config2 = get_config()
-            
+
             # Should be same instance
             assert config1 is config2
-    
+
     def test_uses_default_config_when_none(self):
         """Test that default config is used when none exists."""
-        with patch('transcriptx.core.utils.config._global_config', None):
+        with patch("transcriptx.core.utils.config._global_config", None):
             config = get_config()
-            
+
             assert isinstance(config, TranscriptXConfig)
             assert isinstance(config.analysis, AnalysisConfig)
             assert isinstance(config.audio_preprocessing, AudioPreprocessingConfig)
@@ -321,50 +317,50 @@ class TestGetConfig:
 
 class TestSaveConfig:
     """Tests for save_config function."""
-    
+
     def test_saves_config_to_file(self, tmp_path):
         """Test that config is saved to file."""
         config_file = tmp_path / "config.json"
         config = TranscriptXConfig()
         config.analysis.sentiment_window_size = 25
-        
+
         # Config is saved through the config object's save method or via load_config
         # For now, just test that we can create and set config
         set_config(config)
-        
+
         # Config is set globally, not necessarily saved to file
         retrieved = get_config()
         assert isinstance(retrieved, TranscriptXConfig)
-    
+
     def test_creates_directory_if_needed(self, tmp_path):
         """Test that directory is created if it doesn't exist."""
         config_file = tmp_path / "subdir" / "config.json"
         config = TranscriptXConfig()
-        
+
         # Config is saved through the config object's save method or via load_config
         # For now, just test that we can create and set config
         set_config(config)
-        
+
         # Config is set globally
         retrieved = get_config()
         assert isinstance(retrieved, TranscriptXConfig)
-    
+
     def test_preserves_all_settings(self, tmp_path):
         """Test that all settings are preserved when saving."""
         config_file = tmp_path / "config.json"
         config = TranscriptXConfig()
         config.analysis.sentiment_window_size = 30
         config.analysis.emotion_min_confidence = 0.4
-        
+
         # Save config to file using the save_to_file method
         config.save_to_file(str(config_file))
-        
+
         # Load it back and verify
         loaded_config = load_config(str(config_file))
-        
+
         assert loaded_config.analysis.sentiment_window_size == 30
         assert loaded_config.analysis.emotion_min_confidence == 0.4
-    
+
     def test_preserves_audio_preprocessing_settings(self, tmp_path):
         """Test that audio preprocessing settings are preserved when saving."""
         config_file = tmp_path / "config.json"
@@ -374,13 +370,13 @@ class TestSaveConfig:
         config.audio_preprocessing.denoise_mode = "auto"
         config.audio_preprocessing.denoise_strength = "high"
         config.audio_preprocessing.normalize_mode = "suggest"
-        
+
         # Save config to file
         config.save_to_file(str(config_file))
-        
+
         # Load it back and verify
         loaded_config = load_config(str(config_file))
-        
+
         assert loaded_config.audio_preprocessing.preprocessing_mode == "auto"
         assert loaded_config.audio_preprocessing.target_sample_rate == 22050
         assert loaded_config.audio_preprocessing.denoise_mode == "auto"
@@ -406,9 +402,20 @@ class TestDownloadPolicy:
         monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "0")
         assert nlp_runtime._downloads_disabled() is False
 
-    def test_downloads_disabled_blocks_spacy_download(self, monkeypatch):
-        """Ensure download path is skipped when downloads are disabled."""
-        monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "1")
+    def test_spacy_download_disabled_by_default_unset(self, monkeypatch):
+        """TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD unset means allow (spaCy auto-download)."""
+        monkeypatch.delenv("TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD", raising=False)
+        assert nlp_runtime._spacy_download_disabled() is False
+
+    def test_spacy_download_disabled_when_set(self, monkeypatch):
+        """TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1 means do not auto-download spaCy."""
+        monkeypatch.setenv("TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD", "1")
+        assert nlp_runtime._spacy_download_disabled() is True
+
+    def test_disable_spacy_download_skips_download(self, monkeypatch):
+        """When TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1, _ensure_spacy_model returns without calling download."""
+        monkeypatch.setenv("TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD", "1")
+        monkeypatch.setattr(nlp_runtime, "_core_mode", lambda: False)
 
         class _FakeSpacy:
             def load(self, _model):
@@ -422,9 +429,30 @@ class TestDownloadPolicy:
         monkeypatch.setattr(nlp_runtime, "_import_spacy", lambda: _FakeSpacy())
         nlp_runtime._ensure_spacy_model("en_core_web_sm")
 
-    def test_downloads_enabled_allows_spacy_download(self, monkeypatch):
-        """Ensure download path is executed when explicitly enabled."""
-        monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "0")
+    def test_disable_spacy_download_ensure_raises(self, monkeypatch):
+        """When TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1, ensure_spacy_model raises with manual install message."""
+        monkeypatch.setenv("TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD", "1")
+        monkeypatch.setattr(nlp_runtime, "_core_mode", lambda: False)
+
+        class _FakeSpacy:
+            def load(self, _model):
+                raise OSError("missing model")
+
+            class cli:
+                @staticmethod
+                def download(_model):
+                    raise AssertionError("download should not be called")
+
+        monkeypatch.setattr(nlp_runtime, "_import_spacy", lambda: _FakeSpacy())
+        with pytest.raises(OSError) as exc_info:
+            nlp_runtime.ensure_spacy_model("en_core_web_sm")
+        assert "TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD" in str(exc_info.value)
+        assert "python -m spacy download" in str(exc_info.value)
+
+    def test_default_unset_attempts_spacy_download(self, monkeypatch):
+        """Default (unset) with non-core mode: attempt download (mock spacy.cli.download, assert called)."""
+        monkeypatch.delenv("TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD", raising=False)
+        monkeypatch.setattr(nlp_runtime, "_core_mode", lambda: False)
         called = {"download": False}
 
         class _FakeSpacy:

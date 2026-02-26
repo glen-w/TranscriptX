@@ -19,7 +19,10 @@ from transcriptx.core.utils.transcript_languages import (
 )
 from transcriptx.core.utils.path_utils import get_transcript_dir
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.speaker_extraction import count_named_speakers
 from transcriptx.cli.audio import get_audio_duration
+from transcriptx.io import load_segments
+from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.utils.spinner import spinner
 from transcriptx.cli.file_selection_interface import (
     FileSelectionConfig,
@@ -51,6 +54,9 @@ _TRANSCRIPT_FILENAME_EXCLUSIONS = (
     "_manifest.json",
     "_simplified_transcript.json",
 )
+
+# Supported audio extensions for merge, convert, preprocessing, and batch
+AUDIO_EXTENSIONS = (".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac")
 
 
 def _normalize_allowed_exts(
@@ -247,9 +253,7 @@ def _set_transcription_language(config) -> bool:
 
         save_project_config(config.to_dict())
         label = normalized or "auto"
-        console.print(
-            f"[green]✅ Language set to {label} and saved to config[/green]"
-        )
+        console.print(f"[green]✅ Language set to {label} and saved to config[/green]")
     except Exception as e:
         logger.warning(f"Could not save config: {e}")
         label = normalized or "auto"
@@ -488,8 +492,28 @@ def _format_transcript_file_with_analysis(transcript_file: Path) -> str:
                 data = json.load(f)
                 if isinstance(data, dict):
                     if "segments" in data:
-                        segments = len(data["segments"])
-                        return f"{prefix}📄 {transcript_file.name} ({size_kb:.1f} KB, {segments} segments)"
+                        segment_count = len(data["segments"])
+                        segments = load_segments(str(transcript_file), data=data)
+                        speaker_map = data.get("speaker_map", {})
+                        if not isinstance(speaker_map, dict):
+                            speaker_map = {}
+                        resolved = [dict(seg) for seg in segments]
+                        for seg in resolved:
+                            sp = seg.get("speaker")
+                            if sp is not None and sp in speaker_map:
+                                seg["speaker"] = speaker_map[sp]
+                        named = count_named_speakers(resolved)
+                        has_meaningful_map = bool(speaker_map) and any(
+                            is_named_speaker(str(v)) for v in speaker_map.values()
+                        )
+                        base = f"{prefix}📄 {transcript_file.name} ({size_kb:.1f} KB, {segment_count} segments)"
+                        if named > 0:
+                            base += f" • 👤 {named} named"
+                        else:
+                            base += " • ⚠️ 0 named"
+                            base += " (no map)" if not has_meaningful_map else " (map?)"
+                            base += " — map speakers to unlock analysis"
+                        return base
                     elif "text" in data:
                         text_length = len(data["text"])
                         return f"{prefix}📄 {transcript_file.name} ({size_kb:.1f} KB, {text_length} chars)"
@@ -693,14 +717,18 @@ def select_folder_interactive(start_path: Path | None = None) -> Path | None:
             elif isinstance(selection, Path):
                 current_path = selection
                 try:
-                    if not any(Path(entry.path).is_dir() for entry in os.scandir(current_path)):
+                    if not any(
+                        Path(entry.path).is_dir() for entry in os.scandir(current_path)
+                    ):
                         return current_path
                 except Exception:
                     pass
             elif isinstance(selection, str):
                 current_path = Path(selection)
                 try:
-                    if not any(Path(entry.path).is_dir() for entry in os.scandir(current_path)):
+                    if not any(
+                        Path(entry.path).is_dir() for entry in os.scandir(current_path)
+                    ):
                         return current_path
                 except Exception:
                     pass
@@ -779,6 +807,8 @@ def select_audio_file_interactive() -> Path | None:
         title="🎵 Audio File Selection",
         current_path=folder_path,
         metadata_formatter=format_audio_file,
+        skip_seconds_short=config_obj.input.playback_skip_seconds_short,
+        skip_seconds_long=config_obj.input.playback_skip_seconds_long,
     )
 
     selected = select_files_interactive(available_files, selection_config)
@@ -978,7 +1008,7 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
     """
     Select one or more audio files from configured recordings folders that don't already have corresponding transcripts.
     This function specifically handles the WhisperX integration requirement.
-    
+
     Returns:
         List of selected audio file paths, or None if cancelled. For single file selection,
         returns a list with one item.
@@ -1030,7 +1060,11 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
                 if files_with_existing_transcripts:
                     choice = questionary.select(
                         "No valid files available (already transcribed).",
-                        choices=["🔄 Overwrite and re-transcribe", "Retry input", "Cancel"],
+                        choices=[
+                            "🔄 Overwrite and re-transcribe",
+                            "Retry input",
+                            "Cancel",
+                        ],
                     ).ask()
                     if choice == "🔄 Overwrite and re-transcribe":
                         if not _set_transcription_language(config):
@@ -1055,7 +1089,7 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
             if invalid_entries:
                 _print_invalid_entries(invalid_entries)
                 choice = questionary.select(
-                    f"Some files already have transcripts. What would you like to do?",
+                    "Some files already have transcripts. What would you like to do?",
                     choices=[
                         f"Continue with {len(available_files)} new file(s) only",
                         "🔄 Overwrite existing and include all files",
@@ -1132,21 +1166,29 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
     available_files = sorted(available_files, key=lambda p: p.name.lower())
 
     # Debug: Log how many files are available
-    logger.debug(f"Found {len(available_files)} available audio files for WhisperX transcription")
-    
+    logger.debug(
+        f"Found {len(available_files)} available audio files for WhisperX transcription"
+    )
+
     # Provide user feedback before showing selection menu
-    console.print(f"\n[bold cyan]🎤 WhisperX Transcription - Available Audio Files[/bold cyan]")
-    console.print(f"[dim]Found {len(available_files)} audio files ready for transcription[/dim]")
+    console.print(
+        "\n[bold cyan]🎤 WhisperX Transcription - Available Audio Files[/bold cyan]"
+    )
+    console.print(
+        f"[dim]Found {len(available_files)} audio files ready for transcription[/dim]"
+    )
     console.print(f"[dim]Recordings directory: {recordings_dir}[/dim]")
     console.print(f"[dim]Transcripts will be saved to: {transcripts_output_dir}[/dim]")
-    
+
     # Ensure any previous output is flushed before showing the selection menu
     import sys
+
     sys.stdout.flush()
     sys.stderr.flush()
 
     # Use the new generic selection interface
     # The interactive interface will display the files with full metadata and playback support
+    config_obj = get_config()
     selection_config = FileSelectionConfig(
         multi_select=True,
         enable_playback=True,
@@ -1158,6 +1200,8 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
         toggle_hidden_files=files_with_existing_transcripts,
         toggle_hidden_label="Show transcribed",
         toggle_hidden_key="t",
+        skip_seconds_short=config_obj.input.playback_skip_seconds_short,
+        skip_seconds_long=config_obj.input.playback_skip_seconds_long,
     )
 
     try:
@@ -1173,16 +1217,24 @@ def select_audio_for_whisperx_transcription() -> list[Path] | None:
         # Fallback to a simpler selection method
         if available_files:
             from rich.prompt import Prompt
-            console.print(f"\n[bold]Available audio files:[/bold]")
+
+            console.print("\n[bold]Available audio files:[/bold]")
             for idx, file_path in enumerate(available_files, 1):
                 console.print(f"  {idx}. {file_path.name}")
             try:
-                choice = Prompt.ask("\nEnter file number(s) separated by commas (or 'q' to cancel)", default="q")
-                if choice.lower() == 'q':
+                choice = Prompt.ask(
+                    "\nEnter file number(s) separated by commas (or 'q' to cancel)",
+                    default="q",
+                )
+                if choice.lower() == "q":
                     return None
                 # Parse multiple file selections
-                selected_indices = [int(x.strip()) - 1 for x in choice.split(',')]
-                selected_files = [available_files[idx] for idx in selected_indices if 0 <= idx < len(available_files)]
+                selected_indices = [int(x.strip()) - 1 for x in choice.split(",")]
+                selected_files = [
+                    available_files[idx]
+                    for idx in selected_indices
+                    if 0 <= idx < len(available_files)
+                ]
                 if selected_files:
                     return selected_files
                 else:
@@ -1234,6 +1286,194 @@ def validate_wav_file(wav_path: Path) -> tuple[bool, str | None]:
         return False, f"Cannot read file: {str(e)}"
 
     return True, None
+
+
+def validate_audio_file(
+    path: Path,
+    allowed_extensions: tuple[str, ...] | None = None,
+) -> tuple[bool, str | None]:
+    """
+    Validate that an audio file exists and is readable.
+
+    Args:
+        path: Path to the audio file to validate
+        allowed_extensions: Tuple of allowed suffixes (e.g. AUDIO_EXTENSIONS). Defaults to AUDIO_EXTENSIONS.
+
+    Returns:
+        tuple[bool, str | None]: (is_valid, error_message)
+    """
+    if allowed_extensions is None:
+        allowed_extensions = AUDIO_EXTENSIONS
+    if not path.exists():
+        return False, f"File does not exist: {path}"
+    if not path.is_file():
+        return False, f"Path is not a file: {path}"
+    if path.suffix.lower() not in allowed_extensions:
+        return (
+            False,
+            f"File is not a supported audio format (extension: {path.suffix}); allowed: {', '.join(sorted(allowed_extensions))}",
+        )
+    try:
+        file_size = path.stat().st_size
+        if file_size == 0:
+            return False, "File is empty (0 bytes)"
+        if file_size < 1024:
+            return (
+                False,
+                f"File is suspiciously small ({file_size} bytes), may be corrupted",
+            )
+    except OSError as e:
+        return False, f"Cannot access file: {str(e)}"
+    try:
+        with open(path, "rb") as f:
+            f.read(1)
+    except PermissionError:
+        return False, f"Permission denied: {path}"
+    except Exception as e:
+        return False, f"Cannot read file: {str(e)}"
+    return True, None
+
+
+def select_audio_files_interactive(
+    start_path: Path | None = None,
+    extensions: tuple[str, ...] | None = None,
+) -> list[Path] | None:
+    """
+    Select one or more audio files interactively (WAV, MP3, OGG, etc.), starting from /Volumes/.
+
+    Uses directory navigation similar to select_folder_interactive() but
+    filters by the given extensions and allows multi-select.
+
+    Args:
+        start_path: Starting directory path (defaults to /Volumes/)
+        extensions: Allowed file extensions (defaults to AUDIO_EXTENSIONS)
+
+    Returns:
+        list[Path] | None: List of selected audio file paths, or None if cancelled
+    """
+    if extensions is None:
+        extensions = AUDIO_EXTENSIONS
+    mode = get_file_selection_mode()
+    if mode is None:
+        return None
+    if mode == "direct":
+        return prompt_for_file_paths(
+            allowed_exts=extensions,
+            allow_glob=True,
+            prompt_text="Enter audio file path(s) or glob pattern(s), comma-separated:",
+        )
+
+    if start_path is None:
+        start_path = Path("/Volumes/")
+
+    current_path = start_path
+
+    while True:
+        try:
+            folders = []
+            files = []
+            with os.scandir(current_path) as entries:
+                for entry in entries:
+                    if entry.name.startswith("."):
+                        continue
+                    path = Path(entry.path)
+                    if entry.is_dir():
+                        folders.append(path)
+                    elif entry.is_file():
+                        files.append(path)
+        except PermissionError:
+            console.print(f"[red]❌ Permission denied accessing {current_path}[/red]")
+            return None
+        except FileNotFoundError:
+            console.print(f"[red]❌ Directory not found: {current_path}[/red]")
+            return None
+        except Exception as e:
+            console.print(f"[red]❌ Error accessing {current_path}: {e}[/red]")
+            return None
+
+        audio_files = [f for f in files if f.suffix.lower() in extensions]
+
+        if audio_files:
+
+            def _creation_sort_key(path: Path) -> tuple[float, str]:
+                try:
+                    st = path.stat()
+                    t = getattr(st, "st_birthtime", st.st_ctime)
+                    return (t, path.name.lower())
+                except OSError:
+                    return (0.0, path.name.lower())
+
+            audio_files = sorted(audio_files, key=_creation_sort_key)
+
+            config_obj = get_config()
+            selection_config = FileSelectionConfig(
+                multi_select=True,
+                enable_playback=True,
+                enable_rename=True,
+                enable_select_all=True,
+                title="🎵 Audio File Selection",
+                current_path=current_path,
+                metadata_formatter=format_audio_file,
+                validator=lambda p: validate_audio_file(p, extensions),
+                skip_seconds_short=config_obj.input.playback_skip_seconds_short,
+                skip_seconds_long=config_obj.input.playback_skip_seconds_long,
+            )
+
+            selected_files = select_files_interactive(audio_files, selection_config)
+            return selected_files
+
+        nav_choices = []
+        if current_path != current_path.parent:
+            nav_choices.append(questionary.Choice(title="📁 .. (Go up)", value=".."))
+        nav_choices.append(
+            questionary.Choice(
+                title=f"📍 Current: {current_path}", value=None, disabled=""
+            )
+        )
+        nav_choices.append(questionary.Choice(title="", value=None, disabled=""))
+
+        for folder in sorted(folders):
+            nav_choices.append(
+                questionary.Choice(title=f"📁 {folder.name}/", value=folder)
+            )
+
+        if audio_files:
+            nav_choices.append(
+                questionary.Choice(
+                    title=f"🎵 Audio files: {len(audio_files)}", value=None, disabled=""
+                )
+            )
+        nav_choices.append(
+            questionary.Choice(
+                title=f"📄 Total files: {len(files)}", value=None, disabled=""
+            )
+        )
+
+        nav_choices.append(questionary.Choice(title="", value=None, disabled=""))
+        nav_choices.append(questionary.Choice(title="❌ Cancel", value="cancel"))
+
+        console.print("\n[bold cyan]📂 Folder Navigation[/bold cyan]")
+        console.print(f"[dim]Current location: {current_path}[/dim]")
+        console.print(
+            "[yellow]No audio files found in this folder. Navigate to find audio files.[/yellow]"
+        )
+
+        try:
+            selection = questionary.select(
+                "Navigate to find audio files:",
+                choices=nav_choices,
+            ).ask()
+
+            if not selection or selection == "cancel":
+                return None
+
+            if selection == "..":
+                current_path = current_path.parent
+            elif isinstance(selection, Path):
+                current_path = selection
+        except KeyboardInterrupt:
+            console.print("\n[cyan]Cancelled. Returning to previous menu.[/cyan]")
+            return None
 
 
 def select_wav_files_interactive(start_path: Path | None = None) -> list[Path] | None:
@@ -1308,6 +1548,7 @@ def select_wav_files_interactive(start_path: Path | None = None) -> list[Path] |
             wav_files = sorted(wav_files, key=_creation_sort_key)
 
             # Use the new generic selection interface
+            config_obj = get_config()
             selection_config = FileSelectionConfig(
                 multi_select=True,
                 enable_playback=True,
@@ -1317,6 +1558,8 @@ def select_wav_files_interactive(start_path: Path | None = None) -> list[Path] |
                 current_path=current_path,
                 metadata_formatter=format_audio_file,
                 validator=validate_wav_file,
+                skip_seconds_short=config_obj.input.playback_skip_seconds_short,
+                skip_seconds_long=config_obj.input.playback_skip_seconds_long,
             )
 
             selected_files = select_files_interactive(wav_files, selection_config)
@@ -1427,12 +1670,10 @@ def select_single_audio_file_for_preprocessing(
             console.print(f"[red]❌ Error: {e}[/red]")
             return None
 
-        audio_files = [
-            f for f in files
-            if f.suffix.lower() in audio_extensions
-        ]
+        audio_files = [f for f in files if f.suffix.lower() in audio_extensions]
 
         if audio_files:
+
             def _creation_sort_key(p: Path) -> tuple[float, str]:
                 try:
                     st = p.stat()
@@ -1442,6 +1683,7 @@ def select_single_audio_file_for_preprocessing(
                     return (0.0, p.name.lower())
 
             audio_files = sorted(audio_files, key=_creation_sort_key)
+            config_obj = get_config()
             selection_config = FileSelectionConfig(
                 multi_select=False,
                 enable_playback=True,
@@ -1449,6 +1691,8 @@ def select_single_audio_file_for_preprocessing(
                 title="🎵 Select audio file to preprocess",
                 current_path=current_path,
                 metadata_formatter=format_audio_file,
+                skip_seconds_short=config_obj.input.playback_skip_seconds_short,
+                skip_seconds_long=config_obj.input.playback_skip_seconds_long,
             )
             selected = select_files_interactive(audio_files, selection_config)
             if selected and len(selected) > 0:
@@ -1530,7 +1774,9 @@ def reorder_files_interactive(files: list[Path]) -> list[Path] | None:
                             f"  {idx}. {file_path.name} ({size_mb:.1f} MB, {duration_str})"
                         )
                     else:
-                        file_lines.append(f"  {idx}. {file_path.name} ({size_mb:.1f} MB)")
+                        file_lines.append(
+                            f"  {idx}. {file_path.name} ({size_mb:.1f} MB)"
+                        )
                 except Exception:
                     file_lines.append(f"  {idx}. {file_path.name}")
 

@@ -9,6 +9,7 @@ from transcriptx.core.utils.speaker_extraction import (
     group_segments_by_speaker,
     get_speaker_display_name,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
     HeatmapMatrixSpec,
@@ -230,9 +231,7 @@ def build_derived_indices_charts(
     global_mismatch = _rate(
         segments, lambda seg: bool(seg.get("affect_mismatch_posneg"))
     )
-    global_entropy = _mean(
-        _safe_float(seg.get("emotion_entropy")) for seg in segments
-    )
+    global_entropy = _mean(_safe_float(seg.get("emotion_entropy")) for seg in segments)
     global_volatility = _mean(
         _safe_float(seg.get("emotion_volatility_proxy")) for seg in segments
     )
@@ -314,14 +313,16 @@ def build_dynamics_timeseries_charts(
     )
     mismatch_xs, mismatch_ys = _build_series(
         segments,
-        lambda seg: 1.0
-        if seg.get("affect_mismatch_posneg") is True
-        else 0.0
-        if seg.get("affect_mismatch_posneg") is False
-        else None,
+        lambda seg: (
+            1.0
+            if seg.get("affect_mismatch_posneg") is True
+            else 0.0 if seg.get("affect_mismatch_posneg") is False else None
+        ),
     )
 
     if entropy_xs and volatility_xs:
+        ex_disp, x_label = time_axis_display(entropy_xs)
+        vx_disp, _ = time_axis_display(volatility_xs)
         specs.append(
             LineTimeSeriesSpec(
                 viz_id=VIZ_AFFECT_TENSION_ENTROPY_VOLATILITY_TIMESERIES_GLOBAL,
@@ -330,17 +331,18 @@ def build_dynamics_timeseries_charts(
                 scope="global",
                 chart_intent="line_timeseries",
                 title=f"Emotion Entropy + Volatility Over Time - {base_name}",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Value",
                 markers=False,
                 series=[
-                    {"name": "Entropy", "x": entropy_xs, "y": entropy_ys},
-                    {"name": "Volatility", "x": volatility_xs, "y": volatility_ys},
+                    {"name": "Entropy", "x": ex_disp, "y": entropy_ys},
+                    {"name": "Volatility", "x": vx_disp, "y": volatility_ys},
                 ],
             )
         )
     else:
         if entropy_xs:
+            ex_disp, x_label = time_axis_display(entropy_xs)
             specs.append(
                 LineTimeSeriesSpec(
                     viz_id=VIZ_AFFECT_TENSION_ENTROPY_TIMESERIES_GLOBAL,
@@ -349,13 +351,14 @@ def build_dynamics_timeseries_charts(
                     scope="global",
                     chart_intent="line_timeseries",
                     title=f"Emotion Entropy Over Time - {base_name}",
-                    x_label="Time (seconds)",
+                    x_label=x_label,
                     y_label="Entropy",
                     markers=False,
-                    series=[{"name": "Entropy", "x": entropy_xs, "y": entropy_ys}],
+                    series=[{"name": "Entropy", "x": ex_disp, "y": entropy_ys}],
                 )
             )
         if volatility_xs:
+            vx_disp, x_label = time_axis_display(volatility_xs)
             specs.append(
                 LineTimeSeriesSpec(
                     viz_id=VIZ_AFFECT_TENSION_VOLATILITY_TIMESERIES_GLOBAL,
@@ -364,14 +367,15 @@ def build_dynamics_timeseries_charts(
                     scope="global",
                     chart_intent="line_timeseries",
                     title=f"Emotion Volatility Over Time - {base_name}",
-                    x_label="Time (seconds)",
+                    x_label=x_label,
                     y_label="Volatility",
                     markers=False,
-                    series=[{"name": "Volatility", "x": volatility_xs, "y": volatility_ys}],
+                    series=[{"name": "Volatility", "x": vx_disp, "y": volatility_ys}],
                 )
             )
 
     if mismatch_xs:
+        mx_disp, x_label = time_axis_display(mismatch_xs)
         specs.append(
             LineTimeSeriesSpec(
                 viz_id=VIZ_AFFECT_TENSION_MISMATCH_TIMESERIES_GLOBAL,
@@ -380,10 +384,10 @@ def build_dynamics_timeseries_charts(
                 scope="global",
                 chart_intent="line_timeseries",
                 title=f"Mismatch Flags Over Time - {base_name}",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Mismatch (0/1)",
                 markers=False,
-                series=[{"name": "Mismatch", "x": mismatch_xs, "y": mismatch_ys}],
+                series=[{"name": "Mismatch", "x": mx_disp, "y": mismatch_ys}],
             )
         )
 
@@ -403,10 +407,15 @@ def build_dynamics_timeseries_charts(
         if not sp_entropy_xs and not sp_vol_xs:
             continue
         series: List[Dict[str, Any]] = []
+        sp_x_label = "Time (minutes)"
         if sp_entropy_xs:
-            series.append({"name": "Entropy", "x": sp_entropy_xs, "y": sp_entropy_ys})
+            se_disp, sp_x_label = time_axis_display(sp_entropy_xs)
+            series.append({"name": "Entropy", "x": se_disp, "y": sp_entropy_ys})
         if sp_vol_xs:
-            series.append({"name": "Volatility", "x": sp_vol_xs, "y": sp_vol_ys})
+            sv_disp, vol_label = time_axis_display(sp_vol_xs)
+            if not series:
+                sp_x_label = vol_label
+            series.append({"name": "Volatility", "x": sv_disp, "y": sp_vol_ys})
         specs.append(
             LineTimeSeriesSpec(
                 viz_id=VIZ_AFFECT_TENSION_ENTROPY_VOLATILITY_TIMESERIES_SPEAKER,
@@ -416,7 +425,7 @@ def build_dynamics_timeseries_charts(
                 speaker=speaker,
                 chart_intent="line_timeseries",
                 title=f"Emotion Entropy + Volatility - {speaker}",
-                x_label="Time (seconds)",
+                x_label=sp_x_label,
                 y_label="Value",
                 markers=False,
                 series=series,
@@ -442,18 +451,15 @@ def build_tension_summary_heatmap(
         return None
 
     mismatch_type_labels = sorted(
-        {
-            str(seg.get("mismatch_type"))
-            for seg in segments
-            if seg.get("mismatch_type")
-        }
+        {str(seg.get("mismatch_type")) for seg in segments if seg.get("mismatch_type")}
     )
     if mismatch_type_labels:
         categories = mismatch_type_labels
 
         def category_rate(segs: List[Dict[str, Any]], category: str) -> float:
             return float(
-                _rate(segs, lambda seg: str(seg.get("mismatch_type")) == category) or 0.0
+                _rate(segs, lambda seg: str(seg.get("mismatch_type")) == category)
+                or 0.0
             )
 
         z_rows: List[List[float]] = []
@@ -503,10 +509,7 @@ def build_tension_summary_heatmap(
             continue
         y_labels.append(speaker)
         z_rows.append(
-            [
-                float(_rate(segs, predicate) or 0.0)
-                for _, predicate in flag_categories
-            ]
+            [float(_rate(segs, predicate) or 0.0) for _, predicate in flag_categories]
         )
     if INCLUDE_GLOBAL:
         y_labels.append("Global")

@@ -11,8 +11,15 @@ import json
 
 import pytest
 
-from transcriptx.io.speaker_mapping import build_speaker_map, load_speaker_map, save_speaker_map
-from transcriptx.io.speaker_mapping.core import update_transcript_json_with_speaker_names
+from transcriptx.io.speaker_mapping import (
+    build_speaker_map,
+    load_speaker_map,
+    save_speaker_map,
+)
+from transcriptx.io.speaker_mapping.core import (
+    update_transcript_json_with_speaker_names,
+)
+from transcriptx.io.speaker_mapping.utils import compute_speaker_stats_from_segments
 
 
 def test_save_speaker_map_stub_raises() -> None:
@@ -71,3 +78,44 @@ def test_build_speaker_map_batch_updates_transcript(tmp_path) -> None:
     assert updated["segments"][0]["speaker"] == "Speaker 1"
     assert updated["segments"][1]["speaker"] == "Speaker 2"
     assert updated["speaker_map"] == result
+
+
+class TestComputeSpeakerStatsFromSegments:
+    """Tests for compute_speaker_stats_from_segments (one-pass, no _extract_segment_times in loops)."""
+
+    def test_timestamps_present(self) -> None:
+        segments = [
+            {"speaker": "A", "text": "x", "start": 0.0, "end": 10.0},
+            {"speaker": "A", "text": "y", "start": 10.0, "end": 20.0},
+            {"speaker": "B", "text": "z", "start": 20.0, "end": 30.0},
+        ]
+        stats = compute_speaker_stats_from_segments(segments)
+        assert stats["A"]["segment_count"] == 2
+        assert stats["A"]["total_duration"] == 20.0
+        assert stats["A"]["percent"] == pytest.approx(200 / 3, rel=1e-5)
+        assert stats["B"]["segment_count"] == 1
+        assert stats["B"]["total_duration"] == 10.0
+        assert stats["B"]["percent"] == pytest.approx(100 / 3, rel=1e-5)
+
+    def test_timestamps_missing(self) -> None:
+        segments = [
+            {"speaker": "A", "text": "x"},
+            {"speaker": "A", "text": "y"},
+            {"speaker": "B", "text": "z"},
+        ]
+        stats = compute_speaker_stats_from_segments(segments)
+        assert stats["A"]["segment_count"] == 2
+        assert stats["A"]["total_duration"] == 0.0
+        assert stats["A"]["percent"] == pytest.approx(200 / 3, rel=1e-5)
+        assert stats["B"]["segment_count"] == 1
+        assert stats["B"]["percent"] == pytest.approx(100 / 3, rel=1e-5)
+
+    def test_one_segment_missing_end_ignored_for_duration_still_counts(self) -> None:
+        segments = [
+            {"speaker": "A", "text": "x", "start": 0.0, "end": 10.0},
+            {"speaker": "A", "text": "y", "start": 10.0},
+        ]
+        stats = compute_speaker_stats_from_segments(segments)
+        assert stats["A"]["segment_count"] == 2
+        assert stats["A"]["total_duration"] == 10.0
+        assert stats["A"]["percent"] == 100.0

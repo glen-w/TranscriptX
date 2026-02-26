@@ -11,7 +11,7 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from transcriptx.core.utils.logger import (
     get_logger,
@@ -29,13 +29,14 @@ from transcriptx.core.utils.performance_estimator import (
     PerformanceEstimator,
     format_time_estimate,
 )
-from transcriptx.core.pipeline.pipeline_context import PipelineContext, ReadOnlyPipelineContext
+from transcriptx.core.pipeline.pipeline_context import PipelineContext
 
 
 def get_module_registry():
     from transcriptx.core.pipeline.module_registry import ModuleRegistry
 
     return ModuleRegistry()
+
 
 # Note: load_or_create_speaker_map is imported lazily inside functions to avoid circular dependency
 
@@ -55,6 +56,20 @@ class DAGNode:
     executed: bool = False
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+
+
+@dataclass
+class ModuleExecOutcome:
+    """Result of running or skipping a single module. No side effects."""
+
+    status: Literal["success", "skipped", "failed"]
+    module_result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    duration_ms: float = 0.0
+    used_cache: bool = False
+    skip_reason: Optional[str] = None
+    module_run: Any = None  # for db_coordinator.complete_module_run
+    module_started_at: Optional[str] = None  # for building error result in record
 
 
 class DAGPipeline:
@@ -150,7 +165,8 @@ class DAGPipeline:
                 missing_deps[module_name] = missing
         if missing_deps:
             details = "; ".join(
-                f"{module}: {', '.join(deps)}" for module, deps in sorted(missing_deps.items())
+                f"{module}: {', '.join(deps)}"
+                for module, deps in sorted(missing_deps.items())
             )
             raise ValueError(f"Missing dependencies for module(s): {details}")
 
@@ -326,6 +342,12 @@ class DAGPipeline:
             "warnings": [],
         }
 
+        # Record requested modules that are not in the registry
+        for name in selected_modules:
+            if name not in self.nodes:
+                results["skipped_modules"].append(name)
+                results["warnings"].append(f"Module '{name}' not in registry")
+
         # Resolve all modules including dependencies
         try:
             all_modules = self.resolve_dependencies(selected_modules)
@@ -447,6 +469,151 @@ class DAGPipeline:
         except Exception as e:
             self.logger.warning(f"Failed to log execution plan: {e}")
 
+    def compute_review_before_run(
+        self,
+        transcript_path: str,
+        selected_modules: List[str],
+        output_dir: str,
+        requirements_resolver: Optional[Any] = None,
+        speaker_map: Optional[Dict[str, str]] = None,
+        skip_speaker_mapping: bool = False,
+        speaker_options: Optional[Any] = None,
+        transcript_key: Optional[str] = None,
+        run_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Compute review data (what will run vs be skipped) without executing.
+        Used by the pipeline layer to print "Review before run"; no console output here.
+        """
+        from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+
+        speaker_options = speaker_options or SpeakerRunOptions()
+        transcript_name = Path(transcript_path).name
+        modules_will_run: List[str] = []
+        modules_skipped: List[Dict[str, str]] = []
+
+        if not self._finalized:
+            try:
+                self.finalize()
+            except ValueError:
+                pass
+
+        preflight = self.preflight_check(selected_modules)
+        try:
+            execution_order = self.resolve_dependencies(selected_modules)
+        except ValueError:
+            return {
+                "transcript_name": transcript_name,
+                "output_dir": output_dir,
+                "modules_will_run": [],
+                "modules_skipped": [
+                    {"module": "?", "reason": "dependency resolution failed"}
+                ],
+            }
+
+        # Dedupe preflight skipped by module name; one reason per module
+        preflight_skipped: Dict[str, str] = {}
+        for name in preflight.get("skipped_modules", []):
+            preflight_skipped.setdefault(name, "not in registry")
+        for name in preflight.get("missing_dependencies", []):
+            preflight_skipped.setdefault(name, "missing optional dependency")
+
+        context = None
+        named_speaker_count: Optional[int] = None
+        try:
+            context = PipelineContext(
+                transcript_path,
+                speaker_map=speaker_map,
+                skip_speaker_mapping=skip_speaker_mapping,
+                include_unidentified_speakers=speaker_options.include_unidentified,
+                anonymise_speakers=speaker_options.anonymise,
+                batch_mode=True,
+                use_db=False,
+                output_dir=output_dir,
+                transcript_key=transcript_key,
+                run_id=run_id,
+            )
+            if context.validate():
+                try:
+                    from transcriptx.core.utils.speaker_extraction import (
+                        count_named_speakers,
+                    )
+
+                    named_speaker_count = count_named_speakers(context.get_segments())
+                except Exception:
+                    named_speaker_count = None
+        except Exception:
+            named_speaker_count = None
+        finally:
+            if context:
+                try:
+                    context.close()
+                except Exception:
+                    pass
+
+        for module_name in execution_order:
+            if module_name in preflight_skipped:
+                modules_skipped.append(
+                    {
+                        "module": module_name,
+                        "reason": preflight_skipped[module_name],
+                    }
+                )
+                continue
+            if module_name not in self.nodes:
+                modules_skipped.append(
+                    {
+                        "module": module_name,
+                        "reason": "not in registry",
+                    }
+                )
+                continue
+            node = self.nodes[module_name]
+            if requirements_resolver:
+                should_skip, reasons = requirements_resolver.should_skip(
+                    node.requirements
+                )
+                if should_skip:
+                    modules_skipped.append(
+                        {
+                            "module": module_name,
+                            "reason": (
+                                "; ".join(reasons)
+                                if reasons
+                                else "requirements not met"
+                            ),
+                        }
+                    )
+                    continue
+            if named_speaker_count is not None:
+                try:
+                    from transcriptx.core.pipeline.module_registry import (
+                        effective_min_named_speakers,
+                        get_module_info,
+                    )
+
+                    module_info = get_module_info(module_name)
+                    if module_info:
+                        min_required = effective_min_named_speakers(module_info)
+                        if named_speaker_count < min_required:
+                            modules_skipped.append(
+                                {
+                                    "module": module_name,
+                                    "reason": f"requires at least {min_required} named speakers",
+                                }
+                            )
+                            continue
+                except Exception:
+                    pass
+            modules_will_run.append(module_name)
+
+        return {
+            "transcript_name": transcript_name,
+            "output_dir": output_dir,
+            "modules_will_run": modules_will_run,
+            "modules_skipped": modules_skipped,
+        }
+
     def _sort_by_category(self, modules: List[str]) -> List[str]:
         """
         Sort modules by category (light -> medium -> heavy) while preserving dependencies.
@@ -469,7 +636,9 @@ class DAGPipeline:
             if module_name in self.nodes:
                 node = self.nodes[module_name]
                 # Only track dependencies that are in the modules list
-                dep_graph[module_name] = set(dep for dep in node.dependencies if dep in modules_set)
+                dep_graph[module_name] = set(
+                    dep for dep in node.dependencies if dep in modules_set
+                )
 
         # Stable sort: maintain topological order, but prefer category ordering
         # when dependencies are satisfied
@@ -480,7 +649,8 @@ class DAGPipeline:
         while remaining:
             # Find modules ready to execute (all dependencies satisfied)
             ready = [
-                mod for mod in remaining
+                mod
+                for mod in remaining
                 if mod in self.nodes and dep_graph.get(mod, set()).issubset(executed)
             ]
 
@@ -494,9 +664,11 @@ class DAGPipeline:
             ready_sorted = sorted(
                 ready,
                 key=lambda m: (
-                    category_order.get(self.nodes[m].category if m in self.nodes else "heavy", 2),
-                    m
-                )
+                    category_order.get(
+                        self.nodes[m].category if m in self.nodes else "heavy", 2
+                    ),
+                    m,
+                ),
             )
 
             # Add to result and mark as executed
@@ -521,6 +693,7 @@ class DAGPipeline:
         run_id: Optional[str] = None,
         run_report: Optional[Any] = None,
         requirements_resolver: Optional[Any] = None,
+        event_collector: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         Execute the analysis pipeline using DAG dependency resolution.
@@ -725,6 +898,15 @@ class DAGPipeline:
                 node, results["modules_run"]
             )
             if missing_deps:
+                if event_collector is not None:
+                    event_collector.append(
+                        {
+                            "event": "module_skipped",
+                            "module_name": module_name,
+                            "reason": "missing_dependencies",
+                            "missing_deps": missing_deps,
+                        }
+                    )
                 # Check if any missing dependencies themselves have missing dependencies
                 dep_chain = []
                 for dep in missing_deps:
@@ -734,40 +916,23 @@ class DAGPipeline:
                             dep_node, results["modules_run"]
                         )
                         if missing_dep_deps:
-                            dep_chain.append(f"{dep} (which requires {missing_dep_deps})")
+                            dep_chain.append(
+                                f"{dep} (which requires {missing_dep_deps})"
+                            )
                         else:
                             dep_chain.append(dep)
                     else:
                         dep_chain.append(dep)
-                
+
                 error_msg = f"{module_name}: Missing dependencies {missing_deps}"
                 if dep_chain != missing_deps:
                     error_msg += f" ({', '.join(dep_chain)})"
-                
+
                 self.logger.warning(
                     f"Module '{module_name}' missing dependencies: {missing_deps}"
                 )
                 results["errors"].append(error_msg)
                 continue
-
-            if requirements_resolver:
-                should_skip, reasons = requirements_resolver.should_skip(
-                    node.requirements
-                )
-                if should_skip:
-                    reason_text = "; ".join(reasons)
-                    results["skipped_modules"].append(
-                        {"module": module_name, "reason": reason_text}
-                    )
-                    if run_report:
-                        from transcriptx.core.utils.run_report import ModuleResult
-
-                        run_report.record_module(
-                            module_name=module_name,
-                            status=ModuleResult.SKIP,
-                            reason=reason_text,
-                        )
-                    continue
 
             if named_speaker_count is None and context is not None:
                 try:
@@ -779,314 +944,63 @@ class DAGPipeline:
                 except Exception:
                     named_speaker_count = None
 
-            if named_speaker_count is not None:
-                try:
-                    from transcriptx.core.pipeline.module_registry import (
-                        effective_min_named_speakers,
-                        get_module_info,
-                    )
-
-                    module_info = get_module_info(module_name)
-                    if module_info:
-                        min_required = effective_min_named_speakers(module_info)
-                        if named_speaker_count < min_required:
-                            reason_text = (
-                                "requires at least "
-                                f"{min_required} named speakers"
-                            )
-                            results["skipped_modules"].append(
-                                {
-                                    "module": module_name,
-                                    "reason": reason_text,
-                                    "requires_multiple_speakers": (
-                                        module_info.requires_multiple_speakers
-                                    ),
-                                    "named_speaker_count": named_speaker_count,
-                                }
-                            )
-                            if run_report:
-                                from transcriptx.core.utils.run_report import ModuleResult
-
-                                run_report.record_module(
-                                    module_name=module_name,
-                                    status=ModuleResult.SKIP,
-                                    reason=reason_text,
-                                )
-                            continue
-                except Exception:
-                    pass
-
-            # Execute module
-            try:
-                self.logger.info(f"Running {module_name} analysis")
-                notify_user(
-                    f"🔍 Running {node.description}...",
-                    technical=False,
-                    section=module_name,
+            if event_collector is not None:
+                event_collector.append(
+                    {"event": "module_started", "module_name": module_name}
                 )
-                log_analysis_start(module_name, transcript_path)
-
-                # Get transcript metrics for logging and estimation
-                transcript_segments_count = None
-                transcript_word_count = None
-                try:
-                    from transcriptx.io import load_segments
-
-                    segments = load_segments(transcript_path)
-                    transcript_segments_count = len(segments)
-                    transcript_word_count = sum(
-                        len(seg.get("text", "").split()) for seg in segments
+            outcome = self._execute_single_module(
+                module_name=module_name,
+                node=node,
+                transcript_path=transcript_path,
+                context=context,
+                db_coordinator=db_coordinator,
+                run_report=run_report,
+                requirements_resolver=requirements_resolver,
+                named_speaker_count=named_speaker_count,
+            )
+            if event_collector is not None:
+                if outcome.status == "success":
+                    event_collector.append(
+                        {
+                            "event": "module_completed",
+                            "module_name": module_name,
+                            "duration_ms": outcome.duration_ms,
+                        }
                     )
-                except Exception:
-                    pass
-
-                # Show time estimate
-                try:
-                    estimator = PerformanceEstimator()
-                    estimate = estimator.estimate_analysis_time(
-                        module_name=module_name,
-                        transcript_segments=transcript_segments_count,
-                        transcript_words=transcript_word_count,
+                elif outcome.status == "skipped":
+                    event_collector.append(
+                        {
+                            "event": "module_skipped",
+                            "module_name": module_name,
+                            "reason": outcome.skip_reason or "unknown",
+                            "used_cache": outcome.used_cache,
+                        }
                     )
-                    if estimate.get("estimated_seconds") is not None:
-                        estimate_str = format_time_estimate(estimate)
-                        self.logger.info(
-                            f"Estimated {module_name} time: {estimate_str}"
-                        )
-                except Exception:
-                    pass  # Don't fail if estimation fails
-
-                # Determine module cache config
-                module_run = None
-                cached = False
-                if db_coordinator:
-                    from transcriptx.core.utils.module_cache_config import (
-                        get_cache_affecting_config,
+                else:
+                    event_collector.append(
+                        {
+                            "event": "module_failed",
+                            "module_name": module_name,
+                            "error": outcome.error,
+                        }
                     )
-                    from transcriptx.core.utils.config import get_config
-
-                    module_config = get_cache_affecting_config(
-                        module_name, get_config()
+            self._record_module_outcome(
+                module_name=module_name,
+                node=node,
+                outcome=outcome,
+                results=results,
+                transcript_path=transcript_path,
+                db_coordinator=db_coordinator,
+                run_report=run_report,
+            )
+            if outcome.status == "failed" and self._should_abort_pipeline(
+                outcome, results
+            ):
+                if event_collector is not None:
+                    event_collector.append(
+                        {"event": "pipeline_aborted", "reason": outcome.error}
                     )
-                    module_run, cached = db_coordinator.begin_module_run(
-                        module_name=module_name,
-                        module_config=module_config,
-                        dependency_names=node.dependencies,
-                    )
-                    if cached:
-                        results["modules_run"].append(module_name)
-                        results["cache_hits"].append(module_name)
-                        if run_report:
-                            from transcriptx.core.utils.run_report import ModuleResult
-
-                            run_report.record_module(
-                                module_name=module_name,
-                                status=ModuleResult.RUN,
-                                duration_seconds=0.0,
-                                reason="cache_hit",
-                            )
-                        continue
-
-                module_start = time.time()
-                module_result = None
-                from transcriptx.core.utils.module_result import (
-                    build_module_result,
-                    capture_exception,
-                    now_iso,
-                )
-
-                module_started_at = now_iso()
-                # Wrap module execution with performance logging
-                file_name = Path(transcript_path).name
-                pipeline_run_id = (
-                    db_coordinator.pipeline_run.id
-                    if db_coordinator and getattr(db_coordinator, "pipeline_run", None)
-                    else None
-                )
-                transcript_file_id = (
-                    db_coordinator.transcript_file.id
-                    if db_coordinator
-                    and getattr(db_coordinator, "transcript_file", None)
-                    else None
-                )
-                module_run_id = module_run.id if module_run else None
-                span_name = f"module.{module_name}.run"
-                with TimedJob(
-                    span_name,
-                    file_name,
-                    pipeline_run_id=pipeline_run_id,
-                    module_run_id=module_run_id,
-                    transcript_file_id=transcript_file_id,
-                ) as job:
-                    job.add_metadata(
-                        {"module_name": module_name, "transcript_path": transcript_path}
-                    )
-                    if transcript_segments_count is not None:
-                        job.add_metadata(
-                            {"transcript_segments_count": transcript_segments_count}
-                        )
-                    if transcript_word_count is not None:
-                        job.add_metadata(
-                            {"transcript_word_count": transcript_word_count}
-                        )
-
-                    # Execute module function
-                    # Try to use new interface (PipelineContext) if available
-                    if context is not None:
-                        # For parallel execution, use read-only context wrapper
-                        from transcriptx.core.pipeline.pipeline_context import (
-                            ReadOnlyPipelineContext,
-                        )
-
-                        if parallel:
-                            # Freeze context and wrap in read-only wrapper for parallel execution
-                            context.freeze()
-                            read_only_context = ReadOnlyPipelineContext(context)
-                            execution_context = read_only_context
-                        else:
-                            execution_context = context
-
-                        # Check if function is an AnalysisModule class or instance
-                        if isinstance(node.function, type) and hasattr(
-                            node.function, "run_from_context"
-                        ):
-                            # It's an AnalysisModule class, instantiate it
-                            module_instance = node.function()
-                            module_result = module_instance.run_from_context(
-                                execution_context
-                            )
-                            if module_result.get("status") == "error":
-                                raise RuntimeError(
-                                    module_result.get("error", "Unknown error")
-                                )
-                        elif hasattr(
-                            type(node.function), "run_from_context"
-                        ) and not isinstance(node.function, type):
-                            # It's an AnalysisModule instance
-                            module_result = node.function.run_from_context(
-                                execution_context
-                            )
-                            if module_result.get("status") == "error":
-                                raise RuntimeError(
-                                    module_result.get("error", "Unknown error")
-                                )
-                        else:
-                            # Fall back to legacy function call
-                            node.function(transcript_path)
-                    else:
-                        # No context available, use legacy function call
-                        node.function(transcript_path)
-
-                module_duration = time.time() - module_start
-                if module_result is None:
-                    module_result = build_module_result(
-                        module_name=module_name,
-                        status="success",
-                        started_at=module_started_at,
-                        finished_at=now_iso(),
-                        artifacts=[],
-                        metrics={"duration_seconds": module_duration},
-                        payload_type="analysis_results",
-                        payload={},
-                    )
-
-                # Record module result payload for aggregation
-                results["module_results"][module_name] = module_result
-
-                # Mark as executed
-                node.executed = True
-                results["modules_run"].append(module_name)
-
-                notify_user(
-                    f"✅ Completed {node.description}",
-                    technical=False,
-                    section=module_name,
-                )
-                log_analysis_complete(module_name, transcript_path)
-
-                if db_coordinator and module_run:
-                    db_coordinator.complete_module_run(
-                        module_run=module_run,
-                        module_name=module_name,
-                        duration_seconds=module_duration,
-                        module_failed=False,
-                        module_result=module_result,
-                    )
-                if run_report:
-                    from transcriptx.core.utils.run_report import ModuleResult
-
-                    run_report.record_module(
-                        module_name=module_name,
-                        status=ModuleResult.RUN,
-                        duration_seconds=module_duration,
-                    )
-
-            except Exception as e:
-                error_msg = f"Error in {module_name} analysis: {str(e)}"
-                self.logger.error(error_msg)
-                results["errors"].append(error_msg)
-                node.error = str(e)
-                notify_user(
-                    f"❌ Failed {node.description}: {str(e)}",
-                    technical=True,
-                    section=module_name,
-                )
-                if run_report:
-                    from transcriptx.core.utils.run_report import ModuleResult
-
-                    run_report.record_module(
-                        module_name=module_name,
-                        status=ModuleResult.FAIL,
-                        error=str(e),
-                    )
-                log_analysis_error(module_name, transcript_path, e)
-                module_result = build_module_result(
-                    module_name=module_name,
-                    status="error",
-                    started_at=(
-                        module_started_at
-                        if "module_started_at" in locals()
-                        else now_iso()
-                    ),
-                    finished_at=now_iso(),
-                    artifacts=[],
-                    metrics=(
-                        {"duration_seconds": time.time() - module_start}
-                        if "module_start" in locals()
-                        else {}
-                    ),
-                    payload_type="analysis_results",
-                    payload={},
-                    error=capture_exception(e),
-                )
-                results["module_results"][module_name] = module_result
-
-                # Check if this is a critical error that should stop the pipeline
-                error_str = str(e).lower()
-                if any(
-                    keyword in error_str
-                    for keyword in [
-                        "speaker map",
-                        "speaker mapping",
-                        "no speaker map",
-                        "speaker mapping required",
-                        "speaker identification",
-                    ]
-                ):
-                    self.logger.error(
-                        "Critical error: Speaker mapping required. Stopping pipeline."
-                    )
-                    results["status"] = "failed"
-                    break
-
-                if db_coordinator and module_run:
-                    db_coordinator.complete_module_run(
-                        module_run=module_run,
-                        module_name=module_name,
-                        duration_seconds=0.0,
-                        module_failed=True,
-                        module_result=module_result,
-                    )
+                break
 
         # Add execution metadata
         results["end_time"] = time.time()
@@ -1108,6 +1022,342 @@ class DAGPipeline:
                 self.logger.warning(f"Error closing PipelineContext: {e}")
 
         return results
+
+    def _should_abort_pipeline(
+        self, outcome: ModuleExecOutcome, results: Dict[str, Any]
+    ) -> bool:
+        """Centralizes critical-error / stop logic. No side effects."""
+        if outcome.status != "failed" or not outcome.error:
+            return False
+        error_str = outcome.error.lower()
+        critical_keywords = [
+            "speaker map",
+            "speaker mapping",
+            "no speaker map",
+            "speaker mapping required",
+            "speaker identification",
+        ]
+        if any(kw in error_str for kw in critical_keywords):
+            self.logger.error(
+                "Critical error: Speaker mapping required. Stopping pipeline."
+            )
+            results["status"] = "failed"
+            return True
+        return False
+
+    def _record_module_outcome(
+        self,
+        module_name: str,
+        node: DAGNode,
+        outcome: ModuleExecOutcome,
+        results: Dict[str, Any],
+        transcript_path: str,
+        db_coordinator: Optional[Any],
+        run_report: Optional[Any],
+    ) -> None:
+        """Apply outcome to results, db_coordinator, run_report, notify/log. All side effects here."""
+        from transcriptx.core.utils.module_result import (
+            build_module_result,
+            capture_exception,
+            now_iso,
+        )
+
+        if outcome.status == "skipped":
+            if outcome.skip_reason:
+                results["skipped_modules"].append(
+                    {"module": module_name, "reason": outcome.skip_reason}
+                )
+            if run_report and outcome.skip_reason:
+                from transcriptx.core.utils.run_report import ModuleResult
+
+                run_report.record_module(
+                    module_name=module_name,
+                    status=ModuleResult.SKIP,
+                    reason=outcome.skip_reason,
+                )
+            return
+
+        if outcome.used_cache:
+            results["modules_run"].append(module_name)
+            results["cache_hits"].append(module_name)
+            if run_report:
+                from transcriptx.core.utils.run_report import ModuleResult
+
+                run_report.record_module(
+                    module_name=module_name,
+                    status=ModuleResult.RUN,
+                    duration_seconds=0.0,
+                    reason="cache_hit",
+                )
+            return
+
+        if outcome.status == "success":
+            results["module_results"][module_name] = outcome.module_result or {}
+            node.executed = True
+            results["modules_run"].append(module_name)
+            notify_user(
+                f"✅ Completed {node.description}",
+                technical=False,
+                section=module_name,
+            )
+            log_analysis_complete(module_name, transcript_path)
+            if db_coordinator and outcome.module_run:
+                db_coordinator.complete_module_run(
+                    module_run=outcome.module_run,
+                    module_name=module_name,
+                    duration_seconds=outcome.duration_ms / 1000.0,
+                    module_failed=False,
+                    module_result=outcome.module_result,
+                )
+            if run_report:
+                from transcriptx.core.utils.run_report import ModuleResult
+
+                run_report.record_module(
+                    module_name=module_name,
+                    status=ModuleResult.RUN,
+                    duration_seconds=outcome.duration_ms / 1000.0,
+                )
+            return
+
+        # outcome.status == "failed"
+        results["errors"].append(outcome.error or f"Error in {module_name} analysis")
+        node.error = outcome.error
+        notify_user(
+            f"❌ Failed {node.description}: {outcome.error}",
+            technical=True,
+            section=module_name,
+        )
+        log_analysis_error(module_name, transcript_path, Exception(outcome.error or ""))
+        if run_report:
+            from transcriptx.core.utils.run_report import ModuleResult
+
+            run_report.record_module(
+                module_name=module_name,
+                status=ModuleResult.FAIL,
+                error=outcome.error,
+            )
+        results["module_results"][module_name] = outcome.module_result or build_module_result(
+            module_name=module_name,
+            status="error",
+            started_at=outcome.module_started_at or now_iso(),
+            finished_at=now_iso(),
+            artifacts=[],
+            metrics={"duration_seconds": outcome.duration_ms / 1000.0},
+            payload_type="analysis_results",
+            payload={},
+            error={"error_message": outcome.error} if outcome.error else None,
+        )
+        if db_coordinator and outcome.module_run:
+            db_coordinator.complete_module_run(
+                module_run=outcome.module_run,
+                module_name=module_name,
+                duration_seconds=0.0,
+                module_failed=True,
+                module_result=outcome.module_result,
+            )
+
+    def _execute_single_module(
+        self,
+        module_name: str,
+        node: DAGNode,
+        transcript_path: str,
+        context: Optional[Any],
+        db_coordinator: Optional[Any],
+        run_report: Optional[Any],
+        requirements_resolver: Optional[Any],
+        named_speaker_count: Optional[int],
+    ) -> ModuleExecOutcome:
+        """Run one module (or determine skip/cache). Returns outcome only; no DB/run_report/notify."""
+        from transcriptx.core.utils.module_result import (
+            build_module_result,
+            capture_exception,
+            now_iso,
+        )
+
+        # Requirements resolver skip
+        if requirements_resolver:
+            should_skip, reasons = requirements_resolver.should_skip(node.requirements)
+            if should_skip:
+                return ModuleExecOutcome(
+                    status="skipped",
+                    skip_reason="; ".join(reasons),
+                )
+        # Speaker count skip
+        if named_speaker_count is not None:
+            try:
+                from transcriptx.core.pipeline.module_registry import (
+                    effective_min_named_speakers,
+                    get_module_info,
+                )
+
+                module_info = get_module_info(module_name)
+                if module_info:
+                    min_required = effective_min_named_speakers(module_info)
+                    if named_speaker_count < min_required:
+                        reason_text = (
+                            "requires at least " f"{min_required} named speakers"
+                        )
+                        return ModuleExecOutcome(
+                            status="skipped",
+                            skip_reason=reason_text,
+                        )
+            except Exception:
+                pass
+
+        # Cache check and begin_module_run
+        module_run = None
+        if db_coordinator:
+            from transcriptx.core.utils.module_cache_config import (
+                get_cache_affecting_config,
+            )
+            from transcriptx.core.utils.config import get_config
+
+            module_config = get_cache_affecting_config(
+                module_name, get_config()
+            )
+            module_run, cached = db_coordinator.begin_module_run(
+                module_name=module_name,
+                module_config=module_config,
+                dependency_names=node.dependencies,
+            )
+            if cached:
+                return ModuleExecOutcome(
+                    status="skipped",
+                    used_cache=True,
+                    skip_reason="cache_hit",
+                )
+
+        # Run the module
+        self.logger.info(f"Running {module_name} analysis")
+        notify_user(
+            f"🔍 Running {node.description}...",
+            technical=False,
+            section=module_name,
+        )
+        log_analysis_start(module_name, transcript_path)
+        module_start = time.time()
+        module_started_at = now_iso()
+        module_result = None
+        transcript_segments_count = None
+        transcript_word_count = None
+        try:
+            from transcriptx.io import load_segments
+
+            segments = load_segments(transcript_path)
+            transcript_segments_count = len(segments)
+            transcript_word_count = sum(
+                len(seg.get("text", "").split()) for seg in segments
+            )
+        except Exception:
+            pass
+
+        file_name = Path(transcript_path).name
+        pipeline_run_id = (
+            db_coordinator.pipeline_run.id
+            if db_coordinator and getattr(db_coordinator, "pipeline_run", None)
+            else None
+        )
+        transcript_file_id = (
+            db_coordinator.transcript_file.id
+            if db_coordinator
+            and getattr(db_coordinator, "transcript_file", None)
+            else None
+        )
+        module_run_id = module_run.id if module_run else None
+        span_name = f"module.{module_name}.run"
+        try:
+            with TimedJob(
+                span_name,
+                file_name,
+                pipeline_run_id=pipeline_run_id,
+                module_run_id=module_run_id,
+                transcript_file_id=transcript_file_id,
+            ) as job:
+                job.add_metadata(
+                    {"module_name": module_name, "transcript_path": transcript_path}
+                )
+                if transcript_segments_count is not None:
+                    job.add_metadata(
+                        {"transcript_segments_count": transcript_segments_count}
+                    )
+                if transcript_word_count is not None:
+                    job.add_metadata(
+                        {"transcript_word_count": transcript_word_count}
+                    )
+
+                if context is not None:
+                    from transcriptx.core.pipeline.pipeline_context import (
+                        ReadOnlyPipelineContext,
+                    )
+
+                    execution_context = context
+                    if isinstance(node.function, type) and hasattr(
+                        node.function, "run_from_context"
+                    ):
+                        module_instance = node.function()
+                        module_result = module_instance.run_from_context(
+                            execution_context
+                        )
+                        if module_result.get("status") == "error":
+                            raise RuntimeError(
+                                module_result.get("error", "Unknown error")
+                            )
+                    elif hasattr(
+                        type(node.function), "run_from_context"
+                    ) and not isinstance(node.function, type):
+                        module_result = node.function.run_from_context(
+                            execution_context
+                        )
+                        if module_result.get("status") == "error":
+                            raise RuntimeError(
+                                module_result.get("error", "Unknown error")
+                            )
+                    else:
+                        node.function(transcript_path)
+                else:
+                    node.function(transcript_path)
+
+            duration_ms = (time.time() - module_start) * 1000
+            if module_result is None:
+                module_result = build_module_result(
+                    module_name=module_name,
+                    status="success",
+                    started_at=module_started_at,
+                    finished_at=now_iso(),
+                    artifacts=[],
+                    metrics={"duration_seconds": duration_ms / 1000.0},
+                    payload_type="analysis_results",
+                    payload={},
+                )
+            return ModuleExecOutcome(
+                status="success",
+                module_result=module_result,
+                duration_ms=duration_ms,
+                module_run=module_run,
+                module_started_at=module_started_at,
+            )
+        except Exception as e:
+            self.logger.error(f"Error in {module_name} analysis: {str(e)}")
+            duration_ms = (time.time() - module_start) * 1000
+            err_module_result = build_module_result(
+                module_name=module_name,
+                status="error",
+                started_at=module_started_at,
+                finished_at=now_iso(),
+                artifacts=[],
+                metrics={"duration_seconds": duration_ms / 1000.0},
+                payload_type="analysis_results",
+                payload={},
+                error=capture_exception(e),
+            )
+            return ModuleExecOutcome(
+                status="failed",
+                module_result=err_module_result,
+                error=str(e),
+                duration_ms=duration_ms,
+                module_run=module_run,
+                module_started_at=module_started_at,
+            )
 
     def _check_missing_dependencies(
         self, node: DAGNode, executed_modules: List[str]

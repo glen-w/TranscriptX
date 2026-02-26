@@ -1,5 +1,4 @@
 import argparse
-import os
 import shutil
 from pathlib import Path
 
@@ -54,9 +53,15 @@ def migrate_readable_csv(csv_file: Path, overwrite: bool, dry_run: bool) -> None
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Migrate transcripts to outputs/<session>/transcripts")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing destination files")
-    parser.add_argument("--dry-run", action="store_true", help="Print actions without moving files")
+    parser = argparse.ArgumentParser(
+        description="Migrate transcripts to outputs/<session>/transcripts"
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing destination files"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print actions without moving files"
+    )
     args = parser.parse_args()
 
     # Raw JSON transcripts
@@ -87,5 +92,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

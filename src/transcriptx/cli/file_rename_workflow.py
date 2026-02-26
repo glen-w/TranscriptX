@@ -26,6 +26,7 @@ from transcriptx.cli.file_selection_interface import (
     select_files_interactive,
     _is_audio_file,
 )
+from transcriptx.core.utils.config import get_config
 from transcriptx.cli.file_selection_utils import select_folder_interactive
 from transcriptx.core.utils.logger import get_logger, log_error
 from transcriptx.utils.error_handling import graceful_exit
@@ -41,7 +42,7 @@ def run_file_rename_workflow() -> None:
     1. Folder selection
     2. File discovery
     3. Interactive browsing and renaming (via centralized file_selection_interface)
-    
+
     Renaming is handled by the file_selection_interface module - users press 'r'
     on any file to rename it while browsing.
     """
@@ -57,13 +58,15 @@ def _run_file_rename_workflow_impl() -> None:
 
         # Step 1: Select folder location
         print("\n[bold]Step 1: Select folder containing files to rename[/bold]")
-        
+
         # Use default start path based on platform
         import platform
+
         if platform.system() == "Darwin":
             default_start = Path("/Volumes/")
         else:
             from transcriptx.core.utils.paths import RECORDINGS_DIR
+
             default_start = Path(RECORDINGS_DIR)
 
         folder_path = select_folder_interactive(start_path=default_start)
@@ -83,13 +86,16 @@ def _run_file_rename_workflow_impl() -> None:
 
         # Step 3: Browse and rename files
         print("\n[bold]Step 3: Browse and rename files[/bold]")
-        print("[dim]Use arrow keys to navigate, [r] to rename, [→] to play audio, Enter when done[/dim]")
-        
+        print(
+            "[dim]Use arrow keys to navigate, [r] to rename, [→] to play audio, Enter when done[/dim]"
+        )
+
         # Check if any files are audio files (enable playback if so)
         are_audio_files = any(_is_audio_file(f) for f in all_files)
-        
+
         # Configure file selection interface with rename enabled
         # This uses the centralized rename functionality from file_selection_interface
+        config = get_config()
         selection_config = FileSelectionConfig(
             multi_select=True,
             enable_playback=are_audio_files,  # Enable playback for audio files
@@ -97,14 +103,18 @@ def _run_file_rename_workflow_impl() -> None:
             enable_select_all=True,  # Allow selecting all files at once
             title="Rename Files (Press [r] to rename, [→] to play audio)",
             current_path=folder_path,
+            skip_seconds_short=config.input.playback_skip_seconds_short,
+            skip_seconds_long=config.input.playback_skip_seconds_long,
         )
 
         # The file selection interface handles renaming interactively
         # Users can press 'r' on any file to rename it while browsing
         selected_files = select_files_interactive(all_files, selection_config)
-        
+
         if selected_files:
-            print(f"\n[green]✅ Completed. Selected {len(selected_files)} file(s)[/green]")
+            print(
+                f"\n[green]✅ Completed. Selected {len(selected_files)} file(s)[/green]"
+            )
         else:
             print("\n[cyan]No files selected. Returning to menu.[/cyan]")
 
@@ -130,16 +140,16 @@ def _discover_all_files(folder_path: Path) -> List[Path]:
         List of Path objects for all files found
     """
     files = []
-    
+
     try:
         # Get all files in the folder (non-recursive)
         for item in folder_path.iterdir():
             if item.is_file():
                 files.append(item)
-        
+
         # Sort files by name for consistent display
         files.sort(key=lambda p: p.name.lower())
-        
+
     except PermissionError:
         logger.warning(f"Permission denied accessing folder: {folder_path}")
         print(f"[red]❌ Permission denied accessing folder: {folder_path}[/red]")
@@ -150,7 +160,7 @@ def _discover_all_files(folder_path: Path) -> List[Path]:
             exception=e,
         )
         print(f"[red]❌ Error discovering files: {e}[/red]")
-    
+
     return files
 
 

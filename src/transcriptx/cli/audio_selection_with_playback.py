@@ -14,6 +14,7 @@ from transcriptx.cli.file_selection_interface import (
     format_audio_file,
 )
 from transcriptx.cli.file_selection_utils import validate_wav_file
+from transcriptx.core.utils.config import get_config
 
 
 def select_wav_files_with_playback(
@@ -34,6 +35,7 @@ def select_wav_files_with_playback(
         List of selected file paths, or None if cancelled
     """
     # Use the new generic selection interface
+    config = get_config()
     selection_config = FileSelectionConfig(
         multi_select=True,
         enable_playback=True,
@@ -43,6 +45,8 @@ def select_wav_files_with_playback(
         current_path=current_path,
         metadata_formatter=format_audio_file,
         validator=validate_wav_file,
+        skip_seconds_short=config.input.playback_skip_seconds_short,
+        skip_seconds_long=config.input.playback_skip_seconds_long,
     )
 
     result = select_files_interactive(wav_files, selection_config)

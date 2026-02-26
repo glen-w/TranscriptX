@@ -21,7 +21,9 @@ except ImportError:
 try:
     # Suppress pkg_resources deprecation warning from webrtcvad
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning, message=".*pkg_resources.*")
+        warnings.filterwarnings(
+            "ignore", category=UserWarning, message=".*pkg_resources.*"
+        )
         import webrtcvad
 
     WEBRTCVAD_AVAILABLE = True
@@ -423,6 +425,75 @@ def backup_wav_files_to_storage(
         wav_mp3_pairs = [(wav_path, None, None) for wav_path in wav_paths]
 
     return backup_wav_files_after_processing(wav_mp3_pairs, delete_original=True)
+
+
+def backup_audio_files_to_storage(
+    audio_paths: list[Path],
+    base_name: Optional[str] = None,
+    delete_original: bool = True,
+) -> list[Path]:
+    """
+    Backup multiple audio files (any format) to storage directory, preserving extension.
+
+    Copies each file to WAV_STORAGE_DIR with names like {base_name}_{idx+1}{suffix}.
+    Used for merge and other flows where originals may be WAV, MP3, OGG, etc.
+
+    Args:
+        audio_paths: List of paths to audio files to backup
+        base_name: Base name for numbered backups (e.g. "260108_merged" -> "260108_merged_1.wav", "260108_merged_2.mp3").
+                  If None, uses each file's stem (no numbering).
+        delete_original: If True, delete original files after copy (default: True)
+
+    Returns:
+        list[Path]: List of backup file paths in storage directory
+    """
+    if not audio_paths:
+        return []
+
+    wav_storage_dir = Path(WAV_STORAGE_DIR)
+    wav_storage_dir.mkdir(parents=True, exist_ok=True)
+
+    backup_paths: List[Path] = []
+    for idx, src_path in enumerate(audio_paths):
+        try:
+            if not src_path.exists():
+                logger.warning(f"Audio file not found, skipping backup: {src_path}")
+                continue
+
+            suffix = src_path.suffix.lower()
+            if base_name:
+                backup_stem = f"{base_name}_{idx + 1}"
+            else:
+                backup_stem = src_path.stem
+
+            dest_path = wav_storage_dir / f"{backup_stem}{suffix}"
+            counter = 1
+            while dest_path.exists():
+                dest_path = wav_storage_dir / f"{backup_stem}_{counter}{suffix}"
+                counter += 1
+                if counter > 1000:
+                    logger.warning(f"Too many conflicts for {backup_stem}, skipping")
+                    break
+            if counter > 1000:
+                continue
+
+            shutil.copy2(src_path, dest_path)
+            logger.info(f"Backed up {src_path.name} to {dest_path.name}")
+
+            if delete_original:
+                src_path.unlink()
+                logger.info(f"Deleted original: {src_path}")
+
+            backup_paths.append(dest_path)
+        except Exception as e:
+            log_error(
+                "AUDIO_BACKUP",
+                f"Failed to backup {src_path.name}: {e}",
+                exception=e,
+            )
+            logger.warning(f"Backup failed for {src_path.name}: {e}")
+
+    return backup_paths
 
 
 def _extract_date_from_file(wav_path: Path) -> Optional[str]:

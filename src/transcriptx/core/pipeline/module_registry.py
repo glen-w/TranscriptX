@@ -5,11 +5,36 @@ This module provides a single source of truth for all analysis modules,
 centralizing module metadata, dependencies, and lazy import functions.
 """
 
-from typing import Dict, List, Optional, Callable, Iterable
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Callable, Iterable, Set
+from dataclasses import dataclass, field
 
 from transcriptx.core.domain.module_requirements import Requirement, Enhancement
 from transcriptx.core.utils.audio_availability import has_resolvable_audio
+
+# One representative import per extra for deterministic is_extra_available() (do not inspect extras metadata)
+_EXTRA_REPRESENTATIVE: Dict[str, str] = {
+    "voice": "opensmile",
+    "emotion": "transformers",
+    "nlp": "spacy",
+    "ner": "spacy",
+    "bertopic": "bertopic",
+    "maps": "folium",
+    "visualization": "matplotlib",
+    "plotly": "plotly",
+    "ui": "gradio",
+}
+
+
+def is_extra_available(extra_name: str) -> bool:
+    """Return True if the given extra is available (one representative import per extra). Deterministic."""
+    module_name = _EXTRA_REPRESENTATIVE.get(extra_name)
+    if not module_name:
+        return False
+    try:
+        __import__(module_name)
+        return True
+    except ImportError:
+        return False
 
 
 def analyze_sentiment_from_file(transcript_path: str):
@@ -32,15 +57,22 @@ class ModuleInfo:
     function: Optional[Callable] = None
     timeout_seconds: int = 600
     exclude_from_default: bool = False
-    post_processing_only: bool = False  # Not offered in analysis module list; run via post-processing
+    post_processing_only: bool = (
+        False  # Not offered in analysis module list; run via post-processing
+    )
     requires_audio: bool = False
-    requires_multiple_speakers: bool = False  # Skip when transcript has ≤1 named speaker
+    requires_multiple_speakers: bool = (
+        False  # Skip when transcript has ≤1 named speaker
+    )
     min_named_speakers: int = 1  # Future-proof; default allows single-speaker
     supports_audio: bool = False
     supports_group: bool = True
     output_namespace: Optional[str] = None
     output_version: Optional[str] = None
     cost_tier: str = "normal"
+    required_extras: Set[str] = field(
+        default_factory=set
+    )  # e.g. {"voice"}, {"emotion"}, {"nlp"}
 
 
 def effective_min_named_speakers(info: ModuleInfo) -> int:
@@ -101,15 +133,7 @@ class ModuleRegistry:
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
                 "requires_multiple_speakers": True,
-            },
-            "convokit": {
-                "description": "ConvoKit Coordination and Accommodation Analysis",
-                "dependencies": [],
-                "category": "medium",
-                "determinism_tier": "T1",
-                "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
-                "enhancements": [],
-                "requires_multiple_speakers": True,
+                "required_extras": ["emotion"],
             },
             "emotion": {
                 "description": "Emotion Analysis",
@@ -118,6 +142,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "required_extras": ["emotion"],
             },
             "entity_sentiment": {
                 "description": "Entity-based Sentiment Analysis",
@@ -126,6 +151,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "required_extras": ["nlp"],
             },
             "affect_tension": {
                 "description": "Emotion + Sentiment mismatch and tension indices",
@@ -134,6 +160,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
                 "enhancements": [],
+                "required_extras": ["emotion"],
             },
             "interactions": {
                 "description": "Speaker Interaction Analysis",
@@ -151,6 +178,7 @@ class ModuleRegistry:
                 "determinism_tier": "T1",
                 "requirements": default_requirements,
                 "enhancements": [],
+                "required_extras": ["nlp"],
             },
             "semantic_similarity": {
                 "description": "Semantic Similarity Analysis",
@@ -337,6 +365,7 @@ class ModuleRegistry:
                 "requires_audio": True,
                 "supports_audio": True,
                 "cost_tier": "heavy",
+                "required_extras": ["voice"],
             },
             "voice_mismatch": {
                 "description": "Tone–Text mismatch detection (sarcasm/discord moments)",
@@ -353,6 +382,7 @@ class ModuleRegistry:
                 "requires_audio": True,
                 "supports_audio": True,
                 "cost_tier": "normal",
+                "required_extras": ["voice"],
             },
             "voice_tension": {
                 "description": "Conversation tension curve from voice",
@@ -368,6 +398,7 @@ class ModuleRegistry:
                 "requires_audio": True,
                 "supports_audio": True,
                 "cost_tier": "normal",
+                "required_extras": ["voice"],
             },
             "voice_fingerprint": {
                 "description": "Per-speaker voice fingerprint baseline and drift",
@@ -384,6 +415,7 @@ class ModuleRegistry:
                 "requires_audio": True,
                 "supports_audio": True,
                 "cost_tier": "normal",
+                "required_extras": ["voice"],
             },
             "prosody_dashboard": {
                 "description": "Prosody dashboard charts from voice features",
@@ -399,6 +431,7 @@ class ModuleRegistry:
                 "requires_audio": True,
                 "supports_audio": True,
                 "cost_tier": "cheap",
+                "required_extras": ["voice"],
             },
             "voice_charts_core": {
                 "description": "Voice charts core: pauses + rhythm indices",
@@ -416,6 +449,7 @@ class ModuleRegistry:
                 "output_namespace": "voice",
                 "output_version": "v1",
                 "cost_tier": "normal",
+                "required_extras": ["voice"],
             },
             "voice_contours": {
                 "description": "Voice contours (slow; needs audio decode + pitch tracking)",
@@ -435,11 +469,13 @@ class ModuleRegistry:
                 "output_namespace": "voice",
                 "output_version": "v1",
                 "cost_tier": "heavy",
+                "required_extras": ["voice"],
             },
         }
 
         # Create module info objects
         for name, info in module_definitions.items():
+            req_extras = info.get("required_extras", [])
             self._modules[name] = ModuleInfo(
                 name=name,
                 description=info["description"],
@@ -461,15 +497,29 @@ class ModuleRegistry:
                 output_version=info.get("output_version"),
                 cost_tier=info.get("cost_tier", "normal"),
                 timeout_seconds=600,
+                required_extras=set(req_extras),
             )
 
-    def get_available_modules(self) -> List[str]:
-        """Get list of available analysis modules (excludes post-processing-only tools)."""
-        return [
-            name
-            for name, info in self._modules.items()
-            if not info.post_processing_only
-        ]
+    def get_available_modules(
+        self,
+        core_mode: Optional[bool] = None,
+    ) -> List[str]:
+        """Get list of available analysis modules (excludes post-processing-only). If core_mode True, exclude modules with required_extras."""
+        if core_mode is None:
+            try:
+                from transcriptx.core.utils.config import get_config
+
+                core_mode = get_config().core_mode
+            except Exception:
+                core_mode = False
+        out = []
+        for name, info in self._modules.items():
+            if info.post_processing_only:
+                continue
+            if core_mode and info.required_extras:
+                continue
+            out.append(name)
+        return out
 
     def get_default_modules(
         self,
@@ -480,8 +530,17 @@ class ModuleRegistry:
         include_heavy: bool = True,
         include_excluded_from_default: bool = False,
         for_group: bool = False,
+        core_mode: Optional[bool] = None,
     ) -> List[str]:
-        """Get list of modules used for default analysis runs."""
+        """Get list of modules used for default analysis runs. When core_mode True, exclude modules with required_extras."""
+        if core_mode is None:
+            try:
+                from transcriptx.core.utils.config import get_config
+
+                core_mode = get_config().core_mode
+            except Exception:
+                core_mode = False
+
         audio_available: Optional[bool] = None
         if transcript_targets is not None:
             resolver = audio_resolver or has_resolvable_audio
@@ -491,24 +550,20 @@ class ModuleRegistry:
                 audio_available = None
 
         if dep_resolver is None:
+
             def dep_resolver(info: ModuleInfo) -> bool:
+                # core_mode and required_extras already filtered in loop
                 if not info.requires_audio:
                     return True
-                try:
-                    from transcriptx.core.analysis.voice.deps import (
-                        check_voice_optional_deps,
-                    )
-                    from transcriptx.core.utils.config import get_config
-
-                    voice_cfg = getattr(getattr(get_config(), "analysis", None), "voice", None)
-                    egemaps_enabled = bool(getattr(voice_cfg, "egemaps_enabled", True))
-                    deps = check_voice_optional_deps(egemaps_enabled=egemaps_enabled)
-                    return bool(deps.get("ok", True))
-                except Exception:
-                    return True
+                if info.requires_audio and audio_available is False:
+                    return False
+                # When core_mode False, show all modules (including missing extras) for discoverability
+                return True
 
         selected: list[str] = []
         for name, info in self._modules.items():
+            if core_mode and info.required_extras:
+                continue
             if not include_excluded_from_default and info.exclude_from_default:
                 continue
             if not include_heavy and info.cost_tier == "heavy":
@@ -563,7 +618,6 @@ class ModuleRegistry:
             "sentiment": ("transcriptx.core.analysis.sentiment", "SentimentAnalysis"),
             "acts": ("transcriptx.core.analysis.acts.analysis", "ActsAnalysis"),
             "stats": ("transcriptx.core.analysis.stats", "StatsAnalysis"),
-            "convokit": ("transcriptx.core.analysis.convokit", "ConvoKitAnalysis"),
             "interactions": (
                 "transcriptx.core.analysis.interactions.analysis",
                 "InteractionsAnalysis",
@@ -614,7 +668,10 @@ class ModuleRegistry:
                 "transcriptx.core.analysis.temporal_dynamics.analysis",
                 "TemporalDynamicsAnalysis",
             ),
-            "qa_analysis": ("transcriptx.core.analysis.qa_analysis.analysis", "QAAnalysis"),
+            "qa_analysis": (
+                "transcriptx.core.analysis.qa_analysis.analysis",
+                "QAAnalysis",
+            ),
             "pauses": (
                 "transcriptx.core.analysis.dynamics.pauses",
                 "PausesAnalysis",
@@ -736,9 +793,9 @@ class ModuleRegistry:
 _module_registry = ModuleRegistry()
 
 
-def get_available_modules() -> List[str]:
-    """Get list of available analysis modules."""
-    return _module_registry.get_available_modules()
+def get_available_modules(core_mode: Optional[bool] = None) -> List[str]:
+    """Get list of available analysis modules. If core_mode True, only modules without required_extras."""
+    return _module_registry.get_available_modules(core_mode=core_mode)
 
 
 def get_default_modules(
@@ -749,8 +806,9 @@ def get_default_modules(
     include_heavy: bool = True,
     include_excluded_from_default: bool = False,
     for_group: bool = False,
+    core_mode: Optional[bool] = None,
 ) -> List[str]:
-    """Get list of modules used for default analysis runs."""
+    """Get list of modules used for default analysis runs. core_mode from config if None."""
     return _module_registry.get_default_modules(
         transcript_targets,
         audio_resolver=audio_resolver,
@@ -758,6 +816,7 @@ def get_default_modules(
         include_heavy=include_heavy,
         include_excluded_from_default=include_excluded_from_default,
         for_group=for_group,
+        core_mode=core_mode,
     )
 
 

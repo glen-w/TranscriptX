@@ -1,6 +1,12 @@
 """Shared configuration registry and resolution utilities."""
 
-from .registry import FieldMetadata, flatten, unflatten, build_registry, get_default_config_dict
+from .registry import (
+    FieldMetadata,
+    flatten,
+    unflatten,
+    build_registry,
+    get_default_config_dict,
+)
 from .resolver import ResolvedConfig, resolve_effective_config
 from .persistence import (
     CONFIG_SCHEMA_VERSION,

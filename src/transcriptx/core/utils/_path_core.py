@@ -45,6 +45,18 @@ def get_canonical_base_name(transcript_path: str) -> str:
     return base_name
 
 
+def is_canonical_transcript_filename(path: str | Path) -> bool:
+    """
+    Return True if the path has a canonical transcript filename.
+
+    Canonical filenames end with *_transcriptx.json (primary) or *_canonical.json
+    (migration alias). All other names are non-canonical; analysis will refuse
+    them unless the user runs an import step or passes --accept-noncanonical.
+    """
+    name = os.path.basename(str(path))
+    return name.endswith("_transcriptx.json") or name.endswith("_canonical.json")
+
+
 def get_base_name(transcript_path: str) -> str:
     """
     Extract base name from transcript file path.

@@ -12,7 +12,6 @@ from PIL import Image
 
 from transcriptx.core.config import (
     resolve_effective_config,
-    get_default_config_dict,
 )
 from transcriptx.core.utils.chart_registry import (
     get_chart_definition,
@@ -60,7 +59,9 @@ def render_charts() -> None:
 
     # Get ALL charts first (without filters) for the overview section
     all_artifacts = ArtifactService.list_artifacts(run_root)
-    all_charts = [a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}]
+    all_charts = [
+        a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}
+    ]
 
     if not all_charts:
         st.warning("No chart artifacts found.")
@@ -93,15 +94,11 @@ def render_charts() -> None:
         col3a, col3b = st.columns(2)
         with col3a:
             st.session_state["filter_show_static"] = st.toggle(
-                "Static",
-                value=show_static,
-                key="filter_static_toggle"
+                "Static", value=show_static, key="filter_static_toggle"
             )
         with col3b:
             st.session_state["filter_show_dynamic"] = st.toggle(
-                "Dynamic",
-                value=show_dynamic,
-                key="filter_dynamic_toggle"
+                "Dynamic", value=show_dynamic, key="filter_dynamic_toggle"
             )
     with col4:
         st.session_state["filter_tags"] = st.multiselect(
@@ -147,16 +144,12 @@ def render_charts() -> None:
         # Default to True (collapsed state) - page starts with all collapsed except summary
         collapse_all = _get_filter_state("collapse_all", True)
         st.session_state["collapse_all"] = st.toggle(
-            "Collapse/Expand All",
-            value=collapse_all,
-            key="collapse_all_toggle"
+            "Collapse/Expand All", value=collapse_all, key="collapse_all_toggle"
         )
     with toggle_col2:
         show_summary = _get_filter_state("show_summary_charts", True)
         st.session_state["show_summary_charts"] = st.toggle(
-            "Show Summary Charts",
-            value=show_summary,
-            key="show_summary_toggle"
+            "Show Summary Charts", value=show_summary, key="show_summary_toggle"
         )
 
     # Determine kind filter based on toggle states
@@ -204,7 +197,7 @@ def render_charts() -> None:
             if selected.kind == "chart_static":
                 path = ArtifactService._resolve_safe_path(run_root, selected.rel_path)
                 if path and path.exists():
-                    st.image(Image.open(path), width='stretch')
+                    st.image(Image.open(path), width="stretch")
             else:
                 html_payload = ArtifactService.load_html_artifact(run_root, selected)
                 if not html_payload:
@@ -212,7 +205,9 @@ def render_charts() -> None:
                 else:
                     size = html_payload["bytes"]
                     if size > MAX_FULLSCREEN_HTML_BYTES:
-                        st.warning("HTML chart is too large to render. Download instead.")
+                        st.warning(
+                            "HTML chart is too large to render. Download instead."
+                        )
                     else:
                         st.components.v1.html(
                             html_payload["content"],
@@ -225,14 +220,18 @@ def render_charts() -> None:
     # Use effective config resolution to load from project config file
     # This ensures we get config from .transcriptx/config.json if it exists
     run_dir = run_root
-    resolved = resolve_effective_config(run_dir=run_dir) if run_dir and run_dir.exists() else resolve_effective_config(run_dir=None)
+    resolved = (
+        resolve_effective_config(run_dir=run_dir)
+        if run_dir and run_dir.exists()
+        else resolve_effective_config(run_dir=None)
+    )
     if resolved:
         config = resolved.effective_config
         dashboard_config = getattr(config, "dashboard", None)
     else:
         # Fallback to defaults if config resolution fails
         dashboard_config = None
-    
+
     registry = get_chart_registry()
     enabled_viz_ids = getattr(dashboard_config, "overview_charts", []) or []
     # Fall back to defaults if no overview charts are configured
@@ -243,9 +242,7 @@ def render_charts() -> None:
         enabled_viz_ids = enabled_viz_ids[:max_items]
 
     overview_slots: list[dict] = []
-    missing_behavior = getattr(
-        dashboard_config, "overview_missing_behavior", "skip"
-    )
+    missing_behavior = getattr(dashboard_config, "overview_missing_behavior", "skip")
     for viz_id in enabled_viz_ids:
         chart_def = registry.get(viz_id)
         if not chart_def:
@@ -305,7 +302,7 @@ def render_charts() -> None:
                                 run_root, chart
                             )
                             if thumb_path and Path(thumb_path).exists():
-                                st.image(Image.open(thumb_path), width='stretch')
+                                st.image(Image.open(thumb_path), width="stretch")
                             else:
                                 st.write("Thumbnail unavailable")
                         else:
@@ -325,7 +322,9 @@ def render_charts() -> None:
                                     st.caption("Open for full-screen view.")
                                 else:
                                     st.caption("Too large to render inline.")
-                        if st.button("View", key=f"overview_chart_{slot['viz_id']}_{chart.id}"):
+                        if st.button(
+                            "View", key=f"overview_chart_{slot['viz_id']}_{chart.id}"
+                        ):
                             st.session_state["full_screen_artifact"] = chart.id
                             st.rerun()
                 st.divider()
@@ -348,31 +347,56 @@ def render_charts() -> None:
             f"📊 {module_name} ({len(module_charts)} chart{'s' if len(module_charts) != 1 else ''})",
             expanded=module_expanded,
         ):
-            cols = st.columns(3)
-            for idx, chart in enumerate(module_charts):
-                with cols[idx % 3]:
-                    st.caption(chart.title or chart.rel_path)
-                    if chart.kind == "chart_static":
-                        thumb_path = ArtifactService.generate_thumbnail(run_root, chart)
-                        if thumb_path and Path(thumb_path).exists():
-                            st.image(Image.open(thumb_path), width='stretch')
-                        else:
-                            st.write("Thumbnail unavailable")
-                    else:
-                        st.info("Dynamic chart (HTML)")
-                        html_payload = ArtifactService.load_html_artifact(run_root, chart)
-                        if html_payload:
-                            size = html_payload["bytes"]
-                            if size <= MAX_INLINE_HTML_BYTES:
-                                st.components.v1.html(
-                                    html_payload["content"],
-                                    height=400,
-                                    scrolling=True,
-                                )
-                            elif size <= MAX_FULLSCREEN_HTML_BYTES:
-                                st.caption("Open for full-screen view.")
+            # Group by speaker: "All Speakers" first, then each speaker alphabetically
+            all_speakers_charts: List[Artifact] = []
+            by_speaker: Dict[str, List[Artifact]] = {}
+            for chart in module_charts:
+                if chart.scope == "speaker" and chart.speaker:
+                    by_speaker.setdefault(chart.speaker, []).append(chart)
+                else:
+                    all_speakers_charts.append(chart)
+            speaker_order = ["All Speakers"] + sorted(by_speaker.keys())
+            sections = []
+            for heading in speaker_order:
+                if heading == "All Speakers":
+                    chunk = all_speakers_charts
+                else:
+                    chunk = by_speaker.get(heading, [])
+                if chunk:
+                    sections.append((heading, chunk))
+            for si, (heading, chunk) in enumerate(sections):
+                st.markdown(f"**{heading}**")
+                cols = st.columns(3)
+                for idx, chart in enumerate(chunk):
+                    with cols[idx % 3]:
+                        st.caption(chart.title or chart.rel_path)
+                        if chart.kind == "chart_static":
+                            thumb_path = ArtifactService.generate_thumbnail(
+                                run_root, chart
+                            )
+                            if thumb_path and Path(thumb_path).exists():
+                                st.image(Image.open(thumb_path), width="stretch")
                             else:
-                                st.caption("Too large to render inline.")
-                    if st.button("View", key=f"chart_{chart.id}"):
-                        st.session_state["full_screen_artifact"] = chart.id
-                        st.rerun()
+                                st.write("Thumbnail unavailable")
+                        else:
+                            st.info("Dynamic chart (HTML)")
+                            html_payload = ArtifactService.load_html_artifact(
+                                run_root, chart
+                            )
+                            if html_payload:
+                                size = html_payload["bytes"]
+                                if size <= MAX_INLINE_HTML_BYTES:
+                                    st.components.v1.html(
+                                        html_payload["content"],
+                                        height=400,
+                                        scrolling=True,
+                                    )
+                                elif size <= MAX_FULLSCREEN_HTML_BYTES:
+                                    st.caption("Open for full-screen view.")
+                                else:
+                                    st.caption("Too large to render inline.")
+                        if st.button("View", key=f"chart_{chart.id}"):
+                            st.session_state["full_screen_artifact"] = chart.id
+                            st.rerun()
+                if si < len(sections) - 1:
+                    st.divider()

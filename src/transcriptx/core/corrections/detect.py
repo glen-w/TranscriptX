@@ -24,7 +24,12 @@ def resolve_segment_id(
     start = segment.get("start", segment.get("start_time"))
     end = segment.get("end", segment.get("end_time"))
     # Prefer timestamps when present (more stable than index)
-    if start is not None and end is not None and isinstance(start, (int, float)) and isinstance(end, (int, float)):
+    if (
+        start is not None
+        and end is not None
+        and isinstance(start, (int, float))
+        and isinstance(end, (int, float))
+    ):
         signature = f"{transcript_key}:{float(start):.3f}:{float(end):.3f}"
         return _stable_sha1(signature)
     if segment_index is not None:
@@ -41,9 +46,7 @@ def _build_snippet(text: str, span: Tuple[int, int], window: int = 40) -> str:
     return text[start:end].strip()
 
 
-def _iter_matches(
-    text: str, pattern: re.Pattern
-) -> Iterable[Tuple[int, int, str]]:
+def _iter_matches(text: str, pattern: re.Pattern) -> Iterable[Tuple[int, int, str]]:
     for match in pattern.finditer(text):
         yield match.start(), match.end(), match.group(0)
 
@@ -79,7 +82,11 @@ def detect_memory_hits(
         occurrences: List[Occurrence] = []
         for wrong in rule.wrong:
             if rule.type == "regex":
-                flags = 0 if rule.conditions and rule.conditions.case_sensitive else re.IGNORECASE
+                flags = (
+                    0
+                    if rule.conditions and rule.conditions.case_sensitive
+                    else re.IGNORECASE
+                )
                 pattern = re.compile(wrong, flags=flags)
                 match_iter = _iter_matches
             elif rule.type == "acronym":
@@ -95,14 +102,18 @@ def detect_memory_hits(
                 case_sensitive = (
                     rule.conditions.case_sensitive if rule.conditions else False
                 )
-                word_boundary = rule.conditions.word_boundary if rule.conditions else True
+                word_boundary = (
+                    rule.conditions.word_boundary if rule.conditions else True
+                )
                 pattern = _compile_pattern(wrong, case_sensitive, word_boundary)
                 match_iter = _iter_matches
 
             for seg_idx, segment in enumerate(segments):
                 text = segment.get("text", "")
                 for start, end, matched in match_iter(text, pattern):
-                    segment_id = resolve_segment_id(segment, transcript_key, segment_index=seg_idx)
+                    segment_id = resolve_segment_id(
+                        segment, transcript_key, segment_index=seg_idx
+                    )
                     occurrences.append(
                         Occurrence(
                             segment_id=segment_id,
@@ -190,8 +201,12 @@ def detect_acronym_candidates(
                                 Occurrence(
                                     segment_id=segment_id,
                                     speaker=segment.get("speaker"),
-                                    time_start=segment.get("start", segment.get("start_time")),
-                                    time_end=segment.get("end", segment.get("end_time")),
+                                    time_start=segment.get(
+                                        "start", segment.get("start_time")
+                                    ),
+                                    time_end=segment.get(
+                                        "end", segment.get("end_time")
+                                    ),
                                     span=(start, end),
                                     snippet=_build_snippet(text, (start, end)),
                                 )
@@ -219,7 +234,29 @@ def _tokenize_entities(text: str) -> List[str]:
 _ENTITY_PATTERN = re.compile(r"\b[A-Z][A-Za-z0-9]+\b")
 
 
-_SENTENCE_STARTERS = frozenset({"the", "but", "so", "and", "or", "if", "it", "is", "as", "at", "be", "by", "for", "in", "of", "on", "to", "we"})
+_SENTENCE_STARTERS = frozenset(
+    {
+        "the",
+        "but",
+        "so",
+        "and",
+        "or",
+        "if",
+        "it",
+        "is",
+        "as",
+        "at",
+        "be",
+        "by",
+        "for",
+        "in",
+        "of",
+        "on",
+        "to",
+        "we",
+    }
+)
+
 
 def detect_consistency_candidates(
     segments: List[Dict],
@@ -276,9 +313,7 @@ def detect_consistency_candidates(
             # Optional: only compare within length bucket ±2
             if abs(len(dominant) - len(minority)) > 2:
                 continue
-            score = SequenceMatcher(
-                None, dominant.lower(), minority.lower()
-            ).ratio()
+            score = SequenceMatcher(None, dominant.lower(), minority.lower()).ratio()
             if score < similarity_threshold:
                 continue
             candidates.append(

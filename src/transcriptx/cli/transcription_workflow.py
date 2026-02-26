@@ -46,6 +46,7 @@ from .analysis_utils import (
     filter_modules_by_mode,
 )
 from .transcription_common import transcribe_with_whisperx
+from transcriptx.core.transcription_runtime import get_docker_whisperx_status
 from transcriptx.cli.transcription_utils_compose import (
     check_whisperx_compose_service,
     start_whisperx_compose_service,
@@ -56,12 +57,9 @@ logger = get_logger()
 
 
 def _has_hf_token(config: object | None) -> bool:
-    token = ""
-    if config and hasattr(config, "transcription"):
-        token = getattr(config.transcription, "huggingface_token", "") or ""
-    if not token:
-        token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
-    return bool(token.strip())
+    from transcriptx.core.utils.hf_token import resolve_hf_token
+
+    return bool(resolve_hf_token(config).strip())
 
 
 def run_transcription_workflow() -> None:
@@ -87,6 +85,13 @@ def _run_transcription_workflow_impl() -> None:
         # Integrated WhisperX transcription workflow
         print("\n[bold cyan]🎤 Transcribe with WhisperX[/bold cyan]")
 
+        # Check Docker/WhisperX before showing file picker so user gets immediate feedback
+        status, message = get_docker_whisperx_status()
+        if status != "ready":
+            print(f"\n[red]❌ {message}[/red]")
+            log_error("CLI", f"WhisperX unavailable: {status}")
+            return
+
         # Get configuration
         config = get_config()
 
@@ -103,9 +108,18 @@ def _run_transcription_workflow_impl() -> None:
             # Ensure WhisperX service is available before transcription
             if not check_whisperx_compose_service():
                 if not start_whisperx_compose_service():
+                    status, msg = get_docker_whisperx_status()
+                    print(f"\n[red]❌ {msg}[/red]")
                     log_error("CLI", "Failed to start WhisperX service")
                     return
                 if not wait_for_whisperx_service(timeout=60):
+                    status, msg = get_docker_whisperx_status()
+                    err = (
+                        msg
+                        if status != "ready"
+                        else "WhisperX container did not become ready in time. Check: docker logs transcriptx-whisperx"
+                    )
+                    print(f"\n[red]❌ {err}[/red]")
                     log_error("CLI", "WhisperX service did not become ready")
                     return
 
@@ -119,8 +133,12 @@ def _run_transcription_workflow_impl() -> None:
                 print("\n[red]❌ WhisperX transcription failed.[/red]")
                 return
 
-            print(f"\n[green]✅ Transcription completed! File saved to: {result}[/green]")
-            logger.info(f"WhisperX transcription completed successfully for: {audio_file}")
+            print(
+                f"\n[green]✅ Transcription completed! File saved to: {result}[/green]"
+            )
+            logger.info(
+                f"WhisperX transcription completed successfully for: {audio_file}"
+            )
 
             # Ask if user wants to analyze the transcript (only for single file)
             if not Path(result).exists():
@@ -133,50 +151,79 @@ def _run_transcription_workflow_impl() -> None:
         else:
             # Handle multiple file selection - transcribe all without asking for analysis
             print(f"\n[bold]Transcribing {len(audio_files)} files with WhisperX[/bold]")
-            logger.info(f"Starting batch WhisperX transcription for {len(audio_files)} audio files")
-            
+            logger.info(
+                f"Starting batch WhisperX transcription for {len(audio_files)} audio files"
+            )
+
             successful_transcriptions = []
             failed_transcriptions = []
-            
+
             for idx, audio_file in enumerate(audio_files, 1):
                 if not check_whisperx_compose_service():
                     if not start_whisperx_compose_service():
+                        status, msg = get_docker_whisperx_status()
+                        print(f"\n[red]❌ {msg}[/red]")
                         log_error("CLI", "Failed to start WhisperX service")
                         failed_transcriptions.append(audio_file.name)
                         continue
                     if not wait_for_whisperx_service(timeout=60):
+                        status, msg = get_docker_whisperx_status()
+                        err = (
+                            msg
+                            if status != "ready"
+                            else "WhisperX container did not become ready in time. Check: docker logs transcriptx-whisperx"
+                        )
+                        print(f"\n[red]❌ {err}[/red]")
                         log_error("CLI", "WhisperX service did not become ready")
                         failed_transcriptions.append(audio_file.name)
                         continue
-                print(f"\n[bold][{idx}/{len(audio_files)}] Transcribing:[/bold] {audio_file.name}")
-                logger.info(f"Starting WhisperX transcription for audio [{idx}/{len(audio_files)}]: {audio_file}")
-                
+                print(
+                    f"\n[bold][{idx}/{len(audio_files)}] Transcribing:[/bold] {audio_file.name}"
+                )
+                logger.info(
+                    f"Starting WhisperX transcription for audio [{idx}/{len(audio_files)}]: {audio_file}"
+                )
+
                 try:
                     result = transcribe_with_whisperx(audio_file, config)
-                    
+
                     if not result:
-                        log_error("CLI", f"WhisperX returned no result for {audio_file}")
-                        print(f"[red]❌ Transcription failed for: {audio_file.name}[/red]")
+                        log_error(
+                            "CLI", f"WhisperX returned no result for {audio_file}"
+                        )
+                        print(
+                            f"[red]❌ Transcription failed for: {audio_file.name}[/red]"
+                        )
                         failed_transcriptions.append(audio_file.name)
                     else:
-                        print(f"[green]✅ [{idx}/{len(audio_files)}] Completed: {audio_file.name}[/green]")
-                        logger.info(f"WhisperX transcription completed successfully for: {audio_file}")
+                        print(
+                            f"[green]✅ [{idx}/{len(audio_files)}] Completed: {audio_file.name}[/green]"
+                        )
+                        logger.info(
+                            f"WhisperX transcription completed successfully for: {audio_file}"
+                        )
                         successful_transcriptions.append((audio_file.name, result))
                 except Exception as e:
-                    log_error("CLI", f"Error transcribing {audio_file}: {e}", exception=e)
+                    log_error(
+                        "CLI", f"Error transcribing {audio_file}: {e}", exception=e
+                    )
                     print(f"[red]❌ Error transcribing {audio_file.name}: {e}[/red]")
                     failed_transcriptions.append(audio_file.name)
-            
+
             # Summary
-            print(f"\n[bold]Transcription Summary:[/bold]")
-            print(f"[green]✅ Successfully transcribed: {len(successful_transcriptions)} file(s)[/green]")
+            print("\n[bold]Transcription Summary:[/bold]")
+            print(
+                f"[green]✅ Successfully transcribed: {len(successful_transcriptions)} file(s)[/green]"
+            )
             if failed_transcriptions:
                 print(f"[red]❌ Failed: {len(failed_transcriptions)} file(s)[/red]")
                 for failed_file in failed_transcriptions:
                     print(f"  - {failed_file}")
-            
+
             # Don't ask for analysis when multiple files are selected
-            print("\n[dim]Batch transcription completed. Use the analysis menu to analyze transcripts individually.[/dim]")
+            print(
+                "\n[dim]Batch transcription completed. Use the analysis menu to analyze transcripts individually.[/dim]"
+            )
 
     except KeyboardInterrupt:
         print("\n[cyan]Cancelled. Returning to main menu.[/cyan]")
@@ -193,7 +240,9 @@ def _run_post_transcription_analysis(
     """
     try:
         # Select analysis mode
-        non_interactive = os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty()
+        non_interactive = (
+            os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty()
+        )
         if non_interactive:
             analysis_mode = "quick"
             apply_analysis_mode_settings_non_interactive(analysis_mode)
@@ -201,7 +250,9 @@ def _run_post_transcription_analysis(
             analysis_mode = select_analysis_mode()
             apply_analysis_mode_settings(analysis_mode)
 
-        force_non_interactive = os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty()
+        force_non_interactive = (
+            os.environ.get("PYTEST_CURRENT_TEST") or not sys.stdin.isatty()
+        )
         decision, status = check_speaker_gate(
             transcript_path, force_non_interactive=bool(force_non_interactive)
         )
@@ -237,14 +288,18 @@ def _run_post_transcription_analysis(
 
                         if choice == "🔄 Rerun speaker identification":
                             # Rerun speaker identification
-                            success, updated_path = run_speaker_identification_for_transcript(
-                                transcript_path,
-                                batch_mode=False,
-                                from_gate=True,
+                            success, updated_path = (
+                                run_speaker_identification_for_transcript(
+                                    transcript_path,
+                                    batch_mode=False,
+                                    from_gate=True,
+                                )
                             )
                             if success:
                                 transcript_path = updated_path
-                                status = check_speaker_identification_status(transcript_path)
+                                status = check_speaker_identification_status(
+                                    transcript_path
+                                )
                                 if status.is_complete or status.total_count == 0:
                                     skip_speaker_mapping = False
                                     break  # Exit loop, proceed with analysis
@@ -354,9 +409,7 @@ def run_transcription_non_interactive(
     # Normalize engine selection
     engine_value = (engine or "auto").strip().lower()
     if engine_value not in ("auto", "whisperx"):
-        raise ValueError(
-            f"Invalid engine: {engine}. Must be 'auto' or 'whisperx'"
-        )
+        raise ValueError(f"Invalid engine: {engine}. Must be 'auto' or 'whisperx'")
 
     # Resolve engine for auto mode (fail fast if unavailable)
     if engine_value == "auto":
@@ -381,9 +434,7 @@ def run_transcription_non_interactive(
     diarize_restore = None
     if getattr(config.transcription, "diarize", True) and not _has_hf_token(config):
         if skip_confirm:
-            logger.warning(
-                "No Hugging Face token set; proceeding without diarization."
-            )
+            logger.warning("No Hugging Face token set; proceeding without diarization.")
             diarize_restore = config.transcription.diarize
             config.transcription.diarize = False
         else:

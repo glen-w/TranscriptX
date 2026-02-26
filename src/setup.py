@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="transcriptx",
-    version="0.1.0",
+    version="0.42",
     description="Advanced transcript analysis and visualization toolkit",
     author="TranscriptX Team",
     packages=find_packages(),
@@ -15,4 +15,4 @@ setup(
     install_requires=[
         # Core dependencies will be installed from requirements.txt
     ],
-) 
+)

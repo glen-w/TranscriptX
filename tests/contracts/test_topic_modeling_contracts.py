@@ -102,8 +102,12 @@ class TestTopicModelingContracts:
         assert "models" in result
         assert "texts_count" in result or "diagnostics" in result
 
-    @patch("transcriptx.core.analysis.topic_modeling.analysis.perform_enhanced_nmf_analysis")
-    @patch("transcriptx.core.analysis.topic_modeling.analysis.perform_enhanced_lda_analysis")
+    @patch(
+        "transcriptx.core.analysis.topic_modeling.analysis.perform_enhanced_nmf_analysis"
+    )
+    @patch(
+        "transcriptx.core.analysis.topic_modeling.analysis.perform_enhanced_lda_analysis"
+    )
     def test_topic_modeling_success_output_contract(
         self,
         mock_lda: MagicMock,

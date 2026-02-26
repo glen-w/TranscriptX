@@ -80,7 +80,9 @@ def _validate_group_payload(
     else:
         for idx, row in enumerate(doc_topic_data):
             if not isinstance(row, dict):
-                warnings.append(f"Group bertopic doc_topic_data {idx} is not an object.")
+                warnings.append(
+                    f"Group bertopic doc_topic_data {idx} is not an object."
+                )
                 continue
             if "doc_index" not in row or "dominant_topic" not in row:
                 warnings.append(
@@ -133,11 +135,15 @@ def aggregate_bertopic_group(
         transcript_id = get_transcript_id(result, transcript_set)
         session_meta.setdefault(
             session_id,
-            session_row_from_result(result, transcript_set, session_path=transcript_path),
+            session_row_from_result(
+                result, transcript_set, session_path=transcript_path
+            ),
         )
         path_meta.setdefault(
             transcript_path,
-            session_row_from_result(result, transcript_set, session_path=transcript_path),
+            session_row_from_result(
+                result, transcript_set, session_path=transcript_path
+            ),
         )
 
         for idx, segment in enumerate(segments):
@@ -271,8 +277,12 @@ def aggregate_bertopic_group(
     }
     session_counts: dict[str, int] = defaultdict(int)
     speaker_counts: dict[str, int] = defaultdict(int)
-    session_topic_counts: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
-    speaker_topic_counts: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    session_topic_counts: dict[str, dict[int, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
+    speaker_topic_counts: dict[str, dict[int, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
 
     for row in doc_topic_data:
         session_id = str(row.get("session_name", ""))

@@ -37,7 +37,7 @@ def _deprecation_warning(func_name: str):
         f"transcriptx.speaker_utils.{func_name} is deprecated and will be removed in v0.3.0. "
         f"Use transcriptx.core.utils.speaker_profiling.{func_name} instead.",
         DeprecationWarning,
-        stacklevel=3
+        stacklevel=3,
     )
 
 

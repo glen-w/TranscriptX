@@ -3,7 +3,6 @@ Tests for processing state recovery and partial-run semantics.
 """
 
 import json
-from pathlib import Path
 
 import pytest
 
@@ -38,7 +37,9 @@ def test_update_analysis_state_partial_run():
 def test_load_processing_state_when_locked(tmp_path, monkeypatch):
     """Locked state file should return empty state to avoid corruption."""
     state_file = tmp_path / "processing_state.json"
-    state_file.write_text(json.dumps({"processed_files": {"file": {"status": "completed"}}}))
+    state_file.write_text(
+        json.dumps({"processed_files": {"file": {"status": "completed"}}})
+    )
     monkeypatch.setattr(processing_state, "PROCESSING_STATE_FILE", state_file)
 
     with FileLock(state_file, blocking=True) as lock:

@@ -9,7 +9,7 @@ from typing import Dict, Iterable, List, Tuple
 import streamlit as st
 
 from transcriptx.web.db_utils import get_all_speakers
-from transcriptx.web.models.search import SearchFilters, SearchResponse, SearchResult
+from transcriptx.web.models.search import SearchFilters, SearchResult
 from transcriptx.web.services.search_service import SearchService
 from transcriptx.web.services.subject_service import SubjectService
 
@@ -91,7 +91,7 @@ def _render_results_section(
             if st.button(
                 "Jump to segment",
                 key=f"jump_{result.session_slug}_{result.run_id}_{result.segment_index}_{title}",
-                width='content',
+                width="content",
             ):
                 from transcriptx.web.app import navigate_to_segment
 
@@ -100,7 +100,9 @@ def _render_results_section(
 
 
 def render_search() -> None:
-    st.markdown('<div class="main-header">🔎 Global Search</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="main-header">🔎 Global Search</div>', unsafe_allow_html=True
+    )
 
     # Initialize session state for debouncing and caching
     if "global_search_last_change" not in st.session_state:
@@ -114,12 +116,14 @@ def render_search() -> None:
     if "global_search_cached_filters" not in st.session_state:
         st.session_state["global_search_cached_filters"] = None
 
-    query = st.text_input("Search transcripts", key="global_search_query", placeholder="Type to search…")
+    query = st.text_input(
+        "Search transcripts", key="global_search_query", placeholder="Type to search…"
+    )
 
     # Track query changes for debouncing
     current_time = time.time()
     query_changed = query != st.session_state["global_search_last_query"]
-    
+
     if query_changed:
         st.session_state["global_search_last_change"] = current_time
         st.session_state["global_search_last_query"] = query
@@ -170,7 +174,7 @@ def render_search() -> None:
         if subject and subject.subject_type == "transcript":
             session_slugs = [subject.subject_id]
     filters = SearchFilters(speaker_keys=speaker_keys, session_slugs=session_slugs)
-    
+
     # Check if filters changed (by comparing relevant fields)
     cached_filters = st.session_state.get("global_search_cached_filters")
     filters_changed = (
@@ -183,11 +187,15 @@ def render_search() -> None:
         # Invalidate cache if filters changed and clear debounce
         st.session_state["global_search_last_searched_query"] = None
         st.session_state["global_search_cached_response"] = None
-        st.session_state["global_search_last_change"] = 0  # Clear debounce on filter change
+        st.session_state["global_search_last_change"] = (
+            0  # Clear debounce on filter change
+        )
 
     # Check debounce: run search only after user pauses typing
     debounce_ms = 300
-    time_since_change_ms = (current_time - st.session_state["global_search_last_change"]) * 1000
+    time_since_change_ms = (
+        current_time - st.session_state["global_search_last_change"]
+    ) * 1000
     is_within_debounce = time_since_change_ms < debounce_ms
 
     # Determine if we need to search (after debounce period)
@@ -205,10 +213,16 @@ def render_search() -> None:
     # then schedule a rerun after the remainder of the debounce so search runs once
     # they've stopped typing (Streamlit only reruns on widget interaction, so without
     # this we'd never rerun after pause).
-    if is_within_debounce and len(query) >= 3 and query != st.session_state.get("global_search_last_searched_query"):
+    if (
+        is_within_debounce
+        and len(query) >= 3
+        and query != st.session_state.get("global_search_last_searched_query")
+    ):
         # Show cached results while waiting (if available)
         cached_response = st.session_state.get("global_search_cached_response")
-        if cached_response is not None and (cached_response.substring_results or cached_response.fuzzy_results):
+        if cached_response is not None and (
+            cached_response.substring_results or cached_response.fuzzy_results
+        ):
             _render_results_section(
                 "Matches",
                 cached_response.substring_results,
@@ -243,7 +257,9 @@ def render_search() -> None:
     if needs_search:
         service = SearchService()
         with st.spinner("Searching transcripts..."):
-            response = service.search_all_transcripts(query, filters, enable_fuzzy=enable_fuzzy)
+            response = service.search_all_transcripts(
+                query, filters, enable_fuzzy=enable_fuzzy
+            )
         # Cache the results
         st.session_state["global_search_last_searched_query"] = query
         st.session_state["global_search_cached_response"] = response

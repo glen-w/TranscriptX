@@ -4,29 +4,31 @@ Tests for output reporter functionality.
 This module tests output summary generation, formatting, and display.
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from transcriptx.core.pipeline.output_reporter import OutputReporter
+from transcriptx.core.pipeline.output_reporter import (
+    OutputReporter,
+    print_compact_post_run_summary,
+)
 
 
 class TestOutputReporter:
     """Tests for OutputReporter class."""
-    
+
     @pytest.fixture
     def output_reporter(self):
         """Fixture for OutputReporter instance."""
         return OutputReporter()
-    
+
     @pytest.fixture
     def sample_transcript_path(self, tmp_path):
         """Fixture for sample transcript path."""
         transcript_file = tmp_path / "test_transcript.json"
         transcript_file.write_text('{"segments": []}')
         return str(transcript_file)
-    
+
     def test_generate_comprehensive_output_summary_success(
         self, output_reporter, sample_transcript_path, tmp_path
     ):
@@ -36,46 +38,60 @@ class TestOutputReporter:
         output_dir.mkdir()
         (output_dir / "sentiment").mkdir()
         (output_dir / "stats").mkdir()
-        
-        with patch('transcriptx.core.pipeline.output_reporter.get_transcript_dir', return_value=str(output_dir)), \
-             patch('transcriptx.core.pipeline.output_reporter.validate_module_outputs') as mock_validate:
-            
+
+        with (
+            patch(
+                "transcriptx.core.pipeline.output_reporter.get_transcript_dir",
+                return_value=str(output_dir),
+            ),
+            patch(
+                "transcriptx.core.pipeline.output_reporter.validate_module_outputs"
+            ) as mock_validate,
+        ):
+
             mock_validate.return_value = {
                 "sentiment": {"valid": True},
-                "stats": {"valid": True}
+                "stats": {"valid": True},
             }
-            
+
             summary = output_reporter.generate_comprehensive_output_summary(
                 transcript_path=sample_transcript_path,
                 selected_modules=["sentiment", "stats"],
                 modules_run=["sentiment", "stats"],
-                errors=[]
+                errors=[],
             )
-        
+
         assert "transcript_info" in summary
         assert "analysis_summary" in summary
         assert "outputs" in summary
         assert summary["analysis_summary"]["total_modules_successful"] == 2
-    
+
     def test_generate_comprehensive_output_summary_with_errors(
         self, output_reporter, sample_transcript_path, tmp_path
     ):
         """Test output summary generation with errors."""
         output_dir = tmp_path / "test_transcript"
         output_dir.mkdir()
-        
-        with patch('transcriptx.core.pipeline.output_reporter.get_transcript_dir', return_value=str(output_dir)), \
-             patch('transcriptx.core.pipeline.output_reporter.validate_module_outputs') as mock_validate:
-            
+
+        with (
+            patch(
+                "transcriptx.core.pipeline.output_reporter.get_transcript_dir",
+                return_value=str(output_dir),
+            ),
+            patch(
+                "transcriptx.core.pipeline.output_reporter.validate_module_outputs"
+            ) as mock_validate,
+        ):
+
             mock_validate.return_value = {}
-            
+
             summary = output_reporter.generate_comprehensive_output_summary(
                 transcript_path=sample_transcript_path,
                 selected_modules=["sentiment", "stats"],
                 modules_run=["sentiment"],
-                errors=["Error in stats module"]
+                errors=["Error in stats module"],
             )
-        
+
         assert summary["analysis_summary"]["total_modules_failed"] == 1
         assert len(summary["analysis_summary"]["errors"]) == 1
 
@@ -87,12 +103,15 @@ class TestOutputReporter:
         output_dir.mkdir()
         (output_dir / "sentiment").mkdir()
 
-        with patch(
-            'transcriptx.core.pipeline.output_reporter.get_transcript_dir',
-            return_value=str(output_dir)
-        ), patch(
-            'transcriptx.core.pipeline.output_reporter.validate_module_outputs'
-        ) as mock_validate:
+        with (
+            patch(
+                "transcriptx.core.pipeline.output_reporter.get_transcript_dir",
+                return_value=str(output_dir),
+            ),
+            patch(
+                "transcriptx.core.pipeline.output_reporter.validate_module_outputs"
+            ) as mock_validate,
+        ):
             mock_validate.return_value = {}
 
             summary = output_reporter.generate_comprehensive_output_summary(
@@ -100,31 +119,36 @@ class TestOutputReporter:
                 selected_modules=["sentiment", "interactions"],
                 modules_run=["sentiment"],
                 errors=[],
-                skipped_modules=[{
-                    "module": "interactions",
-                    "reason": "requires at least 2 named speakers",
-                }],
+                skipped_modules=[
+                    {
+                        "module": "interactions",
+                        "reason": "requires at least 2 named speakers",
+                    }
+                ],
             )
 
         assert summary["analysis_summary"]["total_modules_failed"] == 0
         assert "interactions" in summary["outputs"]["skipped_modules"]
         assert "interactions" not in summary["outputs"]["failed_modules"]
-    
+
     def test_generate_comprehensive_output_summary_no_output_dir(
         self, output_reporter, sample_transcript_path, tmp_path
     ):
         """Test output summary when output directory doesn't exist."""
-        with patch('transcriptx.core.pipeline.output_reporter.get_transcript_dir', return_value=str(tmp_path / "missing_dir")):
+        with patch(
+            "transcriptx.core.pipeline.output_reporter.get_transcript_dir",
+            return_value=str(tmp_path / "missing_dir"),
+        ):
             summary = output_reporter.generate_comprehensive_output_summary(
                 transcript_path=sample_transcript_path,
                 selected_modules=["sentiment"],
                 modules_run=["sentiment"],
-                errors=[]
+                errors=[],
             )
-        
+
         assert "error" in summary["outputs"]
         assert "does not exist" in summary["outputs"]["error"]
-    
+
     def test_display_output_summary_to_user(
         self, output_reporter, sample_transcript_path
     ):
@@ -133,16 +157,18 @@ class TestOutputReporter:
             "transcript_info": {"base_name": "test"},
             "analysis_summary": {
                 "total_modules_successful": 2,
-                "total_modules_failed": 0
-            }
+                "total_modules_failed": 0,
+            },
         }
-        
-        with patch('transcriptx.core.pipeline.output_reporter.console.print') as mock_print:
+
+        with patch(
+            "transcriptx.core.pipeline.output_reporter.console.print"
+        ) as mock_print:
             output_reporter.display_output_summary_to_user(summary)
-        
+
         # Should display summary
         assert mock_print.called
-    
+
     def test_validate_module_outputs_integration(
         self, output_reporter, sample_transcript_path, tmp_path
     ):
@@ -150,21 +176,79 @@ class TestOutputReporter:
         output_dir = tmp_path / "test_transcript"
         output_dir.mkdir()
         (output_dir / "sentiment").mkdir()
-        (output_dir / "sentiment" / "test_transcript_sentiment.json").write_text('{}')
-        
-        with patch('transcriptx.core.pipeline.output_reporter.get_transcript_dir', return_value=str(output_dir)), \
-             patch('transcriptx.core.pipeline.output_reporter.validate_module_outputs') as mock_validate:
-            
+        (output_dir / "sentiment" / "test_transcript_sentiment.json").write_text("{}")
+
+        with (
+            patch(
+                "transcriptx.core.pipeline.output_reporter.get_transcript_dir",
+                return_value=str(output_dir),
+            ),
+            patch(
+                "transcriptx.core.pipeline.output_reporter.validate_module_outputs"
+            ) as mock_validate,
+        ):
+
             mock_validate.return_value = {
-                "sentiment": {"valid": True, "files": ["test_transcript_sentiment.json"]}
+                "sentiment": {
+                    "valid": True,
+                    "files": ["test_transcript_sentiment.json"],
+                }
             }
-            
+
             summary = output_reporter.generate_comprehensive_output_summary(
                 transcript_path=sample_transcript_path,
                 selected_modules=["sentiment"],
                 modules_run=["sentiment"],
-                errors=[]
+                errors=[],
             )
-        
+
         assert "validation" in summary
         assert "sentiment" in summary["validation"]
+
+    def test_print_compact_post_run_summary_key_lines(self) -> None:
+        """Compact post-run summary prints status, output path, and viewer hint."""
+        with patch(
+            "transcriptx.core.pipeline.output_reporter._output_reporter"
+        ) as mock_reporter:
+            mock_reporter.print_compact_post_run_summary = MagicMock()
+            print_compact_post_run_summary(
+                "/out/run",
+                {
+                    "modules_requested": ["stats", "sentiment"],
+                    "modules_run": ["stats"],
+                    "skipped_modules": [
+                        {"module": "sentiment", "reason": "downloads disabled"},
+                    ],
+                    "errors": [],
+                },
+            )
+            mock_reporter.print_compact_post_run_summary.assert_called_once()
+            call_kwargs = mock_reporter.print_compact_post_run_summary.call_args
+            assert call_kwargs[0][0] == "/out/run"
+            results = call_kwargs[0][1]
+            assert results["modules_run"] == ["stats"]
+            assert len(results["skipped_modules"]) == 1
+            assert results["skipped_modules"][0]["module"] == "sentiment"
+
+    def test_print_compact_post_run_summary_output_contains_key_lines(self) -> None:
+        """Integration: compact summary output contains status, Outputs, viewer command."""
+        output_dir = "/fake/output"
+        results = {
+            "modules_requested": ["stats"],
+            "modules_run": ["stats"],
+            "skipped_modules": [],
+            "errors": [],
+        }
+        reporter = OutputReporter()
+        printed: list = []
+
+        def capture_print(*args, **kwargs):
+            parts = [str(a) for a in args]
+            printed.extend(parts)
+
+        reporter.console.print = capture_print
+        reporter.print_compact_post_run_summary(output_dir, results)
+        out = " ".join(printed)
+        assert "Run summary" in out or "summary" in out
+        assert output_dir in out
+        assert "transcriptx web-viewer" in out

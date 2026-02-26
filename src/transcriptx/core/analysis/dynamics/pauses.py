@@ -24,6 +24,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_PAUSES_HIST,
     VIZ_PAUSES_TIMELINE,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import BarCategoricalSpec, LineTimeSeriesSpec
 
 plt = lazy_pyplot()
@@ -71,7 +72,9 @@ class PausesAnalysis(AnalysisModule):
         # Determine which segments are questions (if acts available)
         question_flags: List[bool] = [False] * len(segments)
         if acts_data:
-            acts_segments = acts_data.get("tagged_segments") or acts_data.get("segments")
+            acts_segments = acts_data.get("tagged_segments") or acts_data.get(
+                "segments"
+            )
             if isinstance(acts_segments, list) and len(acts_segments) == len(segments):
                 for idx, seg in enumerate(acts_segments):
                     act = (seg or {}).get("dialogue_act", "")
@@ -102,7 +105,11 @@ class PausesAnalysis(AnalysisModule):
             curr_info = extract_speaker_info(curr)
             nxt_info = extract_speaker_info(nxt)
             speaker = None
-            if curr_info and nxt_info and curr_info.grouping_key == nxt_info.grouping_key:
+            if (
+                curr_info
+                and nxt_info
+                and curr_info.grouping_key == nxt_info.grouping_key
+            ):
                 speaker = get_speaker_display_name(
                     curr_info.grouping_key, [curr], segments
                 )
@@ -155,7 +162,9 @@ class PausesAnalysis(AnalysisModule):
                     segment_start_idx=entry["segment_idx"],
                     segment_end_idx=entry["segment_idx"] + 1,
                     severity=min(1.0, gap / max(long_pause_threshold, 0.1)),
-                    evidence=[{"source": "pauses", "feature": "gap_seconds", "value": gap}],
+                    evidence=[
+                        {"source": "pauses", "feature": "gap_seconds", "value": gap}
+                    ],
                     links=[
                         {"type": "segment", "idx": entry["segment_idx"]},
                         {"type": "segment", "idx": entry["segment_idx"] + 1},
@@ -214,12 +223,12 @@ class PausesAnalysis(AnalysisModule):
                 continue
             speaker_stats[speaker] = {
                 "gap_count": len(speaker_gaps),
-                "mean_gap_seconds": float(np.mean(speaker_gaps))
-                if speaker_gaps
-                else 0.0,
-                "median_gap_seconds": float(np.median(speaker_gaps))
-                if speaker_gaps
-                else 0.0,
+                "mean_gap_seconds": (
+                    float(np.mean(speaker_gaps)) if speaker_gaps else 0.0
+                ),
+                "median_gap_seconds": (
+                    float(np.median(speaker_gaps)) if speaker_gaps else 0.0
+                ),
                 "long_hesitation_count": sum(
                     1 for g in speaker_gaps if g >= long_pause_threshold
                 ),
@@ -316,7 +325,9 @@ class PausesAnalysis(AnalysisModule):
 
         for speaker, data in speaker_stats.items():
             safe_speaker = sanitize_filename(speaker)
-            path = output_structure.speaker_data_dir / f"{safe_speaker}_pauses.stats.json"
+            path = (
+                output_structure.speaker_data_dir / f"{safe_speaker}_pauses.stats.json"
+            )
             save_json(data, str(path))
 
         # Charts
@@ -324,8 +335,7 @@ class PausesAnalysis(AnalysisModule):
         if gaps:
             counts, bin_edges = np.histogram(gaps, bins=20)
             categories = [
-                f"{bin_edges[i]:.1f}-{bin_edges[i + 1]:.1f}"
-                for i in range(len(counts))
+                f"{bin_edges[i]:.1f}-{bin_edges[i + 1]:.1f}" for i in range(len(counts))
             ]
             spec = BarCategoricalSpec(
                 viz_id=VIZ_PAUSES_HIST,
@@ -341,9 +351,12 @@ class PausesAnalysis(AnalysisModule):
             )
             output_service.save_chart(spec, chart_type="hist")
 
-        events_for_timeline = [e for e in events if e.kind in {"long_pause", "post_question_silence"}]
+        events_for_timeline = [
+            e for e in events if e.kind in {"long_pause", "post_question_silence"}
+        ]
         if events_for_timeline:
             xs = [e.time_start for e in events_for_timeline]
+            x_display, x_label = time_axis_display(xs)
             ys = [e.time_end - e.time_start for e in events_for_timeline]
             spec = LineTimeSeriesSpec(
                 viz_id=VIZ_PAUSES_TIMELINE,
@@ -352,10 +365,10 @@ class PausesAnalysis(AnalysisModule):
                 scope="global",
                 chart_intent="line_timeseries",
                 title="Long Pauses Timeline",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Gap (seconds)",
                 markers=True,
-                series=[{"name": "Pause", "x": xs, "y": ys}],
+                series=[{"name": "Pause", "x": x_display, "y": ys}],
             )
             output_service.save_chart(spec, chart_type="timeline")
 

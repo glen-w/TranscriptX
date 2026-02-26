@@ -16,7 +16,10 @@ from transcriptx.core.corrections.models import (
     Decision,
     Occurrence,
 )
-from transcriptx.core.corrections.workflow import _dedupe_candidates, _rule_signature_for_dedupe
+from transcriptx.core.corrections.workflow import (
+    _dedupe_candidates,
+    _rule_signature_for_dedupe,
+)
 
 
 def _segment(text: str, speaker: str = "Alice", start: float = 0.0, end: float = 1.0):
@@ -57,7 +60,9 @@ def test_consistency_detector_flags_minority_variant():
         _segment("REN21 launched the program."),
         _segment("Ren21 was mentioned in notes."),
     ]
-    candidates = detect_consistency_candidates(segments, "key", similarity_threshold=0.88)
+    candidates = detect_consistency_candidates(
+        segments, "key", similarity_threshold=0.88
+    )
     assert any(
         c.proposed_wrong == "Ren21" and c.proposed_right == "REN21" for c in candidates
     )
@@ -271,7 +276,10 @@ def test_patch_log_has_resolution_policy_and_conflict_metadata():
         segments, [long_candidate, short_candidate], transcript_key="key"
     )
     first = patch_log[0]
-    assert first.get("resolution_policy") == "longest_span > confidence > kind_priority > left_to_right"
+    assert (
+        first.get("resolution_policy")
+        == "longest_span > confidence > kind_priority > left_to_right"
+    )
     conflict_entry = next(
         (e for e in patch_log if e.get("status") == "conflict_skipped"),
         None,
@@ -398,7 +406,9 @@ def test_dedupe_with_different_conditions_keeps_separate():
         rule_id=rule_b.id,
         occurrences=[o2],
     )
-    merged = _dedupe_candidates([c1, c2], rules_by_id={rule_a.id: rule_a, rule_b.id: rule_b})
+    merged = _dedupe_candidates(
+        [c1, c2], rules_by_id={rule_a.id: rule_a, rule_b.id: rule_b}
+    )
     assert len(merged) == 2
 
 

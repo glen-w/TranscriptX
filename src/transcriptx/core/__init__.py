@@ -32,7 +32,11 @@ Available Analysis Modules:
 from .utils import config
 
 # Import pipeline functions
-from .pipeline.module_registry import get_available_modules, get_default_modules
+from .pipeline.module_registry import (
+    get_available_modules,
+    get_default_modules,
+    is_extra_available,
+)
 from .pipeline.pipeline import run_analysis_pipeline
 
 # Define the public API for this package
@@ -43,4 +47,5 @@ __all__ = [
     "run_analysis_pipeline",
     "get_available_modules",
     "get_default_modules",
+    "is_extra_available",
 ]

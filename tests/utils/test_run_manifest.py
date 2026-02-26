@@ -2,7 +2,6 @@
 Tests for run manifest determinism and idempotency.
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,10 +18,18 @@ def test_run_manifest_deterministic_hashes(tmp_path):
     ]
 
     config = MagicMock()
-    config.to_dict.return_value = {"analysis": {"mode": "default"}, "output": {"version": 1}}
+    config.to_dict.return_value = {
+        "analysis": {"mode": "default"},
+        "output": {"version": 1},
+    }
 
-    with patch("transcriptx.core.utils.run_manifest.get_config", return_value=config), \
-         patch("transcriptx.core.utils.module_hashing.compute_module_source_hash", return_value="hash"):
+    with (
+        patch("transcriptx.core.utils.run_manifest.get_config", return_value=config),
+        patch(
+            "transcriptx.core.utils.module_hashing.compute_module_source_hash",
+            return_value="hash",
+        ),
+    ):
 
         first = create_run_manifest(
             transcript_hash="sha256:transcript",

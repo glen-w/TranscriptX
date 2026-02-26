@@ -30,11 +30,7 @@ def test_save_interaction_events_writes_json_and_csv(tmp_path: Path) -> None:
     save_interaction_events(
         interactions, output_structure=output_structure, base_name="sample"
     )
-    json_path = (
-        output_structure.global_data_dir / "sample_interaction_events.json"
-    )
-    csv_path = (
-        output_structure.global_data_dir / "sample_interaction_events.csv"
-    )
+    json_path = output_structure.global_data_dir / "sample_interaction_events.json"
+    csv_path = output_structure.global_data_dir / "sample_interaction_events.csv"
     assert json_path.exists()
     assert csv_path.exists()

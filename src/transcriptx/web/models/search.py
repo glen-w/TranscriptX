@@ -47,10 +47,14 @@ class SegmentRef:
             raise ValueError("SegmentRef requires segment_id or segment_index.")
         if self.primary_locator == "db_id":
             if self.segment_id is None:
-                raise ValueError("SegmentRef primary_locator db_id requires segment_id.")
+                raise ValueError(
+                    "SegmentRef primary_locator db_id requires segment_id."
+                )
         elif self.primary_locator == "index":
             if self.segment_index is None:
-                raise ValueError("SegmentRef primary_locator index requires segment_index.")
+                raise ValueError(
+                    "SegmentRef primary_locator index requires segment_index."
+                )
         else:
             raise ValueError(f"Unknown primary_locator: {self.primary_locator}")
 

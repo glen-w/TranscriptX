@@ -396,7 +396,9 @@ class NERAnalysis(AnalysisModule):
                 png_path = image_dir / f"{base_name}-locations-{safe}.png"
                 fmap.save(str(html_path))
                 # Record HTML map as dynamic artifact
-                output_service._record_artifact(html_path, "html", artifact_role="primary")
+                output_service._record_artifact(
+                    html_path, "html", artifact_role="primary"
+                )
                 output_service._record_artifact_metadata(
                     html_path,
                     {
@@ -411,7 +413,9 @@ class NERAnalysis(AnalysisModule):
                 self._render_html_to_png(html_path, png_path, sync_playwright)
                 # Record PNG map as static artifact (if created)
                 if png_path.exists():
-                    output_service._record_artifact(png_path, "png", artifact_role="primary")
+                    output_service._record_artifact(
+                        png_path, "png", artifact_role="primary"
+                    )
                     output_service._record_artifact_metadata(
                         png_path,
                         {
@@ -460,7 +464,9 @@ class NERAnalysis(AnalysisModule):
             self._render_html_to_png(html_path, png_path, sync_playwright)
             # Record PNG map as static artifact (if created)
             if png_path.exists():
-                output_service._record_artifact(png_path, "png", artifact_role="primary")
+                output_service._record_artifact(
+                    png_path, "png", artifact_role="primary"
+                )
                 output_service._record_artifact_metadata(
                     png_path,
                     {
@@ -478,7 +484,11 @@ class NERAnalysis(AnalysisModule):
         )
 
     def _render_html_to_png(
-        self, html_path: Path, image_path: Path, sync_playwright: Any = None, width: int = 1000
+        self,
+        html_path: Path,
+        image_path: Path,
+        sync_playwright: Any = None,
+        width: int = 1000,
     ):
         """
         Render HTML map to PNG image.
@@ -502,7 +512,9 @@ class NERAnalysis(AnalysisModule):
             msg = str(exc).lower()
             return "executable doesn't exist" in msg or "browser_type.launch" in msg
 
-        def _render_with(browser_type: Any, *, launch_kwargs: Dict[str, Any], label: str) -> Exception | None:
+        def _render_with(
+            browser_type: Any, *, launch_kwargs: Dict[str, Any], label: str
+        ) -> Exception | None:
             """
             Attempt rendering using a specific Playwright browser type.
 
@@ -539,7 +551,9 @@ class NERAnalysis(AnalysisModule):
                     return None
 
                 # 2) Bundled Playwright Chromium
-                exc2 = _render_with(p.chromium, launch_kwargs={"headless": True}, label="chromium")
+                exc2 = _render_with(
+                    p.chromium, launch_kwargs={"headless": True}, label="chromium"
+                )
                 if exc2 is None:
                     return None
 
@@ -561,7 +575,11 @@ class NERAnalysis(AnalysisModule):
                     return None
 
                 # Return the most informative failure we saw.
-                return exc2 if not _is_missing_executable_error(exc2) else (exc3 or exc2 or exc)
+                return (
+                    exc2
+                    if not _is_missing_executable_error(exc2)
+                    else (exc3 or exc2 or exc)
+                )
 
         try:
             exc = _attempt_render()
@@ -570,7 +588,9 @@ class NERAnalysis(AnalysisModule):
 
             if _is_missing_executable_error(exc):
                 # Try to install the browser one more time before giving up
-                from transcriptx.core.utils.lazy_imports import _ensure_playwright_browser_installed
+                from transcriptx.core.utils.lazy_imports import (
+                    _ensure_playwright_browser_installed,
+                )
 
                 print("Attempting to install Playwright Chromium browser...")
                 if _ensure_playwright_browser_installed(silent=False):

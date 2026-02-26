@@ -13,9 +13,11 @@ from pathlib import Path
 import inspect
 from typing import Any, Dict, List, Optional, Callable
 
+
 # Suppress tokenizer warnings about parallelism to prevent console spam
 def _ensure_tokenizers_parallelism() -> None:
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 
 from transcriptx.core.utils.logger import get_logger, log_pipeline_complete
 from transcriptx.core.domain.transcript_set import TranscriptSet
@@ -31,8 +33,13 @@ from transcriptx.core.pipeline.target_resolver import (
 from transcriptx.core.pipeline.output_reporter import (
     generate_comprehensive_output_summary,
     display_output_summary_to_user,
+    print_review_before_run,
+    print_compact_post_run_summary,
 )
-from transcriptx.core.pipeline.manifest_builder import write_output_manifest
+from transcriptx.core.pipeline.manifest_builder import (
+    write_output_manifest,
+    write_run_results_summary,
+)
 from transcriptx.core.pipeline.module_registry import (
     get_available_modules as get_available_modules_from_registry,
     get_default_modules as get_default_modules_from_registry,
@@ -160,7 +167,10 @@ def run_analysis_pipeline(
     transcript_id_map: Dict[str, int] = {}
     transcript_uuid_map: Dict[str, str] = {}
     for member in members:
-        if getattr(member, "file_path", None) and getattr(member, "id", None) is not None:
+        if (
+            getattr(member, "file_path", None)
+            and getattr(member, "id", None) is not None
+        ):
             transcript_id_map[str(member.file_path)] = int(member.id)
         if getattr(member, "file_path", None) and getattr(member, "uuid", None):
             transcript_uuid_map[str(member.file_path)] = str(member.uuid)
@@ -203,7 +213,9 @@ def run_analysis_pipeline(
     from transcriptx.core.output.group_row_writer import write_row_outputs
     from transcriptx.io import save_json
 
-    group_run_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    group_run_id = (
+        f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    )
     member_uuids = [member.uuid for member in members]
     if group_uuid is None:
         raise ValueError("Group scope is required for group output paths.")
@@ -256,7 +268,9 @@ def run_analysis_pipeline(
         transcript_set: TranscriptSet,
     ) -> List[Dict[str, Any]]:
         by_path = {r.transcript_path: r for r in per_transcript_results}
-        by_key = {r.transcript_key: r for r in per_transcript_results if r.transcript_key}
+        by_key = {
+            r.transcript_key: r for r in per_transcript_results if r.transcript_key
+        }
         by_index = {r.order_index: r for r in per_transcript_results}
         for row in session_rows:
             result = None
@@ -270,7 +284,9 @@ def run_analysis_pipeline(
                 result = by_index[row["order_index"]]
             if result:
                 row.setdefault("order_index", result.order_index)
-                row.setdefault("transcript_id", get_transcript_id(result, transcript_set))
+                row.setdefault(
+                    "transcript_id", get_transcript_id(result, transcript_set)
+                )
         return session_rows
 
     def _call_aggregate_fn(
@@ -289,13 +305,21 @@ def run_analysis_pipeline(
         parameters = list(signature.parameters.values())
         if any(param.kind == param.VAR_POSITIONAL for param in parameters):
             return aggregate_fn(
-                per_transcript_results, canonical_speaker_map, transcript_set, aggregations
+                per_transcript_results,
+                canonical_speaker_map,
+                transcript_set,
+                aggregations,
             )
         if len(parameters) >= 4:
             return aggregate_fn(
-                per_transcript_results, canonical_speaker_map, transcript_set, aggregations
+                per_transcript_results,
+                canonical_speaker_map,
+                transcript_set,
+                aggregations,
             )
-        return aggregate_fn(per_transcript_results, canonical_speaker_map, transcript_set)
+        return aggregate_fn(
+            per_transcript_results, canonical_speaker_map, transcript_set
+        )
 
     ROW_KEYS = {"session_rows", "speaker_rows", "metrics_spec"}
     WRITER_EXTRA_KEYS = {"content_rows", "content_rows_name", "drop_csv_keys"}
@@ -408,6 +432,18 @@ def run_analysis_pipeline(
         modules_enabled=selected_modules,
     )
 
+    # Run-level results summary for group (modules_enabled; per-transcript run/skip live in each transcript run dir)
+    write_run_results_summary(
+        run_dir=Path(group_output_service.base_dir),
+        run_id=group_run_id,
+        transcript_key=group_uuid,
+        modules_enabled=selected_modules,
+        modules_run=[],
+        skipped_modules=[],
+        errors=group_errors,
+        preset_explanation=None,
+    )
+
     group_results: Dict[str, Any] = {
         "status": "completed",
         "group_key": transcript_set.key,
@@ -428,6 +464,46 @@ def run_analysis_pipeline(
     }
 
     return group_results
+
+
+def _build_preset_explanation(
+    modules_run: List[str],
+    skipped_modules: List[Any],
+) -> str:
+    """Build a short human-readable explanation of what ran and what was skipped."""
+    included = ", ".join(modules_run) if modules_run else "none"
+    parts = []
+    for entry in skipped_modules or []:
+        if isinstance(entry, dict) and "module" in entry:
+            reason = entry.get("reason", "Skipped")
+            parts.append(f"{entry['module']} ({reason})")
+        elif isinstance(entry, str):
+            parts.append(f"{entry} (not in registry)")
+    excluded = "; ".join(parts) if parts else "none"
+    return f"Included: {included}. Excluded: {excluded}."
+
+
+def _build_and_write_run_results(
+    run_dir: Path,
+    run_id: str,
+    transcript_key: str,
+    modules_enabled: List[str],
+    modules_run: List[str],
+    skipped_modules: List[Any],
+    errors: List[str],
+) -> None:
+    """Write run_results.json with preset explanation for Web UI and CLI."""
+    preset_explanation = _build_preset_explanation(modules_run, skipped_modules)
+    write_run_results_summary(
+        run_dir=run_dir,
+        run_id=run_id,
+        transcript_key=transcript_key,
+        modules_enabled=modules_enabled,
+        modules_run=modules_run,
+        skipped_modules=skipped_modules,
+        errors=errors,
+        preset_explanation=preset_explanation,
+    )
 
 
 def _run_single_analysis_pipeline(
@@ -612,6 +688,7 @@ def _run_single_analysis_pipeline(
 
     # Wrap pipeline execution with performance logging
     file_name = Path(transcript_path).name
+
     def _safe_db_id(value: Any) -> Optional[int]:
         if value is None or isinstance(value, bool):
             return None
@@ -648,6 +725,23 @@ def _run_single_analysis_pipeline(
             job.add_metadata({"transcript_segments_count": transcript_segments_count})
         if transcript_word_count is not None:
             job.add_metadata({"transcript_word_count": transcript_word_count})
+
+        # Review before run: compute and print (engine returns data, pipeline prints)
+        try:
+            review = dag_pipeline.compute_review_before_run(
+                transcript_path=transcript_path,
+                selected_modules=selected_modules,
+                output_dir=output_dir,
+                requirements_resolver=requirements_resolver,
+                speaker_map=None,
+                skip_speaker_mapping=skip_speaker_mapping,
+                speaker_options=speaker_options,
+                transcript_key=transcript_key,
+                run_id=run_id,
+            )
+            print_review_before_run(review)
+        except Exception as e:
+            logger.warning(f"Could not compute review before run: {e}")
 
         # Execute pipeline using DAG
         start_time = time.time()
@@ -690,8 +784,21 @@ def _run_single_analysis_pipeline(
             modules_enabled=selected_modules,
         )
 
+        # Run-level results summary (modules run / skipped / why) for CLI and Web UI
+        skipped = results.get("skipped_modules", [])
+        _build_and_write_run_results(
+            run_dir=Path(output_dir),
+            run_id=run_id,
+            transcript_key=transcript_key,
+            modules_enabled=selected_modules,
+            modules_run=results.get("modules_run", []),
+            skipped_modules=skipped,
+            errors=results.get("errors", []),
+        )
+
         # Display results to user
         display_output_summary_to_user(summary)
+        print_compact_post_run_summary(output_dir, results)
 
         # Log pipeline completion
         end_time = time.time()
@@ -853,9 +960,9 @@ def run_analysis_pipeline_from_file(
     )
 
 
-def get_available_modules() -> List[str]:
-    """Get list of available analysis modules."""
-    return list(get_available_modules_from_registry())
+def get_available_modules(core_mode: Optional[bool] = None) -> List[str]:
+    """Get list of available analysis modules. core_mode from config if None."""
+    return list(get_available_modules_from_registry(core_mode=core_mode))
 
 
 def get_default_modules(
@@ -866,8 +973,9 @@ def get_default_modules(
     include_heavy: bool = True,
     include_excluded_from_default: bool = False,
     for_group: bool = False,
+    core_mode: Optional[bool] = None,
 ) -> List[str]:
-    """Get list of modules used for default analysis runs."""
+    """Get list of modules used for default analysis runs. core_mode from config if None."""
     return list(
         get_default_modules_from_registry(
             transcript_targets,
@@ -876,5 +984,6 @@ def get_default_modules(
             include_heavy=include_heavy,
             include_excluded_from_default=include_excluded_from_default,
             for_group=for_group,
+            core_mode=core_mode,
         )
     )

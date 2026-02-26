@@ -91,30 +91,59 @@ class VoiceFeatureTable:
         rows: list[VoiceFeatureRow] = []
         eg_cols = [c for c in df.columns if isinstance(c, str) and c.startswith("eg_")]
         for _, r in df.iterrows():
-            eg = {c.removeprefix("eg_"): float(r[c]) for c in eg_cols if r.get(c) is not None}
+            eg = {
+                c.removeprefix("eg_"): float(r[c])
+                for c in eg_cols
+                if r.get(c) is not None
+            }
             rows.append(
                 VoiceFeatureRow(
                     segment_id=str(r.get("segment_id")),
-                    speaker=(None if r.get("speaker") is None else str(r.get("speaker"))),
+                    speaker=(
+                        None if r.get("speaker") is None else str(r.get("speaker"))
+                    ),
                     start_s=float(r.get("start_s", 0.0)),
                     end_s=float(r.get("end_s", 0.0)),
                     duration_s=float(r.get("duration_s", 0.0)),
-                    voiced_ratio=(None if r.get("voiced_ratio") is None else float(r.get("voiced_ratio"))),
-                    rms_db=(None if r.get("rms_db") is None else float(r.get("rms_db"))),
-                    f0_mean_hz=(None if r.get("f0_mean_hz") is None else float(r.get("f0_mean_hz"))),
-                    f0_std_hz=(None if r.get("f0_std_hz") is None else float(r.get("f0_std_hz"))),
+                    voiced_ratio=(
+                        None
+                        if r.get("voiced_ratio") is None
+                        else float(r.get("voiced_ratio"))
+                    ),
+                    rms_db=(
+                        None if r.get("rms_db") is None else float(r.get("rms_db"))
+                    ),
+                    f0_mean_hz=(
+                        None
+                        if r.get("f0_mean_hz") is None
+                        else float(r.get("f0_mean_hz"))
+                    ),
+                    f0_std_hz=(
+                        None
+                        if r.get("f0_std_hz") is None
+                        else float(r.get("f0_std_hz"))
+                    ),
                     f0_range_semitones=(
                         None
                         if r.get("f0_range_semitones") is None
                         else float(r.get("f0_range_semitones"))
                     ),
                     speech_rate_wps=(
-                        None if r.get("speech_rate_wps") is None else float(r.get("speech_rate_wps"))
+                        None
+                        if r.get("speech_rate_wps") is None
+                        else float(r.get("speech_rate_wps"))
                     ),
-                    arousal_raw=(None if r.get("arousal_raw") is None else float(r.get("arousal_raw"))),
-                    valence_raw=(None if r.get("valence_raw") is None else float(r.get("valence_raw"))),
+                    arousal_raw=(
+                        None
+                        if r.get("arousal_raw") is None
+                        else float(r.get("arousal_raw"))
+                    ),
+                    valence_raw=(
+                        None
+                        if r.get("valence_raw") is None
+                        else float(r.get("valence_raw"))
+                    ),
                     eg=eg,
                 )
             )
         return cls(rows=rows)
-

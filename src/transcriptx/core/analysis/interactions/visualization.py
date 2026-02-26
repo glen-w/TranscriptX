@@ -71,7 +71,10 @@ def create_combined_timeline(
             {
                 "name": interaction_type.replace("_", " ").title(),
                 "x": [event.timestamp / 60.0 for event in type_interactions],
-                "y": [speaker_positions.get(event.speaker_a, 0) for event in type_interactions],
+                "y": [
+                    speaker_positions.get(event.speaker_a, 0)
+                    for event in type_interactions
+                ],
             }
         )
 
@@ -99,7 +102,9 @@ def create_interaction_network(
     if not matrix or not output_service:
         return
 
-    speakers = sorted(set(matrix.keys()) | {s for targets in matrix.values() for s in targets})
+    speakers = sorted(
+        set(matrix.keys()) | {s for targets in matrix.values() for s in targets}
+    )
     if not speakers:
         return
 
@@ -107,9 +112,9 @@ def create_interaction_network(
     heatmap = [[0 for _ in speakers] for _ in speakers]
     for speaker_a, targets in matrix.items():
         for speaker_b, interactions in targets.items():
-            heatmap[index[speaker_a]][index[speaker_b]] = (
-                interactions.get("interruptions", 0) + interactions.get("responses", 0)
-            )
+            heatmap[index[speaker_a]][index[speaker_b]] = interactions.get(
+                "interruptions", 0
+            ) + interactions.get("responses", 0)
 
     spec = HeatmapMatrixSpec(
         viz_id="interactions.network.global",
@@ -136,7 +141,9 @@ def create_interaction_network_graph(
         return
 
     # Get all speakers
-    speakers = sorted(set(matrix.keys()) | {s for targets in matrix.values() for s in targets})
+    speakers = sorted(
+        set(matrix.keys()) | {s for targets in matrix.values() for s in targets}
+    )
     if not speakers:
         return
 
@@ -146,47 +153,57 @@ def create_interaction_network_graph(
         total = 0
         # Count outgoing interactions
         for target, interactions in matrix.get(speaker, {}).items():
-            total += interactions.get("interruptions", 0) + interactions.get("responses", 0)
+            total += interactions.get("interruptions", 0) + interactions.get(
+                "responses", 0
+            )
         # Count incoming interactions
         for source, targets in matrix.items():
             if speaker in targets:
-                total += targets[speaker].get("interruptions", 0) + targets[speaker].get("responses", 0)
+                total += targets[speaker].get("interruptions", 0) + targets[
+                    speaker
+                ].get("responses", 0)
         speaker_degrees[speaker] = total
 
     # Create nodes
     nodes = []
     for speaker in speakers:
         degree = speaker_degrees.get(speaker, 0)
-        nodes.append({
-            "id": speaker,
-            "label": speaker,
-            "size": max(20, min(100, degree * 5 + 20)),  # Scale node size
-        })
+        nodes.append(
+            {
+                "id": speaker,
+                "label": speaker,
+                "size": max(20, min(100, degree * 5 + 20)),  # Scale node size
+            }
+        )
 
     # Create edges (undirected, combining both directions)
     edges = []
     edge_weights = {}  # Track combined weights for undirected edges
-    
+
     for speaker_a, targets in matrix.items():
         for speaker_b, interactions in targets.items():
             # Combine responses and interruptions
-            weight = interactions.get("interruptions", 0) + interactions.get("responses", 0)
+            weight = interactions.get("interruptions", 0) + interactions.get(
+                "responses", 0
+            )
             if weight > 0:
                 # Use sorted pair as key for undirected edge
                 pair = tuple(sorted([speaker_a, speaker_b]))
                 if pair not in edge_weights:
                     edge_weights[pair] = 0
                 edge_weights[pair] += weight
-    
+
     # Create edges from combined weights
     for (speaker_a, speaker_b), weight in edge_weights.items():
         if weight > 0:
-            edges.append({
-                "source": speaker_a,
-                "target": speaker_b,
-                "weight": weight,
-                "label": f"res:{int(weight)}",
-            })
+            edges.append(
+                {
+                    "source": speaker_a,
+                    "target": speaker_b,
+                    "weight": weight,
+                    "label": f"res:{int(weight)}",
+                }
+            )
 
     if not edges:
         return
@@ -212,7 +229,9 @@ def create_interaction_heatmap(
     if not matrix or not output_service:
         return
 
-    all_speakers = sorted(set(matrix.keys()) | {s for targets in matrix.values() for s in targets})
+    all_speakers = sorted(
+        set(matrix.keys()) | {s for targets in matrix.values() for s in targets}
+    )
     if not all_speakers:
         return
 
@@ -353,12 +372,18 @@ def create_speaker_timeline_charts(
         other_map = {name: idx for idx, name in enumerate(other_speakers)}
 
         series = []
-        for interaction_type in ["interruption_overlap", "interruption_gap", "response"]:
+        for interaction_type in [
+            "interruption_overlap",
+            "interruption_gap",
+            "response",
+        ]:
             points = []
             for event, role in speaker_events:
                 if event.interaction_type != interaction_type:
                     continue
-                other_speaker = event.speaker_b if role == "initiated" else event.speaker_a
+                other_speaker = (
+                    event.speaker_b if role == "initiated" else event.speaker_a
+                )
                 points.append((event.timestamp / 60.0, other_map.get(other_speaker, 0)))
             if points:
                 series.append(

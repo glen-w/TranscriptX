@@ -1,4 +1,5 @@
 """Highlights configuration editor."""
+
 from typing import Any
 
 from transcriptx.cli.settings import settings_menu_loop  # type: ignore[import-untyped]

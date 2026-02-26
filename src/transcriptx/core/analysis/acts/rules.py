@@ -480,5 +480,3 @@ def enhanced_fallback_classification(
     if len(text.split()) > 3:
         return "statement"
     return "acknowledgement"
-
-

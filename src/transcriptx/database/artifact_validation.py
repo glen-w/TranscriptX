@@ -62,7 +62,9 @@ class ArtifactValidationService:
 
         expected_by_root: dict[Path, Set[str]] = {}
         for record in expected_records:
-            record_root = Path(record.artifact_root) if record.artifact_root else default_root
+            record_root = (
+                Path(record.artifact_root) if record.artifact_root else default_root
+            )
             expected_by_root.setdefault(record_root, set()).add(record.relative_path)
 
         file_paths_by_root: dict[Path, List[str]] = {}
@@ -73,9 +75,8 @@ class ArtifactValidationService:
         # Missing files and hash mismatch
         for record in expected_records:
             file_path = (
-                (Path(record.artifact_root) if record.artifact_root else default_root)
-                / record.relative_path
-            )
+                Path(record.artifact_root) if record.artifact_root else default_root
+            ) / record.relative_path
             if not file_path.exists():
                 report.p0_errors.append(f"Missing file: {record.relative_path}")
                 continue

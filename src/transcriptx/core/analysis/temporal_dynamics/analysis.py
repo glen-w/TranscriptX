@@ -27,6 +27,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_TEMPORAL_DASHBOARD,
     VIZ_TEMPORAL_DASHBOARD_SPEAKING_RATE,
 )
+from transcriptx.core.viz.axis_utils import time_axis_display
 from transcriptx.core.viz.specs import BarCategoricalSpec, LineTimeSeriesSpec
 
 logger = get_logger()
@@ -657,9 +658,10 @@ class TemporalDynamicsAnalysis(AnalysisModule):
             return
 
         # Extract time points and metrics
-        window_centers = [
+        window_centers_sec = [
             (w["window_start"] + w["window_end"]) / 2 for w in time_windows
         ]
+        x_display, x_label = time_axis_display(window_centers_sec)
 
         # Engagement score plot
         engagement_scores = [
@@ -673,12 +675,10 @@ class TemporalDynamicsAnalysis(AnalysisModule):
                 scope="global",
                 chart_intent="line_timeseries",
                 title="Engagement Over Time",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Engagement Score",
                 markers=True,
-                series=[
-                    {"name": "Engagement", "x": window_centers, "y": engagement_scores}
-                ],
+                series=[{"name": "Engagement", "x": x_display, "y": engagement_scores}],
             )
             output_service.save_chart(spec)
 
@@ -692,13 +692,13 @@ class TemporalDynamicsAnalysis(AnalysisModule):
                 scope="global",
                 chart_intent="line_timeseries",
                 title="Speaking Rate Over Time",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Speaking Rate (words/min)",
                 markers=True,
                 series=[
                     {
                         "name": "Speaking Rate",
-                        "x": window_centers,
+                        "x": x_display,
                         "y": speaking_rates,
                     }
                 ],
@@ -712,11 +712,12 @@ class TemporalDynamicsAnalysis(AnalysisModule):
             if w["metrics"].get("avg_sentiment") is not None
         ]
         if sentiment_values:
-            sentiment_times = [
+            sentiment_times_sec = [
                 (w["window_start"] + w["window_end"]) / 2
                 for w in time_windows
                 if w["metrics"].get("avg_sentiment") is not None
             ]
+            sentiment_x, _ = time_axis_display(sentiment_times_sec)
             spec = LineTimeSeriesSpec(
                 viz_id=VIZ_TEMPORAL_SENTIMENT_TIMESERIES,
                 module=self.module_name,
@@ -724,12 +725,10 @@ class TemporalDynamicsAnalysis(AnalysisModule):
                 scope="global",
                 chart_intent="line_timeseries",
                 title="Sentiment Over Time",
-                x_label="Time (seconds)",
+                x_label=x_label,
                 y_label="Average Sentiment",
                 markers=True,
-                series=[
-                    {"name": "Sentiment", "x": sentiment_times, "y": sentiment_values}
-                ],
+                series=[{"name": "Sentiment", "x": sentiment_x, "y": sentiment_values}],
             )
             output_service.save_chart(spec)
 
@@ -772,29 +771,25 @@ class TemporalDynamicsAnalysis(AnalysisModule):
     def _create_dashboard(
         self, time_windows: List[Dict[str, Any]], output_service: "OutputService"
     ) -> None:
-        """Create multi-metric dashboards (engagement/turn/segments in one chart;
-        speaking rate in a separate chart so scale is readable)."""
+        """Create multi-metric dashboards (turn frequency & num segments in one chart;
+        engagement and speaking rate on separate charts so scales are readable)."""
         if not time_windows:
             return
 
-        window_centers = [
+        window_centers_sec = [
             (w["window_start"] + w["window_end"]) / 2 for w in time_windows
         ]
-        # Engagement, turn frequency, num segments share a similar scale
+        x_display, x_label = time_axis_display(window_centers_sec)
+        # Turn frequency and num segments share a similar scale; engagement is 0–1 so it has its own chart
         series_metrics = [
             {
-                "name": "Engagement",
-                "x": window_centers,
-                "y": [w["metrics"].get("engagement_score", 0) for w in time_windows],
-            },
-            {
                 "name": "Turn Frequency",
-                "x": window_centers,
+                "x": x_display,
                 "y": [w["metrics"].get("turn_frequency", 0) for w in time_windows],
             },
             {
                 "name": "Num Segments",
-                "x": window_centers,
+                "x": x_display,
                 "y": [w["metrics"].get("num_segments", 0) for w in time_windows],
             },
         ]
@@ -804,8 +799,8 @@ class TemporalDynamicsAnalysis(AnalysisModule):
             name="temporal_dashboard",
             scope="global",
             chart_intent="line_timeseries",
-            title="Temporal Dynamics Dashboard",
-            x_label="Time (seconds)",
+            title="Temporal Dynamics Dashboard (Turn Frequency & Segments)",
+            x_label=x_label,
             y_label="Value",
             markers=True,
             series=series_metrics,
@@ -816,7 +811,7 @@ class TemporalDynamicsAnalysis(AnalysisModule):
         series_speaking_rate = [
             {
                 "name": "Speaking Rate",
-                "x": window_centers,
+                "x": x_display,
                 "y": [w["metrics"].get("speaking_rate", 0) for w in time_windows],
             },
         ]
@@ -827,7 +822,7 @@ class TemporalDynamicsAnalysis(AnalysisModule):
             scope="global",
             chart_intent="line_timeseries",
             title="Temporal Dynamics – Speaking Rate",
-            x_label="Time (seconds)",
+            x_label=x_label,
             y_label="Words per minute",
             markers=True,
             series=series_speaking_rate,

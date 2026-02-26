@@ -46,10 +46,11 @@ def test_save_events_json_adds_anchor_and_segment_ref(tmp_path: Path) -> None:
     assert payload[0]["status"] == "ok"
     assert "segment_ref" not in payload[1]
     assert "anchor" not in payload[1]
+
+
 from types import SimpleNamespace
 
-from transcriptx.core.io.events_io import load_events_json, save_events_json
-from transcriptx.core.models.events import Event
+from transcriptx.core.io.events_io import load_events_json
 
 
 def test_save_load_events_json_sorted(tmp_path):

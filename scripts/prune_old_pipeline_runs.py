@@ -29,7 +29,12 @@ from sqlalchemy.orm import joinedload
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.database import get_session, init_database
 from transcriptx.database.migrations import require_up_to_date_schema
-from transcriptx.database.models import ArtifactIndex, ModuleRun, PipelineRun, TranscriptFile
+from transcriptx.database.models import (
+    ArtifactIndex,
+    ModuleRun,
+    PipelineRun,
+    TranscriptFile,
+)
 
 
 @dataclass(frozen=True)
@@ -94,7 +99,11 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
 
 def _select_target_transcript_file_ids(
-    session, *, only_ids: List[int], file_name_contains: Optional[str], limit: Optional[int]
+    session,
+    *,
+    only_ids: List[int],
+    file_name_contains: Optional[str],
+    limit: Optional[int],
 ) -> List[int]:
     """
     Returns transcript_file_id values that have > 1 PipelineRun.
@@ -120,7 +129,8 @@ def _choose_keep_run(runs: List[PipelineRun]) -> PipelineRun:
     return sorted(
         runs,
         key=lambda r: (
-            r.created_at or datetime.min,  # created_at should exist; fallback keeps things sortable
+            r.created_at
+            or datetime.min,  # created_at should exist; fallback keeps things sortable
             r.id,
         ),
         reverse=True,
@@ -145,7 +155,9 @@ def _gather_artifacts_for_module_runs(
         if not row.artifact_root:
             continue
         artifacts.append(
-            ArtifactPath(artifact_root=row.artifact_root, relative_path=row.relative_path)
+            ArtifactPath(
+                artifact_root=row.artifact_root, relative_path=row.relative_path
+            )
         )
     return artifacts
 
@@ -180,7 +192,9 @@ def main(argv: Sequence[str]) -> int:
     session = get_session()
 
     outputs_root = Path(OUTPUTS_DIR).resolve()
-    print(f"DB cleanup: keep newest PipelineRun per transcript. outputs_root={outputs_root}")
+    print(
+        f"DB cleanup: keep newest PipelineRun per transcript. outputs_root={outputs_root}"
+    )
 
     if args.apply and not args.yes:
         print("ERROR: --apply requires --yes (safety).")
@@ -194,7 +208,9 @@ def main(argv: Sequence[str]) -> int:
             limit=args.limit,
         )
         if not transcript_ids:
-            print("Nothing to do: no transcripts have more than one PipelineRun (with current filters).")
+            print(
+                "Nothing to do: no transcripts have more than one PipelineRun (with current filters)."
+            )
             return 0
 
         total_runs_to_delete = 0
@@ -223,9 +239,8 @@ def main(argv: Sequence[str]) -> int:
             total_transcripts += 1
             total_runs_to_delete += len(delete_runs)
 
-            label = (
-                f"transcript_file_id={transcript_file_id}"
-                + (f" file_name={transcript_file.file_name}" if transcript_file else "")
+            label = f"transcript_file_id={transcript_file_id}" + (
+                f" file_name={transcript_file.file_name}" if transcript_file else ""
             )
             print(f"\n{label}")
             print(
@@ -245,7 +260,9 @@ def main(argv: Sequence[str]) -> int:
                     .all()
                 ]
                 delete_module_run_ids.update(module_ids)
-                artifact_candidates.extend(_gather_artifacts_for_module_runs(session, module_ids))
+                artifact_candidates.extend(
+                    _gather_artifacts_for_module_runs(session, module_ids)
+                )
 
             if args.apply:
                 # NOTE:
@@ -256,7 +273,9 @@ def main(argv: Sequence[str]) -> int:
 
         if not args.apply:
             print("\n---")
-            print(f"DRY-RUN summary: transcripts={total_transcripts}, pipeline_runs_to_delete={total_runs_to_delete}")
+            print(
+                f"DRY-RUN summary: transcripts={total_transcripts}, pipeline_runs_to_delete={total_runs_to_delete}"
+            )
             if args.delete_files:
                 print(
                     f"DRY-RUN note: would also consider deleting up to {len(artifact_candidates)} artifact records' files (reference-counted)."
@@ -265,10 +284,14 @@ def main(argv: Sequence[str]) -> int:
 
         # Apply DB deletions (SQL DELETE; relies on ON DELETE CASCADE for module_runs/artifacts).
         if run_ids_to_delete:
-            session.execute(delete(PipelineRun).where(PipelineRun.id.in_(run_ids_to_delete)))
+            session.execute(
+                delete(PipelineRun).where(PipelineRun.id.in_(run_ids_to_delete))
+            )
         session.commit()
         print("\n---")
-        print(f"DB delete committed: transcripts={total_transcripts}, pipeline_runs_deleted={total_runs_to_delete}")
+        print(
+            f"DB delete committed: transcripts={total_transcripts}, pipeline_runs_deleted={total_runs_to_delete}"
+        )
 
         # Optional: delete artifact files on disk (only if unreferenced).
         if args.delete_files and artifact_candidates:
@@ -324,4 +347,3 @@ def main(argv: Sequence[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
-

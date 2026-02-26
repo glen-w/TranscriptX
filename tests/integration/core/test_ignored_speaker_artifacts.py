@@ -35,9 +35,13 @@ def test_ignored_speaker_creates_no_speaker_artifacts(
     monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
     monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(transcript_output_module, "OUTPUTS_DIR", str(outputs_root))
-    monkeypatch.setattr(transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root))
+    monkeypatch.setattr(
+        transcript_output_module, "DIARISED_TRANSCRIPTS_DIR", str(transcripts_root)
+    )
     monkeypatch.setattr(pipeline_module, "OUTPUTS_DIR", str(outputs_root))
 
     transcript_path = transcripts_root / "ignored_transcript.json"

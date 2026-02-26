@@ -131,13 +131,17 @@ class TranscriptionConfig:
     batch_size: int = 16
     diarize: bool = True
     min_speakers: int = 1
-    max_speakers: Optional[int] = None  # None = no limit
+    max_speakers: Optional[int] = 20  # None = no limit
     model_download_policy: Literal["anonymous", "require_token"] = "require_token"
     huggingface_token: str = ""
 
     def __post_init__(self) -> None:
         # Back-compat: older configs may store null or "auto".
-        if self.language is None or str(self.language).strip().lower() in {"", "auto", "none"}:
+        if self.language is None or str(self.language).strip().lower() in {
+            "",
+            "auto",
+            "none",
+        }:
             self.language = "en"
 
 
@@ -152,6 +156,9 @@ class InputConfig:
     prefill_rename_with_date_prefix: bool = True
     # How to choose file selection UI: "prompt" = ask each time; "explore" = file browser; "direct" = type path
     file_selection_mode: Literal["prompt", "explore", "direct"] = "prompt"
+    # Playback skip amounts (seconds) in file selection TUI: short (,/.) and long ([/])
+    playback_skip_seconds_short: float = 10.0
+    playback_skip_seconds_long: float = 60.0
 
 
 @dataclass

@@ -12,8 +12,11 @@ from typing import Optional
 from transcriptx.core.transcription import run_whisperx_compose
 from transcriptx.core.transcription_runtime import (
     check_whisperx_compose_service,
+    get_docker_whisperx_status,
     start_whisperx_compose_service,
 )
+from rich import print as rprint
+
 from transcriptx.core.utils.logger import get_logger, log_error
 from transcriptx.cli.transcription_utils_compose import wait_for_whisperx_service
 
@@ -21,12 +24,9 @@ logger = get_logger()
 
 
 def _has_hf_token(config: object | None) -> bool:
-    token = ""
-    if config and hasattr(config, "transcription"):
-        token = getattr(config.transcription, "huggingface_token", "") or ""
-    if not token:
-        token = os.getenv("TRANSCRIPTX_HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or ""
-    return bool(token.strip())
+    from transcriptx.core.utils.hf_token import resolve_hf_token
+
+    return bool(resolve_hf_token(config).strip())
 
 
 def transcribe_with_whisperx(
@@ -55,6 +55,8 @@ def transcribe_with_whisperx(
         if not check_whisperx_compose_service():
             logger.info("WhisperX service not running, attempting to start")
             if not start_whisperx_compose_service():
+                status, msg = get_docker_whisperx_status()
+                rprint(f"\n[red]❌ {msg}[/red]")
                 log_error(
                     "TRANSCRIPTION",
                     "Failed to start WhisperX service",
@@ -66,6 +68,8 @@ def transcribe_with_whisperx(
         if not wait_for_whisperx_service(timeout=30):
             logger.warning("WhisperX service may not be stable, attempting to restart")
             if not start_whisperx_compose_service():
+                status, msg = get_docker_whisperx_status()
+                rprint(f"\n[red]❌ {msg}[/red]")
                 log_error(
                     "TRANSCRIPTION",
                     "Failed to start WhisperX service after wait",
@@ -75,6 +79,8 @@ def transcribe_with_whisperx(
 
         # Final verification
         if not check_whisperx_compose_service():
+            status, msg = get_docker_whisperx_status()
+            rprint(f"\n[red]❌ {msg}[/red]")
             log_error(
                 "TRANSCRIPTION",
                 "WhisperX service is not ready",
@@ -84,7 +90,11 @@ def transcribe_with_whisperx(
 
         # If diarization is requested but no HF token is available, ask user.
         diarize_restore = None
-        if config and getattr(config.transcription, "diarize", True) and not _has_hf_token(config):
+        if (
+            config
+            and getattr(config.transcription, "diarize", True)
+            and not _has_hf_token(config)
+        ):
             if prompt_for_diarization:
                 import questionary
 

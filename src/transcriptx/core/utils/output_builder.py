@@ -10,7 +10,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.artifact_writer import write_json, write_text
+from transcriptx.core.utils.artifact_writer import write_json
 
 logger = get_logger()
 

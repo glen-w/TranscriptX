@@ -26,7 +26,9 @@ class SentimentDataExtractor(BaseDataExtractor):
     def __init__(self):
         super().__init__("sentiment")
 
-    def extract_data(self, analysis_results: Dict[str, Any], speaker_id: str) -> Dict[str, Any]:
+    def extract_data(
+        self, analysis_results: Dict[str, Any], speaker_id: str
+    ) -> Dict[str, Any]:
         try:
             speaker_id_int = int(speaker_id)
         except Exception:
@@ -118,7 +120,9 @@ class SentimentDataExtractor(BaseDataExtractor):
 
         return sentiment_data
 
-    def validate_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> bool:
+    def validate_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> bool:
         """
         Validate extracted sentiment data.
 
@@ -137,7 +141,9 @@ class SentimentDataExtractor(BaseDataExtractor):
             self.logger.error(f"Sentiment data validation failed: {e.message}")
             raise
 
-    def transform_data(self, data: Dict[str, Any], speaker_id: str | None = None) -> Dict[str, Any]:
+    def transform_data(
+        self, data: Dict[str, Any], speaker_id: str | None = None
+    ) -> Dict[str, Any]:
         """
         Transform sentiment data for database storage.
 

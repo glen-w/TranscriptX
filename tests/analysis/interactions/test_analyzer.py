@@ -21,7 +21,8 @@ def _segment(idx: int, speaker: str, start: float, end: float) -> dict:
 
 def test_detects_overlap_and_response(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "transcriptx.core.analysis.interactions.analyzer.notify_user", lambda *args, **kwargs: None
+        "transcriptx.core.analysis.interactions.analyzer.notify_user",
+        lambda *args, **kwargs: None,
     )
     analyzer = SpeakerInteractionAnalyzer(
         overlap_threshold=0.5,
@@ -43,7 +44,8 @@ def test_detects_overlap_and_response(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_skips_short_segments(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "transcriptx.core.analysis.interactions.analyzer.notify_user", lambda *args, **kwargs: None
+        "transcriptx.core.analysis.interactions.analyzer.notify_user",
+        lambda *args, **kwargs: None,
     )
     analyzer = SpeakerInteractionAnalyzer(min_segment_length=1.0)
     segments = [

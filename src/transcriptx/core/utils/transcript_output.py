@@ -79,10 +79,9 @@ def generate_human_friendly_transcript(
         from transcriptx.utils.text_utils import is_named_speaker
 
         unique_speakers = get_unique_speakers(segments)
-        speaker_names = sorted([
-            name for name in set(unique_speakers.values())
-            if is_named_speaker(name)
-        ])
+        speaker_names = sorted(
+            [name for name in set(unique_speakers.values()) if is_named_speaker(name)]
+        )
 
         summary_data = {
             "transcript_file": txt_path,

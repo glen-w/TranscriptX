@@ -103,11 +103,11 @@ def _try_install_package(
         else:
             cmd = [sys.executable, "-m", "pip", "install", target]
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=300
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             if result.returncode != 0:
-                err = (result.stderr or result.stdout or "").strip() or f"pip exit code {result.returncode}"
+                err = (
+                    result.stderr or result.stdout or ""
+                ).strip() or f"pip exit code {result.returncode}"
                 return (False, err)
             importlib.invalidate_caches()
             try:
@@ -141,41 +141,76 @@ def _try_install_package(
     return (False, err)
 
 
+def _core_mode() -> bool:
+    """True if core mode is on (no auto-install). Resolve from env then config."""
+    env_val = os.getenv("TRANSCRIPTX_CORE")
+    if env_val is not None:
+        return str(env_val).strip().lower() in ("1", "true", "yes", "on")
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        return get_config().core_mode
+    except Exception:
+        return True  # safe default: no auto-install
+
+
 def optional_import(
-    module_name: str, purpose: str, extra: Optional[str] = None, auto_install: bool = False
+    module_name: str,
+    purpose: str,
+    extra: Optional[str] = None,
+    auto_install: bool = False,
 ) -> Any:
     """
     Optional import with a consistent error message and install hint.
-    
+
+    When auto_install=True, extra must be provided so the install command is transcriptx[extra].
+    When core_mode is True (or TRANSCRIPTX_CORE=1), auto_install is never performed.
+
     Args:
         module_name: Name of the module to import
         purpose: Description of what the module is used for
-        extra: Optional extra name for pip install transcriptx[extra]
-        auto_install: If True, attempt to install the package if import fails
-    
+        extra: Extra name for pip install transcriptx[extra]; required when auto_install=True
+        auto_install: If True and not core_mode, attempt to install the package if import fails
+
     Returns:
         The imported module
-    
+
     Raises:
-        ImportError: If the module cannot be imported (and auto_install is False or fails)
+        ImportError: If the module cannot be imported (and auto_install is False or fails or core_mode)
     """
     try:
         return lazy_import(module_name)
     except ImportError as exc:
         extra_install_msg = ""
         if auto_install:
-            package_name = module_name.split(".")[0]  # e.g., "playwright.sync_api" -> "playwright"
-            ok, install_err = _try_install_package(package_name, module_name, purpose, extra)
-            if ok:
-                try:
-                    return lazy_import(module_name)
-                except ImportError:
-                    pass
-            elif install_err:
-                extra_install_msg = f" Auto-install failed: {install_err}"
-        extra_msg = (
-            f" Install with: pip install transcriptx[{extra}]" if extra else ""
-        )
+            if not extra:
+                raise ValueError(
+                    "optional_import(..., auto_install=True) requires extra= so the install command is transcriptx[extra]"
+                ) from exc
+            if _core_mode():
+                extra_install_msg = " (core mode: auto-install disabled)"
+            elif os.getenv("TRANSCRIPTX_NO_AUTO_INSTALL", "").strip().lower() in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            ):
+                extra_install_msg = (
+                    " (TRANSCRIPTX_NO_AUTO_INSTALL: auto-install disabled)"
+                )
+            else:
+                package_name = module_name.split(".")[0]
+                ok, install_err = _try_install_package(
+                    package_name, module_name, purpose, extra
+                )
+                if ok:
+                    try:
+                        return lazy_import(module_name)
+                    except ImportError:
+                        pass
+                elif install_err:
+                    extra_install_msg = f" Auto-install failed: {install_err}"
+        extra_msg = f" Install with: pip install transcriptx[{extra}]" if extra else ""
         raise ImportError(
             f"{module_name} is required for {purpose}.{extra_msg}{extra_install_msg}"
         ) from exc
@@ -195,11 +230,13 @@ def lazy_pyplot() -> Any:
 
 
 def get_torch() -> Any:
-    return optional_import("torch", "ML models", "emotion")
+    return optional_import("torch", "ML models", "emotion", auto_install=True)
 
 
 def get_transformers() -> Any:
-    return optional_import("transformers", "transformer models", "emotion")
+    return optional_import(
+        "transformers", "transformer models", "emotion", auto_install=True
+    )
 
 
 def get_matplotlib_pyplot() -> Any:
@@ -249,13 +286,13 @@ def get_geopy() -> Any:
 def _check_playwright_browser_installed() -> bool:
     """
     Check if Playwright Chromium browser is installed without installing it.
-    
+
     Returns:
         True if browser is available, False otherwise
     """
     try:
         from playwright.sync_api import sync_playwright
-        
+
         # Lightweight check: try to get browser executable path
         # This doesn't launch a browser, just checks if it's installed
         try:
@@ -268,7 +305,7 @@ def _check_playwright_browser_installed() -> bool:
         except Exception:
             # Browser not found or not installed
             pass
-        
+
         return False
     except ImportError:
         # Playwright module itself is not available
@@ -278,36 +315,38 @@ def _check_playwright_browser_installed() -> bool:
 def _ensure_playwright_browser_installed(silent: bool = False) -> bool:
     """
     Ensure Playwright Chromium browser is installed.
-    
+
     This function checks if the Chromium browser is available and installs it
     if needed. It uses a lightweight check before attempting installation.
-    
+
     Args:
         silent: If True, suppress success messages (only show warnings/errors)
-    
+
     Returns:
         True if browser is available (or was successfully installed), False otherwise
     """
     try:
         from playwright.sync_api import sync_playwright
-        
+
         # Check if browser is already installed
         if _check_playwright_browser_installed():
             return True
-        
+
         # Browser not found, try to install it
         try:
             if not silent:
-                print("Installing Playwright Chromium browser (this may take a few minutes)...")
+                print(
+                    "Installing Playwright Chromium browser (this may take a few minutes)..."
+                )
             install_cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
             result = subprocess.run(
-                install_cmd, 
-                capture_output=True, 
-                text=True, 
+                install_cmd,
+                capture_output=True,
+                text=True,
                 timeout=600,  # 10 minute timeout
-                check=False
+                check=False,
             )
-            
+
             if result.returncode == 0:
                 if not silent:
                     print("Playwright Chromium browser installed successfully.")
@@ -317,14 +356,16 @@ def _ensure_playwright_browser_installed(silent: bool = False) -> bool:
             else:
                 stderr_msg = result.stderr.strip() if result.stderr else "Unknown error"
                 if not silent:
-                    print(f"Warning: Playwright browser installation failed: {stderr_msg}")
+                    print(
+                        f"Warning: Playwright browser installation failed: {stderr_msg}"
+                    )
         except subprocess.TimeoutExpired:
             if not silent:
                 print("Warning: Playwright browser installation timed out.")
         except Exception as e:
             if not silent:
                 print(f"Warning: Failed to install Playwright browser: {e}")
-        
+
         return False
     except ImportError:
         # Playwright module itself is not available
@@ -334,28 +375,30 @@ def _ensure_playwright_browser_installed(silent: bool = False) -> bool:
 def get_playwright_sync_api(silent: bool = False) -> Any:
     """
     Get the sync_playwright function from playwright.sync_api.
-    
+
     This function:
     1. Lazily imports playwright with auto-installation support
     2. Attempts to ensure Chromium browser is installed at runtime
     3. Returns the sync_playwright function (or None if playwright cannot be imported)
-    
+
     Args:
         silent: If True, suppress installation messages (only show warnings/errors)
-    
+
     Note: Even if browser installation fails, the function is still returned.
     The calling code should handle browser launch failures gracefully.
-    
+
     Returns:
         The sync_playwright function, or None if playwright module is unavailable
     """
     try:
         # Try to import with auto-installation
-        sync_api = optional_import("playwright.sync_api", "HTML rendering", "maps", auto_install=True)
-        
+        sync_api = optional_import(
+            "playwright.sync_api", "HTML rendering", "maps", auto_install=True
+        )
+
         # Attempt to ensure browser is installed (non-blocking - will warn if fails)
         _ensure_playwright_browser_installed(silent=silent)
-        
+
         # Return the function - calling code will handle browser launch failures
         return sync_api.sync_playwright
     except ImportError:
@@ -365,13 +408,13 @@ def get_playwright_sync_api(silent: bool = False) -> Any:
 def ensure_playwright_ready(silent: bool = False) -> bool:
     """
     Ensure Playwright package and browser are ready for use.
-    
+
     This function can be called at startup to proactively install Playwright
     if needed, avoiding warnings during analysis.
-    
+
     Args:
         silent: If True, suppress installation messages (only show warnings/errors)
-    
+
     Returns:
         True if Playwright is ready, False otherwise
     """
@@ -385,17 +428,14 @@ def ensure_playwright_ready(silent: bool = False) -> bool:
         return False
 
 
-def get_convokit() -> Any:
-    """Get the convokit module with runtime installation support."""
-    return optional_import("convokit", "ConvoKit analysis", "convokit", auto_install=True)
-
-
 def get_reportlab() -> Any:
     """
     Get the reportlab package for PDF generation (e.g. summary all-charts PDF).
     Lazy-loaded; attempts auto-install if missing.
     """
-    return optional_import("reportlab", "PDF generation (summary charts)", None, auto_install=True)
+    return optional_import(
+        "reportlab", "PDF generation (summary charts)", "visualization"
+    )
 
 
 def ensure_pdf_ready(silent: bool = False) -> bool:
@@ -418,4 +458,3 @@ def ensure_pdf_ready(silent: bool = False) -> bool:
         if not silent:
             print(f"Warning: PDF dependencies not available: {e}")
         return False
-

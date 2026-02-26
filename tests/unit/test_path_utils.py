@@ -9,7 +9,9 @@ from transcriptx.core.utils import _path_core
 
 
 def test_get_canonical_base_name_strips_suffixes() -> None:
-    assert _path_core.get_canonical_base_name("/tmp/meeting_transcript.json") == "meeting"
+    assert (
+        _path_core.get_canonical_base_name("/tmp/meeting_transcript.json") == "meeting"
+    )
     assert (
         _path_core.get_canonical_base_name("/tmp/session_transcript_diarised.json")
         == "session"
@@ -40,4 +42,7 @@ def test_get_enriched_transcript_path_uses_standard_layout(
         "global",
         "meeting_with_sentiment.json",
     )
-    assert _path_core.get_enriched_transcript_path(transcript_path, "sentiment") == expected
+    assert (
+        _path_core.get_enriched_transcript_path(transcript_path, "sentiment")
+        == expected
+    )

@@ -26,9 +26,13 @@ def test_voice_charts_core_outputs(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(output_dir / "groups"))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(output_dir))
     monkeypatch.setattr(
-        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(tmp_path / "transcripts")
+        output_standards_module,
+        "DIARISED_TRANSCRIPTS_DIR",
+        str(tmp_path / "transcripts"),
     )
-    monkeypatch.setattr("transcriptx.core.utils.output_standards.OUTPUTS_DIR", str(output_dir))
+    monkeypatch.setattr(
+        "transcriptx.core.utils.output_standards.OUTPUTS_DIR", str(output_dir)
+    )
 
     context = PipelineContext(str(transcript_path), output_dir=str(output_dir))
 
@@ -110,13 +114,20 @@ def test_voice_charts_core_missing_inputs_skips(tmp_path: Path, monkeypatch) -> 
     monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(output_dir / "groups"))
     monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(output_dir))
     monkeypatch.setattr(
-        output_standards_module, "DIARISED_TRANSCRIPTS_DIR", str(tmp_path / "transcripts")
+        output_standards_module,
+        "DIARISED_TRANSCRIPTS_DIR",
+        str(tmp_path / "transcripts"),
     )
-    monkeypatch.setattr("transcriptx.core.utils.output_standards.OUTPUTS_DIR", str(output_dir))
+    monkeypatch.setattr(
+        "transcriptx.core.utils.output_standards.OUTPUTS_DIR", str(output_dir)
+    )
 
     context = PipelineContext(str(transcript_path), output_dir=str(output_dir))
     result = VoiceChartsCoreAnalysis().run_from_context(context)
     payload = result.get("payload") or result.get("results") or {}
     assert result.get("status") == "success"
     assert payload.get("status") == "skipped"
-    assert payload.get("skipped_reason") in {"no_voice_features", "missing_optional_deps"}
+    assert payload.get("skipped_reason") in {
+        "no_voice_features",
+        "missing_optional_deps",
+    }
