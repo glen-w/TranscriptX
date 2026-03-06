@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+# User data and outputs (never commit)
+data/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# IDE
+.cursor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+
+# Testing and coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.test_outputs/
+
+# Build and dist
+dist/
+build/
+*.manifest
+
+# App runtime state
+.transcriptx/
+processing_state/
+transcriptx_data/
+nltk_data/
+whisperx.env
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+
+# Project-specific
+README backup.md
+.cursor/commands/backup.md
+.cursor/commands/cleanup.md
+.cursor/commands/docs.md
+.cursor/commands/export-exemplars.md
+.cursor/commands/pre-release.md
+.cursor/commands/prune.md
+.cursor/commands/refactor.md
+.cursor/commands/tests.md

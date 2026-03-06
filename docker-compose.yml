@@ -1,0 +1,107 @@
+# TranscriptX: recommended way to run with Docker (primary install route).
+# Volume layout: mount ./data so container sees /data/transcripts, /data/outputs, etc.
+# Non-root: transcriptx service runs as host user (UID/GID) so /data is writable; see docs/docker.md.
+#
+# Interactive CLI (arrow keys and menus need a real TTY — use run with -it):
+#   docker compose run -it --rm transcriptx   # recommended: full terminal (arrow keys work)
+#   docker compose run --rm transcriptx      # no -it: menu may disappear on first arrow key
+#   docker compose up transcriptx             # no TTY; use run -it for interactive menu
+# Web only:  docker compose up transcriptx-web
+# Speaker Studio (instant playback):  docker compose up transcriptx-studio  → http://localhost:8502
+# Both:      docker compose up -d transcriptx-web && docker compose up transcriptx
+
+services:
+  transcriptx:
+    build: .
+    image: transcriptx:latest
+    init: true
+    tty: true
+    stdin_open: true
+    restart: "no"
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /data
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/data
+      - transcriptx_cache:/home/transcriptx/.cache
+      # Optional: mount external libraries (then set env vars below)
+      # - /host/recordings:/recordings
+      # - /host/transcripts:/transcripts
+    environment:
+      - TERM=xterm-256color
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
+      # Audio playback in Docker: segments are exported here; play the WAV on your host
+      - TRANSCRIPTX_PLAYBACK_EXPORT_DIR=${TRANSCRIPTX_PLAYBACK_EXPORT_DIR:-/data/playback-clips}
+      # Use /data for caches so host user (UID:GID) can write; /home/transcriptx/.cache can be unwritable
+      - HF_HOME=/data/.cache/huggingface
+      - MPLCONFIGDIR=/data/.cache/matplotlib
+      - NLTK_DATA=/opt/venv/nltk_data
+      # When using external library mounts above, set:
+      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
+      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
+    command: ["interactive"]
+    # One-off: docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm
+
+  transcriptx-web:
+    build: .
+    image: transcriptx:latest
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    environment:
+      - HOME=/tmp/streamlit_home
+      - MPLCONFIGDIR=/tmp/mpl
+      - HF_HOME=/tmp/hf
+      - TRANSCRIPTX_CACHE_DIR=/tmp/transcriptx_cache
+      - TRANSCRIPTX_DATA_DIR=/tmp/data
+      - TRANSCRIPTX_PROFILES_DIR=/tmp/profiles
+      - NLTK_DATA=/tmp/nltk
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-1}
+    volumes:
+      - transcriptx_web_data:/tmp/data
+      - ./data/transcripts:/tmp/data/transcripts:ro
+      - ./data/outputs:/tmp/data/outputs:ro
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    command: ["web-viewer", "--host", "0.0.0.0"]
+
+  transcriptx-studio:
+    build: .
+    image: transcriptx:latest
+    init: true
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - transcriptx_cache:/home/transcriptx/.cache
+    ports:
+      - "8502:8502"
+    environment:
+      - TRANSCRIPTX_DATA_DIR=/data
+      - TRANSCRIPTX_ENABLE_SPEAKER_STUDIO=1
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - NLTK_DATA=/opt/venv/nltk_data
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-1}
+      - HF_HOME=/data/.cache/huggingface
+      - MPLCONFIGDIR=/data/.cache/matplotlib
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8502/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    command: ["web-viewer", "--host", "0.0.0.0", "--port", "8502"]
+
+volumes:
+  transcriptx_web_data:
+  transcriptx_cache:

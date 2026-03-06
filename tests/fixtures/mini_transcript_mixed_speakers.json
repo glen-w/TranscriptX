@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "title": "Mixed speakers fixture",
+    "language": "en",
+    "segment_count": 8,
+    "speaker_count": 4
+  },
+  "segments": [
+    {"start": 0.0, "end": 2.0, "speaker": "Alice", "text": "First from Alice."},
+    {"start": 2.0, "end": 4.0, "speaker": "Bob", "text": "Bob here."},
+    {"start": 4.0, "end": 6.0, "speaker": "SPEAKER_00", "text": "Unidentified one."},
+    {"start": 6.0, "end": 8.0, "speaker": "SPEAKER_01", "text": "Another unidentified."},
+    {"start": 8.0, "end": 10.0, "speaker": "Alice", "text": "Alice again."},
+    {"start": 10.0, "end": 12.0, "speaker": "Bob", "text": "Bob again."},
+    {"start": 12.0, "end": 14.0, "speaker": "SPEAKER_00", "text": "SPEAKER_00 second."},
+    {"start": 14.0, "end": 16.0, "speaker": "SPEAKER_01", "text": "SPEAKER_01 second."}
+  ]
+}

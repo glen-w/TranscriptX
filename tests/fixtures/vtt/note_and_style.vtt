@@ -1,0 +1,12 @@
+WEBVTT
+
+NOTE This is a note block
+NOTE It should be skipped
+
+STYLE
+::cue {
+  color: white;
+}
+
+00:00:00.000 --> 00:00:05.500
+Actual subtitle text

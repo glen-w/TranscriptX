@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "type": "manual",
+    "original_path": "example.wav",
+    "imported_at": "2026-02-26T12:00:00Z"
+  },
+  "metadata": {
+    "duration_seconds": 30.0,
+    "segment_count": 4,
+    "speaker_count": 2
+  },
+  "segments": [
+    {"start": 0.0, "end": 8.0, "speaker": "Alice", "text": "Welcome to the meeting. Let's discuss the quarterly results."},
+    {"start": 8.0, "end": 16.0, "speaker": "Bob", "text": "Thanks Alice. Revenue is up fifteen percent compared to last quarter."},
+    {"start": 16.0, "end": 24.0, "speaker": "Alice", "text": "That's great news. What about the customer satisfaction scores?"},
+    {"start": 24.0, "end": 30.0, "speaker": "Bob", "text": "Satisfaction improved across the board. I'll share the full report after this."}
+  ]
+}
