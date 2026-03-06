@@ -17,17 +17,17 @@
 - Stability over novelty: contracts + tests before new features
 - Observable outputs: every module produces machine-readable artifacts
 - Deferred platformisation: adapters/plugins are designed, not prematurely built
-- Low-regret UX: CLI is the canonical execution surface; Web Viewer is first-class for read-only exploration (see [CLI/GUI Strategy](CLI_GUI_STRATEGY.md))
+- Low-regret UX: GUI is the primary interface; CLI provides equivalent capabilities for scripting and automation
 
 ---
 
-## Product direction (CLI-first)
+## Product direction
 
-The CLI remains the canonical execution surface; the Web Viewer is a read-only gallery. See [CLI/GUI Strategy](CLI_GUI_STRATEGY.md) for boundaries and guardrails. The following horizons guide prioritization without adding new product commitments.
+The GUI (Streamlit) is the primary interface for interactive use; the CLI provides equivalent capabilities for scripting, automation, and CI. The following horizons guide prioritization without adding new product commitments.
 
 **Near-term (v0.1 – v0.41)**
 
-- Harden CLI experience
+- Harden GUI and CLI experience
 - Improve run summaries and explainability
 - Improve speaker identification workflow
 - Improve installation reliability
@@ -35,9 +35,8 @@ The CLI remains the canonical execution surface; the Web Viewer is a read-only g
 
 **Later (v0.3+)**
 
-- Enhanced Web Viewer capabilities: run comparison, artifact filtering, group-level browsing
-- Potential GUI for complex editing workflows (e.g. advanced speaker curation)
-- No commitment to full GUI replacement of CLI
+- Enhanced GUI capabilities: run comparison, artifact filtering, richer visualizations
+- Deeper cross-session and longitudinal views in the GUI
 
 ---
 
@@ -48,7 +47,7 @@ The CLI remains the canonical execution surface; the Web Viewer is a read-only g
 **Goal:** Install, core flows, and docs work for a beta user with no bugs.
 
 - Install path: one canonical sequence (venv → requirements.txt → pip install -e .); script and README aligned
-- Core flows: interactive CLI, web-viewer, analyze (single + non-interactive), groups — all run and produce outputs
+- Core flows: GUI, interactive CLI, analyze (single + non-interactive), groups — all run and produce outputs
 - Docs: README Quickstart, manual install, verify-install step, env vars, troubleshooting
 - Dependencies: version consistency (requirements.txt, lock, launcher, CI)
 - CI: smoke, contracts, fast gates pass; build_sanity validates “install then run”
@@ -65,10 +64,10 @@ TranscriptX is analysis-only; transcription is external (see [DECISIONS.md](DECI
 
 ### Phase 2 — UX + stability (next)
 
-**Goal:** CLI and Web Viewer feel intentional; outputs and contracts are solid.
+**Goal:** GUI and CLI feel intentional; outputs and contracts are solid.
 
 - UX v1: CLI ergonomics (fast file selection, progress, clear errors)
-- Web Viewer parity and guardrails (probe-gated startup, canonical paths, read-only viewer)
+- GUI polish and guardrails (probe-gated startup, canonical paths)
 - Stats consolidation (unified stats MD/JSON, module status table)
 - Contract tests and output schema stability
 - Internal cleanup: error types, pipeline failure semantics, config/secrets via env only
@@ -79,7 +78,7 @@ TranscriptX is analysis-only; transcription is external (see [DECISIONS.md](DECI
 
 **Goal:** Richer analysis and tooling without blocking beta or stability.
 
-- **Longitudinal speaker tracking v1 and v2** — including **web visualization** (speaker-over-time charts, cross-session views). Current `transcriptx cross-session` and `transcriptx database` commands remain **CLI-only**; no Web Viewer for speaker-over-time or DB-backed analytics yet.
+- **Longitudinal speaker tracking v1 and v2** — including **web visualization** (speaker-over-time charts, cross-session views). Richer speaker-over-time and DB-backed analytics views are planned.
 - Emotion/sentiment convergence (multi-label, tension metrics, divergence summaries)
 - NER-driven insight (entity–sentiment, concordance, timelines)
 - Interaction and network analysis (graphs, network outputs)
@@ -92,8 +91,8 @@ TranscriptX is analysis-only; transcription is external (see [DECISIONS.md](DECI
 
 The following are explicitly **not** part of the beta-ready scope; they are planned for a later release:
 
-- **Longitudinal speaker identity with web visualization** — speaker-over-time charts, cross-session views, and richer DB-backed analytics in the Web Viewer. The CLI commands (`transcriptx cross-session`, `transcriptx database`) exist and are CLI-only; visualization and full DB UX are deferred.
-- Database and cross-session speaker commands are available today (CLI only). Speaker-over-time **visualization** and full database-backed analytics are planned for a later release.
+- **Longitudinal speaker identity with visualization** — speaker-over-time charts, cross-session views, and richer DB-backed analytics.
+- Speaker-over-time **visualization** and full database-backed analytics are planned for a later release.
 
 ### ConvoKit analysis (archived)
 
@@ -108,7 +107,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 ## Milestones (reference)
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
-- **M2:** UX v1 — CLI and Web Viewer parity (Phase 2)
+- **M2:** UX v1 — GUI and CLI parity (Phase 2)
 - **M3:** v0.42 — current release; calmer architecture (Phase 2 + selected Phase 3 items)
 
 ---
@@ -148,7 +147,7 @@ The following sprint plan is kept for reference. **Sprints 4 and 10 (Longitudina
 
 ---
 
-### Sprint 2 (Weeks 3–4) — **UX v1 (CLI-first)**
+### Sprint 2 (Weeks 3–4) — **UX v1**
 **Goal:** make TranscriptX feel intentional to use (fast menus, clear progress, predictable errors).
 
 **CLI ergonomics**
@@ -166,18 +165,17 @@ The following sprint plan is kept for reference. **Sprints 4 and 10 (Longitudina
 
 ---
 
-### Sprint 3 (Weeks 5–6) — **Web Viewer Parity + Guardrails**
-**Goal:** Web Viewer mirrors CLI capabilities safely (no surprise subprocesses).
+### Sprint 3 (Weeks 5–6) — **GUI Polish + Guardrails**
+**Goal:** GUI workflows are robust and predictable.
 
 - [ ] Engine forcing (`auto | whisperx`) wired end-to-end (not cosmetic)
 - [ ] Probe-gated startup (if WhisperX unavailable, show start command; don’t spawn)
 - [ ] Display canonical output paths in UI
-- [ ] Read-only viewer mode for existing transcripts (no side effects)
 
 ---
 
 ### Sprint 4 (Weeks 7–8) — **Longitudinal Speaker Tracking v1 (Backlog / Phase 3)**
-**Goal:** track speakers *across transcripts*, conservatively and reversibly. **Deferred:** CLI layer exists; **web visualization** (speaker-over-time, cross-session views) is planned for later.
+**Goal:** track speakers *across transcripts*, conservatively and reversibly. **Deferred:** speaker-over-time and cross-session visualization is planned for later.
 
 **Data model + storage**
 - [ ] Define persistent `SpeakerIdentity` model (stable ID across runs)
@@ -249,12 +247,12 @@ The following sprint plan is kept for reference. **Sprints 4 and 10 (Longitudina
 ---
 
 ### Sprint 10 (Weeks 19–20) — **Longitudinal Speaker Tracking v2 (Backlog / Phase 3)**
-**Goal:** make identity usable *and* safe; **web visualization** (speaker-over-time, uncertain matches) deferred to later.
+**Goal:** make identity usable *and* safe; speaker-over-time visualization deferred to later.
 
 - [ ] Manual merge/split tooling (CLI + optional UI hooks)
 - [ ] Confidence scoring + provenance (why a match was made)
 - [ ] Stats aggregation per speaker over time
-- [ ] Visual indicators for uncertain matches (CLI first; Web Viewer later)
+- [ ] Visual indicators for uncertain matches
 
 ---
 
@@ -294,5 +292,5 @@ The following sprint plan is kept for reference. **Sprints 4 and 10 (Longitudina
 - A serious researcher can trust the outputs and cite the artifacts
 - Stats outputs are coherent (MD + JSON) and stable across versions
 - Adding a new analysis module feels low-risk
-- CLI and DB layer for speaker identity exist and do not corrupt data; **visualization** (speaker-over-time, cross-session views in Web Viewer) is deferred to a later release
+- GUI and CLI for speaker identity exist and do not corrupt data; richer speaker-over-time visualization is deferred to a later release
 - You still enjoy working on the codebase

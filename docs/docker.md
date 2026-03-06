@@ -1,6 +1,6 @@
 # Docker
 
-**Docker Compose is the recommended way** to run TranscriptX in containers (no local Python required). The same CLI and Streamlit viewer run inside containers with mounted data. For an **interactive terminal** (menus, prompts), run the CLI service alone so it gets a real TTY; see Quickstart below.
+**Docker Compose is the recommended way** to run TranscriptX in containers (no local Python required). The same CLI and Streamlit GUI run inside containers with mounted data. For an **interactive terminal** (menus, prompts), run the CLI service alone so it gets a real TTY; see Quickstart below.
 
 TranscriptX is **analysis-only**; it does not run WhisperX or any transcription engine inside Docker. Bring your own transcript JSON (see [transcription.md](transcription.md) for how to generate compatible transcripts).
 
@@ -39,7 +39,7 @@ docker run --rm -v "$(pwd)/data:/data" --platform linux/amd64 transcriptx:amd64 
 
 Use `--platform linux/amd64` on **both** build and run when using the amd64 image on Apple Silicon. You can also run `docker compose build` to build using the default compose file.
 
-### Primary commands: interactive CLI and web viewer
+### Primary commands: interactive CLI and GUI
 
 From the repo root. For a **fully accessible terminal** (arrow keys, menus, same experience as the host CLI), use **`docker compose run -it --rm transcriptx`**. The **`-it`** flag allocates a pseudo-TTY and keeps stdin open; without it, the menu can disappear on the first arrow key. **`docker compose up transcriptx`** does not allocate a TTY—use **`run -it`** for the interactive menu.
 
@@ -55,13 +55,13 @@ Or explicitly: `docker compose run -it --rm transcriptx interactive`. Stop with 
 
 **Alternative (no full TTY):** `docker compose up transcriptx` runs the CLI in the foreground but without a TTY; arrow keys and menus may not work. Prefer `run -it` for interactive use.
 
-**Web viewer:** Open http://localhost:8501 after starting the web service:
+**GUI:** Open http://localhost:8501 after starting the web service:
 
 ```bash
 docker compose up transcriptx-web
 ```
 
-**CLI and web together:** Start the viewer in the background, then the CLI with a full terminal in another terminal:
+**CLI and GUI together:** Start the GUI in the background, then the CLI with a full terminal in another terminal:
 
 ```bash
 docker compose up -d transcriptx-web
@@ -72,7 +72,7 @@ docker compose run --rm transcriptx
 
 - **CLI interactive menu (full terminal):** `docker compose run -it --rm transcriptx` or `docker compose run -it --rm transcriptx interactive`
 - **One-off analysis (no menu):** `docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm`
-- **Viewer only:** `docker compose up transcriptx-web`
+- **GUI only:** `docker compose up transcriptx-web`
 - **Speaker Studio (instant playback, port 8502):** `docker compose up transcriptx-studio` → http://localhost:8502
 
 ### Operational modes
@@ -81,9 +81,9 @@ docker compose run --rm transcriptx
 |------|---------|
 | **Interactive CLI** | `docker compose run -it --rm transcriptx` — full terminal (arrow keys, etc.) |
 | **CLI one-off** | `docker compose run --rm transcriptx analyze ...` etc. |
-| **Viewer only** | `docker compose up transcriptx-web` |
+| **GUI only** | `docker compose up transcriptx-web` |
 | **Speaker Studio** | `docker compose up transcriptx-studio` — http://localhost:8502 (instant playback, speaker ID in browser) |
-| **CLI + viewer** | `docker compose up -d transcriptx-web` then `docker compose run -it --rm transcriptx` |
+| **CLI + GUI** | `docker compose up -d transcriptx-web` then `docker compose run -it --rm transcriptx` |
 
 ### Without Compose
 
@@ -298,7 +298,7 @@ The image is built with **full dependencies**. Core mode is a **runtime restrict
 
 2. **Missing runtime libs** — The runtime image includes **ffmpeg**, **libsndfile1**, **libgomp1**, and **ca-certificates** (soundfile/opensmile, audio handling, OpenMP). If you change the base image or strip packages, restore these or audio/NLP features may fail at runtime.
 
-3. **Hidden writes in the viewer** — The transcriptx-web service runs with `read_only: true`. Besides `HOME=/tmp/streamlit_home` and tmpfs, the compose file sets **MPLCONFIGDIR**, **HF_HOME**, **TRANSCRIPTX_CACHE_DIR**, and **NLTK_DATA** to `/tmp/...` so Streamlit, matplotlib, Hugging Face, and NLTK do not write to default locations. Keep these env vars when changing the viewer service.
+3. **Hidden writes in the GUI container** — The transcriptx-web service runs with `read_only: true` at the filesystem level. Besides `HOME=/tmp/streamlit_home` and tmpfs, the compose file sets **MPLCONFIGDIR**, **HF_HOME**, **TRANSCRIPTX_CACHE_DIR**, and **NLTK_DATA** to `/tmp/...` so Streamlit, matplotlib, Hugging Face, and NLTK do not write to default locations. Keep these env vars when changing the web service.
 
 4. **Apple Silicon platform mismatch** — If you build for amd64 (`--platform linux/amd64`), you must **run** with the same platform (`docker run --platform linux/amd64 ...`) or you get exec format / ELF errors. Use `--platform linux/amd64` on **both** build and run when using the amd64 image on Apple Silicon.
 

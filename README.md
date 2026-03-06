@@ -8,12 +8,12 @@ Transcripts are treated as canonical data. Analyses are reproducible, traceable,
 
 ## Product Philosophy
 
-TranscriptX is a deterministic CLI-first analysis engine.
+TranscriptX is a deterministic analysis engine with a GUI-first workflow.
 
-- **The CLI is the primary interface for:** transcript processing, speaker identification, module selection, preset configuration, and group operations.
-- **The Web Viewer is:** read-only; a structured browser for run outputs; designed to eliminate manual folder navigation. It is not a workflow tool and not an editing interface.
+- **The GUI (Streamlit)** is the primary interface for transcript processing, speaker identification, analysis browsing, batch operations, audio preparation, settings, and group management.
+- **The CLI** provides the same core capabilities for scripting, automation, and CI pipelines. All GUI workflows have CLI equivalents.
 
-The CLI enables reproducibility, scripting, and deterministic runs. Complex multi-step workflows (such as speaker mapping) are more transparent in a terminal-first model. The viewer reads from stable run artifacts and manifests—no mutation, no run creation from the browser.
+Both interfaces produce reproducible, traceable, and deterministic outputs. The GUI and CLI share the same engine, pipeline, and artifact contracts.
 
 ## Finding the right workflow
 
@@ -50,7 +50,7 @@ docker build -t transcriptx:latest .
 docker compose run -it --rm transcriptx
 ```
 
-Use **`-it`** so the menu gets a real TTY (arrow keys work). Without `-it`, the menu can disappear on the first keypress. For the **web viewer**, open http://localhost:8501: `docker compose up transcriptx-web`. CLI with full terminal in another terminal: `docker compose run -it --rm transcriptx`. If you start the **Browser (Streamlit)** option from the CLI menu, open **http://localhost:8501** in your host browser (port 8501 is published by the CLI container).
+Use **`-it`** so the menu gets a real TTY (arrow keys work). Without `-it`, the menu can disappear on the first keypress. For the **GUI**, open http://localhost:8501: `docker compose up transcriptx-web`. CLI with full terminal in another terminal: `docker compose run -it --rm transcriptx`. If you start the **Browser (Streamlit)** option from the CLI menu, open **http://localhost:8501** in your host browser (port 8501 is published by the CLI container).
 
 - **CLI interactive menu:** `docker compose run -it --rm transcriptx` — full terminal (arrow keys; `-it` required)
 - **One-off analysis:** `docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm`
@@ -67,7 +67,7 @@ Full details (volume layout, Apple Silicon, WhisperX, pitfalls): **[docs/docker.
 ./transcriptx.sh
 ```
 
-With no arguments, this starts the interactive CLI. To open the Web Viewer instead: `./transcriptx.sh web-viewer`. To install only **core** dependencies: `TRANSCRIPTX_CORE=1 ./transcriptx.sh`.
+With no arguments, this starts the interactive CLI. To open the GUI instead: `./transcriptx.sh gui`. To install only **core** dependencies: `TRANSCRIPTX_CORE=1 ./transcriptx.sh`.
 
 **Manual install:** You need Python 3.10 or later.
 
@@ -92,17 +92,17 @@ If you only install the NLP extra but never download the model, analyses that ne
 transcriptx analyze -t tests/fixtures/mini_transcriptx.json --modules stats --skip-confirm
 ```
 
-For all commands and options, see the [CLI reference](docs/CLI.md).
+For all commands and options, see the [CLI reference](docs/generated/cli.md).
 
-**Web Viewer:** With the environment activated:
+**GUI:** With the environment activated:
 
 ```bash
-transcriptx web-viewer
+transcriptx gui
 ```
 
-### Analysis presets (CLI)
+### Analysis presets
 
-When you run analysis from the CLI, you choose a **Preset** (or an explicit module list) that determines which analysis modules run. Use `--mode quick` (default) or `--mode full` to control analysis depth. The Web Viewer then lets you browse the outputs of those runs.
+When you run analysis, you choose a **Preset** (or an explicit module list) that determines which analysis modules run. Use `--mode quick` (default) or `--mode full` to control analysis depth. Both the GUI and CLI support preset selection.
 
 - **Recommended** — Runs the default set of modules: safe, non-heavy, and runnable for the current transcript (e.g. skips audio-required modules when audio is missing, and heavy/optional-deps modules when not available). Best for most sessions.
 - **All modules** — Runs every available analysis module (subject to mode and pipeline requirements). Use when you want full coverage.
@@ -192,7 +192,7 @@ Downloads are disabled by default; opt in by setting `TRANSCRIPTX_DISABLE_DOWNLO
 
 Gates are checks that prompt, block, or skip work to keep results accurate and runs predictable.
 
-- Speaker identification gate (CLI): prompts to identify speakers before analysis so per-speaker outputs are meaningful. Can be bypassed via workflow `skip_speaker_gate` or forced non-interactive mode in `check_speaker_gate()`. See `src/transcriptx/cli/speaker_utils.py`.
+- Speaker identification gate: prompts to identify speakers before analysis so per-speaker outputs are meaningful. Can be bypassed via workflow `skip_speaker_gate` or forced non-interactive mode in `check_speaker_gate()`. See `src/transcriptx/cli/speaker_utils.py`.
 - Audio/default-module gate: audio-required modules are included in defaults only when audio is resolvable and (when not in core mode) required optional extras are available or auto-installed. In core mode, only modules without required_extras are offered. Override by passing an explicit module list. See `src/transcriptx/core/pipeline/module_registry.py` and `src/transcriptx/core/utils/audio_availability.py`.
 - Pipeline requirements gate: modules are skipped when transcript capabilities (segments, timestamps, speaker labels, database) do not meet requirements. See `src/transcriptx/core/pipeline/requirements_resolver.py`.
 - Downloads gate: downloads are opt-in via `TRANSCRIPTX_DISABLE_DOWNLOADS=0` (sentiment, emotion). spaCy model auto-download is allowed by default when not in core mode unless `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1`. See `src/transcriptx/core/utils/nlp_runtime.py`.
@@ -227,8 +227,8 @@ TranscriptX is built around a DAG-based pipeline, a shared context, and strict a
 
 ## Scope and non-goals (v0.42)
 
-v0.42 does **not** include: a plugin system, a hosted service, or real-time processing. The CLI and Web Viewer are the supported interfaces; database and cross-session commands are CLI-only. See the [roadmap](docs/ROADMAP.md) for what is planned later.
+v0.42 does **not** include: a plugin system, a hosted service, or real-time processing. The GUI and CLI are the supported interfaces. See the [roadmap](docs/ROADMAP.md) for what is planned later.
 
 ## What’s next
 
-See the [roadmap](docs/ROADMAP.md) for near-term direction and deferred features. Database and cross-session speaker commands (`transcriptx database`, `transcriptx cross-session`) are available as **CLI-only**; speaker-over-time visualization and richer DB-backed analytics in the Web Viewer are planned for a later release.
+See the [roadmap](docs/ROADMAP.md) for near-term direction and deferred features.

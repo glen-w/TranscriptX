@@ -15,10 +15,8 @@ This document gives a high-level mental model for how TranscriptX works today. I
 TranscriptX is structured in three layers:
 
 - **Engine** — Pipeline, modules, and shared context. Responsible for execution and artifact production.
-- **CLI** — Orchestration and interaction. All run creation, speaker identification, module and preset selection, and group operations happen here.
-- **Web Viewer** — Read-only artifact exploration. It browses run outputs under the configured output directories. It does not mutate transcripts and does not create runs.
-
-**Guarantees:** The Web Viewer never mutates transcripts. The Web Viewer never creates runs. All pipeline execution originates in the CLI. This separation preserves reproducibility, determinism, and stable artifact contracts. See [CLI/GUI Strategy](CLI_GUI_STRATEGY.md) for positioning, guardrails, and non-goals.
+- **GUI** — Streamlit-based web interface. Provides transcript processing, speaker identification, analysis browsing, batch operations, audio preparation, settings, groups, and more. The GUI and CLI share the same engine and produce identical artifacts.
+- **CLI** — Terminal-based orchestration. Supports scripting, automation, and CI pipelines. All GUI workflows have CLI equivalents.
 
 ## Components
 
@@ -26,7 +24,7 @@ TranscriptX is structured in three layers:
 - **Pipeline** (`src/transcriptx/core/pipeline/`) — Dependency resolution and execution strategy.
 - **Analysis modules** (`src/transcriptx/core/analysis/`) — Each module reads from context and writes artifacts.
 - **Outputs** — Group-level artifact writing in `src/transcriptx/core/output/`. Run-level artifact registration, output manifest, and display live in `src/transcriptx/core/pipeline/` (manifest_builder, output_reporter). Reproducibility run manifests are in `src/transcriptx/core/utils/run_manifest.py`.
-- **Web Viewer** (`src/transcriptx/web/`) — Streamlit UI that reads run directories under `data/outputs/`. Read-only; see Interaction Layers.
+- **GUI** (`src/transcriptx/web/`) — Streamlit UI for analysis, speaker identification, batch operations, settings, and artifact browsing. See Interaction Layers.
 
 ## Data loading and output layout
 
@@ -44,13 +42,13 @@ TranscriptX is structured in three layers:
 
 ## Docker (runtime / deployment)
 
-**Docker Compose is the recommended way** to run TranscriptX in containers (no local Python install). The same **Engine + CLI + Web Viewer** stack runs inside the image; only the runtime environment changes. The default compose file is at the repo root ([docker-compose.yml](../docker-compose.yml)).
+**Docker Compose is the recommended way** to run TranscriptX in containers (no local Python install). The same **Engine + GUI + CLI** stack runs inside the image; only the runtime environment changes. The default compose file is at the repo root ([docker-compose.yml](../docker-compose.yml)).
 
 **Transcription is external;** TranscriptX does not run WhisperX or any transcription engine. It consumes diarized transcript JSON (see [transcription.md](transcription.md)).
 
-- **Services (default set):** A plain `docker compose up` starts **transcriptx** (CLI, interactive menu in foreground) and **transcriptx-web** (Streamlit viewer, port 8501). Both mount `./data`; no Docker socket.
+- **Services (default set):** A plain `docker compose up` starts **transcriptx** (CLI, interactive menu in foreground) and **transcriptx-web** (Streamlit GUI, port 8501). Both mount `./data`; no Docker socket.
 - **Image contract:** The image uses `ENTRYPOINT ["transcriptx"]`. You pass the subcommand and arguments directly (e.g. `docker run ... transcriptx:latest analyze ...`). Do not prefix the command with `transcriptx` again.
-- **Data:** Mount the host data tree at `/data` so the container sees `data/recordings`, `data/transcripts`, and `data/outputs` in the same layout as the [Data layout](#data-layout-stable-contract) above. All run creation and artifact writing still goes through the CLI; the viewer remains read-only.
+- **Data:** Mount the host data tree at `/data` so the container sees `data/recordings`, `data/transcripts`, and `data/outputs` in the same layout as the [Data layout](#data-layout-stable-contract) above.
 - **Reference:** Build and run details, volume layout, Apple Silicon, permissions, and pitfalls: **[docker.md](docker.md)**.
 
 ## Extension points (v0.42)
@@ -62,4 +60,4 @@ TranscriptX is structured in three layers:
 
 - No plugin system
 - No hosted services
-- No multi-tenant web dashboard
+- No multi-tenant deployment

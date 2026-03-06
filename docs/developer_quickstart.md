@@ -24,7 +24,7 @@ canonical transcript
 → dependency resolution (DAG)  
 → module execution  
 → artifact writing + manifest  
-→ inspection (CLI / WebUI / downstream tools)
+→ inspection (GUI / CLI / downstream tools)
 
 If an output exists, it can always be traced back to the input transcript, the effective configuration, and the modules that produced it.
 
@@ -38,7 +38,7 @@ src/transcriptx/
 │   ├── output/ — Artifact writing & manifest tracking  
 │   ├── config/ — Configuration resolution  
 │   └── domain/ — Canonical transcript and group structures  
-├── web/ — Streamlit WebUI (reads run outputs)  
+├── web/ — Streamlit GUI (analysis, speaker ID, batch ops, browsing)  
 
 data/  
 ├── recordings/ — Input audio  
