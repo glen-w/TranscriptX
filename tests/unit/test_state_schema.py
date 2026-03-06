@@ -8,14 +8,9 @@ These tests are fast, deterministic, and require no external services.
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import patch
 
-import pytest
 
 from transcriptx.core.utils.state_schema import (
-    STATE_SCHEMA_VERSION,
-    REQUIRED_FIELDS,
-    CONDITIONALLY_REQUIRED_FIELDS,
     validate_state_entry,
     migrate_state_entry,
     validate_state_paths,

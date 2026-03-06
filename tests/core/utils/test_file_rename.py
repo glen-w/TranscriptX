@@ -191,7 +191,14 @@ class TestFindOriginalAudioFile:
             patch(
                 "transcriptx.core.utils.file_rename.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.file_rename.DATA_DIR", str(tmp_path)),
+            patch("transcriptx.core.utils.file_rename.RECORDINGS_DIR", recordings_dir),
+            patch(
+                "transcriptx.core.utils.file_rename.OUTPUTS_DIR", tmp_path / "outputs"
+            ),
+            patch(
+                "transcriptx.core.utils.file_rename.resolve_file_path",
+                side_effect=FileNotFoundError,
+            ),
             patch(
                 "transcriptx.core.utils.file_rename.get_base_name",
                 return_value="meeting",
@@ -229,26 +236,30 @@ class TestFindOriginalAudioFile:
     def test_infers_from_transcript_name(self, tmp_path, monkeypatch):
         """Test inferring audio file from transcript name."""
         transcript_path = str(tmp_path / "20251230160235.json")
-        audio_path = tmp_path / "20251230160235.wav"
-        audio_path.write_text("fake audio")
 
         state_file = tmp_path / "processing_state.json"
         state_file.write_text(json.dumps({"processed_files": {}}))
+
+        recordings_dir = tmp_path / "recordings"
+        recordings_dir.mkdir()
+        audio_in_recordings = recordings_dir / "20251230160235.wav"
+        audio_in_recordings.write_text("fake audio")
 
         with (
             patch(
                 "transcriptx.core.utils.file_rename.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.file_rename.DATA_DIR", str(tmp_path)),
+            patch("transcriptx.core.utils.file_rename.RECORDINGS_DIR", recordings_dir),
+            patch(
+                "transcriptx.core.utils.file_rename.OUTPUTS_DIR", tmp_path / "outputs"
+            ),
+            patch(
+                "transcriptx.core.utils.file_rename.resolve_file_path",
+                side_effect=FileNotFoundError,
+            ),
             patch("transcriptx.core.utils.file_rename.get_base_name") as mock_base,
         ):
             mock_base.return_value = "20251230160235"
-
-            # Create recordings directory
-            recordings_dir = tmp_path / "recordings"
-            recordings_dir.mkdir()
-            audio_in_recordings = recordings_dir / "20251230160235.wav"
-            audio_in_recordings.write_text("fake audio")
 
             result = find_original_audio_file(transcript_path)
 
@@ -261,11 +272,21 @@ class TestFindOriginalAudioFile:
         state_file = tmp_path / "processing_state.json"
         state_file.write_text(json.dumps({"processed_files": {}}))
 
+        empty_dir = tmp_path / "empty_recordings"
+        empty_dir.mkdir()
+
         with (
             patch(
                 "transcriptx.core.utils.file_rename.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.file_rename.DATA_DIR", str(tmp_path)),
+            patch("transcriptx.core.utils.file_rename.RECORDINGS_DIR", empty_dir),
+            patch(
+                "transcriptx.core.utils.file_rename.OUTPUTS_DIR", tmp_path / "outputs"
+            ),
+            patch(
+                "transcriptx.core.utils.file_rename.resolve_file_path",
+                side_effect=FileNotFoundError,
+            ),
         ):
             result = find_original_audio_file(transcript_path)
 

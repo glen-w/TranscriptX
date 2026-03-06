@@ -684,7 +684,9 @@ class TestCorrectionService:
     )
     @patch("transcriptx.services.corrections_studio.service.detect_memory_hits")
     @patch("transcriptx.services.corrections_studio.service.detect_acronym_candidates")
-    @patch("transcriptx.services.corrections_studio.service.detect_consistency_candidates")
+    @patch(
+        "transcriptx.services.corrections_studio.service.detect_consistency_candidates"
+    )
     @patch("transcriptx.services.corrections_studio.service.detect_fuzzy_candidates")
     def test_generate_candidates_force_deletes_old(
         self,
@@ -866,7 +868,9 @@ class TestCorrectionService:
         db_session.flush()
 
         assert "export_path" in result
-        assert result["export_path"].endswith("_corrected_" + session["id"][:8] + ".json")
+        assert result["export_path"].endswith(
+            "_corrected_" + session["id"][:8] + ".json"
+        )
         assert result["applied_count"] >= 1
         mock_save.assert_called_once()
         call_args = mock_save.call_args[0]

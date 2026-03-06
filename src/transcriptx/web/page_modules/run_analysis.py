@@ -38,13 +38,19 @@ def render_run_analysis_page() -> None:
     transcript_choice = st.selectbox(
         "Transcript",
         range(len(transcript_options)),
-        format_func=lambda i: transcript_labels[i] if i < len(transcript_labels) else "",
+        format_func=lambda i: (
+            transcript_labels[i] if i < len(transcript_labels) else ""
+        ),
         index=default_idx if default_idx < len(transcript_options) else 0,
         key="run_analysis_transcript",
     )
-    transcript_path = Path(transcript_options[transcript_choice]) if transcript_options else None
+    transcript_path = (
+        Path(transcript_options[transcript_choice]) if transcript_options else None
+    )
 
-    mode = st.radio("Analysis mode", ["quick", "full"], horizontal=True, key="run_analysis_mode")
+    mode = st.radio(
+        "Analysis mode", ["quick", "full"], horizontal=True, key="run_analysis_mode"
+    )
     profile = None
     if mode == "full":
         profile = st.selectbox(
@@ -54,11 +60,19 @@ def render_run_analysis_page() -> None:
         )
 
     available = analysis_ctrl.get_available_modules()
-    default_modules = analysis_ctrl.get_default_modules([str(transcript_path)]) if transcript_path else []
-    use_defaults = st.checkbox("Use recommended modules", value=True, key="run_analysis_use_defaults")
+    default_modules = (
+        analysis_ctrl.get_default_modules([str(transcript_path)])
+        if transcript_path
+        else []
+    )
+    use_defaults = st.checkbox(
+        "Use recommended modules", value=True, key="run_analysis_use_defaults"
+    )
     if use_defaults:
         selected_modules = default_modules
-        st.caption(f"Modules: {', '.join(selected_modules[:8])}{'...' if len(selected_modules) > 8 else ''}")
+        st.caption(
+            f"Modules: {', '.join(selected_modules[:8])}{'...' if len(selected_modules) > 8 else ''}"
+        )
     else:
         selected_modules = st.multiselect(
             "Select modules",

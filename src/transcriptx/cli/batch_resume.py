@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.paths import PROCESSING_STATE_FILE
 from transcriptx.cli.processing_state import (
     load_processing_state,
     save_processing_state,

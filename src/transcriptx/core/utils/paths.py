@@ -50,15 +50,25 @@ def _build_paths() -> PathSettings:
     """Build all paths from env vars with documented defaults. Uses expanduser(), not resolve()."""
     project_root = Path(__file__).parent.parent.parent.parent.parent
     data_dir = _env_path_value("TRANSCRIPTX_DATA_DIR") or (project_root / "data")
-    config_dir = _env_path_value("TRANSCRIPTX_CONFIG_DIR") or (project_root / ".transcriptx")
-    recordings_dir = _env_path_value("TRANSCRIPTX_RECORDINGS_DIR") or (data_dir / "recordings")
-    transcripts_dir = _env_path_value("TRANSCRIPTX_TRANSCRIPTS_DIR") or (data_dir / "transcripts")
+    config_dir = _env_path_value("TRANSCRIPTX_CONFIG_DIR") or (
+        project_root / ".transcriptx"
+    )
+    recordings_dir = _env_path_value("TRANSCRIPTX_RECORDINGS_DIR") or (
+        data_dir / "recordings"
+    )
+    transcripts_dir = _env_path_value("TRANSCRIPTX_TRANSCRIPTS_DIR") or (
+        data_dir / "transcripts"
+    )
     # OUTPUTS_DIR: allow tests/CI to override (e.g. tmp_path) before importing app modules
     outputs_dir_val = os.getenv("TRANSCRIPTX_OUTPUT_DIR")
     outputs_dir = (
-        Path(outputs_dir_val).expanduser() if outputs_dir_val else (data_dir / "outputs")
+        Path(outputs_dir_val).expanduser()
+        if outputs_dir_val
+        else (data_dir / "outputs")
     )
-    profiles_dir = _env_path_value("TRANSCRIPTX_PROFILES_DIR") or (config_dir / "profiles")
+    profiles_dir = _env_path_value("TRANSCRIPTX_PROFILES_DIR") or (
+        config_dir / "profiles"
+    )
     state_dir = data_dir / "state"
     wav_backup_env = _env_path_value("TRANSCRIPTX_WAV_BACKUP_DIR")
     wav_storage_legacy = _env_path_value("TRANSCRIPTX_WAV_STORAGE_DIR")
@@ -66,7 +76,9 @@ def _build_paths() -> PathSettings:
         _log.warning(
             "TRANSCRIPTX_WAV_STORAGE_DIR is deprecated; use TRANSCRIPTX_WAV_BACKUP_DIR instead"
         )
-    wav_backup_dir = wav_backup_env or wav_storage_legacy or (data_dir / "backups" / "wav")
+    wav_backup_dir = (
+        wav_backup_env or wav_storage_legacy or (data_dir / "backups" / "wav")
+    )
     return PathSettings(
         project_root=project_root,
         data_dir=data_dir,

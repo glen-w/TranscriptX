@@ -34,7 +34,7 @@ class TestCreateBackup:
             patch(
                 "transcriptx.core.utils.state_backup.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
         ):
             backup_path = create_backup()
 
@@ -57,7 +57,7 @@ class TestCreateBackup:
             patch(
                 "transcriptx.core.utils.state_backup.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
         ):
             backup_path = create_backup()
 
@@ -75,7 +75,7 @@ class TestCreateBackup:
             patch(
                 "transcriptx.core.utils.state_backup.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
         ):
             backup_path = create_backup()
 
@@ -90,7 +90,7 @@ class TestCreateBackup:
 
         backup_dir = tmp_path / "backups" / "processing_state"
 
-        with patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir):
+        with patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir):
             backup_path = create_backup(custom_state_file)
 
             assert backup_path is not None
@@ -108,7 +108,7 @@ class TestCreateBackup:
             patch(
                 "transcriptx.core.utils.state_backup.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
             patch("transcriptx.core.utils.state_backup.rotate_backups") as mock_rotate,
         ):
             create_backup()
@@ -127,7 +127,7 @@ class TestCreateBackup:
             patch(
                 "transcriptx.core.utils.state_backup.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
             patch("shutil.copy2") as mock_copy,
         ):
             mock_copy.side_effect = OSError("Permission denied")
@@ -159,7 +159,7 @@ class TestRotateBackups:
             time.sleep(0.01)  # Small delay to ensure different mtimes
 
         with (
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
             patch("transcriptx.core.utils.state_backup.MAX_BACKUPS", max_backups),
         ):
             rotate_backups()
@@ -189,7 +189,7 @@ class TestRotateBackups:
             time.sleep(0.01)
 
         with (
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
             patch("transcriptx.core.utils.state_backup.MAX_BACKUPS", 5),
         ):
             rotate_backups()
@@ -205,7 +205,7 @@ class TestRotateBackups:
         """Test that function handles nonexistent backup directory."""
         backup_dir = tmp_path / "nonexistent" / "backups"
 
-        with patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir):
+        with patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir):
             # Should not raise error
             rotate_backups()
 
@@ -219,7 +219,7 @@ class TestRotateBackups:
         backup_file.write_text(json.dumps({"test": "data"}))
 
         with (
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
             patch("transcriptx.core.utils.state_backup.MAX_BACKUPS", 0),
             patch("pathlib.Path.unlink") as mock_unlink,
         ):
@@ -236,7 +236,7 @@ class TestListBackups:
         """Test that empty list is returned when no backups exist."""
         backup_dir = tmp_path / "backups" / "processing_state"
 
-        with patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir):
+        with patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir):
             backups = list_backups()
 
             assert backups == []
@@ -250,7 +250,7 @@ class TestListBackups:
         backup_data = {"processed_files": {"test": {}}}
         backup_file.write_text(json.dumps(backup_data))
 
-        with patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir):
+        with patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir):
             backups = list_backups()
 
             assert len(backups) == 1
@@ -273,7 +273,7 @@ class TestListBackups:
             backup_file.touch()
             time.sleep(0.01)
 
-        with patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir):
+        with patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir):
             backups = list_backups()
 
             # Should be sorted newest first
@@ -321,7 +321,7 @@ class TestRestoreFromBackup:
             patch(
                 "transcriptx.core.utils.state_backup.PROCESSING_STATE_FILE", state_file
             ),
-            patch("transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir),
+            patch("transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir),
             patch("transcriptx.core.utils.state_backup.create_backup") as mock_backup,
         ):
             restore_from_backup(backup_file)

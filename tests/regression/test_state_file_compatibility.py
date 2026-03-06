@@ -30,9 +30,9 @@ class TestCorruptJSONRecovery:
         backup_dir = state_file.parent / "backups" / "processing_state"
         backup_dir.mkdir(parents=True, exist_ok=True)
 
-        # Monkeypatch BACKUP_DIR to point to our test directory
+        # Monkeypatch STATE_BACKUP_DIR to point to our test directory
         monkeypatch.setattr(
-            "transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir
+            "transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir
         )
 
         # Create a valid backup with timestamp
@@ -285,9 +285,9 @@ class TestStateRecoveryBehavior:
         backups = fixture["backups"]
         backup_dir = Path(fixture["backup_dir"])
 
-        # Monkeypatch BACKUP_DIR
+        # Monkeypatch STATE_BACKUP_DIR
         monkeypatch.setattr(
-            "transcriptx.core.utils.state_backup.BACKUP_DIR", backup_dir
+            "transcriptx.core.utils.state_backup.STATE_BACKUP_DIR", backup_dir
         )
 
         # Create timestamped backups

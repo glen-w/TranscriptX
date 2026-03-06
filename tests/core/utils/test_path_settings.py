@@ -6,10 +6,8 @@ serialization after the str -> Path migration.
 """
 
 import json
-import os
 from pathlib import Path
 
-import pytest
 
 from transcriptx.core.utils import paths as paths_module
 
@@ -18,11 +16,20 @@ class TestPathSettingsStructure:
     """Path contract: processing_state_file under state_dir, profiles_dir under config_dir."""
 
     def test_processing_state_file_under_state_dir(self):
-        assert paths_module.PROCESSING_STATE_FILE == paths_module.STATE_DIR / "processing_state.json"
-        assert paths_module.PATHS.processing_state_file == paths_module.PATHS.state_dir / "processing_state.json"
+        assert (
+            paths_module.PROCESSING_STATE_FILE
+            == paths_module.STATE_DIR / "processing_state.json"
+        )
+        assert (
+            paths_module.PATHS.processing_state_file
+            == paths_module.PATHS.state_dir / "processing_state.json"
+        )
 
     def test_profiles_dir_under_config_dir(self):
-        assert paths_module.PATHS.profiles_dir == paths_module.PATHS.config_dir / "profiles"
+        assert (
+            paths_module.PATHS.profiles_dir
+            == paths_module.PATHS.config_dir / "profiles"
+        )
         assert paths_module.PROFILES_DIR == paths_module.CONFIG_DIR / "profiles"
 
     def test_all_constants_are_path_objects(self):
@@ -53,7 +60,9 @@ class TestEnvOverride:
         result = paths_module._build_paths()
         assert result.data_dir == tmp_path
         assert result.state_dir == tmp_path / "state"
-        assert result.processing_state_file == tmp_path / "state" / "processing_state.json"
+        assert (
+            result.processing_state_file == tmp_path / "state" / "processing_state.json"
+        )
 
     def test_recordings_and_transcripts_from_env(self, monkeypatch, tmp_path):
         monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(tmp_path))
@@ -110,7 +119,9 @@ class TestConfigSerialization:
         json_str = json.dumps(config_dict, indent=2, default=str)
         loaded = json.loads(json_str)
         for key, value in loaded.items():
-            assert isinstance(value, str), f"{key} should be str in JSON, got {type(value)}"
+            assert isinstance(
+                value, str
+            ), f"{key} should be str in JSON, got {type(value)}"
             assert "Path" not in value and "PosixPath" not in value
 
     def test_resolver_env_strip_does_not_affect_path_constants(self):

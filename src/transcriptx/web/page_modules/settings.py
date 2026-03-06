@@ -24,6 +24,8 @@ def render_settings_page() -> None:
         for name, path in roots.items():
             st.text(f"{name}: {path}")
 
-        st.caption("For full config editing, use the Configuration page (when a run is selected) or the CLI: transcriptx settings")
+        st.caption(
+            "For full config editing, use the Configuration page (when a run is selected) or the CLI: transcriptx settings"
+        )
     except Exception as e:
         st.error(f"Could not load settings: {e}")

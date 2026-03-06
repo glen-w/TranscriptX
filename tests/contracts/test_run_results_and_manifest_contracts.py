@@ -94,15 +94,17 @@ def test_golden_run_stats_produces_valid_manifest_and_run_results(
 
 
 # Contract: single-transcript run_analysis_pipeline() return shape (do not remove keys).
-REQUIRED_SINGLE_RESULT_KEYS = frozenset({
-    "transcript_path",
-    "selected_modules",
-    "modules_run",
-    "errors",
-    "output_dir",
-    "transcript_key",
-    "run_id",
-})
+REQUIRED_SINGLE_RESULT_KEYS = frozenset(
+    {
+        "transcript_path",
+        "selected_modules",
+        "modules_run",
+        "errors",
+        "output_dir",
+        "transcript_key",
+        "run_id",
+    }
+)
 
 
 def test_single_pipeline_result_shape_contract(

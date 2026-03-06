@@ -689,8 +689,6 @@ def render_transcript_viewer():
         st.exception(e)
 
 
-
-
 def render_speakers_list():
     """Speakers list page."""
     st.markdown('<div class="main-header">👥 Speakers</div>', unsafe_allow_html=True)

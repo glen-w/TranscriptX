@@ -5,6 +5,19 @@ All notable changes to TranscriptX will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Transcript validate/canonicalize**: `transcriptx transcript validate --file <path>` and `transcriptx transcript canonicalize --in <path> [--out <path>]` for schema validation and converting raw/legacy JSON to canonical format. See [docs/transcription.md](docs/transcription.md).
+- **Golden path**: Get JSON → canonicalize/validate → analyze; external transcription guide in `docs/transcription.md` and reference recipe in `docs/recipes/whisperx/`.
+
+### Changed
+- **Config backward compatibility**: Existing config files that contain a `transcription` section are still loaded successfully; the `transcription` section is silently ignored (TranscriptX is analysis-only; transcription is external).
+
+### Deprecated
+- **`transcribe` command**: Deprecated; prints guidance to stderr and exits 2. Use external transcription (see docs/transcription.md) then `transcriptx analyze`.
+- **`whisperx-web-gui` command**: Deprecated; same stub behavior. Will be removed in v0.2.
+
 ## [0.42] - 2026-03-03
 
 ### Added
@@ -25,19 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **Dockerfile.ui**: Removed (Gradio stub). Use `transcriptx-web` or `transcriptx-studio` for web UI.
 - **Unused logging**: Removed `log_transcription_start` / `log_transcription_complete` from logger.
-
-## [Unreleased]
-
-### Added
-- **Transcript validate/canonicalize**: `transcriptx transcript validate --file <path>` and `transcriptx transcript canonicalize --in <path> [--out <path>]` for schema validation and converting raw/legacy JSON to canonical format. See [docs/transcription.md](docs/transcription.md).
-- **Golden path**: Get JSON → canonicalize/validate → analyze; external transcription guide in `docs/transcription.md` and reference recipe in `docs/recipes/whisperx/`.
-
-### Changed
-- **Config backward compatibility**: Existing config files that contain a `transcription` section are still loaded successfully; the `transcription` section is silently ignored (TranscriptX is analysis-only; transcription is external).
-
-### Deprecated
-- **`transcribe` command**: Deprecated; prints guidance to stderr and exits 2. Use external transcription (see docs/transcription.md) then `transcriptx analyze`.
-- **`whisperx-web-gui` command**: Deprecated; same stub behavior. Will be removed in v0.2.
 
 ### Removed (breaking)
 - **`transcribe`**: TranscriptX no longer transcribes audio; use external tools and `transcript canonicalize` + `analyze`.

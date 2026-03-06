@@ -559,6 +559,7 @@ def analyze(
 
         if not skip_confirm:
             from rich.prompt import Confirm
+
             if not Confirm.ask("Proceed with analysis?"):
                 exit_user_cancel()
 

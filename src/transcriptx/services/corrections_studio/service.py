@@ -475,9 +475,7 @@ class CorrectionService:
                     content_hash=None,
                 )
             except Exception as e:
-                logger.warning(
-                    "Could not register corrections export artifact: %s", e
-                )
+                logger.warning("Could not register corrections export artifact: %s", e)
 
         return {
             "export_path": export_path,

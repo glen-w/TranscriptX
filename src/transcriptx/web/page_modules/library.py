@@ -22,7 +22,9 @@ def render_library() -> None:
         transcripts = lib_ctrl.list_transcripts()
 
         if not transcripts:
-            st.info("No transcripts found. Add transcript JSON files to your configured transcript folder.")
+            st.info(
+                "No transcripts found. Add transcript JSON files to your configured transcript folder."
+            )
             return
 
         df = pd.DataFrame(
@@ -30,8 +32,12 @@ def render_library() -> None:
                 {
                     "Name": m.base_name,
                     "Path": str(m.path),
-                    "Speakers": "-" if m.speaker_count is None else str(m.speaker_count),
-                    "Duration": f"{m.duration_seconds:.1f}s" if m.duration_seconds else "-",
+                    "Speakers": (
+                        "-" if m.speaker_count is None else str(m.speaker_count)
+                    ),
+                    "Duration": (
+                        f"{m.duration_seconds:.1f}s" if m.duration_seconds else "-"
+                    ),
                     "Has Analysis": "✓" if m.has_analysis_outputs else "—",
                     "Speakers Mapped": "✓" if m.has_speaker_map else "—",
                 }

@@ -88,7 +88,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Slugs matching '{args.prefix}': {len(slugs)}")
     for slug, path in to_remove:
         if path and path.exists():
-            run_count = sum(1 for p in path.iterdir() if p.is_dir() and not p.name.startswith("."))
+            run_count = sum(
+                1 for p in path.iterdir() if p.is_dir() and not p.name.startswith(".")
+            )
             print(f"  - {slug}  ({path})  [{run_count} run(s)]")
         else:
             print(f"  - {slug}  (index only, no directory)")

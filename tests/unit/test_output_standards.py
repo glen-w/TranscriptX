@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from transcriptx.core.utils.output_standards import (
     OutputStructure,
@@ -65,7 +64,9 @@ class TestCreateStandardOutputStructure:
 
     def test_redirects_non_outputs_dir_path(self):
         structure = create_standard_output_structure("/tmp/wrong_place", "stats")
-        assert str(structure.transcript_dir).startswith(str(Path(OUTPUTS_DIR).resolve()))
+        assert str(structure.transcript_dir).startswith(
+            str(Path(OUTPUTS_DIR).resolve())
+        )
 
 
 class TestGetStandardFilePatterns:

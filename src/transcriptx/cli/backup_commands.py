@@ -9,7 +9,6 @@ from transcriptx.core.utils.state_backup import (
     verify_backup,
     create_backup,
 )
-from transcriptx.core.utils.paths import PROCESSING_STATE_FILE
 from transcriptx.core.utils.logger import get_logger
 from rich.console import Console
 from rich.table import Table

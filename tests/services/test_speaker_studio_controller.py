@@ -34,7 +34,9 @@ def test_controller_list_transcripts_delegates_to_segment_index(tmp_path: Path) 
         out = ctrl.list_transcripts(data_dir=tmp_path)
         assert len(out) == 1
         assert out[0].base_name == "a"
-        mock_svc.list_transcripts.assert_called_once_with(data_dir=tmp_path, canonical_only=False)
+        mock_svc.list_transcripts.assert_called_once_with(
+            data_dir=tmp_path, canonical_only=False
+        )
 
 
 def test_controller_list_segments_delegates(tmp_path: Path) -> None:

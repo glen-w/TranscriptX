@@ -33,7 +33,9 @@ def render_home() -> None:
         with col2:
             st.metric("Transcripts", len(transcripts))
         with col3:
-            st.metric("Output Root", "Configured" if Path(OUTPUTS_DIR).exists() else "N/A")
+            st.metric(
+                "Output Root", "Configured" if Path(OUTPUTS_DIR).exists() else "N/A"
+            )
 
         st.divider()
         st.subheader("Quick Actions")
@@ -58,12 +60,18 @@ def render_home() -> None:
         st.divider()
         st.subheader("Recent Runs")
         if not runs:
-            st.info("No analysis runs yet. Start an analysis from the Library or Run Analysis page.")
+            st.info(
+                "No analysis runs yet. Start an analysis from the Library or Run Analysis page."
+            )
         else:
             for run in runs[:5]:
-                with st.expander(f"{run.run_id} — {run.created_at.strftime('%Y-%m-%d %H:%M')}"):
+                with st.expander(
+                    f"{run.run_id} — {run.created_at.strftime('%Y-%m-%d %H:%M')}"
+                ):
                     st.caption(f"Transcript: {run.transcript_path}")
-                    st.caption(f"Modules: {', '.join(run.selected_modules[:5])}{'...' if len(run.selected_modules) > 5 else ''}")
+                    st.caption(
+                        f"Modules: {', '.join(run.selected_modules[:5])}{'...' if len(run.selected_modules) > 5 else ''}"
+                    )
                     if st.button("Open", key=f"open_run_{run.run_id}"):
                         st.session_state["subject_type"] = "transcript"
                         st.session_state["subject_id"] = run.run_dir.parent.name

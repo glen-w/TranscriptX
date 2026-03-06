@@ -324,9 +324,15 @@ def render_corrections_studio() -> None:
                 "rejected": "[x]",
                 "skipped": "[-]",
             }.get(c["status"], "")
-            wrong_preview = c["wrong_text"][:30] + ("…" if len(c["wrong_text"]) > 30 else "")
-            suggested_preview = c["suggested_text"][:30] + ("…" if len(c["suggested_text"]) > 30 else "")
-            label = f"{c['kind']} {status_emoji} — {wrong_preview} → {suggested_preview}"
+            wrong_preview = c["wrong_text"][:30] + (
+                "…" if len(c["wrong_text"]) > 30 else ""
+            )
+            suggested_preview = c["suggested_text"][:30] + (
+                "…" if len(c["suggested_text"]) > 30 else ""
+            )
+            label = (
+                f"{c['kind']} {status_emoji} — {wrong_preview} → {suggested_preview}"
+            )
             is_active = active_id == c["id"]
             btn_type = "primary" if is_active else "secondary"
             if st.button(

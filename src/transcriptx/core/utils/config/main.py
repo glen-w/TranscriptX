@@ -13,7 +13,6 @@ except Exception:  # pragma: no cover - optional dependency guard
     _load_dotenv = None
 
 load_dotenv: Optional[Callable[..., bool]] = _load_dotenv
-from pathlib import Path as _Path
 from .analysis import AnalysisConfig
 
 

@@ -125,9 +125,7 @@ class InputConfig:
     wav_folders: list[str] = field(
         default_factory=lambda: ["/Volumes/DVT1600/RECORD/A"]
     )
-    recordings_folders: list[str] = field(
-        default_factory=lambda: [str(RECORDINGS_DIR)]
-    )
+    recordings_folders: list[str] = field(default_factory=lambda: [str(RECORDINGS_DIR)])
     prefill_rename_with_date_prefix: bool = True
     # How to choose file selection UI: "prompt" = ask each time; "explore" = file browser; "direct" = type path
     file_selection_mode: Literal["prompt", "explore", "direct"] = "prompt"
