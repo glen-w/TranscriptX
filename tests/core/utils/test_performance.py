@@ -12,7 +12,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from transcriptx.core.utils.performance_logger import get_performance_logger, TimedJob
+from transcriptx.core.utils.performance_logger import (
+    PerformanceLogger,
+    get_performance_logger,
+    TimedJob,
+)
 from transcriptx.core.utils.performance_estimator import PerformanceEstimator
 from transcriptx.database.models import Base, PerformanceSpan
 from transcriptx.database.repositories import PerformanceSpanRepository
@@ -35,6 +39,8 @@ class TestPerformanceLogger:
 
     def test_logs_span_execution(self, db_session_factory):
         """Test that TimedJob writes a span record."""
+        # Use a fresh logger so global _disabled state from other tests does not skip writes
+        logger = PerformanceLogger()
 
         def _session():
             return db_session_factory()
@@ -43,7 +49,7 @@ class TestPerformanceLogger:
             "transcriptx.core.utils.performance_logger.get_session",
             side_effect=_session,
         ):
-            with TimedJob("test_job", "test.wav") as job:
+            with TimedJob("test_job", "test.wav", logger_instance=logger) as job:
                 job.add_metadata({"model": "tiny"})
 
         session = db_session_factory()
@@ -60,6 +66,7 @@ class TestPerformanceLogger:
 
     def test_logs_exception_event(self, db_session_factory):
         """Test that exceptions are recorded as span events."""
+        logger = PerformanceLogger()
 
         def _session():
             return db_session_factory()
@@ -69,7 +76,7 @@ class TestPerformanceLogger:
             side_effect=_session,
         ):
             with pytest.raises(ValueError):
-                with TimedJob("test_job", "test.wav"):
+                with TimedJob("test_job", "test.wav", logger_instance=logger):
                     raise ValueError("boom")
 
         session = db_session_factory()

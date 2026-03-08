@@ -115,3 +115,22 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 | File | Test | Covers |
 |------|------|--------|
 | `tests/contracts/test_run_results_and_manifest_contracts.py` | `test_single_pipeline_result_shape_contract` | Single-transcript `run_analysis_pipeline()` return dict must contain `REQUIRED_SINGLE_RESULT_KEYS` (output_dir, errors, transcript_path, etc.). |
+
+---
+
+## 8. Expansion (2026-03-08) – suite review and high-leverage run results
+
+### Bug fix
+
+- **`tests/core/utils/test_performance.py`** – `test_logs_span_execution` and `test_logs_exception_event` were failing because the global `PerformanceLogger` singleton could be disabled (`_disabled=True`) by an earlier test that hit a missing `performance_spans` table. Fixed by using a fresh `PerformanceLogger()` and passing it as `logger_instance=logger` to `TimedJob` so the test does not depend on global state.
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/pipeline/test_manifest_builder.py` | `TestBuildRunResultsSummary` (5 tests), `test_write_run_results_summary_creates_file` | `build_run_results_summary` (minimal payload, skipped/failed computation, preset_explanation, errors); `write_run_results_summary` (writes `run_results.json`, contract with `RunResultsSummary.validate_run_results`) |
+
+### Suite totals after expansion
+
+- **Default run:** 1359 passed, 3 skipped, 458 deselected, 0 failed.
+- **High-leverage:** Run results summary builder and run_results.json write path now have direct unit tests and schema contract.
