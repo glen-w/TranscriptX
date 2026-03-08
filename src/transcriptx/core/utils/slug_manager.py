@@ -164,8 +164,12 @@ def register_transcript(
     existing_key = slug_to_key.get(base_slug)
     if existing_key and existing_key != transcript_key:
         existing_entry = transcripts.get(existing_key)
-        if existing_entry and existing_entry.get("source_path") == source_path:
-            # Same transcript file path, treat as the same slug identity.
+        same_file = existing_entry and (
+            existing_entry.get("source_path") == source_path
+            or existing_entry.get("source_basename") == source_basename
+        )
+        if same_file:
+            # Same transcript (file moved or content changed), reuse the slug.
             merged_runs = list({*existing_entry.get("runs", []), run_id})
             transcripts.pop(existing_key, None)
             transcripts[transcript_key] = {

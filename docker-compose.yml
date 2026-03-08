@@ -20,27 +20,27 @@ services:
     restart: "no"
     user: "${UID:-1000}:${GID:-1000}"
     working_dir: /data
-    ports:
-      - "8501:8501"
     volumes:
       - ./data:/data
       - transcriptx_cache:/home/transcriptx/.cache
-      # Optional: mount external libraries (then set env vars below)
-      # - /host/recordings:/recordings
-      # - /host/transcripts:/transcripts
+      # Optional: mount your local libraries (set the env vars below to match)
+      # - ${TRANSCRIPTX_HOST_TRANSCRIPTS_DIR:-}:/transcripts
+      # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings
+      # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
     environment:
       - TERM=xterm-256color
       - TRANSCRIPTX_USE_EMOJIS=0
       - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
+      # When using external library mounts above, set these to match the container paths:
+      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
+      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
+      # - TRANSCRIPTX_WAV_BACKUP_DIR=/wav
       # Audio playback in Docker: segments are exported here; play the WAV on your host
       - TRANSCRIPTX_PLAYBACK_EXPORT_DIR=${TRANSCRIPTX_PLAYBACK_EXPORT_DIR:-/data/playback-clips}
       # Use /data for caches so host user (UID:GID) can write; /home/transcriptx/.cache can be unwritable
       - HF_HOME=/data/.cache/huggingface
       - MPLCONFIGDIR=/data/.cache/matplotlib
       - NLTK_DATA=/opt/venv/nltk_data
-      # When using external library mounts above, set:
-      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
-      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
     command: ["interactive"]
     # One-off: docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm
 
@@ -48,23 +48,25 @@ services:
     build: .
     image: transcriptx:latest
     init: true
-    read_only: true
-    tmpfs:
-      - /tmp
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - transcriptx_cache:/home/transcriptx/.cache
+      # Optional: mount your local libraries (set the env vars below to match)
+      # - ${TRANSCRIPTX_HOST_TRANSCRIPTS_DIR:-}:/transcripts
+      # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings:ro
+      # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
     environment:
-      - HOME=/tmp/streamlit_home
-      - MPLCONFIGDIR=/tmp/mpl
-      - HF_HOME=/tmp/hf
-      - TRANSCRIPTX_CACHE_DIR=/tmp/transcriptx_cache
-      - TRANSCRIPTX_DATA_DIR=/tmp/data
-      - TRANSCRIPTX_PROFILES_DIR=/tmp/profiles
-      - NLTK_DATA=/tmp/nltk
+      - TRANSCRIPTX_DATA_DIR=/data
+      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
+      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
+      # - TRANSCRIPTX_WAV_BACKUP_DIR=/wav
       - TRANSCRIPTX_USE_EMOJIS=0
       - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-1}
-    volumes:
-      - transcriptx_web_data:/tmp/data
-      - ./data/transcripts:/tmp/data/transcripts:ro
-      - ./data/outputs:/tmp/data/outputs:ro
+      - HF_HOME=/data/.cache/huggingface
+      - MPLCONFIGDIR=/data/.cache/matplotlib
+      - NLTK_DATA=/opt/venv/nltk_data
     ports:
       - "8501:8501"
     healthcheck:
@@ -84,10 +86,17 @@ services:
     volumes:
       - ./data:/data
       - transcriptx_cache:/home/transcriptx/.cache
+      # Optional: mount your local libraries (set the env vars below to match)
+      # - ${TRANSCRIPTX_HOST_TRANSCRIPTS_DIR:-}:/transcripts
+      # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings
+      # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
     ports:
       - "8502:8502"
     environment:
       - TRANSCRIPTX_DATA_DIR=/data
+      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
+      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
+      # - TRANSCRIPTX_WAV_BACKUP_DIR=/wav
       - TRANSCRIPTX_ENABLE_SPEAKER_STUDIO=1
       - TRANSCRIPTX_USE_EMOJIS=0
       - NLTK_DATA=/opt/venv/nltk_data
@@ -103,5 +112,4 @@ services:
     command: ["web-viewer", "--host", "0.0.0.0", "--port", "8502"]
 
 volumes:
-  transcriptx_web_data:
   transcriptx_cache:

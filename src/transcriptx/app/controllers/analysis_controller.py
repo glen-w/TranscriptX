@@ -4,6 +4,7 @@ Analysis controller. Thin coordination - validates, calls workflow, normalizes r
 
 from __future__ import annotations
 
+from typing import Any, MutableMapping, Optional
 
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.models.results import AnalysisResult
@@ -25,10 +26,11 @@ class AnalysisController:
         self,
         request: AnalysisRequest,
         progress: ProgressCallback | None = None,
+        snapshot: Optional[MutableMapping[str, Any]] = None,
     ) -> AnalysisResult:
         """Run single-transcript analysis."""
         try:
-            return run_analysis(request, progress)
+            return run_analysis(request, progress, snapshot=snapshot)
         except (FileNotFoundError, ValueError) as e:
             raise ValidationError(str(e)) from e
         except Exception as e:

@@ -84,13 +84,14 @@ def run_analysis_pipeline(
     persist: bool = False,
     rerun_mode: str = "new-run",
     transcript_path: Optional[str] = None,
+    on_event: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     Run the analysis pipeline on a transcript or GroupRef.
 
-    Canonical entry: pass manifest (RunManifestInput). When manifest is provided,
-    target, selected_modules, speaker_options, skip_speaker_mapping, and persist
-    are derived from it. Otherwise uses the provided kwargs (compat layer).
+    on_event: optional callable(event_dict) forwarded to the single-transcript
+    DAG execution path. Best-effort — the pipeline continues even if it raises.
+    Only used for single-transcript runs; group runs do not forward it.
     """
     # Normalize from manifest when provided (canonical path)
     if manifest is not None:
@@ -134,6 +135,7 @@ def run_analysis_pipeline(
             rerun_mode=rerun_mode,
             run_id_override=run_id_override,
             output_dir_override=output_dir_override,
+            on_event=on_event,
         )
 
     logger.info(
@@ -531,12 +533,13 @@ def _run_single_analysis_pipeline(
     rerun_mode: str = "new-run",
     run_id_override: Optional[str] = None,
     output_dir_override: Optional[str] = None,
+    on_event: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     Run the analysis pipeline on a single transcript.
 
-    This is the existing single-transcript execution path, extracted to support
-    multi-transcript analysis without altering the core logic.
+    on_event: optional callable(event_dict) forwarded to the DAG pipeline.
+    Best-effort — the pipeline continues even if the hook raises.
     """
     logger.info(
         f"Starting analysis pipeline for {transcript_path} with modules: {', '.join(selected_modules)}"
@@ -780,6 +783,7 @@ def _run_single_analysis_pipeline(
                 run_id=run_id,
                 run_report=run_report,
                 requirements_resolver=requirements_resolver,
+                on_event=on_event,
             )
             logger.info("✅ DAG pipeline execution completed successfully")
         except Exception as e:

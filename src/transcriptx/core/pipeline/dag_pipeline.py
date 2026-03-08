@@ -690,6 +690,7 @@ class DAGPipeline:
         run_report: Optional[Any] = None,
         requirements_resolver: Optional[Any] = None,
         event_collector: Optional[List[Dict[str, Any]]] = None,
+        on_event: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Execute the analysis pipeline using DAG dependency resolution.
@@ -700,6 +701,10 @@ class DAGPipeline:
             skip_speaker_mapping: Skip speaker mapping if already done (deprecated, kept for compatibility)
             parallel: If True, execute modules in parallel where possible
             max_workers: Maximum parallel workers (if parallel=True)
+            event_collector: Optional list that receives structured event dicts (legacy).
+            on_event: Optional callable(event_dict) invoked synchronously on each
+                event. Receives the same structured dict that goes into
+                event_collector.  Best-effort — exceptions are swallowed.
 
         Returns:
             Dictionary with execution results
@@ -710,6 +715,18 @@ class DAGPipeline:
         self.logger.info(
             f"Starting DAG pipeline for {transcript_path} (parallel={parallel})"
         )
+
+        # ------------------------------------------------------------------
+        # Internal helper: fire both legacy collector and live callback
+        # ------------------------------------------------------------------
+        def _emit(event_dict: Dict[str, Any]) -> None:
+            if event_collector is not None:
+                event_collector.append(event_dict)
+            if on_event is not None:
+                try:
+                    on_event(event_dict)
+                except Exception:
+                    pass  # best-effort
 
         if output_dir is None:
             from transcriptx.core.utils.path_utils import get_transcript_dir
@@ -881,8 +898,26 @@ class DAGPipeline:
 
             return results
 
-        # Execute modules in order (sequential)
-        for module_name in execution_order:
+        # ------------------------------------------------------------------
+        # Sequential execution
+        # ------------------------------------------------------------------
+        total_modules = len(execution_order)
+
+        # Counters tracked alongside results lists for event enrichment
+        ev_completed = 0
+        ev_skipped = 0
+        ev_failed = 0
+
+        _emit({
+            "event": "run_started",
+            "total": total_modules,
+            "message": f"Starting pipeline: {total_modules} modules",
+        })
+
+        aborted = False
+        for idx_0, module_name in enumerate(execution_order):
+            index = idx_0 + 1  # 1-based display index
+
             if module_name not in self.nodes:
                 self.logger.warning(f"Unknown module: {module_name}")
                 continue
@@ -894,15 +929,18 @@ class DAGPipeline:
                 node, results["modules_run"]
             )
             if missing_deps:
-                if event_collector is not None:
-                    event_collector.append(
-                        {
-                            "event": "module_skipped",
-                            "module_name": module_name,
-                            "reason": "missing_dependencies",
-                            "missing_deps": missing_deps,
-                        }
-                    )
+                ev_skipped += 1
+                _emit({
+                    "event": "module_skipped",
+                    "module_name": module_name,
+                    "index": index,
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
+                    "message": "missing_dependencies",
+                })
                 # Check if any missing dependencies themselves have missing dependencies
                 dep_chain = []
                 for dep in missing_deps:
@@ -940,10 +978,16 @@ class DAGPipeline:
                 except Exception:
                     named_speaker_count = None
 
-            if event_collector is not None:
-                event_collector.append(
-                    {"event": "module_started", "module_name": module_name}
-                )
+            _emit({
+                "event": "module_started",
+                "module_name": module_name,
+                "index": index,
+                "total": total_modules,
+                "completed": ev_completed,
+                "skipped": ev_skipped,
+                "failed": ev_failed,
+                "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
+            })
             outcome = self._execute_single_module(
                 module_name=module_name,
                 node=node,
@@ -954,32 +998,46 @@ class DAGPipeline:
                 requirements_resolver=requirements_resolver,
                 named_speaker_count=named_speaker_count,
             )
-            if event_collector is not None:
-                if outcome.status == "success":
-                    event_collector.append(
-                        {
-                            "event": "module_completed",
-                            "module_name": module_name,
-                            "duration_ms": outcome.duration_ms,
-                        }
-                    )
-                elif outcome.status == "skipped":
-                    event_collector.append(
-                        {
-                            "event": "module_skipped",
-                            "module_name": module_name,
-                            "reason": outcome.skip_reason or "unknown",
-                            "used_cache": outcome.used_cache,
-                        }
-                    )
-                else:
-                    event_collector.append(
-                        {
-                            "event": "module_failed",
-                            "module_name": module_name,
-                            "error": outcome.error,
-                        }
-                    )
+            if outcome.status == "success":
+                ev_completed += 1
+                _emit({
+                    "event": "module_completed",
+                    "module_name": module_name,
+                    "index": index,
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
+                    "duration_ms": outcome.duration_ms,
+                })
+            elif outcome.status == "skipped":
+                ev_skipped += 1
+                _emit({
+                    "event": "module_skipped",
+                    "module_name": module_name,
+                    "index": index,
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
+                    "message": outcome.skip_reason or "unknown",
+                })
+            else:
+                ev_failed += 1
+                _emit({
+                    "event": "module_failed",
+                    "module_name": module_name,
+                    "index": index,
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
+                    "error": outcome.error,
+                })
+
             self._record_module_outcome(
                 module_name=module_name,
                 node=node,
@@ -992,10 +1050,16 @@ class DAGPipeline:
             if outcome.status == "failed" and self._should_abort_pipeline(
                 outcome, results
             ):
-                if event_collector is not None:
-                    event_collector.append(
-                        {"event": "pipeline_aborted", "reason": outcome.error}
-                    )
+                aborted = True
+                _emit({
+                    "event": "run_failed",
+                    "error": outcome.error,
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "message": f"Pipeline aborted: {outcome.error}",
+                })
                 break
 
         # Add execution metadata
@@ -1005,6 +1069,20 @@ class DAGPipeline:
         # Ensure execution_order is always present (even if empty)
         if "execution_order" not in results:
             results["execution_order"] = execution_order
+
+        if not aborted:
+            has_errors = bool(results.get("errors"))
+            _emit({
+                "event": "run_completed" if not has_errors else "run_completed",
+                "total": total_modules,
+                "completed": ev_completed,
+                "skipped": ev_skipped,
+                "failed": ev_failed,
+                "pct": 100.0,
+                "message": (
+                    f"Pipeline complete: {ev_completed} run, {ev_skipped} skipped, {ev_failed} failed"
+                ),
+            })
 
         self.logger.info(
             f"Pipeline completed. Ran {len(results['modules_run'])} modules with {len(results['errors'])} errors"

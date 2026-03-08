@@ -81,6 +81,19 @@ def _log_db_error(operation: str, err: Exception) -> None:
     )
 
 
+def _is_missing_performance_span_table_error(err: Exception) -> bool:
+    """
+    Detect schema errors where performance span table is unavailable.
+
+    This happens in DB-optional runs where the database is initialized for reads
+    but schema creation is intentionally skipped.
+    """
+    text = str(err).lower()
+    return (
+        "no such table" in text and "performance_spans" in text
+    ) or "relation \"performance_spans\" does not exist" in text
+
+
 class PerformanceLogger:
     """
     Singleton logger for performance spans.
@@ -88,6 +101,29 @@ class PerformanceLogger:
 
     def __init__(self):
         self._write_lock = threading.Lock()
+        self._disabled = False
+        self._disable_reason: Optional[str] = None
+
+    def _handle_db_exception(self, operation: str, err: Exception) -> None:
+        """
+        Handle database failures without interrupting the main pipeline.
+
+        If performance_spans does not exist, disable performance logging for the
+        remainder of the process to avoid repetitive error spam.
+        """
+        if _is_missing_performance_span_table_error(err):
+            if not self._disabled:
+                self._disabled = True
+                self._disable_reason = "performance_spans table is missing"
+                _log_db_error(
+                    operation,
+                    Exception(
+                        "performance_spans table is unavailable; disabling "
+                        "performance logging for this run"
+                    ),
+                )
+            return
+        _log_db_error(operation, err)
 
     def start_span(
         self,
@@ -102,6 +138,8 @@ class PerformanceLogger:
         module_run_id: Optional[int] = None,
         transcript_file_id: Optional[int] = None,
     ) -> None:
+        if self._disabled:
+            return
         with self._write_lock:
             from transcriptx.database.repositories import PerformanceSpanRepository
 
@@ -121,7 +159,7 @@ class PerformanceLogger:
                     transcript_file_id=transcript_file_id,
                 )
             except sqlalchemy.exc.DBAPIError as e:
-                _log_db_error("start_span", e)
+                self._handle_db_exception("start_span", e)
             finally:
                 session.close()
 
@@ -132,6 +170,8 @@ class PerformanceLogger:
         attributes_patch: Optional[Dict[str, Any]] = None,
         events_patch: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
+        if self._disabled:
+            return
         with self._write_lock:
             from transcriptx.database.repositories import PerformanceSpanRepository
 
@@ -145,7 +185,10 @@ class PerformanceLogger:
                     events_patch=events_patch,
                 )
             except (sqlalchemy.exc.DBAPIError, ValueError) as e:
-                _log_db_error("end_span_ok", e)
+                if isinstance(e, sqlalchemy.exc.DBAPIError):
+                    self._handle_db_exception("end_span_ok", e)
+                else:
+                    _log_db_error("end_span_ok", e)
             finally:
                 session.close()
 
@@ -157,6 +200,8 @@ class PerformanceLogger:
         attributes_patch: Optional[Dict[str, Any]] = None,
         events_patch: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
+        if self._disabled:
+            return
         with self._write_lock:
             from transcriptx.database.repositories import PerformanceSpanRepository
 
@@ -171,7 +216,10 @@ class PerformanceLogger:
                     events_patch=events_patch,
                 )
             except (sqlalchemy.exc.DBAPIError, ValueError) as e:
-                _log_db_error("end_span_error", e)
+                if isinstance(e, sqlalchemy.exc.DBAPIError):
+                    self._handle_db_exception("end_span_error", e)
+                else:
+                    _log_db_error("end_span_error", e)
             finally:
                 session.close()
 
@@ -188,6 +236,8 @@ class PerformanceLogger:
             span_id: The span ID to update
             attributes_patch: Dictionary of attributes to merge into existing attributes
         """
+        if self._disabled:
+            return
         with self._write_lock:
             from transcriptx.database.repositories import PerformanceSpanRepository
 
@@ -199,7 +249,7 @@ class PerformanceLogger:
                     attributes_patch=attributes_patch,
                 )
             except sqlalchemy.exc.DBAPIError as e:
-                _log_db_error("update_span_attributes", e)
+                self._handle_db_exception("update_span_attributes", e)
             finally:
                 session.close()
 

@@ -10,10 +10,18 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from typing import Any, Callable, MutableMapping, Optional
 
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.models.results import AnalysisResult
-from transcriptx.app.progress import NullProgress, ProgressCallback
+from transcriptx.app.progress import (
+    NullProgress,
+    ProgressCallback,
+    ProgressEvent,
+    ProgressSnapshot,
+    make_initial_snapshot,
+    update_snapshot_from_event,
+)
 from transcriptx.core import (
     get_available_modules,
     get_default_modules,
@@ -61,15 +69,24 @@ def validate_analysis_readiness(request: AnalysisRequest) -> list[str]:
 def run_analysis(
     request: AnalysisRequest,
     progress: ProgressCallback | None = None,
+    snapshot: Optional[MutableMapping[str, Any]] = None,
 ) -> AnalysisResult:
     """
     Run single-transcript analysis. No prompts, no prints.
+
+    snapshot: optional mutable dict (e.g. st.session_state["run_progress"]) that
+    will be updated in-place via update_snapshot_from_event as the pipeline
+    emits structured events.  The caller is responsible for storing it in
+    session state before calling this function so that Streamlit reruns can
+    read the latest value.
     """
     if progress is None:
         progress = NullProgress()
 
     path = Path(request.transcript_path)
     if not path.exists():
+        if snapshot is not None:
+            snapshot.update(status="failed", phase="failed", error=f"Transcript file not found: {path}")
         return AnalysisResult(
             success=False,
             run_dir=Path(),
@@ -80,10 +97,19 @@ def run_analysis(
             status="failed",
         )
 
+    # -----------------------------------------------------------------------
+    # Validation phase
+    # -----------------------------------------------------------------------
+    if snapshot is not None:
+        snapshot.update(status="running", phase="validating", latest_event="Validating inputs…")
     progress.on_stage_start("validating")
+
     errors = validate_analysis_readiness(request)
     if errors:
         progress.on_stage_complete("validating")
+        if snapshot is not None:
+            snapshot.update(status="failed", phase="failed", error="; ".join(errors),
+                            latest_event="Validation failed")
         return AnalysisResult(
             success=False,
             run_dir=Path(),
@@ -110,13 +136,17 @@ def run_analysis(
     elif request.modules:
         invalid = [m for m in request.modules if m not in available]
         if invalid:
+            err_msg = f"Invalid modules: {', '.join(invalid)}"
+            if snapshot is not None:
+                snapshot.update(status="failed", phase="failed", error=err_msg,
+                                latest_event=err_msg)
             return AnalysisResult(
                 success=False,
                 run_dir=Path(),
                 manifest_path=Path(),
                 modules_executed=[],
                 warnings=[],
-                errors=[f"Invalid modules: {', '.join(invalid)}"],
+                errors=[err_msg],
                 status="failed",
             )
         selected = list(request.modules)
@@ -132,8 +162,58 @@ def run_analysis(
         config = get_config()
         config.output.base_output_dir = output_dir_str
 
+    # -----------------------------------------------------------------------
+    # Pipeline phase — build on_event hook that keeps snapshot up to date
+    # -----------------------------------------------------------------------
+    if snapshot is not None:
+        snap = snapshot
+        # Seed snapshot before the run so the UI has something to show immediately
+        snap.update(
+            status="running",
+            phase="running_pipeline",
+            total=len(filtered),
+            completed=0,
+            skipped=0,
+            failed=0,
+            pct=0.0,
+            latest_event=f"Running {len(filtered)} modules…",
+            error=None,
+        )
+        if "recent_logs" not in snap:
+            snap["recent_logs"] = []
+
+        def _on_event(event: ProgressEvent) -> None:
+            update_snapshot_from_event(snap, event)  # type: ignore[arg-type]
+            # Also forward structured event to progress callback
+            if hasattr(progress, "on_event"):
+                try:
+                    progress.on_event(event)  # type: ignore[arg-type]
+                except Exception:
+                    pass
+
+        on_event: Optional[Callable[..., None]] = _on_event
+    else:
+        # No snapshot; still forward to progress callback if it supports on_event
+        if hasattr(progress, "on_event"):
+            def _on_event_only(event: ProgressEvent) -> None:
+                try:
+                    progress.on_event(event)  # type: ignore[arg-type]
+                except Exception:
+                    pass
+            on_event = _on_event_only
+        else:
+            on_event = None
+
     progress.on_stage_start("running_pipeline")
     progress.on_log(f"Running modules: {', '.join(filtered)}", level="info")
+    if snapshot is not None:
+        logs: list = snapshot.get("recent_logs", [])  # type: ignore[assignment]
+        import datetime as _dt
+        ts = _dt.datetime.now().strftime("%H:%M:%S")
+        logs.append(f"[{ts}] Running modules: {', '.join(filtered)}")
+        if len(logs) > 100:
+            logs = logs[-100:]
+        snapshot["recent_logs"] = logs
 
     start = time.perf_counter()
     try:
@@ -148,10 +228,13 @@ def run_analysis(
             skip_speaker_gate=request.skip_speaker_mapping,
             persist=request.persist,
         )
-        results = run_analysis_pipeline(manifest=manifest)
+        results = run_analysis_pipeline(manifest=manifest, on_event=on_event)
     except Exception as e:
         duration = time.perf_counter() - start
         progress.on_stage_complete("running_pipeline")
+        if snapshot is not None:
+            snapshot.update(status="failed", phase="failed", error=str(e),
+                            latest_event=f"Pipeline error: {e}")
         return AnalysisResult(
             success=False,
             run_dir=Path(),
@@ -166,6 +249,12 @@ def run_analysis(
     duration = time.perf_counter() - start
     progress.on_stage_complete("running_pipeline")
 
+    # -----------------------------------------------------------------------
+    # Finalizing phase
+    # -----------------------------------------------------------------------
+    if snapshot is not None:
+        snapshot.update(phase="finalizing", latest_event="Finalizing outputs…")
+
     output_dir = results.get("output_dir", "")
     output_path = Path(output_dir) if output_dir else Path()
     manifest_path = output_path / "manifest.json" if output_path else Path()
@@ -175,6 +264,20 @@ def run_analysis(
     status = "completed"
     if result_errors:
         status = "partial" if modules_run else "failed"
+
+    if snapshot is not None:
+        final_status = "failed" if status == "failed" else "completed"
+        final_phase = "failed" if status == "failed" else "completed"
+        snapshot.update(
+            status=final_status,
+            phase=final_phase,
+            pct=100.0,
+            latest_event=(
+                f"Done: {len(modules_run)} modules run"
+                + (f", {len(result_errors)} error(s)" if result_errors else "")
+            ),
+            error=result_errors[0] if result_errors and status == "failed" else snapshot.get("error"),
+        )
 
     return AnalysisResult(
         success=len(result_errors) == 0 or len(modules_run) > 0,

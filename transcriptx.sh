@@ -250,8 +250,12 @@ main() {
         fi
     done
 
-    # Check for virtual environment
-    if [ ! -d ".transcriptx" ]; then
+    # Check for virtual environment (verify bin/activate exists, not just the directory)
+    if [ ! -f ".transcriptx/bin/activate" ]; then
+        if [ -d ".transcriptx" ]; then
+            print_warning "Directory .transcriptx exists but is not a valid virtual environment. Recreating..."
+            rm -rf .transcriptx
+        fi
         if [ "$TRANSCRIPTX_CORE" = "1" ]; then
             print_warning "Virtual environment not found. Setting up core-only environment (TRANSCRIPTX_CORE=1)..."
             setup_environment_core

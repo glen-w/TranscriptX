@@ -74,9 +74,14 @@ class FileService:
             except Exception as e:
                 logger.warning(f"Failed to read manifest for {session_name}: {e}")
 
+        # Extract slug (without run_id) for fallback lookups
+        slug = session_name.split("/", 1)[0] if "/" in session_name else session_name
+
         for candidate in [
             Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",
             Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}_transcript_diarised.json",
+            Path(DIARISED_TRANSCRIPTS_DIR) / f"{slug}.json",
+            Path(DIARISED_TRANSCRIPTS_DIR) / f"{slug}_transcript_diarised.json",
         ]:
             if candidate.exists():
                 return candidate

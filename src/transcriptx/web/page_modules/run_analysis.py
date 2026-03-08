@@ -12,8 +12,13 @@ from transcriptx.app.controllers.analysis_controller import AnalysisController
 from transcriptx.app.controllers.library_controller import LibraryController
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.output_capture import capture_output
+from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.web.state import SELECTED_TRANSCRIPT_PATH
-from transcriptx.web.components.progress_panel import StreamlitProgressCallback
+from transcriptx.web.components.progress_panel import (
+    SNAPSHOT_KEY,
+    StreamlitProgressCallback,
+    render_progress_panel,
+)
 
 
 def render_run_analysis_page() -> None:
@@ -81,9 +86,25 @@ def render_run_analysis_page() -> None:
             key="run_analysis_modules",
         )
 
+    # ------------------------------------------------------------------
+    # If a run is in progress, show the live progress panel instead of
+    # the launch button.  The snapshot is persisted in session_state so
+    # Streamlit reruns rehydrate it without regressing to a generic message.
+    # ------------------------------------------------------------------
     if st.session_state.get("analysis_run_in_progress", False):
-        st.warning("Analysis is running...")
+        snapshot = st.session_state.get(SNAPSHOT_KEY)
+        if snapshot is not None:
+            render_progress_panel(snapshot)
+        else:
+            st.info("Analysis is running…")
         return
+
+    # Show panel for the last run (completed or failed) so the result persists
+    # on the page after execution finishes without requiring a manual refresh.
+    last_snapshot = st.session_state.get(SNAPSHOT_KEY)
+    if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
+        with st.expander("Last run progress", expanded=False):
+            render_progress_panel(last_snapshot)
 
     if st.button("▶ Run Analysis", type="primary", key="run_analysis_launch"):
         if not transcript_path or not transcript_path.exists():
@@ -107,35 +128,46 @@ def render_run_analysis_page() -> None:
                 st.error(e)
             return
 
+        # Seed a fresh snapshot in session state *before* setting the in-progress
+        # flag so the progress panel has something to show on the very first rerun.
+        st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(selected_modules))
         st.session_state["analysis_run_in_progress"] = True
-        progress = StreamlitProgressCallback()
 
-        with st.status("Running analysis...", expanded=True) as status:
+        progress = StreamlitProgressCallback()
+        snapshot = st.session_state[SNAPSHOT_KEY]
+
+        with st.status("Running analysis…", expanded=True) as status_widget:
             try:
                 with capture_output() as (stdout_buf, stderr_buf):
-                    result = analysis_ctrl.run_analysis(request, progress=progress)
+                    result = analysis_ctrl.run_analysis(
+                        request, progress=progress, snapshot=snapshot
+                    )
             finally:
                 st.session_state["analysis_run_in_progress"] = False
 
             captured = stdout_buf.getvalue() + stderr_buf.getvalue()
 
             if result.success:
-                status.update(label="✓ Analysis complete", state="complete")
-                st.success(f"Analysis completed. Output: {result.run_dir}")
-                if result.modules_executed:
-                    st.caption(f"Modules run: {', '.join(result.modules_executed)}")
-                if result.errors:
-                    st.warning(f"Warnings: {len(result.errors)}")
-                    for e in result.errors[:5]:
-                        st.caption(f"  • {e}")
-                if captured:
-                    with st.expander("Log output"):
-                        st.text(captured)
+                status_widget.update(label="✓ Analysis complete", state="complete")
             else:
-                status.update(label="✗ Analysis failed", state="error")
-                st.error("Analysis failed")
-                for e in result.errors:
-                    st.error(e)
-                if captured:
-                    with st.expander("Log output"):
-                        st.text(captured)
+                status_widget.update(label="✗ Analysis failed", state="error")
+
+        # Render outcome outside the status widget so it stays visible after collapse
+        if result.success:
+            st.success(
+                f"Analysis completed successfully.  \nOutput: `{result.run_dir}`"
+            )
+            if result.modules_executed:
+                st.caption(f"Modules run: {', '.join(result.modules_executed)}")
+            if result.errors:
+                st.warning(f"{len(result.errors)} warning(s) during run:")
+                for e in result.errors[:5]:
+                    st.caption(f"  • {e}")
+        else:
+            st.error("Analysis failed.")
+            for e in result.errors:
+                st.error(e)
+
+        if captured:
+            with st.expander("Full log output"):
+                st.text(captured)
