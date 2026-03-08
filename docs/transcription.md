@@ -37,9 +37,13 @@ TranscriptX accepts **canonical** transcript JSON with this structure (schema ve
 
 Filenames ending with `*_transcriptx.json` are treated as canonical; use `--accept-noncanonical` to analyze other filenames when the content is valid.
 
-## Generate with WhisperX (standalone)
+## Generate transcript JSON
 
-Run WhisperX yourself (Docker or local), then feed the output into TranscriptX.
+You can produce compatible JSON with any tool: WhisperX, AssemblyAI, Deepgram, Otter, Google, Colab, or manual edits. TranscriptX does not run any transcription engine; it consumes JSON you provide.
+
+### WhisperX (optional reference example)
+
+WhisperX is one example of an external transcription workflow. The recipe below is a **standalone reference** — optional, not required. Run WhisperX yourself (Docker or local), then feed the output into TranscriptX.
 
 **Docker (copy-paste):** Use the reference recipe in [docs/recipes/whisperx/](recipes/whisperx/README.md). From that directory:
 
@@ -89,8 +93,8 @@ You can produce compatible JSON from other engines (e.g. AssemblyAI, Deepgram, G
 
 ## Golden path
 
-1. **Get JSON** — Use WhisperX, Colab, or another tool (see [recipes/whisperx](recipes/whisperx/README.md)).
+1. **Get JSON** — Use any tool that produces compatible JSON: WhisperX, AssemblyAI, Deepgram, Otter, Colab, or manual export. See [recipes/whisperx](recipes/whisperx/README.md) for an optional WhisperX reference recipe.
 2. **Canonicalize (optional but recommended)** — `transcriptx transcript canonicalize --in <file> --out <stem>_transcriptx.json`.
 3. **Analyze** — `transcriptx analyze --transcript-file <stem>_transcriptx.json`.
 
-You can also point `analyze` at raw WhisperX JSON directly; TranscriptX will load it and show a one-line tip to canonicalize for best results.
+You can also point `analyze` at raw JSON directly (e.g. from WhisperX); TranscriptX will load it and show a one-line tip to canonicalize for best results.

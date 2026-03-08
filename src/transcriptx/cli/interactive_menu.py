@@ -19,7 +19,6 @@ from rich import print
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger, log_error
 
-from .display_utils import show_banner
 from .exit_codes import exit_success, exit_user_cancel
 
 logger = get_logger()
@@ -355,7 +354,8 @@ def _show_browser_menu() -> None:
         time.sleep(2)
         if not _running_in_docker():
             webbrowser.open(user_url)
-        print("[green]✓ Web interface opened in your browser[/green]")
+        print("[green]✓ Browser UI has been started and opened in your browser[/green]")
+        print(f"[dim]Access at: {user_url}[/dim]")
         print("[dim]Note: Keep this CLI session open to keep the server running.[/dim]")
         print(
             "[dim]Press Enter to stop the server and return to the main menu...[/dim]"
@@ -370,6 +370,7 @@ def _show_browser_menu() -> None:
                 process.wait(timeout=5)
             except Exception:
                 process.kill()
+            print("[dim]Browser UI stopped. Returning to Interface menu.[/dim]")
 
     except FileNotFoundError:
         log_error(
@@ -421,7 +422,6 @@ def run_interactive_menu() -> None:
         the primary interactive experience. CLI commands and flags remain
         fully supported.
     """
-    show_banner()
     print(
         "\n[yellow]⚠️  Interactive terminal menus are deprecated. "
         "Use `transcriptx gui` for the primary interactive experience. "

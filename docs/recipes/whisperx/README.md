@@ -1,6 +1,6 @@
-# WhisperX standalone (reference recipe)
+# WhisperX standalone (optional reference recipe)
 
-These files are **standalone reference examples** for running WhisperX independently. They are **not** part of the TranscriptX runtime—TranscriptX is analysis-only and does not orchestrate WhisperX.
+These files are **optional standalone reference examples** for running WhisperX independently. They are **not** part of the TranscriptX runtime—TranscriptX is analysis-only and does not orchestrate WhisperX. Use any tool that produces compatible transcript JSON; WhisperX is one example.
 
 Use them to generate diarized transcript JSON that you can then **canonicalize** and **analyze** with TranscriptX:
 

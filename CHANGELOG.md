@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5] - 2026-03-08
+
 ### Added
 - **Transcript validate/canonicalize**: `transcriptx transcript validate --file <path>` and `transcriptx transcript canonicalize --in <path> [--out <path>]` for schema validation and converting raw/legacy JSON to canonical format. See [docs/transcription.md](docs/transcription.md).
 - **Golden path**: Get JSON → canonicalize/validate → analyze; external transcription guide in `docs/transcription.md` and reference recipe in `docs/recipes/whisperx/`.
@@ -16,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 - **`transcribe` command**: Deprecated; prints guidance to stderr and exits 2. Use external transcription (see docs/transcription.md) then `transcriptx analyze`.
-- **`whisperx-web-gui` command**: Deprecated; same stub behavior. Will be removed in v0.2.
+- **`whisperx-web-gui` command**: Deprecated; same stub behavior. Will be removed in a future release.
 
 ## [0.42] - 2026-03-03
 

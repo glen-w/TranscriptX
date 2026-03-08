@@ -7,7 +7,7 @@ This document covers contribution workflow and how to keep documentation in sync
 To avoid drift between the CLI, Docker setup, and docs, use this checklist when changing CLI commands, compose files, or architecture:
 
 1. **Regenerate and review `--help` output**  
-   Run `transcriptx --help` and `transcriptx <command> --help` for any changed commands. Update [docs/CLI.md](CLI.md) so flags and options match exactly. Do not document internal-only parameters.
+   Run `transcriptx --help` and `transcriptx <command> --help` for any changed commands. Update [docs/generated/cli.md](generated/cli.md) so flags and options match exactly. Do not document internal-only parameters.
 
 2. **Verify README examples**  
    Ensure installation (pip/venv and Docker), CLI examples, and “golden path” commands in [README.md](../README.md) are runnable with the current code.

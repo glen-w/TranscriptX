@@ -24,4 +24,4 @@ Package Structure:
 
 """
 
-__version__ = "0.42"
+__version__ = "0.5"
