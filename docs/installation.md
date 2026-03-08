@@ -94,6 +94,6 @@ Gates are checks that prompt, block, or skip work to keep results accurate and r
 
 ## Troubleshooting
 
-- **"No module named …" after install** — Ensure you ran `pip install -r requirements.txt` before `pip install -e .`. The package does not bundle runtime dependencies.
+- **"No module named …" after install** — For an editable install from source, install dependencies first: `pip install -r requirements.txt` then `pip install -e .`. If you installed via `pip install transcriptx` or `pip install transcriptx[full]`, dependencies are pulled from pyproject.toml; reinstall with the desired extra if a module fails.
 - **spaCy model errors** — The language model is a separate download from the NLP extra. Install the NLP extra first, then run `python -m spacy download en_core_web_md`. If offline and auto-download fails, install manually.
 - **Download-related failures** — Downloads are off by default. For features that need models, set `TRANSCRIPTX_DISABLE_DOWNLOADS=0` and (where required) provide a Hugging Face token or policy.

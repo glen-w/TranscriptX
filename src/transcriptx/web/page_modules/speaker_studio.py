@@ -8,10 +8,37 @@ Calls only SpeakerStudioController (no direct service imports).
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.app.compat import discover_all_transcript_paths
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
+from transcriptx.web.services.file_service import FileService
+
+
+def _transcript_paths_for_speaker_views() -> list[Path]:
+    """Same discovery as Library and session-based views: config/DIARISED dir + session transcripts."""
+    paths: list[Path] = []
+    seen: set[str] = set()
+    for p in discover_all_transcript_paths(None):
+        key = str(Path(p).resolve())
+        if key not in seen:
+            seen.add(key)
+            paths.append(Path(p))
+    if not paths:
+        for session in FileService.list_available_sessions():
+            name = session.get("name", "")
+            if "/" not in name:
+                continue
+            resolved = FileService.resolve_transcript_path(name)
+            if resolved and resolved.exists():
+                p = Path(resolved)
+                key = str(p.resolve())
+                if key not in seen:
+                    seen.add(key)
+                    paths.append(p)
+    return sorted(paths, key=lambda p: str(p.resolve()))
 
 
 def render_speaker_studio() -> None:
@@ -24,11 +51,16 @@ def render_speaker_studio() -> None:
     )
 
     controller = SpeakerStudioController()
-    try:
-        transcripts = controller.list_transcripts(canonical_only=False)
-    except TypeError:
-        # Older controller without canonical_only: list only canonical-named files
-        transcripts = controller.list_transcripts()
+    paths = _transcript_paths_for_speaker_views()
+    if paths:
+        transcripts = controller.list_transcripts_from_paths(paths)
+    else:
+        transcripts = []
+    if not transcripts:
+        try:
+            transcripts = controller.list_transcripts(canonical_only=False)
+        except TypeError:
+            transcripts = controller.list_transcripts()
     if not transcripts:
         st.info(
             "No transcripts found in the data directory. Add transcript JSON files to get started."

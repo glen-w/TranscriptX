@@ -53,6 +53,9 @@ class PerformanceEstimator:
                 attributes_filter=attributes_filter,
             )
             return spans
+        except Exception:
+            # Table may be missing or DB unavailable; degrade gracefully
+            return []
         finally:
             session.close()
 

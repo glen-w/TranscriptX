@@ -134,3 +134,9 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 
 - **Default run:** 1359 passed, 3 skipped, 458 deselected, 0 failed.
 - **High-leverage:** Run results summary builder and run_results.json write path now have direct unit tests and schema contract.
+
+### integration_core fixes (2026-03-08)
+
+- **`src/transcriptx/core/utils/transcript_output.py`** – Normalized `OUTPUTS_DIR` and `DIARISED_TRANSCRIPTS_DIR` to `Path(...)` before `.resolve()` and `/` so tests that monkeypatch them to `str(tmp_path)` do not raise `AttributeError: 'str' object has no attribute 'resolve'`.
+- **`tests/integration/core/test_cli_workflow_integration.py`** – Patches were targeting `transcriptx.cli.main.questionary` but `main` is a module (main.py), not a package. Updated to patch `transcriptx.cli.interactive_menu.questionary.select` where questionary is actually used.
+- **Result:** `pytest -m integration_core` now passes (32 passed).

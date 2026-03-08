@@ -163,6 +163,30 @@ class SpeakerMappingService:
         _store.mutate(transcript_path, mutator, reason="speaker_mapping", timeout=15)
         return self.get_mapping(transcript_path)
 
+    def unignore_speaker(
+        self,
+        transcript_path: str,
+        diarized_id: str,
+        *,
+        method: str = "web",
+    ) -> SpeakerMapState:
+        """Remove diarized ID from ignored_speakers list."""
+        did = _normalize_diarized_id(diarized_id)
+        path = Path(transcript_path)
+        if not path.exists():
+            raise FileNotFoundError(transcript_path)
+
+        def mutator(data: Dict[str, Any]) -> None:
+            ignored = list(data.get("ignored_speakers") or [])
+            if did in ignored:
+                ignored.remove(did)
+            data["ignored_speakers"] = ignored
+            data["_speaker_id_to_db_id"] = data.get("speaker_id_to_db_id") or {}
+            self._apply_and_stamp(data, method)
+
+        _store.mutate(transcript_path, mutator, reason="speaker_mapping", timeout=15)
+        return self.get_mapping(transcript_path)
+
     def bulk_update(
         self,
         transcript_path: str,

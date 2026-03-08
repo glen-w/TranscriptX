@@ -439,15 +439,8 @@ def run_analysis_pipeline(
         transcript_paths=resolved_paths,
         run_id=group_run_id,
     )
-    # Build lightweight output manifest for group runs (native UI contract).
-    write_output_manifest(
-        run_dir=Path(group_output_service.base_dir),
-        run_id=group_run_id,
-        transcript_key=group_uuid,
-        modules_enabled=selected_modules,
-    )
-
     # Run-level results summary for group (modules_enabled; per-transcript run/skip live in each transcript run dir)
+    # Written before the manifest so run_results.json is captured as an artifact.
     write_run_results_summary(
         run_dir=Path(group_output_service.base_dir),
         run_id=group_run_id,
@@ -457,6 +450,14 @@ def run_analysis_pipeline(
         skipped_modules=[],
         errors=group_errors,
         preset_explanation=None,
+    )
+
+    # Build lightweight output manifest for group runs (native UI contract).
+    write_output_manifest(
+        run_dir=Path(group_output_service.base_dir),
+        run_id=group_run_id,
+        transcript_key=group_uuid,
+        modules_enabled=selected_modules,
     )
 
     group_results: Dict[str, Any] = {
@@ -544,6 +545,14 @@ def _run_single_analysis_pipeline(
     logger.info(
         f"Starting analysis pipeline for {transcript_path} with modules: {', '.join(selected_modules)}"
     )
+
+    # Ensure DB tables exist before estimator or any DB access (e.g. register_transcript)
+    try:
+        from transcriptx.database import init_database
+
+        init_database()
+    except Exception as e:
+        logger.debug("Database init skipped or failed (non-fatal): %s", e)
 
     # Validate inputs
     validate_transcript(transcript_path)
@@ -801,15 +810,8 @@ def _run_single_analysis_pipeline(
             skipped_modules=results.get("skipped_modules", []),
         )
 
-        # Build lightweight output manifest for the run
-        write_output_manifest(
-            run_dir=Path(output_dir),
-            run_id=run_id,
-            transcript_key=transcript_key,
-            modules_enabled=selected_modules,
-        )
-
         # Run-level results summary (modules run / skipped / why) for CLI and Web UI
+        # Written before the manifest so run_results.json is captured as an artifact.
         skipped = results.get("skipped_modules", [])
         _build_and_write_run_results(
             run_dir=Path(output_dir),
@@ -819,6 +821,14 @@ def _run_single_analysis_pipeline(
             modules_run=results.get("modules_run", []),
             skipped_modules=skipped,
             errors=results.get("errors", []),
+        )
+
+        # Build lightweight output manifest for the run
+        write_output_manifest(
+            run_dir=Path(output_dir),
+            run_id=run_id,
+            transcript_key=transcript_key,
+            modules_enabled=selected_modules,
         )
 
         # Display results to user

@@ -8,6 +8,7 @@ output capture if wrapping legacy code that still prints.
 
 from __future__ import annotations
 
+import logging
 import time
 from pathlib import Path
 from typing import Any, Callable, MutableMapping, Optional
@@ -19,6 +20,7 @@ from transcriptx.app.progress import (
     ProgressCallback,
     ProgressEvent,
     ProgressSnapshot,
+    SnapshotLogHandler,
     make_initial_snapshot,
     update_snapshot_from_event,
 )
@@ -215,7 +217,21 @@ def run_analysis(
             logs = logs[-100:]
         snapshot["recent_logs"] = logs
 
+    # Attach a SnapshotLogHandler so transcriptx logger output (INFO/WARNING/ERROR)
+    # from the pipeline and analysis modules flows into the snapshot's recent_logs.
+    # Only attached when we have a snapshot (i.e. a web GUI run).
+    _tx_logger = logging.getLogger("transcriptx")
+    _log_handler: Optional[SnapshotLogHandler] = None
+    if snapshot is not None:
+        # Remove any pre-existing SnapshotLogHandler to avoid duplicate attachment.
+        _tx_logger.handlers = [h for h in _tx_logger.handlers
+                                if not isinstance(h, SnapshotLogHandler)]
+        _log_handler = SnapshotLogHandler(snapshot)
+        _tx_logger.addHandler(_log_handler)
+
     start = time.perf_counter()
+    _pipeline_exception: Optional[Exception] = None
+    results: dict = {}
     try:
         manifest = RunManifestInput.from_cli_kwargs(
             transcript_file=path,
@@ -230,18 +246,25 @@ def run_analysis(
         )
         results = run_analysis_pipeline(manifest=manifest, on_event=on_event)
     except Exception as e:
+        _pipeline_exception = e
+    finally:
+        if _log_handler is not None:
+            _tx_logger.removeHandler(_log_handler)
+            _log_handler.close()
+
+    if _pipeline_exception is not None:
         duration = time.perf_counter() - start
         progress.on_stage_complete("running_pipeline")
         if snapshot is not None:
-            snapshot.update(status="failed", phase="failed", error=str(e),
-                            latest_event=f"Pipeline error: {e}")
+            snapshot.update(status="failed", phase="failed", error=str(_pipeline_exception),
+                            latest_event=f"Pipeline error: {_pipeline_exception}")
         return AnalysisResult(
             success=False,
             run_dir=Path(),
             manifest_path=Path(),
             modules_executed=[],
             warnings=[],
-            errors=[str(e)],
+            errors=[str(_pipeline_exception)],
             duration_seconds=duration,
             status="failed",
         )

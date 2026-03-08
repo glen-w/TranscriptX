@@ -58,7 +58,8 @@ to derive state. Use on_log() for human-readable context only.
 from __future__ import annotations
 
 import datetime
-from typing import Any, Dict, List, Literal, Optional, Protocol, TypedDict, runtime_checkable
+import logging
+from typing import Any, Dict, List, Literal, MutableMapping, Optional, Protocol, TypedDict, runtime_checkable
 
 # ---------------------------------------------------------------------------
 # Event type constants
@@ -316,3 +317,66 @@ class NullProgress:
 
     def on_event(self, event: ProgressEvent) -> None:
         pass
+
+
+# ---------------------------------------------------------------------------
+# SnapshotLogHandler — forwards transcriptx logger records to a snapshot
+# ---------------------------------------------------------------------------
+
+class SnapshotLogHandler(logging.Handler):
+    """
+    A logging.Handler that appends log records from the transcriptx logger
+    into a progress snapshot's ``recent_logs`` list.
+
+    Scope: INFO, WARNING, and ERROR only (set at handler level = INFO; DEBUG
+    is excluded because the transcriptx logger itself typically runs at INFO).
+
+    Concurrency assumption: only one analysis run writes to a given snapshot
+    at a time.  This handler is not safe for concurrent runs targeting
+    different snapshots without further isolation.
+
+    Usage::
+
+        handler = SnapshotLogHandler(snapshot)
+        tx_logger = logging.getLogger("transcriptx")
+        # Remove any pre-existing instance first (safety).
+        tx_logger.handlers = [h for h in tx_logger.handlers
+                               if not isinstance(h, SnapshotLogHandler)]
+        tx_logger.addHandler(handler)
+        try:
+            run_analysis_pipeline(...)
+        finally:
+            tx_logger.removeHandler(handler)
+            handler.close()
+    """
+
+    _LOG_LEVEL = logging.INFO  # INFO, WARNING, ERROR; DEBUG ignored
+
+    def __init__(self, snapshot: MutableMapping[str, Any]) -> None:
+        super().__init__(level=self._LOG_LEVEL)
+        self._snapshot = snapshot
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Append the record's message to snapshot["recent_logs"].
+
+        - Uses record.getMessage() — no extra timestamp formatting so that
+          browser logs stay clean (the panel prepends [HH:MM:SS] itself).
+        - Initialises recent_logs if the key is absent.
+        - Caps the list at 100 entries (drops oldest).
+        - For WARNING or ERROR only, also updates latest_event so the caption
+          line in the progress panel highlights the notable message.
+        """
+        try:
+            msg = record.getMessage()
+            logs: List[str] = self._snapshot.get("recent_logs")  # type: ignore[assignment]
+            if logs is None:
+                logs = []
+            logs.append(msg)
+            if len(logs) > 100:
+                logs = logs[-100:]
+            self._snapshot["recent_logs"] = logs
+
+            if record.levelno >= logging.WARNING:
+                self._snapshot["latest_event"] = msg
+        except Exception:
+            self.handleError(record)

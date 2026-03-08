@@ -30,6 +30,25 @@ def test_ignore_speaker(tmp_path) -> None:
     assert "SPEAKER_01" in state.ignored_speakers
 
 
+def test_unignore_speaker(tmp_path) -> None:
+    path = tmp_path / "t.json"
+    path.write_text(json.dumps({"segments": [], "speaker_map": {}}))
+    svc = SpeakerMappingService()
+    svc.ignore_speaker(str(path), "SPEAKER_01", method="web")
+    svc.unignore_speaker(str(path), "SPEAKER_01", method="web")
+    state = svc.get_mapping(str(path))
+    assert "SPEAKER_01" not in state.ignored_speakers
+
+
+def test_unignore_speaker_idempotent_when_not_ignored(tmp_path) -> None:
+    """unignore_speaker on an ID that is not ignored should not raise and leave the list unchanged."""
+    path = tmp_path / "t.json"
+    path.write_text(json.dumps({"segments": [], "speaker_map": {}}))
+    svc = SpeakerMappingService()
+    state = svc.unignore_speaker(str(path), "SPEAKER_99", method="web")
+    assert "SPEAKER_99" not in state.ignored_speakers
+
+
 def test_bulk_update(tmp_path) -> None:
     path = tmp_path / "t.json"
     path.write_text(

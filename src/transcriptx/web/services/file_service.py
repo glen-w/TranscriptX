@@ -139,6 +139,11 @@ class FileService:
         Returns:
             Transcript data dictionary or None if not found
         """
+        # Single-char session_name usually means a bug (e.g. iterating over a
+        # UUID string); skip to avoid log spam and still resolve normally.
+        if not session_name or len(session_name) <= 1:
+            logger.debug("Skipping invalid session name (too short): %r", session_name)
+            return None
         path = FileService.resolve_transcript_path(session_name)
         if path is None:
             logger.warning(f"Transcript not found for session: {session_name}")

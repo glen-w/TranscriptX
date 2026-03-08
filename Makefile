@@ -7,7 +7,7 @@ help:
 	@echo "TranscriptX Makefile"
 	@echo ""
 	@echo "Documentation targets:"
-	@echo "  docs-gen     Generate documentation from code (CLI, modules) -> docs/generated/"
+	@echo "  docs-gen     No-op; CLI docs in docs/generated/ are maintained manually (see CONTRIBUTING.md)"
 	@echo "  docs         Same as docs-gen (Sphinx build deferred; see docs/ROADMAP.md)"
 	@echo "  docs-clean   Remove generated docs and build artifacts"
 	@echo ""
@@ -30,12 +30,9 @@ run:
 	docker compose run -it --rm transcriptx
 
 docs-gen:
-	@echo "Generating documentation from code..."
-	@python scripts/generate_docs.py
+	@echo "CLI docs are in docs/generated/ and maintained manually. Run transcriptx --help and transcriptx <command> --help, then update docs/generated/cli.md when commands change (see docs/CONTRIBUTING.md)."
 
 docs: docs-gen
-	@echo "Documentation generated. Outputs in docs/generated/"
-	@echo "(Full Sphinx HTML build deferred — see docs/ROADMAP.md; README is canonical.)"
 
 docs-clean:
 	@echo "Cleaning documentation build and generated files..."

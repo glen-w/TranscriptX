@@ -9,7 +9,7 @@ the controller delegates only.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from transcriptx.services.speaker_studio.segment_index import (
     SegmentIndexService,
@@ -48,6 +48,25 @@ class SpeakerStudioController:
         return self._segment_index.list_transcripts(
             data_dir=data_dir, canonical_only=canonical_only
         )
+
+    def list_transcripts_from_paths(
+        self,
+        paths: List[Union[str, Path]],
+    ) -> List[TranscriptSummary]:
+        """Build transcript summaries for the given paths (e.g. from shared discovery).
+        Skips paths that do not load as segment-bearing transcripts."""
+        summaries: List[TranscriptSummary] = []
+        seen: set[str] = set()
+        for p in paths:
+            summary = self._segment_index.summary_for_path(p)
+            if summary is None:
+                continue
+            key = str(Path(summary.path).resolve())
+            if key in seen:
+                continue
+            seen.add(key)
+            summaries.append(summary)
+        return sorted(summaries, key=lambda s: s.path)
 
     def list_segments(self, transcript_path: str) -> List[SegmentInfo]:
         """List segments for a transcript (start, end, text, speaker)."""
@@ -119,6 +138,20 @@ class SpeakerStudioController:
     ) -> SpeakerMapState:
         """Mark a diarized ID as ignored. Returns updated mapping state."""
         return self._mapping_service.ignore_speaker(
+            transcript_path,
+            diarized_id,
+            method=method,
+        )
+
+    def unignore_speaker(
+        self,
+        transcript_path: str,
+        diarized_id: str,
+        *,
+        method: str = "web",
+    ) -> SpeakerMapState:
+        """Remove a diarized ID from the ignored list. Returns updated mapping state."""
+        return self._mapping_service.unignore_speaker(
             transcript_path,
             diarized_id,
             method=method,

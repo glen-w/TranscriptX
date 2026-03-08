@@ -6,7 +6,7 @@ This document remains a short reference. Implementation lives in `src/transcript
 
 ## Directory layout
 
-- **Run root:** For a transcript at `.../foo.json`, outputs live under `outputs/<transcript_dir>/` (or a custom base). The run root is a timestamped directory `YYYYMMDD_HHMMSS_<hash>/` containing module subdirs and `manifest.json`, `run_results.json`.
+- **Run root:** Outputs live under `outputs/<slug>/<run_id>/` where `slug` is the human-friendly folder name (from the slug manager) and `run_id` is `YYYYMMDD_HHMMSS_<hash>`. The run root contains module subdirs, `manifest.json`, and `run_results.json`. See [output-contract-v1.md](contracts/output-contract-v1.md) for the full contract.
 - **Per-module:** Each analysis module writes under `<run_root>/<module_name>/` unless it uses a versioned namespace (see below).
 - **Standard subdirs (per module):** `data/`, `charts/`, `global/`, `speakers/` as created by `create_standard_output_structure()` in `output_standards.py`.
 
@@ -16,7 +16,7 @@ Modules that need a stable, versioned contract write under `<run_root>/<namespac
 
 ## Artifact naming
 
-- **Canonical base name:** From `path_utils.get_base_name(transcript_path)` (filename without extension). Used for run directories and file prefixes.
+- **Canonical base name:** From `path_utils.get_canonical_base_name(transcript_path)` (used for run dir and file prefixes). See contract for naming rules.
 - **Manifest and run summary:** `manifest.json` and `run_results.json` at run root. Built by `manifest_builder.py`; schema validated in tests (see `run_schema.py` and `tests/contracts/test_run_results_and_manifest_contracts.py`).
 - **Module data/charts:** Use `create_standard_output_structure()` and the helpers in `output_standards.py` (e.g. `save_global_data`, `save_speaker_data`) so paths stay consistent.
 

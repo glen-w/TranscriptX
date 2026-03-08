@@ -1,8 +1,8 @@
 # TranscriptX Roadmap
 
-**Current version:** 0.42
+**Current version:** See [pyproject.toml](../pyproject.toml) for the package version (e.g. 0.5).
 
-**North star:** ship a credible **beta → v0.42** analysis toolkit with stable contracts, great UX, and a safe path to extensibility.
+**North star:** ship a credible **beta** analysis toolkit with stable contracts, great UX, and a safe path to extensibility.
 
 > **Status legend (GitHub-style):**  
 > - [ ] planned / not started  

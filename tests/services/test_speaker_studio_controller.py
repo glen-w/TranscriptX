@@ -104,6 +104,26 @@ def test_controller_ignore_speaker_delegates(tmp_path: Path) -> None:
         )
 
 
+def test_controller_unignore_speaker_delegates(tmp_path: Path) -> None:
+    with patch(
+        "transcriptx.services.speaker_studio.controller.SpeakerMappingService"
+    ) as MapSvc:
+        mock_svc = MagicMock()
+        mock_svc.unignore_speaker.return_value = SpeakerMapState(
+            speaker_map={},
+            ignored_speakers=[],
+            schema_version="1.0",
+            provenance=None,
+        )
+        MapSvc.return_value = mock_svc
+        ctrl = SpeakerStudioController(data_dir=tmp_path)
+        state = ctrl.unignore_speaker("/path/to/t.json", "SPEAKER_01", method="web")
+        assert "SPEAKER_01" not in state.ignored_speakers
+        mock_svc.unignore_speaker.assert_called_once_with(
+            "/path/to/t.json", "SPEAKER_01", method="web"
+        )
+
+
 def test_controller_get_mapping_status_delegates(tmp_path: Path) -> None:
     with patch(
         "transcriptx.services.speaker_studio.controller.SpeakerMappingService"

@@ -175,6 +175,37 @@ class SegmentIndexService:
                 continue
         return summaries
 
+    def summary_for_path(self, path: str | Path) -> Optional[TranscriptSummary]:
+        """
+        Build a single TranscriptSummary for a path, or None if not loadable.
+        Used when listing from an external source (e.g. discover_all_transcript_paths).
+        """
+        path = Path(path)
+        if not path.is_file() or path.suffix.lower() != ".json":
+            return None
+        skip = frozenset({"manifest.json", "processing_state.json", "config.json"})
+        if path.name in skip:
+            return None
+        try:
+            segments = load_segments(str(path))
+            if not segments:
+                return None
+            speaker_map = extract_speaker_map_from_transcript(str(path))
+            ignored = extract_ignored_speakers_from_transcript(path)
+            status = _compute_speaker_map_status(segments, speaker_map, ignored)
+            unique_speakers = len(
+                set(seg.get("speaker") for seg in segments if seg.get("speaker"))
+            )
+            return TranscriptSummary(
+                path=str(path.resolve()),
+                base_name=get_canonical_base_name(str(path)),
+                speaker_map_status=status,
+                segment_count=len(segments),
+                unique_speaker_count=unique_speakers,
+            )
+        except Exception:
+            return None
+
     def list_segments(self, transcript_path: str) -> List[SegmentInfo]:
         """Load segments for a transcript with start, end, text, speaker."""
         raw = load_segments(transcript_path)

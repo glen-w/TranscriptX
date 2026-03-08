@@ -1,4 +1,4 @@
-# TranscriptX Architecture (v0.42)
+# TranscriptX Architecture
 
 This document gives a high-level mental model for how TranscriptX works today. It is not an API reference.
 
@@ -51,12 +51,12 @@ TranscriptX is structured in three layers:
 - **Data:** Mount the host data tree at `/data` so the container sees `data/recordings`, `data/transcripts`, and `data/outputs` in the same layout as the [Data layout](#data-layout-stable-contract) above.
 - **Reference:** Build and run details, volume layout, Apple Silicon, permissions, and pitfalls: **[docker.md](docker.md)**.
 
-## Extension points (v0.42)
+## Extension points
 
 - Add a module under `src/transcriptx/core/analysis/`, register it in the module registry, and add a minimal test.
 - Keep module outputs consistent: JSON/CSV/visual artifacts under the run directory with a stable filename pattern.
 
-## Non-goals (v0.42)
+## Non-goals
 
 - No plugin system
 - No hosted services

@@ -45,9 +45,10 @@ def generate_human_friendly_transcript(
 
     # Ensure transcript_dir is in the outputs directory, not in data/transcripts
     # This prevents accidentally creating directories in the wrong location (e.g., data/transcripts/raw)
+    # Normalize to Path so monkeypatched str (e.g. in tests) works with .resolve() and /
+    outputs_dir_path = Path(OUTPUTS_DIR).resolve()
+    transcripts_dir_path = Path(DIARISED_TRANSCRIPTS_DIR).resolve()
     transcript_dir_path = Path(transcript_dir).resolve()
-    outputs_dir_path = OUTPUTS_DIR.resolve()
-    transcripts_dir_path = DIARISED_TRANSCRIPTS_DIR.resolve()
 
     # Explicitly prevent creating directories in data/transcripts
     if str(transcript_dir_path).startswith(str(transcripts_dir_path)):
@@ -55,7 +56,7 @@ def generate_human_friendly_transcript(
             f"⚠️ transcript_dir is in transcripts directory ({transcript_dir}), "
             f"which is not allowed. Redirecting to outputs directory."
         )
-        transcript_dir = str(OUTPUTS_DIR / base_name)
+        transcript_dir = str(Path(OUTPUTS_DIR) / base_name)
         transcript_dir_path = Path(transcript_dir).resolve()
 
     # Ensure transcript_dir is in the outputs directory
@@ -64,7 +65,7 @@ def generate_human_friendly_transcript(
             f"⚠️ transcript_dir is not in outputs directory: {transcript_dir}. "
             f"Correcting to outputs directory."
         )
-        transcript_dir = str(OUTPUTS_DIR / base_name)
+        transcript_dir = str(Path(OUTPUTS_DIR) / base_name)
 
     try:
         # Generate the transcript files to the transcripts subdirectory

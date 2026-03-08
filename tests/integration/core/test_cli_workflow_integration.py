@@ -24,7 +24,7 @@ class TestCLIWorkflowIntegration:
         """Test interactive menu flow."""
         with (
             patch("transcriptx.cli.main._main_impl") as mock_main,
-            patch("transcriptx.cli.main.questionary.select") as mock_select,
+            patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select,
             patch("transcriptx.cli.analysis_workflow.run_single_analysis_workflow"),
         ):
             mock_select.return_value.ask.side_effect = [
@@ -105,7 +105,7 @@ class TestCLIWorkflowIntegration:
         """Test error recovery in CLI."""
         with (
             patch("transcriptx.cli.main._main_impl"),
-            patch("transcriptx.cli.main.questionary.select") as mock_select,
+            patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select,
         ):
             # Simulate workflow error
             mock_select.return_value.ask.side_effect = [
@@ -156,7 +156,7 @@ class TestCLIWorkflowIntegration:
         """Test graceful exit handling."""
         with (
             patch("transcriptx.cli.main._main_impl") as mock_main,
-            patch("transcriptx.cli.main.questionary.select") as mock_select,
+            patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select,
         ):
             mock_select.return_value.ask.return_value = "🚪 Exit"
             mock_main.return_value = None
@@ -181,7 +181,7 @@ class TestMainImplIntegration:
         config_file = tmp_path / "config.json"
         config_file.write_text('{"test": "config"}')
 
-        with patch("transcriptx.cli.main.questionary.select") as mock_select:
+        with patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select:
             mock_select.return_value.ask.return_value = "🚪 Exit"
 
             result = cli_runner.invoke(app, ["--config", str(config_file)])
@@ -190,7 +190,7 @@ class TestMainImplIntegration:
 
     def test_main_impl_workflow_routing(self, cli_runner):
         """Test main with no args exits when user selects Exit."""
-        with patch("transcriptx.cli.main.questionary.select") as mock_select:
+        with patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select:
             mock_select.return_value.ask.return_value = "🚪 Exit"
 
             result = cli_runner.invoke(app, [])

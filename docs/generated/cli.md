@@ -1,12 +1,14 @@
 # CLI Command Reference
 
-*This documentation is auto-generated from the CLI help output.*
+*This documentation reflects the CLI help output. Run `transcriptx --help` and `transcriptx <command> --help` for the latest. When commands or options change, update this file to match (see docs/CONTRIBUTING.md).*
 
 ## Main Command
 
+Invoke the CLI as **`transcriptx`** (when the package is installed) or **`python -m transcriptx.cli.main`** from the project root with `PYTHONPATH=src`.
+
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main [OPTIONS] COMMAND [ARGS]...              
+ Usage: transcriptx [OPTIONS] COMMAND [ARGS]...              
                                                                                 
  🎤 TranscriptX - Advanced Transcript Analysis Toolkit                          
                                                                                 
@@ -63,13 +65,17 @@
 
 ```
 
+**Usage:** Run `transcriptx` with no arguments for the interactive menu. For any command, run `transcriptx <command> --help` for full options. The **doctor** and **audit** groups run their default action when invoked with only global options (e.g. `transcriptx doctor`, `transcriptx audit -r <run_id>`).
+
 ## Subcommands
+
+Only a subset of subcommands are expanded below. For the rest (e.g. `gui`, `web-viewer`, `batch-analyze`, `preprocess`, `prep-audio`, `simplify-transcript`, `settings`, `test-analysis`, `deduplicate`, `cross-session`, `perf`, `analysis`, `deps`, `artifacts`, `group`), run `transcriptx <command> --help`.
 
 ### analyze
 
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main analyze [OPTIONS]                        
+ Usage: transcriptx analyze [OPTIONS]                        
                                                                                 
  Analyze a transcript file with specified modules and settings.                 
                                                                                 
@@ -121,7 +127,7 @@
 
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main database [OPTIONS] COMMAND [ARGS]...     
+ Usage: transcriptx database [OPTIONS] COMMAND [ARGS]...     
                                                                                 
  Database management commands                                                   
                                                                                 
@@ -154,7 +160,7 @@
 
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main identify-speakers [OPTIONS]              
+ Usage: transcriptx identify-speakers [OPTIONS]              
                                                                                 
  Identify speakers in a transcript file.                                        
                                                                                 
@@ -174,7 +180,7 @@
 
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main process-wav [OPTIONS] COMMAND [ARGS]...  
+ Usage: transcriptx process-wav [OPTIONS] COMMAND [ARGS]...  
                                                                                 
  Process audio files: convert, merge, or compress (WAV, MP3, OGG, etc.)         
                                                                                 
@@ -195,7 +201,7 @@
 
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main transcribe [OPTIONS]                     
+ Usage: transcriptx transcribe [OPTIONS]                     
                                                                                 
  [DEPRECATED] TranscriptX no longer transcribes audio directly. See             
  docs/transcription.md.                                                         
@@ -218,7 +224,7 @@
 
 ```
                                                                                 
- Usage: python -m transcriptx.cli.main transcript [OPTIONS] COMMAND [ARGS]...   
+ Usage: transcriptx transcript [OPTIONS] COMMAND [ARGS]...   
                                                                                 
  Transcript management commands                                                 
                                                                                 

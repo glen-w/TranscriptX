@@ -128,24 +128,58 @@ st.markdown(
         font-weight: 500;
         margin-right: 0.5rem;
     }
-    /* Style navigation buttons to look like text links */
+    /* Navigation section headers */
+    .nav-section-header {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8a9ab0;
+        margin: 1.1rem 0 0.25rem 0.1rem;
+        padding: 0;
+        line-height: 1.2;
+        user-select: none;
+    }
+    /* Style navigation buttons to look like sidebar links */
     div[data-testid="stButton"] > button[kind="secondary"] {
         background: transparent;
         border: none;
-        color: #1f77b4;
+        border-radius: 6px;
+        color: #3d5166;
         text-align: left;
-        padding: 0.5rem 0;
+        padding: 0.35rem 0.6rem;
         font-weight: normal;
+        font-size: 0.92rem;
         box-shadow: none;
         width: 100%;
+        transition: background 0.12s ease, color 0.12s ease;
     }
     div[data-testid="stButton"] > button[kind="secondary"]:hover {
-        color: #0d5a8a;
-        text-decoration: underline;
-        background: transparent;
+        color: #1f77b4;
+        background: #eef4fb;
+        text-decoration: none;
     }
     div[data-testid="stButton"] > button[kind="secondary"]:focus {
         box-shadow: none;
+        outline: none;
+    }
+    /* Active nav item — left-bar highlight */
+    div[data-testid="stButton"] > button[kind="secondary"].nav-active,
+    .nav-active-item > div[data-testid="stButton"] > button[kind="secondary"] {
+        background: #ddeeff;
+        color: #1f77b4;
+        font-weight: 600;
+    }
+    /* Subject panel section headers (CONTEXT / VIEWS / FILES / ADVANCED) */
+    .subject-section-header {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8a9ab0;
+        margin: 1rem 0 0.2rem 0.1rem;
+        line-height: 1.2;
+        user-select: none;
     }
     /* Scroll to top button */
     #scroll-to-top-btn {
@@ -955,51 +989,82 @@ def main():
 
     # Always render sidebar first so the menu is visible even with no sessions or on error
     current_page = st.session_state.get("page", "Home")
+
+    def _nav_button(page_key: str, label: str) -> None:
+        """Render a single nav button; bold + highlighted when active."""
+        is_active = current_page == page_key
+        text = f"**{label}**" if is_active else label
+        if is_active:
+            st.markdown('<div class="nav-active-item">', unsafe_allow_html=True)
+        if st.button(text, key=f"nav_{page_key}", width="stretch", type="secondary"):
+            st.session_state["page"] = page_key
+            st.rerun()
+        if is_active:
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    def _section(label: str) -> None:
+        st.markdown(
+            f'<p class="nav-section-header">{label}</p>', unsafe_allow_html=True
+        )
+
+    def _subject_section(label: str) -> None:
+        st.markdown(
+            f'<p class="subject-section-header">{label}</p>', unsafe_allow_html=True
+        )
+
     with st.sidebar:
         st.title("TranscriptX")
         st.divider()
 
-        # Global navigation (no subheader)
-        global_pages = [
-            ("Home", "Home"),
-            ("Library", "Library"),
-            ("Run Analysis", "Run Analysis"),
-            ("Speaker ID", "Speaker ID"),
-            ("Audio Prep", "Audio Prep"),
-            ("Batch Ops", "Batch Ops"),
-            ("Diagnostics", "Diagnostics"),
-            ("Settings", "Settings"),
-            ("Profiles", "Profiles"),
-            ("Search", "Search"),
-            ("Speakers", "Speakers"),
-            ("Groups", "Groups"),
-            ("Statistics", "Statistics"),
-        ]
+        # ── WORKSPACE ────────────────────────────────────────────────────────
+        _section("Workspace")
+        _nav_button("Home", "Home")
+        _nav_button("Library", "Library")
+        _nav_button("Search", "Search")
+
+        # ── PIPELINE ─────────────────────────────────────────────────────────
+        _section("Pipeline")
+        _nav_button("Audio Prep", "Audio Prep")
+        _nav_button("Speaker ID", "Speaker ID")
+        _nav_button("Run Analysis", "Run Analysis")
+        _nav_button("Batch Ops", "Batch Ops")
+
+        # ── EXPLORE ──────────────────────────────────────────────────────────
+        _section("Explore")
+        _nav_button("Statistics", "Statistics")
+        _nav_button("Speakers", "Speakers")
+        _nav_button("Groups", "Groups")
+
+        # ── TOOLS ────────────────────────────────────────────────────────────
+        tools_items = []
         if _speaker_studio_available:
-            global_pages.append(("Speaker Studio", "Speaker Studio"))
+            tools_items.append(("Speaker Studio", "Speaker Studio"))
         if _corrections_studio_available:
-            global_pages.append(("Corrections Studio", "Corrections Studio"))
-        for page_key, label in global_pages:
-            text = f"**{label}**" if current_page == page_key else label
-            if st.button(
-                text,
-                key=f"nav_{page_key}",
-                width="stretch",
-                type="secondary",
-            ):
-                st.session_state["page"] = page_key
-                st.rerun()
+            tools_items.append(("Corrections Studio", "Corrections Studio"))
+        if tools_items:
+            _section("Tools")
+            for page_key, label in tools_items:
+                _nav_button(page_key, label)
+
+        # ── SYSTEM ───────────────────────────────────────────────────────────
+        _section("System")
+        _nav_button("Profiles", "Profiles")
+        _nav_button("Settings", "Settings")
+        _nav_button("Diagnostics", "Diagnostics")
 
         st.divider()
 
-        # Subject selection (transcript or group)
+        # ── SUBJECT PANEL ────────────────────────────────────────────────────
         st.markdown("**Subject**")
+
+        _subject_section("Context")
         subject_type_label = st.radio(
             "Type",
             ["Transcript", "Group"],
             index=0,
             horizontal=True,
             key="subject_type_selector",
+            label_visibility="collapsed",
         )
         subject_type = "transcript" if subject_type_label == "Transcript" else "group"
         st.session_state["subject_type"] = subject_type
@@ -1025,15 +1090,15 @@ def main():
                 st.caption("No groups yet")
                 st.session_state["subject_id"] = None
             else:
-                options = {g.uuid: g for g in groups}
-                labels = {
+                group_options = {g.uuid: g for g in groups}
+                group_labels = {
                     g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
                     for g in groups
                 }
                 selected_group = st.selectbox(
                     "Group",
-                    list(options.keys()),
-                    format_func=lambda key: labels.get(key, key),
+                    list(group_options.keys()),
+                    format_func=lambda key: group_labels.get(key, key),
                     key="subject_id_selector",
                 )
                 st.session_state["subject_id"] = selected_group
@@ -1060,29 +1125,24 @@ def main():
         else:
             st.session_state["run_id"] = None
 
-        # Viewer navigation
-        transcript_pages = [
-            ("Overview", "Overview"),
-            ("Transcript", "Transcript"),
-            ("Charts", "Charts"),
-            ("Insights", "Insights"),
-            ("Data", "Data"),
-            ("Explorer", "File List"),
-            ("Configuration", "Configuration"),
-        ]
-        for page_key, label in transcript_pages:
-            text = f"**{label}**" if current_page == page_key else label
-            if st.button(
-                text,
-                key=f"nav_{page_key}",
-                width="stretch",
-                type="secondary",
-            ):
-                st.session_state["page"] = page_key
-                st.rerun()
+        # ── VIEWS ────────────────────────────────────────────────────────────
+        _subject_section("Views")
+        _nav_button("Overview", "Overview")
+        _nav_button("Transcript", "Transcript")
+        _nav_button("Charts", "Charts")
+        _nav_button("Insights", "Insights")
+        _nav_button("Data", "Data")
+
+        # ── FILES ────────────────────────────────────────────────────────────
+        _subject_section("Files")
+        _nav_button("Explorer", "File List")
+
+        # ── ADVANCED ─────────────────────────────────────────────────────────
+        _subject_section("Advanced")
+        _nav_button("Configuration", "Configuration")
 
         st.divider()
-        st.caption("Streamlit Studio Interface")
+        st.caption("TranscriptX")
 
     # Main content: show load error if present, then route to page
     if load_error:
