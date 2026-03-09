@@ -91,7 +91,7 @@ def _is_missing_performance_span_table_error(err: Exception) -> bool:
     text = str(err).lower()
     return (
         "no such table" in text and "performance_spans" in text
-    ) or "relation \"performance_spans\" does not exist" in text
+    ) or 'relation "performance_spans" does not exist' in text
 
 
 class PerformanceLogger:

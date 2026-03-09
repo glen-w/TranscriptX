@@ -19,9 +19,7 @@ from transcriptx.app.progress import (
     NullProgress,
     ProgressCallback,
     ProgressEvent,
-    ProgressSnapshot,
     SnapshotLogHandler,
-    make_initial_snapshot,
     update_snapshot_from_event,
 )
 from transcriptx.core import (
@@ -88,7 +86,11 @@ def run_analysis(
     path = Path(request.transcript_path)
     if not path.exists():
         if snapshot is not None:
-            snapshot.update(status="failed", phase="failed", error=f"Transcript file not found: {path}")
+            snapshot.update(
+                status="failed",
+                phase="failed",
+                error=f"Transcript file not found: {path}",
+            )
         return AnalysisResult(
             success=False,
             run_dir=Path(),
@@ -103,15 +105,21 @@ def run_analysis(
     # Validation phase
     # -----------------------------------------------------------------------
     if snapshot is not None:
-        snapshot.update(status="running", phase="validating", latest_event="Validating inputs…")
+        snapshot.update(
+            status="running", phase="validating", latest_event="Validating inputs…"
+        )
     progress.on_stage_start("validating")
 
     errors = validate_analysis_readiness(request)
     if errors:
         progress.on_stage_complete("validating")
         if snapshot is not None:
-            snapshot.update(status="failed", phase="failed", error="; ".join(errors),
-                            latest_event="Validation failed")
+            snapshot.update(
+                status="failed",
+                phase="failed",
+                error="; ".join(errors),
+                latest_event="Validation failed",
+            )
         return AnalysisResult(
             success=False,
             run_dir=Path(),
@@ -140,8 +148,9 @@ def run_analysis(
         if invalid:
             err_msg = f"Invalid modules: {', '.join(invalid)}"
             if snapshot is not None:
-                snapshot.update(status="failed", phase="failed", error=err_msg,
-                                latest_event=err_msg)
+                snapshot.update(
+                    status="failed", phase="failed", error=err_msg, latest_event=err_msg
+                )
             return AnalysisResult(
                 success=False,
                 run_dir=Path(),
@@ -197,11 +206,13 @@ def run_analysis(
     else:
         # No snapshot; still forward to progress callback if it supports on_event
         if hasattr(progress, "on_event"):
+
             def _on_event_only(event: ProgressEvent) -> None:
                 try:
                     progress.on_event(event)  # type: ignore[arg-type]
                 except Exception:
                     pass
+
             on_event = _on_event_only
         else:
             on_event = None
@@ -211,6 +222,7 @@ def run_analysis(
     if snapshot is not None:
         logs: list = snapshot.get("recent_logs", [])  # type: ignore[assignment]
         import datetime as _dt
+
         ts = _dt.datetime.now().strftime("%H:%M:%S")
         logs.append(f"[{ts}] Running modules: {', '.join(filtered)}")
         if len(logs) > 100:
@@ -224,8 +236,9 @@ def run_analysis(
     _log_handler: Optional[SnapshotLogHandler] = None
     if snapshot is not None:
         # Remove any pre-existing SnapshotLogHandler to avoid duplicate attachment.
-        _tx_logger.handlers = [h for h in _tx_logger.handlers
-                                if not isinstance(h, SnapshotLogHandler)]
+        _tx_logger.handlers = [
+            h for h in _tx_logger.handlers if not isinstance(h, SnapshotLogHandler)
+        ]
         _log_handler = SnapshotLogHandler(snapshot)
         _tx_logger.addHandler(_log_handler)
 
@@ -256,8 +269,12 @@ def run_analysis(
         duration = time.perf_counter() - start
         progress.on_stage_complete("running_pipeline")
         if snapshot is not None:
-            snapshot.update(status="failed", phase="failed", error=str(_pipeline_exception),
-                            latest_event=f"Pipeline error: {_pipeline_exception}")
+            snapshot.update(
+                status="failed",
+                phase="failed",
+                error=str(_pipeline_exception),
+                latest_event=f"Pipeline error: {_pipeline_exception}",
+            )
         return AnalysisResult(
             success=False,
             run_dir=Path(),
@@ -299,7 +316,11 @@ def run_analysis(
                 f"Done: {len(modules_run)} modules run"
                 + (f", {len(result_errors)} error(s)" if result_errors else "")
             ),
-            error=result_errors[0] if result_errors and status == "failed" else snapshot.get("error"),
+            error=(
+                result_errors[0]
+                if result_errors and status == "failed"
+                else snapshot.get("error")
+            ),
         )
 
     return AnalysisResult(

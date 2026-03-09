@@ -22,8 +22,6 @@ from typing import Any, Dict, MutableMapping, Optional
 import streamlit as st
 
 from transcriptx.app.progress import (
-    NullProgress,
-    ProgressCallback,
     ProgressEvent,
     ProgressSnapshot,
     update_snapshot_from_event,
@@ -38,6 +36,7 @@ PANEL_LOG_LINES = 8
 # ---------------------------------------------------------------------------
 # Pure rendering function
 # ---------------------------------------------------------------------------
+
 
 def render_progress_panel(snapshot: ProgressSnapshot) -> None:
     """
@@ -78,7 +77,9 @@ def render_progress_panel(snapshot: ProgressSnapshot) -> None:
 
     # 2. Current module
     if current_module:
-        prefix = "Last module:" if status in ("completed", "failed") else "Current module:"
+        prefix = (
+            "Last module:" if status in ("completed", "failed") else "Current module:"
+        )
         st.markdown(f"{prefix} `{current_module}`")
 
     # 3. Progress bar with x / y modules
@@ -107,6 +108,7 @@ def render_progress_panel(snapshot: ProgressSnapshot) -> None:
 # ---------------------------------------------------------------------------
 # StreamlitProgressCallback — bridges ProgressCallback + on_event to snapshot
 # ---------------------------------------------------------------------------
+
 
 class StreamlitProgressCallback:
     """

@@ -59,7 +59,16 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any, Dict, List, Literal, MutableMapping, Optional, Protocol, TypedDict, runtime_checkable
+from typing import (
+    Any,
+    List,
+    Literal,
+    MutableMapping,
+    Optional,
+    Protocol,
+    TypedDict,
+    runtime_checkable,
+)
 
 # ---------------------------------------------------------------------------
 # Event type constants
@@ -89,15 +98,17 @@ StatusType = Literal["running", "completed", "failed"]
 # Structured progress event
 # ---------------------------------------------------------------------------
 
+
 class ProgressEvent(TypedDict, total=False):
     """
     Structured pipeline event dict.  All fields except ``event`` are optional.
     index is 1-based (position in planned execution order).
     pct = (completed + skipped + failed) / total * 100
     """
-    event: str          # required — one of EventType
+
+    event: str  # required — one of EventType
     module_name: str
-    index: int          # 1-based
+    index: int  # 1-based
     total: int
     completed: int
     skipped: int
@@ -112,6 +123,7 @@ class ProgressEvent(TypedDict, total=False):
 # Progress snapshot — the single object the UI renders
 # ---------------------------------------------------------------------------
 
+
 class ProgressSnapshot(TypedDict, total=False):
     """
     Workflow-maintained snapshot stored in st.session_state.
@@ -120,8 +132,9 @@ class ProgressSnapshot(TypedDict, total=False):
     recent_logs holds up to 100 timestamped strings; the UI renders the last 5-10.
     current_module persists as the last active module until a new run starts.
     """
-    status: str          # StatusType
-    phase: str           # PhaseType
+
+    status: str  # StatusType
+    phase: str  # PhaseType
     current_module: str
     completed: int
     skipped: int
@@ -198,7 +211,8 @@ def update_snapshot_from_event(
         idx = event.get("index", "")
         tot = event.get("total", "")
         snapshot["latest_event"] = (
-            f"Completed {name}{dur_str} ({idx}/{tot})" if idx and tot
+            f"Completed {name}{dur_str} ({idx}/{tot})"
+            if idx and tot
             else f"Completed {name}{dur_str}"
         )
 
@@ -213,7 +227,8 @@ def update_snapshot_from_event(
         tot = event.get("total", "")
         reason_str = f": {reason}" if reason else ""
         snapshot["latest_event"] = (
-            f"Skipped {name}{reason_str} ({idx}/{tot})" if idx and tot
+            f"Skipped {name}{reason_str} ({idx}/{tot})"
+            if idx and tot
             else f"Skipped {name}{reason_str}"
         )
 
@@ -230,7 +245,8 @@ def update_snapshot_from_event(
         tot = event.get("total", "")
         err_str = f": {err}" if err else ""
         snapshot["latest_event"] = (
-            f"Failed {name}{err_str} ({idx}/{tot})" if idx and tot
+            f"Failed {name}{err_str} ({idx}/{tot})"
+            if idx and tot
             else f"Failed {name}{err_str}"
         )
         if err:
@@ -274,6 +290,7 @@ def _refresh_pct(snapshot: ProgressSnapshot) -> None:
 # ---------------------------------------------------------------------------
 # ProgressCallback protocol
 # ---------------------------------------------------------------------------
+
 
 @runtime_checkable
 class ProgressCallback(Protocol):
@@ -322,6 +339,7 @@ class NullProgress:
 # ---------------------------------------------------------------------------
 # SnapshotLogHandler — forwards transcriptx logger records to a snapshot
 # ---------------------------------------------------------------------------
+
 
 class SnapshotLogHandler(logging.Handler):
     """

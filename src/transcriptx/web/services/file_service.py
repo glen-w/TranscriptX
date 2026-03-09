@@ -61,6 +61,8 @@ class FileService:
         session_dir = FileService._resolve_session_dir(session_name)
         manifest_path = session_dir / ".transcriptx" / "manifest.json"
 
+        slug = session_name.split("/", 1)[0] if "/" in session_name else session_name
+
         if manifest_path.exists():
             try:
                 from transcriptx.core.pipeline.manifest_loader import load_run_manifest
@@ -71,11 +73,22 @@ class FileService:
                     path = Path(manifest_path_value)
                     if path.exists():
                         return path
+                    # Manifest path often absolute host path; in Docker it may not exist.
+                    # Fallback: transcript copied into run dir (same basename).
+                    run_dir_candidate = session_dir / path.name
+                    if run_dir_candidate.exists():
+                        return run_dir_candidate
             except Exception as e:
                 logger.warning(f"Failed to read manifest for {session_name}: {e}")
 
-        # Extract slug (without run_id) for fallback lookups
-        slug = session_name.split("/", 1)[0] if "/" in session_name else session_name
+        # Run dir: transcript may live next to manifest (e.g. pipeline or Docker layout)
+        for candidate in [
+            session_dir / f"{slug}.json",
+            session_dir / "transcript.json",
+            session_dir / f"{slug}_transcript_diarised.json",
+        ]:
+            if candidate.exists():
+                return candidate
 
         for candidate in [
             Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",

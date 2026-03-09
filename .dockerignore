@@ -1,0 +1,50 @@
+# Git and IDE
+.git
+.gitignore
+.cursor
+.vscode
+*.swp
+*.swo
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.venv
+venv
+.env
+.env.*
+!.env.example
+
+# Build and packaging
+*.egg-info
+.eggs
+dist
+build
+*.whl
+
+# Data and caches (don’t ship into image)
+data/
+*.db
+.cache
+
+# Docs and dev (not needed at runtime)
+docs/
+*.md
+!README.md
+tests/
+.pytest_cache
+.coverage
+htmlcov
+.mypy_cache
+.ruff_cache
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Misc
+*.log
+.DS_Store

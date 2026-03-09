@@ -110,7 +110,10 @@ class TestBuildRunResultsSummary:
             errors=[],
         )
         assert payload["modules_run"] == ["stats"]
-        assert any(s["module"] == "emotion" and s["reason"] == "No model" for s in payload["modules_skipped"])
+        assert any(
+            s["module"] == "emotion" and s["reason"] == "No model"
+            for s in payload["modules_skipped"]
+        )
         # sentiment not run, not skipped -> failed
         assert "sentiment" in payload["modules_failed"]
         assert "emotion" not in payload["modules_failed"]

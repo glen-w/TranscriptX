@@ -232,7 +232,11 @@ def _cached_health(
             if not path.is_file():
                 continue
             rel = path.relative_to(run_dir).as_posix()
-            if rel == "manifest.json" or rel == "run_results.json" or rel.startswith(".transcriptx/"):
+            if (
+                rel == "manifest.json"
+                or rel == "run_results.json"
+                or rel.startswith(".transcriptx/")
+            ):
                 continue
             if "/.thumbnails/" in rel:
                 continue

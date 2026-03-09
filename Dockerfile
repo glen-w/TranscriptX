@@ -28,9 +28,10 @@ WORKDIR /app
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install dependencies only (constraints enforced)
+# Install dependencies only (constraints enforced); cache pip for faster rebuilds
 COPY constraints.txt requirements.txt ./
-RUN pip install -c constraints.txt -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -c constraints.txt -r requirements.txt
 
 # Install build tool and build wheel
 RUN pip install build
@@ -39,7 +40,8 @@ COPY src ./src
 RUN python -m build
 
 # Install the application wheel into the venv (no editable install)
-RUN pip install -c constraints.txt dist/*.whl
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -c constraints.txt dist/*.whl
 
 # Download spaCy language models so NLP modules (topic_modeling, NER, etc.) work out of the box
 RUN python -m spacy download en_core_web_md && python -m spacy download en_core_web_sm

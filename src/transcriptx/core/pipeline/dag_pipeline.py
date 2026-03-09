@@ -908,11 +908,13 @@ class DAGPipeline:
         ev_skipped = 0
         ev_failed = 0
 
-        _emit({
-            "event": "run_started",
-            "total": total_modules,
-            "message": f"Starting pipeline: {total_modules} modules",
-        })
+        _emit(
+            {
+                "event": "run_started",
+                "total": total_modules,
+                "message": f"Starting pipeline: {total_modules} modules",
+            }
+        )
 
         aborted = False
         for idx_0, module_name in enumerate(execution_order):
@@ -930,17 +932,25 @@ class DAGPipeline:
             )
             if missing_deps:
                 ev_skipped += 1
-                _emit({
-                    "event": "module_skipped",
-                    "module_name": module_name,
-                    "index": index,
-                    "total": total_modules,
-                    "completed": ev_completed,
-                    "skipped": ev_skipped,
-                    "failed": ev_failed,
-                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
-                    "message": "missing_dependencies",
-                })
+                _emit(
+                    {
+                        "event": "module_skipped",
+                        "module_name": module_name,
+                        "index": index,
+                        "total": total_modules,
+                        "completed": ev_completed,
+                        "skipped": ev_skipped,
+                        "failed": ev_failed,
+                        "pct": (
+                            (ev_completed + ev_skipped + ev_failed)
+                            / total_modules
+                            * 100
+                            if total_modules
+                            else 0.0
+                        ),
+                        "message": "missing_dependencies",
+                    }
+                )
                 # Check if any missing dependencies themselves have missing dependencies
                 dep_chain = []
                 for dep in missing_deps:
@@ -978,16 +988,22 @@ class DAGPipeline:
                 except Exception:
                     named_speaker_count = None
 
-            _emit({
-                "event": "module_started",
-                "module_name": module_name,
-                "index": index,
-                "total": total_modules,
-                "completed": ev_completed,
-                "skipped": ev_skipped,
-                "failed": ev_failed,
-                "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
-            })
+            _emit(
+                {
+                    "event": "module_started",
+                    "module_name": module_name,
+                    "index": index,
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "pct": (
+                        (ev_completed + ev_skipped + ev_failed) / total_modules * 100
+                        if total_modules
+                        else 0.0
+                    ),
+                }
+            )
             outcome = self._execute_single_module(
                 module_name=module_name,
                 node=node,
@@ -1000,43 +1016,67 @@ class DAGPipeline:
             )
             if outcome.status == "success":
                 ev_completed += 1
-                _emit({
-                    "event": "module_completed",
-                    "module_name": module_name,
-                    "index": index,
-                    "total": total_modules,
-                    "completed": ev_completed,
-                    "skipped": ev_skipped,
-                    "failed": ev_failed,
-                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
-                    "duration_ms": outcome.duration_ms,
-                })
+                _emit(
+                    {
+                        "event": "module_completed",
+                        "module_name": module_name,
+                        "index": index,
+                        "total": total_modules,
+                        "completed": ev_completed,
+                        "skipped": ev_skipped,
+                        "failed": ev_failed,
+                        "pct": (
+                            (ev_completed + ev_skipped + ev_failed)
+                            / total_modules
+                            * 100
+                            if total_modules
+                            else 0.0
+                        ),
+                        "duration_ms": outcome.duration_ms,
+                    }
+                )
             elif outcome.status == "skipped":
                 ev_skipped += 1
-                _emit({
-                    "event": "module_skipped",
-                    "module_name": module_name,
-                    "index": index,
-                    "total": total_modules,
-                    "completed": ev_completed,
-                    "skipped": ev_skipped,
-                    "failed": ev_failed,
-                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
-                    "message": outcome.skip_reason or "unknown",
-                })
+                _emit(
+                    {
+                        "event": "module_skipped",
+                        "module_name": module_name,
+                        "index": index,
+                        "total": total_modules,
+                        "completed": ev_completed,
+                        "skipped": ev_skipped,
+                        "failed": ev_failed,
+                        "pct": (
+                            (ev_completed + ev_skipped + ev_failed)
+                            / total_modules
+                            * 100
+                            if total_modules
+                            else 0.0
+                        ),
+                        "message": outcome.skip_reason or "unknown",
+                    }
+                )
             else:
                 ev_failed += 1
-                _emit({
-                    "event": "module_failed",
-                    "module_name": module_name,
-                    "index": index,
-                    "total": total_modules,
-                    "completed": ev_completed,
-                    "skipped": ev_skipped,
-                    "failed": ev_failed,
-                    "pct": (ev_completed + ev_skipped + ev_failed) / total_modules * 100 if total_modules else 0.0,
-                    "error": outcome.error,
-                })
+                _emit(
+                    {
+                        "event": "module_failed",
+                        "module_name": module_name,
+                        "index": index,
+                        "total": total_modules,
+                        "completed": ev_completed,
+                        "skipped": ev_skipped,
+                        "failed": ev_failed,
+                        "pct": (
+                            (ev_completed + ev_skipped + ev_failed)
+                            / total_modules
+                            * 100
+                            if total_modules
+                            else 0.0
+                        ),
+                        "error": outcome.error,
+                    }
+                )
 
             self._record_module_outcome(
                 module_name=module_name,
@@ -1051,15 +1091,17 @@ class DAGPipeline:
                 outcome, results
             ):
                 aborted = True
-                _emit({
-                    "event": "run_failed",
-                    "error": outcome.error,
-                    "total": total_modules,
-                    "completed": ev_completed,
-                    "skipped": ev_skipped,
-                    "failed": ev_failed,
-                    "message": f"Pipeline aborted: {outcome.error}",
-                })
+                _emit(
+                    {
+                        "event": "run_failed",
+                        "error": outcome.error,
+                        "total": total_modules,
+                        "completed": ev_completed,
+                        "skipped": ev_skipped,
+                        "failed": ev_failed,
+                        "message": f"Pipeline aborted: {outcome.error}",
+                    }
+                )
                 break
 
         # Add execution metadata
@@ -1072,17 +1114,19 @@ class DAGPipeline:
 
         if not aborted:
             has_errors = bool(results.get("errors"))
-            _emit({
-                "event": "run_completed" if not has_errors else "run_completed",
-                "total": total_modules,
-                "completed": ev_completed,
-                "skipped": ev_skipped,
-                "failed": ev_failed,
-                "pct": 100.0,
-                "message": (
-                    f"Pipeline complete: {ev_completed} run, {ev_skipped} skipped, {ev_failed} failed"
-                ),
-            })
+            _emit(
+                {
+                    "event": "run_completed" if not has_errors else "run_completed",
+                    "total": total_modules,
+                    "completed": ev_completed,
+                    "skipped": ev_skipped,
+                    "failed": ev_failed,
+                    "pct": 100.0,
+                    "message": (
+                        f"Pipeline complete: {ev_completed} run, {ev_skipped} skipped, {ev_failed} failed"
+                    ),
+                }
+            )
 
         self.logger.info(
             f"Pipeline completed. Ran {len(results['modules_run'])} modules with {len(results['errors'])} errors"

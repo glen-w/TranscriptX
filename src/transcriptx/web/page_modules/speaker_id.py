@@ -17,7 +17,9 @@ import streamlit as st
 
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
-from transcriptx.web.page_modules.speaker_studio import _transcript_paths_for_speaker_views
+from transcriptx.web.page_modules.speaker_studio import (
+    _transcript_paths_for_speaker_views,
+)
 from transcriptx.web.state import SELECTED_TRANSCRIPT_PATH
 
 # How many sample lines to show per speaker by default
@@ -25,6 +27,7 @@ _LINES_PER_PAGE = 8
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _group_by_diarized_id(
     segments: List[SegmentInfo],
@@ -50,6 +53,7 @@ def _fmt_time(seconds: float) -> str:
 
 
 # ── main render ──────────────────────────────────────────────────────────────
+
 
 def render_speaker_id_page() -> None:
     """Render the speaker-by-speaker identification page."""
@@ -84,11 +88,7 @@ def render_speaker_id_page() -> None:
         f"{t.base_name} ({t.speaker_map_status}, {t.segment_count} segs)"
         for t in transcripts
     ]
-    default_idx = (
-        options.index(selected_path)
-        if selected_path in options
-        else 0
-    )
+    default_idx = options.index(selected_path) if selected_path in options else 0
 
     idx = st.selectbox(
         "Transcript",
@@ -129,7 +129,8 @@ def render_speaker_id_page() -> None:
 
     # ── progress summary ──────────────────────────────────────────────────────
     named = sum(
-        1 for sid in speaker_ids
+        1
+        for sid in speaker_ids
         if (speaker_map.get(sid) or "").strip() and sid not in ignored
     )
     n_ignored = sum(1 for sid in speaker_ids if sid in ignored)
@@ -162,7 +163,8 @@ def render_speaker_id_page() -> None:
 
     # ── speaker header ────────────────────────────────────────────────────────
     status_badge = (
-        "🔇 ignored" if is_ignored
+        "🔇 ignored"
+        if is_ignored
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
     st.subheader(
@@ -176,7 +178,9 @@ def render_speaker_id_page() -> None:
 
     # ── audio clip player ─────────────────────────────────────────────────────
     if audio_path and play_seg_idx is not None:
-        seg_to_play = active_segs[play_seg_idx] if play_seg_idx < len(active_segs) else None
+        seg_to_play = (
+            active_segs[play_seg_idx] if play_seg_idx < len(active_segs) else None
+        )
         if seg_to_play:
             try:
                 clip_bytes = controller.get_clip_bytes(
@@ -201,7 +205,9 @@ def render_speaker_id_page() -> None:
             st.write(seg.text or "_(empty)_")
         with col_play:
             if audio_path:
-                if st.button("▶", key=f"sid_play_{active_id}_{i}", help="Play this clip"):
+                if st.button(
+                    "▶", key=f"sid_play_{active_id}_{i}", help="Play this clip"
+                ):
                     st.session_state["speaker_id_play_seg"] = i
                     st.rerun()
 
@@ -226,7 +232,9 @@ def render_speaker_id_page() -> None:
             label_visibility="collapsed",
         )
     with col_save:
-        if st.button("Save name", key="sid_save", type="primary", use_container_width=True):
+        if st.button(
+            "Save name", key="sid_save", type="primary", use_container_width=True
+        ):
             name = (name_input or "").strip()
             if name:
                 try:
@@ -237,8 +245,10 @@ def render_speaker_id_page() -> None:
                     st.session_state["speaker_id_play_seg"] = None
                     # Advance to next unnamed speaker automatically
                     next_idx = _next_unnamed_idx(
-                        speaker_ids, speaker_map | {active_id: name},
-                        ignored, speaker_idx,
+                        speaker_ids,
+                        speaker_map | {active_id: name},
+                        ignored,
+                        speaker_idx,
                     )
                     st.session_state["speaker_id_speaker_idx"] = next_idx
                     st.rerun()
@@ -255,9 +265,7 @@ def render_speaker_id_page() -> None:
                         transcript_path, active_id, method="web"
                     )
                 else:
-                    controller.ignore_speaker(
-                        transcript_path, active_id, method="web"
-                    )
+                    controller.ignore_speaker(transcript_path, active_id, method="web")
                 st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
                 st.session_state["speaker_id_play_seg"] = None
                 next_idx = _next_unnamed_idx(
@@ -272,7 +280,12 @@ def render_speaker_id_page() -> None:
     st.divider()
     col_prev, col_jump, col_next = st.columns([1, 3, 1])
     with col_prev:
-        if st.button("← Prev", key="sid_prev", disabled=(speaker_idx == 0), use_container_width=True):
+        if st.button(
+            "← Prev",
+            key="sid_prev",
+            disabled=(speaker_idx == 0),
+            use_container_width=True,
+        ):
             st.session_state["speaker_id_speaker_idx"] = speaker_idx - 1
             st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
             st.session_state["speaker_id_play_seg"] = None
@@ -298,7 +311,8 @@ def render_speaker_id_page() -> None:
             st.rerun()
     with col_next:
         if st.button(
-            "Next →", key="sid_next",
+            "Next →",
+            key="sid_next",
             disabled=(speaker_idx >= total_speakers - 1),
             use_container_width=True,
         ):
@@ -309,6 +323,7 @@ def render_speaker_id_page() -> None:
 
 
 # ── utilities ─────────────────────────────────────────────────────────────────
+
 
 def _speaker_label(
     sid: str,

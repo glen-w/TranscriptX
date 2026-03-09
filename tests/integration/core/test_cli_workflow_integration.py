@@ -181,7 +181,9 @@ class TestMainImplIntegration:
         config_file = tmp_path / "config.json"
         config_file.write_text('{"test": "config"}')
 
-        with patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select:
+        with patch(
+            "transcriptx.cli.interactive_menu.questionary.select"
+        ) as mock_select:
             mock_select.return_value.ask.return_value = "🚪 Exit"
 
             result = cli_runner.invoke(app, ["--config", str(config_file)])
@@ -190,7 +192,9 @@ class TestMainImplIntegration:
 
     def test_main_impl_workflow_routing(self, cli_runner):
         """Test main with no args exits when user selects Exit."""
-        with patch("transcriptx.cli.interactive_menu.questionary.select") as mock_select:
+        with patch(
+            "transcriptx.cli.interactive_menu.questionary.select"
+        ) as mock_select:
             mock_select.return_value.ask.return_value = "🚪 Exit"
 
             result = cli_runner.invoke(app, [])

@@ -17,6 +17,7 @@ from transcriptx.services.speaker_studio.controller import SpeakerStudioControll
 
 # ── contract ──────────────────────────────────────────────────────────────────
 
+
 def test_speaker_id_page_imports_only_controller() -> None:
     """Contract: speaker_id page must not import SegmentIndexService, ClipService, or SpeakerMappingService."""
     import transcriptx.web.page_modules.speaker_id as mod
@@ -36,6 +37,7 @@ def test_speaker_id_page_exposes_render_function() -> None:
 
 
 # ── helper fixtures ───────────────────────────────────────────────────────────
+
 
 def _make_transcript(path: Path, speakers: list[dict]) -> None:
     """Write a minimal transcript JSON with given segments."""
@@ -63,16 +65,37 @@ def two_speaker_transcript(transcript_dir: Path) -> Path:
     _make_transcript(
         path,
         [
-            {"start": 0.0, "end": 2.5, "speaker": "SPEAKER_00", "text": "Good morning everyone."},
-            {"start": 2.5, "end": 5.0, "speaker": "SPEAKER_01", "text": "Hi, thanks for joining."},
-            {"start": 5.0, "end": 8.0, "speaker": "SPEAKER_00", "text": "Let us get started."},
-            {"start": 8.0, "end": 10.0, "speaker": "SPEAKER_01", "text": "Sounds good."},
+            {
+                "start": 0.0,
+                "end": 2.5,
+                "speaker": "SPEAKER_00",
+                "text": "Good morning everyone.",
+            },
+            {
+                "start": 2.5,
+                "end": 5.0,
+                "speaker": "SPEAKER_01",
+                "text": "Hi, thanks for joining.",
+            },
+            {
+                "start": 5.0,
+                "end": 8.0,
+                "speaker": "SPEAKER_00",
+                "text": "Let us get started.",
+            },
+            {
+                "start": 8.0,
+                "end": 10.0,
+                "speaker": "SPEAKER_01",
+                "text": "Sounds good.",
+            },
         ],
     )
     return path
 
 
 # ── integration ───────────────────────────────────────────────────────────────
+
 
 def test_speaker_id_initial_state_is_none(
     monkeypatch: pytest.MonkeyPatch,
@@ -82,6 +105,7 @@ def test_speaker_id_initial_state_is_none(
     """Fresh transcript starts with speaker_map_status='none'."""
     monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(transcript_dir))
     import transcriptx.core.utils.paths as paths_mod
+
     monkeypatch.setattr(paths_mod, "DATA_DIR", str(transcript_dir))
 
     controller = SpeakerStudioController(data_dir=transcript_dir)
@@ -101,6 +125,7 @@ def test_speaker_id_segments_grouped_by_diarized_id(
 
     monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(transcript_dir))
     import transcriptx.core.utils.paths as paths_mod
+
     monkeypatch.setattr(paths_mod, "DATA_DIR", str(transcript_dir))
 
     controller = SpeakerStudioController(data_dir=transcript_dir)
@@ -121,6 +146,7 @@ def test_speaker_id_assign_name_reflected_in_mapping(
     """Assigning a name via apply_mapping_mutation updates the transcript JSON."""
     monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(transcript_dir))
     import transcriptx.core.utils.paths as paths_mod
+
     monkeypatch.setattr(paths_mod, "DATA_DIR", str(transcript_dir))
 
     controller = SpeakerStudioController(data_dir=transcript_dir)
@@ -145,6 +171,7 @@ def test_speaker_id_ignore_speaker(
     """ignore_speaker marks the diarized ID as ignored."""
     monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(transcript_dir))
     import transcriptx.core.utils.paths as paths_mod
+
     monkeypatch.setattr(paths_mod, "DATA_DIR", str(transcript_dir))
 
     controller = SpeakerStudioController(data_dir=transcript_dir)
@@ -162,6 +189,7 @@ def test_speaker_id_unignore_speaker(
     """unignore_speaker removes the diarized ID from the ignored list."""
     monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(transcript_dir))
     import transcriptx.core.utils.paths as paths_mod
+
     monkeypatch.setattr(paths_mod, "DATA_DIR", str(transcript_dir))
 
     controller = SpeakerStudioController(data_dir=transcript_dir)
@@ -180,6 +208,7 @@ def test_speaker_id_full_flow_both_speakers_named(
     """Naming all speakers results in speaker_map_status='complete'."""
     monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(transcript_dir))
     import transcriptx.core.utils.paths as paths_mod
+
     monkeypatch.setattr(paths_mod, "DATA_DIR", str(transcript_dir))
 
     controller = SpeakerStudioController(data_dir=transcript_dir)

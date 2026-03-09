@@ -16,28 +16,54 @@ from transcriptx.app.compat import discover_all_transcript_paths
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.web.services.file_service import FileService
 
+# Non-transcript JSON names under run dirs (skip when scanning outputs)
+_RUN_DIR_JSON_SKIP = frozenset(
+    {"manifest.json", "run_results.json", "processing_state.json"}
+)
+
 
 def _transcript_paths_for_speaker_views() -> list[Path]:
-    """Same discovery as Library and session-based views: config/DIARISED dir + session transcripts."""
+    """Same discovery as Library and session-based views; also scan run dirs (Docker-friendly)."""
     paths: list[Path] = []
     seen: set[str] = set()
-    for p in discover_all_transcript_paths(None):
-        key = str(Path(p).resolve())
-        if key not in seen:
+
+    def add(p: Path) -> None:
+        key = str(p.resolve())
+        if key not in seen and p.exists():
             seen.add(key)
-            paths.append(Path(p))
-    if not paths:
-        for session in FileService.list_available_sessions():
-            name = session.get("name", "")
-            if "/" not in name:
+            paths.append(p)
+
+    for p in discover_all_transcript_paths(None):
+        add(Path(p))
+
+    for session in FileService.list_available_sessions():
+        name = session.get("name", "")
+        if "/" not in name:
+            continue
+        resolved = FileService.resolve_transcript_path(name)
+        if resolved:
+            add(Path(resolved))
+
+    # Docker: manifest transcript_path is often host-only; scan run dirs for transcript-like JSON
+    from transcriptx.core.utils.paths import OUTPUTS_DIR
+
+    outputs_dir = Path(OUTPUTS_DIR)
+    if outputs_dir.is_dir():
+        for slug_dir in outputs_dir.iterdir():
+            if not slug_dir.is_dir() or slug_dir.name.startswith("."):
                 continue
-            resolved = FileService.resolve_transcript_path(name)
-            if resolved and resolved.exists():
-                p = Path(resolved)
-                key = str(p.resolve())
-                if key not in seen:
-                    seen.add(key)
-                    paths.append(p)
+            for run_dir in slug_dir.iterdir():
+                if not run_dir.is_dir() or run_dir.name.startswith("."):
+                    continue
+                for j in run_dir.glob("*.json"):
+                    if (
+                        j.name in _RUN_DIR_JSON_SKIP
+                        or j.parent.name == ".transcriptx"
+                        or j.name.endswith("_stats.json")
+                    ):
+                        continue
+                    add(j)
+
     return sorted(paths, key=lambda p: str(p.resolve()))
 
 

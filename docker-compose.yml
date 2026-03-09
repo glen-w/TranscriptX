@@ -45,7 +45,6 @@ services:
     # One-off: docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm
 
   transcriptx-web:
-    build: .
     image: transcriptx:latest
     init: true
     user: "${UID:-1000}:${GID:-1000}"
@@ -78,7 +77,6 @@ services:
     command: ["web-viewer", "--host", "0.0.0.0"]
 
   transcriptx-studio:
-    build: .
     image: transcriptx:latest
     init: true
     user: "${UID:-1000}:${GID:-1000}"
