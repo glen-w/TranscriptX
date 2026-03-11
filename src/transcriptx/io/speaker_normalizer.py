@@ -33,7 +33,9 @@ def assign_speaker_ids(unique_speakers: List[str]) -> Dict[str, str]:
     Returns:
         ``{original_label: "SPEAKER_XX"}`` mapping.
     """
-    return {spk: f"SPEAKER_{idx:02d}" for idx, spk in enumerate(sorted(unique_speakers))}
+    return {
+        spk: f"SPEAKER_{idx:02d}" for idx, spk in enumerate(sorted(unique_speakers))
+    }
 
 
 def normalize_speakers(turns: List[IntermediateTurn]) -> List[TranscriptSegment]:
@@ -58,7 +60,9 @@ def normalize_speakers(turns: List[IntermediateTurn]) -> List[TranscriptSegment]
     has_speakers = bool(unique_speakers)
 
     if not has_speakers:
-        logger.info("No speaker labels found — setting speaker to null for all segments")
+        logger.info(
+            "No speaker labels found — setting speaker to null for all segments"
+        )
         speaker_mapping: Dict[str, str] = {}
     else:
         speaker_mapping = assign_speaker_ids(unique_speakers)

@@ -20,7 +20,10 @@ import streamlit as st
 
 from transcriptx.app.compat import discover_all_transcript_paths
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
-from transcriptx.web.components.playback_panel import _set_play_idx, render_playback_panel
+from transcriptx.web.components.playback_panel import (
+    _set_play_idx,
+    render_playback_panel,
+)
 from transcriptx.web.services.file_service import FileService
 
 # Non-transcript JSON names under run dirs (skip when scanning outputs)
@@ -29,7 +32,13 @@ _RUN_DIR_JSON_SKIP = frozenset(
 )
 
 
-def _transcript_paths_for_speaker_views() -> list[Path]:
+@st.cache_data(ttl=120, show_spinner=False)
+def _transcript_paths_for_speaker_views() -> list:
+    """Cached so transcript dropdown/selection doesn't trigger full discovery on every rerun."""
+    return _transcript_paths_for_speaker_views_impl()
+
+
+def _transcript_paths_for_speaker_views_impl() -> list[Path]:
     """Same discovery as Library and session-based views; also scan run dirs (Docker-friendly)."""
     paths: list[Path] = []
     seen: set[str] = set()
@@ -74,6 +83,26 @@ def _transcript_paths_for_speaker_views() -> list[Path]:
     return sorted(paths, key=lambda p: str(p.resolve()))
 
 
+@st.cache_data(ttl=120, show_spinner=False)
+def _cached_transcripts_for_paths(paths_key: tuple[str, ...]) -> list:
+    """Return transcript list for given paths so selectbox/UI doesn't recompute on every rerun."""
+    if not paths_key:
+        return []
+    controller = SpeakerStudioController()
+    paths = [Path(p) for p in paths_key]
+    return controller.list_transcripts_from_paths(paths)
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def _cached_speaker_studio_fallback_transcripts() -> list:
+    """Fallback when no paths from discovery; avoids full list_transcripts on every rerun."""
+    controller = SpeakerStudioController()
+    try:
+        return controller.list_transcripts(canonical_only=False)
+    except TypeError:
+        return controller.list_transcripts()
+
+
 def render_speaker_studio() -> None:
     st.markdown(
         '<div class="main-header">🎙️ Speaker Studio</div>',
@@ -86,14 +115,12 @@ def render_speaker_studio() -> None:
     controller = SpeakerStudioController()
     paths = _transcript_paths_for_speaker_views()
     if paths:
-        transcripts = controller.list_transcripts_from_paths(paths)
+        paths_key = tuple(str(p) for p in paths)
+        transcripts = _cached_transcripts_for_paths(paths_key)
     else:
         transcripts = []
     if not transcripts:
-        try:
-            transcripts = controller.list_transcripts(canonical_only=False)
-        except TypeError:
-            transcripts = controller.list_transcripts()
+        transcripts = _cached_speaker_studio_fallback_transcripts()
     if not transcripts:
         st.info(
             "No transcripts found in the data directory. Add transcript JSON files to get started."

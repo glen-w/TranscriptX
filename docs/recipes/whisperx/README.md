@@ -9,7 +9,10 @@ Use them to generate diarized transcript JSON that you can then **canonicalize**
 # 2. Canonicalize (optional but recommended)
 transcriptx transcript canonicalize --in whisperx.json --out meeting_transcriptx.json
 # 3. Analyze
-transcriptx analyze --transcript-file meeting_transcriptx.json
+# Use the web interface or Python API:
+# from transcriptx.app.models.requests import AnalysisRequest
+# from transcriptx.app.workflows.analysis import run_analysis
+# run_analysis(AnalysisRequest(transcript_path="meeting_transcriptx.json"))
 ```
 
 ## Configure WhisperX

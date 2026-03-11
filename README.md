@@ -13,13 +13,12 @@ Most transcript tools are either cloud SaaS (Otter, Fireflies), transcription to
 
 ## Architecture
 
-TranscriptX has three layers:
+TranscriptX has two layers:
 
 - **Engine** — Pipeline and modules. DAG-based, dependency-aware execution.
-- **GUI** — Streamlit interface for transcript processing, speaker identification, analysis browsing, batch operations, and settings.
-- **CLI** — Scripting and automation. All GUI workflows have CLI equivalents.
+- **GUI** — Streamlit web interface for transcript processing, speaker identification, analysis browsing, batch operations, and settings.
 
-The pipeline is deterministic, DAG-based, and dependency-aware. The GUI and CLI share the same engine and produce identical artifacts.
+The pipeline is deterministic, DAG-based, and dependency-aware. Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`).
 
 ## Design Principles
 
@@ -29,8 +28,16 @@ TranscriptX is: local-first, modular, reproducible, extensible, and transcript-c
 
 **Input:** A meeting transcript (JSON, e.g. from WhisperX, AssemblyAI, Deepgram, or manual export).
 
-```bash
-transcriptx analyze -t meeting_transcriptx.json
+Open the web interface and run analysis from the browser — or via the Python API:
+
+```python
+from transcriptx.app.models.requests import AnalysisRequest
+from transcriptx.app.workflows.analysis import run_analysis
+
+result = run_analysis(AnalysisRequest(
+    transcript_path="meeting_transcriptx.json",
+    modules=["stats"],
+))
 ```
 
 **Outputs:** speaker statistics, sentiment timelines, named entities, interaction networks, summary artifacts.
@@ -43,16 +50,14 @@ TranscriptX does not perform audio transcription. Bring your own transcript JSON
 
 ```bash
 docker build -t transcriptx:latest .
-docker compose run -it --rm transcriptx
+docker compose up transcriptx-web
 ```
 
-Use `-it` for the interactive menu (arrow keys). For the GUI: `docker compose up transcriptx-web` → http://localhost:8501.
+Then open http://localhost:8501 in your browser.
 
 **Local install:** Python 3.10+. Core: `pip install transcriptx`. Full: `pip install transcriptx[full]`. Launcher: `./transcriptx.sh`.
 
 For detailed installation, environment variables, NLP setup, and troubleshooting, see [docs/installation.md](docs/installation.md).
-
-**Verify:** `transcriptx analyze -t tests/fixtures/mini_transcriptx.json --modules stats --skip-confirm`
 
 ## What TranscriptX Does Today
 
@@ -84,8 +89,7 @@ Next phases:
 
 - [Installation & configuration](docs/installation.md) — NLP setup, gates, core mode, env vars, troubleshooting
 - [Transcription guide](docs/transcription.md) — Canonical schema, how to produce transcript JSON
-- [CLI reference](docs/generated/cli.md) — All commands and options
 - [Docker guide](docs/docker.md) — Volume layout, Apple Silicon, pitfalls
-- [Architecture](docs/ARCHITECTURE.md) — Engine, GUI, CLI, data flow
+- [Architecture](docs/ARCHITECTURE.md) — Engine, GUI, data flow
 - [Developer quickstart](docs/developer_quickstart.md) — Adding modules, pipeline structure
 - [Roadmap](docs/ROADMAP.md) — Full roadmap and phases

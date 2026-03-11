@@ -1,4 +1,5 @@
 """Tests for RevAdapter."""
+
 from __future__ import annotations
 
 import json
@@ -19,12 +20,20 @@ class TestRevAdapterDetect:
     def test_zero_on_whisperx(self):
         adapter = RevAdapter()
         data = {"segments": [{"start": 0.0, "end": 1.0, "text": "Hi", "speaker": "S0"}]}
-        assert adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        assert (
+            adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        )
 
     def test_zero_on_fireflies(self):
         adapter = RevAdapter()
-        data = {"meeting": {"sentences": [{"text": "Hi", "start_time": 0.0, "end_time": 1.0}]}}
-        assert adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        data = {
+            "meeting": {
+                "sentences": [{"text": "Hi", "start_time": 0.0, "end_time": 1.0}]
+            }
+        }
+        assert (
+            adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        )
 
 
 class TestRevAdapterParse:

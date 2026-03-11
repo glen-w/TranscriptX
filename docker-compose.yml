@@ -1,23 +1,16 @@
 # TranscriptX: recommended way to run with Docker (primary install route).
 # Volume layout: mount ./data so container sees /data/transcripts, /data/outputs, etc.
-# Non-root: transcriptx service runs as host user (UID/GID) so /data is writable; see docs/docker.md.
+# Non-root: services run as host user (UID/GID) so /data is writable; see docs/docker.md.
 #
-# Interactive CLI (arrow keys and menus need a real TTY — use run with -it):
-#   docker compose run -it --rm transcriptx   # recommended: full terminal (arrow keys work)
-#   docker compose run --rm transcriptx      # no -it: menu may disappear on first arrow key
-#   docker compose up transcriptx             # no TTY; use run -it for interactive menu
-# Web only:  docker compose up transcriptx-web
-# Speaker Studio (instant playback):  docker compose up transcriptx-studio  → http://localhost:8502
-# Both:      docker compose up -d transcriptx-web && docker compose up transcriptx
+# Web interface:   docker compose up transcriptx-web     → http://localhost:8501
+# Speaker Studio:  docker compose up transcriptx-studio  → http://localhost:8502
+# Both:            docker compose up
 
 services:
-  transcriptx:
+  transcriptx-web:
     build: .
     image: transcriptx:latest
     init: true
-    tty: true
-    stdin_open: true
-    restart: "no"
     user: "${UID:-1000}:${GID:-1000}"
     working_dir: /data
     volumes:
@@ -26,35 +19,6 @@ services:
       # Optional: mount your local libraries (set the env vars below to match)
       # - ${TRANSCRIPTX_HOST_TRANSCRIPTS_DIR:-}:/transcripts
       # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings
-      # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
-    environment:
-      - TERM=xterm-256color
-      - TRANSCRIPTX_USE_EMOJIS=0
-      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
-      # When using external library mounts above, set these to match the container paths:
-      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
-      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
-      # - TRANSCRIPTX_WAV_BACKUP_DIR=/wav
-      # Audio playback in Docker: segments are exported here; play the WAV on your host
-      - TRANSCRIPTX_PLAYBACK_EXPORT_DIR=${TRANSCRIPTX_PLAYBACK_EXPORT_DIR:-/data/playback-clips}
-      # Use /data for caches so host user (UID:GID) can write; /home/transcriptx/.cache can be unwritable
-      - HF_HOME=/data/.cache/huggingface
-      - MPLCONFIGDIR=/data/.cache/matplotlib
-      - NLTK_DATA=/opt/venv/nltk_data
-    command: ["interactive"]
-    # One-off: docker compose run --rm transcriptx analyze -t /data/transcripts/foo_transcriptx.json --modules stats --skip-confirm
-
-  transcriptx-web:
-    image: transcriptx:latest
-    init: true
-    user: "${UID:-1000}:${GID:-1000}"
-    working_dir: /data
-    volumes:
-      - ./data:/data
-      - transcriptx_cache:/home/transcriptx/.cache
-      # Optional: mount your local libraries (set the env vars below to match)
-      # - ${TRANSCRIPTX_HOST_TRANSCRIPTS_DIR:-}:/transcripts
-      # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings:ro
       # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
     environment:
       - TRANSCRIPTX_DATA_DIR=/data
@@ -74,7 +38,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-    command: ["web-viewer", "--host", "0.0.0.0"]
+    command: ["--host", "0.0.0.0"]
 
   transcriptx-studio:
     image: transcriptx:latest
@@ -107,7 +71,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-    command: ["web-viewer", "--host", "0.0.0.0", "--port", "8502"]
+    command: ["--host", "0.0.0.0", "--port", "8502"]
 
 volumes:
   transcriptx_cache:

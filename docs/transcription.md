@@ -84,7 +84,7 @@ WhisperX writes JSON with segments (often with `words` arrays). TranscriptX can 
 Then analyze:
 
 ```bash
-transcriptx analyze --transcript-file meeting_transcriptx.json
+# Use the web interface or Python API to analyze the transcript
 ```
 
 ## Other tools
@@ -95,6 +95,6 @@ You can produce compatible JSON from other engines (e.g. AssemblyAI, Deepgram, G
 
 1. **Get JSON** — Use any tool that produces compatible JSON: WhisperX, AssemblyAI, Deepgram, Otter, Colab, or manual export. See [recipes/whisperx](recipes/whisperx/README.md) for an optional WhisperX reference recipe.
 2. **Canonicalize (optional but recommended)** — `transcriptx transcript canonicalize --in <file> --out <stem>_transcriptx.json`.
-3. **Analyze** — `transcriptx analyze --transcript-file <stem>_transcriptx.json`.
+3. **Analyze** — open the web interface and select the transcript, or use the Python API (`AnalysisRequest` + `run_analysis`).
 
-You can also point `analyze` at raw JSON directly (e.g. from WhisperX); TranscriptX will load it and show a one-line tip to canonicalize for best results.
+You can also point the analysis at raw JSON directly (e.g. from WhisperX); TranscriptX will load it and show a tip to canonicalize for best results.

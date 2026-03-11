@@ -78,7 +78,7 @@ class LibraryController:
         speaker_count: int | None = None
         named_count: int | None = None
         try:
-            from transcriptx.cli.audio import get_audio_duration
+            from transcriptx.core.audio import get_audio_duration
 
             duration = get_audio_duration(str(path))
         except Exception:

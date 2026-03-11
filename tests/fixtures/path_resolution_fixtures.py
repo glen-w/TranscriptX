@@ -111,7 +111,7 @@ def fixture_stale_state_pointers(tmp_path, monkeypatch):
 
     # Monkeypatch PROCESSING_STATE_FILE
     monkeypatch.setattr(
-        "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
     return {

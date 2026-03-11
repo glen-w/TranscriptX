@@ -30,10 +30,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 
 logger = get_logger()
 
@@ -94,9 +97,7 @@ class RevAdapter:
             if not text:
                 # Fallback: concatenate all values
                 text = "".join(
-                    e.get("value", "")
-                    for e in elements
-                    if isinstance(e, dict)
+                    e.get("value", "") for e in elements if isinstance(e, dict)
                 ).strip()
 
             speaker_raw = mono.get("speaker")

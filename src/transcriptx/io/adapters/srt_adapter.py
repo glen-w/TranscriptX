@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import ClassVar, List
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 from transcriptx.io.srt_parser import _parse_srt_lines
 
 logger = get_logger()
@@ -42,7 +45,11 @@ class SRTAdapter:
     def parse(self, path: Path, content: bytes) -> IntermediateTranscript:
         warnings: List[str] = []
         try:
-            lines = content.lstrip(b"\xef\xbb\xbf").decode("utf-8", errors="replace").splitlines()
+            lines = (
+                content.lstrip(b"\xef\xbb\xbf")
+                .decode("utf-8", errors="replace")
+                .splitlines()
+            )
             lines = [ln.rstrip("\r") for ln in lines]
             cues = _parse_srt_lines(lines)
         except Exception as exc:

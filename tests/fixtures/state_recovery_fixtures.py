@@ -32,7 +32,7 @@ def fixture_corrupt_json(tmp_path, monkeypatch):
 
     state_file.write_text(corrupt_content)
     monkeypatch.setattr(
-        "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
     return {
@@ -58,7 +58,7 @@ def fixture_corrupt_json_missing_fields(tmp_path, monkeypatch):
 
     state_file.write_text(invalid_content)
     monkeypatch.setattr(
-        "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
     return {
@@ -86,7 +86,7 @@ def fixture_corrupt_json_invalid_types(tmp_path, monkeypatch):
 
     state_file.write_text(invalid_content)
     monkeypatch.setattr(
-        "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
     return {
@@ -132,7 +132,7 @@ def fixture_backup_chain(tmp_path, monkeypatch):
     # Create corrupt main file
     state_file.write_text("{ invalid json }")
     monkeypatch.setattr(
-        "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
     # Note: Backup system uses timestamped filenames, not indexed backups
@@ -168,7 +168,7 @@ def fixture_concurrent_writers(tmp_path, monkeypatch):
     state_file.write_text(json.dumps(initial_state, indent=2))
 
     monkeypatch.setattr(
-        "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
     return {

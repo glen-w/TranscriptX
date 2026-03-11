@@ -241,3 +241,22 @@ def get_speaker_display_name(
         return f"{base_name} (ID: {db_id})"
 
     return base_name if base_name and is_named_speaker(base_name) else str(grouping_key)
+
+
+def named_speaker_count_for_path(path) -> int:
+    """
+    Return named speaker count for a transcript file, applying the file's
+    speaker_map so SPEAKER_XX segment labels count as named when mapped.
+    """
+    from transcriptx.io import load_segments
+    from transcriptx.io.transcript_loader import extract_speaker_map_from_transcript
+
+    path_str = str(path)
+    segments = load_segments(path_str)
+    speaker_map = extract_speaker_map_from_transcript(path_str)
+    resolved = [dict(seg) for seg in segments]
+    for seg in resolved:
+        speaker = seg.get("speaker")
+        if speaker is not None and speaker in speaker_map:
+            seg["speaker"] = speaker_map[speaker]
+    return count_named_speakers(resolved)

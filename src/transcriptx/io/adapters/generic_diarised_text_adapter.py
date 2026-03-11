@@ -30,7 +30,10 @@ from pathlib import Path
 from typing import ClassVar, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 
 logger = get_logger()
 
@@ -46,9 +49,9 @@ _SPEAKER_PAT = r"([A-Z][^\n:]{0,59}?)"
 # Full line pattern (timestamp optional, speaker required, colon separator)
 _TURN_LINE = re.compile(
     r"^\s*(?:\[?(\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?)\]?\s+)?"  # optional timestamp
-    r"([A-Z][^\n:]{0,59}?)"                                       # speaker
-    r":\s+"                                                        # colon separator
-    r"(.+)$",                                                      # utterance
+    r"([A-Z][^\n:]{0,59}?)"  # speaker
+    r":\s+"  # colon separator
+    r"(.+)$",  # utterance
     re.IGNORECASE,
 )
 
@@ -183,7 +186,7 @@ class GenericDiarisedTextAdapter:
                     text=utterance,
                     speaker=speaker if speaker else None,
                     start=start,
-                    end=None,    # no end time in diarised-text format
+                    end=None,  # no end time in diarised-text format
                     turn_index=turn_index,
                     raw=line,
                 )

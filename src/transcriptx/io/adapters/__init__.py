@@ -156,7 +156,9 @@ def _register_builtin_adapters() -> None:
     from transcriptx.io.adapters.fireflies_adapter import FirefliesAdapter
     from transcriptx.io.adapters.rev_adapter import RevAdapter
     from transcriptx.io.adapters.zoom_adapter import ZoomAdapter
-    from transcriptx.io.adapters.generic_diarised_text_adapter import GenericDiarisedTextAdapter
+    from transcriptx.io.adapters.generic_diarised_text_adapter import (
+        GenericDiarisedTextAdapter,
+    )
 
     registry.register(VTTAdapter())
     registry.register(SRTAdapter())

@@ -1,16 +1,21 @@
 """
 Tests for GenericDiarisedTextAdapter.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
 
-from transcriptx.io.adapters.generic_diarised_text_adapter import GenericDiarisedTextAdapter
+from transcriptx.io.adapters.generic_diarised_text_adapter import (
+    GenericDiarisedTextAdapter,
+)
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
-FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "generic_text"
+FIXTURES = (
+    Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "generic_text"
+)
 
 
 class TestGenericAdapterDetect:
@@ -154,4 +159,6 @@ class TestGenericAdapterBinaryGuard:
         binary = b"PK\x03\x04" + b"\x00" * 100  # ZIP/DOCX magic bytes
         result = adapter.parse(Path("mystery.docx"), binary)
         assert len(result.turns) == 0
-        assert any("not appear to be text" in w or "refusing" in w for w in result.warnings)
+        assert any(
+            "not appear to be text" in w or "refusing" in w for w in result.warnings
+        )

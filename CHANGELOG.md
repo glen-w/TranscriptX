@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **CLI and interactive terminal menu**: The Typer-based CLI and questionary interactive menu have been fully removed. The only user-facing entry point is the Streamlit web interface (`transcriptx` or `transcriptx --host 0.0.0.0`). Scripting and automation use the Python API (`transcriptx.app.workflows.run_analysis`, `AnalysisRequest`, etc.). See `docs/generated/cli.md` for API usage.
+
+### Changed
+- **Entry point**: `transcriptx` now launches the web UI by default (replaces `transcriptx interactive` / `web-viewer`).
+- **Docker**: Default service is `transcriptx-web`; the separate `transcriptx` interactive CLI service has been removed from docker-compose.
+
 ## [0.5] - 2026-03-08
 
 ### Added

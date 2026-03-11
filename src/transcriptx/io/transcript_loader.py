@@ -89,11 +89,7 @@ def _load_segments_from_data(data: Any) -> List[Dict[str, Any]]:
     * **Everything else** (raw WhisperX dict, bare list, pre-import JSON): delegates
       to ``_normalize_legacy_segments()``, the backward-compatibility shim.
     """
-    if (
-        isinstance(data, dict)
-        and "schema_version" in data
-        and "source" in data
-    ):
+    if isinstance(data, dict) and "schema_version" in data and "source" in data:
         # Fast path: canonical schema v1.0 artifact.
         return data.get("segments", [])
 

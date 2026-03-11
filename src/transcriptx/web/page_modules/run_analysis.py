@@ -9,7 +9,6 @@ from pathlib import Path
 import streamlit as st
 
 from transcriptx.app.controllers.analysis_controller import AnalysisController
-from transcriptx.app.controllers.library_controller import LibraryController
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
@@ -18,6 +17,11 @@ from transcriptx.web.components.progress_panel import (
     SNAPSHOT_KEY,
     StreamlitProgressCallback,
     render_progress_panel,
+)
+from transcriptx.web.cache_helpers import (
+    cached_list_transcripts,
+    cached_get_available_modules,
+    cached_get_default_modules,
 )
 
 
@@ -28,10 +32,9 @@ def render_run_analysis_page() -> None:
         unsafe_allow_html=True,
     )
 
-    lib_ctrl = LibraryController()
     analysis_ctrl = AnalysisController()
 
-    transcripts = lib_ctrl.list_transcripts()
+    transcripts = cached_list_transcripts()
     transcript_options = [str(t.path) for t in transcripts]
     transcript_labels = [t.base_name for t in transcripts]
 
@@ -64,11 +67,9 @@ def render_run_analysis_page() -> None:
             key="run_analysis_profile",
         )
 
-    available = analysis_ctrl.get_available_modules()
+    available = cached_get_available_modules()
     default_modules = (
-        analysis_ctrl.get_default_modules([str(transcript_path)])
-        if transcript_path
-        else []
+        cached_get_default_modules(str(transcript_path)) if transcript_path else []
     )
     use_defaults = st.checkbox(
         "Use recommended modules", value=True, key="run_analysis_use_defaults"
@@ -136,7 +137,7 @@ def render_run_analysis_page() -> None:
         progress = StreamlitProgressCallback()
         snapshot = st.session_state[SNAPSHOT_KEY]
 
-        with st.status("Running analysis…", expanded=True) as status_widget:
+        with st.spinner("Running analysis…"):
             try:
                 with capture_output() as (stdout_buf, stderr_buf):
                     result = analysis_ctrl.run_analysis(
@@ -147,12 +148,7 @@ def render_run_analysis_page() -> None:
 
             captured = stdout_buf.getvalue() + stderr_buf.getvalue()
 
-            if result.success:
-                status_widget.update(label="✓ Analysis complete", state="complete")
-            else:
-                status_widget.update(label="✗ Analysis failed", state="error")
-
-        # Render outcome outside the status widget so it stays visible after collapse
+        # Render outcome after spinner finishes
         if result.success:
             st.success(
                 f"Analysis completed successfully.  \nOutput: `{result.run_dir}`"

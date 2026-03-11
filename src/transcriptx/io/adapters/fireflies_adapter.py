@@ -30,10 +30,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 
 logger = get_logger()
 
@@ -59,7 +62,11 @@ class FirefliesAdapter:
             sentences = meeting.get("sentences")
             if isinstance(sentences, list) and sentences:
                 first = sentences[0]
-                if isinstance(first, dict) and "text" in first and "start_time" in first:
+                if (
+                    isinstance(first, dict)
+                    and "text" in first
+                    and "start_time" in first
+                ):
                     return 0.9
 
         return 0.0

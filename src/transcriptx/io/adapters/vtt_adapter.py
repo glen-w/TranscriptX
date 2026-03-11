@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import ClassVar, List
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 from transcriptx.io.vtt_parser import _parse_vtt_lines
 
 logger = get_logger()
@@ -32,7 +35,11 @@ class VTTAdapter:
     def parse(self, path: Path, content: bytes) -> IntermediateTranscript:
         warnings: List[str] = []
         try:
-            lines = content.lstrip(b"\xef\xbb\xbf").decode("utf-8", errors="replace").splitlines(keepends=True)
+            lines = (
+                content.lstrip(b"\xef\xbb\xbf")
+                .decode("utf-8", errors="replace")
+                .splitlines(keepends=True)
+            )
             cues = _parse_vtt_lines(lines)
         except Exception as exc:
             return IntermediateTranscript(

@@ -48,6 +48,9 @@ try:
     from transcriptx.web.page_modules.speaker_id import render_speaker_id_page
     from transcriptx.web.page_modules.audio_prep import render_audio_prep_page
     from transcriptx.web.page_modules.audio_merge import render_audio_merge_page
+    from transcriptx.web.page_modules.upload_transcript import (
+        render_upload_transcript_page,
+    )
     from transcriptx.web.page_modules.batch_ops import render_batch_ops_page
     from transcriptx.web.page_modules.diagnostics import render_diagnostics_page
     from transcriptx.web.page_modules.charts import render_charts
@@ -709,7 +712,7 @@ def render_transcript_viewer():
 
         if not modules:
             st.info(
-                "No analysis modules run yet. To run analysis, use the CLI: `transcriptx analyze`"
+                "No analysis modules run yet. Use the Run Analysis page to analyze this transcript."
             )
 
         st.divider()
@@ -1083,9 +1086,9 @@ def main():
                 st.session_state["subject_id"] = selected_session
         else:
             try:
-                from transcriptx.web.services.group_service import GroupService
+                from transcriptx.web.cache_helpers import cached_list_groups
 
-                groups = GroupService.list_groups()
+                groups = cached_list_groups()
             except Exception:
                 groups = []
             if not groups:

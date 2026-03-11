@@ -116,6 +116,38 @@ class TestRepairProcessingState:
 
             assert "repaired" in result or "fixed" in result or isinstance(result, dict)
 
+    def test_repair_nonexistent_file_returns_early(self, tmp_path):
+        """repair_processing_state on nonexistent file returns result with repaired=False, no backup."""
+        state_file = tmp_path / "nonexistent_processing_state.json"
+        assert not state_file.exists()
+
+        result = repair_processing_state(state_file)
+
+        assert result.get("repaired") is False
+        assert result.get("backup_path") is None
+        assert "entries_repaired" in result
+        assert "entries_removed" in result
+
+    def test_repair_dry_run_does_not_write(self, tmp_path):
+        """repair_processing_state with dry_run=True does not modify the state file."""
+        state_file = tmp_path / "processing_state.json"
+        state_data = {
+            "processed_files": {
+                "f.wav": {
+                    "transcript_path": str(tmp_path / "f.json"),
+                    "status": "completed",
+                    "processed_at": "2026-01-01T00:00:00",
+                }
+            }
+        }
+        state_file.write_text(json.dumps(state_data))
+        original_mtime = state_file.stat().st_mtime
+
+        result = repair_processing_state(state_file, backup=False, dry_run=True)
+
+        assert state_file.stat().st_mtime == original_mtime
+        assert result.get("backup_path") is None
+
 
 class TestGetAnalysisHistory:
     """Tests for get_analysis_history function."""

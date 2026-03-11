@@ -175,3 +175,57 @@ class TestValidateManifestShape:
             "artifacts": [],
         }
         validate_manifest_shape(manifest)
+
+    def test_valid_artifact_manifest_with_one_artifact_entry(self):
+        """Contract: manifest with one artifact entry validates; each artifact has required keys."""
+        manifest = {
+            "manifest_type": MANIFEST_TYPE_ARTIFACT,
+            "run_id": "r1",
+            "run_metadata": {
+                "timestamp": "2026-01-01T00:00:00",
+                "transcript_key": "k1",
+                "modules_enabled": ["stats"],
+                "total_size_bytes": 0,
+            },
+            "artifacts": [
+                {
+                    "id": "stats-summary",
+                    "kind": "file",
+                    "rel_path": "data/demo_stats_summary.json",
+                    "bytes": 1024,
+                    "mtime": "2026-01-01T00:00:00",
+                    "mime": "application/json",
+                    "tags": ["stats", "summary"],
+                    "module": "stats",
+                }
+            ],
+        }
+        validate_manifest_shape(manifest)
+
+    def test_valid_artifact_entry_optional_fields(self):
+        """Contract: artifact entry may include optional scope and speaker."""
+        manifest = {
+            "manifest_type": MANIFEST_TYPE_ARTIFACT,
+            "run_id": "r1",
+            "run_metadata": {
+                "timestamp": "2026-01-01T00:00:00",
+                "transcript_key": "k1",
+                "modules_enabled": ["sentiment"],
+                "total_size_bytes": 0,
+            },
+            "artifacts": [
+                {
+                    "id": "sentiment-S1",
+                    "kind": "file",
+                    "rel_path": "speaker_data/S1_sentiment.json",
+                    "bytes": 512,
+                    "mtime": "2026-01-01T00:00:00",
+                    "mime": "application/json",
+                    "tags": [],
+                    "module": "sentiment",
+                    "scope": "speaker",
+                    "speaker": "S1",
+                }
+            ],
+        }
+        validate_manifest_shape(manifest)

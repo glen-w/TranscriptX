@@ -7,7 +7,7 @@ from __future__ import annotations
 import streamlit as st
 import pandas as pd
 
-from transcriptx.app.controllers.library_controller import LibraryController
+from transcriptx.web.cache_helpers import cached_list_transcripts
 
 
 def render_library() -> None:
@@ -18,8 +18,7 @@ def render_library() -> None:
     )
 
     try:
-        lib_ctrl = LibraryController()
-        transcripts = lib_ctrl.list_transcripts()
+        transcripts = cached_list_transcripts()
 
         if not transcripts:
             st.info(

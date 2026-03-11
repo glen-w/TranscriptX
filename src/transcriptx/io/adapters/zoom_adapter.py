@@ -34,7 +34,10 @@ from pathlib import Path
 from typing import ClassVar, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 from transcriptx.io.vtt_parser import parse_vtt_timestamp
 
 logger = get_logger()
@@ -120,8 +123,10 @@ class ZoomAdapter:
 
             # Optional cue ID (numeric line before timestamp)
             cue_id: Optional[str] = None
-            if line.isdigit() and i + 1 < len(lines) and _TIMESTAMP_LINE.match(
-                lines[i + 1].strip()
+            if (
+                line.isdigit()
+                and i + 1 < len(lines)
+                and _TIMESTAMP_LINE.match(lines[i + 1].strip())
             ):
                 cue_id = line
                 i += 1
@@ -151,12 +156,19 @@ class ZoomAdapter:
                 continue
 
             # Zoom double-line format: first line = speaker, second = utterance
-            if len(text_lines) >= 2 and ":" not in text_lines[0] and not text_lines[0].startswith("<"):
+            if (
+                len(text_lines) >= 2
+                and ":" not in text_lines[0]
+                and not text_lines[0].startswith("<")
+            ):
                 speaker: Optional[str] = text_lines[0]
                 text = " ".join(text_lines[1:])
             else:
                 # Fallback: standard VTT-style single-line with optional "Name: text"
-                from transcriptx.io.vtt_parser import extract_speaker_hint, strip_html_tags
+                from transcriptx.io.vtt_parser import (
+                    extract_speaker_hint,
+                    strip_html_tags,
+                )
 
                 raw = "\n".join(text_lines)
                 speaker, cleaned = extract_speaker_hint(raw)

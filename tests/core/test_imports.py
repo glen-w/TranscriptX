@@ -10,6 +10,6 @@ from __future__ import annotations
 import importlib
 
 
-def test_workflow_modules_imports_under_root_conftest() -> None:
-    """CLI workflow_modules can be imported (lightweight; no pipeline/database)."""
-    importlib.import_module("transcriptx.cli.workflow_modules")
+def test_core_processing_state_imports_under_root_conftest() -> None:
+    """core.utils.processing_state can be imported (lightweight; no pipeline/database)."""
+    importlib.import_module("transcriptx.core.utils.processing_state")

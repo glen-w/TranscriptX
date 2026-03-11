@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 
-from transcriptx.cli.processing_state import (
+from transcriptx.core.utils.processing_state import (
     load_processing_state,
     save_processing_state,
 )
@@ -210,7 +210,7 @@ class TestPartialMigrationCompatibility:
         """Old code writes, new code reads (backward compatibility)."""
         state_file = tmp_path / "processing_state.json"
         monkeypatch.setattr(
-            "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+            "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
         )
 
         # Simulate old write (direct JSON dump, no atomic write)
@@ -234,7 +234,7 @@ class TestPartialMigrationCompatibility:
         """New code writes, old code reads (forward compatibility)."""
         state_file = tmp_path / "processing_state.json"
         monkeypatch.setattr(
-            "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+            "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
         )
 
         # New code writes with atomic write
@@ -259,7 +259,7 @@ class TestPartialMigrationCompatibility:
         """Detect when mixed write patterns exist."""
         state_file = tmp_path / "processing_state.json"
         monkeypatch.setattr(
-            "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+            "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
         )
 
         # Write with new method
@@ -326,7 +326,7 @@ class TestStateRecoveryBehavior:
         """Validation normalizes fields (e.g., path canonicalization)."""
         state_file = tmp_path / "processing_state.json"
         monkeypatch.setattr(
-            "transcriptx.cli.processing_state.PROCESSING_STATE_FILE", state_file
+            "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
         )
 
         # Create state with non-canonical paths

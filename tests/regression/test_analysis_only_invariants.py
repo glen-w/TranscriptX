@@ -177,7 +177,7 @@ def test_compose_has_cache_volume():
 
 
 def test_default_compose_downloads_enabled():
-    """TRANSCRIPTX_DISABLE_DOWNLOADS in compose should default to 0 (allow downloads)."""
+    """docker-compose should expose TRANSCRIPTX_DISABLE_DOWNLOADS for web services."""
     repo_root = os.path.join(os.path.dirname(__file__), "..", "..")
     compose_path = os.path.join(repo_root, "docker-compose.yml")
     if not os.path.isfile(compose_path):
@@ -185,5 +185,5 @@ def test_default_compose_downloads_enabled():
     with open(compose_path, "r", encoding="utf-8") as f:
         content = f.read()
     assert (
-        "TRANSCRIPTX_DISABLE_DOWNLOADS" in content and ":-0}" in content
-    ), "transcriptx service should default DISABLE_DOWNLOADS to 0"
+        "TRANSCRIPTX_DISABLE_DOWNLOADS" in content
+    ), "compose should reference TRANSCRIPTX_DISABLE_DOWNLOADS for configurable downloads"

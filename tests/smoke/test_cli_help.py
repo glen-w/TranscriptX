@@ -1,45 +1,32 @@
-import os
+"""Smoke tests: verify the web entry point is importable and functional."""
+
 import sys
-import subprocess
 from pathlib import Path
 
 import pytest
 
 
 @pytest.mark.smoke
-def test_cli_help_smoke() -> None:
-    repo_root = Path(__file__).resolve().parents[2]
-    env = os.environ.copy()
-    env["TRANSCRIPTX_USE_EMOJIS"] = "0"
-    env["TRANSCRIPTX_DISABLE_DOWNLOADS"] = "1"
-    result = subprocess.run(
-        [sys.executable, "-m", "transcriptx.cli.main", "--help"],
-        cwd=repo_root,
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    assert result.returncode == 0
-    assert "TranscriptX" in result.stdout or "TranscriptX" in result.stderr
+def test_web_entry_importable() -> None:
+    """Verify the web entry point module is importable."""
+    import importlib
+
+    mod = importlib.import_module("transcriptx.web.__main__")
+    assert callable(getattr(mod, "main", None))
 
 
 @pytest.mark.smoke
-def test_analyze_help_smoke() -> None:
-    """Verify 'transcriptx analyze --help' runs (install + CLI regression guard)."""
+def test_web_entry_help() -> None:
+    """Verify the web entry point responds to --help without error."""
+    import subprocess
+
     repo_root = Path(__file__).resolve().parents[2]
-    env = os.environ.copy()
-    env["TRANSCRIPTX_USE_EMOJIS"] = "0"
-    env["TRANSCRIPTX_DISABLE_DOWNLOADS"] = "1"
     result = subprocess.run(
-        [sys.executable, "-m", "transcriptx.cli.main", "analyze", "--help"],
+        [sys.executable, "-m", "transcriptx.web", "--help"],
         cwd=repo_root,
-        env=env,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=30,
     )
-    assert result.returncode == 0
-    assert (
-        "transcript" in result.stdout.lower() or "transcript" in result.stderr.lower()
-    )
+    assert result.returncode == 0, result.stderr
+    assert "TranscriptX" in result.stdout or "transcriptx" in result.stdout.lower()

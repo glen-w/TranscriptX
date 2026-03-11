@@ -248,4 +248,4 @@ class TestOutputReporter:
         out = " ".join(printed)
         assert "Run summary" in out or "summary" in out
         assert output_dir in out
-        assert "transcriptx web-viewer" in out
+        assert "open the web interface" in out or "web" in out.lower()

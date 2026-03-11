@@ -44,13 +44,26 @@ from .utils import (
     _is_test_environment,
     compute_speaker_stats_from_segments,
 )
-from .interactive import (
-    _select_name_with_playback,
-    GO_BACK_SENTINEL,
-    EXIT_SENTINEL,
-    SpeakerChoice,
-)
+from ._types import GO_BACK_SENTINEL, EXIT_SENTINEL, SpeakerChoice
 from .database import _create_or_link_speaker_with_disambiguation
+
+
+def _select_name_with_playback(speaker_id, segments, existing_name, audio_path):
+    """Delegate to the terminal-UI implementation (CLI context only)."""
+    try:
+        from .interactive import _select_name_with_playback as _impl  # noqa: PLC0415
+
+        return _impl(
+            speaker_id=speaker_id,
+            segments=segments,
+            existing_name=existing_name,
+            audio_path=audio_path,
+        )
+    except ImportError:
+        raise RuntimeError(
+            "Interactive terminal speaker mapping is not available in web-only mode. "
+            "Use batch_mode=True or the web interface for speaker identification."
+        )
 
 
 _SPEAKER_MAP_METHODS = ("interactive", "web", "batch")

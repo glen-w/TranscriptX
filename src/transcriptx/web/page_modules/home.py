@@ -8,9 +8,11 @@ from pathlib import Path
 
 import streamlit as st
 
-from transcriptx.app.controllers.library_controller import LibraryController
-from transcriptx.app.controllers.run_controller import RunController
 from transcriptx.core.utils.paths import OUTPUTS_DIR
+from transcriptx.web.cache_helpers import (
+    cached_list_transcripts,
+    cached_list_recent_runs,
+)
 
 
 def render_home() -> None:
@@ -21,11 +23,8 @@ def render_home() -> None:
     )
 
     try:
-        run_ctrl = RunController()
-        lib_ctrl = LibraryController()
-
-        runs = run_ctrl.list_recent_runs(limit=10)
-        transcripts = lib_ctrl.list_transcripts()
+        runs = cached_list_recent_runs(limit=10)
+        transcripts = cached_list_transcripts()
 
         col1, col2, col3 = st.columns(3)
         with col1:

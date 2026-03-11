@@ -31,7 +31,6 @@ If an output exists, it can always be traced back to the input transcript, the e
 ## 2. Repository layout
 
 src/transcriptx/  
-├── cli/ — Typer-based CLI workflows  
 ├── core/  
 │   ├── analysis/ — Analysis modules (primary extension surface)  
 │   ├── pipeline/ — DAG construction & execution  
@@ -39,6 +38,7 @@ src/transcriptx/
 │   ├── config/ — Configuration resolution  
 │   └── domain/ — Canonical transcript and group structures  
 ├── web/ — Streamlit GUI (analysis, speaker ID, batch ops, browsing)  
+├── app/ — App-layer workflows (AnalysisRequest, run_analysis, etc.)  
 
 data/  
 ├── recordings/ — Input audio  
@@ -51,7 +51,7 @@ tests/ — Pytest-based tests
 
 ## 3. How an analysis run works
 
-Runs are initiated via the CLI or programmatically. Configuration is resolved from defaults, environment variables, config files, and CLI overrides, then snapshotted for reproducibility.
+Runs are initiated via the web interface or the Python API (`app.workflows.run_analysis`). Configuration is resolved from defaults, environment variables, and config files, then snapshotted for reproducibility.
 
 Each module declares its dependencies. The pipeline builds a DAG, sorts it, and executes modules deterministically. Modules communicate only through the shared PipelineContext.
 

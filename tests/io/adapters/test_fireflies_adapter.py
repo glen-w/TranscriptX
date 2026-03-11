@@ -1,4 +1,5 @@
 """Tests for FirefliesAdapter."""
+
 from __future__ import annotations
 
 import json
@@ -7,7 +8,9 @@ from pathlib import Path
 from transcriptx.io.adapters.fireflies_adapter import FirefliesAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
-FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "fireflies"
+FIXTURES = (
+    Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "fireflies"
+)
 
 
 class TestFirefliesAdapterDetect:
@@ -19,12 +22,18 @@ class TestFirefliesAdapterDetect:
     def test_zero_on_whisperx(self):
         adapter = FirefliesAdapter()
         data = {"segments": [{"start": 0.0, "end": 1.0, "text": "Hi", "speaker": "S0"}]}
-        assert adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        assert (
+            adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        )
 
     def test_zero_on_otter(self):
         adapter = FirefliesAdapter()
-        data = {"speech_segments": [{"transcript": "Hi", "start_ts": 0.0, "end_ts": 1.0}]}
-        assert adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        data = {
+            "speech_segments": [{"transcript": "Hi", "start_ts": 0.0, "end_ts": 1.0}]
+        }
+        assert (
+            adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        )
 
 
 class TestFirefliesAdapterParse:

@@ -165,14 +165,21 @@ class CorrectionsStudioController:
             session.close()
 
     def list_transcripts(self) -> List[Dict[str, Any]]:
-        """Reuse Speaker Studio's transcript listing for the picker."""
+        """List transcripts using the same discovery as Library/Speaker Studio (config + recursive scan)."""
         try:
+            from transcriptx.app.compat import discover_all_transcript_paths
             from transcriptx.services.speaker_studio.controller import (
                 SpeakerStudioController,
             )
 
-            ctrl = SpeakerStudioController()
-            transcripts = ctrl.list_transcripts(canonical_only=False)
+            paths = discover_all_transcript_paths(None)
+            if not paths:
+                # Fallback: SegmentIndex only looks in DATA_DIR/transcripts (flat)
+                ctrl = SpeakerStudioController()
+                transcripts = ctrl.list_transcripts(canonical_only=False)
+            else:
+                ctrl = SpeakerStudioController()
+                transcripts = ctrl.list_transcripts_from_paths(paths)
             return [
                 {
                     "path": t.path,

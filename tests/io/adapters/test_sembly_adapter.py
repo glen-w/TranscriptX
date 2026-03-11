@@ -1,10 +1,10 @@
 """
 Tests for SemblyAdapter (JSON and HTML).
 """
+
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -25,7 +25,11 @@ class TestSemblyAdapterDetectJSON:
 
     def test_zero_on_whisperx_json(self):
         adapter = SemblyAdapter()
-        data = {"segments": [{"start": 0.0, "end": 1.0, "text": "Hi", "speaker": "SPEAKER_00"}]}
+        data = {
+            "segments": [
+                {"start": 0.0, "end": 1.0, "text": "Hi", "speaker": "SPEAKER_00"}
+            ]
+        }
         content = json.dumps(data).encode()
         assert adapter.detect_confidence(Path("test.json"), content) == 0.0
 
@@ -183,7 +187,9 @@ class TestSemblyIntegration:
         from transcriptx.io.transcript_normalizer import TranscriptNormalizer
         from transcriptx.io.speaker_normalizer import normalize_speakers
         from transcriptx.io.transcript_schema import (
-            SourceInfo, create_transcript_document, validate_transcript_document
+            SourceInfo,
+            create_transcript_document,
+            validate_transcript_document,
         )
         from datetime import datetime
 

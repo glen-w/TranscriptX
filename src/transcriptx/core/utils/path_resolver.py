@@ -137,7 +137,7 @@ class StateFilePathStrategy(PathResolutionStrategy):
         """
         if self.state_loader is None:
             # Lazy import to avoid circular dependencies
-            from transcriptx.cli.processing_state import load_processing_state
+            from transcriptx.core.utils.processing_state import load_processing_state
 
             self.state_loader = load_processing_state
 

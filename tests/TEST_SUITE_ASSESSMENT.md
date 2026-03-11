@@ -171,3 +171,25 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 
 - **Default run:** 1380 passed, 3 skipped, 458 deselected, 0 failed.
 - **integration_core:** 32 passed.
+
+---
+
+## 11. Expansion (2026-03-11) – manifest contract, state repair, pipeline result shape
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/unit/test_run_schema.py` | 2 | `validate_manifest_shape` with one artifact entry (required keys id, kind, rel_path, bytes, mtime, mime, tags, module); optional scope/speaker on artifact entry |
+| `tests/core/utils/test_state_management.py` | 2 | `repair_processing_state` on nonexistent file returns early with repaired=False, no backup; dry_run=True does not write to state file |
+
+### New contract test
+
+| File | Test | Covers |
+|------|------|--------|
+| `tests/contracts/test_run_results_and_manifest_contracts.py` | `test_pipeline_result_shape_contract_with_empty_modules` | Run with `selected_modules=[]` still returns result with `REQUIRED_SINGLE_RESULT_KEYS` and `modules_run == []` (stable result shape on no-op run) |
+
+### Suite totals after expansion
+
+- **Default run:** 1717 passed, 5 skipped, 321 deselected, 0 failed.
+- **Collected (default filter):** 1722 selected (2043 total, 321 deselected).

@@ -130,3 +130,29 @@ def test_single_pipeline_result_shape_contract(
     assert not missing, f"Pipeline result missing required keys: {missing}"
     assert isinstance(result["errors"], list)
     assert isinstance(result["output_dir"], str)
+
+
+def test_pipeline_result_shape_contract_with_empty_modules(
+    tmp_path, monkeypatch, _patch_output_paths
+) -> None:
+    """Contract: run with selected_modules=[] still returns result with REQUIRED_SINGLE_RESULT_KEYS."""
+    import transcriptx.core.pipeline.pipeline as pipeline_module
+
+    monkeypatch.setattr(pipeline_module, "OUTPUTS_DIR", str(_patch_output_paths))
+
+    repo_root = Path(__file__).resolve().parents[2]
+    fixture_path = repo_root / "tests" / "fixtures" / "mini_transcript.json"
+    if not fixture_path.exists():
+        pytest.skip("fixtures/mini_transcript.json not found")
+
+    result = run_analysis_pipeline(
+        target=TranscriptRef(path=str(fixture_path)),
+        selected_modules=[],
+        persist=False,
+    )
+
+    missing = REQUIRED_SINGLE_RESULT_KEYS - set(result.keys())
+    assert not missing, f"Pipeline result missing required keys: {missing}"
+    assert isinstance(result["errors"], list)
+    assert isinstance(result["output_dir"], str)
+    assert result["modules_run"] == []

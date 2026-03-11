@@ -165,17 +165,15 @@ class TestPathResolutionContract:
             assert original_path in str(exc_info.value)
 
 
-class TestDatabaseCommandsLoadTranscriptDataContract:
-    """Optional: database_commands.load_transcript_data(Path) returns dict with 'segments'."""
+class TestTranscriptServiceLoadTranscriptDataContract:
+    """transcript_loader.load_transcript_data(path) returns TranscriptLoadResult with segments."""
 
-    def test_database_commands_load_transcript_data_returns_dict_with_segments(
+    def test_service_load_transcript_data_returns_dict_with_segments(
         self, tmp_path: Path
     ) -> None:
-        """database_commands.load_transcript_data(Path) returns a dict containing 'segments' (CLI helper)."""
-        from transcriptx.cli.database_commands import load_transcript_data as db_load
+        from transcriptx.io.transcript_loader import load_transcript_data
 
         path, segments, _ = _fixture_transcript(tmp_path)
-        result = db_load(Path(path))
-        assert isinstance(result, dict)
-        assert "segments" in result
-        assert len(result["segments"]) == len(segments)
+        result = load_transcript_data(path)
+        assert hasattr(result, "segments")
+        assert len(result.segments) == len(segments)

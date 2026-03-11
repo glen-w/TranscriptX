@@ -8,7 +8,7 @@ import pytest
 
 from transcriptx.core.utils.state_schema import update_analysis_state
 from transcriptx.core.utils.file_lock import FileLock
-from transcriptx.cli import processing_state
+from transcriptx.core.utils import processing_state
 
 
 @pytest.mark.unit

@@ -60,16 +60,22 @@ class TestMakeInitialSnapshot:
 @pytest.mark.unit
 class TestRefreshPct:
     def test_no_total_does_not_raise(self):
-        snap: ProgressSnapshot = ProgressSnapshot(total=0, completed=0, skipped=0, failed=0)
+        snap: ProgressSnapshot = ProgressSnapshot(
+            total=0, completed=0, skipped=0, failed=0
+        )
         _refresh_pct(snap)  # should not raise
 
     def test_pct_computed_correctly(self):
-        snap: ProgressSnapshot = ProgressSnapshot(total=4, completed=2, skipped=1, failed=0)
+        snap: ProgressSnapshot = ProgressSnapshot(
+            total=4, completed=2, skipped=1, failed=0
+        )
         _refresh_pct(snap)
         assert snap["pct"] == pytest.approx(75.0)
 
     def test_pct_capped_at_100(self):
-        snap: ProgressSnapshot = ProgressSnapshot(total=2, completed=2, skipped=2, failed=2)
+        snap: ProgressSnapshot = ProgressSnapshot(
+            total=2, completed=2, skipped=2, failed=2
+        )
         _refresh_pct(snap)
         assert snap["pct"] <= 100.0
 

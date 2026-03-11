@@ -6,13 +6,23 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web.cache_helpers import cached_list_groups
 from transcriptx.web.services.group_service import GroupService  # type: ignore[import]
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_get_members(group_uuid: str) -> list:
+    groups = cached_list_groups()
+    group = next((g for g in groups if g.uuid == group_uuid), None)
+    if not group:
+        return []
+    return GroupService.get_members(group)
 
 
 def render_groups() -> None:
     st.markdown('<div class="main-header">Groups</div>', unsafe_allow_html=True)
 
-    groups = GroupService.list_groups()
+    groups = cached_list_groups()
     if not groups:
         st.info("No TranscriptSets found. Create a group via CLI or database tools.")
         return
@@ -42,7 +52,7 @@ def render_groups() -> None:
         for transcript_uuid in group.transcript_file_uuids or []:
             st.write(f"- {transcript_uuid}")
 
-    members = GroupService.get_members(group)
+    members = _cached_get_members(group.uuid)
     if members:
         with st.expander("Transcript files", expanded=False):
             for member in members:

@@ -527,7 +527,7 @@ def require_up_to_date_schema() -> None:
         "Database schema is behind migrations. "
         f"Pending revisions: {pending_list}. "
         f"Database: {db_url}. "
-        "Run: python -m transcriptx.cli.main database migrate"
+        "Run database migrations (see docs) or use the web interface to apply schema updates."
     )
 
 

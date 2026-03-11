@@ -1,6 +1,7 @@
 """
 Tests for AdapterRegistry detection logic.
 """
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.io.adapters import AdapterRegistry, CONFIDENCE_THRESHOLD
+from transcriptx.io.adapters import AdapterRegistry
 from transcriptx.io.adapters.base import UnsupportedFormatError
 from transcriptx.io.adapters.vtt_adapter import VTTAdapter
 from transcriptx.io.adapters.srt_adapter import SRTAdapter
@@ -68,8 +69,14 @@ class TestRegistryDetection:
         reg = _build_registry()
         artifact = {
             "schema_version": "1.0",
-            "source": {"type": "vtt", "original_path": "/tmp/x.vtt", "imported_at": "2025-01-01T00:00:00Z"},
-            "segments": [{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "Hi"}],
+            "source": {
+                "type": "vtt",
+                "original_path": "/tmp/x.vtt",
+                "imported_at": "2025-01-01T00:00:00Z",
+            },
+            "segments": [
+                {"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "Hi"}
+            ],
         }
         content = json.dumps(artifact).encode()
         path = Path("test.json")
@@ -110,6 +117,7 @@ class TestRegistryDetection:
 class TestPriorityTieBreaking:
     def test_lower_priority_wins_on_equal_score(self):
         """Two adapters with the same score: lower priority value should win."""
+
         class AlphaAdapter:
             source_id = "alpha"
             supported_extensions = (".txt",)

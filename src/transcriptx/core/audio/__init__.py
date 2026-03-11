@@ -16,3 +16,4 @@ from transcriptx.core.audio.conversion import (  # noqa: F401
 from transcriptx.core.audio.backup import (  # noqa: F401
     backup_audio_files_to_storage,
 )
+from transcriptx.core.audio.utils import get_audio_duration  # noqa: F401

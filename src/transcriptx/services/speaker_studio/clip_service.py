@@ -70,11 +70,11 @@ def _extract_segment_ffmpeg(
     output_path: Path,
     *,
     format: str = "mp3",
-) -> bool:
-    """Extract a segment to output_path. Returns True on success."""
+) -> None:
+    """Extract a segment to output_path. Raises RuntimeError on any failure."""
     ffmpeg_path = _find_ffmpeg()
     if not ffmpeg_path:
-        return False
+        raise RuntimeError("ffmpeg not found (install ffmpeg or add it to PATH)")
     base = [
         ffmpeg_path,
         "-hide_banner",
@@ -121,19 +121,20 @@ def _extract_segment_ffmpeg(
             "1",
             str(output_path),
         ]
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, check=False, timeout=30
-        )
-        if (
-            result.returncode == 0
-            and output_path.exists()
-            and output_path.stat().st_size > 0
-        ):
-            return True
-    except Exception as e:
-        logger.warning("ClipService ffmpeg extract failed: %s", e)
-    return False
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, check=False, timeout=30
+    )
+    if (
+        result.returncode == 0
+        and output_path.exists()
+        and output_path.stat().st_size > 0
+    ):
+        return
+    stderr = (result.stderr or "").strip()
+    detail = f": {stderr}" if stderr else f" (exit {result.returncode})"
+    raise RuntimeError(
+        f"ffmpeg failed for {audio_path.name} [{start_s:.1f}s+{duration_s:.1f}s]{detail}"
+    )
 
 
 # ── ClipService ───────────────────────────────────────────────────────────────
@@ -261,26 +262,21 @@ class ClipService:
         """
         tmp_path = out_path.with_name(
             f"{out_path.stem}"
-            f".{os.getpid()}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp"
+            f".{os.getpid()}.{threading.get_ident()}.{uuid.uuid4().hex}"
+            f"{out_path.suffix}"
         )
         t0 = time.monotonic()
         try:
-            success = _extract_segment_ffmpeg(
+            _extract_segment_ffmpeg(
                 audio_path, extract_start, extract_duration, tmp_path, format=format
             )
-            if success:
-                os.replace(tmp_path, out_path)  # atomic on POSIX
-                elapsed_ms = (time.monotonic() - t0) * 1000.0
-                with self._lock:
-                    self._stats["gen_ms_total"] += elapsed_ms
-                logger.debug(
-                    "ClipService generated %s in %.0fms", out_path.name, elapsed_ms
-                )
-            else:
-                raise RuntimeError(
-                    f"ffmpeg failed for {audio_path!s} "
-                    f"[{extract_start:.1f}s + {extract_duration:.1f}s]"
-                )
+            os.replace(tmp_path, out_path)  # atomic on POSIX
+            elapsed_ms = (time.monotonic() - t0) * 1000.0
+            with self._lock:
+                self._stats["gen_ms_total"] += elapsed_ms
+            logger.debug(
+                "ClipService generated %s in %.0fms", out_path.name, elapsed_ms
+            )
         finally:
             if tmp_path.exists():
                 try:
@@ -315,7 +311,14 @@ class ClipService:
         except Exception as e:
             with self._lock:
                 self._stats["warm_fail"] += 1
-            logger.warning("clip_warm failed key=%s…: %s", key[:8], e)
+            err_str = str(e)
+            err_short = err_str[:200] + "…" if len(err_str) > 200 else err_str
+            logger.warning(
+                "clip_warm failed key=%s… file=%s: %s",
+                key[:8],
+                audio_path.name,
+                err_short,
+            )
         finally:
             with self._lock:
                 self._inflight.pop(key, None)
@@ -473,9 +476,7 @@ class ClipService:
 
     def _prune_cache_if_needed(self) -> None:
         """Trigger lazy cache pruning in a background daemon thread."""
-        t = threading.Thread(
-            target=self._prune_cache, daemon=True, name="clip_prune"
-        )
+        t = threading.Thread(target=self._prune_cache, daemon=True, name="clip_prune")
         t.start()
 
     def _prune_cache(self) -> None:

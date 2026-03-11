@@ -1,9 +1,5 @@
 """
 Regression tests: key modules import without side effects.
-
-Uses tests/regression/conftest.py so autouse fixtures (questionary, logging)
-do not run and affect import order. Tests here avoid pulling in pipeline/database
-chains that can cause circular imports when run under the root conftest.
 """
 
 from __future__ import annotations
@@ -16,10 +12,13 @@ import pytest
 @pytest.mark.parametrize(
     "module_name",
     [
-        "transcriptx.cli.workflow_modules",
-        "transcriptx.cli.deduplication_workflow",
         "transcriptx.core.utils.paths",
         "transcriptx.core.utils.config.workflow",
+        "transcriptx.core.utils.processing_state",
+        "transcriptx.core.utils.file_discovery",
+        "transcriptx.core.audio.utils",
+        "transcriptx.core.audio.fingerprinting",
+        "transcriptx.web.__main__",
     ],
 )
 def test_module_imports_without_side_effects(module_name: str) -> None:

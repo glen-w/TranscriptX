@@ -7,7 +7,12 @@ from __future__ import annotations
 import streamlit as st
 
 from transcriptx.app.controllers.profile_controller import ProfileController
-from transcriptx.core import get_available_modules
+from transcriptx.web.cache_helpers import cached_get_available_modules
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_list_profiles(module: str) -> list:
+    return ProfileController().list_profiles(module)
 
 
 def render_profiles_page() -> None:
@@ -19,7 +24,7 @@ def render_profiles_page() -> None:
 
     try:
         ctrl = ProfileController()
-        modules = get_available_modules()
+        modules = cached_get_available_modules()
 
         module_choice = st.selectbox(
             "Module",
@@ -28,7 +33,7 @@ def render_profiles_page() -> None:
             key="profiles_module",
         )
         if module_choice:
-            profiles = ctrl.list_profiles(module_choice)
+            profiles = _cached_list_profiles(module_choice)
             active = ctrl.get_active_profile(module_choice)
             st.metric("Profiles", len(profiles))
             st.caption(f"Active: {active}")

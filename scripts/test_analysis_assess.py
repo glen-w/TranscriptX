@@ -43,7 +43,30 @@ except ImportError:
     spacy = None
     Image = None
 
-from transcriptx.cli.analysis_workflow import run_analysis_non_interactive
+from transcriptx.app.workflows.analysis import run_analysis as _run_analysis_workflow
+from transcriptx.app.models.requests import AnalysisRequest as _AnalysisRequest
+
+
+def run_analysis_non_interactive(
+    transcript_file,
+    modules=None,
+    mode="quick",
+    skip_confirm=True,
+    **_kwargs,
+):
+    """Thin wrapper around app.workflows.run_analysis for script compatibility."""
+    from pathlib import Path
+
+    request = _AnalysisRequest(
+        transcript_path=Path(transcript_file),
+        mode=mode,
+        modules=modules,
+        skip_speaker_mapping=True,
+    )
+    result = _run_analysis_workflow(request)
+    return {"success": result.success, "errors": result.errors}
+
+
 from transcriptx.core.utils.path_utils import (
     get_transcript_dir,
     get_canonical_base_name,

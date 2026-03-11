@@ -26,6 +26,9 @@ class PathSettings:
     project_root: Path
     # Library (user-owned)
     recordings_dir: Path
+    """Where to discover recordings; may be read-only (e.g. Docker :ro mount)."""
+    recordings_imports_dir: Path
+    """Writable directory for uploaded files (imports). Falls back under DATA_DIR when recordings_dir is read-only."""
     transcripts_dir: Path
     readable_transcripts_dir: Path
     # Working (app-managed)
@@ -79,12 +82,27 @@ def _build_paths() -> PathSettings:
     wav_backup_dir = (
         wav_backup_env or wav_storage_legacy or (data_dir / "backups" / "wav")
     )
+    # Writable directory for uploads: env override, else recordings_dir/imports if writable, else data/recordings/imports
+    imports_env = _env_path_value("TRANSCRIPTX_IMPORTS_DIR")
+    if imports_env is not None:
+        recordings_imports_dir = imports_env
+    elif recordings_dir.exists() and os.access(str(recordings_dir), os.W_OK):
+        recordings_imports_dir = recordings_dir / "imports"
+    else:
+        recordings_imports_dir = data_dir / "recordings" / "imports"
+        if recordings_dir != (data_dir / "recordings"):
+            _log.info(
+                "RECORDINGS_DIR %s is read-only or missing; uploads will use %s",
+                recordings_dir,
+                recordings_imports_dir,
+            )
     return PathSettings(
         project_root=project_root,
         data_dir=data_dir,
         config_dir=config_dir,
         profiles_dir=profiles_dir,
         recordings_dir=recordings_dir,
+        recordings_imports_dir=recordings_imports_dir,
         transcripts_dir=transcripts_dir,
         readable_transcripts_dir=transcripts_dir / "readable",
         outputs_dir=outputs_dir,
@@ -106,6 +124,7 @@ PROJECT_ROOT = PATHS.project_root
 DATA_DIR = PATHS.data_dir
 CONFIG_DIR = PATHS.config_dir
 RECORDINGS_DIR = PATHS.recordings_dir
+RECORDINGS_IMPORTS_DIR = PATHS.recordings_imports_dir
 DIARISED_TRANSCRIPTS_DIR = PATHS.transcripts_dir
 READABLE_TRANSCRIPTS_DIR = PATHS.readable_transcripts_dir
 OUTPUTS_DIR = PATHS.outputs_dir
@@ -169,11 +188,12 @@ def ensure_data_dirs() -> None:
     """Create core data directories if they do not exist.
 
     On permission errors (e.g. read-only DATA_DIR in Docker web container),
-    logs a warning and continues so read-only modes (e.g. web-viewer) can start.
+    logs a warning and continues so read-only modes (e.g. web interface) can start.
     """
     _migrate_state_paths()
     dirs = [
         PATHS.recordings_dir,
+        PATHS.recordings_imports_dir,
         PATHS.transcripts_dir,
         PATHS.outputs_dir,
         PATHS.group_outputs_dir,

@@ -322,14 +322,6 @@ def mock_analysis_module():
 # ============================================================================
 
 
-@pytest.fixture
-def typer_test_client():
-    """Typer test client for CLI testing."""
-    from typer.testing import CliRunner
-
-    return CliRunner()
-
-
 @pytest.fixture(autouse=True)
 def mock_questionary():
     """Mock questionary for all tests to prevent interactive prompts."""
@@ -605,13 +597,6 @@ def pytest_collection_modifyitems(config, items):
                 marker.name == "integration_extended" for marker in item.iter_markers()
             ):
                 item.add_marker(pytest.mark.integration_extended)
-
-        # Treat CLI workflow tests as integration-level by default (they exercise orchestration).
-        # Skip promotion to integration if the test is already explicitly marked as unit.
-        if "/tests/cli/" in path_str:
-            existing_markers = {m.name for m in item.iter_markers()}
-            if "integration" not in existing_markers and "unit" not in existing_markers:
-                item.add_marker(pytest.mark.integration)
 
         # Add database marker to tests in database/ directory
         if "database" in path_str:

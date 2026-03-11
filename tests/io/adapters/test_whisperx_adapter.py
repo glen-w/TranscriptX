@@ -4,19 +4,20 @@ Tests for WhisperXAdapter.
 Verifies semantic parity with the previous transcript_importer.py path for all
 fixture inputs — equivalent segments, speaker assignments, and metadata.
 """
+
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
-import pytest
 
 from transcriptx.io.adapters.whisperx_adapter import WhisperXAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "whisperx"
-LEGACY_FIXTURE = Path(__file__).parent.parent.parent / "fixtures" / "whisperx_legacy.json"
+LEGACY_FIXTURE = (
+    Path(__file__).parent.parent.parent / "fixtures" / "whisperx_legacy.json"
+)
 
 
 class TestWhisperXAdapterDetect:
@@ -45,8 +46,14 @@ class TestWhisperXAdapterDetect:
         adapter = WhisperXAdapter()
         artifact = {
             "schema_version": "1.0",
-            "source": {"type": "vtt", "original_path": "/tmp/x.vtt", "imported_at": "2025-01-01T00:00:00Z"},
-            "segments": [{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "Hi"}],
+            "source": {
+                "type": "vtt",
+                "original_path": "/tmp/x.vtt",
+                "imported_at": "2025-01-01T00:00:00Z",
+            },
+            "segments": [
+                {"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "Hi"}
+            ],
         }
         content = json.dumps(artifact).encode()
         assert adapter.detect_confidence(Path("test.json"), content) == 0.0
@@ -134,9 +141,24 @@ class TestWhisperXAdapterParseWordLevel:
                     "end": 8.0,
                     "text": "Let us start.",
                     "words": [
-                        {"word": "Let", "start": 5.2, "end": 5.5, "speaker": "SPEAKER_00"},
-                        {"word": "us", "start": 5.5, "end": 5.8, "speaker": "SPEAKER_01"},
-                        {"word": "start.", "start": 5.8, "end": 8.0, "speaker": "SPEAKER_00"},
+                        {
+                            "word": "Let",
+                            "start": 5.2,
+                            "end": 5.5,
+                            "speaker": "SPEAKER_00",
+                        },
+                        {
+                            "word": "us",
+                            "start": 5.5,
+                            "end": 5.8,
+                            "speaker": "SPEAKER_01",
+                        },
+                        {
+                            "word": "start.",
+                            "start": 5.8,
+                            "end": 8.0,
+                            "speaker": "SPEAKER_00",
+                        },
                     ],
                 }
             ]

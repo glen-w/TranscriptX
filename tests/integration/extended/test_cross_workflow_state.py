@@ -7,7 +7,7 @@ This module tests state persistence and consistency across different workflows.
 import json
 import pytest
 
-from transcriptx.cli.processing_state import (
+from transcriptx.core.utils.processing_state import (
     load_processing_state,
     save_processing_state,
     get_current_transcript_path_from_state,

@@ -874,7 +874,7 @@ def _run_single_analysis_pipeline(
     # Update processing state with analysis results
     try:
         from transcriptx.core.utils.state_schema import update_analysis_state
-        from transcriptx.cli.processing_state import (
+        from transcriptx.core.utils.processing_state import (
             load_processing_state,
             save_processing_state,
         )

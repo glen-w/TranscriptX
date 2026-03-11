@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from transcriptx.app.controllers.diagnostics_controller import DiagnosticsController
+from transcriptx.web.cache_helpers import cached_doctor_report
 
 
 def render_diagnostics_page() -> None:
@@ -16,8 +16,7 @@ def render_diagnostics_page() -> None:
         unsafe_allow_html=True,
     )
 
-    ctrl = DiagnosticsController()
-    report = ctrl.get_doctor_report()
+    report = cached_doctor_report()
 
     st.subheader("Environment")
     st.write(

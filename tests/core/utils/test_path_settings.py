@@ -38,6 +38,7 @@ class TestPathSettingsStructure:
             "DATA_DIR",
             "CONFIG_DIR",
             "RECORDINGS_DIR",
+            "RECORDINGS_IMPORTS_DIR",
             "DIARISED_TRANSCRIPTS_DIR",
             "READABLE_TRANSCRIPTS_DIR",
             "OUTPUTS_DIR",
@@ -85,6 +86,11 @@ class TestEnvOverride:
         # Recordings and transcripts must not be under data when overridden
         assert not str(result.recordings_dir).startswith(str(result.data_dir))
         assert not str(result.transcripts_dir).startswith(str(result.data_dir))
+        # Imports dir is either under RECORDINGS_DIR or under DATA_DIR when RECORDINGS_DIR is read-only
+        assert result.recordings_imports_dir in (
+            result.recordings_dir / "imports",
+            result.data_dir / "recordings" / "imports",
+        )
 
 
 class TestConfigSerialization:

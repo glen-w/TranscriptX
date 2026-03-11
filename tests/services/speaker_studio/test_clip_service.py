@@ -75,7 +75,9 @@ def test_cache_key_changes_when_size_changes(tmp_path: Path) -> None:
     svc = ClipService(data_dir=tmp_path)
     k1 = svc._cache_key(audio, 0.0, 2.0, "mp3", 50)
 
-    audio.write_bytes(b"\x00" * 1024)  # different size, same mtime unlikely but size differs
+    audio.write_bytes(
+        b"\x00" * 1024
+    )  # different size, same mtime unlikely but size differs
     k2 = svc._cache_key(audio, 0.0, 2.0, "mp3", 50)
     assert k1 != k2
     svc.close()
@@ -132,9 +134,9 @@ def test_warm_clips_deduplicates_same_segment(tmp_path: Path) -> None:
         svc.warm_clips(audio, [(1.0, 3.0)])
         svc.warm_clips(audio, [(1.0, 3.0)])
 
-    assert len(submit_calls) == 1, (
-        f"Expected 1 submit for duplicate segment; got {len(submit_calls)}"
-    )
+    assert (
+        len(submit_calls) == 1
+    ), f"Expected 1 submit for duplicate segment; got {len(submit_calls)}"
     svc.close()
 
 
@@ -144,9 +146,7 @@ def test_warm_clips_skips_already_cached(tmp_path: Path) -> None:
     svc = ClipService(data_dir=tmp_path)
 
     # Pre-create the cache file.
-    _, _, _, _, key, out_path = svc._compute_extract_params(
-        audio, 1.0, 3.0, "mp3", 50
-    )
+    _, _, _, _, key, out_path = svc._compute_extract_params(audio, 1.0, 3.0, "mp3", 50)
     out_path.write_bytes(b"fake clip")
 
     submit_calls: List = []
@@ -182,7 +182,9 @@ def test_foreground_joins_inflight_warm_job(tmp_path: Path) -> None:
 
     original_generate = svc._generate_sync
 
-    def slow_generate(ap: object, es: object, ed: object, op: Path, format: object) -> None:
+    def slow_generate(
+        ap: object, es: object, ed: object, op: Path, format: object
+    ) -> None:
         generate_calls.append(1)
         # Simulate ffmpeg work: write a fake file after a brief pause.
         time.sleep(0.05)
@@ -200,8 +202,6 @@ def test_foreground_joins_inflight_warm_job(tmp_path: Path) -> None:
             with svc._lock:
                 svc._inflight.pop(key, None)
             evt.set()
-
-    import concurrent.futures
 
     fut = svc._executor.submit(warm_worker)
     with svc._lock:
@@ -234,7 +234,9 @@ def test_temp_file_not_visible_to_get_clip_path(tmp_path: Path) -> None:
 
     observed_paths: List[Path] = []
 
-    def fake_generate(ap: object, es: object, ed: object, op: Path, format: object) -> None:
+    def fake_generate(
+        ap: object, es: object, ed: object, op: Path, format: object
+    ) -> None:
         # op is the temp path; record it, then write content and let rename happen.
         observed_paths.append(op)
         op.write_bytes(b"clip")
@@ -273,7 +275,9 @@ def test_warm_clips_noop_when_ffmpeg_absent(tmp_path: Path) -> None:
     ):
         svc = ClipService(data_dir=tmp_path)
         submit_calls: List = []
-        with patch.object(svc._executor, "submit", side_effect=lambda *a, **k: submit_calls.append(1)):
+        with patch.object(
+            svc._executor, "submit", side_effect=lambda *a, **k: submit_calls.append(1)
+        ):
             svc.warm_clips(audio, [(0.0, 2.0)])
         assert submit_calls == []
         svc.close()
@@ -291,9 +295,7 @@ def test_get_clip_path_raises_when_audio_missing(tmp_path: Path) -> None:
 
 
 def test_controller_ffmpeg_available_delegates(tmp_path: Path) -> None:
-    with patch(
-        "transcriptx.services.speaker_studio.controller.ClipService"
-    ) as MockCS:
+    with patch("transcriptx.services.speaker_studio.controller.ClipService") as MockCS:
         mock_svc = MagicMock()
         mock_svc.ffmpeg_available.return_value = True
         MockCS.return_value = mock_svc
@@ -307,9 +309,7 @@ def test_controller_warm_clips_delegates(tmp_path: Path) -> None:
         patch(
             "transcriptx.services.speaker_studio.controller.SegmentIndexService"
         ) as MockIdx,
-        patch(
-            "transcriptx.services.speaker_studio.controller.ClipService"
-        ) as MockCS,
+        patch("transcriptx.services.speaker_studio.controller.ClipService") as MockCS,
     ):
         mock_idx = MagicMock()
         mock_idx.get_transcript_audio_path.return_value = tmp_path / "audio.mp3"
@@ -331,9 +331,7 @@ def test_controller_warm_clips_noop_when_no_audio(tmp_path: Path) -> None:
         patch(
             "transcriptx.services.speaker_studio.controller.SegmentIndexService"
         ) as MockIdx,
-        patch(
-            "transcriptx.services.speaker_studio.controller.ClipService"
-        ) as MockCS,
+        patch("transcriptx.services.speaker_studio.controller.ClipService") as MockCS,
     ):
         mock_idx = MagicMock()
         mock_idx.get_transcript_audio_path.return_value = None

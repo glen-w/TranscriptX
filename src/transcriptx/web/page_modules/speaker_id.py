@@ -14,7 +14,7 @@ the page (header, metrics, name assignment, navigation) does not dim.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import streamlit as st
 
@@ -22,6 +22,8 @@ from transcriptx.services.speaker_studio.controller import SpeakerStudioControll
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
 from transcriptx.web.page_modules.speaker_studio import (
+    _cached_speaker_studio_fallback_transcripts,
+    _cached_transcripts_for_paths,
     _transcript_paths_for_speaker_views,
 )
 from transcriptx.web.state import SELECTED_TRANSCRIPT_PATH
@@ -65,14 +67,12 @@ def render_speaker_id_page() -> None:
     controller = SpeakerStudioController()
     paths = _transcript_paths_for_speaker_views()
     if paths:
-        transcripts = controller.list_transcripts_from_paths(paths)
+        paths_key = tuple(str(p) for p in paths)
+        transcripts = _cached_transcripts_for_paths(paths_key)
     else:
         transcripts = []
     if not transcripts:
-        try:
-            transcripts = controller.list_transcripts(canonical_only=False)
-        except TypeError:
-            transcripts = controller.list_transcripts()
+        transcripts = _cached_speaker_studio_fallback_transcripts()
     if not transcripts:
         st.info("No transcripts found. Add transcript JSON files first.")
         return

@@ -29,12 +29,10 @@ from typing import Optional
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
 from transcriptx.io.adapters import registry
-from transcriptx.io.adapters.base import UnsupportedFormatError
 from transcriptx.io.segment_coalescer import CoalesceConfig, coalesce_segments
 from transcriptx.io.speaker_normalizer import normalize_speakers
 from transcriptx.io.transcript_normalizer import TranscriptNormalizer
 from transcriptx.io.transcript_schema import (
-    PERMITTED_SOURCE_TYPES,
     SourceInfo,
     TranscriptMetadata,
     compute_content_hash,
@@ -96,9 +94,7 @@ def detect_transcript_format(path: Path) -> str:
     return adapter.source_id
 
 
-def ensure_json_artifact(
-    path: Path, force_adapter: Optional[str] = None
-) -> Path:
+def ensure_json_artifact(path: Path, force_adapter: Optional[str] = None) -> Path:
     """Ensure a JSON artifact exists for the given transcript path.
 
     If *path* is already a valid TranscriptX schema v1.0 artifact, it is

@@ -1,9 +1,13 @@
 """
 Tests for TranscriptNormalizer.
 """
+
 from __future__ import annotations
 
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 from transcriptx.io.transcript_normalizer import TranscriptNormalizer
 
 
@@ -37,8 +41,12 @@ def _turn(
 
 class TestEndTimestampRepair:
     def test_fills_missing_end_from_next_start(self):
-        t0 = IntermediateTurn(text="Hi", speaker=None, start=0.0, end=None, turn_index=0)
-        t1 = IntermediateTurn(text="There", speaker=None, start=2.5, end=4.0, turn_index=1)
+        t0 = IntermediateTurn(
+            text="Hi", speaker=None, start=0.0, end=None, turn_index=0
+        )
+        t1 = IntermediateTurn(
+            text="There", speaker=None, start=2.5, end=4.0, turn_index=1
+        )
         transcript = _make_transcript(t0, t1)
 
         normalizer = TranscriptNormalizer()
@@ -48,7 +56,9 @@ class TestEndTimestampRepair:
 
     def test_fills_missing_end_with_estimate_when_last(self):
         t0 = IntermediateTurn(text="Hi", speaker=None, start=0.0, end=2.0, turn_index=0)
-        t1 = IntermediateTurn(text="Bye", speaker=None, start=3.0, end=None, turn_index=1)
+        t1 = IntermediateTurn(
+            text="Bye", speaker=None, start=3.0, end=None, turn_index=1
+        )
         transcript = _make_transcript(t0, t1)
 
         normalizer = TranscriptNormalizer()

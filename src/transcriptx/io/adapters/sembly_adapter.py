@@ -25,7 +25,10 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 
 logger = get_logger()
 
@@ -203,7 +206,9 @@ class SemblyAdapter:
             text_tag = item.select_one(".transcript-text")
 
             speaker = speaker_tag.get_text(strip=True) if speaker_tag else None
-            text = text_tag.get_text(strip=True) if text_tag else item.get_text(strip=True)
+            text = (
+                text_tag.get_text(strip=True) if text_tag else item.get_text(strip=True)
+            )
 
             start_raw = item.get("data-start")
             end_raw = item.get("data-end")

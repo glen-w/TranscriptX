@@ -91,9 +91,10 @@ class MergeRequest:
 
 @dataclass
 class BatchAnalysisRequest:
-    """Input for batch analysis."""
+    """Input for batch analysis. Provide either transcript_paths or folder."""
 
-    folder: Path
+    transcript_paths: Optional[list[Path]] = None
+    folder: Optional[Path] = None
     analysis_mode: str = "quick"
     selected_modules: Optional[list[str]] = None
     skip_speaker_gate: bool = False

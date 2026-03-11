@@ -22,7 +22,10 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 
 logger = get_logger()
 
@@ -124,9 +127,7 @@ class WhisperXAdapter:
                 if promoted:
                     speaker = promoted
                 else:
-                    warnings.append(
-                        f"Segment {idx}: no speaker found in words array"
-                    )
+                    warnings.append(f"Segment {idx}: no speaker found in words array")
 
             turns.append(
                 IntermediateTurn(

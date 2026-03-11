@@ -15,6 +15,13 @@ from transcriptx.web.utils import (
 )
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_sessions_and_stats() -> tuple[list, dict]:
+    sessions = list_available_sessions()
+    stats = get_all_sessions_statistics()
+    return sessions, stats
+
+
 def render_statistics() -> None:
     """Render the Statistics page with aggregate and per-session stats."""
     st.markdown(
@@ -22,14 +29,12 @@ def render_statistics() -> None:
         unsafe_allow_html=True,
     )
 
-    sessions = list_available_sessions()
+    sessions, stats = _cached_sessions_and_stats()
     if not sessions:
         st.info(
             "No transcript sessions found. Process transcripts to see statistics here."
         )
         return
-
-    stats = get_all_sessions_statistics()
 
     # Aggregate metrics
     st.subheader("Overview")
@@ -55,6 +60,7 @@ def render_statistics() -> None:
 
     st.divider()
     st.subheader("Per-session statistics")
+    # stats already loaded above from cache
 
     rows = []
     for s in sessions:

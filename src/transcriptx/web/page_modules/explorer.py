@@ -11,6 +11,15 @@ import streamlit as st
 from transcriptx.web.services import RunIndex, SubjectService
 
 
+@st.cache_data(ttl=30, show_spinner=False)
+def _cached_run_files(run_root_str: str) -> list:
+    run_dir = Path(run_root_str)
+    if not run_dir.exists():
+        return []
+    files = [p for p in run_dir.rglob("*") if p.is_file()]
+    return sorted(files)
+
+
 def render_explorer() -> None:
     subject = SubjectService.resolve_current_subject(st.session_state)
     run_id = st.session_state.get("run_id")
@@ -29,8 +38,7 @@ def render_explorer() -> None:
     st.subheader("File List")
     st.caption("Browse and open files from the run directory.")
 
-    files = [p for p in run_dir.rglob("*") if p.is_file()]
-    files = sorted(files)
+    files = _cached_run_files(str(run_dir))
 
     if not files:
         st.info("No files found in this run directory.")

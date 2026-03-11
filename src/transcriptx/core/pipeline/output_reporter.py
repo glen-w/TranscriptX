@@ -261,7 +261,7 @@ class OutputReporter:
                 self.console.print(f"    • {short}")
             if len(errors) > 5:
                 self.console.print(f"    • ... and {len(errors) - 5} more errors")
-        self.console.print("  To explore results: transcriptx web-viewer")
+        self.console.print("  To explore results: open the web interface")
         self.console.print("---\n")
 
     def display_output_summary_to_user(self, summary: Dict[str, Any]) -> None:

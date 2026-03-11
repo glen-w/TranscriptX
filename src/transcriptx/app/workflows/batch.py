@@ -20,20 +20,23 @@ def run_batch_analysis(
     progress: ProgressCallback | None = None,
 ) -> BatchAnalysisResult:
     """
-    Run analysis on all transcripts in folder. No prompts, no prints.
+    Run analysis on selected transcripts or all in folder. No prompts, no prints.
     """
     if progress is None:
         progress = NullProgress()
 
-    folder = Path(request.folder)
-    if not folder.exists() or not folder.is_dir():
-        return BatchAnalysisResult(
-            success=False,
-            transcript_count=0,
-            errors=[f"Folder not found or not a directory: {folder}"],
-        )
+    if request.transcript_paths:
+        transcript_paths = [Path(p) for p in request.transcript_paths]
+    else:
+        folder = Path(request.folder) if request.folder else None
+        if not folder or not folder.exists() or not folder.is_dir():
+            return BatchAnalysisResult(
+                success=False,
+                transcript_count=0,
+                errors=[f"Folder not found or not a directory: {folder}"],
+            )
+        transcript_paths = discover_all_transcript_paths(folder)
 
-    transcript_paths = discover_all_transcript_paths(folder)
     if not transcript_paths:
         return BatchAnalysisResult(
             success=True,

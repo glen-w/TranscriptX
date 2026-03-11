@@ -20,7 +20,10 @@ import statistics
 from typing import List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.intermediate_transcript import IntermediateTurn, IntermediateTranscript
+from transcriptx.io.intermediate_transcript import (
+    IntermediateTurn,
+    IntermediateTranscript,
+)
 
 logger = get_logger()
 
@@ -96,6 +99,7 @@ class TranscriptNormalizer:
                     spk = None
             if spk != turn.speaker:
                 from dataclasses import replace
+
                 turn = replace(turn, speaker=spk)
             cleaned.append(turn)
         return cleaned

@@ -95,7 +95,8 @@ LABEL org.opencontainers.image.revision="${GIT_SHA}"
 LABEL org.opencontainers.image.version="${TRANSCRIPTX_VERSION}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
-# ENTRYPOINT contract: use "docker run ... analyze ..." (no extra "transcriptx" before subcommand)
-# Default: interactive CLI menu; use -it for TTY. Override with e.g. --help or analyze ...
+# ENTRYPOINT: starts the Streamlit web interface.
+# Default host: 0.0.0.0 so the port is reachable from outside the container.
+# Override with --host / --port as needed.
 ENTRYPOINT ["transcriptx"]
-CMD ["interactive"]
+CMD ["--host", "0.0.0.0"]

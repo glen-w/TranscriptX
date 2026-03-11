@@ -21,11 +21,11 @@ import streamlit as st
 
 from transcriptx.core.audio.types import AudioFileMeta
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.paths import RECORDINGS_IMPORTS_DIR
 
 logger = get_logger()
 
 _AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".wma"}
-_IMPORTS_SUBDIR = "imports"
 
 
 class RecordingsService:
@@ -86,24 +86,25 @@ class RecordingsService:
             )
 
     @staticmethod
-    def save_uploaded_file(uploaded_file: object, recordings_dir: Path) -> Path:
+    def save_uploaded_file(
+        uploaded_file: object, recordings_dir: Path | None = None
+    ) -> Path:
         """
-        Write a Streamlit UploadedFile to <recordings_dir>/imports/<filename>.
+        Write a Streamlit UploadedFile to the writable imports directory.
 
-        The imports/ directory is created if it does not exist.
-        Files are stored durably; cleanup is future work.
+        Uses RECORDINGS_IMPORTS_DIR (writable; may differ from recordings_dir/imports
+        when recordings_dir is read-only, e.g. Docker :ro mount). The imports directory
+        is created if it does not exist.
 
         Args:
             uploaded_file: st.UploadedFile instance
-            recordings_dir: Root recordings directory
+            recordings_dir: Unused; kept for backward compatibility.
 
         Returns:
             Path to the saved file
         """
-        imports_dir = recordings_dir / _IMPORTS_SUBDIR
-        imports_dir.mkdir(parents=True, exist_ok=True)
-
-        dest = imports_dir / uploaded_file.name  # type: ignore[union-attr]
+        RECORDINGS_IMPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        dest = RECORDINGS_IMPORTS_DIR / uploaded_file.name  # type: ignore[union-attr]
         dest.write_bytes(uploaded_file.read())  # type: ignore[union-attr]
         logger.info(f"Saved uploaded file to {dest}")
         return dest

@@ -110,7 +110,7 @@ def run_cli_with_capture(
     import subprocess
     import os
 
-    cmd = ["python", "-m", "transcriptx.cli.main", command] + args
+    cmd = ["python", "-m", "transcriptx.web", command] + args
 
     if env:
         full_env = os.environ.copy()

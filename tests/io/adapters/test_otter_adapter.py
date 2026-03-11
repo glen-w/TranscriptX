@@ -1,4 +1,5 @@
 """Tests for OtterAdapter."""
+
 from __future__ import annotations
 
 import json
@@ -19,12 +20,26 @@ class TestOtterAdapterDetect:
     def test_zero_on_whisperx(self):
         adapter = OtterAdapter()
         data = {"segments": [{"start": 0.0, "end": 1.0, "text": "Hi", "speaker": "S0"}]}
-        assert adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        assert (
+            adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        )
 
     def test_zero_on_sembly(self):
         adapter = OtterAdapter()
-        data = {"transcript": [{"speaker_name": "Alice", "start_time": 0.0, "end_time": 2.0, "words_str": "Hi"}], "participants": []}
-        assert adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        data = {
+            "transcript": [
+                {
+                    "speaker_name": "Alice",
+                    "start_time": 0.0,
+                    "end_time": 2.0,
+                    "words_str": "Hi",
+                }
+            ],
+            "participants": [],
+        }
+        assert (
+            adapter.detect_confidence(Path("t.json"), json.dumps(data).encode()) == 0.0
+        )
 
 
 class TestOtterAdapterParse:

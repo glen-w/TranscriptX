@@ -84,9 +84,7 @@ def _trigger_warm(
         return
     st.session_state[warm_sig_key] = window_sig
     try:
-        controller.warm_clips(
-            transcript_path, [(s.start, s.end) for s in warm_targets]
-        )
+        controller.warm_clips(transcript_path, [(s.start, s.end) for s in warm_targets])
     except Exception:
         pass  # warming is best-effort; never propagate failures to UI
 
@@ -165,9 +163,7 @@ def render_playback_panel(
 
     # ── audio player ───────────────────────────────────────────────────────────
     if play_seg_idx is not None:
-        seg_to_play = (
-            all_segs[play_seg_idx] if play_seg_idx < len(all_segs) else None
-        )
+        seg_to_play = all_segs[play_seg_idx] if play_seg_idx < len(all_segs) else None
         if seg_to_play:
             try:
                 clip_bytes = controller.get_clip_bytes(

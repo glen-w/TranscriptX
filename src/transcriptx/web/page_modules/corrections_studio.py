@@ -15,6 +15,11 @@ from transcriptx.services.corrections_studio.controller import (
 )
 
 
+@st.cache_data(ttl=120, show_spinner=False)
+def _cached_corrections_studio_transcripts() -> list:
+    return CorrectionsStudioController().list_transcripts()
+
+
 def _render_progress_bar(stats: dict) -> None:
     total = sum(stats.values())
     if total == 0:
@@ -177,7 +182,7 @@ def render_corrections_studio() -> None:
         )
 
     # -- Transcript selection --
-    transcripts = controller.list_transcripts()
+    transcripts = _cached_corrections_studio_transcripts()
     if not transcripts:
         st.info("No transcripts found. Add transcript JSON files to get started.")
         return

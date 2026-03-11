@@ -7,7 +7,7 @@ TranscriptNormalizer and SpeakerNormalizer before the schema v1.0 artifact is cr
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from typing import TypedDict
@@ -18,12 +18,12 @@ class IntermediateTurn:
     """One diarised utterance from any source."""
 
     text: str
-    speaker: Optional[str]          # raw label from source; normalised later
-    start: Optional[float]          # seconds; None if source omits timestamps
-    end: Optional[float]            # seconds; None if source omits end time
-    turn_index: int                 # 0-based original order
-    raw_turn_id: Optional[str] = None   # vendor-assigned segment/turn ID
-    raw: Optional[str] = None       # raw source line(s) before any cleaning
+    speaker: Optional[str]  # raw label from source; normalised later
+    start: Optional[float]  # seconds; None if source omits timestamps
+    end: Optional[float]  # seconds; None if source omits end time
+    turn_index: int  # 0-based original order
+    raw_turn_id: Optional[str] = None  # vendor-assigned segment/turn ID
+    raw: Optional[str] = None  # raw source line(s) before any cleaning
     words: Optional[List[Dict[str, Any]]] = None  # word-level data (e.g. WhisperX)
 
 
@@ -37,11 +37,11 @@ class IntermediateTranscript:
     persisted into the schema v1.0 artifact.
     """
 
-    source_tool: str                    # e.g. "whisperx", "sembly", "vtt", "srt"
-    source_format: str                  # "json", "html", "txt", "vtt", "srt"
+    source_tool: str  # e.g. "whisperx", "sembly", "vtt", "srt"
+    source_format: str  # "json", "html", "txt", "vtt", "srt"
     turns: List[IntermediateTurn]
     source_metadata: Dict[str, Any]
-    warnings: List[str]                 # non-fatal parse issues; never raises
+    warnings: List[str]  # non-fatal parse issues; never raises
 
 
 # ── TranscriptSegment TypedDict ───────────────────────────────────────────────

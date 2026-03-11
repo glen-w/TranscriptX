@@ -141,7 +141,7 @@ class ConversationRepository(BaseRepository):
 
             # If not found, try to get current path from processing state (for renamed files)
             try:
-                from transcriptx.cli.processing_state import (
+                from transcriptx.core.utils.processing_state import (
                     get_current_transcript_path_from_state,
                 )
 

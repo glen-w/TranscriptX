@@ -565,7 +565,7 @@ def update_processing_state(
                         )
 
             # Use atomic save_processing_state instead of direct file write
-            from transcriptx.cli.processing_state import save_processing_state
+            from transcriptx.core.utils.processing_state import save_processing_state
 
             save_processing_state(state)
             logger.info("Updated processing_state.json with new paths")

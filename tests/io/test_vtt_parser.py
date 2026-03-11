@@ -233,12 +233,16 @@ class TestTranscriptImporter:
                 "original_path": "/tmp/test.vtt",
                 "imported_at": "2025-01-01T00:00:00Z",
             },
-            "metadata": {"duration_seconds": 5.0, "segment_count": 1, "speaker_count": 1},
-            "segments": [{"start": 0.0, "end": 5.0, "speaker": "SPEAKER_00", "text": "Hi"}],
+            "metadata": {
+                "duration_seconds": 5.0,
+                "segment_count": 1,
+                "speaker_count": 1,
+            },
+            "segments": [
+                {"start": 0.0, "end": 5.0, "speaker": "SPEAKER_00", "text": "Hi"}
+            ],
         }
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(artifact, f)
             json_path = Path(f.name)
 

@@ -56,7 +56,6 @@ class ArtifactService:
         return candidate
 
     @staticmethod
-    @staticmethod
     def list_artifacts(
         run_root: Path, filters: Optional[ArtifactFilters] = None
     ) -> List[Artifact]:
