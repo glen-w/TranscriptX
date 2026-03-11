@@ -47,6 +47,7 @@ try:
     from transcriptx.web.page_modules.profiles import render_profiles_page
     from transcriptx.web.page_modules.speaker_id import render_speaker_id_page
     from transcriptx.web.page_modules.audio_prep import render_audio_prep_page
+    from transcriptx.web.page_modules.audio_merge import render_audio_merge_page
     from transcriptx.web.page_modules.batch_ops import render_batch_ops_page
     from transcriptx.web.page_modules.diagnostics import render_diagnostics_page
     from transcriptx.web.page_modules.charts import render_charts
@@ -1025,6 +1026,7 @@ def main():
         # ── PIPELINE ─────────────────────────────────────────────────────────
         _section("Pipeline")
         _nav_button("Audio Prep", "Audio Prep")
+        _nav_button("Audio Merge", "Audio Merge")
         _nav_button("Speaker ID", "Speaker ID")
         _nav_button("Run Analysis", "Run Analysis")
         _nav_button("Batch Ops", "Batch Ops")
@@ -1193,6 +1195,8 @@ def main():
             render_speaker_id_page()
         elif current_page == "Audio Prep":
             render_audio_prep_page()
+        elif current_page == "Audio Merge":
+            render_audio_merge_page()
         elif current_page == "Batch Ops":
             render_batch_ops_page()
         elif current_page == "Diagnostics":

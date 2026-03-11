@@ -47,6 +47,7 @@ processing_state/
 transcriptx_data/
 nltk_data/
 whisperx.env
+*.key
 
 # Logs and temp
 *.log

@@ -9,10 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-pytestmark = [
-    pytest.mark.quarantined,
-    pytest.mark.xfail(strict=True, reason="quarantined"),
-]  # reason: patches workflow entrypoints that were removed/renamed (select_transcript_file, process_wav_file, etc.); owner: cli; remove_by: when workflows API stabilizes
+pytestmark = pytest.mark.unit
 
 from transcriptx.cli.workflow_modules import (
     run_single_analysis_workflow,
@@ -38,30 +35,15 @@ class TestSingleAnalysisWorkflow:
         mock_workflow.assert_called_once()
 
     @patch("transcriptx.cli.analysis_workflow.run_single_analysis_workflow")
-    @patch("transcriptx.cli.analysis_workflow.select_transcript_file")
-    @patch("transcriptx.cli.analysis_workflow.select_analysis_modules")
-    @patch("transcriptx.core.pipeline.pipeline.run_analysis_pipeline")
     def test_analysis_workflow_complete_flow(
         self,
-        mock_pipeline,
-        mock_select_modules,
-        mock_select_file,
         mock_workflow,
         temp_transcript_file,
         mock_questionary,
     ):
-        """Test complete analysis workflow flow."""
-        mock_select_file.return_value = str(temp_transcript_file)
-        mock_select_modules.return_value = ["sentiment", "stats"]
-        mock_pipeline.return_value = {
-            "modules_run": ["sentiment", "stats"],
-            "errors": [],
-        }
-
-        # The actual workflow function would handle this
-        # This is a simplified test
-        assert mock_select_file is not None
-        assert mock_select_modules is not None
+        """Test that run_single_analysis_workflow is accessible."""
+        mock_workflow.return_value = None
+        assert mock_workflow is not None
 
 
 class TestTranscriptionWorkflow:
@@ -101,21 +83,11 @@ class TestWAVProcessingWorkflow:
 
         mock_workflow.assert_called_once()
 
-    @patch("transcriptx.cli.wav_processing_workflow.select_wav_file")
-    @patch("transcriptx.cli.wav_processing_workflow.process_wav_file")
-    def test_wav_processing_workflow_selects_file(
-        self, mock_process, mock_select, tmp_path
-    ):
-        """Test WAV processing workflow file selection."""
-        wav_file = tmp_path / "test.wav"
-        wav_file.write_bytes(b"fake wav data")
-
-        mock_select.return_value = str(wav_file)
-        mock_process.return_value = {"status": "success"}
-
-        # Workflow should select and process file
-        assert mock_select is not None
-        assert mock_process is not None
+    @patch("transcriptx.cli.wav_processing_workflow.run_wav_processing_workflow")
+    def test_wav_processing_workflow_selects_file(self, mock_workflow, tmp_path):
+        """Test WAV processing workflow is accessible."""
+        mock_workflow.return_value = None
+        assert mock_workflow is not None
 
 
 class TestBatchWAVWorkflow:
@@ -152,13 +124,8 @@ class TestDeduplicationWorkflow:
 
         mock_workflow.assert_called_once()
 
-    @patch("transcriptx.cli.deduplication_workflow.find_duplicates")
-    @patch("transcriptx.cli.deduplication_workflow.remove_duplicates")
-    def test_deduplication_workflow_finds_duplicates(self, mock_remove, mock_find):
-        """Test deduplication workflow finds and removes duplicates."""
-        mock_find.return_value = [{"file1": "path1", "file2": "path2"}]
-        mock_remove.return_value = {"removed": 2}
-
-        # Workflow should find and remove duplicates
-        assert mock_find is not None
-        assert mock_remove is not None
+    @patch("transcriptx.cli.deduplication_workflow.run_deduplication_workflow")
+    def test_deduplication_workflow_finds_duplicates(self, mock_workflow):
+        """Test deduplication workflow is accessible."""
+        mock_workflow.return_value = None
+        assert mock_workflow is not None

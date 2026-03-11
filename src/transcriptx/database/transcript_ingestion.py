@@ -5,7 +5,7 @@ Transcript ingestion service for canonical DB storage.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -92,7 +92,7 @@ class TranscriptIngestionService:
             file_name=transcript_path_obj.name,
             audio_file_path=str(audio_file_path) if audio_file_path else None,
             source_uri=source_uri,
-            import_timestamp=datetime.utcnow(),
+            import_timestamp=datetime.now(timezone.utc),
             duration_seconds=duration_seconds,
             segment_count=len(segments),
             speaker_count=len(speaker_labels),

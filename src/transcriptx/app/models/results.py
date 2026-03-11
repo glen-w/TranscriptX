@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+from transcriptx.core.audio.types import AudioAssessment, AudioCompliance
 
 
 @dataclass
@@ -45,16 +47,42 @@ class SpeakerIdentificationResult:
     success: bool
     updated_paths: list[Path]
     speakers_identified: int
-    errors: list[str] = ()
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
 class PreprocessResult:
-    """Result of audio preprocessing. Details TBD in Phase 5."""
+    """
+    Result of audio preprocessing.
+
+    compliance reflects the source file only (v1).
+    Output compliance is not re-checked after export.
+    """
 
     success: bool
     output_path: Optional[Path] = None
-    errors: list[str] = ()
+    applied_steps: list[str] = field(default_factory=list)
+    assessment: Optional[AudioAssessment] = None
+    compliance: Optional[AudioCompliance] = None
+    duration_seconds: Optional[float] = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
+@dataclass
+class MergeResult:
+    """
+    Result of audio file merge.
+
+    warnings carries non-fatal notices (e.g. backup failed but merge succeeded).
+    errors carries fatal problems (merge did not complete).
+    """
+
+    success: bool
+    output_path: Optional[Path] = None
+    files_merged: int = 0
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -63,5 +91,5 @@ class BatchAnalysisResult:
 
     success: bool
     transcript_count: int
-    errors: list[str] = ()
+    errors: list[str] = field(default_factory=list)
     message: Optional[str] = None

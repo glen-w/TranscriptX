@@ -7,6 +7,7 @@ and coordinate between routes and data access layers.
 
 from .artifact_service import ArtifactService
 from .file_service import FileService
+from .recordings_service import RecordingsService
 from .run_index import RunIndex
 from .subject_service import SubjectService
 from .search_service import SearchService
@@ -16,6 +17,7 @@ from .summary_service import SummaryService
 __all__ = [
     "ArtifactService",
     "FileService",
+    "RecordingsService",
     "RunIndex",
     "SearchService",
     "StatisticsService",

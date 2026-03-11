@@ -1,4 +1,12 @@
-"""Audio preprocessing configuration editor."""
+"""Audio preprocessing configuration editor.
+
+This module edits the config-time layer (AudioPreprocessingConfig): per-step and
+global modes (auto/suggest/off, selected/auto/suggest/off) that define defaults
+for apply_preprocessing(). It is separate from the request-time contract used
+by PreprocessRequest.preprocessing_mode ("off" | "selected" | "auto") and the
+GUI/CLI run flow; those translate the run choice into a decisions dict. See
+AudioPreprocessingConfig and PreprocessRequest docstrings for the two layers.
+"""
 
 import questionary
 from rich import print

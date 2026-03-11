@@ -160,6 +160,7 @@ class CorrectionService:
             return self.repo.list_candidates(session_id, limit=10000)
 
         if force:
+            self.repo.delete_decisions_for_session(session_id)
             self.repo.delete_candidates_for_session(session_id)
 
         transcript_path = session["transcript_path"]

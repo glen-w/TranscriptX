@@ -4,6 +4,15 @@ Transcript Service for TranscriptX.
 This module provides a service layer for loading and caching transcript data,
 eliminating redundant file reads and providing a clean interface for transcript access.
 
+Relationship to the ingestion pipeline
+---------------------------------------
+``TranscriptService`` operates on already-imported schema v1.0 JSON artifacts.
+It does not import or convert raw source files itself.  Callers that hold a path
+to a non-JSON file (VTT, SRT, Otter JSON, Sembly HTML, etc.) should normalise it
+first with ``transcript_importer.ensure_json_artifact(path)`` — which runs the
+adapter detection pipeline and returns a path to the canonical JSON — then pass
+that JSON path to this service.  This keeps the service layer source-format-agnostic.
+
 Path resolution invariant: All file-path resolution for transcripts is owned by this
 layer (and transcript_loader / _path_resolution). If the input path exists, it is used;
 if missing, resolution is attempted via _path_resolution.resolve_file_path (e.g. renamed
@@ -97,8 +106,12 @@ class TranscriptService:
             ValueError: If transcript file is invalid or not JSON
 
         Note:
-            This service only handles JSON files. VTT files should be converted
-            to JSON via transcript_importer.ensure_json_artifact() first.
+            This service only accepts JSON artifacts in schema v1.0 format.
+            Any other source format (VTT, SRT, Otter, Sembly, plain text, etc.)
+            must be converted first with
+            ``transcript_importer.ensure_json_artifact(path)``, which runs the
+            adapter detection pipeline and produces a canonical JSON file.
+            The resulting path can then be passed here.
         """
         # Check cache
         if use_cache and self.enable_cache and transcript_path in self._segments_cache:
@@ -134,8 +147,10 @@ class TranscriptService:
         path_obj = Path(transcript_path)
         if path_obj.suffix.lower() != ".json":
             raise ValueError(
-                f"TranscriptService only handles JSON files, got: {path_obj.suffix}. "
-                f"VTT files should be converted to JSON via transcript_importer.ensure_json_artifact() first."
+                f"TranscriptService only accepts schema v1.0 JSON artifacts, "
+                f"got: {path_obj.suffix!r}. "
+                f"Convert the source file first with "
+                f"transcript_importer.ensure_json_artifact(path)."
             )
 
         # Load from file

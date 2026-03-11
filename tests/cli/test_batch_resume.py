@@ -4,9 +4,10 @@ Tests for batch resume and checkpoint functionality.
 This module tests batch checkpoint creation, retrieval, and resume operations.
 """
 
-import json
+import pytest
 from unittest.mock import patch
 
+pytestmark = pytest.mark.unit
 
 from transcriptx.cli.batch_resume import (
     create_batch_checkpoint,
@@ -23,11 +24,7 @@ class TestCreateBatchCheckpoint:
 
     def test_creates_checkpoint(self, tmp_path, monkeypatch):
         """Test that checkpoint is created."""
-        state_file = tmp_path / "processing_state.json"
-        state_file.write_text(json.dumps({}))
-
         with (
-            patch("transcriptx.cli.batch_resume.PROCESSING_STATE_FILE", state_file),
             patch("transcriptx.cli.batch_resume.load_processing_state") as mock_load,
             patch("transcriptx.cli.batch_resume.save_processing_state") as mock_save,
         ):
@@ -50,7 +47,6 @@ class TestCreateBatchCheckpoint:
 
     def test_updates_existing_checkpoint(self, tmp_path, monkeypatch):
         """Test that existing checkpoint is updated."""
-        state_file = tmp_path / "processing_state.json"
         existing_state = {
             "batch_progress": {
                 "batch_id": "test_batch",
@@ -59,10 +55,8 @@ class TestCreateBatchCheckpoint:
                 "processed_files": ["file1.wav"],
             }
         }
-        state_file.write_text(json.dumps(existing_state))
 
         with (
-            patch("transcriptx.cli.batch_resume.PROCESSING_STATE_FILE", state_file),
             patch("transcriptx.cli.batch_resume.load_processing_state") as mock_load,
             patch("transcriptx.cli.batch_resume.save_processing_state") as mock_save,
         ):
@@ -87,17 +81,14 @@ class TestGetBatchCheckpoint:
 
     def test_returns_checkpoint_when_exists(self, tmp_path, monkeypatch):
         """Test that checkpoint is returned when it exists."""
-        state_file = tmp_path / "processing_state.json"
         checkpoint_data = {
             "batch_id": "test_batch",
             "total_files": 10,
             "processed_files": ["file1.wav"],
         }
         state_data = {"batch_progress": checkpoint_data}
-        state_file.write_text(json.dumps(state_data))
 
         with (
-            patch("transcriptx.cli.batch_resume.PROCESSING_STATE_FILE", state_file),
             patch("transcriptx.cli.batch_resume.load_processing_state") as mock_load,
         ):
             mock_load.return_value = state_data
@@ -108,11 +99,7 @@ class TestGetBatchCheckpoint:
 
     def test_returns_none_when_not_exists(self, tmp_path, monkeypatch):
         """Test that None is returned when checkpoint doesn't exist."""
-        state_file = tmp_path / "processing_state.json"
-        state_file.write_text(json.dumps({}))
-
         with (
-            patch("transcriptx.cli.batch_resume.PROCESSING_STATE_FILE", state_file),
             patch("transcriptx.cli.batch_resume.load_processing_state") as mock_load,
         ):
             mock_load.return_value = {}
@@ -127,12 +114,9 @@ class TestClearBatchCheckpoint:
 
     def test_clears_checkpoint(self, tmp_path, monkeypatch):
         """Test that checkpoint is cleared."""
-        state_file = tmp_path / "processing_state.json"
         state_data = {"batch_progress": {"batch_id": "test_batch", "total_files": 10}}
-        state_file.write_text(json.dumps(state_data))
 
         with (
-            patch("transcriptx.cli.batch_resume.PROCESSING_STATE_FILE", state_file),
             patch("transcriptx.cli.batch_resume.load_processing_state") as mock_load,
             patch("transcriptx.cli.batch_resume.save_processing_state") as mock_save,
         ):
@@ -151,14 +135,11 @@ class TestCompleteBatchCheckpoint:
 
     def test_marks_checkpoint_as_completed(self, tmp_path, monkeypatch):
         """Test that checkpoint is marked as completed."""
-        state_file = tmp_path / "processing_state.json"
         state_data = {
             "batch_progress": {"batch_id": "test_batch", "status": "in_progress"}
         }
-        state_file.write_text(json.dumps(state_data))
 
         with (
-            patch("transcriptx.cli.batch_resume.PROCESSING_STATE_FILE", state_file),
             patch("transcriptx.cli.batch_resume.load_processing_state") as mock_load,
             patch("transcriptx.cli.batch_resume.save_processing_state") as mock_save,
         ):

@@ -8,10 +8,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-pytestmark = [
-    pytest.mark.quarantined,
-    pytest.mark.xfail(strict=True, reason="quarantined"),
-]  # reason: patches settings_menu_loop which no longer exists; owner: cli; remove_by: when config_editor API stabilizes
+pytestmark = pytest.mark.unit
 
 from transcriptx.cli.config_editor import edit_config_interactive
 from transcriptx.cli.config_editors import (
@@ -93,7 +90,7 @@ class TestEditAnalysisConfig:
             captured["items"] = items
 
         with patch(
-            "transcriptx.cli.config_editor.settings_menu_loop", new=fake_menu_loop
+            "transcriptx.cli.config_editors.analysis.settings_menu_loop", new=fake_menu_loop
         ):
             edit_analysis_config(config)
 
@@ -120,7 +117,7 @@ class TestEditAnalysisConfig:
             assert dirty_tracker()
 
         with patch(
-            "transcriptx.cli.config_editor.settings_menu_loop", new=fake_menu_loop
+            "transcriptx.cli.config_editors.analysis.settings_menu_loop", new=fake_menu_loop
         ):
             edit_analysis_config(config)
 
@@ -142,7 +139,7 @@ class TestEditAudioPreprocessingConfig:
             assert "audio_preprocessing.target_sample_rate" in keys
 
         with patch(
-            "transcriptx.cli.config_editor.settings_menu_loop", new=fake_menu_loop
+            "transcriptx.cli.config_editors.audio_preprocessing.settings_menu_loop", new=fake_menu_loop
         ):
             edit_audio_preprocessing_config(config)
 
@@ -162,7 +159,7 @@ class TestEditOutputConfig:
             assert "output.overwrite_existing" in keys
 
         with patch(
-            "transcriptx.cli.config_editor.settings_menu_loop", new=fake_menu_loop
+            "transcriptx.cli.config_editors.output.settings_menu_loop", new=fake_menu_loop
         ):
             edit_output_config(config)
 
@@ -182,7 +179,7 @@ class TestEditLoggingConfig:
             assert "logging.backup_count" in keys
 
         with patch(
-            "transcriptx.cli.config_editor.settings_menu_loop", new=fake_menu_loop
+            "transcriptx.cli.config_editors.logging.settings_menu_loop", new=fake_menu_loop
         ):
             edit_logging_config(config)
 

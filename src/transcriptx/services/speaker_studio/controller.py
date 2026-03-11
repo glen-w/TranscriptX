@@ -9,7 +9,7 @@ the controller delegates only.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from transcriptx.services.speaker_studio.segment_index import (
     SegmentIndexService,
@@ -160,3 +160,24 @@ class SpeakerStudioController:
     def get_mapping_status(self, transcript_path: str) -> SpeakerMapState:
         """Current speaker map and ignored list for the transcript."""
         return self._mapping_service.get_mapping(transcript_path)
+
+    def warm_clips(
+        self,
+        transcript_path: str,
+        segments: List[Tuple[float, float]],
+        *,
+        format: str = "mp3",
+    ) -> None:
+        """
+        Best-effort fire-and-forget: enqueue background clip generation for the
+        given (start_s, end_s) pairs. Returns immediately. No-op if audio is
+        unavailable or ffmpeg is not installed.
+        """
+        audio_path = self._segment_index.get_transcript_audio_path(transcript_path)
+        if not audio_path:
+            return
+        self._clip_service.warm_clips(audio_path, segments, format=format)
+
+    def ffmpeg_available(self) -> bool:
+        """Return True if ffmpeg is installed and usable."""
+        return self._clip_service.ffmpeg_available()

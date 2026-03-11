@@ -8,4 +8,4 @@ The Flask/Jinja2 interface has been removed; the Streamlit web app is the
 current web interface.
 """
 
-__version__ = "0.42"
+__version__ = "0.5"

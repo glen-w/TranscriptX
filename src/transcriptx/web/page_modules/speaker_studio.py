@@ -3,6 +3,12 @@ Speaker Studio: browser-first speaker identification with instant audio playback
 
 Shown only when TRANSCRIPTX_ENABLE_SPEAKER_STUDIO=1 (e.g. transcriptx-studio service).
 Calls only SpeakerStudioController (no direct service imports).
+
+The audio player is rendered via render_playback_panel() (@st.fragment) with
+include_segment_rows=False. Segment rows with their assign widgets are rendered
+outside the fragment (they need to be able to trigger full reruns for the status
+bar). Play buttons in those rows use on_click callbacks to update session state
+without an extra explicit st.rerun().
 """
 
 from __future__ import annotations
@@ -14,6 +20,7 @@ import streamlit as st
 
 from transcriptx.app.compat import discover_all_transcript_paths
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
+from transcriptx.web.components.playback_panel import _set_play_idx, render_playback_panel
 from transcriptx.web.services.file_service import FileService
 
 # Non-transcript JSON names under run dirs (skip when scanning outputs)
@@ -121,9 +128,9 @@ def render_speaker_studio() -> None:
         active_index = max(0, len(segments) - 1)
         st.session_state.speaker_studio_active_index = active_index
 
-    # Single audio player + Prev/Next
+    # Prev/Next navigation (outside fragment — intentional full rerun)
     if audio_path and segments:
-        col_prev, col_play, col_next = st.columns([1, 2, 1])
+        col_prev, _col_mid, col_next = st.columns([1, 2, 1])
         with col_prev:
             if st.button("⬅ Prev", key="studio_prev"):
                 st.session_state.speaker_studio_active_index = max(0, active_index - 1)
@@ -135,20 +142,22 @@ def render_speaker_studio() -> None:
                 )
                 st.rerun()
 
-        active_seg = segments[active_index] if segments else None
-        if active_seg and audio_path:
-            try:
-                clip_bytes = controller.get_clip_bytes(
-                    transcript_path,
-                    active_seg.start,
-                    active_seg.end,
-                    format="mp3",
-                )
-                st.audio(clip_bytes, format="audio/mpeg")
-            except Exception as e:
-                st.warning(f"Could not load clip: {e}")
-    elif not audio_path and segments:
-        st.warning("No audio file found for this transcript; playback unavailable.")
+    # Audio player fragment — only this region reruns when active_index changes
+    # via on_click callbacks in the rows below.  The rows themselves stay outside
+    # the fragment so their Save buttons can trigger full reruns to refresh the
+    # status bar.
+    render_playback_panel(
+        controller=controller,
+        transcript_path=transcript_path,
+        audio_path=audio_path,
+        all_segs=segments,
+        active_id="studio",
+        play_key="speaker_studio_active_index",
+        lines_key="speaker_studio_lines_shown",
+        max_lines=len(segments),
+        autoplay=False,
+        include_segment_rows=False,
+    )
 
     # Status bar
     state = controller.get_mapping_status(transcript_path)
@@ -168,7 +177,6 @@ def render_speaker_studio() -> None:
         return
 
     for i, seg in enumerate(segments):
-        is_active = i == active_index
         col_speaker, col_time, col_text, col_play, col_assign = st.columns(
             [1, 1, 3, 0.5, 1.5]
         )
@@ -181,9 +189,15 @@ def render_speaker_studio() -> None:
                 (seg.text or "")[:120] + ("..." if len(seg.text or "") > 120 else "")
             )
         with col_play:
-            if audio_path and st.button("▶", key=f"play_{i}"):
-                st.session_state.speaker_studio_active_index = i
-                st.rerun()
+            if audio_path:
+                # on_click sets state before the natural rerun — no explicit
+                # st.rerun() needed.
+                st.button(
+                    "▶",
+                    key=f"studio_play_{i}",
+                    on_click=_set_play_idx,
+                    args=("speaker_studio_active_index", i),
+                )
         with col_assign:
             diarized_id = seg.speaker_diarized_id or seg.speaker
             current_name = (state.speaker_map or {}).get(diarized_id) or ""

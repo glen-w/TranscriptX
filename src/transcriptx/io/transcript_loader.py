@@ -1,16 +1,45 @@
 """
 Transcript loading utilities for TranscriptX.
 
-This module provides standardized functions for loading transcript data
-from various sources and formats, with consistent validation and error handling.
+This module has **one clearly defined role per function**.  The two paths are
+structurally separated in code, not just documented:
 
-Path resolution invariant (canonical):
-  All file-path resolution for transcripts is owned by this layer (and
-  _path_resolution). If the input path exists, it is used. If missing,
-  resolution is attempted via _path_resolution.resolve_file_path(path, file_type="transcript")
-  (e.g. renamed files after speaker mapping). If resolution fails, FileNotFoundError
-  is raised with the original path in the message. Callers outside the io layer
-  must not implement their own path-resolution fallback.
+Canonical path (schema v1.0 artifacts)
+---------------------------------------
+``load_segments()`` → ``_load_segments_from_data()`` detects a v1.0 artifact
+(``schema_version`` + ``source`` keys present) and returns ``data["segments"]``
+directly.  No normalisation is needed: the importer already did that work.
+
+Legacy compatibility path (raw / pre-import JSON)
+--------------------------------------------------
+When ``_load_segments_from_data()`` sees data that is *not* a v1.0 artifact
+(bare segment list, raw WhisperX output, dict without ``schema_version``), it
+delegates to ``_normalize_legacy_segments()``.  That function handles:
+
+* Raw WhisperX segments — segments with a ``words`` array but no ``speaker``
+  field; speaker is promoted from the most-common word-level speaker.
+* Bare segment lists (``isinstance(data, list)``).
+* Segments that have no resolvable speaker → ``"UNKNOWN_SPEAKER"``.
+
+The legacy shim is kept because:
+* Some raw JSON files on disk have never been re-imported through the adapter
+  pipeline.
+* A few callers pass raw WhisperX dicts already in memory.
+
+``_normalize_legacy_segments`` is deliberately **not** called on v1.0 artifacts:
+those are handled by the fast path above, keeping the two behaviours separate.
+
+Public surface: ``load_segments()``, ``normalize_segments()``, ``load_transcript()``,
+``load_transcript_data()``.  Everything else is internal.
+
+Path resolution invariant (canonical)
+--------------------------------------
+All file-path resolution for transcripts is owned by this layer (and
+_path_resolution). If the input path exists, it is used. If missing,
+resolution is attempted via _path_resolution.resolve_file_path(path, file_type="transcript")
+(e.g. renamed files after speaker mapping). If resolution fails, FileNotFoundError
+is raised with the original path in the message. Callers outside the io layer
+must not implement their own path-resolution fallback.
 """
 
 import json
@@ -38,116 +67,125 @@ class TranscriptLoadResult(NamedTuple):
 
 
 def normalize_segments(data: Any) -> List[Dict[str, Any]]:
+    """Extract and normalise segments from any transcript data structure (public API).
+
+    Routes between the canonical v1.0 fast-path and the legacy compatibility
+    shim.  Callers that already hold a parsed JSON dict or a raw segment list
+    can pass it here without loading from a file.
+
+    For new code, prefer calling ``load_segments(path)`` or passing a v1.0
+    artifact dict — the legacy path exists only for backward compatibility.
     """
-    Extract and normalize segments from a transcript data structure (public API).
-    Handles dict with 'segments' key, direct list of segments, and WhisperX words.
-    Use this for canonicalize and any callers that need segment list without loading from file.
-    """
-    return _process_segments_from_data(data)
+    return _load_segments_from_data(data)
 
 
-def _process_segments_from_data(data: Any) -> List[Dict[str, Any]]:
+def _load_segments_from_data(data: Any) -> List[Dict[str, Any]]:
+    """Route segment extraction between the canonical path and the legacy path.
+
+    * **v1.0 artifact** (dict with ``schema_version`` + ``source``): returns
+      ``data["segments"]`` directly.  No normalisation is applied; the importer
+      already did that work.
+
+    * **Everything else** (raw WhisperX dict, bare list, pre-import JSON): delegates
+      to ``_normalize_legacy_segments()``, the backward-compatibility shim.
     """
-    Extract and process segments from a transcript data structure.
-    Handles dict with 'segments' key, direct list of segments, and WhisperX words.
-    Shared by load_segments() and normalize_segments().
+    if (
+        isinstance(data, dict)
+        and "schema_version" in data
+        and "source" in data
+    ):
+        # Fast path: canonical schema v1.0 artifact.
+        return data.get("segments", [])
+
+    # Legacy path: raw or pre-import data.
+    return _normalize_legacy_segments(data)
+
+
+def _normalize_legacy_segments(data: Any) -> List[Dict[str, Any]]:
+    """Backward-compatibility shim for raw / pre-import JSON.
+
+    Handles three legacy shapes:
+
+    1. ``{"segments": [...]}`` dict *without* ``schema_version`` (old-style exports).
+    2. Bare ``list`` of segments (raw WhisperX output or similar).
+    3. Segments that have a ``words`` array but no ``speaker`` field
+       (raw WhisperX segments before speaker diarisation was merged in) — speaker
+       is promoted from the most-common word-level speaker, falling back to
+       ``"UNKNOWN_SPEAKER"`` when no word carries a speaker label.
+
+    **Do not call this on v1.0 artifacts.**  ``_load_segments_from_data`` handles
+    the routing; this function is only for data that has not gone through the
+    adapter pipeline.
     """
-    segments = []
+    raw: List[Any] = []
     if isinstance(data, dict):
-        segments = data.get("segments", [])
+        raw = data.get("segments", [])
     elif isinstance(data, list):
-        segments = data  # assume it's already a list of segments
+        raw = data
 
-    processed_segments = []
-    for segment in segments:
-        if isinstance(segment, dict):
-            # Check if this is a WhisperX format segment with words array
-            if "words" in segment and "speaker" not in segment:
-                # Extract speaker from words array (use most common speaker)
-                words = segment.get("words", [])
-                if words:
-                    # Count speaker occurrences
-                    speaker_counts = {}
-                    for word in words:
-                        if isinstance(word, dict) and "speaker" in word:
-                            speaker = word["speaker"]
-                            speaker_counts[speaker] = speaker_counts.get(speaker, 0) + 1
+    result: List[Dict[str, Any]] = []
+    for segment in raw:
+        if not isinstance(segment, dict):
+            result.append(segment)
+            continue
 
-                    # Use the most common speaker
-                    if speaker_counts:
-                        most_common_speaker = max(
-                            speaker_counts, key=speaker_counts.get
-                        )
-                        # Create a new segment with speaker field
-                        processed_segment = segment.copy()
-                        processed_segment["speaker"] = most_common_speaker
-                        processed_segments.append(processed_segment)
-                    else:
-                        # No speaker found in words, assign a default speaker
-                        processed_segment = segment.copy()
-                        processed_segment["speaker"] = "UNKNOWN_SPEAKER"
-                        processed_segments.append(processed_segment)
-                else:
-                    # No words array, assign a default speaker
-                    processed_segment = segment.copy()
-                    processed_segment["speaker"] = "UNKNOWN_SPEAKER"
-                    processed_segments.append(processed_segment)
+        # Raw WhisperX: segment has words array but no speaker field.
+        if "words" in segment and "speaker" not in segment:
+            words = segment.get("words") or []
+            speaker_counts: Dict[str, int] = {}
+            for word in words:
+                if isinstance(word, dict) and "speaker" in word:
+                    lbl = word["speaker"]
+                    speaker_counts[lbl] = speaker_counts.get(lbl, 0) + 1
+
+            promoted = segment.copy()
+            if speaker_counts:
+                promoted["speaker"] = max(speaker_counts, key=speaker_counts.get)
             else:
-                processed_segments.append(segment)
+                promoted["speaker"] = "UNKNOWN_SPEAKER"
+            result.append(promoted)
         else:
-            processed_segments.append(segment)
+            result.append(segment)
 
-    return processed_segments
+    return result
 
 
 def load_segments(path: str, data: Optional[Any] = None) -> List[Dict[str, Any]]:
-    """
-    Load and extract segments from a transcript JSON file.
+    """Load segments from a transcript JSON file or a pre-parsed dict.
 
-    This function handles different JSON structures that might be present
-    in transcript files. It can process both direct segment lists and
-    nested structures with a 'segments' key. Also handles WhisperX format
-    with words arrays.
+    For schema v1.0 artifacts (produced by ``import_transcript()``), segments are
+    returned as-is — no normalisation is applied.  For legacy / raw JSON the
+    backward-compatibility shim (``_normalize_legacy_segments``) is invoked
+    automatically.  See the module docstring for a full description of each path.
 
     Args:
-        path: Path to the transcript JSON file (used for file read when data is None;
-            when data is provided, path is still required for API consistency and
-            optional resolution logic).
-        data: Optional pre-loaded transcript dict. When provided, the file is not
-            read; segments are extracted from this dict using the same logic as
-            when loading from file. Use to avoid double-loading when the caller
-            already has the parsed JSON.
+        path: Path to the transcript JSON file.  Required even when *data* is
+            provided (kept for API stability; not read when *data* is given).
+        data: Optional pre-loaded transcript dict.  When provided the file is not
+            read and *path* is used only for error messages.
 
     Returns:
-        List of segment dictionaries containing transcript data
+        List of segment dicts.
+
+    Raises:
+        FileNotFoundError: File not found and path resolution fails.
+        ValueError: Path is not a ``.json`` file.
 
     Note:
-        The function is flexible and can handle:
-        - Files with {"segments": [...]} structure
-        - Files that are direct lists of segments
-        - WhisperX format with words arrays (extracts speaker from words)
-        - Returns empty list for invalid formats
-
-        This flexibility allows TranscriptX to work with transcripts
-        from different sources and formats without requiring strict
-        standardization of the input files.
-
-        IMPORTANT: This function only handles JSON files. VTT files should
-        be converted to JSON via transcript_importer.ensure_json_artifact()
-        before reaching this function.
+        Only ``.json`` files are accepted.  Any other source format must be
+        converted first with ``transcript_importer.ensure_json_artifact(path)``.
     """
     if data is not None:
-        return _process_segments_from_data(data)
+        return _load_segments_from_data(data)
 
-    # Ensure we're only handling JSON files
     path_obj = Path(path)
     if path_obj.suffix.lower() != ".json":
         raise ValueError(
-            f"load_segments() only handles JSON files, got: {path_obj.suffix}. "
-            f"VTT files should be converted to JSON via transcript_importer.ensure_json_artifact() first."
+            f"load_segments() only accepts .json files, got: {path_obj.suffix!r}. "
+            f"Convert the source file first with "
+            f"transcript_importer.ensure_json_artifact(path)."
         )
 
-    # Try to resolve path if file doesn't exist (handles renamed files)
     resolved_path = path
     if not path_obj.exists():
         try:
@@ -157,13 +195,12 @@ def load_segments(path: str, data: Optional[Any] = None) -> List[Dict[str, Any]]
             resolved_path = resolve_file_path(path, file_type="transcript")
             get_logger().debug(f"Resolved transcript path: {path} -> {resolved_path}")
         except FileNotFoundError:
-            # If resolution fails, raise the original error with the original path
             raise FileNotFoundError(f"Transcript file not found: {path}")
 
     with open(resolved_path) as f:
         file_data = json.load(f)
 
-    return _process_segments_from_data(file_data)
+    return _load_segments_from_data(file_data)
 
 
 def extract_speaker_map_from_transcript(transcript_path: str) -> Dict[str, str]:

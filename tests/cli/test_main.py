@@ -9,10 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-pytestmark = [
-    pytest.mark.quarantined,
-    pytest.mark.xfail(strict=True, reason="quarantined"),
-]  # reason: app.commands/run_single_analysis_workflow/exit codes changed; owner: cli; remove_by: when main CLI stabilizes
+pytestmark = pytest.mark.unit
 
 from transcriptx.cli.main import app
 
@@ -23,7 +20,7 @@ class TestMainCLI:
     def test_cli_app_initialization(self):
         """Test that CLI app is properly initialized."""
         assert app is not None
-        assert hasattr(app, "commands")
+        assert hasattr(app, "registered_commands")
 
     def test_cli_help(self, typer_test_client):
         """Test CLI help command."""
@@ -35,40 +32,47 @@ class TestMainCLI:
     def test_cli_main_with_config_option(
         self, typer_test_client, tmp_path, mock_config
     ):
-        """Test main CLI with config file option."""
+        """Test interactive subcommand accepts --config option."""
         config_file = tmp_path / "config.json"
-        config_file.write_text('{"test": "config"}')
-
-        with patch("transcriptx.cli.main._main_impl") as mock_main:
-            mock_main.return_value = None
-
-            result = typer_test_client.invoke(app, ["--config", str(config_file)])
-
-            # Should call main implementation
-            # (exact behavior depends on implementation)
-            assert result.exit_code in [0, 1]  # May exit with 0 or 1
+        config_file.write_text("{}")
+        with (
+            patch("transcriptx.cli.main._run_interactive_setup_and_menu") as mock_impl,
+            patch("transcriptx.cli.main.ensure_data_dirs"),
+            patch("transcriptx.cli.main._configure_nltk_data_path"),
+        ):
+            result = typer_test_client.invoke(
+                app, ["interactive", "--config", str(config_file)]
+            )
+            assert result.exit_code == 0
+            mock_impl.assert_called_once()
+            call_kwargs = mock_impl.call_args
+            assert call_kwargs is not None
 
     def test_cli_main_with_log_level(self, typer_test_client, mock_config):
-        """Test main CLI with log level option."""
-        with patch("transcriptx.cli.main._main_impl") as mock_main:
-            mock_main.return_value = None
-
-            result = typer_test_client.invoke(app, ["--log-level", "DEBUG"])
-
-            # Should accept log level
-            assert result.exit_code in [0, 1]
+        """Test interactive subcommand accepts --log-level option."""
+        with (
+            patch("transcriptx.cli.main._run_interactive_setup_and_menu") as mock_impl,
+            patch("transcriptx.cli.main.ensure_data_dirs"),
+            patch("transcriptx.cli.main._configure_nltk_data_path"),
+        ):
+            result = typer_test_client.invoke(
+                app, ["interactive", "--log-level", "DEBUG"]
+            )
+            assert result.exit_code == 0
+            mock_impl.assert_called_once()
 
     def test_cli_main_with_output_dir(self, typer_test_client, tmp_path, mock_config):
-        """Test main CLI with output directory option."""
-        output_dir = tmp_path / "outputs"
-
-        with patch("transcriptx.cli.main._main_impl") as mock_main:
-            mock_main.return_value = None
-
-            result = typer_test_client.invoke(app, ["--output-dir", str(output_dir)])
-
-            # Should accept output directory
-            assert result.exit_code in [0, 1]
+        """Test interactive subcommand accepts --output-dir option."""
+        with (
+            patch("transcriptx.cli.main._run_interactive_setup_and_menu") as mock_impl,
+            patch("transcriptx.cli.main.ensure_data_dirs"),
+            patch("transcriptx.cli.main._configure_nltk_data_path"),
+        ):
+            result = typer_test_client.invoke(
+                app, ["interactive", "--output-dir", str(tmp_path)]
+            )
+            assert result.exit_code == 0
+            mock_impl.assert_called_once()
 
     def test_cli_database_subcommand(self, typer_test_client):
         """Test database subcommand is available."""
@@ -136,88 +140,54 @@ class TestMainCLI:
 
     def test_cli_web_viewer_command(self, typer_test_client):
         """Test web-viewer command."""
-        with patch("transcriptx.web.app.run"):
-            result = typer_test_client.invoke(app, ["web-viewer", "--help"])
+        result = typer_test_client.invoke(app, ["web-viewer", "--help"])
 
-            # Should show help for web-viewer
-            assert result.exit_code == 0
+        assert result.exit_code == 0
 
 
 class TestMainImpl:
-    """Tests for _main_impl function."""
+    """Tests for _run_interactive_setup_and_menu (main interactive entry point)."""
 
     @patch("transcriptx.cli.main.show_banner")
-    @patch("transcriptx.cli.main._initialize_whisperx_service")
+    @patch("transcriptx.cli.main.run_interactive_menu")
     @patch("transcriptx.cli.main._check_audio_playback_dependencies")
-    @patch("transcriptx.cli.main.questionary.select")
     def test_main_impl_interactive_menu(
-        self, mock_select, mock_audio, mock_whisperx, mock_banner, mock_config
+        self, mock_audio, mock_menu, mock_banner, mock_config
     ):
         """Test interactive menu flow."""
-        from transcriptx.cli.main import _main_impl
+        from transcriptx.cli.main import _run_interactive_setup_and_menu
 
-        # Mock questionary to return Exit
-        mock_select.return_value.ask.return_value = "🚪 Exit"
+        _run_interactive_setup_and_menu()
 
-        # Should exit gracefully
-        try:
-            _main_impl()
-        except SystemExit:
-            pass  # Expected when exiting
-
-        # Verify banner was shown
         mock_banner.assert_called_once()
+        mock_menu.assert_called_once()
 
     @patch("transcriptx.cli.main.show_banner")
-    @patch("transcriptx.cli.main._initialize_whisperx_service")
+    @patch("transcriptx.cli.main.run_interactive_menu")
     @patch("transcriptx.cli.main._check_audio_playback_dependencies")
-    @patch("transcriptx.cli.main.questionary.select")
-    @patch("transcriptx.cli.main.run_single_analysis_workflow")
     def test_main_impl_analyze_choice(
-        self,
-        mock_workflow,
-        mock_select,
-        mock_audio,
-        mock_whisperx,
-        mock_banner,
-        mock_config,
+        self, mock_audio, mock_menu, mock_banner, mock_config
     ):
-        """Test selecting Analyze from menu."""
-        from transcriptx.cli.main import _main_impl
+        """Test that run_interactive_menu is called during setup."""
+        from transcriptx.cli.main import _run_interactive_setup_and_menu
 
-        # Mock questionary to return Analyze, then Exit
-        mock_select.return_value.ask.side_effect = ["📊 Analyze", "🚪 Exit"]
-        mock_workflow.return_value = None
+        _run_interactive_setup_and_menu()
 
-        # Should call analysis workflow
-        try:
-            _main_impl()
-        except SystemExit:
-            pass  # Expected when exiting
-
-        # Verify workflow was called
-        mock_workflow.assert_called_once()
+        mock_menu.assert_called_once()
 
     @patch("transcriptx.cli.main.load_config")
-    def test_main_impl_load_config(self, mock_load, tmp_path, mock_config):
+    @patch("transcriptx.cli.main.show_banner")
+    @patch("transcriptx.cli.main.run_interactive_menu")
+    @patch("transcriptx.cli.main._check_audio_playback_dependencies")
+    def test_main_impl_load_config(
+        self, mock_audio, mock_menu, mock_banner, mock_load, tmp_path, mock_config
+    ):
         """Test loading configuration file."""
-        from transcriptx.cli.main import _main_impl
+        from transcriptx.cli.main import _run_interactive_setup_and_menu
 
         config_file = tmp_path / "config.json"
         config_file.write_text('{"test": "config"}')
 
-        with (
-            patch("transcriptx.cli.main.show_banner"),
-            patch("transcriptx.cli.main._initialize_whisperx_service"),
-            patch("transcriptx.cli.main._check_audio_playback_dependencies"),
-            patch("transcriptx.cli.main.questionary.select") as mock_select,
-        ):
-            mock_select.return_value.ask.return_value = "🚪 Exit"
+        _run_interactive_setup_and_menu(config_file=config_file)
 
-            try:
-                _main_impl(config_file=str(config_file))
-            except SystemExit:
-                pass
-
-            # Verify config was loaded
-            mock_load.assert_called_once()
+        mock_load.assert_called_once()

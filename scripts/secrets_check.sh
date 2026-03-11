@@ -6,7 +6,7 @@ cd "$ROOT_DIR"
 
 fail=0
 
-if git ls-files -- "whisperx.env" | rg -q .; then
+if git ls-files -- "whisperx.env" | grep -q .; then
     echo "ERROR: whisperx.env is tracked. Remove with: git rm --cached whisperx.env"
     fail=1
 fi

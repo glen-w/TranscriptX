@@ -1,80 +1,136 @@
 """
-Centralized transcript importer interface.
+Centralised transcript importer interface.
 
-This module provides a single entrypoint for importing transcripts from various
-formats (VTT, JSON) and creating standardized JSON artifacts.
+Provides a single entry-point for importing transcripts from any supported
+source format and creating standardised JSON artifacts.
+
+Design invariants
+-----------------
+* **Single-read ingestion:** the source file is read into ``bytes`` exactly
+  once via ``source_path.read_bytes()``.  ``compute_content_hash()`` operates
+  on those bytes so no second disk read is needed.
+* **Detection is registry-driven:** the ``AdapterRegistry`` selects the best
+  adapter from registered candidates; the importer has no format-specific
+  knowledge.
+* **Already-normalised artifacts bypass re-import:** if a ``.json`` file is a
+  valid TranscriptX schema v1.0 document (``schema_version`` + ``source`` +
+  ``segments``), it is returned as-is.  If it fails validation it is treated
+  as raw source data and re-imported through the adapter pipeline.
 """
+
+from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+from transcriptx.io.adapters import registry
+from transcriptx.io.adapters.base import UnsupportedFormatError
 from transcriptx.io.segment_coalescer import CoalesceConfig, coalesce_segments
 from transcriptx.io.speaker_normalizer import normalize_speakers
+from transcriptx.io.transcript_normalizer import TranscriptNormalizer
 from transcriptx.io.transcript_schema import (
+    PERMITTED_SOURCE_TYPES,
     SourceInfo,
     TranscriptMetadata,
-    compute_file_hash,
+    compute_content_hash,
     create_transcript_document,
     validate_transcript_document,
 )
-from transcriptx.io.vtt_parser import parse_vtt_file
-from transcriptx.io.srt_parser import parse_srt_file
 
 logger = get_logger()
 
 
-def detect_transcript_format(path: Path) -> str:
+# ── Internal helpers ───────────────────────────────────────────────────────────
+
+
+def _is_transcriptx_artifact(content: bytes) -> bool:
+    """Return True if *content* looks like a TranscriptX schema v1.0 artifact.
+
+    Checks for the presence of ``schema_version`` and ``source`` and
+    ``segments`` at the top level.  Does not perform full validation.
     """
-    Detect the format of a transcript file.
+    try:
+        data = json.loads(content.decode("utf-8", errors="replace"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return False
+    return (
+        isinstance(data, dict)
+        and "schema_version" in data
+        and "source" in data
+        and "segments" in data
+    )
 
-    Args:
-        path: Path to transcript file
 
-    Returns:
-        Format string: "vtt" or "json"
+def _utc_now_iso() -> str:
+    """Return the current UTC time as an ISO 8601 string with timezone offset."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+# ── Public API ─────────────────────────────────────────────────────────────────
+
+
+def detect_transcript_format(path: Path) -> str:
+    """Return the ``source_id`` of the best-matching adapter for *path*.
+
+    .. deprecated::
+        This function's return-value semantics have changed: it now returns the
+        adapter ``source_id`` (e.g. ``"sembly"``, ``"whisperx"``) rather than the
+        old extension-derived strings (``"vtt"``, ``"srt"``, ``"json"``).
+        Callers that branch on ``"json"`` must migrate to checking
+        ``adapter.source_id`` or using ``isinstance(adapter, ...)`` directly.
 
     Raises:
-        ValueError: If format cannot be determined
+        UnsupportedFormatError: If no adapter can handle the file.
+        FileNotFoundError: If the file does not exist.
     """
-    ext = path.suffix.lower()
-    if ext == ".vtt":
-        return "vtt"
-    elif ext == ".json":
-        return "json"
-    elif ext == ".srt":
-        return "srt"
-    else:
-        raise ValueError(
-            f"Unsupported transcript format: {ext}. Supported: .vtt, .json, .srt"
-        )
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Source file not found: {path}")
+    content = path.read_bytes()
+    adapter = registry.detect(path, content)
+    return adapter.source_id
 
 
-def ensure_json_artifact(path: Path) -> Path:
-    """
-    Ensure a JSON artifact exists for the given transcript path.
+def ensure_json_artifact(
+    path: Path, force_adapter: Optional[str] = None
+) -> Path:
+    """Ensure a JSON artifact exists for the given transcript path.
 
-    If path is VTT, import and return JSON path.
-    If path is JSON, return as-is.
+    If *path* is already a valid TranscriptX schema v1.0 artifact, it is
+    returned as-is without re-processing.  Otherwise ``import_transcript``
+    is called to produce one.
 
     Args:
-        path: Path to transcript file (VTT or JSON)
+        path: Path to transcript file (any supported format or existing artifact).
+        force_adapter: If given, bypass detection and use this adapter source_id.
 
     Returns:
-        Path to JSON artifact
+        Path to the JSON artifact.
     """
-    format_type = detect_transcript_format(path)
+    path = Path(path)
+    if path.suffix.lower() == ".json":
+        try:
+            content = path.read_bytes()
+            if _is_transcriptx_artifact(content):
+                # Validate before accepting as-is
+                data = json.loads(content.decode("utf-8", errors="replace"))
+                try:
+                    validate_transcript_document(data)
+                    return path
+                except ValueError as exc:
+                    logger.warning(
+                        f"Existing artifact failed validation ({exc}); "
+                        "falling back to re-import."
+                    )
+        except OSError:
+            pass  # fall through to import_transcript
 
-    if format_type == "json":
-        return path
-
-    # VTT - import it
-    json_path = import_transcript(path)
-    return json_path
+    return import_transcript(path, force_adapter=force_adapter)
 
 
 def import_transcript(
@@ -82,184 +138,146 @@ def import_transcript(
     output_dir: Optional[str | Path] = None,
     coalesce_config: Optional[CoalesceConfig] = None,
     overwrite: bool = False,
+    force_adapter: Optional[str] = None,
 ) -> Path:
-    """
-    Import a transcript file (VTT or JSON) and create standardized JSON artifact.
+    """Import a transcript file and create a standardised JSON artifact.
 
-    Flow:
-    1. Detect file format (.vtt or .json)
-    2. If .vtt: Parse → Normalize speakers → (Optional) Coalesce → Create JSON document
-    3. If .json: Validate schema → (Optional) Migrate/upgrade → Return path
-    4. Compute file hash and metadata
-    5. Save standardized JSON to output directory
-    6. Return path to JSON artifact
+    Flow
+    ----
+    1.  Read source bytes **once**.
+    2.  If file is an already-valid TranscriptX artifact, write it to the
+        output location and return.  If it fails validation, fall through to
+        re-import.
+    3.  Detect the correct adapter via ``AdapterRegistry``.
+    4.  Parse with the selected adapter → ``IntermediateTranscript``.
+    5.  Repair with ``TranscriptNormalizer`` (logs only newly added warnings).
+    6.  Normalise speakers with ``SpeakerNormalizer``.
+    7.  (Optional) coalesce segments.
+    8.  Build and write the schema v1.0 JSON artifact (hash from bytes, no
+        second disk read).
 
     Args:
-        source_path: Path to source file (.vtt or .json)
-        output_dir: Directory to save JSON artifact (default: DIARISED_TRANSCRIPTS_DIR)
-        coalesce_config: Optional segment coalescing configuration
-        overwrite: Whether to overwrite existing JSON file
+        source_path: Path to the source file (any supported format).
+        output_dir: Directory for the JSON artifact.
+            Defaults to ``DIARISED_TRANSCRIPTS_DIR``.
+        coalesce_config: Optional segment coalescing configuration.
+        overwrite: Whether to overwrite an existing JSON artifact.
+        force_adapter: Bypass detection; use this adapter source_id directly.
+            Raises ``UnsupportedFormatError`` immediately if unknown.
 
     Returns:
-        Path to created JSON artifact
+        Path to the created JSON artifact.
 
     Raises:
-        ValueError: If file format is unsupported or invalid
-        FileNotFoundError: If source file doesn't exist
+        FileNotFoundError: If source file doesn't exist.
+        UnsupportedFormatError: If no adapter can handle the file.
+        ValueError: If the resulting document is invalid.
     """
     source_path = Path(source_path)
-
     if not source_path.exists():
         raise FileNotFoundError(f"Source file not found: {source_path}")
 
-    # Detect format
-    format_type = detect_transcript_format(source_path)
-    logger.info(f"Importing {format_type.upper()} transcript: {source_path}")
-
-    # Set output directory
     if output_dir is None:
         output_dir = Path(DIARISED_TRANSCRIPTS_DIR)
     else:
         output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine output JSON path
     json_filename = source_path.stem + ".json"
     json_path = output_dir / json_filename
 
-    # Check if already exists
     if json_path.exists() and not overwrite:
         logger.info(f"JSON artifact already exists: {json_path}")
         return json_path
 
-    # Process based on format
-    if format_type == "vtt":
-        # Parse VTT
-        cues = parse_vtt_file(source_path)
-        if not cues:
-            raise ValueError(f"No cues found in VTT file: {source_path}")
+    # ── 1. Single file read ───────────────────────────────────────────────────
+    content = source_path.read_bytes()
 
-        # Normalize speakers
-        segments = normalize_speakers(cues)
-
-        # Optional coalescing
-        if coalesce_config and coalesce_config.enabled:
-            segments = coalesce_segments(segments, coalesce_config)
-
-        # Compute metadata
-        duration = max(seg.get("end", 0) for seg in segments) if segments else 0.0
-        speaker_ids = set(seg.get("speaker") for seg in segments if seg.get("speaker"))
-        metadata = TranscriptMetadata(
-            duration_seconds=duration,
-            segment_count=len(segments),
-            speaker_count=len(speaker_ids),
-        )
-
-        # Create source info
-        file_hash = compute_file_hash(source_path)
-        file_mtime = os.path.getmtime(source_path)
-        source_info = SourceInfo(
-            type="vtt",
-            original_path=str(source_path.resolve()),
-            imported_at=datetime.utcnow().isoformat() + "Z",
-            file_hash=file_hash,
-            file_mtime=file_mtime,
-        )
-
-        # Create standardized document
-        document = create_transcript_document(segments, source_info, metadata)
-
-    elif format_type == "srt":
-        cues = parse_srt_file(source_path)
-        if not cues:
-            raise ValueError(f"No cues found in SRT file: {source_path}")
-
-        segments = normalize_speakers(cues)
-
-        if coalesce_config and coalesce_config.enabled:
-            segments = coalesce_segments(segments, coalesce_config)
-
-        duration = max(seg.get("end", 0) for seg in segments) if segments else 0.0
-        speaker_ids = set(seg.get("speaker") for seg in segments if seg.get("speaker"))
-        metadata = TranscriptMetadata(
-            duration_seconds=duration,
-            segment_count=len(segments),
-            speaker_count=len(speaker_ids),
-        )
-
-        file_hash = compute_file_hash(source_path)
-        file_mtime = os.path.getmtime(source_path)
-        source_info = SourceInfo(
-            type="srt",
-            original_path=str(source_path.resolve()),
-            imported_at=datetime.utcnow().isoformat() + "Z",
-            file_hash=file_hash,
-            file_mtime=file_mtime,
-        )
-
-        document = create_transcript_document(segments, source_info, metadata)
-
-    elif format_type == "json":
-        # Load existing JSON
-        with open(source_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        # Validate schema
+    # ── 2. Short-circuit: already a valid TranscriptX artifact ───────────────
+    if source_path.suffix.lower() == ".json" and _is_transcriptx_artifact(content):
         try:
+            data = json.loads(content.decode("utf-8", errors="replace"))
             validate_transcript_document(data)
-        except ValueError as e:
+            from transcriptx.core.store import TranscriptStore
+
+            TranscriptStore().write(json_path, data, reason="import")
+            logger.info(f"Passed through existing artifact: {json_path}")
+            return json_path
+        except ValueError as exc:
             logger.warning(
-                f"JSON file validation failed: {e}. Attempting to upgrade..."
+                f"Existing artifact failed validation ({exc}); re-importing via adapter."
             )
-            # For now, just copy as-is if validation fails
-            # TODO: Implement schema migration/upgrade logic
+            # fall through to adapter detection
 
-        # If already standardized, use as-is
-        if "schema_version" in data and "source" in data:
-            document = data
-            # Update source info if needed
-            if document["source"]["type"] != "json":
-                # Keep original source info
-                pass
-        else:
-            # Legacy format - wrap in standardized schema
-            segments = data.get("segments", data if isinstance(data, list) else [])
-            duration = max(seg.get("end", 0) for seg in segments) if segments else 0.0
-            speaker_ids = set(
-                seg.get("speaker") for seg in segments if seg.get("speaker")
-            )
-            metadata = TranscriptMetadata(
-                duration_seconds=duration,
-                segment_count=len(segments),
-                speaker_count=len(speaker_ids),
-            )
+    # ── 3. Detect adapter ─────────────────────────────────────────────────────
+    adapter = registry.detect(source_path, content, force_adapter=force_adapter)
+    logger.info(
+        f"Importing via {type(adapter).__name__} ({adapter.source_id!r}): {source_path.name}"
+    )
 
-            file_hash = compute_file_hash(source_path)
-            file_mtime = os.path.getmtime(source_path)
-            source_info = SourceInfo(
-                type="whisperx",  # Assume legacy JSON is from WhisperX
-                original_path=str(source_path.resolve()),
-                imported_at=datetime.utcnow().isoformat() + "Z",
-                file_hash=file_hash,
-                file_mtime=file_mtime,
-            )
+    # ── 4. Parse ──────────────────────────────────────────────────────────────
+    intermediate = adapter.parse(source_path, content)
+    _log_warnings(intermediate.warnings, prefix=f"[{adapter.source_id}]")
 
-            document = create_transcript_document(segments, source_info, metadata)
+    # ── 5. Normalise (repair timestamps, clean labels) ────────────────────────
+    parse_warning_count = len(intermediate.warnings)
+    normalizer = TranscriptNormalizer()
+    turns = normalizer.normalize(intermediate)
 
-    else:
-        raise ValueError(f"Unsupported format: {format_type}")
+    # Only log warnings added by the normalizer (not already logged above)
+    new_norm_warnings = intermediate.warnings[parse_warning_count:]
+    _log_warnings(new_norm_warnings, prefix="[normalizer]", level="debug")
 
-    # Validate document before saving
+    # ── 6. Speaker normalisation ──────────────────────────────────────────────
+    segments = normalize_speakers(turns)
+
+    # ── 7. Optional coalescing ────────────────────────────────────────────────
+    if coalesce_config and coalesce_config.enabled:
+        segments = coalesce_segments(segments, coalesce_config)
+
+    # ── 8. Build metadata and artifact ───────────────────────────────────────
+    duration = max((seg.get("end", 0) for seg in segments), default=0.0)
+    speaker_ids = {seg.get("speaker") for seg in segments if seg.get("speaker")}
+    metadata = TranscriptMetadata(
+        duration_seconds=float(duration),
+        segment_count=len(segments),
+        speaker_count=len(speaker_ids),
+    )
+
+    # Hash from already-read bytes — no second disk read
+    file_hash = compute_content_hash(content)
+    file_mtime = os.path.getmtime(source_path)
+
+    source_info = SourceInfo(
+        type=adapter.source_id,
+        original_path=str(source_path.resolve()),
+        imported_at=_utc_now_iso(),
+        file_hash=file_hash,
+        file_mtime=file_mtime,
+    )
+
+    document = create_transcript_document(segments, source_info, metadata)
     validate_transcript_document(document)
 
-    # Save JSON artifact via TranscriptStore (atomic write + schema stamp)
     from transcriptx.core.store import TranscriptStore
 
     TranscriptStore().write(json_path, document, reason="import")
 
     logger.info(f"Created JSON artifact: {json_path}")
-    logger.info(f"  Segments: {document['metadata']['segment_count']}")
-    logger.info(f"  Duration: {document['metadata']['duration_seconds']:.2f}s")
-    logger.info(f"  Speakers: {document['metadata']['speaker_count']}")
+    logger.info(
+        f"  adapter={adapter.source_id!r}  segments={metadata.segment_count}"
+        f"  duration={metadata.duration_seconds:.2f}s  speakers={metadata.speaker_count}"
+    )
 
     return json_path
+
+
+# ── Logging helper ─────────────────────────────────────────────────────────────
+
+
+def _log_warnings(
+    warnings: list[str], *, prefix: str = "", level: str = "warning"
+) -> None:
+    log = logger.warning if level == "warning" else logger.debug
+    for w in warnings:
+        log(f"{prefix} {w}".strip())

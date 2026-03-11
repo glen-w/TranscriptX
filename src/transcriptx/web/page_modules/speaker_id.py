@@ -5,18 +5,22 @@ Mirrors the CLI flow: groups segments by diarized speaker ID, shows sample
 lines for the active speaker, supports audio clip playback (if audio is
 available), and lets the user assign a name or mark as ignored before
 moving to the next speaker.
+
+The audio player + segment rows are rendered via render_playback_panel()
+(@st.fragment), so play-button clicks rerun only that region — the rest of
+the page (header, metrics, name assignment, navigation) does not dim.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import streamlit as st
 
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
 from transcriptx.web.page_modules.speaker_studio import (
     _transcript_paths_for_speaker_views,
 )
@@ -42,14 +46,6 @@ def _group_by_diarized_id(
         if did:
             groups[did].append(seg)
     return {k: groups[k] for k in seen_order}
-
-
-def _fmt_time(seconds: float) -> str:
-    m, s = divmod(int(seconds), 60)
-    h, m = divmod(m, 60)
-    if h:
-        return f"{h}:{m:02d}:{s:02d}"
-    return f"{m}:{s:02d}"
 
 
 # ── main render ──────────────────────────────────────────────────────────────
@@ -125,7 +121,7 @@ def render_speaker_id_page() -> None:
         st.info("No speaker IDs found in this transcript.")
         return
 
-    audio_path: Optional[Path] = controller.get_audio_path(transcript_path)
+    audio_path = controller.get_audio_path(transcript_path)
 
     # ── progress summary ──────────────────────────────────────────────────────
     named = sum(
@@ -153,9 +149,6 @@ def render_speaker_id_page() -> None:
         speaker_idx = 0
         st.session_state["speaker_id_speaker_idx"] = 0
 
-    lines_shown = st.session_state.get("speaker_id_lines_shown", _LINES_PER_PAGE)
-    play_seg_idx = st.session_state.get("speaker_id_play_seg", None)
-
     active_id = speaker_ids[speaker_idx]
     active_segs = groups[active_id]
     current_name = speaker_map.get(active_id, "")
@@ -170,54 +163,28 @@ def render_speaker_id_page() -> None:
     st.subheader(
         f"Speaker {speaker_idx + 1} / {total_speakers} — `{active_id}` {status_badge}"
     )
+    lines_shown = st.session_state.get("speaker_id_lines_shown", _LINES_PER_PAGE)
     total_dur = sum(max(0.0, s.end - s.start) for s in active_segs)
     st.caption(
         f"{len(active_segs)} segments · {_fmt_time(total_dur)} total · "
         f"showing {min(lines_shown, len(active_segs))} of {len(active_segs)} lines"
     )
 
-    # ── audio clip player ─────────────────────────────────────────────────────
-    if audio_path and play_seg_idx is not None:
-        seg_to_play = (
-            active_segs[play_seg_idx] if play_seg_idx < len(active_segs) else None
-        )
-        if seg_to_play:
-            try:
-                clip_bytes = controller.get_clip_bytes(
-                    transcript_path,
-                    seg_to_play.start,
-                    seg_to_play.end,
-                    format="mp3",
-                )
-                st.audio(clip_bytes, format="audio/mpeg", autoplay=True)
-            except Exception as e:
-                st.warning(f"Could not load clip: {e}")
-    elif not audio_path:
-        st.caption("_No audio file found — playback unavailable._")
-
-    # ── segment lines table ───────────────────────────────────────────────────
-    visible_segs = active_segs[:lines_shown]
-    for i, seg in enumerate(visible_segs):
-        col_time, col_text, col_play = st.columns([1, 5, 0.5])
-        with col_time:
-            st.caption(f"{_fmt_time(seg.start)} – {_fmt_time(seg.end)}")
-        with col_text:
-            st.write(seg.text or "_(empty)_")
-        with col_play:
-            if audio_path:
-                if st.button(
-                    "▶", key=f"sid_play_{active_id}_{i}", help="Play this clip"
-                ):
-                    st.session_state["speaker_id_play_seg"] = i
-                    st.rerun()
-
-    if lines_shown < len(active_segs):
-        if st.button(
-            f"Show {min(_LINES_PER_PAGE, len(active_segs) - lines_shown)} more lines",
-            key="sid_more_lines",
-        ):
-            st.session_state["speaker_id_lines_shown"] = lines_shown + _LINES_PER_PAGE
-            st.rerun()
+    # ── playback panel (fragment) ─────────────────────────────────────────────
+    # Only this region reruns on play-button clicks; the rest of the page is
+    # unaffected.  All expensive data work was done above and is passed in.
+    render_playback_panel(
+        controller=controller,
+        transcript_path=transcript_path,
+        audio_path=audio_path,
+        all_segs=active_segs,
+        active_id=active_id,
+        play_key="speaker_id_play_seg",
+        lines_key="speaker_id_lines_shown",
+        max_lines=_LINES_PER_PAGE,
+        autoplay=True,
+        include_segment_rows=True,
+    )
 
     st.divider()
 

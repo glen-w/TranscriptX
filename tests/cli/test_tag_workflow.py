@@ -10,10 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-pytestmark = [
-    pytest.mark.quarantined,
-    pytest.mark.xfail(strict=True, reason="quarantined"),
-]  # reason: patches extract_tags which no longer on module; owner: cli; remove_by: when tag_workflow API stabilizes
+pytestmark = pytest.mark.unit
 
 from transcriptx.cli.tag_workflow import (
     load_tags_for_transcript,
@@ -68,7 +65,7 @@ class TestLoadTagsForTranscript:
 
         with (
             patch("transcriptx.cli.tag_workflow.load_processing_state") as mock_load,
-            patch("transcriptx.cli.tag_workflow.extract_tags") as mock_extract,
+            patch("transcriptx.core.analysis.tag_extraction.extract_tags") as mock_extract,
         ):
             mock_load.return_value = {"processed_files": {}}
             mock_extract.return_value = {"tags": ["auto_tag"], "tag_details": {}}
@@ -155,6 +152,7 @@ class TestOfferAndEditTags:
             mock_load.return_value = {
                 "auto_tags": ["meeting"],
                 "current_tags": ["meeting"],
+                "tag_details": {},
                 "transcript_path": transcript_path,
             }
 
@@ -162,8 +160,8 @@ class TestOfferAndEditTags:
                 transcript_path, batch_mode=True, auto_prompt=True
             )
 
-            # Should return tags without prompting
-            assert result is not None or isinstance(result, dict)
+            assert isinstance(result, dict)
+            assert "tags" in result
 
 
 class TestSaveTagsToState:

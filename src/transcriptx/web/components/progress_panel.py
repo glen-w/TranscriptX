@@ -27,8 +27,12 @@ from transcriptx.app.progress import (
     update_snapshot_from_event,
 )
 
-# Session-state key under which the running snapshot is stored
+# Session-state key under which the analysis running snapshot is stored
 SNAPSHOT_KEY = "run_progress_snapshot"
+# Session-state key for the audio preprocessing snapshot
+PREPROCESS_SNAPSHOT_KEY = "audio_prep_snapshot"
+# Session-state key for the audio merge snapshot
+MERGE_SNAPSHOT_KEY = "audio_merge_snapshot"
 # Number of log lines to render in the panel
 PANEL_LOG_LINES = 8
 
@@ -113,17 +117,20 @@ def render_progress_panel(snapshot: ProgressSnapshot) -> None:
 class StreamlitProgressCallback:
     """
     Implements ProgressCallback protocol and bridges pipeline events into the
-    shared ProgressSnapshot stored in st.session_state[SNAPSHOT_KEY].
+    shared ProgressSnapshot stored in st.session_state[snapshot_key].
 
-    The snapshot must be initialised in session state before the run starts
-    (done by run_analysis.py). This class only mutates it; it never creates it.
+    The snapshot must be initialised in session state before the run starts.
+    This class only mutates it; it never creates it.
+
+    Pass a custom snapshot_key to isolate concurrent panels (e.g. audio prep
+    uses PREPROCESS_SNAPSHOT_KEY while analysis uses SNAPSHOT_KEY).
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, snapshot_key: str = SNAPSHOT_KEY) -> None:
+        self._snapshot_key = snapshot_key
 
     def _snap(self) -> Optional[MutableMapping[str, Any]]:
-        return st.session_state.get(SNAPSHOT_KEY)
+        return st.session_state.get(self._snapshot_key)
 
     # ------------------------------------------------------------------
     # ProgressCallback protocol

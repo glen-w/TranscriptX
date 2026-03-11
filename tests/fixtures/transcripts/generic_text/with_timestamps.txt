@@ -1,0 +1,4 @@
+00:00:01 Alice: Hello everyone, good morning.
+00:00:05 Bob: Good morning Alice. Ready to start?
+00:00:12 Alice: Yes, let us dive right in.
+00:00:18 Bob: Sounds good to me.

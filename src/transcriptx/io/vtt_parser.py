@@ -144,36 +144,13 @@ def strip_html_tags(text: str) -> str:
     return text.strip()
 
 
-def parse_vtt_file(path: str | Path) -> List[VTTCue]:
+def _parse_vtt_lines(lines: List[str]) -> List[VTTCue]:
+    """Parse cues from an already-decoded list of VTT lines.
+
+    This is the core parsing logic.  ``parse_vtt_file`` and ``VTTAdapter``
+    both delegate here so the file is never re-read when bytes are already
+    in memory.
     """
-    Parse a WebVTT file and return list of cues.
-
-    Handles:
-    - WEBVTT header
-    - Cue IDs (optional line before timestamp)
-    - Timestamps with settings
-    - Multi-line cue text
-    - NOTE blocks (skipped)
-    - STYLE blocks (skipped)
-    - Overlapping/out-of-order cues (preserved with warning)
-
-    Args:
-        path: Path to VTT file
-
-    Returns:
-        List of VTTCue objects
-
-    Raises:
-        FileNotFoundError: If file doesn't exist
-        ValueError: If file format is invalid
-    """
-    path = Path(path)
-    if not path.exists():
-        raise FileNotFoundError(f"VTT file not found: {path}")
-
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
     cues: List[VTTCue] = []
     i = 0
     line_num = 0
@@ -307,3 +284,39 @@ def parse_vtt_file(path: str | Path) -> List[VTTCue]:
         logger.warning(f"Found {out_of_order_count} out-of-order cues in VTT file")
 
     return cues
+
+
+def parse_vtt_file(path: str | Path) -> List[VTTCue]:
+    """Parse a WebVTT file from disk and return a list of cues.
+
+    Reads the file once, then delegates to ``_parse_vtt_lines``.
+    Prefer calling ``_parse_vtt_lines`` directly when the file bytes are
+    already in memory (e.g. inside ``VTTAdapter.parse``).
+
+    Handles:
+    - WEBVTT header
+    - Cue IDs (optional line before timestamp)
+    - Timestamps with settings
+    - Multi-line cue text
+    - NOTE blocks (skipped)
+    - STYLE blocks (skipped)
+    - Overlapping/out-of-order cues (preserved with warning)
+
+    Args:
+        path: Path to VTT file
+
+    Returns:
+        List of VTTCue objects
+
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        ValueError: If file format is invalid
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"VTT file not found: {path}")
+
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    return _parse_vtt_lines(lines)

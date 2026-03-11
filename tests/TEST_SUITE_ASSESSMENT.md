@@ -140,3 +140,34 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 - **`src/transcriptx/core/utils/transcript_output.py`** – Normalized `OUTPUTS_DIR` and `DIARISED_TRANSCRIPTS_DIR` to `Path(...)` before `.resolve()` and `/` so tests that monkeypatch them to `str(tmp_path)` do not raise `AttributeError: 'str' object has no attribute 'resolve'`.
 - **`tests/integration/core/test_cli_workflow_integration.py`** – Patches were targeting `transcriptx.cli.main.questionary` but `main` is a module (main.py), not a package. Updated to patch `transcriptx.cli.interactive_menu.questionary.select` where questionary is actually used.
 - **Result:** `pytest -m integration_core` now passes (32 passed).
+
+---
+
+## 10. Expansion (2026-03-10) – progress snapshot and merge workflow coverage
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/unit/test_progress_snapshot.py` | 31 | `make_initial_snapshot` (status, phase, total, counts, logs, error, current_module); `_refresh_pct` (no-total no-raise, correct formula, capped at 100); `update_snapshot_from_event` (all 7 event types, log_line appended, log cap, unknown-event no-op); `SnapshotLogHandler.emit` (append, missing-key init, WARNING sets latest_event, INFO does not, cap at 100); `NullProgress` (protocol conformance, all methods callable) |
+| `tests/app/test_merge_workflow.py` | 20 | `run_merge` validation (ffmpeg unavailable, <2 files, duplicates, missing files, bad extension, output exists without overwrite, output same as input); output filename derivation (explicit no-.mp3 gets extension, date-prefix auto-name, fallback when no prefix); happy path (success result shape, merge exception → failed result, 4 stages called, NullProgress no-raise); backup branch (empty backup adds warning, backup exception adds warning + merge continues); `MergeController` delegation (validation failure, success, unexpected exception → WorkflowExecutionError) |
+
+### Suite totals after expansion
+
+- **Default run:** 1589 passed, 3 skipped, 321 deselected, 0 failed.
+- **New coverage areas:** `app.progress` (snapshot state machine, SnapshotLogHandler, NullProgress protocol) and `app.workflows.merge` + `app.controllers.merge_controller` were entirely untested.
+
+---
+
+## 9. Expansion (2026-03-09) – state query helper coverage
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/unit/test_state_utils_queries.py` | 6 | `list_transcripts_with_analysis` filtering; `list_transcripts_needing_analysis` with/without module filters; `has_analysis_completed` fallback branch; `get_missing_modules` no-history fallback; `get_analysis_history` not-found path |
+
+### Suite totals after expansion
+
+- **Default run:** 1380 passed, 3 skipped, 458 deselected, 0 failed.
+- **integration_core:** 32 passed.

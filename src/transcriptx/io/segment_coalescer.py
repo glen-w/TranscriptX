@@ -6,7 +6,7 @@ based on configurable criteria (gap size, max duration, max characters).
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from transcriptx.core.utils.logger import get_logger
 
@@ -25,7 +25,7 @@ class CoalesceConfig:
 
 
 def coalesce_segments(
-    segments: List[Dict[str, Any]], config: CoalesceConfig
+    segments: Sequence[Dict[str, Any]], config: CoalesceConfig
 ) -> List[Dict[str, Any]]:
     """
     Merge segments based on configuration.

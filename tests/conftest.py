@@ -607,8 +607,10 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(pytest.mark.integration_extended)
 
         # Treat CLI workflow tests as integration-level by default (they exercise orchestration).
+        # Skip promotion to integration if the test is already explicitly marked as unit.
         if "/tests/cli/" in path_str:
-            if not any(marker.name == "integration" for marker in item.iter_markers()):
+            existing_markers = {m.name for m in item.iter_markers()}
+            if "integration" not in existing_markers and "unit" not in existing_markers:
                 item.add_marker(pytest.mark.integration)
 
         # Add database marker to tests in database/ directory
@@ -633,7 +635,9 @@ def pytest_collection_modifyitems(config, items):
         ):
             item.add_marker(pytest.mark.contract)
 
-        # Add requires_models marker for model-heavy areas (skip for contract path)
+        # Add requires_models marker for model-heavy areas (skip for contract path).
+        # Exempt adapter unit tests — substring matches like "ner" inside "generic"
+        # must not falsely tag clean adapter tests as model-dependent.
         if (
             any(
                 keyword in path_str
@@ -647,27 +651,34 @@ def pytest_collection_modifyitems(config, items):
                 ]
             )
             and not is_contract_path
+            and "/io/adapters/" not in path_str
         ):
             if not any(
                 marker.name == "requires_models" for marker in item.iter_markers()
             ):
                 item.add_marker(pytest.mark.requires_models)
 
-        # Add requires_docker marker for Docker/WhisperX tests
+        # Add requires_docker marker for Docker/WhisperX tests.
+        # Exempt adapter unit tests — they test adapter logic, not the Docker service.
+        _is_adapter_unit = "/io/adapters/" in path_str
         if any(keyword in path_str for keyword in ["whisperx", "docker", "compose"]):
-            if not any(
-                marker.name == "requires_docker" for marker in item.iter_markers()
+            if not _is_adapter_unit and not any(
+                marker.name in ("requires_docker", "unit")
+                for marker in item.iter_markers()
             ):
                 item.add_marker(pytest.mark.requires_docker)
 
-        # Add requires_ffmpeg marker for audio/WAV/ffmpeg paths
+        # Add requires_ffmpeg marker for audio/WAV/ffmpeg paths.
+        # Skip auto-assignment for tests explicitly marked as unit (they mock ffmpeg).
         if any(
             keyword in path_str
             for keyword in ["audio", "wav", "ffmpeg", "ffprobe", "playback"]
         ):
             if "/tests/cli/" in path_str or "/tests/analysis/" in path_str:
-                if not any(
-                    marker.name == "requires_ffmpeg" for marker in item.iter_markers()
+                existing_markers = {m.name for m in item.iter_markers()}
+                if (
+                    "requires_ffmpeg" not in existing_markers
+                    and "unit" not in existing_markers
                 ):
                     item.add_marker(pytest.mark.requires_ffmpeg)
 

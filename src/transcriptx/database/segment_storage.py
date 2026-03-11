@@ -103,7 +103,14 @@ class SegmentStorageService:
 
             # Create or get transcript file record (UUID-first)
             resolved_path = str(transcript_path_obj.resolve())
-            file_metadata.update({"source": "whisperx", "speaker_ids": speaker_ids})
+            # Read source.type from the artifact rather than assuming "whisperx".
+            # Falls back to "unknown" only if the artifact predates schema v1.0.
+            source_type = (
+                transcript_data.get("source", {}).get("type")
+                or file_metadata.get("source_type")
+                or "unknown"
+            )
+            file_metadata.update({"source": source_type, "speaker_ids": speaker_ids})
 
             transcript_file = None
             if transcript_uuid:

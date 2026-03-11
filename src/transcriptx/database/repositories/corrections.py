@@ -259,6 +259,16 @@ class CorrectionRepository(BaseRepository):
         self.session.flush()
         return count
 
+    def delete_decisions_for_session(self, session_id: str) -> int:
+        """Delete all decisions for a session."""
+        count = (
+            self.session.query(CorrectionDecision)
+            .filter(CorrectionDecision.session_id == session_id)
+            .delete(synchronize_session="fetch")
+        )
+        self.session.flush()
+        return count
+
     # -- Decisions --
 
     def upsert_decision(

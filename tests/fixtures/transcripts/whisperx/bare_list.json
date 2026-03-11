@@ -1,0 +1,14 @@
+[
+  {
+    "start": 0.0,
+    "end": 3.5,
+    "text": "This is the legacy bare-list format.",
+    "speaker": "SPEAKER_00"
+  },
+  {
+    "start": 3.8,
+    "end": 7.2,
+    "text": "It is used by older WhisperX outputs.",
+    "speaker": "SPEAKER_01"
+  }
+]

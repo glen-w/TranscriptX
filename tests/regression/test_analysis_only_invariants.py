@@ -44,19 +44,23 @@ def test_no_docker_socket_references():
 
 
 def test_no_docker_invocation_strings():
-    """No docker exec/cp/compose/run string literals in source."""
+    """No docker exec/cp/compose/run string literals in source (except doc/help text)."""
     root = os.path.join(os.path.dirname(__file__), "..", "..", "src", "transcriptx")
     exclude = frozenset({"__pycache__", ".mypy_cache", "vendored"})
-    allowlist = frozenset()
+    # User-facing help text that shows example docker run for users (no orchestration)
+    allowlist = frozenset({"web/page_modules/audio_prep.py"})
     patterns = [
         "docker exec",
         "docker cp",
         "docker compose",
         "docker run",
     ]
-    files = _collect_py_files(root, exclude, allowlist)
+    files = _collect_py_files(root, exclude, frozenset())
     bad = []
     for path in files:
+        rel = os.path.relpath(path, root).replace("\\", "/")
+        if rel in allowlist:
+            continue
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
             for pat in patterns:

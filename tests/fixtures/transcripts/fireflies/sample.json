@@ -1,0 +1,35 @@
+{
+  "meeting": {
+    "id": "mtg-001",
+    "title": "Product Sync",
+    "date": "2025-01-15T09:00:00Z",
+    "duration": 14,
+    "sentences": [
+      {
+        "index": 0,
+        "speaker_id": "spk_alice",
+        "speaker_name": "Alice",
+        "start_time": 0.0,
+        "end_time": 4.2,
+        "text": "Hello team, welcome to the product sync."
+      },
+      {
+        "index": 1,
+        "speaker_id": "spk_bob",
+        "speaker_name": "Bob",
+        "start_time": 4.5,
+        "end_time": 9.1,
+        "text": "Thanks Alice. I have updates on the feature roadmap."
+      },
+      {
+        "index": 2,
+        "speaker_id": "spk_alice",
+        "speaker_name": "Alice",
+        "start_time": 9.3,
+        "end_time": 14.0,
+        "text": "Perfect. Let us go through each item."
+      }
+    ],
+    "summary": "Product sync covering feature roadmap updates."
+  }
+}

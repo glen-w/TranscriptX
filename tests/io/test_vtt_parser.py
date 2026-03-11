@@ -111,16 +111,21 @@ class TestVTTParser:
 
 
 class TestSpeakerNormalizer:
-    """Tests for speaker normalization."""
+    """Tests for speaker normalization via VTTAdapter → normalize_speakers pipeline."""
 
     def test_normalize_speakers_with_hints(self):
-        """Test normalizing speakers from VTT cues."""
+        """Test normalizing speakers from a VTT file via the adapter pipeline."""
+        from transcriptx.io.adapters.vtt_adapter import VTTAdapter
+        from transcriptx.io.transcript_normalizer import TranscriptNormalizer
+
         vtt_path = FIXTURES_DIR / "with_speakers.vtt"
-        cues = parse_vtt_file(vtt_path)
-        segments = normalize_speakers(cues)
+        adapter = VTTAdapter()
+        content = vtt_path.read_bytes()
+        intermediate = adapter.parse(vtt_path, content)
+        turns = TranscriptNormalizer().normalize(intermediate)
+        segments = normalize_speakers(turns)
 
         assert len(segments) == 3
-        # Check that speakers are normalized
         speakers = [seg.get("speaker") for seg in segments]
         assert "SPEAKER_00" in speakers
         assert "SPEAKER_01" in speakers
@@ -128,12 +133,17 @@ class TestSpeakerNormalizer:
 
     def test_normalize_speakers_without_hints(self):
         """Test normalizing when no speaker hints exist."""
+        from transcriptx.io.adapters.vtt_adapter import VTTAdapter
+        from transcriptx.io.transcript_normalizer import TranscriptNormalizer
+
         vtt_path = FIXTURES_DIR / "simple.vtt"
-        cues = parse_vtt_file(vtt_path)
-        segments = normalize_speakers(cues)
+        adapter = VTTAdapter()
+        content = vtt_path.read_bytes()
+        intermediate = adapter.parse(vtt_path, content)
+        turns = TranscriptNormalizer().normalize(intermediate)
+        segments = normalize_speakers(turns)
 
         assert len(segments) == 3
-        # All speakers should be null
         for seg in segments:
             assert seg.get("speaker") is None
 
@@ -215,10 +225,21 @@ class TestTranscriptImporter:
             assert json_path.exists()
 
     def test_ensure_json_artifact_json(self):
-        """Test ensure_json_artifact with JSON file."""
-        # Create a temporary JSON file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json.dump({"segments": []}, f)
+        """Test ensure_json_artifact returns a schema v1.0 artifact as-is."""
+        artifact = {
+            "schema_version": "1.0",
+            "source": {
+                "type": "vtt",
+                "original_path": "/tmp/test.vtt",
+                "imported_at": "2025-01-01T00:00:00Z",
+            },
+            "metadata": {"duration_seconds": 5.0, "segment_count": 1, "speaker_count": 1},
+            "segments": [{"start": 0.0, "end": 5.0, "speaker": "SPEAKER_00", "text": "Hi"}],
+        }
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as f:
+            json.dump(artifact, f)
             json_path = Path(f.name)
 
         try:

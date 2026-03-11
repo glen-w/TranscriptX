@@ -9,16 +9,13 @@ from unittest.mock import patch
 
 import pytest
 
-pytestmark = [
-    pytest.mark.quarantined,
-    pytest.mark.xfail(strict=True, reason="quarantined"),
-]  # reason: patches select_transcript_file/select_audio_file etc. which were moved/renamed; owner: cli; remove_by: when file_selection API stabilizes
+pytestmark = pytest.mark.unit
 
 
 class TestFileSelection:
     """Tests for file selection functions."""
 
-    @patch("transcriptx.cli.file_selection_utils.select_transcript_file")
+    @patch("transcriptx.cli.file_selection_utils.select_transcript_file_interactive")
     def test_select_transcript_file(self, mock_select):
         """Test transcript file selection."""
         mock_select.return_value = "/path/to/transcript.json"
@@ -27,7 +24,7 @@ class TestFileSelection:
 
         assert result == "/path/to/transcript.json"
 
-    @patch("transcriptx.cli.file_selection_utils.select_audio_file")
+    @patch("transcriptx.cli.file_selection_utils.select_audio_file_interactive")
     def test_select_audio_file(self, mock_select):
         """Test audio file selection."""
         mock_select.return_value = "/path/to/audio.mp3"
@@ -36,7 +33,7 @@ class TestFileSelection:
 
         assert result == "/path/to/audio.mp3"
 
-    @patch("transcriptx.cli.file_selection_utils.discover_transcript_files")
+    @patch("transcriptx.cli.file_selection_utils.discover_all_transcript_paths")
     def test_discover_transcript_files(self, mock_discover, tmp_path):
         """Test transcript file discovery."""
         transcript_dir = tmp_path / "transcripts"
@@ -55,16 +52,16 @@ class TestFileSelection:
         assert len(files) == 2
         assert all(f.endswith(".json") for f in files)
 
-    @patch("transcriptx.cli.file_selection_utils.select_wav_file")
+    @patch("transcriptx.cli.file_selection_utils.select_wav_files_interactive")
     def test_select_wav_file(self, mock_select):
         """Test WAV file selection."""
-        mock_select.return_value = "/path/to/audio.wav"
+        mock_select.return_value = ["/path/to/audio.wav"]
 
         result = mock_select()
 
-        assert result == "/path/to/audio.wav"
+        assert result == ["/path/to/audio.wav"]
 
-    @patch("transcriptx.cli.file_selection_utils.select_wav_folder")
+    @patch("transcriptx.cli.file_selection_utils.select_folder_interactive")
     def test_select_wav_folder(self, mock_select):
         """Test WAV folder selection."""
         mock_select.return_value = "/path/to/wavs"

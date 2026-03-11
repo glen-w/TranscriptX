@@ -9,7 +9,7 @@ from .tools import (
     SOUNDFILE_AVAILABLE,
 )
 from .utils import get_audio_duration
-from .preprocessing import (
+from transcriptx.core.audio.preprocessing import (
     assess_audio_noise,
     check_audio_compliance,
     normalize_loudness,

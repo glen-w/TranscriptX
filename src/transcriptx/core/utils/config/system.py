@@ -65,7 +65,7 @@ class LoggingConfig:
     backup_count: int = 5
 
 
-# Preprocessing mode types
+# Preprocessing mode types (config layer: defaults for per-step and global behavior)
 PreprocessingMode = Literal["auto", "suggest", "off"]
 GlobalPreprocessingMode = Literal["selected", "auto", "suggest", "off"]
 
@@ -73,19 +73,24 @@ GlobalPreprocessingMode = Literal["selected", "auto", "suggest", "off"]
 @dataclass
 class AudioPreprocessingConfig:
     """
-    Configuration for audio preprocessing settings.
+    Configuration for audio preprocessing settings (config layer).
 
-    This dataclass contains all parameters for audio preprocessing operations,
-    including resampling, normalization, denoising, and filtering. All settings
-    are designed to be ASR-safe and preserve audio quality for modern speech
-    recognition systems.
+    This dataclass defines **config-time defaults**: per-step and global modes
+    that influence how apply_preprocessing() behaves when no run-time override
+    is given. It is a different layer from the **request-time** contract used by
+    PreprocessRequest.preprocessing_mode ("off" | "selected" | "auto"), which
+    controls a single run. The workflow bridges the two: it uses
+    preprocessing_mode to derive a per-step decisions dict, then passes that into
+    apply_preprocessing() along with this config for numeric parameters (LUFS,
+    cutoffs, etc.). See PreprocessRequest and _derive_decisions() in the
+    preprocess workflow for the request → config bridge.
 
-    Each preprocessing step supports three modes:
+    Per-step modes (convert_to_mono, downsample, normalize_mode, denoise_mode, …):
     - "auto": Always apply if needed (no user interaction)
     - "suggest": Assess files and suggest to user, apply if confirmed
     - "off": Never apply this preprocessing step
 
-    The global preprocessing_mode can override all per-step settings:
+    Global preprocessing_mode overrides all per-step settings when not "selected":
     - "selected": Use per-step mode settings (fine-grained control)
     - "auto": Override all steps to "auto"
     - "suggest": Override all steps to "suggest"

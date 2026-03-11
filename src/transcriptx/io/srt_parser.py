@@ -49,14 +49,13 @@ def _extract_speaker_hint(text: str) -> tuple[Optional[str], str]:
     return None, text
 
 
-def parse_srt_file(path: str | Path) -> List[SRTCue]:
-    path = Path(path)
-    if not path.exists():
-        raise FileNotFoundError(f"SRT file not found: {path}")
+def _parse_srt_lines(lines: List[str]) -> List[SRTCue]:
+    """Parse cues from an already-decoded list of SRT lines.
 
-    with open(path, "r", encoding="utf-8") as handle:
-        lines = [line.rstrip("\n") for line in handle]
-
+    This is the core parsing logic.  ``parse_srt_file`` and ``SRTAdapter``
+    both delegate here so the file is never re-read when bytes are already
+    in memory.
+    """
     cues: List[SRTCue] = []
     i = 0
     while i < len(lines):
@@ -111,3 +110,20 @@ def parse_srt_file(path: str | Path) -> List[SRTCue]:
         )
 
     return cues
+
+
+def parse_srt_file(path: str | Path) -> List[SRTCue]:
+    """Parse an SRT file from disk and return a list of cues.
+
+    Reads the file once, then delegates to ``_parse_srt_lines``.
+    Prefer calling ``_parse_srt_lines`` directly when the file bytes are
+    already in memory (e.g. inside ``SRTAdapter.parse``).
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"SRT file not found: {path}")
+
+    with open(path, "r", encoding="utf-8") as handle:
+        lines = [line.rstrip("\n") for line in handle]
+
+    return _parse_srt_lines(lines)

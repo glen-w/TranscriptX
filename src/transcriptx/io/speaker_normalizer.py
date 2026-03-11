@@ -1,137 +1,104 @@
 """
-Speaker normalization for VTT and SRT imports.
+Speaker normalization for transcript imports.
 
-This module handles extraction and normalization of speaker hints from VTT and SRT cues,
-mapping them to standardized SPEAKER_XX format or null if no speaker info exists.
+Accepts ``List[IntermediateTurn]`` (the only input type — the legacy
+``CueWithSpeaker = Union[VTTCue, SRTCue]`` union has been removed).
+``VTTAdapter`` and ``SRTAdapter`` each convert their cue objects into
+``IntermediateTurn`` before calling this module.
+
+Maps raw speaker labels to standardised ``SPEAKER_XX`` format or ``None``
+when no speaker information is present.  Preserves original labels in
+``original_cue.original_speaker`` for downstream use.
+
+Returns ``List[TranscriptSegment]`` — a TypedDict capturing the schema v1.0
+segment shape (``start``, ``end``, ``speaker``, ``text``, optional fields).
 """
 
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.vtt_parser import VTTCue
-from transcriptx.io.srt_parser import SRTCue
+from transcriptx.io.intermediate_transcript import IntermediateTurn, TranscriptSegment
 
 logger = get_logger()
 
-# Type alias for cue objects that have speaker hints
-CueWithSpeaker = Union[VTTCue, SRTCue]
 
-
-def extract_speaker_hints(cue: CueWithSpeaker) -> Optional[str]:
-    """
-    Extract speaker hint from a VTT or SRT cue.
+def assign_speaker_ids(unique_speakers: List[str]) -> Dict[str, str]:
+    """Map sorted unique speaker labels to ``SPEAKER_XX`` identifiers.
 
     Args:
-        cue: VTTCue or SRTCue object
+        unique_speakers: Unique, non-None speaker label strings.
 
     Returns:
-        Speaker hint string or None
+        ``{original_label: "SPEAKER_XX"}`` mapping.
     """
-    return cue.speaker_hint
+    return {spk: f"SPEAKER_{idx:02d}" for idx, spk in enumerate(sorted(unique_speakers))}
 
 
-def assign_speaker_ids(speaker_hints: List[Optional[str]]) -> Dict[str, str]:
-    """
-    Create mapping from unique speaker hints to SPEAKER_XX format.
-
-    Args:
-        speaker_hints: List of speaker hints (may contain None)
-
-    Returns:
-        Dictionary mapping original speaker hint to SPEAKER_XX format
-    """
-    # Get unique non-None speaker hints
-    unique_speakers = []
-    seen = set()
-    for hint in speaker_hints:
-        if hint and hint not in seen:
-            unique_speakers.append(hint)
-            seen.add(hint)
-
-    # Create mapping
-    mapping = {}
-    for idx, speaker in enumerate(sorted(unique_speakers)):
-        speaker_id = f"SPEAKER_{idx:02d}"
-        mapping[speaker] = speaker_id
-
-    return mapping
-
-
-def normalize_speakers(cues: List[CueWithSpeaker]) -> List[Dict[str, Any]]:
-    """
-    Normalize speaker hints from VTT or SRT cues to segments with SPEAKER_XX format.
+def normalize_speakers(turns: List[IntermediateTurn]) -> List[TranscriptSegment]:
+    """Normalise raw speaker labels from a list of IntermediateTurn objects.
 
     Rules:
-    - If no speaker info: speaker is null (don't fake diarization)
-    - If speaker hints present: normalize to SPEAKER_XX format
-    - Preserve original speaker names in metadata
+    - If no turn has a speaker label: ``speaker`` is ``null`` in all segments
+      (no fake diarisation).
+    - If any speaker labels are present: map to ``SPEAKER_XX`` format.
+    - Original labels are preserved in ``original_cue.original_speaker``.
 
     Args:
-        cues: List of VTTCue or SRTCue objects
+        turns: List of IntermediateTurn objects (output of TranscriptNormalizer).
 
     Returns:
-        List of segment dictionaries with normalized speakers
+        List of TranscriptSegment dicts conforming to schema v1.0.
     """
-    # Extract all speaker hints
-    speaker_hints = [extract_speaker_hints(cue) for cue in cues]
-
-    # Check if any speaker hints exist
-    has_speakers = any(hint is not None for hint in speaker_hints)
+    # Collect unique non-None speaker labels
+    unique_speakers = list(
+        dict.fromkeys(t.speaker for t in turns if t.speaker is not None)
+    )
+    has_speakers = bool(unique_speakers)
 
     if not has_speakers:
-        # No speaker info - set all to null
-        logger.info("No speaker hints found, setting speaker to null for all segments")
-        segments = []
-        for cue in cues:
-            segment = {
-                "start": cue.start,
-                "end": cue.end,
-                "speaker": None,
-                "text": cue.text,
-            }
-            if cue.id:
-                segment["cue_id"] = cue.id
-            # Only VTTCue has settings attribute
-            if hasattr(cue, "settings") and cue.settings:
-                segment["original_cue"] = {"settings": cue.settings}
-            segments.append(segment)
-        return segments
+        logger.info("No speaker labels found — setting speaker to null for all segments")
+        speaker_mapping: Dict[str, str] = {}
+    else:
+        speaker_mapping = assign_speaker_ids(unique_speakers)
+        logger.info(f"Found {len(speaker_mapping)} unique speaker(s)")
+        for original, normalised in speaker_mapping.items():
+            logger.debug(f"  {original!r} -> {normalised!r}")
 
-    # Create speaker mapping
-    speaker_mapping = assign_speaker_ids(speaker_hints)
+    segments: List[TranscriptSegment] = []
+    for turn in turns:
+        raw_speaker = turn.speaker
+        normalised_speaker: Optional[str] = (
+            speaker_mapping.get(raw_speaker) if raw_speaker is not None else None
+        )
 
-    # Log speaker mapping for reference
-    logger.info(f"Found {len(speaker_mapping)} unique speakers")
-    for original, normalized in speaker_mapping.items():
-        logger.debug(f"  {original} -> {normalized}")
-
-    # Convert cues to segments with normalized speakers
-    segments = []
-    for cue in cues:
-        speaker_hint = extract_speaker_hints(cue)
-        normalized_speaker = speaker_mapping.get(speaker_hint) if speaker_hint else None
-
-        segment = {
-            "start": cue.start,
-            "end": cue.end,
-            "speaker": normalized_speaker,
-            "text": cue.text,
+        seg: TranscriptSegment = {
+            "start": turn.start if turn.start is not None else 0.0,
+            "end": turn.end if turn.end is not None else 0.0,
+            "speaker": normalised_speaker,
+            "text": turn.text,
         }
 
-        # Add optional fields
-        if cue.id:
-            segment["cue_id"] = cue.id
+        if turn.raw_turn_id is not None:
+            seg["cue_id"] = turn.raw_turn_id
 
-        # Preserve original cue data in metadata
-        original_cue_data = {}
-        # Only VTTCue has settings attribute
-        if hasattr(cue, "settings") and cue.settings:
-            original_cue_data["settings"] = cue.settings
-        if speaker_hint:
-            original_cue_data["original_speaker"] = speaker_hint
-        if original_cue_data:
-            segment["original_cue"] = original_cue_data
+        if turn.words is not None:
+            seg["words"] = turn.words
 
-        segments.append(segment)
+        # Build original_cue metadata
+        original_cue: Dict[str, Any] = {}
+
+        if raw_speaker is not None:
+            original_cue["original_speaker"] = raw_speaker
+
+        # Carry end-estimation flag from TranscriptNormalizer if present
+        if getattr(turn, "_end_estimated", False):
+            original_cue["end_estimated"] = True
+
+        if original_cue:
+            seg["original_cue"] = original_cue
+
+        segments.append(seg)
 
     return segments
