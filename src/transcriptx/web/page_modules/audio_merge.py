@@ -18,7 +18,7 @@ from transcriptx.app.controllers.merge_controller import MergeController
 from transcriptx.app.models.requests import MergeRequest
 from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.utils.file_rename import extract_date_prefix
-from transcriptx.core.utils.paths import RECORDINGS_DIR
+from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
 from transcriptx.web.components.progress_panel import (
     MERGE_SNAPSHOT_KEY,
     StreamlitProgressCallback,
@@ -53,12 +53,42 @@ def render_audio_merge_page() -> None:
         "Various formats are supported (WAV, MP3, OGG, M4A, FLAC, AAC, WMA)."
     )
 
+    # Upload area — same as Audio Prep; saved to RECORDINGS_IMPORTS_DIR
+    uploaded_list = st.file_uploader(
+        "Upload audio file(s)",
+        type=["mp3", "wav", "m4a", "flac", "ogg", "aac"],
+        accept_multiple_files=True,
+        help="Uploaded files are saved to the recordings imports folder and appear in the list below.",
+        key="audio_merge_uploader",
+    )
+    if uploaded_list:
+        saved_paths: List[Path] = []
+        for uploaded in uploaded_list:
+            saved_path = RecordingsService.save_uploaded_file(uploaded)
+            saved_paths.append(saved_path)
+        if len(saved_paths) == 1:
+            st.success(
+                f"Saved to `{saved_paths[0].relative_to(RECORDINGS_IMPORTS_DIR)}`"
+            )
+        else:
+            st.success(
+                f"Saved {len(saved_paths)} files to `{RECORDINGS_IMPORTS_DIR.name}/`"
+            )
+        RecordingsService.list_recordings.clear()  # type: ignore[attr-defined]
+
     recordings = RecordingsService.list_recordings(RECORDINGS_DIR)
+    if RECORDINGS_IMPORTS_DIR != RECORDINGS_DIR / "imports":
+        imports_files = RecordingsService.list_recordings(RECORDINGS_IMPORTS_DIR)
+        seen = {p.resolve() for p in recordings}
+        for p in imports_files:
+            if p.resolve() not in seen:
+                recordings.append(p)
+        recordings.sort(key=lambda p: p.name)
 
     if not recordings:
         st.info(
             f"No audio files found in `{RECORDINGS_DIR}`. "
-            "Upload a file via Audio Prep or add files to the recordings directory."
+            "Upload a file above or add files to the recordings directory."
         )
         return
 

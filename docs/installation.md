@@ -103,6 +103,12 @@ Gates are checks that block or skip work to keep results accurate and runs predi
 
 **Configuration:** TranscriptX uses env-first configuration with explicit overrides. Unknown/unmapped speakers are excluded from analysis by default; excluded segment counts are reported in run summaries. See [ARCHITECTURE.md](ARCHITECTURE.md) for data layout.
 
+## Web interface (Streamlit)
+
+The Streamlit app reads options from `.streamlit/config.toml` when present.
+
+- **File upload limit** — Audio Prep (and other upload widgets) accept files up to **500 MB per file**. This is set in `.streamlit/config.toml` as `[server] maxUploadSize = 500` (value in megabytes). To change it, edit that file or set the `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` environment variable.
+
 ## Troubleshooting
 
 - **"No module named …" after install** — For an editable install from source, install dependencies first: `pip install -r requirements.txt` then `pip install -e .`. If you installed via `pip install transcriptx` or `pip install transcriptx[full]`, dependencies are pulled from pyproject.toml; reinstall with the desired extra if a module fails.

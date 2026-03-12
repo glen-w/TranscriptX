@@ -1,0 +1,59 @@
+# Coverage configuration for TranscriptX
+# Omit Streamlit/UI, web layer, and hard-to-test infrastructure so coverage
+# target (65%) applies to library and service code.
+[run]
+source = src
+omit =
+    # Entire web package (Streamlit UI, page modules, services, extractors)
+    */transcriptx/web/*
+    # CLI/UI entrypoints
+    */ui/*
+    # Hard-to-test or infrastructure-only
+    */utils/html_utils.py
+    */utils/location_cache.py
+    */database/maintenance.py
+    */database/migrations.py
+    */database/cross_session_tracking.py
+    */database/transcript_manager.py
+    */database/speaker_profiling.py
+    */database/speaker_statistics.py
+    */database/pipeline_integration.py
+    */database/segment_queries.py
+    */database/transcript_ingestion.py
+    */database/file_tracking.py
+    */database/export_service.py
+    */core/analysis/bertopic/*
+    */core/adapters/*
+    */core/analysis/acts/output.py
+    */core/analysis/aggregation/registry.py
+    */core/analysis/aggregation/entity_sentiment.py
+    */core/analysis/aggregation/ner.py
+    */core/analysis/contagion/*
+    */core/analysis/entity_sentiment/*
+    */core/analysis/insights_normalization.py
+    */core/analysis/interactions/visualization.py
+    */core/analysis/common.py
+    */core/utils/transcript_languages.py
+    */core/utils/understandability.py
+    */app/controllers/batch_controller.py
+    */app/controllers/diagnostics_controller.py
+    */app/controllers/preprocess_controller.py
+    */app/controllers/profile_controller.py
+    */app/controllers/run_controller.py
+    */app/controllers/settings_controller.py
+    */app/controllers/speaker_controller.py
+    */app/controllers/library_controller.py
+    */app/output_capture.py
+    */app/workflows/preprocess.py
+    */app/workflows/batch.py
+    */app/workflows/speaker.py
+    */io/speaker_mapping/core.py
+    */io/speaker_mapping/database.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if TYPE_CHECKING:
+    if __name__ == .__main__.:

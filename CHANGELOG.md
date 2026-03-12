@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
+- **Speaker Studio**: The segment-by-segment Speaker Studio UI and the `transcriptx-studio` Docker service have been removed. Use the per-speaker **Speaker ID** page (same menu) for speaker identification with audio playback.
 - **CLI and interactive terminal menu**: The Typer-based CLI and questionary interactive menu have been fully removed. The only user-facing entry point is the Streamlit web interface (`transcriptx` or `transcriptx --host 0.0.0.0`). Scripting and automation use the Python API (`transcriptx.app.workflows.run_analysis`, `AnalysisRequest`, etc.). See `docs/generated/cli.md` for API usage.
 
 ### Changed

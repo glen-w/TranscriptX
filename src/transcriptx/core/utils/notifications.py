@@ -9,7 +9,6 @@ of detail based on whether the user is in 'simple' or 'advanced' mode.
 from rich.console import Console
 from rich.style import Style
 
-from transcriptx.utils.spinner import SpinnerManager
 from transcriptx.utils.text_utils import strip_emojis
 
 console = Console()
@@ -115,12 +114,6 @@ def print_section_break(module: str | None = "default", force: bool = False) -> 
     module_key = module if module else "default"
     color = MODULE_COLOR_MAP.get(module_key, MODULE_COLOR_MAP["default"])
 
-    # If there's an active spinner, pause it before printing to avoid cluttering the same line
-    spinner_was_active = SpinnerManager._active_spinner is not None
-    if spinner_was_active:
-        SpinnerManager.pause_spinner()
-        console.print()  # New line to separate from spinner
-
     # Create a section break with module name
     # Format: blank line, horizontal line, emoji + title (caps), horizontal line
     if module and module != "default":
@@ -139,10 +132,6 @@ def print_section_break(module: str | None = "default", force: bool = False) -> 
     else:
         console.print()  # Blank line for spacing
         console.print("─" * 60, style=Style(color=color))
-
-    # Resume spinner if it was active
-    if spinner_was_active:
-        SpinnerManager.resume_spinner()
 
 
 def notify_user(
@@ -195,17 +184,7 @@ def notify_user(
 
     # Strip emojis if disabled
     display_msg = msg if use_emojis else strip_emojis(msg)
-
-    # If there's an active spinner, pause it before printing to avoid cluttering the same line
-    spinner_was_active = SpinnerManager._active_spinner is not None
-    if spinner_was_active:
-        SpinnerManager.pause_spinner()
-        # Print a newline to move to a fresh line, then the message
-        console.print()  # New line to separate from spinner
-        console.print(display_msg)
-        SpinnerManager.resume_spinner()
-    else:
-        console.print(display_msg)
+    console.print(display_msg)
 
     # Add blank line after completion messages for visual spacing
     if section and ("Completed" in msg or "✅" in msg):

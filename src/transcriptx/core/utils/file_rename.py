@@ -928,10 +928,6 @@ def prompt_for_rename(transcript_path: str, default_name: str) -> Optional[str]:
     Returns:
         New name if user provided one, None if skipped or cancelled
     """
-    # Pause spinner for interactive workflow
-    from transcriptx.utils.spinner import SpinnerManager
-
-    SpinnerManager.pause_spinner()
     try:
         old_name = get_base_name(transcript_path)
 
@@ -972,9 +968,6 @@ def prompt_for_rename(transcript_path: str, default_name: str) -> Optional[str]:
     except Exception as e:
         log_error("FILE_RENAME", f"Error in rename prompt: {e}", exception=e)
         return None
-    finally:
-        # Resume spinner after interactive workflow
-        SpinnerManager.resume_spinner()
 
 
 def rename_mp3_file(mp3_path: Path, default_name: str = "") -> Optional[Path]:

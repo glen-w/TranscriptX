@@ -2,9 +2,7 @@
 # Volume layout: mount ./data so container sees /data/transcripts, /data/outputs, etc.
 # Non-root: services run as host user (UID/GID) so /data is writable; see docs/docker.md.
 #
-# Web interface:   docker compose up transcriptx-web     → http://localhost:8501
-# Speaker Studio:  docker compose up transcriptx-studio  → http://localhost:8502
-# Both:            docker compose up
+# Web interface:   docker compose up (or docker compose up transcriptx-web) → http://localhost:8501
 
 services:
   transcriptx-web:
@@ -39,39 +37,6 @@ services:
       retries: 3
       start_period: 15s
     command: ["--host", "0.0.0.0"]
-
-  transcriptx-studio:
-    image: transcriptx:latest
-    init: true
-    user: "${UID:-1000}:${GID:-1000}"
-    working_dir: /data
-    volumes:
-      - ./data:/data
-      - transcriptx_cache:/home/transcriptx/.cache
-      # Optional: mount your local libraries (set the env vars below to match)
-      # - ${TRANSCRIPTX_HOST_TRANSCRIPTS_DIR:-}:/transcripts
-      # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings
-      # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
-    ports:
-      - "8502:8502"
-    environment:
-      - TRANSCRIPTX_DATA_DIR=/data
-      # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
-      # - TRANSCRIPTX_RECORDINGS_DIR=/recordings
-      # - TRANSCRIPTX_WAV_BACKUP_DIR=/wav
-      - TRANSCRIPTX_ENABLE_SPEAKER_STUDIO=1
-      - TRANSCRIPTX_USE_EMOJIS=0
-      - NLTK_DATA=/opt/venv/nltk_data
-      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-1}
-      - HF_HOME=/data/.cache/huggingface
-      - MPLCONFIGDIR=/data/.cache/matplotlib
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8502/_stcore/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    command: ["--host", "0.0.0.0", "--port", "8502"]
 
 volumes:
   transcriptx_cache:

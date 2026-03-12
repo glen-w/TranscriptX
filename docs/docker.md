@@ -44,19 +44,7 @@ docker compose up transcriptx-web
 
 Then open http://localhost:8501 in your browser.
 
-**Speaker Studio (instant audio playback, port 8502):**
-
-```bash
-docker compose up transcriptx-studio
-```
-
-Then open http://localhost:8502.
-
-**Both services:**
-
-```bash
-docker compose up
-```
+You can also run `docker compose up` (without a service name) to start the web interface.
 
 **Scripting / automation (one-off Python API):**
 
@@ -82,10 +70,8 @@ print('success:', result.success)
 
 | Mode | Command |
 |------|---------|
-| Web interface | `docker compose up transcriptx-web` → http://localhost:8501 |
-| Speaker Studio | `docker compose up transcriptx-studio` → http://localhost:8502 |
-| Both | `docker compose up` |
-| Custom host/port | `docker run --rm -p 8502:8502 transcriptx:latest --host 0.0.0.0 --port 8502` |
+| Web interface | `docker compose up` or `docker compose up transcriptx-web` → http://localhost:8501 |
+| Custom host/port | `docker run --rm -p 8501:8501 transcriptx:latest --host 0.0.0.0 --port 8501` |
 
 ## Volume layout
 

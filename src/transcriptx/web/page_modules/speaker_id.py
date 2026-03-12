@@ -14,22 +14,96 @@ the page (header, metrics, name assignment, navigation) does not dim.
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List
 
 import streamlit as st
 
+from transcriptx.app.compat import discover_all_transcript_paths
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
-from transcriptx.web.page_modules.speaker_studio import (
-    _cached_speaker_studio_fallback_transcripts,
-    _cached_transcripts_for_paths,
-    _transcript_paths_for_speaker_views,
-)
+from transcriptx.web.services.file_service import FileService
 from transcriptx.web.state import SELECTED_TRANSCRIPT_PATH
 
 # How many sample lines to show per speaker by default
 _LINES_PER_PAGE = 8
+
+# Non-transcript JSON names under run dirs (skip when scanning outputs)
+_RUN_DIR_JSON_SKIP = frozenset(
+    {"manifest.json", "run_results.json", "processing_state.json"}
+)
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def _transcript_paths_for_speaker_views() -> list:
+    """Cached so transcript dropdown/selection doesn't trigger full discovery on every rerun."""
+    return _transcript_paths_for_speaker_views_impl()
+
+
+def _transcript_paths_for_speaker_views_impl() -> list[Path]:
+    """Same discovery as Library and session-based views; also scan run dirs (Docker-friendly)."""
+    paths: list[Path] = []
+    seen: set[str] = set()
+
+    def add(p: Path) -> None:
+        key = str(p.resolve())
+        if key not in seen and p.exists():
+            seen.add(key)
+            paths.append(p)
+
+    for p in discover_all_transcript_paths(None):
+        add(Path(p))
+
+    for session in FileService.list_available_sessions():
+        name = session.get("name", "")
+        if "/" not in name:
+            continue
+        resolved = FileService.resolve_transcript_path(name)
+        if resolved:
+            add(Path(resolved))
+
+    # Docker: manifest transcript_path is often host-only; scan run dirs for transcript-like JSON
+    from transcriptx.core.utils.paths import OUTPUTS_DIR
+
+    outputs_dir = Path(OUTPUTS_DIR)
+    if outputs_dir.is_dir():
+        for slug_dir in outputs_dir.iterdir():
+            if not slug_dir.is_dir() or slug_dir.name.startswith("."):
+                continue
+            for run_dir in slug_dir.iterdir():
+                if not run_dir.is_dir() or run_dir.name.startswith("."):
+                    continue
+                for j in run_dir.glob("*.json"):
+                    if (
+                        j.name in _RUN_DIR_JSON_SKIP
+                        or j.parent.name == ".transcriptx"
+                        or j.name.endswith("_stats.json")
+                    ):
+                        continue
+                    add(j)
+
+    return sorted(paths, key=lambda p: str(p.resolve()))
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def _cached_transcripts_for_paths(paths_key: tuple[str, ...]) -> list:
+    """Return transcript list for given paths so selectbox/UI doesn't recompute on every rerun."""
+    if not paths_key:
+        return []
+    controller = SpeakerStudioController()
+    paths = list(paths_key)  # str paths for controller list_transcripts_from_paths
+    return controller.list_transcripts_from_paths(paths)
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def _cached_fallback_transcripts() -> list:
+    """Fallback when no paths from discovery; avoids full list_transcripts on every rerun."""
+    controller = SpeakerStudioController()
+    try:
+        return controller.list_transcripts(canonical_only=False)
+    except TypeError:
+        return controller.list_transcripts()
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -72,7 +146,7 @@ def render_speaker_id_page() -> None:
     else:
         transcripts = []
     if not transcripts:
-        transcripts = _cached_speaker_studio_fallback_transcripts()
+        transcripts = _cached_fallback_transcripts()
     if not transcripts:
         st.info("No transcripts found. Add transcript JSON files first.")
         return

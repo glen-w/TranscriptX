@@ -1,0 +1,6 @@
+# Streamlit server configuration.
+# See: https://docs.streamlit.io/develop/api-reference/widgets/st.file_uploader
+
+[server]
+# Max size per uploaded file (MB). Audio Prep and other uploaders use this limit.
+maxUploadSize = 500

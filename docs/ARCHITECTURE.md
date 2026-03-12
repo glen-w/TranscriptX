@@ -46,7 +46,7 @@ Scripting and automation use the Python API directly (`app.workflows`, `core.pip
 
 **Transcription is external;** TranscriptX does not run WhisperX or any transcription engine. It consumes diarized transcript JSON (see [transcription.md](transcription.md)).
 
-- **Services (default set):** `docker compose up` starts **transcriptx-web** (Streamlit GUI, port 8501) and optionally **transcriptx-studio** (port 8502). Both mount `./data`; no Docker socket.
+- **Services (default set):** `docker compose up` starts **transcriptx-web** (Streamlit GUI, port 8501). The container mounts `./data`; no Docker socket.
 - **Image contract:** The image uses `ENTRYPOINT ["transcriptx"]` which starts the web interface. Pass `--host` / `--port` to override defaults.
 - **Data:** Mount the host data tree at `/data` so the container sees `data/recordings`, `data/transcripts`, and `data/outputs` in the same layout as the [Data layout](#data-layout-stable-contract) above.
 - **Reference:** Build and run details, volume layout, Apple Silicon, permissions, and pitfalls: **[docker.md](docker.md)**.

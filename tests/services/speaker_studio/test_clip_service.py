@@ -408,24 +408,3 @@ def test_speaker_id_page_uses_render_playback_panel() -> None:
     source = Path(mod.__file__).read_text()
     assert "render_playback_panel" in source
     assert "playback_panel" in source
-
-
-def test_speaker_studio_page_uses_render_playback_panel() -> None:
-    """speaker_studio.py must call render_playback_panel from the shared component."""
-    import transcriptx.web.page_modules.speaker_studio as mod
-
-    source = Path(mod.__file__).read_text()
-    assert "render_playback_panel" in source
-    assert "playback_panel" in source
-
-
-def test_speaker_studio_page_uses_on_click_for_play_buttons() -> None:
-    """speaker_studio.py must use on_click callbacks, not st.rerun() after play buttons."""
-    import transcriptx.web.page_modules.speaker_studio as mod
-
-    source = Path(mod.__file__).read_text()
-    assert "on_click=_set_play_idx" in source
-    # The play buttons in rows should not call st.rerun() (rerun after save is fine,
-    # but there must be no rerun immediately after setting active_index from a play click).
-    # We verify on_click is present as the primary indicator.
-    assert "_set_play_idx" in source

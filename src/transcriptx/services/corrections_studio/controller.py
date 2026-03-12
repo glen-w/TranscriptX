@@ -165,7 +165,7 @@ class CorrectionsStudioController:
             session.close()
 
     def list_transcripts(self) -> List[Dict[str, Any]]:
-        """List transcripts using the same discovery as Library/Speaker Studio (config + recursive scan)."""
+        """List transcripts using the same discovery as Library/Speaker ID (config + recursive scan)."""
         try:
             from transcriptx.app.compat import discover_all_transcript_paths
             from transcriptx.services.speaker_studio.controller import (

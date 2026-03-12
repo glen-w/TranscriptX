@@ -128,7 +128,7 @@ def render_playback_panel(
         Whether st.audio should autoplay on load.
     include_segment_rows:
         If True (default), renders segment rows with play buttons.
-        Set False for pages that render their own custom rows (e.g. speaker_studio
+        Set False for pages that render their own custom rows (e.g. Speaker ID
         with additional assign widgets); the fragment then manages only the audio
         player and warm trigger.
     """

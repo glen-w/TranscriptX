@@ -193,3 +193,17 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 
 - **Default run:** 1717 passed, 5 skipped, 321 deselected, 0 failed.
 - **Collected (default filter):** 1722 selected (2043 total, 321 deselected).
+
+---
+
+## 12. Expansion (2026-03-12) – processing state load/save unit tests
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/utils/test_processing_state.py` | 5 | `load_processing_state` (nonexistent → empty dict; valid JSON → parsed; locked → empty); `save_processing_state` (creates file with state); load/save roundtrip. Uses tmp_path and mocked FileLock/create_backup so tests run in default suite. |
+
+### High-leverage area
+
+- **State persistence:** Direct unit coverage for `processing_state.load_processing_state` and `save_processing_state` (previously only covered via integration/regression and state_utils/state_backup).

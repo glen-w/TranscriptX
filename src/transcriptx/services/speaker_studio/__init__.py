@@ -1,7 +1,7 @@
 """
-Speaker Studio services: UI-agnostic segment index, clip extraction, and speaker mapping.
+Speaker identification services: UI-agnostic segment index, clip extraction, and speaker mapping.
 
-Used by both CLI (identify speakers) and Speaker Studio (Streamlit) so that
+Used by CLI (identify speakers) and the web Speaker ID page so that
 mapping writes and clip generation are consistent and single-source.
 """
 

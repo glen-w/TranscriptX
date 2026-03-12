@@ -61,17 +61,6 @@ try:
     from transcriptx.web.page_modules.search import render_search
 
     try:
-        from transcriptx.web.page_modules.speaker_studio import (
-            render_speaker_studio,
-            is_speaker_studio_enabled,
-        )
-
-        _speaker_studio_available = is_speaker_studio_enabled()
-    except ImportError:
-        _speaker_studio_available = False
-        render_speaker_studio = None  # type: ignore[misc, assignment]
-
-    try:
         from transcriptx.web.page_modules.corrections_studio import (
             render_corrections_studio,
             is_corrections_studio_enabled,
@@ -1042,8 +1031,6 @@ def main():
 
         # ── TOOLS ────────────────────────────────────────────────────────────
         tools_items = []
-        if _speaker_studio_available:
-            tools_items.append(("Speaker Studio", "Speaker Studio"))
         if _corrections_studio_available:
             tools_items.append(("Corrections Studio", "Corrections Studio"))
         if tools_items:
@@ -1212,12 +1199,6 @@ def main():
             render_groups()
         elif current_page == "Statistics":
             render_statistics()
-        elif (
-            current_page == "Speaker Studio"
-            and _speaker_studio_available
-            and render_speaker_studio
-        ):
-            render_speaker_studio()
         elif (
             current_page == "Corrections Studio"
             and _corrections_studio_available

@@ -64,7 +64,7 @@ def render_library() -> None:
             with col1:
                 if st.button("Run Speaker ID", key="lib_speaker_id"):
                     st.session_state["selected_transcript_path"] = str(selected.path)
-                    st.session_state["page"] = "Speaker Studio"
+                    st.session_state["page"] = "Speaker ID"
                     st.rerun()
             with col2:
                 if st.button("Run Analysis", key="lib_run_analysis"):
