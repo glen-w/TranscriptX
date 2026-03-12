@@ -19,6 +19,9 @@ services:
       # - ${TRANSCRIPTX_HOST_RECORDINGS_DIR:-}:/recordings
       # - ${TRANSCRIPTX_HOST_WAV_DIR:-}:/wav
     environment:
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      # Allow 500 MB per file (matches .streamlit/config.toml; container has no config file)
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
       - TRANSCRIPTX_DATA_DIR=/data
       # - TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
       # - TRANSCRIPTX_RECORDINGS_DIR=/recordings

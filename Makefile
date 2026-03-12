@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-all test-contracts test-integration-core test-optional docker-smoke run
+.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-all test-contracts test-integration-core test-optional docker-smoke run prune clean-test-artifacts
 
 help:
 	@echo "TranscriptX Makefile"
@@ -21,6 +21,11 @@ help:
 	@echo "  test-all         Run full test suite (may be slow)"
 	@echo "  docker-smoke     Run Docker first-run smoke test (build + validate/canonicalize/analyze)"
 	@echo ""
+	@echo "Maintenance:"
+	@echo "  prune               Dry-run prune old pipeline runs"
+	@echo "  prune-apply         Prune old runs (--apply --yes)"
+	@echo "  clean-test-artifacts  Remove test artifact slugs (e.g. test__*) from outputs and index (run manually if needed)"
+	@echo ""
 	@echo "Usage:"
 	@echo "  make run          # Docker interactive CLI (use this for menus)"
 	@echo "  make docs        # Generate docs from code"
@@ -38,6 +43,18 @@ docs-clean:
 	@echo "Cleaning documentation build and generated files..."
 	@rm -rf docs/_build docs/generated docs/api/generated
 	@echo "Documentation cleaned!"
+
+clean-test-artifacts:
+	@echo "Clearing test artifact slugs (test__*) from outputs and index..."
+	@python scripts/clean_test_artifacts.py --prefix test__ --apply --yes
+
+prune:
+	@echo "Pruning old pipeline runs (dry-run)..."
+	@python scripts/prune_old_pipeline_runs.py
+
+prune-apply:
+	@echo "Pruning old pipeline runs (apply)..."
+	@python scripts/prune_old_pipeline_runs.py --apply --yes
 
 test-smoke:
 	@echo "Running CI smoke gate..."

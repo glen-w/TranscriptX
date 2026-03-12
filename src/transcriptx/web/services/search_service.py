@@ -10,6 +10,7 @@ import re
 
 import streamlit as st
 
+from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.web.models.search import (
     SearchFilters,
@@ -140,6 +141,40 @@ def _resolve_transcript_mtime(session_name: str) -> Optional[float]:
         if isinstance(mtime, (int, float)):
             return float(mtime)
     return None
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def get_speakers_from_transcripts(
+    session_slugs: Optional[Tuple[str, ...]] = None,
+) -> List[str]:
+    """
+    Get unique speaker display names from transcript segments.
+
+    If session_slugs is None, collect from all available sessions;
+    otherwise only from the given session names (e.g. slug/run_id).
+    """
+    sessions = FileService.list_available_sessions()
+    if session_slugs is not None:
+        slug_set = set(session_slugs)
+        sessions = [s for s in sessions if s.get("name") in slug_set]
+    names: set = set()
+    for session_info in sessions:
+        session_name = session_info.get("name", "")
+        if not session_name:
+            continue
+        transcript_path = _resolve_transcript_path(session_name) or session_name
+        transcript_mtime = _resolve_transcript_mtime(session_name)
+        index = _build_transcript_index(session_name, transcript_path, transcript_mtime)
+        if not index:
+            continue
+        from transcriptx.web.utils import resolve_speaker_names_from_db
+
+        segments = resolve_speaker_names_from_db(index.segments, session_name)
+        for seg in segments:
+            n = seg.get("speaker_display") or seg.get("speaker") or ""
+            if n and str(n).strip():
+                names.add(str(n).strip())
+    return sorted(names)
 
 
 class SearchBackend(Protocol):
@@ -350,7 +385,7 @@ class SearchService:
         self._backend: Optional[SearchBackend] = None
         self._backend_kind: Optional[str] = None
 
-    def _select_backend(self) -> object:
+    def _select_backend(self) -> SearchBackend:
         if self._backend is not None:
             return self._backend
         backend_kind = st.session_state.get("search_backend_kind")
@@ -371,6 +406,8 @@ class SearchService:
         return self._backend
 
     def _db_available(self) -> bool:
+        if not getattr(get_config().database, "enabled", False):
+            return False
         try:
             backend = DbSearchBackend()
             session = backend._get_session()

@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "title": "Tiny diarized fixture",
+    "language": "en",
+    "transcript_uuid": "00000000-0000-0000-0000-000000000001"
+  },
+  "segments": [
+    {
+      "speaker": "Alice",
+      "speaker_db_id": 1,
+      "text": "Hello Bob, uh, are we meeting in New York tomorrow?",
+      "start": 0.0,
+      "end": 2.8
+    },
+    {
+      "speaker": "Bob",
+      "speaker_db_id": 2,
+      "text": "Yes—New York. I think the timeline is good.",
+      "start": 3.0,
+      "end": 5.2
+    },
+    {
+      "speaker": "Alice",
+      "speaker_db_id": 1,
+      "text": "Great. Please email OpenAI's recruiter after lunch.",
+      "start": 5.4,
+      "end": 7.5
+    },
+    {
+      "speaker": "SPEAKER_XX",
+      "text": "um um um",
+      "start": 7.6,
+      "end": 8.0
+    },
+    {
+      "speaker": "Bob",
+      "speaker_db_id": 2,
+      "text": "Sure. Also, you mentioned shipping tomorrow—I'm aligned.",
+      "start": 8.1,
+      "end": 10.8
+    },
+    {
+      "speaker": "unidentified",
+      "text": "background noise",
+      "start": 10.9,
+      "end": 11.2
+    },
+    {
+      "speaker": "Alice",
+      "speaker_db_id": 1,
+      "text": "Thanks. Let's keep it short and focused.",
+      "start": 11.3,
+      "end": 13.0
+    },
+    {
+      "speaker": "Bob",
+      "speaker_db_id": 2,
+      "text": "Agreed; we'll ship tomorrow if tests are green.",
+      "start": 13.1,
+      "end": 15.0
+    }
+  ]
+}

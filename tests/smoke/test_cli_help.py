@@ -1,4 +1,4 @@
-"""Smoke tests: verify the web entry point is importable and functional."""
+"""Smoke tests: verify the web GUI entry point is importable and functional (no CLI; main entry is web + Python API)."""
 
 import sys
 from pathlib import Path

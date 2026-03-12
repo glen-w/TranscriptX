@@ -4,7 +4,11 @@ from typing import Any
 
 
 class TranscriptSimplifier:
-    def __init__(self, tics_list: list[str] = None, agreements_list: list[str] = None):
+    def __init__(
+        self,
+        tics_list: list[str] | None = None,
+        agreements_list: list[str] | None = None,
+    ):
         self.tics_list = tics_list or []
         self.agreements_list = agreements_list or []
 

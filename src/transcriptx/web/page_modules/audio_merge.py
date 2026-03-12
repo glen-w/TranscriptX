@@ -58,23 +58,36 @@ def render_audio_merge_page() -> None:
         "Upload audio file(s)",
         type=["mp3", "wav", "m4a", "flac", "ogg", "aac"],
         accept_multiple_files=True,
-        help="Uploaded files are saved to the recordings imports folder and appear in the list below.",
+        help="Uploaded files are saved to the recordings imports folder and appear in the list below. Limit 500 MB per file.",
         key="audio_merge_uploader",
+        max_upload_size=500,
     )
     if uploaded_list:
         saved_paths: List[Path] = []
+        save_errors: List[str] = []
         for uploaded in uploaded_list:
-            saved_path = RecordingsService.save_uploaded_file(uploaded)
-            saved_paths.append(saved_path)
-        if len(saved_paths) == 1:
-            st.success(
-                f"Saved to `{saved_paths[0].relative_to(RECORDINGS_IMPORTS_DIR)}`"
+            try:
+                saved_path = RecordingsService.save_uploaded_file(uploaded)
+                saved_paths.append(saved_path)
+            except Exception as e:
+                save_errors.append(f"{uploaded.name}: {e}")
+        if save_errors:
+            for err in save_errors:
+                st.error(err)
+            st.caption(
+                "If you see **AxiosError: Network Error** in the uploader, the upload often failed due to size limit, "
+                "timeout, or proxy. When using Docker, ensure the server allows 500 MB (STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500)."
             )
-        else:
-            st.success(
-                f"Saved {len(saved_paths)} files to `{RECORDINGS_IMPORTS_DIR.name}/`"
-            )
-        RecordingsService.list_recordings.clear()  # type: ignore[attr-defined]
+        if saved_paths:
+            if len(saved_paths) == 1:
+                st.success(
+                    f"Saved to `{saved_paths[0].relative_to(RECORDINGS_IMPORTS_DIR)}`"
+                )
+            else:
+                st.success(
+                    f"Saved {len(saved_paths)} files to `{RECORDINGS_IMPORTS_DIR.name}/`"
+                )
+            RecordingsService.list_recordings.clear()  # type: ignore[attr-defined]
 
     recordings = RecordingsService.list_recordings(RECORDINGS_DIR)
     if RECORDINGS_IMPORTS_DIR != RECORDINGS_DIR / "imports":

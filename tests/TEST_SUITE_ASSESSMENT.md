@@ -207,3 +207,40 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 ### High-leverage area
 
 - **State persistence:** Direct unit coverage for `processing_state.load_processing_state` and `save_processing_state` (previously only covered via integration/regression and state_utils/state_backup).
+
+---
+
+## 13. Expansion (2026-03-12) – per-module smoke tests
+
+### New smoke tests
+
+| File | Purpose |
+|------|---------|
+| `tests/smoke/test_all_modules_smoke.py` | Per-module pipeline smoke: runs `run_analysis_pipeline` with a single module on `mini_transcript.json`. **Core modules** (no optional deps, no audio) are parameterized and always run; **optional modules** (required_extras) run only when those extras are installed. Modules that need larger data or NLTK (topic_modeling, understandability) are excluded from smoke and covered by contract/integration tests. |
+
+- **Entry point:** Main product entry is web GUI + Python API (no separate CLI). Smoke suite covers web entry point (import + `--help`), pipeline install run, and every analysis module for fast regression detection.
+
+---
+
+## 14. Expansion (2026-03-12) – core/analysis coverage
+
+### Review
+
+- **Default run:** 1810 passed, 5 skipped, 83 deselected. **Core package coverage: 63%** (25197 statements, 9255 missed).
+- **Structure:** Markers and addopts unchanged; quarantined/heavy tests excluded by default.
+- **Gaps:** Lowest coverage in `config/system.py`, `processing_state.py`, `file_rename.py`, and many analysis submodules (contagion, entity_sentiment, semantic_similarity, topic_modeling, etc.).
+
+### New tests (high-leverage)
+
+| Area | File | Tests / changes |
+|------|------|-----------------|
+| Processing state | `tests/core/utils/test_processing_state.py` | `_is_uuid_format` (valid/invalid UUID), load with `validate=True` and valid state, corrupt JSON, `is_file_processed` (by audio_path, by filename, not processed), `migrate_processing_state_to_uuid_keys` (empty state, already UUID keys) |
+| Analysis base | `tests/analysis/test_module_base.py` | Config type validation, `aggregate` NotImplementedError, `run_from_file` when PipelineContext missing, `get_module_info`, `AnalysisResult` (to_dict, is_successful, has_errors), `create_analysis_module`, `validate_module_interface` (non-callable method) |
+| Conversation loops | `tests/analysis/test_conversation_loops.py` | Imports from `conversation_loops.detection` and `conversation_loops.output` for coverage of re-export modules |
+| Pipeline | `tests/pipeline/test_speaker_normalizer.py` | `normalize_speakers_across_transcripts` returns `CanonicalSpeakerMap`, fallback canonical ID when identity_service unavailable |
+| Config | `tests/core/utils/test_config.py` | `TranscriptXConfig(config_file=...)` loads from file, install_profile "full" → core_mode False, install_profile "core" → core_mode True |
+
+### Result
+
+- **70% target:** Not reached; core remains at **63%**. Reaching 70% would require ~1700 additional covered lines, mainly in `config/system.py`, `file_rename.py`, and analysis submodules.
+- All new tests pass in the default suite.

@@ -21,9 +21,6 @@ try:
         list_available_sessions,
         load_transcript_by_session,
         get_analysis_modules,
-        load_analysis_data,
-        get_all_sessions_statistics,
-        extract_analysis_summary,
     )
     from transcriptx.web.db_utils import (
         get_all_speakers,
@@ -35,7 +32,6 @@ try:
     )
     from transcriptx.web.services import (
         FileService,
-        ArtifactService,
         RunIndex,
         SubjectService,
     )
@@ -48,9 +44,6 @@ try:
     from transcriptx.web.page_modules.speaker_id import render_speaker_id_page
     from transcriptx.web.page_modules.audio_prep import render_audio_prep_page
     from transcriptx.web.page_modules.audio_merge import render_audio_merge_page
-    from transcriptx.web.page_modules.upload_transcript import (
-        render_upload_transcript_page,
-    )
     from transcriptx.web.page_modules.batch_ops import render_batch_ops_page
     from transcriptx.web.page_modules.diagnostics import render_diagnostics_page
     from transcriptx.web.page_modules.charts import render_charts
@@ -79,8 +72,9 @@ try:
     from transcriptx.web.pages.configuration import render_configuration_page
     from transcriptx.web.components.exemplars import render_speaker_exemplars
     from transcriptx.web.components.subject_header import render_subject_header
-    from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
     from transcriptx.core.utils.logger import get_logger
+    from transcriptx.core.utils.config import get_config
     from transcriptx.utils.text_utils import format_time_detailed
     from transcriptx.web.module_registry import build_module_label
 except ImportError as e:
@@ -88,6 +82,12 @@ except ImportError as e:
     st.stop()
 
 logger = get_logger()
+
+
+def is_db_enabled() -> bool:
+    """Return True only when database mode is explicitly enabled in config."""
+    return bool(getattr(get_config().database, "enabled", False))
+
 
 # Page configuration
 st.set_page_config(
@@ -101,17 +101,23 @@ st.set_page_config(
 st.markdown(
     """
 <style>
+    /* Global left alignment for main content */
+    section[data-testid="stAppViewContainer"] .block-container,
+    section[data-testid="stAppViewContainer"] .element-container {
+        text-align: left;
+    }
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
         color: #1f77b4;
         margin-bottom: 1rem;
+        text-align: left;
     }
     .stat-card {
         background-color: #f0f2f6;
         padding: 1rem;
         border-radius: 0.5rem;
-        text-align: center;
+        text-align: left;
     }
     .speaker-badge {
         display: inline-block;
@@ -491,7 +497,11 @@ def render_transcript_viewer():
         if nav_request:
             highlight_query = nav_request.highlight_query
             segment_ref = nav_request.segment_ref
-            if segment_ref.primary_locator == "db_id" and segment_ref.segment_id:
+            if (
+                segment_ref.primary_locator == "db_id"
+                and segment_ref.segment_id
+                and is_db_enabled()
+            ):
                 try:
                     from transcriptx.database import get_session
                     from transcriptx.database.models import TranscriptSegment
@@ -718,6 +728,13 @@ def render_transcript_viewer():
 
 def render_speakers_list():
     """Speakers list page."""
+    if not is_db_enabled():
+        st.info(
+            "This feature requires TranscriptX database mode. "
+            "Enable it with `TRANSCRIPTX_DB_ENABLED=1`."
+        )
+        return
+
     st.markdown('<div class="main-header">👥 Speakers</div>', unsafe_allow_html=True)
 
     try:
@@ -843,6 +860,13 @@ def render_speakers_list():
 
 def render_speaker_detail():
     """Speaker detail page."""
+    if not is_db_enabled():
+        st.info(
+            "This feature requires TranscriptX database mode. "
+            "Enable it with `TRANSCRIPTX_DB_ENABLED=1`."
+        )
+        return
+
     st.markdown(
         '<div class="main-header">👤 Speaker Details</div>', unsafe_allow_html=True
     )
@@ -1026,8 +1050,9 @@ def main():
         # ── EXPLORE ──────────────────────────────────────────────────────────
         _section("Explore")
         _nav_button("Statistics", "Statistics")
-        _nav_button("Speakers", "Speakers")
-        _nav_button("Groups", "Groups")
+        if is_db_enabled():
+            _nav_button("Speakers", "Speakers")
+            _nav_button("Groups", "Groups")
 
         # ── TOOLS ────────────────────────────────────────────────────────────
         tools_items = []
@@ -1050,9 +1075,20 @@ def main():
         st.markdown("**Subject**")
 
         _subject_section("Context")
+
+        # Only offer Group as a subject type when DB is enabled.
+        if is_db_enabled():
+            _subject_type_options = ["Transcript", "Group"]
+        else:
+            _subject_type_options = ["Transcript"]
+            # Reset stale "group" subject type left from a previous DB-enabled session.
+            if st.session_state.get("subject_type") == "group":
+                st.session_state["subject_type"] = "transcript"
+                st.caption("Database mode is disabled; subject set to Transcript.")
+
         subject_type_label = st.radio(
             "Type",
-            ["Transcript", "Group"],
+            _subject_type_options,
             index=0,
             horizontal=True,
             key="subject_type_selector",

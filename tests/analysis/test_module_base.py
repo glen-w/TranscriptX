@@ -12,14 +12,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from transcriptx.core.analysis.base import AnalysisModule
+from transcriptx.core.analysis.base import (
+    AnalysisModule,
+    AnalysisResult,
+    create_analysis_module,
+    validate_module_interface,
+)
 
 
 class MockAnalysisModule(AnalysisModule):
     """Mock analysis module for testing."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        super().__init__(config=config)
         self.module_name = "test_module"
 
     def analyze(
@@ -241,3 +246,104 @@ class TestAnalysisModule:
         module = MockAnalysisModule()
         with pytest.raises(TypeError):
             module.save_results({"result": "test"})
+
+    def test_config_must_be_dict_or_none(self) -> None:
+        """AnalysisModule raises TypeError if config is not None or dict."""
+        with pytest.raises(TypeError, match="config must be None or a dict"):
+            MockAnalysisModule(config="invalid")
+
+    def test_aggregate_raises_not_implemented(self) -> None:
+        """aggregate() raises NotImplementedError for non-aggregation modules."""
+        module = MockAnalysisModule()
+        with pytest.raises(NotImplementedError, match="does not support aggregation"):
+            module.aggregate()
+
+    def test_run_from_file_requires_pipeline_context(self) -> None:
+        """run_from_file raises ImportError when PipelineContext is not available."""
+        module = MockAnalysisModule()
+        with patch(
+            "transcriptx.core.analysis.base.PipelineContext",
+            None,
+        ):
+            with pytest.raises(ImportError, match="PipelineContext is required"):
+                module.run_from_file("/path/to/transcript.json")
+
+    def test_get_module_info_returns_dict(self) -> None:
+        """get_module_info returns name, description, version, dependencies."""
+        module = MockAnalysisModule()
+        info = module.get_module_info()
+        assert "name" in info
+        assert "description" in info
+        assert "version" in info
+        assert "dependencies" in info
+        assert info["name"] == "test_module"
+
+
+class TestAnalysisResult:
+    """Tests for AnalysisResult container."""
+
+    def test_to_dict(self) -> None:
+        """to_dict returns module, transcript_path, status, results, errors, metadata."""
+        r = AnalysisResult(
+            module_name="m",
+            transcript_path="/p",
+            status="success",
+            results={"k": "v"},
+            errors=[],
+            metadata={"x": 1},
+        )
+        d = r.to_dict()
+        assert d["module"] == "m"
+        assert d["transcript_path"] == "/p"
+        assert d["status"] == "success"
+        assert d["results"] == {"k": "v"}
+        assert d["errors"] == []
+        assert d["metadata"] == {"x": 1}
+
+    def test_is_successful(self) -> None:
+        """is_successful is True when status is success and no errors."""
+        assert AnalysisResult("m", "/p", "success", {}, []).is_successful() is True
+        assert (
+            AnalysisResult("m", "/p", "success", {}, ["e"]).is_successful() is False
+        )
+        assert AnalysisResult("m", "/p", "error", {}, []).is_successful() is False
+
+    def test_has_errors(self) -> None:
+        """has_errors is True when errors list non-empty or status is error."""
+        assert AnalysisResult("m", "/p", "success", {}, []).has_errors() is False
+        assert AnalysisResult("m", "/p", "success", {}, ["e"]).has_errors() is True
+        assert AnalysisResult("m", "/p", "error", {}, []).has_errors() is True
+
+
+class TestCreateAnalysisModule:
+    """Tests for create_analysis_module factory."""
+
+    def test_create_analysis_module_with_config(self) -> None:
+        """create_analysis_module passes config to module class."""
+        module = create_analysis_module(MockAnalysisModule, config={"key": "value"})
+        assert isinstance(module, MockAnalysisModule)
+        assert module.config == {"key": "value"}
+
+    def test_create_analysis_module_no_config(self) -> None:
+        """create_analysis_module with None config uses empty dict."""
+        module = create_analysis_module(MockAnalysisModule)
+        assert module.config == {}
+
+
+class TestValidateModuleInterface:
+    """Tests for validate_module_interface."""
+
+    def test_validate_module_interface_valid(self) -> None:
+        """validate_module_interface returns True for valid module."""
+        module = MockAnalysisModule()
+        assert validate_module_interface(module) is True
+
+    def test_validate_module_interface_missing_method(self) -> None:
+        """validate_module_interface returns False when required method is not callable."""
+        class IncompleteModule(AnalysisModule):
+            def analyze(self, segments, speaker_map=None):
+                return {}
+        # Make run_from_file non-callable so interface validation fails
+        IncompleteModule.run_from_file = None  # type: ignore[assignment]
+        module = IncompleteModule()
+        assert validate_module_interface(module) is False

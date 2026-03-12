@@ -6,10 +6,15 @@ from __future__ import annotations
 
 from typing import Any, MutableMapping, Optional
 
-from transcriptx.app.models.requests import AnalysisRequest
+from transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisRequest
 from transcriptx.app.models.results import AnalysisResult
 from transcriptx.app.progress import ProgressCallback
-from transcriptx.app.workflows.analysis import run_analysis, validate_analysis_readiness
+from transcriptx.app.workflows.analysis import (
+    run_analysis,
+    run_group_analysis,
+    validate_analysis_readiness,
+    validate_group_analysis_readiness,
+)
 from transcriptx.app.module_resolution import resolve_modules
 from transcriptx.core import get_available_modules, get_default_modules
 from transcriptx.app.models.errors import ValidationError, WorkflowExecutionError
@@ -31,6 +36,24 @@ class AnalysisController:
         """Run single-transcript analysis."""
         try:
             return run_analysis(request, progress, snapshot=snapshot)
+        except (FileNotFoundError, ValueError) as e:
+            raise ValidationError(str(e)) from e
+        except Exception as e:
+            raise WorkflowExecutionError(str(e)) from e
+
+    def validate_group_readiness(self, request: GroupAnalysisRequest) -> list[str]:
+        """Pre-run validation for group analysis. Returns list of error messages; empty if ready."""
+        return validate_group_analysis_readiness(request)
+
+    def run_group_analysis(
+        self,
+        request: GroupAnalysisRequest,
+        progress: ProgressCallback | None = None,
+        snapshot: Optional[MutableMapping[str, Any]] = None,
+    ) -> AnalysisResult:
+        """Run group-level analysis (all members + aggregation)."""
+        try:
+            return run_group_analysis(request, progress, snapshot=snapshot)
         except (FileNotFoundError, ValueError) as e:
             raise ValidationError(str(e)) from e
         except Exception as e:

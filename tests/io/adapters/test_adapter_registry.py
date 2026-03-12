@@ -66,7 +66,7 @@ class TestRegistryDetection:
 
     def test_transcriptx_artifact_not_matched_by_whisperx(self):
         """Already-normalised schema v1.0 artifact should not be matched."""
-        reg = _build_registry()
+        _build_registry()
         artifact = {
             "schema_version": "1.0",
             "source": {

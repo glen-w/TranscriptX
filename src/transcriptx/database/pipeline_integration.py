@@ -51,10 +51,19 @@ class PipelineDatabaseIntegration:
 
         if self.enable_storage:
             try:
-                # Initialize database if not already done
-                init_database()
-                self.transcript_manager = TranscriptManager()
-                logger.info("✅ Database integration initialized")
+                from transcriptx.core.utils.config import get_config as _get_config
+
+                _db_cfg = getattr(_get_config(), "database", None)
+                if not (_db_cfg and _db_cfg.enabled):
+                    logger.debug(
+                        "Database integration disabled (TRANSCRIPTX_DB_ENABLED not set)."
+                    )
+                    self.enable_storage = False
+                else:
+                    if _db_cfg.auto_init:
+                        init_database()
+                    self.transcript_manager = TranscriptManager()
+                    logger.info("✅ Database integration initialized")
             except Exception as e:
                 logger.warning(f"⚠️ Database integration failed to initialize: {e}")
                 self.enable_storage = False

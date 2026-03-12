@@ -73,9 +73,11 @@ def _ensure_transcript_uuid(transcript_path: Optional[str]) -> str:
     if DATABASE_AVAILABLE and get_session and TranscriptFileRepository:
         try:
             config = get_config()
-            if hasattr(config, "database") and config.database.enabled:
-                # Initialize database if needed
-                init_database()
+            _db_cfg = getattr(config, "database", None)
+            if _db_cfg and _db_cfg.enabled:
+                # Initialize database only when auto_init is also on
+                if _db_cfg.auto_init:
+                    init_database()
 
                 # Get or create TranscriptFile
                 session = get_session()
@@ -517,8 +519,10 @@ def migrate_processing_state_to_uuid_keys() -> Dict[str, Any]:
             if DATABASE_AVAILABLE and get_session and TranscriptFileRepository:
                 try:
                     config = get_config()
-                    if hasattr(config, "database") and config.database.enabled:
-                        init_database()
+                    _db_cfg = getattr(config, "database", None)
+                    if _db_cfg and _db_cfg.enabled:
+                        if _db_cfg.auto_init:
+                            init_database()
                         session = get_session()
                         try:
                             file_repo = TranscriptFileRepository(session)

@@ -67,7 +67,9 @@ For detailed installation, environment variables, NLP setup, and troubleshooting
 - Structured, traceable outputs
 - Voice prosody dashboards (per-speaker profiles, timelines, comparisons)
 - Voice charts core: pause/turn-delivery + rhythm indices (audio-gated)
-- Groups: analyze multiple transcripts as a single unit (DB-backed)
+- Groups: analyze multiple transcripts as a single unit (DB-backed, experimental)
+
+> **Database features are experimental and disabled by default.** TranscriptX runs in file-first mode out of the box. Enable database mode with `TRANSCRIPTX_DB_ENABLED=1` — see [docs/installation.md](docs/installation.md) for all DB env vars.
 
 ## Product Direction
 

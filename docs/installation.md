@@ -88,6 +88,27 @@ Gates are checks that block or skip work to keep results accurate and runs predi
 - **Env:** `TRANSCRIPTX_CORE=1` turns core mode on; `TRANSCRIPTX_CORE=0` turns it off.
 - Set `TRANSCRIPTX_NO_AUTO_INSTALL=1` to disable automatic pip installs when core mode is off.
 
+## Database features (experimental, disabled by default)
+
+Database-backed features are experimental and disabled by default. TranscriptX runs in file-first mode out of the box. Enable database mode with `TRANSCRIPTX_DB_ENABLED=1`.
+
+When database mode is off, Groups and Speakers UI pages are hidden, search uses the file backend, and no DB initialization occurs at startup or during analysis runs.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TRANSCRIPTX_DB_ENABLED` | `0` | Enable database integration. Must be `1` to use any DB-backed features (Groups, Speakers, DB search, segment storage). |
+| `TRANSCRIPTX_DB_AUTO_INIT` | `0` | Automatically initialize the database (create tables) when DB is enabled. Set to `1` when running the app for the first time with DB mode on. |
+| `TRANSCRIPTX_DB_AUTO_STORE_SEGMENTS` | `0` | Automatically store transcript segments in the DB after each analysis run. Requires `TRANSCRIPTX_DB_ENABLED=1`. |
+| `TRANSCRIPTX_DB_FIRST` | `0` | Prefer DB reads for transcript lookups over file-based reads. Requires `TRANSCRIPTX_DB_ENABLED=1`. |
+| `TRANSCRIPTX_DB_AUTO_IMPORT` | `0` | Auto-import transcripts into the DB on first access. Requires `TRANSCRIPTX_DB_ENABLED=1`. |
+| `TRANSCRIPTX_DB_STRICT` | `0` | Fail hard if any DB read or write fails, rather than falling back silently. |
+
+To enable a full DB-backed session for the first time:
+
+```bash
+TRANSCRIPTX_DB_ENABLED=1 TRANSCRIPTX_DB_AUTO_INIT=1 streamlit run src/transcriptx/web/app.py
+```
+
 ## Environment variables
 
 | Variable | Purpose |

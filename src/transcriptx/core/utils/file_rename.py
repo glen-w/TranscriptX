@@ -352,12 +352,19 @@ def _update_database_paths(old_path: str, new_path: str) -> None:
         new_path: New transcript path
     """
     try:
-        # Try to import database functions (lazy to avoid circular import)
+        # Only proceed when database mode is enabled.
+        from transcriptx.core.utils.config import get_config as _get_config
+
+        _db_cfg = getattr(_get_config(), "database", None)
+        if not (_db_cfg and _db_cfg.enabled):
+            return
+
         from transcriptx.database import init_database
         from transcriptx.database.repositories import TranscriptFileRepository
         from transcriptx.database.transcript_manager import TranscriptManager
 
-        init_database()
+        if _db_cfg.auto_init:
+            init_database()
 
         # Get UUID from processing state
         transcript_uuid = None

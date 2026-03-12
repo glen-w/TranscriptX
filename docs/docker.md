@@ -110,6 +110,7 @@ TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
 | `TRANSCRIPTX_DATA_DIR` | `/data` | Base data directory inside container |
 | `TRANSCRIPTX_RECORDINGS_DIR` | `$DATA_DIR/recordings` | Source audio |
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` | `$DATA_DIR/transcripts` | Transcript JSON files |
@@ -131,3 +132,4 @@ docker compose ps   # shows health status
 - **Port conflict:** If 8501 is taken, override with `--port 8502` or set `TRANSCRIPTX_PORT`.
 - **Permissions:** Ensure the `./data` directory is writable by the UID/GID used in compose.
 - **Model downloads:** Set `TRANSCRIPTX_DISABLE_DOWNLOADS=0` if you need to download ML models at runtime (the image includes spaCy but not all optional models).
+- **Upload "AxiosError: Network Error":** If the file uploader shows this for large files, the server limit or a reverse proxy may be blocking the request. Compose sets `STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500`; if you use a proxy in front, increase its body size and timeouts (e.g. nginx `client_max_body_size` and `proxy_read_timeout`).

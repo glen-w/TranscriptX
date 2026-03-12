@@ -10,19 +10,19 @@
 
 ## CI time budgets (targets)
 
-- `test-smoke` ≤ 2–3 min
+- `test-smoke` ≤ 5 min
 - `test-contracts` ≤ 5–8 min
 - `test-fast` ≤ 8–12 min
 - nightly `integration_core` ≤ 15–25 min
 
 ## Test counts (collection)
 
-Collected via `pytest --collect-only`:
+Collected via `pytest --collect-only` (run locally for current numbers):
 
-- **total collected**: 1534
-- **smoke**: 5
-- **integration**: 405
-- **unit-core (not integration/slow/requires_*)**: 1071
+- **total collected**: ~1800+
+- **smoke**: 50+ (web entry point, pipeline install run, per-module pipeline smokes for all core and optional modules, capabilities snapshot, DB-off-by-default)
+- **integration**: 405+
+- **unit-core (not integration/slow/requires_*)**: 1071+
 - **requires_models**: 43
 - **slow**: 3
 
@@ -72,7 +72,7 @@ When running beyond `smoke`, the main sources of failures are:
   - fixed `pytest.ini` to use `[pytest]` section and removed invalid options
   - added/kept marker taxonomy and made model-heavy tests opt-in
 - **Smoke suite**:
-  - kept CLI smoke, added fast module-level smoke tests for `stats` + `sentiment`
+  - Web entry point (import + `--help`); pipeline install run; per-module smoke tests for every analysis module (core modules always run; optional-extras modules run when extras installed); stats/sentiment contracts; capabilities snapshot; DB-off-by-default. Modules that need larger data or NLTK (e.g. topic_modeling, understandability) are covered by contract/integration tests.
 - **Core analysis tests** (contract-based):
   - updated tests for `sentiment`, `stats`, `tics`, `tag_extraction`, `wordclouds`, `interactions` to assert output contracts rather than brittle exactness
   - **Contracts folder**: moved contract tests to `tests/contracts/` (offline + deterministic by path)

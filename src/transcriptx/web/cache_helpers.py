@@ -33,6 +33,14 @@ def cached_get_default_modules(transcript_path_str: str) -> list[str]:
 
 
 @st.cache_data(show_spinner=False)
+def cached_get_default_modules_for_paths(paths: tuple[str, ...]) -> list[str]:
+    """Default modules for multiple transcript paths (e.g. group members)."""
+    from transcriptx.app.controllers.analysis_controller import AnalysisController
+
+    return AnalysisController().get_default_modules(list(paths))
+
+
+@st.cache_data(show_spinner=False)
 def cached_get_module_info_list() -> list:
     from transcriptx.app.module_resolution import get_module_info_list
 
@@ -55,6 +63,10 @@ def cached_doctor_report() -> dict:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cached_list_groups() -> list:
+    from transcriptx.core.utils.config import get_config
+
+    if not getattr(get_config().database, "enabled", False):
+        return []
     from transcriptx.web.services.group_service import GroupService
 
     return GroupService.list_groups()

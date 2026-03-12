@@ -144,7 +144,6 @@ class TranscriptNormalizer:
                 # Mark the end as estimated in normalized segment metadata
                 from dataclasses import replace
 
-                extra_cue = {"end_estimated": True}
                 turn = replace(turn, end=new_end)
                 # Carry estimation flag via raw_turn_id annotation is not ideal;
                 # the flag will be written into original_cue by SpeakerNormalizer.

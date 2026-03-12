@@ -623,6 +623,7 @@ def pytest_collection_modifyitems(config, items):
         # Add requires_models marker for model-heavy areas (skip for contract path).
         # Exempt adapter unit tests — substring matches like "ner" inside "generic"
         # must not falsely tag clean adapter tests as model-dependent.
+        # Exempt contagion_detection tests (detection/emotion_merger logic only, no models).
         if (
             any(
                 keyword in path_str
@@ -637,6 +638,7 @@ def pytest_collection_modifyitems(config, items):
             )
             and not is_contract_path
             and "/io/adapters/" not in path_str
+            and "test_contagion_detection" not in path_str
         ):
             if not any(
                 marker.name == "requires_models" for marker in item.iter_markers()

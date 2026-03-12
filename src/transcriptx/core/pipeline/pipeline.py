@@ -546,19 +546,23 @@ def _run_single_analysis_pipeline(
         f"Starting analysis pipeline for {transcript_path} with modules: {', '.join(selected_modules)}"
     )
 
-    # Ensure DB tables exist before estimator or any DB access (e.g. register_transcript)
-    try:
-        from transcriptx.database import init_database
+    # Resolve config early so DB startup respects the DB feature flags.
+    pipeline_config = config or get_config()
 
-        init_database()
-    except Exception as e:
-        logger.debug("Database init skipped or failed (non-fatal): %s", e)
+    # Initialize DB only when both enabled and auto_init are explicitly on.
+    _db_cfg = getattr(pipeline_config, "database", None)
+    if getattr(_db_cfg, "enabled", False) and getattr(_db_cfg, "auto_init", False):
+        try:
+            from transcriptx.database import init_database
+
+            init_database()
+        except Exception as e:
+            logger.debug("Database init skipped or failed (non-fatal): %s", e)
 
     # Validate inputs
     validate_transcript(transcript_path)
 
     # Validate dynamic chart requirements before any artifact writes
-    pipeline_config = config or get_config()
     if getattr(pipeline_config.output, "dynamic_charts", "auto") == "on":
         require_plotly()
 
@@ -637,7 +641,6 @@ def _run_single_analysis_pipeline(
     from transcriptx.core.config.resolver import resolve_effective_config
     from transcriptx.core.config.validation import validate_config
     from transcriptx.core.utils.config import set_config
-    from transcriptx.core.viz.charts import require_plotly
 
     run_dir = Path(output_dir)
     draft_override = load_draft_override()

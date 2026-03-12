@@ -298,6 +298,9 @@ class FileService:
                     continue
                 try:
                     session_id = f"{transcript_dir.name}/{run_dir.name}"
+                    # Only list sessions that have a resolvable transcript (avoids log spam and stale runs)
+                    if FileService.resolve_transcript_path(session_id) is None:
+                        continue
                     modules = _get_analysis_modules(session_id)
                     module_count = len(modules)
                     analysis_completion = (
@@ -326,7 +329,7 @@ class FileService:
                         "last_updated": last_updated,
                         "analysis_completion": analysis_completion,
                     }
-                    # Populate stats from transcript when available
+                    # Populate stats from transcript (path already verified above)
                     transcript_data = FileService.load_transcript_by_session(session_id)
                     if transcript_data:
                         segments = transcript_data.get("segments", [])

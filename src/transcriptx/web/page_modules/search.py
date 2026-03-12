@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import html
 import time
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import streamlit as st
 
-from transcriptx.web.db_utils import get_all_speakers
 from transcriptx.web.models.search import SearchFilters, SearchResult
-from transcriptx.web.services.search_service import SearchService
+from transcriptx.web.services.search_service import (
+    SearchService,
+    get_speakers_from_transcripts,
+)
 from transcriptx.web.services.subject_service import SubjectService
 
 
@@ -151,19 +153,22 @@ def render_search() -> None:
 
     speaker_keys: List[str] = []
     try:
-        speakers = get_all_speakers()
-        if speakers:
-            speaker_options = ["All speakers"] + [
-                s.get("name", "Unknown") for s in speakers
-            ]
-            selected = st.selectbox(
-                "Speakers",
-                speaker_options,
-                index=0,
-                key="global_search_speaker",
-            )
-            if selected != "All speakers":
-                speaker_keys = [selected]
+        # Resolve session scope for speaker list (same as search scope)
+        session_slugs_for_speakers: Optional[Tuple[str, ...]] = None
+        if scope == "Current transcript":
+            subject = SubjectService.resolve_current_subject(st.session_state)
+            if subject and subject.subject_type == "transcript" and subject.subject_id:
+                session_slugs_for_speakers = (subject.subject_id,)
+        speakers = get_speakers_from_transcripts(session_slugs_for_speakers)
+        speaker_options = ["All speakers"] + (speakers or [])
+        selected = st.selectbox(
+            "Speakers",
+            speaker_options,
+            index=0,
+            key="global_search_speaker",
+        )
+        if selected != "All speakers":
+            speaker_keys = [selected]
     except Exception:
         st.caption("Speaker filters unavailable.")
 

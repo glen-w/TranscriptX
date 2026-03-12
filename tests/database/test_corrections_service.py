@@ -94,7 +94,7 @@ class TestCorrectionRepository:
 
     def test_find_active_session_returns_none_for_completed(self, db_session):
         repo = CorrectionRepository(db_session)
-        created = repo.create_session(
+        repo.create_session(
             transcript_path="/tmp/done.json",
             source_fingerprint="fp1",
             detector_version=CORRECTIONS_SCHEMA_VERSION,

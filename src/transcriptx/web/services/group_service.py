@@ -4,7 +4,7 @@ Group service layer for web UI.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from transcriptx.core.domain.group import Group
 from transcriptx.core.services.group_service import GroupService as CoreGroupService
@@ -41,6 +41,30 @@ class GroupService:
             description=description,
             metadata=metadata,
         )
+
+    @staticmethod
+    def create_group_with_status(
+        name: Optional[str],
+        group_type: str,
+        transcript_refs: List[str],
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Group, bool]:
+        return CoreGroupService.create_or_get_group_with_status(
+            name=name,
+            group_type=group_type,
+            transcript_refs=transcript_refs,
+            description=description,
+            metadata=metadata,
+        )
+
+    @staticmethod
+    def rename_group(identifier: str, name: str) -> Group:
+        return CoreGroupService.rename_group(identifier, name)
+
+    @staticmethod
+    def update_membership(identifier: str, transcript_refs: List[str]) -> Group:
+        return CoreGroupService.update_membership(identifier, transcript_refs)
 
     @staticmethod
     def delete_group(identifier: str) -> bool:

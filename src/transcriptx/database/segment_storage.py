@@ -310,16 +310,36 @@ def store_transcript_segments_from_json(
     transcript_path: str,
     audio_file_path: Optional[str] = None,
     update_existing: bool = False,
+    strict_db: bool = False,
 ) -> Optional[Tuple[TranscriptFile, List[TranscriptSegment]]]:
     """
-    Store transcript segments from a JSON file (no gating).
+    Store transcript segments from a JSON file.
+
+    If DB is disabled, this function must never initialize the DB.
+    In non-strict/default containment paths it no-ops and logs clearly;
+    in explicit DB-required or strict_db=True paths it raises RuntimeError.
 
     Returns (transcript_file, segments) on success, or None on failure.
     """
+    from transcriptx.core.utils.config import get_config as _get_config
+
+    _db_cfg = getattr(_get_config(), "database", None)
+    if not (_db_cfg and _db_cfg.enabled):
+        if strict_db:
+            raise RuntimeError(
+                "Database storage requested but database mode is disabled. "
+                "Enable it with TRANSCRIPTX_DB_ENABLED=1."
+            )
+        logger.info(
+            "store_transcript_segments_from_json: database mode is disabled, skipping."
+        )
+        return None
+
     try:
         from transcriptx.database import init_database
 
-        init_database()
+        if _db_cfg.auto_init:
+            init_database()
         service = SegmentStorageService()
         try:
             transcript_file, segments = service.store_transcript_segments(

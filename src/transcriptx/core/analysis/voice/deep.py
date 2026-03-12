@@ -44,22 +44,22 @@ def _emotion_to_valence(label: str) -> float | None:
     """
     if not label:
         return None
-    l = label.strip().lower()
+    lab = label.strip().lower()
 
     # Common label sets across SER models
-    if "joy" in l or "happy" in l:
+    if "joy" in lab or "happy" in lab:
         return 1.0
-    if "neutral" in l:
+    if "neutral" in lab:
         return 0.0
-    if "sad" in l:
+    if "sad" in lab:
         return -1.0
-    if "anger" in l or "angry" in l:
+    if "anger" in lab or "angry" in lab:
         return -0.9
-    if "fear" in l:
+    if "fear" in lab:
         return -0.7
-    if "disgust" in l:
+    if "disgust" in lab:
         return -0.8
-    if "surprise" in l:
+    if "surprise" in lab:
         return 0.3
     return None
 

@@ -46,10 +46,10 @@ def render_batch_ops_page() -> None:
 
     mode = st.selectbox("Analysis mode", ["quick", "full"], index=0, key="batch_mode")
     modules_info = cached_get_module_info_list()
-    module_ids = [m.id for m in modules_info]
+    module_names = [m.name for m in modules_info]
     selected = st.multiselect(
         "Modules (empty = defaults)",
-        options=module_ids,
+        options=module_names,
         default=[],
         key="batch_modules",
     )

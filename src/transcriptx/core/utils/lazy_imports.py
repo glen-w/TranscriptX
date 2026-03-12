@@ -326,7 +326,7 @@ def _ensure_playwright_browser_installed(silent: bool = False) -> bool:
         True if browser is available (or was successfully installed), False otherwise
     """
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright  # noqa: F401
 
         # Check if browser is already installed
         if _check_playwright_browser_installed():

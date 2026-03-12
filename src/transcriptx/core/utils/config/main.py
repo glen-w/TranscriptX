@@ -241,6 +241,11 @@ class TranscriptXConfig:
             val = db_auto_store.strip().lower()
             self.database.auto_store_segments = val in ("1", "true", "yes", "on")
 
+        db_auto_init = os.getenv("TRANSCRIPTX_DB_AUTO_INIT")
+        if db_auto_init is not None:
+            val = db_auto_init.strip().lower()
+            self.database.auto_init = val in ("1", "true", "yes", "on")
+
         db_first = os.getenv("TRANSCRIPTX_DB_FIRST")
         if db_first is not None:
             val = db_first.strip().lower()

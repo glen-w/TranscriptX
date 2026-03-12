@@ -13,6 +13,30 @@ import pytest
 from transcriptx.core.analysis.conversation_loops import ConversationLoopDetector
 
 
+def test_conversation_loops_detection_submodule_imports():
+    """Import from conversation_loops.detection re-exports (for coverage)."""
+    from transcriptx.core.analysis.conversation_loops.detection import (
+        ConversationLoop,
+        ConversationLoopDetector as D,
+        analyze_loop_patterns,
+    )
+    assert D is not None
+    assert analyze_loop_patterns is not None
+    assert ConversationLoop is not None
+
+
+def test_conversation_loops_output_submodule_imports():
+    """Import from conversation_loops.output re-exports (for coverage)."""
+    from transcriptx.core.analysis.conversation_loops.output import (
+        analyze_conversation_loops,
+        create_analysis_summary,
+        save_loop_data,
+    )
+    assert analyze_conversation_loops is not None
+    assert create_analysis_summary is not None
+    assert save_loop_data is not None
+
+
 class TestConversationLoopDetector:
     """Tests for ConversationLoopDetector."""
 

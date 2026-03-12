@@ -2,8 +2,18 @@
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
+
+from transcriptx.core.utils.config.analysis import AnalysisConfig
+from transcriptx.core.utils.config.workflow import (
+    InputConfig,
+    OutputConfig,
+    WorkflowConfig,
+)
 
 
 @dataclass
@@ -15,11 +25,11 @@ class DatabaseConfig:
     including whether to enable storage and automatic segment storage.
     """
 
-    enabled: bool = True  # Enable database integration
-    auto_store_segments: bool = True  # Store transcript+segments after speaker ID
-    auto_init: bool = True  # Automatically initialize database if needed
-    db_first: bool = True  # Prefer DB reads for transcripts
-    auto_import: bool = True  # Auto-import transcripts into DB on miss
+    enabled: bool = False  # DB is opt-in; keep core analysis file-first by default
+    auto_store_segments: bool = False  # Store transcript+segments after speaker ID
+    auto_init: bool = False  # Automatically initialize database if needed
+    db_first: bool = False  # Prefer DB reads for transcripts
+    auto_import: bool = False  # Auto-import transcripts into DB on miss
     strict_db: bool = False  # Fail if DB read/write fails
 
 
@@ -329,6 +339,11 @@ class TranscriptXConfig:
         if db_auto_store is not None:
             val = db_auto_store.strip().lower()
             self.database.auto_store_segments = val in ("1", "true", "yes", "on")
+
+        db_auto_init = os.getenv("TRANSCRIPTX_DB_AUTO_INIT")
+        if db_auto_init is not None:
+            val = db_auto_init.strip().lower()
+            self.database.auto_init = val in ("1", "true", "yes", "on")
 
         db_first = os.getenv("TRANSCRIPTX_DB_FIRST")
         if db_first is not None:

@@ -28,7 +28,7 @@ class DataValidationError(Exception):
 
 
 def validate_speaker_data(
-    data: Dict[str, Any], required_fields: List[str] = None
+    data: Dict[str, Any], required_fields: List[str] | None = None
 ) -> bool:
     """
     Validate speaker data for required fields and data types.

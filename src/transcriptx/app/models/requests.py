@@ -90,6 +90,20 @@ class MergeRequest:
 
 
 @dataclass
+class GroupAnalysisRequest:
+    """Input for group-level analysis (all members + aggregation)."""
+
+    group_uuid: str
+    mode: str = "quick"
+    modules: Optional[list[str]] = None
+    profile: Optional[str] = None
+    skip_speaker_mapping: bool = True
+    include_unidentified_speakers: bool = False
+    output_dir: Optional[Path] = None
+    persist: bool = False
+
+
+@dataclass
 class BatchAnalysisRequest:
     """Input for batch analysis. Provide either transcript_paths or folder."""
 

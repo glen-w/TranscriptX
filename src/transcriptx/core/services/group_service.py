@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from transcriptx.core.domain.group import Group
 from transcriptx.core.utils.logger import get_logger
@@ -94,6 +94,43 @@ class GroupService:
             session.close()
 
     @staticmethod
+    def rename_group(identifier: str, name: str) -> Group:
+        name = name.strip()
+        if not name:
+            raise ValueError("Group name cannot be empty.")
+        group = GroupService.resolve_group_identifier(identifier)
+        if group.id is None:
+            raise ValueError("Cannot rename a non-persisted group.")
+        if name == (group.name or "").strip():
+            return group  # no-op
+        session = _get_session()
+        try:
+            repo = GroupRepository(session)
+            updated = repo.rename_group(group.id, name)
+            if updated is None:
+                raise ValueError(f"Group not found: {identifier}")
+            return updated
+        finally:
+            session.close()
+
+    @staticmethod
+    def update_membership(identifier: str, transcript_refs: Sequence[str]) -> Group:
+        group = GroupService.resolve_group_identifier(identifier)
+        if group.id is None:
+            raise ValueError("Cannot update membership of a non-persisted group.")
+        transcript_files = GroupService._resolve_transcript_refs(transcript_refs)
+        transcript_file_ids = [record.id for record in transcript_files]
+        session = _get_session()
+        try:
+            repo = GroupRepository(session)
+            updated = repo.update_membership(group.id, transcript_file_ids)
+            if updated is None:
+                raise ValueError(f"Group not found: {identifier}")
+            return updated
+        finally:
+            session.close()
+
+    @staticmethod
     def create_or_get_group(
         name: Optional[str],
         group_type: str,
@@ -122,6 +159,39 @@ class GroupService:
                 description=description,
                 metadata=metadata,
             )
+        finally:
+            session.close()
+
+    @staticmethod
+    def create_or_get_group_with_status(
+        name: Optional[str],
+        group_type: str,
+        transcript_refs: Sequence[str],
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Group, bool]:
+        transcript_files = GroupService._resolve_transcript_refs(transcript_refs)
+        transcript_file_ids = [record.id for record in transcript_files]
+        ordered_uuids = [record.uuid for record in transcript_files]
+        key = Group.compute_key(ordered_uuids)
+
+        session = _get_session()
+        try:
+            repo = GroupRepository(session)
+            existing = repo.get_by_key(key)
+            if existing:
+                logger.info(
+                    "Group already exists, returning existing group for key %s", key
+                )
+                return existing, False
+            created = repo.create_group(
+                name=name,
+                group_type=group_type,
+                transcript_file_ids_ordered=transcript_file_ids,
+                description=description,
+                metadata=metadata,
+            )
+            return created, True
         finally:
             session.close()
 

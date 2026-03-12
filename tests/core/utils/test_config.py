@@ -163,6 +163,39 @@ class TestConfig:
 
         assert config.analysis.sentiment_window_size == 15
 
+    def test_init_with_config_file_loads_settings(self, tmp_path):
+        """TranscriptXConfig(config_file=path) loads analysis/output from JSON."""
+        config_file = tmp_path / "config.json"
+        config_file.write_text(
+            json.dumps({
+                "analysis": {"sentiment_window_size": 33},
+                "output": {},
+                "logging": {},
+            })
+        )
+        config = TranscriptXConfig(config_file=str(config_file))
+        assert config.analysis.sentiment_window_size == 33
+
+    def test_install_profile_full_sets_core_mode_false(self, tmp_path):
+        """When install_profile file contains 'full', core_mode is False."""
+        (tmp_path / "install_profile").write_text("full")
+        with patch(
+            "transcriptx.core.utils.paths.CONFIG_DIR",
+            tmp_path,
+        ):
+            config = TranscriptXConfig()
+        assert config.core_mode is False
+
+    def test_install_profile_core_or_empty_keeps_core_mode_true(self, tmp_path):
+        """When install_profile is 'core' or absent, core_mode stays True."""
+        (tmp_path / "install_profile").write_text("core")
+        with patch(
+            "transcriptx.core.utils.paths.CONFIG_DIR",
+            tmp_path,
+        ):
+            config = TranscriptXConfig()
+        assert config.core_mode is True
+
 
 class TestLoadConfig:
     """Tests for load_config function."""

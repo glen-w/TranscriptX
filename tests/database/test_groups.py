@@ -84,3 +84,66 @@ def test_group_resolve_ambiguous_name():
             assert "Multiple groups share this name" in str(exc)
         else:
             raise AssertionError("Expected ValueError for ambiguous group name")
+
+
+def test_group_repository_rename_group(db_session):
+    transcript = TranscriptFile(
+        file_path="/tmp/rename.json",
+        file_name="rename.json",
+    )
+    db_session.add(transcript)
+    db_session.commit()
+
+    repo = GroupRepository(db_session)
+    group = repo.create_group(
+        name="Original",
+        group_type="merged_event",
+        transcript_file_ids_ordered=[transcript.id],
+    )
+    assert group.name == "Original"
+
+    updated = repo.rename_group(group.id, "Renamed")
+    assert updated is not None
+    assert updated.name == "Renamed"
+    assert updated.uuid == group.uuid
+
+    db_session.expire_all()
+    stored = db_session.query(GroupModel).filter_by(id=group.id).first()
+    assert stored.name == "Renamed"
+
+
+def test_group_repository_rename_group_returns_none_for_missing(db_session):
+    repo = GroupRepository(db_session)
+    result = repo.rename_group(99999, "Any")
+    assert result is None
+
+
+def test_group_repository_update_membership(db_session):
+    one = TranscriptFile(file_path="/tmp/a.json", file_name="a.json")
+    two = TranscriptFile(file_path="/tmp/b.json", file_name="b.json")
+    three = TranscriptFile(file_path="/tmp/c.json", file_name="c.json")
+    db_session.add_all([one, two, three])
+    db_session.commit()
+
+    repo = GroupRepository(db_session)
+    group = repo.create_group(
+        name="Reorder",
+        group_type="merged_event",
+        transcript_file_ids_ordered=[one.id, two.id],
+    )
+    members_before = repo.resolve_members(group.id)
+    assert len(members_before) == 2
+    assert [m.id for m in members_before] == [one.id, two.id]
+
+    updated = repo.update_membership(group.id, [two.id, one.id, three.id])
+    assert updated is not None
+    assert updated.uuid == group.uuid
+    members_after = repo.resolve_members(group.id)
+    assert len(members_after) == 3
+    assert [m.id for m in members_after] == [two.id, one.id, three.id]
+
+
+def test_group_repository_update_membership_returns_none_for_missing(db_session):
+    repo = GroupRepository(db_session)
+    result = repo.update_membership(99999, [])
+    assert result is None

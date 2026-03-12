@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -18,4 +18,4 @@ class TranscriptMetadata:
     named_speaker_count: Optional[int] = None
     has_analysis_outputs: bool = False
     has_speaker_map: bool = False
-    linked_run_dirs: list[Path] = ()
+    linked_run_dirs: list[Path] = field(default_factory=list)

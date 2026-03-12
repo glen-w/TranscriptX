@@ -14,7 +14,7 @@
 **PR order**: Smoke → Contracts → Fast
 
 Time budgets (target ceilings):
-- `test-smoke` ≤ 2–3 min
+- `test-smoke` ≤ 5 min
 - `test-contracts` ≤ 5–8 min
 - `test-fast` ≤ 8–12 min
 - nightly `integration_core` ≤ 15–25 min
@@ -24,7 +24,7 @@ Time budgets (target ceilings):
 **Includes**
 - Unit tests under `tests/unit/` or `tests/core/` (no heavy markers)
 - Contract tests under `tests/contracts/`
-- Pure CLI parsing/help tests (no WhisperX, no HF/OpenAI, no docker exec, no ffmpeg)
+- Web entry point (import + `--help`) tests (no WhisperX, no HF/OpenAI, no docker exec, no ffmpeg)
 
 **Excludes**
 - Integration workflows

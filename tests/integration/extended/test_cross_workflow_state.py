@@ -67,7 +67,7 @@ class TestCrossWorkflowState:
 
         # Load state and resolve path (API requires transcript_path argument)
         loaded_state = load_processing_state(str(temp_state_file))
-        current = get_current_transcript_path_from_state(
+        get_current_transcript_path_from_state(
             loaded_state.get("transcript_path", "") or ""
         )
 

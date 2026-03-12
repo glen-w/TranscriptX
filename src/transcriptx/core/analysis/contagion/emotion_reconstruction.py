@@ -78,7 +78,7 @@ def reconstruct_emotion_data(
                 return segments, "context_emotion", True
             logger.debug(
                 "[CONTAGION] contextual_all available but no matches found. "
-                f"Speaker emotion counts: {[(s, len(l)) for s, l in speaker_emotion_lists.items()]}"
+                f"Speaker emotion counts: {[(s, len(lst)) for s, lst in speaker_emotion_lists.items()]}"
             )
 
     if contextual_examples:

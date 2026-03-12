@@ -82,6 +82,7 @@ def _render_section_a() -> None:
         accept_multiple_files=True,
         help="Uploaded files are saved to the recordings imports folder. You can select multiple files to convert in one go.",
         key="audio_prep_uploader",
+        max_upload_size=500,
     )
     if uploaded_list:
         saved_paths: List[Path] = []
@@ -123,7 +124,7 @@ def _render_section_a() -> None:
         except ValueError:
             return p.name
 
-    labels = [_label(p) for p in recordings]
+    [_label(p) for p in recordings]
     paths_str = [str(p) for p in recordings]
 
     # Preserve previously selected file(s) across reruns; default to first file

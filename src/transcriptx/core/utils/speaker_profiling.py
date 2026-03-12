@@ -409,9 +409,11 @@ class SpeakerRegistry:
             float(
                 np.mean(
                     [
-                        w / l if l else 0
-                        for w, l in zip(word_counts, segment_lengths, strict=False)
-                        if l > 0
+                        w / seg_len if seg_len else 0
+                        for w, seg_len in zip(
+                            word_counts, segment_lengths, strict=False
+                        )
+                        if seg_len > 0
                     ]
                 )
             )

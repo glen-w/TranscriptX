@@ -725,7 +725,7 @@ def categorize_error(error: Exception) -> ErrorCategory:
         return ErrorCategory.DEPENDENCY
 
     # Timeout errors
-    if error_type == TimeoutError:
+    if error_type is TimeoutError:
         return ErrorCategory.TIMEOUT
 
     # Network errors
