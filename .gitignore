@@ -9,10 +9,16 @@ venv/
 env/
 
 # Data and runtime
+data/
 .transcriptx/
 transcriptx_data/
 nltk_data/
 processing_state/
+
+# Test artifacts and local backups
+*MagicMock*
+README backup.md
+*.json.bak
 
 # Node
 node_modules/
@@ -27,6 +33,10 @@ node_modules/
 .coverage.*
 htmlcov/
 .pytest_cache/
+
+# Local overrides (do not commit)
+whisperx.env
+docker-compose.override.yml
 
 # Misc
 *.egg-info/
