@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "group_id": "2cfe0b18-a4b9-44d9-b90d-b65e55c754d4",
+  "name": "Test Group",
+  "description": null,
+  "members": [
+    "data/transcripts/a_group_test.json",
+    "data/transcripts/nested/b_group_test.json"
+  ],
+  "created_at": "2026-04-01T10:55:11.119237Z",
+  "updated_at": "2026-04-01T10:55:11.119260Z"
+}

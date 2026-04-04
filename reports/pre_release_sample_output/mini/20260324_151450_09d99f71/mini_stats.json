@@ -1,0 +1,206 @@
+{
+  "insights": [
+    {
+      "evidence": [
+        {
+          "key": "speakers[0].pct_total_words",
+          "kind": "stat",
+          "value": 0.5043478260869565
+        }
+      ],
+      "id": "top_speaker_word_share",
+      "severity": "high",
+      "title": "Alice has 50% of words"
+    },
+    {
+      "evidence": [
+        {
+          "key": "sentiment.opening_vs_closing_delta.by_time",
+          "kind": "stat",
+          "value": 0.3912
+        }
+      ],
+      "id": "sentiment_opening_closing_delta",
+      "severity": "medium",
+      "title": "Opening vs closing sentiment delta (by_time) = 0.391"
+    }
+  ],
+  "meta": {
+    "base_name": "mini",
+    "config_hash": "sha256:94ef8cbb78f576928d430bcb1ea6d40284e6bc04cf196e91af1103c23b1c32ac",
+    "generated_at": "2026-03-24T15:15:00.592439+00:00",
+    "generator": {
+      "git_sha": null,
+      "name": "transcriptx",
+      "version": "0.52"
+    },
+    "input_source": "db",
+    "run_id": "20260324_151450_09d99f71",
+    "schema_version": "report.v1",
+    "transcript_key": "sha256:24fe721988492787f86615cebe6e6edfcf79c315c6a51b8536fd4d84f09f9147",
+    "units": {
+      "duration": "seconds",
+      "percentages": "fraction_0_1",
+      "words": "count",
+      "words_per_min": "words/min"
+    }
+  },
+  "modules": {
+    "acts": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "affect_tension": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "contagion": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "conversation_loops": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "emotion": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "entity_sentiment": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "highlights": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "interactions": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "momentum": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "ner": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "pauses": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "sentiment": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "summary": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "temporal_dynamics": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "tics": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "understandability": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    },
+    "wordclouds": {
+      "module_status": "skipped",
+      "reason": "module skipped",
+      "report_contribution_status": "omitted"
+    }
+  },
+  "overview": {
+    "exclusions": [],
+    "speaker_count_named": 2,
+    "speaker_count_total": 2,
+    "total_duration_sec": 28.1,
+    "total_segments": 10,
+    "total_segments_all": 10,
+    "total_words": 115
+  },
+  "provenance": {
+    "exclusions": [],
+    "input_source": "db",
+    "segment_count": 10,
+    "speaker_count_named": 2,
+    "speaker_count_total": 2
+  },
+  "report_summary_index": [],
+  "sentiment": {
+    "mean_compound": 0.11935,
+    "opening_vs_closing_delta": {
+      "delta_by_count": 0.38585,
+      "delta_by_time": 0.3912,
+      "method": "by_time"
+    },
+    "spread": {
+      "std_compound": 0.33337442988327703
+    }
+  },
+  "speakers": [
+    {
+      "avg_segment_duration_sec": 2.96,
+      "avg_segment_length_words": 11.6,
+      "duration_hhmmss": "0:14",
+      "duration_sec": 14.799999999999999,
+      "name": "Alice",
+      "pct_total_duration": 0.5266903914590747,
+      "pct_total_words": 0.5043478260869565,
+      "segments": 5,
+      "sentiment": {
+        "compound": 0.04602000000000002,
+        "neg": 0.1022,
+        "neu": 0.796,
+        "pos": 0.1018
+      },
+      "tic_rate": 0.0,
+      "warnings": [],
+      "words": 58,
+      "words_per_min": 235.13513513513516
+    },
+    {
+      "avg_segment_duration_sec": 2.6600000000000006,
+      "avg_segment_length_words": 11.4,
+      "duration_hhmmss": "0:13",
+      "duration_sec": 13.300000000000002,
+      "name": "Bob",
+      "pct_total_duration": 0.47330960854092535,
+      "pct_total_words": 0.4956521739130435,
+      "segments": 5,
+      "sentiment": {
+        "compound": 0.19268000000000002,
+        "neg": 0.027000000000000003,
+        "neu": 0.8256,
+        "pos": 0.1474
+      },
+      "tic_rate": 0.0,
+      "warnings": [],
+      "words": 57,
+      "words_per_min": 257.1428571428571
+    }
+  ],
+  "warnings": []
+}

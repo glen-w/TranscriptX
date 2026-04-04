@@ -1,0 +1,36 @@
+# Standalone WhisperX Compose (reference recipe; not part of TranscriptX runtime).
+# Use from this directory: docker compose -f docker-compose.whisperx.yml up -d
+# Copy whisperx.env.example to whisperx.env and set HF_TOKEN.
+
+version: '3.8'
+
+services:
+  whisperx:
+    image: ghcr.io/jim60105/whisperx:no_model
+    container_name: transcriptx-whisperx
+    entrypoint: ["/bin/bash"]
+    env_file:
+      - ./whisperx.env
+    volumes:
+      - ./data/recordings:/data/input:ro
+      - ./data/transcripts:/data/output
+      - ./transcriptx_output:/data/transcriptx_output
+      - whisperx_hf_cache:/root/.cache/huggingface
+    environment:
+      - WHISPERX_MODEL=large-v2
+      - WHISPERX_LANGUAGE=en
+      - WHISPERX_COMPUTE_TYPE=float16
+      - WHISPERX_DEVICE=cpu
+      - WHISPERX_DIARIZE=true
+      - HF_TOKEN=${HF_TOKEN}
+    networks:
+      - transcriptx-whisperx-network
+    restart: unless-stopped
+    command: ["-c", "echo 'WhisperX service ready. Use docker exec to run transcriptions.' && tail -f /dev/null"]
+
+volumes:
+  whisperx_hf_cache:
+
+networks:
+  transcriptx-whisperx-network:
+    driver: bridge

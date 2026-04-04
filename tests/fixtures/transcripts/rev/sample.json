@@ -1,0 +1,33 @@
+{
+  "monologues": [
+    {
+      "speaker": 0,
+      "start_time": 0.0,
+      "end_time": 4.2,
+      "elements": [
+        {"type": "text", "value": "Hello "},
+        {"type": "text", "value": "everyone."},
+        {"type": "punct", "value": " "},
+        {"type": "text", "value": "Good morning."}
+      ]
+    },
+    {
+      "speaker": 1,
+      "start_time": 4.5,
+      "end_time": 9.1,
+      "elements": [
+        {"type": "text", "value": "Thanks. "},
+        {"type": "text", "value": "I have the report ready."}
+      ]
+    },
+    {
+      "speaker": 0,
+      "start_time": 9.3,
+      "end_time": 14.0,
+      "elements": [
+        {"type": "text", "value": "Great. "},
+        {"type": "text", "value": "Let us begin."}
+      ]
+    }
+  ]
+}

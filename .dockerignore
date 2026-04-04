@@ -1,0 +1,41 @@
+# Build context only — Dockerfile COPY is already narrow; this keeps uploads fast
+# and avoids accidentally widening COPY patterns later.
+
+.git
+.github
+.cursor
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+.coverage
+.coverage.*
+coverage.xml
+htmlcov
+
+# Local / CI artifacts (can be multi-GB)
+.test_outputs
+.release-test-env
+.docs-verify-venv
+*.egg-info
+.eggs
+dist
+build
+
+# Runtime data (never needed to build the image)
+data
+outputs
+archive
+reports
+
+# Env and local overrides
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+
+# Docs and tooling not used by COPY in Dockerfile
+docs
+tests
+scripts

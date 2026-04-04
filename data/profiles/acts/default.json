@@ -1,0 +1,28 @@
+{
+  "name": "default",
+  "module": "acts",
+  "description": "Default dialogue acts classification profile",
+  "config": {
+    "method": "both",
+    "use_context": true,
+    "context_window_size": 3,
+    "context_window_type": "sliding",
+    "include_speaker_info": true,
+    "include_timing_info": false,
+    "min_confidence": 0.7,
+    "high_confidence_threshold": 0.9,
+    "ensemble_weight_transformer": 0.5,
+    "ensemble_weight_ml": 0.3,
+    "ensemble_weight_rules": 0.2,
+    "ml_model_name": "bert-base-uncased",
+    "ml_use_gpu": false,
+    "ml_batch_size": 32,
+    "ml_max_length": 512,
+    "rules_use_enhanced_patterns": true,
+    "rules_use_fallback_logic": true,
+    "rules_confidence_boost_exact_match": 0.1,
+    "rules_context_boost_factor": 0.15,
+    "enable_caching": true,
+    "cache_size": 1000
+  }
+}

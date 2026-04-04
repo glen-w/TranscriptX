@@ -1,0 +1,25 @@
+{
+  "name": "default",
+  "module": "topic_modeling",
+  "description": "Default topic modeling profile with balanced settings",
+  "config": {
+    "max_features": 1000,
+    "min_df": 2,
+    "max_df": 0.95,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "random_state": 42,
+    "max_iter_lda": 50,
+    "max_iter_nmf": 10000,
+    "alpha_H": 0.1,
+    "tol": 0.01,
+    "learning_method": "batch",
+    "k_range": [
+      3,
+      15
+    ],
+    "test_size": 0.2
+  }
+}

@@ -1,0 +1,188 @@
+"""Sequential DAG module execution loop (extracted from DAGPipeline)."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+
+from transcriptx.core.pipeline.dag_pipeline_progress import (
+    module_completed_event,
+    module_failed_event,
+    module_skipped_event,
+    module_started_event,
+    run_failed_event,
+    run_started_event,
+)
+from transcriptx.core.utils.speaker_extraction import named_speaker_count_for_path
+
+if TYPE_CHECKING:
+    from transcriptx.core.pipeline.dag_pipeline import DAGPipeline
+
+
+def run_sequential_execution_phase(
+    pipeline: DAGPipeline,
+    *,
+    execution_order: List[str],
+    results: Dict[str, Any],
+    context: Any,
+    transcript_path: str,
+    run_report: Optional[Any],
+    requirements_resolver: Optional[Any],
+    named_speaker_count_ref: List[Optional[int]],
+    emit: Callable[[Dict[str, Any]], None],
+) -> Tuple[bool, int, int, int, int]:
+    """Execute modules in order. Mutates ``results`` and ``named_speaker_count_ref[0]``."""
+    total_modules = len(execution_order)
+    ev_completed = 0
+    ev_skipped = 0
+    ev_failed = 0
+
+    emit(run_started_event(total_modules=total_modules))
+
+    aborted = False
+    for idx_0, module_name in enumerate(execution_order):
+        index = idx_0 + 1
+
+        if module_name not in pipeline.nodes:
+            pipeline.logger.warning(f"Unknown module: {module_name}")
+            continue
+
+        node = pipeline.nodes[module_name]
+
+        missing_deps = pipeline._check_missing_dependencies(
+            node, results["modules_run"]
+        )
+        if missing_deps:
+            ev_skipped += 1
+            emit(
+                module_skipped_event(
+                    module_name=module_name,
+                    index=index,
+                    total_modules=total_modules,
+                    ev_completed=ev_completed,
+                    ev_skipped=ev_skipped,
+                    ev_failed=ev_failed,
+                    message="missing_dependencies",
+                )
+            )
+            dep_chain = []
+            for dep in missing_deps:
+                if dep in pipeline.nodes:
+                    dep_node = pipeline.nodes[dep]
+                    missing_dep_deps = pipeline._check_missing_dependencies(
+                        dep_node, results["modules_run"]
+                    )
+                    if missing_dep_deps:
+                        dep_chain.append(f"{dep} (which requires {missing_dep_deps})")
+                    else:
+                        dep_chain.append(dep)
+                else:
+                    dep_chain.append(dep)
+
+            error_msg = f"{module_name}: Missing dependencies {missing_deps}"
+            if dep_chain != missing_deps:
+                error_msg += f" ({', '.join(dep_chain)})"
+
+            pipeline.logger.warning(
+                f"Module '{module_name}' missing dependencies: {missing_deps}"
+            )
+            results.setdefault("skipped_modules", []).append(
+                {
+                    "module": module_name,
+                    "reason": error_msg,
+                    "execution_status": "blocked",
+                }
+            )
+            continue
+
+        if named_speaker_count_ref[0] is None and context is not None:
+            try:
+                named_speaker_count_ref[0] = named_speaker_count_for_path(
+                    transcript_path
+                )
+            except Exception:
+                named_speaker_count_ref[0] = None
+
+        emit(
+            module_started_event(
+                module_name=module_name,
+                index=index,
+                total_modules=total_modules,
+                ev_completed=ev_completed,
+                ev_skipped=ev_skipped,
+                ev_failed=ev_failed,
+            )
+        )
+        outcome = pipeline._execute_single_module(
+            module_name=module_name,
+            node=node,
+            transcript_path=transcript_path,
+            context=context,
+            run_report=run_report,
+            requirements_resolver=requirements_resolver,
+            named_speaker_count=named_speaker_count_ref[0],
+        )
+        if outcome.status == "success":
+            ev_completed += 1
+            emit(
+                module_completed_event(
+                    module_name=module_name,
+                    index=index,
+                    total_modules=total_modules,
+                    ev_completed=ev_completed,
+                    ev_skipped=ev_skipped,
+                    ev_failed=ev_failed,
+                    duration_ms=outcome.duration_ms,
+                )
+            )
+        elif outcome.status == "skipped":
+            ev_skipped += 1
+            emit(
+                module_skipped_event(
+                    module_name=module_name,
+                    index=index,
+                    total_modules=total_modules,
+                    ev_completed=ev_completed,
+                    ev_skipped=ev_skipped,
+                    ev_failed=ev_failed,
+                    message=outcome.skip_reason or "unknown",
+                )
+            )
+        else:
+            ev_failed += 1
+            emit(
+                module_failed_event(
+                    module_name=module_name,
+                    index=index,
+                    total_modules=total_modules,
+                    ev_completed=ev_completed,
+                    ev_skipped=ev_skipped,
+                    ev_failed=ev_failed,
+                    error=outcome.error,
+                )
+            )
+
+        pipeline._record_module_outcome(
+            module_name=module_name,
+            node=node,
+            outcome=outcome,
+            results=results,
+            transcript_path=transcript_path,
+            run_report=run_report,
+        )
+        if outcome.status == "failed" and pipeline._should_abort_pipeline(
+            outcome, results
+        ):
+            aborted = True
+            emit(
+                run_failed_event(
+                    total_modules=total_modules,
+                    ev_completed=ev_completed,
+                    ev_skipped=ev_skipped,
+                    ev_failed=ev_failed,
+                    error=outcome.error,
+                    message=f"Pipeline aborted: {outcome.error}",
+                )
+            )
+            break
+
+    return aborted, total_modules, ev_completed, ev_skipped, ev_failed

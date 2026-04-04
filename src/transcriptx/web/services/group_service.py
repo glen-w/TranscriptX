@@ -1,0 +1,67 @@
+"""Group service layer for web UI."""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from transcriptx.core.domain.group import Group, GroupMember
+from transcriptx.core.services.group_service import GroupService as CoreGroupService
+
+
+class GroupService:
+    @staticmethod
+    def list_groups(group_type: Optional[str] = None) -> List[Group]:
+        return CoreGroupService.list_groups(group_type=group_type)
+
+    @staticmethod
+    def get_group(identifier: str) -> Group:
+        return CoreGroupService.resolve_group_identifier(identifier)
+
+    @staticmethod
+    def get_members(group: Union[Group, str]) -> List[GroupMember]:
+        group_id = group.group_id if isinstance(group, Group) else group
+        return CoreGroupService.get_members(group_id)
+
+    @staticmethod
+    def create_group(
+        name: Optional[str],
+        group_type: str,
+        transcript_refs: List[str],
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Group:
+        return CoreGroupService.create_or_get_group(
+            name=name,
+            group_type=group_type,
+            transcript_refs=transcript_refs,
+            description=description,
+            metadata=metadata,
+        )
+
+    @staticmethod
+    def create_group_with_status(
+        name: Optional[str],
+        group_type: str,
+        transcript_refs: List[str],
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Group, bool]:
+        return CoreGroupService.create_or_get_group_with_status(
+            name=name,
+            group_type=group_type,
+            transcript_refs=transcript_refs,
+            description=description,
+            metadata=metadata,
+        )
+
+    @staticmethod
+    def rename_group(identifier: str, name: str) -> Group:
+        return CoreGroupService.rename_group(identifier, name)
+
+    @staticmethod
+    def update_membership(identifier: str, transcript_refs: List[str]) -> Group:
+        return CoreGroupService.update_membership(identifier, transcript_refs)
+
+    @staticmethod
+    def delete_group(identifier: str) -> bool:
+        return CoreGroupService.delete_group(identifier)

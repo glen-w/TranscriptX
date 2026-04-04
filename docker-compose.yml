@@ -1,0 +1,58 @@
+# TranscriptX: recommended way to run with Docker (primary install route).
+#
+# Volumes:
+#   ./data:/data — project data root (cache, local config copies, etc.)
+#   HOST_*_DIR mounts — map host folders into TRANSCRIPTX_*_DIR paths (see environment).
+#   Transcripts default to read-only at /mnt/transcripts; use docker-compose.override.yml
+#   locally if you need the web UI to write .speaker_map.json sidecars beside JSON files.
+#
+# Non-root: services run as host user (UID/GID) so mounted dirs stay owned correctly.
+#
+# Web: docker compose up → http://localhost:8501
+
+services:
+  transcriptx-web:
+    build: .
+    image: transcriptx:latest
+    init: true
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /data
+    volumes:
+      - ./data:/data
+      - transcriptx_cache:/home/transcriptx/.cache
+      # HOST_*_DIR vars (from .env) set the host-side mount source.
+      # TRANSCRIPTX_*_DIR vars in environment: set the container-side paths.
+      # Separate names avoid Docker Compose .env-vs-environment precedence issues.
+      - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
+      - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
+      - ${HOST_RECORDINGS_DIR:-./data/recordings}:/mnt/recordings
+      # Imports (uploaded files) are writable so we can delete after backup; recordings root stays :ro.
+      - ${HOST_RECORDINGS_DIR:-./data/recordings}/imports:/mnt/recordings/imports
+      - ${HOST_WAV_BACKUP_DIR:-./data/backups/wav}:/mnt/wav
+    environment:
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      # Allow 500 MB per file (matches .streamlit/config.toml; container has no config file)
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
+      - TRANSCRIPTX_DATA_DIR=/data
+      - TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts
+      - TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs
+      - TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings
+      - TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports
+      - TRANSCRIPTX_WAV_BACKUP_DIR=/mnt/wav
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
+      - HF_HOME=/data/.cache/huggingface
+      - MPLCONFIGDIR=/data/.cache/matplotlib
+      - NLTK_DATA=/opt/venv/nltk_data
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    command: ["--host", "0.0.0.0"]
+
+volumes:
+  transcriptx_cache:

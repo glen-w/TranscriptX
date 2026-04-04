@@ -1,0 +1,7 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:05.500 align:start position:10%
+Subtitle with alignment settings
+
+00:00:05.500 --> 00:00:10.000 align:end position:90%
+Another subtitle with different settings

@@ -1,0 +1,2663 @@
+[
+  {
+    "viz_id": "group.acts.global_acts_pie.global",
+    "label": "Group aggregate — Dialogue Acts (filtered, all speakers)",
+    "rank_default": 2,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.acts.global_acts_pie.global",
+      "by_artifact_key_prefix": "acts/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.sentiment.session.compound_mean",
+    "label": "Group aggregate — Sentiment compound by session",
+    "rank_default": 3,
+    "kind": "chart",
+    "module": "sentiment",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.sentiment.session.compound_mean",
+      "by_artifact_key_prefix": "sentiment/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.stats.session.total_words",
+    "label": "Group aggregate — Total words by session",
+    "rank_default": 4,
+    "kind": "chart",
+    "module": "stats",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.stats.session.total_words",
+      "by_artifact_key_prefix": "stats/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.acts.temporal_overlay.global",
+    "label": "Group aggregate — Acts over time (cross-session overlay)",
+    "rank_default": 5,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.acts.temporal_overlay.global",
+      "by_artifact_key_prefix": "acts/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.sentiment.temporal_overlay.global",
+    "label": "Group aggregate — Sentiment cross-session overlay",
+    "rank_default": 6,
+    "kind": "chart",
+    "module": "sentiment",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.sentiment.temporal_overlay.global",
+      "by_artifact_key_prefix": "sentiment/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.pauses.temporal_overlay.global",
+    "label": "Group aggregate — Pauses cross-session overlay",
+    "rank_default": 7,
+    "kind": "chart",
+    "module": "pauses",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.pauses.temporal_overlay.global",
+      "by_artifact_key_prefix": "pauses/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.emotion.temporal_overlay.global",
+    "label": "Group aggregate — Emotion cross-session overlay",
+    "rank_default": 8,
+    "kind": "chart",
+    "module": "emotion",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.emotion.temporal_overlay.global",
+      "by_artifact_key_prefix": "emotion/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.prosody.temporal_overlay.global",
+    "label": "Group aggregate — Prosody RMS cross-session overlay",
+    "rank_default": 9,
+    "kind": "chart",
+    "module": "prosody",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.prosody.temporal_overlay.global",
+      "by_artifact_key_prefix": "prosody/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.sentiment.cross_session_speaker.pattern",
+    "label": "Group aggregate — Sentiment compound across sessions (per speaker)",
+    "rank_default": 48,
+    "kind": "chart",
+    "module": "sentiment",
+    "scope": "speaker",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": null,
+      "by_artifact_key_prefix": "sentiment/charts/",
+      "by_chart_slug_regex": "cross_session_speaker",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.stats.cross_session_speaker.pattern",
+    "label": "Group aggregate — Stats word count across sessions (per speaker)",
+    "rank_default": 49,
+    "kind": "chart",
+    "module": "stats",
+    "scope": "speaker",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": null,
+      "by_artifact_key_prefix": "stats/charts/",
+      "by_chart_slug_regex": "stats_cross_session_speaker",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.stats.cross_session_speaker.segment_count.pattern",
+    "label": "Group aggregate — Stats segment count across sessions (per speaker)",
+    "rank_default": 50,
+    "kind": "chart",
+    "module": "stats",
+    "scope": "speaker",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": null,
+      "by_artifact_key_prefix": "stats/charts/",
+      "by_chart_slug_regex": "stats_cross_session_segment_count",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "sentiment.multi_speaker_sentiment.global",
+    "label": "Multispeaker Sentiment Over Time",
+    "rank_default": 10,
+    "kind": "chart",
+    "module": "sentiment",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "sentiment.multi_speaker_sentiment.global",
+      "by_artifact_key_prefix": "sentiment/charts/",
+      "by_chart_slug_regex": "multi_speaker_sentiment",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "sentiment.rolling_sentiment.speaker",
+    "label": "Rolling Sentiment (Per Speaker)",
+    "rank_default": 20,
+    "kind": "chart",
+    "module": "sentiment",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "sentiment.rolling_sentiment.speaker",
+      "by_artifact_key_prefix": "sentiment/charts/",
+      "by_chart_slug_regex": "rolling_sentiment",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "emotion.radar.global",
+    "label": "Emotion Radar - All Speakers",
+    "rank_default": 30,
+    "kind": "chart",
+    "module": "emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "emotion.radar.global",
+      "by_artifact_key_prefix": "emotion/charts/",
+      "by_chart_slug_regex": "emotion_all_radar",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "emotion.radar.speaker",
+    "label": "Emotion Radar (Per Speaker)",
+    "rank_default": 40,
+    "kind": "chart",
+    "module": "emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "emotion.radar.speaker",
+      "by_artifact_key_prefix": "emotion/charts/",
+      "by_chart_slug_regex": "/radar\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "emotion.radar_polar.global",
+    "label": "Emotion Radar (Polar) \u2013 Global",
+    "rank_default": 42,
+    "kind": "chart",
+    "module": "emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "emotion.radar_polar.global",
+      "by_artifact_key_prefix": "emotion/charts/",
+      "by_chart_slug_regex": "radar_polar",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "emotion.radar_polar.speaker",
+    "label": "Emotion Radar (Polar) \u2013 Per Speaker",
+    "rank_default": 43,
+    "kind": "chart",
+    "module": "emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "emotion.radar_polar.speaker",
+      "by_artifact_key_prefix": "emotion/charts/speakers/",
+      "by_chart_slug_regex": "radar_polar",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "ner.entity_types.global",
+    "label": "Entity Types - Global",
+    "rank_default": 50,
+    "kind": "chart",
+    "module": "ner",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "ner.entity_types.global",
+      "by_artifact_key_prefix": "ner/charts/",
+      "by_chart_slug_regex": "ner-types-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "ner.entity_types.speaker",
+    "label": "Entity Types (Per Speaker)",
+    "rank_default": 60,
+    "kind": "chart",
+    "module": "ner",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "ner.entity_types.speaker",
+      "by_artifact_key_prefix": "ner/charts/",
+      "by_chart_slug_regex": "ner-types",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "ner.locations.global",
+    "label": "Locations Map - Global",
+    "rank_default": 70,
+    "kind": "map",
+    "module": "ner",
+    "scope": "global",
+    "cardinality": "paired_static_dynamic",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "ner.locations.global",
+      "by_artifact_key_prefix": "ner/charts/",
+      "by_chart_slug_regex": "locations-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "ner.locations.speaker",
+    "label": "Locations Map (Per Speaker)",
+    "rank_default": 80,
+    "kind": "map",
+    "module": "ner",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "ner.locations.speaker",
+      "by_artifact_key_prefix": "ner/charts/",
+      "by_chart_slug_regex": "locations-[^/]+",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.timeline.global",
+    "label": "Speaker Interaction Timeline",
+    "rank_default": 90,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.timeline.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "/timeline\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.timeline.speaker",
+    "label": "Speaker Interaction Timeline (Per Speaker)",
+    "rank_default": 100,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.timeline.speaker",
+      "by_artifact_key_prefix": "interactions/charts/speakers/",
+      "by_chart_slug_regex": "/timeline\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.network.global",
+    "label": "Speaker Interaction Network",
+    "rank_default": 110,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.network.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "/network\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.heatmap.global",
+    "label": "Speaker Interaction Matrices",
+    "rank_default": 120,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.heatmap.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "/heatmap\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.dominance.global",
+    "label": "Dominance Analysis",
+    "rank_default": 130,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.dominance.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "/dominance\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.network_graph.global",
+    "label": "Speaker Interaction Network (Graph)",
+    "rank_default": 132,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.network_graph.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "network_graph",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.heatmap_interruptions.global",
+    "label": "Interruption Matrix",
+    "rank_default": 133,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.heatmap_interruptions.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "heatmap_interruptions",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.heatmap_responses.global",
+    "label": "Response Matrix",
+    "rank_default": 134,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.heatmap_responses.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "heatmap_responses",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "momentum.momentum.global",
+    "label": "Momentum Over Time",
+    "rank_default": 140,
+    "kind": "chart",
+    "module": "momentum",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "momentum.momentum.global",
+      "by_artifact_key_prefix": "momentum/charts/",
+      "by_chart_slug_regex": "momentum",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "temporal_dynamics.engagement_timeseries.global",
+    "label": "Engagement Timeseries",
+    "rank_default": 150,
+    "kind": "chart",
+    "module": "temporal_dynamics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "temporal_dynamics.engagement_timeseries.global",
+      "by_artifact_key_prefix": "temporal_dynamics/charts/",
+      "by_chart_slug_regex": "engagement_timeseries",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "temporal_dynamics.speaking_rate_timeseries.global",
+    "label": "Speaking Rate Timeseries",
+    "rank_default": 160,
+    "kind": "chart",
+    "module": "temporal_dynamics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "temporal_dynamics.speaking_rate_timeseries.global",
+      "by_artifact_key_prefix": "temporal_dynamics/charts/",
+      "by_chart_slug_regex": "speaking_rate_timeseries",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "temporal_dynamics.sentiment_timeseries.global",
+    "label": "Sentiment Timeseries",
+    "rank_default": 170,
+    "kind": "chart",
+    "module": "temporal_dynamics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "temporal_dynamics.sentiment_timeseries.global",
+      "by_artifact_key_prefix": "temporal_dynamics/charts/",
+      "by_chart_slug_regex": "sentiment_timeseries",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "temporal_dynamics.phase_detection.global",
+    "label": "Phase Detection Timeline",
+    "rank_default": 180,
+    "kind": "chart",
+    "module": "temporal_dynamics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "temporal_dynamics.phase_detection.global",
+      "by_artifact_key_prefix": "temporal_dynamics/charts/",
+      "by_chart_slug_regex": "phase_detection",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "temporal_dynamics.temporal_dashboard.global",
+    "label": "Temporal Dynamics Dashboard (Turn Frequency & Segments)",
+    "rank_default": 190,
+    "kind": "chart",
+    "module": "temporal_dynamics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "temporal_dynamics.temporal_dashboard.global",
+      "by_artifact_key_prefix": "temporal_dynamics/charts/",
+      "by_chart_slug_regex": "temporal_dashboard\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "temporal_dynamics.temporal_dashboard_speaking_rate.global",
+    "label": "Temporal Dynamics \u2013 Speaking Rate",
+    "rank_default": 192,
+    "kind": "chart",
+    "module": "temporal_dynamics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "temporal_dynamics.temporal_dashboard_speaking_rate.global",
+      "by_artifact_key_prefix": "temporal_dynamics/charts/",
+      "by_chart_slug_regex": "temporal_dashboard_speaking_rate",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "qa_analysis.qa_timeline.global",
+    "label": "Q&A Timeline",
+    "rank_default": 200,
+    "kind": "chart",
+    "module": "qa_analysis",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "qa_analysis.qa_timeline.global",
+      "by_artifact_key_prefix": "qa_analysis/charts/",
+      "by_chart_slug_regex": "qa_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "qa_analysis.response_quality.global",
+    "label": "Response Quality Distribution",
+    "rank_default": 210,
+    "kind": "chart",
+    "module": "qa_analysis",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "qa_analysis.response_quality.global",
+      "by_artifact_key_prefix": "qa_analysis/charts/",
+      "by_chart_slug_regex": "response_quality",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "qa_analysis.question_type_breakdown.global",
+    "label": "Question Type Breakdown",
+    "rank_default": 220,
+    "kind": "chart",
+    "module": "qa_analysis",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "qa_analysis.question_type_breakdown.global",
+      "by_artifact_key_prefix": "qa_analysis/charts/",
+      "by_chart_slug_regex": "question_type_breakdown",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "qa_analysis.response_time_analysis.global",
+    "label": "Response Time Analysis",
+    "rank_default": 230,
+    "kind": "chart",
+    "module": "qa_analysis",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "qa_analysis.response_time_analysis.global",
+      "by_artifact_key_prefix": "qa_analysis/charts/",
+      "by_chart_slug_regex": "response_time_analysis",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "tics.tics.speaker",
+    "label": "Verbal Tics (Per Speaker)",
+    "rank_default": 240,
+    "kind": "chart",
+    "module": "tics",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "tics.tics.speaker",
+      "by_artifact_key_prefix": "tics/charts/",
+      "by_chart_slug_regex": "/tics\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "entity_sentiment.sentiment_heatmap.global",
+    "label": "Entity Sentiment Heatmap",
+    "rank_default": 250,
+    "kind": "chart",
+    "module": "entity_sentiment",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "entity_sentiment.sentiment_heatmap.global",
+      "by_artifact_key_prefix": "entity_sentiment/charts/",
+      "by_chart_slug_regex": "sentiment_heatmap",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "entity_sentiment.entity_type_analysis.global",
+    "label": "Entity Sentiment by Type",
+    "rank_default": 260,
+    "kind": "chart",
+    "module": "entity_sentiment",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "entity_sentiment.entity_type_analysis.global",
+      "by_artifact_key_prefix": "entity_sentiment/charts/",
+      "by_chart_slug_regex": "entity_type_analysis",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "entity_sentiment.entity_mentions.speaker",
+    "label": "Entity Mentions (Per Speaker)",
+    "rank_default": 270,
+    "kind": "chart",
+    "module": "entity_sentiment",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "entity_sentiment.entity_mentions.speaker",
+      "by_artifact_key_prefix": "entity_sentiment/charts/",
+      "by_chart_slug_regex": "entity_mentions",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "contagion.contagion_matrix.global",
+    "label": "Emotional Contagion Matrix",
+    "rank_default": 280,
+    "kind": "chart",
+    "module": "contagion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contagion.contagion_matrix.global",
+      "by_artifact_key_prefix": "contagion/charts/",
+      "by_chart_slug_regex": "contagion_matrix",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "echoes.echo_heatmap.global",
+    "label": "Echo Network Heatmap",
+    "rank_default": 290,
+    "kind": "chart",
+    "module": "echoes",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "echoes.echo_heatmap.global",
+      "by_artifact_key_prefix": "echoes/charts/",
+      "by_chart_slug_regex": "echo_heatmap",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "echoes.echo_timeline.global",
+    "label": "Echo Timeline",
+    "rank_default": 300,
+    "kind": "chart",
+    "module": "echoes",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "echoes.echo_timeline.global",
+      "by_artifact_key_prefix": "echoes/charts/",
+      "by_chart_slug_regex": "echo_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "pauses.pauses_hist.global",
+    "label": "Pause Duration Histogram",
+    "rank_default": 310,
+    "kind": "chart",
+    "module": "pauses",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "pauses.pauses_hist.global",
+      "by_artifact_key_prefix": "pauses/charts/",
+      "by_chart_slug_regex": "pauses_hist",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "pauses.pauses_timeline.global",
+    "label": "Pause Timeline",
+    "rank_default": 320,
+    "kind": "chart",
+    "module": "pauses",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "pauses.pauses_timeline.global",
+      "by_artifact_key_prefix": "pauses/charts/",
+      "by_chart_slug_regex": "pauses_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "moments.moments_timeline.global",
+    "label": "Moments Timeline",
+    "rank_default": 330,
+    "kind": "chart",
+    "module": "moments",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "moments.moments_timeline.global",
+      "by_artifact_key_prefix": "moments/charts/",
+      "by_chart_slug_regex": "moments_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.speaker_repetition_frequency.global",
+    "label": "Speaker Repetition Frequency",
+    "rank_default": 340,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.speaker_repetition_frequency.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "speaker_repetition_frequency",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.agreement_breakdown.global",
+    "label": "Cross-Speaker Interaction Types",
+    "rank_default": 350,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.agreement_breakdown.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "agreement_disagreement_breakdown",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.similarity_distribution.global",
+    "label": "Similarity Distribution",
+    "rank_default": 360,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.similarity_distribution.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "similarity_distribution",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.speaker_repetitions.global",
+    "label": "Repetitions by Speaker",
+    "rank_default": 370,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.speaker_repetitions.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "speaker_repetitions",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.classification.global",
+    "label": "Repetition Classification",
+    "rank_default": 380,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.classification.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "classification",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.speaker_similarity.global",
+    "label": "Average Similarity by Speaker",
+    "rank_default": 382,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.speaker_similarity.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "speaker_similarity",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity.agreement_disagreement_breakdown.global",
+    "label": "Agreement/Disagreement Breakdown",
+    "rank_default": 384,
+    "kind": "chart",
+    "module": "semantic_similarity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity.agreement_disagreement_breakdown.global",
+      "by_artifact_key_prefix": "semantic_similarity/charts/",
+      "by_chart_slug_regex": "agreement_disagreement_breakdown",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.diagnostic_plots.global",
+    "label": "Topic Modeling Diagnostics",
+    "rank_default": 390,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.diagnostic_plots.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "diagnostic_plots",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.discourse_analysis.global",
+    "label": "Discourse Analysis",
+    "rank_default": 400,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.discourse_analysis.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "discourse_analysis",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.lda_topic_word_heatmap.global",
+    "label": "LDA Topic-Word Heatmap",
+    "rank_default": 410,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.lda_topic_word_heatmap.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "enhanced_lda_topic_word_heatmap",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.nmf_topic_word_heatmap.global",
+    "label": "NMF Topic-Word Heatmap",
+    "rank_default": 420,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.nmf_topic_word_heatmap.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "enhanced_nmf_topic_word_heatmap",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.topic_evolution_timeline.global",
+    "label": "Topic Evolution Timeline",
+    "rank_default": 430,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.topic_evolution_timeline.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "topic_evolution_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.speaker_topic_engagement_heatmap.global",
+    "label": "Speaker-Topic Engagement Heatmap",
+    "rank_default": 440,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.speaker_topic_engagement_heatmap.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "speaker_topic_engagement_heatmap",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.expected_topic_proportions.global",
+    "label": "Expected Topic Proportions",
+    "rank_default": 450,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.expected_topic_proportions.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": "expected_topic_proportions",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "topic_modeling.topic_bar.speaker",
+    "label": "Topic Distribution (Per Speaker)",
+    "rank_default": 460,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_modeling.topic_bar.speaker",
+      "by_artifact_key_prefix": "topic_modeling/charts/speakers/",
+      "by_chart_slug_regex": "topic_bar",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "acts.acts_pie.speaker",
+    "label": "Dialogue Acts - Pie (Per Speaker)",
+    "rank_default": 470,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "acts.acts_pie.speaker",
+      "by_artifact_key_prefix": "acts/charts/speakers/",
+      "by_chart_slug_regex": "acts_pie",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "acts.acts_bar.speaker",
+    "label": "Dialogue Acts - Bar (Per Speaker)",
+    "rank_default": 480,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "acts.acts_bar.speaker",
+      "by_artifact_key_prefix": "acts/charts/speakers/",
+      "by_chart_slug_regex": "acts_bar",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "acts.global_acts_pie.global",
+    "label": "Dialogue Acts - Global Pie",
+    "rank_default": 490,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "acts.global_acts_pie.global",
+      "by_artifact_key_prefix": "acts/charts/",
+      "by_chart_slug_regex": "global_acts_pie",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "acts.global_acts_bar.global",
+    "label": "Dialogue Acts - Global Bar",
+    "rank_default": 500,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "acts.global_acts_bar.global",
+      "by_artifact_key_prefix": "acts/charts/",
+      "by_chart_slug_regex": "global_acts_bar",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "acts.acts_temporal_all.global",
+    "label": "Dialogue Acts Over Time - All Speakers",
+    "rank_default": 510,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "acts.acts_temporal_all.global",
+      "by_artifact_key_prefix": "acts/charts/",
+      "by_chart_slug_regex": "acts_temporal_all",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "acts.acts_temporal.speaker",
+    "label": "Dialogue Acts Over Time (Per Speaker)",
+    "rank_default": 520,
+    "kind": "chart",
+    "module": "acts",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "acts.acts_temporal.speaker",
+      "by_artifact_key_prefix": "acts/charts/speakers/",
+      "by_chart_slug_regex": "acts_temporal",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "conversation_loops.loop_network.global",
+    "label": "Conversation Loop Network",
+    "rank_default": 530,
+    "kind": "chart",
+    "module": "conversation_loops",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "conversation_loops.loop_network.global",
+      "by_artifact_key_prefix": "conversation_loops/charts/",
+      "by_chart_slug_regex": "loop_network",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "conversation_loops.loop_timeline.global",
+    "label": "Conversation Loop Timeline",
+    "rank_default": 540,
+    "kind": "chart",
+    "module": "conversation_loops",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "conversation_loops.loop_timeline.global",
+      "by_artifact_key_prefix": "conversation_loops/charts/",
+      "by_chart_slug_regex": "loop_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "conversation_loops.act_patterns.global",
+    "label": "Conversation Loop Act Patterns",
+    "rank_default": 550,
+    "kind": "chart",
+    "module": "conversation_loops",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "conversation_loops.act_patterns.global",
+      "by_artifact_key_prefix": "conversation_loops/charts/",
+      "by_chart_slug_regex": "act_patterns",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.pauses_distribution.global",
+    "label": "Pauses Distribution (Voice) \u2013 Global",
+    "rank_default": 552,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.pauses_distribution.global",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "pauses_distribution",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.pauses_distribution.speaker",
+    "label": "Pauses Distribution (Voice) \u2013 Per Speaker",
+    "rank_default": 553,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.pauses_distribution.speaker",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "pauses_distribution",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.pauses_timeline.global",
+    "label": "Pauses Timeline (Voice)",
+    "rank_default": 554,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.pauses_timeline.global",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "pauses_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.hesitation_map.global",
+    "label": "Hesitation Map",
+    "rank_default": 555,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.hesitation_map.global",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "hesitation_map",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.burstiness.speaker",
+    "label": "Burstiness (Per Speaker)",
+    "rank_default": 556,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.burstiness.speaker",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "burstiness",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.rhythm_compare.global",
+    "label": "Rhythm Comparison",
+    "rank_default": 557,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.rhythm_compare.global",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "rhythm_compare",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.rhythm_scatter.global",
+    "label": "Rhythm Scatter",
+    "rank_default": 558,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.rhythm_scatter.global",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "rhythm_scatter",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.f0_contours.speaker",
+    "label": "F0 Contours (Per Speaker)",
+    "rank_default": 559,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.f0_contours.speaker",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "f0_contours",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice.f0_slope_distribution.global",
+    "label": "F0 Slope Distribution",
+    "rank_default": 560,
+    "kind": "chart",
+    "module": "voice",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice.f0_slope_distribution.global",
+      "by_artifact_key_prefix": "voice",
+      "by_chart_slug_regex": "f0_slope_distribution",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.profile_distribution.speaker",
+    "label": "Prosody Profile Distribution (Per Speaker)",
+    "rank_default": 561,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.profile_distribution.speaker",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "profile_distribution",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.profile_corr.speaker",
+    "label": "Prosody Profile Correlation (Per Speaker)",
+    "rank_default": 562,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.profile_corr.speaker",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "profile_corr",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.timeline.global",
+    "label": "Prosody Timeline",
+    "rank_default": 563,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.timeline.global",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.compare_speakers.global",
+    "label": "Prosody Compare Speakers",
+    "rank_default": 564,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.compare_speakers.global",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "compare_speakers",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.fingerprint_scatter.global",
+    "label": "Prosody Fingerprint Scatter",
+    "rank_default": 565,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.fingerprint_scatter.global",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "fingerprint_scatter",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.egemaps_distribution.speaker",
+    "label": "Prosody eGeMAPS Distribution (Per Speaker)",
+    "rank_default": 566,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.egemaps_distribution.speaker",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "egemaps_distribution",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "prosody_dashboard.quality_scatter.global",
+    "label": "Prosody Quality Scatter",
+    "rank_default": 567,
+    "kind": "chart",
+    "module": "prosody_dashboard",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "prosody_dashboard.quality_scatter.global",
+      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_chart_slug_regex": "quality_scatter",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice_tension.tension_curve.global",
+    "label": "Voice Tension Curve",
+    "rank_default": 568,
+    "kind": "chart",
+    "module": "voice_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice_tension.tension_curve.global",
+      "by_artifact_key_prefix": "voice_tension",
+      "by_chart_slug_regex": "tension_curve",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice_mismatch.sentiment_vs_arousal.global",
+    "label": "Sentiment vs Arousal (Mismatch)",
+    "rank_default": 569,
+    "kind": "chart",
+    "module": "voice_mismatch",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice_mismatch.sentiment_vs_arousal.global",
+      "by_artifact_key_prefix": "voice_mismatch",
+      "by_chart_slug_regex": "sentiment_vs_arousal",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice_mismatch.mismatch_timeline.global",
+    "label": "Voice Mismatch Timeline",
+    "rank_default": 570,
+    "kind": "chart",
+    "module": "voice_mismatch",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice_mismatch.mismatch_timeline.global",
+      "by_artifact_key_prefix": "voice_mismatch",
+      "by_chart_slug_regex": "mismatch_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "voice_fingerprint.drift_timeline.speaker",
+    "label": "Voice Drift Timeline (Per Speaker)",
+    "rank_default": 571,
+    "kind": "chart",
+    "module": "voice_fingerprint",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "voice_fingerprint.drift_timeline.speaker",
+      "by_artifact_key_prefix": "voice_fingerprint",
+      "by_chart_slug_regex": "drift_timeline",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "understandability.flesch_reading_ease.global",
+    "label": "Flesch Reading Ease (Per Speaker)",
+    "rank_default": 560,
+    "kind": "chart",
+    "module": "understandability",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "understandability.flesch_reading_ease.global",
+      "by_artifact_key_prefix": "understandability/charts/",
+      "by_chart_slug_regex": "flesch-reading-ease-bars",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "understandability.readability_indices.global",
+    "label": "Readability Indices (Per Speaker)",
+    "rank_default": 570,
+    "kind": "chart",
+    "module": "understandability",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "understandability.readability_indices.global",
+      "by_artifact_key_prefix": "understandability/charts/",
+      "by_chart_slug_regex": "readability-indices-bars",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "understandability.structure_bars.global",
+    "label": "Structural Features (Per Speaker)",
+    "rank_default": 580,
+    "kind": "chart",
+    "module": "understandability",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "understandability.structure_bars.global",
+      "by_artifact_key_prefix": "understandability/charts/",
+      "by_chart_slug_regex": "structure-bars",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "understandability.word_count_bars.global",
+    "label": "Word Count (Per Speaker)",
+    "rank_default": 590,
+    "kind": "chart",
+    "module": "understandability",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "understandability.word_count_bars.global",
+      "by_artifact_key_prefix": "understandability/charts/",
+      "by_chart_slug_regex": "word-count-bars",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.basic",
+    "label": "Wordcloud (Per Speaker)",
+    "rank_default": 600,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.basic",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "/wordcloud\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "basic"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.basic",
+    "label": "Wordcloud - All Speakers",
+    "rank_default": 610,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.basic",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "_wordcloud\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "basic"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.bigrams",
+    "label": "Wordcloud Bigrams (Per Speaker)",
+    "rank_default": 620,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.bigrams",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "wordcloud-bigrams",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "bigrams"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.bigrams",
+    "label": "Wordcloud Bigrams - All Speakers",
+    "rank_default": 630,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.bigrams",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "wordcloud-bigrams-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "bigrams"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.tfidf",
+    "label": "Wordcloud TF-IDF (Per Speaker)",
+    "rank_default": 640,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.tfidf",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "/tfidf\\\\.(png|html)$",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "tfidf"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.tfidf",
+    "label": "Wordcloud TF-IDF - All Speakers",
+    "rank_default": 650,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.tfidf",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "tfidf-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "tfidf"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.tfidf_bigrams",
+    "label": "Wordcloud TF-IDF Bigrams (Per Speaker)",
+    "rank_default": 660,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.tfidf_bigrams",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "tfidf-bigrams",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "tfidf_bigrams"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.tfidf_bigrams",
+    "label": "Wordcloud TF-IDF Bigrams - All Speakers",
+    "rank_default": 670,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.tfidf_bigrams",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "tfidf-bigrams-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "tfidf_bigrams"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.tics",
+    "label": "Wordcloud Tics (Per Speaker)",
+    "rank_default": 680,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.tics",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "wordcloud-tics",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "tics"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.noun",
+    "label": "Wordcloud Nouns (Per Speaker)",
+    "rank_default": 690,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.noun",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "wordcloud-noun",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "noun"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.noun",
+    "label": "Wordcloud Nouns - All Speakers",
+    "rank_default": 700,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.noun",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "wordcloud-noun-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "noun"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.verb",
+    "label": "Wordcloud Verbs (Per Speaker)",
+    "rank_default": 710,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.verb",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "wordcloud-verb",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "verb"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.verb",
+    "label": "Wordcloud Verbs - All Speakers",
+    "rank_default": 720,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.verb",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "wordcloud-verb-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "verb"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.speaker.adj",
+    "label": "Wordcloud Adjectives (Per Speaker)",
+    "rank_default": 730,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.speaker.adj",
+      "by_artifact_key_prefix": "wordclouds/charts/speakers/",
+      "by_chart_slug_regex": "wordcloud-adj",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.speaker",
+    "variant": "adj"
+  },
+  {
+    "viz_id": "wordcloud.wordcloud.global.adj",
+    "label": "Wordcloud Adjectives - All Speakers",
+    "rank_default": 740,
+    "kind": "wordcloud",
+    "module": "wordclouds",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "wordcloud.wordcloud.global.adj",
+      "by_artifact_key_prefix": "wordclouds/charts/",
+      "by_chart_slug_regex": "wordcloud-adj-ALL",
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": "wordcloud.wordcloud.global",
+    "variant": "adj"
+  },
+  {
+    "viz_id": "group.ner.pooled.entity_types.global",
+    "label": "Group pooled — NER entity types (full corpus)",
+    "rank_default": 751,
+    "kind": "chart",
+    "module": "ner",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.ner.pooled.entity_types.global",
+      "by_artifact_key_prefix": "ner/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.ner.pooled.top_entities.global",
+    "label": "Group pooled — NER top entities",
+    "rank_default": 752,
+    "kind": "chart",
+    "module": "ner",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.ner.pooled.top_entities.global",
+      "by_artifact_key_prefix": "ner/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.entity_sentiment.pooled.top_entities.global",
+    "label": "Group pooled — entity sentiment top entities",
+    "rank_default": 753,
+    "kind": "chart",
+    "module": "entity_sentiment",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.entity_sentiment.pooled.top_entities.global",
+      "by_artifact_key_prefix": "entity_sentiment/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.topic_modeling.pooled.topic_share.global",
+    "label": "Group pooled — topic prevalence (group LDA)",
+    "rank_default": 754,
+    "kind": "chart",
+    "module": "topic_modeling",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.topic_modeling.pooled.topic_share.global",
+      "by_artifact_key_prefix": "topic_modeling/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.emotion.pooled.profile.global",
+    "label": "Group pooled — mean emotion profile",
+    "rank_default": 755,
+    "kind": "chart",
+    "module": "emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.emotion.pooled.profile.global",
+      "by_artifact_key_prefix": "emotion/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.tics.pooled.by_tic.global",
+    "label": "Group pooled — tic counts (full corpus)",
+    "rank_default": 756,
+    "kind": "chart",
+    "module": "tics",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.tics.pooled.by_tic.global",
+      "by_artifact_key_prefix": "tics/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.stats.pooled.totals.global",
+    "label": "Group pooled — corpus totals",
+    "rank_default": 757,
+    "kind": "chart",
+    "module": "stats",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.stats.pooled.totals.global",
+      "by_artifact_key_prefix": "stats/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.interactions.pooled.interruptions_initiated.global",
+    "label": "Group pooled — interactions interruptions initiated",
+    "rank_default": 758,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.interactions.pooled.interruptions_initiated.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.interactions.pooled.interruptions_received.global",
+    "label": "Group pooled — interactions interruptions received",
+    "rank_default": 759,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.interactions.pooled.interruptions_received.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.contagion.pooled.top_directed_edges.global",
+    "label": "Group pooled — contagion top directed edges",
+    "rank_default": 760,
+    "kind": "chart",
+    "module": "contagion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": ["html", "png"],
+    "match": {
+      "by_viz_id": "group.contagion.pooled.top_directed_edges.global",
+      "by_artifact_key_prefix": "contagion/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": null,
+    "family_id": null,
+    "variant": null
+  }
+]

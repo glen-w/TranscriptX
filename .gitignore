@@ -1,0 +1,60 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+whisperx.env
+*.key
+
+# State and data
+processing_state/
+transcriptx_data/
+data/state/
+data/.cache/
+data/cache/
+outputs/
+.transcriptx/
+
+# Local test / tooling artifacts (large; do not commit)
+.test_outputs/
+.release-test-env/
+.docs-verify-venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Testing and quality
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+
+# Archived docs/reports
+docs/archive/
+reports/archive/

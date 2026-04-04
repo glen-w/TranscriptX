@@ -1,0 +1,14 @@
+[run]
+# Exclude web and io from coverage (not necessary for core pipeline)
+omit =
+    */.venv/*
+    */venv/*
+    */site-packages/*
+    */transcriptx/web/*
+    */transcriptx/io/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError

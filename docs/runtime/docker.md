@@ -1,0 +1,146 @@
+Type: GUIDE
+Authority: runtime/STORAGE.md
+
+# Docker
+
+Operational guide only. For authoritative storage and metadata structure, see `STORAGE.md`. For behavior and invariants, see CONTRACT documents.
+
+**Docker Compose is the recommended way** to run TranscriptX in containers (no local Python required). The Streamlit web interface runs inside the container with a mounted data directory.
+
+This guide describes container behavior and operational layouts only. Canonical storage, output, and run-truth rules live in:
+
+- `docs/runtime/STORAGE.md`
+- `docs/contracts/output-contract-v1.md`
+- `docs/run_outcome_contract.md`
+
+TranscriptX is **analysis-only**; it does not run WhisperX or any transcription engine inside Docker. Bring your own transcript JSON (see [transcription.md](transcription.md) for how to generate compatible transcripts).
+
+## Non-root /data write access
+
+The default compose runs the `transcriptx-web` service as your host user (`user: "${UID:-1000}:${GID:-1000}"`) so that files written under the mounted `./data` volume are owned by you.
+
+- **Dev / quick start:** If `/data` is not writable (e.g. permission denied), make the host directory writable: `chmod -R a+w data/` (or create `data` and then run compose).
+- **Production:** Use the same `user: "${UID:-1000}:${GID:-1000}"` so the container runs as a known UID/GID; ensure the host `./data` is owned by that user or is group-writable.
+
+## Quickstart
+
+### Build
+
+```bash
+docker build -t transcriptx:latest .
+```
+
+Multi-arch (e.g. for publishing):
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t transcriptx:latest .
+```
+
+The image includes the spaCy language models (`en_core_web_md` and `en_core_web_sm`), so NLP modules (topic modeling, NER, etc.) work out of the box—no need to run `python -m spacy download` inside the container.
+
+**Apple Silicon (M1/M2/M3):** If the arm64 build fails or you want maximum compatibility with CPU/torch wheels, build and run the amd64 image under emulation:
+
+```bash
+docker buildx build --platform linux/amd64 --load -t transcriptx:amd64 .
+docker run --rm -v "$(pwd)/data:/data" --platform linux/amd64 -p 8501:8501 transcriptx:amd64
+```
+
+### Primary commands: Web interface
+
+**Start the web interface (port 8501):**
+
+```bash
+docker compose up transcriptx-web
+```
+
+Then open http://localhost:8501 in your browser.
+
+You can also run `docker compose up` (without a service name) to start the web interface.
+
+**Scripting / automation (one-off Python API):**
+
+```bash
+docker run --rm \
+  -v "$(pwd)/data:/data" \
+  -w /data \
+  transcriptx:latest \
+  python -c "
+from transcriptx.app.models.requests import AnalysisRequest
+from transcriptx.app.workflows.analysis import run_analysis
+from pathlib import Path
+
+result = run_analysis(AnalysisRequest(
+    transcript_path=Path('/data/transcripts/foo_transcriptx.json'),
+    modules=['stats'],
+))
+print('success:', result.success)
+"
+```
+
+### Operational modes
+
+| Mode | Command |
+|------|---------|
+| Web interface | `docker compose up` or `docker compose up transcriptx-web` → http://localhost:8501 |
+| Custom host/port | `docker run --rm -p 8501:8501 transcriptx:latest --host 0.0.0.0 --port 8501` |
+
+## Volume layout
+
+Mount your data at `/data`:
+
+```yaml
+volumes:
+  - ./data:/data
+```
+
+Recommended layout under `./data`:
+
+```
+data/
+  recordings/    ← source WAV/MP3 files
+  transcripts/   ← JSON transcripts
+  outputs/       ← analysis run outputs
+```
+
+Optional separate mounts for large libraries:
+
+```yaml
+volumes:
+  - ./data:/data
+  - /path/to/recordings:/recordings
+  - /path/to/transcripts:/transcripts
+```
+
+Then set environment variables:
+```
+TRANSCRIPTX_RECORDINGS_DIR=/recordings
+TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
+| `TRANSCRIPTX_DATA_DIR` | `/data` | Base data directory inside container |
+| `TRANSCRIPTX_RECORDINGS_DIR` | `$DATA_DIR/recordings` | Source audio |
+| `TRANSCRIPTX_TRANSCRIPTS_DIR` | `$DATA_DIR/transcripts` | Transcript JSON files |
+| `TRANSCRIPTX_OUTPUT_DIR` | `$DATA_DIR/outputs` | Analysis outputs |
+| `TRANSCRIPTX_DISABLE_DOWNLOADS` | `0` | Enable model/resource downloads (`1` disables) |
+| `TRANSCRIPTX_HOST` | `0.0.0.0` | Streamlit bind host |
+| `TRANSCRIPTX_PORT` | `8501` | Streamlit port |
+
+## Health check
+
+The compose file includes a health check that pings the Streamlit health endpoint:
+
+```bash
+docker compose ps   # shows health status
+```
+
+## Pitfalls
+
+- **Port conflict:** If 8501 is taken, override with `--port 8502` or set `TRANSCRIPTX_PORT`.
+- **Permissions:** Ensure the `./data` directory is writable by the UID/GID used in compose.
+- **Model downloads:** Runtime downloads are enabled by default. Set `TRANSCRIPTX_DISABLE_DOWNLOADS=1` for offline/no-download runs and provide pre-populated caches as needed.
+- **Upload "AxiosError: Network Error":** If the file uploader shows this for large files, the server limit or a reverse proxy may be blocking the request. Compose sets `STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500`; if you use a proxy in front, increase its body size and timeouts (e.g. nginx `client_max_body_size` and `proxy_read_timeout`).

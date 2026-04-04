@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "import_id": "7ef53727-71a6-4cde-be4f-f9a3b8045fd4",
+  "imported_at": "2026-03-27T12:11:51.129519+00:00",
+  "adapter_source_id": "transcriptx",
+  "source_upload_basename": "mini_transcriptx.json",
+  "archived_original_relpath": "originals/mini_transcriptx.json",
+  "current_json_filename": "mini_transcriptx.json",
+  "rename_history": []
+}

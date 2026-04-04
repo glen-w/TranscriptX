@@ -1,0 +1,10 @@
+{
+  "name": "default",
+  "module": "tag_extraction",
+  "description": "Default tag extraction profile",
+  "config": {
+    "early_window_seconds": 60,
+    "early_segments": 10,
+    "min_confidence": 0.6
+  }
+}

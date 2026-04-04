@@ -1,0 +1,374 @@
+"""
+Unified module registry for TranscriptX analysis pipeline.
+
+This module provides a single source of truth for all analysis modules,
+centralizing module metadata, dependencies, and lazy import functions.
+"""
+
+from typing import Dict, List, Optional, Callable, Iterable, Set
+from dataclasses import dataclass, field
+
+from transcriptx.core.domain.module_requirements import Requirement, Enhancement
+from transcriptx.core.pipeline.module_registry_specs import (
+    EXTRA_REPRESENTATIVE,
+    MODULE_CLASS_MAP,
+    build_module_definitions,
+)
+from transcriptx.core.utils.audio_availability import has_resolvable_audio
+
+
+def is_extra_available(extra_name: str) -> bool:
+    """Return True if the given extra is available (one representative import per extra). Deterministic."""
+    module_name = EXTRA_REPRESENTATIVE.get(extra_name)
+    if not module_name:
+        return False
+    try:
+        __import__(module_name)
+        return True
+    except ImportError:
+        return False
+
+
+def analyze_sentiment_from_file(transcript_path: str):
+    from transcriptx.core.analysis.sentiment import SentimentAnalysis
+
+    return SentimentAnalysis().run_from_file(transcript_path)
+
+
+@dataclass
+class ModuleInfo:
+    """Information about an analysis module."""
+
+    name: str
+    description: str
+    category: str  # light, medium, heavy
+    dependencies: List[str]
+    determinism_tier: str  # T0, T1, T2
+    requirements: List[Requirement]
+    enhancements: List[Enhancement]
+    function: Optional[Callable] = None
+    timeout_seconds: int = 600
+    exclude_from_default: bool = False
+    post_processing_only: bool = (
+        False  # Not offered in analysis module list; run via post-processing
+    )
+    requires_audio: bool = False
+    requires_multiple_speakers: bool = (
+        False  # Skip when transcript has ≤1 named speaker
+    )
+    min_named_speakers: int = 1  # Future-proof; default allows single-speaker
+    supports_audio: bool = False
+    supports_group: bool = True
+    output_namespace: Optional[str] = None
+    output_version: Optional[str] = None
+    cost_tier: str = "normal"
+    required_extras: Set[str] = field(
+        default_factory=set
+    )  # e.g. {"voice"}, {"emotion"}, {"nlp"}
+
+
+def effective_min_named_speakers(info: ModuleInfo) -> int:
+    """Return the effective minimum named speaker count for a module."""
+    return max(info.min_named_speakers, 2 if info.requires_multiple_speakers else 1)
+
+
+class ModuleRegistry:
+    """
+    Central registry for all analysis modules.
+
+    This class provides a single source of truth for module metadata
+    and handles lazy loading of module functions.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the module registry."""
+        self._modules: Dict[str, ModuleInfo] = {}
+        self._setup_modules()
+
+    def _setup_modules(self) -> None:
+        """Set up all available analysis modules."""
+        # Define module metadata
+        default_requirements = [Requirement.SEGMENTS]
+        module_definitions = build_module_definitions(default_requirements)
+
+        # Create module info objects
+        for name, info in module_definitions.items():
+            req_extras = info.get("required_extras", [])
+            self._modules[name] = ModuleInfo(
+                name=name,
+                description=info["description"],
+                category=info["category"],
+                dependencies=info["dependencies"],
+                determinism_tier=info.get("determinism_tier", "T0"),
+                requirements=info.get("requirements", default_requirements),
+                enhancements=info.get("enhancements", []),
+                exclude_from_default=info.get("exclude_from_default", False),
+                post_processing_only=info.get("post_processing_only", False),
+                requires_audio=info.get("requires_audio", False),
+                requires_multiple_speakers=bool(
+                    info.get("requires_multiple_speakers", False)
+                ),
+                min_named_speakers=int(info.get("min_named_speakers", 1)),
+                supports_audio=info.get("supports_audio", False),
+                supports_group=info.get("supports_group", True),
+                output_namespace=info.get("output_namespace"),
+                output_version=info.get("output_version"),
+                cost_tier=info.get("cost_tier", "normal"),
+                timeout_seconds=600,
+                required_extras=set(req_extras),
+            )
+
+    def get_available_modules(
+        self,
+        core_mode: Optional[bool] = None,
+    ) -> List[str]:
+        """Get list of available analysis modules (excludes post-processing-only)."""
+        if core_mode is None:
+            try:
+                from transcriptx.core.utils.config import get_config
+
+                core_mode = get_config().core_mode
+            except Exception:
+                core_mode = False
+        out = []
+        for name, info in self._modules.items():
+            if info.post_processing_only:
+                continue
+            out.append(name)
+        return out
+
+    def get_default_modules(
+        self,
+        transcript_targets: Optional[Iterable[object]] = None,
+        *,
+        audio_resolver: Optional[Callable[[object], bool]] = None,
+        dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
+        include_heavy: bool = True,
+        include_excluded_from_default: bool = False,
+        for_group: bool = False,
+        core_mode: Optional[bool] = None,
+    ) -> List[str]:
+        """Get list of modules used for default analysis runs."""
+        if core_mode is None:
+            try:
+                from transcriptx.core.utils.config import get_config
+
+                core_mode = get_config().core_mode
+            except Exception:
+                core_mode = False
+
+        audio_available: Optional[bool] = None
+        if transcript_targets is not None:
+            resolver = audio_resolver or has_resolvable_audio
+            try:
+                audio_available = resolver(transcript_targets)
+            except Exception:
+                audio_available = None
+
+        if dep_resolver is None:
+
+            def dep_resolver(info: ModuleInfo) -> bool:
+                if not info.requires_audio:
+                    return True
+                if info.requires_audio and audio_available is False:
+                    return False
+                return True
+
+        selected: list[str] = []
+        for name, info in self._modules.items():
+            if not include_excluded_from_default and info.exclude_from_default:
+                continue
+            if not include_heavy and info.cost_tier == "heavy":
+                continue
+            if info.requires_audio and audio_available is False:
+                continue
+            if for_group and not info.supports_group:
+                continue
+            if dep_resolver is not None and not dep_resolver(info):
+                continue
+            selected.append(name)
+        return selected
+
+    def get_module_info(self, module_name: str) -> Optional[ModuleInfo]:
+        """Get information about a specific analysis module."""
+        return self._modules.get(module_name)
+
+    def resolve_canonical_module_id(self, module_name: str) -> str:
+        """
+        Single ingestion rule for module identifiers in outcomes and reporting.
+
+        Returns registry-native lowercase id when the name matches a registered
+        module (exact or case-insensitive); otherwise returns stripped lower().
+        """
+        if not module_name:
+            return ""
+        stripped = module_name.strip()
+        if stripped in self._modules:
+            return stripped
+        lower = stripped.lower()
+        if lower in self._modules:
+            return lower
+        for key in self._modules:
+            if key.lower() == lower:
+                return key
+        return lower
+
+    def get_module_function(self, module_name: str) -> Optional[Callable]:
+        """Get the lazy import function for a module."""
+        module_info = self._modules.get(module_name)
+        if not module_info:
+            return None
+
+        # Return cached function if available
+        if module_info.function:
+            return module_info.function
+
+        # Create lazy import function
+        lazy_function = self._create_lazy_import_function(module_name)
+        module_info.function = lazy_function
+        return lazy_function
+
+    def _create_lazy_import_function(self, module_name: str) -> Callable:
+        """
+        Create a lazy import function that returns AnalysisModule class for a module.
+
+        All modules now use the AnalysisModule base class interface,
+        allowing the DAG pipeline to use the shared PipelineContext.
+
+        Raises:
+            ImportError: If the AnalysisModule class cannot be imported
+            ValueError: If the module name is unknown
+        """
+        # Module name to AnalysisModule class mapping
+        if module_name not in MODULE_CLASS_MAP:
+            raise ValueError(f"Unknown module: {module_name}")
+
+        module_path, class_name = MODULE_CLASS_MAP[module_name]
+
+        # Dynamically import the AnalysisModule class
+        try:
+            module = __import__(module_path, fromlist=[class_name])
+            analysis_class = getattr(module, class_name)
+
+            # Verify it's actually an AnalysisModule class
+            from transcriptx.core.analysis.base import AnalysisModule
+
+            if not (
+                isinstance(analysis_class, type)
+                and issubclass(analysis_class, AnalysisModule)
+            ):
+                raise TypeError(f"{class_name} is not an AnalysisModule subclass")
+
+            class ModuleCallable:
+                def __init__(self, module_cls, module_name: str):
+                    self._module_cls = module_cls
+                    self._module_name = module_name
+
+                def run_from_context(self, context):
+                    return self._module_cls().run_from_context(context)
+
+                def __call__(self, transcript_path: str):
+                    if self._module_name == "sentiment":
+                        return analyze_sentiment_from_file(transcript_path)
+                    return self._module_cls().run_from_file(transcript_path)
+
+            return ModuleCallable(analysis_class, module_name)
+        except ImportError as e:
+            raise ImportError(
+                f"Failed to import {class_name} from {module_path} for module '{module_name}': {e}"
+            ) from e
+        except AttributeError as e:
+            raise AttributeError(
+                f"Module {module_path} does not have class {class_name}: {e}"
+            ) from e
+
+    def get_dependencies(self, module_name: str) -> List[str]:
+        """Get dependencies for a module."""
+        module_info = self._modules.get(module_name)
+        return module_info.dependencies if module_info else []
+
+    def get_category(self, module_name: str) -> Optional[str]:
+        """Get category for a module."""
+        module_info = self._modules.get(module_name)
+        return module_info.category if module_info else None
+
+    def get_description(self, module_name: str) -> Optional[str]:
+        """Get description for a module."""
+        module_info = self._modules.get(module_name)
+        return module_info.description if module_info else None
+
+    def get_determinism_tier(self, module_name: str) -> Optional[str]:
+        """Get determinism tier for a module."""
+        module_info = self._modules.get(module_name)
+        return module_info.determinism_tier if module_info else None
+
+
+# Global registry instance
+_module_registry = ModuleRegistry()
+
+
+def get_module_registry() -> ModuleRegistry:
+    """Return the single authoritative registry instance."""
+    return _module_registry
+
+
+def get_available_modules(core_mode: Optional[bool] = None) -> List[str]:
+    """Get list of available analysis modules."""
+    return _module_registry.get_available_modules(core_mode=core_mode)
+
+
+def get_default_modules(
+    transcript_targets: Optional[Iterable[object]] = None,
+    *,
+    audio_resolver: Optional[Callable[[object], bool]] = None,
+    dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
+    include_heavy: bool = True,
+    include_excluded_from_default: bool = False,
+    for_group: bool = False,
+    core_mode: Optional[bool] = None,
+) -> List[str]:
+    """Get list of modules used for default analysis runs. core_mode from config if None."""
+    return _module_registry.get_default_modules(
+        transcript_targets,
+        audio_resolver=audio_resolver,
+        dep_resolver=dep_resolver,
+        include_heavy=include_heavy,
+        include_excluded_from_default=include_excluded_from_default,
+        for_group=for_group,
+        core_mode=core_mode,
+    )
+
+
+def get_module_info(module_name: str) -> Optional[ModuleInfo]:
+    """Get information about a specific analysis module."""
+    return _module_registry.get_module_info(module_name)
+
+
+def canonical_module_id(module_name: str) -> str:
+    """Registry-owned normalization for module ids at outcome/reporting boundaries."""
+    return _module_registry.resolve_canonical_module_id(module_name)
+
+
+def get_module_function(module_name: str) -> Optional[Callable]:
+    """Get the lazy import function for a module."""
+    return _module_registry.get_module_function(module_name)
+
+
+def get_dependencies(module_name: str) -> List[str]:
+    """Get dependencies for a module."""
+    return _module_registry.get_dependencies(module_name)
+
+
+def get_category(module_name: str) -> Optional[str]:
+    """Get category for a module."""
+    return _module_registry.get_category(module_name)
+
+
+def get_description(module_name: str) -> Optional[str]:
+    """Get description for a module."""
+    return _module_registry.get_description(module_name)
+
+
+def get_determinism_tier(module_name: str) -> Optional[str]:
+    """Get determinism tier for a module."""
+    return _module_registry.get_determinism_tier(module_name)

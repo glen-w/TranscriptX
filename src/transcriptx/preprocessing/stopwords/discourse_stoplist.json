@@ -1,0 +1,39 @@
+{
+  "discourse_verbs": [
+    "think",
+    "know",
+    "mean",
+    "feel",
+    "guess",
+    "suppose",
+    "believe",
+    "seem",
+    "wonder"
+  ],
+  "filler_adverbs": [
+    "basically",
+    "actually",
+    "literally",
+    "honestly",
+    "obviously",
+    "clearly",
+    "really",
+    "just",
+    "like",
+    "totally",
+    "definitely",
+    "absolutely",
+    "seriously"
+  ],
+  "hedge_terms": [
+    "kind",
+    "sort",
+    "bit",
+    "stuff",
+    "thing",
+    "things",
+    "way",
+    "something",
+    "anything"
+  ]
+}

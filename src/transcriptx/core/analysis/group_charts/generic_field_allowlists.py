@@ -1,0 +1,71 @@
+"""
+Per-agg allowlists for GenericNumericGroupChartGenerator session fields.
+
+If an ``agg_id`` is absent from this map, the generic generator charts all numeric
+session columns (subject to ``max_charts``). Listed ids only chart approved keys so
+Phase-4 curation applies at field level, not only registry membership.
+
+Source of truth for outcomes: ``docs/group_charts_phase4_outcome_table.md``.
+"""
+
+from __future__ import annotations
+
+from typing import Dict, FrozenSet, Optional
+
+# agg_id -> allowed session row metric keys (after one-level dict flattening, e.g. counts_by_kind.echo)
+GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
+    "conversation_loops": frozenset({"total_loops", "unique_speaker_pairs"}),
+    "interactions": frozenset({"total_interactions", "unique_speakers"}),
+    "qa_analysis": frozenset(
+        {
+            "total_questions",
+            "answered",
+            "unanswered",
+            "answer_rate",
+            "avg_response_time",
+            "avg_quality_score",
+        }
+    ),
+    "echoes": frozenset(
+        {
+            "total_events",
+            "counts_by_kind.echo",
+            "counts_by_kind.paraphrase",
+            "counts_by_kind.explicit_quote",
+        }
+    ),
+    "momentum": frozenset(
+        {
+            "window_length_seconds",
+            "window_step_seconds",
+            "stall_threshold",
+            "stall_zone_count",
+            "momentum_cliff_count",
+        }
+    ),
+    "affect_tension": frozenset(
+        {
+            "polite_tension_index",
+            "suppressed_conflict_score",
+            "institutional_tone_affect_delta",
+        }
+    ),
+    "understandability": frozenset(
+        {
+            "flesch_reading_ease",
+            "gunning_fog_index",
+            "smog_index",
+            "automated_readability_index",
+            "avg_sentence_length",
+            "lexical_density",
+            "word_count",
+            "sentence_count",
+        }
+    ),
+    "tics": frozenset({"total_tics"}),
+}
+
+
+def allowed_numeric_keys_for_generic_agg(agg_id: str) -> Optional[FrozenSet[str]]:
+    """Return allowlist for ``agg_id``, or ``None`` when all numeric fields remain eligible."""
+    return GENERIC_SESSION_FIELD_ALLOWLISTS.get(agg_id)

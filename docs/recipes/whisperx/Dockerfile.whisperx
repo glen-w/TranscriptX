@@ -1,0 +1,58 @@
+# WhisperX Dockerfile (standalone reference recipe; not part of TranscriptX runtime).
+# Model strategy: Do not bake model weights into the image. At runtime, mount a
+# volume for caches and set env vars so downloads go to the mount, e.g.:
+#   HF_HOME=/models/hf
+#   TORCH_HOME=/models/torch
+
+# -----------------------------------------------------------------------------
+# Builder: build deps + pip install into venv
+# -----------------------------------------------------------------------------
+FROM python:3.10-slim AS builder
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install --no-cache-dir \
+    whisperx \
+    torch \
+    torchaudio \
+    transformers \
+    pyannote.audio \
+    librosa \
+    soundfile
+
+# -----------------------------------------------------------------------------
+# Runtime: only runtime libs, no build tools; copy venv
+# -----------------------------------------------------------------------------
+FROM python:3.10-slim AS production
+
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
+
+RUN mkdir -p /data/input /data/output /data/transcriptx_output
+
+# Optional: set at run time to store models on a mounted volume instead of in image
+# ENV HF_HOME=/models/hf
+# ENV TORCH_HOME=/models/torch
+
+CMD ["whisperx", "--help"]

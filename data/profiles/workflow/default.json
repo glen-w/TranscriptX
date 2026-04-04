@@ -1,0 +1,14 @@
+{
+  "name": "default",
+  "module": "workflow",
+  "description": "Default workflow profile",
+  "config": {
+    "timeout_quick_seconds": 3600,
+    "timeout_full_seconds": 7200,
+    "update_interval": 10.0,
+    "max_size_mb": 30,
+    "subprocess_timeout": 5,
+    "mp3_bitrate": "192k",
+    "conversion_time_factor": 0.5
+  }
+}

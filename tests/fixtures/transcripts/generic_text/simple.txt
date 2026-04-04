@@ -1,0 +1,4 @@
+Alice: Hello everyone, good morning.
+Bob: Good morning Alice. Ready to start?
+Alice: Yes, let us dive right in. First item on the agenda.
+Bob: Sounds good to me.

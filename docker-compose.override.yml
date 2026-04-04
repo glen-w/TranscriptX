@@ -1,0 +1,19 @@
+# Local override (optional; often gitignored for machine-specific paths).
+#
+# Docker Compose merges this file with docker-compose.yml. Listing `volumes` here
+# replaces the entire `volumes` array for transcriptx-web, so we repeat the same
+# mounts as the base file but drop the `:ro` flag on transcripts so the app can
+# write `.speaker_map.json` sidecars next to transcript JSON files.
+#
+# For production-like read-only transcripts, use only docker-compose.yml (or delete
+# this file) so /mnt/transcripts stays :ro.
+services:
+  transcriptx-web:
+    volumes:
+      - ./data:/data
+      - transcriptx_cache:/home/transcriptx/.cache
+      - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts
+      - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
+      - ${HOST_RECORDINGS_DIR:-./data/recordings}:/mnt/recordings
+      - ${HOST_RECORDINGS_DIR:-./data/recordings}/imports:/mnt/recordings/imports
+      - ${HOST_WAV_BACKUP_DIR:-./data/backups/wav}:/mnt/wav

@@ -1,0 +1,94 @@
+Type: CONTRACT
+Authority: self
+
+# Public surfaces contract
+
+This document defines which TranscriptX surfaces are **supported** and which are explicitly **not supported**. It is the contract for how users and contributors are expected to interact with the system.
+
+## 1. Supported public surfaces
+
+### 1.1 GUI (Streamlit web app)
+
+- The **Streamlit web interface** (launched via `transcriptx` or `python -m transcriptx.web`) is the **primary supported interface**.
+- Supported operations include:
+  - Importing transcripts into managed storage (managed import workflow).
+  - Running analysis on individual transcripts and groups.
+  - Browsing results, charts, and reports.
+  - Managing basic settings exposed in the UI.
+
+### 1.2 Python API
+
+- The **Python API** is a supported surface for scripting and automation.
+- Core entrypoints include:
+  - `run_managed_import_workflow` (managed import).
+  - `run_analysis` (single-transcript analysis).
+  - Batch and group workflows as documented in `docs/generated/cli.md` and dev guides.
+- These APIs expect:
+  - Canonical or managed transcripts as defined in the storage and terminology contracts.
+  - Use of typed request models (e.g. `AnalysisRequest`, `BatchAnalysisRequest`).
+
+### 1.3 Managed import workflow
+
+- The **managed import workflow** is the only supported way to admit transcripts into managed storage for library-valid analysis:
+  - It performs canonical validation.
+  - It writes sidecars and archival/original artifacts.
+  - It enforces the storage and metadata mirroring invariants.
+- Importing raw JSON directly into the canonical library without going through a managed import path is not supported for library-valid analysis.
+
+## 2. Not supported surfaces / patterns
+
+The following patterns are **explicitly not supported** and should be avoided in user flows, docs, and contributions:
+
+### 2.1 Direct CLI analysis commands
+
+- There is **no supported** `transcriptx <subcommand>` analysis CLI.
+- The `transcriptx` console script:
+  - Only launches the web interface.
+  - Accepts `--host` and `--port` flags.
+- Any usage of `transcriptx analyze ...`, `transcriptx transcript ...`, or similar subcommands is considered deprecated and unsupported.
+
+### 2.2 Ad hoc JSON ingestion
+
+- Directly pointing analysis at arbitrary JSON files that:
+  - Have not gone through canonical validation, and
+  - Are not part of the managed transcript set
+- is **not supported** as a stable surface.
+- Codepaths that “guess” based on filenames or directory placement (e.g. “any `.json` under `transcripts_dir`”) violate the storage and admission contracts.
+
+### 2.3 Direct filesystem operations on managed storage
+
+- Direct filesystem writes, renames, or deletions under:
+  - `transcripts_dir` and its metadata subtrees,
+  - managed outputs and state defined in the storage and output contracts,
+- are **not supported** and may corrupt invariants.
+- Supported behavior:
+  - Use the storage rename service for managed transcript moves.
+  - Use public APIs to modify or regenerate artifacts.
+
+## 3. Contributor guidance
+
+- When adding new features or entrypoints:
+  - Prefer the GUI and Python API as integration points.
+  - Keep new surfaces aligned with this contract; if you introduce a new public surface, document it here.
+- When removing or deprecating surfaces:
+  - Update this document to reflect what remains supported.
+  - Make deprecated patterns clearly visible in docs to avoid reintroduction.
+---
+
+## 4. Contract violations
+
+This section describes **public surface contract violations**, how they are detected, and the expected behavior.
+
+- **Invalid states (examples)**:
+  - Docs or examples that present unsupported CLI subcommands (for example, `transcriptx analyze ...`) as if they were supported.
+  - Features or codepaths that rely on direct filesystem manipulation of managed storage instead of using documented public APIs.
+  - Workflows that bypass the managed import workflow while still claiming library-valid analysis guarantees.
+- **Detection**:
+  - Documentation reviews that compare guides and README against this contract.
+  - Tests or linters that scan for references to deprecated or unsupported surfaces.
+  - Code review checklists that flag direct filesystem operations on managed storage paths.
+- **Expected behavior**:
+  - Treat such cases as **fail-fast** documentation or API violations: update docs and/or code to align with this contract before shipping.
+  - Where users depend on an unsupported surface, clearly mark it as unsupported and provide a migration path to a supported surface where feasible.
+
+This contract is the reference point for “what is supported” in README, installation docs, and CONTRIBUTING.
