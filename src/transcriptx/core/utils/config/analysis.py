@@ -197,6 +197,29 @@ class BERTopicConfig:
 
 
 @dataclass
+class SemanticSimilarityV2Config:
+    """Tunable settings for semantic_similarity_v2 (batched, vectorized path)."""
+
+    enabled: bool = True
+    mode: str = "basic"  # "basic" | "advanced"
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    batch_size: int = 64
+    min_text_length_words: int = 3
+    self_similarity_threshold: float = 0.7
+    cross_speaker_similarity_threshold: float = 0.6
+    self_time_window_seconds: float = 300.0
+    cross_speaker_time_window_seconds: float = 600.0
+    max_candidate_pairs: int = 50_000
+    top_k_per_segment: int = 50
+    timeout_seconds: float = 300.0
+    persist_embeddings: bool = False
+    lru_size: int = 50_000
+    use_lexical_prefilter: bool = False
+    lexical_prefilter_min_jaccard: float = 0.05
+    strict_advanced_inputs: bool = False
+
+
+@dataclass
 class AnalysisConfig:
     """
     Configuration for analysis modules.
@@ -782,10 +805,20 @@ class AnalysisConfig:
     semantic_batch_size: int = (
         64  # Batch size for processing (increased from 32 for better performance)
     )
+    semantic_progress_log_interval_seconds: float = (
+        60.0  # Heartbeat interval for long-running semantic analysis
+    )
+    module_progress_log_interval_seconds: float = (
+        60.0  # Heartbeat interval for long-running module execution
+    )
 
     # General
     output_formats: list[str] = field(default_factory=lambda: ["json", "csv", "png"])
     use_dag_pipeline: bool = True  # Use DAG pipeline for better dependency management
+
+    # When True, legacy analysis modules marked `legacy` in the registry are included
+    # in default module lists. Default False: only explicit module IDs run legacy paths.
+    include_legacy_modules: bool = False
 
     # Quick vs Full Analysis Mode
     analysis_mode: str = "quick"  # "quick" or "full"
@@ -817,6 +850,44 @@ class AnalysisConfig:
             "skip_geocoding": False,
             "reduced_chart_generation": False,
             "semantic_profile": "balanced",
+        }
+    )
+
+    # Semantic similarity v2 (default semantic path; legacy IDs remain selectable)
+    semantic_similarity_v2: SemanticSimilarityV2Config = field(
+        default_factory=SemanticSimilarityV2Config
+    )
+    active_semantic_similarity_v2_profile: str = "balanced_v2"
+    semantic_similarity_v2_profiles: dict[str, dict[str, Any]] = field(
+        default_factory=lambda: {
+            "fast_v2": {
+                "self_similarity_threshold": 0.78,
+                "cross_speaker_similarity_threshold": 0.68,
+                "top_k_per_segment": 20,
+                "max_candidate_pairs": 15_000,
+                "timeout_seconds": 120.0,
+                "use_lexical_prefilter": True,
+                "lexical_prefilter_min_jaccard": 0.10,
+                "mode": "basic",
+            },
+            "balanced_v2": {
+                "self_similarity_threshold": 0.72,
+                "cross_speaker_similarity_threshold": 0.62,
+                "top_k_per_segment": 50,
+                "max_candidate_pairs": 50_000,
+                "timeout_seconds": 300.0,
+                "use_lexical_prefilter": True,
+                "lexical_prefilter_min_jaccard": 0.05,
+            },
+            "deep_v2": {
+                "mode": "advanced",
+                "self_similarity_threshold": 0.65,
+                "cross_speaker_similarity_threshold": 0.55,
+                "top_k_per_segment": 120,
+                "max_candidate_pairs": 150_000,
+                "timeout_seconds": 900.0,
+                "use_lexical_prefilter": False,
+            },
         }
     )
 
@@ -1017,6 +1088,7 @@ class EchoesConfig:
         default_factory=lambda: ["yeah", "exactly", "right"]
     )
     enable_semantic_paraphrase: bool = False
+    semantic_model_name: str | None = None
     echo_burst_window_seconds: float = 25.0
     echo_burst_min_events: int = 3
     echo_burst_percentile_threshold: float = 0.95

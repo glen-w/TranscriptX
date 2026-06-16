@@ -3,6 +3,7 @@
 # Volumes:
 #   ./data:/data — project data root (cache, local config copies, etc.)
 #   HOST_*_DIR mounts — map host folders into TRANSCRIPTX_*_DIR paths (see environment).
+#   HOST_RECORDINGS_DIR is required — point at a folder outside the repo (see .env.example).
 #   Transcripts default to read-only at /mnt/transcripts; use docker-compose.override.yml
 #   locally if you need the web UI to write .speaker_map.json sidecars beside JSON files.
 #
@@ -25,9 +26,10 @@ services:
       # Separate names avoid Docker Compose .env-vs-environment precedence issues.
       - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
       - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
-      - ${HOST_RECORDINGS_DIR:-./data/recordings}:/mnt/recordings
+      # Source audio lives only on the host outside the repo; set HOST_RECORDINGS_DIR in .env (see .env.example).
+      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings
       # Imports (uploaded files) are writable so we can delete after backup; recordings root stays :ro.
-      - ${HOST_RECORDINGS_DIR:-./data/recordings}/imports:/mnt/recordings/imports
+      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}/imports:/mnt/recordings/imports
       - ${HOST_WAV_BACKUP_DIR:-./data/backups/wav}:/mnt/wav
     environment:
       - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
@@ -42,8 +44,15 @@ services:
       - TRANSCRIPTX_USE_EMOJIS=0
       - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
       - HF_HOME=/data/.cache/huggingface
+      # Keep Playwright browser binaries in writable project cache.
+      - PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
       - MPLCONFIGDIR=/data/.cache/matplotlib
       - NLTK_DATA=/opt/venv/nltk_data
+      # Librosa uses Numba with cache=True; without a writable locator, JIT init raises
+      # "no locator available for file .../site-packages/librosa/...". Host UID override
+      # often leaves HOME unsuitable for Numba's default cache path.
+      - NUMBA_CACHE_DIR=/data/.cache/numba
+      - NUMBA_DISABLE_CACHING=1
     ports:
       - "8501:8501"
     healthcheck:

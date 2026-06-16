@@ -91,8 +91,16 @@ class LibraryController:
             duration = get_audio_duration(str(path))
         except Exception:
             pass
+        segment_count: int | None = None
+        speaker_map_status = "none"
+        unidentified_speaker_count = 0
+        ignored_speaker_count = 0
         try:
             from transcriptx.io import load_segments
+
+            from transcriptx.services.speaker_studio.segment_index import (
+                transcript_summary_from_loaded_segments,
+            )
 
             segments = load_segments(str(path))
             if duration is None:
@@ -100,6 +108,11 @@ class LibraryController:
             speaker_count = len(
                 set(seg.get("speaker") for seg in segments if seg.get("speaker"))
             )
+            ts = transcript_summary_from_loaded_segments(path, segments)
+            segment_count = ts.segment_count
+            speaker_map_status = ts.speaker_map_status
+            unidentified_speaker_count = ts.unidentified_speaker_count
+            ignored_speaker_count = ts.ignored_speaker_count
         except Exception:
             pass
         try:
@@ -118,4 +131,8 @@ class LibraryController:
             has_analysis_outputs=has_outputs,
             has_speaker_map=has_map,
             linked_run_dirs=linked,
+            segment_count=segment_count,
+            speaker_map_status=speaker_map_status,
+            unidentified_speaker_count=unidentified_speaker_count,
+            ignored_speaker_count=ignored_speaker_count,
         )

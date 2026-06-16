@@ -128,6 +128,34 @@ def test_render_library_summary_shows_has_audio_and_duration(monkeypatch) -> Non
     monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: transcripts)
     monkeypatch.setattr(
         mod,
+        "cached_get_transcript_summaries_for_paths",
+        lambda _paths: [
+            type(
+                "_Summary",
+                (),
+                {
+                    "path": str(Path("/tmp/short.json").resolve()),
+                    "speaker_map_status": "complete",
+                    "unidentified_speaker_count": 0,
+                    "ignored_speaker_count": 0,
+                    "unique_speaker_count": 2,
+                },
+            )(),
+            type(
+                "_Summary",
+                (),
+                {
+                    "path": str(Path("/tmp/long.json").resolve()),
+                    "speaker_map_status": "partial",
+                    "unidentified_speaker_count": 2,
+                    "ignored_speaker_count": 1,
+                    "unique_speaker_count": 3,
+                },
+            )(),
+        ],
+    )
+    monkeypatch.setattr(
+        mod,
         "has_resolvable_audio",
         lambda p: Path(p).stem == "short",
     )
@@ -152,3 +180,17 @@ def test_render_library_summary_shows_has_audio_and_duration(monkeypatch) -> Non
     ]
     assert list(_DummyStreamlit.captured_df["Duration"]) == ["2m", "1h 2m"]
     assert list(_DummyStreamlit.captured_df["Has Audio"]) == ["✓", "—"]
+    assert list(_DummyStreamlit.captured_df["Fully Mapped"]) == ["✓", "—"]
+    assert list(_DummyStreamlit.captured_df["Identified"]) == ["2", "0"]
+    assert list(_DummyStreamlit.captured_df["Ignored"]) == ["0", "1"]
+
+
+def test_library_page_wires_rename_service_for_transcript_rename_form() -> None:
+    """Library uses RenameService + refresh for the post-rename Streamlit form."""
+    import transcriptx.web.page_modules.library as mod
+
+    assert getattr(mod, "RenameService", None) is not None
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "library_rename_form" in source
+    assert "RenameService.rename_transcript_and_audio" in source
+    assert "RenameService.refresh_after_rename" in source

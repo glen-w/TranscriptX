@@ -36,6 +36,41 @@ def test_speaker_id_page_exposes_render_function() -> None:
     assert callable(render_speaker_id_page)
 
 
+def test_speaker_id_transcript_label_partial_shows_counts() -> None:
+    from transcriptx.web.page_modules.speaker_id import _speaker_id_transcript_label
+    from transcriptx.services.speaker_studio.segment_index import TranscriptSummary
+
+    t = TranscriptSummary(
+        path="/x.json",
+        base_name="meeting",
+        speaker_map_status="partial",
+        segment_count=100,
+        unique_speaker_count=3,
+        unidentified_speaker_count=2,
+        ignored_speaker_count=1,
+    )
+    label = _speaker_id_transcript_label(t)
+    assert label.startswith("meeting (partial, 100 segs)")
+    assert "2 unidentified" in label
+    assert "1 ignored" in label
+
+
+def test_speaker_id_transcript_label_complete_omits_extra_counts() -> None:
+    from transcriptx.web.page_modules.speaker_id import _speaker_id_transcript_label
+    from transcriptx.services.speaker_studio.segment_index import TranscriptSummary
+
+    t = TranscriptSummary(
+        path="/x.json",
+        base_name="meeting",
+        speaker_map_status="complete",
+        segment_count=50,
+        unique_speaker_count=2,
+        unidentified_speaker_count=0,
+        ignored_speaker_count=1,
+    )
+    assert _speaker_id_transcript_label(t) == "meeting (complete, 50 segs)"
+
+
 # ── helper fixtures ───────────────────────────────────────────────────────────
 
 
@@ -280,6 +315,31 @@ def test_speaker_id_next_unnamed_idx_stays_when_all_named() -> None:
     assert result == 0
 
 
+def test_speaker_id_next_unnamed_idx_after_save_moves_to_next_unnamed() -> None:
+    """Saving current speaker should advance to the next unnamed speaker when present."""
+    from transcriptx.web.page_modules.speaker_id import _next_unnamed_idx
+
+    speaker_ids = ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02", "SPEAKER_03"]
+    speaker_map = {
+        "SPEAKER_00": "Alice",
+        "SPEAKER_02": "Carol",
+    }
+    ignored: list[str] = []
+    current_idx = 0  # active speaker is SPEAKER_00
+
+    # Mirror the save-path behavior: current speaker is now named.
+    map_after_save = speaker_map | {"SPEAKER_00": "Alice"}
+    result = _next_unnamed_idx(
+        speaker_ids,
+        map_after_save,
+        ignored,
+        current=current_idx,
+    )
+
+    # SPEAKER_01 is the next unnamed speaker and should be selected.
+    assert result == 1
+
+
 def test_speaker_map_display_name_variant_id_matches_sidecar() -> None:
     """Sidecar keys are normalized; UI lookups must accept variant diarized ids."""
     from transcriptx.web.page_modules.speaker_id import _speaker_map_display_name
@@ -288,6 +348,15 @@ def test_speaker_map_display_name_variant_id_matches_sidecar() -> None:
     assert _speaker_map_display_name(m, "SPEAKER_1") == "Andrea"
     assert _speaker_map_display_name(m, "SPEAKER_01") == "Andrea"
     assert _speaker_map_display_name(m, "SPEAKER_2") == "Bob"
+
+
+def test_speaker_map_display_name_ignores_placeholder_self_mapping() -> None:
+    """Mappings like SPEAKER_00 -> SPEAKER_00 should still render as unnamed."""
+    from transcriptx.web.page_modules.speaker_id import _speaker_map_display_name
+
+    m = {"SPEAKER_00": "SPEAKER_00", "SPEAKER_01": "Alice"}
+    assert _speaker_map_display_name(m, "SPEAKER_00") == ""
+    assert _speaker_map_display_name(m, "SPEAKER_01") == "Alice"
 
 
 def test_speaker_id_named_and_remaining_counts_with_variant_diarized_ids(

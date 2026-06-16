@@ -73,7 +73,7 @@ class TestTranscriptOutputAnalysis:
         assert result["total_segments"] == 0
 
     @patch(
-        "transcriptx.core.utils.transcript_output.generate_human_friendly_transcript_from_file"
+        "transcriptx.core.utils.transcript_output.generate_human_friendly_transcript"
     )
     def test_transcript_output_save_results(
         self,
@@ -82,12 +82,17 @@ class TestTranscriptOutputAnalysis:
         sample_segments,
         sample_speaker_map,
     ):
-        """Test saving transcript output results."""
+        """Test saving transcript output uses in-memory segments (incl. sidecar names)."""
         mock_output_service = MagicMock()
         mock_output_service.transcript_path = "/tmp/test_transcript.json"
+        mock_output_service.base_name = "test_transcript"
+        mock_output_service.transcript_dir = "/tmp/out"
 
         result = transcript_output_module.analyze(sample_segments)
         transcript_output_module._save_results(result, mock_output_service)
 
-        # Should call generate function
-        mock_generate.assert_called_once_with("/tmp/test_transcript.json")
+        mock_generate.assert_called_once_with(
+            sample_segments,
+            "test_transcript",
+            "/tmp/out",
+        )

@@ -375,9 +375,11 @@ class MomentumAnalysis(AnalysisModule):
             pauses_result = context.get_analysis_result("pauses")
             echoes_result = context.get_analysis_result("echoes")
             loops_result = context.get_analysis_result("conversation_loops")
-            similarity_result = context.get_analysis_result(
-                "semantic_similarity_advanced"
-            ) or context.get_analysis_result("semantic_similarity")
+            similarity_result = (
+                context.get_analysis_result("semantic_similarity_advanced")
+                or context.get_analysis_result("semantic_similarity")
+                or context.get_analysis_result("semantic_similarity_v2")
+            )
             sentiment_result = context.get_analysis_result("sentiment")
 
             results = self.analyze(

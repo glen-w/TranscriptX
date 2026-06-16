@@ -6,6 +6,7 @@ import json
 import os
 from typing import Any
 
+from transcriptx.core.config import iter_all_profile_target_adapters
 from transcriptx.core.utils.config.config_errors import ConfigLoadError
 from transcriptx.core.utils.config.config_raw_validation import (
     unwrap_config_payload,
@@ -30,38 +31,21 @@ def load_config_file_into(config: Any, config_file: str) -> None:
         config_data = unwrap_config_payload(raw)
         validate_raw_config_dict(config_data)
 
+        adapters = iter_all_profile_target_adapters()
+        analysis_target_config_keys = {
+            adapter.config_path[1]
+            for adapter in adapters
+            if len(adapter.config_path) == 2 and adapter.config_path[0] == "analysis"
+        }
+        pending_quality_profiles: dict[str, Any] | None = None
+
         if "analysis" in config_data:
             for key, value in config_data["analysis"].items():
-                if key in (
-                    "topic_modeling",
-                    "acts",
-                    "tag_extraction",
-                    "qa_analysis",
-                    "temporal_dynamics",
-                    "vectorization",
-                    "voice",
-                    "speaker_exemplars",
-                    "affect_tension",
-                ):
-                    config_obj = getattr(config.analysis, key)
-                    if isinstance(value, dict):
-                        apply_profile_to_config(config_obj, value)
-                elif key.startswith("active_") and key.endswith("_profile"):
-                    setattr(config.analysis, key, value)
-                elif key == "quality_filtering_profiles" and isinstance(value, dict):
-                    for profile_name, profile_data in value.items():
-                        if (
-                            isinstance(profile_data, dict)
-                            and "thresholds" in profile_data
-                        ):
-                            thresholds = profile_data["thresholds"]
-                            for threshold_key, threshold_value in thresholds.items():
-                                if (
-                                    isinstance(threshold_value, list)
-                                    and len(threshold_value) == 2
-                                ):
-                                    thresholds[threshold_key] = tuple(threshold_value)
-                    setattr(config.analysis, key, value)
+                if key == "quality_filtering_profiles" and isinstance(value, dict):
+                    pending_quality_profiles = value
+                elif key in analysis_target_config_keys and isinstance(value, dict):
+                    # Adapter-owned target config application happens below.
+                    continue
                 elif hasattr(config.analysis, key):
                     setattr(config.analysis, key, value)
 
@@ -105,8 +89,37 @@ def load_config_file_into(config: Any, config_file: str) -> None:
                 if hasattr(config.group_analysis, key):
                     setattr(config.group_analysis, key, value)
 
-        if "active_workflow_profile" in config_data:
-            config.active_workflow_profile = config_data["active_workflow_profile"]
+        for adapter in adapters:
+            found_activation, activation_name = adapter.get_activation_from_payload(
+                config_data
+            )
+            if found_activation:
+                adapter.set_active_profile_name(config, activation_name)
+            found_target_payload, target_payload = adapter.get_target_payload(
+                config_data
+            )
+            if found_target_payload and adapter.target_id != "workflow":
+                config_obj = adapter.get_target_config_obj(config)
+                if config_obj is not None:
+                    apply_profile_to_config(config_obj, target_payload)
+
+        # Deterministic apply order:
+        # 1) base file overrides
+        # 2) adapter-target payload application
+        # 3) special-case bucket normalization/repair where required
+        if pending_quality_profiles is not None:
+            for profile_data in pending_quality_profiles.values():
+                if isinstance(profile_data, dict) and "thresholds" in profile_data:
+                    thresholds = profile_data["thresholds"]
+                    for threshold_key, threshold_value in thresholds.items():
+                        if (
+                            isinstance(threshold_value, list)
+                            and len(threshold_value) == 2
+                        ):
+                            thresholds[threshold_key] = tuple(threshold_value)
+            setattr(
+                config.analysis, "quality_filtering_profiles", pending_quality_profiles
+            )
 
         if "use_emojis" in config_data:
             config.use_emojis = bool(config_data["use_emojis"])

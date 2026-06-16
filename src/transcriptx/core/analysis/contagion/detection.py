@@ -9,11 +9,7 @@ from typing import Any, Dict, List, Tuple
 
 
 def _top_score_label(scores: Dict[str, Any]) -> str | None:
-    numeric = {
-        k: v
-        for k, v in scores.items()
-        if isinstance(v, (int, float)) and v > 0
-    }
+    numeric = {k: v for k, v in scores.items() if isinstance(v, (int, float)) and v > 0}
     if not numeric:
         return None
     return max(numeric.items(), key=lambda x: x[1])[0]
@@ -45,7 +41,7 @@ def build_emotion_timeline(
         extract_speaker_info,
         get_speaker_display_name,
     )
-    from transcriptx.utils.text_utils import is_named_speaker
+    from transcriptx.utils.text_utils import is_turn_taking_speaker_label
 
     speaker_emotions = defaultdict(list)
     timeline: List[Tuple[str, str]] = []
@@ -55,7 +51,7 @@ def build_emotion_timeline(
         if speaker_info is None:
             continue
         speaker = get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
-        if not speaker or not is_named_speaker(speaker):
+        if not speaker or not is_turn_taking_speaker_label(speaker):
             continue
 
         if emotion_type == "context_emotion":

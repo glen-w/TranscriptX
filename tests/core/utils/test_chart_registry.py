@@ -56,7 +56,7 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 123
+    assert len(CHART_DEFINITIONS) == 129
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("group.pauses.temporal_overlay.global") is not None
     assert get_chart_definition("group.acts.temporal_overlay.global") is not None
@@ -83,6 +83,12 @@ def test_chart_definitions_json_load_count():
     )
     assert (
         get_chart_definition("group.contagion.pooled.top_directed_edges.global")
+        is not None
+    )
+    assert (
+        get_chart_definition(
+            "semantic_similarity_v2.speaker_repetition_frequency.global"
+        )
         is not None
     )
 
@@ -282,6 +288,31 @@ def test_registry_stability_core_viz_ids():
         assert get_chart_definition(viz_id) is not None
 
 
+def test_semantic_similarity_v2_chart_definitions_match_artifacts():
+    expected = {
+        "speaker_repetition_frequency",
+        "agreement_disagreement_breakdown",
+        "similarity_distribution",
+        "speaker_repetitions",
+        "classification",
+        "speaker_similarity",
+    }
+    for slug in expected:
+        viz_id = f"semantic_similarity_v2.{slug}.global"
+        chart_def = get_chart_definition(viz_id)
+        assert chart_def is not None
+        artifact = FakeArtifact(
+            id=f"{slug}_png",
+            kind="chart_static",
+            module="semantic_similarity_v2",
+            scope="global",
+            speaker=None,
+            rel_path=f"semantic_similarity_v2/charts/global/static/base_{slug}.png",
+            meta={"viz_id": viz_id},
+        )
+        assert chart_def.match.matches(artifact, chart_def) is True
+
+
 def test_matcher_prefers_viz_id_metadata():
     chart_def = get_chart_definition("sentiment.multi_speaker_sentiment.global")
     assert chart_def is not None
@@ -357,6 +388,19 @@ def test_iter_chart_definitions_returns_definitions():
     defs = list(iter_chart_definitions())
     assert defs
     assert all(hasattr(defn, "viz_id") for defn in defs)
+
+
+def test_all_chart_definitions_have_description():
+    """Every chart definition must carry a non-trivial human-readable description."""
+    missing = [c.viz_id for c in CHART_DEFINITIONS if not (c.description or "").strip()]
+    assert not missing, f"Chart definitions missing description: {missing}"
+
+    too_short = [
+        c.viz_id for c in CHART_DEFINITIONS if len((c.description or "").strip()) < 20
+    ]
+    assert (
+        not too_short
+    ), f"Chart descriptions too short (likely placeholders): {too_short}"
 
 
 def _infer_group_chart_family_from_viz_id(viz_id: str) -> str | None:

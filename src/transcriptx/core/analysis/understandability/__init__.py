@@ -12,7 +12,7 @@ from transcriptx.core.utils.understandability import (
     compute_understandability_metrics,
     plot_understandability_charts,
 )
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_turn_taking_speaker_label
 from transcriptx.core.utils.notifications import notify_user
 
 
@@ -42,21 +42,36 @@ class UnderstandabilityAnalysis(AnalysisModule):
         Returns:
             Dictionary containing understandability analysis results
         """
+        from collections import defaultdict
+
         from transcriptx.core.utils.speaker_extraction import (
-            group_segments_by_speaker,
+            extract_speaker_info,
             get_speaker_display_name,
         )
 
-        # Group segments by speaker using speaker_db_id when available
-        grouped_segments = group_segments_by_speaker(segments)
+        # Group segments by speaker, falling back to the raw diarization label
+        # (e.g. "SPEAKER_00") when a segment has no stable id / human-readable name,
+        # so readability metrics are still produced for un-named transcripts.
+        grouped_segments: Dict[Any, List[Dict[str, Any]]] = defaultdict(list)
+        skipped = 0
+        for seg in segments:
+            info = extract_speaker_info(seg)
+            if info is not None:
+                grouping_key = info.grouping_key
+            else:
+                label = seg.get("speaker")
+                grouping_key = str(label) if label else None
+            if grouping_key is None:
+                skipped += 1
+                continue
+            grouped_segments[grouping_key].append(seg)
 
         # Aggregate text by speaker (using grouping_key for uniqueness)
         grouped_texts = {}
-        skipped = 0
 
         for grouping_key, segs in grouped_segments.items():
             display_name = get_speaker_display_name(grouping_key, segs, segments)
-            if not display_name or not is_named_speaker(display_name):
+            if not display_name or not is_turn_taking_speaker_label(display_name):
                 skipped += len(segs)
                 continue
 

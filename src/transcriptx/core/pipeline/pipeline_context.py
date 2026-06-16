@@ -12,6 +12,7 @@ Key Features:
 - Efficient data access
 """
 
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils.logger import get_logger
@@ -20,6 +21,243 @@ from transcriptx.io.transcript_service import TranscriptService
 from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 logger = get_logger()
+
+
+@dataclass(frozen=True)
+class LoadedTranscript:
+    segments: List[Dict[str, Any]]
+    base_name: str
+    transcript_dir: str
+    transcript_service: TranscriptService
+
+
+@dataclass(frozen=True)
+class SpeakerResolution:
+    segments: List[Dict[str, Any]]
+    speaker_map: Dict[str, str]
+    speaker_map_metadata: Dict[str, str]
+    ignored_speaker_ids: set[str]
+
+
+@dataclass(frozen=True)
+class RuntimeIdentityAndFlags:
+    transcript_key: str
+    run_id: Optional[str]
+    runtime_flags: Dict[str, Any]
+
+
+class PipelineContextBuilder:
+    def __init__(
+        self,
+        *,
+        transcript_path: str,
+        include_unidentified_speakers: bool = False,
+        anonymise_speakers: bool = False,
+        batch_mode: bool = False,
+        output_dir: Optional[str] = None,
+        transcript_key: Optional[str] = None,
+        run_id: Optional[str] = None,
+    ) -> None:
+        self.transcript_path = transcript_path
+        self.include_unidentified_speakers = include_unidentified_speakers
+        self.anonymise_speakers = anonymise_speakers
+        self.batch_mode = batch_mode
+        self.output_dir = output_dir
+        self.transcript_key = transcript_key
+        self.run_id = run_id
+
+    def load_transcript(self) -> LoadedTranscript:
+        transcript_service = TranscriptService(enable_cache=True)
+        try:
+            segments, base_name, transcript_dir = (
+                transcript_service.load_transcript_data(
+                    self.transcript_path,
+                    batch_mode=self.batch_mode,
+                    use_cache=True,
+                    output_dir=self.output_dir,
+                )
+            )
+        except FileNotFoundError:
+            logger.error(f"Transcript file not found: {self.transcript_path}")
+            raise
+        except ValueError as e:
+            logger.error(f"Invalid transcript data: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to load transcript data: {e}")
+            raise RuntimeError(f"Failed to initialize PipelineContext: {e}") from e
+        return LoadedTranscript(
+            segments=segments,
+            base_name=base_name,
+            transcript_dir=transcript_dir,
+            transcript_service=transcript_service,
+        )
+
+    def resolve_speakers(self, loaded: LoadedTranscript) -> SpeakerResolution:
+        # Contract: speaker display state is a module-global bridge used by
+        # legacy output helpers. A builder invocation may set it once from the
+        # resolved metadata, and PipelineContext.close() clears it.
+        from transcriptx.core.utils.speaker_extraction import (
+            get_unique_speakers,
+            set_speaker_display_map,
+        )
+        from transcriptx.io.speaker_map_resolver import SpeakerMapResolver
+
+        resolver = SpeakerMapResolver()
+        state = resolver.load_mapping(self.transcript_path)
+        ignored_speaker_ids = set(state.ignored_speakers)
+        segments = loaded.segments
+        if state.speaker_map:
+            segments = resolver.resolve_segments(segments, state)
+            loaded.transcript_service.replace_cached_segments(
+                self.transcript_path, segments
+            )
+
+        speaker_map = get_unique_speakers(segments)
+        logger.debug(f"Extracted {len(speaker_map)} speakers from segments")
+        speaker_map_metadata = (
+            state.speaker_map or self._derive_speaker_map_from_segments(segments)
+        )
+        if speaker_map_metadata:
+            set_speaker_display_map(speaker_map_metadata)
+        return SpeakerResolution(
+            segments=segments,
+            speaker_map=speaker_map,
+            speaker_map_metadata=speaker_map_metadata,
+            ignored_speaker_ids=ignored_speaker_ids,
+        )
+
+    def compute_identity_and_runtime_flags(
+        self, speaker_resolution: SpeakerResolution
+    ) -> RuntimeIdentityAndFlags:
+        from transcriptx.core.utils.canonicalization import (
+            compute_transcript_identity_hash,
+        )
+
+        transcript_key = self.transcript_key or compute_transcript_identity_hash(
+            speaker_resolution.segments
+        )
+        runtime_flags: Dict[str, Any] = {
+            "include_unidentified_speakers": self.include_unidentified_speakers,
+            "anonymise_speakers": self.anonymise_speakers,
+            "ignored_speaker_ids": speaker_resolution.ignored_speaker_ids,
+        }
+        if self.anonymise_speakers:
+            runtime_flags["speaker_anonymisation_map"] = (
+                self._build_speaker_anonymisation_map(speaker_resolution.segments)
+            )
+        runtime_flags["named_speaker_keys"] = self._collect_named_speaker_keys(
+            speaker_resolution.segments,
+            speaker_resolution.ignored_speaker_ids,
+        )
+        runtime_flags["speaker_key_aliases"] = self._build_speaker_key_aliases(
+            speaker_resolution.speaker_map
+        )
+        return RuntimeIdentityAndFlags(
+            transcript_key=transcript_key,
+            run_id=self.run_id,
+            runtime_flags=runtime_flags,
+        )
+
+    @staticmethod
+    def _get_speaker_key_from_segment(segment: Dict[str, Any]) -> Optional[str]:
+        key = segment.get("speaker_db_id")
+        if key:
+            return str(key).strip() or None
+        key = segment.get("speaker_key") or segment.get("grouping_key")
+        if key:
+            return str(key).strip() or None
+        key = segment.get("speaker")
+        if key:
+            return str(key).strip() or None
+        return None
+
+    @classmethod
+    def _collect_named_speaker_keys(
+        cls, segments: List[Dict[str, Any]], ignored_speaker_ids: set[str]
+    ) -> set[str]:
+        named_keys: set[str] = set()
+        for segment in segments:
+            label = segment.get("speaker")
+            key = cls._get_speaker_key_from_segment(segment)
+            if key and label:
+                if is_eligible_named_speaker(str(label), str(key), ignored_speaker_ids):
+                    named_keys.add(key)
+        return named_keys
+
+    @classmethod
+    def _build_speaker_anonymisation_map(
+        cls, segments: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        seen: set[str] = set()
+        ordered_keys: list[str] = []
+        for segment in segments:
+            key = cls._get_speaker_key_from_segment(segment)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            ordered_keys.append(key)
+        return {
+            key: f"Speaker {index:02d}"
+            for index, key in enumerate(ordered_keys, start=1)
+        }
+
+    @staticmethod
+    def _build_speaker_key_aliases(speaker_map: Dict[Any, Any]) -> Dict[str, str]:
+        aliases: Dict[str, str] = {}
+        collisions: set[str] = set()
+        for key, display in speaker_map.items():
+            if display is None:
+                continue
+            display_str = str(display).strip()
+            key_str = str(key).strip()
+            if not display_str or not key_str:
+                continue
+            if display_str in aliases and aliases[display_str] != key_str:
+                collisions.add(display_str)
+                continue
+            aliases[display_str] = key_str
+        for display in collisions:
+            aliases.pop(display, None)
+        return aliases
+
+    @staticmethod
+    def _derive_speaker_map_from_segments(
+        segments: List[Dict[str, Any]],
+    ) -> Dict[str, str]:
+        from collections import Counter
+
+        votes: Dict[str, Counter[str]] = {}
+        for seg in segments:
+            if not isinstance(seg, dict):
+                continue
+            speaker_id = seg.get("speaker")
+            if not isinstance(speaker_id, str) or not speaker_id.strip():
+                continue
+            original_cue = seg.get("original_cue")
+            if not isinstance(original_cue, dict):
+                continue
+            original_name = original_cue.get("original_speaker")
+            if not isinstance(original_name, str) or not original_name.strip():
+                continue
+            sid = speaker_id.strip()
+            name = original_name.strip()
+            bucket = votes.setdefault(sid, Counter())
+            bucket[name] += 1
+
+        resolved: Dict[str, str] = {}
+        for sid, counter in votes.items():
+            if not counter:
+                continue
+            resolved[sid] = sorted(
+                counter.items(), key=lambda item: (-item[1], item[0])
+            )[0][0]
+
+        if resolved:
+            logger.info(
+                f"Recovered {len(resolved)} speaker name(s) from original_cue metadata"
+            )
+        return resolved
 
 
 class PipelineContext:
@@ -67,84 +305,32 @@ class PipelineContext:
             RuntimeError: If context initialization fails
         """
         self.transcript_path = transcript_path
-
-        # Create TranscriptService instance and load transcript data once
-        self._transcript_service = TranscriptService(enable_cache=True)
-        try:
-            self.segments, self.base_name, self.transcript_dir = (
-                self._transcript_service.load_transcript_data(
-                    transcript_path,
-                    batch_mode=batch_mode,
-                    use_cache=True,
-                    output_dir=output_dir,
-                )
-            )
-        except FileNotFoundError:
-            logger.error(f"Transcript file not found: {transcript_path}")
-            raise
-        except ValueError as e:
-            logger.error(f"Invalid transcript data: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Failed to load transcript data: {e}")
-            raise RuntimeError(f"Failed to initialize PipelineContext: {e}") from e
-
-        # Speaker sidecar: resolve diarized IDs to display names on segments so all
-        # modules (and segment cache) see the same labels as get_speaker_map metadata.
-        from transcriptx.core.utils.speaker_extraction import (
-            get_unique_speakers,
-            set_speaker_display_map,
+        builder = PipelineContextBuilder(
+            transcript_path=transcript_path,
+            include_unidentified_speakers=include_unidentified_speakers,
+            anonymise_speakers=anonymise_speakers,
+            batch_mode=batch_mode,
+            output_dir=output_dir,
+            transcript_key=transcript_key,
+            run_id=run_id,
         )
-        from transcriptx.io.speaker_map_resolver import SpeakerMapResolver
+        loaded = builder.load_transcript()
+        speaker_resolution = builder.resolve_speakers(loaded)
+        runtime = builder.compute_identity_and_runtime_flags(speaker_resolution)
 
-        resolver = SpeakerMapResolver()
-        state = resolver.load_mapping(transcript_path)
-        self.ignored_speaker_ids = set(state.ignored_speakers)
-
-        if state.speaker_map:
-            self.segments = resolver.resolve_segments(self.segments, state)
-            self._transcript_service.replace_cached_segments(
-                transcript_path, self.segments
-            )
-
-        self.speaker_map = get_unique_speakers(self.segments)
-        logger.debug(f"Extracted {len(self.speaker_map)} speakers from segments")
-
-        from transcriptx.core.utils.canonicalization import (
-            compute_transcript_identity_hash,
-        )
-
-        self.transcript_key = transcript_key or compute_transcript_identity_hash(
-            self.segments
-        )
-        self.run_id = run_id
-        self._speaker_map_metadata = state.speaker_map
-        if not self._speaker_map_metadata:
-            self._speaker_map_metadata = self._derive_speaker_map_from_segments(
-                self.segments
-            )
-        if self._speaker_map_metadata:
-            set_speaker_display_map(self._speaker_map_metadata)
+        self._transcript_service = loaded.transcript_service
+        self.segments = speaker_resolution.segments
+        self.base_name = loaded.base_name
+        self.transcript_dir = loaded.transcript_dir
+        self.ignored_speaker_ids = speaker_resolution.ignored_speaker_ids
+        self.speaker_map = speaker_resolution.speaker_map
+        self.transcript_key = runtime.transcript_key
+        self.run_id = runtime.run_id
+        self._speaker_map_metadata = speaker_resolution.speaker_map_metadata
 
         # Cache for analysis results (keyed by module name)
         self._analysis_results: Dict[str, Any] = {}
-        self.runtime_flags: Dict[str, Any] = {
-            "include_unidentified_speakers": include_unidentified_speakers,
-            "anonymise_speakers": anonymise_speakers,
-            "ignored_speaker_ids": self.ignored_speaker_ids,
-        }
-
-        if anonymise_speakers:
-            self.runtime_flags["speaker_anonymisation_map"] = (
-                self.build_speaker_anonymisation_map(self.segments)
-            )
-
-        self.runtime_flags["named_speaker_keys"] = self._collect_named_speaker_keys(
-            self.segments
-        )
-        self.runtime_flags["speaker_key_aliases"] = self._build_speaker_key_aliases(
-            self.speaker_map
-        )
+        self.runtime_flags = runtime.runtime_flags
 
         # Cache for computed values that can be reused
         self._computed_values: Dict[str, Any] = {}

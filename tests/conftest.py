@@ -15,6 +15,7 @@ pytest_plugins = [
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -573,20 +574,23 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.contract)
 
         # Add requires_models marker for model-heavy areas (skip for contract path).
-        # Exempt adapter unit tests — substring matches like "ner" inside "generic"
-        # must not falsely tag clean adapter tests as model-dependent.
+        # Exempt adapter unit tests — substring matches like "ner" inside "ownership"
+        # or "generic" must not falsely tag clean tests as model-dependent.
         # Exempt contagion_detection tests (detection/emotion_merger logic only, no models).
+        _mentions_ner_area = bool(re.search(r"(^|[/_-])ner([/_\-.]|$)", path_str))
         if (
-            any(
-                keyword in path_str
-                for keyword in [
-                    "ner",
-                    "topic_modeling",
-                    "emotion",
-                    "contagion",
-                    "entity_sentiment",
-                    "semantic_similarity_advanced",
-                ]
+            (
+                _mentions_ner_area
+                or any(
+                    keyword in path_str
+                    for keyword in [
+                        "topic_modeling",
+                        "emotion",
+                        "contagion",
+                        "entity_sentiment",
+                        "semantic_similarity_advanced",
+                    ]
+                )
             )
             and not is_contract_path
             and "/io/adapters/" not in path_str

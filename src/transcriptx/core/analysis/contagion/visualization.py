@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_turn_taking_speaker_label
 from transcriptx.core.utils.viz_ids import VIZ_CONTAGION_MATRIX
 from transcriptx.core.viz.specs import HeatmapMatrixSpec
 
@@ -23,7 +23,7 @@ def create_contagion_matrix(
     seen = set()
     speakers = []
     for s in speaker_emotions.keys():
-        if s and s not in seen and is_named_speaker(s):
+        if s and s not in seen and is_turn_taking_speaker_label(s):
             speakers.append(s)
             seen.add(s)
 

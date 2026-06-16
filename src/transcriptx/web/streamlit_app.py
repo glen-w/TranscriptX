@@ -468,8 +468,8 @@ def render_documentation():
                 ],
             },
             "semantic_similarity": {
-                "title": "Semantic Similarity Analysis",
-                "description": "Measures similarity between utterances using semantic embeddings. Identifies repetitive content and tracks concept evolution.",
+                "title": "Semantic Similarity Analysis (Legacy)",
+                "description": "Legacy semantic similarity path that measures similarity between utterances using semantic embeddings. Identifies repetitive content and tracks concept evolution.",
                 "capabilities": [
                     "Measures similarity between utterances",
                     "Identifies repetitive content",
@@ -478,12 +478,22 @@ def render_documentation():
                 ],
             },
             "semantic_similarity_advanced": {
-                "title": "Advanced Semantic Similarity",
-                "description": "Enhanced semantic similarity analysis with integration of other analysis modules for more sophisticated similarity detection.",
+                "title": "Advanced Semantic Similarity (Legacy)",
+                "description": "Legacy advanced semantic path with integration of other analysis modules for more sophisticated similarity detection.",
                 "capabilities": [
                     "Advanced similarity detection",
                     "Integration with other analysis modules",
                     "More sophisticated repetition detection",
+                ],
+            },
+            "semantic_similarity_v2": {
+                "title": "Semantic Similarity v2",
+                "description": "Default semantic similarity path using batched embeddings, vectorized cosine similarity, candidate caps, and structured diagnostics.",
+                "capabilities": [
+                    "Batched embedding inference",
+                    "Vectorized similarity scoring",
+                    "Candidate pruning and timeouts",
+                    "JSON outputs with schema_version",
                 ],
             },
             "sentiment": {

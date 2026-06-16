@@ -9,20 +9,14 @@ a minimal run so the transcript appears in Library and subject views.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from collections import Counter
 import uuid
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, List
 
 import streamlit as st
 
 from transcriptx.core.utils.canonicalization import compute_transcript_identity_hash
-from transcriptx.core.utils.paths import (
-    OUTPUTS_DIR,
-    TRANSCRIPTS_IMPORTS_DIR,
-)
-from transcriptx.core.utils.run_manifest import create_run_manifest, save_run_manifest
+from transcriptx.core.utils.paths import TRANSCRIPTS_IMPORTS_DIR
 from transcriptx.core.utils.slug_manager import register_transcript
 from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils.logger import get_logger
@@ -48,7 +42,9 @@ def _save_uploaded_transcript(uploaded_file: Any) -> tuple[Path, str]:
     """
     imports_dir = Path(TRANSCRIPTS_IMPORTS_DIR)
     imports_dir.mkdir(parents=True, exist_ok=True)
-    logical_basename = Path(getattr(uploaded_file, "name", "uploaded") or "uploaded").name
+    logical_basename = Path(
+        getattr(uploaded_file, "name", "uploaded") or "uploaded"
+    ).name
     dest = imports_dir / f"{uuid.uuid4().hex}_{logical_basename}"
     dest.write_bytes(uploaded_file.read())
     logger.info(
@@ -69,12 +65,9 @@ def _load_segments_from_json(transcript_path: Path) -> List[Any]:
     return segments
 
 
-def _register_uploaded_transcript(transcript_path: Path) -> tuple[str, str, Path]:
+def _register_uploaded_transcript(transcript_path: Path) -> str:
     """
-    Register transcript in the index and create a minimal run so it appears in the app.
-
-    Returns:
-        (slug, run_id, run_dir)
+    Register transcript in the index and return its slug.
     """
     validation = validate_managed_transcript(transcript_path)
     if not validation.ok:
@@ -83,80 +76,16 @@ def _register_uploaded_transcript(transcript_path: Path) -> tuple[str, str, Path
         )
     segments = _load_segments_from_json(transcript_path)
     transcript_key = compute_transcript_identity_hash(segments)
-    run_id = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     source_basename = get_canonical_base_name(str(transcript_path))
 
     slug = register_transcript(
         transcript_key=transcript_key,
         transcript_path=str(transcript_path),
-        run_id=run_id,
+        run_id=None,
         source_basename=source_basename,
         source_path=str(transcript_path),
     )
-
-    run_dir = Path(OUTPUTS_DIR) / slug / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-
-    manifest = create_run_manifest(
-        transcript_path=str(transcript_path.resolve()),
-        transcript_identity_hash=transcript_key,
-        run_id=run_id,
-        source_basename=source_basename,
-        source_path=str(transcript_path.resolve()),
-    )
-    save_run_manifest(manifest, str(run_dir))
-
-    return slug, run_id, run_dir
-
-
-def _build_speaker_map_from_segments(segments: List[Any]) -> Dict[str, str]:
-    """Extract stable speaker ID -> original speaker name from imported segments."""
-    votes: dict[str, Counter[str]] = {}
-    for seg in segments:
-        if not isinstance(seg, dict):
-            continue
-        speaker_id = seg.get("speaker")
-        if not isinstance(speaker_id, str) or not speaker_id.strip():
-            continue
-        original_cue = seg.get("original_cue")
-        if not isinstance(original_cue, dict):
-            continue
-        original_name = original_cue.get("original_speaker")
-        if not isinstance(original_name, str) or not original_name.strip():
-            continue
-        sid = speaker_id.strip()
-        name = original_name.strip()
-        bucket = votes.setdefault(sid, Counter())
-        bucket[name] += 1
-
-    resolved: Dict[str, str] = {}
-    for sid, counter in votes.items():
-        if not counter:
-            continue
-        # Deterministic tie-break: most common, then lexical order.
-        resolved[sid] = sorted(counter.items(), key=lambda item: (-item[1], item[0]))[
-            0
-        ][0]
-    return resolved
-
-
-def _persist_imported_speaker_names(transcript_path: Path) -> None:
-    """Persist discovered speaker names into sidecar mapping when available."""
-    segments = _load_segments_from_json(transcript_path)
-    speaker_map = _build_speaker_map_from_segments(segments)
-    if not speaker_map:
-        return
-    from transcriptx.services.speaker_studio.mapping_service import (
-        SpeakerMappingService,
-    )
-
-    SpeakerMappingService().bulk_update(
-        str(transcript_path),
-        speaker_map=speaker_map,
-        ignored_speakers=[],
-        method="batch",
-        speaker_map_source={"kind": "imported_original_speaker"},
-    )
+    return slug
 
 
 def _clear_import_caches() -> None:
@@ -165,8 +94,8 @@ def _clear_import_caches() -> None:
     RecordingsService.list_recordings.clear()  # type: ignore[attr-defined]
 
 
-def _import_uploaded_transcript(uploaded: Any) -> tuple[str, Path, Path]:
-    """Import uploaded transcript and return (session_id, run_dir, transcript_path)."""
+def _import_uploaded_transcript(uploaded: Any) -> tuple[str, Path]:
+    """Import uploaded transcript and return (slug, transcript_path)."""
     saved_path, logical_basename = _save_uploaded_transcript(uploaded)
     try:
         managed = run_managed_import_workflow(
@@ -182,15 +111,14 @@ def _import_uploaded_transcript(uploaded: Any) -> tuple[str, Path, Path]:
 
     json_path = managed.json_path
 
-    _persist_imported_speaker_names(json_path)
-    slug, run_id, run_dir = _register_uploaded_transcript(json_path)
-    return f"{slug}/{run_id}", run_dir, json_path
+    slug = _register_uploaded_transcript(json_path)
+    return slug, json_path
 
 
 def _import_uploaded_transcript_with_timeout(
     uploaded: Any,
     timeout_seconds: int = _IMPORT_TIMEOUT_SECONDS,
-) -> tuple[str, Path, Path]:
+) -> tuple[str, Path]:
     """Run transcript import with a timeout to avoid endless UI loading."""
     with ThreadPoolExecutor(
         max_workers=1, thread_name_prefix="transcript_import"
@@ -273,12 +201,12 @@ def render_upload_transcript_page() -> None:
         if not uploaded_transcripts:
             st.error("Please choose a transcript file to import.")
         else:
-            successes: list[tuple[str, Path, Path]] = []
+            successes: list[tuple[str, Path]] = []
             failures: list[tuple[str, str]] = []
             for uploaded_transcript in uploaded_transcripts:
                 try:
-                    session_id, run_dir, transcript_path = (
-                        _import_uploaded_transcript_with_timeout(uploaded_transcript)
+                    slug, transcript_path = _import_uploaded_transcript_with_timeout(
+                        uploaded_transcript
                     )
                 except UnsupportedFormatError as e:
                     failures.append(
@@ -294,15 +222,17 @@ def render_upload_transcript_page() -> None:
                     logger.exception("Import failed")
                     failures.append((uploaded_transcript.name, f"Import failed: {e}"))
                 else:
-                    successes.append((session_id, run_dir, transcript_path))
+                    successes.append((slug, transcript_path))
 
             if successes:
                 _clear_import_caches()
                 last = successes[-1]
-                st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = str(last[2])
+                st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = str(last[1])
                 st.success(f"Imported {len(successes)} transcript(s).")
-                for session_id, run_dir, _tp in successes:
-                    st.caption(f"Registered as **{session_id}** (`{run_dir}`)")
+                for slug, transcript_path in successes:
+                    st.caption(
+                        f"Registered transcript **{slug}** from `{transcript_path}`."
+                    )
                 st.info(
                     "Select it from **Library** or the **Subject** dropdown to view and run analysis."
                 )

@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from transcriptx.web.module_ui_groups import module_sort_key
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 
 
@@ -160,7 +161,9 @@ def render_explorer() -> None:
                 mod_counts = pd.DataFrame(
                     [
                         {"Module": k, "Files": len(v)}
-                        for k, v in sorted(by_module.items())
+                        for k, v in sorted(
+                            by_module.items(), key=lambda item: module_sort_key(item[0])
+                        )
                     ]
                 )
                 st.bar_chart(mod_counts.set_index("Module"), height=200)
@@ -181,7 +184,7 @@ def render_explorer() -> None:
     st.divider()
 
     # Sections per module (from artifacts)
-    for module_name in sorted(by_module.keys()):
+    for module_name in sorted(by_module.keys(), key=module_sort_key):
         module_artifacts = by_module[module_name]
         shown = [a for a in module_artifacts if _matches_search(Path(a.rel_path))]
         if not shown and search_lower:

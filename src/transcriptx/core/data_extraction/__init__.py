@@ -22,7 +22,7 @@ from .emotion_extractor import EmotionDataExtractor
 from .topic_extractor import TopicDataExtractor
 from .entity_extractor import EntityDataExtractor
 from .tic_extractor import TicDataExtractor
-from .semantic_extractor import SemanticDataExtractor
+from .semantic_extractor import SemanticDataExtractor, pick_semantic_similarity_payload
 from .interaction_extractor import InteractionDataExtractor
 from .performance_extractor import PerformanceDataExtractor
 from .validation import DataValidationError, validate_speaker_data
@@ -35,6 +35,7 @@ __all__ = [
     "EntityDataExtractor",
     "TicDataExtractor",
     "SemanticDataExtractor",
+    "pick_semantic_similarity_payload",
     "InteractionDataExtractor",
     "PerformanceDataExtractor",
     "DataValidationError",

@@ -95,7 +95,7 @@ Modules are loosely grouped into light, medium, and heavy. Heavy modules should 
 
 Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging.
 
-**Docker:** The image uses `ENTRYPOINT ["transcriptx"]` and expects the host data tree mounted at `/data` (same layout as the repo: `data/recordings`, `data/transcripts`, `data/outputs`). When changing the Dockerfile or dependency constraints, build and run a quick smoke (e.g. `docker run --rm -p 8501:8501 -v "$(pwd)/data:/data" transcriptx:latest --host 0.0.0.0` and hit `http://localhost:8501/_stcore/health`) to avoid “works locally, fails in container” drift. The builder stage installs with `-c constraints.txt`; do not add pip installs in the runtime stage or without constraints. Full details: [docker.md](docker.md) and the [Architecture](ARCHITECTURE.md#docker-runtime--deployment) Docker section.
+**Docker:** The image uses `ENTRYPOINT ["transcriptx"]`. Compose mounts `./data` at `/data` for app state, outputs, and cache, and requires **`HOST_RECORDINGS_DIR`** (outside the repo) for source audio—see [docker.md](../runtime/docker.md). For a minimal health check with `docker run`, mount `./data` and add a second bind for recordings plus `TRANSCRIPTX_RECORDINGS_DIR` (see compose file). When changing the Dockerfile or dependency constraints, build and run a quick smoke and hit `http://localhost:8501/_stcore/health` to avoid “works locally, fails in container” drift. The builder stage installs with `-c constraints.txt`; do not add pip installs in the runtime stage or without constraints. Full details: [docker.md](docker.md) and the [Architecture](ARCHITECTURE.md#docker-runtime--deployment) Docker section.
 
 ## 9. What not to do
 

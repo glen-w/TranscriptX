@@ -38,6 +38,15 @@ Before doing anything else, run the **backup** custom command (`# backup`) and p
     - If `quarantined` is missing, run required tests as plain `pytest`; quarantine audit becomes `skipped (marker not defined)` and must be reported.
     - Always report detected markers and the exact fallback command used.
 - **Ensure required release tests pass.** Any failure in required suites is a blocker; optional/heavy suite failures follow the release-target policy above.
+- **Lane command alignment (must stay in sync with test docs/Makefile):**
+  - Default fast coverage lane:
+    - `pytest -q --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"`
+  - Integration lane:
+    - `pytest -q tests/integration -m "not quarantined and (integration or integration_core or integration_extended) and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not release_only"`
+  - Smoke lane:
+    - `pytest -q tests/smoke -m "smoke and not quarantined and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not release_only"`
+  - Release-only packaging lane:
+    - `pytest -q tests/release -m "release_only and not quarantined"`
 - **Review skipped tests.** Confirm every skip has a valid reason (e.g. missing optional dep, platform gate). Flag skips that look like they should be active.
 - **Handle flakiness explicitly:** if any test fails, re-run the failed test(s) once before final classification.
   - Passes on re-run: mark as flaky warning.
@@ -51,7 +60,7 @@ Before doing anything else, run the **backup** custom command (`# backup`) and p
   ```
   If optional/heavy suites are run with coverage separately, merge coverage data before reporting final coverage (e.g. combine `.coverage*` files and produce one final report).
   Confirm downstream tooling (CI/reporting) consumes `coverage.xml`; if not consumed, flag as warning.
-  Report the overall coverage percentage. Warn (non-blocking) if below 60%.
+  Report the overall coverage percentage. The repo enforces **≥ 70%** on the default fast suite via `.coveragerc` `fail_under` when using `make test-coverage` (same marker filter). Warn (non-blocking) on pre-release review if below that threshold or if the run did not use the same gate.
 - **Audit quarantined tests:**
   - Collect inventory: `pytest -m quarantined --collect-only -q`
   - Execute quarantined tests in non-blocking mode: `pytest -m quarantined -q`

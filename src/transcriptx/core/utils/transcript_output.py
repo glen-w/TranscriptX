@@ -1,7 +1,7 @@
 """
 Human-friendly transcript output module.
 
-This module generates human-friendly transcript files in both text and CSV formats.
+This module generates human-friendly transcript files in text, CSV, and SRT formats.
 """
 
 import os
@@ -69,7 +69,7 @@ def generate_human_friendly_transcript(
         # Generate the transcript files to the transcripts subdirectory
         transcripts_dir = str(Path(transcript_dir) / "transcripts")
         Path(transcripts_dir).mkdir(parents=True, exist_ok=True)
-        txt_path, csv_path = write_transcript_files(
+        txt_path, csv_path, srt_path = write_transcript_files(
             segments, None, base_name, transcripts_dir, format_time
         )
 
@@ -85,6 +85,7 @@ def generate_human_friendly_transcript(
         summary_data = {
             "transcript_file": txt_path,
             "csv_file": csv_path,
+            "srt_file": srt_path,
             "total_segments": len(segments),
             "speakers": speaker_names,
             "duration_minutes": (
@@ -103,6 +104,7 @@ def generate_human_friendly_transcript(
             "status": "success",
             "transcript_file": txt_path,
             "csv_file": csv_path,
+            "srt_file": srt_path,
             "summary": summary_data,
         }
 

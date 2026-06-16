@@ -12,7 +12,7 @@ services:
     env_file:
       - ./whisperx.env
     volumes:
-      - ./data/recordings:/data/input:ro
+      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR to your host audio folder outside the repo}:/data/input:ro
       - ./data/transcripts:/data/output
       - ./transcriptx_output:/data/transcriptx_output
       - whisperx_hf_cache:/root/.cache/huggingface

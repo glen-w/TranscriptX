@@ -12,6 +12,25 @@ from transcriptx.core.data_extraction.base_extractor import BaseDataExtractor
 from transcriptx.core.utils.similarity_utils import similarity_calculator
 
 
+def pick_semantic_similarity_payload(
+    results_by_module: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Prefer v2 results when present, else legacy basic/advanced.
+
+    ``results_by_module`` maps module id → analysis result dict.
+    """
+    for key in (
+        "semantic_similarity_v2",
+        "semantic_similarity",
+        "semantic_similarity_advanced",
+    ):
+        payload = results_by_module.get(key)
+        if isinstance(payload, dict) and payload:
+            return payload
+    return {}
+
+
 class SemanticDataExtractor(BaseDataExtractor):
     """
     Data extractor for semantic similarity analysis results.

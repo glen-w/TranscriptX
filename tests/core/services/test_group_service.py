@@ -111,7 +111,9 @@ def test_list_groups_best_effort_skips_broken_manifest(
         group_type="group",
         transcript_refs=[str(t1)],
     )
-    bad_path = project_root / "groups" / "deadbeef-dead-dead-dead-deadbeef0001.group.json"
+    bad_path = (
+        project_root / "groups" / "deadbeef-dead-dead-dead-deadbeef0001.group.json"
+    )
     bad_path.write_text(
         json.dumps(
             {

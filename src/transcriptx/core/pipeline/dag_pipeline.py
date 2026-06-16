@@ -7,73 +7,60 @@ It's designed for standard CPU setups and handles dependencies automatically.
 """
 
 import time
-from collections import defaultdict, deque
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+import threading
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from transcriptx.core.utils.logger import (
-    get_logger,
-    log_analysis_complete,
-    log_analysis_error,
-    log_analysis_start,
-)
+from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.validation import (
     validate_transcript_file,
     validate_output_directory,
 )
-from transcriptx.core.utils.notifications import notify_user
+from transcriptx.core.pipeline.dag_pipeline_execution import (
+    run_sequential_execution_phase,
+)
+from transcriptx.core.pipeline.dag_pipeline_engine import execute_pipeline_runtime
 from transcriptx.core.pipeline.dag_pipeline_run import (
     build_execute_pipeline_context,
     resolve_output_dir_for_run,
 )
-from transcriptx.core.pipeline.dag_pipeline_execution import (
-    run_sequential_execution_phase,
+from transcriptx.core.utils.config_provider import get_config
+from transcriptx.core.pipeline.contracts import RegistryModuleSnapshot, RegistrySnapshot
+from transcriptx.core.pipeline.dag_planner import DAGPlanner
+from transcriptx.core.pipeline.dag_executor import DAGExecutor, ExecutorState
+from transcriptx.core.pipeline.contracts import ModuleOutcome
+from transcriptx.core.pipeline.ports import CallbackEventSink
+from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
+from transcriptx.core.pipeline.dag_pipeline_errors import PipelineSetupError
+from transcriptx.core.pipeline.dag_legacy_compat import DAGLegacyCompatHelpers
+from transcriptx.core.pipeline.dag_registry import (
+    DAGNode,
+    DAGRegistry,
 )
-from transcriptx.core.pipeline.dag_pipeline_finalize import finalize_execution_results
-
-
-def get_module_registry():
-    from transcriptx.core.pipeline.module_registry import get_module_registry
-
-    return get_module_registry()
-
+from transcriptx.core.pipeline.module_registry import get_module_registry
+from transcriptx.core.pipeline.dag_execution_adapter import (
+    apply_module_side_effects as apply_module_side_effects_compat,
+    execute_single_module as execute_single_module_compat,
+)
 
 # Note: load_or_create_speaker_map is imported lazily inside functions to avoid circular dependency
 
 
-@dataclass
-class DAGNode:
-    """Represents a module in the DAG."""
-
-    name: str
-    description: str
-    category: str  # light, medium, heavy
-    dependencies: List[str]
-    function: Any  # The actual module function
-    timeout_seconds: int = 600
-    requirements: List[Any] = None
-    enhancements: List[Any] = None
-    executed: bool = False
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+# Backward-compatible no-op hooks kept for legacy tests/patches.
+def notify_user(*_args: Any, **_kwargs: Any) -> None:
+    return None
 
 
-@dataclass
-class ModuleExecOutcome:
-    """Result of running or skipping a single module. No side effects."""
+def log_analysis_complete(*_args: Any, **_kwargs: Any) -> None:
+    return None
 
-    status: Literal["success", "skipped", "failed"]
-    module_result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    duration_ms: float = 0.0
-    used_cache: bool = False
-    skip_reason: Optional[str] = None
-    module_run: Any = None  # reserved for future module-run bookkeeping
-    module_started_at: Optional[str] = None  # for building error result in record
+
+def log_analysis_error(*_args: Any, **_kwargs: Any) -> None:
+    return None
 
 
 class DAGPipeline:
+    PipelineSetupError = PipelineSetupError
     """
     Lightweight DAG-based analysis pipeline.
 
@@ -84,18 +71,40 @@ class DAGPipeline:
     - Explicit module registration
     - Deterministic execution ordering
     - Preflight dependency checks
-    - Execution plan logging
+    - Planner-based deterministic execution plans
     - Read-only context for parallel execution
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        registry: Optional[DAGRegistry] = None,
+        planner: Optional[DAGPlanner] = None,
+        engine: Optional[Callable[..., Dict[str, Any]]] = None,
+        compat_helpers: Optional[DAGLegacyCompatHelpers] = None,
+    ):
         """Initialize the DAG pipeline."""
         self.logger = get_logger()
-        self.nodes: Dict[str, DAGNode] = {}
+        self._registry = registry or DAGRegistry(nodes={})
+        self.nodes: Dict[str, DAGNode] = self._registry.nodes
         self.execution_order: List[str] = []
         self.results: Dict[str, Any] = {}
         self.errors: List[str] = []
         self._finalized: bool = False  # Track if registry is finalized
+        self.module_progress_log_interval_seconds: float = max(
+            float(
+                getattr(
+                    get_config().analysis,
+                    "module_progress_log_interval_seconds",
+                    60.0,
+                )
+            ),
+            1.0,
+        )
+        self._planner = planner or DAGPlanner()
+        self._engine = engine or execute_pipeline_runtime
+        self._executor = DAGExecutor()
+        self._compat_helpers = compat_helpers or DAGLegacyCompatHelpers()
 
     def add_module(
         self,
@@ -109,15 +118,15 @@ class DAGPipeline:
         enhancements: Optional[List[Any]] = None,
     ):
         """Add a module to the DAG."""
-        self.nodes[name] = DAGNode(
+        self._registry.add_module(
             name=name,
             description=description,
             category=category,
             dependencies=dependencies,
             function=function,
             timeout_seconds=timeout_seconds,
-            requirements=requirements or [],
-            enhancements=enhancements or [],
+            requirements=requirements,
+            enhancements=enhancements,
         )
 
     def resolve_dependencies(self, selected_modules: List[str]) -> List[str]:
@@ -130,116 +139,13 @@ class DAGPipeline:
         Returns:
             List of modules in execution order with dependencies included
         """
-        # Add all dependencies for selected modules (recursively)
-        modules_to_run = {module for module in selected_modules if module in self.nodes}
-        modules_to_process = set(modules_to_run)
+        return self._compat_helpers.resolve_dependencies(self, selected_modules)
 
-        # Recursively resolve all transitive dependencies
-        while modules_to_process:
-            new_modules = set()
-            for module_name in modules_to_process:
-                if module_name in self.nodes:
-                    node = self.nodes[module_name]
-                    # Add explicit dependencies
-                    for dep in node.dependencies:
-                        if dep in self.nodes and dep not in modules_to_run:
-                            modules_to_run.add(dep)
-                            new_modules.add(dep)
-                    # Add implicit dependencies
-                    implicit_deps = self._check_implicit_dependencies(module_name)
-                    for dep in implicit_deps:
-                        if dep in self.nodes and dep not in modules_to_run:
-                            modules_to_run.add(dep)
-                            new_modules.add(dep)
-            modules_to_process = new_modules
+    def check_implicit_dependencies(self, module_name: str) -> List[str]:
+        return self._planner.check_implicit_dependencies(module_name)
 
-        # Detect missing dependencies explicitly for clearer errors
-        missing_deps: Dict[str, List[str]] = {}
-        for module_name in modules_to_run:
-            if module_name not in self.nodes:
-                continue
-            node = self.nodes[module_name]
-            deps = list(node.dependencies)
-            deps.extend(self._check_implicit_dependencies(module_name))
-            missing = [dep for dep in deps if dep not in self.nodes]
-            if missing:
-                missing_deps[module_name] = missing
-        if missing_deps:
-            details = "; ".join(
-                f"{module}: {', '.join(deps)}"
-                for module, deps in sorted(missing_deps.items())
-            )
-            raise ValueError(f"Missing dependencies for module(s): {details}")
-
-        # Build execution order using topological sort
-        execution_order = self._topological_sort(list(modules_to_run))
-
-        # Ensure deterministic ordering (sort by name when dependencies are equal)
-        execution_order = self._make_deterministic(execution_order)
-
-        # Sort by category within dependency constraints
-        execution_order = self._sort_by_category(execution_order)
-
-        return execution_order
-
-    def _check_implicit_dependencies(self, module_name: str) -> List[str]:
-        """Check for implicit dependencies based on module requirements."""
-        implicit_deps = []
-
-        # Known implicit dependencies
-        if module_name == "contagion":
-            # Contagion needs emotion data
-            implicit_deps.append("emotion")
-        elif module_name == "stats":
-            # Stats aggregates data from other modules, but doesn't strictly depend on them
-            # It can run with partial data
-            pass
-
-        return implicit_deps
-
-    def _topological_sort(self, modules: List[str]) -> List[str]:
-        """
-        Perform topological sort to determine execution order.
-
-        Args:
-            modules: List of module names to sort
-
-        Returns:
-            List of modules in dependency order
-        """
-        # Build adjacency list
-        graph = defaultdict(list)
-        in_degree = defaultdict(int)
-
-        for module_name in modules:
-            if module_name in self.nodes:
-                node = self.nodes[module_name]
-                in_degree[module_name] = len(node.dependencies)
-
-                for dep in node.dependencies:
-                    if dep in modules:
-                        graph[dep].append(module_name)
-
-        # Topological sort using Kahn's algorithm
-        queue = deque([module for module in modules if in_degree[module] == 0])
-        result = []
-
-        while queue:
-            current = queue.popleft()
-            result.append(current)
-
-            for neighbor in graph[current]:
-                in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
-                    queue.append(neighbor)
-
-        # Check for cycles
-        if len(result) != len(modules):
-            cycle_msg = "Circular dependency detected in modules"
-            self.logger.error(cycle_msg)
-            raise ValueError(cycle_msg)
-
-        return result
+    def topological_sort(self, modules: List[str]) -> List[str]:
+        return self._planner.topological_sort(modules, self._registry_snapshot())
 
     def _make_deterministic(self, modules: List[str]) -> List[str]:
         """
@@ -258,45 +164,7 @@ class DAGPipeline:
     def validate_dependencies(
         self, modules: Optional[List[str]] = None
     ) -> tuple[bool, List[str]]:
-        """
-        Validate that all declared dependencies exist and there are no circular dependencies.
-
-        Args:
-            modules: List of modules to validate (default: all registered modules)
-
-        Returns:
-            Tuple of (is_valid, list_of_errors)
-        """
-        errors = []
-
-        if modules is None:
-            modules = list(self.nodes.keys())
-
-        # Check all dependencies exist
-        for module_name in modules:
-            if module_name not in self.nodes:
-                errors.append(f"Module '{module_name}' not found in registry")
-                continue
-
-            node = self.nodes[module_name]
-            for dep in node.dependencies:
-                if dep not in self.nodes:
-                    errors.append(
-                        f"Module '{module_name}' depends on '{dep}' which is not registered"
-                    )
-
-        # Check for circular dependencies
-        try:
-            # Try topological sort - if it fails, there's a cycle
-            test_order = self._topological_sort(modules)
-            if len(test_order) != len(modules):
-                errors.append("Circular dependency detected in module graph")
-        except ValueError:
-            errors.append("Circular dependency detected in module graph")
-        except Exception as e:
-            errors.append(f"Circular dependency check failed: {e}")
-
-        return len(errors) == 0, errors
+        return self._compat_helpers.validate_dependencies(self, modules)
 
     def finalize(self) -> None:
         """
@@ -322,66 +190,13 @@ class DAGPipeline:
         self.logger.info("Module registry finalized and locked")
 
     def preflight_check(self, selected_modules: List[str]) -> Dict[str, Any]:
-        """
-        Perform preflight checks before pipeline execution.
+        return self._compat_helpers.preflight_check(self, selected_modules)
 
-        Checks:
-        - All modules can be imported
-        - All dependencies are available
-        - Missing optional dependencies are reported
+    def _plan_execution(self, selected_modules: List[str]):
+        return self._planner.plan(selected_modules, self._registry_snapshot())
 
-        Args:
-            selected_modules: List of modules to check
-
-        Returns:
-            Dictionary with check results
-        """
-        results = {
-            "all_importable": True,
-            "missing_dependencies": [],
-            "skipped_modules": [],
-            "warnings": [],
-        }
-
-        # Record requested modules that are not in the registry
-        for name in selected_modules:
-            if name not in self.nodes:
-                results["skipped_modules"].append(name)
-                results["warnings"].append(f"Module '{name}' not in registry")
-
-        # Resolve all modules including dependencies
-        try:
-            all_modules = self.resolve_dependencies(selected_modules)
-        except Exception as e:
-            results["all_importable"] = False
-            results["warnings"].append(f"Failed to resolve dependencies: {e}")
-            return results
-
-        # Check each module can be imported
-        for module_name in all_modules:
-            if module_name not in self.nodes:
-                results["skipped_modules"].append(module_name)
-                results["warnings"].append(f"Module '{module_name}' not in registry")
-                continue
-
-            node = self.nodes[module_name]
-            try:
-                # Try to get the module function (this will import it)
-                func = node.function
-                if func is None:
-                    results["missing_dependencies"].append(module_name)
-                    results["warnings"].append(
-                        f"Module '{module_name}' function is None"
-                    )
-            except ImportError as e:
-                results["missing_dependencies"].append(module_name)
-                results["warnings"].append(f"Module '{module_name}' import failed: {e}")
-            except Exception as e:
-                results["warnings"].append(f"Module '{module_name}' check failed: {e}")
-
-        results["all_importable"] = len(results["missing_dependencies"]) == 0
-
-        return results
+    def get_execution_plan(self, selected_modules: List[str]):
+        return self._plan_execution(selected_modules)
 
     def _create_execution_plan(
         self,
@@ -390,85 +205,14 @@ class DAGPipeline:
         preflight: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
-        Create execution plan for logging and reproducibility.
-
-        Args:
-            requested_modules: Modules requested by user
-            execution_order: Resolved execution order with dependencies
-            preflight: Preflight check results
-
-        Returns:
-            Dictionary with execution plan details
+        Backward-compatible execution plan payload for regression tests/logging.
         """
-        # Build dependency graph visualization
-        dependency_graph = {}
-        for module_name in execution_order:
-            if module_name in self.nodes:
-                node = self.nodes[module_name]
-                dependency_graph[module_name] = {
-                    "dependencies": node.dependencies,
-                    "category": node.category,
-                    "included_reason": (
-                        "requested"
-                        if module_name in requested_modules
-                        else f"dependency of {self._find_requester(module_name, requested_modules)}"
-                    ),
-                }
-
-        # Determine which modules were added as dependencies
-        explicit_deps = set()
-        for module_name in requested_modules:
-            if module_name in self.nodes:
-                explicit_deps.update(self.nodes[module_name].dependencies)
-
         return {
-            "requested_modules": requested_modules,
-            "resolved_modules": execution_order,
-            "execution_order": execution_order,
-            "dependency_graph": dependency_graph,
-            "modules_added_as_dependencies": list(explicit_deps),
-            "skipped_modules": preflight.get("skipped_modules", []),
-            "missing_dependencies": preflight.get("missing_dependencies", []),
-            "warnings": preflight.get("warnings", []),
+            "requested_modules": list(requested_modules),
+            "execution_order": list(execution_order),
+            "dependency_graph": self.get_dependency_graph(requested_modules),
+            "preflight": dict(preflight),
         }
-
-    def _find_requester(
-        self, module_name: str, requested_modules: List[str]
-    ) -> Optional[str]:
-        """Find which requested module requires this dependency."""
-        for req_module in requested_modules:
-            if req_module in self.nodes:
-                if module_name in self.nodes[req_module].dependencies:
-                    return req_module
-        return None
-
-    def _log_execution_plan(self, plan: Dict[str, Any], output_dir: str) -> None:
-        """
-        Log execution plan to file and console.
-
-        Args:
-            plan: Execution plan dictionary
-            output_dir: Output directory for this run
-        """
-        try:
-            manifest_dir = Path(output_dir) / ".transcriptx"
-            manifest_dir.mkdir(parents=True, exist_ok=True)
-
-            # Save execution plan
-            from transcriptx.core.utils.artifact_writer import write_json
-
-            plan_path = manifest_dir / "execution_plan.json"
-            write_json(plan_path, plan, indent=2, ensure_ascii=False)
-
-            self.logger.info(f"Execution plan saved to {plan_path}")
-
-            # Log summary to console
-            self.logger.info(
-                f"Execution plan: {len(plan['requested_modules'])} requested, "
-                f"{len(plan['resolved_modules'])} total (including {len(plan['modules_added_as_dependencies'])} dependencies)"
-            )
-        except Exception as e:
-            self.logger.warning(f"Failed to log execution plan: {e}")
 
     def compute_review_before_run(
         self,
@@ -480,15 +224,7 @@ class DAGPipeline:
         transcript_key: Optional[str] = None,
         run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Compute review data (what will run vs be skipped) without executing.
-        Used by the pipeline layer to print "Review before run"; no console output here.
-        """
-        from transcriptx.core.pipeline.dag_pipeline_planning import (
-            compute_review_before_run_for_pipeline,
-        )
-
-        return compute_review_before_run_for_pipeline(
+        return self._compat_helpers.compute_review_before_run(
             self,
             transcript_path=transcript_path,
             selected_modules=selected_modules,
@@ -499,69 +235,8 @@ class DAGPipeline:
             run_id=run_id,
         )
 
-    def _sort_by_category(self, modules: List[str]) -> List[str]:
-        """
-        Sort modules by category (light -> medium -> heavy) while preserving dependencies.
-
-        This method maintains the topological order from dependencies while preferring
-        to execute lighter modules first when dependencies allow.
-
-        Args:
-            modules: List of modules in dependency order
-
-        Returns:
-            List of modules sorted by category within dependency constraints
-        """
-        category_order = {"light": 0, "medium": 1, "heavy": 2}
-
-        # Build dependency graph for reference (only consider dependencies in modules list)
-        modules_set = set(modules)
-        dep_graph = {}
-        for module_name in modules:
-            if module_name in self.nodes:
-                node = self.nodes[module_name]
-                # Only track dependencies that are in the modules list
-                dep_graph[module_name] = set(
-                    dep for dep in node.dependencies if dep in modules_set
-                )
-
-        # Stable sort: maintain topological order, but prefer category ordering
-        # when dependencies are satisfied
-        result = []
-        remaining = set(modules)
-        executed: set[str] = set()
-
-        while remaining:
-            # Find modules ready to execute (all dependencies satisfied)
-            ready = [
-                mod
-                for mod in remaining
-                if mod in self.nodes and dep_graph.get(mod, set()).issubset(executed)
-            ]
-
-            if not ready:
-                # No modules ready - this shouldn't happen if topological sort worked
-                # but handle gracefully by adding remaining modules in order
-                result.extend([m for m in modules if m in remaining])
-                break
-
-            # Sort ready modules by category, then by name for determinism
-            ready_sorted = sorted(
-                ready,
-                key=lambda m: (
-                    category_order.get(
-                        self.nodes[m].category if m in self.nodes else "heavy", 2
-                    ),
-                    m,
-                ),
-            )
-
-            # Add to result and mark as executed
-            result.extend(ready_sorted)
-            executed.update(ready_sorted)
-            remaining -= set(ready_sorted)
-
-        return result
+    def sort_by_category(self, modules: List[str]) -> List[str]:
+        return self._planner.sort_by_category(modules, self._registry_snapshot())
 
     def _pipeline_emit(
         self,
@@ -569,13 +244,20 @@ class DAGPipeline:
         on_event: Optional[Any],
         event_dict: Dict[str, Any],
     ) -> None:
-        if event_collector is not None:
-            event_collector.append(event_dict)
-        if on_event is not None:
-            try:
-                on_event(event_dict)
-            except Exception:
-                pass
+        sink = CallbackEventSink(on_event=on_event, event_collector=event_collector)
+        sink.emit(event_dict)
+
+    def _registry_snapshot(self) -> RegistrySnapshot:
+        return RegistrySnapshot(
+            modules={
+                name: RegistryModuleSnapshot(
+                    name=name,
+                    dependencies=list(node.dependencies),
+                    category=node.category,
+                )
+                for name, node in sorted(self.nodes.items())
+            }
+        )
 
     def _new_pipeline_results(
         self, transcript_path: str, selected_modules: List[str]
@@ -593,6 +275,15 @@ class DAGPipeline:
             "module_results": {},
         }
 
+    def _new_executor_state(self, results: Dict[str, Any]) -> ExecutorState:
+        return ExecutorState(
+            module_results=results["module_results"],
+            modules_run=results["modules_run"],
+            skipped_modules=results["skipped_modules"],
+            errors=results["errors"],
+            cache_hits=results["cache_hits"],
+        )
+
     def _validate_pipeline_io(
         self, transcript_path: str, output_dir: str, results: Dict[str, Any]
     ) -> bool:
@@ -607,19 +298,6 @@ class DAGPipeline:
             results["end_time"] = time.time()
             results["duration"] = results["end_time"] - results["start_time"]
             return False
-
-    def _resolve_execution_order(
-        self, selected_modules: List[str], results: Dict[str, Any]
-    ) -> Optional[List[str]]:
-        try:
-            return self.resolve_dependencies(selected_modules)
-        except ValueError as e:
-            self.logger.error(str(e))
-            results["errors"].append(str(e))
-            results["status"] = "failed"
-            results["end_time"] = time.time()
-            results["duration"] = results["end_time"] - results["start_time"]
-            return None
 
     def _run_sequential_execution_phase(
         self,
@@ -651,8 +329,6 @@ class DAGPipeline:
         transcript_path: str,
         selected_modules: List[str],
         speaker_options: "SpeakerRunOptions | None" = None,
-        parallel: bool = False,
-        max_workers: int = 4,
         output_dir: Optional[str] = None,
         transcript_key: Optional[str] = None,
         run_id: Optional[str] = None,
@@ -660,6 +336,9 @@ class DAGPipeline:
         requirements_resolver: Optional[Any] = None,
         event_collector: Optional[List[Dict[str, Any]]] = None,
         on_event: Optional[Any] = None,
+        context: Optional[Any] = None,
+        named_speaker_count: Optional[int] = None,
+        execution_plan: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Execute the analysis pipeline using DAG dependency resolution.
@@ -667,8 +346,6 @@ class DAGPipeline:
         Args:
             transcript_path: Path to transcript file
             selected_modules: List of modules to run
-            parallel: Ignored; retained for API compatibility (always sequential).
-            max_workers: Ignored; retained for API compatibility.
             event_collector: Optional list that receives structured event dicts (legacy).
             on_event: Optional callable(event_dict) invoked synchronously on each
                 event. Receives the same structured dict that goes into
@@ -677,114 +354,49 @@ class DAGPipeline:
         Returns:
             Dictionary with execution results
         """
-        from transcriptx.core.pipeline.run_options import SpeakerRunOptions
+        resolved_speaker_options = speaker_options or SpeakerRunOptions()
+        owned_context = False
+        runtime_context = context
+        runtime_named_speaker_count = named_speaker_count
 
-        speaker_options = speaker_options or SpeakerRunOptions()
-        self.logger.info(
-            f"Starting DAG pipeline for {transcript_path} (parallel={parallel})"
-        )
-
-        def emit(event_dict: Dict[str, Any]) -> None:
-            self._pipeline_emit(event_collector, on_event, event_dict)
-
-        output_dir = resolve_output_dir_for_run(transcript_path, output_dir)
-
-        results = self._new_pipeline_results(transcript_path, selected_modules)
-
-        if not self._validate_pipeline_io(transcript_path, output_dir, results):
-            return results
-
-        if parallel:
-            self.logger.warning(
-                "parallel=True is ignored; DAG pipeline always runs sequentially"
+        # Backward compatibility: direct DAG callers may not inject context.
+        # New orchestrator paths still provide context explicitly.
+        if runtime_context is None:
+            runtime_context, runtime_named_speaker_count = (
+                build_execute_pipeline_context(
+                    self.logger,
+                    transcript_path=transcript_path,
+                    speaker_options=resolved_speaker_options,
+                    output_dir=resolve_output_dir_for_run(transcript_path, output_dir),
+                    transcript_key=transcript_key,
+                    run_id=run_id,
+                )
             )
+            owned_context = True
 
-        # Finalize registry if not already done
-        if not self._finalized:
-            try:
-                self.finalize()
-            except ValueError as e:
-                self.logger.error(f"Registry finalization failed: {e}")
-                # Continue anyway for backward compatibility
-
-        # Perform preflight checks
-        preflight = self.preflight_check(selected_modules)
-        if preflight["warnings"]:
-            for warning in preflight["warnings"]:
-                self.logger.warning(f"Preflight warning: {warning}")
-
-        if not preflight["all_importable"]:
-            missing = ", ".join(preflight["missing_dependencies"])
-            self.logger.error(
-                f"Preflight check failed: modules cannot be imported: {missing}"
+        try:
+            return self._engine(
+                self,
+                transcript_path=transcript_path,
+                selected_modules=selected_modules,
+                speaker_options=resolved_speaker_options,
+                output_dir=output_dir,
+                transcript_key=transcript_key,
+                run_id=run_id,
+                run_report=run_report,
+                requirements_resolver=requirements_resolver,
+                event_collector=event_collector,
+                on_event=on_event,
+                context=runtime_context,
+                named_speaker_count=runtime_named_speaker_count,
+                execution_plan=execution_plan,
             )
-            # Continue anyway - modules may have optional dependencies
-
-        execution_order = self._resolve_execution_order(selected_modules, results)
-        if execution_order is None:
-            return results
-        self.logger.info(f"Execution order: {', '.join(execution_order)}")
-
-        # Create and log execution plan
-        execution_plan = self._create_execution_plan(
-            selected_modules, execution_order, preflight
-        )
-        self._log_execution_plan(execution_plan, output_dir)
-
-        # Update execution order in results
-        results["execution_order"] = execution_order
-
-        context, named_speaker_count = build_execute_pipeline_context(
-            self.logger,
-            transcript_path=transcript_path,
-            speaker_options=speaker_options,
-            output_dir=output_dir,
-            transcript_key=transcript_key,
-            run_id=run_id,
-        )
-
-        named_speaker_count_ref = [named_speaker_count]
-        (
-            aborted,
-            total_modules,
-            ev_completed,
-            ev_skipped,
-            ev_failed,
-        ) = self._run_sequential_execution_phase(
-            execution_order=execution_order,
-            results=results,
-            context=context,
-            transcript_path=transcript_path,
-            run_report=run_report,
-            requirements_resolver=requirements_resolver,
-            named_speaker_count_ref=named_speaker_count_ref,
-            emit=emit,
-        )
-
-        # Finalization seam: duration + terminal event.
-        finalize_execution_results(
-            results=results,
-            execution_order=execution_order,
-            aborted=aborted,
-            total_modules=total_modules,
-            ev_completed=ev_completed,
-            ev_skipped=ev_skipped,
-            ev_failed=ev_failed,
-            emit=emit,
-        )
-
-        self.logger.info(
-            f"Pipeline completed. Ran {len(results['modules_run'])} modules with {len(results['errors'])} errors"
-        )
-
-        # Clean up context
-        if context:
-            try:
-                context.close()
-            except Exception as e:
-                self.logger.warning(f"Error closing PipelineContext: {e}")
-
-        return results
+        finally:
+            if owned_context and runtime_context is not None:
+                try:
+                    runtime_context.close()
+                except Exception:
+                    pass
 
     def _should_abort_pipeline(
         self, outcome: ModuleExecOutcome, results: Dict[str, Any]
@@ -808,104 +420,52 @@ class DAGPipeline:
             return True
         return False
 
-    def _record_module_outcome(
+    def _reduce_module_outcome(
+        self,
+        module_name: str,
+        outcome: ModuleExecOutcome,
+        results: Dict[str, Any],
+    ) -> None:
+        state = ExecutorState(
+            module_results=results["module_results"],
+            modules_run=results["modules_run"],
+            skipped_modules=results["skipped_modules"],
+            errors=results["errors"],
+            cache_hits=results["cache_hits"],
+        )
+        status = "failed"
+        if outcome.status == "success":
+            status = "succeeded"
+        elif outcome.status == "skipped":
+            status = "skipped"
+        module_outcome = ModuleOutcome(
+            module=module_name,
+            status=status,  # type: ignore[arg-type]
+            reason=outcome.skip_reason or outcome.error,
+            duration_ms=outcome.duration_ms,
+        )
+        self._executor.reduce_outcome(
+            state,
+            module_name,
+            module_outcome,
+            module_result=outcome.module_result,
+        )
+
+    def _apply_module_side_effects(
         self,
         module_name: str,
         node: DAGNode,
         outcome: ModuleExecOutcome,
-        results: Dict[str, Any],
         transcript_path: str,
         run_report: Optional[Any],
     ) -> None:
-        """Apply outcome to results, run_report, notify/log. All side effects here."""
-        from transcriptx.core.utils.module_result import (
-            build_module_result,
-            now_iso,
-        )
-
-        # Coordinated cache hits use status=skipped + used_cache; handle before generic skip.
-        if outcome.used_cache:
-            results["modules_run"].append(module_name)
-            results["cache_hits"].append(module_name)
-            if run_report:
-                from transcriptx.core.utils.run_report import ModuleResult
-
-                run_report.record_module(
-                    module_name=module_name,
-                    status=ModuleResult.RUN,
-                    duration_seconds=0.0,
-                    reason="cache_hit",
-                )
-            return
-
-        if outcome.status == "skipped":
-            if outcome.skip_reason:
-                results["skipped_modules"].append(
-                    {"module": module_name, "reason": outcome.skip_reason}
-                )
-            if run_report and outcome.skip_reason:
-                from transcriptx.core.utils.run_report import ModuleResult
-
-                run_report.record_module(
-                    module_name=module_name,
-                    status=ModuleResult.SKIP,
-                    reason=outcome.skip_reason,
-                )
-            return
-
-        if outcome.status == "success":
-            results["module_results"][module_name] = outcome.module_result or {}
-            node.executed = True
-            results["modules_run"].append(module_name)
-            notify_user(
-                f"✅ Completed {node.description}",
-                technical=False,
-                section=module_name,
-            )
-            log_analysis_complete(module_name, transcript_path)
-            self.logger.info(
-                f"{module_name} completed in {outcome.duration_ms / 1000.0:.2f}s"
-            )
-            if run_report:
-                from transcriptx.core.utils.run_report import ModuleResult
-
-                run_report.record_module(
-                    module_name=module_name,
-                    status=ModuleResult.RUN,
-                    duration_seconds=outcome.duration_ms / 1000.0,
-                )
-            return
-
-        # outcome.status == "failed"
-        results["errors"].append(outcome.error or f"Error in {module_name} analysis")
-        node.error = outcome.error
-        notify_user(
-            f"❌ Failed {node.description}: {outcome.error}",
-            technical=True,
-            section=module_name,
-        )
-        log_analysis_error(module_name, transcript_path, Exception(outcome.error or ""))
-        if run_report:
-            from transcriptx.core.utils.run_report import ModuleResult
-
-            run_report.record_module(
-                module_name=module_name,
-                status=ModuleResult.FAIL,
-                error=outcome.error,
-            )
-        results["module_results"][module_name] = (
-            outcome.module_result
-            or build_module_result(
-                module_name=module_name,
-                status="error",
-                started_at=outcome.module_started_at or now_iso(),
-                finished_at=now_iso(),
-                artifacts=[],
-                metrics={"duration_seconds": outcome.duration_ms / 1000.0},
-                payload_type="analysis_results",
-                payload={},
-                error={"error_message": outcome.error} if outcome.error else None,
-            )
+        apply_module_side_effects_compat(
+            self,
+            module_name=module_name,
+            node=node,
+            outcome=outcome,
+            transcript_path=transcript_path,
+            run_report=run_report,
         )
 
     def _execute_single_module(
@@ -918,114 +478,24 @@ class DAGPipeline:
         requirements_resolver: Optional[Any],
         named_speaker_count: Optional[int],
     ) -> ModuleExecOutcome:
-        """Run one module (or determine skip/cache). Returns outcome only; no DB/run_report/notify."""
-        from transcriptx.core.utils.module_result import (
-            build_module_result,
-            capture_exception,
-            now_iso,
+        return execute_single_module_compat(
+            self,
+            module_name=module_name,
+            node=node,
+            transcript_path=transcript_path,
+            context=context,
+            requirements_resolver=requirements_resolver,
+            named_speaker_count=named_speaker_count,
         )
 
-        # Requirements resolver skip
-        if requirements_resolver:
-            should_skip, reasons = requirements_resolver.should_skip(node.requirements)
-            if should_skip:
-                return ModuleExecOutcome(
-                    status="skipped",
-                    skip_reason="; ".join(reasons),
-                )
-        # Speaker count skip
-        if named_speaker_count is not None:
-            try:
-                from transcriptx.core.pipeline.module_registry import (
-                    effective_min_named_speakers,
-                    get_module_info,
-                )
-
-                module_info = get_module_info(module_name)
-                if module_info:
-                    min_required = effective_min_named_speakers(module_info)
-                    if named_speaker_count < min_required:
-                        reason_text = f"requires at least {min_required} named speakers"
-                        return ModuleExecOutcome(
-                            status="skipped",
-                            skip_reason=reason_text,
-                        )
-            except Exception:
-                pass
-
-        module_run = None
-
-        # Run the module
-        self.logger.info(f"Running {module_name} analysis")
-        notify_user(
-            f"🔍 Running {node.description}...",
-            technical=False,
-            section=module_name,
-        )
-        log_analysis_start(module_name, transcript_path)
-        module_start = time.time()
-        module_started_at = now_iso()
-        module_result = None
-        try:
-            if context is None:
-                raise RuntimeError("PipelineContext is required for module execution")
-            execution_context = context
-            if isinstance(node.function, type) and hasattr(
-                node.function, "run_from_context"
-            ):
-                module_instance = node.function()
-                module_result = module_instance.run_from_context(execution_context)
-                if module_result.get("status") == "error":
-                    raise RuntimeError(module_result.get("error", "Unknown error"))
-            elif hasattr(type(node.function), "run_from_context") and not isinstance(
-                node.function, type
-            ):
-                module_result = node.function.run_from_context(execution_context)
-                if module_result.get("status") == "error":
-                    raise RuntimeError(module_result.get("error", "Unknown error"))
-            else:
-                node.function(transcript_path)
-
-            duration_ms = (time.time() - module_start) * 1000
-            if module_result is None:
-                module_result = build_module_result(
-                    module_name=module_name,
-                    status="success",
-                    started_at=module_started_at,
-                    finished_at=now_iso(),
-                    artifacts=[],
-                    metrics={"duration_seconds": duration_ms / 1000.0},
-                    payload_type="analysis_results",
-                    payload={},
-                )
-            return ModuleExecOutcome(
-                status="success",
-                module_result=module_result,
-                duration_ms=duration_ms,
-                module_run=module_run,
-                module_started_at=module_started_at,
-            )
-        except Exception as e:
-            self.logger.error(f"Error in {module_name} analysis: {str(e)}")
-            duration_ms = (time.time() - module_start) * 1000
-            err_module_result = build_module_result(
-                module_name=module_name,
-                status="error",
-                started_at=module_started_at,
-                finished_at=now_iso(),
-                artifacts=[],
-                metrics={"duration_seconds": duration_ms / 1000.0},
-                payload_type="analysis_results",
-                payload={},
-                error=capture_exception(e),
-            )
-            return ModuleExecOutcome(
-                status="failed",
-                module_result=err_module_result,
-                error=str(e),
-                duration_ms=duration_ms,
-                module_run=module_run,
-                module_started_at=module_started_at,
+    def _module_progress_heartbeat(
+        self, module_name: str, module_start: float, stop_event: threading.Event
+    ) -> None:
+        interval = max(float(self.module_progress_log_interval_seconds), 1.0)
+        while not stop_event.wait(interval):
+            elapsed_seconds = time.time() - module_start
+            self.logger.info(
+                f"{module_name} still running... {elapsed_seconds:.1f}s elapsed"
             )
 
     def _check_missing_dependencies(
@@ -1039,42 +509,17 @@ class DAGPipeline:
         return missing
 
     def get_dependency_graph(self, selected_modules: List[str]) -> Dict[str, List[str]]:
-        """
-        Get the dependency graph for visualization or debugging.
-
-        Args:
-            selected_modules: List of modules to include
-
-        Returns:
-            Dictionary mapping modules to their dependencies
-        """
-        execution_order = self.resolve_dependencies(selected_modules)
-        graph = {}
-
-        for module_name in execution_order:
-            if module_name in self.nodes:
-                graph[module_name] = self.nodes[module_name].dependencies.copy()
-
-        return graph
+        return self._compat_helpers.get_dependency_graph(self, selected_modules)
 
 
 def create_dag_pipeline() -> DAGPipeline:
-    """
-    Create a DAG pipeline with all available modules.
-
-    Returns:
-        Configured DAG pipeline
-    """
-    dag = DAGPipeline()
-    registry = get_module_registry()
-
-    # Add all modules to the DAG
-    for module_name in registry.get_available_modules():
-        module_info = registry.get_module_info(module_name)
-        module_function = registry.get_module_function(module_name)
-
+    module_registry = get_module_registry()
+    registry = DAGRegistry(nodes={})
+    for module_name in module_registry.get_available_modules():
+        module_info = module_registry.get_module_info(module_name)
+        module_function = module_registry.get_module_function(module_name)
         if module_info and module_function:
-            dag.add_module(
+            registry.add_module(
                 name=module_name,
                 description=module_info.description,
                 category=module_info.category,
@@ -1084,8 +529,7 @@ def create_dag_pipeline() -> DAGPipeline:
                 requirements=module_info.requirements,
                 enhancements=module_info.enhancements,
             )
-
-    return dag
+    return DAGPipeline(registry=registry)
 
 
 def run_dag_pipeline(
@@ -1093,21 +537,28 @@ def run_dag_pipeline(
     selected_modules: List[str],
     speaker_options: "SpeakerRunOptions | None" = None,
 ) -> Dict[str, Any]:
-    """
-    Convenience function to run the DAG pipeline.
-
-    Note: Speaker information is extracted directly from segments.
-
-    Args:
-        transcript_path: Path to transcript file
-        selected_modules: List of modules to run
-
-    Returns:
-        Pipeline execution results
-    """
     dag = create_dag_pipeline()
-    return dag.execute_pipeline(
-        transcript_path=transcript_path,
-        selected_modules=selected_modules,
-        speaker_options=speaker_options,
-    )
+    resolved_speaker_options = speaker_options or SpeakerRunOptions()
+    context = None
+    try:
+        context, named_speaker_count = build_execute_pipeline_context(
+            dag.logger,
+            transcript_path=transcript_path,
+            speaker_options=resolved_speaker_options,
+            output_dir=resolve_output_dir_for_run(transcript_path, None),
+            transcript_key=None,
+            run_id=None,
+        )
+        return dag.execute_pipeline(
+            transcript_path=transcript_path,
+            selected_modules=selected_modules,
+            speaker_options=resolved_speaker_options,
+            context=context,
+            named_speaker_count=named_speaker_count,
+        )
+    finally:
+        if context is not None:
+            try:
+                context.close()
+            except Exception:
+                pass

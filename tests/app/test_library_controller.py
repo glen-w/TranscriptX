@@ -31,6 +31,8 @@ def test_get_transcript_metadata_uses_segment_duration_fallback(monkeypatch) -> 
 
     assert meta.duration_seconds == 7.5
     assert meta.speaker_count == 2
+    assert meta.segment_count == 2
+    assert meta.speaker_map_status == "none"
 
 
 def test_get_transcript_metadata_keeps_duration_none_when_segments_invalid(
@@ -62,3 +64,5 @@ def test_get_transcript_metadata_keeps_duration_none_when_segments_invalid(
 
     assert meta.duration_seconds is None
     assert meta.speaker_count == 2
+    assert meta.segment_count == 3
+    assert meta.speaker_map_status == "none"

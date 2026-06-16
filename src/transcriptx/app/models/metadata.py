@@ -19,3 +19,8 @@ class TranscriptMetadata:
     has_analysis_outputs: bool = False
     has_speaker_map: bool = False
     linked_run_dirs: list[Path] = field(default_factory=list)
+    # Populated when segments load; used by web dropdown formatters (Run Analysis, etc.).
+    segment_count: Optional[int] = None
+    speaker_map_status: str = "none"
+    unidentified_speaker_count: int = 0
+    ignored_speaker_count: int = 0

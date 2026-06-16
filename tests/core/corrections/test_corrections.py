@@ -17,7 +17,7 @@ from transcriptx.core.corrections.models import (
     Occurrence,
 )
 from transcriptx.core.corrections.workflow import (
-    _dedupe_candidates,
+    dedupe_candidates,
     _rule_signature_for_dedupe,
 )
 
@@ -366,7 +366,7 @@ def test_dedupe_merges_same_kind_wrong_right_keeps_max_confidence():
         confidence=0.95,
         occurrences=[o2],
     )
-    merged = _dedupe_candidates([c1, c2])
+    merged = dedupe_candidates([c1, c2])
     assert len(merged) == 1
     assert merged[0].confidence == 0.95
     assert len(merged[0].occurrences) == 2
@@ -406,7 +406,7 @@ def test_dedupe_with_different_conditions_keeps_separate():
         rule_id=rule_b.id,
         occurrences=[o2],
     )
-    merged = _dedupe_candidates(
+    merged = dedupe_candidates(
         [c1, c2], rules_by_id={rule_a.id: rule_a, rule_b.id: rule_b}
     )
     assert len(merged) == 2

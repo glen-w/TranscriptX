@@ -58,11 +58,29 @@ def _rule_signature_for_dedupe(rule: Optional[CorrectionRule]) -> tuple:
     return (cond_sig, cond.speaker)
 
 
-def _dedupe_candidates(
+def dedupe_candidates(
     candidates: List[Candidate],
     rules_by_id: Optional[Dict[str, CorrectionRule]] = None,
 ) -> List[Candidate]:
-    """Merge duplicate candidates (same kind, wrong, right, conditions); keep max confidence, merge occurrences."""
+    """
+    Merge correction candidates that describe the same logical fix.
+
+    **Determinism:** For a given ``candidates`` list and ``rules_by_id``, iteration
+    order over the dedupe map follows insertion order (Python 3.7+ dict order).
+
+    **Duplicate collapse:** Candidates with the same ``(kind, proposed_wrong.lower(),
+    proposed_right.lower(), rule_condition_signature)`` merge into one row.
+    The condition signature comes from :func:`_rule_signature_for_dedupe` when a
+    ``rule_id`` resolves in ``rules_by_id``.
+
+    **Confidence:** The merged candidate keeps the **maximum** confidence of the
+    merged rows.
+
+    **Occurrences:** Occurrence lists are concatenated and de-duplicated by
+    ``(segment_id, span[0], span[1])`` (``None`` spans treated as distinct keys).
+
+    Used by the CLI corrections workflow and Corrections Studio candidate generation.
+    """
     rules_by_id = rules_by_id or {}
     key_to_candidate: Dict[tuple, Candidate] = {}
     for c in candidates:
@@ -97,6 +115,14 @@ def _dedupe_candidates(
             occurrences=merged_occ,
         )
     return list(key_to_candidate.values())
+
+
+def _dedupe_candidates(
+    candidates: List[Candidate],
+    rules_by_id: Optional[Dict[str, CorrectionRule]] = None,
+) -> List[Candidate]:
+    """Deprecated alias for :func:`dedupe_candidates`."""
+    return dedupe_candidates(candidates, rules_by_id=rules_by_id)
 
 
 def _backup_transcript_file(transcript_path: str) -> str:
@@ -199,7 +225,7 @@ def run_corrections_on_segments(
         )
     )
 
-    candidates = _dedupe_candidates(candidates, rules_by_id=memory.rules)
+    candidates = dedupe_candidates(candidates, rules_by_id=memory.rules)
     suggestions_payload = [candidate.model_dump() for candidate in candidates]
     suggestions_path = output_service.save_data(
         suggestions_payload, "corrections_suggestions", format_type="json"

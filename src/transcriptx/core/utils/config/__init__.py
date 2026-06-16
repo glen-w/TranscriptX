@@ -23,7 +23,6 @@ from .workflow import (
 from .system import LLMConfig, LoggingConfig, AudioPreprocessingConfig
 from .main import (
     TranscriptXConfig,
-    initialize_default_profiles,
 )
 from . import main as _main
 from .config_errors import ConfigLoadError
@@ -48,7 +47,6 @@ def get_config() -> TranscriptXConfig:
             _global_config = _main._config
         else:
             _global_config = TranscriptXConfig()
-            initialize_default_profiles()
     _main.set_config(_global_config)
     return _global_config
 
@@ -106,7 +104,6 @@ __all__ = [
     "set_config",
     "load_config",
     "reset_config_for_tests",
-    "initialize_default_profiles",
     "EMOTION_CATEGORIES",
     "ACT_TYPES",
     "DEFAULT_NER_LABELS",

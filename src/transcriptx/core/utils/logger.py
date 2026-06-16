@@ -30,6 +30,10 @@ from typing import Any
 # Global logger instance for singleton pattern
 # This ensures all modules use the same logger configuration
 _logger: logging.Logger | None = None
+_ANALYSIS_DISPLAY_NAME_OVERRIDES = {
+    "semantic_similarity": "semantic_similarity (legacy)",
+    "semantic_similarity_advanced": "semantic_similarity_advanced (legacy)",
+}
 
 # Default logging configuration values
 # These can be overridden by configuration files or environment variables
@@ -223,7 +227,8 @@ def log_analysis_start(module_name: str, transcript_path: str) -> None:
         transcript_path: Path to the transcript being analyzed
     """
     logger = get_logger()
-    logger.info(f"Starting {module_name} analysis for: {transcript_path}")
+    display_name = _ANALYSIS_DISPLAY_NAME_OVERRIDES.get(module_name, module_name)
+    logger.info(f"Starting {display_name} analysis for: {transcript_path}")
 
 
 def log_analysis_complete(
@@ -238,7 +243,8 @@ def log_analysis_complete(
         duration: Duration of the analysis in seconds (optional)
     """
     logger = get_logger()
-    message = f"Completed {module_name} analysis for: {transcript_path}"
+    display_name = _ANALYSIS_DISPLAY_NAME_OVERRIDES.get(module_name, module_name)
+    message = f"Completed {display_name} analysis for: {transcript_path}"
     if duration is not None:
         message += f" (took {duration:.2f}s)"
     logger.info(message)

@@ -84,7 +84,7 @@ def test_golden_run_stats_produces_valid_manifest_and_run_results(
     assert summary.run_id
     assert summary.transcript_key
     assert "stats" in summary.modules_run or "stats" in summary.modules_enabled
-    assert summary.schema_version >= 1
+    assert summary.schema_version >= 2
 
     # .transcriptx/manifest.json: run manifest with manifest_type
     run_manifest_path = output_dir / ".transcriptx" / "manifest.json"
@@ -100,6 +100,7 @@ REQUIRED_SINGLE_RESULT_KEYS = frozenset(
         "selected_modules",
         "modules_run",
         "errors",
+        "skipped_modules",
         "output_dir",
         "transcript_key",
         "run_id",
@@ -129,6 +130,7 @@ def test_single_pipeline_result_shape_contract(
     missing = REQUIRED_SINGLE_RESULT_KEYS - set(result.keys())
     assert not missing, f"Pipeline result missing required keys: {missing}"
     assert isinstance(result["errors"], list)
+    assert isinstance(result["skipped_modules"], list)
     assert isinstance(result["output_dir"], str)
 
 
@@ -154,5 +156,6 @@ def test_pipeline_result_shape_contract_with_empty_modules(
     missing = REQUIRED_SINGLE_RESULT_KEYS - set(result.keys())
     assert not missing, f"Pipeline result missing required keys: {missing}"
     assert isinstance(result["errors"], list)
+    assert isinstance(result["skipped_modules"], list)
     assert isinstance(result["output_dir"], str)
     assert result["modules_run"] == []

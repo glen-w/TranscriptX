@@ -93,6 +93,23 @@ def normalize_display_name(value: Any) -> str:
     return str(value).strip()
 
 
+def is_effective_speaker_name(diarized_id: Any, display_name: Any) -> bool:
+    """
+    True when display_name is non-empty and not just the diarized placeholder.
+
+    We treat mappings like SPEAKER_00 -> SPEAKER_00 as still unnamed so UI
+    progress and pipeline gating do not count placeholder self-maps as
+    identified speakers.
+    """
+    name = normalize_display_name(display_name)
+    if not name:
+        return False
+    did = normalize_diarized_id(diarized_id)
+    if not did:
+        return True
+    return normalize_diarized_id(name) != did
+
+
 def _dedupe_preserve_order(values: Iterable[str]) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []
@@ -123,7 +140,8 @@ class SpeakerMapState:
         return sum(
             1
             for speaker_id, display_name in self.speaker_map.items()
-            if speaker_id not in ignored and normalize_display_name(display_name)
+            if speaker_id not in ignored
+            and is_effective_speaker_name(speaker_id, display_name)
         )
 
     @property

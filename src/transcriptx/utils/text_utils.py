@@ -76,6 +76,25 @@ def is_named_speaker(name: str) -> bool:
     return True
 
 
+def is_turn_taking_speaker_label(name: str) -> bool:
+    """
+    True when the label can identify a turn for interaction analysis (e.g. contagion).
+
+    Unlike :func:`is_named_speaker`, diarization-style labels such as ``Speaker 1`` or
+    ``SPEAKER_00`` are allowed. Bare unknown placeholders are excluded.
+    """
+    if not name:
+        return False
+    n = str(name).strip().lower()
+    if not n:
+        return False
+    if n in {"none", "unidentified", "unidentified speaker"}:
+        return False
+    if re.match(r"^unknown(?:_speaker|\s+speaker)?$", n):
+        return False
+    return True
+
+
 def is_eligible_named_speaker(
     display_name: str | None,
     speaker_id: str | None,

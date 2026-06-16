@@ -171,6 +171,12 @@ MODULE_VALIDATION_RULES = {
         min_files=1,  # At least 1 main data file
         file_extensions={".json", ".png"},
     ),
+    "semantic_similarity_v2": ModuleValidationRule(
+        required_files=["*_semantic_similarity_v2_summary.json"],
+        required_dirs=["data", "charts/global"],
+        min_files=2,
+        file_extensions={".json", ".png"},
+    ),
 }
 
 

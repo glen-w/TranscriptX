@@ -19,7 +19,10 @@ from typing import Dict, List
 import streamlit as st
 
 from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
-from transcriptx.io.speaker_map_resolver import normalize_diarized_id
+from transcriptx.io.speaker_map_resolver import (
+    is_effective_speaker_name,
+    normalize_diarized_id,
+)
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
@@ -28,6 +31,10 @@ from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
     SELECTED_TRANSCRIPT_PATH,
 )
+from transcriptx.web.transcript_option_format import (
+    format_transcript_option_with_speaker_status,
+)
+from transcriptx.web.navigation import apply_transcript_selection_context
 
 # How many sample lines to show per speaker by default
 _LINES_PER_PAGE = 8
@@ -112,6 +119,11 @@ def _cached_fallback_transcripts() -> list:
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 
+def _speaker_id_transcript_label(t) -> str:
+    """Dropdown label: for partial maps, add unnamed vs ignored speaker counts."""
+    return format_transcript_option_with_speaker_status(t)
+
+
 def _speaker_map_display_name(speaker_map: Dict[str, str], sid: str) -> str:
     """
     Resolve display name for a diarized speaker id.
@@ -122,10 +134,12 @@ def _speaker_map_display_name(speaker_map: Dict[str, str], sid: str) -> str:
     nid = normalize_diarized_id(sid)
     if nid:
         v = speaker_map.get(nid)
-        if v is not None and str(v).strip():
+        if is_effective_speaker_name(nid, v):
             return str(v).strip()
     v = speaker_map.get(sid)
-    return str(v).strip() if v is not None else ""
+    if is_effective_speaker_name(sid, v):
+        return str(v).strip()
+    return ""
 
 
 def _is_speaker_ignored(ignored: List[str], sid: str) -> bool:
@@ -181,10 +195,7 @@ def render_speaker_id_page() -> None:
     # ── transcript picker ────────────────────────────────────────────────────
     selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
     options = [t.path for t in transcripts]
-    labels = [
-        f"{t.base_name} ({t.speaker_map_status}, {t.segment_count} segs)"
-        for t in transcripts
-    ]
+    labels = [_speaker_id_transcript_label(t) for t in transcripts]
     n = len(options)
     default_idx = options.index(selected_path) + 1 if selected_path in options else 0
 
@@ -201,7 +212,7 @@ def render_speaker_id_page() -> None:
         st.info("Select a transcript to continue.")
         return
     transcript_path = options[idx - 1]
-    st.session_state[SELECTED_TRANSCRIPT_PATH] = transcript_path
+    apply_transcript_selection_context(st.session_state, transcript_path)
 
     # Re-load whenever transcript changes
     prev_key = "speaker_id_prev_transcript"
@@ -210,6 +221,9 @@ def render_speaker_id_page() -> None:
         st.session_state["speaker_id_speaker_idx"] = 0
         st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
         st.session_state["speaker_id_play_seg"] = None
+        # Keep jump selectbox (key sid_jump) aligned — its widget state otherwise
+        # overrides Prev/Next on the next rerun.
+        st.session_state["sid_jump"] = 0
 
     # ── load segments + map ───────────────────────────────────────────────────
     try:
@@ -333,6 +347,7 @@ def render_speaker_id_page() -> None:
                         speaker_idx,
                     )
                     st.session_state["speaker_id_speaker_idx"] = next_idx
+                    st.session_state["sid_jump"] = next_idx
                     st.rerun()
                 except Exception as e:
                     st.error(str(e))
@@ -354,6 +369,7 @@ def render_speaker_id_page() -> None:
                     speaker_ids, speaker_map, ignored + [active_id], speaker_idx
                 )
                 st.session_state["speaker_id_speaker_idx"] = next_idx
+                st.session_state["sid_jump"] = next_idx
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
@@ -361,6 +377,8 @@ def render_speaker_id_page() -> None:
     # ── prev / next navigation ────────────────────────────────────────────────
     st.divider()
     col_prev, col_jump, col_next = st.columns([1, 3, 1])
+    # Run Prev/Next before the jump selectbox: Streamlit disallows assigning to
+    # session_state["sid_jump"] after the widget with key sid_jump is created.
     with col_prev:
         if st.button(
             "← Prev",
@@ -369,6 +387,19 @@ def render_speaker_id_page() -> None:
             width="stretch",
         ):
             st.session_state["speaker_id_speaker_idx"] = speaker_idx - 1
+            st.session_state["sid_jump"] = speaker_idx - 1
+            st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
+            st.session_state["speaker_id_play_seg"] = None
+            st.rerun()
+    with col_next:
+        if st.button(
+            "Next →",
+            key="sid_next",
+            disabled=(speaker_idx >= total_speakers - 1),
+            width="stretch",
+        ):
+            st.session_state["speaker_id_speaker_idx"] = speaker_idx + 1
+            st.session_state["sid_jump"] = speaker_idx + 1
             st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
             st.session_state["speaker_id_play_seg"] = None
             st.rerun()
@@ -388,17 +419,8 @@ def render_speaker_id_page() -> None:
         )
         if jump_idx != speaker_idx:
             st.session_state["speaker_id_speaker_idx"] = jump_idx
-            st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-            st.session_state["speaker_id_play_seg"] = None
-            st.rerun()
-    with col_next:
-        if st.button(
-            "Next →",
-            key="sid_next",
-            disabled=(speaker_idx >= total_speakers - 1),
-            width="stretch",
-        ):
-            st.session_state["speaker_id_speaker_idx"] = speaker_idx + 1
+            # sid_jump is already the user's selection; do not assign it after
+            # this widget is instantiated.
             st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
             st.session_state["speaker_id_play_seg"] = None
             st.rerun()

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, List, MutableMapping, Optional
 
@@ -36,6 +37,72 @@ from transcriptx.core.pipeline.run_options import SpeakerRunOptions
 from transcriptx.core.pipeline.run_schema import RunManifestInput
 from transcriptx.core.pipeline.target_resolver import GroupRef, resolve_analysis_target
 from transcriptx.core.utils.config import get_config
+
+
+@dataclass(frozen=True)
+class ValidationOutcome:
+    valid: bool
+    result: AnalysisResult | None
+
+
+def _failure_result(
+    errors: list[str], *, warnings: list[str] | None = None
+) -> AnalysisResult:
+    return AnalysisResult(
+        success=False,
+        run_dir=Path(),
+        manifest_path=Path(),
+        modules_executed=[],
+        warnings=warnings or [],
+        errors=errors,
+        status="failed",
+    )
+
+
+def _update_snapshot(
+    snapshot: Optional[MutableMapping[str, Any]], **fields: Any
+) -> None:
+    if snapshot is not None:
+        snapshot.update(**fields)
+
+
+def _validate_or_fail(
+    snapshot: Optional[MutableMapping[str, Any]],
+    request: Any,
+    validator: Callable[[Any], list[str]],
+) -> ValidationOutcome:
+    errors = validator(request)
+    if not errors:
+        return ValidationOutcome(valid=True, result=None)
+    _update_snapshot(
+        snapshot,
+        status="failed",
+        phase="failed",
+        error="; ".join(errors),
+        latest_event="Validation failed",
+    )
+    return ValidationOutcome(valid=False, result=_failure_result(errors))
+
+
+def _resolve_modules(
+    request_modules: list[str] | None, defaults_for_paths: list[str]
+) -> tuple[list[str], str | None]:
+    available = get_available_modules()
+    default = get_default_modules(defaults_for_paths)
+    if request_modules is None or (
+        isinstance(request_modules, list) and len(request_modules) == 0
+    ):
+        return default, None
+    if (
+        isinstance(request_modules, list)
+        and len(request_modules) == 1
+        and request_modules[0].lower() == "all"
+    ):
+        return default, None
+    invalid = [module for module in request_modules if module not in available]
+    if invalid:
+        return [], f"Invalid modules: {', '.join(invalid)}"
+    return list(request_modules), None
 
 
 def validate_analysis_readiness(request: AnalysisRequest) -> list[str]:
@@ -88,93 +155,54 @@ def run_analysis(
 
     path = Path(request.transcript_path)
     if not path.exists():
-        if snapshot is not None:
-            snapshot.update(
-                status="failed",
-                phase="failed",
-                error=f"Transcript file not found: {path}",
-            )
-        return AnalysisResult(
-            success=False,
-            run_dir=Path(),
-            manifest_path=Path(),
-            modules_executed=[],
-            warnings=[],
-            errors=[f"Transcript file not found: {path}"],
+        _update_snapshot(
+            snapshot,
             status="failed",
+            phase="failed",
+            error=f"Transcript file not found: {path}",
         )
+        return _failure_result([f"Transcript file not found: {path}"])
 
     # -----------------------------------------------------------------------
     # Validation phase
     # -----------------------------------------------------------------------
-    if snapshot is not None:
-        snapshot.update(
-            status="running", phase="validating", latest_event="Validating inputs…"
-        )
+    _update_snapshot(
+        snapshot,
+        status="running",
+        phase="validating",
+        latest_event="Validating inputs…",
+    )
     progress.on_stage_start("validating")
 
-    errors = validate_analysis_readiness(request)
-    if errors:
+    validation = _validate_or_fail(snapshot, request, validate_analysis_readiness)
+    if not validation.valid:
         progress.on_stage_complete("validating")
-        if snapshot is not None:
-            snapshot.update(
-                status="failed",
-                phase="failed",
-                error="; ".join(errors),
-                latest_event="Validation failed",
-            )
-        return AnalysisResult(
-            success=False,
-            run_dir=Path(),
-            manifest_path=Path(),
-            modules_executed=[],
-            warnings=[],
-            errors=errors,
-            status="failed",
-        )
+        assert validation.result is not None
+        return validation.result
     progress.on_stage_complete("validating")
 
-    available = get_available_modules()
-    default = get_default_modules([str(path)])
-    if request.modules is None or (
-        isinstance(request.modules, list) and len(request.modules) == 0
-    ):
-        selected = default
-    elif (
-        isinstance(request.modules, list)
-        and len(request.modules) == 1
-        and request.modules[0].lower() == "all"
-    ):
-        selected = default
-    elif request.modules:
-        invalid = [m for m in request.modules if m not in available]
-        if invalid:
-            err_msg = f"Invalid modules: {', '.join(invalid)}"
-            if snapshot is not None:
-                snapshot.update(
-                    status="failed", phase="failed", error=err_msg, latest_event=err_msg
-                )
-            return AnalysisResult(
-                success=False,
-                run_dir=Path(),
-                manifest_path=Path(),
-                modules_executed=[],
-                warnings=[],
-                errors=[err_msg],
-                status="failed",
-            )
-        selected = list(request.modules)
-    else:
-        selected = default
+    selected, module_error = _resolve_modules(request.modules, [str(path)])
+    if module_error:
+        _update_snapshot(
+            snapshot,
+            status="failed",
+            phase="failed",
+            error=module_error,
+            latest_event=module_error,
+        )
+        return _failure_result([module_error])
 
     apply_analysis_mode_settings(request.mode, request.profile)
     filtered = filter_modules_by_mode(selected, request.mode)
 
     output_dir_str: str | None = None
+    output_config: Any | None = None
+    previous_base_output_dir: Any | None = None
     if request.output_dir:
         output_dir_str = str(Path(request.output_dir))
-        config = get_config()
-        config.output.base_output_dir = output_dir_str
+        output_config = get_config()
+        previous_base_output_dir = output_config.output.base_output_dir
+        output_config.output.base_output_dir = output_dir_str
 
     # -----------------------------------------------------------------------
     # Pipeline phase — build on_event hook that keeps snapshot up to date
@@ -266,6 +294,8 @@ def run_analysis(
         if _log_handler is not None:
             _tx_logger.removeHandler(_log_handler)
             _log_handler.close()
+        if output_config is not None:
+            output_config.output.base_output_dir = previous_base_output_dir
 
     if _pipeline_exception is not None:
         duration = time.perf_counter() - start
@@ -294,8 +324,7 @@ def run_analysis(
     # -----------------------------------------------------------------------
     # Finalizing phase
     # -----------------------------------------------------------------------
-    if snapshot is not None:
-        snapshot.update(phase="finalizing", latest_event="Finalizing outputs…")
+    _update_snapshot(snapshot, phase="finalizing", latest_event="Finalizing outputs…")
 
     output_dir = results.get("output_dir", "")
     output_path = Path(output_dir) if output_dir else Path()
@@ -420,40 +449,17 @@ def run_group_analysis(
     if progress is None:
         progress = NullProgress()
 
-    errors = validate_group_analysis_readiness(request)
-    if errors:
-        if snapshot is not None:
-            snapshot.update(
-                status="failed",
-                phase="failed",
-                error="; ".join(errors),
-                latest_event="Validation failed",
-            )
-        return AnalysisResult(
-            success=False,
-            run_dir=Path(),
-            manifest_path=Path(),
-            modules_executed=[],
-            warnings=[],
-            errors=errors,
-            status="failed",
-        )
+    validation = _validate_or_fail(snapshot, request, validate_group_analysis_readiness)
+    if not validation.valid:
+        assert validation.result is not None
+        return validation.result
 
     target = GroupRef(path=request.group_uuid)
     try:
         scope, members = resolve_analysis_target(target)
     except (ValueError, TypeError) as e:
-        if snapshot is not None:
-            snapshot.update(status="failed", phase="failed", error=str(e))
-        return AnalysisResult(
-            success=False,
-            run_dir=Path(),
-            manifest_path=Path(),
-            modules_executed=[],
-            warnings=[],
-            errors=[str(e)],
-            status="failed",
-        )
+        _update_snapshot(snapshot, status="failed", phase="failed", error=str(e))
+        return _failure_result([str(e)])
 
     resolved_paths = [m.file_path for m in members if getattr(m, "file_path", None)]
     missing = [p for p in resolved_paths if not Path(p).exists()]
@@ -465,52 +471,18 @@ def run_group_analysis(
         )
         resolved_paths = [p for p in resolved_paths if Path(p).exists()]
     if not resolved_paths:
-        if snapshot is not None:
-            snapshot.update(
-                status="failed",
-                phase="failed",
-                error="No member paths exist on disk.",
-            )
-        return AnalysisResult(
-            success=False,
-            run_dir=Path(),
-            manifest_path=Path(),
-            modules_executed=[],
-            warnings=[],
-            errors=["No member transcript paths exist on disk."],
+        _update_snapshot(
+            snapshot,
             status="failed",
+            phase="failed",
+            error="No member paths exist on disk.",
         )
+        return _failure_result(["No member transcript paths exist on disk."])
 
-    available = get_available_modules()
-    default = get_default_modules(resolved_paths)
-    if request.modules is None or (
-        isinstance(request.modules, list) and len(request.modules) == 0
-    ):
-        selected = default
-    elif (
-        isinstance(request.modules, list)
-        and len(request.modules) == 1
-        and request.modules[0].lower() == "all"
-    ):
-        selected = default
-    elif request.modules:
-        invalid = [m for m in request.modules if m not in available]
-        if invalid:
-            err_msg = f"Invalid modules: {', '.join(invalid)}"
-            if snapshot is not None:
-                snapshot.update(status="failed", phase="failed", error=err_msg)
-            return AnalysisResult(
-                success=False,
-                run_dir=Path(),
-                manifest_path=Path(),
-                modules_executed=[],
-                warnings=[],
-                errors=[err_msg],
-                status="failed",
-            )
-        selected = list(request.modules)
-    else:
-        selected = default
+    selected, module_error = _resolve_modules(request.modules, resolved_paths)
+    if module_error:
+        _update_snapshot(snapshot, status="failed", phase="failed", error=module_error)
+        return _failure_result([module_error])
 
     apply_analysis_mode_settings(request.mode, request.profile)
     filtered = filter_modules_by_mode(selected, request.mode)

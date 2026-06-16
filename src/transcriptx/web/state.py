@@ -10,6 +10,11 @@ from __future__ import annotations
 from typing import Any, Literal
 
 # Selection state
+PAGE_KEY = "page"
+SUBJECT_TYPE_KEY = "subject_type"
+SUBJECT_ID_KEY = "subject_id"
+RUN_ID_KEY = "run_id"
+NAV_REQUEST_KEY = "nav_request"
 SELECTED_TRANSCRIPT_PATH = "selected_transcript_path"
 
 # Selectbox: explicit choice before loading dependent content (Streamlit has no empty selection)
@@ -34,7 +39,49 @@ SETTINGS_DRAFT = "settings_draft"
 PAGE_FLASH_MESSAGE = "page_flash_message"
 PAGE_FLASH_KIND = "page_flash_kind"
 
+# Sidebar: keyed expanders (Streamlit session_state holds open/closed when on_change="rerun")
+TX_NAV_EXPANDER_WORKFLOW = "tx_nav_exp_workflow"
+TX_NAV_EXPANDER_TOOLS = "tx_nav_exp_tools"
+TX_NAV_EXPANDER_VIEW = "tx_nav_exp_view"
+TX_NAV_EXPANDER_CONFIG = "tx_nav_exp_config"
+TX_NAV_SIDEBAR_SEEDED = "tx_nav_sidebar_seeded"
+TX_NAV_PREV_SHOULD_PRIORITIZE_VIEW = "tx_nav_prev_should_prioritize_view"
+
 FlashKind = Literal["success", "info", "warning", "error"]
+SubjectType = Literal["transcript", "group"]
+
+
+def get_current_subject_context() -> tuple[SubjectType | None, str | None, str | None]:
+    """Read canonical subject context tuple from session state."""
+    import streamlit as st
+
+    subject_type = st.session_state.get(SUBJECT_TYPE_KEY)
+    if subject_type not in ("transcript", "group"):
+        subject_type = None
+    subject_id = st.session_state.get(SUBJECT_ID_KEY)
+    run_id = st.session_state.get(RUN_ID_KEY)
+    return subject_type, subject_id, run_id
+
+
+def set_current_subject_context(
+    *,
+    subject_type: SubjectType | None,
+    subject_id: str | None,
+    run_id: str | None,
+) -> None:
+    """Write canonical subject context tuple to session state."""
+    import streamlit as st
+
+    st.session_state[SUBJECT_TYPE_KEY] = subject_type
+    st.session_state[SUBJECT_ID_KEY] = subject_id
+    st.session_state[RUN_ID_KEY] = run_id
+
+
+def set_selected_transcript_path(path: str | None) -> None:
+    """Set legacy transcript path key while migration to canonical context is in progress."""
+    import streamlit as st
+
+    st.session_state[SELECTED_TRANSCRIPT_PATH] = path
 
 
 def set_page_flash(kind: FlashKind, message: str) -> None:

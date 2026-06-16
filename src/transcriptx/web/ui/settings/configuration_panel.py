@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 import streamlit as st
 
 from transcriptx.core.config import (
+    COMMON_SETTINGS_SCHEMA,
     build_registry,
     flatten,
     get_default_config_dict,
@@ -25,6 +26,9 @@ from transcriptx.core.config import (
     save_run_override,
     unflatten,
     validate_config,
+    iter_all_profile_target_adapters,
+    strip_activation_keys_from_flat_map,
+    strip_activation_keys_from_nested_map,
 )
 from transcriptx.web.ui.settings.diff_view import render_config_diff
 from transcriptx.web.ui.settings.forms import render_config_form
@@ -33,6 +37,7 @@ _SCOPE_KEYS = ("Default", "Project", "Draft override", "Run override")
 _SCOPE_WIDGET_KEY = "settings_config_scope_ix"
 _SCOPE_CACHE_KEY = "settings_config_scope_cache"
 _DRAFT_STATE_KEY = "settings_config_draft"
+_RUN_CACHE_KEY = "settings_config_run_cache"
 
 
 def _scope_labels(run_dir: Optional[Path]) -> list[str]:
@@ -66,6 +71,88 @@ def _save_target(scope: str, run_dir: Optional[Path]) -> tuple[str, str]:
         p = get_run_override_path(run_dir)
         return "Run override", str(p.resolve())
     return "Default", ""
+
+
+def _should_reset_draft_state(
+    session_state: dict[str, Any], *, scope: str, current_run_cache: str
+) -> bool:
+    scope_cache = session_state.get(_SCOPE_CACHE_KEY)
+    run_cache = session_state.get(_RUN_CACHE_KEY)
+    return (
+        _DRAFT_STATE_KEY not in session_state
+        or scope_cache != scope
+        or run_cache != current_run_cache
+    )
+
+
+def _strip_activation_keys(config_map: dict[str, Any]) -> dict[str, Any]:
+    """Return config map without adapter-owned activation keys."""
+    return strip_activation_keys_from_flat_map(config_map)
+
+
+def _sanitize_scope_config(scope: str, config_map: dict[str, Any]) -> dict[str, Any]:
+    """Return a scope-safe config payload for editor state/persistence."""
+    if scope == "Draft override":
+        return strip_activation_keys_from_nested_map(config_map)
+    return config_map
+
+
+def _render_active_profile_selectors(
+    *,
+    draft_dot: dict[str, Any],
+    scope: str,
+    form_scope_key: str,
+) -> None:
+    from transcriptx.app.controllers.profile_controller import ProfileController
+
+    if scope not in ("Project", "Run override"):
+        st.caption(
+            "Active profile selection is available for Project and Run override scopes."
+        )
+        return
+
+    ctrl = ProfileController()
+
+    adapters = iter_all_profile_target_adapters()
+    workflow_adapter = next((a for a in adapters if a.matches_type("workflow")), None)
+    module_adapters = [a for a in adapters if a.matches_type("module")]
+
+    if workflow_adapter is None:
+        st.warning("Workflow profile support is not available.")
+        return
+
+    st.markdown("**Workflow Profile Activation**")
+    if not ctrl.can_edit_activation_for_scope(workflow_adapter.target_id, scope):
+        st.caption("Workflow profile activation is not editable in this scope.")
+        return
+
+    workflow_profiles = ctrl.list_profiles(workflow_adapter.target_id)
+    workflow_current = draft_dot.get(workflow_adapter.activation_key, "default")
+    if workflow_current not in workflow_profiles:
+        workflow_profiles = [workflow_current] + workflow_profiles
+    workflow_selected = st.selectbox(
+        workflow_adapter.activation_label,
+        options=workflow_profiles,
+        index=workflow_profiles.index(workflow_current),
+        key=f"{form_scope_key}_active_profile_workflow",
+    )
+    workflow_adapter.write_activation_value(value=workflow_selected, flat_map=draft_dot)
+
+    st.markdown("**Module Profile Activation**")
+    for adapter in module_adapters:
+        if not ctrl.can_edit_activation_for_scope(adapter.target_id, scope):
+            continue
+        profiles = ctrl.list_profiles(adapter.target_id)
+        current = draft_dot.get(adapter.activation_key, "default")
+        if current not in profiles:
+            profiles = [current] + profiles
+        selected = st.selectbox(
+            adapter.activation_label,
+            options=profiles,
+            index=profiles.index(current),
+            key=f"{form_scope_key}_active_profile_{adapter.target_id}",
+        )
+        adapter.write_activation_value(value=selected, flat_map=draft_dot)
 
 
 def render_configuration_panel(
@@ -104,8 +191,11 @@ def render_configuration_panel(
     st.caption(eff_caption)
 
     st.caption(
-        "Precedence (later wins per key): Environment → Run override (or draft when no run "
-        "folder) → Project config → Defaults."
+        "Precedence (highest to lowest): Environment, then Run override "
+        "(or Draft override when no run is selected), then Project config, then Defaults."
+    )
+    st.caption(
+        "Source labels currently report Draft override keys under the run-layer source model."
     )
 
     col_left, col_right = st.columns([3, 1])
@@ -125,7 +215,7 @@ def render_configuration_panel(
 
     registry = build_registry()
     effective_dot = flatten(effective_config)
-    categories = sorted({meta.category for meta in registry.values()})
+    categories = list(dict.fromkeys(meta.category for meta in registry.values()))
 
     with col_left:
         for category in categories:
@@ -133,7 +223,7 @@ def render_configuration_panel(
             if not keys:
                 continue
             with st.expander(category.title(), expanded=False):
-                for key in sorted(keys):
+                for key in keys:
                     value = effective_dot.get(key)
                     source = sources.get(key, "default")
                     st.write(f"`{key}`")
@@ -175,16 +265,25 @@ def render_configuration_panel(
     elif scope == "Project":
         base_config = project or defaults
     elif scope == "Draft override":
-        base_config = draft or {}
+        base_config = _sanitize_scope_config(scope, draft or {})
     else:
         base_config = run_ov if run_dir is not None else {}
 
-    scope_cache = st.session_state.get(_SCOPE_CACHE_KEY)
-    if _DRAFT_STATE_KEY not in st.session_state or scope_cache != scope:
+    current_run_cache = str(run_dir) if run_dir is not None else "__no_run__"
+    if _should_reset_draft_state(
+        st.session_state,
+        scope=scope,
+        current_run_cache=current_run_cache,
+    ):
         st.session_state[_DRAFT_STATE_KEY] = copy.deepcopy(base_config)
         st.session_state[_SCOPE_CACHE_KEY] = scope
+        st.session_state[_RUN_CACHE_KEY] = current_run_cache
 
-    draft_config = st.session_state.get(_DRAFT_STATE_KEY) or {}
+    draft_config = _sanitize_scope_config(
+        scope, st.session_state.get(_DRAFT_STATE_KEY) or {}
+    )
+    if draft_config != st.session_state.get(_DRAFT_STATE_KEY):
+        st.session_state[_DRAFT_STATE_KEY] = copy.deepcopy(draft_config)
     draft_dot = flatten(draft_config)
     base_dot = flatten(base_config)
 
@@ -203,6 +302,14 @@ def render_configuration_panel(
     form_scope_key = scope.lower().replace(" ", "_")
 
     if edit_mode and scope != "Default":
+        common_keys = {item.key for item in COMMON_SETTINGS_SCHEMA}
+        activation_keys = {
+            adapter.activation_key for adapter in iter_all_profile_target_adapters()
+        }
+        editable_registry_keys = {
+            key for key in registry.keys() if key not in activation_keys
+        }
+        st.markdown("**Common Settings (Guided)**")
         for category in categories:
             fields = [meta for meta in registry.values() if meta.category == category]
             if not fields:
@@ -215,10 +322,46 @@ def render_configuration_panel(
                     show_only_changed=show_only_changed,
                     base_values=base_dot,
                     scope=form_scope_key,
+                    allowed_keys=common_keys - activation_keys,
                 )
                 draft_dot.update(updated)
 
-        draft_config = unflatten(draft_dot)
+        st.divider()
+        if scope in ("Project", "Run override"):
+            st.markdown("**Active Profiles**")
+            _render_active_profile_selectors(
+                draft_dot=draft_dot,
+                scope=scope,
+                form_scope_key=form_scope_key,
+            )
+
+        st.divider()
+        show_advanced = st.toggle(
+            "Show advanced/raw settings editor",
+            value=False,
+            key="settings_config_show_advanced_editor",
+        )
+        if show_advanced:
+            st.caption("Advanced editor exposes all registered keys. Use with care.")
+            for category in categories:
+                fields = [
+                    meta for meta in registry.values() if meta.category == category
+                ]
+                if not fields:
+                    continue
+                with st.expander(f"{category.title()} (advanced)", expanded=False):
+                    updated = render_config_form(
+                        category=category,
+                        fields=fields,
+                        values=draft_dot,
+                        show_only_changed=show_only_changed,
+                        base_values=base_dot,
+                        scope=f"{form_scope_key}_advanced",
+                        allowed_keys=editable_registry_keys,
+                    )
+                    draft_dot.update(updated)
+
+        draft_config = _sanitize_scope_config(scope, unflatten(draft_dot))
         st.session_state[_DRAFT_STATE_KEY] = draft_config
 
         errors = validate_config(draft_config)
@@ -250,7 +393,7 @@ def render_configuration_panel(
                 if scope == "Project":
                     save_project_config(draft_config)
                 elif scope == "Draft override":
-                    save_draft_override(draft_config)
+                    save_draft_override(_strip_activation_keys(draft_config))
                 elif scope == "Run override" and run_dir is not None:
                     save_run_override(run_dir, draft_config)
                 st.success(f"Saved **{save_label_scope}** to `{save_path}`.")

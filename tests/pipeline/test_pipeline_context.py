@@ -9,7 +9,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from transcriptx.core.pipeline.pipeline_context import PipelineContext
+from transcriptx.core.pipeline.pipeline_context import (
+    PipelineContext,
+    ReadOnlyPipelineContext,
+)
 
 
 class TestPipelineContext:
@@ -359,3 +362,70 @@ class TestPipelineContext:
 
         assert context.get_speaker_map() == {"SPEAKER_00": "Alice", "SPEAKER_01": "Bob"}
         assert context.get_speaker_display_name("SPEAKER_00") == "Alice (SPEAKER_00)"
+
+    def test_pipeline_context_freeze_blocks_mutations(self, pipeline_context_factory):
+        context = pipeline_context_factory()
+        context.freeze()
+        assert context.is_frozen() is True
+
+        with pytest.raises(RuntimeError, match="frozen"):
+            context.set_segments([])
+        with pytest.raises(RuntimeError, match="frozen"):
+            context.store_computed_value("k", "v")
+        with pytest.raises(RuntimeError, match="frozen"):
+            context.store_analysis_result("stats", {})
+
+    def test_pipeline_context_speaker_key_alias_collision_is_removed(
+        self, pipeline_context_factory
+    ):
+        context = pipeline_context_factory()
+        aliases = context._build_speaker_key_aliases(
+            {"SPEAKER_00": "Alex", "SPEAKER_01": "Alex"}
+        )
+        assert "Alex" not in aliases
+
+    def test_pipeline_context_get_speaker_display_name_returns_key_when_missing_mapping(
+        self, pipeline_context_factory
+    ):
+        context = pipeline_context_factory()
+        assert context.get_speaker_display_name("UNKNOWN_KEY") == "UNKNOWN_KEY"
+
+    def test_pipeline_context_anonymised_display_name_falls_back_to_key_when_unmapped(
+        self, pipeline_context_factory
+    ):
+        context = pipeline_context_factory()
+        context.runtime_flags["anonymise_speakers"] = True
+        context.runtime_flags["speaker_anonymisation_map"] = {}
+        assert context.get_speaker_display_name("NOT_IN_MAP") == "NOT_IN_MAP"
+
+    def test_pipeline_context_get_speaker_key_from_segment_precedence(
+        self, pipeline_context_factory
+    ):
+        context = pipeline_context_factory()
+        seg_with_db = {"speaker_db_id": 7, "speaker_key": "SK", "speaker": "SPEAKER_00"}
+        seg_with_key = {"speaker_key": "SK", "speaker": "SPEAKER_00"}
+        seg_with_grouping = {"grouping_key": "GK", "speaker": "SPEAKER_00"}
+        seg_with_speaker = {"speaker": "SPEAKER_00"}
+
+        assert context.get_speaker_key_from_segment(seg_with_db) == "7"
+        assert context.get_speaker_key_from_segment(seg_with_key) == "SK"
+        assert context.get_speaker_key_from_segment(seg_with_grouping) == "GK"
+        assert context.get_speaker_key_from_segment(seg_with_speaker) == "SPEAKER_00"
+
+
+class TestReadOnlyPipelineContext:
+    def test_read_only_wrapper_delegates_reads(self, pipeline_context_factory):
+        ctx = pipeline_context_factory()
+        ro = ReadOnlyPipelineContext(ctx)
+        assert ro.get_base_name() == ctx.get_base_name()
+        assert ro.get_segments() == ctx.get_segments()
+        assert ro.get_runtime_flags() == ctx.get_runtime_flags()
+
+    def test_read_only_wrapper_blocks_mutations(self, pipeline_context_factory):
+        ro = ReadOnlyPipelineContext(pipeline_context_factory())
+        with pytest.raises(RuntimeError, match="read-only"):
+            ro.set_segments([])
+        with pytest.raises(RuntimeError, match="read-only"):
+            ro.store_analysis_result("stats", {})
+        with pytest.raises(RuntimeError, match="read-only"):
+            ro.store_computed_value("k", "v")

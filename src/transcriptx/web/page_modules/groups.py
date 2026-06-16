@@ -1,14 +1,23 @@
 """
 Group management page for TranscriptX Studio.
+
+Membership editing runs inside ``@st.fragment`` so multiselect interactions do not
+trigger a full-app rerun (avoids the dimming overlay on each chip toggle).
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Mapping
 
 import pandas as pd
 import streamlit as st
 
+from transcriptx.core.domain.group import Group
+from transcriptx.core.store.group_manifest_store import (
+    canonical_group_member_path,
+    canonicalize_group_member_paths,
+)
 from transcriptx.web.cache_helpers import (
     cached_list_groups,
     clear_group_workspace_cache,
@@ -39,6 +48,137 @@ def _clear_group_caches() -> None:
     _cached_get_members.clear()
 
 
+@st.fragment
+def _render_create_group_transcripts_fragment(
+    transcript_options: list[str],
+    transcript_labels: Mapping[str, str],
+) -> None:
+    """Transcript multiselect chips without full-app rerun; commit still full-reruns."""
+    selected_paths = st.multiselect(
+        "Transcripts",
+        options=transcript_options,
+        format_func=lambda p: transcript_labels.get(p, Path(p).name),
+        key="create_group_transcripts",
+    )
+    if st.button("Create group", type="primary", key="create_group_submit"):
+        if not selected_paths:
+            st.error("Select at least one transcript.")
+        else:
+            try:
+                name_raw = (st.session_state.get("create_group_name") or "").strip()
+                desc_raw = (
+                    st.session_state.get("create_group_description") or ""
+                ).strip()
+                group, created = GroupService.create_group_with_status(
+                    name=name_raw or None,
+                    group_type="group",
+                    transcript_refs=selected_paths,
+                    description=desc_raw or None,
+                    metadata=None,
+                )
+                _clear_group_caches()
+                if created:
+                    set_page_flash("success", "Group created.")
+                    try_page_toast("Group created.")
+                else:
+                    set_page_flash(
+                        "info", "Group already exists with those transcripts."
+                    )
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
+
+
+@st.fragment
+def _render_edit_membership_fragment(
+    group: Group,
+    transcript_options: list[str],
+    transcript_labels: Mapping[str, str],
+    transcript_canonical: Mapping[str, str],
+) -> None:
+    """Fragment-scoped: multiselect changes rerun only this block, not the whole page."""
+    membership_key = f"group_membership_state_{group.group_id}"
+    members = _cached_get_members(group.group_id)
+    if membership_key not in st.session_state:
+        st.session_state[membership_key] = canonicalize_group_member_paths(
+            [m.file_path for m in members]
+        )
+
+    working_paths: list[str] = st.session_state[membership_key]
+    path_to_label = dict(transcript_labels)
+    working_canon = (
+        set(canonicalize_group_member_paths(working_paths)) if working_paths else set()
+    )
+    available_for_add = [
+        p for p in transcript_options if transcript_canonical[p] not in working_canon
+    ]
+    st.caption(
+        "**Add selected** writes new transcripts to the group file immediately. "
+        "**Save membership** re-syncs the manifest from the list above if needed."
+    )
+    if available_for_add:
+        to_add = st.multiselect(
+            "Add transcripts",
+            options=available_for_add,
+            format_func=lambda p: path_to_label.get(p, Path(p).name),
+            key=f"membership_add_{group.group_id}",
+        )
+        if st.button("Add selected", key=f"membership_add_btn_{group.group_id}"):
+            if not to_add:
+                st.warning(
+                    "Pick one or more transcripts in “Add transcripts”, then click "
+                    "**Add selected** again."
+                )
+            else:
+                merged = list(working_paths)
+                merged.extend(to_add)
+                try:
+                    canonical = canonicalize_group_member_paths(merged)
+                    prior = set(
+                        canonicalize_group_member_paths(working_paths)
+                        if working_paths
+                        else []
+                    )
+                    if set(canonical) == prior:
+                        st.info("Those transcripts are already in this group.")
+                    else:
+                        GroupService.update_membership(group.group_id, canonical)
+                        _clear_group_caches()
+                        st.session_state[membership_key] = canonical
+                        set_page_flash("success", "Added transcript(s) to the group.")
+                        try_page_toast("Membership updated.")
+                        st.rerun()
+                except Exception as e:
+                    st.error(str(e))
+
+    st.multiselect(
+        "Current transcripts",
+        options=working_paths,
+        default=working_paths,
+        format_func=lambda p: path_to_label.get(p, Path(p).name),
+        key=f"membership_current_{group.group_id}",
+        disabled=True,
+    )
+
+    if st.button("Save membership", key=f"membership_save_{group.group_id}"):
+        if not working_paths:
+            st.error("Group must have at least one transcript.")
+        else:
+            try:
+                canonical = canonicalize_group_member_paths(working_paths)
+                GroupService.update_membership(group.group_id, canonical)
+                _clear_group_caches()
+                st.session_state.pop(membership_key, None)
+                set_page_flash("success", "Membership updated.")
+                try_page_toast("Membership updated.")
+                st.rerun()
+            except Exception as e:
+                st.error(str(e))
+    if st.button("Cancel", key=f"membership_cancel_{group.group_id}"):
+        st.session_state.pop(membership_key, None)
+        st.rerun()
+
+
 def render_groups() -> None:
     render_page_shell(
         "Groups",
@@ -50,39 +190,17 @@ def render_groups() -> None:
     transcripts = get_cached_list_transcripts()
     transcript_options = [str(m.path) for m in transcripts]
     transcript_labels = {str(m.path): m.base_name for m in transcripts}
+    transcript_canonical = {
+        p: canonical_group_member_path(p) for p in transcript_options
+    }
 
     with st.expander("Create new group", expanded=False):
-        name = st.text_input("Name", key="create_group_name")
-        description = st.text_area("Description", key="create_group_description")
-        selected_paths = st.multiselect(
-            "Transcripts",
-            options=transcript_options,
-            format_func=lambda p: transcript_labels.get(p, Path(p).name),
-            key="create_group_transcripts",
+        st.text_input("Name", key="create_group_name")
+        st.text_area("Description", key="create_group_description")
+        _render_create_group_transcripts_fragment(
+            transcript_options,
+            transcript_labels,
         )
-        if st.button("Create group", type="primary", key="create_group_submit"):
-            if not selected_paths:
-                st.error("Select at least one transcript.")
-            else:
-                try:
-                    group, created = GroupService.create_group_with_status(
-                        name=(name or "").strip() or None,
-                        group_type="group",
-                        transcript_refs=selected_paths,
-                        description=(description or "").strip() or None,
-                        metadata=None,
-                    )
-                    _clear_group_caches()
-                    if created:
-                        set_page_flash("success", "Group created.")
-                        try_page_toast("Group created.")
-                    else:
-                        set_page_flash(
-                            "info", "Group already exists with those transcripts."
-                        )
-                    st.rerun()
-                except Exception as e:
-                    st.error(str(e))
 
     groups = cached_list_groups()
     if not groups:
@@ -169,54 +287,13 @@ def render_groups() -> None:
                 except Exception as e:
                     st.error(str(e))
 
-    membership_key = f"group_membership_state_{group.group_id}"
-    if membership_key not in st.session_state:
-        st.session_state[membership_key] = [m.file_path for m in members]
-
     with st.expander("Edit membership"):
-        working_paths: list[str] = st.session_state[membership_key]
-        path_to_label = {str(m.path): m.base_name for m in transcripts}
-        available_for_add = [p for p in transcript_options if p not in working_paths]
-        if available_for_add:
-            to_add = st.multiselect(
-                "Add transcripts",
-                options=available_for_add,
-                format_func=lambda p: path_to_label.get(p, Path(p).name),
-                key=f"membership_add_{group.group_id}",
-            )
-            if st.button("Add selected", key=f"membership_add_btn_{group.group_id}"):
-                new_list = list(working_paths)
-                for p in to_add:
-                    if p not in new_list:
-                        new_list.append(p)
-                st.session_state[membership_key] = new_list
-                st.rerun()
-
-        st.multiselect(
-            "Current transcripts",
-            options=working_paths,
-            default=working_paths,
-            format_func=lambda p: path_to_label.get(p, Path(p).name),
-            key=f"membership_current_{group.group_id}",
-            disabled=True,
+        _render_edit_membership_fragment(
+            group,
+            transcript_options,
+            transcript_labels,
+            transcript_canonical,
         )
-
-        if st.button("Save membership", key=f"membership_save_{group.group_id}"):
-            if not working_paths:
-                st.error("Group must have at least one transcript.")
-            else:
-                try:
-                    GroupService.update_membership(group.group_id, working_paths)
-                    _clear_group_caches()
-                    st.session_state.pop(membership_key, None)
-                    set_page_flash("success", "Membership updated.")
-                    try_page_toast("Membership updated.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(str(e))
-        if st.button("Cancel", key=f"membership_cancel_{group.group_id}"):
-            st.session_state.pop(membership_key, None)
-            st.rerun()
 
     confirm_key = f"confirm_delete_group_{group.group_id}"
     if st.button("Delete group", type="secondary", key=f"delete_btn_{group.group_id}"):

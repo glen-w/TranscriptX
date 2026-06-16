@@ -519,3 +519,263 @@ Both integration tests use `@pytest.mark.integration_core`, tmp paths, and env/m
 - **Default run:** `2128 passed, 4 skipped, 91 deselected` (0 failed).
 - **`pytest -m integration_core`:** `33 passed`.
 
+## 28. Expansion (2026-04-06) – suite review, version sync, manifest fingerprints
+
+### Fixes
+
+- **`src/transcriptx/web/__init__.py`**: Bumped `__version__` to `0.1.1` so it matches `transcriptx.__version__` and `[project].version` in `pyproject.toml` (restores `tests/unit/test_version_metadata.py`).
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/services/test_corrections_studio_manifest_fingerprints.py` | 6 | `corrections_config_fingerprint` (None → empty, stability, acronym sensitivity), `memory_rule_fingerprint` (empty rules, sorted rule ids), `build_generation_manifest` field wiring. File name avoids `generation` in the path so `tests/conftest.py` does not false-tag `ner` → `requires_models`. |
+
+### Suite status (this review)
+
+- **Collection:** `2361` items total, `2270` selected, `91` deselected (default `-m` filter).
+- **Default run:** `2269 passed, 1 skipped, 91 deselected`.
+- **`pytest -m integration_core`:** `38 passed`.
+
+## 29. Expansion (2026-04-21) – web option formatter coverage
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/web/test_option_formatters.py` | 5 | `format_module_option` (known module group prefix, unknown module `Other` bucket with injected label builder), `format_transcript_option_with_speaker_status` (default/missing attrs, `partial` branch with unidentified/ignored counts, non-partial branch omits count suffix). |
+
+### Suite totals
+
+- **Collection (default filter):** `2456` total, `2365` selected, `91` deselected.
+- **Default run:** `2364 passed, 1 skipped, 91 deselected`.
+- **`pytest -m integration_core`:** `38 passed`.
+
+## 30. Suite review (2026-04-22) – `# tests` command
+
+### Backup (mandatory)
+
+- Workspace rsync to `/Users/89298/Documents/transcriptx backup/260422` (~15G, ~30k files); `custom-commands/` mirrored under backup root.
+
+### Test artifact cleanup
+
+- **Disabled** (no destructive clean-test-artifacts run; data-loss risk unless user requests a documented preview-only script).
+
+### Suite status (this run)
+
+- **Collection:** `2485` items total, `2394` selected, `91` deselected (default `pytest.ini` `-m` filter).
+- **Default run:** `2395 passed`, `1 skipped`, `91 deselected`, `4` warnings (topic modeling contracts).
+- **Skipped:** `tests/regression/test_pipeline_determinism.py` (one test: requires full pipeline setup).
+- **Quarantined:** marker appears on quarantine metadata/enforcement tests; default run excludes `quarantined` per addopts.
+- **Skipped at collection (known):** `tests/analysis/test_rules.py` — missing `transcriptx.core.analysis.rules` (see §3).
+
+### New unit tests (rename / processing_state contract)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/utils/test_file_rename_contracts.py` | `test_build_rename_plan_unmanaged_transcript_records_managed_validation_failure`, `test_compute_processing_state_rename_mutation_leaves_state_untouched` | `build_rename_plan` records failed `managed_library_transcript` validation; `_compute_processing_state_rename_mutation` does not mutate input `state`. |
+
+### Optional marker run
+
+- **`pytest -m integration_core -q`:** `38 passed`, `2449 deselected` (this run).
+
+## 31. Expansion (2026-04-22) – adapter/guardrail coverage pass
+
+### Backup
+
+- Backup completed: `/Users/89298/Documents/transcriptx backup/260422-1505` (~16.99G, ~31k files); `custom-commands/` mirrored under backup root.
+
+### Suite status (this run)
+
+- **Collection (`pytest --co -q`):** `2432/2523` tests selected under default marker filter (`91` deselected).
+- **Default run (`pytest -q`):** `2438 passed`, `1 skipped`, `91 deselected`, `4 warnings`.
+- **Coverage run (`pytest --cov=src ...` with default marker expression):** `2431 passed`, `1 skipped`, `91 deselected`; **TOTAL 69%**.
+- **`pytest -m integration_core -q`:** `38 passed`, `2492 deselected`.
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/config/test_profile_target_adapter.py` | 5 | Adapter contract for module/workflow active-profile get/set; target config object resolution; runtime/all adapter ordering consistency. |
+| `tests/core/utils/test_profile_manager_guardrails.py` | +2 | Rename collision policy (`destination exists` fails and preserves both files); load rejects invalid persisted payload shape. |
+| `tests/core/utils/test_config_loading_contracts.py` | +1 | `load_module_profiles` uses adapter iteration (`iter_runtime_profile_target_adapters`) rather than hardcoded per-target branches. |
+| `tests/web/test_settings_draft_state_contracts.py` | +1 | Draft state does not reset when activation/advanced-editor UI flags change while scope/run cache are stable. |
+| `tests/web/test_profiles_page_contracts.py` | 4 | Baseline-vs-saved profile split helper contract; create-intent copy options fallback behavior. |
+
+### Gap notes (post-pass)
+
+- **Quarantined marker usage in active tests:** none found (`@pytest.mark.quarantined` only appears in assessment/quarantine docs).
+- **Skipped-at-collection due to import failures:** none observed in this run (`tests/analysis/test_rules.py` now collects/runs).
+- **Lower-coverage high-leverage modules remaining:** `core/utils/config/system.py`, `core/utils/profile_manager.py`, `core/utils/system_env.py`, `core/utils/understandability.py`, and selected service/UI modules.
+
+## 32. Suite review (2026-04-23) – manifest config snapshot guardrails
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260423` (~16G, ~31.9k files); `custom-commands/` mirrored under backup root.
+
+### Review and suite status
+
+- **Collection (`pytest --co -q`):** `2497/2588` selected under default marker filter (`91` deselected).
+- **Default run (initial):** `2495 passed`, `1 failed`, `1 skipped`, `91 deselected`. Failure: `tests/unit/test_audit_guardrails.py::test_run_manifest_includes_required_fields` due to missing `config_snapshot_hash`/`config_snapshot`.
+- **Default run (after fix):** `2498 passed`, `1 skipped`, `91 deselected`, `4` warnings.
+- **`pytest -m integration_core -q`:** `38 passed`, `2552 deselected`.
+
+### Fixes and high-leverage expansion
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `src/transcriptx/core/utils/run_manifest.py` | n/a (product fix) | Added robust config snapshot extraction fallback (`dict`, dataclass, `__dict__`) so `create_run_manifest()` still computes `config_snapshot_hash` when `config.to_dict()` fails. |
+| `tests/core/utils/test_run_manifest_extended.py` | 2 | `TestCreateRunManifest.test_config_snapshot_hash_uses_dataclass_fallback`; `test_config_snapshot_hash_uses_mapping_config` validate hash/snapshot contract for dataclass configs with failing `to_dict` and plain dict configs. |
+
+## 33. Expansion (2026-04-23) – file override guardrails
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260423-0428` (~17G, ~32.3k files); `custom-commands/` mirrored under backup root.
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/utils/test_config_loading_contracts.py` | 2 | `test_load_config_file_root_bool_flags_are_coerced` verifies root-level `use_emojis`/`core_mode` boolean coercion contract; `test_load_config_file_preserves_config_load_error` verifies `ConfigLoadError` from payload validation is re-raised (not wrapped as generic `ValueError`). |
+
+### Suite status
+
+- **Collection (`pytest --co -q`):** `2501/2592` selected under default marker filter (`91` deselected).
+- **Default run:** `2500 passed`, `1 skipped`, `91 deselected`, `4` warnings.
+- **`pytest -m integration_core -q`:** `38 passed`, `2554 deselected`.
+
+## 34. Expansion (2026-04-23) – GUI orchestration + pipeline outcomes
+
+### New tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/app/test_gui_surface_orchestration.py` | 14 | GUI/API orchestration surface contracts: `resolve_modules` invalid/default-filter paths, `get_module_info_list`, `capture_output`, `SettingsController` effective config + storage roots, `BatchController` validation/wrapping/happy-path, `SpeakerController` validation/wrapping/happy-path, `run_batch_analysis` folder error + mixed success/failure aggregation, `identify_speakers` happy path + missing-file/exception handling. |
+| `tests/pipeline/test_module_outcomes.py` | +3 | `normalize_raw_outcomes` execution-state mapping (cache hit, blocked, skipped, failed, run, not_started fallback), unknown raw-shape fallback, `normalize_skipped_entries` status normalization and string entry handling. |
+
+### Result
+
+- **Default run:** `2517 passed`, `1 skipped`, `91 deselected`.
+- **`pytest -m integration_core -q`:** `38 passed`, `2571 deselected`.
+- **Coverage (`--cov=src/transcriptx/core --cov=src/transcriptx/web --cov=src/transcriptx/app`):** total remained at **70%**; targeted module improvements include `core/pipeline/module_outcomes.py` **73% → 91%**, `app/module_resolution.py` **27% → 95%**, `app/output_capture.py` **56% → 100%**, `app/controllers/speaker_controller.py` **0% → 100%**, `app/workflows/batch.py` **25% → 94%**, and `app/workflows/speaker.py` **27% → 97%**.
+
+## 35. Suite review (2026-04-25) – `dag_pipeline_engine` control-flow coverage
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260425` (~18G); `custom-commands/` mirrored under backup root.
+
+### Review snapshot
+
+- **Collection (`pytest --co -q`):** `2715/2806` selected under default marker filter (`91` deselected).
+- **Default run (`pytest -q`):** `2667 passed`, `48 failed`, `1 skipped`, `91 deselected`, `2 errors`.
+- **Coverage run (`pytest --cov=src ...` with default marker expression):** completed with failures; reported **67% total** before exit with same failure cluster.
+- **`pytest -m integration_core -q`:** `21 passed`, `15 failed`, `2 errors` (38 selected).
+- **Primary failure cluster:** tests patching `transcriptx.core.pipeline.pipeline.OUTPUTS_DIR` / `create_dag_pipeline` now fail because those attributes are no longer exported from `pipeline.py` after DAG/runtime refactors.
+
+### New unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/pipeline/test_dag_pipeline_engine.py` | 3 | `execute_pipeline_runtime` contract branches: context is required (`PipelineSetupError`), plan-resolution exceptions trigger setup-failure finalization with failed status + surfaced error, and blocked-plan outcomes are reduced before sequential execution/finalization. |
+
+### Targeted validation
+
+- **`pytest -q tests/pipeline/test_dag_pipeline_engine.py`**: `3 passed`.
+
+## 36. Suite review (2026-04-25) – `/tests` command + bootstrap/workspace expansion
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260425-2306` (~20G); `custom-commands/` mirrored under backup root.
+
+### Review and baseline
+
+- **Collection (`pytest --co -q`):** `2757/2848` selected under default marker filter (`91` deselected).
+- **Default run (`pytest -q`):** `2756 passed`, `1 skipped`, `91 deselected` (green baseline).
+- **Cleanup:** destructive test-artifact cleanup remains disabled.
+
+### New high-leverage unit tests
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/pipeline/test_run_bootstrap_service.py` | 10 | `RunBootstrapService.load_segments` object/dict/error paths; `compute_identity` hash/content/file-hash wiring; managed sidecar gate allow/deny behavior; transcript registration wiring and source metadata propagation. |
+| `tests/pipeline/test_run_workspace_service.py` | 5 | `RunWorkspaceService.create` output-root precedence (`override` > `paths.OUTPUTS_DIR` > env fallback), directory creation, and scoped output-dir lifecycle (`set`/`clear`) including exception cleanup. |
+
+### Validation
+
+- **Targeted run:** `pytest -q tests/pipeline/test_run_bootstrap_service.py tests/pipeline/test_run_workspace_service.py` → `15 passed`.
+- **Default suite (post-expansion):** `2756 passed`, `1 skipped`, `91 deselected`.
+- **`pytest -m integration_core -q`:** `38 passed`.
+- **Coverage (`pytest --cov=src --cov-report=term-missing ...` default marker expression):** `2771 passed`, `1 skipped`, `91 deselected`; **TOTAL 72%**.
+
+## 37. Suite review (2026-06-16) – `# tests` command + config coercion / rename transaction coverage
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260616` (~26G, ~40.7k files); `custom-commands/` mirrored under backup root.
+
+### Review and baseline
+
+- **Collection (`pytest --co -q`):** `2951/3106` selected under default marker filter (`155` deselected).
+- **Default run (`pytest -q`):** `2950 passed`, `1 skipped`, `155 deselected`, `4` warnings (green baseline before expansion).
+- **Coverage gate (default marker expression):** `2955 passed`, `1 skipped`, `150 deselected`; **TOTAL 71%**.
+- **Cleanup:** destructive test-artifact cleanup remains disabled.
+- **Quarantined:** `0` tests selected with `-m quarantined` in active tree.
+
+### Coverage gaps targeted (offline, deterministic, high-leverage)
+
+- `core/config/coercion.py` was **46.6%** (only `bool`/`list` string cases tested).
+- `core/utils/rename_transaction.py` was **60.5%** (only the dry-run bookkeeping path tested).
+
+### New / expanded unit tests (tests-only; no production changes)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/config/test_coercion.py` | 17 (was 2) | `coerce` for every target: `None` passthrough across types; `bool` truthy/falsy/unknown strings + passthrough; `int` string parse, bool rejection, invalid-string passthrough; `float` string/int parse + bool rejection; `list` CSV trim/drop-empty, JSON array, empty-string passthrough, JSON-object→CSV fallback; `dict` JSON parse, invalid-JSON and non-object passthrough; unknown-target passthrough. |
+| `tests/core/utils/test_rename_transaction_unit.py` | 10 (was 2) | `execute` happy path (rename + executed bookkeeping), state-update execution, rollback when a later rename's dest exists, lock-not-acquired failure, unknown op type; `_execute_rename` source-missing branch; `_execute_state_update` exception branch; `rollback` reversing executed renames. Uses `tmp_path` + a fake `FileLock` and a tmp `PROCESSING_STATE_FILE` so it stays offline/deterministic. |
+
+### Targeted coverage result
+
+- `core/config/coercion.py`: **46.6% → 100%**.
+- `core/utils/rename_transaction.py`: **60.5% → 86%** (remaining misses are the backup-creation, in-`execute` exception handler, rename-failure logging, and rollback-restore branches).
+
+### Validation
+
+- **Targeted run:** `pytest -q tests/core/config/test_coercion.py tests/core/utils/test_rename_transaction_unit.py` → `37 passed`.
+- **Default suite (post-expansion):** `2983 passed`, `1 skipped`, `155 deselected` (+33 vs baseline, `0` failed).
+- **`pytest -m integration_core -q`:** `44 passed`.
+- **Production code:** none changed (tests-only expansion).
+
+## 38. Expansion (2026-06-16) – top-3 priority area coverage (resolution / registry / session store)
+
+### Targeted areas (offline, deterministic, high-leverage)
+
+Selected the three highest-leverage low-coverage critical-path modules that are testable without models/audio/network:
+
+1. **Path / transcript resolution** — `core/utils/path_resolution_core.py` (was **64.9%**).
+2. **Group aggregation module registry** — `core/analysis/aggregation/registry.py` (was **29%**).
+3. **Corrections session state persistence** — `core/store/corrections_session_store.py` (was **65.2%**).
+
+### New / expanded unit tests (tests-only; no production changes)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/utils/test_path_resolution_core_unit.py` | +14 (3 → 17) | `find_state_entry_by_path` step-transcript / variant-base / no-match branches; `get_path_from_state` (missing file, transcript-exists, audio `mp3_path`, `output_dir_path`); `try_canonical_base_match` (transcript in diarised, audio in recordings, output_dir, not-found); `try_suffix_variants` (equal-base no-op, differing-base delegation); `heuristic_search` (outputs glob hit, no-match). Uses a `patched_paths` fixture monkeypatching the `paths` module constants + `tmp_path`. |
+| `tests/core/analysis/test_aggregation_registry_branches.py` | +13 (5 → 18) | `build_registry` contract (entry type, **agg_id uniqueness**, deps reference known aggregations, valid `output_type`, selector semantics, `entity_sentiment`→`ner` dep); `_resolve_prosody_summary_path` (empty/missing/existing); `_aggregate_prosody` success path (prefixed metrics vs `raw`); `_aggregate_summary_blob` (none-when-empty, payload collection + blob shape); `_warning_payload_shape` contract. |
+| `tests/core/store/test_corrections_session_store_unit.py` | +17 (8 → 25) | `_shard` (long id, single-char pad, empty/symbols → length-2); `_load_index` resilience (missing, non-dict, missing `entries`, corrupt JSON); `write(update_index=False)` + legacy-read fallback; `read` unknown → None; `write` requires `session_id`; `mutate` no-session raises; `find_by_session_id` (unknown → None, rglob scan without index); `read_event_lines` missing → `[]`; `write_and_append_event`; `ensure_session` idempotency; `rebuild` empty-root default. |
+
+### Targeted coverage result (full-suite measurement)
+
+- `core/utils/path_resolution_core.py`: **64.9% → 74%**.
+- `core/store/corrections_session_store.py`: **65.2% → 81%**.
+- `core/analysis/aggregation/registry.py`: **29% → 39%** (remaining misses are the heavy per-module aggregate functions that require real per-transcript artifacts).
+
+### Validation
+
+- **Default coverage gate (`pytest --cov=src ... -m "<default expr>"`):** `3031 passed`, `1 skipped`, `150 deselected`, `0 failed`; **TOTAL 71%**.
+- **`pytest -m integration_core -q`:** `44 passed`.
+- **Production code:** none changed (tests-only expansion; +44 tests across the three files).
+

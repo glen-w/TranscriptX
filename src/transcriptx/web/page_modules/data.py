@@ -12,6 +12,7 @@ import streamlit as st
 
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.module_ui_groups import module_sort_key
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_ARTIFACT
 
@@ -119,6 +120,11 @@ def render_data() -> None:
         )
         render_page_help(_DATA_HELP_LOADED)
         return
+
+    data_artifacts = sorted(
+        data_artifacts,
+        key=lambda a: (module_sort_key(a.module or None), a.rel_path or ""),
+    )
 
     options = {a.id: f"{a.module or 'other'} • {a.rel_path}" for a in data_artifacts}
     option_keys = list(options.keys())

@@ -5,6 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from transcriptx.services.corrections_studio.review_target import (
+    persisted_review_target_text,
+)
 from transcriptx.services.corrections_studio.schema import (
     ApplyScope,
     LearnIntent,
@@ -41,12 +44,21 @@ class CorrectionsStudioReviewService:
         decision: str,
         selected_occurrence_keys: Optional[List[str]] = None,
         learn_rule_params: Optional[Dict[str, Any]] = None,
+        review_target_raw: Optional[str] = None,
     ) -> None:
         doc = self._session.load_document(session_id)
         gen = doc.current_generation_id
         if gen is None:
             raise ValueError("No active generation; generate candidates first")
 
+        sc = next(
+            (
+                c
+                for c in doc.candidates
+                if c.candidate_id == candidate_id and c.generation_id == gen
+            ),
+            None,
+        )
         learn_rule_id: Optional[str] = None
         if learn_rule_params:
             sr = StudioRule(
@@ -69,6 +81,13 @@ class CorrectionsStudioReviewService:
         scope = ApplyScope.selected if selected_occurrence_keys else ApplyScope.all
         keys = [str(x) for x in (selected_occurrence_keys or [])]
 
+        review_target_text: Optional[str] = None
+        if action in (ReviewAction.accept, ReviewAction.learn):
+            review_target_text = persisted_review_target_text(
+                raw_override=review_target_raw,
+                candidate_right_text=sc.right_text if sc else "",
+            )
+
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         seq = self._session.next_event_sequence(session_id)
 
@@ -81,6 +100,7 @@ class CorrectionsStudioReviewService:
             selected_occurrence_keys=keys,
             learn_intent=LearnIntent.create_rule if learn_rule_params else None,
             learn_rule_id=learn_rule_id,
+            review_target_text=review_target_text,
             recorded_at=now,
             event_sequence=seq,
         )
@@ -114,6 +134,7 @@ class CorrectionsStudioReviewService:
             selected_occurrence_keys=keys,
             learn_intent=rec.learn_intent,
             learn_rule_id=learn_rule_id,
+            review_target_text=review_target_text,
         )
         event = StudioEventEnvelope(
             session_id=session_id,

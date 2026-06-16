@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import hashlib
 import json
+import os
+import tempfile
 
 from transcriptx.core.utils.paths import CONFIG_DIR
 
@@ -38,11 +40,27 @@ def _unwrap_config(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def save_config_atomic(config_dict: Dict[str, Any], target_path: Path) -> None:
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = target_path.with_suffix(".tmp")
     payload = _wrap_config(config_dict)
+    temp_path: str | None = None
     with config_write_lock(target_path):
-        temp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        temp_path.replace(target_path)
+        try:
+            fd, temp_path = tempfile.mkstemp(
+                prefix=".config_tmp_",
+                suffix=".json",
+                dir=str(target_path.parent),
+            )
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temp_path, target_path)
+        except Exception:
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.unlink(temp_path)
+                except OSError:
+                    pass
+            raise
 
 
 def load_config_safe(config_path: Path) -> Optional[Dict[str, Any]]:
@@ -74,7 +92,10 @@ def load_project_config() -> Optional[Dict[str, Any]]:
 
 
 def save_project_config(config_dict: Dict[str, Any]) -> None:
-    save_config_atomic(config_dict, get_project_config_path())
+    # Compatibility: callers may pass a full on-disk payload
+    # {"schema_version": ..., "config": {...}}. Persist the inner config
+    # so load_project_config() always returns the nested settings map.
+    save_config_atomic(_unwrap_config(config_dict), get_project_config_path())
 
 
 def load_draft_override() -> Optional[Dict[str, Any]]:

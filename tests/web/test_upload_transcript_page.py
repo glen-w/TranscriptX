@@ -24,7 +24,6 @@ def test_import_uploaded_transcript_builds_session_id(
     uploaded = object()
     saved_source = tmp_path / "incoming.vtt"
     json_artifact = tmp_path / "meeting.json"
-    run_dir = tmp_path / "outputs" / "meeting_slug" / "run123"
 
     monkeypatch.setattr(
         mod, "_save_uploaded_transcript", lambda f: (saved_source, "incoming.vtt")
@@ -48,13 +47,11 @@ def test_import_uploaded_transcript_builds_session_id(
     monkeypatch.setattr(
         mod,
         "_register_uploaded_transcript",
-        lambda p: ("meeting_slug", "run123", run_dir),
+        lambda p: "meeting_slug",
     )
-    monkeypatch.setattr(mod, "_persist_imported_speaker_names", lambda _p: None)
 
-    session_id, out_dir, transcript_path = mod._import_uploaded_transcript(uploaded)
-    assert session_id == "meeting_slug/run123"
-    assert out_dir == run_dir
+    slug, transcript_path = mod._import_uploaded_transcript(uploaded)
+    assert slug == "meeting_slug"
     assert transcript_path == json_artifact
     assert called["path"] == saved_source
     assert called["logical_upload_basename"] == "incoming.vtt"
@@ -62,111 +59,29 @@ def test_import_uploaded_transcript_builds_session_id(
     assert called["delete_staging_on_success"] is True
 
 
-def test_build_speaker_map_from_segments_uses_original_speaker() -> None:
-    import transcriptx.web.page_modules.upload_transcript as mod
-
-    segments = [
-        {
-            "speaker": "SPEAKER_00",
-            "text": "a",
-            "original_cue": {"original_speaker": "Alice"},
-        },
-        {
-            "speaker": "SPEAKER_00",
-            "text": "b",
-            "original_cue": {"original_speaker": "Alice"},
-        },
-        {
-            "speaker": "SPEAKER_01",
-            "text": "c",
-            "original_cue": {"original_speaker": "Bob"},
-        },
-    ]
-
-    mapped = mod._build_speaker_map_from_segments(segments)
-    assert mapped == {"SPEAKER_00": "Alice", "SPEAKER_01": "Bob"}
-
-
-def test_persist_imported_speaker_names_calls_bulk_update(
-    monkeypatch, tmp_path: Path
-) -> None:
-    import transcriptx.web.page_modules.upload_transcript as mod
-
-    transcript_path = tmp_path / "meeting.json"
-    transcript_path.write_text("{}", encoding="utf-8")
-
-    monkeypatch.setattr(
-        mod,
-        "_load_segments_from_json",
-        lambda _p: [
-            {
-                "speaker": "SPEAKER_00",
-                "original_cue": {"original_speaker": "Alice"},
-                "text": "x",
-            }
-        ],
-    )
-
-    called = {"args": None, "kwargs": None}
-
-    class _DummyMappingService:
-        def bulk_update(self, *args, **kwargs):
-            called["args"] = args
-            called["kwargs"] = kwargs
-            return None
-
-    monkeypatch.setattr(
-        "transcriptx.services.speaker_studio.mapping_service.SpeakerMappingService",
-        _DummyMappingService,
-    )
-
-    mod._persist_imported_speaker_names(transcript_path)
-    assert called["args"] is not None
-    assert called["args"][0] == str(transcript_path)
-    assert called["kwargs"]["speaker_map"] == {"SPEAKER_00": "Alice"}
-    assert called["kwargs"]["ignored_speakers"] == []
-
-
-def test_import_uploaded_transcript_persists_imported_speaker_names(
+def test_import_uploaded_transcript_does_not_apply_speaker_map_directly(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
     import transcriptx.web.page_modules.upload_transcript as mod
 
     uploaded = object()
-    saved_source = tmp_path / "incoming.html"
     json_artifact = tmp_path / "meeting.json"
-    run_dir = tmp_path / "outputs" / "meeting_slug" / "run123"
 
     monkeypatch.setattr(
-        mod, "_save_uploaded_transcript", lambda f: (saved_source, "incoming.html")
+        mod, "_save_uploaded_transcript", lambda f: (tmp_path / "x.vtt", "x.vtt")
     )
-
-    class _ManagedResult:
-        json_path = json_artifact
-
     monkeypatch.setattr(
         "transcriptx.web.page_modules.upload_transcript.run_managed_import_workflow",
-        lambda path, **kwargs: _ManagedResult(),
+        lambda path, **kwargs: type("R", (), {"json_path": json_artifact})(),
     )
-    monkeypatch.setattr(
-        mod,
-        "_register_uploaded_transcript",
-        lambda p: ("meeting_slug", "run123", run_dir),
-    )
+    monkeypatch.setattr(mod, "_register_uploaded_transcript", lambda p: "slug")
 
-    called = {"path": None}
-    monkeypatch.setattr(
-        mod,
-        "_persist_imported_speaker_names",
-        lambda p: called.__setitem__("path", p),
-    )
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_persist_imported_speaker_names" not in source
+    assert "apply_speaker_map_on_import" not in source
 
-    session_id, out_dir, transcript_path = mod._import_uploaded_transcript(uploaded)
-    assert session_id == "meeting_slug/run123"
-    assert out_dir == run_dir
-    assert called["path"] == json_artifact
-    assert transcript_path == json_artifact
+    mod._import_uploaded_transcript(uploaded)
 
 
 def test_save_uploaded_recording_uses_recordings_service(monkeypatch) -> None:
@@ -227,24 +142,25 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
 
 
 def test_app_workflow_menu_order_under_workflow() -> None:
-    import transcriptx.web.app as app_mod
+    import transcriptx.web.sidebar as sidebar_mod
 
-    source = Path(app_mod.__file__).read_text(encoding="utf-8")
-    workflow_idx = source.index('_section("Workflow")')
+    source = Path(sidebar_mod.__file__).read_text(encoding="utf-8")
+    workflow_start = source.index("tx_sidebar_workflow_nav")
     transcribe_idx = source.index('_nav_button("Transcribe Audio", "Transcribe Audio")')
     import_idx = source.index('_nav_button("Import Transcript", "Import Transcript")')
     speaker_idx = source.index('_nav_button("Speaker ID", "Speaker Identification")')
     run_analysis_idx = source.index('_nav_button("Run Analysis", "Run Analysis")')
     batch_idx = source.index('_nav_button("Batch Ops", "Batch Analysis")')
     groups_idx = source.index('_nav_button("Groups", "Groups")')
-    tools_idx = source.index('_section("Tools")')
+    # Workflow items must stay inside the Workflow group, before the Tools group.
+    tools_group_idx = source.index("tx_sidebar_tools_group")
     assert (
-        workflow_idx
+        workflow_start
         < transcribe_idx
         < import_idx
         < speaker_idx
         < run_analysis_idx
         < batch_idx
         < groups_idx
-        < tools_idx
+        < tools_group_idx
     )

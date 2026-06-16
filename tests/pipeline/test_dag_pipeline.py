@@ -16,6 +16,7 @@ from transcriptx.core.pipeline.dag_pipeline import (
     run_dag_pipeline,
 )
 from transcriptx.core.pipeline.module_registry import ModuleInfo
+from transcriptx.core.pipeline.dag_pipeline_finalize import finalize_execution_results
 from transcriptx.core.utils.run_report import ModuleResult, RunReport
 from transcriptx.io.speaker_map_resolver import sidecar_path_for
 
@@ -25,6 +26,7 @@ def _minimal_module_info(
     name: str = "stub",
     requires_multiple_speakers: bool = False,
     min_named_speakers: int = 1,
+    gate_on_turn_taking_speakers: bool = False,
 ) -> ModuleInfo:
     return ModuleInfo(
         name=name,
@@ -36,6 +38,7 @@ def _minimal_module_info(
         enhancements=[],
         requires_multiple_speakers=requires_multiple_speakers,
         min_named_speakers=min_named_speakers,
+        gate_on_turn_taking_speakers=gate_on_turn_taking_speakers,
     )
 
 
@@ -169,7 +172,7 @@ class TestDAGPipeline:
         p.add_module("l", "L", "light", [], MagicMock())
         p.add_module("med", "M", "medium", [], MagicMock())
         modules = ["h", "med", "l"]
-        sorted_m = p._sort_by_category(modules)
+        sorted_m = p.sort_by_category(modules)
         assert sorted_m[0] == "l" and sorted_m[1] == "med" and sorted_m[2] == "h"
 
     def test_topological_sort_cycle_detection(self):
@@ -177,7 +180,7 @@ class TestDAGPipeline:
         p.add_module("a", "A", "light", ["b"], MagicMock())
         p.add_module("b", "B", "light", ["a"], MagicMock())
         with pytest.raises(ValueError, match="Circular dependency"):
-            p._topological_sort(["a", "b"])
+            p.topological_sort(["a", "b"])
 
     def test_execute_pipeline_invalid_transcript(self, tmp_path):
         p = DAGPipeline()
@@ -185,10 +188,13 @@ class TestDAGPipeline:
         p.finalize()
         bad = tmp_path / "bad.txt"
         bad.write_text("{}")
+        ctx = MagicMock()
         r = p.execute_pipeline(
             transcript_path=str(bad),
             selected_modules=["x"],
             output_dir=str(tmp_path / "o"),
+            context=ctx,
+            named_speaker_count=1,
         )
         assert r.get("status") == "failed" or r["errors"]
 
@@ -215,6 +221,8 @@ class TestDAGPipeline:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["only"],
                 output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=2,
             )
         assert "only" in r["execution_order"]
         assert "only" in r["modules_run"]
@@ -238,11 +246,13 @@ class TestDAGPipeline:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["boom"],
                 output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=2,
             )
         assert r["errors"]
         assert "boom" in r["execution_order"]
 
-    def test_execute_pipeline_parallel_flag_ignored(
+    def test_execute_pipeline_no_internal_parallel_warning(
         self, tmp_path, temp_transcript_file, caplog
     ):
         import logging
@@ -263,9 +273,12 @@ class TestDAGPipeline:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["p"],
                 output_dir=str(tmp_path / "out"),
-                parallel=True,
+                context=mc,
+                named_speaker_count=2,
             )
-        assert any("parallel=True is ignored" in r.getMessage() for r in caplog.records)
+        assert not any(
+            "parallel=True is ignored" in r.getMessage() for r in caplog.records
+        )
 
     def test_execute_pipeline_skips_multi_speaker_module(
         self, tmp_path, temp_transcript_file
@@ -298,9 +311,103 @@ class TestDAGPipeline:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["multi_only"],
                 output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=1,
             )
         skipped = {x["module"] for x in r["skipped_modules"]}
         assert "multi_only" in skipped
+
+    def test_execute_pipeline_runs_turn_taking_module_on_diarized_speakers(
+        self, tmp_path, temp_transcript_file
+    ):
+        """Turn-taking gate: diarized (un-named) speakers count, so it runs."""
+        p = DAGPipeline()
+        p.add_module("turn_only", "T", "light", [], MagicMock())
+        p.finalize()
+        sp = {"SPEAKER_00": "SPEAKER_00", "SPEAKER_01": "SPEAKER_01"}
+        info = _minimal_module_info(
+            name="turn_only",
+            requires_multiple_speakers=True,
+            gate_on_turn_taking_speakers=True,
+        )
+        diarized_segments = [
+            {"speaker": "SPEAKER_00", "text": "first turn here"},
+            {"speaker": "SPEAKER_01", "text": "second turn here"},
+        ]
+        ctx_cm = _patch_execute_io_and_context()
+        with (
+            ctx_cm[0] as mock_ctx_cls,
+            ctx_cm[1],
+            ctx_cm[2],
+            patch(
+                "transcriptx.core.pipeline.module_registry.get_module_info",
+                return_value=info,
+            ),
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline_run.gating_named_speaker_count",
+                return_value=0,
+            ),
+        ):
+            mc = MagicMock()
+            mc.validate.return_value = True
+            mc.get_segments.return_value = diarized_segments
+            mc.get_speaker_map.return_value = sp
+            mock_ctx_cls.return_value = mc
+            r = p.execute_pipeline(
+                transcript_path=str(temp_transcript_file),
+                selected_modules=["turn_only"],
+                output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=0,
+            )
+        skipped = {x["module"] for x in r["skipped_modules"]}
+        assert "turn_only" not in skipped
+
+    def test_execute_pipeline_skips_turn_taking_module_single_speaker(
+        self, tmp_path, temp_transcript_file
+    ):
+        """Turn-taking multi-speaker module still skips a single-speaker transcript."""
+        p = DAGPipeline()
+        p.add_module("turn_only", "T", "light", [], MagicMock())
+        p.finalize()
+        sp = {"SPEAKER_00": "SPEAKER_00"}
+        info = _minimal_module_info(
+            name="turn_only",
+            requires_multiple_speakers=True,
+            gate_on_turn_taking_speakers=True,
+        )
+        single_speaker_segments = [
+            {"speaker": "SPEAKER_00", "text": "first turn here"},
+            {"speaker": "SPEAKER_00", "text": "second turn here"},
+        ]
+        ctx_cm = _patch_execute_io_and_context()
+        with (
+            ctx_cm[0] as mock_ctx_cls,
+            ctx_cm[1],
+            ctx_cm[2],
+            patch(
+                "transcriptx.core.pipeline.module_registry.get_module_info",
+                return_value=info,
+            ),
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline_run.gating_named_speaker_count",
+                return_value=0,
+            ),
+        ):
+            mc = MagicMock()
+            mc.validate.return_value = True
+            mc.get_segments.return_value = single_speaker_segments
+            mc.get_speaker_map.return_value = sp
+            mock_ctx_cls.return_value = mc
+            r = p.execute_pipeline(
+                transcript_path=str(temp_transcript_file),
+                selected_modules=["turn_only"],
+                output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=0,
+            )
+        skipped = {x["module"] for x in r["skipped_modules"]}
+        assert "turn_only" in skipped
 
 
 class TestDAGPipelineEdgeCases:
@@ -362,6 +469,8 @@ class TestDAGPipelineEdgeCases:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["dep", "needs"],
                 output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=2,
             )
         # Missing deps are non-fatal: recorded as blocked skips, not pipeline errors.
         assert not any("Missing dependencies" in e for e in r["errors"])
@@ -392,6 +501,8 @@ class TestDAGPipelineEdgeCases:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["ok", "bad", "after"],
                 output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=2,
             )
         assert "bad" in r["execution_order"] and "after" in r["execution_order"]
         assert r["errors"]
@@ -476,8 +587,9 @@ class TestDAGPipelineEdgeCases:
         assert not ok
         assert any("Circular" in e for e in errs)
 
-    def test_fallback_to_sequential(self, tmp_path, temp_transcript_file):
-        """parallel=True is accepted; execution remains sequential (no crash)."""
+    def test_execute_pipeline_sequential_with_injected_context(
+        self, tmp_path, temp_transcript_file
+    ):
         p = DAGPipeline()
         p.add_module("s", "S", "light", [], MagicMock())
         p.finalize()
@@ -493,7 +605,8 @@ class TestDAGPipelineEdgeCases:
                 transcript_path=str(temp_transcript_file),
                 selected_modules=["s"],
                 output_dir=str(tmp_path / "out"),
-                parallel=True,
+                context=mc,
+                named_speaker_count=2,
             )
         assert "s" in r["modules_run"]
 
@@ -509,7 +622,7 @@ class TestSortByCategory:
         p.add_module("heavy_m", "H", "heavy", [], MagicMock())
         p.add_module("light_m", "L", "light", [], MagicMock())
         p.add_module("med_m", "M", "medium", [], MagicMock())
-        out = p._sort_by_category(["heavy_m", "med_m", "light_m"])
+        out = p.sort_by_category(["heavy_m", "med_m", "light_m"])
         assert out == ["light_m", "med_m", "heavy_m"]
 
     def test_sort_by_category_preserves_dependency_order(self):
@@ -518,16 +631,27 @@ class TestSortByCategory:
         p.add_module(
             "dep", "D", "light", ["base"], MagicMock()
         )  # depends on heavy — base runs first
-        out = p._sort_by_category(["dep", "base"])
+        out = p.sort_by_category(["dep", "base"])
         assert out.index("base") < out.index("dep")
 
 
 class TestRunDAGPipeline:
     def test_run_dag_pipeline_delegates_to_dag(self, tmp_path, temp_transcript_file):
-        with patch(
-            "transcriptx.core.pipeline.dag_pipeline.create_dag_pipeline"
-        ) as mock_create:
+        with (
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline.create_dag_pipeline"
+            ) as mock_create,
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline.resolve_output_dir_for_run",
+                return_value=str(tmp_path / "out"),
+            ),
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline.build_execute_pipeline_context"
+            ) as mock_build_context,
+        ):
             dag = MagicMock()
+            context = MagicMock()
+            mock_build_context.return_value = (context, 2)
             dag.execute_pipeline.return_value = {"ok": True}
             mock_create.return_value = dag
             r = run_dag_pipeline(
@@ -539,6 +663,9 @@ class TestRunDAGPipeline:
             kw = dag.execute_pipeline.call_args.kwargs
             assert kw["transcript_path"] == str(temp_transcript_file)
             assert kw["selected_modules"] == ["sentiment"]
+            assert kw["context"] is context
+            assert kw["named_speaker_count"] == 2
+            context.close.assert_called_once()
 
 
 class TestExecutePipelineFakeDAG:
@@ -559,6 +686,32 @@ class TestExecutePipelineFakeDAG:
     def test_should_abort_pipeline_returns_false_for_other_error(self, pipeline):
         out = ModuleExecOutcome(status="failed", error="Some random failure")
         assert pipeline._should_abort_pipeline(out, {"errors": []}) is False
+
+    def test_reduce_module_outcome_has_no_side_effect_calls(self, pipeline):
+        results = {
+            "module_results": {},
+            "modules_run": [],
+            "skipped_modules": [],
+            "errors": [],
+            "cache_hits": [],
+        }
+        outcome = ModuleExecOutcome(
+            status="success", module_result={"status": "success"}
+        )
+        with (
+            patch("transcriptx.core.pipeline.dag_pipeline.notify_user") as mock_notify,
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline.log_analysis_complete"
+            ) as mock_log_ok,
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline.log_analysis_error"
+            ) as mock_log_err,
+        ):
+            pipeline._reduce_module_outcome("m", outcome, results)
+        assert "m" in results["modules_run"]
+        mock_notify.assert_not_called()
+        mock_log_ok.assert_not_called()
+        mock_log_err.assert_not_called()
 
     def test_success_path_records_in_results_and_run_report(
         self, tmp_path, temp_transcript_file, pipeline
@@ -583,6 +736,8 @@ class TestExecutePipelineFakeDAG:
                     selected_modules=["m"],
                     output_dir=str(tmp_path / "out"),
                     run_report=rr,
+                    context=mc,
+                    named_speaker_count=2,
                 )
         assert "m" in r["modules_run"]
         assert rr.modules["m"].status == ModuleResult.RUN
@@ -610,6 +765,8 @@ class TestExecutePipelineFakeDAG:
                     selected_modules=["m"],
                     output_dir=str(tmp_path / "out"),
                     run_report=rr,
+                    context=mc,
+                    named_speaker_count=2,
                 )
         assert r["errors"]
         assert rr.modules["m"].status == ModuleResult.FAIL
@@ -644,6 +801,8 @@ class TestExecutePipelineFakeDAG:
                     transcript_path=str(temp_transcript_file),
                     selected_modules=["m", "m2"],
                     output_dir=str(tmp_path / "out"),
+                    context=mc,
+                    named_speaker_count=2,
                 )
         assert r.get("status") == "failed"
         assert "m2" not in r["modules_run"]
@@ -667,6 +826,8 @@ class TestExecutePipelineFakeDAG:
                     selected_modules=["m"],
                     output_dir=str(tmp_path / "out"),
                     event_collector=events,
+                    context=mc,
+                    named_speaker_count=2,
                 )
         kinds = [e.get("event") for e in events]
         assert "run_started" in kinds
@@ -695,6 +856,8 @@ class TestOnEventCallback:
                     selected_modules=["e"],
                     output_dir=str(tmp_path / "out"),
                     on_event=lambda d: received.append(d),
+                    context=mc,
+                    named_speaker_count=2,
                 )
         assert any(x.get("event") == "run_started" for x in received)
 
@@ -721,5 +884,90 @@ class TestOnEventCallback:
                     selected_modules=["e2"],
                     output_dir=str(tmp_path / "out"),
                     on_event=boom,
+                    context=mc,
+                    named_speaker_count=2,
                 )
         assert "e2" in r["modules_run"]
+
+    def test_context_none_builds_runtime_context(self, tmp_path, temp_transcript_file):
+        p = DAGPipeline()
+        p.add_module("e3", "E3", "light", [], MagicMock())
+        p.finalize()
+        ctx_cm = _patch_execute_io_and_context()
+        with ctx_cm[0] as mock_ctx_cls, ctx_cm[1], ctx_cm[2]:
+            mc = MagicMock()
+            mc.validate.return_value = True
+            mc.get_segments.return_value = [{"speaker": "A"}]
+            mc.get_speaker_map.return_value = {"SPEAKER_00": "A"}
+            mock_ctx_cls.return_value = mc
+            with (
+                patch(
+                    "transcriptx.core.pipeline.dag_pipeline.validate_transcript_file"
+                ),
+                patch(
+                    "transcriptx.core.pipeline.dag_pipeline.validate_output_directory"
+                ),
+                patch.object(
+                    p,
+                    "_execute_single_module",
+                    return_value=ModuleExecOutcome(status="success"),
+                ),
+            ):
+                result = p.execute_pipeline(
+                    transcript_path=str(temp_transcript_file),
+                    selected_modules=["e3"],
+                    output_dir=str(tmp_path / "out"),
+                )
+        assert "e3" in result["modules_run"]
+        mock_ctx_cls.assert_called_once()
+
+    def test_terminal_run_event_emitted_at_most_once_on_abort(
+        self, tmp_path, temp_transcript_file
+    ):
+        p = DAGPipeline()
+        p.add_module("crit", "Critical", "light", [], MagicMock())
+        p.finalize()
+        sp = {"SPEAKER_00": "A"}
+        fail = ModuleExecOutcome(status="failed", error="Speaker mapping required")
+        events: list = []
+        ctx_cm = _patch_execute_io_and_context()
+        with ctx_cm[0] as mock_ctx_cls, ctx_cm[1], ctx_cm[2]:
+            mc = MagicMock()
+            mc.validate.return_value = True
+            mc.get_segments.return_value = [{"speaker": "A"}]
+            mc.get_speaker_map.return_value = sp
+            mock_ctx_cls.return_value = mc
+            with patch.object(p, "_execute_single_module", return_value=fail):
+                p.execute_pipeline(
+                    transcript_path=str(temp_transcript_file),
+                    selected_modules=["crit"],
+                    output_dir=str(tmp_path / "out"),
+                    event_collector=events,
+                    context=mc,
+                    named_speaker_count=1,
+                )
+        terminal_events = [
+            e for e in events if e.get("event") in {"run_failed", "run_completed"}
+        ]
+        assert len(terminal_events) == 1
+
+
+def test_finalize_execution_results_best_effort_when_sink_fails():
+    results = {"start_time": 0.0, "errors": [], "modules_run": []}
+
+    def _emit(_event):
+        raise RuntimeError("sink failed")
+
+    # Should never raise even when emit fails.
+    out = finalize_execution_results(
+        results=results,
+        execution_order=[],
+        aborted=False,
+        setup_failed=False,
+        total_modules=0,
+        ev_completed=0,
+        ev_skipped=0,
+        ev_failed=0,
+        emit=_emit,
+    )
+    assert "end_time" in out

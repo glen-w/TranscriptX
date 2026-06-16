@@ -66,9 +66,42 @@ def _sort_key(item: _ExportableItem) -> tuple[str, str]:
     return (module.lower(), item.artifact.rel_path)
 
 
-def generate_charts_index_html(
-    items: list[_ExportableItem], omitted_count: int, run_title: str
-) -> str:
+# Shared inline CSS for self-contained export index pages (charts gallery and the
+# combined Overview export index). Kept renderer-agnostic and CDN-free so exports
+# render correctly when opened directly from disk over file://.
+_EXPORT_INDEX_CSS = (
+    "body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"
+    "background:#f6f7f9;color:#15171a;}main{display:grid;grid-template-columns:240px 1fr;"
+    "gap:20px;max-width:1400px;margin:0 auto;padding:24px;}nav{position:sticky;top:16px;"
+    "align-self:start;background:#fff;border:1px solid #dde2e8;border-radius:10px;padding:14px;}"
+    "nav ul{margin:8px 0 0;padding-left:18px;}nav a{text-decoration:none;color:#0f3d91;}"
+    ".content h1{margin:0 0 14px;}.notice{background:#fff7db;border:1px solid #f0d37a;"
+    "padding:10px 12px;border-radius:8px;margin-bottom:14px;}.card-grid{display:grid;"
+    "grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}.card{background:#fff;"
+    "border:1px solid #dde2e8;border-radius:10px;padding:12px;display:flex;flex-direction:column;"
+    "gap:8px;}.card h3{margin:0;font-size:16px;}.meta{margin:0;color:#5a6473;font-size:13px;}"
+    ".card img{width:100%;height:auto;max-width:100%;border-radius:8px;border:1px solid #e6eaf0;}"
+    ".badge{display:inline-block;width:max-content;padding:2px 8px;border-radius:999px;"
+    "background:#e8eefc;color:#123b8c;font-size:12px;}.open-link{font-size:13px;font-weight:600;}"
+    ".card iframe{width:100%;height:320px;border:1px solid #e1e6ee;border-radius:8px;}"
+    ".hint{font-size:12px;color:#5a6473;margin:0;}section{margin-bottom:24px;}"
+    ".tx-segment{background:#fff;border:1px solid #dde2e8;border-radius:10px;padding:10px 12px;"
+    "margin-bottom:10px;}.tx-speaker-chip{display:inline-block;padding:2px 10px;border-radius:999px;"
+    "background:#e8eefc;color:#123b8c;font-weight:600;font-size:13px;}.tx-time{color:#5a6473;"
+    "font-size:12px;margin-left:6px;}.tx-text{margin:6px 0 0;white-space:pre-wrap;}"
+    ".included-files{font-size:13px;color:#5a6473;}.included-files ul{margin:6px 0 0;padding-left:18px;}"
+    "@media (max-width: 900px){main{grid-template-columns:1fr;}nav{position:static;}}"
+)
+
+
+def render_chart_sections(
+    items: list[_ExportableItem],
+) -> tuple[list[str], list[str]]:
+    """Build the per-module TOC entries and chart gallery `<section>` markup.
+
+    Returns a tuple of (toc_entries, section_html). Shared by the charts-only
+    export index and the combined Overview export index.
+    """
     grouped: dict[str, list[_ExportableItem]] = defaultdict(list)
     for item in sorted(items, key=_sort_key):
         grouped[item.artifact.module or "Other"].append(item)
@@ -79,7 +112,8 @@ def generate_charts_index_html(
     for module_name in ordered_modules:
         anchor = f"module-{module_name.lower().replace(' ', '-')}"
         toc_entries.append(
-            f'<li><a href="#{html.escape(anchor)}">{html.escape(module_name)}</a></li>'
+            f'<li><a href="#{html.escape(anchor, quote=True)}">'
+            f"{html.escape(module_name)}</a></li>"
         )
         cards: list[str] = []
         for item in grouped[module_name]:
@@ -89,14 +123,16 @@ def generate_charts_index_html(
             meta = f"{artifact.kind} · {artifact.scope or '—'}"
             if artifact.kind == "chart_static":
                 body = (
-                    f'<img src="{html.escape(rel)}" alt="{html.escape(title)}" '
-                    'loading="lazy" />'
+                    f'<img src="{html.escape(rel, quote=True)}" '
+                    f'alt="{html.escape(title, quote=True)}" loading="lazy" />'
                 )
             else:
                 body = (
                     '<span class="badge">Interactive HTML</span>'
-                    f'<a class="open-link" href="{html.escape(rel)}">Open chart</a>'
-                    f'<iframe title="{html.escape(title)}" src="{html.escape(rel)}"></iframe>'
+                    f'<a class="open-link" href="{html.escape(rel, quote=True)}">'
+                    "Open chart</a>"
+                    f'<iframe title="{html.escape(title, quote=True)}" '
+                    f'src="{html.escape(rel, quote=True)}"></iframe>'
                     '<p class="hint">Inline preview is best effort for local files.</p>'
                 )
             cards.append(
@@ -107,10 +143,17 @@ def generate_charts_index_html(
                 "</article>"
             )
         section_html.append(
-            f'<section id="{html.escape(anchor)}">'
+            f'<section id="{html.escape(anchor, quote=True)}">'
             f"<h2>{html.escape(module_name)}</h2>"
             '<div class="card-grid">' + "".join(cards) + "</div></section>"
         )
+    return toc_entries, section_html
+
+
+def generate_charts_index_html(
+    items: list[_ExportableItem], omitted_count: int, run_title: str
+) -> str:
+    toc_entries, section_html = render_chart_sections(items)
 
     omitted_banner = ""
     if omitted_count > 0:
@@ -125,24 +168,7 @@ def generate_charts_index_html(
         "<!DOCTYPE html>"
         "<html><head><meta charset='utf-8'/>"
         f"<title>Charts Export - {html.escape(run_title)}</title>"
-        "<style>"
-        "body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"
-        "background:#f6f7f9;color:#15171a;}main{display:grid;grid-template-columns:240px 1fr;"
-        "gap:20px;max-width:1400px;margin:0 auto;padding:24px;}nav{position:sticky;top:16px;"
-        "align-self:start;background:#fff;border:1px solid #dde2e8;border-radius:10px;padding:14px;}"
-        "nav ul{margin:8px 0 0;padding-left:18px;}nav a{text-decoration:none;color:#0f3d91;}"
-        ".content h1{margin:0 0 14px;}.notice{background:#fff7db;border:1px solid #f0d37a;"
-        "padding:10px 12px;border-radius:8px;margin-bottom:14px;}.card-grid{display:grid;"
-        "grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}.card{background:#fff;"
-        "border:1px solid #dde2e8;border-radius:10px;padding:12px;display:flex;flex-direction:column;"
-        "gap:8px;}.card h3{margin:0;font-size:16px;}.meta{margin:0;color:#5a6473;font-size:13px;}"
-        ".card img{width:100%;height:auto;max-width:100%;border-radius:8px;border:1px solid #e6eaf0;}"
-        ".badge{display:inline-block;width:max-content;padding:2px 8px;border-radius:999px;"
-        "background:#e8eefc;color:#123b8c;font-size:12px;}.open-link{font-size:13px;font-weight:600;}"
-        ".card iframe{width:100%;height:320px;border:1px solid #e1e6ee;border-radius:8px;}"
-        ".hint{font-size:12px;color:#5a6473;margin:0;}section{margin-bottom:24px;}"
-        "@media (max-width: 900px){main{grid-template-columns:1fr;}nav{position:static;}}"
-        "</style></head><body>"
+        "<style>" + _EXPORT_INDEX_CSS + "</style></head><body>"
         "<main><nav><strong>Modules</strong><ul>"
         + "".join(toc_entries)
         + "</ul></nav><div class='content'>"

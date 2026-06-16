@@ -15,11 +15,14 @@ def render_config_form(
     show_only_changed: bool,
     base_values: Dict[str, Any],
     scope: str,
+    allowed_keys: set[str] | None = None,
 ) -> Dict[str, Any]:
     """Render widgets for a category and return updated dotmap."""
     updated: Dict[str, Any] = {}
     for field_meta in fields:
         key = field_meta.key
+        if allowed_keys is not None and key not in allowed_keys:
+            continue
         if show_only_changed and base_values.get(key) == values.get(key):
             continue
         widget_key = f"{scope}_{category}_{key}"

@@ -86,7 +86,7 @@ class TestBuildEmotionTimeline:
                 side_effect=lambda k, _, __: "Alice" if str(k) == "alice" else "Bob",
             ):
                 with patch(
-                    "transcriptx.utils.text_utils.is_named_speaker",
+                    "transcriptx.utils.text_utils.is_turn_taking_speaker_label",
                     return_value=True,
                 ):
                     mock_extract.side_effect = [
@@ -100,7 +100,23 @@ class TestBuildEmotionTimeline:
         assert len(timeline) == 2
         assert timeline[0][1] == "joy" and timeline[1][1] == "joy"
 
-    def test_skips_unnamed_speaker(self):
+    def test_skips_unknown_placeholder_speaker(self):
+        segments = [{"speaker": "Unknown", "start": 0.0, "nrc_emotion": {"joy": 0.9}}]
+        with patch(
+            "transcriptx.core.utils.speaker_extraction.extract_speaker_info"
+        ) as mock_extract:
+            with patch(
+                "transcriptx.core.utils.speaker_extraction.get_speaker_display_name",
+                return_value="Unknown",
+            ):
+                mock_extract.return_value = MagicMock(grouping_key="u0")
+                speaker_emotions, timeline = build_emotion_timeline(
+                    segments, "nrc_emotion"
+                )
+        assert len(timeline) == 0
+        assert len(speaker_emotions) == 0
+
+    def test_includes_diarization_style_speaker(self):
         segments = [
             {"speaker": "SPEAKER_00", "start": 0.0, "nrc_emotion": {"joy": 0.9}}
         ]
@@ -111,16 +127,12 @@ class TestBuildEmotionTimeline:
                 "transcriptx.core.utils.speaker_extraction.get_speaker_display_name",
                 return_value="SPEAKER_00",
             ):
-                with patch(
-                    "transcriptx.utils.text_utils.is_named_speaker",
-                    return_value=False,
-                ):
-                    mock_extract.return_value = MagicMock(grouping_key="s0")
-                    speaker_emotions, timeline = build_emotion_timeline(
-                        segments, "nrc_emotion"
-                    )
-        assert len(timeline) == 0
-        assert len(speaker_emotions) == 0
+                mock_extract.return_value = MagicMock(grouping_key="s0")
+                speaker_emotions, timeline = build_emotion_timeline(
+                    segments, "nrc_emotion"
+                )
+        assert len(timeline) == 1
+        assert "SPEAKER_00" in speaker_emotions
 
 
 class TestMergeEmotionData:

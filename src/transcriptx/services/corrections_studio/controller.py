@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from transcriptx.core.utils.logger import get_logger
+from transcriptx.services.corrections_studio.schema import (
+    CandidateLocalDiffResult,
+    StudioCandidate,
+    StudioReviewStats,
+    StudioSessionDocument,
+    StudioTranscriptSummary,
+)
 from transcriptx.services.corrections_studio.service import CorrectionService
-
-logger = get_logger()
 
 
 class CorrectionsStudioController:
@@ -16,15 +20,15 @@ class CorrectionsStudioController:
     def __init__(self) -> None:
         self._svc = CorrectionService()
 
-    def start_or_resume(self, transcript_path: str) -> Dict[str, Any]:
+    def start_or_resume(self, transcript_path: str) -> StudioSessionDocument:
         return self._svc.start_or_resume_session(transcript_path)
 
-    def load_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def load_session(self, session_id: str) -> Optional[StudioSessionDocument]:
         return self._svc.load_session(session_id)
 
     def generate_candidates(
         self, session_id: str, force: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> List[StudioCandidate]:
         return self._svc.generate_candidates(session_id, force=force)
 
     def list_candidates(
@@ -35,7 +39,7 @@ class CorrectionsStudioController:
         confidence_min: Optional[float] = None,
         offset: int = 0,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[StudioCandidate]:
         return self._svc.list_candidates(
             session_id,
             status_filter=status_filter,
@@ -66,6 +70,7 @@ class CorrectionsStudioController:
         decision: str,
         selected_occurrence_keys: Optional[List[str]] = None,
         learn_rule_params: Optional[Dict[str, Any]] = None,
+        review_target_raw: Optional[str] = None,
     ) -> None:
         self._svc.record_decision(
             session_id,
@@ -73,75 +78,34 @@ class CorrectionsStudioController:
             decision,
             selected_occurrence_keys=selected_occurrence_keys,
             learn_rule_params=learn_rule_params,
+            review_target_raw=review_target_raw,
         )
 
-    def compute_preview(self, session_id: str) -> Dict[str, Any]:
+    def compute_preview(self, session_id: str) -> dict[str, Any]:
         return self._svc.compute_preview(session_id)
 
     def apply_and_export(
         self, session_id: str, export_path: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return self._svc.apply_and_export(session_id, export_path=export_path)
 
-    def get_session_stats(self, session_id: str) -> Dict[str, int]:
+    def get_session_stats(self, session_id: str) -> StudioReviewStats:
         return self._svc.get_session_stats(session_id)
 
     def get_candidate_local_diff(
-        self, session_id: str, candidate_id: str
-    ) -> Dict[str, Any]:
-        return self._svc.get_candidate_local_diff(session_id, candidate_id)
+        self,
+        session_id: str,
+        candidate_id: str,
+        transient_target_raw: Optional[str] = None,
+    ) -> CandidateLocalDiffResult:
+        return self._svc.get_candidate_local_diff(
+            session_id, candidate_id, transient_target_raw=transient_target_raw
+        )
 
-    def list_transcript_summaries_for_studio(self) -> List[Dict[str, Any]]:
+    def list_transcript_summaries_for_studio(self) -> List[StudioTranscriptSummary]:
         """List managed transcripts for the Corrections Studio picker (no SpeakerStudioController)."""
-        try:
-            from pathlib import Path
+        return self._svc.list_transcript_summaries_for_studio()
 
-            from transcriptx.core.utils.file_discovery import (
-                discover_managed_transcript_paths,
-            )
-            from transcriptx.services.speaker_studio.segment_index import (
-                SegmentIndexService,
-            )
-
-            paths = discover_managed_transcript_paths(None)
-            idx = SegmentIndexService()
-            summaries: List[Dict[str, Any]] = []
-            seen: set[str] = set()
-            for p in paths:
-                s = idx.summary_for_path(p)
-                if s is None:
-                    continue
-                key = str(Path(s.path).resolve())
-                if key in seen:
-                    continue
-                seen.add(key)
-                summaries.append(
-                    {
-                        "path": s.path,
-                        "base_name": s.base_name,
-                        "segment_count": s.segment_count,
-                        "speaker_map_status": s.speaker_map_status,
-                    }
-                )
-            if not summaries:
-                for t in idx.list_transcripts(canonical_only=False):
-                    key = str(Path(t.path).resolve())
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    summaries.append(
-                        {
-                            "path": t.path,
-                            "base_name": t.base_name,
-                            "segment_count": t.segment_count,
-                            "speaker_map_status": t.speaker_map_status,
-                        }
-                    )
-            return sorted(summaries, key=lambda x: x["path"])
-        except Exception as exc:
-            logger.warning("Could not list transcripts: %s", exc)
-            return []
-
-    def list_transcripts(self) -> List[Dict[str, Any]]:
+    def list_transcripts(self) -> List[StudioTranscriptSummary]:
         """Deprecated alias; prefer list_transcript_summaries_for_studio."""
         return self.list_transcript_summaries_for_studio()

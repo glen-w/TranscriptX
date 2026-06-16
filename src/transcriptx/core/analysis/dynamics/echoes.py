@@ -52,7 +52,8 @@ class EchoesAnalysis(AnalysisModule):
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
         self.module_name = "echoes"
-        self.config = get_config().analysis.echoes
+        self.analysis_config = get_config().analysis
+        self.config = self.analysis_config.echoes
         self.similarity = SimilarityCalculator()
         self._embedding_model = None
 
@@ -61,7 +62,14 @@ class EchoesAnalysis(AnalysisModule):
             try:
                 from sentence_transformers import SentenceTransformer
 
-                self._embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+                model_name = getattr(
+                    self.config, "semantic_model_name", None
+                ) or getattr(
+                    self.analysis_config,
+                    "semantic_model_name",
+                    "sentence-transformers/all-MiniLM-L6-v2",
+                )
+                self._embedding_model = SentenceTransformer(model_name)
             except Exception:
                 self._embedding_model = None
         return self._embedding_model
@@ -88,7 +96,11 @@ class EchoesAnalysis(AnalysisModule):
 
         info = extract_speaker_info(segment)
         if info is None:
-            return "UNKNOWN"
+            # Fall back to the raw diarization label (e.g. "SPEAKER_00") so that
+            # cross-speaker echoes are still detected on transcripts whose speakers
+            # have not been assigned human-readable names.
+            label = segment.get("speaker")
+            return str(label) if label else "UNKNOWN"
         return get_speaker_display_name(info.grouping_key, [segment], segments)
 
     def _collect_candidates(

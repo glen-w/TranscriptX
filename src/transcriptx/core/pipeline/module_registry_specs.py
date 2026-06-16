@@ -53,6 +53,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "transcriptx.core.analysis.semantic_similarity",
         "SemanticSimilarityAdvancedAnalysis",
     ),
+    "semantic_similarity_v2": (
+        "transcriptx.core.analysis.semantic_similarity_v2",
+        "SemanticSimilarityV2Analysis",
+    ),
     "transcript_output": (
         "transcriptx.core.analysis.transcript_output",
         "TranscriptOutputAnalysis",
@@ -204,16 +208,27 @@ def build_module_definitions(
             "required_extras": ["nlp"],
         },
         "semantic_similarity": {
-            "description": "Semantic Similarity Analysis",
+            "description": "Semantic Similarity Analysis (Legacy)",
             "dependencies": [],
             "category": "heavy",
             "determinism_tier": "T1",
             "requirements": default_requirements,
             "enhancements": [],
             "requires_multiple_speakers": True,
+            "legacy": True,
         },
         "semantic_similarity_advanced": {
-            "description": "Advanced Semantic Similarity with Analysis Integration",
+            "description": "Advanced Semantic Similarity with Analysis Integration (Legacy)",
+            "dependencies": [],
+            "category": "heavy",
+            "determinism_tier": "T1",
+            "requirements": default_requirements,
+            "enhancements": [],
+            "requires_multiple_speakers": True,
+            "legacy": True,
+        },
+        "semantic_similarity_v2": {
+            "description": "Semantic similarity v2 (batched embeddings, vectorized similarity)",
             "dependencies": [],
             "category": "heavy",
             "determinism_tier": "T1",
@@ -268,6 +283,7 @@ def build_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "gate_on_turn_taking_speakers": True,
         },
         "wordclouds": {
             "description": "Word Cloud Generation",
@@ -334,6 +350,7 @@ def build_module_definitions(
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
             "requires_multiple_speakers": True,
+            "gate_on_turn_taking_speakers": True,
         },
         "momentum": {
             "description": "Stall/Flow Index Analysis",

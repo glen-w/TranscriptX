@@ -9,6 +9,7 @@ from pathlib import Path
 import streamlit as st
 
 from transcriptx.app.controllers.analysis_controller import AnalysisController
+from transcriptx.core.domain.group import Group
 from transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisRequest
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
@@ -34,7 +35,12 @@ from transcriptx.web.cache_helpers import (
     cached_get_default_modules,
     cached_get_default_modules_for_paths,
 )
+from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.services.group_service import GroupService
+from transcriptx.web.transcript_option_format import (
+    format_transcript_option_with_speaker_status,
+)
+from transcriptx.web.navigation import apply_transcript_selection_context
 
 _RUN_ANALYSIS_HELP = (
     "**Quick** uses a lighter preset; **full** lets you pick a profile. "
@@ -42,121 +48,21 @@ _RUN_ANALYSIS_HELP = (
 )
 
 
-def render_run_analysis_page() -> None:
-    """Render the Run Analysis page with form and execution."""
-    render_page_shell(
-        "Run Analysis",
-        "Configure modules and run analysis on one transcript or a group.",
-        badges=None,
-        actions=None,
-    )
-
+@st.fragment
+def _run_analysis_config_and_launch_fragment(
+    target_type: str,
+    transcript_path: Path | None,
+    selected_group: Group | None,
+    available: tuple[str, ...],
+    default_modules: tuple[str, ...],
+) -> None:
+    """
+    Config widgets + launch + post-run UI in one fragment so module multiselect
+    does not rerun sidebar/context bar. Target selection stays in the parent
+    (full rerun when transcript/group changes). Launch/progress remain explicit
+    commit paths with full ``st.rerun()`` after completion/navigation.
+    """
     analysis_ctrl = AnalysisController()
-    config = get_config()
-    group_analysis_enabled = getattr(config.group_analysis, "enabled", False)
-    group_target_available = group_analysis_enabled
-
-    target_options = ["Transcript"]
-    if group_target_available:
-        target_options.append("Group")
-    target_type = st.radio(
-        "Target",
-        target_options,
-        horizontal=True,
-        key="run_analysis_target",
-    )
-    if not group_target_available and "Group" not in target_options:
-        st.caption("Enable group analysis in config to run analysis on groups.")
-    if group_target_available:
-        st.caption(
-            "Group scope: modules differ—registry-backed aggregate charts, special paths (e.g. wordclouds), "
-            "data-only (e.g. temporal dynamics), or blob-only (summary). "
-            "See docs/groups/group_analysis_module_outputs.md in the project."
-        )
-
-    transcript_path: Path | None = None
-    selected_group = None  # set when target is Group
-    resolved_member_paths: list[str] = []
-
-    if target_type == "Transcript":
-        transcripts = get_cached_list_transcripts()
-        transcript_options = [str(t.path) for t in transcripts]
-        transcript_labels = [t.base_name for t in transcripts]
-
-        if not transcript_options:
-            render_empty_state(
-                "no_results_yet",
-                "No transcripts found",
-                "Add transcript JSON files to your configured diarized folder or register them from the Library.",
-                primary_action=("Library", "Library"),
-                secondary_action=("Home", "Home"),
-            )
-            transcript_path = None
-        else:
-            selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
-            default_idx = 0
-            if selected_path and selected_path in transcript_options:
-                default_idx = transcript_options.index(selected_path) + 1
-
-            transcript_choice = st.selectbox(
-                "Transcript",
-                range(len(transcript_options) + 1),
-                format_func=lambda i: (
-                    SELECTBOX_PLACEHOLDER_TRANSCRIPT
-                    if i == 0
-                    else (
-                        transcript_labels[i - 1]
-                        if i - 1 < len(transcript_labels)
-                        else ""
-                    )
-                ),
-                index=default_idx,
-                key="run_analysis_transcript",
-            )
-            transcript_path = (
-                Path(transcript_options[transcript_choice - 1])
-                if transcript_choice > 0
-                else None
-            )
-            if transcript_path is not None:
-                st.session_state[SELECTED_TRANSCRIPT_PATH] = str(transcript_path)
-    else:
-        groups = cached_list_groups()
-        if not groups:
-            render_empty_state(
-                "no_results_yet",
-                "No groups yet",
-                "Create a group on the Groups page before running group analysis.",
-                primary_action=("Groups", "Groups"),
-                secondary_action=("Library", "Library"),
-            )
-        else:
-            group_options = {g.uuid: g for g in groups}
-            group_labels = {
-                g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
-                for g in groups
-            }
-            group_keys = list(group_options.keys())
-            selected_uuid = st.selectbox(
-                "Group",
-                [""] + group_keys,
-                format_func=lambda key: (
-                    SELECTBOX_PLACEHOLDER_GROUP
-                    if key == ""
-                    else group_labels.get(key, key)
-                ),
-                index=0,
-                key="run_analysis_group",
-            )
-            selected_group = group_options.get(selected_uuid) if selected_uuid else None
-            if selected_group:
-                members = GroupService.get_members(selected_group)
-                resolved_member_paths = [
-                    str(Path(m.file_path))
-                    for m in members
-                    if getattr(m, "file_path", None) and Path(m.file_path).exists()
-                ]
-
     mode = st.radio(
         "Analysis mode", ["quick", "full"], horizontal=True, key="run_analysis_mode"
     )
@@ -171,21 +77,11 @@ def render_run_analysis_page() -> None:
             key="run_analysis_profile",
         )
 
-    available = cached_get_available_modules()
-    if target_type == "Transcript" and transcript_path:
-        default_modules = cached_get_default_modules(str(transcript_path))
-    elif target_type == "Group" and resolved_member_paths:
-        default_modules = cached_get_default_modules_for_paths(
-            tuple(resolved_member_paths)
-        )
-    else:
-        default_modules = available[:5] if available else []
-
     use_defaults = st.checkbox(
         "Use recommended modules", value=True, key="run_analysis_use_defaults"
     )
     if use_defaults:
-        selected_modules = default_modules
+        selected_modules = list(default_modules)
         st.caption(
             f"**{len(selected_modules)} modules** (recommended): "
             f"{', '.join(selected_modules[:8])}{'...' if len(selected_modules) > 8 else ''}"
@@ -193,8 +89,9 @@ def render_run_analysis_page() -> None:
     else:
         selected_modules = st.multiselect(
             "Select modules",
-            available,
-            default=default_modules[:5] if default_modules else [],
+            list(available),
+            default=list(default_modules[:5]) if default_modules else [],
+            format_func=format_module_option,
             key="run_analysis_modules",
         )
         st.caption(f"**{len(selected_modules)} modules** selected.")
@@ -207,27 +104,6 @@ def render_run_analysis_page() -> None:
     else:
         can_launch = can_launch and selected_group is not None
 
-    # ------------------------------------------------------------------
-    # If a run is in progress, show the live progress panel instead of
-    # the launch button.  The snapshot is persisted in session_state so
-    # Streamlit reruns rehydrate it without regressing to a generic message.
-    # ------------------------------------------------------------------
-    if st.session_state.get("analysis_run_in_progress", False):
-        snapshot = st.session_state.get(SNAPSHOT_KEY)
-        if snapshot is not None:
-            render_progress_panel(snapshot)
-        else:
-            st.info("Analysis is running…")
-        render_page_help(_RUN_ANALYSIS_HELP)
-        return
-
-    # Show panel for the last run (completed or failed) so the result persists
-    # on the page after execution finishes without requiring a manual refresh.
-    last_snapshot = st.session_state.get(SNAPSHOT_KEY)
-    if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
-        with st.expander("Last run progress", expanded=False):
-            render_progress_panel(last_snapshot)
-
     if st.button(
         "▶ Run Analysis",
         type="primary",
@@ -236,13 +112,11 @@ def render_run_analysis_page() -> None:
     ):
         if not selected_modules:
             st.error("Please select at least one module.")
-            render_page_help(_RUN_ANALYSIS_HELP)
             return
 
         if target_type == "Transcript":
             if not transcript_path or not transcript_path.exists():
                 st.error("Please select a valid transcript.")
-                render_page_help(_RUN_ANALYSIS_HELP)
                 return
 
             request = AnalysisRequest(
@@ -256,7 +130,6 @@ def render_run_analysis_page() -> None:
             if errors:
                 for e in errors:
                     st.error(e)
-                render_page_help(_RUN_ANALYSIS_HELP)
                 return
 
             def run_fn():
@@ -267,7 +140,6 @@ def render_run_analysis_page() -> None:
         else:
             if not selected_group:
                 st.error("Please select a group.")
-                render_page_help(_RUN_ANALYSIS_HELP)
                 return
 
             group_request = GroupAnalysisRequest(
@@ -282,18 +154,13 @@ def render_run_analysis_page() -> None:
             if errors:
                 for e in errors:
                     st.error(e)
-                render_page_help(_RUN_ANALYSIS_HELP)
                 return
-
-            request = group_request
 
             def run_fn():
                 return analysis_ctrl.run_group_analysis(
                     group_request, progress=progress, snapshot=snapshot
                 )
 
-        # Seed a fresh snapshot in session state *before* setting the in-progress
-        # flag so the progress panel has something to show on the very first rerun.
         st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(selected_modules))
         st.session_state["analysis_run_in_progress"] = True
 
@@ -309,7 +176,6 @@ def render_run_analysis_page() -> None:
 
             captured = stdout_buf.getvalue() + stderr_buf.getvalue()
 
-        # Render outcome after spinner finishes
         if result.success:
             rd = result.run_dir
             if target_type == "Transcript":
@@ -388,4 +254,170 @@ def render_run_analysis_page() -> None:
         if captured:
             with st.expander("Full log output"):
                 st.text(captured)
+
+        st.rerun()
+
+
+def render_run_analysis_page() -> None:
+    """Render the Run Analysis page with form and execution."""
+    render_page_shell(
+        "Run Analysis",
+        "Configure modules and run analysis on one transcript or a group.",
+        badges=None,
+        actions=None,
+    )
+
+    config = get_config()
+    group_analysis_enabled = getattr(config.group_analysis, "enabled", False)
+    group_target_available = group_analysis_enabled
+
+    target_options = ["Transcript"]
+    if group_target_available:
+        target_options.append("Group")
+    target_type = st.radio(
+        "Target",
+        target_options,
+        horizontal=True,
+        key="run_analysis_target",
+    )
+    if not group_target_available and "Group" not in target_options:
+        st.caption("Enable group analysis in config to run analysis on groups.")
+    if group_target_available:
+        st.caption(
+            "Group scope: modules differ—registry-backed aggregate charts, special paths (e.g. wordclouds), "
+            "data-only (e.g. temporal dynamics), or blob-only (summary). "
+            "See docs/groups/group_analysis_module_outputs.md in the project."
+        )
+
+    transcript_path: Path | None = None
+    selected_group = None  # set when target is Group
+    resolved_member_paths: list[str] = []
+
+    if target_type == "Transcript":
+        transcripts = get_cached_list_transcripts()
+        transcript_options = [str(t.path) for t in transcripts]
+        transcript_labels = [
+            format_transcript_option_with_speaker_status(t) for t in transcripts
+        ]
+
+        if not transcript_options:
+            render_empty_state(
+                "no_results_yet",
+                "No transcripts found",
+                "Add transcript JSON files to your configured diarized folder or register them from the Library.",
+                primary_action=("Library", "Library"),
+                secondary_action=("Home", "Home"),
+            )
+            transcript_path = None
+        else:
+            selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
+            default_idx = 0
+            if selected_path and selected_path in transcript_options:
+                default_idx = transcript_options.index(selected_path) + 1
+
+            transcript_choice = st.selectbox(
+                "Transcript",
+                range(len(transcript_options) + 1),
+                format_func=lambda i: (
+                    SELECTBOX_PLACEHOLDER_TRANSCRIPT
+                    if i == 0
+                    else (
+                        transcript_labels[i - 1]
+                        if i - 1 < len(transcript_labels)
+                        else ""
+                    )
+                ),
+                index=default_idx,
+                key="run_analysis_transcript",
+            )
+            transcript_path = (
+                Path(transcript_options[transcript_choice - 1])
+                if transcript_choice > 0
+                else None
+            )
+            if transcript_path is not None:
+                apply_transcript_selection_context(
+                    st.session_state, str(transcript_path)
+                )
+    else:
+        groups = cached_list_groups()
+        if not groups:
+            render_empty_state(
+                "no_results_yet",
+                "No groups yet",
+                "Create a group on the Groups page before running group analysis.",
+                primary_action=("Groups", "Groups"),
+                secondary_action=("Library", "Library"),
+            )
+        else:
+            group_options = {g.uuid: g for g in groups}
+            group_labels = {
+                g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
+                for g in groups
+            }
+            group_keys = list(group_options.keys())
+            selected_uuid = st.selectbox(
+                "Group",
+                [""] + group_keys,
+                format_func=lambda key: (
+                    SELECTBOX_PLACEHOLDER_GROUP
+                    if key == ""
+                    else group_labels.get(key, key)
+                ),
+                index=0,
+                key="run_analysis_group",
+            )
+            selected_group = group_options.get(selected_uuid) if selected_uuid else None
+            if selected_group:
+                members = GroupService.get_members(selected_group)
+                resolved_member_paths = [
+                    str(Path(m.file_path))
+                    for m in members
+                    if getattr(m, "file_path", None) and Path(m.file_path).exists()
+                ]
+
+    available = cached_get_available_modules()
+    if target_type == "Transcript" and transcript_path:
+        default_modules = cached_get_default_modules(str(transcript_path))
+    elif target_type == "Group" and resolved_member_paths:
+        default_modules = cached_get_default_modules_for_paths(
+            tuple(resolved_member_paths)
+        )
+    else:
+        default_modules = available[:5] if available else []
+
+    # ------------------------------------------------------------------
+    # If a run is in progress, show the live progress panel instead of
+    # the launch button.  The snapshot is persisted in session_state so
+    # Streamlit reruns rehydrate it without regressing to a generic message.
+    # ------------------------------------------------------------------
+    if st.session_state.get("analysis_run_in_progress", False):
+        snapshot = st.session_state.get(SNAPSHOT_KEY)
+        if snapshot is not None:
+            render_progress_panel(snapshot)
+        else:
+            st.info("Analysis is running…")
+        render_page_help(_RUN_ANALYSIS_HELP)
+        return
+
+    # Show panel for the last run (completed or failed) so the result persists
+    # on the page after execution finishes without requiring a manual refresh.
+    last_snapshot = st.session_state.get(SNAPSHOT_KEY)
+    if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
+        with st.expander("Last run progress", expanded=False):
+            render_progress_panel(last_snapshot)
+            if last_snapshot.get("status") == "completed":
+                if st.button(
+                    "Open Viewer Overview", key="last_run_progress_open_overview"
+                ):
+                    st.session_state["page"] = "Overview"
+                    st.rerun()
+
+    _run_analysis_config_and_launch_fragment(
+        target_type,
+        transcript_path,
+        selected_group,
+        tuple(available),
+        tuple(default_modules),
+    )
     render_page_help(_RUN_ANALYSIS_HELP)

@@ -5,6 +5,22 @@ set -euo pipefail
 
 echo "=== Docker First-Run Smoke Test ==="
 
+# Recordings must not live under the repo; compose requires HOST_RECORDINGS_DIR.
+# When unset, use a disposable temp dir so CI/local smoke does not touch the clone.
+_smoke_recordings_created=
+if [ -z "${HOST_RECORDINGS_DIR:-}" ]; then
+  HOST_RECORDINGS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/transcriptx-smoke-recordings.XXXXXX")"
+  export HOST_RECORDINGS_DIR
+  _smoke_recordings_created=1
+fi
+mkdir -p "$HOST_RECORDINGS_DIR/imports"
+cleanup_smoke_recordings() {
+  if [ -n "${_smoke_recordings_created:-}" ]; then
+    rm -rf "$HOST_RECORDINGS_DIR"
+  fi
+}
+trap cleanup_smoke_recordings EXIT
+
 # 0. Prep host directories
 mkdir -p data/transcripts data/outputs
 

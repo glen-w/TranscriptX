@@ -5,7 +5,7 @@ Charts gallery page for TranscriptX Studio.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Sequence
 
 import streamlit as st
 from PIL import Image
@@ -23,6 +23,7 @@ from transcriptx.web.services.chart_view_model_service import (
     build_filter_options,
     build_overview_slots,
     compute_chart_badges,
+    resolve_chart_description,
 )
 from transcriptx.web.services.artifact_service import (
     MAX_INLINE_HTML_BYTES,
@@ -32,6 +33,8 @@ from transcriptx.utils.charts_export import (
     ChartsExportResult,
     prepare_charts_export_zip,
 )
+from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.module_ui_groups import order_strings_like_modules
 from transcriptx.web.state import (
     CHARTS_KEY_EXPORT_RESULT,
     CHARTS_KEY_EXPORT_SIG,
@@ -50,6 +53,7 @@ from transcriptx.web.state import (
     CHARTS_KEY_DYNAMIC_TOGGLE,
     CHARTS_KEY_SUBVIEW_TABS,
     CHARTS_KEY_TAGS_MULTI,
+    SELECTBOX_PLACEHOLDER_MODULE,
 )
 
 _CHARTS_HELP_PREREQ = (
@@ -60,7 +64,8 @@ _CHARTS_HELP_LOADED = (
     "**What this shows:** All chart artifacts produced by analysis modules for the "
     "selected run.\n\n**If empty:** Run analysis for this transcript or group, or pick "
     "another run. **Filters:** Narrow by module, scope, tags, or chart type; **Reset filters** "
-    "restores defaults for this page."
+    "restores defaults for this page.\n\n**Reading charts:** Each chart shows a short "
+    "interpretation caption under its title when one is available."
 )
 
 
@@ -125,7 +130,10 @@ def _render_chart_gallery_card(
             unsafe_allow_html=True,
         )
         st.caption(chart.title or chart.rel_path)
-        if chart.has_tag("group_aggregate"):
+        description = resolve_chart_description(chart)
+        if description:
+            st.caption(description)
+        elif chart.has_tag("group_aggregate"):
             st.caption(_group_aggregate_semantics_caption(chart))
         if chart.kind == "chart_static":
             thumb_path = ArtifactService.generate_thumbnail(run_root, chart)
@@ -139,11 +147,7 @@ def _render_chart_gallery_card(
             if html_payload:
                 size = html_payload["bytes"]
                 if size <= MAX_INLINE_HTML_BYTES:
-                    st.components.v1.html(
-                        html_payload["content"],
-                        height=400,
-                        scrolling=True,
-                    )
+                    st.iframe(html_payload["content"], height=400)
                 elif size <= MAX_FULLSCREEN_HTML_BYTES:
                     st.caption("Too large for inline preview — open full screen.")
                 else:
@@ -180,67 +184,26 @@ def _has_current_export(
     return isinstance(stored_result, ChartsExportResult) and stored_sig == current_sig
 
 
-def render_charts() -> None:
-    subject = SubjectService.resolve_current_subject(st.session_state)
-    run_id = st.session_state.get("run_id")
-
-    if not subject or not run_id:
-        render_page_shell(
-            "Charts Gallery",
-            "Browse static and dynamic chart artifacts for the current run.",
-            badges=None,
-            actions=None,
-        )
-        render_empty_state(
-            "missing_prerequisite",
-            "No subject or run selected",
-            "Pick a transcript or group and a run in the sidebar to view charts.",
-            primary_action=("Open Library", "Library"),
-            secondary_action=("Run Analysis", "Run Analysis"),
-        )
-        render_page_help(_CHARTS_HELP_PREREQ)
-        return
-
-    _ensure_charts_filters_for_run(subject.subject_id, run_id)
-
-    run_root = RunIndex.get_run_root(
-        subject.scope,
-        run_id,
-        subject_id=subject.subject_id,
-    )
-
-    all_artifacts = ArtifactService.list_artifacts(run_root)
-    all_charts = [
-        a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}
-    ]
-
-    badge_bits = compute_chart_badges(all_charts)
-
-    render_page_shell(
-        "Charts Gallery",
-        "Browse static and dynamic chart artifacts for the current run.",
-        badges=badge_bits,
-        actions=None,
-    )
-
-    if not all_charts:
-        render_empty_state(
-            "no_results_yet",
-            "No chart artifacts for this run",
-            "This run completed without chart outputs, or charts were not produced for the selected modules.",
-            primary_action=("Run Analysis", "Run Analysis"),
-            secondary_action=("Overview", "Overview"),
-        )
-        render_page_help(_CHARTS_HELP_LOADED)
-        return
-
-    modules, scopes, tags, subviews = build_filter_options(all_charts)
-
+@st.fragment
+def _charts_filters_and_gallery_fragment(
+    run_root: Path,
+    all_charts: list[Artifact],
+    modules: list[str],
+    scopes: list[str],
+    tags: list[str],
+    subviews: list[str],
+    user_overview: Sequence[Any],
+    max_items: Optional[int],
+    missing_behavior: str,
+) -> None:
     col_reset, _ = st.columns([1, 4])
     with col_reset:
         if st.button("Reset filters", key="charts_reset_filters"):
             reset_charts_filters_to_defaults(st.session_state)
-            st.rerun()
+            try:
+                st.rerun(scope="fragment")
+            except TypeError:
+                st.rerun()
 
     st.caption(
         "Member session charts are merged from each transcript run in the group; "
@@ -264,6 +227,9 @@ def render_charts() -> None:
         st.selectbox(
             "Module",
             [None] + modules,
+            format_func=lambda m: (
+                SELECTBOX_PLACEHOLDER_MODULE if m is None else format_module_option(m)
+            ),
             key=CHARTS_KEY_FILTER_MODULE,
         )
     with col2:
@@ -385,7 +351,9 @@ def render_charts() -> None:
         else:
             if st.button("Export Visible Charts", key="charts_export_btn"):
                 try:
-                    result = prepare_charts_export_zip(run_root, charts, run_id)
+                    result = prepare_charts_export_zip(
+                        run_root, charts, st.session_state.get("run_id", "")
+                    )
                     st.session_state[CHARTS_KEY_EXPORT_RESULT] = result
                     st.session_state[CHARTS_KEY_EXPORT_SIG] = current_sig
                     stored_result = result
@@ -420,7 +388,10 @@ def render_charts() -> None:
         selected = next((a for a in all_charts if a.id == full_screen_id), None)
         if selected:
             st.subheader(selected.title or selected.rel_path)
-            if selected.has_tag("group_aggregate"):
+            selected_description = resolve_chart_description(selected)
+            if selected_description:
+                st.caption(selected_description)
+            elif selected.has_tag("group_aggregate"):
                 st.caption(_group_aggregate_semantics_caption(selected))
             if st.button("Close Full Screen"):
                 st.session_state[CHARTS_KEY_FULL_SCREEN] = None
@@ -440,33 +411,14 @@ def render_charts() -> None:
                             "HTML chart is too large to render. Download instead."
                         )
                     else:
-                        st.components.v1.html(
-                            html_payload["content"],
-                            height=700,
-                            scrolling=True,
-                        )
+                        st.iframe(html_payload["content"], height=700)
         st.divider()
 
-    run_dir = run_root
-    resolved = (
-        resolve_effective_config(run_dir=run_dir)
-        if run_dir and run_dir.exists()
-        else resolve_effective_config(run_dir=None)
-    )
-    if resolved:
-        config = resolved.effective_config
-        dashboard_config = getattr(config, "dashboard", None)
-    else:
-        dashboard_config = None
-
-    user_overview = getattr(dashboard_config, "overview_charts", []) or []
     overview_candidates = _overview_candidate_charts(
         all_charts,
         chart_source,
         list(st.session_state.get(CHARTS_KEY_FILTER_TAGS) or []),
     )
-    max_items = getattr(dashboard_config, "overview_max_items", None)
-    missing_behavior = getattr(dashboard_config, "overview_missing_behavior", "skip")
     overview_slots = build_overview_slots(
         overview_candidates=overview_candidates,
         user_overview=user_overview,
@@ -488,6 +440,9 @@ def render_charts() -> None:
         ):
             for slot in overview_slots:
                 st.markdown(f"**{slot['label']}**")
+                slot_description = slot.get("description")
+                if slot_description:
+                    st.caption(slot_description)
                 if slot.get("missing"):
                     render_empty_state(
                         "module_unavailable",
@@ -514,7 +469,7 @@ def render_charts() -> None:
         module = chart.module or "Other"
         module_groups.setdefault(module, []).append(chart)
 
-    for module_name in sorted(module_groups.keys()):
+    for module_name in order_strings_like_modules(list(module_groups.keys())):
         module_charts = module_groups[module_name]
         with st.expander(
             f"📊 {module_name} ({len(module_charts)} chart{'s' if len(module_charts) != 1 else ''})",
@@ -548,4 +503,86 @@ def render_charts() -> None:
                         )
                 if si < len(sections) - 1:
                     st.divider()
+
+
+def render_charts() -> None:
+    subject = SubjectService.resolve_current_subject(st.session_state)
+    run_id = st.session_state.get("run_id")
+
+    if not subject or not run_id:
+        render_page_shell(
+            "Charts Gallery",
+            "Browse static and dynamic chart artifacts for the current run.",
+            badges=None,
+            actions=None,
+        )
+        render_empty_state(
+            "missing_prerequisite",
+            "No subject or run selected",
+            "Pick a transcript or group and a run in the sidebar to view charts.",
+            primary_action=("Open Library", "Library"),
+            secondary_action=("Run Analysis", "Run Analysis"),
+        )
+        render_page_help(_CHARTS_HELP_PREREQ)
+        return
+
+    _ensure_charts_filters_for_run(subject.subject_id, run_id)
+
+    run_root = RunIndex.get_run_root(
+        subject.scope,
+        run_id,
+        subject_id=subject.subject_id,
+    )
+
+    all_artifacts = ArtifactService.list_artifacts(run_root)
+    all_charts = [
+        a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}
+    ]
+
+    badge_bits = compute_chart_badges(all_charts)
+
+    render_page_shell(
+        "Charts Gallery",
+        "Browse static and dynamic chart artifacts for the current run.",
+        badges=badge_bits,
+        actions=None,
+    )
+
+    if not all_charts:
+        render_empty_state(
+            "no_results_yet",
+            "No chart artifacts for this run",
+            "This run completed without chart outputs, or charts were not produced for the selected modules.",
+            primary_action=("Run Analysis", "Run Analysis"),
+            secondary_action=("Overview", "Overview"),
+        )
+        render_page_help(_CHARTS_HELP_LOADED)
+        return
+
+    modules, scopes, tags, subviews = build_filter_options(all_charts)
+    resolved = (
+        resolve_effective_config(run_dir=run_root)
+        if run_root and run_root.exists()
+        else resolve_effective_config(run_dir=None)
+    )
+    if resolved:
+        cfg = resolved.effective_config
+        dashboard_config = getattr(cfg, "dashboard", None)
+    else:
+        dashboard_config = None
+    user_overview = getattr(dashboard_config, "overview_charts", []) or []
+    max_ov_items = getattr(dashboard_config, "overview_max_items", None)
+    missing_behavior = getattr(dashboard_config, "overview_missing_behavior", "skip")
+
+    _charts_filters_and_gallery_fragment(
+        run_root,
+        all_charts,
+        modules,
+        scopes,
+        tags,
+        subviews,
+        user_overview,
+        max_ov_items,
+        missing_behavior,
+    )
     render_page_help(_CHARTS_HELP_LOADED)

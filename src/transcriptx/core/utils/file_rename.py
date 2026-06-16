@@ -4,13 +4,20 @@ File rename utilities for TranscriptX.
 This module provides functionality to rename transcript files and their
 associated output folders after speaker mapping is completed. The rename
 operation updates all related files and references.
+
+Rollback policy: ``RenameTransaction.rollback()`` is only for failures **during**
+``execute()``. After ``execute()`` returns success (non-dry-run), the transaction
+is committed; a later finalize failure must **not** call ``rollback()`` — finalize
+is a separate boundary and may have partially moved output artifacts.
 """
 
+import copy
 import json
 import shutil
 from datetime import datetime
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from transcriptx.core.utils.logger import get_logger, log_error
 from transcriptx.core.utils.paths import (
@@ -35,6 +42,188 @@ from transcriptx.io.import_metadata_sidecar import (
 from transcriptx.io.speaker_map_resolver import sidecar_path_for
 
 logger = get_logger()
+
+ROLLBACK_POLICY = (
+    "Use RenameTransaction.rollback() only for failures during execute(); "
+    "never rollback to fix post-commit finalize failures."
+)
+
+
+@dataclass(frozen=True)
+class RenameTranscriptOutcome:
+    """Structured result for rename pipeline (transaction vs finalize boundaries).
+
+    ``transaction_succeeded``: ``RenameTransaction.execute()`` returned True (or dry-run
+    path that skips real I/O but is treated as success).
+
+    ``transaction_committed``: non-dry-run execute succeeded; filesystem + processing
+    state reflect transaction ops. **Do not** call ``RenameTransaction.rollback()`` for
+    a later finalize failure — finalize is a separate boundary and may have partially
+    mutated the output tree.
+    """
+
+    transaction_attempted: bool
+    transaction_succeeded: bool
+    transaction_committed: bool
+    finalize_attempted: bool
+    finalize_succeeded: bool
+    warnings: list[str] = field(default_factory=list)
+    last_error: Optional[str] = None
+
+    @property
+    def ok(self) -> bool:
+        """True when both transaction and finalize stages succeeded (legacy bool)."""
+        return self.transaction_succeeded and self.finalize_succeeded
+
+    @property
+    def partial_success_after_transaction(self) -> bool:
+        """Transaction phase committed but finalize did not complete successfully."""
+        return self.transaction_committed and not self.finalize_succeeded
+
+
+@dataclass(frozen=True)
+class RenameContext:
+    """Read-only inputs for building a rename plan."""
+
+    old_name: str
+    new_name: str
+    transcript_path: str
+    transcript_file: Path
+    new_transcript_path: Path
+    old_output_dir: Path
+    new_output_dir: Path
+
+
+@dataclass(frozen=True)
+class RenamePlanValidation:
+    """One read-only pre-transaction check recorded on the plan."""
+
+    name: str
+    passed: bool
+    detail: str = ""
+
+
+@dataclass(frozen=True)
+class ProcessingStateRenameMutation:
+    """Computed processing_state row update (apply via ``_persist_processing_state_mutation``)."""
+
+    entry_key: str
+    enriched_entry: dict[str, Any]
+    sibling_path_validation_msgs: tuple[str, ...] = ()
+
+
+@dataclass
+class RenamePlan:
+    """Ordered rename work: validations, transaction ops, finalize ops, cache targets."""
+
+    blocked: bool = False
+    block_message: str = ""
+    validations: tuple[RenamePlanValidation, ...] = ()
+    warnings: list[str] = field(default_factory=list)
+    transaction_file_renames: list[tuple[Path, Path, str]] = field(default_factory=list)
+    transaction_state_updates: list[
+        tuple[Callable[..., None], tuple[Any, ...], dict[str, Any]]
+    ] = field(default_factory=list)
+    needs_output_finalize: bool = False
+    finalize_ops: tuple[str, ...] = ()
+    old_output_dir: Path = field(default_factory=Path)
+    new_output_dir: Path = field(default_factory=Path)
+    old_name: str = ""
+    new_name: str = ""
+    transcript_path_before: str = ""
+    transcript_path_after: str = ""
+    cache_invalidation_targets: tuple[str, str] = ("", "")
+
+
+def ordered_audio_candidate_paths_for_state_entry(
+    file_key: str,
+    metadata: dict,
+    transcript_path: str,
+    *,
+    resolved_audio_from_transcript: Optional[str],
+    transcript_base: str,
+    canonical_base_from_metadata: str,
+    base_without_suffix: str,
+    recordings_dirs: tuple[Path, ...],
+    audio_extensions: tuple[str, ...],
+) -> list[str]:
+    """
+    Ordered candidate path strings for one processing_state row (no existence checks).
+
+    Selection of the first existing path is done by the caller. Order matches
+    historical find_original_audio_file behavior for this entry.
+    """
+    out: list[str] = []
+
+    def _add(raw: str | Path | None) -> None:
+        if raw is None:
+            return
+        s = str(Path(raw))
+        if s and s not in out:
+            out.append(s)
+
+    if metadata.get("audio_path"):
+        _add(metadata["audio_path"])
+    if not _looks_like_uuid(file_key):
+        _add(file_key)
+    if metadata.get("mp3_path"):
+        _add(metadata["mp3_path"])
+    convert_step = metadata.get("convert", {})
+    if isinstance(convert_step, dict):
+        step_mp3 = convert_step.get("mp3_path")
+        if step_mp3:
+            _add(step_mp3)
+    steps = metadata.get("steps", {})
+    if isinstance(steps, dict):
+        legacy_convert = steps.get("convert", {})
+        if isinstance(legacy_convert, dict):
+            legacy_step_mp3 = legacy_convert.get("mp3_path")
+            if legacy_step_mp3:
+                _add(legacy_step_mp3)
+    if resolved_audio_from_transcript:
+        _add(resolved_audio_from_transcript)
+    for s in _build_audio_candidates_from_recordings(
+        _audio_lookup_bases(
+            canonical_base_from_metadata, transcript_base, base_without_suffix
+        ),
+        recordings_dirs,
+        audio_extensions,
+    ):
+        _add(s)
+    return out
+
+
+def _fallback_audio_candidate_paths_no_state(
+    transcript_path: str,
+    *,
+    resolved_full: Optional[str],
+    resolved_stripped: Optional[str],
+    transcript_base: str,
+    base_without_suffix: str,
+    recordings_dirs: tuple[Path, ...],
+    audio_extensions: tuple[str, ...],
+) -> list[str]:
+    """Ordered candidates when no processing_state row matched (strings only)."""
+    out: list[str] = []
+
+    def _add(raw: str | Path | None) -> None:
+        if raw is None:
+            return
+        s = str(Path(raw))
+        if s and s not in out:
+            out.append(s)
+
+    if resolved_full:
+        _add(resolved_full)
+    if resolved_stripped:
+        _add(resolved_stripped)
+    for s in _build_audio_candidates_from_recordings(
+        _audio_lookup_bases(transcript_base, base_without_suffix),
+        recordings_dirs,
+        audio_extensions,
+    ):
+        _add(s)
+    return out
 
 
 def _audio_lookup_bases(*parts: Optional[str]) -> list[str]:
@@ -65,6 +254,28 @@ def _looks_like_uuid(key: str) -> bool:
         and len(parts[4]) == 12
         and all(p.isalnum() for p in parts)
     )
+
+
+def _build_audio_candidates_from_recordings(
+    bases_sequence: list[str],
+    recordings_dirs: tuple[Path, ...],
+    audio_extensions: tuple[str, ...],
+) -> list[str]:
+    """Ordered deduplicated path strings for stems under recordings roots (no I/O)."""
+    out: list[str] = []
+
+    def _add(raw: str | Path | None) -> None:
+        if raw is None:
+            return
+        s = str(Path(raw))
+        if s and s not in out:
+            out.append(s)
+
+    for base in bases_sequence:
+        for dir_path in recordings_dirs:
+            for ext in audio_extensions:
+                _add(dir_path / f"{base}{ext}")
+    return out
 
 
 def extract_date_prefix_from_filename(filename: str) -> str:
@@ -203,56 +414,40 @@ def find_original_audio_file(transcript_path: str) -> Optional[Path]:
         Path to original audio file if found, None otherwise
     """
     try:
-        # Load processing state
+        recordings_dirs_tpl = (RECORDINGS_DIR, OUTPUTS_DIR / "recordings")
+        exts_tpl = (".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg")
+
+        def _first_existing(candidates: list[str]) -> Optional[Path]:
+            for s in candidates:
+                p = Path(s)
+                if p.exists():
+                    return p
+            return None
+
         if PROCESSING_STATE_FILE.exists():
             with open(PROCESSING_STATE_FILE, "r") as f:
                 state = json.load(f)
 
             processed_files = state.get("processed_files", {})
 
-            # Search for transcript path in processing state
             for file_key, metadata in processed_files.items():
+                if not isinstance(metadata, dict):
+                    continue
                 if metadata.get("transcript_path") != transcript_path:
                     continue
-                # State may be keyed by UUID (after migration) or by path; get audio path from metadata first
-                audio_path = None
-                if metadata.get("audio_path"):
-                    audio_path = Path(metadata["audio_path"])
-                if audio_path and audio_path.exists():
-                    return audio_path
-                # Legacy: key may be the original audio path (path-based state)
-                if not _looks_like_uuid(file_key):
-                    path_candidate = Path(file_key)
-                    if path_candidate.exists():
-                        return path_candidate
-                mp3_path = metadata.get("mp3_path")
-                if mp3_path:
-                    candidate = Path(mp3_path)
-                    if candidate.exists():
-                        return candidate
-                convert_step = metadata.get("convert", {})
-                step_mp3 = convert_step.get("mp3_path")
-                if step_mp3:
-                    candidate = Path(step_mp3)
-                    if candidate.exists():
-                        return candidate
-                steps = metadata.get("steps", {})
-                legacy_convert = steps.get("convert", {})
-                legacy_step_mp3 = legacy_convert.get("mp3_path")
-                if legacy_step_mp3:
-                    candidate = Path(legacy_step_mp3)
-                    if candidate.exists():
-                        return candidate
-                # State had no usable path (e.g. UUID key without audio_path); try resolver/recordings before logging
+
+                resolved_audio: Optional[str] = None
                 try:
-                    resolved = resolve_file_path(
-                        transcript_path, file_type="audio", validate_state=False
+                    resolved_audio = str(
+                        resolve_file_path(
+                            transcript_path,
+                            file_type="audio",
+                            validate_state=False,
+                        )
                     )
-                    if Path(resolved).exists():
-                        return Path(resolved)
                 except FileNotFoundError:
-                    pass
-                # Try recordings: use canonical_base_name from state, then full base, then base without _N suffix
+                    resolved_audio = None
+
                 transcript_base = get_base_name(transcript_path)
                 canonical_base = metadata.get("canonical_base_name") or transcript_base
                 base_without_suffix = (
@@ -260,75 +455,69 @@ def find_original_audio_file(transcript_path: str) -> Optional[Path]:
                     if "_" in transcript_base
                     else transcript_base
                 )
-                recordings_dirs = [
-                    RECORDINGS_DIR,
-                    OUTPUTS_DIR / "recordings",
-                ]
-                exts = [".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg"]
-                for base in _audio_lookup_bases(
-                    canonical_base, transcript_base, base_without_suffix
-                ):
-                    for dir_path in recordings_dirs:
-                        if not dir_path.exists():
-                            continue
-                        for ext in exts:
-                            candidate = dir_path / f"{base}{ext}"
-                            if candidate.exists():
-                                return candidate
-                # Nothing worked for this entry
+
+                candidate_strings = ordered_audio_candidate_paths_for_state_entry(
+                    str(file_key),
+                    metadata,
+                    transcript_path,
+                    resolved_audio_from_transcript=resolved_audio,
+                    transcript_base=transcript_base,
+                    canonical_base_from_metadata=str(canonical_base),
+                    base_without_suffix=base_without_suffix,
+                    recordings_dirs=recordings_dirs_tpl,
+                    audio_extensions=exts_tpl,
+                )
+                hit = _first_existing(candidate_strings)
+                if hit is not None:
+                    return hit
+
                 path_ref = metadata.get("audio_path") or (
-                    file_key if not _looks_like_uuid(file_key) else None
+                    file_key if not _looks_like_uuid(str(file_key)) else None
                 )
                 logger.info(
                     "Original audio file from state not found; "
                     f"speaker identification will continue without playback: {path_ref or file_key}"
                 )
 
-        # If not found in state, try resolver first (handles canonical base matching)
-        try:
-            resolved = resolve_file_path(
-                transcript_path, file_type="audio", validate_state=False
-            )
-            resolved_path = Path(resolved)
-            if resolved_path.exists():
-                return resolved_path
-        except FileNotFoundError:
-            pass
-
-        # If not found in state, try to infer from transcript name
-        # Try full base name first (e.g. 260224_CSE), then suffix-stripped (e.g. 260223_team_facilitation from 260223_team_facilitation_8)
         transcript_base = get_base_name(transcript_path)
         base_without_suffix = (
             transcript_base.rsplit("_", 1)[0]
             if "_" in transcript_base
             else transcript_base
         )
-
-        # Try resolver with suffix-stripped base name
+        resolved_full: Optional[str] = None
         try:
-            resolved = resolve_file_path(
-                base_without_suffix, file_type="audio", validate_state=False
+            resolved_full = str(
+                resolve_file_path(
+                    transcript_path, file_type="audio", validate_state=False
+                )
             )
-            resolved_path = Path(resolved)
-            if resolved_path.exists():
-                return resolved_path
+        except FileNotFoundError:
+            pass
+        resolved_stripped: Optional[str] = None
+        try:
+            resolved_stripped = str(
+                resolve_file_path(
+                    base_without_suffix,
+                    file_type="audio",
+                    validate_state=False,
+                )
+            )
         except FileNotFoundError:
             pass
 
-        # Try common audio extensions: full base first, then base without _N suffix
-        audio_extensions = [".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg"]
-        recordings_dirs = [
-            RECORDINGS_DIR,
-            OUTPUTS_DIR / "recordings",
-        ]
-        for base in _audio_lookup_bases(transcript_base, base_without_suffix):
-            for recordings_dir in recordings_dirs:
-                if not recordings_dir.exists():
-                    continue
-                for ext in audio_extensions:
-                    audio_file = recordings_dir / f"{base}{ext}"
-                    if audio_file.exists():
-                        return audio_file
+        fallback = _fallback_audio_candidate_paths_no_state(
+            transcript_path,
+            resolved_full=resolved_full,
+            resolved_stripped=resolved_stripped,
+            transcript_base=transcript_base,
+            base_without_suffix=base_without_suffix,
+            recordings_dirs=recordings_dirs_tpl,
+            audio_extensions=exts_tpl,
+        )
+        hit = _first_existing(fallback)
+        if hit is not None:
+            return hit
 
     except Exception as e:
         log_error("FILE_RENAME", f"Error finding original audio file: {e}", exception=e)
@@ -339,6 +528,180 @@ def find_original_audio_file(transcript_path: str) -> Optional[Path]:
 def _legacy_rename_hook_noop(old_path: str, new_path: str) -> None:
     """No-op retained for compatibility after legacy path-state removal."""
     return
+
+
+def _mutate_metadata_for_rename(
+    metadata: dict,
+    old_path: str,
+    new_path: str,
+    old_name: str,
+    new_name: str,
+) -> None:
+    """Apply path rewrites for a rename onto a metadata dict (mutates in place)."""
+    from transcriptx.core.utils.processing_state import same_resolved_path
+
+    old_canonical_base = get_canonical_base_name(old_path)
+    new_canonical_base = get_canonical_base_name(new_path)
+    new_output_dir = OUTPUTS_DIR / new_canonical_base
+    new_path_str = str(new_path)
+
+    metadata["transcript_path"] = new_path_str
+    metadata["current_transcript_path"] = new_path_str
+
+    mp3_path = metadata.get("mp3_path", "")
+    old_mp3_path = mp3_path
+    if mp3_path and old_name in mp3_path:
+        new_mp3_path = mp3_path.replace(old_name, new_name)
+        metadata["mp3_path"] = new_mp3_path
+    elif mp3_path:
+        old_mp3_base = get_canonical_base_name(mp3_path)
+        if old_mp3_base == old_canonical_base:
+            mp3_dir = Path(mp3_path).parent
+            mp3_ext = Path(mp3_path).suffix
+            new_mp3_path = str(mp3_dir / f"{new_name}{mp3_ext}")
+            metadata["mp3_path"] = new_mp3_path
+            old_mp3_path = mp3_path
+
+    metadata["output_dir_path"] = str(new_output_dir)
+    metadata["canonical_base_name"] = new_canonical_base
+
+    steps = metadata.get("steps", {})
+    if steps:
+        if "transcribe" in steps:
+            transcribe_step = steps["transcribe"]
+            step_tp = transcribe_step.get("transcript_path")
+            if same_resolved_path(step_tp, old_path):
+                transcribe_step["transcript_path"] = new_path_str
+            elif step_tp:
+                step_transcript_base = get_canonical_base_name(step_tp)
+                if step_transcript_base == old_canonical_base:
+                    step_transcript_dir = Path(step_tp).parent
+                    transcribe_step["transcript_path"] = str(
+                        step_transcript_dir / f"{new_name}.json"
+                    )
+
+        if "convert" in steps:
+            convert_step = steps["convert"]
+            step_mp3 = convert_step.get("mp3_path")
+            if old_mp3_path and step_mp3 == old_mp3_path:
+                convert_step["mp3_path"] = metadata.get("mp3_path", old_mp3_path)
+            elif step_mp3:
+                step_mp3_base = get_canonical_base_name(step_mp3)
+                if step_mp3_base == old_canonical_base:
+                    step_mp3_dir = Path(step_mp3).parent
+                    step_mp3_ext = Path(step_mp3).suffix
+                    convert_step["mp3_path"] = str(
+                        step_mp3_dir / f"{new_name}{step_mp3_ext}"
+                    )
+
+    transcribe_step = metadata.get("transcribe")
+    if isinstance(transcribe_step, dict):
+        step_tp = transcribe_step.get("transcript_path")
+        if same_resolved_path(step_tp, old_path):
+            transcribe_step["transcript_path"] = new_path_str
+        elif step_tp:
+            step_transcript_base = get_canonical_base_name(step_tp)
+            if step_transcript_base == old_canonical_base:
+                step_transcript_dir = Path(step_tp).parent
+                transcribe_step["transcript_path"] = str(
+                    step_transcript_dir / f"{new_name}.json"
+                )
+
+    convert_step = metadata.get("convert")
+    if isinstance(convert_step, dict):
+        step_mp3 = convert_step.get("mp3_path")
+        if old_mp3_path and step_mp3 == old_mp3_path:
+            convert_step["mp3_path"] = metadata.get("mp3_path", old_mp3_path)
+        elif step_mp3:
+            step_mp3_base = get_canonical_base_name(step_mp3)
+            if step_mp3_base == old_canonical_base:
+                step_mp3_dir = Path(step_mp3).parent
+                step_mp3_ext = Path(step_mp3).suffix
+                convert_step["mp3_path"] = str(
+                    step_mp3_dir / f"{new_name}{step_mp3_ext}"
+                )
+
+    metadata["last_updated"] = datetime.now().isoformat()
+
+
+def _build_enriched_entry_for_rename(
+    metadata: dict,
+    old_path: str,
+    new_path: str,
+    old_name: str,
+    new_name: str,
+    new_path_str: str,
+) -> dict:
+    """Return enriched processing_state row for ``new_path_str`` (pure aside from imports)."""
+    from transcriptx.core.utils.state_schema import enrich_state_entry
+
+    work = copy.deepcopy(metadata)
+    _mutate_metadata_for_rename(work, old_path, new_path, old_name, new_name)
+    return enrich_state_entry(work, new_path_str)
+
+
+def _sibling_path_validation_messages(
+    processed_files: dict, new_path_str: str
+) -> list[str]:
+    """Human-readable messages for state rows tied to ``new_path_str`` with invalid paths."""
+    from transcriptx.core.utils.state_schema import validate_state_paths
+    from transcriptx.core.utils.processing_state import same_resolved_path
+
+    msgs: list[str] = []
+    for _ek, em in processed_files.items():
+        tp = em.get("transcript_path") if isinstance(em, dict) else None
+        if tp and same_resolved_path(tp, new_path_str):
+            is_valid, errors = validate_state_paths(em)
+            if not is_valid:
+                msgs.append(f"State entry has invalid paths after update: {errors!r}")
+    return msgs
+
+
+def _compute_processing_state_rename_mutation(
+    state: dict,
+    old_path: str,
+    new_path: str,
+    old_name: str,
+    new_name: str,
+) -> Optional[ProcessingStateRenameMutation]:
+    """Compute the updated row and sibling validation messages (no disk write)."""
+    from transcriptx.core.utils.processing_state import find_processed_entry_for_path
+
+    processed_files = state.get("processed_files", {})
+    if not isinstance(processed_files, dict):
+        return None
+
+    key, metadata = find_processed_entry_for_path(old_path, state)
+    if metadata is None or key is None:
+        return None
+
+    new_path_str = str(new_path)
+    enriched = _build_enriched_entry_for_rename(
+        metadata, old_path, new_path, old_name, new_name, new_path_str
+    )
+    temp_processed = dict(processed_files)
+    temp_processed[key] = enriched
+    sibling_msgs = tuple(
+        _sibling_path_validation_messages(temp_processed, new_path_str)
+    )
+    return ProcessingStateRenameMutation(
+        entry_key=str(key),
+        enriched_entry=enriched,
+        sibling_path_validation_msgs=sibling_msgs,
+    )
+
+
+def _persist_processing_state_mutation(
+    state: dict, mutation: ProcessingStateRenameMutation, state_file: Path
+) -> None:
+    """Apply mutation to ``state`` and persist to ``state_file``."""
+    from transcriptx.core.utils.processing_state import save_processing_state
+
+    processed = state.setdefault("processed_files", {})
+    processed[mutation.entry_key] = mutation.enriched_entry
+    for msg in mutation.sibling_path_validation_msgs:
+        logger.warning("%s", msg)
+    save_processing_state(state, state_file)
 
 
 def update_processing_state(
@@ -368,138 +731,20 @@ def update_processing_state(
         if not PROCESSING_STATE_FILE.exists():
             return
 
-        from transcriptx.core.utils.state_schema import (
-            enrich_state_entry,
-            validate_state_paths,
-        )
-        from transcriptx.core.utils.processing_state import (
-            find_processed_entry_for_path,
-            same_resolved_path,
-            save_processing_state,
-        )
-
-        with open(PROCESSING_STATE_FILE, "r") as f:
+        with open(PROCESSING_STATE_FILE, "r", encoding="utf-8") as f:
             state = json.load(f)
 
-        processed_files = state.get("processed_files", {})
-
-        # Pre-compute canonical bases
-        old_canonical_base = get_canonical_base_name(old_path)
-        new_canonical_base = get_canonical_base_name(new_path)
-        new_output_dir = OUTPUTS_DIR / new_canonical_base
-
-        key, metadata = find_processed_entry_for_path(old_path, state)
-        if metadata is None or key is None:
+        mutation = _compute_processing_state_rename_mutation(
+            state, old_path, new_path, old_name, new_name
+        )
+        if mutation is None:
             logger.warning(
                 "No processing state entry matched rename source path %s; state not updated",
                 old_path,
             )
             return
 
-        new_path_str = str(new_path)
-
-        # Update transcript path (resolved-path matching found the row)
-        metadata["transcript_path"] = new_path_str
-        metadata["current_transcript_path"] = new_path_str
-
-        # --- mp3_path updates ---
-        mp3_path = metadata.get("mp3_path", "")
-        old_mp3_path = mp3_path
-        if mp3_path and old_name in mp3_path:
-            # Simple string replacement when old_name is part of path
-            new_mp3_path = mp3_path.replace(old_name, new_name)
-            metadata["mp3_path"] = new_mp3_path
-        elif mp3_path:
-            # Fallback: match by canonical base name
-            old_mp3_base = get_canonical_base_name(mp3_path)
-            if old_mp3_base == old_canonical_base:
-                mp3_dir = Path(mp3_path).parent
-                mp3_ext = Path(mp3_path).suffix
-                new_mp3_path = str(mp3_dir / f"{new_name}{mp3_ext}")
-                metadata["mp3_path"] = new_mp3_path
-                old_mp3_path = mp3_path
-
-        # --- high-level metadata paths ---
-        metadata["output_dir_path"] = str(new_output_dir)
-        metadata["canonical_base_name"] = new_canonical_base
-
-        # --- step-level paths (legacy `steps` structure) ---
-        steps = metadata.get("steps", {})
-        if steps:
-            # transcribe step transcript_path
-            if "transcribe" in steps:
-                transcribe_step = steps["transcribe"]
-                step_tp = transcribe_step.get("transcript_path")
-                if same_resolved_path(step_tp, old_path):
-                    transcribe_step["transcript_path"] = new_path_str
-                elif step_tp:
-                    step_transcript_base = get_canonical_base_name(step_tp)
-                    if step_transcript_base == old_canonical_base:
-                        step_transcript_dir = Path(step_tp).parent
-                        transcribe_step["transcript_path"] = str(
-                            step_transcript_dir / f"{new_name}.json"
-                        )
-
-            # convert step mp3_path
-            if "convert" in steps:
-                convert_step = steps["convert"]
-                step_mp3 = convert_step.get("mp3_path")
-                if old_mp3_path and step_mp3 == old_mp3_path:
-                    convert_step["mp3_path"] = metadata.get("mp3_path", old_mp3_path)
-                elif step_mp3:
-                    step_mp3_base = get_canonical_base_name(step_mp3)
-                    if step_mp3_base == old_canonical_base:
-                        step_mp3_dir = Path(step_mp3).parent
-                        step_mp3_ext = Path(step_mp3).suffix
-                        convert_step["mp3_path"] = str(
-                            step_mp3_dir / f"{new_name}{step_mp3_ext}"
-                        )
-
-        # --- step-level paths (current top-level structure) ---
-        transcribe_step = metadata.get("transcribe")
-        if isinstance(transcribe_step, dict):
-            step_tp = transcribe_step.get("transcript_path")
-            if same_resolved_path(step_tp, old_path):
-                transcribe_step["transcript_path"] = new_path_str
-            elif step_tp:
-                step_transcript_base = get_canonical_base_name(step_tp)
-                if step_transcript_base == old_canonical_base:
-                    step_transcript_dir = Path(step_tp).parent
-                    transcribe_step["transcript_path"] = str(
-                        step_transcript_dir / f"{new_name}.json"
-                    )
-
-        convert_step = metadata.get("convert")
-        if isinstance(convert_step, dict):
-            step_mp3 = convert_step.get("mp3_path")
-            if old_mp3_path and step_mp3 == old_mp3_path:
-                convert_step["mp3_path"] = metadata.get("mp3_path", old_mp3_path)
-            elif step_mp3:
-                step_mp3_base = get_canonical_base_name(step_mp3)
-                if step_mp3_base == old_canonical_base:
-                    step_mp3_dir = Path(step_mp3).parent
-                    step_mp3_ext = Path(step_mp3).suffix
-                    convert_step["mp3_path"] = str(
-                        step_mp3_dir / f"{new_name}{step_mp3_ext}"
-                    )
-
-        from datetime import datetime
-
-        metadata["last_updated"] = datetime.now().isoformat()
-
-        # Enrich returns a copy — persist back onto the entry
-        processed_files[key] = enrich_state_entry(metadata, new_path_str)
-
-        for _ek, em in processed_files.items():
-            tp = em.get("transcript_path") if isinstance(em, dict) else None
-            if tp and same_resolved_path(tp, new_path_str):
-                is_valid, errors = validate_state_paths(em)
-                if not is_valid:
-                    logger.warning(
-                        f"State entry has invalid paths after update: {errors}"
-                    )
-
-        save_processing_state(state)
+        _persist_processing_state_mutation(state, mutation, PROCESSING_STATE_FILE)
         logger.info("Updated processing_state.json with new paths")
 
     except Exception as e:
@@ -508,7 +753,7 @@ def update_processing_state(
 
 def rename_files_in_directory(
     old_dir: Path, new_dir: Path, old_name: str, new_name: str
-) -> None:
+) -> list[str]:
     """
     Rename files inside a directory that contain the old name.
 
@@ -517,12 +762,15 @@ def rename_files_in_directory(
         new_dir: New directory path
         old_name: Old base name
         new_name: New base name
+
+    Returns:
+        Non-fatal warning strings (per-file failures or outer exceptions).
     """
+    warnings: list[str] = []
     if not new_dir.exists():
-        return
+        return warnings
 
     try:
-        # Find all files that contain the old name
         for file_path in new_dir.rglob("*"):
             if file_path.is_file():
                 old_filename = file_path.name
@@ -530,10 +778,460 @@ def rename_files_in_directory(
                     new_filename = old_filename.replace(old_name, new_name)
                     new_file_path = file_path.parent / new_filename
                     if new_file_path != file_path:
-                        file_path.rename(new_file_path)
-                        logger.debug(f"Renamed file: {old_filename} -> {new_filename}")
+                        try:
+                            file_path.rename(new_file_path)
+                            logger.debug(
+                                "Renamed file: %s -> %s", old_filename, new_filename
+                            )
+                        except OSError as err:
+                            warnings.append(
+                                f"Could not rename {file_path} -> {new_file_path}: {err}"
+                            )
     except Exception as e:
         log_error("FILE_RENAME", f"Error renaming files in directory: {e}", exception=e)
+        warnings.append(f"rename_files_in_directory: {e}")
+    return warnings
+
+
+def build_rename_plan(
+    ctx: RenameContext,
+    state_snapshot: Optional[dict],
+    rename_history_at_iso: str,
+) -> RenamePlan:
+    """
+    Build a deterministic rename plan (read-only: no filesystem mutations).
+
+    Caller supplies ``state_snapshot`` from a prior read of processing state
+    (or None when no file exists). Pass ``rename_history_at_iso`` from the
+    orchestrator so the plan does not embed wall-clock reads.
+    """
+    transcript_file = ctx.transcript_file
+    new_transcript_path = ctx.new_transcript_path
+    old_transcript_dir = ctx.old_output_dir
+    new_transcript_dir = ctx.new_output_dir
+    old_name = ctx.old_name
+    new_name = ctx.new_name
+    transcript_path = ctx.transcript_path
+
+    vals: list[RenamePlanValidation] = []
+
+    if not transcript_file.exists():
+        vals.append(
+            RenamePlanValidation("transcript_file_exists", False, str(transcript_path))
+        )
+        return RenamePlan(
+            blocked=True,
+            block_message=f"Transcript file not found: {transcript_path}",
+            validations=tuple(vals),
+        )
+    vals.append(
+        RenamePlanValidation("transcript_file_exists", True, str(transcript_file))
+    )
+
+    managed_validation = validate_managed_transcript(transcript_file)
+    if not managed_validation.ok:
+        vals.append(
+            RenamePlanValidation(
+                "managed_library_transcript",
+                False,
+                managed_validation.message
+                or "transcript is not library-valid managed transcript",
+            )
+        )
+        return RenamePlan(
+            blocked=True,
+            block_message=managed_validation.message
+            or "transcript is not library-valid managed transcript",
+            validations=tuple(vals),
+        )
+    vals.append(RenamePlanValidation("managed_library_transcript", True, ""))
+
+    plan_warnings: list[str] = list(managed_validation.warnings or [])
+
+    if new_transcript_path.exists() and new_transcript_path != transcript_file:
+        vals.append(
+            RenamePlanValidation(
+                "target_transcript_path_available",
+                False,
+                str(new_transcript_path),
+            )
+        )
+        return RenamePlan(
+            blocked=True,
+            block_message=f"Rename blocked: file already exists: {new_transcript_path}",
+            validations=tuple(vals),
+        )
+    vals.append(RenamePlanValidation("target_transcript_path_available", True, ""))
+
+    if new_transcript_dir.exists() and new_transcript_dir != old_transcript_dir:
+        vals.append(
+            RenamePlanValidation(
+                "target_output_dir_available",
+                False,
+                str(new_transcript_dir),
+            )
+        )
+        return RenamePlan(
+            blocked=True,
+            block_message=(
+                f"Rename blocked: output directory already exists: {new_transcript_dir}"
+            ),
+            validations=tuple(vals),
+        )
+    vals.append(RenamePlanValidation("target_output_dir_available", True, ""))
+
+    transaction_file_renames: list[tuple[Path, Path, str]] = []
+    if transcript_file != new_transcript_path:
+        transaction_file_renames.append(
+            (
+                transcript_file,
+                new_transcript_path,
+                f"Rename transcript: {old_name} -> {new_name}",
+            )
+        )
+
+    old_sidecar = sidecar_path_for(transcript_file)
+    new_sidecar = sidecar_path_for(new_transcript_path)
+    if old_sidecar.exists() and old_sidecar != new_sidecar:
+        transaction_file_renames.append(
+            (
+                old_sidecar,
+                new_sidecar,
+                f"Rename speaker map sidecar: {old_sidecar.name} -> {new_sidecar.name}",
+            )
+        )
+
+    old_import_meta_sidecar = import_meta_sidecar_path_for_transcript(transcript_file)
+    new_import_meta_sidecar = import_meta_sidecar_path_for_transcript(
+        new_transcript_path
+    )
+    if not old_import_meta_sidecar.exists():
+        vals.append(
+            RenamePlanValidation(
+                "import_metadata_sidecar_present",
+                False,
+                str(old_import_meta_sidecar),
+            )
+        )
+        return RenamePlan(
+            blocked=True,
+            block_message=(
+                f"Rename blocked: managed import sidecar missing: {old_import_meta_sidecar}"
+            ),
+            validations=tuple(vals),
+        )
+    vals.append(
+        RenamePlanValidation(
+            "import_metadata_sidecar_present", True, str(old_import_meta_sidecar)
+        )
+    )
+
+    if old_import_meta_sidecar != new_import_meta_sidecar:
+        if new_import_meta_sidecar.exists():
+            vals.append(
+                RenamePlanValidation(
+                    "import_metadata_sidecar_target_available",
+                    False,
+                    str(new_import_meta_sidecar),
+                )
+            )
+            return RenamePlan(
+                blocked=True,
+                block_message=(
+                    "Rename blocked: target import sidecar already exists: "
+                    f"{new_import_meta_sidecar}"
+                ),
+                validations=tuple(vals),
+            )
+        vals.append(
+            RenamePlanValidation("import_metadata_sidecar_target_available", True, "")
+        )
+        transaction_file_renames.append(
+            (
+                old_import_meta_sidecar,
+                new_import_meta_sidecar,
+                (
+                    "Rename managed import sidecar: "
+                    f"{old_import_meta_sidecar.name} -> {new_import_meta_sidecar.name}"
+                ),
+            )
+        )
+    else:
+        vals.append(
+            RenamePlanValidation(
+                "import_metadata_sidecar_target_available", True, "unchanged"
+            )
+        )
+
+    old_audio_file: Optional[Path] = None
+    new_audio_file: Optional[Path] = None
+    if state_snapshot:
+        try:
+            from transcriptx.core.utils.processing_state import (
+                find_processed_entry_for_path,
+            )
+
+            _, metadata = find_processed_entry_for_path(
+                str(transcript_path), state_snapshot
+            )
+            if metadata:
+                mp3_path = metadata.get("mp3_path", "")
+                if mp3_path:
+                    cand = Path(mp3_path)
+                    if cand.exists():
+                        old_audio_file = cand
+                        new_audio_file = cand.parent / f"{new_name}{cand.suffix}"
+        except Exception as e:
+            logger.debug("Could not use processing state for MP3 rename: %s", e)
+
+    if not old_audio_file or not old_audio_file.exists():
+        for ext in (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg"):
+            candidate = RECORDINGS_DIR / f"{old_name}{ext}"
+            if candidate.exists():
+                old_audio_file = candidate
+                new_audio_file = RECORDINGS_DIR / f"{new_name}{ext}"
+                break
+
+    if (
+        old_audio_file
+        and old_audio_file.exists()
+        and new_audio_file is not None
+        and not new_audio_file.exists()
+    ):
+        transaction_file_renames.append(
+            (
+                old_audio_file,
+                new_audio_file,
+                f"Rename audio file: {old_audio_file.name} -> {new_audio_file.name}",
+            )
+        )
+
+    transaction_state_updates: list[
+        tuple[Callable[..., None], tuple[Any, ...], dict[str, Any]]
+    ] = [
+        (
+            update_processing_state,
+            (str(transcript_path), str(new_transcript_path), old_name, new_name),
+            {},
+        ),
+        (
+            append_rename_history,
+            (),
+            {
+                "sidecar_path": str(new_import_meta_sidecar),
+                "old_filename": f"{old_name}.json",
+                "new_filename": f"{new_name}.json",
+                "at_iso": rename_history_at_iso,
+            },
+        ),
+    ]
+
+    needs_finalize = (
+        old_transcript_dir.exists() and old_transcript_dir != new_transcript_dir
+    )
+    finalize_ops: tuple[str, ...] = (
+        ("output_dir_merge", "rename_files_in_directory") if needs_finalize else ()
+    )
+    cache_before, cache_after = str(transcript_path), str(new_transcript_path)
+
+    vals.append(RenamePlanValidation("rename_plan_complete", True, ""))
+
+    return RenamePlan(
+        blocked=False,
+        validations=tuple(vals),
+        warnings=plan_warnings,
+        transaction_file_renames=transaction_file_renames,
+        transaction_state_updates=transaction_state_updates,
+        needs_output_finalize=needs_finalize,
+        finalize_ops=finalize_ops,
+        old_output_dir=old_transcript_dir,
+        new_output_dir=new_transcript_dir,
+        old_name=old_name,
+        new_name=new_name,
+        transcript_path_before=cache_before,
+        transcript_path_after=cache_after,
+        cache_invalidation_targets=(cache_before, cache_after),
+    )
+
+
+def _finalize_output_directory_move(old_dir: Path, new_dir: Path) -> None:
+    """Best-effort merge/move of transcript output directory (non-transactional)."""
+    if not old_dir.exists() or old_dir == new_dir:
+        return
+    if not new_dir.exists():
+        new_dir.mkdir(parents=True, exist_ok=True)
+    for item in old_dir.iterdir():
+        dest = new_dir / item.name
+        if dest.exists():
+            if item.is_dir():
+                for subitem in item.rglob("*"):
+                    rel_path = subitem.relative_to(item)
+                    new_subitem = dest / rel_path
+                    new_subitem.parent.mkdir(parents=True, exist_ok=True)
+                    if subitem.is_file():
+                        shutil.move(str(subitem), str(new_subitem))
+            else:
+                logger.warning("Skipping %s - already exists in destination", item.name)
+        else:
+            shutil.move(str(item), str(dest))
+    try:
+        if old_dir.exists() and not any(old_dir.iterdir()):
+            old_dir.rmdir()
+    except OSError:
+        pass
+    logger.info("Renamed output directory: %s -> %s", old_dir.name, new_dir.name)
+
+
+def rename_transcript_files_with_outcome(
+    old_name: str, new_name: str, transcript_path: str, dry_run: bool = False
+) -> RenameTranscriptOutcome:
+    """
+    Rename transcript and related artifacts; return structured outcome.
+
+    Transaction phase: file renames + processing_state + rename_history (rollback-capable).
+    Finalize phase: output directory merge/move + in-tree filename fixes (best-effort).
+    """
+    warnings: list[str] = []
+    try:
+        transcript_file = Path(transcript_path)
+        old_transcript_dir = Path(get_transcript_dir(transcript_path))
+        new_transcript_path = transcript_file.parent / f"{new_name}.json"
+        new_transcript_dir = Path(get_transcript_dir(str(new_transcript_path)))
+
+        state_snapshot: Optional[dict] = None
+        if PROCESSING_STATE_FILE.exists():
+            with open(PROCESSING_STATE_FILE, "r", encoding="utf-8") as handle:
+                state_snapshot = json.load(handle)
+
+        rename_history_at_iso = datetime.now().isoformat()
+        ctx = RenameContext(
+            old_name=old_name,
+            new_name=new_name,
+            transcript_path=transcript_path,
+            transcript_file=transcript_file,
+            new_transcript_path=new_transcript_path,
+            old_output_dir=old_transcript_dir,
+            new_output_dir=new_transcript_dir,
+        )
+        plan = build_rename_plan(ctx, state_snapshot, rename_history_at_iso)
+        if plan.blocked:
+            msg = plan.block_message or "rename blocked"
+            logger.error("%s", msg)
+            return RenameTranscriptOutcome(
+                transaction_attempted=False,
+                transaction_succeeded=False,
+                transaction_committed=False,
+                finalize_attempted=False,
+                finalize_succeeded=False,
+                warnings=warnings,
+                last_error=msg,
+            )
+
+        warnings.extend(plan.warnings)
+
+        if dry_run:
+            logger.info("DRY RUN: Would rename %s -> %s", old_name, new_name)
+
+        transaction = RenameTransaction(dry_run=dry_run)
+        for src, dest, desc in plan.transaction_file_renames:
+            transaction.add_rename(src, dest, desc)
+        for func, args, kwargs in plan.transaction_state_updates:
+            transaction.add_state_update(func, *args, **kwargs)
+
+        transaction_attempted = True
+        if not transaction.execute():
+            logger.error("Rename transaction failed; changes rolled back")
+            return RenameTranscriptOutcome(
+                transaction_attempted=transaction_attempted,
+                transaction_succeeded=False,
+                transaction_committed=False,
+                finalize_attempted=False,
+                finalize_succeeded=False,
+                warnings=warnings,
+                last_error="rename transaction failed",
+            )
+
+        if dry_run:
+            return RenameTranscriptOutcome(
+                transaction_attempted=True,
+                transaction_succeeded=True,
+                transaction_committed=False,
+                finalize_attempted=False,
+                finalize_succeeded=True,
+                warnings=warnings,
+            )
+
+        finalize_attempted = plan.needs_output_finalize
+        finalize_succeeded = True
+        if plan.needs_output_finalize:
+            try:
+                _finalize_output_directory_move(
+                    plan.old_output_dir, plan.new_output_dir
+                )
+            except Exception as e:
+                logger.error("Error renaming output directory: %s", e)
+                logger.error(
+                    "Rename transaction phase already committed (transcript, state, "
+                    "history). Not rolling back — finalize is a separate boundary; "
+                    "output tree may be partially moved. Investigate %s -> %s",
+                    plan.old_output_dir,
+                    plan.new_output_dir,
+                )
+                finalize_succeeded = False
+                warnings.append(
+                    "Output directory finalize failed after the rename transaction "
+                    "committed; transcript and processing_state already reflect the new "
+                    "name. Check output folders for a partial merge."
+                )
+                return RenameTranscriptOutcome(
+                    transaction_attempted=True,
+                    transaction_succeeded=True,
+                    transaction_committed=True,
+                    finalize_attempted=True,
+                    finalize_succeeded=False,
+                    warnings=warnings,
+                    last_error=str(e),
+                )
+
+        if plan.new_output_dir.exists():
+            dir_warnings = rename_files_in_directory(
+                plan.old_output_dir,
+                plan.new_output_dir,
+                plan.old_name,
+                plan.new_name,
+            )
+            warnings.extend(dir_warnings)
+
+        cb, ca = plan.cache_invalidation_targets
+        if cb:
+            invalidate_path_cache(cb)
+        if ca:
+            invalidate_path_cache(ca)
+
+        if not dry_run:
+            logger.info("Successfully renamed all files: %s -> %s", old_name, new_name)
+
+        return RenameTranscriptOutcome(
+            transaction_attempted=True,
+            transaction_succeeded=True,
+            transaction_committed=True,
+            finalize_attempted=finalize_attempted,
+            finalize_succeeded=finalize_succeeded,
+            warnings=warnings,
+        )
+
+    except Exception as e:
+        log_error("FILE_RENAME", f"Error renaming transcript files: {e}", exception=e)
+        logger.error("Error renaming files: %s", e)
+        return RenameTranscriptOutcome(
+            transaction_attempted=False,
+            transaction_succeeded=False,
+            transaction_committed=False,
+            finalize_attempted=False,
+            finalize_succeeded=False,
+            warnings=warnings,
+            last_error=str(e),
+        )
 
 
 def rename_transcript_files(
@@ -559,231 +1257,9 @@ def rename_transcript_files(
     Returns:
         True if rename was successful, False otherwise
     """
-    transaction = RenameTransaction(dry_run=dry_run)
-
-    try:
-        transcript_file = Path(transcript_path)
-        if not transcript_file.exists():
-            logger.error(f"Transcript file not found: {transcript_path}")
-            return False
-
-        managed_validation = validate_managed_transcript(transcript_file)
-        if not managed_validation.ok:
-            logger.error(
-                "Rename blocked: transcript is not library-valid managed transcript: %s",
-                managed_validation.message,
-            )
-            return False
-
-        # Get old paths
-        old_transcript_dir = Path(get_transcript_dir(transcript_path))
-
-        # Calculate new paths
-        new_transcript_path = transcript_file.parent / f"{new_name}.json"
-        new_transcript_dir = OUTPUTS_DIR / new_name
-
-        # Check if new paths would conflict
-        if new_transcript_path.exists() and new_transcript_path != transcript_file:
-            logger.error("Rename blocked: file already exists: %s", new_transcript_path)
-            return False
-
-        if new_transcript_dir.exists() and new_transcript_dir != old_transcript_dir:
-            logger.error(
-                "Rename blocked: output directory already exists: %s",
-                new_transcript_dir,
-            )
-            return False
-
-        if dry_run:
-            logger.info("DRY RUN: Would rename %s -> %s", old_name, new_name)
-
-        # Plan all rename operations in transaction
-        # Rename transcript file
-        if transcript_file != new_transcript_path:
-            transaction.add_rename(
-                transcript_file,
-                new_transcript_path,
-                f"Rename transcript: {old_name} -> {new_name}",
-            )
-
-        # Rename speaker-map sidecar alongside the transcript if it exists.
-        old_sidecar = sidecar_path_for(transcript_file)
-        new_sidecar = sidecar_path_for(new_transcript_path)
-        if old_sidecar.exists() and old_sidecar != new_sidecar:
-            transaction.add_rename(
-                old_sidecar,
-                new_sidecar,
-                f"Rename speaker map sidecar: {old_sidecar.name} -> {new_sidecar.name}",
-            )
-
-        old_import_meta_sidecar = import_meta_sidecar_path_for_transcript(
-            transcript_file
-        )
-        new_import_meta_sidecar = import_meta_sidecar_path_for_transcript(
-            new_transcript_path
-        )
-        if not old_import_meta_sidecar.exists():
-            logger.error(
-                "Rename blocked: managed import sidecar missing: %s",
-                old_import_meta_sidecar,
-            )
-            return False
-        if old_import_meta_sidecar != new_import_meta_sidecar:
-            if new_import_meta_sidecar.exists():
-                logger.error(
-                    "Rename blocked: target import sidecar already exists: %s",
-                    new_import_meta_sidecar,
-                )
-                return False
-            transaction.add_rename(
-                old_import_meta_sidecar,
-                new_import_meta_sidecar,
-                (
-                    "Rename managed import sidecar: "
-                    f"{old_import_meta_sidecar.name} -> {new_import_meta_sidecar.name}"
-                ),
-            )
-
-        # Find and rename audio file if it exists
-        # Use mp3_path from processing state to find actual audio file
-        old_audio_file = None
-        new_audio_file = None
-        if PROCESSING_STATE_FILE.exists():
-            try:
-                from transcriptx.core.utils.processing_state import (
-                    find_processed_entry_for_path,
-                )
-
-                with open(PROCESSING_STATE_FILE, "r") as f:
-                    state = json.load(f)
-                _, metadata = find_processed_entry_for_path(str(transcript_path), state)
-                if metadata:
-                    mp3_path = metadata.get("mp3_path", "")
-                    if mp3_path:
-                        old_audio_file = Path(mp3_path)
-                        if old_audio_file.exists():
-                            mp3_dir = old_audio_file.parent
-                            mp3_ext = old_audio_file.suffix
-                            new_audio_file = mp3_dir / f"{new_name}{mp3_ext}"
-            except Exception as e:
-                logger.debug(f"Could not load processing state for MP3 rename: {e}")
-
-        # Fallback: try to find audio file by old_name if not found in state
-        if not old_audio_file or not old_audio_file.exists():
-            audio_extensions = [".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg"]
-            for ext in audio_extensions:
-                candidate = RECORDINGS_DIR / f"{old_name}{ext}"
-                if candidate.exists():
-                    old_audio_file = candidate
-                    new_audio_file = RECORDINGS_DIR / f"{new_name}{ext}"
-                    break
-
-        # Add audio file rename to transaction if found
-        if old_audio_file and old_audio_file.exists() and new_audio_file:
-            if not new_audio_file.exists():
-                transaction.add_rename(
-                    old_audio_file,
-                    new_audio_file,
-                    f"Rename audio file: {old_audio_file.name} -> {new_audio_file.name}",
-                )
-
-        # Speaker map sidecars are preserved as part of the transcript artifact set.
-
-        # Rename output directory (handle separately as it's more complex)
-        if old_transcript_dir.exists() and old_transcript_dir != new_transcript_dir:
-            # This is handled separately as it involves moving multiple files
-            # We'll do this after transaction executes
-            pass
-
-        # Add state update to transaction
-        transaction.add_state_update(
-            update_processing_state,
-            str(transcript_path),
-            str(new_transcript_path),
-            old_name,
-            new_name,
-        )
-        transaction.add_state_update(
-            append_rename_history,
-            sidecar_path=str(new_import_meta_sidecar),
-            old_filename=f"{old_name}.json",
-            new_filename=f"{new_name}.json",
-            at_iso=datetime.now().isoformat(),
-        )
-
-        # Execute transaction (all file renames and state update)
-        if not transaction.execute():
-            logger.error("Rename transaction failed; changes rolled back")
-            return False
-
-        # Handle output directory rename (complex operation, do after transaction)
-        if old_transcript_dir.exists() and old_transcript_dir != new_transcript_dir:
-            try:
-                # Move all contents to new directory
-                if not new_transcript_dir.exists():
-                    new_transcript_dir.mkdir(parents=True, exist_ok=True)
-
-                # Move all files and subdirectories
-                for item in old_transcript_dir.iterdir():
-                    dest = new_transcript_dir / item.name
-                    if dest.exists():
-                        # If it's a directory, merge contents
-                        if item.is_dir():
-                            for subitem in item.rglob("*"):
-                                rel_path = subitem.relative_to(item)
-                                new_subitem = dest / rel_path
-                                new_subitem.parent.mkdir(parents=True, exist_ok=True)
-                                if subitem.is_file():
-                                    shutil.move(str(subitem), str(new_subitem))
-                        else:
-                            logger.warning(
-                                f"Skipping {item.name} - already exists in destination"
-                            )
-                    else:
-                        shutil.move(str(item), str(dest))
-
-                # Remove old directory if empty
-                try:
-                    if old_transcript_dir.exists() and not any(
-                        old_transcript_dir.iterdir()
-                    ):
-                        old_transcript_dir.rmdir()
-                except OSError:
-                    pass
-
-                logger.info(
-                    "Renamed output directory: %s -> %s",
-                    old_transcript_dir.name,
-                    new_transcript_dir.name,
-                )
-            except Exception as e:
-                logger.error(f"Error renaming output directory: {e}")
-                # Rollback transaction
-                transaction.rollback()
-                return False
-
-        # Rename files inside directory that contain old name
-        if new_transcript_dir.exists():
-            rename_files_in_directory(
-                old_transcript_dir, new_transcript_dir, old_name, new_name
-            )
-
-        # Invalidate path resolution cache for renamed files
-        # With UUID-based keys, we mainly need to clear path-to-UUID lookups
-        invalidate_path_cache(str(transcript_path))
-        invalidate_path_cache(str(new_transcript_path))
-        # Note: With UUID-based keys, the cache is less critical since UUIDs don't change
-        # But we still cache path lookups for performance
-
-        if not dry_run:
-            logger.info("Successfully renamed all files: %s -> %s", old_name, new_name)
-
-        return True
-
-    except Exception as e:
-        log_error("FILE_RENAME", f"Error renaming transcript files: {e}", exception=e)
-        logger.error("Error renaming files: %s", e)
-        return False
+    return rename_transcript_files_with_outcome(
+        old_name, new_name, transcript_path, dry_run=dry_run
+    ).ok
 
 
 def prompt_for_rename(transcript_path: str, default_name: str) -> Optional[str]:

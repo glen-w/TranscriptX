@@ -7,7 +7,7 @@ which record all information needed to reproduce an analysis run.
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -18,6 +18,29 @@ from transcriptx.core.utils.artifact_writer import write_json
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 
 logger = get_logger()
+
+
+def _extract_config_snapshot(config: Any) -> Optional[Dict[str, Any]]:
+    """
+    Best-effort conversion of runtime config to a JSON-serializable dict.
+    """
+    if config is None:
+        return None
+    if isinstance(config, dict):
+        return config
+    if hasattr(config, "to_dict"):
+        try:
+            snapshot = config.to_dict()
+            if isinstance(snapshot, dict):
+                return snapshot
+        except Exception:
+            # Fall through to other structural adapters.
+            pass
+    if is_dataclass(config):
+        return asdict(config)
+    if hasattr(config, "__dict__"):
+        return dict(config.__dict__)
+    return None
 
 
 @dataclass
@@ -202,7 +225,7 @@ def create_run_manifest(
     if config_hash is None:
         try:
             config = get_config()
-            config_snapshot = config.to_dict() if hasattr(config, "to_dict") else None
+            config_snapshot = _extract_config_snapshot(config)
             if config_snapshot is not None:
                 serialized = json.dumps(
                     config_snapshot,

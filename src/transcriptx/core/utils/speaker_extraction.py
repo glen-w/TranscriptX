@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
 from transcriptx.io.speaker_map_resolver import normalize_diarized_id
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_named_speaker, is_turn_taking_speaker_label
 
 _SPEAKER_DISPLAY_MAP: Optional[Dict[str, str]] = None
 
@@ -119,6 +119,45 @@ def count_named_speakers(
         named_speaker_ids.add(speaker_id)
 
     return len(named_speaker_ids)
+
+
+def count_turn_taking_speakers(
+    segments: List[Dict[str, Any]],
+    *,
+    ignored_speaker_ids: Optional[set[Union[str, int]]] = None,
+) -> int:
+    """
+    Count distinct speakers eligible for turn-taking analysis.
+
+    Unlike :func:`count_named_speakers`, diarization-style labels such as
+    ``SPEAKER_00`` are counted as distinct speakers. Bare unknown placeholders
+    are excluded (see :func:`is_turn_taking_speaker_label`). This is the count
+    used to gate modules that analyse interaction structure rather than only
+    human-named participants.
+
+    Args:
+        segments: Transcript segments to inspect.
+        ignored_speaker_ids: Optional set of speaker IDs to exclude from the count.
+
+    Returns:
+        Number of distinct turn-taking speakers.
+    """
+    ignored = ignored_speaker_ids or set()
+    speaker_keys: set[Union[str, int]] = set()
+
+    for segment in segments:
+        label = segment.get("speaker")
+        if not label or not is_turn_taking_speaker_label(str(label)):
+            continue
+
+        db_id = segment.get("speaker_db_id")
+        key: Union[str, int] = int(db_id) if db_id is not None else str(label)
+        if key in ignored or str(key) in ignored:
+            continue
+
+        speaker_keys.add(key)
+
+    return len(speaker_keys)
 
 
 def get_unique_speakers(segments: List[Dict[str, Any]]) -> Dict[Union[str, int], str]:

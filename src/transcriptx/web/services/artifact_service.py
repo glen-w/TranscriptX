@@ -178,16 +178,71 @@ class ArtifactService:
         zip_path = temp_dir / f"{run_root.name}_export.zip"
         with tempfile.TemporaryDirectory() as staging:
             staging_dir = Path(staging)
+            copied: List[tuple[Artifact, Path]] = []
             for artifact in selected:
                 path = ArtifactService.resolve_artifact_source_path(run_root, artifact)
                 if path is None or not path.exists():
                     continue
                 prefix = Path(artifact.id[:16]) if artifact.storage_root else Path()
-                target = staging_dir / prefix / artifact.rel_path
+                rel = prefix / artifact.rel_path
+                target = staging_dir / rel
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, target)
+                copied.append((artifact, rel))
+            ArtifactService._write_export_index(staging_dir, run_root.name, copied)
             shutil.make_archive(str(zip_path).replace(".zip", ""), "zip", staging_dir)
         return zip_path
+
+    @staticmethod
+    def _write_export_index(
+        staging_dir: Path, run_title: str, copied: List["tuple[Artifact, Path]"]
+    ) -> None:
+        """Write a self-contained ``index.html`` approximating the GUI.
+
+        Renders a basic transcript displayer plus an unfiltered charts gallery
+        for the copied artifacts. The transcript and charts sections fail
+        independently; the file is written when either section is produced and
+        skipped only when neither is. Never raises: index generation must not
+        break the raw-file export.
+        """
+        try:
+            from transcriptx.utils.charts_export import _ExportableItem
+            from transcriptx.utils.export_index import build_export_index_html
+
+            transcript_data: Optional[Dict] = None
+            for artifact, rel in copied:
+                if artifact.kind == "transcript" and artifact.rel_path.endswith(
+                    ".json"
+                ):
+                    try:
+                        transcript_data = json.loads(
+                            (staging_dir / rel).read_text(encoding="utf-8")
+                        )
+                    except Exception:
+                        transcript_data = None
+                    break
+
+            chart_items: List[_ExportableItem] = []
+            for artifact, rel in copied:
+                if artifact.kind in {"chart_static", "chart_dynamic"}:
+                    chart_items.append(
+                        _ExportableItem(
+                            artifact=artifact,
+                            source_path=staging_dir / rel,
+                            export_rel_path=rel,
+                            size_bytes=0,
+                        )
+                    )
+
+            html_payload = build_export_index_html(
+                run_title=run_title,
+                transcript_data=transcript_data,
+                chart_items=chart_items,
+            )
+            if html_payload:
+                (staging_dir / "index.html").write_text(html_payload, encoding="utf-8")
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.warning("Failed to generate export index.html: %s", exc)
 
     @staticmethod
     def read_for_download(path: Path, max_size: int = 500_000_000) -> bytes:

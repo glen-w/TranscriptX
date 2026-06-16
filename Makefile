@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-optional docker-smoke run clean-test-artifacts
+.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-release-only docker-smoke run clean-test-artifacts
 
 help:
 	@echo "TranscriptX Makefile"
@@ -20,7 +20,10 @@ help:
 	@echo "  test-heavy       Run explicit heavy profile (excludes quarantined)"
 	@echo "  test-heavy-all   Run explicit heavy profile (includes quarantined)"
 	@echo "  test-contracts   Run offline contract tests"
+	@echo "  test-integration Run integration + integration_core + integration_extended lane"
 	@echo "  test-all         Run all tests except quarantined"
+	@echo "  test-coverage    Default fast suite + coverage (fail_under from .coveragerc)"
+	@echo "  test-release-only  Run release-only packaging/install smoke"
 	@echo "  docker-smoke     Run Docker first-run smoke test (build + validate/canonicalize/analyze)"
 	@echo ""
 	@echo "Maintenance:"
@@ -50,11 +53,11 @@ clean-test-artifacts:
 
 test-smoke:
 	@echo "Running CI smoke gate..."
-	@pytest -m smoke
+	@pytest -q tests/smoke -m "smoke and not quarantined and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not release_only"
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -m "not integration and not slow and not requires_models and not requires_docker and not requires_ffmpeg and not requires_api and not quarantined"
+	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"
 
 test-heavy:
 	@echo "Running heavy profile (excluding quarantined)..."
@@ -72,6 +75,10 @@ test-integration-core:
 	@echo "Running integration core tests..."
 	@pytest -m integration_core
 
+test-integration:
+	@echo "Running integration gate (integration/integration_core/integration_extended)..."
+	@pytest -q tests/integration -m "not quarantined and (integration or integration_core or integration_extended) and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not release_only"
+
 test-optional:
 	@echo "Running optional capability tests (ffmpeg, docker, models, slow, integration)..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "slow or requires_models or requires_docker or requires_ffmpeg or requires_api or integration"
@@ -79,6 +86,15 @@ test-optional:
 test-all:
 	@echo "Running all tests except quarantined..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "not quarantined"
+
+test-coverage:
+	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
+	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
+		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"
+
+test-release-only:
+	@echo "Running release-only packaging smoke..."
+	@pytest -q tests/release -m "release_only and not quarantined"
 
 docker-smoke:
 	@echo "Running Docker first-run smoke test..."

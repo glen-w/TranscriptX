@@ -143,6 +143,7 @@ def _format_merge_row_meta(path: Path) -> str:
 # ---------------------------------------------------------------------------
 
 
+@st.fragment
 def _render_section_1(recordings: List[Path]) -> None:
     st.subheader("1. Select and order files")
     st.caption(
@@ -213,7 +214,10 @@ def _render_section_1(recordings: List[Path]) -> None:
                     merged_order[i],
                 )
                 st.session_state[_KEY_ORDERED_PATHS] = merged_order
-                st.rerun()
+                try:
+                    st.rerun(scope="fragment")
+                except TypeError:
+                    st.rerun()
         with col_down:
             if i < len(merged_order) - 1 and st.button(
                 "↓", key=f"merge_down_{i}", help="Move down"
@@ -223,7 +227,10 @@ def _render_section_1(recordings: List[Path]) -> None:
                     merged_order[i],
                 )
                 st.session_state[_KEY_ORDERED_PATHS] = merged_order
-                st.rerun()
+                try:
+                    st.rerun(scope="fragment")
+                except TypeError:
+                    st.rerun()
 
     _render_rename_section(merged_order, all_labels)
 

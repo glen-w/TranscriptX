@@ -2,12 +2,14 @@
 
 ## Quick commands (single source of truth)
 
-- `pytest` (or `make test-fast`) — **default**: fast core only (no ffmpeg, docker, models, integration, slow)
+- `pytest` (or `make test-fast`) — **default**: fast lane only (excludes smoke, release_only, integration, integration_core, integration_extended, slow, and requires_* capability markers)
 - `make test-smoke` — CI gate (smoke tests only)
 - `make test-fast` — same as default `pytest` (fast core)
 - `make test-heavy` — heavy profile, excludes quarantined by default
 - `make test-heavy-all` — heavy profile including quarantined
 - `make test-contracts` — offline contract tests (output shape only)
+- `make test-integration` — integration lane (`integration` / `integration_core` / `integration_extended`) excluding external-capability markers
+- `make test-release-only` — release-only packaging/install smoke
 - `make test-optional` — run only heavy/optional tests (ffmpeg, docker, models, slow, integration)
 - `make test-all` — full suite including optional and quarantined (may be slow)
 
@@ -66,7 +68,10 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 ## Marker policy matrix
 
-- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`, `integration`.
+- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`.
+- **Smoke lane (`make test-smoke`)**: `tests/smoke` only, requires `smoke` marker, excludes `release_only` and external-capability markers.
+- **Integration lane (`make test-integration`)**: `tests/integration` only, includes `integration` or `integration_core` or `integration_extended`, excludes `release_only` and external-capability markers.
+- **Release-only lane (`make test-release-only`)**: `tests/release` only, includes `release_only`.
 - **Heavy profile (`make test-heavy`)**: includes `heavy`, excludes `quarantined`.
 - **Heavy all (`make test-heavy-all`)**: includes all `heavy` tests, including `quarantined`.
 - **Optional capability profile (`make test-optional`)**: historical pytest marker bucket (`slow` or `requires_*` or `integration`), independent of explicit `heavy`—not related to runtime “legacy” code paths.

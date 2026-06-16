@@ -22,6 +22,7 @@ from transcriptx.io.import_managed.sidecar import (
     write_initial_sidecar,
 )
 from transcriptx.io.originals_archive import disambiguate_originals_archive_path
+from transcriptx.io.speaker_map_inheritance import apply_speaker_map_on_import
 
 
 @dataclass(frozen=True)
@@ -92,9 +93,7 @@ def run_managed_import_workflow(
     output_dir = Path(DIARISED_TRANSCRIPTS_DIR)
     output_dir.mkdir(parents=True, exist_ok=True)
     archive_basename = (
-        Path(logical_upload_basename).name
-        if logical_upload_basename
-        else staging.name
+        Path(logical_upload_basename).name if logical_upload_basename else staging.name
     )
     canonical_stem = Path(archive_basename).stem
     target_json = output_dir / f"{canonical_stem}.json"
@@ -130,6 +129,8 @@ def run_managed_import_workflow(
                 delete_staging=delete_staging_on_success,
                 skip_unlink_if_same_as=output_dir / rel,
             )
+            # Canonical hook: transcriptx.io.speaker_map_inheritance.apply_speaker_map_on_import
+            apply_speaker_map_on_import(target_json)
             return ManagedImportResult(
                 import_id=import_id,
                 imported_at=imported_at,
@@ -178,6 +179,8 @@ def run_managed_import_workflow(
             delete_staging=delete_staging_on_success,
             skip_unlink_if_same_as=archive_dest,
         )
+        # Canonical hook: transcriptx.io.speaker_map_inheritance.apply_speaker_map_on_import
+        apply_speaker_map_on_import(json_path)
         return ManagedImportResult(
             import_id=import_id,
             imported_at=imported_at,

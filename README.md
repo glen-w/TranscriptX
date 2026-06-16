@@ -4,7 +4,7 @@ TranscriptX is a local-first transcript analysis toolkit. It treats transcripts 
 
 ## Why TranscriptX
 
-Most transcript tools are either cloud SaaS (Otter, Fireflies), transcription tools (Whisper, AssemblyAI), or research libraries with little UX. TranscriptX focuses on analysis. It is designed to:
+Most transcript tools are either cloud SaaS (Otter, Fireflies), transcription tools (Whisper, AssemblyAI), or research libraries with limited UX. TranscriptX focuses on analysis. It is designed to:
 
 - analyze transcripts locally
 - run modular analysis pipelines
@@ -19,7 +19,6 @@ After install, the `transcriptx` console script starts the Streamlit app (same a
 
 - Supported flags: `--host`, `--port`
 - Env overrides: `TRANSCRIPTX_HOST`, `TRANSCRIPTX_PORT`
-- No analysis subcommands are supported from `transcriptx` itself.
 
 ### Secondary: Python API
 
@@ -73,6 +72,8 @@ TranscriptX does not perform audio transcription. Bring your own transcript file
 
 **Docker (recommended):** No local Python required.
 
+Copy `.env.example` to `.env` and set **`HOST_RECORDINGS_DIR`** to an absolute path on your machine **outside this repository** (your source-audio folder). Compose mounts it read-only at `/mnt/recordings`.
+
 ```bash
 docker build -t transcriptx:latest .
 docker compose up transcriptx-web
@@ -84,12 +85,22 @@ Then open http://localhost:8501 in your browser.
 
 For detailed installation, environment variables, NLP setup, and troubleshooting, see [docs/runtime/installation.md](docs/runtime/installation.md).
 
+Settings precedence note: effective configuration resolves by layer strength as
+Environment > Run override (or Draft override when no run is selected) >
+Project config > Defaults. Current source labels in the settings UI keep draft
+overrides under the run-layer source model.
+
+## Canonical sample transcript (development)
+
+For automated tests, integration checks, and local experiments, the repository’s shared minimal fixture is **`tests/fixtures/mini_transcript.json`** (short dialogue, schema v1.0). The Docker first-run script **`scripts/docker-smoke-test.sh`** instead writes a tiny inline example under **`data/transcripts/`** inside your configured data tree; use that flow when validating containers and compose mounts.
+
 ## Output artifacts (high-level)
 
 Each analysis run writes structured artifacts under an outputs directory (per-run folders, manifests, and module subdirectories). Full layout and schema details live in:
 
 - `docs/contracts/output-contract-v1.md` — output layout, naming, manifests, and run results.
 - `docs/run_outcome_contract.md` — run outcome statuses and precedence rules.
+- `docs/dev/pipeline_contracts.md` — core pipeline layering, lifecycle, events, and cleanup invariants.
 
 ## Public surfaces
 

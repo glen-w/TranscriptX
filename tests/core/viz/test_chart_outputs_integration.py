@@ -37,6 +37,34 @@ def test_acts_chart_specs_render() -> None:
     fig = render_mpl(spec_bar)
     assert fig is not None
 
+    # Grouped bars: categories only on each series (spec.categories empty)
+    spec_grouped = BarCategoricalSpec(
+        viz_id="voice.rhythm_compare.global",
+        module="voice",
+        name="rhythm_compare",
+        scope="global",
+        chart_intent="bar_categorical",
+        title="Rhythm Indices by Speaker",
+        x_label="Speaker",
+        y_label="Index value",
+        series=[
+            {
+                "name": "nPVI_voiced",
+                "categories": ["Alice", "Bob", "Carol"],
+                "values": [100.0, 88.0, 92.0],
+            },
+            {
+                "name": "nPVI_silence",
+                "categories": ["Alice", "Bob", "Carol"],
+                "values": [94.0, 91.0, 91.0],
+            },
+        ],
+    )
+    fig_grouped = render_mpl(spec_grouped)
+    assert fig_grouped is not None
+    ax_g = fig_grouped.axes[0]
+    assert [t.get_text() for t in ax_g.get_xticklabels()] == ["Alice", "Bob", "Carol"]
+
     # Temporal (acts over time)
     spec_temporal = LineTimeSeriesSpec(
         viz_id="acts.acts_temporal.speaker",

@@ -50,12 +50,23 @@ class TranscriptOutputAnalysis(AnalysisModule):
             results: Analysis results dictionary
             output_service: OutputService instance
         """
-        # Generate transcript output using utility function
+        # Use segments from the pipeline context (speaker sidecar already applied
+        # in PipelineContext). Reloading from disk would drop mapped names because
+        # load_segments() does not merge the sidecar.
         from transcriptx.core.utils.transcript_output import (
+            generate_human_friendly_transcript,
             generate_human_friendly_transcript_from_file,
         )
 
-        generate_human_friendly_transcript_from_file(output_service.transcript_path)
+        segments = results.get("segments")
+        if segments is not None:
+            generate_human_friendly_transcript(
+                segments,
+                output_service.base_name,
+                output_service.transcript_dir,
+            )
+        else:
+            generate_human_friendly_transcript_from_file(output_service.transcript_path)
 
 
 __all__ = ["TranscriptOutputAnalysis"]

@@ -13,6 +13,10 @@ from transcriptx.core.corrections.models import (
     Decision,
     Occurrence,
 )
+from transcriptx.services.corrections_studio.review_target import (
+    normalize_review_target_text,
+    resolve_effective_right,
+)
 from transcriptx.services.corrections_studio.schema import (
     ApplyScope,
     ReviewAction,
@@ -62,7 +66,9 @@ def _coerce_engine_kind(kind: str) -> str:
     return kind if kind in valid else "consistency"
 
 
-def _studio_candidate_to_engine(sc: StudioCandidate) -> Candidate:
+def _studio_candidate_to_engine(
+    sc: StudioCandidate, *, proposed_right: str
+) -> Candidate:
     occs = []
     for o in sc.occurrences:
         span_t: Optional[Tuple[int, int]] = o.span
@@ -81,7 +87,7 @@ def _studio_candidate_to_engine(sc: StudioCandidate) -> Candidate:
         candidate_id=sc.candidate_id,
         rule_id=sc.rule_id,
         proposed_wrong=sc.wrong_text,
-        proposed_right=sc.right_text,
+        proposed_right=proposed_right,
         kind=_coerce_engine_kind(sc.kind),  # type: ignore[arg-type]
         confidence=sc.confidence,
         occurrences=occs,
@@ -134,7 +140,17 @@ def compile_studio_to_engine_apply(
         sc = by_id.get(cand_id)
         if not sc:
             continue
-        engine_candidates.append(_studio_candidate_to_engine(sc))
+        proposed_right = resolve_effective_right(
+            candidate_right_text=sc.right_text,
+            review_target_normalized=normalize_review_target_text(
+                rec.review_target_text
+            ),
+        )
+        if normalize_review_target_text(proposed_right) is None:
+            proposed_right = sc.right_text
+        engine_candidates.append(
+            _studio_candidate_to_engine(sc, proposed_right=proposed_right)
+        )
 
         new_rule = None
         if (

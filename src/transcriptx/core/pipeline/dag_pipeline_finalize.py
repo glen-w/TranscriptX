@@ -11,31 +11,47 @@ def finalize_execution_results(
     results: Dict[str, Any],
     execution_order: List[str],
     aborted: bool,
+    setup_failed: bool,
     total_modules: int,
     ev_completed: int,
     ev_skipped: int,
     ev_failed: int,
     emit,
+    abort_error: str | None = None,
+    setup_error: str | None = None,
 ) -> Dict[str, Any]:
-    """Finalize result payload and emit terminal run event when applicable."""
+    """Finalize result payload and emit exactly one terminal run event."""
     results["end_time"] = time.time()
     results["duration"] = results["end_time"] - results["start_time"]
     if "execution_order" not in results:
         results["execution_order"] = execution_order
 
-    if not aborted:
-        has_errors = bool(results.get("errors"))
+    terminal_event = "run_completed"
+    message = f"Pipeline complete: {ev_completed} run, {ev_skipped} skipped, {ev_failed} failed"
+    error_payload = None
+    if setup_failed:
+        terminal_event = "run_failed"
+        error_payload = setup_error
+        message = "Pipeline failed during setup"
+    elif aborted:
+        terminal_event = "run_failed"
+        error_payload = abort_error
+        message = "Pipeline aborted"
+
+    try:
         emit(
             {
-                "event": "run_completed" if not has_errors else "run_completed",
+                "event": terminal_event,
                 "total": total_modules,
                 "completed": ev_completed,
                 "skipped": ev_skipped,
                 "failed": ev_failed,
                 "pct": 100.0,
-                "message": (
-                    f"Pipeline complete: {ev_completed} run, {ev_skipped} skipped, {ev_failed} failed"
-                ),
+                "message": message,
+                "error": error_payload,
             }
         )
+    except Exception:
+        # Best-effort by contract: sink failures must not break result finalization.
+        pass
     return results

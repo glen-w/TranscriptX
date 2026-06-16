@@ -17,6 +17,8 @@ from transcriptx.core.pipeline.run_outcome_truth import (
 
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.module_ui_groups import module_sort_key, order_module_ids
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 
 _OVERVIEW_HELP_PREREQ = "**Overview** shows artifact counts, module summaries, and export options for one run."
@@ -188,7 +190,9 @@ def render_overview() -> None:
 
     # Create DataFrame for table display
     table_data = []
-    for module, stats in sorted(module_map.items()):
+    for module, stats in sorted(
+        module_map.items(), key=lambda item: module_sort_key(item[0])
+    ):
         table_data.append(
             {
                 "Module": module,
@@ -242,8 +246,12 @@ def render_overview() -> None:
     )
     selected_artifacts = artifacts
     if export_mode == "Module":
-        module_options = sorted({a.module for a in artifacts if a.module})
-        module_choice = st.selectbox("Module", module_options)
+        module_options = order_module_ids({a.module for a in artifacts if a.module})
+        module_choice = st.selectbox(
+            "Module",
+            module_options,
+            format_func=format_module_option,
+        )
         selected_artifacts = [a for a in artifacts if a.module == module_choice]
     elif export_mode == "Speaker":
         speaker_options = sorted({a.speaker for a in artifacts if a.speaker})

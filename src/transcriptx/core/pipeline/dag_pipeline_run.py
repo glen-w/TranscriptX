@@ -5,7 +5,58 @@ from __future__ import annotations
 from typing import Any, Optional, Tuple
 
 from transcriptx.core.pipeline.pipeline_context import PipelineContext
-from transcriptx.core.utils.speaker_extraction import named_speaker_count_for_path
+from transcriptx.core.utils.speaker_extraction import (
+    count_turn_taking_speakers,
+    named_speaker_count_for_path,
+)
+
+
+def gating_turn_taking_speaker_count(
+    context: Optional[PipelineContext],
+) -> Optional[int]:
+    """
+    Distinct turn-taking speaker count for module skip gating.
+
+    Counts diarization-style labels (e.g. ``SPEAKER_00``) as speakers, unlike
+    :func:`gating_named_speaker_count`. Returns ``None`` when segments are not
+    available so callers fail open (do not skip).
+    """
+    if context is None:
+        return None
+    try:
+        return count_turn_taking_speakers(context.get_segments())
+    except Exception:
+        return None
+
+
+def speaker_gate_skip_reason(
+    module_info: Any,
+    *,
+    named_speaker_count: Optional[int],
+    turn_taking_speaker_count: Optional[int],
+) -> Optional[str]:
+    """
+    Return a skip reason if a module fails its speaker-count gate, else ``None``.
+
+    Modules flagged with ``gate_on_turn_taking_speakers`` are gated on the count
+    of distinct turn-taking speakers (diarization labels allowed); all other
+    modules are gated on the count of human-named speakers.
+    """
+    from transcriptx.core.pipeline.module_registry import (
+        effective_min_named_speakers,
+    )
+
+    min_required = effective_min_named_speakers(module_info)
+    if getattr(module_info, "gate_on_turn_taking_speakers", False):
+        count = turn_taking_speaker_count
+        reason = f"requires at least {min_required} speakers"
+    else:
+        count = named_speaker_count
+        reason = f"requires at least {min_required} named speakers"
+
+    if count is not None and count < min_required:
+        return reason
+    return None
 
 
 def gating_named_speaker_count(

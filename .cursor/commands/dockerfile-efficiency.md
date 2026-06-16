@@ -27,7 +27,7 @@ Before doing anything else, run the **backup** custom command (`# backup`). Wait
 - **Stages:** Keep build tools only in builder stage (gcc, make, rust, headers). In runtime stage, install only what you need (no compilers).
 - **apt:** Add `--no-install-recommends` for apt installs. Always clean apt cache in the same layer: `rm -rf /var/lib/apt/lists/*`.
 - **pip:** Use `pip install --no-cache-dir ...`. Do not copy a local venv into the image.
-- **Current setup:** Note which Dockerfiles exist (e.g. `Dockerfile`, `Dockerfile.ui`). Document role of each; remove or update references to removed variants (e.g. Gradio).
+- **Current setup:** Note which Dockerfiles exist (e.g. `Dockerfile`, `Dockerfile.ui`). Document role of each; remove or update references to removed variants.
 
 ---
 

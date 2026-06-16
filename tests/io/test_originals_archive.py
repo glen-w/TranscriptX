@@ -18,9 +18,7 @@ def test_reuses_path_when_staging_is_same_file(tmp_path: Path) -> None:
     originals.mkdir()
     staging = originals / "meet.srt"
     staging.write_text("x", encoding="utf-8")
-    p = disambiguate_originals_archive_path(
-        "meet.srt", originals, staging_path=staging
-    )
+    p = disambiguate_originals_archive_path("meet.srt", originals, staging_path=staging)
     assert p == staging
 
 
@@ -31,7 +29,5 @@ def test_numeric_suffix_only_on_real_collision(tmp_path: Path) -> None:
     staging = tmp_path / "staging" / "meet.srt"
     staging.parent.mkdir()
     staging.write_text("new", encoding="utf-8")
-    p = disambiguate_originals_archive_path(
-        "meet.srt", originals, staging_path=staging
-    )
+    p = disambiguate_originals_archive_path("meet.srt", originals, staging_path=staging)
     assert p == originals / "meet (1).srt"

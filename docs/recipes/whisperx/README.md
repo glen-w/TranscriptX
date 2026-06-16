@@ -59,6 +59,7 @@ Every former `TranscriptionConfig` field is mapped below; if you add a new knob,
 
 ```bash
 cd docs/recipes/whisperx
+export HOST_RECORDINGS_DIR=/path/to/your/recordings   # host folder outside the git clone (required)
 cp whisperx.env.example whisperx.env
 # Edit whisperx.env and set HF_TOKEN
 docker compose -f docker-compose.whisperx.yml up -d
@@ -70,8 +71,9 @@ docker compose -f docker-compose.whisperx.yml up -d
 Override the image entrypoint and run `whisperx` explicitly in a shell so the audio path and flags are passed correctly:
 
 ```bash
+export HOST_RECORDINGS_DIR=/path/to/your/recordings   # outside the git clone
 docker run --rm --entrypoint /bin/bash \
-  -v "$(pwd)/data/recordings:/data/input:ro" -v "$(pwd)/data/transcripts:/data/output" \
+  -v "$HOST_RECORDINGS_DIR:/data/input:ro" -v "$(pwd)/data/transcripts:/data/output" \
   --env-file whisperx.env \
   ghcr.io/jim60105/whisperx:no_model \
   -c "whisperx /data/input/your_audio.wav --output_dir /data/output --language en --diarize"

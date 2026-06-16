@@ -7,10 +7,18 @@ ordering to catch regressions introduced by finalization and preflight checks.
 
 import hashlib
 import json
+from pathlib import Path
+from typing import Any
 
 import pytest
 
+from transcriptx.core.pipeline import pipeline as pipeline_module
 from transcriptx.core.pipeline.dag_pipeline import DAGPipeline
+from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
+from transcriptx.core.utils import output_standards as output_standards_module
+from transcriptx.core.utils import paths as paths_module
+from transcriptx.core.utils import transcript_output as transcript_output_module
+from transcriptx.io.file_io import convert_np
 from transcriptx.core.pipeline.module_registry import ModuleRegistry
 from transcriptx.core.pipeline.pipeline_context import (
     PipelineContext,
@@ -28,6 +36,92 @@ def _v1_transcript_dict(segments: list) -> dict:
         },
         "segments": segments,
     }
+
+
+def _patch_pipeline_output_roots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Isolate pipeline outputs under tmp_path.
+
+    Keep in sync with ``tests/integration/core/test_pipeline_risk_integration._patch_output_roots``.
+    """
+    outputs_root = tmp_path / "outputs"
+    transcripts_root = tmp_path / "transcripts"
+    outputs_root.mkdir()
+    transcripts_root.mkdir()
+    monkeypatch.setenv("TRANSCRIPTX_DISABLE_DOWNLOADS", "1")
+    monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
+    monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(outputs_root / "groups"))
+    monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
+    monkeypatch.setattr(
+        output_standards_module,
+        "DIARISED_TRANSCRIPTS_DIR",
+        str(transcripts_root),
+    )
+    monkeypatch.setattr(transcript_output_module, "OUTPUTS_DIR", str(outputs_root))
+    monkeypatch.setattr(
+        transcript_output_module,
+        "DIARISED_TRANSCRIPTS_DIR",
+        str(transcripts_root),
+    )
+    monkeypatch.setattr(pipeline_module, "OUTPUTS_DIR", str(outputs_root))
+
+
+_VOLATILE_KEYS = frozenset(
+    {
+        "run_id",
+        "output_dir",
+        "output_directory",
+        "duration",
+        "summary",
+        "transcript_key",
+        "started_at",
+        "finished_at",
+        "generated_at",
+        "run_metadata",
+    }
+)
+
+
+def _prune_volatile(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {
+            k: _prune_volatile(v) for k, v in obj.items() if k not in _VOLATILE_KEYS
+        }
+    if isinstance(obj, list):
+        return [_prune_volatile(v) for v in obj]
+    return obj
+
+
+def _normalized_pipeline_payload(result: dict) -> dict:
+    """Build a JSON-safe dict for comparing two pipeline runs.
+
+    This is a semantic determinism fingerprint for tests only. It is not a persistence
+    schema, run artifact contract, or public API guarantee.
+    """
+    payload = {
+        "selected_modules": result.get("selected_modules"),
+        "modules_run": result.get("modules_run"),
+        "execution_order": result.get("execution_order"),
+        "errors": result.get("errors"),
+        "module_results": result.get("module_results"),
+    }
+    cleaned = _prune_volatile(payload)
+    return json.loads(json.dumps(cleaned, sort_keys=True, default=convert_np))
+
+
+def _stable_pipeline_fingerprint(result: dict) -> str:
+    normalized = _normalized_pipeline_payload(result)
+    return hashlib.sha256(
+        json.dumps(normalized, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def _mini_transcript_fixture_path() -> Path:
+    path = Path(__file__).resolve().parents[1] / "fixtures" / "mini_transcript.json"
+    if not path.exists():
+        pytest.skip("fixtures/mini_transcript.json not found")
+    return path
 
 
 class TestPreflightImport:
@@ -161,70 +255,34 @@ class TestPreflightImport:
         ), "Valid module should be resolved"
 
 
-@pytest.mark.skip(
-    reason="run_analysis_pipeline return type changed — result is not directly JSON-serialisable; "
-    "test needs updating to use the new result model before it can be activated"
-)
 class TestDeterministicOrdering:
     """Tests for deterministic execution ordering."""
 
-    def test_same_inputs_same_outputs_hash(self, tmp_path):
-        """Same inputs produce same outputs (hash comparison)."""
-        # Create a simple transcript fixture
-        transcript_file = tmp_path / "test_transcript.json"
-        transcript_data = {
-            "segments": [
-                {
-                    "start": 0.0,
-                    "end": 5.0,
-                    "speaker": "SPEAKER_00",
-                    "text": "Hello, this is a test.",
-                }
-            ]
-        }
-        transcript_file.write_text(json.dumps(transcript_data))
+    @pytest.mark.integration_core
+    def test_same_inputs_same_outputs_hash(self, tmp_path, monkeypatch):
+        """Same inputs produce the same normalized semantic pipeline fingerprint twice."""
+        # Regression conftest replaces root clean_environment; allow fixture transcripts.
+        monkeypatch.setenv("TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS", "1")
+        _patch_pipeline_output_roots(tmp_path, monkeypatch)
+        transcript_path = str(_mini_transcript_fixture_path())
 
-        # Run pipeline twice with same inputs
-        from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
+        result1 = run_analysis_pipeline(
+            transcript_path=transcript_path,
+            selected_modules=["stats"],
+            persist=False,
+        )
+        result2 = run_analysis_pipeline(
+            transcript_path=transcript_path,
+            selected_modules=["stats"],
+            persist=False,
+        )
 
-        try:
-            result1 = run_analysis_pipeline(
-                transcript_path=str(transcript_file),
-                selected_modules=["stats"],  # Lightweight module
-            )
-
-            result2 = run_analysis_pipeline(
-                transcript_path=str(transcript_file),
-                selected_modules=["stats"],
-            )
-
-            # Hash outputs (excluding timestamps and other non-deterministic fields)
-            def normalize_for_hash(data):
-                """Remove non-deterministic fields."""
-                if isinstance(data, dict):
-                    return {
-                        k: normalize_for_hash(v)
-                        for k, v in data.items()
-                        if k
-                        not in ["execution_time", "timestamp", "start_time", "end_time"]
-                    }
-                elif isinstance(data, list):
-                    return [normalize_for_hash(item) for item in data]
-                else:
-                    return data
-
-            hash1 = hashlib.sha256(
-                json.dumps(normalize_for_hash(result1), sort_keys=True).encode()
-            ).hexdigest()
-            hash2 = hashlib.sha256(
-                json.dumps(normalize_for_hash(result2), sort_keys=True).encode()
-            ).hexdigest()
-
-            # Outputs should be the same (within tolerance for floating point)
-            assert hash1 == hash2, "Outputs differ between runs"
-        except Exception as e:
-            # Skip if pipeline setup fails (may need more setup)
-            pytest.skip(f"Pipeline setup failed: {e}")
+        n1 = _normalized_pipeline_payload(result1)
+        n2 = _normalized_pipeline_payload(result2)
+        assert n1 == n2
+        assert _stable_pipeline_fingerprint(result1) == _stable_pipeline_fingerprint(
+            result2
+        )
 
     def test_deterministic_execution_order(self):
         """Execution order is deterministic (same modules, same order)."""

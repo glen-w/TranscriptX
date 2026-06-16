@@ -49,6 +49,28 @@ def render_page_shell(
                     st.rerun()
 
 
-def render_page_help(help_md: str | None) -> None:
-    """Page help section removed from GUI."""
-    return
+def render_page_help(help_md: str | None, key_suffix: str = "") -> None:
+    """Render collapsed page-level help below main content.
+
+    No-op when ``help_md`` is falsy. Wrapped in the ``.tx-page-help`` container so
+    the shared CSS in ``shell.py`` styles the expander more quietly than body text.
+    """
+    if not help_md:
+        return
+
+    st.markdown('<div class="tx-page-help">', unsafe_allow_html=True)
+    try:
+        if key_suffix:
+            expander = st.expander(
+                "About this page",
+                expanded=False,
+                key=f"page_help{key_suffix}",  # type: ignore[call-arg]
+            )
+        else:
+            expander = st.expander("About this page", expanded=False)
+    except TypeError:
+        # Older Streamlit builds do not accept ``key`` on st.expander.
+        expander = st.expander("About this page", expanded=False)
+    with expander:
+        st.markdown(help_md)
+    st.markdown("</div>", unsafe_allow_html=True)

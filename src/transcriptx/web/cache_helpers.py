@@ -44,8 +44,10 @@ def clear_transcript_listing_caches() -> None:
 @st.cache_data(show_spinner=False)
 def cached_get_available_modules() -> list[str]:
     from transcriptx.app.controllers.analysis_controller import AnalysisController
+    from transcriptx.web.module_ui_groups import order_module_ids
 
-    return AnalysisController().get_available_modules()
+    raw = AnalysisController().get_available_modules()
+    return order_module_ids(raw)
 
 
 @st.cache_data(show_spinner=False)
@@ -76,6 +78,7 @@ _MODULE_INFO_CACHE_ATTRS = (
     "requires_audio",
     "requires_multiple_speakers",
     "min_named_speakers",
+    "gate_on_turn_taking_speakers",
     "supports_audio",
     "supports_group",
     "output_namespace",
@@ -88,6 +91,7 @@ _MODULE_INFO_CACHE_ATTRS = (
 @st.cache_data(show_spinner=False)
 def cached_get_module_info_list() -> list[dict]:
     from transcriptx.app.module_resolution import get_module_info_list
+    from transcriptx.web.module_ui_groups import order_module_ids
 
     raw = get_module_info_list()
     result = []
@@ -103,6 +107,15 @@ def cached_get_module_info_list() -> list[dict]:
                 v = sorted(v) if v else []
             d[k] = v
         result.append(d)
+    names = [row["name"] for row in result if row.get("name")]
+    order = order_module_ids(names)
+    rank = {name: i for i, name in enumerate(order)}
+    result.sort(
+        key=lambda row: (
+            rank.get(row.get("name"), 10**9),
+            row.get("name") or "",
+        )
+    )
     return result
 
 

@@ -15,12 +15,42 @@ from transcriptx.core.utils.paths import (
     OUTPUTS_DIR,
 )
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.pipeline.manifest_loader import load_artifact_manifest
 
 logger = get_logger()
 
 
 class FileService:
     """Service for file I/O operations."""
+
+    @staticmethod
+    def _has_user_artifacts(run_dir: Path) -> bool:
+        manifest_path = run_dir / "manifest.json"
+        if not manifest_path.is_file():
+            return False
+        try:
+            manifest = load_artifact_manifest(manifest_path)
+        except Exception:
+            return False
+        artifacts = manifest.get("artifacts")
+        if not isinstance(artifacts, list) or not artifacts:
+            return False
+        for artifact in artifacts:
+            if not isinstance(artifact, dict):
+                continue
+            rel_path = str(artifact.get("rel_path") or "")
+            if (
+                rel_path
+                and not rel_path.startswith(".transcriptx/")
+                and rel_path not in {"run_results.json", "run_report.json"}
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _is_viewable_run(run_dir: Path) -> bool:
+        """Only index runs that produced at least one user-visible artifact."""
+        return FileService._has_user_artifacts(run_dir)
 
     @staticmethod
     def _resolve_session_dir(session_id: str) -> Path:
@@ -309,6 +339,8 @@ class FileService:
             total_modules = get_total_module_count()
             for run_dir in transcript_dir.iterdir():
                 if not run_dir.is_dir() or run_dir.name.startswith("."):
+                    continue
+                if not FileService._is_viewable_run(run_dir):
                     continue
                 try:
                     session_id = f"{transcript_dir.name}/{run_dir.name}"

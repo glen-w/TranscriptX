@@ -48,6 +48,7 @@ class TestSummaryExtractors:
             "interactions",
             "semantic_similarity",
             "semantic_similarity_advanced",
+            "semantic_similarity_v2",
             "entity_sentiment",
             "understandability",
             "temporal_dynamics",
@@ -100,6 +101,26 @@ class TestSummaryExtractors:
 
         assert "Emotions Detected" in summary["key_metrics"]
         assert "Dominant Emotion" in summary["key_metrics"]
+
+    def test_semantic_similarity_v2_extractor(self):
+        """Test semantic_similarity_v2 extractor against v2 output shape."""
+        extractor = get_extractor("semantic_similarity_v2")
+        assert extractor is not None
+
+        data = {
+            "speaker_repetitions": {
+                "Alice": [{"similarity": 0.9}, {"similarity": 0.8}],
+            },
+            "cross_speaker_repetitions": [{"similarity": 0.7}],
+            "total_repetitions": 3,
+        }
+        summary = {"key_metrics": {}, "highlights": []}
+        extractor(data, summary)
+
+        assert summary["key_metrics"]["Self Repetitions"] == 2
+        assert summary["key_metrics"]["Cross-Speaker Repetitions"] == 1
+        assert summary["key_metrics"]["Total Repetitions"] == 3
+        assert summary["key_metrics"]["Average Similarity"] == "0.80"
 
     def test_generic_extractor(self):
         """Test generic extractor as fallback."""

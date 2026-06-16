@@ -40,8 +40,10 @@ docker compose -f docker-compose.whisperx.yml up -d
 **Single `docker run` (snippet):**
 
 ```bash
+# Use a host audio folder outside the repo (same idea as HOST_RECORDINGS_DIR in compose).
+export HOST_RECORDINGS_DIR=/path/to/your/recordings
 docker run --rm \
-  -v "$(pwd)/data/recordings:/data/input:ro" \
+  -v "$HOST_RECORDINGS_DIR:/data/input:ro" \
   -v "$(pwd)/data/transcripts:/data/output" \
   --env-file whisperx.env \
   ghcr.io/jim60105/whisperx:no_model \
@@ -88,6 +90,28 @@ The managed workflow detects the format, normalizes speakers (missing or empty â
 Downstream analysis APIs (for example `AnalysisRequest` + `run_analysis`) assume the input `transcript_path` refers to a library-valid, canonically validated transcript produced by this workflow or an equivalent canonical loader.
 
 Then analyze from the web interface or via `AnalysisRequest` + `run_analysis` (see [generated/cli.md](generated/cli.md)).
+
+## Multi-language variants
+
+Import alternate-language versions of an existing transcript using a flat filename suffix in the same directory:
+
+- Base (default): `meeting.json`
+- French variant: `meeting_fr.json`
+- English explicit variant: `meeting_en.json` (optional; `meeting.json` remains the conventional default English path)
+
+**Workflow:**
+
+1. Import and identify speakers on the base transcript first (Speaker ID page, or segment-derived names on import).
+2. Import the language variant via the same managed import path (web **Import Transcript** or `run_managed_import_workflow`).
+3. On import, speaker-map inheritance runs automatically when the base has a speaker-map sidecar and the variant does not yet.
+
+**Requirements:** variant segments must use the same diarized speaker IDs as the base (`SPEAKER_00`, `SPEAKER_01`, â€¦).
+
+**What is copied:** display names, ignored speakers, and `speaker_id_to_db_id`. Each variant gets its own sidecar under `metadata/speaker_maps/` (see [STORAGE.md](STORAGE.md)).
+
+**When inheritance is skipped:** the filename is not `{base}_{lang}`, the base transcript is missing, the base has no speaker-map sidecar, or the variant already has its own speaker-map sidecar (re-import safe).
+
+**Fallback:** if inheritance does not apply, segment `original_cue.original_speaker` names are used as on a normal import.
 
 ## Other tools
 

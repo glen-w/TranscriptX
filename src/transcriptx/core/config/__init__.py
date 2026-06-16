@@ -26,6 +26,20 @@ from .persistence import (
     save_run_effective,
 )
 from .validation import ValidationError, validate_config
+from .gui_support import (
+    COMMON_SETTINGS_SCHEMA,
+    CommonSettingField,
+    list_runtime_profile_targets,
+    list_supported_profile_target_ids,
+)
+from .profile_target_adapter import (
+    ProfileTargetAdapter,
+    get_profile_target_adapter,
+    iter_all_profile_target_adapters,
+    iter_runtime_profile_target_adapters,
+    strip_activation_keys_from_flat_map,
+    strip_activation_keys_from_nested_map,
+)
 
 __all__ = [
     "FieldMetadata",
@@ -52,4 +66,14 @@ __all__ = [
     "save_run_override",
     "unflatten",
     "validate_config",
+    "COMMON_SETTINGS_SCHEMA",
+    "CommonSettingField",
+    "list_runtime_profile_targets",
+    "list_supported_profile_target_ids",
+    "ProfileTargetAdapter",
+    "get_profile_target_adapter",
+    "iter_all_profile_target_adapters",
+    "iter_runtime_profile_target_adapters",
+    "strip_activation_keys_from_flat_map",
+    "strip_activation_keys_from_nested_map",
 ]

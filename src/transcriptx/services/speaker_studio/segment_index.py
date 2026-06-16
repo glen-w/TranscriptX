@@ -7,13 +7,14 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from transcriptx.core.utils.paths import DATA_DIR
 from transcriptx.io.transcript_loader import load_segments
 from transcriptx.io.speaker_map_resolver import (
     SpeakerMapResolver,
     SpeakerMapState,
+    is_effective_speaker_name,
     normalize_diarized_id,
 )
 from transcriptx.core.utils._path_resolution import resolve_file_path
@@ -32,6 +33,9 @@ class TranscriptSummary:
     speaker_map_status: SpeakerMapStatus
     segment_count: int
     unique_speaker_count: int
+    # Unique diarized IDs in segments: not yet named and not ignored / marked ignored
+    unidentified_speaker_count: int = 0
+    ignored_speaker_count: int = 0
 
 
 @dataclass
@@ -84,7 +88,7 @@ def _compute_speaker_map_status(
     ignored_set = set(ignored_speakers or [])
     covered = set(speaker_map.keys()) | ignored_set
     mapped_with_name = {
-        k for k, v in (speaker_map or {}).items() if v and str(v).strip()
+        k for k, v in (speaker_map or {}).items() if is_effective_speaker_name(k, v)
     }
 
     # Compare using normalized IDs so SPEAKER_1 in segments matches SPEAKER_01 in sidecar.
@@ -99,6 +103,102 @@ def _compute_speaker_map_status(
         if nid not in mapped_with_name:
             return "partial"
     return "complete"
+
+
+def _nid_is_ignored(nid: str, ignored_speakers: Optional[List[str]]) -> bool:
+    """True if normalized diarized id is listed as ignored (raw or normalized entry)."""
+    if not nid:
+        return False
+    raw = set(ignored_speakers or [])
+    if nid in raw:
+        return True
+    for ig in ignored_speakers or []:
+        if ig is None or not str(ig).strip():
+            continue
+        if normalize_diarized_id(str(ig)) == nid:
+            return True
+    return False
+
+
+def _nid_has_assigned_name(nid: str, speaker_map: dict) -> bool:
+    """True if sidecar maps this diarized id to a non-empty display name."""
+    if not nid:
+        return False
+    sm = speaker_map or {}
+    v = sm.get(nid)
+    if is_effective_speaker_name(nid, v):
+        return True
+    for k, v in sm.items():
+        if not is_effective_speaker_name(k, v):
+            continue
+        kn = normalize_diarized_id(str(k))
+        if kn == nid:
+            return True
+    return False
+
+
+def _compute_speaker_pick_counts(
+    segments: List[dict],
+    state: SpeakerMapState,
+) -> Tuple[int, int]:
+    """
+    Count unique diarized speaker IDs in segments: unnamed (still to identify) vs ignored.
+    Aligns with Speaker Identification page metrics (per diarized role, not segment rows).
+    """
+    unique_in_segments = set()
+    for seg in segments:
+        sp = seg.get("speaker")
+        if sp is None or not str(sp).strip():
+            continue
+        unique_in_segments.add(str(sp).strip())
+
+    normalized_diarized: set[str] = set()
+    for sp in unique_in_segments:
+        if _is_diarized_id(sp):
+            nid = normalize_diarized_id(sp)
+            if nid:
+                normalized_diarized.add(nid)
+
+    ignored_list = state.ignored_speakers or []
+    speaker_map = state.speaker_map or {}
+    unidentified = 0
+    ignored = 0
+    for nid in normalized_diarized:
+        if _nid_is_ignored(nid, ignored_list):
+            ignored += 1
+        elif not _nid_has_assigned_name(nid, speaker_map):
+            unidentified += 1
+    return unidentified, ignored
+
+
+def transcript_summary_from_loaded_segments(
+    path: str | Path,
+    segments: List[dict],
+    *,
+    state: Optional[SpeakerMapState] = None,
+) -> TranscriptSummary:
+    """
+    Build TranscriptSummary from already-loaded segment dicts (single I/O for mapping).
+
+    When *state* is omitted, loads the speaker sidecar via SpeakerMapResolver.
+    """
+    path = Path(path)
+    if state is None:
+        state = SpeakerMapResolver().load_mapping(str(path))
+    status = _compute_speaker_map_status(segments, state)
+    un_id, ign = _compute_speaker_pick_counts(segments, state)
+    unique_speakers = len(
+        set(seg.get("speaker") for seg in segments if seg.get("speaker"))
+    )
+    return TranscriptSummary(
+        path=str(path.resolve()),
+        base_name=get_canonical_base_name(str(path)),
+        speaker_map_status=status,
+        segment_count=len(segments),
+        unique_speaker_count=unique_speakers,
+        unidentified_speaker_count=un_id,
+        ignored_speaker_count=ign,
+    )
 
 
 class SegmentIndexService:
@@ -138,18 +238,8 @@ class SegmentIndexService:
                 if not segments:
                     continue
                 state = SpeakerMapResolver().load_mapping(str(path))
-                status = _compute_speaker_map_status(segments, state)
-                unique_speakers = len(
-                    set(seg.get("speaker") for seg in segments if seg.get("speaker"))
-                )
                 summaries.append(
-                    TranscriptSummary(
-                        path=str(path.resolve()),
-                        base_name=get_canonical_base_name(str(path)),
-                        speaker_map_status=status,
-                        segment_count=len(segments),
-                        unique_speaker_count=unique_speakers,
-                    )
+                    transcript_summary_from_loaded_segments(path, segments, state=state)
                 )
             except Exception:
                 continue
@@ -170,18 +260,7 @@ class SegmentIndexService:
             segments = load_segments(str(path))
             if not segments:
                 return None
-            state = SpeakerMapResolver().load_mapping(str(path))
-            status = _compute_speaker_map_status(segments, state)
-            unique_speakers = len(
-                set(seg.get("speaker") for seg in segments if seg.get("speaker"))
-            )
-            return TranscriptSummary(
-                path=str(path.resolve()),
-                base_name=get_canonical_base_name(str(path)),
-                speaker_map_status=status,
-                segment_count=len(segments),
-                unique_speaker_count=unique_speakers,
-            )
+            return transcript_summary_from_loaded_segments(path, segments)
         except Exception:
             return None
 

@@ -9,6 +9,9 @@ def test_normalize_and_validate_target_name() -> None:
     assert RenameService.normalize_base_name("meeting.json") == "meeting"
     assert RenameService.normalize_base_name("recording.wav") == "recording"
     assert RenameService.normalize_base_name("  sample  ") == "sample"
+    assert RenameService.normalize_base_name("  talk.MP3  ") == "talk"
+    assert RenameService.normalize_base_name("clip.flac") == "clip"
+    assert RenameService.normalize_base_name("noext") == "noext"
 
     ok, msg = RenameService.validate_target_name("old_name", "old_name")
     assert ok is False
@@ -33,13 +36,23 @@ def test_rename_transcript_and_audio_uses_core_rename(
 
     calls = {"args": None}
 
-    def _fake_rename(old_name: str, new_name: str, transcript_path: str) -> bool:
+    def _fake_outcome(
+        old_name: str, new_name: str, transcript_path: str, dry_run: bool = False
+    ):
+        from transcriptx.core.utils.file_rename import RenameTranscriptOutcome
+
         calls["args"] = (old_name, new_name, transcript_path)
-        return True
+        return RenameTranscriptOutcome(
+            transaction_attempted=True,
+            transaction_succeeded=True,
+            transaction_committed=True,
+            finalize_attempted=False,
+            finalize_succeeded=True,
+        )
 
     monkeypatch.setattr(
-        "transcriptx.web.services.rename_service.rename_transcript_files",
-        _fake_rename,
+        "transcriptx.web.services.rename_service.rename_transcript_files_with_outcome",
+        _fake_outcome,
     )
     monkeypatch.setattr(
         RenameService,
@@ -134,3 +147,98 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     assert (
         _DummyStreamlit.session_state["audio_merge_ordered_paths"][0] == "/tmp/new.mp3"
     )
+
+
+def test_rename_transcript_and_audio_returns_not_found_when_transcript_missing(
+    tmp_path: Path,
+) -> None:
+    from transcriptx.web.services.rename_service import RenameService
+
+    missing = tmp_path / "ghost.json"
+    result = RenameService.rename_transcript_and_audio(missing, "new_name")
+    assert result.ok is False
+    assert "not found" in result.message.lower()
+
+
+def test_rename_from_audio_returns_unlinked_message_when_no_state_match(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from transcriptx.web.services.rename_service import RenameService
+
+    audio = tmp_path / "orphan.mp3"
+    audio.write_bytes(b"x")
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.load_processing_state",
+        lambda validate=False: {"processed_files": {}},
+    )
+    result = RenameService.rename_from_audio(audio, "renamed")
+    assert result.ok is False
+    assert "not linked" in result.message.lower()
+
+
+def test_rename_transcript_and_audio_partial_finalize_surfaces_distinct_message(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.core.utils.file_rename import RenameTranscriptOutcome
+    from transcriptx.web.services.rename_service import RenameService
+
+    transcript = tmp_path / "cur.json"
+    transcript.write_text("{}", encoding="utf-8")
+
+    def _partial_outcome(
+        old_name: str, new_name: str, transcript_path: str, dry_run: bool = False
+    ) -> RenameTranscriptOutcome:
+        return RenameTranscriptOutcome(
+            transaction_attempted=True,
+            transaction_succeeded=True,
+            transaction_committed=True,
+            finalize_attempted=True,
+            finalize_succeeded=False,
+            last_error="simulated",
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.rename_transcript_files_with_outcome",
+        _partial_outcome,
+    )
+    monkeypatch.setattr(
+        RenameService,
+        "_find_audio_path_for_transcript",
+        staticmethod(lambda _tp: None),
+    )
+
+    result = RenameService.rename_transcript_and_audio(transcript, "new_base")
+    assert result.ok is False
+    assert result.transaction_phase_ok is True
+    assert result.finalize_phase_ok is False
+    assert "output" in result.message.lower() and "folder" in result.message.lower()
+
+
+def test_find_audio_path_for_transcript_prefers_audio_path_over_mp3(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from transcriptx.web.services.rename_service import RenameService
+
+    transcript = tmp_path / "meet.json"
+    transcript.write_text("{}", encoding="utf-8")
+    wav = tmp_path / "via_audio.wav"
+    mp3 = tmp_path / "via_mp3.mp3"
+    wav.write_bytes(b"a")
+    mp3.write_bytes(b"b")
+
+    state = {
+        "processed_files": {
+            "k": {
+                "transcript_path": str(transcript),
+                "audio_path": str(wav),
+                "mp3_path": str(mp3),
+            }
+        }
+    }
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.load_processing_state",
+        lambda validate=False: state,
+    )
+
+    found = RenameService._find_audio_path_for_transcript(transcript)
+    assert found == wav

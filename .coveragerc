@@ -1,13 +1,13 @@
 [run]
-# Exclude web and io from coverage (not necessary for core pipeline)
+# Exclude web from coverage; io is included in traced scope.
 omit =
     */.venv/*
     */venv/*
     */site-packages/*
     */transcriptx/web/*
-    */transcriptx/io/*
 
 [report]
+fail_under = 70
 exclude_lines =
     pragma: no cover
     def __repr__

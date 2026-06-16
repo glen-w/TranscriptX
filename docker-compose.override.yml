@@ -14,6 +14,6 @@ services:
       - transcriptx_cache:/home/transcriptx/.cache
       - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts
       - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
-      - ${HOST_RECORDINGS_DIR:-./data/recordings}:/mnt/recordings
-      - ${HOST_RECORDINGS_DIR:-./data/recordings}/imports:/mnt/recordings/imports
+      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings
+      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}/imports:/mnt/recordings/imports
       - ${HOST_WAV_BACKUP_DIR:-./data/backups/wav}:/mnt/wav

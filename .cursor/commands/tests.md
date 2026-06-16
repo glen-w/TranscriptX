@@ -1,90 +1,279 @@
-# Review and Expand Test Suite (# tests)
+Review and Expand Test Suite (# tests)
 
-Review the TranscriptX test suite for health, coverage gaps, and quarantined/skipped tests; then propose and implement targeted expansions (unit, integration, contract) where high leverage is identified.
+Review the TranscriptX test suite for health, coverage gaps, and quarantined/skipped tests; then propose and, where safe, implement targeted test expansions.
 
 Execute from the workspace root.
 
----
+⸻
 
-## 0. Run backup first (mandatory)
+0. Run backup first (mandatory)
 
-Before doing anything else, run the **backup** custom command (`# backup`). Wait for it to complete, then proceed with the steps below.
+Before doing anything else, run the backup custom command (# backup). Wait for it to complete, then proceed.
 
----
+⸻
 
-## 1. Test Artifact Cleanup (optional)
+1. Operating rules
 
-- **Disabled:** Do not run destructive clean-test-artifacts flows; data loss risk. Report that cleanup is disabled unless the user explicitly requests a preview-only pass with a documented script.
+Primary goal: improve test confidence without broad production refactors.
 
----
+* Bias toward tests-only changes.
+* Do not run destructive clean-test-artifacts flows.
+* If production-code changes appear necessary, stop and report the proposed fix unless it is a trivial import/path compatibility correction.
+* If the default suite is failing before changes, do not expand tests until failures are understood and classified.
+* Do not re-enable quarantined tests by default.
+* New tests must not be marked quarantined, slow, requires_docker, requires_ffmpeg, requires_models, or requires_api unless explicitly justified.
+* Keep default test runs fast and offline.
 
-## 2. Review Phase
+⸻
 
-### 2.1 Run and summarize current suite
+2. Test Artifact Cleanup
 
-- **Default run (excludes quarantined/heavy):**
-  `pytest --co -q` then `pytest -q` (or `pytest -x` to stop on first failure if debugging).
-- **Report:** Total collected tests, passed/failed/skipped; any collection errors or import failures.
-- **Optional:** `pytest --co -q -m ""` to see full count including quarantined; compare with `tests/TEST_SUITE_ASSESSMENT.md` (~1558 tests noted there).
+Cleanup is disabled.
 
-### 2.2 Structure and markers
+Do not run destructive cleanup flows. Only report that cleanup is disabled unless explicitly requested to run a preview-only cleanup audit with a documented script.
 
-- **List test directories** under `tests/`: `analysis`, `contracts`, `core`, `integration`, `io`, `pipeline`, `regression`, `services`, `smoke`, `unit`, `utils`, `web`, etc.
-- **Confirm markers** in `pytest.ini`: `smoke`, `unit`, `integration`, `contract`, `slow`, `requires_models`, `requires_docker`, `quarantined`, `integration_core`, `integration_extended`, etc.
-- **Default filter:** addopts exclude `quarantined`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`, `integration` so normal runs stay fast.
+⸻
 
-### 2.3 Quarantined and skipped tests
+3. Review Phase
 
-- **Read** `tests/TEST_SUITE_ASSESSMENT.md` for the list of quarantined files and reasons (obsolete APIs, removed modules).
-- **Identify skipped-at-collection:** e.g. `tests/analysis/test_rules.py` (missing modules). List any others if present.
-- **Summarize:** How many tests are quarantined; how many files are skipped at collection; whether any quarantined tests are candidates for update-or-remove.
+3.1 Run and summarize current suite
 
-### 2.4 Coverage and gaps
+Run:
 
-- **If coverage is available:** Run `pytest --cov=src --cov-report=term-missing -q -m "not quarantined and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not integration"` (or the project's coverage command). Note low-coverage modules or critical paths with no tests.
-- **If no coverage run:** Manually compare `src/` packages (e.g. `transcriptx.core`, `transcriptx.io`, `transcriptx.web`, pipeline, services) to `tests/` and list areas with no or few corresponding tests.
-- **High-leverage areas** (from assessment): config lifecycle, validation, module registry, transcript loader, pipeline run, state persistence, output builder. Note which of these already have tests and which lack coverage.
+pytest –co -q
+pytest -q
 
----
+If debugging a failure, use:
 
-## 3. Expand Phase
+pytest -x
 
-### 3.1 Prioritize expansion targets
+Report:
 
-- Prefer (in order):
-  1) Critical paths with no or minimal tests (config, validation, pipeline, state).
-  2) New or refactored code without tests.
-  3) Contract tests for output shapes and manifest/artifact invariants.
-  4) Stable integration tests (e.g. `integration_core`) that don't require Docker/FFmpeg/models.
-- Do **not** re-enable quarantined tests by default; either update them to current APIs (and remove the marker) or leave quarantined and document.
+* Total collected tests
+* Passed / failed / skipped / xfailed / xpassed
+* Collection errors or import failures
+* Whether baseline is green before adding tests
 
-### 3.2 Add or extend tests
+Optional full collection comparison:
 
-- **Unit:** Add or extend tests in `tests/unit/` or the appropriate domain folder (e.g. `tests/core/utils/`, `tests/io/`). Use existing patterns from `tests/unit/test_high_leverage.py`: config, validation, module registry, loader.
-- **Integration:** Add or extend in `tests/integration/core/` (e.g. `test_high_leverage_integration.py` style). Use `@pytest.mark.integration_core`, tmp paths, env/monkeypatch; avoid DB or external services when possible.
-- **Contract:** Add or extend in `tests/contracts/` for output shape, manifest, and artifact invariants; keep them offline and deterministic.
-- **Fixtures:** Reuse fixtures from `tests/conftest.py` and `tests.fixtures.*`; add new fixtures only when necessary and place them in the appropriate conftest or fixture module.
+pytest –co -q -m “”
 
-### 3.3 Style and constraints
+Compare with tests/TEST_SUITE_ASSESSMENT.md if it notes an expected count (e.g. ~1558 tests).
 
-- Follow existing naming: `test_*.py`, `Test*` classes, `test_*` functions. Use markers consistently (`@pytest.mark.unit`, `@pytest.mark.integration_core`, etc.).
-- Prefer small, focused tests; avoid large end-to-end tests unless explicitly requested.
-- Ensure new tests are **not** marked `quarantined`, `slow`, or heavy (e.g. `requires_docker`) unless required; default run should include them.
+⸻
 
----
+3.2 Structure and markers
 
-## 4. Validation and reporting
+List test directories under tests/, including where present:
 
-- **Re-run default suite** after changes: `pytest -q` (with default addopts). All new/updated tests must pass.
-- **Optional:** Run `pytest -m "integration_core" -q` to confirm integration subset passes.
-- **Update assessment (optional):** If you added a new test file or a new high-leverage area, add a short note to `tests/TEST_SUITE_ASSESSMENT.md` under "High-leverage tests added" or "Recommendations" so the doc stays accurate.
+analysis, contracts, core, integration, io, pipeline, regression, services, smoke, unit, utils, web
 
----
+Inspect pytest.ini.
 
-## Execution summary
+Confirm markers including, where present:
 
-After running the command, provide:
+smoke, unit, integration, contract, slow, requires_models, requires_docker, requires_ffmpeg, requires_api, quarantined, integration_core, integration_extended
 
-1. **Review:** Suite status (counts, failures, quarantined/skipped summary), structure/markers, and coverage/gaps summary.
-2. **Expansion:** What was added or extended (files and test names), and which high-leverage area each targets.
-3. **Result:** Pass/fail of default run and any optional marker run you executed.
+Confirm default addopts excludes heavy/quarantined/API/model tests, especially:
+
+quarantined, requires_ffmpeg, requires_docker, requires_models, requires_api, slow, integration
+
+⸻
+
+3.3 Quarantined and skipped tests
+
+Read:
+
+tests/TEST_SUITE_ASSESSMENT.md
+
+Identify:
+
+* Quarantined files and reasons
+* Skipped-at-collection files (missing modules, obsolete imports, etc.)
+* Tests skipped due to removed modules or API changes
+* Quarantined tests that are candidates for update-or-remove
+
+Report:
+
+* Number of quarantined tests/files
+* Number of skipped-at-collection files
+* Whether quarantined tests should remain quarantined, be updated, or be removed
+
+Do not re-enable quarantined tests unless updated to current APIs and passing.
+
+⸻
+
+3.4 Coverage and gaps
+
+If coverage is available and reasonable, run:
+
+pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"
+
+If full coverage is too slow/noisy, run targeted coverage:
+
+pytest tests/core tests/pipeline tests/contracts –cov=src/transcriptx/core –cov-report=term-missing -q
+
+If coverage cannot be run, manually compare src/ packages to tests/.
+
+Focus on high-leverage areas:
+
+* Config lifecycle
+* Validation
+* Module registry
+* Transcript loader
+* Pipeline run / DAG execution
+* State persistence
+* Output builder
+* Manifest/run outcome contracts
+* Artifact invariants
+
+Report which areas already have tests and which lack coverage.
+
+⸻
+
+4. Expansion Phase
+
+Only proceed if the baseline is green, or if baseline failures are unrelated and clearly documented.
+
+4.1 Prioritize expansion targets
+
+Prefer, in order:
+
+1. Critical paths with minimal or no tests (config, validation, pipeline, state, registry, loader)
+2. New or refactored code without tests
+3. Contract tests for output shapes, manifest semantics, run outcomes, artifact invariants
+4. Stable integration tests (integration_core) that do not require external dependencies
+
+Avoid broad end-to-end tests unless explicitly requested.
+
+⸻
+
+4.2 Add or extend tests
+
+Use existing patterns and fixtures where possible.
+
+Locations:
+
+* Unit: tests/unit/, tests/core/, tests/core/utils/, tests/io/
+* Integration: tests/integration/core/
+* Contract: tests/contracts/
+
+Reference patterns:
+
+tests/unit/test_high_leverage.py
+tests/integration/core/test_high_leverage_integration.py
+
+Add small, focused tests. Examples:
+
+* Config lifecycle behavior is deterministic
+* Validation rejects malformed input with explicit errors
+* Registry enforces uniqueness and schema correctness
+* Loader handles missing/partial data safely
+* Pipeline preserves canonical status vocabulary
+* Manifest loader enforces schema versioning
+* Output builder uses stable naming independent of artifact presence
+
+⸻
+
+4.3 Style and constraints
+
+* File names: test_*.py
+* Classes: Test*
+* Functions: test_*
+* Markers: @pytest.mark.unit, @pytest.mark.contract, @pytest.mark.integration_core
+
+Tests must be:
+
+* Offline
+* Deterministic
+* Small and fast
+* Independent
+* tmp_path-based when filesystem is involved
+
+Avoid dependencies on:
+
+* Absolute paths
+* Wall-clock timing
+* Network access
+* External services
+* Models / Docker / FFmpeg
+
+⸻
+
+5. Validation
+
+After changes:
+
+pytest -q
+
+Optional:
+
+pytest -m “integration_core” -q
+
+If coverage was used, rerun relevant coverage command.
+
+Report changes:
+
+git diff –stat
+git diff –name-only
+
+Clearly separate production-code changes from test/doc changes.
+
+⸻
+
+6. Optional documentation update
+
+If high-leverage tests were added, update:
+
+tests/TEST_SUITE_ASSESSMENT.md
+
+Add a brief note under:
+
+* High-leverage tests added
+* Recommendations
+* Coverage gaps reduced
+* Quarantine notes
+
+⸻
+
+7. Execution summary
+
+Provide:
+
+1. Review
+
+* Suite status
+* Collection counts
+* Pass/fail/skip summary
+* Collection/import errors
+* Structure and markers
+* Quarantined/skipped summary
+* Coverage or gap analysis
+
+2. Expansion
+
+* Files added or modified
+* Tests added or extended
+* Targeted high-leverage areas
+* Status of quarantined tests
+
+3. Result
+
+* Final pytest -q result
+* Optional integration_core result
+* Optional coverage result
+* git diff –stat
+* Note of any production-code changes
+
+⸻
+
+## Canonical gate commands
+
+- Default fast coverage gate:
+  - `pytest -q --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"`
+- Integration gate:
+  - `pytest -q tests/integration -m "not quarantined and (integration or integration_core or integration_extended) and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not release_only"`
+- Smoke gate:
+  - `pytest -q tests/smoke -m "smoke and not quarantined and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not release_only"`
+- Release-only gate:
+  - `pytest -q tests/release -m "release_only and not quarantined"`

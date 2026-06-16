@@ -17,6 +17,7 @@ from transcriptx.utils.error_handling import (
     retry_with_backoff,
     categorize_error,
     get_user_friendly_message,
+    handle_errors,
 )
 
 
@@ -362,3 +363,40 @@ class TestGracefulExit:
             # Register cleanup
             # Cleanup should be called on exit
             assert True
+
+
+class TestCategorizeAndMessages:
+    def test_categorize_permission_error_security(self):
+        assert categorize_error(PermissionError("denied")) == ErrorCategory.SECURITY
+
+    def test_get_user_friendly_message_includes_short_detail(self):
+        msg = get_user_friendly_message(ValueError("oops"), ErrorCategory.VALIDATION)
+        assert "Invalid input" in msg
+        assert "oops" in msg
+
+    def test_get_user_friendly_message_traceback_shape_uses_base_only(self):
+        msg = get_user_friendly_message(
+            ValueError("traceback at line 5"), ErrorCategory.VALIDATION
+        )
+        assert msg == "Invalid input provided"
+
+
+class TestHandleErrorsDecorator:
+    def test_handle_errors_retries_until_success(self, monkeypatch):
+        from transcriptx.utils import error_handling as eh
+
+        calls = {"n": 0}
+
+        def work() -> int:
+            calls["n"] += 1
+            if calls["n"] < 2:
+                raise ValueError("retry")
+            return 99
+
+        monkeypatch.setattr(eh.error_handler, "handle_error", lambda *a, **k: True)
+
+        @handle_errors(max_retries=3)
+        def f() -> int:
+            return work()
+
+        assert f() == 99

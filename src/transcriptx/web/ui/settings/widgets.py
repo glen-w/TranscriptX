@@ -23,10 +23,32 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
 
     if field_meta.type is bool:
         return st.checkbox(field_meta.key, value=bool(current_value), key=key)
+    if field_meta.choices is not None:
+        options = list(field_meta.choices)
+        if field_meta.type in (list, tuple):
+            current_list = (
+                list(current_value) if isinstance(current_value, (list, tuple)) else []
+            )
+            return st.multiselect(
+                field_meta.key,
+                options=options,
+                default=[v for v in current_list if v in options],
+                key=key,
+            )
+        current = (
+            current_value
+            if current_value in options
+            else (options[0] if options else "")
+        )
+        return st.selectbox(
+            field_meta.key, options=options, index=options.index(current), key=key
+        )
     if field_meta.type is int:
         return st.number_input(
             field_meta.key,
             value=int(current_value) if current_value is not None else 0,
+            min_value=int(field_meta.min) if field_meta.min is not None else None,
+            max_value=int(field_meta.max) if field_meta.max is not None else None,
             step=1,
             key=key,
         )
@@ -34,6 +56,8 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
         return st.number_input(
             field_meta.key,
             value=float(current_value) if current_value is not None else 0.0,
+            min_value=float(field_meta.min) if field_meta.min is not None else None,
+            max_value=float(field_meta.max) if field_meta.max is not None else None,
             key=key,
         )
     if field_meta.type in (list, dict):

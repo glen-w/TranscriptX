@@ -11,7 +11,23 @@ from transcriptx.core.utils.chart_registry import (
     get_default_overview_charts,
     select_preferred_artifacts,
 )
+from transcriptx.web.module_ui_groups import order_module_ids
 from transcriptx.web.models.artifact import Artifact, ArtifactFilters
+
+
+def resolve_chart_description(artifact: Artifact) -> str | None:
+    """Return the registry description for a chart artifact, if any.
+
+    Looks up the artifact's ``viz_id`` (from its manifest meta) against the chart
+    registry and returns the stripped description. Returns ``None`` when the artifact
+    has no ``viz_id``, the id is unknown, or the description is empty.
+    """
+    viz_id = (artifact.meta or {}).get("viz_id")
+    if isinstance(viz_id, str):
+        cd = get_chart_definition(viz_id)
+        if cd and cd.description:
+            return cd.description.strip() or None
+    return None
 
 
 def compute_chart_badges(all_charts: List[Artifact]) -> List[str]:
@@ -30,7 +46,7 @@ def compute_chart_badges(all_charts: List[Artifact]) -> List[str]:
 def build_filter_options(
     all_charts: List[Artifact],
 ) -> Tuple[List[str], List[str], List[str], List[str]]:
-    modules = sorted({a.module for a in all_charts if a.module})
+    modules = order_module_ids({a.module for a in all_charts if a.module})
     scopes = sorted({a.scope for a in all_charts if a.scope})
     tags = sorted({tag for a in all_charts for tag in a.tags})
     subviews = sorted({a.subview for a in all_charts if a.subview})
@@ -86,6 +102,7 @@ def build_overview_slots(
                         "label": f"{viz_id} (not available)",
                         "viz_id": viz_id,
                         "artifacts": [],
+                        "description": None,
                         "missing": True,
                     }
                 )
@@ -103,12 +120,18 @@ def build_overview_slots(
             display_title = (
                 matching[0].title if matching and matching[0].title else chart_def.label
             )
+            description = (
+                chart_def.description.strip()
+                if chart_def.description and chart_def.description.strip()
+                else None
+            )
             slots.append(
                 {
                     "label": display_title,
                     "viz_id": viz_id,
                     "artifacts": matching,
                     "cardinality": chart_def.cardinality,
+                    "description": description,
                     "missing": not matching,
                 }
             )

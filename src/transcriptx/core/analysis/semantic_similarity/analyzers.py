@@ -294,6 +294,11 @@ class AdvancedSemanticSimilarityAnalyzer:
 
             self.comparison_state = ComparisonState(0, self.max_comparisons)
             self._limit_exceeded_warning_logged = False
+            self._analysis_start_time = 0.0
+            self._last_progress_log_time = 0.0
+            self._progress_log_interval_seconds = getattr(
+                self.config.analysis, "semantic_progress_log_interval_seconds", 60
+            )
 
             log_info("SEMANTIC_ADVANCED", f"Initialized with method: {self.method}")
         except Exception as exc:
@@ -306,6 +311,7 @@ class AdvancedSemanticSimilarityAnalyzer:
 
     def calculate_semantic_similarity(self, text1: str, text2: str) -> float:
         self.comparison_state.comparison_count += 1
+        self._log_progress_heartbeat()
         if self.comparison_state.comparison_count > self.max_comparisons:
             if not self._limit_exceeded_warning_logged:
                 log_warning(
@@ -316,6 +322,25 @@ class AdvancedSemanticSimilarityAnalyzer:
             return self.similarity_calculator.tfidf_similarity(text1, text2)
         return self.similarity_calculator.calculate(text1, text2)
 
+    def _log_progress_heartbeat(self) -> None:
+        if self._analysis_start_time <= 0:
+            return
+        now = time.time()
+        interval = max(float(self._progress_log_interval_seconds), 1.0)
+        if now - self._last_progress_log_time < interval:
+            return
+        elapsed = now - self._analysis_start_time
+        log_info(
+            "SEMANTIC_ADVANCED",
+            (
+                "Still running: "
+                f"{elapsed:.1f}s elapsed, "
+                f"{self.comparison_state.comparison_count} comparisons "
+                f"(limit: {self.max_comparisons})"
+            ),
+        )
+        self._last_progress_log_time = now
+
     def detect_repetitions(
         self,
         segments: list[dict[str, Any]],
@@ -323,6 +348,8 @@ class AdvancedSemanticSimilarityAnalyzer:
         transcript_path: str | None = None,
     ) -> dict[str, Any]:
         start_time = time.time()
+        self._analysis_start_time = start_time
+        self._last_progress_log_time = start_time
         analysis_results: dict[str, Any] = {}
         if transcript_path and self.method == "advanced":
             analysis_results = load_analysis_results(

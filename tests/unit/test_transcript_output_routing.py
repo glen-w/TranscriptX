@@ -38,6 +38,7 @@ def test_generate_human_friendly_transcript_redirects_from_transcripts_tree(
     expected_base = outputs / "meet" / "transcripts"
     assert Path(result["transcript_file"]).is_file()
     assert Path(result["csv_file"]).is_file()
+    assert Path(result["srt_file"]).is_file()
     assert expected_base in Path(result["transcript_file"]).parents
 
 
@@ -61,6 +62,7 @@ def test_generate_human_friendly_transcript_redirects_when_outside_outputs(
     assert result["status"] == "success"
     assert (outputs / "session" / "transcripts").exists()
     assert Path(result["transcript_file"]).is_file()
+    assert Path(result["srt_file"]).is_file()
 
 
 def test_generate_human_friendly_transcript_uses_outputs_subdir_when_valid(
@@ -80,5 +82,8 @@ def test_generate_human_friendly_transcript_uses_outputs_subdir_when_valid(
 
     assert result["status"] == "success"
     out_txt = Path(result["transcript_file"])
+    out_srt = Path(result["srt_file"])
     assert "transcripts" in out_txt.parts
     assert run_dir in out_txt.parents
+    assert out_srt.is_file()
+    assert run_dir in out_srt.parents

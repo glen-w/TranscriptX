@@ -163,3 +163,23 @@ def test_load_mapping_with_sidecar_sets_named_speaker_count(tmp_path) -> None:
     state = SpeakerMapResolver().load_mapping(transcript)
     assert state.has_sidecar is True
     assert state.named_speaker_count == 2
+
+
+def test_named_speaker_count_excludes_placeholder_self_mapping(tmp_path) -> None:
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text(json.dumps({"segments": []}))
+    sidecar = sidecar_path_for(transcript)
+    sidecar.write_text(
+        json.dumps(
+            {
+                "speaker_map": {
+                    "SPEAKER_00": "SPEAKER_00",
+                    "SPEAKER_01": "Alice",
+                },
+                "ignored_speakers": [],
+            }
+        )
+    )
+
+    state = SpeakerMapResolver().load_mapping(transcript)
+    assert state.named_speaker_count == 1

@@ -5,6 +5,7 @@ Extended unit tests for run_manifest module (RunManifest, compute_file_hash, get
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ import pytest
 from transcriptx.core.utils.run_manifest import (
     RunManifest,
     compute_file_hash,
+    create_run_manifest,
     get_dependency_versions,
     get_transcriptx_version,
 )
@@ -157,3 +159,38 @@ class TestGetTranscriptxVersion:
         v = get_transcriptx_version()
         # In test env, transcriptx is importable
         assert v != "unknown" or "transcriptx" not in __import__("sys").modules
+
+
+class TestCreateRunManifest:
+    def test_config_snapshot_hash_uses_dataclass_fallback(self, monkeypatch) -> None:
+        @dataclass
+        class _Cfg:
+            mode: str = "test"
+
+            def to_dict(self):
+                raise TypeError("asdict() should be called on dataclass instances")
+
+        monkeypatch.setattr(
+            "transcriptx.core.utils.run_manifest.get_config",
+            lambda: _Cfg(),
+        )
+
+        manifest = create_run_manifest(selected_modules=["stats"])
+        assert manifest.config_snapshot == {"mode": "test"}
+        assert (
+            manifest.config_snapshot_hash
+            and manifest.config_snapshot_hash.startswith("sha256:")
+        )
+
+    def test_config_snapshot_hash_uses_mapping_config(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "transcriptx.core.utils.run_manifest.get_config",
+            lambda: {"alpha": 1, "beta": {"enabled": True}},
+        )
+
+        manifest = create_run_manifest(selected_modules=["stats"])
+        assert manifest.config_snapshot == {"alpha": 1, "beta": {"enabled": True}}
+        assert (
+            manifest.config_snapshot_hash
+            and manifest.config_snapshot_hash.startswith("sha256:")
+        )

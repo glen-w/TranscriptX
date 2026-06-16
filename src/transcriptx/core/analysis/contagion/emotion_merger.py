@@ -57,8 +57,13 @@ def merge_emotion_data(
                     merged_count += 1
                     break
                 ctx_scores = emotion_seg.get("context_emotion_scores")
-                if isinstance(ctx_scores, dict) and ctx_scores and any(
-                    isinstance(v, (int, float)) and v > 0 for v in ctx_scores.values()
+                if (
+                    isinstance(ctx_scores, dict)
+                    and ctx_scores
+                    and any(
+                        isinstance(v, (int, float)) and v > 0
+                        for v in ctx_scores.values()
+                    )
                 ):
                     top = max(
                         (

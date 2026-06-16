@@ -57,6 +57,12 @@ class ModuleInfo:
         False  # Skip when transcript has ≤1 named speaker
     )
     min_named_speakers: int = 1  # Future-proof; default allows single-speaker
+    gate_on_turn_taking_speakers: bool = (
+        # When True, the speaker-count gate counts diarization-style labels
+        # (e.g. "SPEAKER_00") as distinct speakers instead of requiring
+        # human-assigned names. Used by interaction/structure modules.
+        False
+    )
     supports_audio: bool = False
     supports_group: bool = True
     output_namespace: Optional[str] = None
@@ -65,6 +71,7 @@ class ModuleInfo:
     required_extras: Set[str] = field(
         default_factory=set
     )  # e.g. {"voice"}, {"emotion"}, {"nlp"}
+    legacy: bool = False  # excluded from default plans when include_legacy=False
 
 
 def effective_min_named_speakers(info: ModuleInfo) -> int:
@@ -109,6 +116,9 @@ class ModuleRegistry:
                     info.get("requires_multiple_speakers", False)
                 ),
                 min_named_speakers=int(info.get("min_named_speakers", 1)),
+                gate_on_turn_taking_speakers=bool(
+                    info.get("gate_on_turn_taking_speakers", False)
+                ),
                 supports_audio=info.get("supports_audio", False),
                 supports_group=info.get("supports_group", True),
                 output_namespace=info.get("output_namespace"),
@@ -116,6 +126,7 @@ class ModuleRegistry:
                 cost_tier=info.get("cost_tier", "normal"),
                 timeout_seconds=600,
                 required_extras=set(req_extras),
+                legacy=bool(info.get("legacy", False)),
             )
 
     def get_available_modules(
@@ -147,6 +158,7 @@ class ModuleRegistry:
         include_excluded_from_default: bool = False,
         for_group: bool = False,
         core_mode: Optional[bool] = None,
+        include_legacy: Optional[bool] = None,
     ) -> List[str]:
         """Get list of modules used for default analysis runs."""
         if core_mode is None:
@@ -156,6 +168,14 @@ class ModuleRegistry:
                 core_mode = get_config().core_mode
             except Exception:
                 core_mode = False
+
+        if include_legacy is None:
+            try:
+                from transcriptx.core.utils.config import get_config
+
+                include_legacy = bool(get_config().analysis.include_legacy_modules)
+            except Exception:
+                include_legacy = False
 
         audio_available: Optional[bool] = None
         if transcript_targets is not None:
@@ -179,6 +199,8 @@ class ModuleRegistry:
             if not include_excluded_from_default and info.exclude_from_default:
                 continue
             if not include_heavy and info.cost_tier == "heavy":
+                continue
+            if info.legacy and not include_legacy:
                 continue
             if info.requires_audio and audio_available is False:
                 continue
@@ -326,6 +348,7 @@ def get_default_modules(
     include_excluded_from_default: bool = False,
     for_group: bool = False,
     core_mode: Optional[bool] = None,
+    include_legacy: Optional[bool] = None,
 ) -> List[str]:
     """Get list of modules used for default analysis runs. core_mode from config if None."""
     return _module_registry.get_default_modules(
@@ -336,6 +359,7 @@ def get_default_modules(
         include_excluded_from_default=include_excluded_from_default,
         for_group=for_group,
         core_mode=core_mode,
+        include_legacy=include_legacy,
     )
 
 

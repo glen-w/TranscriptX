@@ -120,7 +120,7 @@ def find_available_slug(
 def register_transcript(
     transcript_key: str,
     transcript_path: str,
-    run_id: str,
+    run_id: Optional[str] = None,
     source_basename: Optional[str] = None,
     source_path: Optional[str] = None,
 ) -> str:
@@ -133,7 +133,7 @@ def register_transcript(
     Args:
         transcript_key: Transcript content hash (canonical identifier)
         transcript_path: Path to transcript file
-        run_id: Run ID for this analysis run
+        run_id: Optional run ID for this analysis run
         source_basename: Optional source basename (defaults to extracted from path)
         source_path: Optional source path (defaults to transcript_path)
 
@@ -155,7 +155,7 @@ def register_transcript(
         # it's available, so future runs land in the renamed folder.
         entry = transcripts[transcript_key]
         runs = entry.get("runs", [])
-        if run_id not in runs:
+        if run_id and run_id not in runs:
             runs.append(run_id)
             entry["runs"] = runs
 
@@ -195,7 +195,10 @@ def register_transcript(
         )
         if same_file:
             # Same transcript (file moved or content changed), reuse the slug.
-            merged_runs = list({*existing_entry.get("runs", []), run_id})
+            existing_runs = list(existing_entry.get("runs", []))
+            merged_runs = (
+                list({*existing_runs, run_id}) if run_id else list(existing_runs)
+            )
             transcripts.pop(existing_key, None)
             transcripts[transcript_key] = {
                 "slug": base_slug,
@@ -216,7 +219,7 @@ def register_transcript(
     # Register in index
     transcripts[transcript_key] = {
         "slug": slug,
-        "runs": [run_id],
+        "runs": [run_id] if run_id else [],
         "source_basename": source_basename,
         "source_path": source_path,
     }

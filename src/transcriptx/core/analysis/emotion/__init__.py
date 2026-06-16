@@ -243,13 +243,14 @@ class EmotionAnalysis(AnalysisModule):
             speaker = get_speaker_display_name(
                 speaker_info.grouping_key, [seg], segments
             )
-            if not speaker or not is_named_speaker(speaker):
+            if not speaker:
                 continue
             text = seg.get("text", "")
             scores = self._compute_nrc_emotions(text)
             seg["nrc_emotion"] = scores
-            for emo, val in scores.items():
-                nrc_scores[speaker][emo] += val
+            if is_named_speaker(speaker):
+                for emo, val in scores.items():
+                    nrc_scores[speaker][emo] += val
             # Fill context_* from NRC when there is no usable HF (or other) label yet.
             # HF sets source to "hf" even when the pipeline returns empty labels after
             # thresholding; without this fallback, contagion/downstream see no emotion.

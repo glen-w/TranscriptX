@@ -62,6 +62,14 @@ class StalenessStatus(str, Enum):
     incompatible_transcript = "incompatible_transcript"
 
 
+class FuzzySkippedReason(str, Enum):
+    disabled = "disabled"
+    no_speaker_map = "no_speaker_map"
+    zero_map_entries = "zero_map_entries"
+    zero_named_speakers = "zero_named_speakers"
+    not_applicable = "not_applicable"
+
+
 # ---------------------------------------------------------------------------
 # Snapshot entities
 # ---------------------------------------------------------------------------
@@ -74,8 +82,44 @@ class GenerationManifest(BaseModel):
     corrections_config_fingerprint: str = ""
     detector_version: str
     memory_rule_fingerprint: str = ""
-    speaker_map_fingerprint: Optional[str] = None
+    speaker_map_fingerprint: str = ""
+    studio_session_rules_fingerprint: str = ""
     tool_build_id: Optional[str] = None
+
+    @field_validator("speaker_map_fingerprint", mode="before")
+    @classmethod
+    def _coerce_speaker_fp(cls, v: Any) -> str:
+        return v if isinstance(v, str) else ""
+
+
+class DetectorCountsByKind(BaseModel):
+    """Per-detector or per-kind candidate counts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    memory_hit: int = 0
+    acronym: int = 0
+    consistency: int = 0
+    fuzzy: int = 0
+    ner_variant: int = 0
+    other: int = 0
+
+
+class CandidateGenerationDiagnostics(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    pre_dedupe: DetectorCountsByKind
+    total_pre_dedupe: int
+    post_dedupe_counts_by_kind: DetectorCountsByKind
+    total_after_dedupe: int
+    fuzzy_enabled: bool
+    fuzzy_similarity_threshold: float = 0.85
+    consistency_similarity_threshold: float = 0.0
+    known_acronym_count: int = 0
+    known_org_phrase_count: int = 0
+    fuzzy_named_speaker_count: int = 0
+    fuzzy_skipped_reason: FuzzySkippedReason
+    observed_named_speaker_count: int = 0
 
 
 class StudioGenerationRecord(BaseModel):
@@ -86,6 +130,7 @@ class StudioGenerationRecord(BaseModel):
     generation_manifest_hash: str
     candidate_ids: List[str] = Field(default_factory=list)
     completed_at: str
+    generation_diagnostics: Optional[CandidateGenerationDiagnostics] = None
 
 
 class StudioOccurrence(BaseModel):
@@ -135,6 +180,7 @@ class StudioReviewRecord(BaseModel):
     selected_occurrence_keys: List[str] = Field(default_factory=list)
     learn_intent: Optional[LearnIntent] = None
     learn_rule_id: Optional[str] = None
+    review_target_text: Optional[str] = None
     recorded_at: str
     event_sequence: int
 
@@ -193,6 +239,48 @@ class StudioSessionDocument(BaseModel):
 
     # Ephemeral / UI cache (not persisted in v1 hot path unless needed)
     candidates_stale: bool = False
+    generation_inputs_stale: bool = False
+
+
+class StudioTranscriptSummary(BaseModel):
+    """One row for the Corrections Studio transcript picker."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    base_name: str
+    segment_count: int
+    speaker_map_status: str = ""
+
+
+class StudioReviewStats(BaseModel):
+    """Review counts for the session progress bar."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    pending: int = 0
+    accepted: int = 0
+    rejected: int = 0
+    skipped: int = 0
+
+
+class CandidateOccurrenceDiff(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    segment_id: str
+    segment_index: int = -1
+    speaker: str = ""
+    time_start: Optional[float] = None
+    time_end: Optional[float] = None
+    before: str = ""
+    after: str = ""
+    stable_occurrence_key: str = ""
+
+
+class CandidateLocalDiffResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    diffs: List[CandidateOccurrenceDiff] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -248,6 +336,7 @@ class CandidatesGeneratedPayload(BaseModel):
     generation_manifest_hash: str
     candidate_ids: List[str]
     candidates: List[Dict[str, Any]] = Field(default_factory=list)
+    diagnostics: Optional[CandidateGenerationDiagnostics] = None
 
 
 class ReviewRecordedPayload(BaseModel):
@@ -260,6 +349,7 @@ class ReviewRecordedPayload(BaseModel):
     selected_occurrence_keys: List[str] = Field(default_factory=list)
     learn_intent: Optional[LearnIntent] = None
     learn_rule_id: Optional[str] = None
+    review_target_text: Optional[str] = None
 
 
 class PreviewComputedPayload(BaseModel):

@@ -9,7 +9,6 @@ from transcriptx.core.pipeline.dag_pipeline_progress import (
     module_failed_event,
     module_skipped_event,
     module_started_event,
-    run_failed_event,
     run_started_event,
 )
 from transcriptx.core.utils.speaker_extraction import named_speaker_count_for_path
@@ -29,7 +28,7 @@ def run_sequential_execution_phase(
     requirements_resolver: Optional[Any],
     named_speaker_count_ref: List[Optional[int]],
     emit: Callable[[Dict[str, Any]], None],
-) -> Tuple[bool, int, int, int, int]:
+) -> Tuple[bool, int, int, int, int, str | None]:
     """Execute modules in order. Mutates ``results`` and ``named_speaker_count_ref[0]``."""
     total_modules = len(execution_order)
     ev_completed = 0
@@ -39,6 +38,7 @@ def run_sequential_execution_phase(
     emit(run_started_event(total_modules=total_modules))
 
     aborted = False
+    abort_error: str | None = None
     for idx_0, module_name in enumerate(execution_order):
         index = idx_0 + 1
 
@@ -161,11 +161,15 @@ def run_sequential_execution_phase(
                 )
             )
 
-        pipeline._record_module_outcome(
+        pipeline._reduce_module_outcome(
+            module_name=module_name,
+            outcome=outcome,
+            results=results,
+        )
+        pipeline._apply_module_side_effects(
             module_name=module_name,
             node=node,
             outcome=outcome,
-            results=results,
             transcript_path=transcript_path,
             run_report=run_report,
         )
@@ -173,16 +177,7 @@ def run_sequential_execution_phase(
             outcome, results
         ):
             aborted = True
-            emit(
-                run_failed_event(
-                    total_modules=total_modules,
-                    ev_completed=ev_completed,
-                    ev_skipped=ev_skipped,
-                    ev_failed=ev_failed,
-                    error=outcome.error,
-                    message=f"Pipeline aborted: {outcome.error}",
-                )
-            )
+            abort_error = outcome.error
             break
 
-    return aborted, total_modules, ev_completed, ev_skipped, ev_failed
+    return aborted, total_modules, ev_completed, ev_skipped, ev_failed, abort_error

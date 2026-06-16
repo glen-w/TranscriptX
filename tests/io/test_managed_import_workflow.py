@@ -28,10 +28,27 @@ def _write_valid_transcript(path: Path, original_relpath: str) -> None:
 
 
 def _patch_managed_dirs(monkeypatch, transcript_root: Path) -> None:
+    from dataclasses import replace
+
     metadata_dir = transcript_root / "metadata"
     originals_dir = transcript_root / "originals"
+    speaker_maps_dir = metadata_dir / "speaker_maps"
     metadata_dir.mkdir(parents=True, exist_ok=True)
     originals_dir.mkdir(parents=True, exist_ok=True)
+    speaker_maps_dir.mkdir(parents=True, exist_ok=True)
+    import transcriptx.core.utils.paths as paths_mod
+
+    monkeypatch.setattr(
+        paths_mod,
+        "PATHS",
+        replace(
+            paths_mod.PATHS,
+            transcripts_dir=transcript_root,
+            transcripts_metadata_dir=metadata_dir,
+            transcripts_speaker_maps_dir=speaker_maps_dir,
+            transcripts_originals_dir=originals_dir,
+        ),
+    )
     monkeypatch.setattr(
         "transcriptx.io.managed_import_workflow.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
@@ -281,9 +298,7 @@ def test_staging_in_originals_reuses_slot_without_numeric_suffix(
     transcript_root = tmp_path / "transcripts"
     _patch_managed_dirs(monkeypatch, transcript_root)
     staging = transcript_root / "originals" / "meeting.srt"
-    staging.write_text(
-        "1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8"
-    )
+    staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
 
     result = mod.run_managed_import_workflow(
         staging,
@@ -297,6 +312,47 @@ def test_staging_in_originals_reuses_slot_without_numeric_suffix(
     assert not (transcript_root / "originals" / "meeting (1).srt").exists()
 
 
+def test_import_language_variant_inherits_base_speaker_map(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.io import managed_import_workflow as mod
+    from transcriptx.io.speaker_map_resolver import SpeakerMapResolver
+    from transcriptx.services.speaker_studio.mapping_service import (
+        SpeakerMappingService,
+    )
+
+    transcript_root = tmp_path / "transcripts"
+    _patch_managed_dirs(monkeypatch, transcript_root)
+    base_json = transcript_root / "meeting.json"
+    _write_valid_transcript(base_json, "originals/meeting.srt")
+    SpeakerMappingService().bulk_update(
+        str(base_json),
+        speaker_map={"SPEAKER_00": "Alice"},
+        ignored_speakers=[],
+        method="batch",
+    )
+
+    staging = tmp_path / "imports" / "meeting_fr.srt"
+    staging.parent.mkdir(parents=True, exist_ok=True)
+    staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nBonjour\n", encoding="utf-8")
+
+    result = mod.run_managed_import_workflow(
+        staging,
+        logical_upload_basename="meeting_fr.srt",
+        overwrite=False,
+        delete_staging_on_success=True,
+    )
+
+    assert result.json_path == transcript_root / "meeting_fr.json"
+    variant_state = SpeakerMapResolver().load_mapping(result.json_path)
+    assert variant_state.has_sidecar is True
+    assert variant_state.speaker_map["SPEAKER_00"] == "Alice"
+    assert variant_state.speaker_map_source == {
+        "kind": "inherited_from_base",
+        "base_transcript_relpath": "meeting.json",
+    }
+
+
 def test_logical_upload_basename_for_imports_staging(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -307,9 +363,7 @@ def test_logical_upload_basename_for_imports_staging(
     _patch_managed_dirs(monkeypatch, transcript_root)
     staging = tmp_path / "imports" / "a1b2c3d4_meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
-    staging.write_text(
-        "1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8"
-    )
+    staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
 
     result = mod.run_managed_import_workflow(
         staging,

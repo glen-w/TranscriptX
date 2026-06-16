@@ -49,6 +49,12 @@ def _set_play_idx(play_key: str, idx: int) -> None:
     st.session_state[play_key] = idx
 
 
+def _increment_lines_shown(lines_key: str, increment: int) -> None:
+    """on_click callback: increase visible lines before fragment rerun."""
+    current = int(st.session_state.get(lines_key, 0) or 0)
+    st.session_state[lines_key] = current + increment
+
+
 def _trigger_warm(
     controller: SpeakerStudioController,
     transcript_path: str,
@@ -133,8 +139,24 @@ def render_playback_panel(
         player and warm trigger.
     """
     # ── ffmpeg / audio guard ───────────────────────────────────────────────────
-    if not audio_path or not controller.ffmpeg_available():
-        st.caption("_Playback unavailable — audio file or ffmpeg not found._")
+    if not audio_path:
+        st.caption("_Playback unavailable — audio file not found._")
+        st.caption(
+            "_Tip: verify the transcript's source recording exists under mounted recordings._"
+        )
+        if include_segment_rows:
+            lines_shown: int = st.session_state.get(lines_key, max_lines)
+            for seg in all_segs[:lines_shown]:
+                col_time, col_text = st.columns([1, 5])
+                with col_time:
+                    st.caption(f"{_fmt_time(seg.start)} – {_fmt_time(seg.end)}")
+                with col_text:
+                    st.write(seg.text or "_(empty)_")
+        return
+
+    if not controller.ffmpeg_available():
+        st.caption("_Playback unavailable — ffmpeg not found._")
+        st.caption("_Tip: install ffmpeg or ensure it is on PATH inside runtime._")
         if include_segment_rows:
             lines_shown: int = st.session_state.get(lines_key, max_lines)
             for seg in all_segs[:lines_shown]:
@@ -203,10 +225,10 @@ def render_playback_panel(
     if lines_shown < len(all_segs):
         remaining = len(all_segs) - lines_shown
         n_more = min(max_lines, remaining)
-        if st.button(
+        st.button(
             f"Show {n_more} more lines",
             key=f"more_lines_{active_id}",
-        ):
-            # Button click triggers a natural fragment rerun; state is read on
-            # that rerun to show additional lines.
-            st.session_state[lines_key] = lines_shown + max_lines
+            # on_click sets state before rerun so the first click renders more.
+            on_click=_increment_lines_shown,
+            args=(lines_key, n_more),
+        )

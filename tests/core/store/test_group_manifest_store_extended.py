@@ -5,6 +5,7 @@ from pathlib import Path
 from transcriptx.core.domain.group import Group
 from transcriptx.core.store.group_manifest_store import (
     GroupManifestStore,
+    canonicalize_group_member_paths,
     manifest_path_for,
 )
 from transcriptx.core.utils.paths import PATHS
@@ -36,3 +37,17 @@ def test_group_manifest_roundtrip_and_member_resolution(tmp_path: Path) -> None:
     member_paths = {Path(m.file_path) for m in members}
     assert a in member_paths
     assert b in member_paths
+
+
+def test_canonicalize_group_member_paths_dedupes_absolute_and_relative() -> None:
+    transcripts_root = PATHS.transcripts_dir
+    p = transcripts_root / "canon_dedupe_group_test.json"
+    p.write_text("{}", encoding="utf-8")
+    try:
+        abs_s = str(p.resolve())
+        rel_under_tx = str(p.relative_to(transcripts_root.resolve()))
+        merged = canonicalize_group_member_paths([abs_s, rel_under_tx, abs_s])
+        assert len(merged) == 1
+        assert merged == canonicalize_group_member_paths([abs_s])
+    finally:
+        p.unlink(missing_ok=True)

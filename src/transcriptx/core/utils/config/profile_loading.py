@@ -5,6 +5,11 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from transcriptx.core.config import (
+    get_profile_target_adapter,
+    iter_runtime_profile_target_adapters,
+)
+
 
 def apply_profile_to_config(config_obj: Any, profile_data: dict[str, Any]) -> None:
     """
@@ -38,49 +43,18 @@ def load_module_profiles(config: Any) -> None:
 
     profile_manager = get_profile_manager()
 
-    topic_profile = profile_manager.load_profile(
-        "topic_modeling", config.analysis.active_topic_modeling_profile
-    )
-    if topic_profile and "config" in topic_profile:
-        apply_profile_to_config(config.analysis.topic_modeling, topic_profile["config"])
+    for adapter in iter_runtime_profile_target_adapters():
+        active_profile_name = adapter.get_active_profile_name(config)
+        profile_data = profile_manager.load_profile(
+            adapter.target_id, active_profile_name
+        )
+        config_obj = adapter.get_target_config_obj(config)
+        if config_obj is not None and profile_data and "config" in profile_data:
+            apply_profile_to_config(config_obj, profile_data["config"])
 
-    acts_profile = profile_manager.load_profile(
-        "acts", config.analysis.active_acts_profile
-    )
-    if acts_profile and "config" in acts_profile:
-        apply_profile_to_config(config.analysis.acts, acts_profile["config"])
     env_acts_model = os.getenv("TRANSCRIPTX_ACTS_MODEL")
     if env_acts_model:
-        config.analysis.acts.ml_model_name = env_acts_model
-
-    tag_profile = profile_manager.load_profile(
-        "tag_extraction", config.analysis.active_tag_extraction_profile
-    )
-    if tag_profile and "config" in tag_profile:
-        apply_profile_to_config(config.analysis.tag_extraction, tag_profile["config"])
-
-    qa_profile = profile_manager.load_profile(
-        "qa_analysis", config.analysis.active_qa_analysis_profile
-    )
-    if qa_profile and "config" in qa_profile:
-        apply_profile_to_config(config.analysis.qa_analysis, qa_profile["config"])
-
-    temporal_profile = profile_manager.load_profile(
-        "temporal_dynamics", config.analysis.active_temporal_dynamics_profile
-    )
-    if temporal_profile and "config" in temporal_profile:
-        apply_profile_to_config(
-            config.analysis.temporal_dynamics, temporal_profile["config"]
-        )
-
-    vector_profile = profile_manager.load_profile(
-        "vectorization", config.analysis.active_vectorization_profile
-    )
-    if vector_profile and "config" in vector_profile:
-        apply_profile_to_config(config.analysis.vectorization, vector_profile["config"])
-
-    workflow_profile = profile_manager.load_profile(
-        "workflow", config.active_workflow_profile
-    )
-    if workflow_profile and "config" in workflow_profile:
-        apply_profile_to_config(config.workflow, workflow_profile["config"])
+        acts_adapter = get_profile_target_adapter("acts")
+        acts_cfg = acts_adapter.get_target_config_obj(config) if acts_adapter else None
+        if acts_cfg is not None:
+            setattr(acts_cfg, "ml_model_name", env_acts_model)

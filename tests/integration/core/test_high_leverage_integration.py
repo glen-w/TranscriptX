@@ -69,7 +69,7 @@ def test_pipeline_stats_module_produces_artifacts(tmp_path, monkeypatch) -> None
 def test_pipeline_transcript_output_module_produces_files(
     tmp_path, monkeypatch
 ) -> None:
-    """Run pipeline with 'transcript_output' on mini transcript; assert txt/csv outputs."""
+    """Run pipeline with 'transcript_output' on mini transcript; assert transcript outputs."""
     outputs_root = tmp_path / "outputs"
     transcripts_root = tmp_path / "transcripts"
     outputs_root.mkdir()
@@ -104,4 +104,6 @@ def test_pipeline_transcript_output_module_produces_files(
     output_dir = Path(result["output_dir"])
     transcripts_dir = output_dir / "transcripts"
     assert transcripts_dir.exists()
-    assert list(transcripts_dir.glob("*.txt")) or list(transcripts_dir.glob("*.csv"))
+    assert list(transcripts_dir.glob("*.txt"))
+    assert list(transcripts_dir.glob("*.csv"))
+    assert list(transcripts_dir.glob("*.srt"))

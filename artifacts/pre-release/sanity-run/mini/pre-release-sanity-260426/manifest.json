@@ -1,0 +1,51 @@
+{
+  "manifest_type": "artifact_manifest",
+  "schema_version": 1,
+  "run_id": "pre-release-sanity-260426",
+  "run_metadata": {
+    "timestamp": "2026-04-26T15:16:27.590282Z",
+    "transcript_key": "sha256:bdaa34aa0295f168c125ba6690ab0c97cd692be66ad6b677709977e5dad36ad0",
+    "audio_rel_path": null,
+    "modules_enabled": [
+      "stats",
+      "transcript_output"
+    ],
+    "version_hash": {
+      "stats": "",
+      "transcript_output": ""
+    },
+    "total_size_bytes": 28791,
+    "config_effective_path": ".transcriptx/run_config_effective.json",
+    "config_hash": "sha256:fa6fcc5cb1925f9f786c3e29b6c8a0bfbdfabe7a4ef4665b8b8c1432fbbd7dee",
+    "config_schema_version": 1,
+    "config_source": "default"
+  },
+  "artifacts": [
+    {
+      "id": "9a2c3d6e71d47dcac7eeeb6c719f0290c74e7967",
+      "kind": "data_json",
+      "module": "run_results.json",
+      "rel_path": "run_results.json",
+      "bytes": 773,
+      "mtime": "2026-04-26T15:15:53.663827Z",
+      "mime": "application/json",
+      "tags": [
+        "run_results.json"
+      ],
+      "title": "Run Results"
+    },
+    {
+      "id": "9c9dd0fa0c4ac608fd7a018ebde4c80358e1d4e1",
+      "kind": "config",
+      "module": ".transcriptx",
+      "rel_path": ".transcriptx/run_config_effective.json",
+      "bytes": 28018,
+      "mtime": "2026-04-26T15:15:53.658848Z",
+      "mime": "application/json",
+      "tags": [
+        ".transcriptx"
+      ],
+      "title": "Run Config Effective"
+    }
+  ]
+}

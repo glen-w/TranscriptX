@@ -8,14 +8,26 @@ with consistent error handling and data serialization.
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Callable
+from typing import Any, Callable, Dict, List, Mapping
 
 import numpy as np
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
 from transcriptx.core.utils.artifact_writer import write_csv, write_json, write_text
+from transcriptx.io.srt_writer import write_srt_file
 
 logger = get_logger()
+
+
+def convert_np(obj: Any) -> Any:
+    """Convert numpy types to standard Python types for JSON serialization."""
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, (np.ndarray,)):
+        return obj.tolist()
+    return str(obj) if hasattr(obj, "__str__") else obj
 
 
 def _validate_directory_creation(path: str) -> bool:
@@ -75,16 +87,6 @@ def save_json(data: Dict[str, Any], path: str) -> None:
         data: Dictionary or list to save
         path: Path where the file should be saved
     """
-
-    def convert_np(obj: Any) -> Any:
-        """Convert numpy types to standard Python types."""
-        if isinstance(obj, (np.integer,)):
-            return int(obj)
-        if isinstance(obj, (np.floating,)):
-            return float(obj)
-        if isinstance(obj, (np.ndarray,)):
-            return obj.tolist()
-        return str(obj) if hasattr(obj, "__str__") else obj
 
     # Validate directory creation before creating it
     if not _validate_directory_creation(path):
@@ -147,15 +149,52 @@ def save_transcript(data: List[Dict[str, Any]], path: str) -> None:
     logger.debug(f"Saved transcript to: {path}")
 
 
+def _resolve_segment_speaker_name(
+    seg: Mapping[str, Any],
+    segments: List[Dict[str, Any]],
+    speaker_map: Dict[str, str] | None = None,
+) -> str:
+    """Resolve the display speaker name used by transcript text-like outputs."""
+    speaker_field = seg.get("speaker", "")
+    speaker_key = str(speaker_field)
+
+    # Legacy fallback: use speaker_map if provided
+    if speaker_map and speaker_key in speaker_map:
+        return speaker_map[speaker_key]
+
+    try:
+        from transcriptx.core.utils.speaker_extraction import (
+            extract_speaker_info,
+            get_speaker_display_name,
+        )
+        from transcriptx.utils.text_utils import is_named_speaker
+    except ImportError:
+        logger.warning(
+            "Speaker extraction utilities not available, using basic fallback"
+        )
+        return str(speaker_field) if speaker_field else "Unknown"
+
+    # Use speaker field directly if it looks like a display name
+    if speaker_field and is_named_speaker(str(speaker_field)):
+        return str(speaker_field)
+
+    # Fallback: try to extract speaker info if speaker field is ID-like
+    speaker_info = extract_speaker_info(seg)
+    if speaker_info:
+        return get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
+
+    return str(speaker_field) if speaker_field else "Unknown"
+
+
 def write_transcript_files(
     segments: List[Dict[str, Any]],
     speaker_map: Dict[str, str] | None = None,
     base_name: str = "",
     out_dir: str = "",
     format_time_func: Callable[[float], str] | None = None,
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     """
-    Write transcript files in both TXT and CSV formats.
+    Write transcript files in TXT, CSV, and SRT formats.
 
     Uses segment-based speaker identification. The speaker field in segments
     should already contain the display name. speaker_map parameter is deprecated
@@ -169,7 +208,7 @@ def write_transcript_files(
         format_time_func: Function to format timestamps
 
     Returns:
-        Tuple of (transcript_txt_path, transcript_csv_path)
+        Tuple of (transcript_txt_path, transcript_csv_path, transcript_srt_path)
     """
     if format_time_func is None:
         from transcriptx.utils.text_utils import format_time
@@ -178,6 +217,7 @@ def write_transcript_files(
 
     transcript_path = os.path.join(out_dir, f"{base_name}-transcript.txt")
     csv_path = os.path.join(out_dir, f"{base_name}-transcript.csv")
+    srt_path = os.path.join(out_dir, f"{base_name}-transcript.srt")
 
     rows: List[List[str]] = [["Speaker", "Timestamp", "Text"]]
     prev_speaker = None
@@ -185,45 +225,8 @@ def write_transcript_files(
     start_time = None
     text_lines: List[str] = []
 
-    # Import speaker extraction utilities for fallback
-    try:
-        from transcriptx.core.utils.speaker_extraction import (
-            extract_speaker_info,
-            get_speaker_display_name,
-        )
-        from transcriptx.utils.text_utils import is_named_speaker
-
-        use_speaker_extraction = True
-    except ImportError:
-        use_speaker_extraction = False
-        logger.warning(
-            "Speaker extraction utilities not available, using basic fallback"
-        )
-
     for seg in segments:
-        # Get speaker name - segments should already have display name in 'speaker' field
-        speaker_field = seg.get("speaker", "")
-
-        speaker_key = str(speaker_field)
-        # Legacy fallback: use speaker_map if provided
-        if speaker_map and speaker_key in speaker_map:
-            name = speaker_map[speaker_key]
-        # Use speaker field directly if it looks like a display name
-        elif speaker_field and (
-            not use_speaker_extraction or is_named_speaker(str(speaker_field))
-        ):
-            name = str(speaker_field)
-        elif use_speaker_extraction:
-            # Fallback: try to extract speaker info if speaker field is ID-like
-            speaker_info = extract_speaker_info(seg)
-            if speaker_info:
-                name = get_speaker_display_name(
-                    speaker_info.grouping_key, [seg], segments
-                )
-            else:
-                name = str(speaker_field) if speaker_field else "Unknown"
-        else:
-            name = str(speaker_field) if speaker_field else "Unknown"
+        name = _resolve_segment_speaker_name(seg, segments, speaker_map)
 
         text = seg.get("text", "").strip()
         pause = seg.get("pause", 0)
@@ -252,6 +255,14 @@ def write_transcript_files(
 
     write_csv(csv_path, rows[1:], header=rows[0])
     write_text(transcript_path, "".join(text_lines))
+    write_srt_file(
+        segments,
+        srt_path,
+        speaker_map=speaker_map,
+        resolve_speaker=lambda seg: _resolve_segment_speaker_name(
+            seg, segments, speaker_map
+        ),
+    )
 
-    logger.debug(f"Saved transcript files: {transcript_path}, {csv_path}")
-    return transcript_path, csv_path
+    logger.debug(f"Saved transcript files: {transcript_path}, {csv_path}, {srt_path}")
+    return transcript_path, csv_path, srt_path

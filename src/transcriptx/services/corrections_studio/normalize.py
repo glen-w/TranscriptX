@@ -2,11 +2,15 @@
 Temporary cutover: legacy on-disk session dict → StudioSessionDocument.
 
 Delete once no legacy blobs remain in the wild.
+
+**Import surface:** External code should only rely on
+``normalize_cutover_session_blob`` for loading legacy session blobs into
+``StudioSessionDocument``. Other helpers in this module are internal to the
+Corrections Studio package.
 """
 
 from __future__ import annotations
 
-import hashlib
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -25,17 +29,13 @@ from transcriptx.services.corrections_studio.schema import (
 from transcriptx.services.corrections_studio.identity import (
     compute_generation_manifest_hash,
 )
+from transcriptx.services.corrections_studio.occurrence_keys import (
+    stable_occurrence_key,
+)
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _stable_occurrence_key(
-    segment_id: str, span_start: int, span_end: int, wrong_text: str
-) -> str:
-    sig = f"{segment_id}:{span_start}:{span_end}:{wrong_text}"
-    return hashlib.sha1(sig.encode("utf-8")).hexdigest()
 
 
 def _review_status_from_str(s: str) -> ReviewStatus:
@@ -53,7 +53,7 @@ def _occ_from_legacy(o: Dict[str, Any], idx: int, wrong_text: str) -> StudioOccu
     sk = o.get("stable_occurrence_key")
     if not sk:
         span_start, span_end = (span_t[0], span_t[1]) if span_t else (-1, -1)
-        base = _stable_occurrence_key(
+        base = stable_occurrence_key(
             str(o.get("segment_id", "")), span_start, span_end, wrong_text
         )
         sk = f"{base}_{idx}" if span_t is None else base
@@ -116,6 +116,8 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
         detector_version=det_ver,
         corrections_config_fingerprint="",
         memory_rule_fingerprint="",
+        speaker_map_fingerprint="",
+        studio_session_rules_fingerprint="",
     )
     mh = compute_generation_manifest_hash(manifest)
 
@@ -225,5 +227,7 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
 
 def session_document_to_persistence(doc: StudioSessionDocument) -> Dict[str, Any]:
     """JSON-serializable dict for session.json (drops ephemeral UI fields)."""
-    d = doc.model_dump(mode="json", exclude={"candidates_stale"})
+    d = doc.model_dump(
+        mode="json", exclude={"candidates_stale", "generation_inputs_stale"}
+    )
     return d

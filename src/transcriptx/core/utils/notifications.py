@@ -39,6 +39,7 @@ MODULE_COLOR_MAP = {
     "entity_sentiment": "#ff875f",  # Entity-based sentiment analysis (salmon/orange)
     "semantic_similarity": "#af00d7",  # Semantic similarity analysis (dark violet)
     "semantic_similarity_advanced": "#d700ff",  # Advanced semantic similarity (violet)
+    "semantic_similarity_v2": "#9b59b6",  # Semantic similarity v2
     "topic_modeling": "#ffd700",  # Topic modeling (gold)
     "tics": "#ff5f00",  # Tics analysis (orange red)
     "understandability": "#00ffaf",  # Understandability analysis (medium spring green)
@@ -72,6 +73,7 @@ MODULE_EMOJI_MAP = {
     "entity_sentiment": "💭",  # Entity-based sentiment analysis
     "semantic_similarity": "🔗",  # Semantic similarity analysis
     "semantic_similarity_advanced": "🔗",  # Advanced semantic similarity
+    "semantic_similarity_v2": "🔗",  # Semantic similarity v2
     "topic_modeling": "💡",  # Topic modeling
     "tics": "✔️",  # Tics analysis
     "understandability": "📖",  # Understandability analysis
@@ -82,6 +84,12 @@ MODULE_EMOJI_MAP = {
     "momentum": "🚀",  # Momentum analysis
     "moments": "⭐",  # Moments analysis
     "default": "⚙️",  # Default emoji for unknown modules
+}
+
+_MODULE_DISPLAY_NAME_MAP = {
+    "semantic_similarity": "SEMANTIC SIMILARITY (LEGACY)",
+    "semantic_similarity_advanced": "SEMANTIC SIMILARITY ADVANCED (LEGACY)",
+    "semantic_similarity_v2": "SEMANTIC SIMILARITY V2",
 }
 
 
@@ -123,8 +131,10 @@ def print_section_break(module: str | None = "default", force: bool = False) -> 
         emoji = ""
         if use_emojis:
             emoji = MODULE_EMOJI_MAP.get(module_key, MODULE_EMOJI_MAP["default"]) + " "
-        # Format module name: replace underscores with spaces and capitalize
-        module_display = module.upper().replace("_", " ")
+        # Format module name; explicitly label known legacy modules.
+        module_display = _MODULE_DISPLAY_NAME_MAP.get(
+            module_key, module.upper().replace("_", " ")
+        )
         # Print with emoji prefix (if enabled)
         console.print(f"{emoji}{module_display}", style=Style(color=color, bold=True))
         console.print("─" * 60, style=Style(color=color))

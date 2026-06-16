@@ -42,7 +42,9 @@ The image includes the spaCy language models (`en_core_web_md` and `en_core_web_
 
 ```bash
 docker buildx build --platform linux/amd64 --load -t transcriptx:amd64 .
-docker run --rm -v "$(pwd)/data:/data" --platform linux/amd64 -p 8501:8501 transcriptx:amd64
+export HOST_RECORDINGS_DIR=/path/to/your/recordings   # outside the repo; same as in .env for compose
+docker run --rm -v "$(pwd)/data:/data" -v "$HOST_RECORDINGS_DIR:/mnt/recordings" \
+  -e TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings --platform linux/amd64 -p 8501:8501 transcriptx:amd64
 ```
 
 ### Primary commands: Web interface
@@ -86,35 +88,36 @@ print('success:', result.success)
 
 ## Volume layout
 
-Mount your data at `/data`:
+Mount your app working data at `/data` and **mount source audio from outside the git clone**:
 
 ```yaml
 volumes:
   - ./data:/data
+  - ${HOST_RECORDINGS_DIR}:/mnt/recordings
+  - ${HOST_RECORDINGS_DIR}/imports:/mnt/recordings/imports
 ```
 
-Recommended layout under `./data`:
+`HOST_RECORDINGS_DIR` must be set in `.env` to a host folder that is **not** under the repository (see `.env.example`). Do not keep recordings inside the clone; they are user-owned media and are excluded from version control.
 
-```
-data/
-  recordings/    ← source WAV/MP3 files
-  transcripts/   ← JSON transcripts
-  outputs/       ← analysis run outputs
-```
+Typical layout:
 
-Optional separate mounts for large libraries:
+- **On the host (outside the repo):** `recordings/` (and `recordings/imports/` for uploads)
+- **Under `./data` (mounted at `/data`):** transcripts, outputs, cache, state, and other app-managed paths
+
+Optional separate mounts for large transcript libraries (same pattern as recordings):
 
 ```yaml
 volumes:
   - ./data:/data
-  - /path/to/recordings:/recordings
-  - /path/to/transcripts:/transcripts
+  - /path/to/recordings:/mnt/recordings
+  - /path/to/transcripts:/mnt/transcripts
 ```
 
-Then set environment variables:
+Then set environment variables (as in `docker-compose.yml`):
+
 ```
-TRANSCRIPTX_RECORDINGS_DIR=/recordings
-TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
+TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings
+TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts
 ```
 
 ## Environment variables
@@ -123,7 +126,7 @@ TRANSCRIPTX_TRANSCRIPTS_DIR=/transcripts
 |----------|---------|-------------|
 | `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
 | `TRANSCRIPTX_DATA_DIR` | `/data` | Base data directory inside container |
-| `TRANSCRIPTX_RECORDINGS_DIR` | `$DATA_DIR/recordings` | Source audio |
+| `TRANSCRIPTX_RECORDINGS_DIR` | `$DATA_DIR/recordings` (native only; **Docker compose sets `/mnt/recordings`**) | Source audio |
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` | `$DATA_DIR/transcripts` | Transcript JSON files |
 | `TRANSCRIPTX_OUTPUT_DIR` | `$DATA_DIR/outputs` | Analysis outputs |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | `0` | Enable model/resource downloads (`1` disables) |

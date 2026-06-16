@@ -4,7 +4,8 @@ Integration tests for pipeline state management.
 This module tests pipeline execution → State updates → Resume capability.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+from types import SimpleNamespace
 import pytest
 import json
 
@@ -29,28 +30,35 @@ class TestPipelineStateIntegration:
     ):
         """Test that pipeline execution updates state."""
         with (
-            patch(
-                "transcriptx.core.pipeline.pipeline.create_dag_pipeline"
-            ) as mock_create_dag,
             patch("transcriptx.core.pipeline.pipeline.validate_transcript"),
             patch(
-                "transcriptx.io.transcript_service.get_transcript_service"
-            ) as mock_get_service,
+                "transcriptx.io.import_metadata_sidecar.validate_managed_transcript",
+                return_value=SimpleNamespace(
+                    ok=True, category=SimpleNamespace(value="ok"), message="ok"
+                ),
+            ),
+            patch("transcriptx.core.pipeline.pipeline._orchestrator.run") as mock_run,
         ):
-            mock_dag = MagicMock()
-            mock_dag.execute_pipeline.return_value = {
-                "modules_run": ["sentiment"],
-                "errors": [],
-            }
-            mock_create_dag.return_value = mock_dag
-
-            mock_service = MagicMock()
-            mock_service.load_transcript_data.return_value = (
-                [{"speaker": "SPEAKER_00", "text": "Test", "start": 0.0, "end": 1.0}],
-                "test",
-                str(temp_transcript_file.parent),
+            mock_run.return_value = SimpleNamespace(
+                transcript_path=str(temp_transcript_file),
+                selected_modules=["sentiment"],
+                modules_run=["sentiment"],
+                errors=[],
+                duration=0.1,
+                summary={},
+                execution_order=["sentiment"],
+                cache_hits=[],
+                output_dir=str(temp_transcript_file.parent),
+                transcript_key="k",
+                run_id="r1",
+                module_results={},
+                status="success",
+                execution_status="succeeded",
+                final_status="succeeded",
+                persistence_outcomes=[],
+                termination_reason=None,
+                schema_version=1,
             )
-            mock_get_service.return_value = mock_service
 
             result = run_analysis_pipeline(
                 target=TranscriptRef(path=str(temp_transcript_file)),

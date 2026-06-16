@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.pipeline.pipeline_context import PipelineContext
-from transcriptx.core.pipeline.dag_pipeline_run import gating_named_speaker_count
+from transcriptx.core.pipeline.dag_pipeline_run import (
+    gating_named_speaker_count,
+    gating_turn_taking_speaker_count,
+    speaker_gate_skip_reason,
+)
 
 
 def compute_review_before_run_for_pipeline(
@@ -63,6 +67,7 @@ def compute_review_before_run_for_pipeline(
 
     context = None
     named_speaker_count: Optional[int] = None
+    turn_taking_speaker_count: Optional[int] = None
     try:
         context = PipelineContext(
             transcript_path,
@@ -75,8 +80,10 @@ def compute_review_before_run_for_pipeline(
         )
         if context.validate():
             named_speaker_count = gating_named_speaker_count(transcript_path, context)
+            turn_taking_speaker_count = gating_turn_taking_speaker_count(context)
     except Exception:
         named_speaker_count = None
+        turn_taking_speaker_count = None
     finally:
         if context:
             try:
@@ -114,26 +121,26 @@ def compute_review_before_run_for_pipeline(
                     }
                 )
                 continue
-        if named_speaker_count is not None:
-            try:
-                from transcriptx.core.pipeline.module_registry import (
-                    effective_min_named_speakers,
-                    get_module_info,
-                )
+        try:
+            from transcriptx.core.pipeline.module_registry import get_module_info
 
-                module_info = get_module_info(module_name)
-                if module_info:
-                    min_required = effective_min_named_speakers(module_info)
-                    if named_speaker_count < min_required:
-                        modules_skipped.append(
-                            {
-                                "module": module_name,
-                                "reason": f"requires at least {min_required} named speakers",
-                            }
-                        )
-                        continue
-            except Exception:
-                pass
+            module_info = get_module_info(module_name)
+            if module_info:
+                reason_text = speaker_gate_skip_reason(
+                    module_info,
+                    named_speaker_count=named_speaker_count,
+                    turn_taking_speaker_count=turn_taking_speaker_count,
+                )
+                if reason_text:
+                    modules_skipped.append(
+                        {
+                            "module": module_name,
+                            "reason": reason_text,
+                        }
+                    )
+                    continue
+        except Exception:
+            pass
         modules_will_run.append(module_name)
 
     return {

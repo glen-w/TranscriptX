@@ -59,22 +59,8 @@ class ThreadLocalConfigProvider:
 
         return _ensure_dashboard_config(self._default_config)
 
-
-def _ensure_dashboard_config(config: TranscriptXConfig) -> TranscriptXConfig:
-    if hasattr(config, "dashboard"):
-        return config
-    from transcriptx.core.utils.config.workflow import DashboardConfig
-
-    config.dashboard = DashboardConfig()
-    return config
-
     def set_config(self, config: TranscriptXConfig) -> None:
-        """
-        Set configuration for current thread.
-
-        Args:
-            config: Configuration to set for current thread
-        """
+        """Set configuration for current thread."""
         self._local.config = config
 
     def clear_config(self) -> None:
@@ -84,19 +70,7 @@ def _ensure_dashboard_config(config: TranscriptXConfig) -> TranscriptXConfig:
 
     @contextmanager
     def with_config(self, config: TranscriptXConfig):
-        """
-        Context manager for temporary configuration.
-
-        Useful for testing or temporarily overriding configuration.
-
-        Args:
-            config: Configuration to use within context
-
-        Example:
-            with provider.with_config(test_config):
-                # Use test_config here
-                result = some_function()
-        """
+        """Context manager for temporary thread-local configuration."""
         old_config = getattr(self._local, "config", None)
         try:
             self.set_config(config)
@@ -106,6 +80,15 @@ def _ensure_dashboard_config(config: TranscriptXConfig) -> TranscriptXConfig:
                 self.clear_config()
             else:
                 self.set_config(old_config)
+
+
+def _ensure_dashboard_config(config: TranscriptXConfig) -> TranscriptXConfig:
+    if hasattr(config, "dashboard"):
+        return config
+    from transcriptx.core.utils.config.workflow import DashboardConfig
+
+    config.dashboard = DashboardConfig()
+    return config
 
 
 # Global thread-local provider instance

@@ -7,6 +7,7 @@ Concept → Authority:
 
 - **Storage** → `docs/runtime/STORAGE.md`
 - **Run truth & statuses** → `docs/run_outcome_contract.md`
+- **Core pipeline layering & lifecycle** → `docs/dev/pipeline_contracts.md`
 - **Outputs & layout** → `docs/contracts/output-contract-v1.md`
 - **Public surfaces & support** → `docs/public_surfaces.md`
 - **Terms (index only)** → `docs/TERMS.md`

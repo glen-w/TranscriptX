@@ -17,7 +17,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Pie of the dialogue-act mix pooled across every session in the group, as if the whole group were one conversation. Each slice is an act category's share of all classified utterances. Larger slices show which act types dominate; this is the audited pooled act mix, not a per-session average.",
     "family_id": null,
     "variant": null
   },
@@ -39,7 +39,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "One bar per transcript in the group showing that session's mean compound sentiment (-1 most negative to +1 most positive). Compare bar heights to see which sessions skewed positive or negative overall. One value per session, not a within-session timeline.",
     "family_id": null,
     "variant": null
   },
@@ -61,7 +61,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "One bar per transcript in the group showing the total words spoken in that session. Use it to compare session length and verbosity across the group. One value per session.",
     "family_id": null,
     "variant": null
   },
@@ -83,7 +83,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Dialogue-act activity over time with each session drawn as its own line on a shared session-relative minute axis (not one wall-clock timeline). Compare the shape of act usage across sessions; the x-axis is minutes from each session's own start.",
     "family_id": null,
     "variant": null
   },
@@ -105,7 +105,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Sentiment trajectory for each session overlaid on a shared session-relative minute axis. Each line is one session's compound sentiment over its own elapsed time; use it to compare emotional arcs across sessions rather than absolute clock time.",
     "family_id": null,
     "variant": null
   },
@@ -127,7 +127,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Pause activity for each session overlaid on a shared session-relative minute axis. Each line tracks one session's pausing over its own elapsed time; compare where silences cluster across sessions.",
     "family_id": null,
     "variant": null
   },
@@ -149,7 +149,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Emotion intensity for each session overlaid on a shared session-relative minute axis. Each line is one session's emotion signal over its own elapsed time; compare emotional dynamics across sessions, not absolute clock time.",
     "family_id": null,
     "variant": null
   },
@@ -171,7 +171,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Prosodic energy (RMS loudness) for each session overlaid on a shared session-relative minute axis. Each line tracks one session's loudness over its own elapsed time. Gallery-only by default; requires voice/prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -193,7 +193,7 @@
       "by_chart_slug_regex": "cross_session_speaker",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Bars comparing the same canonical speaker's mean compound sentiment across the group's sessions. Use it to see whether a given person trends more positive or negative from session to session. Speakers are matched by canonical identity across transcripts.",
     "family_id": null,
     "variant": null
   },
@@ -215,7 +215,7 @@
       "by_chart_slug_regex": "stats_cross_session_speaker",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Bars comparing the same canonical speaker's word count across the group's sessions. Shows how one person's verbosity changes session to session. Speakers matched by canonical identity across transcripts.",
     "family_id": null,
     "variant": null
   },
@@ -237,7 +237,7 @@
       "by_chart_slug_regex": "stats_cross_session_segment_count",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Bars comparing the same canonical speaker's number of speaking turns (segments) across the group's sessions. Shows how often one person took the floor in each session. Speakers matched by canonical identity.",
     "family_id": null,
     "variant": null
   },
@@ -259,7 +259,7 @@
       "by_chart_slug_regex": "multi_speaker_sentiment",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Sentiment over time with one line per speaker on a shared timeline. The y-axis is compound sentiment (-1 negative to +1 positive); use it to see how each speaker's tone rises and falls and where speakers diverge.",
     "family_id": null,
     "variant": null
   },
@@ -281,7 +281,7 @@
       "by_chart_slug_regex": "rolling_sentiment",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Rolling (smoothed) compound sentiment for a single speaker over the conversation. Smoothing reduces turn-to-turn noise so you can see that speaker's sustained mood trend. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -303,7 +303,7 @@
       "by_chart_slug_regex": "emotion_all_radar",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Radar chart of emotion-category intensities aggregated over all speakers. Each axis is an emotion; a larger reach on an axis means that emotion is more present overall.",
     "family_id": null,
     "variant": null
   },
@@ -325,7 +325,7 @@
       "by_chart_slug_regex": "/radar\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Radar chart of emotion-category intensities for a single speaker. Each axis is an emotion; compare the shape across speakers to see who expresses which emotions most. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -347,7 +347,7 @@
       "by_chart_slug_regex": "radar_polar",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Polar variant of the all-speaker emotion radar. Each wedge is an emotion category and its radius is overall intensity; a quick visual fingerprint of the conversation's emotional balance.",
     "family_id": null,
     "variant": null
   },
@@ -369,7 +369,7 @@
       "by_chart_slug_regex": "radar_polar",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Polar emotion radar for a single speaker. Each wedge is an emotion and its radius is that speaker's intensity for it. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -391,7 +391,7 @@
       "by_chart_slug_regex": "ner-types-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Counts of named-entity types (people, places, organizations, dates, etc.) across the whole transcript. Taller bars mean that entity type was mentioned more often.",
     "family_id": null,
     "variant": null
   },
@@ -413,7 +413,7 @@
       "by_chart_slug_regex": "ner-types",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Counts of named-entity types for a single speaker. Shows which kinds of entities each person references most. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -435,7 +435,7 @@
       "by_chart_slug_regex": "locations-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Map of location entities mentioned in the transcript, geocoded where possible. Markers show places referenced across all speakers; use it to see the conversation's geographic footprint. Ambiguous place names may be omitted.",
     "family_id": null,
     "variant": null
   },
@@ -457,7 +457,7 @@
       "by_chart_slug_regex": "locations-[^/]+",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Map of location entities mentioned by a single speaker, geocoded where possible. Markers show the places that person referenced. One map per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -479,7 +479,7 @@
       "by_chart_slug_regex": "/timeline\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of speaking turns across the conversation, with each speaker on its own track. Shows turn-taking order, who spoke when, and turn lengths along the time axis.",
     "family_id": null,
     "variant": null
   },
@@ -501,7 +501,7 @@
       "by_chart_slug_regex": "/timeline\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Speaking-turn timeline focused on a single speaker, showing when that person held the floor across the conversation. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -523,7 +523,7 @@
       "by_chart_slug_regex": "/network\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Network graph of who responds to whom. Nodes are speakers and edges show directed interaction flow; thicker or denser links mean more frequent exchanges between those speakers.",
     "family_id": null,
     "variant": null
   },
@@ -545,7 +545,7 @@
       "by_chart_slug_regex": "/heatmap\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Matrix of speaker-to-speaker interaction counts. Rows and columns are speakers and each cell's color intensity shows how often one followed or addressed the other; darker cells mean more interaction.",
     "family_id": null,
     "variant": null
   },
@@ -567,7 +567,7 @@
       "by_chart_slug_regex": "/dominance\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Comparison of conversational dominance per speaker (such as share of talk time or turns). Taller bars mean that speaker dominated more of the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -589,7 +589,7 @@
       "by_chart_slug_regex": "network_graph",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Graph-layout view of the speaker interaction network. Nodes are speakers and edge weight reflects the strength of exchanges; use it to spot central speakers and isolated participants.",
     "family_id": null,
     "variant": null
   },
@@ -611,7 +611,7 @@
       "by_chart_slug_regex": "heatmap_interruptions",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Matrix of interruptions between speakers. Each cell shows how often the row speaker interrupted the column speaker; darker cells mean more interruptions in that direction.",
     "family_id": null,
     "variant": null
   },
@@ -633,7 +633,7 @@
       "by_chart_slug_regex": "heatmap_responses",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Matrix of responses between speakers. Each cell shows how often the row speaker responded to the column speaker; darker cells mean more frequent responses in that direction.",
     "family_id": null,
     "variant": null
   },
@@ -655,7 +655,7 @@
       "by_chart_slug_regex": "momentum",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Conversational momentum over time, capturing shifts in pace and energy. Rising values indicate building intensity or engagement and dips indicate lulls; read peaks as moments where the conversation accelerated.",
     "family_id": null,
     "variant": null
   },
@@ -677,7 +677,7 @@
       "by_chart_slug_regex": "engagement_timeseries",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Engagement level over the course of the conversation. The x-axis is time and the y-axis is an engagement score derived from participation and turn dynamics; peaks mark the most active stretches.",
     "family_id": null,
     "variant": null
   },
@@ -699,7 +699,7 @@
       "by_chart_slug_regex": "speaking_rate_timeseries",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Speaking rate (such as words per minute) over time. Higher values mean faster speech; use it to spot rushed or slow passages across the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -721,7 +721,7 @@
       "by_chart_slug_regex": "sentiment_timeseries",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Overall sentiment over time for the whole conversation. The y-axis is compound sentiment (-1 to +1); track rises and falls to see the conversation's emotional arc.",
     "family_id": null,
     "variant": null
   },
@@ -743,7 +743,7 @@
       "by_chart_slug_regex": "phase_detection",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline marking detected conversation phases (for example opening, discussion, closing). Colored spans show where the conversation shifts between phases along the time axis.",
     "family_id": null,
     "variant": null
   },
@@ -765,7 +765,7 @@
       "by_chart_slug_regex": "temporal_dashboard\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Dashboard combining turn frequency and segment activity over time. Use it to see how turn-taking density evolves across the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -787,7 +787,7 @@
       "by_chart_slug_regex": "temporal_dashboard_speaking_rate",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Dashboard view of speaking rate over time. Higher values mean faster delivery; use it to compare pace across phases of the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -809,7 +809,7 @@
       "by_chart_slug_regex": "qa_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of question-and-answer exchanges. Markers show where questions are asked and answered along the conversation; use it to see the rhythm of Q&A.",
     "family_id": null,
     "variant": null
   },
@@ -831,7 +831,7 @@
       "by_chart_slug_regex": "response_quality",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of response-quality scores for answers given. Bars show how many responses fall into each quality band; a right-skewed shape means generally stronger answers.",
     "family_id": null,
     "variant": null
   },
@@ -853,7 +853,7 @@
       "by_chart_slug_regex": "question_type_breakdown",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Breakdown of question types (such as open versus closed, factual versus probing). Each slice or bar is a type's share of all questions asked.",
     "family_id": null,
     "variant": null
   },
@@ -875,7 +875,7 @@
       "by_chart_slug_regex": "response_time_analysis",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of response times between a question and its answer. Longer times suggest hesitation or complex answers; use it to spot slow exchanges.",
     "family_id": null,
     "variant": null
   },
@@ -897,7 +897,7 @@
       "by_chart_slug_regex": "/tics\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Counts of verbal tics and filler words (um, like, you know, etc.) for a single speaker. Taller bars mean that filler is used more by that speaker. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -919,7 +919,7 @@
       "by_chart_slug_regex": "sentiment_heatmap",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Heatmap of sentiment expressed toward entities. Rows are entities and color shows the tone directed at each (positive versus negative); use it to see which topics or people are discussed warmly or critically.",
     "family_id": null,
     "variant": null
   },
@@ -941,7 +941,7 @@
       "by_chart_slug_regex": "entity_type_analysis",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Sentiment grouped by entity type (people, places, organizations, etc.). Bars show average tone toward each category; compare to see which kinds of entities draw positive or negative sentiment.",
     "family_id": null,
     "variant": null
   },
@@ -963,7 +963,7 @@
       "by_chart_slug_regex": "entity_mentions",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Entities mentioned by a single speaker with the sentiment attached to each. Shows what that person talks about and how positively or negatively. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -985,7 +985,7 @@
       "by_chart_slug_regex": "contagion_matrix",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Matrix of emotional contagion between speakers. Each cell estimates how much one speaker's emotion influences another's; darker cells mean stronger directed influence from the row speaker to the column speaker.",
     "family_id": null,
     "variant": null
   },
@@ -1007,7 +1007,7 @@
       "by_chart_slug_regex": "echo_heatmap",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Heatmap of language echoes where speakers reuse each other's words or phrases. Darker cells mean one speaker echoed another more; use it to spot alignment or mirroring.",
     "family_id": null,
     "variant": null
   },
@@ -1029,7 +1029,7 @@
       "by_chart_slug_regex": "echo_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of echo events where speakers repeat each other's language. Markers show when echoes occur across the conversation; clusters indicate stretches of strong mirroring.",
     "family_id": null,
     "variant": null
   },
@@ -1051,7 +1051,7 @@
       "by_chart_slug_regex": "pauses_hist",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Histogram of pause durations across the conversation. The x-axis is pause length and bars count how many pauses fall in each bin; a long tail indicates frequent long silences.",
     "family_id": null,
     "variant": null
   },
@@ -1073,7 +1073,7 @@
       "by_chart_slug_regex": "pauses_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of pauses across the conversation. Markers and heights show where silences occur and how long they last; clusters reveal hesitant or reflective stretches.",
     "family_id": null,
     "variant": null
   },
@@ -1095,7 +1095,7 @@
       "by_chart_slug_regex": "moments_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of notable moments detected in the conversation (such as emotional peaks or shifts). Markers show when each moment occurs; use it to jump to highlights.",
     "family_id": null,
     "variant": null
   },
@@ -1117,7 +1117,7 @@
       "by_chart_slug_regex": "speaker_repetition_frequency",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "How often each speaker repeats their own earlier content, by frequency. Taller bars mean more self-repetition; useful for spotting emphasis or circling back.",
     "family_id": null,
     "variant": null
   },
@@ -1139,7 +1139,7 @@
       "by_chart_slug_regex": "agreement_disagreement_breakdown",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Breakdown of cross-speaker interaction types (such as agreement, disagreement, elaboration) inferred from semantic similarity. Each bar or slice is a type's share of cross-speaker exchanges.",
     "family_id": null,
     "variant": null
   },
@@ -1161,7 +1161,7 @@
       "by_chart_slug_regex": "similarity_distribution",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of semantic-similarity scores between utterances. The x-axis is similarity (0 unrelated to 1 near-identical); a mass at high values indicates lots of repetition or shared content.",
     "family_id": null,
     "variant": null
   },
@@ -1183,7 +1183,7 @@
       "by_chart_slug_regex": "speaker_repetitions",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Count of repeated content per speaker. Taller bars mean that speaker reiterated points more often across the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -1205,7 +1205,7 @@
       "by_chart_slug_regex": "classification",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Classification of detected repetitions (such as self versus cross-speaker, paraphrase versus verbatim). Each bar is a category's share of all repetitions.",
     "family_id": null,
     "variant": null
   },
@@ -1227,7 +1227,7 @@
       "by_chart_slug_regex": "speaker_similarity",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Average semantic similarity of each speaker to the rest of the conversation. Higher bars mean that speaker's contributions were more aligned with others' content.",
     "family_id": null,
     "variant": null
   },
@@ -1249,7 +1249,139 @@
       "by_chart_slug_regex": "agreement_disagreement_breakdown",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Share of agreement versus disagreement across cross-speaker exchanges, inferred from semantic similarity and stance. Use it to gauge how consensual the conversation was.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity_v2.speaker_repetition_frequency.global",
+    "label": "Speaker Repetition Frequency (v2)",
+    "rank_default": 385,
+    "kind": "chart",
+    "module": "semantic_similarity_v2",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity_v2.speaker_repetition_frequency.global",
+      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
+      "by_chart_slug_regex": "speaker_repetition_frequency",
+      "by_filename_glob": null
+    },
+    "description": "How often each speaker repeats their own earlier content (v2 embedding-based engine). Taller bars mean more self-repetition.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity_v2.agreement_disagreement_breakdown.global",
+    "label": "Agreement/Disagreement Breakdown (v2)",
+    "rank_default": 386,
+    "kind": "chart",
+    "module": "semantic_similarity_v2",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity_v2.agreement_disagreement_breakdown.global",
+      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
+      "by_chart_slug_regex": "agreement_disagreement_breakdown",
+      "by_filename_glob": null
+    },
+    "description": "Share of agreement versus disagreement across cross-speaker exchanges (v2 embedding-based engine). Use it to gauge how consensual the conversation was.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity_v2.similarity_distribution.global",
+    "label": "Similarity Distribution (v2)",
+    "rank_default": 387,
+    "kind": "chart",
+    "module": "semantic_similarity_v2",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity_v2.similarity_distribution.global",
+      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
+      "by_chart_slug_regex": "similarity_distribution",
+      "by_filename_glob": null
+    },
+    "description": "Distribution of semantic-similarity scores between utterances (v2 embedding-based engine). The x-axis is similarity (0 unrelated to 1 near-identical); high mass indicates repeated or shared content.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity_v2.speaker_repetitions.global",
+    "label": "Repetitions by Speaker (v2)",
+    "rank_default": 388,
+    "kind": "chart",
+    "module": "semantic_similarity_v2",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity_v2.speaker_repetitions.global",
+      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
+      "by_chart_slug_regex": "speaker_repetitions",
+      "by_filename_glob": null
+    },
+    "description": "Count of repeated content per speaker (v2 embedding-based engine). Taller bars mean more reiteration by that speaker.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity_v2.classification.global",
+    "label": "Repetition Classification (v2)",
+    "rank_default": 389,
+    "kind": "chart",
+    "module": "semantic_similarity_v2",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity_v2.classification.global",
+      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
+      "by_chart_slug_regex": "classification",
+      "by_filename_glob": null
+    },
+    "description": "Classification of detected repetitions by type (v2 embedding-based engine). Each bar is a category's share of all repetitions.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "semantic_similarity_v2.speaker_similarity.global",
+    "label": "Average Similarity by Speaker (v2)",
+    "rank_default": 390,
+    "kind": "chart",
+    "module": "semantic_similarity_v2",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "semantic_similarity_v2.speaker_similarity.global",
+      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
+      "by_chart_slug_regex": "speaker_similarity",
+      "by_filename_glob": null
+    },
+    "description": "Average semantic similarity of each speaker to the rest of the conversation (v2 embedding-based engine). Higher bars mean more alignment with others' content.",
     "family_id": null,
     "variant": null
   },
@@ -1271,7 +1403,7 @@
       "by_chart_slug_regex": "diagnostic_plots",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Diagnostic plots for the topic model (such as coherence or fit by number of topics). Use them to judge model quality and how many topics are well supported when interpreting the other topic charts.",
     "family_id": null,
     "variant": null
   },
@@ -1293,7 +1425,7 @@
       "by_chart_slug_regex": "discourse_analysis",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Discourse-level view of how topics structure the conversation. Shows how discussion is organized across topics; use it alongside the topic timeline for context.",
     "family_id": null,
     "variant": null
   },
@@ -1315,7 +1447,7 @@
       "by_chart_slug_regex": "enhanced_lda_topic_word_heatmap",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Heatmap of word weights per LDA topic. Rows are topics and columns are top words; darker cells mean that word is more characteristic of that topic. Use it to interpret what each topic is about.",
     "family_id": null,
     "variant": null
   },
@@ -1337,7 +1469,7 @@
       "by_chart_slug_regex": "enhanced_nmf_topic_word_heatmap",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Heatmap of word weights per NMF topic. Rows are topics and columns are top words; darker cells mean that word is more characteristic of that topic (NMF as an alternative to LDA).",
     "family_id": null,
     "variant": null
   },
@@ -1359,7 +1491,7 @@
       "by_chart_slug_regex": "topic_evolution_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "How topic prevalence changes over the course of the conversation. Each line or band is a topic; rising values show where that topic gains attention along the timeline.",
     "family_id": null,
     "variant": null
   },
@@ -1381,7 +1513,7 @@
       "by_chart_slug_regex": "speaker_topic_engagement_heatmap",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Heatmap of how much each speaker engages with each topic. Rows are speakers and columns are topics; darker cells mean that speaker contributed more to that topic.",
     "family_id": null,
     "variant": null
   },
@@ -1403,7 +1535,7 @@
       "by_chart_slug_regex": "expected_topic_proportions",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Overall expected share of each topic across the conversation. Bars show each topic's prevalence; taller bars are the dominant themes.",
     "family_id": null,
     "variant": null
   },
@@ -1425,7 +1557,7 @@
       "by_chart_slug_regex": "topic_bar",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Topic distribution for a single speaker. Bars show how that person's contributions split across topics. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -1447,7 +1579,7 @@
       "by_chart_slug_regex": "acts_pie",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Pie of dialogue-act categories for a single speaker. Each slice is an act type's share of that speaker's utterances. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -1469,7 +1601,7 @@
       "by_chart_slug_regex": "acts_bar",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Bar chart of dialogue-act counts for a single speaker. Taller bars mean that act type (question, statement, etc.) is used more by that speaker. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -1491,7 +1623,7 @@
       "by_chart_slug_regex": "global_acts_pie",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Pie of the dialogue-act mix across all speakers in the transcript. Each slice is an act type's share of all utterances; shows the conversation's overall act balance.",
     "family_id": null,
     "variant": null
   },
@@ -1513,7 +1645,7 @@
       "by_chart_slug_regex": "global_acts_bar",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Bar chart of dialogue-act counts across all speakers. Taller bars mean that act type occurs more across the whole conversation.",
     "family_id": null,
     "variant": null
   },
@@ -1535,7 +1667,7 @@
       "by_chart_slug_regex": "acts_temporal_all",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Dialogue-act usage over time across all speakers. The x-axis is time; lines or bands show how act types rise and fall through the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -1557,7 +1689,7 @@
       "by_chart_slug_regex": "acts_temporal",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Dialogue-act usage over time for a single speaker. Shows how that person's act mix changes through the conversation. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -1579,7 +1711,7 @@
       "by_chart_slug_regex": "loop_network",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Network of recurring conversational loops (repeated act and response patterns). Nodes and edges show which exchange patterns cycle; denser links mean stronger looping behavior.",
     "family_id": null,
     "variant": null
   },
@@ -1601,7 +1733,7 @@
       "by_chart_slug_regex": "loop_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of detected conversation loops. Markers show when repeating interaction patterns occur; clusters indicate stretches where the conversation circled.",
     "family_id": null,
     "variant": null
   },
@@ -1623,7 +1755,7 @@
       "by_chart_slug_regex": "act_patterns",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Common dialogue-act sequences that form conversational loops. Bars show how frequent each act pattern is; use it to see the conversation's habitual exchange structures.",
     "family_id": null,
     "variant": null
   },
@@ -1645,7 +1777,7 @@
       "by_chart_slug_regex": "pauses_distribution",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of pause durations measured from the audio across all speakers. The x-axis is pause length; the shape shows how silences are spread. Requires voice/acoustic features.",
     "family_id": null,
     "variant": null
   },
@@ -1667,7 +1799,7 @@
       "by_chart_slug_regex": "pauses_distribution",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of pause durations measured from the audio for a single speaker. Shows that person's silence patterns. One chart per speaker; requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1689,7 +1821,7 @@
       "by_chart_slug_regex": "pauses_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of pauses detected from the audio. Markers show where and how long silences occur across the conversation. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1711,7 +1843,7 @@
       "by_chart_slug_regex": "hesitation_map",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Map of hesitation events (pauses and disfluencies) across the conversation. Highlights where speech stalls; use it to find uncertain or effortful passages. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1733,7 +1865,7 @@
       "by_chart_slug_regex": "burstiness",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Burstiness of a single speaker's speech, that is how clustered versus evenly spaced their talking is. Higher values mean speech comes in bursts. One chart per speaker; requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1755,7 +1887,7 @@
       "by_chart_slug_regex": "rhythm_compare",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Comparison of speech rhythm across speakers. Bars or curves contrast timing regularity; use it to see who speaks more steadily versus erratically. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1777,7 +1909,7 @@
       "by_chart_slug_regex": "rhythm_scatter",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Scatter of speakers by rhythm features (such as tempo versus variability). Each point is a speaker; clusters group similar speaking rhythms. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1799,7 +1931,7 @@
       "by_chart_slug_regex": "f0_contours",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Pitch (F0) contours over time for a single speaker. Shows how intonation rises and falls; use it to read expressiveness or monotone delivery. One chart per speaker; requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1821,7 +1953,7 @@
       "by_chart_slug_regex": "f0_slope_distribution",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of pitch (F0) slopes across the conversation. Rising versus falling slopes indicate intonation patterns (for example questions versus statements). Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1843,7 +1975,7 @@
       "by_chart_slug_regex": "profile_distribution",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of prosodic profile features for a single speaker. Shows the spread of that speaker's loudness, pitch, and rhythm measures. One chart per speaker; requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1865,7 +1997,7 @@
       "by_chart_slug_regex": "profile_corr",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Correlation between prosodic features for a single speaker. Highlights which acoustic measures move together for that person. One chart per speaker; requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1887,7 +2019,7 @@
       "by_chart_slug_regex": "timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Prosodic features over time across the conversation. Tracks loudness and pitch dynamics along the timeline. Requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1909,7 +2041,7 @@
       "by_chart_slug_regex": "compare_speakers",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Comparison of prosodic features across speakers. Bars contrast each speaker's acoustic profile; use it to see who is louder, higher-pitched, and so on. Requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1931,7 +2063,7 @@
       "by_chart_slug_regex": "fingerprint_scatter",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Scatter placing speakers by their prosodic fingerprint. Each point is a speaker; nearby points have similar voices. Requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1953,7 +2085,7 @@
       "by_chart_slug_regex": "egemaps_distribution",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Distribution of eGeMAPS acoustic descriptors (a standardized voice feature set) for a single speaker. Shows the spread of those measures for that speaker. One chart per speaker; requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1975,7 +2107,7 @@
       "by_chart_slug_regex": "quality_scatter",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Scatter of voice-quality measures across speakers and segments. Each point reflects acoustic quality features; outliers may indicate noisy audio. Requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -1997,7 +2129,7 @@
       "by_chart_slug_regex": "tension_curve",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Voice tension over time, estimated from acoustic strain features. Rising values indicate more vocal tension or stress; peaks mark the most strained moments. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -2019,7 +2151,7 @@
       "by_chart_slug_regex": "sentiment_vs_arousal",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Scatter comparing text sentiment against vocal arousal. Each point is an utterance; points far from the diagonal show mismatches, such as positive words spoken in an agitated voice. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -2041,7 +2173,7 @@
       "by_chart_slug_regex": "mismatch_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Timeline of moments where spoken tone and word sentiment diverge. Markers flag where the voice and the words disagree; use it to find sarcasm or suppressed emotion. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -2063,7 +2195,7 @@
       "by_chart_slug_regex": "drift_timeline",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "How a single speaker's voice fingerprint drifts over time. Rising drift indicates the voice changing from its baseline (fatigue, emotion, or speaker-identity uncertainty). One chart per speaker; requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -2085,7 +2217,7 @@
       "by_chart_slug_regex": "flesch-reading-ease-bars",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Flesch Reading Ease score per speaker. Higher scores mean easier-to-follow speech; lower scores indicate denser, more complex language. Bars compare speakers.",
     "family_id": null,
     "variant": null
   },
@@ -2107,7 +2239,7 @@
       "by_chart_slug_regex": "readability-indices-bars",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Several readability indices per speaker (such as Flesch-Kincaid grade level). Compare bars to see whose language is more complex; higher grade-level metrics mean harder to follow.",
     "family_id": null,
     "variant": null
   },
@@ -2129,7 +2261,7 @@
       "by_chart_slug_regex": "structure-bars",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Structural language features per speaker (such as sentence length and clause use). Bars compare how each speaker structures their speech.",
     "family_id": null,
     "variant": null
   },
@@ -2151,7 +2283,7 @@
       "by_chart_slug_regex": "word-count-bars",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Total word count per speaker. Taller bars mean that speaker said more; a quick measure of who talked most.",
     "family_id": null,
     "variant": null
   },
@@ -2172,7 +2304,7 @@
       "by_chart_slug_regex": "/wordcloud\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most frequent words, with stopwords removed. Larger words were said more often by that speaker. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "basic"
   },
@@ -2193,7 +2325,7 @@
       "by_chart_slug_regex": "_wordcloud\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the most frequent words across all speakers, with stopwords removed. Larger words appear more often in the conversation.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "basic"
   },
@@ -2214,7 +2346,7 @@
       "by_chart_slug_regex": "wordcloud-bigrams",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most frequent two-word phrases (bigrams). Larger phrases were used more by that speaker. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "bigrams"
   },
@@ -2235,7 +2367,7 @@
       "by_chart_slug_regex": "wordcloud-bigrams-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the most frequent two-word phrases (bigrams) across all speakers. Larger phrases occur more in the conversation.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "bigrams"
   },
@@ -2256,7 +2388,7 @@
       "by_chart_slug_regex": "/tfidf\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most distinctive words by TF-IDF, which highlights words characteristic of that speaker rather than merely frequent. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "tfidf"
   },
@@ -2277,7 +2409,7 @@
       "by_chart_slug_regex": "tfidf-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the conversation's most distinctive words by TF-IDF, emphasizing terms that stand out rather than merely common ones.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "tfidf"
   },
@@ -2298,7 +2430,7 @@
       "by_chart_slug_regex": "tfidf-bigrams",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most distinctive two-word phrases by TF-IDF. Highlights characteristic phrases for that speaker. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "tfidf_bigrams"
   },
@@ -2319,7 +2451,7 @@
       "by_chart_slug_regex": "tfidf-bigrams-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the conversation's most distinctive two-word phrases by TF-IDF. Emphasizes standout phrases over merely common ones.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "tfidf_bigrams"
   },
@@ -2340,7 +2472,7 @@
       "by_chart_slug_regex": "wordcloud-tics",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's verbal tics and filler words. Larger items are used more by that speaker. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "tics"
   },
@@ -2361,7 +2493,7 @@
       "by_chart_slug_regex": "wordcloud-noun",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most frequent nouns. Larger nouns were said more often; highlights what that speaker talks about. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "noun"
   },
@@ -2382,7 +2514,7 @@
       "by_chart_slug_regex": "wordcloud-noun-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the most frequent nouns across all speakers. Larger nouns appear more; highlights the conversation's subjects.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "noun"
   },
@@ -2403,7 +2535,7 @@
       "by_chart_slug_regex": "wordcloud-verb",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most frequent verbs. Larger verbs were used more; highlights that speaker's actions and processes. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "verb"
   },
@@ -2424,7 +2556,7 @@
       "by_chart_slug_regex": "wordcloud-verb-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the most frequent verbs across all speakers. Larger verbs appear more; highlights the conversation's actions.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "verb"
   },
@@ -2445,7 +2577,7 @@
       "by_chart_slug_regex": "wordcloud-adj",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of a single speaker's most frequent adjectives. Larger adjectives were used more; highlights that speaker's descriptive language. One cloud per speaker.",
     "family_id": "wordcloud.wordcloud.speaker",
     "variant": "adj"
   },
@@ -2466,7 +2598,7 @@
       "by_chart_slug_regex": "wordcloud-adj-ALL",
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Word cloud of the most frequent adjectives across all speakers. Larger adjectives appear more; highlights the conversation's descriptive tone.",
     "family_id": "wordcloud.wordcloud.global",
     "variant": "adj"
   },
@@ -2485,7 +2617,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Counts of named-entity types (people, places, organizations, etc.) pooled across the whole group corpus. Taller bars mean that entity type appears more across all sessions combined; a corpus-level view, not per session.",
     "family_id": null,
     "variant": null
   },
@@ -2504,7 +2636,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Most frequently mentioned named entities across the entire group corpus. Bar length is total mentions pooled over all sessions; use it to find the people, places, or organizations the group talks about most.",
     "family_id": null,
     "variant": null
   },
@@ -2523,7 +2655,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Top entities across the group corpus alongside the sentiment expressed toward them. Reads as which entities are discussed most and whether the surrounding tone is positive or negative, pooled across all sessions.",
     "family_id": null,
     "variant": null
   },
@@ -2542,7 +2674,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Prevalence of each topic from a single topic model fit over the pooled group corpus. Bars show each topic's share of discussion across all sessions combined; corpus-level topics, not per-session.",
     "family_id": null,
     "variant": null
   },
@@ -2561,7 +2693,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Mean emotion profile across the whole group corpus. Each bar is the average intensity of an emotion category pooled over all sessions; use it for the group's overall emotional fingerprint.",
     "family_id": null,
     "variant": null
   },
@@ -2580,7 +2712,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Counts of verbal tics and filler patterns pooled across the entire group corpus. Taller bars mean that tic occurs more across all sessions combined.",
     "family_id": null,
     "variant": null
   },
@@ -2599,7 +2731,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Corpus-level totals (such as words, segments, and speakers) summed across every session in the group. A single combined summary of the whole group rather than per-session bars.",
     "family_id": null,
     "variant": null
   },
@@ -2618,7 +2750,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Interruptions started, pooled across the group corpus and attributed to each speaker. Taller bars mean that speaker interrupted others more often across all sessions combined.",
     "family_id": null,
     "variant": null
   },
@@ -2637,7 +2769,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Interruptions received, pooled across the group corpus per speaker. Taller bars mean that speaker was interrupted more often across all sessions combined.",
     "family_id": null,
     "variant": null
   },
@@ -2656,7 +2788,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": null,
+    "description": "Strongest directed emotional-contagion links pooled across the group corpus. Each edge reads as 'speaker A's emotion influences speaker B'; larger bars mean stronger influence aggregated over all sessions.",
     "family_id": null,
     "variant": null
   }

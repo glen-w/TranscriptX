@@ -75,6 +75,23 @@ def _project_relative_path(value: str | Path) -> str:
     )
 
 
+def canonical_group_member_path(ref: str | Path) -> str:
+    """Return a single transcript ref as a stable project-relative path."""
+    return _project_relative_path(ref)
+
+
+def canonicalize_group_member_paths(refs: Iterable[str | Path]) -> List[str]:
+    """Resolve each ref to a stable project-relative path; dedupe while preserving order."""
+    seen: set[str] = set()
+    out: List[str] = []
+    for ref in refs:
+        rel = _project_relative_path(ref)
+        if rel not in seen:
+            seen.add(rel)
+            out.append(rel)
+    return out
+
+
 def _project_absolute_path(relative_path: str) -> Path:
     project_root_resolved = PATHS.project_root.resolve()
     transcripts_dir_resolved = _TRANSCRIPTS_DIR.resolve()
@@ -216,7 +233,7 @@ class GroupManifestStore:
         members: Iterable[str | Path],
         description: Optional[str] = None,
     ) -> Group:
-        normalized_members = [_project_relative_path(member) for member in members]
+        normalized_members = canonicalize_group_member_paths(members)
         if not normalized_members:
             raise ValueError("Group must contain at least one transcript path.")
         group = Group(
@@ -255,7 +272,7 @@ class GroupManifestStore:
                 else group.description
             ),
             members=(
-                [_project_relative_path(member) for member in members]
+                canonicalize_group_member_paths(members)
                 if members is not None
                 else group.members
             ),

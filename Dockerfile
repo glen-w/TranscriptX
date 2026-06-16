@@ -66,17 +66,43 @@ ARG GIT_SHA=
 ARG TRANSCRIPTX_VERSION=
 ARG BUILD_DATE=
 
-# Runtime OS libs: soundfile/opensmile, ffmpeg/audio, OpenMP (tokenizers/vector libs)
+# Runtime OS libs: soundfile/opensmile, ffmpeg/audio, OpenMP (tokenizers/vector libs),
+# plus Playwright browser system dependencies for headless browser tasks.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
     libgomp1 \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libatspi2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libdrm2 \
+    libx11-6 \
+    libxcb1 \
+    libxext6 \
+    libxrender1 \
+    libglib2.0-0 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy venv from builder (no pip in this stage)
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+# Numba (librosa): provide a writable cache dir so JIT can resolve a locator when site-packages
+# is not writable and HOME may be unset/wrong under docker compose user: UID:GID overrides.
+ENV NUMBA_CACHE_DIR=/data/.cache/numba
+ENV NUMBA_DISABLE_CACHING=1
 ENV NLTK_DATA=/opt/venv/nltk_data
 
 # Data dir override so the app uses /data (mounted volume) instead of under site-packages

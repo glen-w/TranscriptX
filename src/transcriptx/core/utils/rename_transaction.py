@@ -16,6 +16,12 @@ logger = get_logger()
 class RenameTransaction:
     """
     Transaction-like rename operation with rollback capability.
+
+    ``rollback()`` is only valid for failures **during** ``execute()`` (before it
+    returns ``True``). Callers that run a **post-commit finalize** phase (e.g.
+    output-directory moves) must **not** invoke ``rollback()`` when finalize fails,
+    because file renames and state updates may already be committed and finalize
+    may have partially mutated the filesystem.
     """
 
     def __init__(self, dry_run: bool = False):

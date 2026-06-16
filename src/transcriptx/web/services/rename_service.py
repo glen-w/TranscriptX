@@ -10,7 +10,7 @@ from typing import Any
 
 import streamlit as st
 
-from transcriptx.core.utils.file_rename import rename_transcript_files
+from transcriptx.core.utils.file_rename import rename_transcript_files_with_outcome
 from transcriptx.core.utils.processing_state import load_processing_state
 from transcriptx.web.cache_helpers import clear_transcript_listing_caches
 from transcriptx.web.services.recordings_service import RecordingsService
@@ -40,6 +40,10 @@ class RenameResult:
     new_transcript_path: str = ""
     old_audio_path: str = ""
     new_audio_path: str = ""
+    #: From core rename pipeline: transaction phase (file + state + history) succeeded
+    transaction_phase_ok: bool | None = None
+    #: From core rename pipeline: finalize phase (output dir / in-tree renames) succeeded
+    finalize_phase_ok: bool | None = None
 
 
 class RenameService:
@@ -92,17 +96,29 @@ class RenameService:
             else None
         )
 
-        ok = rename_transcript_files(old_base, new_base, str(transcript))
-        if not ok:
+        outcome = rename_transcript_files_with_outcome(
+            old_base, new_base, str(transcript), dry_run=False
+        )
+        if not outcome.ok:
+            partial = outcome.partial_success_after_transaction
+            msg = (
+                "Transcript and processing state were updated, but moving the output "
+                "folder failed. Check output directories; you may need to merge or fix "
+                "paths manually."
+                if partial
+                else "Rename failed. Check for name conflicts or locked files."
+            )
             return RenameResult(
                 ok=False,
-                message="Rename failed. Check for name conflicts or locked files.",
+                message=msg,
                 old_base_name=old_base,
                 new_base_name=new_base,
                 old_transcript_path=str(transcript),
                 new_transcript_path=str(new_transcript),
                 old_audio_path=str(old_audio_path) if old_audio_path else "",
                 new_audio_path=str(new_audio) if new_audio else "",
+                transaction_phase_ok=outcome.transaction_succeeded,
+                finalize_phase_ok=outcome.finalize_succeeded,
             )
 
         return RenameResult(
@@ -114,6 +130,8 @@ class RenameService:
             new_transcript_path=str(new_transcript),
             old_audio_path=str(old_audio_path) if old_audio_path else "",
             new_audio_path=str(new_audio) if new_audio else "",
+            transaction_phase_ok=outcome.transaction_succeeded,
+            finalize_phase_ok=outcome.finalize_succeeded,
         )
 
     @staticmethod

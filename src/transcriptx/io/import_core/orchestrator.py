@@ -54,6 +54,12 @@ def run_import_orchestration(
         artifact_outcome = _recognize_transcriptx_artifact(content)
         if artifact_outcome is not None:
             canonical_doc = json.loads(content.decode("utf-8", errors="replace"))
+            if source_original_path and isinstance(canonical_doc, dict):
+                source = canonical_doc.get("source")
+                if isinstance(source, dict):
+                    # Managed import may archive canonical JSON under originals/.
+                    # Keep transcript source.original_path aligned with sidecar path.
+                    source["original_path"] = source_original_path
             return ImportResult(
                 selected_adapter_id="transcriptx",
                 selected_adapter_kind=artifact_outcome["kind"],

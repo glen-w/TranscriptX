@@ -19,6 +19,8 @@ from .persistence import (
 )
 
 SourceLabel = Literal["default", "project", "run", "env"]
+# Note: "run" currently represents both selected-run override and draft override
+# (when no run is selected). This semantics is intentionally preserved for now.
 
 
 @dataclass(frozen=True)

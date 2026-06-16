@@ -278,8 +278,8 @@ class TestSaveTranscript:
 class TestWriteTranscriptFiles:
     """Tests for write_transcript_files function."""
 
-    def test_writes_txt_and_csv_files(self, tmp_path):
-        """Test that both TXT and CSV files are created."""
+    def test_writes_txt_csv_and_srt_files(self, tmp_path):
+        """Test that TXT, CSV, and SRT files are created."""
         segments = [
             {"speaker": "SPEAKER_00", "text": "Hello", "start": 0.0, "end": 1.0},
             {"speaker": "SPEAKER_00", "text": "World", "start": 1.0, "end": 2.0},
@@ -291,14 +291,16 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path = write_transcript_files(
+        txt_path, csv_path, srt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
         assert Path(txt_path).exists()
         assert Path(csv_path).exists()
+        assert Path(srt_path).exists()
         assert "test-transcript.txt" in txt_path
         assert "test-transcript.csv" in csv_path
+        assert "test-transcript.srt" in srt_path
 
     def test_csv_has_correct_format(self, tmp_path):
         """Test that CSV file has correct format."""
@@ -313,7 +315,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path = write_transcript_files(
+        txt_path, csv_path, srt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -324,6 +326,12 @@ class TestWriteTranscriptFiles:
         assert rows[0] == ["Speaker", "Timestamp", "Text"]
         assert rows[1] == ["Alice", "0s", "Hello"]
         assert rows[2] == ["Bob", "1s", "World"]
+
+        with open(srt_path, encoding="utf-8") as f:
+            srt_content = f.read()
+
+        assert "Alice: Hello" in srt_content
+        assert "Bob: World" in srt_content
 
     def test_handles_speaker_changes(self, tmp_path):
         """Test that speaker changes are handled correctly in TXT."""
@@ -338,7 +346,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path = write_transcript_files(
+        txt_path, csv_path, srt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -349,6 +357,12 @@ class TestWriteTranscriptFiles:
         assert "Bob" in content
         assert "First" in content
         assert "Second" in content
+
+        with open(srt_path, encoding="utf-8") as f:
+            srt_content = f.read()
+
+        assert "Alice: First" in srt_content
+        assert "Bob: Second" in srt_content
 
     def test_handles_pauses(self, tmp_path):
         """Test that pauses are included in TXT output."""
@@ -368,7 +382,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path = write_transcript_files(
+        txt_path, csv_path, srt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -376,6 +390,11 @@ class TestWriteTranscriptFiles:
             content = f.read()
 
         assert "pause" in content.lower() or "⏸️" in content
+
+        with open(srt_path, encoding="utf-8") as f:
+            srt_content = f.read()
+
+        assert "pause" not in srt_content.lower()
 
     def test_handles_missing_speaker_in_map(self, tmp_path):
         """Test that missing speakers in map use speaker ID."""
@@ -390,7 +409,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path = write_transcript_files(
+        txt_path, csv_path, srt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -400,3 +419,8 @@ class TestWriteTranscriptFiles:
 
         # Should use speaker ID for missing speaker
         assert rows[2][0] == "SPEAKER_99"
+
+        with open(srt_path, encoding="utf-8") as f:
+            srt_content = f.read()
+
+        assert "SPEAKER_99: World" in srt_content

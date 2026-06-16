@@ -54,8 +54,13 @@ class ContagionAnalysis(AnalysisModule):
                     return "context_emotion", True
 
                 ctx_scores = seg.get("context_emotion_scores")
-                if isinstance(ctx_scores, dict) and ctx_scores and any(
-                    isinstance(v, (int, float)) and v > 0 for v in ctx_scores.values()
+                if (
+                    isinstance(ctx_scores, dict)
+                    and ctx_scores
+                    and any(
+                        isinstance(v, (int, float)) and v > 0
+                        for v in ctx_scores.values()
+                    )
                 ):
                     logger.debug(
                         f"{log_prefix}Found context_emotion_scores in segment: {seg.get('start', 'unknown')}"
