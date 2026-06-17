@@ -2,14 +2,15 @@
 Combined Overview-export index page builder.
 
 Builds a single self-contained ``index.html`` for the Overview artifact export
-that approximates the GUI: a basic server-rendered transcript displayer plus an
-unfiltered charts gallery (all charts in the selection). Rendering is done
-server-side (not client-side JS) so the page works when opened directly from
-disk over ``file://``, where browsers block ``fetch()`` of local JSON.
+that approximates the GUI: a basic server-rendered transcript displayer, optional
+LLM transcript summary, and an unfiltered charts gallery (all charts in the
+selection). Rendering is done server-side (not client-side JS) so the page works
+when opened directly from disk over ``file://``, where browsers block ``fetch()``
+of local JSON.
 
-The transcript and charts sections fail independently: a malformed transcript
-drops only the transcript section, and a charts render failure drops only the
-gallery. ``build_export_index_html`` returns ``None`` only when neither section
+The transcript, LLM summary, and charts sections fail independently: a malformed
+transcript drops only the transcript section, and a charts render failure drops
+only the gallery. ``build_export_index_html`` returns ``None`` only when no section
 could be produced, so the caller can skip writing the file entirely.
 """
 
@@ -18,7 +19,7 @@ from __future__ import annotations
 import html
 import json
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, TypedDict
 
 from transcriptx.utils.charts_export import (
     _EXPORT_INDEX_CSS,
@@ -33,6 +34,15 @@ _TRANSCRIPT_SIDECAR_MARKERS = (
     "_simplified_transcript_summary.json",
 )
 _ENRICHED_TRANSCRIPT_MARKER = "_with_"
+_LLM_SUMMARY_JSON_SUFFIX = "_llm_summary.json"
+_LLM_SUMMARY_MD_SUFFIX = "_llm_summary.md"
+
+
+class ExportTextSummary(TypedDict, total=False):
+    section_id: str
+    title: str
+    body: str
+    provenance: dict[str, Any]
 
 
 def _is_transcript_sidecar(rel_path: str) -> bool:
@@ -227,6 +237,102 @@ def resolve_export_transcript_data(
     return best
 
 
+def _strip_llm_summary_markdown(md: str) -> str:
+    """Drop the generated markdown title and provenance footer when JSON is absent."""
+    lines = md.splitlines()
+    body_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "---":
+            break
+        if stripped.startswith("# "):
+            continue
+        body_lines.append(line)
+    return "\n".join(body_lines).strip()
+
+
+def resolve_export_llm_summary(
+    *,
+    staging_dir: Path,
+    copied: Sequence[tuple[Any, Path]],
+) -> Optional[ExportTextSummary]:
+    """Load LLM transcript summary text from copied export artifacts, if present."""
+    json_path: Optional[Path] = None
+    md_path: Optional[Path] = None
+
+    for artifact, rel in copied:
+        if getattr(artifact, "module", None) != "llm_summary":
+            continue
+        rel_posix = rel.as_posix()
+        path = staging_dir / rel
+        if rel_posix.endswith(_LLM_SUMMARY_JSON_SUFFIX):
+            json_path = path
+        elif rel_posix.endswith(_LLM_SUMMARY_MD_SUFFIX):
+            md_path = path
+
+    payload: Optional[dict[str, Any]] = None
+    if json_path is not None and json_path.is_file():
+        try:
+            raw = json.loads(json_path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                payload = raw
+        except Exception:
+            payload = None
+
+    body = ""
+    if payload and payload.get("summary"):
+        body = str(payload["summary"]).strip()
+    elif md_path is not None and md_path.is_file():
+        try:
+            body = _strip_llm_summary_markdown(md_path.read_text(encoding="utf-8"))
+        except Exception:
+            body = ""
+
+    if not body:
+        return None
+
+    provenance = payload.get("provenance") if isinstance(payload, dict) else {}
+    return ExportTextSummary(
+        section_id="llm-summary",
+        title="LLM Transcript Summary",
+        body=body,
+        provenance=provenance if isinstance(provenance, dict) else {},
+    )
+
+
+def render_text_summary_section(summary: ExportTextSummary) -> str:
+    """Render a prose summary block for the export index page."""
+    section_id = summary.get("section_id") or "summary"
+    title = summary.get("title") or "Summary"
+    body = summary.get("body") or ""
+    provenance = summary.get("provenance") or {}
+
+    meta_bits: list[str] = []
+    model = provenance.get("model")
+    provider = provenance.get("provider")
+    if model:
+        meta_bits.append(f"Model: {model}")
+    if provider:
+        meta_bits.append(f"Provider: {provider}")
+    if provenance.get("truncated"):
+        meta_bits.append("Input truncated")
+
+    meta_html = ""
+    if meta_bits:
+        meta_line = " · ".join(html.escape(str(bit)) for bit in meta_bits)
+        meta_html = f'<p class="meta">{meta_line}</p>'
+
+    return (
+        f'<section id="{html.escape(section_id)}">'
+        f"<h2>{html.escape(title)}</h2>"
+        '<div class="tx-summary">'
+        f'<p class="tx-text">{html.escape(body)}</p>'
+        "</div>"
+        f"{meta_html}"
+        "</section>"
+    )
+
+
 def _format_timestamp_range(start: Any, end: Any) -> str:
     try:
         return (
@@ -314,15 +420,16 @@ def build_export_index_html(
     page_title: str,
     transcript_data: Optional[dict[str, Any]] = None,
     chart_items: Optional[list[_ExportableItem]] = None,
+    llm_summary: Optional[ExportTextSummary] = None,
     omitted_count: int = 0,
     included_files: Optional[Sequence[str]] = None,
 ) -> Optional[str]:
     """Build the combined Overview-export ``index.html``.
 
-    Renders a transcript section and/or a charts gallery section. Each section is
-    produced independently; a failure in one does not drop the other. Returns
-    ``None`` when neither section could be produced (the caller then skips
-    writing the file).
+    Renders a transcript section, optional LLM summary, and/or a charts gallery
+    section. Each section is produced independently; a failure in one does not drop
+    the others. Returns ``None`` when no section could be produced (the caller
+    then skips writing the file).
     """
     transcript_section: Optional[str] = None
     normalized_transcript = normalize_transcript_payload(transcript_data)
@@ -331,6 +438,13 @@ def build_export_index_html(
             transcript_section = render_transcript_section(normalized_transcript)
         except Exception:
             transcript_section = None
+
+    llm_summary_section: Optional[str] = None
+    if llm_summary and llm_summary.get("body"):
+        try:
+            llm_summary_section = render_text_summary_section(llm_summary)
+        except Exception:
+            llm_summary_section = None
 
     chart_toc: list[str] = []
     chart_sections: list[str] = []
@@ -341,13 +455,16 @@ def build_export_index_html(
             chart_toc, chart_sections = [], []
 
     has_transcript = transcript_section is not None
+    has_llm_summary = llm_summary_section is not None
     has_charts = bool(chart_sections)
-    if not has_transcript and not has_charts:
+    if not has_transcript and not has_llm_summary and not has_charts:
         return None
 
     nav_entries: list[str] = []
     if has_transcript:
         nav_entries.append('<li><a href="#transcript">Transcript</a></li>')
+    if has_llm_summary:
+        nav_entries.append('<li><a href="#llm-summary">LLM Transcript Summary</a></li>')
     if has_charts:
         nav_entries.append("<li><strong>Charts</strong></li>")
         nav_entries.extend(chart_toc)
@@ -364,6 +481,8 @@ def build_export_index_html(
     body_sections: list[str] = []
     if has_transcript and transcript_section is not None:
         body_sections.append(transcript_section)
+    if has_llm_summary and llm_summary_section is not None:
+        body_sections.append(llm_summary_section)
     body_sections.extend(chart_sections)
     if included_files:
         body_sections.append(_render_included_files(included_files))

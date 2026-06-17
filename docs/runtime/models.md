@@ -24,7 +24,7 @@ Shipped defaults target CPU-friendly English analysis:
 | Dialogue acts ML | rules + untrained TF-IDF (transformer path disabled) |
 | Topic modeling (LDA/NMF) | sklearn bag-of-words (no neural embedding) |
 
-The Docker image pre-installs `en_core_web_md` and `en_core_web_sm`. Other models download on first use when downloads are enabled.
+The Docker image pre-installs `en_core_web_sm`, `en_core_web_md`, and `en_core_web_lg` (the latter matches the higher-accuracy preset below). Other spaCy models download on first use when downloads are enabled.
 
 ### Higher-accuracy English (slower)
 
@@ -43,7 +43,7 @@ Then restart Compose so the container receives the variables (`docker compose up
 
 **Notes:**
 
-- `en_core_web_lg` is **not** baked into the image; first NER/highlights run downloads it (allow downloads or pre-install in the image).
+- `en_core_web_lg` is pre-installed in the Docker image. Larger models such as `en_core_web_trf` still download on first use when downloads are enabled.
 - `all-mpnet-base-v2` is much slower than MiniLM but usually better for semantic similarity and BERTopic.
 - `sentiment_backend=transformers` uses `analysis.sentiment_model_name` (default `cardiffnlp/twitter-roberta-base-sentiment-latest`).
 - For maximum English NER quality (slowest): `TRANSCRIPTX_SPACY_MODEL=en_core_web_trf` (transformer pipeline; large download).

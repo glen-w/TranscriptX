@@ -205,16 +205,17 @@ class ArtifactService:
     ) -> None:
         """Write a self-contained ``index.html`` approximating the GUI.
 
-        Renders a basic transcript displayer plus an unfiltered charts gallery
-        for the copied artifacts. The transcript and charts sections fail
-        independently; the file is written when either section is produced and
-        skipped only when neither is. Never raises: index generation must not
-        break the raw-file export.
+        Renders a basic transcript displayer, optional LLM transcript summary, and an
+        unfiltered charts gallery for the copied artifacts. Each section fails
+        independently; the file is written when at least one section is produced and
+        skipped only when none are. Never raises: index generation must not break
+        the raw-file export.
         """
         try:
             from transcriptx.utils.charts_export import _ExportableItem
             from transcriptx.utils.export_index import (
                 build_export_index_html,
+                resolve_export_llm_summary,
                 resolve_export_page_title,
                 resolve_export_transcript_data,
             )
@@ -222,6 +223,10 @@ class ArtifactService:
             transcript_data = resolve_export_transcript_data(
                 staging_dir=staging_dir,
                 run_root=run_root,
+                copied=copied,
+            )
+            llm_summary = resolve_export_llm_summary(
+                staging_dir=staging_dir,
                 copied=copied,
             )
             page_title = resolve_export_page_title(
@@ -246,6 +251,7 @@ class ArtifactService:
                 page_title=page_title,
                 transcript_data=transcript_data,
                 chart_items=chart_items,
+                llm_summary=llm_summary,
             )
             if html_payload:
                 (staging_dir / "index.html").write_text(html_payload, encoding="utf-8")

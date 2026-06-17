@@ -8,6 +8,7 @@ from transcriptx.utils.export_index import (
     build_export_index_html,
     normalize_transcript_payload,
     render_transcript_section,
+    resolve_export_llm_summary,
     resolve_export_page_title,
 )
 from transcriptx.web.models.artifact import Artifact
@@ -135,6 +136,108 @@ def test_build_index_mixed_uses_posix_paths() -> None:
     assert 'id="transcript"' in html
     assert 'src="0123456789abcdef/emotion/charts/global/b.png"' in html
     assert "\\" not in html
+
+
+def test_build_index_llm_summary_only() -> None:
+    html = build_export_index_html(
+        page_title="run-1",
+        llm_summary={
+            "section_id": "llm-summary",
+            "title": "LLM Transcript Summary",
+            "body": "A concise abstractive summary.",
+            "provenance": {"model": "qwen3:8b", "provider": "ollama"},
+        },
+    )
+    assert html is not None
+    assert 'id="llm-summary"' in html
+    assert "A concise abstractive summary." in html
+    assert "qwen3:8b" in html
+    assert ">LLM Transcript Summary</a>" in html
+
+
+def test_build_index_mixed_includes_llm_summary() -> None:
+    items = [_chart_item(artifact_id="a", rel_path="sentiment/charts/global/a.png")]
+    html = build_export_index_html(
+        page_title="run-1",
+        transcript_data=_transcript_data(),
+        chart_items=items,
+        llm_summary={
+            "section_id": "llm-summary",
+            "title": "LLM Transcript Summary",
+            "body": "Summary from the LLM.",
+            "provenance": {},
+        },
+    )
+    assert html is not None
+    assert 'id="transcript"' in html
+    assert "Summary from the LLM." in html
+    assert 'class="card-grid"' in html
+
+
+def test_resolve_export_llm_summary_prefers_json(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "llm_summary/data/global").mkdir(parents=True)
+    (staging / "llm_summary/data/global/demo_llm_summary.json").write_text(
+        json.dumps(
+            {
+                "summary": "JSON summary body",
+                "provenance": {"model": "qwen3:8b"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (staging / "llm_summary/data/global/demo_llm_summary.md").write_text(
+        "# Transcript Summary\n\nMarkdown body\n",
+        encoding="utf-8",
+    )
+    copied = [
+        (
+            _artifact(
+                artifact_id="j",
+                rel_path="llm_summary/data/global/demo_llm_summary.json",
+                kind="data_json",
+                module="llm_summary",
+            ),
+            Path("llm_summary/data/global/demo_llm_summary.json"),
+        ),
+        (
+            _artifact(
+                artifact_id="m",
+                rel_path="llm_summary/data/global/demo_llm_summary.md",
+                kind="data_txt",
+                module="llm_summary",
+            ),
+            Path("llm_summary/data/global/demo_llm_summary.md"),
+        ),
+    ]
+    resolved = resolve_export_llm_summary(staging_dir=staging, copied=copied)
+    assert resolved is not None
+    assert resolved["body"] == "JSON summary body"
+    assert resolved["provenance"]["model"] == "qwen3:8b"
+
+
+def test_write_export_index_includes_llm_summary(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "llm_summary/data/global").mkdir(parents=True)
+    (staging / "llm_summary/data/global/demo_llm_summary.json").write_text(
+        json.dumps({"summary": "Exported LLM summary", "provenance": {}}),
+        encoding="utf-8",
+    )
+    copied = [
+        (
+            _artifact(
+                artifact_id="j",
+                rel_path="llm_summary/data/global/demo_llm_summary.json",
+                kind="data_json",
+                module="llm_summary",
+            ),
+            Path("llm_summary/data/global/demo_llm_summary.json"),
+        ),
+    ]
+    html = _write_index(staging, copied)
+    assert html is not None
+    assert "Exported LLM summary" in html
+    assert 'id="llm-summary"' in html
 
 
 def test_build_index_neither_returns_none() -> None:

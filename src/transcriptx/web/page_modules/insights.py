@@ -42,6 +42,24 @@ def render_insights() -> None:
     _render_highlights_section(run_root)
     st.divider()
     _render_summary_section(run_root)
+    st.divider()
+    _render_llm_module_section(
+        run_root,
+        module="llm_summary",
+        title="LLM Transcript Summary",
+        artifact_stem="_llm_summary",
+        text_field="summary",
+        empty_hint="Run the `llm_summary` module (with LLM enabled) to populate this view.",
+    )
+    st.divider()
+    _render_llm_module_section(
+        run_root,
+        module="narrative_summary",
+        title="Narrative Summary",
+        artifact_stem="_narrative_summary",
+        text_field="narrative",
+        empty_hint="Run the `narrative_summary` module (with LLM enabled) to populate this view.",
+    )
 
 
 def _render_insights_contract_section(run_root: Path) -> None:
@@ -295,6 +313,42 @@ def _render_highlights_section(run_root: Path) -> None:
         return
 
     _highlights_browser_fragment(highlights)
+
+
+def _render_llm_module_section(
+    run_root: Path,
+    *,
+    module: str,
+    title: str,
+    artifact_stem: str,
+    text_field: str,
+    empty_hint: str,
+) -> None:
+    st.subheader(title)
+    payload = _load_artifact_json(run_root, module, f"{artifact_stem}.json")
+    md = _load_artifact_text(run_root, module, f"{artifact_stem}.md")
+    if md:
+        st.markdown(md)
+    elif payload and payload.get(text_field):
+        st.markdown(str(payload[text_field]))
+    elif payload:
+        st.json(payload)
+    else:
+        st.info(empty_hint)
+        return
+
+    prov = (payload or {}).get("provenance") or {}
+    if not prov:
+        return
+    with st.expander("Generation details"):
+        model = prov.get("model")
+        provider = prov.get("provider")
+        if model:
+            st.write(f"Model: {model}")
+        if provider:
+            st.write(f"Provider: {provider}")
+        if prov.get("truncated"):
+            st.caption("Input was truncated to fit the model context window.")
 
 
 def _render_summary_section(run_root: Path) -> None:

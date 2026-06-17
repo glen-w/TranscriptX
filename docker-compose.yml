@@ -45,6 +45,8 @@ services:
       - TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports
       - TRANSCRIPTX_WAV_BACKUP_DIR=/mnt/wav
       - TRANSCRIPTX_USE_EMOJIS=0
+      # Full image (requirements.txt); allow HF/spaCy auto-download into writable /data caches.
+      - TRANSCRIPTX_CORE=0
       - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
       - HF_HOME=/data/.cache/huggingface
       # Keep Playwright browser binaries in writable project cache.

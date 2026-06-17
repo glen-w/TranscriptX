@@ -102,6 +102,8 @@ _EXPORT_INDEX_CSS = (
     "margin-bottom:10px;}.tx-speaker-chip{display:inline-block;padding:2px 10px;border-radius:999px;"
     "background:#e8eefc;color:#123b8c;font-weight:600;font-size:13px;}.tx-time{color:#5a6473;"
     "font-size:12px;margin-left:6px;}.tx-text{margin:6px 0 0;white-space:pre-wrap;}"
+    ".tx-summary{background:#fff;border:1px solid #dde2e8;border-radius:10px;padding:12px 14px;"
+    "margin-bottom:10px;}"
     ".included-files{font-size:13px;color:#5a6473;}.included-files ul{margin:6px 0 0;padding-left:18px;}"
     "@media (max-width: 900px){main{grid-template-columns:1fr;}nav{position:static;}}"
 )

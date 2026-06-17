@@ -16,6 +16,7 @@ from transcriptx.web.cache_helpers import (
 )
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.sidebar_options import _slug_display_labels_from_index
 
 _HOME_HELP = "**Home** is the landing page. Use the header actions or **Recent Runs** to open analysis."
 
@@ -88,9 +89,19 @@ def render_home() -> None:
                 secondary_action=("Library", "Library"),
             )
         else:
+            slug_labels = _slug_display_labels_from_index()
             for run in runs[:5]:
+                slug = run.run_dir.parent.name
+                transcript_name = slug_labels.get(slug)
+                if not transcript_name:
+                    transcript_name = (
+                        run.transcript_path.stem
+                        if run.transcript_path and run.transcript_path.name
+                        else slug
+                    )
                 with st.expander(
-                    f"{run.run_id} — {run.created_at.strftime('%Y-%m-%d %H:%M')}"
+                    f"{transcript_name} — {run.run_id} — "
+                    f"{run.created_at.strftime('%Y-%m-%d %H:%M')}"
                 ):
                     st.caption(f"Transcript: {run.transcript_path}")
                     st.caption(
