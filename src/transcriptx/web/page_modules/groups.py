@@ -179,58 +179,15 @@ def _render_edit_membership_fragment(
         st.rerun()
 
 
-def render_groups() -> None:
-    render_page_shell(
-        "Groups",
-        "Create and manage transcript groups for aggregate analysis.",
-        badges=None,
-        actions=None,
-    )
-
-    transcripts = get_cached_list_transcripts()
-    transcript_options = [str(m.path) for m in transcripts]
-    transcript_labels = {str(m.path): m.base_name for m in transcripts}
-    transcript_canonical = {
-        p: canonical_group_member_path(p) for p in transcript_options
-    }
-
-    with st.expander("Create new group", expanded=False):
-        st.text_input("Name", key="create_group_name")
-        st.text_area("Description", key="create_group_description")
-        _render_create_group_transcripts_fragment(
-            transcript_options,
-            transcript_labels,
-        )
-
-    groups = cached_list_groups()
-    if not groups:
-        render_empty_state(
-            "no_results_yet",
-            "No groups yet",
-            "Create a group from the expander above by selecting transcripts.",
-            primary_action=("Open Library", "Library"),
-            secondary_action=("Run Analysis", "Run Analysis"),
-        )
-        render_page_help(_GROUPS_HELP)
-        return
-
-    table_data = [
-        {
-            "Name": g.name or "Unnamed",
-            "Member count": len(g.members),
-            "Created": g.created_at or "—",
-            "Updated": g.updated_at or "—",
-            "Description": (g.description or "")[:60],
-        }
-        for g in groups
-    ]
-    st.dataframe(pd.DataFrame(table_data), width="stretch", hide_index=True)
-
-    options = {g.group_id: g for g in groups}
-    labels = {
-        g.group_id: f"{g.name or 'Unnamed'} • {len(g.members)} transcripts"
-        for g in groups
-    }
+@st.fragment
+def _groups_detail_fragment(
+    options: dict[str, Group],
+    labels: dict[str, str],
+    transcript_options: list[str],
+    transcript_labels: Mapping[str, str],
+    transcript_canonical: Mapping[str, str],
+) -> None:
+    """Group picker and detail panels without full-app rerun."""
     group_keys = list(options.keys())
     selected_id = st.selectbox(
         "Select group",
@@ -249,7 +206,6 @@ def render_groups() -> None:
             primary_action=("Run Analysis", "Run Analysis"),
             secondary_action=None,
         )
-        render_page_help(_GROUPS_HELP)
         return
 
     group = options[selected_id]
@@ -325,4 +281,65 @@ def render_groups() -> None:
         st.session_state["subject_id"] = group.group_id
         st.session_state["page"] = "Overview"
         st.rerun()
+
+
+def render_groups() -> None:
+    render_page_shell(
+        "Groups",
+        "Create and manage transcript groups for aggregate analysis.",
+        badges=None,
+        actions=None,
+    )
+
+    transcripts = get_cached_list_transcripts()
+    transcript_options = [str(m.path) for m in transcripts]
+    transcript_labels = {str(m.path): m.base_name for m in transcripts}
+    transcript_canonical = {
+        p: canonical_group_member_path(p) for p in transcript_options
+    }
+
+    with st.expander("Create new group", expanded=False):
+        st.text_input("Name", key="create_group_name")
+        st.text_area("Description", key="create_group_description")
+        _render_create_group_transcripts_fragment(
+            transcript_options,
+            transcript_labels,
+        )
+
+    groups = cached_list_groups()
+    if not groups:
+        render_empty_state(
+            "no_results_yet",
+            "No groups yet",
+            "Create a group from the expander above by selecting transcripts.",
+            primary_action=("Open Library", "Library"),
+            secondary_action=("Run Analysis", "Run Analysis"),
+        )
+        render_page_help(_GROUPS_HELP)
+        return
+
+    table_data = [
+        {
+            "Name": g.name or "Unnamed",
+            "Member count": len(g.members),
+            "Created": g.created_at or "—",
+            "Updated": g.updated_at or "—",
+            "Description": (g.description or "")[:60],
+        }
+        for g in groups
+    ]
+    st.dataframe(pd.DataFrame(table_data), width="stretch", hide_index=True)
+
+    options = {g.group_id: g for g in groups}
+    labels = {
+        g.group_id: f"{g.name or 'Unnamed'} • {len(g.members)} transcripts"
+        for g in groups
+    }
+    _groups_detail_fragment(
+        options,
+        labels,
+        transcript_options,
+        transcript_labels,
+        transcript_canonical,
+    )
     render_page_help(_GROUPS_HELP)

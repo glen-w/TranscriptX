@@ -16,6 +16,8 @@ could be produced, so the caller can skip writing the file entirely.
 from __future__ import annotations
 
 import html
+import json
+from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from transcriptx.utils.charts_export import (
@@ -24,6 +26,205 @@ from transcriptx.utils.charts_export import (
     render_chart_sections,
 )
 from transcriptx.utils.text_utils import format_time_detailed
+
+_TRANSCRIPT_SIDECAR_MARKERS = (
+    "_summary.json",
+    ".speaker_map.json",
+    "_simplified_transcript_summary.json",
+)
+_ENRICHED_TRANSCRIPT_MARKER = "_with_"
+
+
+def _is_transcript_sidecar(rel_path: str) -> bool:
+    lowered = rel_path.lower()
+    return any(marker in lowered for marker in _TRANSCRIPT_SIDECAR_MARKERS)
+
+
+def normalize_transcript_payload(raw: Any) -> Optional[dict[str, Any]]:
+    """Normalize transcript JSON shapes to a dict with a non-empty ``segments`` list."""
+    if isinstance(raw, list):
+        segments: list[dict[str, Any]] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            text = str(item.get("text", "")).strip()
+            if not text:
+                continue
+            segments.append(
+                {
+                    "speaker": item.get("speaker")
+                    or item.get("speaker_display")
+                    or "Unknown",
+                    "text": text,
+                    "start": item.get("start", 0),
+                    "end": item.get("end", 0),
+                }
+            )
+        if not segments:
+            return None
+        return {"segments": segments, "metadata": {}}
+
+    if not isinstance(raw, dict):
+        return None
+
+    segments = raw.get("segments")
+    if not isinstance(segments, list) or not segments:
+        return None
+    return raw
+
+
+def _try_load_transcript_json(path: Path) -> Optional[dict[str, Any]]:
+    if not path.is_file():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return normalize_transcript_payload(raw)
+
+
+def _run_root_transcript_candidates(run_root: Path) -> list[Path]:
+    candidates: list[Path] = []
+    seen: set[str] = set()
+
+    def _add(path: Path) -> None:
+        key = str(path)
+        if key in seen:
+            return
+        seen.add(key)
+        candidates.append(path)
+
+    report_path = run_root / "report.json"
+    if report_path.is_file():
+        try:
+            payload = json.loads(report_path.read_text(encoding="utf-8"))
+            meta = payload.get("meta") or payload.get("metadata") or {}
+            base_name = meta.get("base_name")
+            if base_name:
+                from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+
+                _add(Path(DIARISED_TRANSCRIPTS_DIR) / f"{base_name}.json")
+                _add(
+                    Path(DIARISED_TRANSCRIPTS_DIR)
+                    / f"{base_name}_transcript_diarised.json"
+                )
+        except Exception:
+            pass
+
+    manifest_path = run_root / ".transcriptx" / "manifest.json"
+    if manifest_path.is_file():
+        try:
+            from transcriptx.core.pipeline.manifest_loader import load_run_manifest
+
+            manifest = load_run_manifest(manifest_path)
+            transcript_path = manifest.get("transcript_path")
+            if transcript_path:
+                _add(Path(str(transcript_path)))
+            source_basename = manifest.get("source_basename")
+            if source_basename:
+                from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+
+                _add(Path(DIARISED_TRANSCRIPTS_DIR) / f"{source_basename}.json")
+        except Exception:
+            pass
+
+    return candidates
+
+
+def resolve_export_page_title(
+    *,
+    staging_dir: Path,
+    run_root: Optional[Path] = None,
+    fallback: str,
+) -> str:
+    """Resolve the user-facing page title from transcript metadata when available."""
+    for base_dir in (staging_dir, run_root):
+        if base_dir is None:
+            continue
+        report_path = base_dir / "report.json"
+        if report_path.is_file():
+            try:
+                payload = json.loads(report_path.read_text(encoding="utf-8"))
+                meta = payload.get("meta") or payload.get("metadata") or {}
+                base_name = meta.get("base_name")
+                if base_name:
+                    return str(base_name)
+            except Exception:
+                pass
+
+    if run_root is not None:
+        manifest_path = run_root / ".transcriptx" / "manifest.json"
+        if manifest_path.is_file():
+            try:
+                from transcriptx.core.pipeline.manifest_loader import load_run_manifest
+
+                manifest = load_run_manifest(manifest_path)
+                source_basename = manifest.get("source_basename")
+                if source_basename:
+                    return str(source_basename)
+                transcript_path = manifest.get("transcript_path")
+                if transcript_path:
+                    from transcriptx.core.utils._path_core import (
+                        get_canonical_base_name,
+                    )
+
+                    return get_canonical_base_name(str(transcript_path))
+            except Exception:
+                pass
+
+    return fallback
+
+
+def resolve_export_transcript_data(
+    *,
+    staging_dir: Path,
+    run_root: Optional[Path] = None,
+    copied: Sequence[tuple[Any, Path]],
+) -> Optional[dict[str, Any]]:
+    """Pick the best available transcript payload for the export index page."""
+    if run_root is not None:
+        for candidate in _run_root_transcript_candidates(run_root):
+            normalized = _try_load_transcript_json(candidate)
+            if normalized is not None:
+                return normalized
+
+    best: Optional[dict[str, Any]] = None
+    best_count = 0
+
+    def _consider(raw: Any) -> None:
+        nonlocal best, best_count
+        normalized = normalize_transcript_payload(raw)
+        if normalized is None:
+            return
+        count = len(normalized.get("segments") or [])
+        if count > best_count:
+            best = normalized
+            best_count = count
+
+    for _artifact, rel in copied:
+        rel_posix = rel.as_posix()
+        path = staging_dir / rel
+        if not path.is_file() or not rel_posix.endswith(".json"):
+            continue
+
+        artifact = _artifact
+        kind = getattr(artifact, "kind", None)
+        if kind == "transcript":
+            if _is_transcript_sidecar(rel_posix):
+                continue
+        elif kind == "data_json":
+            if _ENRICHED_TRANSCRIPT_MARKER not in Path(rel_posix).name:
+                continue
+        else:
+            continue
+
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        _consider(raw)
+
+    return best
 
 
 def _format_timestamp_range(start: Any, end: Any) -> str:
@@ -110,7 +311,7 @@ def _render_included_files(included_files: Sequence[str]) -> str:
 
 def build_export_index_html(
     *,
-    run_title: str,
+    page_title: str,
     transcript_data: Optional[dict[str, Any]] = None,
     chart_items: Optional[list[_ExportableItem]] = None,
     omitted_count: int = 0,
@@ -124,9 +325,10 @@ def build_export_index_html(
     writing the file).
     """
     transcript_section: Optional[str] = None
-    if transcript_data:
+    normalized_transcript = normalize_transcript_payload(transcript_data)
+    if normalized_transcript is not None:
         try:
-            transcript_section = render_transcript_section(transcript_data)
+            transcript_section = render_transcript_section(normalized_transcript)
         except Exception:
             transcript_section = None
 
@@ -169,12 +371,12 @@ def build_export_index_html(
     return (
         "<!DOCTYPE html>"
         "<html><head><meta charset='utf-8'/>"
-        f"<title>Export - {html.escape(run_title)}</title>"
+        f"<title>{html.escape(page_title)}</title>"
         "<style>" + _EXPORT_INDEX_CSS + "</style></head><body>"
         "<main><nav><strong>Contents</strong><ul>"
         + "".join(nav_entries)
         + "</ul></nav><div class='content'>"
-        f"<h1>Export: {html.escape(run_title)}</h1>"
+        f"<h1>{html.escape(page_title)}</h1>"
         + omitted_banner
         + "".join(body_sections)
         + "</div></main></body></html>"

@@ -98,22 +98,7 @@ Before doing anything else, run the **backup** custom command (`# backup`) and p
 
 ---
 
-## 4. Documentation
-
-- **Run `/docs` custom command** and require explicit success criteria:
-  - Documented import paths resolve against current code.
-  - All code examples/entrypoint examples match current behavior.
-  - Primary/secondary entrypoints in docs align with actual supported entrypoints.
-  - Output artifact docs include `manifest.json`, `run_results.json`, and currently supported report artifacts.
-  - Any drift found is listed with file path and required fix.
-  - `/docs` must return structured output listing:
-    - updated files
-    - drift findings
-  `/docs` failures are blockers for release.
-
----
-
-## 5. Build & Packaging
+## 4. Build & Packaging
 
 - **Build package locally:**
   ```
@@ -149,7 +134,7 @@ Before doing anything else, run the **backup** custom command (`# backup`) and p
 
 ---
 
-## 6. Runtime Readiness
+## 5. Runtime Readiness
 
 - **Confirm `.env.example` is complete:** check every env var reference across bootstrap, settings, and helper/runtime modules (not only `_bootstrap.py`).
   Missing required keys in `.env.example` are blockers.
@@ -158,7 +143,7 @@ Before doing anything else, run the **backup** custom command (`# backup`) and p
 
 ---
 
-## 7. Docker (if applicable)
+## 6. Docker (if applicable)
 
 Only run this section if a `Dockerfile` or `docker-compose.yml` exists in the workspace root.
 
@@ -171,7 +156,7 @@ Only run this section if a `Dockerfile` or `docker-compose.yml` exists in the wo
 
 ---
 
-## 8. Output Sanity Check (required)
+## 7. Output Sanity Check (required)
 
 - **Canonical sample source:** use the repository's designated canonical sample transcript fixture (documented path in README/docs). If none is documented, use one agreed fixture under `tests/fixtures/` and report the exact path used.
 - **Run one canonical sample transcript through the primary supported pipeline** and verify required outputs.
@@ -188,7 +173,7 @@ Only run this section if a `Dockerfile` or `docker-compose.yml` exists in the wo
 
 ---
 
-## 9. Security & Configuration Hygiene
+## 8. Security & Configuration Hygiene
 
 - **Run secrets check resiliently:**
   - Ensure `scripts/secrets_check.sh` exists and is executable before running it.
@@ -217,7 +202,7 @@ Only run this section if a `Dockerfile` or `docker-compose.yml` exists in the wo
 
 ---
 
-## 10. Optional High-Value Checks
+## 9. Optional High-Value Checks
 
 - These checks are non-blocking by default and do not affect release readiness unless explicitly marked otherwise for a target release.
 - **CLI/GUI docs parity:** validate CLI/GUI entrypoint behavior is consistent with README/docs claims; flag drift.
@@ -246,7 +231,6 @@ Only run this section if a `Dockerfile` or `docker-compose.yml` exists in the wo
   | Quarantined tests | NN quarantined / justified / unjustified |
   | Code quality | clean / issues remain |
   | Version & metadata | consistent / mismatch |
-  | Documentation | aligned / drift found |
   | Build & packaging | success / errors |
   | Runtime readiness | ready / issues / skipped |
   | Docker | success / errors / skipped |

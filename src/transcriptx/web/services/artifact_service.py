@@ -189,13 +189,19 @@ class ArtifactService:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, target)
                 copied.append((artifact, rel))
-            ArtifactService._write_export_index(staging_dir, run_root.name, copied)
+            ArtifactService._write_export_index(
+                staging_dir, run_root.name, copied, run_root=run_root
+            )
             shutil.make_archive(str(zip_path).replace(".zip", ""), "zip", staging_dir)
         return zip_path
 
     @staticmethod
     def _write_export_index(
-        staging_dir: Path, run_title: str, copied: List["tuple[Artifact, Path]"]
+        staging_dir: Path,
+        run_title: str,
+        copied: List["tuple[Artifact, Path]"],
+        *,
+        run_root: Optional[Path] = None,
     ) -> None:
         """Write a self-contained ``index.html`` approximating the GUI.
 
@@ -207,20 +213,22 @@ class ArtifactService:
         """
         try:
             from transcriptx.utils.charts_export import _ExportableItem
-            from transcriptx.utils.export_index import build_export_index_html
+            from transcriptx.utils.export_index import (
+                build_export_index_html,
+                resolve_export_page_title,
+                resolve_export_transcript_data,
+            )
 
-            transcript_data: Optional[Dict] = None
-            for artifact, rel in copied:
-                if artifact.kind == "transcript" and artifact.rel_path.endswith(
-                    ".json"
-                ):
-                    try:
-                        transcript_data = json.loads(
-                            (staging_dir / rel).read_text(encoding="utf-8")
-                        )
-                    except Exception:
-                        transcript_data = None
-                    break
+            transcript_data = resolve_export_transcript_data(
+                staging_dir=staging_dir,
+                run_root=run_root,
+                copied=copied,
+            )
+            page_title = resolve_export_page_title(
+                staging_dir=staging_dir,
+                run_root=run_root,
+                fallback=run_title,
+            )
 
             chart_items: List[_ExportableItem] = []
             for artifact, rel in copied:
@@ -235,7 +243,7 @@ class ArtifactService:
                     )
 
             html_payload = build_export_index_html(
-                run_title=run_title,
+                page_title=page_title,
                 transcript_data=transcript_data,
                 chart_items=chart_items,
             )

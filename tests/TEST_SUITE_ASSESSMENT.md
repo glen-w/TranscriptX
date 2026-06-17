@@ -779,3 +779,71 @@ Selected the three highest-leverage low-coverage critical-path modules that are 
 - **`pytest -m integration_core -q`:** `44 passed`.
 - **Production code:** none changed (tests-only expansion; +44 tests across the three files).
 
+## 39. Suite review (2026-06-17) – `/tests` command + audio backup / corrections memory coverage
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260617` (~27G, ~41.8k files); `custom-commands/` mirrored under backup root.
+
+### Review and baseline
+
+- **Collection (`pytest --co -q`):** `3043/3198` selected under default marker filter (`155` deselected); no collection/import errors.
+- **Default run (`pytest -q`):** `3042 passed`, `1 skipped`, `155 deselected`, `4` warnings (green baseline before expansion).
+- **Coverage gate (default marker expression):** `3047 passed`, `1 skipped`, `150 deselected`; **TOTAL 71%**.
+- **Marker breakdown:** smoke `35`, integration/`integration_core`/`integration_extended` `60`, heavy gates (`slow`/`requires_*`) `55`. **Quarantined:** `0` `@pytest.mark.quarantined` tests in the active tree.
+- **Skipped:** `tests/regression/test_pipeline_determinism.py` (one test: requires full pipeline setup). No skipped-at-collection import failures.
+- **Cleanup:** destructive test-artifact cleanup remains disabled.
+
+### Coverage gaps targeted (offline, deterministic, high-leverage)
+
+Selected two low-coverage, pure-logic critical-path modules testable without models/audio/network:
+
+- `core/audio/backup.py` was **17%** (pure filesystem copy + upload-guard delete logic).
+- `core/corrections/memory.py` was **25%** (layered YAML/JSON correction-rule persistence and promotion).
+
+### New unit tests (tests-only; no production changes)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/audio/test_audio_backup.py` | 11 | `_is_under_imports` (under/outside imports); `backup_audio_files_to_storage` empty input, stem-preserving vs `base_name` numbered backups across extensions, on-demand storage `mkdir`, missing-source skip, name-conflict counter suffix, delete-original under imports vs kept-outside-imports, `delete_original=False`, and per-file copy-failure isolation. Redirects `PATHS.wav_backup_dir` + `RECORDINGS_IMPORTS_DIR` into `tmp_path`. |
+| `tests/core/corrections/test_corrections_memory.py` | 21 | `_get_project_memory_path` (None/primary/fallback/default), `_get_global_memory_path` shape; `_load_rules_from_yaml` (missing, invalid YAML, `rules:` unwrap, keyed-id wins, list form, invalid/non-dict entries skipped); `_load_rules_from_decisions` (missing, invalid JSON, non-list, learn-rule extraction); `save_memory_layer` roundtrip; `load_memory` global→project→transcript merge precedence; `promote_rule` (unknown target raises, global write, project scope copy, None-root → None). Global/project paths monkeypatched into `tmp_path`. |
+
+### Targeted coverage result (full default gate measurement)
+
+- `core/audio/backup.py`: **17% → 87%** (remaining misses: name-conflict overflow guard and read-only-FS/exception logging branches).
+- `core/corrections/memory.py`: **25% → 79%** (remaining misses: `resolve_project_root` discovery walk and `save_memory_layer` write-failure handler).
+
+### Validation
+
+- **Default suite (post-expansion):** `3074 passed`, `1 skipped`, `155 deselected`, `0 failed` (+32 vs baseline).
+- **Default coverage gate:** `3079 passed`, `1 skipped`, `150 deselected`; **TOTAL 71% → 72%**.
+- **`pytest -m integration_core -q`:** `44 passed`.
+- **Production code:** none changed (tests-only expansion; +32 tests across the two files).
+
+## 40. Expansion (2026-06-17) – config validation + file discovery to ~75%+
+
+### Targeted areas (offline, deterministic, key critical-path code)
+
+Two pure-logic, low-coverage critical-path modules pushed well past the 75% goal:
+
+- `core/utils/config_validator.py` was **70.0%** (only dashboard checks tested).
+- `core/utils/file_discovery.py` was **61.4%** (only `discover_all_transcript_paths` exclusions + managed filter tested).
+
+### New unit tests (tests-only; no production changes)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/core/utils/test_config_validator_sections.py` | 19 | `ValidationError.__str__` (error/warning), `ValidationResult` (add_error → invalid, add_warning stays valid, `get_all_issues`); `_validate_output_config` (no-output noop, missing-parent error, existing-parent-missing-dir warning, non-bool `create_subdirectories`); `_validate_analysis_config` (non-positive timeout, invalid `max_workers`, valid); `_validate_logging_config` (invalid level, missing log dir, valid); `_validate_paths` import-failure warning branch; `validate_config_and_raise` raises on invalid + logs-warnings-without-raising; `validate_config(None)` default path. Uses `SimpleNamespace` configs for precise branch control. |
+| `tests/core/utils/test_file_discovery_extra.py` | 13 | `_resolve_transcript_discovery_root` (explicit root, config default, diarised fallback, None); `discover_all_transcript_paths` (unresolved root → `[]`, no-`transcripts/` subdir search, sorted/deduped); `discover_managed_transcript_paths` (canonical-failure excluded, managed-failure-with-category excluded); `get_recordings_folder_start_path` (empty → `RECORDINGS_DIR`, first existing folder, walk-up to nearest ancestor, no-ancestor fallback). Uses `tmp_path` + monkeypatch. |
+
+### Targeted coverage result (full default gate measurement)
+
+- `core/utils/config_validator.py`: **70.0% → 97%**.
+- `core/utils/file_discovery.py`: **61.4% → 98%**.
+
+### Validation
+
+- **Default coverage gate:** `3111 passed`, `1 skipped`, `150 deselected`, `0 failed`; **TOTAL 72%**.
+- **`pytest -m integration_core -q`:** `44 passed`.
+- **Production code:** none changed (tests-only expansion; +32 tests across the two files).
+

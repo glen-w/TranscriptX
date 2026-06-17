@@ -1,11 +1,8 @@
 """
 Audio Prep page — assess and preprocess audio files for transcription.
 
-Layout:
-    A. File Selection       — browse recordings dir or upload
-    B. Assessment           — on-demand noise + compliance analysis
-    C. Configuration        — mode, per-step options, output settings
-    D. Run & Result         — process with live progress, then result + handoff
+File selection and preprocessing configuration run in ``@st.fragment`` so widget
+changes do not trigger a full-app rerun.
 """
 
 from __future__ import annotations
@@ -46,6 +43,76 @@ _STEP_LABELS: Dict[str, str] = {
     "lowpass": "Low-pass filter",
     "bandpass": "Band-pass filter",
 }
+
+
+def _audio_prep_path_label(p: Path) -> str:
+    try:
+        return str(p.relative_to(RECORDINGS_DIR))
+    except ValueError:
+        return p.name
+
+
+@st.fragment
+def _audio_prep_selection_fragment(
+    paths_str: List[str], prev_selected: List[str]
+) -> None:
+    """File multiselect, assessment, and config without full-app rerun."""
+    selected_paths_str = st.multiselect(
+        "Recording — file(s) to process",
+        options=paths_str,
+        default=[p for p in prev_selected if p in paths_str] or [paths_str[0]],
+        format_func=lambda p: _audio_prep_path_label(Path(p)),
+        key="audio_prep_file_select",
+        help="The file(s) selected here will be processed. After uploading, your new file appears in this list — select it to process.",
+    )
+    if not selected_paths_str:
+        st.warning("Select at least one file to continue.")
+        return
+
+    selected_paths = [Path(p) for p in selected_paths_str]
+    st.session_state[_KEY_SELECTED_FILES] = selected_paths_str
+
+    # Invalidate cached result when selection changes
+    prev_result_key = st.session_state.get(_KEY_SELECTED_FILE)
+    prev_set = (
+        set(prev_result_key)
+        if isinstance(prev_result_key, list)
+        else {prev_result_key} if prev_result_key else set()
+    )
+    if set(selected_paths_str) != prev_set:
+        st.session_state.pop(_KEY_RESULT, None)
+    st.session_state[_KEY_SELECTED_FILE] = (
+        selected_paths_str[0] if len(selected_paths_str) == 1 else None
+    )
+
+    # File metadata: single file = full row; multiple = summary
+    if len(selected_paths) == 1:
+        meta = RecordingsService.get_audio_metadata(selected_paths[0])
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Duration", RecordingsService.format_duration(meta["duration_sec"]))
+        col2.metric(
+            "Sample rate", f"{meta['sample_rate']:,} Hz" if meta["sample_rate"] else "—"
+        )
+        col3.metric(
+            "Channels",
+            (
+                "Mono"
+                if meta["channels"] == 1
+                else f"{meta['channels']}ch" if meta["channels"] else "—"
+            ),
+        )
+        col4.metric("Size", f"{meta['file_size_mb']} MB")
+        _render_rename_section(selected_paths[0])
+    else:
+        total_dur = sum(
+            RecordingsService.get_audio_metadata(p)["duration_sec"]
+            for p in selected_paths
+        )
+        st.caption(
+            f"{len(selected_paths)} files selected · total duration {RecordingsService.format_duration(total_dur)}"
+        )
+
+    _render_section_b(selected_paths)
 
 
 def render_audio_prep_page() -> None:
@@ -137,62 +204,7 @@ def _render_section_a() -> None:
     if not prev_selected or not any(p in paths_str for p in prev_selected):
         prev_selected = [paths_str[0]]
 
-    selected_paths_str = st.multiselect(
-        "Recording — file(s) to process",
-        options=paths_str,
-        default=[p for p in prev_selected if p in paths_str] or [paths_str[0]],
-        format_func=lambda p: _label(Path(p)),
-        key="audio_prep_file_select",
-        help="The file(s) selected here will be processed. After uploading, your new file appears in this list — select it to process.",
-    )
-    if not selected_paths_str:
-        st.warning("Select at least one file to continue.")
-        return
-
-    selected_paths = [Path(p) for p in selected_paths_str]
-    st.session_state[_KEY_SELECTED_FILES] = selected_paths_str
-
-    # Invalidate cached result when selection changes
-    prev_result_key = st.session_state.get(_KEY_SELECTED_FILE)
-    prev_set = (
-        set(prev_result_key)
-        if isinstance(prev_result_key, list)
-        else {prev_result_key} if prev_result_key else set()
-    )
-    if set(selected_paths_str) != prev_set:
-        st.session_state.pop(_KEY_RESULT, None)
-    st.session_state[_KEY_SELECTED_FILE] = (
-        selected_paths_str[0] if len(selected_paths_str) == 1 else None
-    )
-
-    # File metadata: single file = full row; multiple = summary
-    if len(selected_paths) == 1:
-        meta = RecordingsService.get_audio_metadata(selected_paths[0])
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Duration", RecordingsService.format_duration(meta["duration_sec"]))
-        col2.metric(
-            "Sample rate", f"{meta['sample_rate']:,} Hz" if meta["sample_rate"] else "—"
-        )
-        col3.metric(
-            "Channels",
-            (
-                "Mono"
-                if meta["channels"] == 1
-                else f"{meta['channels']}ch" if meta["channels"] else "—"
-            ),
-        )
-        col4.metric("Size", f"{meta['file_size_mb']} MB")
-        _render_rename_section(selected_paths[0])
-    else:
-        total_dur = sum(
-            RecordingsService.get_audio_metadata(p)["duration_sec"]
-            for p in selected_paths
-        )
-        st.caption(
-            f"{len(selected_paths)} files selected · total duration {RecordingsService.format_duration(total_dur)}"
-        )
-
-    _render_section_b(selected_paths)
+    _audio_prep_selection_fragment(paths_str, prev_selected)
 
 
 def _render_rename_section(audio_path: Path) -> None:

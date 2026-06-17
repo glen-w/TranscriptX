@@ -56,8 +56,8 @@ setup_environment() {
     print_status "Upgrading pip..."
     pip install --upgrade pip
 
-    print_status "Installing setuptools and llvmlite (wheels) for compatibility..."
-    pip install "setuptools>=64,<70"
+    print_status "Installing setuptools (security baseline) and llvmlite..."
+    pip install "setuptools>=78.1.1"
     pip install --prefer-binary "llvmlite>=0.41.0,<0.46" || true
 
     print_status "Installing numpy (pinned to 1.26.4 for compatibility)..."

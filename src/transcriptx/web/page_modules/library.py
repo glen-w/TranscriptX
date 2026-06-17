@@ -1,5 +1,8 @@
 """
 Library page - browse transcripts and audio inputs.
+
+Table toggle and selection widgets run in ``@st.fragment`` so they do not trigger
+a full-app rerun.
 """
 
 from __future__ import annotations
@@ -94,6 +97,100 @@ def _speaker_stats_for_path(
     return fully_mapped, str(identified), str(ignored)
 
 
+@st.fragment
+def _library_browser_fragment(
+    transcripts: list,
+    summary_by_path: dict[str, object],
+) -> None:
+    """Transcript table and actions without full-app rerun."""
+    rows = []
+    for m in transcripts:
+        transcript_path = Path(m.path)
+        audio_path = _resolve_audio_for_transcript(transcript_path)
+        fully_mapped, identified_count, ignored_count = _speaker_stats_for_path(
+            summary_by_path,
+            transcript_path,
+            m.speaker_count,
+        )
+        rows.append(
+            {
+                "Name": m.base_name,
+                "Path": str(transcript_path),
+                "Date Created": _format_path_created_at(transcript_path),
+                "Date Recorded": (
+                    _format_path_created_at(audio_path) if audio_path else "—"
+                ),
+                "Speakers": ("-" if m.speaker_count is None else str(m.speaker_count)),
+                "Duration": _format_duration_display(m.duration_seconds),
+                "Has Audio": "✓" if has_resolvable_audio(m.path) else "—",
+                "Has Analysis": "✓" if m.has_analysis_outputs else "—",
+                "Fully Mapped": fully_mapped,
+                "Identified": identified_count,
+                "Ignored": ignored_count,
+            }
+        )
+    df = pd.DataFrame(rows)
+    show_path_col = st.toggle("Show path column", value=False, key="library_show_path")
+    display_df = df if show_path_col else df.drop(columns=["Path"])
+
+    st.dataframe(
+        display_df,
+        width="stretch",
+        hide_index=True,
+    )
+
+    st.divider()
+    st.subheader("Actions")
+    selected_idx = st.selectbox(
+        "Select transcript",
+        range(len(transcripts) + 1),
+        format_func=lambda i: (
+            SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else transcripts[i - 1].base_name
+        ),
+        index=0,
+        key="library_transcript_select",
+    )
+    if selected_idx > 0:
+        selected = transcripts[selected_idx - 1]
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Run Speaker ID", key="lib_speaker_id"):
+                apply_transcript_selection_context(st.session_state, str(selected.path))
+                st.session_state["page"] = "Speaker ID"
+                st.rerun()
+        with col2:
+            if st.button("Run Analysis", key="lib_run_analysis"):
+                apply_transcript_selection_context(st.session_state, str(selected.path))
+                st.session_state["page"] = "Run Analysis"
+                st.rerun()
+
+        st.markdown("#### Rename transcript + linked audio")
+        st.caption(
+            "Keeps transcript JSON and linked audio filename in sync using the same base name."
+        )
+        with st.form("library_rename_form", clear_on_submit=False):
+            st.text_input("Current file name", value=selected.base_name, disabled=True)
+            target = st.text_input(
+                "New file name",
+                value=selected.base_name,
+                help=(
+                    "Use letters, numbers, spaces, hyphens, and underscores. "
+                    "Do not include extension."
+                ),
+            )
+            rename_submitted = st.form_submit_button("Rename transcript and audio")
+        if rename_submitted:
+            result = RenameService.rename_transcript_and_audio(selected.path, target)
+            if not result.ok:
+                st.error(result.message)
+            else:
+                RenameService.refresh_after_rename(result)
+                st.success(
+                    f"Renamed `{result.old_base_name}` to `{result.new_base_name}`."
+                )
+                st.rerun()
+
+
 def render_library() -> None:
     """Render the transcript library page."""
     st.markdown(
@@ -114,106 +211,7 @@ def render_library() -> None:
         summary_by_path = {
             str(Path(getattr(s, "path", "")).resolve()): s for s in summaries
         }
-        rows = []
-        for m in transcripts:
-            transcript_path = Path(m.path)
-            audio_path = _resolve_audio_for_transcript(transcript_path)
-            fully_mapped, identified_count, ignored_count = _speaker_stats_for_path(
-                summary_by_path,
-                transcript_path,
-                m.speaker_count,
-            )
-            rows.append(
-                {
-                    "Name": m.base_name,
-                    "Path": str(transcript_path),
-                    "Date Created": _format_path_created_at(transcript_path),
-                    "Date Recorded": (
-                        _format_path_created_at(audio_path) if audio_path else "—"
-                    ),
-                    "Speakers": (
-                        "-" if m.speaker_count is None else str(m.speaker_count)
-                    ),
-                    "Duration": _format_duration_display(m.duration_seconds),
-                    "Has Audio": "✓" if has_resolvable_audio(m.path) else "—",
-                    "Has Analysis": "✓" if m.has_analysis_outputs else "—",
-                    "Fully Mapped": fully_mapped,
-                    "Identified": identified_count,
-                    "Ignored": ignored_count,
-                }
-            )
-        df = pd.DataFrame(rows)
-        show_path_col = st.toggle(
-            "Show path column", value=False, key="library_show_path"
-        )
-        display_df = df if show_path_col else df.drop(columns=["Path"])
-
-        st.dataframe(
-            display_df,
-            width="stretch",
-            hide_index=True,
-        )
-
-        st.divider()
-        st.subheader("Actions")
-        selected_idx = st.selectbox(
-            "Select transcript",
-            range(len(transcripts) + 1),
-            format_func=lambda i: (
-                SELECTBOX_PLACEHOLDER_TRANSCRIPT
-                if i == 0
-                else transcripts[i - 1].base_name
-            ),
-            index=0,
-            key="library_transcript_select",
-        )
-        if selected_idx > 0:
-            selected = transcripts[selected_idx - 1]
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Run Speaker ID", key="lib_speaker_id"):
-                    apply_transcript_selection_context(
-                        st.session_state, str(selected.path)
-                    )
-                    st.session_state["page"] = "Speaker ID"
-                    st.rerun()
-            with col2:
-                if st.button("Run Analysis", key="lib_run_analysis"):
-                    apply_transcript_selection_context(
-                        st.session_state, str(selected.path)
-                    )
-                    st.session_state["page"] = "Run Analysis"
-                    st.rerun()
-
-            st.markdown("#### Rename transcript + linked audio")
-            st.caption(
-                "Keeps transcript JSON and linked audio filename in sync using the same base name."
-            )
-            with st.form("library_rename_form", clear_on_submit=False):
-                st.text_input(
-                    "Current file name", value=selected.base_name, disabled=True
-                )
-                target = st.text_input(
-                    "New file name",
-                    value=selected.base_name,
-                    help=(
-                        "Use letters, numbers, spaces, hyphens, and underscores. "
-                        "Do not include extension."
-                    ),
-                )
-                rename_submitted = st.form_submit_button("Rename transcript and audio")
-            if rename_submitted:
-                result = RenameService.rename_transcript_and_audio(
-                    selected.path, target
-                )
-                if not result.ok:
-                    st.error(result.message)
-                else:
-                    RenameService.refresh_after_rename(result)
-                    st.success(
-                        f"Renamed `{result.old_base_name}` to `{result.new_base_name}`."
-                    )
-                    st.rerun()
+        _library_browser_fragment(transcripts, summary_by_path)
 
     except Exception as e:
         st.error(f"Could not load library: {e}")

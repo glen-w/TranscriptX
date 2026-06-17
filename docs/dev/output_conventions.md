@@ -9,7 +9,7 @@ This document remains a short reference. Implementation lives in `src/transcript
 
 ## Directory layout
 
-- **Run root:** Outputs live under `outputs/<slug>/<run_id>/` where `slug` is the human-friendly folder name (from the slug manager) and `run_id` is `YYYYMMDD_HHMMSS_<hash>`. The run root contains module subdirs, `manifest.json`, and `run_results.json`. See [output-contract-v1.md](contracts/output-contract-v1.md) for the full contract.
+- **Run root:** Outputs live under `outputs/<slug>/<run_id>/` where `slug` is the human-friendly folder name (from the slug manager) and `run_id` is `YYYYMMDD_HHMMSS_<hash>`. The run root contains module subdirs, `manifest.json`, `run_results.json`, and report projections (`report.json` / `report.md` / `report.txt`) when enabled by the run profile. See [output-contract-v1.md](contracts/output-contract-v1.md) for the full contract.
 - **Per-module:** Each analysis module writes under `<run_root>/<module_name>/` unless it uses a versioned namespace (see below).
 - **Standard subdirs (per module):** `data/`, `charts/`, `global/`, `speakers/` as created by `create_standard_output_structure()` in `output_standards.py`.
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-17
+
+### Fixed
+
+- Declare `networkx` as a core package dependency so wheel installs can build the module registry (conversation-loops and network chart renderers import it at load time).
+- Defer analysis module class imports until execution so optional extras (e.g. maps/NLP) are not required to plan or run unrelated modules such as `stats`.
+- Document `TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS` in `.env.example`.
+
 ### Added
 
 - Multi-language transcript import: flat `{base}_{lang}.json` variants (e.g. `meeting_fr.json`) inherit the base transcript's speaker map on managed import when the base has a speaker-map sidecar and the variant does not (`io/speaker_map_inheritance.py`, `core/utils/transcript_variant_paths.py`). `speaker_id_to_db_id` is copied because those IDs are canonical cross-segment grouping keys shared by the same physical speakers.

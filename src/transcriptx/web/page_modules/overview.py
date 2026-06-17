@@ -1,5 +1,8 @@
 """
 Overview dashboard page for TranscriptX Studio.
+
+Export selection widgets run in ``@st.fragment`` so radio/select changes do not
+trigger a full-app rerun (avoids the dimming overlay on each export mode click).
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_ui_groups import module_sort_key, order_module_ids
+from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 
 _OVERVIEW_HELP_PREREQ = "**Overview** shows artifact counts, module summaries, and export options for one run."
@@ -54,6 +58,94 @@ def _parse_run_datetime(run_id: str) -> str:
     except (ValueError, IndexError):
         pass
     return run_id  # Fallback to raw run_id if parsing fails
+
+
+@st.fragment
+def _overview_export_fragment(run_root: Path, artifacts: list[Artifact]) -> None:
+    """High-churn export UI; reruns only this block when export mode changes."""
+    st.subheader("Export")
+    export_mode = st.radio(
+        "Export Options",
+        [
+            "All",
+            "Module",
+            "Speaker",
+            "Charts Only",
+            "Static Charts Only",
+            "Data Only",
+            "Custom Selection",
+        ],
+        key="overview_export_mode",
+    )
+    selected_artifacts = artifacts
+    if export_mode == "Module":
+        module_options = order_module_ids({a.module for a in artifacts if a.module})
+        module_choice = st.selectbox(
+            "Module",
+            module_options,
+            format_func=format_module_option,
+            key="overview_export_module",
+        )
+        selected_artifacts = [a for a in artifacts if a.module == module_choice]
+    elif export_mode == "Speaker":
+        speaker_options = sorted({a.speaker for a in artifacts if a.speaker})
+        speaker_choice = st.selectbox(
+            "Speaker",
+            speaker_options,
+            key="overview_export_speaker",
+        )
+        selected_artifacts = [a for a in artifacts if a.speaker == speaker_choice]
+    elif export_mode == "Charts Only":
+        selected_artifacts = [a for a in artifacts if a.kind.startswith("chart")]
+    elif export_mode == "Static Charts Only":
+        selected_artifacts = [a for a in artifacts if a.kind == "chart_static"]
+    elif export_mode == "Data Only":
+        selected_artifacts = [a for a in artifacts if a.kind.startswith("data")]
+    elif export_mode == "Custom Selection":
+        options = {a.id: a.rel_path for a in artifacts}
+        chosen = st.multiselect(
+            "Artifacts",
+            list(options.keys()),
+            format_func=lambda key: options.get(key, key),
+            key="overview_export_artifacts",
+        )
+        selected_artifacts = [a for a in artifacts if a.id in chosen]
+
+    if not selected_artifacts:
+        st.info("No artifacts selected for export.")
+        return
+
+    total_bytes = sum(a.bytes for a in selected_artifacts)
+    st.caption(f"Selection size: {total_bytes / (1024 * 1024):.1f} MB")
+
+    confirm_large = True
+    if total_bytes > 500 * 1024 * 1024:
+        st.warning("Large export (> 500MB). Confirm before exporting.")
+        confirm_large = st.checkbox(
+            "I understand this may take time.",
+            key="overview_export_confirm_large",
+        )
+    if total_bytes > 2 * 1024 * 1024 * 1024:
+        st.error("Export exceeds 2GB hard cap.")
+        return
+
+    if st.button(
+        "Create Export", disabled=not confirm_large, key="overview_create_export"
+    ):
+        export_path = ArtifactService.zip_artifacts(
+            run_root, [a.id for a in selected_artifacts]
+        )
+        if export_path:
+            try:
+                payload = ArtifactService.read_for_download(export_path)
+                st.download_button(
+                    "Download Export",
+                    data=payload,
+                    file_name=export_path.name,
+                    key="overview_download_export",
+                )
+            except Exception as exc:
+                st.error(f"Export failed: {exc}")
 
 
 def render_overview() -> None:
@@ -232,73 +324,5 @@ def render_overview() -> None:
         )
 
     st.divider()
-    st.subheader("Export")
-    export_mode = st.radio(
-        "Export Options",
-        [
-            "All",
-            "Module",
-            "Speaker",
-            "Charts Only",
-            "Data Only",
-            "Custom Selection",
-        ],
-    )
-    selected_artifacts = artifacts
-    if export_mode == "Module":
-        module_options = order_module_ids({a.module for a in artifacts if a.module})
-        module_choice = st.selectbox(
-            "Module",
-            module_options,
-            format_func=format_module_option,
-        )
-        selected_artifacts = [a for a in artifacts if a.module == module_choice]
-    elif export_mode == "Speaker":
-        speaker_options = sorted({a.speaker for a in artifacts if a.speaker})
-        speaker_choice = st.selectbox("Speaker", speaker_options)
-        selected_artifacts = [a for a in artifacts if a.speaker == speaker_choice]
-    elif export_mode == "Charts Only":
-        selected_artifacts = [a for a in artifacts if a.kind.startswith("chart")]
-    elif export_mode == "Data Only":
-        selected_artifacts = [a for a in artifacts if a.kind.startswith("data")]
-    elif export_mode == "Custom Selection":
-        options = {a.id: a.rel_path for a in artifacts}
-        chosen = st.multiselect(
-            "Artifacts",
-            list(options.keys()),
-            format_func=lambda key: options.get(key, key),
-        )
-        selected_artifacts = [a for a in artifacts if a.id in chosen]
-
-    if not selected_artifacts:
-        st.info("No artifacts selected for export.")
-        render_page_help(_OVERVIEW_HELP_LOADED)
-        return
-
-    total_bytes = sum(a.bytes for a in selected_artifacts)
-    st.caption(f"Selection size: {total_bytes / (1024 * 1024):.1f} MB")
-
-    confirm_large = True
-    if total_bytes > 500 * 1024 * 1024:
-        st.warning("Large export (> 500MB). Confirm before exporting.")
-        confirm_large = st.checkbox("I understand this may take time.")
-    if total_bytes > 2 * 1024 * 1024 * 1024:
-        st.error("Export exceeds 2GB hard cap.")
-        render_page_help(_OVERVIEW_HELP_LOADED)
-        return
-
-    if st.button("Create Export", disabled=not confirm_large):
-        export_path = ArtifactService.zip_artifacts(
-            run_root, [a.id for a in selected_artifacts]
-        )
-        if export_path:
-            try:
-                payload = ArtifactService.read_for_download(export_path)
-                st.download_button(
-                    "Download Export",
-                    data=payload,
-                    file_name=export_path.name,
-                )
-            except Exception as exc:
-                st.error(f"Export failed: {exc}")
+    _overview_export_fragment(run_root, artifacts)
     render_page_help(_OVERVIEW_HELP_LOADED)

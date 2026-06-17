@@ -1,7 +1,7 @@
 [
   {
     "viz_id": "group.acts.global_acts_pie.global",
-    "label": "Group aggregate — Dialogue Acts (filtered, all speakers)",
+    "label": "Group aggregate \u2014 Dialogue Acts (filtered, all speakers)",
     "rank_default": 2,
     "kind": "chart",
     "module": "acts",
@@ -23,7 +23,7 @@
   },
   {
     "viz_id": "group.sentiment.session.compound_mean",
-    "label": "Group aggregate — Sentiment compound by session",
+    "label": "Group aggregate \u2014 Sentiment compound by session",
     "rank_default": 3,
     "kind": "chart",
     "module": "sentiment",
@@ -45,7 +45,7 @@
   },
   {
     "viz_id": "group.stats.session.total_words",
-    "label": "Group aggregate — Total words by session",
+    "label": "Group aggregate \u2014 Total words by session",
     "rank_default": 4,
     "kind": "chart",
     "module": "stats",
@@ -67,7 +67,7 @@
   },
   {
     "viz_id": "group.acts.temporal_overlay.global",
-    "label": "Group aggregate — Acts over time (cross-session overlay)",
+    "label": "Group aggregate \u2014 Acts over time (cross-session overlay)",
     "rank_default": 5,
     "kind": "chart",
     "module": "acts",
@@ -89,7 +89,7 @@
   },
   {
     "viz_id": "group.sentiment.temporal_overlay.global",
-    "label": "Group aggregate — Sentiment cross-session overlay",
+    "label": "Group aggregate \u2014 Sentiment cross-session overlay",
     "rank_default": 6,
     "kind": "chart",
     "module": "sentiment",
@@ -111,7 +111,7 @@
   },
   {
     "viz_id": "group.pauses.temporal_overlay.global",
-    "label": "Group aggregate — Pauses cross-session overlay",
+    "label": "Group aggregate \u2014 Pauses cross-session overlay",
     "rank_default": 7,
     "kind": "chart",
     "module": "pauses",
@@ -133,7 +133,7 @@
   },
   {
     "viz_id": "group.emotion.temporal_overlay.global",
-    "label": "Group aggregate — Emotion cross-session overlay",
+    "label": "Group aggregate \u2014 Emotion cross-session overlay",
     "rank_default": 8,
     "kind": "chart",
     "module": "emotion",
@@ -155,7 +155,7 @@
   },
   {
     "viz_id": "group.prosody.temporal_overlay.global",
-    "label": "Group aggregate — Prosody RMS cross-session overlay",
+    "label": "Group aggregate \u2014 Prosody RMS cross-session overlay",
     "rank_default": 9,
     "kind": "chart",
     "module": "prosody",
@@ -177,7 +177,7 @@
   },
   {
     "viz_id": "group.sentiment.cross_session_speaker.pattern",
-    "label": "Group aggregate — Sentiment compound across sessions (per speaker)",
+    "label": "Group aggregate \u2014 Sentiment compound across sessions (per speaker)",
     "rank_default": 48,
     "kind": "chart",
     "module": "sentiment",
@@ -199,7 +199,7 @@
   },
   {
     "viz_id": "group.stats.cross_session_speaker.pattern",
-    "label": "Group aggregate — Stats word count across sessions (per speaker)",
+    "label": "Group aggregate \u2014 Stats word count across sessions (per speaker)",
     "rank_default": 49,
     "kind": "chart",
     "module": "stats",
@@ -221,7 +221,7 @@
   },
   {
     "viz_id": "group.stats.cross_session_speaker.segment_count.pattern",
-    "label": "Group aggregate — Stats segment count across sessions (per speaker)",
+    "label": "Group aggregate \u2014 Stats segment count across sessions (per speaker)",
     "rank_default": 50,
     "kind": "chart",
     "module": "stats",
@@ -287,7 +287,7 @@
   },
   {
     "viz_id": "emotion.radar.global",
-    "label": "Emotion Radar - All Speakers",
+    "label": "Emotion Radar \u2013 All Speakers",
     "rank_default": 30,
     "kind": "chart",
     "module": "emotion",
@@ -375,8 +375,8 @@
   },
   {
     "viz_id": "ner.entity_types.global",
-    "label": "Entity Types - Global",
-    "rank_default": 50,
+    "label": "Entity Types \u2013 Global",
+    "rank_default": 52,
     "kind": "chart",
     "module": "ner",
     "scope": "global",
@@ -419,7 +419,7 @@
   },
   {
     "viz_id": "ner.locations.global",
-    "label": "Locations Map - Global",
+    "label": "Locations Map \u2013 Global",
     "rank_default": 70,
     "kind": "map",
     "module": "ner",
@@ -567,7 +567,7 @@
       "by_chart_slug_regex": "/dominance\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Comparison of conversational dominance per speaker (such as share of talk time or turns). Taller bars mean that speaker dominated more of the conversation.",
+    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses. The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
     "family_id": null,
     "variant": null
   },
@@ -652,16 +652,16 @@
     "match": {
       "by_viz_id": "momentum.momentum.global",
       "by_artifact_key_prefix": "momentum/charts/",
-      "by_chart_slug_regex": "momentum",
+      "by_chart_slug_regex": "momentum\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Conversational momentum over time, capturing shifts in pace and energy. Rising values indicate building intensity or engagement and dips indicate lulls; read peaks as moments where the conversation accelerated.",
+    "description": "Conversational momentum per time window (60s windows, 30s step). The y-axis is a weighted index that adds lexical novelty and turn-taking energy and subtracts pause rate, repetition rate, and loop rate. Higher values mean more new content and active exchange; dips mark stalls.",
     "family_id": null,
     "variant": null
   },
   {
     "viz_id": "temporal_dynamics.engagement_timeseries.global",
-    "label": "Engagement Timeseries",
+    "label": "Engagement Time Series",
     "rank_default": 150,
     "kind": "chart",
     "module": "temporal_dynamics",
@@ -677,13 +677,13 @@
       "by_chart_slug_regex": "engagement_timeseries",
       "by_filename_glob": null
     },
-    "description": "Engagement level over the course of the conversation. The x-axis is time and the y-axis is an engagement score derived from participation and turn dynamics; peaks mark the most active stretches.",
+    "description": "Engagement score (0-1) per time window. The score is a weighted, normalized combination of segment count, average segment length, and question count in each window. Higher values mark the most active stretches; the x-axis is elapsed time.",
     "family_id": null,
     "variant": null
   },
   {
     "viz_id": "temporal_dynamics.speaking_rate_timeseries.global",
-    "label": "Speaking Rate Timeseries",
+    "label": "Speaking Rate Time Series",
     "rank_default": 160,
     "kind": "chart",
     "module": "temporal_dynamics",
@@ -699,13 +699,13 @@
       "by_chart_slug_regex": "speaking_rate_timeseries",
       "by_filename_glob": null
     },
-    "description": "Speaking rate (such as words per minute) over time. Higher values mean faster speech; use it to spot rushed or slow passages across the conversation.",
+    "description": "Speaking rate over time in words per minute (total words in each window divided by window length, scaled to a minute). Higher values mean faster speech; use it to spot rushed or slow passages across the conversation.",
     "family_id": null,
     "variant": null
   },
   {
     "viz_id": "temporal_dynamics.sentiment_timeseries.global",
-    "label": "Sentiment Timeseries",
+    "label": "Sentiment Time Series",
     "rank_default": 170,
     "kind": "chart",
     "module": "temporal_dynamics",
@@ -831,7 +831,7 @@
       "by_chart_slug_regex": "response_quality",
       "by_filename_glob": null
     },
-    "description": "Distribution of response-quality scores for answers given. Bars show how many responses fall into each quality band; a right-skewed shape means generally stronger answers.",
+    "description": "Histogram of answer quality scores (0-1) across matched question-and-answer pairs. The x-axis bins the overall score (a weighted blend of directness, completeness, relevance, and length); the y-axis counts answers per bin. A right-shifted shape means generally higher-scored answers.",
     "family_id": null,
     "variant": null
   },
@@ -985,7 +985,7 @@
       "by_chart_slug_regex": "contagion_matrix",
       "by_filename_glob": null
     },
-    "description": "Matrix of emotional contagion between speakers. Each cell estimates how much one speaker's emotion influences another's; darker cells mean stronger directed influence from the row speaker to the column speaker.",
+    "description": "Matrix of emotional contagion between speakers. Each cell measures how strongly a shift in the row speaker's expressed emotion is followed by a shift in the column speaker's; darker cells mean a stronger directed association from row to column. This reflects temporal association, not proven causal influence.",
     "family_id": null,
     "variant": null
   },
@@ -1136,10 +1136,10 @@
     "match": {
       "by_viz_id": "semantic_similarity.agreement_breakdown.global",
       "by_artifact_key_prefix": "semantic_similarity/charts/",
-      "by_chart_slug_regex": "agreement_disagreement_breakdown",
+      "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": "Breakdown of cross-speaker interaction types (such as agreement, disagreement, elaboration) inferred from semantic similarity. Each bar or slice is a type's share of cross-speaker exchanges.",
+    "description": "Counts of cross-speaker exchanges by model-assigned interaction type (agreement, disagreement, and related labels) inferred from semantic similarity. Each bar is the number of exchanges placed in that category. These are automatic classifications and may be noisy, not a verified measure of consensus.",
     "family_id": null,
     "variant": null
   },
@@ -1202,7 +1202,7 @@
     "match": {
       "by_viz_id": "semantic_similarity.classification.global",
       "by_artifact_key_prefix": "semantic_similarity/charts/",
-      "by_chart_slug_regex": "classification",
+      "by_chart_slug_regex": "classification\\.(png|html)$",
       "by_filename_glob": null
     },
     "description": "Classification of detected repetitions (such as self versus cross-speaker, paraphrase versus verbatim). Each bar is a category's share of all repetitions.",
@@ -1249,7 +1249,7 @@
       "by_chart_slug_regex": "agreement_disagreement_breakdown",
       "by_filename_glob": null
     },
-    "description": "Share of agreement versus disagreement across cross-speaker exchanges, inferred from semantic similarity and stance. Use it to gauge how consensual the conversation was.",
+    "description": "Counts of cross-speaker exchanges the model labelled as agreement versus disagreement, inferred from semantic similarity. Bars compare how many exchanges fell into each label. These are automatic classifications and may be noisy, not a direct measure of consensus.",
     "family_id": null,
     "variant": null
   },
@@ -1293,7 +1293,7 @@
       "by_chart_slug_regex": "agreement_disagreement_breakdown",
       "by_filename_glob": null
     },
-    "description": "Share of agreement versus disagreement across cross-speaker exchanges (v2 embedding-based engine). Use it to gauge how consensual the conversation was.",
+    "description": "Counts of cross-speaker exchanges the model labelled as agreement versus disagreement (v2 embedding-based engine). Bars compare the label counts. These are automatic classifications and may be noisy, not a direct measure of consensus.",
     "family_id": null,
     "variant": null
   },
@@ -1356,7 +1356,7 @@
     "match": {
       "by_viz_id": "semantic_similarity_v2.classification.global",
       "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "classification",
+      "by_chart_slug_regex": "classification\\.(png|html)$",
       "by_filename_glob": null
     },
     "description": "Classification of detected repetitions by type (v2 embedding-based engine). Each bar is a category's share of all repetitions.",
@@ -1388,7 +1388,7 @@
   {
     "viz_id": "topic_modeling.diagnostic_plots.global",
     "label": "Topic Modeling Diagnostics",
-    "rank_default": 390,
+    "rank_default": 392,
     "kind": "chart",
     "module": "topic_modeling",
     "scope": "global",
@@ -1425,7 +1425,7 @@
       "by_chart_slug_regex": "discourse_analysis",
       "by_filename_glob": null
     },
-    "description": "Discourse-level view of how topics structure the conversation. Shows how discussion is organized across topics; use it alongside the topic timeline for context.",
+    "description": "Four-panel view of topics across discourse phases (opening, main discussion, and closing, split by position in the conversation): topic prevalence and average topic confidence as phase-by-topic heatmaps, plus per-phase segment counts with topic diversity and average confidence. Use it to see how topics shift between phases.",
     "family_id": null,
     "variant": null
   },
@@ -1563,7 +1563,7 @@
   },
   {
     "viz_id": "acts.acts_pie.speaker",
-    "label": "Dialogue Acts - Pie (Per Speaker)",
+    "label": "Dialogue Acts \u2013 Pie (Per Speaker)",
     "rank_default": 470,
     "kind": "chart",
     "module": "acts",
@@ -1585,7 +1585,7 @@
   },
   {
     "viz_id": "acts.acts_bar.speaker",
-    "label": "Dialogue Acts - Bar (Per Speaker)",
+    "label": "Dialogue Acts \u2013 Bar (Per Speaker)",
     "rank_default": 480,
     "kind": "chart",
     "module": "acts",
@@ -1607,7 +1607,7 @@
   },
   {
     "viz_id": "acts.global_acts_pie.global",
-    "label": "Dialogue Acts - Global Pie",
+    "label": "Dialogue Acts \u2013 Global Pie",
     "rank_default": 490,
     "kind": "chart",
     "module": "acts",
@@ -1629,7 +1629,7 @@
   },
   {
     "viz_id": "acts.global_acts_bar.global",
-    "label": "Dialogue Acts - Global Bar",
+    "label": "Dialogue Acts \u2013 Global Bar",
     "rank_default": 500,
     "kind": "chart",
     "module": "acts",
@@ -1651,7 +1651,7 @@
   },
   {
     "viz_id": "acts.acts_temporal_all.global",
-    "label": "Dialogue Acts Over Time - All Speakers",
+    "label": "Dialogue Acts Over Time \u2013 All Speakers",
     "rank_default": 510,
     "kind": "chart",
     "module": "acts",
@@ -1773,7 +1773,7 @@
     ],
     "match": {
       "by_viz_id": "voice.pauses_distribution.global",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "pauses_distribution",
       "by_filename_glob": null
     },
@@ -1795,7 +1795,7 @@
     ],
     "match": {
       "by_viz_id": "voice.pauses_distribution.speaker",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "pauses_distribution",
       "by_filename_glob": null
     },
@@ -1817,7 +1817,7 @@
     ],
     "match": {
       "by_viz_id": "voice.pauses_timeline.global",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "pauses_timeline",
       "by_filename_glob": null
     },
@@ -1839,11 +1839,11 @@
     ],
     "match": {
       "by_viz_id": "voice.hesitation_map.global",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "hesitation_map",
       "by_filename_glob": null
     },
-    "description": "Map of hesitation events (pauses and disfluencies) across the conversation. Highlights where speech stalls; use it to find uncertain or effortful passages. Requires voice features.",
+    "description": "Scatter of speech segments by speech rate (x, words per second) against pause count (y), measured from the audio. Points toward the upper-left combine slower speech with more pauses. It shows where speech slows and pauses cluster; it does not measure uncertainty. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1861,7 +1861,7 @@
     ],
     "match": {
       "by_viz_id": "voice.burstiness.speaker",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "burstiness",
       "by_filename_glob": null
     },
@@ -1883,7 +1883,7 @@
     ],
     "match": {
       "by_viz_id": "voice.rhythm_compare.global",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "rhythm_compare",
       "by_filename_glob": null
     },
@@ -1905,11 +1905,11 @@
     ],
     "match": {
       "by_viz_id": "voice.rhythm_scatter.global",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "rhythm_scatter",
       "by_filename_glob": null
     },
-    "description": "Scatter of speakers by rhythm features (such as tempo versus variability). Each point is a speaker; clusters group similar speaking rhythms. Requires voice features.",
+    "description": "Scatter of speakers by speech rate (x, words per second) against rhythmic variability (y, nPVI of voiced runs). Each point is a speaker; it contrasts how fast versus how evenly each speaker talks. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -1927,7 +1927,7 @@
     ],
     "match": {
       "by_viz_id": "voice.f0_contours.speaker",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "f0_contours",
       "by_filename_glob": null
     },
@@ -1949,7 +1949,7 @@
     ],
     "match": {
       "by_viz_id": "voice.f0_slope_distribution.global",
-      "by_artifact_key_prefix": "voice",
+      "by_artifact_key_prefix": "voice/v1/charts/",
       "by_chart_slug_regex": "f0_slope_distribution",
       "by_filename_glob": null
     },
@@ -1971,7 +1971,7 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.profile_distribution.speaker",
-      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
       "by_chart_slug_regex": "profile_distribution",
       "by_filename_glob": null
     },
@@ -1993,7 +1993,7 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.profile_corr.speaker",
-      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
       "by_chart_slug_regex": "profile_corr",
       "by_filename_glob": null
     },
@@ -2015,8 +2015,8 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.timeline.global",
-      "by_artifact_key_prefix": "prosody_dashboard",
-      "by_chart_slug_regex": "timeline",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
+      "by_chart_slug_regex": "prosody_timeline",
       "by_filename_glob": null
     },
     "description": "Prosodic features over time across the conversation. Tracks loudness and pitch dynamics along the timeline. Requires prosody features.",
@@ -2037,7 +2037,7 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.compare_speakers.global",
-      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
       "by_chart_slug_regex": "compare_speakers",
       "by_filename_glob": null
     },
@@ -2059,7 +2059,7 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.fingerprint_scatter.global",
-      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
       "by_chart_slug_regex": "fingerprint_scatter",
       "by_filename_glob": null
     },
@@ -2081,7 +2081,7 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.egemaps_distribution.speaker",
-      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
       "by_chart_slug_regex": "egemaps_distribution",
       "by_filename_glob": null
     },
@@ -2103,11 +2103,11 @@
     ],
     "match": {
       "by_viz_id": "prosody_dashboard.quality_scatter.global",
-      "by_artifact_key_prefix": "prosody_dashboard",
+      "by_artifact_key_prefix": "prosody_dashboard/charts/",
       "by_chart_slug_regex": "quality_scatter",
       "by_filename_glob": null
     },
-    "description": "Scatter of voice-quality measures across speakers and segments. Each point reflects acoustic quality features; outliers may indicate noisy audio. Requires prosody features.",
+    "description": "Scatter of speech segments by harmonics-to-noise ratio (x, HNR in dB) against loudness (y, RMS in dB), colored by speaker. Lower-HNR points may indicate noisier or breathier audio. Requires prosody features.",
     "family_id": null,
     "variant": null
   },
@@ -2125,11 +2125,11 @@
     ],
     "match": {
       "by_viz_id": "voice_tension.tension_curve.global",
-      "by_artifact_key_prefix": "voice_tension",
+      "by_artifact_key_prefix": "voice_tension/charts/",
       "by_chart_slug_regex": "tension_curve",
       "by_filename_glob": null
     },
-    "description": "Voice tension over time, estimated from acoustic strain features. Rising values indicate more vocal tension or stress; peaks mark the most strained moments. Requires voice features.",
+    "description": "Acoustic strain over time, computed from voice features (energy, pitch range, and speech rate) and smoothed. The y-axis is a unitless tension index; higher values mean more acoustic strain in the signal. This measures the acoustic signal, not psychological stress. Requires voice features.",
     "family_id": null,
     "variant": null
   },
@@ -2147,11 +2147,11 @@
     ],
     "match": {
       "by_viz_id": "voice_mismatch.sentiment_vs_arousal.global",
-      "by_artifact_key_prefix": "voice_mismatch",
+      "by_artifact_key_prefix": "voice_mismatch/charts/",
       "by_chart_slug_regex": "sentiment_vs_arousal",
       "by_filename_glob": null
     },
-    "description": "Scatter comparing text sentiment against vocal arousal. Each point is an utterance; points far from the diagonal show mismatches, such as positive words spoken in an agitated voice. Requires voice features.",
+    "description": "Scatter comparing text sentiment (x, VADER compound) against measured vocal arousal (y, an acoustic proxy from energy, pitch range, and rate). Each point is an utterance; points far from the trend show where words and voice diverge. It surfaces divergences only and does not infer intent.",
     "family_id": null,
     "variant": null
   },
@@ -2169,11 +2169,11 @@
     ],
     "match": {
       "by_viz_id": "voice_mismatch.mismatch_timeline.global",
-      "by_artifact_key_prefix": "voice_mismatch",
+      "by_artifact_key_prefix": "voice_mismatch/charts/",
       "by_chart_slug_regex": "mismatch_timeline",
       "by_filename_glob": null
     },
-    "description": "Timeline of moments where spoken tone and word sentiment diverge. Markers flag where the voice and the words disagree; use it to find sarcasm or suppressed emotion. Requires voice features.",
+    "description": "Timeline of moments where text sentiment and measured vocal arousal diverge. Markers flag where the words and the voice signal disagree (the mismatch score on the y-axis); use it to locate divergences for review. It does not detect sarcasm, intent, or suppressed emotion.",
     "family_id": null,
     "variant": null
   },
@@ -2191,18 +2191,18 @@
     ],
     "match": {
       "by_viz_id": "voice_fingerprint.drift_timeline.speaker",
-      "by_artifact_key_prefix": "voice_fingerprint",
+      "by_artifact_key_prefix": "voice_fingerprint/charts/",
       "by_chart_slug_regex": "drift_timeline",
       "by_filename_glob": null
     },
-    "description": "How a single speaker's voice fingerprint drifts over time. Rising drift indicates the voice changing from its baseline (fatigue, emotion, or speaker-identity uncertainty). One chart per speaker; requires voice features.",
+    "description": "How a single speaker's voice fingerprint moves away from their session baseline over time (the drift score on the y-axis). Higher values mean the measured voice is further from baseline. It reports the measured change only, without attributing a cause. One chart per speaker; requires voice features.",
     "family_id": null,
     "variant": null
   },
   {
     "viz_id": "understandability.flesch_reading_ease.global",
-    "label": "Flesch Reading Ease (Per Speaker)",
-    "rank_default": 560,
+    "label": "Flesch Reading Ease (All Speakers)",
+    "rank_default": 572,
     "kind": "chart",
     "module": "understandability",
     "scope": "global",
@@ -2223,8 +2223,8 @@
   },
   {
     "viz_id": "understandability.readability_indices.global",
-    "label": "Readability Indices (Per Speaker)",
-    "rank_default": 570,
+    "label": "Readability Indices (All Speakers)",
+    "rank_default": 573,
     "kind": "chart",
     "module": "understandability",
     "scope": "global",
@@ -2245,8 +2245,8 @@
   },
   {
     "viz_id": "understandability.structure_bars.global",
-    "label": "Structural Features (Per Speaker)",
-    "rank_default": 580,
+    "label": "Structural Features (All Speakers)",
+    "rank_default": 574,
     "kind": "chart",
     "module": "understandability",
     "scope": "global",
@@ -2267,8 +2267,8 @@
   },
   {
     "viz_id": "understandability.word_count_bars.global",
-    "label": "Word Count (Per Speaker)",
-    "rank_default": 590,
+    "label": "Word Count (All Speakers)",
+    "rank_default": 575,
     "kind": "chart",
     "module": "understandability",
     "scope": "global",
@@ -2289,7 +2289,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.basic",
-    "label": "Wordcloud (Per Speaker)",
+    "label": "Word Cloud (Per Speaker)",
     "rank_default": 600,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2310,7 +2310,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.basic",
-    "label": "Wordcloud - All Speakers",
+    "label": "Word Cloud \u2013 All Speakers",
     "rank_default": 610,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2331,7 +2331,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.bigrams",
-    "label": "Wordcloud Bigrams (Per Speaker)",
+    "label": "Word Cloud Bigrams (Per Speaker)",
     "rank_default": 620,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2352,7 +2352,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.bigrams",
-    "label": "Wordcloud Bigrams - All Speakers",
+    "label": "Word Cloud Bigrams \u2013 All Speakers",
     "rank_default": 630,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2373,7 +2373,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.tfidf",
-    "label": "Wordcloud TF-IDF (Per Speaker)",
+    "label": "Word Cloud TF-IDF (Per Speaker)",
     "rank_default": 640,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2394,7 +2394,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.tfidf",
-    "label": "Wordcloud TF-IDF - All Speakers",
+    "label": "Word Cloud TF-IDF \u2013 All Speakers",
     "rank_default": 650,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2415,7 +2415,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.tfidf_bigrams",
-    "label": "Wordcloud TF-IDF Bigrams (Per Speaker)",
+    "label": "Word Cloud TF-IDF Bigrams (Per Speaker)",
     "rank_default": 660,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2436,7 +2436,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.tfidf_bigrams",
-    "label": "Wordcloud TF-IDF Bigrams - All Speakers",
+    "label": "Word Cloud TF-IDF Bigrams \u2013 All Speakers",
     "rank_default": 670,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2457,7 +2457,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.tics",
-    "label": "Wordcloud Tics (Per Speaker)",
+    "label": "Word Cloud Tics (Per Speaker)",
     "rank_default": 680,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2478,7 +2478,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.noun",
-    "label": "Wordcloud Nouns (Per Speaker)",
+    "label": "Word Cloud Nouns (Per Speaker)",
     "rank_default": 690,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2499,7 +2499,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.noun",
-    "label": "Wordcloud Nouns - All Speakers",
+    "label": "Word Cloud Nouns \u2013 All Speakers",
     "rank_default": 700,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2520,7 +2520,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.verb",
-    "label": "Wordcloud Verbs (Per Speaker)",
+    "label": "Word Cloud Verbs (Per Speaker)",
     "rank_default": 710,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2541,7 +2541,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.verb",
-    "label": "Wordcloud Verbs - All Speakers",
+    "label": "Word Cloud Verbs \u2013 All Speakers",
     "rank_default": 720,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2562,7 +2562,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.adj",
-    "label": "Wordcloud Adjectives (Per Speaker)",
+    "label": "Word Cloud Adjectives (Per Speaker)",
     "rank_default": 730,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2583,7 +2583,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.adj",
-    "label": "Wordcloud Adjectives - All Speakers",
+    "label": "Word Cloud Adjectives \u2013 All Speakers",
     "rank_default": 740,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2604,13 +2604,16 @@
   },
   {
     "viz_id": "group.ner.pooled.entity_types.global",
-    "label": "Group pooled — NER entity types (full corpus)",
+    "label": "Group pooled \u2014 NER entity types (full corpus)",
     "rank_default": 751,
     "kind": "chart",
     "module": "ner",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.ner.pooled.entity_types.global",
       "by_artifact_key_prefix": "ner/charts/",
@@ -2623,13 +2626,16 @@
   },
   {
     "viz_id": "group.ner.pooled.top_entities.global",
-    "label": "Group pooled — NER top entities",
+    "label": "Group pooled \u2014 NER top entities",
     "rank_default": 752,
     "kind": "chart",
     "module": "ner",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.ner.pooled.top_entities.global",
       "by_artifact_key_prefix": "ner/charts/",
@@ -2642,13 +2648,16 @@
   },
   {
     "viz_id": "group.entity_sentiment.pooled.top_entities.global",
-    "label": "Group pooled — entity sentiment top entities",
+    "label": "Group pooled \u2014 entity sentiment top entities",
     "rank_default": 753,
     "kind": "chart",
     "module": "entity_sentiment",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.entity_sentiment.pooled.top_entities.global",
       "by_artifact_key_prefix": "entity_sentiment/charts/",
@@ -2661,13 +2670,16 @@
   },
   {
     "viz_id": "group.topic_modeling.pooled.topic_share.global",
-    "label": "Group pooled — topic prevalence (group LDA)",
+    "label": "Group pooled \u2014 topic prevalence (group LDA)",
     "rank_default": 754,
     "kind": "chart",
     "module": "topic_modeling",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.topic_modeling.pooled.topic_share.global",
       "by_artifact_key_prefix": "topic_modeling/charts/",
@@ -2680,13 +2692,16 @@
   },
   {
     "viz_id": "group.emotion.pooled.profile.global",
-    "label": "Group pooled — mean emotion profile",
+    "label": "Group pooled \u2014 mean emotion profile",
     "rank_default": 755,
     "kind": "chart",
     "module": "emotion",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.emotion.pooled.profile.global",
       "by_artifact_key_prefix": "emotion/charts/",
@@ -2699,13 +2714,16 @@
   },
   {
     "viz_id": "group.tics.pooled.by_tic.global",
-    "label": "Group pooled — tic counts (full corpus)",
+    "label": "Group pooled \u2014 tic counts (full corpus)",
     "rank_default": 756,
     "kind": "chart",
     "module": "tics",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.tics.pooled.by_tic.global",
       "by_artifact_key_prefix": "tics/charts/",
@@ -2718,13 +2736,16 @@
   },
   {
     "viz_id": "group.stats.pooled.totals.global",
-    "label": "Group pooled — corpus totals",
+    "label": "Group pooled \u2014 corpus totals",
     "rank_default": 757,
     "kind": "chart",
     "module": "stats",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.stats.pooled.totals.global",
       "by_artifact_key_prefix": "stats/charts/",
@@ -2737,13 +2758,16 @@
   },
   {
     "viz_id": "group.interactions.pooled.interruptions_initiated.global",
-    "label": "Group pooled — interactions interruptions initiated",
+    "label": "Group pooled \u2014 interactions interruptions initiated",
     "rank_default": 758,
     "kind": "chart",
     "module": "interactions",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.interactions.pooled.interruptions_initiated.global",
       "by_artifact_key_prefix": "interactions/charts/",
@@ -2756,13 +2780,16 @@
   },
   {
     "viz_id": "group.interactions.pooled.interruptions_received.global",
-    "label": "Group pooled — interactions interruptions received",
+    "label": "Group pooled \u2014 interactions interruptions received",
     "rank_default": 759,
     "kind": "chart",
     "module": "interactions",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.interactions.pooled.interruptions_received.global",
       "by_artifact_key_prefix": "interactions/charts/",
@@ -2775,20 +2802,331 @@
   },
   {
     "viz_id": "group.contagion.pooled.top_directed_edges.global",
-    "label": "Group pooled — contagion top directed edges",
+    "label": "Group pooled \u2014 contagion top directed edges",
     "rank_default": 760,
     "kind": "chart",
     "module": "contagion",
     "scope": "global",
     "cardinality": "single",
-    "prefer_formats": ["html", "png"],
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
     "match": {
       "by_viz_id": "group.contagion.pooled.top_directed_edges.global",
       "by_artifact_key_prefix": "contagion/charts/",
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": "Strongest directed emotional-contagion links pooled across the group corpus. Each edge reads as 'speaker A's emotion influences speaker B'; larger bars mean stronger influence aggregated over all sessions.",
+    "description": "Strongest directed emotional-contagion links pooled across the group corpus. Each edge reads as 'a shift in speaker B's emotion tends to follow speaker A'; longer bars mean a stronger association aggregated over all sessions. Reflects association, not proven causal influence.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.derived_polite_tension.global",
+    "label": "Polite Tension Index (Per Speaker)",
+    "rank_default": 576,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.derived_polite_tension.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "derived_polite_tension_index",
+      "by_filename_glob": null
+    },
+    "description": "Polite tension index per speaker (plus a Global bar), a derived score combining positive-vs-negative affect mismatch, trust-neutral signals, emotion entropy, and volatility. Taller bars suggest more outwardly polite speech layered over underlying tension. It is a heuristic composite, not a measure of intent or sincerity.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.derived_suppressed_conflict.global",
+    "label": "Suppressed Conflict Score (Per Speaker)",
+    "rank_default": 577,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.derived_suppressed_conflict.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "derived_suppressed_conflict_score",
+      "by_filename_glob": null
+    },
+    "description": "Suppressed conflict score per speaker (plus a Global bar), a derived index flagging where neutral or positive wording coexists with signs of strain. Taller bars point to speakers whose words may understate disagreement. It is a heuristic and does not confirm hidden conflict.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.derived_institutional_tone.global",
+    "label": "Institutional Tone vs Affect Delta (Per Speaker)",
+    "rank_default": 578,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.derived_institutional_tone.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "derived_institutional_tone_delta",
+      "by_filename_glob": null
+    },
+    "description": "Gap between an institutional or formal speaking tone and the underlying measured affect, per speaker (plus a Global bar). Larger bars mean a wider divergence between how formal the language sounds and the affect signals beneath it. It is a derived heuristic, not a judgement of professionalism.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.mismatch_rate.global",
+    "label": "Mismatch Rate (Per Speaker)",
+    "rank_default": 579,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.mismatch_rate.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "mismatch_rate",
+      "by_filename_glob": null
+    },
+    "description": "Share of each speaker's segments flagged as a positive-vs-negative affect mismatch (text sentiment and detected emotion disagree), with a Global bar for the whole transcript. Taller bars mean a higher rate of mismatched segments. Mismatch flags are heuristic and do not detect sarcasm or intent.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.avg_entropy.global",
+    "label": "Average Emotion Entropy (Per Speaker)",
+    "rank_default": 580,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.avg_entropy.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "avg_emotion_entropy",
+      "by_filename_glob": null
+    },
+    "description": "Average emotion entropy per speaker (plus a Global bar). Higher entropy means a speaker's emotion scores are spread across many categories rather than concentrated on one, indicating more mixed or ambiguous emotional expression. Lower bars indicate more emotionally focused speech.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.avg_volatility.global",
+    "label": "Average Emotion Volatility (Per Speaker)",
+    "rank_default": 581,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.avg_volatility.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "avg_volatility_proxy",
+      "by_filename_glob": null
+    },
+    "description": "Average emotion volatility per speaker (plus a Global bar), a proxy for how often the dominant emotion changes between nearby segments. Taller bars mean more frequent shifts in primary emotion; lower bars mean steadier emotional expression.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.entropy_timeseries.global",
+    "label": "Emotion Entropy Over Time",
+    "rank_default": 582,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.entropy_timeseries.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "entropy_timeseries",
+      "by_filename_glob": null
+    },
+    "description": "Emotion entropy over the course of the conversation. Higher points mark moments where emotional expression is spread across many categories rather than focused; use it to locate stretches of mixed or ambiguous affect.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.volatility_timeseries.global",
+    "label": "Emotion Volatility Over Time",
+    "rank_default": 583,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.volatility_timeseries.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "volatility_timeseries",
+      "by_filename_glob": null
+    },
+    "description": "Emotion volatility over time, a proxy for how often the dominant emotion changes between nearby segments. Peaks mark stretches with rapid emotional shifts; flat low values indicate steadier affect.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.mismatch_timeseries.global",
+    "label": "Mismatch Flags Over Time",
+    "rank_default": 584,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.mismatch_timeseries.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "mismatch_timeseries",
+      "by_filename_glob": null
+    },
+    "description": "Timeline of segments flagged as a positive-vs-negative affect mismatch, drawn as a 0/1 signal over time. Spikes to 1 mark moments where text sentiment and detected emotion disagree; use it to locate divergences for review. The flag is heuristic and does not infer intent.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.entropy_volatility_timeseries.global",
+    "label": "Emotion Entropy + Volatility Over Time",
+    "rank_default": 585,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.entropy_volatility_timeseries.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "entropy_volatility_timeseries",
+      "by_filename_glob": null
+    },
+    "description": "Emotion entropy and emotion volatility plotted together over time. Entropy tracks how spread-out emotional expression is; volatility tracks how often the dominant emotion changes. Read the two lines together to spot stretches of mixed and rapidly shifting affect.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.entropy_volatility_timeseries.speaker",
+    "label": "Emotion Entropy + Volatility Over Time (Per Speaker)",
+    "rank_default": 586,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.entropy_volatility_timeseries.speaker",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "entropy_volatility_timeseries",
+      "by_filename_glob": null
+    },
+    "description": "Emotion entropy and volatility over time for a single speaker. Entropy tracks how spread-out their emotional expression is; volatility tracks how often their dominant emotion changes. One chart per speaker.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "affect_tension.mismatch_heatmap.global",
+    "label": "Mismatch Category Rates by Speaker",
+    "rank_default": 587,
+    "kind": "chart",
+    "module": "affect_tension",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "affect_tension.mismatch_heatmap.global",
+      "by_artifact_key_prefix": "affect_tension/charts/",
+      "by_chart_slug_regex": "mismatch_heatmap",
+      "by_filename_glob": null
+    },
+    "description": "Heatmap of mismatch category rates per speaker (rows), with a Global row for the whole transcript. Columns are mismatch categories such as positive-vs-negative mismatch, trust-neutral, and high-entropy mismatch; darker cells mean that category occurs more often for that speaker. Rates are heuristic flags, not confirmed intent.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "bertopic.topic_word_heatmap.global",
+    "label": "BERTopic Topic-Word Heatmap",
+    "rank_default": 588,
+    "kind": "chart",
+    "module": "bertopic",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "bertopic.topic_word_heatmap.global",
+      "by_artifact_key_prefix": "bertopic/charts/",
+      "by_chart_slug_regex": "bertopic_topic_word_heatmap",
+      "by_filename_glob": null
+    },
+    "description": "Heatmap of word weights per BERTopic topic. Rows are topics and columns are top words; darker cells mean that word is more characteristic of that topic. Use it to interpret what each BERTopic cluster is about.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "bertopic.topic_prevalence.global",
+    "label": "BERTopic Topic Prevalence",
+    "rank_default": 589,
+    "kind": "chart",
+    "module": "bertopic",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "bertopic.topic_prevalence.global",
+      "by_artifact_key_prefix": "bertopic/charts/",
+      "by_chart_slug_regex": "bertopic_topic_prevalence",
+      "by_filename_glob": null
+    },
+    "description": "Share of segments assigned to each BERTopic topic, as a bar per topic. Taller bars mean that topic dominates more of the conversation. Segments with no dominant topic are excluded from the shares.",
     "family_id": null,
     "variant": null
   }

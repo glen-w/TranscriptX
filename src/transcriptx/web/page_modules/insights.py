@@ -1,4 +1,8 @@
-"""Highlights and Summary insights viewer."""
+"""Highlights and Summary insights viewer.
+
+Highlights filter widgets run in ``@st.fragment`` so filter changes do not trigger
+a full-app rerun.
+"""
 
 from __future__ import annotations
 
@@ -165,13 +169,9 @@ def _render_highlights_theme_body(
             )
 
 
-def _render_highlights_section(run_root: Path) -> None:
-    st.subheader("Highlights")
-    highlights = _load_artifact_json(run_root, "highlights", "_highlights.json")
-    if not highlights:
-        st.info("Run the `highlights` module to populate this view.")
-        return
-
+@st.fragment
+def _highlights_browser_fragment(highlights: Dict[str, Any]) -> None:
+    """Theme navigation and highlight filters without full-app rerun."""
     visible: list[Dict[str, Any]] = []
     themes = highlights.get("themes")
     if themes:
@@ -255,7 +255,12 @@ def _render_highlights_section(run_root: Path) -> None:
         "Speakers", options=speakers_available, key="highlights_speaker_filter"
     )
     min_score = st.slider(
-        "Minimum score", min_value=0.0, max_value=1.0, value=0.0, step=0.05
+        "Minimum score",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.0,
+        step=0.05,
+        key="highlights_min_score",
     )
 
     filtered = []
@@ -280,6 +285,16 @@ def _render_highlights_section(run_root: Path) -> None:
         st.write(item["quote"])
         with st.expander("Score breakdown"):
             st.json(item["breakdown"])
+
+
+def _render_highlights_section(run_root: Path) -> None:
+    st.subheader("Highlights")
+    highlights = _load_artifact_json(run_root, "highlights", "_highlights.json")
+    if not highlights:
+        st.info("Run the `highlights` module to populate this view.")
+        return
+
+    _highlights_browser_fragment(highlights)
 
 
 def _render_summary_section(run_root: Path) -> None:

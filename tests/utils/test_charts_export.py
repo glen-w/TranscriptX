@@ -27,6 +27,7 @@ def _artifact(
     title: str | None = None,
     storage_root: str | None = None,
     bytes_size: int = 0,
+    meta: dict | None = None,
 ) -> Artifact:
     return Artifact.from_dict(
         {
@@ -44,6 +45,7 @@ def _artifact(
             "tags": [],
             "title": title,
             "storage_root": storage_root,
+            "meta": meta,
         }
     )
 
@@ -140,6 +142,45 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
     assert "<iframe" in html
     assert "Interactive HTML" in html
     assert html.index(">Other<") < html.index(">sentiment<")
+
+
+def test_generate_charts_index_html_includes_description_tooltip() -> None:
+    """A chart with a registry-backed viz_id renders the info tooltip markup."""
+    item = _ExportableItem(
+        artifact=_artifact(
+            artifact_id="at",
+            rel_path="affect_tension/charts/global/static/run_mismatch_heatmap.png",
+            module="affect_tension",
+            title="Mismatch Category Rates by Speaker",
+            meta={"viz_id": "affect_tension.mismatch_heatmap.global"},
+        ),
+        source_path=Path("/tmp/at"),
+        export_rel_path=Path(
+            "affect_tension/charts/global/static/run_mismatch_heatmap.png"
+        ),
+        size_bytes=10,
+    )
+    html = generate_charts_index_html([item], omitted_count=0, run_title="run-x")
+    assert '<span class="tx-info"' in html
+    assert '<span class="tx-tooltip">' in html
+
+
+def test_generate_charts_index_html_omits_tooltip_when_unknown() -> None:
+    """A chart with no registry match renders no info tooltip."""
+    item = _ExportableItem(
+        artifact=_artifact(
+            artifact_id="unk",
+            rel_path="mystery/charts/global/static/unknown_chart.png",
+            module="mystery",
+            title="Unknown Chart",
+            meta={"viz_id": "mystery.unknown.global"},
+        ),
+        source_path=Path("/tmp/unk"),
+        export_rel_path=Path("mystery/charts/global/static/unknown_chart.png"),
+        size_bytes=10,
+    )
+    html = generate_charts_index_html([item], omitted_count=0, run_title="run-y")
+    assert '<span class="tx-info"' not in html
 
 
 def test_prepare_charts_export_zip_contents_and_member_prefix(tmp_path: Path) -> None:

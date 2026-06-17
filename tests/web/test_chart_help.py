@@ -69,9 +69,36 @@ def test_resolve_chart_description_empty_registry_description(monkeypatch):
     class _Blank:
         description = "   "
 
-    monkeypatch.setattr(svc, "get_chart_definition", lambda viz_id: _Blank())
+    monkeypatch.setattr(
+        svc, "find_chart_definition_for_artifact", lambda artifact: _Blank()
+    )
     art = _artifact(viz_id="emotion.radar.global", module="emotion", scope="global")
     assert resolve_chart_description(art) is None
+
+
+def test_resolve_chart_description_falls_back_to_path():
+    """A chart with no viz_id metadata still resolves via the registry path match."""
+    viz_id = "sentiment.multi_speaker_sentiment.global"
+    expected = get_chart_definition(viz_id).description
+    art = Artifact(
+        id="art-path-only",
+        kind="chart_static",
+        module="sentiment",
+        scope="global",
+        speaker=None,
+        subview=None,
+        slice_id=None,
+        rel_path="sentiment/charts/global/static/multi_speaker_sentiment.png",
+        bytes=1,
+        mtime="",
+        mime="image/png",
+        tags=[],
+        title=None,
+        meta=None,
+    )
+    resolved = resolve_chart_description(art)
+    assert resolved == expected.strip()
+    assert resolved and len(resolved) >= 20
 
 
 def test_build_overview_slots_includes_description_key():

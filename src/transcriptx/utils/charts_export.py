@@ -13,6 +13,7 @@ from collections import defaultdict
 
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services.artifact_service import ArtifactService, HARD_CAP_BYTES
+from transcriptx.web.services.chart_view_model_service import resolve_chart_description
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,19 @@ _EXPORT_INDEX_CSS = (
     "grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}.card{background:#fff;"
     "border:1px solid #dde2e8;border-radius:10px;padding:12px;display:flex;flex-direction:column;"
     "gap:8px;}.card h3{margin:0;font-size:16px;}.meta{margin:0;color:#5a6473;font-size:13px;}"
-    ".card img{width:100%;height:auto;max-width:100%;border-radius:8px;border:1px solid #e6eaf0;}"
+    ".card img{width:100%;height:auto;max-width:100%;border-radius:8px;border:1px solid #e6eaf0;display:block;}"
+    ".chart-thumb{display:block;cursor:zoom-in;}.chart-thumb:hover img{border-color:#0f3d91;"
+    "box-shadow:0 0 0 2px rgba(15,61,145,0.15);}"
+    ".card h3{display:flex;align-items:center;gap:6px;}.tx-info{position:relative;display:inline-flex;"
+    "align-items:center;justify-content:center;width:16px;height:16px;color:#5a6473;font-size:14px;"
+    "cursor:help;outline:none;}.tx-info:hover,.tx-info:focus{color:#0f3d91;}.tx-tooltip{visibility:hidden;"
+    "opacity:0;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);"
+    "width:max-content;max-width:260px;background:#15171a;color:#fff;font-size:12px;font-weight:400;"
+    "line-height:1.4;text-align:left;padding:8px 10px;border-radius:8px;box-shadow:0 4px 12px "
+    "rgba(0,0,0,0.18);z-index:10;transition:opacity .12s ease;pointer-events:none;}"
+    ".tx-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);"
+    "border:5px solid transparent;border-top-color:#15171a;}.tx-info:hover .tx-tooltip,"
+    ".tx-info:focus .tx-tooltip{visibility:visible;opacity:1;}"
     ".badge{display:inline-block;width:max-content;padding:2px 8px;border-radius:999px;"
     "background:#e8eefc;color:#123b8c;font-size:12px;}.open-link{font-size:13px;font-weight:600;}"
     ".card iframe{width:100%;height:320px;border:1px solid #e1e6ee;border-radius:8px;}"
@@ -123,8 +136,11 @@ def render_chart_sections(
             meta = f"{artifact.kind} · {artifact.scope or '—'}"
             if artifact.kind == "chart_static":
                 body = (
+                    f'<a class="chart-thumb" href="{html.escape(rel, quote=True)}" '
+                    f'title="Open {html.escape(title, quote=True)}">'
                     f'<img src="{html.escape(rel, quote=True)}" '
                     f'alt="{html.escape(title, quote=True)}" loading="lazy" />'
+                    "</a>"
                 )
             else:
                 body = (
@@ -135,9 +151,19 @@ def render_chart_sections(
                     f'src="{html.escape(rel, quote=True)}"></iframe>'
                     '<p class="hint">Inline preview is best effort for local files.</p>'
                 )
+            info_icon = ""
+            description = resolve_chart_description(artifact)
+            if description:
+                info_icon = (
+                    '<span class="tx-info" tabindex="0" role="img" '
+                    f'aria-label="{html.escape(description, quote=True)}">'
+                    "&#9432;"
+                    f'<span class="tx-tooltip">{html.escape(description)}</span>'
+                    "</span>"
+                )
             cards.append(
                 '<article class="card">'
-                f"<h3>{html.escape(title)}</h3>"
+                f"<h3>{html.escape(title)}{info_icon}</h3>"
                 f'<p class="meta">{html.escape(meta)}</p>'
                 f"{body}"
                 "</article>"

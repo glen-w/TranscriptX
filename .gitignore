@@ -61,6 +61,7 @@ htmlcov/
 # IDE and OS
 .idea/
 .vscode/
+.ipynb_checkpoints/
 *.swp
 *.swo
 .DS_Store

@@ -13,6 +13,7 @@ from transcriptx.core.utils.chart_registry import (
     DEFAULT_GROUP_OVERVIEW_VIZ_IDS,
     DEFAULT_OVERVIEW_VIZ_IDS,
     POOLED_GROUP_OVERVIEW_ALLOWLIST,
+    find_chart_definition_for_artifact,
     get_chart_definition,
     get_chart_registry,
     get_default_overview_charts,
@@ -56,7 +57,7 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 129
+    assert len(CHART_DEFINITIONS) == 143
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("group.pauses.temporal_overlay.global") is not None
     assert get_chart_definition("group.acts.temporal_overlay.global") is not None
@@ -343,6 +344,60 @@ def test_matcher_falls_back_to_path():
     assert chart_def.match.matches(artifact, chart_def) is True
 
 
+def test_find_chart_definition_for_artifact_prefers_viz_id():
+    """When both viz_id and path could match, the viz_id lookup wins."""
+    artifact = FakeArtifact(
+        id="a3",
+        kind="chart_static",
+        module="sentiment",
+        scope="global",
+        speaker=None,
+        rel_path="sentiment/charts/global/static/multi_speaker_sentiment.png",
+        meta={"viz_id": "sentiment.multi_speaker_sentiment.global"},
+    )
+    cd = find_chart_definition_for_artifact(artifact)
+    assert cd is not None
+    assert cd.viz_id == "sentiment.multi_speaker_sentiment.global"
+
+
+def test_find_chart_definition_for_artifact_path_fallback():
+    """An artifact without viz_id resolves via the registry path/slug match."""
+    artifact = FakeArtifact(
+        id="a4",
+        kind="chart_static",
+        module="sentiment",
+        scope="global",
+        speaker=None,
+        rel_path="sentiment/charts/global/static/multi_speaker_sentiment.png",
+        meta=None,
+    )
+    cd = find_chart_definition_for_artifact(artifact)
+    assert cd is not None
+    assert cd.viz_id == "sentiment.multi_speaker_sentiment.global"
+
+
+def test_affect_tension_viz_ids_have_registry_definitions():
+    """Every affect_tension VIZ_* constant must resolve to a registry definition."""
+    import transcriptx.core.utils.viz_ids as viz_ids
+
+    affect_ids = {
+        getattr(viz_ids, name)
+        for name in dir(viz_ids)
+        if name.startswith("VIZ_AFFECT_TENSION_")
+    }
+    missing = sorted(v for v in affect_ids if get_chart_definition(v) is None)
+    assert not missing, f"affect_tension viz_ids without a definition: {missing}"
+
+
+def test_bertopic_viz_ids_have_registry_definitions():
+    """The bertopic chart viz_ids must resolve to registry definitions."""
+    for viz_id in (
+        "bertopic.topic_word_heatmap.global",
+        "bertopic.topic_prevalence.global",
+    ):
+        assert get_chart_definition(viz_id) is not None
+
+
 def test_select_preferred_artifacts_single():
     chart_def = get_chart_definition("emotion.radar.global")
     assert chart_def is not None
@@ -416,6 +471,73 @@ def _infer_group_chart_family_from_viz_id(viz_id: str) -> str | None:
     if "global_acts_pie" in viz_id:
         return "aggregate_pie_bar"
     return None
+
+
+def test_registry_unique_rank_defaults():
+    """rank_default must be unique across all chart definitions (gallery ordering)."""
+    from collections import Counter
+
+    counts = Counter(c.rank_default for c in CHART_DEFINITIONS)
+    dupes = {rank: n for rank, n in counts.items() if n > 1}
+    assert not dupes, f"Duplicate rank_default values: {dupes}"
+
+
+def test_registry_slug_regexes_compile():
+    """Every by_chart_slug_regex must be a valid, compilable regular expression."""
+    import re
+
+    invalid = []
+    for chart_def in CHART_DEFINITIONS:
+        pattern = chart_def.match.by_chart_slug_regex
+        if not pattern:
+            continue
+        try:
+            re.compile(pattern)
+        except re.error as exc:  # pragma: no cover - failure path
+            invalid.append((chart_def.viz_id, pattern, str(exc)))
+    assert not invalid, f"Invalid slug regexes: {invalid}"
+
+
+def test_registry_no_ambiguous_slug_fallback():
+    """
+    No two definitions in the same (module, scope) may share an identical
+    by_chart_slug_regex. Such a collision makes the path-based fallback match
+    ambiguous when an artifact lacks viz_id metadata.
+    """
+    from collections import defaultdict
+
+    seen: dict[tuple[str, str, str], list[str]] = defaultdict(list)
+    for chart_def in CHART_DEFINITIONS:
+        pattern = chart_def.match.by_chart_slug_regex
+        if not pattern:
+            continue
+        seen[(chart_def.module, chart_def.scope, pattern)].append(chart_def.viz_id)
+    ambiguous = {k: v for k, v in seen.items() if len(v) > 1}
+    assert not ambiguous, f"Ambiguous slug-regex fallbacks: {ambiguous}"
+
+
+def test_registry_by_viz_id_matches_definition_viz_id():
+    """When set, match.by_viz_id must equal the definition's own viz_id."""
+    mismatched = [
+        (c.viz_id, c.match.by_viz_id)
+        for c in CHART_DEFINITIONS
+        if c.match.by_viz_id and c.match.by_viz_id != c.viz_id
+    ]
+    assert not mismatched, f"by_viz_id != viz_id: {mismatched}"
+
+
+def test_all_registered_overview_viz_ids_resolve():
+    """Every viz_id registered in overview lists/allowlists must resolve to a def."""
+    registered = (
+        set(DEFAULT_OVERVIEW_VIZ_IDS)
+        | set(DEFAULT_GROUP_OVERVIEW_VIZ_IDS)
+        | set(POOLED_GROUP_OVERVIEW_ALLOWLIST)
+        | set(CROSS_SESSION_SPEAKER_OVERVIEW_ALLOWLIST)
+    )
+    missing = [
+        viz_id for viz_id in sorted(registered) if get_chart_definition(viz_id) is None
+    ]
+    assert not missing, f"Registered viz_ids without a definition: {missing}"
 
 
 def test_group_chart_definitions_align_with_aggregate_chart_families() -> None:

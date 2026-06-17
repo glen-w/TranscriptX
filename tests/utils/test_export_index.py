@@ -6,7 +6,9 @@ from pathlib import Path
 from transcriptx.utils.charts_export import _ExportableItem
 from transcriptx.utils.export_index import (
     build_export_index_html,
+    normalize_transcript_payload,
     render_transcript_section,
+    resolve_export_page_title,
 )
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services.artifact_service import ArtifactService
@@ -99,7 +101,7 @@ def test_render_transcript_prefers_speaker_display() -> None:
 
 def test_build_index_transcript_only() -> None:
     html = build_export_index_html(
-        run_title="run-1", transcript_data=_transcript_data(), chart_items=[]
+        page_title="run-1", transcript_data=_transcript_data(), chart_items=[]
     )
     assert html is not None
     assert 'id="transcript"' in html
@@ -111,7 +113,7 @@ def test_build_index_transcript_only() -> None:
 def test_build_index_charts_only() -> None:
     items = [_chart_item(artifact_id="a", rel_path="sentiment/charts/global/a.png")]
     html = build_export_index_html(
-        run_title="run-1", transcript_data=None, chart_items=items
+        page_title="run-1", transcript_data=None, chart_items=items
     )
     assert html is not None
     assert 'id="transcript"' not in html
@@ -127,7 +129,7 @@ def test_build_index_mixed_uses_posix_paths() -> None:
         )
     ]
     html = build_export_index_html(
-        run_title="run-1", transcript_data=_transcript_data(), chart_items=items
+        page_title="run-1", transcript_data=_transcript_data(), chart_items=items
     )
     assert html is not None
     assert 'id="transcript"' in html
@@ -136,9 +138,11 @@ def test_build_index_mixed_uses_posix_paths() -> None:
 
 
 def test_build_index_neither_returns_none() -> None:
-    assert build_export_index_html(run_title="run-1") is None
+    assert build_export_index_html(page_title="run-1") is None
     assert (
-        build_export_index_html(run_title="run-1", transcript_data=None, chart_items=[])
+        build_export_index_html(
+            page_title="run-1", transcript_data=None, chart_items=[]
+        )
         is None
     )
 
@@ -162,18 +166,19 @@ def test_build_index_escapes_dynamic_values() -> None:
         )
     ]
     html = build_export_index_html(
-        run_title='Run <"&>', transcript_data=data, chart_items=items
+        page_title='Run <"&>', transcript_data=data, chart_items=items
     )
     assert html is not None
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert '<b>"Bob"&</b>' not in html
+    assert "Run &lt;" in html
     assert "Chart &lt;" in html
 
 
 def test_build_index_included_files_footer() -> None:
     html = build_export_index_html(
-        run_title="run-1",
+        page_title="run-1",
         transcript_data=_transcript_data(),
         included_files=["transcripts/a.json", "report.json"],
     )
@@ -226,6 +231,44 @@ def test_write_export_index_malformed_transcript_keeps_charts(
     assert 'id="transcript"' not in html
 
 
+def test_write_export_index_prefers_transcript_with_segments(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "transcripts").mkdir(parents=True)
+    summary = {"total_original": 10, "total_simplified": 8, "removed_count": 2}
+    full = {
+        "segments": [{"start": 0, "end": 1, "speaker": "Alice", "text": "hello world"}]
+    }
+    (staging / "transcripts/summary.json").write_text(
+        json.dumps(summary), encoding="utf-8"
+    )
+    (staging / "transcripts/full.json").write_text(json.dumps(full), encoding="utf-8")
+
+    copied = [
+        (
+            _artifact(
+                artifact_id="1",
+                rel_path="transcripts/summary.json",
+                kind="transcript",
+                module=None,
+            ),
+            Path("transcripts/summary.json"),
+        ),
+        (
+            _artifact(
+                artifact_id="2",
+                rel_path="transcripts/full.json",
+                kind="transcript",
+                module=None,
+            ),
+            Path("transcripts/full.json"),
+        ),
+    ]
+    html = _write_index(staging, copied)
+    assert html is not None
+    assert "hello world" in html
+    assert "1 segments" in html
+
+
 def test_write_export_index_first_transcript_in_selected_order(
     tmp_path: Path,
 ) -> None:
@@ -262,6 +305,68 @@ def test_write_export_index_first_transcript_in_selected_order(
     assert html is not None
     assert "Alice" in html
     assert "Bob" not in html
+
+
+def test_normalize_transcript_payload_accepts_simplified_list() -> None:
+    payload = normalize_transcript_payload(
+        [{"speaker": "Alice", "text": "Hello"}, {"speaker": "Bob", "text": "Hi"}]
+    )
+    assert payload is not None
+    assert len(payload["segments"]) == 2
+
+
+def test_resolve_export_page_title_from_report(tmp_path: Path) -> None:
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    (run_root / "report.json").write_text(
+        json.dumps({"meta": {"base_name": "my_transcript"}}),
+        encoding="utf-8",
+    )
+    title = resolve_export_page_title(
+        staging_dir=run_root, run_root=run_root, fallback="run-id"
+    )
+    assert title == "my_transcript"
+
+
+def test_write_export_index_uses_enriched_transcript_fallback(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "transcripts").mkdir(parents=True)
+    (staging / "transcripts/summary.json").write_text(
+        json.dumps({"total_original": 1}), encoding="utf-8"
+    )
+    (staging / "sentiment/data/global").mkdir(parents=True)
+    enriched = {
+        "segments": [
+            {"start": 0, "end": 1, "speaker": "Alice", "text": "from sentiment"}
+        ]
+    }
+    (staging / "sentiment/data/global/demo_with_sentiment.json").write_text(
+        json.dumps(enriched), encoding="utf-8"
+    )
+
+    copied = [
+        (
+            _artifact(
+                artifact_id="s",
+                rel_path="transcripts/summary.json",
+                kind="transcript",
+                module=None,
+            ),
+            Path("transcripts/summary.json"),
+        ),
+        (
+            _artifact(
+                artifact_id="d",
+                rel_path="sentiment/data/global/demo_with_sentiment.json",
+                kind="data_json",
+                module="sentiment",
+            ),
+            Path("sentiment/data/global/demo_with_sentiment.json"),
+        ),
+    ]
+    html = _write_index(staging, copied)
+    assert html is not None
+    assert "from sentiment" in html
 
 
 def test_write_export_index_neither_writes_nothing(tmp_path: Path) -> None:

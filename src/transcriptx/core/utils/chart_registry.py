@@ -218,6 +218,55 @@ def get_chart_definition(viz_id: str) -> Optional[ChartDefinition]:
     return _REGISTRY_BY_ID.get(viz_id)
 
 
+def _matches_by_filename(artifact, chart_def: ChartDefinition) -> bool:
+    """Path-specific match (slug regex or filename glob), ignoring broad prefix.
+
+    The registry's ``by_artifact_key_prefix`` matches every chart in a module and
+    is therefore too coarse to identify a single definition. This helper uses only
+    the filename-specific signals so the fallback resolves to the right chart.
+    """
+    artifact_kind = getattr(artifact, "kind", None)
+    if (
+        artifact_kind
+        and chart_def.kind
+        and not _kind_matches(artifact_kind, chart_def.kind)
+    ):
+        return False
+    m = chart_def.match
+    rel_path = getattr(artifact, "rel_path", "") or ""
+    if (
+        m.by_chart_slug_regex
+        and getattr(artifact, "module", None) == chart_def.module
+        and getattr(artifact, "scope", None) == chart_def.scope
+        and re.search(m.by_chart_slug_regex, rel_path, re.IGNORECASE)
+    ):
+        return True
+    if m.by_filename_glob and any(
+        fnmatch.fnmatch(rel_path, pattern) for pattern in m.by_filename_glob
+    ):
+        return True
+    return False
+
+
+def find_chart_definition_for_artifact(artifact) -> Optional[ChartDefinition]:
+    """Resolve the chart definition for an artifact by viz_id, then by filename.
+
+    Prefers a direct ``meta.viz_id`` lookup (correct when metadata is present),
+    and falls back to the registry's filename-specific matchers (slug regex or
+    filename glob) when the id is missing, stale, or unknown. Returns ``None``
+    when nothing matches.
+    """
+    viz_id = _artifact_meta_value(artifact, "viz_id")
+    if isinstance(viz_id, str):
+        cd = get_chart_definition(viz_id)
+        if cd is not None:
+            return cd
+    for chart_def in CHART_DEFINITIONS:
+        if _matches_by_filename(artifact, chart_def):
+            return chart_def
+    return None
+
+
 def iter_chart_definitions() -> Iterable[ChartDefinition]:
     return CHART_DEFINITIONS
 

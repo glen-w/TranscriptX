@@ -165,6 +165,11 @@ def test_render_library_summary_shows_has_audio_and_duration(monkeypatch) -> Non
         "_resolve_audio_for_transcript",
         lambda p: Path("/tmp/short.mp3") if p.stem == "short" else None,
     )
+    monkeypatch.setattr(
+        mod,
+        "_library_browser_fragment",
+        mod._library_browser_fragment.__wrapped__,
+    )
 
     mod.render_library()
 

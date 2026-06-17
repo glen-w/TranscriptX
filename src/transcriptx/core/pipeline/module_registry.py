@@ -267,42 +267,52 @@ class ModuleRegistry:
 
         module_path, class_name = MODULE_CLASS_MAP[module_name]
 
-        # Dynamically import the AnalysisModule class
-        try:
-            module = __import__(module_path, fromlist=[class_name])
-            analysis_class = getattr(module, class_name)
+        class ModuleCallable:
+            def __init__(self, module_path: str, class_name: str, module_name: str):
+                self._module_path = module_path
+                self._class_name = class_name
+                self._module_name = module_name
+                self._module_cls = None
 
-            # Verify it's actually an AnalysisModule class
-            from transcriptx.core.analysis.base import AnalysisModule
+            def _resolve_module_cls(self):
+                if self._module_cls is not None:
+                    return self._module_cls
 
-            if not (
-                isinstance(analysis_class, type)
-                and issubclass(analysis_class, AnalysisModule)
-            ):
-                raise TypeError(f"{class_name} is not an AnalysisModule subclass")
+                try:
+                    module = __import__(self._module_path, fromlist=[self._class_name])
+                    analysis_class = getattr(module, self._class_name)
+                except ImportError as e:
+                    raise ImportError(
+                        f"Failed to import {self._class_name} from {self._module_path} "
+                        f"for module '{self._module_name}': {e}"
+                    ) from e
+                except AttributeError as e:
+                    raise AttributeError(
+                        f"Module {self._module_path} does not have class {self._class_name}: {e}"
+                    ) from e
 
-            class ModuleCallable:
-                def __init__(self, module_cls, module_name: str):
-                    self._module_cls = module_cls
-                    self._module_name = module_name
+                from transcriptx.core.analysis.base import AnalysisModule
 
-                def run_from_context(self, context):
-                    return self._module_cls().run_from_context(context)
+                if not (
+                    isinstance(analysis_class, type)
+                    and issubclass(analysis_class, AnalysisModule)
+                ):
+                    raise TypeError(
+                        f"{self._class_name} is not an AnalysisModule subclass"
+                    )
 
-                def __call__(self, transcript_path: str):
-                    if self._module_name == "sentiment":
-                        return analyze_sentiment_from_file(transcript_path)
-                    return self._module_cls().run_from_file(transcript_path)
+                self._module_cls = analysis_class
+                return self._module_cls
 
-            return ModuleCallable(analysis_class, module_name)
-        except ImportError as e:
-            raise ImportError(
-                f"Failed to import {class_name} from {module_path} for module '{module_name}': {e}"
-            ) from e
-        except AttributeError as e:
-            raise AttributeError(
-                f"Module {module_path} does not have class {class_name}: {e}"
-            ) from e
+            def run_from_context(self, context):
+                return self._resolve_module_cls()().run_from_context(context)
+
+            def __call__(self, transcript_path: str):
+                if self._module_name == "sentiment":
+                    return analyze_sentiment_from_file(transcript_path)
+                return self._resolve_module_cls()().run_from_file(transcript_path)
+
+        return ModuleCallable(module_path, class_name, module_name)
 
     def get_dependencies(self, module_name: str) -> List[str]:
         """Get dependencies for a module."""

@@ -44,3 +44,21 @@ Examples operators should expect **only in the gallery** unless you deliberately
 ## Ordering in the registry
 
 `rank_default` on `group.*` entries in [`chart_definitions.json`](../src/transcriptx/core/utils/chart_definitions.json) affects **gallery ordering** relative to other charts. The default strip order is **not** derived from `rank_default`; it follows `DEFAULT_GROUP_OVERVIEW_VIZ_IDS`.
+
+### `group.*` ordering is intentionally split (context-sensitive)
+
+`group.*` definitions are **deliberately not** kept in one contiguous rank block. The split is by chart **role**, so the gallery surfaces group-level summaries in the order operators expect:
+
+- **Ranks 2–50** — overview-eligible group charts that should appear **first**: the pooled acts pie (default-strip anchor), session-based bars (`compound_mean`, `total_words`), temporal overlays (acts, sentiment, pauses, emotion, prosody), and the cross-session-speaker pattern charts.
+- **Ranks 751–760** — **pooled single-view** corpus charts ("if the whole group were one conversation": NER types/top entities, entity sentiment, topic prevalence, mean emotion, tic counts, corpus totals, interruptions, contagion edges). These sit at the **end** of the gallery on purpose, after the per-session/per-speaker single-transcript charts.
+
+This split is **by design**, not an accident of numbering. When adding a new `group.*` chart, place its `rank_default` in the band that matches its role (overview/session/temporal/cross-session → low band; pooled corpus view → 75x band) rather than forcing all `group.*` ranks adjacent.
+
+## Scope semantics (`scope: global` vs per-speaker)
+
+`scope` describes **how artifacts are produced and matched**, not how the chart visually breaks down speakers:
+
+- `scope: "global"` + `cardinality: "single"` can be **one comparison chart that contains every speaker** (e.g. `interactions.dominance.global`, and the `understandability.*` bar charts). These render all speakers inside a single global artifact.
+- `scope: "speaker"` (`cardinality: "speaker_set"`) means **one artifact per speaker** (e.g. `emotion.radar.speaker`).
+
+Do **not** change a definition from `global` to `speaker` scope solely because its label reads "Per Speaker" / "All Speakers". The label describes the visual; the scope describes the artifact set. The `understandability.*` charts are global single artifacts that compare all speakers as bars, so they are labelled "(All Speakers)" and keep `scope: "global"`.

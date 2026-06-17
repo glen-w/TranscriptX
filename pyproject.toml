@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.1.1"
+version = "0.1.2"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -59,6 +59,7 @@ dependencies = [
     "textblob==0.17.1",
     "nltk==3.9.4",
     "scikit-learn==1.5.0",
+    "networkx==3.4.2",
 ]
 
 [project.optional-dependencies]

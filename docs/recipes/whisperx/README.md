@@ -13,14 +13,14 @@ Use them to generate diarized transcript JSON that you can then **canonicalize**
 ```python
 from pathlib import Path
 
-from transcriptx.io.transcript_importer import import_transcript
+from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 
-artifact = import_transcript(
+result = run_managed_import_workflow(
     Path("path/to/whisperx.json"),
-    output_dir=Path("data/transcripts"),
-    overwrite=True,
+    overwrite=False,
 )
-print(artifact)
+print(result.json_path)
+print(result.sidecar_path)
 ```
 
 3. **Analyze** — open the web UI or call `run_analysis(AnalysisRequest(...))` (see [transcription.md](../../transcription.md)).
@@ -81,7 +81,7 @@ docker run --rm --entrypoint /bin/bash \
 
 Replace `your_audio.wav` with your file (e.g. `260225_cursor_presentation.mp3`). With this image, passing arguments directly after the image name does not reach `whisperx`; use the `--entrypoint /bin/bash` form above.
 
-Adjust paths and WhisperX CLI flags to match your setup. Output format: WhisperX JSON; then use `transcriptx.io.transcript_importer.import_transcript()` (see [transcription.md](../../transcription.md)) to produce canonical JSON for analysis.
+Adjust paths and WhisperX CLI flags to match your setup. Output format: WhisperX JSON; then use `run_managed_import_workflow()` (see [transcription.md](../../transcription.md)) to produce canonical JSON for analysis.
 
 ## Troubleshooting
 

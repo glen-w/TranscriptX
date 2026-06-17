@@ -1,3 +1,4 @@
-# Constrain setuptools so llvmlite (numba) can build when pip uses build isolation.
-# setuptools>=70 removes spawn(dry_run=...), which llvmlite's setup.py uses.
-setuptools>=64,<70
+# Security baseline: use a setuptools version with published CVE/PYSEC fixes.
+# If an environment must build very old llvmlite from source, prefer wheels or
+# isolate that workflow with a dedicated constraints file.
+setuptools>=78.1.1

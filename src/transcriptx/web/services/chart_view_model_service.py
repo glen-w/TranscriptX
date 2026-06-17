@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple
 
 from transcriptx.core.utils.chart_registry import (
+    find_chart_definition_for_artifact,
     get_chart_definition,
     get_chart_registry,
     get_default_group_overview_charts,
@@ -18,15 +19,13 @@ from transcriptx.web.models.artifact import Artifact, ArtifactFilters
 def resolve_chart_description(artifact: Artifact) -> str | None:
     """Return the registry description for a chart artifact, if any.
 
-    Looks up the artifact's ``viz_id`` (from its manifest meta) against the chart
-    registry and returns the stripped description. Returns ``None`` when the artifact
-    has no ``viz_id``, the id is unknown, or the description is empty.
+    Resolves the chart definition by ``viz_id`` (from manifest meta) and falls
+    back to the registry's path/slug matchers when the id is missing, stale, or
+    unknown. Returns ``None`` when no definition matches or the description is empty.
     """
-    viz_id = (artifact.meta or {}).get("viz_id")
-    if isinstance(viz_id, str):
-        cd = get_chart_definition(viz_id)
-        if cd and cd.description:
-            return cd.description.strip() or None
+    cd = find_chart_definition_for_artifact(artifact)
+    if cd and cd.description:
+        return cd.description.strip() or None
     return None
 
 

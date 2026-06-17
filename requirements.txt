@@ -4,9 +4,9 @@
 # ============================================================================
 # Build environment (install first to avoid llvmlite/numba build failures)
 # ============================================================================
-# setuptools>=70 drops spawn(dry_run=...), which llvmlite's setup.py uses
-setuptools>=64,<70
-# Pin to 0.45.x: 0.46+ may have no wheel on some platforms and then builds from source (setuptools 70+ breaks build)
+# Security baseline: use a setuptools version with published CVE/PYSEC fixes.
+setuptools>=78.1.1
+# Keep llvmlite on a wheel-friendly range for compatibility.
 llvmlite>=0.41.0,<0.46
 
 # ============================================================================

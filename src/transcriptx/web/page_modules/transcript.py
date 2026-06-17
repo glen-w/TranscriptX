@@ -1,4 +1,8 @@
-"""Transcript page module."""
+"""Transcript page module.
+
+Search/timestamp controls and segment tabs run in ``@st.fragment`` so toggling them
+does not reload the full transcript and sidebar.
+"""
 
 from __future__ import annotations
 
@@ -229,6 +233,35 @@ def _render_transcript_outputs(selected_session: str, run_root: Path) -> None:
         _render_summary_section(run_root)
 
 
+@st.fragment
+def _transcript_interaction_fragment(
+    segments: list[dict[str, Any]],
+    selected_session: str,
+    run_root: Path,
+    *,
+    highlight_query: str | None,
+    jump_index: int | None,
+) -> None:
+    """Transcript search, tabs, and outputs without full-app rerun."""
+    controls = _render_transcript_controls()
+
+    display_segments, filter_caption = filtered_display_segments(
+        segments=segments,
+        search_text=controls.search_text,
+        jump_index=jump_index,
+    )
+    if filter_caption:
+        st.caption(filter_caption)
+
+    _render_transcript_tabs(
+        display_segments,
+        controls=controls,
+        highlight_query=highlight_query,
+        jump_index=jump_index,
+    )
+    _render_transcript_outputs(selected_session, run_root)
+
+
 def render_transcript_viewer() -> None:
     """Transcript viewer page."""
     transcript_help = (
@@ -308,23 +341,14 @@ def render_transcript_viewer() -> None:
         nav_state = consume_nav_request(st.session_state)
         if nav_state.clear_nav_request:
             st.session_state[NAV_REQUEST_KEY] = None
-        controls = _render_transcript_controls()
 
-        display_segments, filter_caption = filtered_display_segments(
-            segments=segments,
-            search_text=controls.search_text,
-            jump_index=nav_state.jump_index,
-        )
-        if filter_caption:
-            st.caption(filter_caption)
-
-        _render_transcript_tabs(
-            display_segments,
-            controls=controls,
+        _transcript_interaction_fragment(
+            segments,
+            selected,
+            run_root,
             highlight_query=nav_state.highlight_query,
             jump_index=nav_state.jump_index,
         )
-        _render_transcript_outputs(selected, run_root)
         _render_transcript_help(transcript_help)
     except Exception as exc:
         logger.error(f"Error loading transcript: {exc}", exc_info=True)

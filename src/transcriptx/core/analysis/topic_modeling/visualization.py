@@ -397,7 +397,7 @@ def create_enhanced_global_heatmaps(
 
         if output_service:
             spec = HeatmapMatrixSpec(
-                viz_id="topic_modeling.enhanced_lda_topic_word_heatmap.global",
+                viz_id="topic_modeling.lda_topic_word_heatmap.global",
                 module="topic_modeling",
                 name="enhanced_lda_topic_word_heatmap",
                 scope="global",
@@ -462,7 +462,7 @@ def create_enhanced_global_heatmaps(
 
         if output_service:
             spec = HeatmapMatrixSpec(
-                viz_id="topic_modeling.enhanced_nmf_topic_word_heatmap.global",
+                viz_id="topic_modeling.nmf_topic_word_heatmap.global",
                 module="topic_modeling",
                 name="enhanced_nmf_topic_word_heatmap",
                 scope="global",

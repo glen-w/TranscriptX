@@ -74,10 +74,11 @@ validate_transcript_document(data)
 ```python
 from pathlib import Path
 
+from transcriptx.core.utils.paths import PATHS
 from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 
 result = run_managed_import_workflow(
-    PATHS.transcript_originals_dir / "whisperx_output.json",
+    PATHS.transcripts_originals_dir / "whisperx_output.json",
     overwrite=False,
 )
 print(result.json_path)

@@ -67,9 +67,12 @@ def write_srt_file(
 ) -> str:
     """Write transcript segments to an SRT file and return the path."""
     if resolve_speaker is None and speaker_map:
-        resolve_speaker = lambda seg: str(
-            speaker_map.get(str(seg.get("speaker", "")), seg.get("speaker", "") or "")
-        )
+
+        def _resolve_from_map(seg: Mapping[str, Any]) -> str:
+            speaker_key = str(seg.get("speaker", ""))
+            return str(speaker_map.get(speaker_key, seg.get("speaker", "") or ""))
+
+        resolve_speaker = _resolve_from_map
 
     srt_text = segments_to_srt_text(segments, resolve_speaker)
     write_text(path, srt_text)

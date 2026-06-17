@@ -1,4 +1,8 @@
-"""Global search page for TranscriptX web UI."""
+"""Global search page for TranscriptX web UI.
+
+Search query, filters, and results run in ``@st.fragment`` so filter toggles do not
+trigger a full-app rerun.
+"""
 
 from __future__ import annotations
 
@@ -108,14 +112,9 @@ def _render_results_section(
             st.divider()
 
 
-def render_search() -> None:
-    render_page_shell(
-        "Search",
-        "Search across transcript text; optionally scope to the current transcript.",
-        badges=None,
-        actions=None,
-    )
-
+@st.fragment
+def _search_interaction_fragment() -> None:
+    """Query input, filters, and results without full-app rerun."""
     # Initialize session state for debouncing and caching
     if "global_search_last_change" not in st.session_state:
         st.session_state["global_search_last_change"] = time.time()
@@ -272,7 +271,6 @@ def render_search() -> None:
             primary_action=("Open Library", "Library"),
             secondary_action=None,
         )
-        render_page_help(_SEARCH_HELP)
         return
 
     # Perform search if needed
@@ -296,7 +294,6 @@ def render_search() -> None:
                 primary_action=("Transcript", "Transcript"),
                 secondary_action=("Open Library", "Library"),
             )
-            render_page_help(_SEARCH_HELP)
             return
 
     if not response.substring_results and not response.fuzzy_results:
@@ -307,7 +304,6 @@ def render_search() -> None:
             primary_action=("Transcript", "Transcript"),
             secondary_action=("Open Library", "Library"),
         )
-        render_page_help(_SEARCH_HELP)
         return
 
     _render_results_section(
@@ -332,4 +328,15 @@ def render_search() -> None:
             "fuzzy matches",
             query,
         )
+
+
+def render_search() -> None:
+    render_page_shell(
+        "Search",
+        "Search across transcript text; optionally scope to the current transcript.",
+        badges=None,
+        actions=None,
+    )
+
+    _search_interaction_fragment()
     render_page_help(_SEARCH_HELP)

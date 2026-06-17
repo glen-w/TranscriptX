@@ -1,6 +1,9 @@
 """
 Corrections Studio: DB-backed, resumable correction review in the browser.
 
+Candidate filters and browsing run in ``@st.fragment`` so filter changes do not
+trigger a full-app rerun.
+
 Calls only CorrectionsStudioController (no direct service/repo imports).
 """
 
@@ -186,114 +189,11 @@ def _render_candidate_detail(
             st.rerun()
 
 
-def render_corrections_studio() -> None:
-    st.markdown(
-        '<div class="main-header">Corrections Studio</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
-        "Review and apply transcript corrections. Select a transcript, review candidates, and export."
-    )
-
-    controller = CorrectionsStudioController()
-
-    # Show one-time export success message if present
-    export_success = st.session_state.pop("corrections_studio_export_success", None)
-    if export_success:
-        st.success(
-            f"Exported to: {export_success['export_path']} "
-            f"({export_success['applied_count']} corrections applied)"
-        )
-
-    # -- Transcript selection --
-    transcripts = _cached_corrections_studio_transcripts()
-    if not transcripts:
-        st.info("No transcripts found. Add transcript JSON files to get started.")
-        return
-
-    options = [
-        f"{t['base_name']} ({t.get('segment_count', 0)} segments)" for t in transcripts
-    ]
-    paths = [t["path"] for t in transcripts]
-    idx = st.selectbox(
-        "Transcript",
-        range(len(options) + 1),
-        format_func=lambda i: (
-            SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else options[i - 1]
-        ),
-        index=0,
-        key="corrections_studio_transcript",
-    )
-    if idx == 0:
-        st.info("Select a transcript to continue.")
-        return
-    transcript_path = paths[idx - 1]
-
-    # -- Start / Resume --
-    col_start, col_regen = st.columns([1, 1])
-    with col_start:
-        start_clicked = st.button("Start / Resume Session", type="primary")
-    with col_regen:
-        regen_clicked = st.button("Regenerate Candidates")
-
-    if start_clicked:
-        try:
-            session_data = controller.start_or_resume(transcript_path)
-            session_id = _get_session_id(session_data)
-            if not session_id:
-                raise KeyError("session_id")
-            st.session_state["corrections_studio_session_id"] = session_id
-            st.session_state["corrections_studio_candidates_stale"] = session_data.get(
-                "candidates_stale", False
-            )
-            st.session_state["corrections_studio_active_candidate"] = None
-            st.session_state["corrections_studio_pending_generate"] = True
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error starting session: {e}")
-            return
-
-    session_id = st.session_state.get("corrections_studio_session_id")
-    if not session_id:
-        st.info("Click **Start / Resume Session** to begin.")
-        return
-
-    # Run candidate generation in a separate run with a visible spinner (avoids endless-looking loading)
-    if st.session_state.pop("corrections_studio_pending_generate", False):
-        try:
-            with st.spinner("Generating candidates…"):
-                controller.generate_candidates(session_id)
-            st.session_state["corrections_studio_candidates_stale"] = False
-            st.session_state.pop("corrections_studio_preview_cache", None)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error generating candidates: {e}")
-            return
-
-    # Ensure stale flag is set when resuming (e.g. returning to page with existing session)
-    if "corrections_studio_candidates_stale" not in st.session_state:
-        session_info = controller.load_session(session_id)
-        st.session_state["corrections_studio_candidates_stale"] = (
-            session_info.get("candidates_stale", False) if session_info else False
-        )
-
-    if st.session_state.get("corrections_studio_candidates_stale"):
-        st.warning(
-            "Candidates were generated with an older detector version. "
-            "Click **Regenerate Candidates** to refresh with the current rules and logic."
-        )
-
-    if regen_clicked:
-        try:
-            controller.generate_candidates(session_id, force=True)
-            st.session_state["corrections_studio_active_candidate"] = None
-            st.session_state["corrections_studio_candidates_stale"] = False
-            st.session_state.pop("corrections_studio_preview_cache", None)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error regenerating candidates: {e}")
-
-    # -- Progress --
+@st.fragment
+def _corrections_studio_workspace_fragment(
+    controller: CorrectionsStudioController, session_id: str
+) -> None:
+    """Filters, candidate list, detail, and export without full-app rerun."""
     stats = controller.get_session_stats(session_id)
     _render_progress_bar(stats)
 
@@ -462,6 +362,116 @@ def render_corrections_studio() -> None:
                 )
             if len(non_policy) > 20:
                 st.caption(f"... and {len(non_policy) - 20} more")
+
+
+def render_corrections_studio() -> None:
+    st.markdown(
+        '<div class="main-header">Corrections Studio</div>',
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "Review and apply transcript corrections. Select a transcript, review candidates, and export."
+    )
+
+    controller = CorrectionsStudioController()
+
+    # Show one-time export success message if present
+    export_success = st.session_state.pop("corrections_studio_export_success", None)
+    if export_success:
+        st.success(
+            f"Exported to: {export_success['export_path']} "
+            f"({export_success['applied_count']} corrections applied)"
+        )
+
+    # -- Transcript selection --
+    transcripts = _cached_corrections_studio_transcripts()
+    if not transcripts:
+        st.info("No transcripts found. Add transcript JSON files to get started.")
+        return
+
+    options = [
+        f"{t['base_name']} ({t.get('segment_count', 0)} segments)" for t in transcripts
+    ]
+    paths = [t["path"] for t in transcripts]
+    idx = st.selectbox(
+        "Transcript",
+        range(len(options) + 1),
+        format_func=lambda i: (
+            SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else options[i - 1]
+        ),
+        index=0,
+        key="corrections_studio_transcript",
+    )
+    if idx == 0:
+        st.info("Select a transcript to continue.")
+        return
+    transcript_path = paths[idx - 1]
+
+    # -- Start / Resume --
+    col_start, col_regen = st.columns([1, 1])
+    with col_start:
+        start_clicked = st.button("Start / Resume Session", type="primary")
+    with col_regen:
+        regen_clicked = st.button("Regenerate Candidates")
+
+    if start_clicked:
+        try:
+            session_data = controller.start_or_resume(transcript_path)
+            session_id = _get_session_id(session_data)
+            if not session_id:
+                raise KeyError("session_id")
+            st.session_state["corrections_studio_session_id"] = session_id
+            st.session_state["corrections_studio_candidates_stale"] = session_data.get(
+                "candidates_stale", False
+            )
+            st.session_state["corrections_studio_active_candidate"] = None
+            st.session_state["corrections_studio_pending_generate"] = True
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error starting session: {e}")
+            return
+
+    session_id = st.session_state.get("corrections_studio_session_id")
+    if not session_id:
+        st.info("Click **Start / Resume Session** to begin.")
+        return
+
+    # Run candidate generation in a separate run with a visible spinner (avoids endless-looking loading)
+    if st.session_state.pop("corrections_studio_pending_generate", False):
+        try:
+            with st.spinner("Generating candidates…"):
+                controller.generate_candidates(session_id)
+            st.session_state["corrections_studio_candidates_stale"] = False
+            st.session_state.pop("corrections_studio_preview_cache", None)
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error generating candidates: {e}")
+            return
+
+    # Ensure stale flag is set when resuming (e.g. returning to page with existing session)
+    if "corrections_studio_candidates_stale" not in st.session_state:
+        session_info = controller.load_session(session_id)
+        st.session_state["corrections_studio_candidates_stale"] = (
+            session_info.get("candidates_stale", False) if session_info else False
+        )
+
+    if st.session_state.get("corrections_studio_candidates_stale"):
+        st.warning(
+            "Candidates were generated with an older detector version. "
+            "Click **Regenerate Candidates** to refresh with the current rules and logic."
+        )
+
+    if regen_clicked:
+        try:
+            controller.generate_candidates(session_id, force=True)
+            st.session_state["corrections_studio_active_candidate"] = None
+            st.session_state["corrections_studio_candidates_stale"] = False
+            st.session_state.pop("corrections_studio_preview_cache", None)
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error regenerating candidates: {e}")
+
+    _corrections_studio_workspace_fragment(controller, session_id)
 
 
 def is_corrections_studio_enabled() -> bool:
