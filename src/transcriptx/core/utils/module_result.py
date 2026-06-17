@@ -18,11 +18,15 @@ def _cap_traceback(text: str) -> str:
 
 
 def capture_exception(error: Exception) -> Dict[str, Any]:
-    return {
+    payload: Dict[str, Any] = {
         "error_type": type(error).__name__,
         "error_message": str(error),
         "traceback_text": _cap_traceback(traceback.format_exc()),
     }
+    error_code = getattr(error, "error_code", None)
+    if error_code:
+        payload["error_code"] = error_code
+    return payload
 
 
 def build_module_result(

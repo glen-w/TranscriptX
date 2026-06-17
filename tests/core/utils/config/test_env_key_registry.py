@@ -56,6 +56,12 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_SENTIMENT_WINDOW_SIZE": ("42", 42),
         "TRANSCRIPTX_EMOTION_MODEL": ("emotion/model", "emotion/model"),
         "TRANSCRIPTX_SEMANTIC_MODEL": ("semantic/model", "semantic/model"),
+        "TRANSCRIPTX_SEMANTIC_V2_MODEL": ("semantic/v2-model", "semantic/v2-model"),
+        "TRANSCRIPTX_SENTIMENT_BACKEND": ("transformers", "transformers"),
+        "TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL": (
+            "sentence-transformers/all-mpnet-base-v2",
+            "sentence-transformers/all-mpnet-base-v2",
+        ),
         "TRANSCRIPTX_SEMANTIC_PROGRESS_LOG_INTERVAL_SECONDS": ("15.5", 15.5),
         "TRANSCRIPTX_MODULE_PROGRESS_LOG_INTERVAL_SECONDS": ("9", 9.0),
         "TRANSCRIPTX_ACTS_MODEL": ("acts/model", "acts/model"),
@@ -81,6 +87,19 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_SPEAKER_GATE_THRESHOLD_TYPE": ("percentage", "percentage"),
         "TRANSCRIPTX_SPEAKER_GATE_MODE": ("enforce", "enforce"),
         "TRANSCRIPTX_SPEAKER_GATE_EXEMPLAR_COUNT": ("3", 3),
+        "TRANSCRIPTX_LLM_ENABLED": ("1", True),
+        "TRANSCRIPTX_LLM_PROVIDER": ("ollama", "ollama"),
+        "TRANSCRIPTX_LLM_MODEL": ("qwen3:8b", "qwen3:8b"),
+        "TRANSCRIPTX_LLM_BASE_URL": (
+            "http://localhost:11434",
+            "http://localhost:11434",
+        ),
+        "TRANSCRIPTX_LLM_SEED": ("7", 7),
+        "TRANSCRIPTX_LLM_REQUEST_TIMEOUT": ("90", 90.0),
+        "TRANSCRIPTX_LLM_AVAILABILITY_TIMEOUT": ("4", 4.0),
+        "TRANSCRIPTX_LLM_MAX_INPUT_CHARS": ("12000", 12000),
+        "TRANSCRIPTX_LLM_MAX_OUTPUT_TOKENS": ("1024", 1024),
+        "TRANSCRIPTX_LLM_DEFAULT_TEMPERATURE": ("0.25", 0.25),
     }
     return table[env_name]
 

@@ -89,6 +89,13 @@ def load_config_file_into(config: Any, config_file: str) -> None:
                 if hasattr(config.group_analysis, key):
                     setattr(config.group_analysis, key, value)
 
+        if "llm" in config_data:
+            llm_data = config_data["llm"]
+            if isinstance(llm_data, dict):
+                for key, value in llm_data.items():
+                    if hasattr(config.llm, key):
+                        setattr(config.llm, key, value)
+
         for adapter in adapters:
             found_activation, activation_name = adapter.get_activation_from_payload(
                 config_data

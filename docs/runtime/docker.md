@@ -30,6 +30,32 @@ The default compose runs the `transcriptx-web` service as your host user (`user:
 docker build -t transcriptx:latest .
 ```
 
+Set **`TRANSCRIPTX_TORCH_VARIANT`** at build time to control which PyTorch wheels are installed:
+
+| Value | When to use |
+|-------|-------------|
+| `default` (unset) | Linux with NVIDIA GPU (`nvidia-container-toolkit`). Pulls CUDA wheels from PyPI on arm64. |
+| `cpu` | Mac / Apple Silicon, or any CPU-only host. Skips 500MB+ NVIDIA deps; uses [PyTorch CPU wheels](https://download.pytorch.org/whl/cpu). |
+
+With Compose (reads from `.env` or `docker-compose.override.yml`):
+
+```bash
+# Mac local dev (docker-compose.override.yml sets cpu by default)
+docker compose build
+
+# Explicit CPU build
+TRANSCRIPTX_TORCH_VARIANT=cpu docker compose build
+
+# GPU-oriented build (Linux)
+TRANSCRIPTX_TORCH_VARIANT=default docker compose build
+```
+
+Plain `docker build`:
+
+```bash
+docker build --build-arg TRANSCRIPTX_TORCH_VARIANT=cpu -t transcriptx:latest .
+```
+
 Multi-arch (e.g. for publishing):
 
 ```bash
@@ -38,7 +64,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t transcriptx:latest .
 
 The image includes the spaCy language models (`en_core_web_md` and `en_core_web_sm`), so NLP modules (topic modeling, NER, etc.) work out of the box—no need to run `python -m spacy download` inside the container.
 
-**Apple Silicon (M1/M2/M3):** If the arm64 build fails or you want maximum compatibility with CPU/torch wheels, build and run the amd64 image under emulation:
+**Apple Silicon (M1/M2/M3):** Prefer a CPU torch build — `docker-compose.override.yml` sets `TRANSCRIPTX_TORCH_VARIANT=cpu` for local dev. Docker on Mac cannot use GPU acceleration anyway. If arm64 builds still fail, you can build the amd64 image under emulation:
 
 ```bash
 docker buildx build --platform linux/amd64 --load -t transcriptx:amd64 .
@@ -132,6 +158,8 @@ TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | `0` | Enable model/resource downloads (`1` disables) |
 | `TRANSCRIPTX_HOST` | `0.0.0.0` | Streamlit bind host |
 | `TRANSCRIPTX_PORT` | `8501` | Streamlit port |
+
+Optional **model overrides** (`TRANSCRIPTX_SPACY_MODEL`, `TRANSCRIPTX_SEMANTIC_MODEL`, etc.) and **LLM / Ollama** settings (`TRANSCRIPTX_LLM_ENABLED`, `TRANSCRIPTX_LLM_BASE_URL`, …) are passed from the host `.env` into the container. See [models.md](models.md) and [llm.md](llm.md). On Mac/Windows Docker, point `TRANSCRIPTX_LLM_BASE_URL` at `http://host.docker.internal:11434` so the container can reach Ollama on the host.
 
 ## Health check
 

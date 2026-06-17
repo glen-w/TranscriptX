@@ -13,6 +13,7 @@ from transcriptx.core.pipeline.pipeline_context import PipelineContext
 from transcriptx.core.pipeline.dag_pipeline_run import (
     gating_named_speaker_count,
     gating_turn_taking_speaker_count,
+    llm_gate_skip_reason,
     speaker_gate_skip_reason,
 )
 
@@ -126,6 +127,15 @@ def compute_review_before_run_for_pipeline(
 
             module_info = get_module_info(module_name)
             if module_info:
+                llm_reason = llm_gate_skip_reason(module_info)
+                if llm_reason:
+                    modules_skipped.append(
+                        {
+                            "module": module_name,
+                            "reason": llm_reason,
+                        }
+                    )
+                    continue
                 reason_text = speaker_gate_skip_reason(
                     module_info,
                     named_speaker_count=named_speaker_count,

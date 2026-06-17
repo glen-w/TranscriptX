@@ -46,6 +46,7 @@ class CanonicalModuleOutcome:
     execution_status: ExecutionStatus
     reason_code: Optional[str] = None
     error_message: Optional[str] = None
+    error_code: Optional[str] = None
     duration_ms: Optional[float] = None
     used_cache: bool = False
 
@@ -58,6 +59,8 @@ class CanonicalModuleOutcome:
             d["reason_code"] = self.reason_code
         if self.error_message is not None:
             d["error_message"] = self.error_message
+        if self.error_code is not None:
+            d["error_code"] = self.error_code
         if self.duration_ms is not None:
             d["duration_ms"] = self.duration_ms
         if self.used_cache:
@@ -106,15 +109,18 @@ def normalize_raw_outcomes(
             continue
         if r.failure or (r.started and r.finished and r.failure is not None):
             err = None
+            error_code = None
             if isinstance(r.failure, dict):
                 err = str(
                     r.failure.get("error_message") or r.failure.get("message") or ""
                 )
+                error_code = r.failure.get("error_code")
             rows.append(
                 CanonicalModuleOutcome(
                     module_id=mid,
                     execution_status="failed",
                     error_message=err or "failed",
+                    error_code=error_code,
                     duration_ms=r.timing_ms,
                 )
             )
@@ -205,11 +211,26 @@ def normalize_skipped_entries(
     return out
 
 
+def _lookup_module_result(
+    module_results: Optional[Dict[str, Any]],
+    module_id: str,
+) -> Optional[Dict[str, Any]]:
+    if not module_results:
+        return None
+    if module_id in module_results:
+        return module_results[module_id]
+    for key, value in module_results.items():
+        if canonical_module_id(str(key)) == module_id:
+            return value
+    return None
+
+
 def build_canonical_rows_from_run_lists(
     modules_enabled: List[str],
     modules_run: List[str],
     skipped_modules: Optional[List[Any]],
     errors: Optional[List[str]],
+    module_results: Optional[Dict[str, Any]] = None,
 ) -> List[CanonicalModuleOutcome]:
     """
     Build canonical rows from pipeline result lists (post-execution projection).
@@ -248,11 +269,20 @@ def build_canonical_rows_from_run_lists(
             )
             continue
         err = err_text_by_module.get(mid)
+        error_code = None
+        module_result = _lookup_module_result(module_results, mid)
+        if isinstance(module_result, dict):
+            err_payload = module_result.get("error")
+            if isinstance(err_payload, dict):
+                error_code = err_payload.get("error_code")
+                if not err:
+                    err = str(err_payload.get("error_message") or "")
         rows.append(
             CanonicalModuleOutcome(
                 module_id=mid,
                 execution_status="failed",
                 error_message=err,
+                error_code=error_code,
             )
         )
     return rows

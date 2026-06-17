@@ -316,6 +316,7 @@ class TranscriptXConfig:
                 "max_log_size": self.logging.max_log_size,
                 "backup_count": self.logging.backup_count,
             },
+            "llm": self._config_to_dict(self.llm),
             "audio_preprocessing": {
                 "preprocessing_mode": self.audio_preprocessing.preprocessing_mode,
                 "convert_to_mono": self.audio_preprocessing.convert_to_mono,

@@ -155,35 +155,9 @@ def _resolve_segment_speaker_name(
     speaker_map: Dict[str, str] | None = None,
 ) -> str:
     """Resolve the display speaker name used by transcript text-like outputs."""
-    speaker_field = seg.get("speaker", "")
-    speaker_key = str(speaker_field)
+    from transcriptx.core.utils.speaker_extraction import resolve_segment_speaker_label
 
-    # Legacy fallback: use speaker_map if provided
-    if speaker_map and speaker_key in speaker_map:
-        return speaker_map[speaker_key]
-
-    try:
-        from transcriptx.core.utils.speaker_extraction import (
-            extract_speaker_info,
-            get_speaker_display_name,
-        )
-        from transcriptx.utils.text_utils import is_named_speaker
-    except ImportError:
-        logger.warning(
-            "Speaker extraction utilities not available, using basic fallback"
-        )
-        return str(speaker_field) if speaker_field else "Unknown"
-
-    # Use speaker field directly if it looks like a display name
-    if speaker_field and is_named_speaker(str(speaker_field)):
-        return str(speaker_field)
-
-    # Fallback: try to extract speaker info if speaker field is ID-like
-    speaker_info = extract_speaker_info(seg)
-    if speaker_info:
-        return get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
-
-    return str(speaker_field) if speaker_field else "Unknown"
+    return resolve_segment_speaker_label(dict(seg), segments, speaker_map)
 
 
 def write_transcript_files(

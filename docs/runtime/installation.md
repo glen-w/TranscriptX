@@ -132,6 +132,8 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 | `TRANSCRIPTX_HOST` | Host for the web interface (default `127.0.0.1`; use `0.0.0.0` for Docker). |
 | `TRANSCRIPTX_PORT` | Port for the web interface (default `8501`). |
 
+**Models:** defaults, higher-accuracy presets, and per-module guidance — [models.md](models.md).
+
 **Configuration:** TranscriptX uses env-first configuration with explicit overrides. Unknown/unmapped speakers are excluded from analysis by default; excluded segment counts are reported in run summaries. See [ARCHITECTURE.md](ARCHITECTURE.md) for data layout.
 
 ## Web interface (Streamlit)

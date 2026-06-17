@@ -301,6 +301,28 @@ def get_speaker_display_name(
     return base_name if base_name and is_named_speaker(base_name) else str(grouping_key)
 
 
+def resolve_segment_speaker_label(
+    seg: Dict[str, Any],
+    segments: List[Dict[str, Any]],
+    speaker_map: Optional[Dict[str, str]] = None,
+) -> str:
+    """Resolve the display speaker label for one transcript segment."""
+    speaker_field = seg.get("speaker", "")
+    speaker_key = str(speaker_field)
+
+    if speaker_map and speaker_key in speaker_map:
+        return speaker_map[speaker_key]
+
+    if speaker_field and is_named_speaker(str(speaker_field)):
+        return str(speaker_field)
+
+    speaker_info = extract_speaker_info(seg)
+    if speaker_info:
+        return get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
+
+    return str(speaker_field) if speaker_field else "Unknown"
+
+
 def named_speaker_count_for_path(path) -> int:
     """
     Return named speaker count for a transcript file using sidecar-backed

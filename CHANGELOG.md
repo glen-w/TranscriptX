@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-17
+
+### Added
+
+- Local LLM integration via Ollama (`llm_summary`, `narrative_summary` opt-in modules).
+- `LLMConfig`, env/file overrides, `requires_llm` gating, and stable `error_code` propagation through the DAG adapter.
+- Shared LLM helpers (truncation, provenance, artifact staging) and documentation (`docs/runtime/llm.md`).
+
 ## [0.1.2] - 2026-06-17
 
 ### Fixed

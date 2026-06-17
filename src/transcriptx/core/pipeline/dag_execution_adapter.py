@@ -82,6 +82,7 @@ def execute_single_module(
     requirements_resolver: Optional[Any],
     named_speaker_count: Optional[int],
 ) -> Any:
+    from transcriptx.core.errors.coded import CodedError
     from transcriptx.core.utils.module_result import (
         build_module_result,
         capture_exception,
@@ -97,11 +98,15 @@ def execute_single_module(
         from transcriptx.core.pipeline.module_registry import get_module_info
         from transcriptx.core.pipeline.dag_pipeline_run import (
             gating_turn_taking_speaker_count,
+            llm_gate_skip_reason,
             speaker_gate_skip_reason,
         )
 
         module_info = get_module_info(module_name)
         if module_info:
+            llm_reason = llm_gate_skip_reason(module_info)
+            if llm_reason:
+                return ModuleExecOutcome(status="skipped", skip_reason=llm_reason)
             turn_taking_count = (
                 gating_turn_taking_speaker_count(context)
                 if getattr(module_info, "gate_on_turn_taking_speakers", False)
@@ -143,13 +148,35 @@ def execute_single_module(
             module_instance = node.function()
             module_result = module_instance.run_from_context(execution_context)
             if module_result.get("status") == "error":
-                raise RuntimeError(module_result.get("error", "Unknown error"))
+                err = module_result.get("error", {})
+                if isinstance(err, dict) and err.get("error_code"):
+                    duration_ms = (time.time() - module_start) * 1000
+                    return ModuleExecOutcome(
+                        status="failed",
+                        module_result=module_result,
+                        error=str(err.get("error_message", "Unknown error")),
+                        duration_ms=duration_ms,
+                        module_run=module_run,
+                        module_started_at=module_started_at,
+                    )
+                raise RuntimeError(err if err else "Unknown error")
         elif hasattr(type(node.function), "run_from_context") and not isinstance(
             node.function, type
         ):
             module_result = node.function.run_from_context(execution_context)
             if module_result.get("status") == "error":
-                raise RuntimeError(module_result.get("error", "Unknown error"))
+                err = module_result.get("error", {})
+                if isinstance(err, dict) and err.get("error_code"):
+                    duration_ms = (time.time() - module_start) * 1000
+                    return ModuleExecOutcome(
+                        status="failed",
+                        module_result=module_result,
+                        error=str(err.get("error_message", "Unknown error")),
+                        duration_ms=duration_ms,
+                        module_run=module_run,
+                        module_started_at=module_started_at,
+                    )
+                raise RuntimeError(err if err else "Unknown error")
         else:
             node.function(transcript_path)
         duration_ms = (time.time() - module_start) * 1000
@@ -167,6 +194,28 @@ def execute_single_module(
         return ModuleExecOutcome(
             status="success",
             module_result=module_result,
+            duration_ms=duration_ms,
+            module_run=module_run,
+            module_started_at=module_started_at,
+        )
+    except CodedError as e:
+        pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
+        duration_ms = (time.time() - module_start) * 1000
+        err_module_result = build_module_result(
+            module_name=module_name,
+            status="error",
+            started_at=module_started_at,
+            finished_at=now_iso(),
+            artifacts=[],
+            metrics={"duration_seconds": duration_ms / 1000.0},
+            payload_type="analysis_results",
+            payload={},
+            error=capture_exception(e),
+        )
+        return ModuleExecOutcome(
+            status="failed",
+            module_result=err_module_result,
+            error=str(e),
             duration_ms=duration_ms,
             module_run=module_run,
             module_started_at=module_started_at,

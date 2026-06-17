@@ -89,6 +89,14 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
     "moments": ("transcriptx.core.analysis.dynamics.moments", "MomentsAnalysis"),
     "highlights": ("transcriptx.core.analysis.highlights", "HighlightsAnalysis"),
     "summary": ("transcriptx.core.analysis.summary", "SummaryAnalysis"),
+    "narrative_summary": (
+        "transcriptx.core.analysis.narrative_summary",
+        "NarrativeSummaryAnalysis",
+    ),
+    "llm_summary": (
+        "transcriptx.core.analysis.llm_summary",
+        "LLMSummaryAnalysis",
+    ),
     "insights": ("transcriptx.core.analysis.insights", "InsightsAnalysis"),
     "voice_features": (
         "transcriptx.core.analysis.voice_features",
@@ -395,6 +403,28 @@ def build_module_definitions(
                 Requirement.SPEAKER_LABELS,
             ],
             "enhancements": [],
+        },
+        "narrative_summary": {
+            "description": "Grounded executive narrative from deterministic summary (LLM)",
+            "dependencies": ["summary"],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [
+                Requirement.SEGMENTS,
+                Requirement.SEGMENT_TIMESTAMPS,
+                Requirement.SPEAKER_LABELS,
+            ],
+            "enhancements": [],
+            "requires_llm": True,
+        },
+        "llm_summary": {
+            "description": "Abstractive transcript summary via local LLM",
+            "dependencies": [],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [Requirement.SEGMENTS],
+            "enhancements": [],
+            "requires_llm": True,
         },
         "insights": {
             "description": "Content-first insights layer separated from style markers",

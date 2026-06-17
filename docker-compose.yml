@@ -13,7 +13,10 @@
 
 services:
   transcriptx-web:
-    build: .
+    build:
+      context: .
+      args:
+        TRANSCRIPTX_TORCH_VARIANT: ${TRANSCRIPTX_TORCH_VARIANT:-default}
     image: transcriptx:latest
     init: true
     user: "${UID:-1000}:${GID:-1000}"
@@ -53,6 +56,19 @@ services:
       # often leaves HOME unsuitable for Numba's default cache path.
       - NUMBA_CACHE_DIR=/data/.cache/numba
       - NUMBA_DISABLE_CACHING=1
+      # Optional model overrides from host .env (see docs/runtime/models.md).
+      - TRANSCRIPTX_SPACY_MODEL=${TRANSCRIPTX_SPACY_MODEL:-}
+      - TRANSCRIPTX_SEMANTIC_MODEL=${TRANSCRIPTX_SEMANTIC_MODEL:-}
+      - TRANSCRIPTX_SEMANTIC_V2_MODEL=${TRANSCRIPTX_SEMANTIC_V2_MODEL:-}
+      - TRANSCRIPTX_EMOTION_MODEL=${TRANSCRIPTX_EMOTION_MODEL:-}
+      - TRANSCRIPTX_SENTIMENT_BACKEND=${TRANSCRIPTX_SENTIMENT_BACKEND:-}
+      - TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL=${TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL:-}
+      # Optional LLM / Ollama overrides from host .env (see docs/runtime/llm.md).
+      - TRANSCRIPTX_LLM_ENABLED=${TRANSCRIPTX_LLM_ENABLED:-}
+      - TRANSCRIPTX_LLM_PROVIDER=${TRANSCRIPTX_LLM_PROVIDER:-}
+      - TRANSCRIPTX_LLM_MODEL=${TRANSCRIPTX_LLM_MODEL:-}
+      - TRANSCRIPTX_LLM_BASE_URL=${TRANSCRIPTX_LLM_BASE_URL:-}
+      - TRANSCRIPTX_LLM_SEED=${TRANSCRIPTX_LLM_SEED:-}
     ports:
       - "8501:8501"
     healthcheck:

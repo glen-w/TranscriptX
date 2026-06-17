@@ -9,6 +9,8 @@ requiring changes to analysis modules that use LLM capabilities.
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from transcriptx.core.llm.errors import LLMConfigurationError
+
 
 class LLMClient(ABC):
     """
@@ -26,9 +28,10 @@ class LLMClient(ABC):
     @abstractmethod
     def generate(
         self,
+        *,
         prompt: str,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float,
         max_tokens: Optional[int] = None,
     ) -> str:
         """
@@ -44,17 +47,17 @@ class LLMClient(ABC):
             Generated text
 
         Raises:
-            RuntimeError: If LLM client is not configured or available
+            LLMError: On provider failures (unavailable, timeout, etc.)
         """
         pass
 
     @abstractmethod
     def is_available(self) -> bool:
         """
-        Check if LLM client is configured and available.
+        Check if the LLM daemon is reachable (diagnostic only).
 
         Returns:
-            True if client is available, False otherwise
+            True if reachable, False otherwise (never raises)
         """
         pass
 
@@ -69,13 +72,14 @@ class NullLLMClient(LLMClient):
 
     def generate(
         self,
+        *,
         prompt: str,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float,
         max_tokens: Optional[int] = None,
     ) -> str:
         """Raise error - LLM client not configured."""
-        raise RuntimeError(
+        raise LLMConfigurationError(
             "LLM client not configured. Please configure an LLM provider in the config file."
         )
 

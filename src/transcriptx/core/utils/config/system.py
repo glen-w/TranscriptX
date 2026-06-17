@@ -35,16 +35,24 @@ class LLMConfig:
     """
     LLM provider configuration.
 
-    This configuration is infrastructure-only. No UI integration yet.
-    Future modules (summarization, action items, speaker briefs) will use
-    this interface with strict provenance and caching.
+    Provider/connection settings and generation limits are grouped here.
+    Module-specific prompt behaviour lives with each analysis module.
     """
 
+    # Provider / connection
     enabled: bool = False
-    provider: str = "null"  # null, ollama, openai
+    provider: str = "null"  # null, ollama
     model: str | None = None
     base_url: str | None = None
     api_key: str | None = None
+    request_timeout: float = 120.0
+    availability_timeout: float = 5.0
+
+    # Generation defaults (callers pass explicit temperature to generate())
+    seed: int = 42
+    max_input_chars: int = 48_000
+    max_output_tokens: int | None = 2048
+    default_temperature: float = 0.3
 
 
 @dataclass

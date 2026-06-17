@@ -32,6 +32,9 @@ SMOKE_SKIP_MODULES: frozenset[str] = frozenset(
         "topic_modeling",
         "understandability",
         "wordclouds",
+        # LLM modules require a running Ollama daemon; covered by unit/integration tests.
+        "llm_summary",
+        "narrative_summary",
     }
 )
 

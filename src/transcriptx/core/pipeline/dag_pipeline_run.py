@@ -59,6 +59,22 @@ def speaker_gate_skip_reason(
     return None
 
 
+def llm_gate_skip_reason(module_info: Any) -> Optional[str]:
+    """Return a skip reason when an LLM module is selected but LLM is disabled."""
+    if not getattr(module_info, "requires_llm", False):
+        return None
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        llm = get_config().llm
+    except Exception:
+        return "LLM disabled"
+    provider = (llm.provider or "null").strip().lower()
+    if not llm.enabled or provider in ("null", ""):
+        return "LLM disabled"
+    return None
+
+
 def gating_named_speaker_count(
     transcript_path: str,
     context: Optional[PipelineContext],

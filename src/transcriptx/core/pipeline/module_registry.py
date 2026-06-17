@@ -53,6 +53,7 @@ class ModuleInfo:
         False  # Not offered in analysis module list; run via post-processing
     )
     requires_audio: bool = False
+    requires_llm: bool = False
     requires_multiple_speakers: bool = (
         False  # Skip when transcript has ≤1 named speaker
     )
@@ -112,6 +113,7 @@ class ModuleRegistry:
                 exclude_from_default=info.get("exclude_from_default", False),
                 post_processing_only=info.get("post_processing_only", False),
                 requires_audio=info.get("requires_audio", False),
+                requires_llm=bool(info.get("requires_llm", False)),
                 requires_multiple_speakers=bool(
                     info.get("requires_multiple_speakers", False)
                 ),

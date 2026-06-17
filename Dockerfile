@@ -8,8 +8,12 @@ FROM python:3.10-slim AS builder
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+# Large wheels (torch, spacy models) can exceed pip's default 15s read timeout.
+ENV PIP_DEFAULT_TIMEOUT=600
+# Retry transient network failures; builder cache mount survives partial downloads.
+ENV PIP_RETRIES=15
+ENV PIP_CACHE_DIR=/root/.cache/pip
 
 # Build deps: libsndfile1-dev for soundfile/opensmile wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -28,13 +32,32 @@ WORKDIR /app
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install dependencies only (constraints enforced); cache pip for faster rebuilds
+# Install dependencies only (constraints enforced); cache pip for faster rebuilds.
+# TRANSCRIPTX_TORCH_VARIANT: default = PyPI torch (CUDA wheels on arm64); cpu = CPU-only PyTorch index.
+ARG TRANSCRIPTX_TORCH_VARIANT=default
 COPY constraints.txt requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -c constraints.txt -r requirements.txt
+    set -e; \
+    pip_retry() { \
+      attempt=1; \
+      while [ "$attempt" -le 5 ]; do \
+        if pip "$@"; then return 0; fi; \
+        echo "pip failed (attempt ${attempt}/5), purging cache and retrying in ${attempt}0s..."; \
+        pip cache purge 2>/dev/null || true; \
+        sleep $((attempt * 10)); \
+        attempt=$((attempt + 1)); \
+      done; \
+      return 1; \
+    }; \
+    pip_retry install -c constraints.txt "numpy==1.26.4"; \
+    if [ "$TRANSCRIPTX_TORCH_VARIANT" = "cpu" ]; then \
+      pip_retry install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple \
+        "numpy==1.26.4" "torch>=2.6.0" "torchvision>=0.15.0" "torchaudio>=2.2.0"; \
+    fi; \
+    pip_retry install -c constraints.txt -r requirements.txt
 
 # Install build tool and build wheel
-RUN pip install build
+RUN --mount=type=cache,target=/root/.cache/pip pip install build
 COPY pyproject.toml README.md ./
 COPY src ./src
 RUN python -m build

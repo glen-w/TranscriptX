@@ -17,9 +17,26 @@ _ALLOWED_TOP_LEVEL_KEYS = frozenset(
         "audio_preprocessing",
         "workflow",
         "group_analysis",
+        "llm",
         "active_workflow_profile",
         "use_emojis",
         "core_mode",
+    }
+)
+
+_LLM_ALLOWED_KEYS = frozenset(
+    {
+        "enabled",
+        "provider",
+        "model",
+        "base_url",
+        "api_key",
+        "request_timeout",
+        "availability_timeout",
+        "seed",
+        "max_input_chars",
+        "max_output_tokens",
+        "default_temperature",
     }
 )
 
@@ -100,6 +117,16 @@ def validate_raw_config_dict(config_data: dict[str, Any]) -> None:
                 'Use "overview_charts" (list of chart ids) with "schema_version": 2.',
                 code="unsupported_legacy_shape",
             )
+
+    llm = config_data.get("llm")
+    if isinstance(llm, dict):
+        for k in llm:
+            if k not in _LLM_ALLOWED_KEYS:
+                raise ConfigLoadError(
+                    f'Unknown llm configuration key "{k}". '
+                    f"Allowed keys: {sorted(_LLM_ALLOWED_KEYS)}.",
+                    code="unknown_section",
+                )
 
     audio = config_data.get("audio_preprocessing")
     if isinstance(audio, dict):

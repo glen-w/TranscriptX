@@ -41,6 +41,7 @@ def persist_canonical_run_outcomes(
     modules_run: List[str],
     skipped_modules: List[Any],
     errors: List[str],
+    module_results: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Persist canonical normalized run outcomes to run_results.json."""
     write_run_results_summary(
@@ -52,6 +53,7 @@ def persist_canonical_run_outcomes(
         skipped_modules=skipped_modules,
         errors=errors,
         preset_explanation=build_preset_explanation(modules_run, skipped_modules),
+        module_results=module_results,
     )
 
 
@@ -79,6 +81,7 @@ def persist_canonical_results_and_artifacts(
         modules_run=modules_run,
         skipped_modules=skipped,
         errors=errors,
+        module_results=dict(results.get("module_results", {})),
     )
     manifest_path = write_output_manifest(
         run_dir=run_dir,

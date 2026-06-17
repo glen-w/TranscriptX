@@ -46,6 +46,7 @@ INFRA_ENV_ALLOWLIST = frozenset(
         "TRANSCRIPTX_ENABLE_CORRECTIONS_STUDIO",
         "TRANSCRIPTX_CACHE_DIR",
         "TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS",
+        "TRANSCRIPTX_TORCH_VARIANT",
     }
 )
 
@@ -165,6 +166,23 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
     ),
     _env_key(
         "TRANSCRIPTX_SEMANTIC_MODEL", ("analysis", "semantic_model_name"), coerce_str
+    ),
+    _env_key(
+        "TRANSCRIPTX_SEMANTIC_V2_MODEL",
+        ("analysis", "semantic_similarity_v2", "model_name"),
+        coerce_str,
+    ),
+    _env_key(
+        "TRANSCRIPTX_SENTIMENT_BACKEND",
+        ("analysis", "sentiment_backend"),
+        coerce_lower_strip,
+        allowed_values=("vader", "transformers", "textblob"),
+        invalid_policy="warn_skip",
+    ),
+    _env_key(
+        "TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL",
+        ("analysis", "bertopic", "embedding_model"),
+        coerce_str,
     ),
     _env_key(
         "TRANSCRIPTX_SEMANTIC_PROGRESS_LOG_INTERVAL_SECONDS",
@@ -293,6 +311,42 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         coerce_str,
         post_hook_target=("workflow", "speaker_gate"),
         post_hook_method="validate",
+    ),
+    _env_key("TRANSCRIPTX_LLM_ENABLED", ("llm", "enabled"), coerce_bool_on_off),
+    _env_key(
+        "TRANSCRIPTX_LLM_PROVIDER",
+        ("llm", "provider"),
+        coerce_lower_strip,
+        allowed_values=("null", "ollama"),
+        invalid_policy="warn_skip",
+    ),
+    _env_key("TRANSCRIPTX_LLM_MODEL", ("llm", "model"), coerce_str),
+    _env_key("TRANSCRIPTX_LLM_BASE_URL", ("llm", "base_url"), coerce_str),
+    _env_key("TRANSCRIPTX_LLM_SEED", ("llm", "seed"), coerce_int),
+    _env_key(
+        "TRANSCRIPTX_LLM_REQUEST_TIMEOUT",
+        ("llm", "request_timeout"),
+        coerce_float,
+    ),
+    _env_key(
+        "TRANSCRIPTX_LLM_AVAILABILITY_TIMEOUT",
+        ("llm", "availability_timeout"),
+        coerce_float,
+    ),
+    _env_key(
+        "TRANSCRIPTX_LLM_MAX_INPUT_CHARS",
+        ("llm", "max_input_chars"),
+        coerce_int,
+    ),
+    _env_key(
+        "TRANSCRIPTX_LLM_MAX_OUTPUT_TOKENS",
+        ("llm", "max_output_tokens"),
+        coerce_int,
+    ),
+    _env_key(
+        "TRANSCRIPTX_LLM_DEFAULT_TEMPERATURE",
+        ("llm", "default_temperature"),
+        coerce_float,
     ),
 )
 

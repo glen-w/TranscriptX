@@ -76,6 +76,7 @@ _MODULE_INFO_CACHE_ATTRS = (
     "exclude_from_default",
     "post_processing_only",
     "requires_audio",
+    "requires_llm",
     "requires_multiple_speakers",
     "min_named_speakers",
     "gate_on_turn_taking_speakers",

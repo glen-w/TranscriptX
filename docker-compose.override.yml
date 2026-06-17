@@ -7,8 +7,14 @@
 #
 # For production-like read-only transcripts, use only docker-compose.yml (or delete
 # this file) so /mnt/transcripts stays :ro.
+#
+# Mac / Apple Silicon: use CPU-only PyTorch wheels at build time (no 500MB+ NVIDIA
+# CUDA deps; Docker on Mac cannot use GPU anyway). Override via .env if needed.
 services:
   transcriptx-web:
+    build:
+      args:
+        TRANSCRIPTX_TORCH_VARIANT: cpu
     volumes:
       - ./data:/data
       - transcriptx_cache:/home/transcriptx/.cache
