@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Optional
 
+# Supported input audio extensions for recordings discovery and transcription.
+SUPPORTED_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
+    {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".wma"}
+)
+
 try:
     from typing import TypedDict
 except ImportError:

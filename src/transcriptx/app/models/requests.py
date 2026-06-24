@@ -110,3 +110,38 @@ class BatchAnalysisRequest:
     analysis_mode: str = "quick"
     selected_modules: Optional[list[str]] = None
     persist: bool = False
+
+
+@dataclass(frozen=True)
+class TranscriptionConversionOptions:
+    """ffmpeg MP3 export settings for transcription staging."""
+
+    codec: str = "libmp3lame"
+    bitrate: str = "128k"
+    channels: int = 2
+    sample_rate: int = 0  # 0 → omit -ar
+    force_reencode: bool = False
+
+
+@dataclass(frozen=True)
+class TranscriptionOptions:
+    """Per-run transcription settings (no secrets)."""
+
+    provider_id: str
+    model: str
+    language: str
+    diarize: bool
+    timeout_seconds: int = 0
+
+
+@dataclass
+class TranscriptionRequest:
+    """Input for integrated transcription workflow."""
+
+    input_paths: list[Path]
+    transcription_options: TranscriptionOptions
+    conversion_options: TranscriptionConversionOptions
+    output_dir: Optional[Path] = None
+    import_into_library: bool = True
+    overwrite_import: bool = False
+    keep_intermediates: bool = False

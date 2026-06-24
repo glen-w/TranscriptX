@@ -847,3 +847,39 @@ Two pure-logic, low-coverage critical-path modules pushed well past the 75% goal
 - **`pytest -m integration_core -q`:** `44 passed`.
 - **Production code:** none changed (tests-only expansion; +32 tests across the two files).
 
+## 41. Expansion (2026-06-24) – integrated transcription GUI test coverage
+
+### Review (pre-expansion)
+
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260624` (~30G, ~43k files); `custom-commands/` mirrored.
+- **Full collection:** 3443 tests (`pytest --co -q -m ""`).
+- **Default fast gate:** 3231 passed, 31 failed, 1 skipped, 157 deselected, 1 error (~152s).
+- **Baseline failures (unrelated to transcription):** predominantly missing spaCy `en_core_web_lg` (`test_nlp_utils`, `test_summary`, topic-modeling contracts/group aggregation, `test_statistics_service`). Transcription slice verified green before expansion.
+- **Transcription slice (pre-expansion):** 39 passed in ~3.7s.
+- **Cleanup:** disabled per command policy.
+
+### New / expanded tests (this pass: tests-only)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/app/controllers/test_transcription_controller.py` | 2 | Controller delegation; `WorkflowExecutionError` boundary |
+| `tests/services/transcription/test_whisperx_docker_provider.py` | 3 | Stub unavailable; not-implemented transcribe; recipe path |
+| `tests/contracts/test_transcription_models_contract.py` | 7 | Frozen dataclasses; no secret fields; result shapes |
+| `tests/web/test_progress_panel_transcription.py` | 1 | `unit_label` / `current_label` contract |
+| `tests/services/transcription/test_env.py` | +3 | Quote strip; env merge order; secret exclusion from options |
+| `tests/services/transcription/test_registry.py` | +1 | Unknown provider ID fallback |
+| `tests/services/transcription/test_redact.py` | +2 | Empty secret; `tail_lines` |
+| `tests/services/transcription/test_whispermlx_provider.py` | +2 | JSON mtime discovery; HF_TOKEN in subprocess env |
+| `tests/app/workflows/test_transcription.py` | +1 | Raw vs imported JSON paths; import stem |
+
+### Transcription slice result (post-expansion)
+
+- **61 passed** in ~3.8s (controller, contracts, env/registry/redact/providers, conversion, workflow, web, regression).
+- **Production code:** unchanged in this expansion pass.
+
+### Remaining gaps
+
+- Streamlit `AppTest` for folder Preview / large-batch checkbox (heavier).
+- Integration fixture test remains `integration` marker (excluded from default gate).
+- FFmpeg-marked conversion integration optional behind `requires_ffmpeg`.
+

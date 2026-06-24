@@ -95,3 +95,48 @@ class BatchAnalysisResult:
     transcript_count: int
     errors: list[str] = field(default_factory=list)
     message: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class TranscriptionProviderResult:
+    """Result of a single provider subprocess invocation."""
+
+    success: bool
+    json_path: Optional[Path]
+    output_dir: Path
+    returncode: Optional[int]
+    stdout_tail: tuple[str, ...]
+    stderr_tail: tuple[str, ...]
+    duration_seconds: float
+    error: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class TranscriptionFileResult:
+    """Per-file result within a transcription batch."""
+
+    input_path: Path
+    provider_id: str
+    success: bool
+    created_staged_file: bool
+    staged_mp3_path: Optional[Path]
+    raw_json_path: Optional[Path]
+    imported_json_path: Optional[Path]
+    import_success: Optional[bool]
+    errors: tuple[str, ...]
+    stderr_tail: tuple[str, ...]
+    duration_seconds: float
+
+
+@dataclass
+class TranscriptionBatchResult:
+    """Summary of a transcription batch run."""
+
+    job_id: str
+    success: bool
+    file_results: list[TranscriptionFileResult]
+    succeeded_count: int
+    failed_count: int
+    output_dir: Path
+    errors: list[str] = field(default_factory=list)
+    duration_seconds: float = 0.0

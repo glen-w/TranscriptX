@@ -6,6 +6,7 @@ App and web layers import from here.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
@@ -21,10 +22,76 @@ except ImportError:
     CouldntEncodeError = Exception  # type: ignore[assignment,misc]
 
 from transcriptx.core.audio.preprocessing import apply_preprocessing
-from transcriptx.core.audio.tools import check_ffmpeg_available
+from transcriptx.core.audio.tools import _find_ffmpeg_path, check_ffmpeg_available
 from transcriptx.core.utils.logger import get_logger, log_error
 
 logger = get_logger()
+
+
+def export_mp3_for_transcription(
+    input_path: Path,
+    output_path: Path,
+    *,
+    codec: str = "libmp3lame",
+    bitrate: str = "128k",
+    channels: int = 2,
+    sample_rate: int = 0,
+    force_reencode: bool = False,
+) -> Path:
+    """
+    Export audio to stereo MP3 for transcription staging.
+
+    When input is already MP3 and force_reencode is False, returns the original
+    input path without creating a new file.
+
+    Raises:
+        FileNotFoundError: input missing
+        ValueError: ffmpeg unavailable
+        RuntimeError: ffmpeg export failed
+    """
+    input_path = Path(input_path)
+    output_path = Path(output_path)
+
+    if not input_path.is_file():
+        raise FileNotFoundError(f"Audio file not found: {input_path}")
+
+    if input_path.suffix.lower() == ".mp3" and not force_reencode:
+        return input_path
+
+    ffmpeg_ok, ffmpeg_err = check_ffmpeg_available()
+    if not ffmpeg_ok:
+        raise ValueError(f"ffmpeg is required for transcription conversion. {ffmpeg_err}")
+
+    ffmpeg_path = _find_ffmpeg_path()
+    if not ffmpeg_path:
+        raise ValueError("ffmpeg executable not found")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        ffmpeg_path,
+        "-y",
+        "-i",
+        str(input_path),
+        "-codec:a",
+        codec,
+        "-b:a",
+        bitrate,
+        "-ac",
+        str(channels),
+    ]
+    if sample_rate > 0:
+        cmd.extend(["-ar", str(sample_rate)])
+    cmd.append(str(output_path))
+
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        stderr_tail = "\n".join(result.stderr.splitlines()[-20:])
+        raise RuntimeError(
+            f"ffmpeg failed to export MP3 (exit {result.returncode}): {stderr_tail}"
+        )
+
+    return output_path
 
 
 def merge_audio_files(

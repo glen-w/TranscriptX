@@ -19,14 +19,11 @@ from typing import List
 
 import streamlit as st
 
-from transcriptx.core.audio.types import AudioFileMeta
+from transcriptx.core.audio.types import AudioFileMeta, SUPPORTED_AUDIO_EXTENSIONS
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import RECORDINGS_IMPORTS_DIR
 
 logger = get_logger()
-
-_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".wma"}
-
 
 class RecordingsService:
     """Audio file discovery and metadata helper for the GUI."""
@@ -45,7 +42,7 @@ class RecordingsService:
         files = sorted(
             p
             for p in directory.rglob("*")
-            if p.is_file() and p.suffix.lower() in _AUDIO_EXTENSIONS
+            if p.is_file() and p.suffix.lower() in SUPPORTED_AUDIO_EXTENSIONS
         )
         return files
 

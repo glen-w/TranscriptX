@@ -1,9 +1,60 @@
 Type: GUIDE
 Authority: runtime/STORAGE.md
 
-# External transcription guide
+# Integrated GUI transcription (macOS whispermlx v1)
 
-TranscriptX is **analysis-only**: it does not run WhisperX or any transcription engine. You bring your own transcript JSON. This guide explains what format TranscriptX expects and how to produce it.
+TranscriptX now includes an integrated **Transcribe Audio** page for macOS hosts running **whispermlx**. WhisperX Docker GUI orchestration is listed in the provider picker as **coming soon**; use the external recipe below for manual Docker workflows.
+
+## Integrated GUI (v1: macOS + whispermlx)
+
+1. Open **Transcribe Audio** in the web UI.
+2. Select **Whisper MLX (Mac)** as the provider (default when available).
+3. Add files via **Upload**, **Pick existing**, or **Folder path** (server-side path on the machine running Streamlit).
+4. Configure model, language, and diarization. **HF_TOKEN** is required only when diarization is enabled.
+5. Optionally enable **Import into library when done** (default on). Use **Overwrite existing transcript if names collide** only when you intend to replace an existing library entry (default off).
+6. Click **Transcribe**.
+
+### Finding whispermlx
+
+```bash
+which whispermlx
+```
+
+If not found, set `WHISPERMLX` in `whisperx.env` at the repo root to the full binary path.
+
+### Environment defaults (`whisperx.env`)
+
+Copy `docs/recipes/whisperx/whisperx.env.example` to `whisperx.env` and configure:
+
+| Variable | Purpose |
+|----------|---------|
+| `WHISPERMLX` | Path to whispermlx binary |
+| `WHISPERMLX_MODEL` | Default model (e.g. `large-v3`) |
+| `WHISPERMLX_LANGUAGE` | Default language |
+| `WHISPERMLX_DIARIZE` | Default diarization on/off |
+| `WHISPERMLX_TIMEOUT_SECONDS` | Per-file timeout (0 = no limit) |
+| `HF_TOKEN` | Required when diarization is on |
+| `TRANSCRIPTX_TRANSCRIPTION_PROVIDER` | Default provider in picker |
+| `TRANSCRIPTION_MP3_*` | Conversion defaults (128k stereo MP3) |
+| `TRANSCRIPTION_FORCE_REENCODE` | Re-encode existing MP3 inputs |
+| `TRANSCRIPTION_KEEP_INTERMEDIATES` | Keep staged MP3 after success (request default) |
+
+### Workflows
+
+- **Upload** — multi-file upload (500 MB per file); files saved via RecordingsService.
+- **Pick existing** — multiselect from recordings/imports with metadata.
+- **Folder path** — enter an absolute server path, click **Preview files**, then run. Large batches (>50 files) require an explicit acknowledgment.
+
+### Conversion defaults
+
+Inputs are converted to stereo MP3 (`libmp3lame`, 128k, 2 channels) unless the input is already MP3 and force re-encode is off. Sample rate defaults to keeping the source (`TRANSCRIPTION_MP3_SAMPLE_RATE=0`).
+
+---
+
+## External transcription (all platforms)
+
+TranscriptX remains **analysis-first**: you can still bring your own transcript JSON from any tool. The sections below describe external workflows and the managed import API.
+
 
 This is an operational GUIDE. The authoritative storage, terminology, and run-outcome rules live in:
 

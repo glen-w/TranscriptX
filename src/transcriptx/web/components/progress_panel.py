@@ -33,6 +33,8 @@ SNAPSHOT_KEY = "run_progress_snapshot"
 PREPROCESS_SNAPSHOT_KEY = "audio_prep_snapshot"
 # Session-state key for the audio merge snapshot
 MERGE_SNAPSHOT_KEY = "audio_merge_snapshot"
+# Session-state key for integrated transcription
+TRANSCRIPTION_SNAPSHOT_KEY = "transcription_snapshot"
 # Number of log lines to render in the panel
 PANEL_LOG_LINES = 8
 
@@ -42,7 +44,12 @@ PANEL_LOG_LINES = 8
 # ---------------------------------------------------------------------------
 
 
-def render_progress_panel(snapshot: ProgressSnapshot) -> None:
+def render_progress_panel(
+    snapshot: ProgressSnapshot,
+    *,
+    unit_label: str = "modules",
+    current_label: str = "Current module",
+) -> None:
     """
     Render the compact five-item progress panel from a snapshot dict.
     This function is stateless and has no side effects beyond Streamlit widgets.
@@ -79,17 +86,18 @@ def render_progress_panel(snapshot: ProgressSnapshot) -> None:
     else:
         st.info(f"**{phase_label}**")
 
-    # 2. Current module
+    # 2. Current module / file
     if current_module:
         prefix = (
-            "Last module:" if status in ("completed", "failed") else "Current module:"
+            f"Last {current_label.lower().replace('current ', '')}:"
+            if status in ("completed", "failed")
+            else f"{current_label}:"
         )
         st.markdown(f"{prefix} `{current_module}`")
 
-    # 3. Progress bar with x / y modules
-    #    Label explains it is module progress, not time progress
+    # 3. Progress bar with x / y units
     if total > 0:
-        bar_label = f"{done} / {total} modules"
+        bar_label = f"{done} / {total} {unit_label}"
         if skipped:
             bar_label += f"  ·  {skipped} skipped"
         if failed:
