@@ -25,6 +25,7 @@ from transcriptx.core.utils.paths import RECORDINGS_IMPORTS_DIR
 
 logger = get_logger()
 
+
 class RecordingsService:
     """Audio file discovery and metadata helper for the GUI."""
 

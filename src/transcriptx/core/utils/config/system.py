@@ -165,21 +165,11 @@ class AudioPreprocessingConfig:
 
 class TranscriptXConfig:
     """
-    Main configuration class for TranscriptX.
+    DEPRECATED: legacy duplicate of ``transcriptx.core.utils.config.main.TranscriptXConfig``.
 
-    This is the central configuration class that manages all settings for the
-    TranscriptX system. It combines configuration from multiple sources:
-    - Default values
-    - Environment variables
-    - Configuration files
-
-    The configuration is organized into logical sections:
-    - analysis: Settings for all analysis modules
-    - output: Settings for file output and organization
-    - logging: Settings for logging system
-
-    Configuration can be loaded from JSON files and environment variables,
-    with environment variables taking precedence over file settings.
+    This copy applies environment variables *before* the config file (inverted load
+    order). Prefer ``transcriptx.core.utils.config.main.TranscriptXConfig``, which
+    loads defaults → file → profiles → env (env wins).
     """
 
     def __init__(self, config_file: str | None = None):

@@ -68,8 +68,8 @@ def _read_http_error_body(exc: urllib.error.HTTPError) -> str:
 
 
 def _is_model_not_found_body(body: str, model: str) -> bool:
-    if not body:
-        return True
+    if not body.strip():
+        return False
     if model and model in body and _MODEL_NOT_FOUND_RE.search(body):
         return True
     return bool(_MODEL_NOT_FOUND_RE.search(body))

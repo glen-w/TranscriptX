@@ -66,7 +66,11 @@ Failed LLM modules return `execution_status=failed` with a stable `error_code` i
 | `llm_dependency_missing` | Required upstream module output missing, failed, skipped, or blocked |
 | `llm_empty_input` | No usable transcript or summary signal |
 
-`llm_invalid_response` is reserved for successful HTTP responses with unusable body content. HTTP 4xx/5xx generation failures map to `llm_generation_error` unless the response clearly indicates a missing model (`llm_model_missing`).
+`llm_invalid_response` is reserved for successful HTTP responses with unusable body content. HTTP 4xx/5xx generation failures map to `llm_generation_error` unless the response body explicitly indicates a missing model (`llm_model_missing`). A bare HTTP 404 with an empty body maps to `llm_generation_error`, not `llm_model_missing`.
+
+`llm_dependency_missing` may include structured `error_context` on the module error envelope, for example `{"dependency": "summary", "state": "missing|skipped|blocked|failed"}`. UI and canonical outcome rows surface `error_code` alongside human-readable messages.
+
+`max_input_chars` must be at least the runtime-derived prompt wrapper overhead (instruction text, delimiters, and safety copy). Config load rejects lower values.
 
 ## Provenance
 

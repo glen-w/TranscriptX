@@ -127,6 +127,7 @@ def validate_raw_config_dict(config_data: dict[str, Any]) -> None:
                     f"Allowed keys: {sorted(_LLM_ALLOWED_KEYS)}.",
                     code="unknown_section",
                 )
+        validate_llm_config_values(llm)
 
     audio = config_data.get("audio_preprocessing")
     if isinstance(audio, dict):
@@ -145,3 +146,28 @@ def validate_raw_config_dict(config_data: dict[str, Any]) -> None:
                     'Use mode strings: "auto", "suggest", or "off".',
                     code="unsupported_legacy_shape",
                 )
+
+
+def validate_llm_config_values(llm: Any) -> None:
+    """Reject ``max_input_chars`` below the runtime-derived prompt wrapper overhead."""
+    from transcriptx.core.analysis.llm_common import llm_prompt_overhead_chars
+
+    raw_max = (
+        llm.get("max_input_chars")
+        if isinstance(llm, dict)
+        else getattr(llm, "max_input_chars", None)
+    )
+    if raw_max is None:
+        return
+    min_chars = llm_prompt_overhead_chars()
+    if int(raw_max) < min_chars:
+        raise ConfigLoadError(
+            f"llm.max_input_chars ({int(raw_max)}) is below the minimum required "
+            f"for the LLM prompt wrapper ({min_chars} characters).",
+            code="invalid_value",
+        )
+
+
+def validate_applied_llm_config(llm: Any) -> None:
+    """Validate applied LLM config after file/env/profile loading."""
+    validate_llm_config_values(llm)

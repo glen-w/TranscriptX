@@ -89,12 +89,28 @@ def test_http_404_maps_to_model_missing() -> None:
         code=404,
         msg="Not Found",
         hdrs=None,
-        fp=io.BytesIO(b""),
+        fp=io.BytesIO(b'{"error":"model \'missing:1b\' not found"}'),
     )
     with patch.object(client, "_http_post", side_effect=err):
         with pytest.raises(LLMModelMissingError) as exc:
             client.generate(prompt="hi", temperature=0.0)
     assert exc.value.error_code == LLM_MODEL_MISSING
+
+
+@pytest.mark.unit
+def test_http_404_empty_body_maps_to_generation_error() -> None:
+    client = OllamaClient(model="missing:1b")
+    err = urllib.error.HTTPError(
+        url="http://x/api/generate",
+        code=404,
+        msg="Not Found",
+        hdrs=None,
+        fp=io.BytesIO(b""),
+    )
+    with patch.object(client, "_http_post", side_effect=err):
+        with pytest.raises(LLMGenerationError) as exc:
+            client.generate(prompt="hi", temperature=0.0)
+    assert exc.value.error_code == LLM_GENERATION_ERROR
 
 
 @pytest.mark.unit

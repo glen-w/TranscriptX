@@ -11,9 +11,9 @@ from typing import Any, Dict, List, Optional
 
 from transcriptx.core.pipeline.pipeline_context import PipelineContext
 from transcriptx.core.pipeline.dag_pipeline_run import (
+    evaluate_llm_gate,
     gating_named_speaker_count,
     gating_turn_taking_speaker_count,
-    llm_gate_skip_reason,
     speaker_gate_skip_reason,
 )
 
@@ -122,20 +122,30 @@ def compute_review_before_run_for_pipeline(
                     }
                 )
                 continue
+        gate_action, gate_skip_reason, gate_fail_message = evaluate_llm_gate(
+            module_name
+        )
+        if gate_action == "skip":
+            modules_skipped.append(
+                {
+                    "module": module_name,
+                    "reason": gate_skip_reason or "LLM disabled",
+                }
+            )
+            continue
+        if gate_action == "fail":
+            modules_skipped.append(
+                {
+                    "module": module_name,
+                    "reason": f"llm_configuration_error: {gate_fail_message}",
+                }
+            )
+            continue
         try:
             from transcriptx.core.pipeline.module_registry import get_module_info
 
             module_info = get_module_info(module_name)
             if module_info:
-                llm_reason = llm_gate_skip_reason(module_info)
-                if llm_reason:
-                    modules_skipped.append(
-                        {
-                            "module": module_name,
-                            "reason": llm_reason,
-                        }
-                    )
-                    continue
                 reason_text = speaker_gate_skip_reason(
                     module_info,
                     named_speaker_count=named_speaker_count,

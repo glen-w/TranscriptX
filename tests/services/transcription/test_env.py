@@ -51,7 +51,9 @@ class TestEnvParsing:
         assert "HF_TOKEN" not in repr(opts)
 
     def test_keep_intermediates_maps_to_request_flags(self):
-        flags = tx_env.default_request_flags({"TRANSCRIPTION_KEEP_INTERMEDIATES": "true"})
+        flags = tx_env.default_request_flags(
+            {"TRANSCRIPTION_KEEP_INTERMEDIATES": "true"}
+        )
         assert flags["keep_intermediates"] is True
 
     def test_strip_simple_quotes(self, tmp_path: Path):

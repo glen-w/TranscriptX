@@ -32,6 +32,7 @@ class CanonicalOutcomeRow:
     module_id: str
     status: OutcomeStatus
     reason: Optional[str] = None
+    error_code: Optional[str] = None
     used_cache: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
@@ -41,6 +42,8 @@ class CanonicalOutcomeRow:
         }
         if self.reason:
             out["reason"] = self.reason
+        if self.error_code:
+            out["error_code"] = self.error_code
         if self.used_cache:
             out["used_cache"] = True
         return out
@@ -106,6 +109,11 @@ def project_canonical_outcomes(
     modules_skipped = run_results.get("modules_skipped") or []
     outcomes_payload = run_results.get("module_outcomes") or []
 
+    outcome_by_id: Dict[str, Dict[str, Any]] = {}
+    for row in outcomes_payload:
+        if isinstance(row, dict) and row.get("module_id"):
+            outcome_by_id[canonical_module_id(str(row["module_id"]))] = row
+
     ran_ids = {canonical_module_id(m) for m in modules_run}
     failed_ids = {canonical_module_id(m) for m in modules_failed}
     skipped_map = _extract_skipped_map(modules_skipped)
@@ -122,7 +130,15 @@ def project_canonical_outcomes(
     rows: List[CanonicalOutcomeRow] = []
     for mid in sorted(all_ids):
         if mid in failed_ids:
-            rows.append(CanonicalOutcomeRow(module_id=mid, status="failed"))
+            outcome_row = outcome_by_id.get(mid, {})
+            rows.append(
+                CanonicalOutcomeRow(
+                    module_id=mid,
+                    status="failed",
+                    reason=outcome_row.get("error_message"),
+                    error_code=outcome_row.get("error_code"),
+                )
+            )
             continue
         if mid in skipped_map:
             sk = skipped_map[mid]

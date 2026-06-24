@@ -26,6 +26,9 @@ def capture_exception(error: Exception) -> Dict[str, Any]:
     error_code = getattr(error, "error_code", None)
     if error_code:
         payload["error_code"] = error_code
+    error_context = getattr(error, "error_context", None)
+    if error_context:
+        payload["error_context"] = error_context
     return payload
 
 

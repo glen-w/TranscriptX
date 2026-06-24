@@ -429,7 +429,9 @@ class FileService:
                             from transcriptx.io.transcript_loader import load_transcript
 
                             try:
-                                doc_cache[cache_key] = load_transcript(str(transcript_path))
+                                doc_cache[cache_key] = load_transcript(
+                                    str(transcript_path)
+                                )
                             except Exception as exc:
                                 logger.debug(
                                     "Skipping metadata stats for %s: %s",

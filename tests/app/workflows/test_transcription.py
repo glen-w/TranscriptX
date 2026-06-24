@@ -17,7 +17,9 @@ from transcriptx.app.progress import NullProgress
 from transcriptx.app.workflows.transcription import run_transcription_workflow
 
 
-def _provider_result(json_path: Path, *, success: bool = True) -> TranscriptionProviderResult:
+def _provider_result(
+    json_path: Path, *, success: bool = True
+) -> TranscriptionProviderResult:
     return TranscriptionProviderResult(
         success=success,
         json_path=json_path if success else None,

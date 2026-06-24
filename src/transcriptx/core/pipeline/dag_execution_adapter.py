@@ -94,19 +94,43 @@ def execute_single_module(
         if should_skip:
             return ModuleExecOutcome(status="skipped", skip_reason="; ".join(reasons))
 
-    try:
-        from transcriptx.core.pipeline.module_registry import get_module_info
-        from transcriptx.core.pipeline.dag_pipeline_run import (
-            gating_turn_taking_speaker_count,
-            llm_gate_skip_reason,
-            speaker_gate_skip_reason,
+    from transcriptx.core.pipeline.dag_pipeline_run import (
+        evaluate_llm_gate,
+        gating_turn_taking_speaker_count,
+        speaker_gate_skip_reason,
+    )
+    from transcriptx.core.pipeline.module_registry import get_module_info
+
+    gate_action, gate_skip_reason, gate_fail_message = evaluate_llm_gate(module_name)
+    if gate_action == "skip":
+        return ModuleExecOutcome(status="skipped", skip_reason=gate_skip_reason)
+    if gate_action == "fail":
+        from transcriptx.core.llm.errors import LLMConfigurationError
+
+        config_exc = LLMConfigurationError(gate_fail_message or "LLM gate failed")
+        err_module_result = build_module_result(
+            module_name=module_name,
+            status="error",
+            started_at=now_iso(),
+            finished_at=now_iso(),
+            artifacts=[],
+            metrics={"duration_seconds": 0.0},
+            payload_type="analysis_results",
+            payload={},
+            error=capture_exception(config_exc),
+        )
+        return ModuleExecOutcome(
+            status="failed",
+            module_result=err_module_result,
+            error=str(config_exc),
+            duration_ms=0.0,
+            module_run=None,
+            module_started_at=now_iso(),
         )
 
+    try:
         module_info = get_module_info(module_name)
         if module_info:
-            llm_reason = llm_gate_skip_reason(module_info)
-            if llm_reason:
-                return ModuleExecOutcome(status="skipped", skip_reason=llm_reason)
             turn_taking_count = (
                 gating_turn_taking_speaker_count(context)
                 if getattr(module_info, "gate_on_turn_taking_speakers", False)

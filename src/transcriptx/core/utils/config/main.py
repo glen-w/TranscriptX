@@ -106,6 +106,11 @@ class TranscriptXConfig:
         # Load configuration from environment variables last
         # Environment variables take highest priority
         self._load_from_env()
+        from transcriptx.core.utils.config.config_raw_validation import (
+            validate_applied_llm_config,
+        )
+
+        validate_applied_llm_config(self.llm)
 
     def _load_from_env(self):
         from transcriptx.core.utils.config.env_overrides import apply_transcriptx_env

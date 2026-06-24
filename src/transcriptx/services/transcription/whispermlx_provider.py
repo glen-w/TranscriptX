@@ -35,9 +35,7 @@ def resolve_whispermlx_binary(env: dict[str, str] | None = None) -> Path | None:
     return Path(found) if found else None
 
 
-def _discover_json(
-    output_dir: Path, audio_stem: str, started_at: float
-) -> Path | None:
+def _discover_json(output_dir: Path, audio_stem: str, started_at: float) -> Path | None:
     exact = output_dir / f"{audio_stem}.json"
     if exact.is_file():
         return exact

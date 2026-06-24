@@ -63,16 +63,64 @@ def llm_gate_skip_reason(module_info: Any) -> Optional[str]:
     """Return a skip reason when an LLM module is selected but LLM is disabled."""
     if not getattr(module_info, "requires_llm", False):
         return None
-    try:
-        from transcriptx.core.utils.config import get_config
+    from transcriptx.core.utils.config import get_config
 
-        llm = get_config().llm
-    except Exception:
-        return "LLM disabled"
+    llm = get_config().llm
     provider = (llm.provider or "null").strip().lower()
     if not llm.enabled or provider in ("null", ""):
         return "LLM disabled"
     return None
+
+
+def module_spec_requires_llm(module_name: str) -> bool:
+    """Return whether static registry metadata marks a module as LLM-backed."""
+    from transcriptx.core.domain.module_requirements import Requirement
+    from transcriptx.core.pipeline.module_registry_specs import build_module_definitions
+
+    spec = build_module_definitions([Requirement.SEGMENTS]).get(module_name)
+    return bool(spec and spec.get("requires_llm"))
+
+
+def evaluate_llm_gate(module_name: str) -> tuple[str, Optional[str], Optional[str]]:
+    """
+    Evaluate LLM gating for one module.
+
+    Returns ``(action, skip_reason, fail_message)`` where action is one of
+    ``run``, ``skip``, or ``fail``.
+    """
+    from transcriptx.core.pipeline.module_registry import get_module_info
+
+    module_info = None
+    registry_error: Optional[Exception] = None
+    try:
+        module_info = get_module_info(module_name)
+    except Exception as exc:
+        registry_error = exc
+
+    requires_llm = False
+    if module_info is not None:
+        requires_llm = bool(getattr(module_info, "requires_llm", False))
+    elif registry_error is not None:
+        requires_llm = module_spec_requires_llm(module_name)
+
+    if not requires_llm:
+        return ("run", None, None)
+
+    if registry_error is not None:
+        return (
+            "fail",
+            None,
+            f"LLM module registry metadata unavailable: {registry_error}",
+        )
+
+    try:
+        llm_reason = llm_gate_skip_reason(module_info)
+    except Exception as exc:
+        return ("fail", None, f"LLM configuration unavailable: {exc}")
+
+    if llm_reason:
+        return ("skip", llm_reason, None)
+    return ("run", None, None)
 
 
 def gating_named_speaker_count(

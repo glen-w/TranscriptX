@@ -95,14 +95,18 @@ def module_failed_event(
     ev_skipped: int,
     ev_failed: int,
     error: str | None,
+    error_code: str | None = None,
 ) -> Dict[str, Any]:
-    return {
+    event: Dict[str, Any] = {
         "event": "module_failed",
         "module_name": module_name,
         "index": index,
         **_progress_fields(ev_completed, ev_skipped, ev_failed, total_modules),
         "error": error,
     }
+    if error_code:
+        event["error_code"] = error_code
+    return event
 
 
 def run_failed_event(

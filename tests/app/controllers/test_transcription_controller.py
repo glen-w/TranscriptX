@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -19,7 +19,9 @@ from transcriptx.app.models.results import TranscriptionBatchResult
 
 @pytest.mark.unit
 class TestTranscriptionController:
-    @patch("transcriptx.app.controllers.transcription_controller.run_transcription_workflow")
+    @patch(
+        "transcriptx.app.controllers.transcription_controller.run_transcription_workflow"
+    )
     def test_controller_returns_batch_result(self, mock_workflow, tmp_path: Path):
         expected = TranscriptionBatchResult(
             job_id="abc",
@@ -44,7 +46,9 @@ class TestTranscriptionController:
         assert result is expected
         mock_workflow.assert_called_once()
 
-    @patch("transcriptx.app.controllers.transcription_controller.run_transcription_workflow")
+    @patch(
+        "transcriptx.app.controllers.transcription_controller.run_transcription_workflow"
+    )
     def test_controller_raises_workflow_execution_error(self, mock_workflow):
         mock_workflow.side_effect = RuntimeError("boom")
         request = TranscriptionRequest(

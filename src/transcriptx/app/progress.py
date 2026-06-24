@@ -144,6 +144,7 @@ class ProgressSnapshot(TypedDict, total=False):
     latest_event: str
     recent_logs: List[str]
     error: Optional[str]
+    error_code: Optional[str]
 
 
 def make_initial_snapshot(total: int) -> ProgressSnapshot:
@@ -241,16 +242,26 @@ def update_snapshot_from_event(
         if name:
             snapshot["current_module"] = name  # persist as last active for forensics
         err = event.get("error", "")
+        raw_code = event.get("error_code")
+        error_code: Optional[str] = raw_code if isinstance(raw_code, str) else None
         idx = event.get("index", "")
         tot = event.get("total", "")
         err_str = f": {err}" if err else ""
+        if error_code and err:
+            err_str = f": [{error_code}] {err}"
+        elif error_code:
+            err_str = f": [{error_code}]"
         snapshot["latest_event"] = (
             f"Failed {name}{err_str} ({idx}/{tot})"
             if idx and tot
             else f"Failed {name}{err_str}"
         )
         if err:
-            snapshot["error"] = err
+            snapshot["error"] = f"[{error_code}] {err}" if error_code else err
+        elif error_code:
+            snapshot["error"] = f"[{error_code}]"
+        if error_code:
+            snapshot["error_code"] = error_code
 
     elif ev == "run_completed":
         snapshot["status"] = "completed"

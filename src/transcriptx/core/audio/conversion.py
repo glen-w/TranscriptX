@@ -60,7 +60,9 @@ def export_mp3_for_transcription(
 
     ffmpeg_ok, ffmpeg_err = check_ffmpeg_available()
     if not ffmpeg_ok:
-        raise ValueError(f"ffmpeg is required for transcription conversion. {ffmpeg_err}")
+        raise ValueError(
+            f"ffmpeg is required for transcription conversion. {ffmpeg_err}"
+        )
 
     ffmpeg_path = _find_ffmpeg_path()
     if not ffmpeg_path:

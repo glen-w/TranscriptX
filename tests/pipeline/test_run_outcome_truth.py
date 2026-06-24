@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from transcriptx.core.pipeline.run_outcome_truth import (
     project_canonical_outcomes,
-    status_for_module,
 )
 
 
@@ -54,8 +53,19 @@ def test_failed_module_fixture() -> None:
         "modules_run": [],
         "modules_skipped": [],
         "modules_failed": ["topic_modeling"],
+        "module_outcomes": [
+            {
+                "module_id": "topic_modeling",
+                "execution_status": "failed",
+                "error_code": "llm_unavailable",
+                "error_message": "daemon down",
+            }
+        ],
     }
-    assert status_for_module("topic_modeling", run_results) == "failed"
+    rows = {row.module_id: row for row in project_canonical_outcomes(run_results)}
+    assert rows["topic_modeling"].status == "failed"
+    assert rows["topic_modeling"].error_code == "llm_unavailable"
+    assert rows["topic_modeling"].reason == "daemon down"
 
 
 def test_cache_hit_fixture_marks_satisfied_without_fresh_execution() -> None:

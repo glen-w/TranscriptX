@@ -12,6 +12,7 @@ from transcriptx.core.analysis.common import (
     log_analysis_start,
 )
 from transcriptx.core.analysis.llm_common import (
+    LLM_SUMMARY_INSTRUCTION,
     build_bounded_user_prompt,
     build_llm_provenance,
     format_transcript_lines,
@@ -93,7 +94,7 @@ class LLMSummaryAnalysis(AnalysisModule):
 
             transcript_block = "\n".join(lines)
             user_prompt, trunc_meta = build_bounded_user_prompt(
-                instruction="Summarise this transcript:",
+                instruction=LLM_SUMMARY_INSTRUCTION,
                 transcript_block=transcript_block,
                 max_input_chars=int(llm_cfg.max_input_chars),
             )

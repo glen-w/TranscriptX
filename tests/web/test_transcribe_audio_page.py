@@ -11,7 +11,9 @@ from transcriptx.app.models.requests import TranscriptionOptions
 
 @pytest.mark.unit
 def test_transcribe_audio_page_callable():
-    from transcriptx.web.page_modules.transcribe_audio import render_transcribe_audio_page
+    from transcriptx.web.page_modules.transcribe_audio import (
+        render_transcribe_audio_page,
+    )
 
     assert callable(render_transcribe_audio_page)
 
@@ -43,7 +45,10 @@ def test_whisperx_docker_always_unavailable():
 
 
 @pytest.mark.unit
-@patch("transcriptx.web.page_modules.transcribe_audio._render_readiness", return_value=False)
+@patch(
+    "transcriptx.web.page_modules.transcribe_audio._render_readiness",
+    return_value=False,
+)
 @patch("streamlit.button", return_value=False)
 def test_run_disabled_when_provider_unavailable(_mock_button, _mock_ready):
     from transcriptx.web.page_modules import transcribe_audio as page

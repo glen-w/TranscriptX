@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -13,14 +12,15 @@ from transcriptx.app.models.requests import TranscriptionOptions
 from transcriptx.services.transcription.whispermlx_provider import (
     WhisperMLXProvider,
     _discover_json,
-    resolve_whispermlx_binary,
 )
 
 
 @pytest.mark.unit
 class TestWhisperMLXAvailability:
     @patch.dict("os.environ", {}, clear=True)
-    @patch("transcriptx.services.transcription.whispermlx_provider.sys.platform", "linux")
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.sys.platform", "linux"
+    )
     @patch(
         "transcriptx.services.transcription.whispermlx_provider.check_ffmpeg_available",
         return_value=(True, None),
@@ -41,7 +41,9 @@ class TestWhisperMLXAvailability:
         assert not availability.available
 
     @patch.dict("os.environ", {}, clear=True)
-    @patch("transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin")
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin"
+    )
     @patch(
         "transcriptx.services.transcription.whispermlx_provider.check_ffmpeg_available",
         return_value=(True, None),
@@ -60,7 +62,9 @@ class TestWhisperMLXAvailability:
         )
         assert not provider.is_available(options).available
 
-    @patch("transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin")
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin"
+    )
     @patch(
         "transcriptx.services.transcription.whispermlx_provider.check_ffmpeg_available",
         return_value=(True, None),
@@ -83,7 +87,9 @@ class TestWhisperMLXAvailability:
         )
         assert not provider.is_available(options).available
 
-    @patch("transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin")
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin"
+    )
     @patch(
         "transcriptx.services.transcription.whispermlx_provider.check_ffmpeg_available",
         return_value=(True, None),
@@ -106,7 +112,9 @@ class TestWhisperMLXAvailability:
         )
         assert provider.is_available(options).available
 
-    @patch("transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin")
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.sys.platform", "darwin"
+    )
     @patch(
         "transcriptx.services.transcription.whispermlx_provider.check_ffmpeg_available",
         return_value=(True, None),
@@ -199,7 +207,10 @@ class TestWhisperMLXTranscribe:
         out_dir.mkdir()
         (out_dir / "clip.json").write_text("{}", encoding="utf-8")
         proc = MagicMock()
-        proc.communicate.return_value = ("output hf_secret_token", "err hf_secret_token")
+        proc.communicate.return_value = (
+            "output hf_secret_token",
+            "err hf_secret_token",
+        )
         proc.returncode = 0
         mock_popen.return_value = proc
 

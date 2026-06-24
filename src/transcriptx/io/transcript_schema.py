@@ -240,6 +240,4 @@ def validate_transcript_document(
 
     if empty_text_count:
         prefix = f"Transcript {label}" if label else "Transcript document"
-        logger.warning(
-            f"{prefix} has {empty_text_count} segments with empty text"
-        )
+        logger.warning(f"{prefix} has {empty_text_count} segments with empty text")

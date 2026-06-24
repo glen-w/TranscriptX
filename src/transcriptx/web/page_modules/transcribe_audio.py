@@ -50,9 +50,7 @@ def _scan_folder(
         return []
     iterator = folder.rglob("*") if recursive else folder.glob("*")
     return sorted(
-        p.resolve()
-        for p in iterator
-        if p.is_file() and p.suffix.lower() in extensions
+        p.resolve() for p in iterator if p.is_file() and p.suffix.lower() in extensions
     )
 
 
@@ -211,7 +209,9 @@ def render_transcribe_audio_page() -> None:
     pick_paths: List[Path] = []
     folder_paths: List[Path] = []
 
-    tab_upload, tab_pick, tab_folder = st.tabs(["Upload", "Pick existing", "Folder path"])
+    tab_upload, tab_pick, tab_folder = st.tabs(
+        ["Upload", "Pick existing", "Folder path"]
+    )
 
     with tab_upload:
         uploaded_list = st.file_uploader(
@@ -246,15 +246,15 @@ def render_transcribe_audio_page() -> None:
                 )
 
     with tab_folder:
-        st.caption(
-            "Path is read from the machine running Streamlit, not your browser."
-        )
+        st.caption("Path is read from the machine running Streamlit, not your browser.")
         folder_input = st.text_input(
             "Absolute folder path",
             value="",
             key="transcription_folder_path",
         )
-        recursive = st.checkbox("Recursive scan", value=True, key="transcription_recursive")
+        recursive = st.checkbox(
+            "Recursive scan", value=True, key="transcription_recursive"
+        )
         if st.button("Preview files", key="transcription_preview_folder"):
             folder = Path(folder_input).expanduser()
             if not folder.is_dir():
@@ -292,7 +292,9 @@ def render_transcribe_audio_page() -> None:
         horizontal=True,
         key="transcription_active_tab",
     )
-    input_paths = _collect_input_paths(active_tab, upload_paths, pick_paths, folder_paths)
+    input_paths = _collect_input_paths(
+        active_tab, upload_paths, pick_paths, folder_paths
+    )
 
     st.markdown("**Transcription settings**")
     import_into_library = st.checkbox(

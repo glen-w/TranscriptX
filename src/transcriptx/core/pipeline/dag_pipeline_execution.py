@@ -149,6 +149,12 @@ def run_sequential_execution_phase(
             )
         else:
             ev_failed += 1
+            error_code = None
+            module_result = getattr(outcome, "module_result", None)
+            if module_result:
+                err_payload = module_result.get("error") or {}
+                if isinstance(err_payload, dict):
+                    error_code = err_payload.get("error_code")
             emit(
                 module_failed_event(
                     module_name=module_name,
@@ -158,6 +164,7 @@ def run_sequential_execution_phase(
                     ev_skipped=ev_skipped,
                     ev_failed=ev_failed,
                     error=outcome.error,
+                    error_code=error_code,
                 )
             )
 

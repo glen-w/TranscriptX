@@ -65,6 +65,7 @@ def render_progress_panel(
     latest_event: str = snapshot.get("latest_event", "")  # type: ignore[assignment]
     recent_logs: list = snapshot.get("recent_logs", [])  # type: ignore[assignment]
     error: Optional[str] = snapshot.get("error")  # type: ignore[assignment]
+    error_code: Optional[str] = snapshot.get("error_code")  # type: ignore[assignment]
 
     done = completed + skipped + failed
 
@@ -83,6 +84,8 @@ def render_progress_panel(
         st.error(f"**{phase_label}**")
         if error:
             st.error(error)
+        elif error_code:
+            st.error(f"[{error_code}]")
     else:
         st.info(f"**{phase_label}**")
 

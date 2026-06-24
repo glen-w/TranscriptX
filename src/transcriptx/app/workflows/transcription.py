@@ -158,9 +158,7 @@ def run_transcription_workflow(
             continue
 
         try:
-            progress.on_log(
-                redact_secret(f"  converting {input_path.name}", secrets)
-            )
+            progress.on_log(redact_secret(f"  converting {input_path.name}", secrets))
             staged_target = staging_dir / f"{input_path.stem}.mp3"
             conv = request.conversion_options
             staged_mp3 = export_mp3_for_transcription(
@@ -177,9 +175,7 @@ def run_transcription_workflow(
             per_file_out = output_dir / input_path.stem
             per_file_out.mkdir(parents=True, exist_ok=True)
 
-            progress.on_log(
-                redact_secret(f"  transcribing {input_path.name}", secrets)
-            )
+            progress.on_log(redact_secret(f"  transcribing {input_path.name}", secrets))
             provider_result = provider.transcribe(
                 staged_mp3, per_file_out, request.transcription_options
             )
@@ -240,9 +236,7 @@ def run_transcription_workflow(
                 except Exception as exc:
                     import_success = False
                     file_ok = False
-                    errors.append(
-                        redact_secret(f"Import failed: {exc}", secrets)
-                    )
+                    errors.append(redact_secret(f"Import failed: {exc}", secrets))
 
             if file_ok:
                 succeeded += 1

@@ -20,8 +20,14 @@ class TestExportMp3ForTranscription:
         assert result.resolve() == mp3.resolve()
         assert not out.exists()
 
-    @patch("transcriptx.core.audio.conversion.check_ffmpeg_available", return_value=(True, None))
-    @patch("transcriptx.core.audio.conversion._find_ffmpeg_path", return_value="/usr/bin/ffmpeg")
+    @patch(
+        "transcriptx.core.audio.conversion.check_ffmpeg_available",
+        return_value=(True, None),
+    )
+    @patch(
+        "transcriptx.core.audio.conversion._find_ffmpeg_path",
+        return_value="/usr/bin/ffmpeg",
+    )
     @patch("transcriptx.core.audio.conversion.subprocess.run")
     def test_wav_builds_expected_ffmpeg_command(
         self, mock_run, _mock_path, _mock_ff, tmp_path: Path
@@ -47,8 +53,14 @@ class TestExportMp3ForTranscription:
         assert "-ac" in cmd and "2" in cmd
         assert "-ar" not in cmd
 
-    @patch("transcriptx.core.audio.conversion.check_ffmpeg_available", return_value=(True, None))
-    @patch("transcriptx.core.audio.conversion._find_ffmpeg_path", return_value="/usr/bin/ffmpeg")
+    @patch(
+        "transcriptx.core.audio.conversion.check_ffmpeg_available",
+        return_value=(True, None),
+    )
+    @patch(
+        "transcriptx.core.audio.conversion._find_ffmpeg_path",
+        return_value="/usr/bin/ffmpeg",
+    )
     @patch("transcriptx.core.audio.conversion.subprocess.run")
     def test_positive_sample_rate_includes_ar(
         self, mock_run, _mock_path, _mock_ff, tmp_path: Path
@@ -64,8 +76,14 @@ class TestExportMp3ForTranscription:
         assert "-ar" in cmd
         assert "16000" in cmd
 
-    @patch("transcriptx.core.audio.conversion.check_ffmpeg_available", return_value=(True, None))
-    @patch("transcriptx.core.audio.conversion._find_ffmpeg_path", return_value="/usr/bin/ffmpeg")
+    @patch(
+        "transcriptx.core.audio.conversion.check_ffmpeg_available",
+        return_value=(True, None),
+    )
+    @patch(
+        "transcriptx.core.audio.conversion._find_ffmpeg_path",
+        return_value="/usr/bin/ffmpeg",
+    )
     @patch("transcriptx.core.audio.conversion.subprocess.run")
     def test_ffmpeg_failure_raises_clear_error(
         self, mock_run, _mock_path, _mock_ff, tmp_path: Path

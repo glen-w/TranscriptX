@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 from transcriptx.core.analysis.llm_common import (
+    LLM_SUMMARY_INSTRUCTION,
     build_bounded_user_prompt,
     format_transcript_lines,
+    llm_prompt_overhead_chars,
     parse_narrative_json,
     resolve_summary_payload,
     sha256_llm_request,
@@ -56,6 +59,70 @@ def test_parse_narrative_json_accepts_fenced() -> None:
     raw = '```json\n{"narrative": "Executive update."}\n```'
     parsed = parse_narrative_json(raw)
     assert parsed["narrative"] == "Executive update."
+
+
+@pytest.mark.unit
+def test_llm_prompt_overhead_chars_matches_bounded_prompt_wrapper() -> None:
+    overhead = llm_prompt_overhead_chars(instruction=LLM_SUMMARY_INSTRUCTION)
+    prompt, _meta = build_bounded_user_prompt(
+        instruction=LLM_SUMMARY_INSTRUCTION,
+        transcript_block="",
+        max_input_chars=overhead,
+    )
+    assert len(prompt) == overhead
+
+
+@pytest.mark.unit
+def test_write_llm_artifacts_rollback_json_when_md_promote_fails(
+    tmp_path, monkeypatch
+) -> None:
+    from transcriptx.core.output.output_service import OutputService
+    from transcriptx.core.utils.output_structure import OutputStructure
+
+    structure = OutputStructure(
+        transcript_dir=str(tmp_path),
+        module_dir=str(tmp_path / "llm_summary"),
+        data_dir=str(tmp_path / "llm_summary" / "data"),
+        global_data_dir=str(tmp_path / "llm_summary" / "data" / "global"),
+    )
+    out_dir = Path(structure.global_data_dir)
+    out_dir.mkdir(parents=True)
+    existing_json = out_dir / "mini_llm_summary.json"
+    existing_md = out_dir / "mini_llm_summary.md"
+    existing_json.write_text('{"summary": "keep"}', encoding="utf-8")
+    existing_md.write_text("# keep\n", encoding="utf-8")
+
+    svc = OutputService.__new__(OutputService)
+    svc.base_name = "mini"
+    svc.module_name = "llm_summary"
+    svc.output_structure = structure
+    svc._artifacts = []
+    svc.record_file = lambda *_a, **_k: None  # type: ignore[method-assign]
+
+    real_replace = os.replace
+    calls = {"n": 0}
+
+    def _replace_fail_md(src, dst):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise OSError("md promote failed")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.llm_common.os.replace", _replace_fail_md
+    )
+
+    with pytest.raises(OSError):
+        write_llm_artifacts(
+            svc,
+            artifact_stem="llm_summary",
+            payload={"summary": "new"},
+            markdown="# Summary\n",
+        )
+
+    assert existing_json.read_text(encoding="utf-8") == '{"summary": "keep"}'
+    assert existing_md.read_text(encoding="utf-8") == "# keep\n"
+    assert len(svc._artifacts) == 0
 
 
 @pytest.mark.unit
@@ -314,6 +381,7 @@ def test_resolve_summary_payload_failed_summary_in_context() -> None:
     with pytest.raises(ModuleDependencyMissingError) as exc:
         resolve_summary_payload(context)
     assert exc.value.error_code == LLM_DEPENDENCY_MISSING
+    assert exc.value.error_context == {"dependency": "summary", "state": "failed"}
 
 
 @pytest.mark.unit

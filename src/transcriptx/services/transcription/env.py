@@ -18,9 +18,7 @@ _WHISPERX_ENV_CANDIDATES = (
     PATHS.project_root / "docs" / "recipes" / "whisperx" / "whisperx.env",
 )
 
-_LINE_RE = re.compile(
-    r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$"
-)
+_LINE_RE = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 
 
 def _strip_quotes(value: str) -> str:
@@ -98,9 +96,7 @@ def default_transcription_options(
         model=merged.get("WHISPERMLX_MODEL", "large-v3"),
         language=merged.get("WHISPERMLX_LANGUAGE", "en"),
         diarize=parse_bool(merged.get("WHISPERMLX_DIARIZE"), default=True),
-        timeout_seconds=parse_int(
-            merged.get("WHISPERMLX_TIMEOUT_SECONDS"), default=0
-        ),
+        timeout_seconds=parse_int(merged.get("WHISPERMLX_TIMEOUT_SECONDS"), default=0),
     )
 
 

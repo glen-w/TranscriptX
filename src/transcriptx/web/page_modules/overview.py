@@ -238,14 +238,26 @@ def render_overview() -> None:
         else:
             outcomes = project_canonical_outcomes(run_results)
         skipped = [o for o in outcomes if o.status in {"skipped", "blocked"}]
+        failed = [o for o in outcomes if o.status == "failed"]
         preset_explanation = run_results.get("preset_explanation")
-        if skipped or preset_explanation:
+        if skipped or failed or preset_explanation:
             with st.expander(
-                "Run summary (included / excluded)", expanded=bool(skipped)
+                "Run summary (included / excluded)",
+                expanded=bool(skipped or failed),
             ):
                 if preset_explanation:
                     st.caption("Preset explanation")
                     st.text(preset_explanation)
+                if failed:
+                    st.caption("Failed modules")
+                    for row in failed:
+                        detail = row.reason or ""
+                        if row.error_code:
+                            prefix = f"[{row.error_code}]"
+                            detail = f"{prefix} {detail}".strip()
+                        st.write(
+                            f"- **{row.module_id}**: {detail or row.error_code or 'failed'}"
+                        )
                 if skipped:
                     st.caption("Skipped modules (reason)")
                     for s in skipped:

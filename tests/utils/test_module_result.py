@@ -25,6 +25,23 @@ def test_capture_exception_includes_type_and_message():
 
 
 @pytest.mark.unit
+def test_capture_exception_includes_error_context_for_dependency_errors() -> None:
+    from transcriptx.core.analysis.llm_module_errors import ModuleDependencyMissingError
+
+    try:
+        raise ModuleDependencyMissingError(
+            "summary missing",
+            dependency="summary",
+            state="missing",
+        )
+    except Exception as exc:
+        payload = capture_exception(exc)
+
+    assert payload["error_code"] == "llm_dependency_missing"
+    assert payload["error_context"] == {"dependency": "summary", "state": "missing"}
+
+
+@pytest.mark.unit
 def test_capture_exception_includes_error_code_for_coded_errors():
     from transcriptx.core.llm.errors import LLMUnavailableError
 

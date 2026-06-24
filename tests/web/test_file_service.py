@@ -124,7 +124,9 @@ class TestFileService:
     @patch("transcriptx.web.services.file_service.FileService._is_viewable_run")
     @patch("transcriptx.web.services.file_service.Path")
     @patch("transcriptx.web.services.file_service.OUTPUTS_DIR", "/tmp/test_outputs")
-    @patch("transcriptx.web.services.file_service.GROUP_OUTPUTS_DIR", "/tmp/test_groups")
+    @patch(
+        "transcriptx.web.services.file_service.GROUP_OUTPUTS_DIR", "/tmp/test_groups"
+    )
     def test_list_available_sessions_dedupes_transcript_loads(
         self,
         mock_path_cls,
@@ -167,19 +169,24 @@ class TestFileService:
             }
         }
 
-        with patch(
-            "transcriptx.core.utils.slug_manager.get_transcript_key_for_slug",
-            return_value="key1",
-        ), patch(
-            "transcriptx.web.module_registry.get_total_module_count",
-            return_value=1,
-        ), patch(
-            "transcriptx.web.module_registry.get_analysis_modules",
-            return_value=["mod"],
-        ), patch.object(
-            FileService,
-            "load_transcript_by_session",
-            side_effect=AssertionError("must not load transcript per run"),
+        with (
+            patch(
+                "transcriptx.core.utils.slug_manager.get_transcript_key_for_slug",
+                return_value="key1",
+            ),
+            patch(
+                "transcriptx.web.module_registry.get_total_module_count",
+                return_value=1,
+            ),
+            patch(
+                "transcriptx.web.module_registry.get_analysis_modules",
+                return_value=["mod"],
+            ),
+            patch.object(
+                FileService,
+                "load_transcript_by_session",
+                side_effect=AssertionError("must not load transcript per run"),
+            ),
         ):
             sessions = FileService.list_available_sessions()
 

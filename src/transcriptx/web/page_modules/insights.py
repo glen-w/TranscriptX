@@ -136,6 +136,31 @@ def _load_artifact_text(run_root: Path, module: str, suffix: str) -> Optional[st
     return cast(str, path.read_text(encoding="utf-8", errors="ignore"))
 
 
+def _module_failure_hint(run_root: Path, module_id: str) -> Optional[str]:
+    from transcriptx.core.pipeline.manifest_loader import load_run_results
+    from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
+
+    rr_path = run_root / "run_results.json"
+    if not rr_path.exists():
+        return None
+    try:
+        run_results = load_run_results(rr_path)
+        for row in project_canonical_outcomes(run_results):
+            if row.module_id == module_id and row.status == "failed":
+                detail = row.reason or ""
+                if row.error_code:
+                    prefix = f"[{row.error_code}]"
+                    detail = f"{prefix} {detail}".strip()
+                return (
+                    detail or f"[{row.error_code}]"
+                    if row.error_code
+                    else "Module failed"
+                )
+    except Exception:
+        return None
+    return None
+
+
 def _highlights_theme_visible(theme: Dict[str, Any]) -> bool:
     has_q = bool(theme.get("quote_ids"))
     has_e = bool(theme.get("conflict_event_ids"))
@@ -325,6 +350,7 @@ def _render_llm_module_section(
     empty_hint: str,
 ) -> None:
     st.subheader(title)
+    failure_hint = _module_failure_hint(run_root, module)
     payload = _load_artifact_json(run_root, module, f"{artifact_stem}.json")
     md = _load_artifact_text(run_root, module, f"{artifact_stem}.md")
     if md:
@@ -334,7 +360,10 @@ def _render_llm_module_section(
     elif payload:
         st.json(payload)
     else:
-        st.info(empty_hint)
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            st.info(empty_hint)
         return
 
     prov = (payload or {}).get("provenance") or {}
