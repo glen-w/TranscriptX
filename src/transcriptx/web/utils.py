@@ -19,7 +19,9 @@ def get_session_statistics(session_name: str) -> Dict[str, Any]:
 
 
 def list_available_sessions() -> List[Dict[str, Any]]:
-    return FileService.list_available_sessions()
+    from transcriptx.web.cache_helpers import cached_list_available_sessions
+
+    return cached_list_available_sessions()
 
 
 def load_transcript_by_session(session_name: str) -> Optional[Dict[str, Any]]:

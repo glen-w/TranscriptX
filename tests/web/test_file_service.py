@@ -2,9 +2,60 @@
 Tests for file service.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from transcriptx.web.services.file_service import FileService
+from transcriptx.web.services.file_service import (
+    DEFAULT_SESSION_STATS,
+    FileService,
+    _extract_metadata_stats,
+)
+
+
+class TestExtractMetadataStats:
+    """Tests for _extract_metadata_stats."""
+
+    def test_canonical_metadata(self) -> None:
+        doc = {
+            "metadata": {
+                "segment_count": 120,
+                "duration_seconds": 3600.0,
+                "speaker_count": 3,
+            }
+        }
+        stats = _extract_metadata_stats(doc)
+        assert stats["segment_count"] == 120
+        assert stats["duration_seconds"] == 3600.0
+        assert stats["duration_minutes"] == 60.0
+        assert stats["speaker_count"] == 3
+        assert stats["word_count"] == 0
+
+    def test_legacy_metadata_keys(self) -> None:
+        doc = {
+            "metadata": {
+                "segments": 50,
+                "duration": 120.0,
+                "num_speakers": 2,
+            }
+        }
+        stats = _extract_metadata_stats(doc)
+        assert stats["segment_count"] == 50
+        assert stats["duration_seconds"] == 120.0
+        assert stats["duration_minutes"] == 2.0
+        assert stats["speaker_count"] == 2
+        assert stats["word_count"] == 0
+
+    def test_missing_metadata_returns_defaults(self) -> None:
+        assert _extract_metadata_stats({}) == dict(DEFAULT_SESSION_STATS)
+        assert _extract_metadata_stats({"metadata": "bad"}) == dict(
+            DEFAULT_SESSION_STATS
+        )
+
+    def test_partial_metadata_merges_with_defaults(self) -> None:
+        stats = _extract_metadata_stats({"metadata": {"segment_count": 10}})
+        assert stats["segment_count"] == 10
+        assert stats["duration_seconds"] == 0
+        assert stats["speaker_count"] == 0
+        assert stats["word_count"] == 0
 
 
 class TestFileService:
@@ -67,3 +118,73 @@ class TestFileService:
         # If there were charts, they should have name and path
         if charts:
             assert all("name" in chart and "path" in chart for chart in charts)
+
+    @patch("transcriptx.io.transcript_loader.load_transcript")
+    @patch("transcriptx.web.services.file_service.FileService.resolve_transcript_path")
+    @patch("transcriptx.web.services.file_service.FileService._is_viewable_run")
+    @patch("transcriptx.web.services.file_service.Path")
+    @patch("transcriptx.web.services.file_service.OUTPUTS_DIR", "/tmp/test_outputs")
+    @patch("transcriptx.web.services.file_service.GROUP_OUTPUTS_DIR", "/tmp/test_groups")
+    def test_list_available_sessions_dedupes_transcript_loads(
+        self,
+        mock_path_cls,
+        mock_viewable,
+        mock_resolve_path,
+        mock_load_transcript,
+    ) -> None:
+        """Two runs sharing a transcript path should load the document once."""
+        mock_viewable.return_value = True
+        shared = MagicMock()
+        shared.resolve.return_value = shared
+        mock_resolve_path.return_value = shared
+
+        run_a = MagicMock()
+        run_a.is_dir.return_value = True
+        run_a.name = "run-a"
+        run_b = MagicMock()
+        run_b.is_dir.return_value = True
+        run_b.name = "run-b"
+
+        slug_dir = MagicMock()
+        slug_dir.is_dir.return_value = True
+        slug_dir.name = "slug1"
+        slug_dir.iterdir.return_value = [run_a, run_b]
+
+        outputs_dir = MagicMock()
+        outputs_dir.exists.return_value = True
+        outputs_dir.iterdir.return_value = [slug_dir]
+
+        mock_path_cls.return_value = outputs_dir
+        mock_path_cls.side_effect = lambda value: (
+            outputs_dir if str(value) == "/tmp/test_outputs" else MagicMock()
+        )
+
+        mock_load_transcript.return_value = {
+            "metadata": {
+                "segment_count": 10,
+                "duration_seconds": 600.0,
+                "speaker_count": 2,
+            }
+        }
+
+        with patch(
+            "transcriptx.core.utils.slug_manager.get_transcript_key_for_slug",
+            return_value="key1",
+        ), patch(
+            "transcriptx.web.module_registry.get_total_module_count",
+            return_value=1,
+        ), patch(
+            "transcriptx.web.module_registry.get_analysis_modules",
+            return_value=["mod"],
+        ), patch.object(
+            FileService,
+            "load_transcript_by_session",
+            side_effect=AssertionError("must not load transcript per run"),
+        ):
+            sessions = FileService.list_available_sessions()
+
+        assert len(sessions) == 2
+        assert mock_load_transcript.call_count == 1
+        assert sessions[0]["segment_count"] == 10
+        assert sessions[0]["word_count"] == 0
+        assert sessions[1]["duration_minutes"] == 10.0

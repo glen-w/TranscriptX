@@ -194,11 +194,11 @@ def validate_segment(segment: Dict[str, Any], index: int) -> None:
         raise ValueError(f"Segment {index} 'end' cannot be negative")
     if segment["start"] >= segment["end"]:
         raise ValueError(f"Segment {index} 'start' must be less than 'end'")
-    if not segment["text"].strip():
-        logger.warning(f"Segment {index} has empty text")
 
 
-def validate_transcript_document(data: Dict[str, Any]) -> None:
+def validate_transcript_document(
+    data: Dict[str, Any], *, label: str | None = None
+) -> None:
     """Validate a complete transcript document against schema v1.0.
 
     Raises:
@@ -228,5 +228,18 @@ def validate_transcript_document(data: Dict[str, Any]) -> None:
     if len(segments) == 0:
         logger.warning("Transcript document contains no segments")
 
+    empty_text_count = 0
     for i, segment in enumerate(segments):
         validate_segment(segment, i)
+        if (
+            isinstance(segment, dict)
+            and isinstance(segment.get("text"), str)
+            and not segment["text"].strip()
+        ):
+            empty_text_count += 1
+
+    if empty_text_count:
+        prefix = f"Transcript {label}" if label else "Transcript document"
+        logger.warning(
+            f"{prefix} has {empty_text_count} segments with empty text"
+        )

@@ -17,7 +17,7 @@ def test_legacy_transcript_path_normalizes_to_canonical_context(monkeypatch) -> 
     from transcriptx.web import navigation as nav_mod
 
     ss = {"selected_transcript_path": "/tmp/a.json"}
-    monkeypatch.setattr(nav_mod.FileService, "list_available_sessions", lambda: [])
+    monkeypatch.setattr(nav_mod, "cached_list_available_sessions", lambda: [])
     monkeypatch.setattr(
         nav_mod.FileService,
         "resolve_session_for_transcript_path",
@@ -34,7 +34,7 @@ def test_apply_transcript_selection_context_updates_subject_tuple(monkeypatch) -
     from transcriptx.web import navigation as nav_mod
 
     ss: dict[str, str] = {}
-    monkeypatch.setattr(nav_mod.FileService, "list_available_sessions", lambda: [])
+    monkeypatch.setattr(nav_mod, "cached_list_available_sessions", lambda: [])
     monkeypatch.setattr(
         nav_mod.FileService,
         "resolve_session_for_transcript_path",

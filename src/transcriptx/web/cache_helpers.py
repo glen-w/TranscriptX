@@ -7,6 +7,14 @@ from __future__ import annotations
 import streamlit as st
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def cached_list_available_sessions() -> list[dict]:
+    """Cached session scan for sidebar/navigation (web layer only)."""
+    from transcriptx.web.services.file_service import FileService
+
+    return FileService.list_available_sessions()
+
+
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_list_transcripts(_transcripts_dir: str = "") -> list:
     from transcriptx.app.controllers.library_controller import LibraryController
@@ -37,6 +45,7 @@ def clear_transcript_listing_caches() -> None:
 
     This avoids expensive global cache invalidation on simple file rename/import actions.
     """
+    cached_list_available_sessions.clear()  # type: ignore[attr-defined]
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
     cached_get_transcript_summaries_for_paths.clear()  # type: ignore[attr-defined]
 

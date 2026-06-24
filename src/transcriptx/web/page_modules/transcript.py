@@ -19,6 +19,7 @@ from transcriptx.web.page_modules.insights import (
     _render_summary_section,
 )
 from transcriptx.web.services import FileService, RunIndex, SubjectService
+from transcriptx.web.utils import list_available_sessions
 from transcriptx.web.transcript_view_state import (
     consume_nav_request,
     filtered_display_segments,
@@ -85,7 +86,7 @@ def _render_group_browser(subject) -> None:
         st.info("This group has no transcripts.")
         return
     st.caption("Select a transcript to open its viewer.")
-    sessions = FileService.list_available_sessions()
+    sessions = list_available_sessions()
     for index, member in enumerate(subject.members, start=1):
         display_name = (
             member.file_name

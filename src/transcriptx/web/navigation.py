@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
 
@@ -51,7 +52,7 @@ def normalize_navigation_context_from_session(session_state: dict[str, Any]) -> 
     if not _is_transcript_path(selected_path):
         return False
     selected_path = str(Path(selected_path).expanduser().resolve())
-    sessions = FileService.list_available_sessions()
+    sessions = cached_list_available_sessions()
     resolved = FileService.resolve_session_for_transcript_path(selected_path, sessions)
     session_state["subject_type"] = "transcript"
     if resolved:
@@ -73,7 +74,7 @@ def apply_transcript_selection_context(
     except Exception:
         normalized_path = transcript_path
     session_state["selected_transcript_path"] = normalized_path
-    sessions = FileService.list_available_sessions()
+    sessions = cached_list_available_sessions()
     resolved = FileService.resolve_session_for_transcript_path(
         normalized_path, sessions
     )

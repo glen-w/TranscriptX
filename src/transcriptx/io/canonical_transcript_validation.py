@@ -62,7 +62,7 @@ def validate_canonical_transcript(path: str | Path) -> CanonicalValidationResult
         )
 
     try:
-        validate_transcript_document(doc)
+        validate_transcript_document(doc, label=str(transcript))
     except Exception as exc:
         return CanonicalValidationResult(
             ok=False,

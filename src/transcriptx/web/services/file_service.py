@@ -19,6 +19,53 @@ from transcriptx.core.pipeline.manifest_loader import load_artifact_manifest
 
 logger = get_logger()
 
+DEFAULT_SESSION_STATS: dict[str, int | float] = {
+    "segment_count": 0,
+    "duration_seconds": 0,
+    "duration_minutes": 0,
+    "speaker_count": 0,
+    "word_count": 0,
+}
+
+
+def _coerce_stat_number(value: Any, *, as_int: bool = False) -> int | float | None:
+    try:
+        if as_int:
+            return int(value)
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_metadata_stats(doc: dict) -> dict[str, int | float]:
+    """Map document.metadata to session stats. Never scans segments."""
+    stats = dict(DEFAULT_SESSION_STATS)
+
+    metadata = doc.get("metadata")
+    if not isinstance(metadata, dict):
+        return stats
+
+    segment_count = _coerce_stat_number(metadata.get("segment_count"), as_int=True)
+    if segment_count is None:
+        segment_count = _coerce_stat_number(metadata.get("segments"), as_int=True)
+    if segment_count is not None:
+        stats["segment_count"] = segment_count
+
+    duration_seconds = _coerce_stat_number(metadata.get("duration_seconds"))
+    if duration_seconds is None:
+        duration_seconds = _coerce_stat_number(metadata.get("duration"))
+    if duration_seconds is not None:
+        stats["duration_seconds"] = duration_seconds
+        stats["duration_minutes"] = round(duration_seconds / 60, 1)
+
+    speaker_count = _coerce_stat_number(metadata.get("speaker_count"), as_int=True)
+    if speaker_count is None:
+        speaker_count = _coerce_stat_number(metadata.get("num_speakers"), as_int=True)
+    if speaker_count is not None:
+        stats["speaker_count"] = speaker_count
+
+    return stats
+
 
 class FileService:
     """Service for file I/O operations."""
@@ -319,6 +366,7 @@ class FileService:
         )
 
         group_root = Path(GROUP_OUTPUTS_DIR)
+        doc_cache: dict[str, dict] = {}
         for transcript_dir in outputs_dir.iterdir():
             if not transcript_dir.is_dir() or transcript_dir.name.startswith("."):
                 continue
@@ -366,35 +414,32 @@ class FileService:
                         "path": str(run_dir),
                         "modules": modules,
                         "module_count": module_count,
-                        "duration_seconds": 0,
-                        "duration_minutes": 0,
-                        "speaker_count": 0,
-                        "word_count": 0,
-                        "segment_count": 0,
+                        **DEFAULT_SESSION_STATS,
                         "last_updated": last_updated,
                         "analysis_completion": analysis_completion,
                     }
-                    # Populate stats from transcript when available (may be None if path not resolvable)
-                    transcript_data = FileService.load_transcript_by_session(session_id)
-                    if transcript_data:
-                        segments = transcript_data.get("segments", [])
-                        session_info["segment_count"] = len(segments)
-                        if segments:
-                            duration_sec = max(
-                                seg.get("end", 0) for seg in segments
-                            ) - min(seg.get("start", 0) for seg in segments)
-                            session_info["duration_seconds"] = duration_sec
-                            session_info["duration_minutes"] = round(
-                                duration_sec / 60, 1
-                            )
-                            speakers = set(
-                                seg.get("speaker")
-                                for seg in segments
-                                if seg.get("speaker")
-                            )
-                            session_info["speaker_count"] = len(speakers)
-                            session_info["word_count"] = sum(
-                                len(seg.get("text", "").split()) for seg in segments
+                    # Session listings use document.metadata only; word_count stays 0.
+                    transcript_path = FileService.resolve_transcript_path(session_id)
+                    if transcript_path is not None:
+                        try:
+                            cache_key = str(transcript_path.resolve())
+                        except (OSError, RuntimeError):
+                            cache_key = str(transcript_path)
+                        if cache_key not in doc_cache:
+                            from transcriptx.io.transcript_loader import load_transcript
+
+                            try:
+                                doc_cache[cache_key] = load_transcript(str(transcript_path))
+                            except Exception as exc:
+                                logger.debug(
+                                    "Skipping metadata stats for %s: %s",
+                                    transcript_path,
+                                    exc,
+                                )
+                                doc_cache[cache_key] = {}
+                        if doc_cache[cache_key]:
+                            session_info.update(
+                                _extract_metadata_stats(doc_cache[cache_key])
                             )
                     sessions.append(session_info)
                 except Exception as e:

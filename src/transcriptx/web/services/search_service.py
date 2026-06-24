@@ -18,6 +18,7 @@ from transcriptx.web.models.search import (
     SegmentRef,
     TranscriptRef,
 )
+from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.utils import resolve_speaker_names_from_sidecars
 
@@ -140,7 +141,7 @@ def _resolve_transcript_mtime(session_name: str) -> Optional[float]:
 def get_speakers_from_transcripts(
     session_slugs: Optional[Tuple[str, ...]] = None,
 ) -> List[str]:
-    sessions = FileService.list_available_sessions()
+    sessions = cached_list_available_sessions()
     if session_slugs is not None:
         slug_set = set(session_slugs)
         sessions = [s for s in sessions if s.get("name") in slug_set]
@@ -172,7 +173,7 @@ class FileSearchBackend:
     def search_substring(
         self, query: str, filters: Optional[SearchFilters] = None
     ) -> Tuple[List[SearchResult], int]:
-        sessions = FileService.list_available_sessions()
+        sessions = cached_list_available_sessions()
         results: List[SearchResult] = []
         for session_info in sessions:
             session_name = session_info.get("name", "")
@@ -291,7 +292,7 @@ class SearchService:
         if not tokens:
             return []
         candidates: List[_TranscriptIndex] = []
-        for session_info in FileService.list_available_sessions():
+        for session_info in cached_list_available_sessions():
             session_name = session_info.get("name", "")
             if not session_name:
                 continue

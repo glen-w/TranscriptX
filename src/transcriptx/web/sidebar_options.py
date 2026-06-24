@@ -6,10 +6,8 @@ import os
 from pathlib import Path
 from typing import Callable
 
-import streamlit as st
-
+from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services import FileService
-from transcriptx.web.utils import list_available_sessions
 
 
 def _build_session_index_from_list(sessions: list) -> dict:
@@ -26,10 +24,9 @@ def _build_session_index_from_list(sessions: list) -> dict:
     return session_map
 
 
-@st.cache_data(ttl=60, show_spinner=False)
 def get_cached_session_data():
-    """Return (session_map, sessions_list) so the app does not recompute every rerun."""
-    sessions_list = list_available_sessions()
+    """Return (session_map, sessions_list) backed by cached_list_available_sessions."""
+    sessions_list = cached_list_available_sessions()
     session_map = _build_session_index_from_list(sessions_list)
     return session_map, sessions_list
 

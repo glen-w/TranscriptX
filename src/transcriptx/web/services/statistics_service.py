@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 from pathlib import Path
 
+from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.module_registry import get_analysis_modules, get_total_module_count
 from transcriptx.web.services.file_service import FileService
 from transcriptx.core.utils.logger import get_logger
@@ -91,7 +92,7 @@ class StatisticsService:
             Dictionary with aggregate statistics
         """
         # Import here to avoid circular dependency
-        sessions = FileService.list_available_sessions()
+        sessions = cached_list_available_sessions()
 
         if not sessions:
             return {

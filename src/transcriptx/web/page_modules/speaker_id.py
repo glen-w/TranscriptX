@@ -26,6 +26,7 @@ from transcriptx.io.speaker_map_resolver import (
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
+from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
@@ -65,7 +66,7 @@ def _transcript_paths_for_speaker_views_impl() -> list[Path]:
     for p in discover_managed_transcript_paths(None):
         add(Path(p))
 
-    for session in FileService.list_available_sessions():
+    for session in cached_list_available_sessions():
         name = session.get("name", "")
         if "/" not in name:
             continue
