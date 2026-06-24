@@ -9,9 +9,15 @@ from __future__ import annotations
 import streamlit as st
 import pandas as pd
 
+from transcriptx.web.components.page_shell import render_page_help, render_page_shell
 from transcriptx.web.utils import (
     get_all_sessions_statistics,
     list_available_sessions,
+)
+
+_STATISTICS_HELP = (
+    "**Statistics** shows workspace-wide session counts, duration, words, "
+    "and analysis completion across all transcript runs."
 )
 
 
@@ -24,9 +30,11 @@ def _cached_sessions_and_stats() -> tuple[list, dict]:
 
 def render_statistics() -> None:
     """Render the Statistics page with aggregate and per-session stats."""
-    st.markdown(
-        '<div class="main-header">📊 Statistics</div>',
-        unsafe_allow_html=True,
+    render_page_shell(
+        "Statistics",
+        "Workspace-wide metrics across all transcript sessions.",
+        badges=None,
+        actions=None,
     )
 
     sessions, stats = _cached_sessions_and_stats()
@@ -34,9 +42,9 @@ def render_statistics() -> None:
         st.info(
             "No transcript sessions found. Process transcripts to see statistics here."
         )
+        render_page_help(_STATISTICS_HELP)
         return
 
-    # Aggregate metrics
     st.subheader("Overview")
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
@@ -60,7 +68,6 @@ def render_statistics() -> None:
 
     st.divider()
     st.subheader("Per-session statistics")
-    # stats already loaded above from cache
 
     rows = []
     for s in sessions:
@@ -76,3 +83,4 @@ def render_statistics() -> None:
         )
     df = pd.DataFrame(rows)
     st.dataframe(df, width="stretch", hide_index=True)
+    render_page_help(_STATISTICS_HELP)

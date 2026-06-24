@@ -1,11 +1,8 @@
 """
-Streamlit-based web interface for TranscriptX.
+Deprecated legacy Streamlit entry point.
 
-This is a proof-of-concept demonstrating how Streamlit could replace
-the Flask/Jinja2 web interface with much simpler code.
-
-To run:
-    streamlit run src/transcriptx/web/streamlit_app.py
+Canonical entry is ``transcriptx.web.app`` (``streamlit run`` via project scripts).
+Set ``TRANSCRIPTX_LEGACY_STREAMLIT=1`` to run this module's dashboard UI.
 """
 
 import streamlit as st
@@ -749,4 +746,12 @@ def main():
 
 
 if __name__ == "__main__":
+    import os
+
+    if os.environ.get("TRANSCRIPTX_LEGACY_STREAMLIT") != "1":
+        st.error(
+            "This entry point is deprecated. Use the canonical app "
+            "(transcriptx.web.app) or set TRANSCRIPTX_LEGACY_STREAMLIT=1."
+        )
+        st.stop()
     main()

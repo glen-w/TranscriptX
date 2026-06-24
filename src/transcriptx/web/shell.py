@@ -249,6 +249,16 @@ def inject_global_styles() -> None:
         margin-bottom: 0.4rem;
         line-height: 1.35;
     }
+    .tx-chart-family-shell {
+        border-left: 3px solid rgba(31, 119, 180, 0.25);
+        padding: 0.15rem 0 0.15rem 0.55rem;
+        margin: 0.15rem 0 0.35rem 0;
+    }
+    .tx-chart-slice-shell {
+        border-left: 2px solid rgba(120, 130, 145, 0.2);
+        padding: 0.1rem 0 0.1rem 0.45rem;
+        margin: 0.1rem 0 0.25rem 0;
+    }
     /* Speaker chips (transcript viewer) */
     span.tx-speaker-chip {
         display: inline-block;

@@ -17,6 +17,7 @@ import streamlit as st
 from transcriptx.app.controllers.merge_controller import MergeController
 from transcriptx.app.models.requests import MergeRequest
 from transcriptx.app.progress import make_initial_snapshot
+from transcriptx.core.audio.serial_groups import detect_serial_audio_groups
 from transcriptx.core.audio.utils import get_audio_duration
 from transcriptx.core.utils.file_rename import extract_date_prefix
 from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
@@ -26,7 +27,8 @@ from transcriptx.web.components.progress_panel import (
     render_progress_panel,
 )
 from transcriptx.web.services.recordings_service import RecordingsService
-from transcriptx.web.services.rename_service import RenameService
+from transcriptx.web.components.rename_form import render_audio_linked_rename_form
+from transcriptx.web.navigation import navigate_to_transcribe_with_paths
 
 # ---------------------------------------------------------------------------
 # Session-state key constants
@@ -107,6 +109,7 @@ def render_audio_merge_page() -> None:
         )
         return
 
+    _render_detected_serial_groups(recordings)
     _render_section_1(recordings)
 
 
@@ -136,6 +139,53 @@ def _format_merge_row_meta(path: Path) -> str:
     except Exception:
         pass
     return "  " + " · ".join(parts) if parts else ""
+
+
+# ---------------------------------------------------------------------------
+# Detected serial groups
+# ---------------------------------------------------------------------------
+
+
+def _render_detected_serial_groups(recordings: List[Path]) -> None:
+    groups = detect_serial_audio_groups(recordings)
+    if not groups:
+        return
+
+    st.subheader("Detected serial recordings")
+    st.caption(
+        "These files look like parts of one recording based on filename patterns. "
+        "Use a suggested group to pre-fill merge order, or select files manually below."
+    )
+
+    for idx, group in enumerate(groups):
+        extension = group.ordered_paths[0].suffix.lower() if group.ordered_paths else ""
+        total_duration = 0.0
+        duration_known = True
+        for path in group.ordered_paths:
+            dur = get_audio_duration(path)
+            if dur is None:
+                duration_known = False
+                break
+            total_duration += dur
+
+        with st.container(border=True):
+            st.markdown(
+                f"**{group.base_key}** · {len(group.ordered_paths)} files · "
+                f"`{extension}` · {group.matched_rule} · {group.confidence}"
+            )
+            if duration_known:
+                st.caption(
+                    f"Combined duration: {RecordingsService.format_duration(total_duration)}"
+                )
+            for path in group.ordered_paths:
+                st.text(path.name)
+            for warning in group.warnings:
+                st.caption(f"⚠ {warning}")
+            if st.button("Use this group", key=f"audio_merge_use_group_{idx}"):
+                st.session_state[_KEY_ORDERED_PATHS] = [
+                    str(p) for p in group.ordered_paths
+                ]
+                st.rerun()
 
 
 # ---------------------------------------------------------------------------
@@ -258,24 +308,12 @@ def _render_rename_section(merged_order: List[str], all_labels: dict[str, str]) 
         key="audio_merge_rename_target",
     )
     audio_path = Path(target_audio)
-    current_name = audio_path.stem
-    with st.form("audio_merge_rename_form", clear_on_submit=False):
-        st.text_input("Current file name", value=current_name, disabled=True)
-        target_name = st.text_input(
-            "New file name",
-            value=current_name,
-            help="Do not include extension. Linked transcript and audio will share this name.",
-        )
-        rename_submitted = st.form_submit_button("Rename linked files")
-    if not rename_submitted:
-        return
-    result = RenameService.rename_from_audio(audio_path, target_name)
-    if not result.ok:
-        st.error(result.message)
-        return
-    RenameService.refresh_after_rename(result)
-    st.success(f"Renamed `{result.old_base_name}` to `{result.new_base_name}`.")
-    st.rerun()
+    render_audio_linked_rename_form(
+        audio_path,
+        form_key="audio_merge_rename_form",
+        show_heading=False,
+        caption="",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -426,6 +464,13 @@ def _render_result(result: object) -> None:
             except Exception as exc:
                 st.caption(f"Playback unavailable: {exc}")
             st.caption(f"`{r.output_path}`")
+            if st.button(
+                "Transcribe merged file",
+                type="primary",
+                key="audio_merge_transcribe_result",
+            ):
+                navigate_to_transcribe_with_paths(st.session_state, [r.output_path])
+                st.rerun()
     else:
         st.error("Merge failed.")
         for err in r.errors:

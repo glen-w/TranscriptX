@@ -20,9 +20,16 @@ from transcriptx.web.cache_helpers import (
     cached_get_transcript_summaries_for_paths,
     get_cached_list_transcripts,
 )
-from transcriptx.web.services.rename_service import RenameService
-from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
-from transcriptx.web.navigation import apply_transcript_selection_context
+from transcriptx.web.components.rename_form import render_transcript_rename_form
+from transcriptx.web.state import (
+    SELECTBOX_PLACEHOLDER_TRANSCRIPT,
+    SELECTED_TRANSCRIPT_PATH,
+)
+from transcriptx.web.navigation import (
+    apply_transcript_selection_context,
+    consume_library_transcript_nav,
+    library_transcript_index,
+)
 
 
 def _format_duration_display(duration_seconds: float | None) -> str:
@@ -141,13 +148,18 @@ def _library_browser_fragment(
 
     st.divider()
     st.subheader("Actions")
+    consume_library_transcript_nav(st.session_state, transcripts)
+    selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
+    default_idx = (
+        library_transcript_index(transcripts, selected_path) if selected_path else 0
+    )
     selected_idx = st.selectbox(
         "Select transcript",
         range(len(transcripts) + 1),
         format_func=lambda i: (
             SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else transcripts[i - 1].base_name
         ),
-        index=0,
+        index=default_idx,
         key="library_transcript_select",
     )
     if selected_idx > 0:
@@ -164,31 +176,11 @@ def _library_browser_fragment(
                 st.session_state["page"] = "Run Analysis"
                 st.rerun()
 
-        st.markdown("#### Rename transcript + linked audio")
-        st.caption(
-            "Keeps transcript JSON and linked audio filename in sync using the same base name."
+        render_transcript_rename_form(
+            selected.path,
+            form_key="library_rename_form",
+            library_transcripts=transcripts,
         )
-        with st.form("library_rename_form", clear_on_submit=False):
-            st.text_input("Current file name", value=selected.base_name, disabled=True)
-            target = st.text_input(
-                "New file name",
-                value=selected.base_name,
-                help=(
-                    "Use letters, numbers, spaces, hyphens, and underscores. "
-                    "Do not include extension."
-                ),
-            )
-            rename_submitted = st.form_submit_button("Rename transcript and audio")
-        if rename_submitted:
-            result = RenameService.rename_transcript_and_audio(selected.path, target)
-            if not result.ok:
-                st.error(result.message)
-            else:
-                RenameService.refresh_after_rename(result)
-                st.success(
-                    f"Renamed `{result.old_base_name}` to `{result.new_base_name}`."
-                )
-                st.rerun()
 
 
 def render_library() -> None:

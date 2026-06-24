@@ -16,6 +16,7 @@ from transcriptx.web.page_modules.audio_prep import render_audio_prep_page
 from transcriptx.web.page_modules.batch_ops import render_batch_ops_page
 from transcriptx.web.page_modules.charts import render_charts
 from transcriptx.web.page_modules.data import render_data
+from transcriptx.web.page_modules.dashboard_builder import render_dashboard_builder
 from transcriptx.web.page_modules.diagnostics import render_diagnostics_page
 from transcriptx.web.page_modules.explorer import render_explorer
 from transcriptx.web.page_modules.groups import render_groups
@@ -56,6 +57,7 @@ PAGE_PREREQUISITES: dict[str, PagePrerequisite] = {
     "Audio Prep": PagePrerequisite("none", "stay", may_mutate_context=False),
     "Audio Merge": PagePrerequisite("none", "stay", may_mutate_context=False),
     "Batch Ops": PagePrerequisite("none", "stay", may_mutate_context=False),
+    "Dashboard Builder": PagePrerequisite("none", "stay", may_mutate_context=False),
     "Diagnostics": PagePrerequisite("none", "stay", may_mutate_context=False),
     "Statistics": PagePrerequisite("none", "stay", may_mutate_context=False),
 }
@@ -98,6 +100,7 @@ def build_page_renderers(
         "Audio Prep": render_audio_prep_page,
         "Audio Merge": render_audio_merge_page,
         "Batch Ops": render_batch_ops_page,
+        "Dashboard Builder": render_dashboard_builder,
         "Diagnostics": render_diagnostics_page,
         "Groups": render_groups,
         "Statistics": render_statistics,

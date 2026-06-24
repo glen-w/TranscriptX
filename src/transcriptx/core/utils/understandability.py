@@ -69,8 +69,40 @@ def _ensure_nltk_punkt():
         raise
 
 
-# Ensure punkt tokenizer is available before module functions are used
+def _ensure_nltk_cmudict():
+    """Ensure NLTK cmudict corpus is available for textstat syllable counting."""
+    try:
+        import nltk
+
+        try:
+            nltk.data.find("corpora/cmudict")
+        except LookupError:
+            try:
+                notify_user(
+                    "📥 Downloading NLTK cmudict corpus (required for readability metrics)...",
+                    technical=True,
+                    section="understandability",
+                )
+            except Exception:
+                print(
+                    "📥 Downloading NLTK cmudict corpus (required for readability metrics)..."
+                )
+            nltk.download("cmudict", quiet=True)
+    except Exception as e:
+        error_msg = (
+            f"⚠️ Could not download NLTK cmudict corpus: {e}. "
+            "Please run: python -c \"import nltk; nltk.download('cmudict')\""
+        )
+        try:
+            notify_user(error_msg, technical=True, section="understandability")
+        except Exception:
+            print(error_msg)
+        raise
+
+
+# Ensure NLTK data is available before module functions are used
 _ensure_nltk_punkt()
+_ensure_nltk_cmudict()
 
 
 def compute_understandability_metrics(text: str) -> dict:

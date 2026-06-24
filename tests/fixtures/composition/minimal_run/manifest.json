@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "run_id": "20240101_120000",
+  "transcript_key": "mini",
+  "artifacts": [
+    {
+      "id": "sentiment_json",
+      "kind": "data_json",
+      "module": "sentiment",
+      "scope": "global",
+      "speaker": null,
+      "subview": null,
+      "slice_id": null,
+      "rel_path": "sentiment/data/global/_sentiment.json",
+      "bytes": 48,
+      "mtime": "2024-01-01T12:00:00",
+      "mime": "application/json",
+      "tags": []
+    },
+    {
+      "id": "highlights_json",
+      "kind": "data_json",
+      "module": "highlights",
+      "scope": "global",
+      "speaker": null,
+      "subview": null,
+      "slice_id": null,
+      "rel_path": "highlights/data/global/_highlights.json",
+      "bytes": 120,
+      "mtime": "2024-01-01T12:00:00",
+      "mime": "application/json",
+      "tags": []
+    },
+    {
+      "id": "summary_json",
+      "kind": "data_json",
+      "module": "summary",
+      "scope": "global",
+      "speaker": null,
+      "subview": null,
+      "slice_id": null,
+      "rel_path": "summary/data/global/_summary.json",
+      "bytes": 64,
+      "mtime": "2024-01-01T12:00:00",
+      "mime": "application/json",
+      "tags": []
+    }
+  ],
+  "run_metadata": {
+    "run_id": "20240101_120000",
+    "transcript_key": "mini"
+  }
+}

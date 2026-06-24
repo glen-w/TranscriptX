@@ -85,6 +85,10 @@ def test_find_linked_transcript_for_audio_reads_processing_state(
         "transcriptx.web.services.rename_service.load_processing_state",
         lambda validate=False: state,
     )
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.find_original_audio_file",
+        lambda tp: audio if tp == str(transcript) else None,
+    )
 
     found = RenameService.find_linked_transcript_for_audio(audio)
     assert found == transcript
@@ -117,7 +121,7 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
         list_recordings = _DummyRecordings()
 
     monkeypatch.setattr(
-        "transcriptx.web.services.rename_service.clear_transcript_listing_caches",
+        "transcriptx.web.services.rename_service.clear_rename_related_caches",
         _fake_clear_listing_caches,
     )
     monkeypatch.setattr(
@@ -147,6 +151,83 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     assert (
         _DummyStreamlit.session_state["audio_merge_ordered_paths"][0] == "/tmp/new.mp3"
     )
+
+
+def test_after_rename_patches_slug_subject_and_library_select(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.app.models.metadata import TranscriptMetadata
+    from transcriptx.web.services.rename_service import RenameResult, RenameService
+
+    old_t = str((tmp_path / "old.json").resolve())
+    new_t = str((tmp_path / "new.json").resolve())
+    transcripts = [
+        TranscriptMetadata(path=Path(new_t), base_name="new"),
+    ]
+
+    calls = {"caches": 0}
+
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.clear_rename_related_caches",
+        lambda: calls.__setitem__("caches", calls["caches"] + 1),
+    )
+
+    class _DummyRecordings:
+        @staticmethod
+        def clear() -> None:
+            pass
+
+    class _DummyStreamlit:
+        session_state = {
+            "selected_transcript_path": old_t,
+            "subject_id": "old_name",
+            "run_id": "run_1",
+            "library_transcript_select": 0,
+        }
+
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.RecordingsService",
+        type("R", (), {"list_recordings": _DummyRecordings})(),
+    )
+    monkeypatch.setattr("transcriptx.web.services.rename_service.st", _DummyStreamlit())
+
+    RenameService.after_rename(
+        RenameResult(
+            ok=True,
+            message="ok",
+            old_transcript_path=old_t,
+            new_transcript_path=new_t,
+            old_slug="old_name",
+            new_slug="new_name",
+        ),
+        library_transcripts=transcripts,
+    )
+
+    assert calls["caches"] == 1
+    assert _DummyStreamlit.session_state["selected_transcript_path"] == new_t
+    assert _DummyStreamlit.session_state["subject_id"] == "new_name"
+    assert _DummyStreamlit.session_state["run_id"] is None
+    assert _DummyStreamlit.session_state["library_transcript_select"] == 1
+
+
+def test_unified_rename_entry_point_delegates_to_transcript_path(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.web.services.rename_service import RenameResult, RenameService
+
+    transcript = tmp_path / "a.json"
+    transcript.write_text("{}", encoding="utf-8")
+    captured: dict[str, object] = {}
+
+    def _fake(transcript_path, raw_target_name, *, dry_run: bool):
+        captured["path"] = transcript_path
+        captured["name"] = raw_target_name
+        captured["dry_run"] = dry_run
+        return RenameResult(ok=True, message="ok")
+
+    monkeypatch.setattr(RenameService, "_rename_transcript_path", staticmethod(_fake))
+    RenameService.rename(transcript_path=transcript, new_base_name="b")
+    assert captured == {"path": transcript, "name": "b", "dry_run": False}
 
 
 def test_rename_transcript_and_audio_returns_not_found_when_transcript_missing(
@@ -214,7 +295,7 @@ def test_rename_transcript_and_audio_partial_finalize_surfaces_distinct_message(
     assert "output" in result.message.lower() and "folder" in result.message.lower()
 
 
-def test_find_audio_path_for_transcript_prefers_audio_path_over_mp3(
+def test_find_audio_path_for_transcript_delegates_to_core_lookup(
     tmp_path: Path, monkeypatch
 ) -> None:
     from transcriptx.web.services.rename_service import RenameService
@@ -222,22 +303,11 @@ def test_find_audio_path_for_transcript_prefers_audio_path_over_mp3(
     transcript = tmp_path / "meet.json"
     transcript.write_text("{}", encoding="utf-8")
     wav = tmp_path / "via_audio.wav"
-    mp3 = tmp_path / "via_mp3.mp3"
     wav.write_bytes(b"a")
-    mp3.write_bytes(b"b")
 
-    state = {
-        "processed_files": {
-            "k": {
-                "transcript_path": str(transcript),
-                "audio_path": str(wav),
-                "mp3_path": str(mp3),
-            }
-        }
-    }
     monkeypatch.setattr(
-        "transcriptx.web.services.rename_service.load_processing_state",
-        lambda validate=False: state,
+        "transcriptx.web.services.rename_service.find_original_audio_file",
+        lambda tp: wav if tp == str(transcript) else None,
     )
 
     found = RenameService._find_audio_path_for_transcript(transcript)

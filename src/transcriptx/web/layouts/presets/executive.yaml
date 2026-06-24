@@ -1,0 +1,30 @@
+schema_version: 1
+id: executive
+title: Executive
+description: Metrics, summary, and commitments first.
+pages:
+  overview:
+    page_id: overview
+    blocks:
+      - placement_id: exec_metrics
+        block_id: artifact_metrics
+        visible: true
+        grid: { col: 0, row: 0, w: 12, h: 1 }
+      - placement_id: exec_health
+        block_id: run_health
+        visible: true
+      - placement_id: exec_export
+        block_id: export_panel
+        visible: true
+  insights:
+    page_id: insights
+    blocks:
+      - placement_id: exec_summary
+        block_id: executive_summary
+        visible: true
+      - placement_id: exec_commitments
+        block_id: commitments_table
+        visible: true
+      - placement_id: exec_highlights
+        block_id: highlights
+        visible: true

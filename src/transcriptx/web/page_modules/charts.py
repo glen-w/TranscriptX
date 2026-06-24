@@ -14,25 +14,27 @@ from transcriptx.web.charts_filter_state import reset_charts_filters_to_defaults
 from transcriptx.core.config import (
     resolve_effective_config,
 )
+from transcriptx.web.blocks.filters.subview_slice import render_subview_slice_filter
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
 from transcriptx.web.services.chart_view_model_service import (
+    ChartGalleryFamily,
     apply_chart_filters,
     build_filter_options,
     build_overview_slots,
     compute_chart_badges,
+    family_from_overview_slot,
+    group_charts_into_families,
     resolve_chart_description,
 )
 from transcriptx.web.services.artifact_service import (
     MAX_INLINE_HTML_BYTES,
     MAX_FULLSCREEN_HTML_BYTES,
 )
-from transcriptx.utils.charts_export import (
-    ChartsExportResult,
-    prepare_charts_export_zip,
-)
+from transcriptx.utils.charts_export import ChartsExportResult
+from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_ui_groups import order_strings_like_modules
 from transcriptx.web.state import (
@@ -164,6 +166,84 @@ def _render_chart_gallery_card(
                 st.rerun()
 
 
+def _render_chart_card_grid(
+    run_root: Path,
+    artifacts: list[Artifact],
+    key_prefix: str,
+) -> None:
+    cols = st.columns(3)
+    for idx, chart in enumerate(artifacts):
+        with cols[idx % 3]:
+            _render_chart_gallery_card(
+                run_root, chart, f"{key_prefix}_{chart.id}_{idx}"
+            )
+
+
+def _family_renders_directly(family: ChartGalleryFamily) -> bool:
+    return family.cardinality in {"single", "paired_static_dynamic"} or (
+        len(family.slices) == 1 and family.slices[0].key == "all"
+    )
+
+
+def _render_chart_family_slices(
+    run_root: Path,
+    family: ChartGalleryFamily,
+    key_prefix: str,
+    *,
+    sections_expanded: bool,
+) -> None:
+    if _family_renders_directly(family):
+        artifacts = family.slices[0].artifacts if family.slices else []
+        _render_chart_card_grid(run_root, artifacts, key_prefix)
+        return
+
+    for sl in family.slices:
+        if not sl.label:
+            _render_chart_card_grid(run_root, sl.artifacts, f"{key_prefix}_{sl.key}")
+            continue
+        with st.expander(
+            f"{sl.label} ({len(sl.artifacts)})",
+            expanded=sections_expanded,
+        ):
+            st.markdown('<div class="tx-chart-slice-shell">', unsafe_allow_html=True)
+            _render_chart_card_grid(run_root, sl.artifacts, f"{key_prefix}_{sl.key}")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _render_chart_family_section(
+    run_root: Path,
+    family: ChartGalleryFamily,
+    key_prefix: str,
+    *,
+    sections_expanded: bool,
+    show_family_expander: bool = True,
+) -> None:
+    if show_family_expander:
+        with st.expander(
+            f"{family.label} ({family.artifact_count})",
+            expanded=sections_expanded,
+        ):
+            if family.description:
+                st.caption(family.description)
+            st.markdown('<div class="tx-chart-family-shell">', unsafe_allow_html=True)
+            _render_chart_family_slices(
+                run_root,
+                family,
+                key_prefix,
+                sections_expanded=sections_expanded,
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="tx-chart-family-shell">', unsafe_allow_html=True)
+        _render_chart_family_slices(
+            run_root,
+            family,
+            key_prefix,
+            sections_expanded=sections_expanded,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
 def _ensure_charts_filters_for_run(subject_id: str, run_id: str) -> None:
     marker = st.session_state.get(CHARTS_KEY_FILTERS_INIT)
     identity = f"{subject_id}|{run_id}"
@@ -267,37 +347,13 @@ def _charts_filters_and_gallery_fragment(
         )
 
     if subviews:
-        st.radio(
-            "Subview",
-            ["All"] + subviews,
-            horizontal=True,
-            key=CHARTS_KEY_SUBVIEW_TABS,
+        slice_state = render_subview_slice_filter(
+            all_charts,
+            subview_key=CHARTS_KEY_SUBVIEW_TABS,
+            slice_key=CHARTS_KEY_SLICE_SELECTOR,
         )
-        tab = st.session_state.get(CHARTS_KEY_SUBVIEW_TABS, "All")
-        st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = None if tab == "All" else tab
-        selected_subview = st.session_state.get(CHARTS_KEY_FILTER_SUBVIEW)
-        if selected_subview in {"by_session", "by_speaker"}:
-            slice_ids = sorted(
-                {
-                    a.slice_id
-                    for a in all_charts
-                    if a.subview == selected_subview and a.slice_id
-                }
-            )
-            if slice_ids:
-                st.selectbox(
-                    "Slice",
-                    ["All"] + slice_ids,
-                    key=CHARTS_KEY_SLICE_SELECTOR,
-                )
-                slice_choice = st.session_state.get(CHARTS_KEY_SLICE_SELECTOR, "All")
-                st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = (
-                    None if slice_choice == "All" else slice_choice
-                )
-            else:
-                st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = None
-        else:
-            st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = None
+        st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = slice_state.subview
+        st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = slice_state.slice_id
 
     toggle_col1, toggle_col2 = st.columns(2)
     with toggle_col1:
@@ -351,7 +407,7 @@ def _charts_filters_and_gallery_fragment(
         else:
             if st.button("Export Visible Charts", key="charts_export_btn"):
                 try:
-                    result = prepare_charts_export_zip(
+                    result = ExportService.zip_charts(
                         run_root, charts, st.session_state.get("run_id", "")
                     )
                     st.session_state[CHARTS_KEY_EXPORT_RESULT] = result
@@ -453,15 +509,15 @@ def _charts_filters_and_gallery_fragment(
                     )
                     st.divider()
                     continue
-                slot_charts = slot.get("artifacts", [])
-                cols = st.columns(3)
-                for idx, chart in enumerate(slot_charts):
-                    with cols[idx % 3]:
-                        _render_chart_gallery_card(
-                            run_root,
-                            chart,
-                            f"overview_chart_{slot['viz_id']}_{chart.id}",
-                        )
+                family = family_from_overview_slot(slot)
+                if family:
+                    _render_chart_family_section(
+                        run_root,
+                        family,
+                        f"overview_chart_{slot['viz_id']}",
+                        sections_expanded=sections_expanded,
+                        show_family_expander=False,
+                    )
                 st.divider()
 
     module_groups: Dict[str, List[Artifact]] = {}
@@ -475,33 +531,16 @@ def _charts_filters_and_gallery_fragment(
             f"📊 {module_name} ({len(module_charts)} chart{'s' if len(module_charts) != 1 else ''})",
             expanded=sections_expanded,
         ):
-            all_speakers_charts: List[Artifact] = []
-            by_speaker: Dict[str, List[Artifact]] = {}
-            for chart in module_charts:
-                if chart.scope == "speaker" and chart.speaker:
-                    by_speaker.setdefault(chart.speaker, []).append(chart)
-                else:
-                    all_speakers_charts.append(chart)
-            speaker_order = ["All Speakers"] + sorted(by_speaker.keys())
-            sections = []
-            for heading in speaker_order:
-                if heading == "All Speakers":
-                    chunk = all_speakers_charts
-                else:
-                    chunk = by_speaker.get(heading, [])
-                if chunk:
-                    sections.append((heading, chunk))
-            for si, (heading, chunk) in enumerate(sections):
-                st.markdown(f"**{heading}**")
-                cols = st.columns(3)
-                for idx, chart in enumerate(chunk):
-                    with cols[idx % 3]:
-                        _render_chart_gallery_card(
-                            run_root,
-                            chart,
-                            f"chart_{chart.id}_{heading}_{idx}",
-                        )
-                if si < len(sections) - 1:
+            families = group_charts_into_families(module_charts)
+            for fi, family in enumerate(families):
+                _render_chart_family_section(
+                    run_root,
+                    family,
+                    f"chart_{module_name}_{family.key}",
+                    sections_expanded=sections_expanded,
+                    show_family_expander=True,
+                )
+                if fi < len(families) - 1:
                     st.divider()
 
 

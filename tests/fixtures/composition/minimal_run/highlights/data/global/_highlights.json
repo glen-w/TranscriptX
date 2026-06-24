@@ -1,0 +1,18 @@
+{
+  "transcript_key": "mini",
+  "sections": {
+    "cold_open": {
+      "items": [
+        {
+          "speaker": "Alice",
+          "quote": "We should move forward.",
+          "start": 1.0,
+          "end": 2.5,
+          "segment_refs": {"segment_indexes": [0]},
+          "score": {"total": 0.9, "breakdown": {}}
+        }
+      ]
+    },
+    "conflict_points": {"events": []}
+  }
+}

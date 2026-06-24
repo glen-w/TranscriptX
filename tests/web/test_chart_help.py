@@ -141,3 +141,174 @@ def test_build_overview_slots_placeholder_has_none_description():
     )
     assert slots
     assert all(slot.get("description") is None for slot in slots)
+
+
+def test_build_overview_slots_speaker_set_uses_family_label_not_first_artifact_title():
+    """Per-speaker chart families must not inherit one speaker's name in the slot header."""
+    viz_id = "acts.acts_temporal.speaker"
+    family_label = get_chart_definition(viz_id).label
+    candidates = [
+        Artifact(
+            id="art-glen",
+            kind="chart_dynamic",
+            module="acts",
+            scope="speaker",
+            speaker="Glen",
+            subview=None,
+            slice_id=None,
+            rel_path="acts/charts/speakers/Glen/acts_temporal.html",
+            bytes=1,
+            mtime="",
+            mime="text/html",
+            tags=[],
+            title="Dialogue Acts Over Time – Glen",
+            meta={"viz_id": viz_id},
+        ),
+        Artifact(
+            id="art-rana",
+            kind="chart_dynamic",
+            module="acts",
+            scope="speaker",
+            speaker="Rana",
+            subview=None,
+            slice_id=None,
+            rel_path="acts/charts/speakers/Rana/acts_temporal.html",
+            bytes=1,
+            mtime="",
+            mime="text/html",
+            tags=[],
+            title="Dialogue Acts Over Time – Rana",
+            meta={"viz_id": viz_id},
+        ),
+    ]
+    slots = build_overview_slots(
+        overview_candidates=candidates,
+        user_overview=[viz_id],
+        missing_behavior="skip",
+        max_items=None,
+    )
+    target = next(slot for slot in slots if slot["viz_id"] == viz_id)
+    assert target["label"] == family_label
+    assert "Glen" not in target["label"]
+    assert len(target["artifacts"]) == 2
+
+
+def test_build_overview_slots_single_uses_artifact_title():
+    viz_id = "emotion.radar.global"
+    custom_title = "Custom Emotion Radar Title"
+    art = Artifact(
+        id="art-single-custom",
+        kind="chart_static",
+        module="emotion",
+        scope="global",
+        speaker=None,
+        subview=None,
+        slice_id=None,
+        rel_path="emotion/charts/global/static/radar.png",
+        bytes=1,
+        mtime="",
+        mime="image/png",
+        tags=[],
+        title=custom_title,
+        meta={"viz_id": viz_id},
+    )
+    slots = build_overview_slots(
+        overview_candidates=[art],
+        user_overview=[viz_id],
+        missing_behavior="skip",
+        max_items=None,
+    )
+    target = next(slot for slot in slots if slot["viz_id"] == viz_id)
+    assert target["label"] == custom_title
+
+
+def test_build_overview_slots_paired_static_dynamic_uses_family_label():
+    viz_id = "group.acts.temporal_overlay.global"
+    family_label = get_chart_definition(viz_id).label
+    candidates = [
+        Artifact(
+            id="static",
+            kind="chart_static",
+            module="acts",
+            scope="global",
+            speaker=None,
+            subview=None,
+            slice_id=None,
+            rel_path="acts/charts/group/overlay.png",
+            bytes=1,
+            mtime="",
+            mime="image/png",
+            tags=["group_aggregate"],
+            title="Wrong Title – Glen",
+            meta={"viz_id": viz_id},
+        ),
+        Artifact(
+            id="dynamic",
+            kind="chart_dynamic",
+            module="acts",
+            scope="global",
+            speaker=None,
+            subview=None,
+            slice_id=None,
+            rel_path="acts/charts/group/overlay.html",
+            bytes=1,
+            mtime="",
+            mime="text/html",
+            tags=["group_aggregate"],
+            title="Wrong Title – Rana",
+            meta={"viz_id": viz_id},
+        ),
+    ]
+    slots = build_overview_slots(
+        overview_candidates=candidates,
+        user_overview=[viz_id],
+        missing_behavior="skip",
+        max_items=None,
+    )
+    target = next(slot for slot in slots if slot["viz_id"] == viz_id)
+    assert target["label"] == family_label
+    assert "Glen" not in target["label"]
+
+
+def test_build_overview_slots_multi_uses_family_label(monkeypatch):
+    """Non-single cardinalities must use registry label even if artifacts have titles."""
+    import transcriptx.web.services.chart_view_model_service as svc
+
+    viz_id = "acts.acts_temporal.speaker"
+    family_label = get_chart_definition(viz_id).label
+
+    class _MultiDef:
+        cardinality = "multi"
+        label = family_label
+        description = "multi test"
+        rank_default = 520
+        match = get_chart_definition(viz_id).match
+
+        def __getattr__(self, name):
+            return getattr(get_chart_definition(viz_id), name)
+
+    monkeypatch.setitem(svc.get_chart_registry(), viz_id, _MultiDef())
+    art = Artifact(
+        id="art-multi",
+        kind="chart_dynamic",
+        module="acts",
+        scope="speaker",
+        speaker="Glen",
+        subview=None,
+        slice_id=None,
+        rel_path="acts/charts/speakers/Glen/acts_temporal.html",
+        bytes=1,
+        mtime="",
+        mime="text/html",
+        tags=[],
+        title="Dialogue Acts Over Time – Glen",
+        meta={"viz_id": viz_id},
+    )
+    slots = build_overview_slots(
+        overview_candidates=[art],
+        user_overview=[viz_id],
+        missing_behavior="skip",
+        max_items=None,
+    )
+    target = next(slot for slot in slots if slot["viz_id"] == viz_id)
+    assert target["label"] == family_label

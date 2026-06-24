@@ -492,8 +492,75 @@ def clean_environment():
 # ============================================================================
 
 
+def _pick_installed_spacy_model() -> str | None:
+    """Prefer the configured spaCy model when installed; else fall back to md/sm."""
+    requested = os.environ.get("TRANSCRIPTX_SPACY_MODEL")
+    if not requested:
+        env_file = _REPO_ROOT / ".env"
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                if line.startswith("TRANSCRIPTX_SPACY_MODEL="):
+                    requested = line.split("=", 1)[1].strip().strip("'\"")
+                    break
+
+    candidates: list[str] = []
+    if requested:
+        candidates.append(requested)
+    for fallback in ("en_core_web_md", "en_core_web_sm"):
+        if fallback not in candidates:
+            candidates.append(fallback)
+
+    try:
+        import spacy
+    except ImportError:
+        return requested
+
+    for name in candidates:
+        try:
+            spacy.load(name)
+            return name
+        except OSError:
+            continue
+    return None
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _session_spacy_model():
+    """Keep tests offline-friendly when .env requests an uninstalled spaCy model."""
+    chosen = _pick_installed_spacy_model()
+    if not chosen:
+        yield
+        return
+
+    os.environ["TRANSCRIPTX_SPACY_MODEL"] = chosen
+    original = None
+    try:
+        import transcriptx.core.utils.nlp_runtime as nlp_runtime
+
+        original = nlp_runtime._resolve_model_name
+
+        def _resolve_for_tests(preferred=None):
+            if preferred:
+                return original(preferred)
+            return chosen
+
+        nlp_runtime._resolve_model_name = _resolve_for_tests
+        yield
+    finally:
+        if original is not None:
+            try:
+                import transcriptx.core.utils.nlp_runtime as nlp_runtime
+
+                nlp_runtime._resolve_model_name = original
+            except Exception:
+                pass
+
+
 def pytest_configure(config):
     """Configure pytest with custom markers."""
+    chosen = _pick_installed_spacy_model()
+    if chosen:
+        os.environ["TRANSCRIPTX_SPACY_MODEL"] = chosen
     if not os.getenv("TRANSCRIPTX_OUTPUT_DIR"):
         test_outputs_dir = _REPO_ROOT / ".test_outputs"
         test_outputs_dir.mkdir(parents=True, exist_ok=True)

@@ -331,3 +331,49 @@ def list_all_transcripts() -> List[Dict[str, Any]]:
         )
 
     return result
+
+
+def update_index_after_transcript_rename(
+    old_transcript_path: str | Path,
+    new_transcript_path: str | Path,
+) -> tuple[str | None, str | None]:
+    """
+    Refresh slug index metadata after a managed transcript rename.
+
+    Returns (old_slug, new_slug) when an index entry was updated, else (None, None).
+    """
+    index = load_index()
+    transcripts = index.get("transcripts", {})
+
+    try:
+        old_resolved = str(Path(old_transcript_path).expanduser().resolve())
+        new_resolved = str(Path(new_transcript_path).expanduser().resolve())
+    except OSError:
+        old_resolved = str(old_transcript_path)
+        new_resolved = str(new_transcript_path)
+
+    transcript_key: str | None = None
+    old_slug: str | None = None
+    for key, entry in transcripts.items():
+        source_path = entry.get("source_path", "")
+        if not source_path:
+            continue
+        try:
+            matches = str(Path(source_path).expanduser().resolve()) == old_resolved
+        except OSError:
+            matches = source_path == old_resolved
+        if matches:
+            transcript_key = key
+            old_slug = entry.get("slug")
+            break
+
+    if transcript_key is None:
+        return None, None
+
+    new_slug = register_transcript(
+        transcript_key,
+        new_resolved,
+        source_basename=get_canonical_base_name(new_resolved),
+        source_path=new_resolved,
+    )
+    return old_slug, new_slug

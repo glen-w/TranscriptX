@@ -14,10 +14,6 @@ import streamlit as st
 
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
-from transcriptx.web.page_modules.insights import (
-    _render_highlights_section,
-    _render_summary_section,
-)
 from transcriptx.web.services import FileService, RunIndex, SubjectService
 from transcriptx.web.utils import list_available_sessions
 from transcriptx.web.transcript_view_state import (
@@ -30,7 +26,6 @@ from transcriptx.web.transcript_viewer.metadata import (
     segment_word_stats,
     speaker_tooltip,
 )
-from transcriptx.web.transcript_viewer.modules_panel import render_modules_panel
 from transcriptx.web.transcript_viewer.preflight import (
     ViewerPreflight,
     resolve_viewer_preflight,
@@ -224,26 +219,14 @@ def _render_transcript_tabs(
         )
 
 
-def _render_transcript_outputs(selected_session: str, run_root: Path) -> None:
-    """Render analysis outputs and insight expanders for a transcript run."""
-    render_modules_panel(selected_session)
-    st.divider()
-    with st.expander("✨ Highlights", expanded=False):
-        _render_highlights_section(run_root)
-    with st.expander("🧾 Executive Summary", expanded=False):
-        _render_summary_section(run_root)
-
-
 @st.fragment
 def _transcript_interaction_fragment(
     segments: list[dict[str, Any]],
-    selected_session: str,
-    run_root: Path,
     *,
     highlight_query: str | None,
     jump_index: int | None,
 ) -> None:
-    """Transcript search, tabs, and outputs without full-app rerun."""
+    """Transcript search and segment tabs without full-app rerun."""
     controls = _render_transcript_controls()
 
     display_segments, filter_caption = filtered_display_segments(
@@ -260,7 +243,6 @@ def _transcript_interaction_fragment(
         highlight_query=highlight_query,
         jump_index=jump_index,
     )
-    _render_transcript_outputs(selected_session, run_root)
 
 
 def render_transcript_viewer() -> None:
@@ -273,7 +255,7 @@ def render_transcript_viewer() -> None:
 
     render_page_shell(
         "Transcript",
-        "Read the diarized transcript for the current run, search segments, and open highlights.",
+        "Read the diarized transcript for the current run and search segments.",
         badges=None,
         actions=None,
     )
@@ -345,8 +327,6 @@ def render_transcript_viewer() -> None:
 
         _transcript_interaction_fragment(
             segments,
-            selected,
-            run_root,
             highlight_query=nav_state.highlight_query,
             jump_index=nav_state.jump_index,
         )

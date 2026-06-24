@@ -9,7 +9,9 @@ from transcriptx.app.controllers.run_controller import _load_manifest
 from transcriptx.core.analysis.stats.report_input_resolver import resolve_report_inputs
 from transcriptx.core.pipeline.manifest_loader import load_run_outcome_context
 from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
-from transcriptx.web.page_modules.overview import _load_run_results
+from transcriptx.web.blocks.session_context import (
+    load_run_results_dict as _load_run_results,
+)
 
 
 def _write_json(path: Path, payload: dict) -> None:

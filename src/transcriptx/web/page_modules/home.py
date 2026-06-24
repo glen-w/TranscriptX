@@ -16,9 +16,24 @@ from transcriptx.web.cache_helpers import (
 )
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.navigation import navigate_to_library_rename_workflow
+from transcriptx.web.services.file_service import FileService
 from transcriptx.web.sidebar_options import _slug_display_labels_from_index
 
 _HOME_HELP = "**Home** is the landing page. Use the header actions or **Recent Runs** to open analysis."
+
+
+def _transcript_path_for_recent_run(run) -> Path | None:
+    slug = run.run_dir.parent.name
+    resolved = FileService.resolve_transcript_path(f"{slug}/{run.run_dir.name}")
+    if resolved is not None:
+        return resolved
+    tp = run.transcript_path
+    if tp and str(tp) and not str(tp).startswith("sha256:"):
+        candidate = Path(tp)
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def render_home() -> None:
@@ -107,7 +122,7 @@ def render_home() -> None:
                     st.caption(
                         f"Modules: {', '.join(run.selected_modules[:5])}{'...' if len(run.selected_modules) > 5 else ''}"
                     )
-                    c1, c2, c3 = st.columns(3)
+                    c1, c2, c3, c4 = st.columns(4)
                     with c1:
                         if st.button("Overview", key=f"home_run_ov_{run.run_id}"):
                             st.session_state["subject_type"] = "transcript"
@@ -128,6 +143,16 @@ def render_home() -> None:
                             st.session_state["subject_id"] = run.run_dir.parent.name
                             st.session_state["run_id"] = run.run_dir.name
                             st.session_state["page"] = "Data"
+                            st.rerun()
+                    with c4:
+                        if st.button("Rename", key=f"home_run_rn_{run.run_id}"):
+                            transcript_path = _transcript_path_for_recent_run(run)
+                            if transcript_path is not None:
+                                navigate_to_library_rename_workflow(
+                                    st.session_state, transcript_path
+                                )
+                            else:
+                                st.session_state["page"] = "Library"
                             st.rerun()
 
         render_page_help(_HOME_HELP)

@@ -1,0 +1,88 @@
+"""Tests for block availability."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from transcriptx.web.blocks.availability import check_block_availability
+from transcriptx.web.blocks.builtin import register_builtin_blocks
+from transcriptx.web.blocks.context import build_block_context
+from transcriptx.web.blocks.registry import clear_registry_for_tests, get_block
+from transcriptx.web.models.artifact import Artifact
+
+
+def _artifact(module: str, rel_path: str) -> Artifact:
+    return Artifact(
+        id=rel_path,
+        kind="data_json",
+        module=module,
+        scope=None,
+        speaker=None,
+        subview=None,
+        slice_id=None,
+        rel_path=rel_path,
+        bytes=1,
+        mtime="",
+        mime="application/json",
+        tags=[],
+    )
+
+
+def test_run_scoped_block_unavailable_without_run() -> None:
+    clear_registry_for_tests()
+    register_builtin_blocks()
+    spec = get_block("highlights")
+    assert spec is not None
+    ctx = build_block_context(
+        run_root=None,
+        subject_type=None,
+        subject_id=None,
+        run_id=None,
+        session_name=None,
+        artifacts=(),
+        run_results=None,
+        layout_profile_id="default",
+    )
+    result = check_block_availability(spec, ctx)
+    assert not result.available
+    assert "run" in (result.reason or "").lower()
+
+
+def test_highlights_unavailable_without_artifact() -> None:
+    clear_registry_for_tests()
+    register_builtin_blocks()
+    spec = get_block("highlights")
+    assert spec is not None
+    ctx = build_block_context(
+        run_root=Path("/tmp/run"),
+        subject_type="transcript",
+        subject_id="slug",
+        run_id="run1",
+        session_name="slug/run1",
+        artifacts=(),
+        run_results=None,
+        layout_profile_id="default",
+    )
+    result = check_block_availability(spec, ctx)
+    assert not result.available
+    assert result.reason
+
+
+def test_highlights_available_with_artifact() -> None:
+    clear_registry_for_tests()
+    register_builtin_blocks()
+    spec = get_block("highlights")
+    assert spec is not None
+    art = _artifact("highlights", "highlights/out/_highlights.json")
+    ctx = build_block_context(
+        run_root=Path("/tmp/run"),
+        subject_type="transcript",
+        subject_id="slug",
+        run_id="run1",
+        session_name="slug/run1",
+        artifacts=(art,),
+        run_results=None,
+        layout_profile_id="default",
+    )
+    result = check_block_availability(spec, ctx)
+    assert result.available

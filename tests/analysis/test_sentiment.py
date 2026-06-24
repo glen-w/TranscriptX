@@ -115,9 +115,11 @@ class TestSentimentAnalysisModule:
         assert float(sentiment.get("compound", 0.0)) < 0
 
     def test_sentiment_analysis_neutral_text(
-        self, sentiment_module: SentimentAnalysis, sample_speaker_map: dict[str, str]
+        self, sample_speaker_map: dict[str, str]
     ) -> None:
         """Test sentiment analysis on neutral text."""
+        mock_cfg = MagicMock()
+        mock_cfg.analysis.sentiment_backend = "vader"
         segments = [
             {
                 "speaker": "Alice",
@@ -128,7 +130,12 @@ class TestSentimentAnalysisModule:
             }
         ]
 
-        result = sentiment_module.analyze(segments)
+        with patch(
+            "transcriptx.core.utils.config.get_config",
+            return_value=mock_cfg,
+        ):
+            sentiment_module = SentimentAnalysis()
+            result = sentiment_module.analyze(segments)
 
         # Should detect neutral sentiment
         sentiment = result["segments_with_sentiment"][0]["sentiment"]

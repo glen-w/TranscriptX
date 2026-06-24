@@ -190,12 +190,10 @@ def test_render_library_summary_shows_has_audio_and_duration(monkeypatch) -> Non
     assert list(_DummyStreamlit.captured_df["Ignored"]) == ["0", "1"]
 
 
-def test_library_page_wires_rename_service_for_transcript_rename_form() -> None:
-    """Library uses RenameService + refresh for the post-rename Streamlit form."""
+def test_library_page_wires_shared_rename_form() -> None:
+    """Library uses shared rename form component."""
     import transcriptx.web.page_modules.library as mod
 
-    assert getattr(mod, "RenameService", None) is not None
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "library_rename_form" in source
-    assert "RenameService.rename_transcript_and_audio" in source
-    assert "RenameService.refresh_after_rename" in source
+    assert "render_transcript_rename_form" in source

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from transcriptx.app.models.metadata import TranscriptMetadata
 from transcriptx.web.navigation import (
     PagePrerequisite,
+    apply_library_rename_navigation,
     apply_transcript_selection_context,
+    consume_library_transcript_nav,
     evaluate_page_access,
+    library_transcript_index,
     normalize_navigation_context_from_session,
 )
 from transcriptx.web.sidebar_state import (
@@ -11,6 +17,51 @@ from transcriptx.web.sidebar_state import (
     apply_sidebar_selection,
     apply_transitional_sidebar_backfill,
 )
+
+
+def test_library_rename_navigation_preselects_library_selectbox(
+    monkeypatch, tmp_path
+) -> None:
+    from transcriptx.web import navigation as nav_mod
+    from transcriptx.web.state import (
+        LIBRARY_NAV_TRANSCRIPT_PATH,
+        SELECTED_TRANSCRIPT_PATH,
+    )
+
+    transcript = tmp_path / "interview.json"
+    transcript.write_text("{}", encoding="utf-8")
+    other = tmp_path / "other.json"
+    other.write_text("{}", encoding="utf-8")
+    transcripts = [
+        TranscriptMetadata(path=other, base_name="other"),
+        TranscriptMetadata(path=transcript, base_name="interview"),
+    ]
+
+    ss: dict[str, object] = {}
+    monkeypatch.setattr(nav_mod, "cached_list_available_sessions", lambda: [])
+    monkeypatch.setattr(
+        nav_mod.FileService,
+        "resolve_session_for_transcript_path",
+        lambda _p, _s: ("slug-1", "run-1"),
+    )
+
+    apply_library_rename_navigation(ss, transcript)
+
+    assert ss[SELECTED_TRANSCRIPT_PATH] == str(transcript.resolve())
+    assert ss[LIBRARY_NAV_TRANSCRIPT_PATH] == str(transcript.resolve())
+
+    consume_library_transcript_nav(ss, transcripts)
+    assert LIBRARY_NAV_TRANSCRIPT_PATH not in ss
+    assert ss["library_transcript_select"] == 2
+
+
+def test_library_transcript_index_matches_resolved_paths(tmp_path) -> None:
+    transcript = tmp_path / "nested" / "call.json"
+    transcript.parent.mkdir()
+    transcript.write_text("{}", encoding="utf-8")
+    meta = TranscriptMetadata(path=transcript, base_name="call")
+    assert library_transcript_index([meta], str(transcript)) == 1
+    assert library_transcript_index([meta], Path("missing.json")) == 0
 
 
 def test_legacy_transcript_path_normalizes_to_canonical_context(monkeypatch) -> None:

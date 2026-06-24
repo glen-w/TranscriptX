@@ -16,6 +16,9 @@ SUBJECT_ID_KEY = "subject_id"
 RUN_ID_KEY = "run_id"
 NAV_REQUEST_KEY = "nav_request"
 SELECTED_TRANSCRIPT_PATH = "selected_transcript_path"
+# One-shot: Home (etc.) sets this before navigating to Library rename workflow.
+LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
+IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
 
 # Selectbox: explicit choice before loading dependent content (Streamlit has no empty selection)
 SELECTBOX_PLACEHOLDER_TRANSCRIPT = "— Select a transcript —"
@@ -123,6 +126,8 @@ CHARTS_KEY_FULL_SCREEN = "full_screen_artifact"
 CHARTS_KEY_FILTERS_INIT = "tx_charts_filters_initialized_for"
 CHARTS_KEY_EXPORT_RESULT = "charts_export_result"
 CHARTS_KEY_EXPORT_SIG = "charts_export_signature"
+
+DATA_KEY_ARTIFACT_PRESET = "data_artifact_preset"
 
 CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_FILTER_MODULE: None,

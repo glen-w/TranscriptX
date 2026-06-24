@@ -75,6 +75,7 @@ def render_sidebar(
     _nav_button("Home", "Home")
     _nav_button("Library", "Library")
     _nav_button("Search", "Search")
+    _nav_button("Statistics", "Statistics")
 
     readiness = context_readiness(st.session_state)
     overview_access = evaluate_page_access("Overview", prerequisites, readiness)
@@ -242,22 +243,35 @@ def render_sidebar(
             )
 
         _subject_section("Pages")
-        for key, label in [
-            ("Overview", "Overview"),
-            ("Transcript", "Transcript"),
-            ("Charts", "Charts"),
-            ("Insights", "Insights"),
-            ("Data", "Data"),
-            ("Explorer", "File List"),
-        ]:
-            access = evaluate_page_access(key, prerequisites, readiness)
-            _nav_button(
-                key,
-                label,
-                key_suffix="_subject",
-                disabled=not access.allowed,
-                help=access.help_text,
-            )
+        view_page_sections = (
+            ("Read", (("Transcript", "Transcript"),)),
+            (
+                "Summarise",
+                (
+                    ("Overview", "Overview"),
+                    ("Insights", "Insights"),
+                ),
+            ),
+            (
+                "Explore",
+                (
+                    ("Charts", "Charts"),
+                    ("Data", "Data"),
+                    ("Explorer", "File List"),
+                ),
+            ),
+        )
+        for section_title, pages in view_page_sections:
+            _subject_section(section_title)
+            for key, label in pages:
+                access = evaluate_page_access(key, prerequisites, readiness)
+                _nav_button(
+                    key,
+                    label,
+                    key_suffix="_subject",
+                    disabled=not access.allowed,
+                    help=access.help_text,
+                )
 
     # tx_sidebar_tools_group (test anchor: workflow nav must appear above this)
     with st.expander(  # type: ignore[call-arg]
@@ -270,6 +284,7 @@ def render_sidebar(
             _nav_button("Corrections Studio", "Corrections Studio")
         _nav_button("Audio Prep", "Audio Pre-processing")
         _nav_button("Audio Merge", "Audio Merge")
+        _nav_button("Dashboard Builder", "Dashboard Builder")
 
     with st.expander(  # type: ignore[call-arg]
         "Settings",

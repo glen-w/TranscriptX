@@ -1,4 +1,4 @@
-"""Analysis modules panel for transcript viewer."""
+"""Analysis modules panel for run overview."""
 
 from __future__ import annotations
 

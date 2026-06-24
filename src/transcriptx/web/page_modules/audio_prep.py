@@ -22,7 +22,7 @@ from transcriptx.web.components.progress_panel import (
     render_progress_panel,
 )
 from transcriptx.web.services.recordings_service import RecordingsService
-from transcriptx.web.services.rename_service import RenameService
+from transcriptx.web.components.rename_form import render_audio_linked_rename_form
 
 # ---------------------------------------------------------------------------
 # Session-state key constants
@@ -208,28 +208,10 @@ def _render_section_a() -> None:
 
 
 def _render_rename_section(audio_path: Path) -> None:
-    st.markdown("#### Rename linked transcript + audio")
-    st.caption(
-        "This action requires a linked transcript and keeps transcript/audio filenames aligned."
+    render_audio_linked_rename_form(
+        audio_path,
+        form_key="audio_prep_rename_form",
     )
-    current_name = audio_path.stem
-    with st.form("audio_prep_rename_form", clear_on_submit=False):
-        st.text_input("Current file name", value=current_name, disabled=True)
-        target = st.text_input(
-            "New file name",
-            value=current_name,
-            help="Do not include extension. Linked transcript and audio will share this name.",
-        )
-        rename_submitted = st.form_submit_button("Rename linked files")
-    if not rename_submitted:
-        return
-    result = RenameService.rename_from_audio(audio_path, target)
-    if not result.ok:
-        st.error(result.message)
-        return
-    RenameService.refresh_after_rename(result)
-    st.success(f"Renamed `{result.old_base_name}` to `{result.new_base_name}`.")
-    st.rerun()
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,62 @@
+schema_version: 1
+id: default
+title: Default
+description: Standard Overview and Insights layouts matching legacy pages.
+pages:
+  overview:
+    page_id: overview
+    blocks:
+      - placement_id: overview_health
+        block_id: run_health
+        visible: true
+      - placement_id: overview_outcomes
+        block_id: run_outcomes
+        visible: true
+      - placement_id: overview_metrics
+        block_id: artifact_metrics
+        visible: true
+      - placement_id: overview_module_nav
+        block_id: module_navigator
+        visible: true
+      - placement_id: overview_module_metrics
+        block_id: module_metrics
+        visible: true
+      - placement_id: overview_module_table
+        block_id: module_summary_table
+        visible: true
+      - placement_id: overview_export
+        block_id: export_panel
+        visible: true
+  insights:
+    page_id: insights
+    blocks:
+      - placement_id: insights_contract
+        block_id: insights_contract
+        visible: true
+      - placement_id: insights_highlights
+        block_id: highlights
+        visible: true
+      - placement_id: insights_exec_summary
+        block_id: executive_summary
+        visible: true
+      - placement_id: insights_commitments
+        block_id: commitments_table
+        visible: true
+      - placement_id: insights_llm_summary
+        block_id: llm_summary_block
+        visible: true
+        params:
+          module: llm_summary
+          title: LLM Transcript Summary
+          artifact_stem: _llm_summary
+          text_field: summary
+          empty_hint: Run the `llm_summary` module (with LLM enabled) to populate this view.
+      - placement_id: insights_narrative
+        block_id: llm_summary_block
+        visible: true
+        params:
+          module: narrative_summary
+          title: Narrative Summary
+          artifact_stem: _narrative_summary
+          text_field: narrative
+          empty_hint: Run the `narrative_summary` module (with LLM enabled) to populate this view.

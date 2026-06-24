@@ -78,7 +78,8 @@ RUN python -c "\
 import nltk; \
 nltk.download('vader_lexicon', download_dir='/opt/venv/nltk_data'); \
 nltk.download('punkt', download_dir='/opt/venv/nltk_data'); \
-nltk.download('punkt_tab', download_dir='/opt/venv/nltk_data')"
+nltk.download('punkt_tab', download_dir='/opt/venv/nltk_data'); \
+nltk.download('cmudict', download_dir='/opt/venv/nltk_data')"
 
 # Pre-download TextBlob corpora for emotion module (NRCLex)
 RUN python -m textblob.download_corpora

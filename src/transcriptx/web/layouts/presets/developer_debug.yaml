@@ -1,0 +1,49 @@
+schema_version: 1
+id: developer_debug
+title: Developer debug
+description: All blocks visible for inspection and layout testing.
+pages:
+  overview:
+    page_id: overview
+    blocks:
+      - placement_id: dbg_health
+        block_id: run_health
+        visible: true
+      - placement_id: dbg_outcomes
+        block_id: run_outcomes
+        visible: true
+      - placement_id: dbg_metrics
+        block_id: artifact_metrics
+        visible: true
+      - placement_id: dbg_nav
+        block_id: module_navigator
+        visible: true
+      - placement_id: dbg_table
+        block_id: module_summary_table
+        visible: true
+      - placement_id: dbg_export
+        block_id: export_panel
+        visible: true
+  insights:
+    page_id: insights
+    blocks:
+      - placement_id: dbg_contract
+        block_id: insights_contract
+        visible: true
+      - placement_id: dbg_highlights
+        block_id: highlights
+        visible: true
+      - placement_id: dbg_summary
+        block_id: executive_summary
+        visible: true
+      - placement_id: dbg_commitments
+        block_id: commitments_table
+        visible: true
+      - placement_id: dbg_llm
+        block_id: llm_summary_block
+        visible: true
+        params:
+          module: llm_summary
+          title: LLM Transcript Summary
+          artifact_stem: _llm_summary
+          text_field: summary

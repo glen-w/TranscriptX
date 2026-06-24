@@ -23,6 +23,7 @@ except ImportError:
     render_corrections_studio = None  # type: ignore[misc, assignment]
 
 from transcriptx.core.utils.logger import get_logger
+import transcriptx.web.blocks  # noqa: F401 — register built-in view blocks
 from transcriptx.web.components.context_bar import render_context_bar
 from transcriptx.web.navigation import normalize_navigation_context_from_session
 from transcriptx.web.page_flash import consume_page_flash

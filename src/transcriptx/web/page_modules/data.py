@@ -7,18 +7,24 @@ not trigger a full-app rerun.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-import pandas as pd
 import streamlit as st
 
+from transcriptx.web.blocks.filters.subview_slice import (
+    filter_artifacts_by_subview_slice,
+    render_subview_slice_filter,
+)
+from transcriptx.web.blocks.implementations.data import render_artifact_file_preview
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.module_ui_groups import module_sort_key
 from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
-from transcriptx.web.state import SELECTBOX_PLACEHOLDER_ARTIFACT
+from transcriptx.web.state import (
+    SELECTBOX_PLACEHOLDER_ARTIFACT,
+    DATA_KEY_ARTIFACT_PRESET,
+)
 
 _DATA_HELP_PREREQ = (
     "**Data** lists structured outputs (tables, JSON) produced by analysis modules."
@@ -29,43 +35,16 @@ _DATA_HELP_LOADED = "Choose a subview or slice if present, then pick a file to p
 @st.fragment
 def _data_browser_fragment(run_root: Path, data_artifacts: list[Artifact]) -> None:
     """Subview, slice, and artifact preview without full-app rerun."""
-    subviews = sorted({a.subview for a in data_artifacts if a.subview})
-    subview_filter = None
-    slice_filter = None
-    if subviews:
-        tab = st.radio(
-            "Subview",
-            ["All"] + subviews,
-            index=0,
-            horizontal=True,
-            key="data_subview_tabs",
-        )
-        subview_filter = None if tab == "All" else tab
-        if subview_filter in {"by_session", "by_speaker"}:
-            slice_ids = sorted(
-                {
-                    a.slice_id
-                    for a in data_artifacts
-                    if a.subview == subview_filter and a.slice_id
-                }
-            )
-            if slice_ids:
-                slice_choice = st.selectbox(
-                    "Slice",
-                    ["All"] + slice_ids,
-                    index=0,
-                    key="data_slice_selector",
-                )
-                slice_filter = None if slice_choice == "All" else slice_choice
-
-    filtered = data_artifacts
-    if subview_filter:
-        filtered = [
-            a
-            for a in data_artifacts
-            if a.subview == subview_filter
-            and (slice_filter is None or a.slice_id == slice_filter)
-        ]
+    slice_state = render_subview_slice_filter(
+        data_artifacts,
+        subview_key="data_subview_tabs",
+        slice_key="data_slice_selector",
+    )
+    filtered = filter_artifacts_by_subview_slice(
+        data_artifacts,
+        subview=slice_state.subview,
+        slice_id=slice_state.slice_id,
+    )
 
     if not filtered:
         render_empty_state(
@@ -104,34 +83,7 @@ def _data_browser_fragment(run_root: Path, data_artifacts: list[Artifact]) -> No
         return
     selected = next(a for a in filtered if a.id == selected_id)
 
-    path = ArtifactService._resolve_safe_path(run_root, selected.rel_path)
-    if path is None or not path.exists():
-        render_empty_state(
-            "error_degraded",
-            "Artifact missing on disk",
-            "The manifest references this path but the file is not available.",
-            primary_action=("Diagnostics", "Diagnostics"),
-            secondary_action=("Overview", "Overview"),
-        )
-        return
-
-    st.caption(f"{selected.rel_path} ({selected.mime})")
-
-    if selected.kind == "data_csv":
-        df = pd.read_csv(path)
-        st.dataframe(df, width="stretch")
-    elif selected.kind == "data_json":
-        with open(path, "r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        st.json(data)
-    elif selected.kind == "data_txt":
-        content = Path(path).read_text(encoding="utf-8", errors="ignore")
-        if path.suffix.lower() == ".md":
-            st.markdown(content)
-        else:
-            st.text_area("Text", content, height=400)
-    else:
-        st.write(Path(path).read_text())
+    render_artifact_file_preview(run_root, selected)
 
 
 def render_data() -> None:
@@ -164,6 +116,9 @@ def render_data() -> None:
     data_artifacts = [
         a for a in artifacts if a.kind in {"data_json", "data_csv", "data_txt"}
     ]
+    preset = st.session_state.pop(DATA_KEY_ARTIFACT_PRESET, None)
+    if preset and any(a.id == preset for a in data_artifacts):
+        st.session_state["data_artifact_selector"] = preset
 
     render_page_shell(
         "Data",

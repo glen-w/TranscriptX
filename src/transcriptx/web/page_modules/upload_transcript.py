@@ -25,7 +25,7 @@ from transcriptx.io.import_metadata_sidecar import validate_managed_transcript
 from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 from transcriptx.web.cache_helpers import clear_transcript_listing_caches
 from transcriptx.web.services.recordings_service import RecordingsService
-from transcriptx.web.services.rename_service import RenameService
+from transcriptx.web.components.rename_form import render_transcript_rename_form
 
 logger = get_logger()
 
@@ -140,35 +140,17 @@ def _save_uploaded_recording(uploaded: Any) -> Path:
 
 
 def _render_import_rename_form(transcript_path: Path) -> None:
-    if not transcript_path.exists():
-        return
-    current_name = transcript_path.stem
-    st.subheader("Rename imported transcript + linked audio")
-    st.caption(
-        "Optional. This keeps transcript and linked audio filenames aligned. "
-        "Extensions are preserved automatically."
+    render_transcript_rename_form(
+        transcript_path,
+        form_key="import_rename_form",
+        title="Rename imported transcript + linked audio",
+        caption=(
+            "Optional. This keeps transcript and linked audio filenames aligned. "
+            "Extensions are preserved automatically."
+        ),
+        submit_label="Rename files",
+        as_subheader=True,
     )
-    with st.form("import_rename_form", clear_on_submit=False):
-        st.text_input("Current file name", value=current_name, disabled=True)
-        target = st.text_input(
-            "New file name",
-            value=current_name,
-            help="Use letters, numbers, spaces, hyphens, and underscores. Do not include extension.",
-        )
-        submitted = st.form_submit_button("Rename files")
-    if not submitted:
-        return
-    result = RenameService.rename_transcript_and_audio(transcript_path, target)
-    if not result.ok:
-        st.error(result.message)
-        return
-    RenameService.refresh_after_rename(result)
-    st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = result.new_transcript_path
-    st.success(
-        f"Renamed `{result.old_base_name}` to `{result.new_base_name}` "
-        "for transcript and linked audio."
-    )
-    st.rerun()
 
 
 def render_upload_transcript_page() -> None:

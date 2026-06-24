@@ -50,6 +50,12 @@ def clear_transcript_listing_caches() -> None:
     cached_get_transcript_summaries_for_paths.clear()  # type: ignore[attr-defined]
 
 
+def clear_rename_related_caches() -> None:
+    """Invalidate caches that can show stale names/paths after a transcript rename."""
+    clear_transcript_listing_caches()
+    cached_list_recent_runs.clear()  # type: ignore[attr-defined]
+
+
 @st.cache_data(show_spinner=False)
 def cached_get_available_modules() -> list[str]:
     from transcriptx.app.controllers.analysis_controller import AnalysisController

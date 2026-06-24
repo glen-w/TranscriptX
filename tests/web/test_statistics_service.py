@@ -76,10 +76,10 @@ class TestStatisticsService:
                     assert stats["speaker_count"] == 0
                     assert stats["word_count"] == 0
 
-    @patch("transcriptx.web.services.statistics_service.FileService")
-    def test_get_all_sessions_statistics(self, mock_file_service):
+    @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
+    def test_get_all_sessions_statistics(self, mock_list_sessions):
         """Test getting aggregate statistics."""
-        mock_file_service.list_available_sessions.return_value = [
+        mock_list_sessions.return_value = [
             {
                 "duration_seconds": 100,
                 "word_count": 500,
@@ -104,10 +104,10 @@ class TestStatisticsService:
         assert stats["total_speakers"] == 3  # max of speaker counts
         assert stats["average_completion"] == 62.5  # (50 + 75) / 2
 
-    @patch("transcriptx.web.services.statistics_service.FileService")
-    def test_get_all_sessions_statistics_empty(self, mock_file_service):
+    @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
+    def test_get_all_sessions_statistics_empty(self, mock_list_sessions):
         """Test getting statistics when no sessions exist."""
-        mock_file_service.list_available_sessions.return_value = []
+        mock_list_sessions.return_value = []
 
         stats = StatisticsService.get_all_sessions_statistics()
 
