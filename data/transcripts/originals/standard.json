@@ -1,0 +1,22 @@
+{
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.5,
+      "text": "Hello, welcome to the meeting.",
+      "speaker": "SPEAKER_00"
+    },
+    {
+      "start": 3.8,
+      "end": 7.2,
+      "text": "Thanks for joining us today.",
+      "speaker": "SPEAKER_01"
+    },
+    {
+      "start": 7.5,
+      "end": 11.0,
+      "text": "Let us go through the agenda quickly.",
+      "speaker": "SPEAKER_00"
+    }
+  ]
+}

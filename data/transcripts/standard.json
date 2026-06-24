@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "type": "whisperx",
+    "original_path": "originals/standard.json",
+    "imported_at": "2026-06-24T00:22:35.528113+00:00",
+    "file_hash": "sha256:056bdd10f2e22e8a736d0771229055946de783a7288f26f76c8e5429817324f0",
+    "file_mtime": 1782260555.5283575
+  },
+  "metadata": {
+    "duration_seconds": 11.0,
+    "segment_count": 3,
+    "speaker_count": 2
+  },
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.5,
+      "speaker": "SPEAKER_00",
+      "text": "Hello, welcome to the meeting.",
+      "cue_id": "0",
+      "original_cue": {
+        "original_speaker": "SPEAKER_00"
+      }
+    },
+    {
+      "start": 3.8,
+      "end": 7.2,
+      "speaker": "SPEAKER_01",
+      "text": "Thanks for joining us today.",
+      "cue_id": "1",
+      "original_cue": {
+        "original_speaker": "SPEAKER_01"
+      }
+    },
+    {
+      "start": 7.5,
+      "end": 11.0,
+      "speaker": "SPEAKER_00",
+      "text": "Let us go through the agenda quickly.",
+      "cue_id": "2",
+      "original_cue": {
+        "original_speaker": "SPEAKER_00"
+      }
+    }
+  ],
+  "_last_modified_by": "import",
+  "_last_modified_at": "2026-06-24T00:22:50.586347+00:00"
+}
