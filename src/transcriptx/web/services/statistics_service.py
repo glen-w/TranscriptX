@@ -14,8 +14,20 @@ from transcriptx.web.module_registry import get_analysis_modules, get_total_modu
 from transcriptx.web.services.file_service import FileService
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import OUTPUTS_DIR
+from transcriptx.io.metadata_display_options import get_metadata_config
+from transcriptx.io.metadata_stats import (
+    duration_seconds_from_document,
+    word_count_from_document,
+)
 
 logger = get_logger()
+
+
+def _session_from_listing(session_name: str) -> dict[str, Any] | None:
+    for session in cached_list_available_sessions():
+        if session.get("name") == session_name:
+            return session
+    return None
 
 
 class StatisticsService:
@@ -41,38 +53,39 @@ class StatisticsService:
             "analysis_completion": 0,
         }
 
-        # Load transcript to get basic stats
-        transcript_data = FileService.load_transcript_by_session(session_name)
-        if transcript_data:
-            segments = transcript_data.get("segments", [])
-            stats["segment_count"] = len(segments)
+        listing_entry = _session_from_listing(session_name)
+        if listing_entry is not None:
+            stats["segment_count"] = int(listing_entry.get("segment_count", 0))
+            stats["duration_seconds"] = float(listing_entry.get("duration_seconds", 0))
+            stats["speaker_count"] = int(listing_entry.get("speaker_count", 0))
+            stats["word_count"] = int(listing_entry.get("word_count", 0))
+        else:
+            transcript_data = FileService.load_transcript_by_session(session_name)
+            if transcript_data:
+                meta_cfg = get_metadata_config()
+                stats["segment_count"] = len(transcript_data.get("segments", []))
+                stats["duration_seconds"] = duration_seconds_from_document(
+                    transcript_data,
+                    method=meta_cfg.duration_calculation,
+                )
+                speakers = {
+                    seg.get("speaker")
+                    for seg in transcript_data.get("segments", [])
+                    if isinstance(seg, dict) and seg.get("speaker")
+                }
+                stats["speaker_count"] = len(speakers)
+                stats["word_count"] = word_count_from_document(
+                    transcript_data,
+                    allow_segment_fallback=True,
+                    allow_legacy_words_alias=meta_cfg.legacy_words_alias,
+                )
 
-            # Calculate duration (guard empty iterables for safety)
-            if segments:
-                ends = [seg.get("end", 0) for seg in segments]
-                starts = [seg.get("start", 0) for seg in segments]
-                if ends and starts:
-                    stats["duration_seconds"] = max(ends) - min(starts)
-
-            # Count speakers
-            speakers = set(seg.get("speaker") for seg in segments if seg.get("speaker"))
-            stats["speaker_count"] = len(speakers)
-
-            # Count words
-            stats["word_count"] = sum(
-                len(seg.get("text", "").split()) for seg in segments
-            )
-
-        # Get analysis modules
         modules = get_analysis_modules(session_name)
-        total_modules = (
-            get_total_module_count()
-        )  # Use dynamic count instead of magic number
+        total_modules = get_total_module_count()
         stats["analysis_completion"] = (
             int((len(modules) / total_modules) * 100) if total_modules > 0 else 0
         )
 
-        # Get last updated time from directory
         session_dir = Path(OUTPUTS_DIR) / session_name
         if session_dir.exists():
             try:
@@ -91,12 +104,12 @@ class StatisticsService:
         Returns:
             Dictionary with aggregate statistics
         """
-        # Import here to avoid circular dependency
         sessions = cached_list_available_sessions()
 
         if not sessions:
             return {
                 "total_sessions": 0,
+                "total_duration_seconds": 0,
                 "total_duration_minutes": 0,
                 "total_duration_hours": 0.0,
                 "total_word_count": 0,
@@ -108,13 +121,13 @@ class StatisticsService:
         total_words = sum(s.get("word_count", 0) for s in sessions)
         completion_rates = [s.get("analysis_completion", 0) for s in sessions]
 
-        # Count unique speakers (simplified - would need to load all transcripts for accurate count)
         total_speakers = (
             max(s.get("speaker_count", 0) for s in sessions) if sessions else 0
         )
 
         return {
             "total_sessions": len(sessions),
+            "total_duration_seconds": total_duration,
             "total_duration_minutes": round(total_duration / 60, 1),
             "total_duration_hours": round(total_duration / 3600, 2),
             "total_word_count": total_words,

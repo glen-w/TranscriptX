@@ -26,6 +26,7 @@ except ImportError as e:
     st.stop()
 
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_SESSION
+from transcriptx.utils.text_utils import format_duration_display_from_config
 
 # Page configuration
 st.set_page_config(
@@ -82,7 +83,12 @@ def render_dashboard():
         with col1:
             st.metric("Total Sessions", stats.get("total_sessions", 0))
         with col2:
-            st.metric("Total Duration", f"{stats.get('total_duration_hours', 0):.1f}h")
+            st.metric(
+                "Total Duration",
+                format_duration_display_from_config(
+                    stats.get("total_duration_seconds", 0)
+                ),
+            )
         with col3:
             st.metric("Total Words", f"{stats.get('total_word_count', 0):,}")
         with col4:
@@ -106,7 +112,9 @@ def render_dashboard():
             [
                 {
                     "Session": s["name"],
-                    "Duration (min)": s.get("duration_minutes", 0),
+                    "Duration": format_duration_display_from_config(
+                        s.get("duration_seconds", 0)
+                    ),
                     "Speakers": s.get("speaker_count", 0),
                     "Words": s.get("word_count", 0),
                     "Modules": s.get("module_count", 0),
@@ -191,7 +199,10 @@ def render_transcript_viewer():
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric(
-                    "Duration", f"{metadata.get('duration_seconds', 0) / 60:.1f} min"
+                    "Duration",
+                    format_duration_display_from_config(
+                        metadata.get("duration_seconds", 0)
+                    ),
                 )
             with col2:
                 st.metric("Speakers", metadata.get("speaker_count", 0))

@@ -51,3 +51,38 @@ def test_transcript_store_write_creates_parent_dirs(tmp_path) -> None:
     store = TranscriptStore()
     store.write(path, {"segments": []}, reason="test")
     assert path.exists()
+
+
+def test_transcript_store_refreshes_derived_metadata(tmp_path) -> None:
+    path = tmp_path / "t.json"
+    data = {
+        "schema_version": "1.0",
+        "metadata": {"title": "keep me"},
+        "segments": [
+            {"start": 0, "end": 1, "speaker": "A", "text": "hello world"},
+        ],
+    }
+    store = TranscriptStore()
+    store.write(path, data, reason="test")
+    read_back = store.read(path)
+    assert read_back["metadata"]["title"] == "keep me"
+    assert read_back["metadata"]["word_count"] == 2
+    assert read_back["metadata"]["segment_count"] == 1
+
+
+def test_transcript_store_skips_refresh_when_disabled(tmp_path, monkeypatch) -> None:
+    from transcriptx.core.utils.config.workflow import MetadataConfig
+
+    monkeypatch.setattr(
+        "transcriptx.io.metadata_display_options.get_metadata_config",
+        lambda: MetadataConfig(auto_refresh_on_write=False),
+    )
+    path = tmp_path / "t.json"
+    data = {
+        "metadata": {},
+        "segments": [{"start": 0, "end": 1, "speaker": "A", "text": "hello world"}],
+    }
+    store = TranscriptStore()
+    store.write(path, data, reason="test")
+    read_back = store.read(path)
+    assert "word_count" not in read_back.get("metadata", {})

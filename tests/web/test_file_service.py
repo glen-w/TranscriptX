@@ -12,7 +12,6 @@ from transcriptx.web.services.file_service import (
 
 
 class TestExtractMetadataStats:
-    """Tests for _extract_metadata_stats."""
 
     def test_canonical_metadata(self) -> None:
         doc = {
@@ -20,6 +19,7 @@ class TestExtractMetadataStats:
                 "segment_count": 120,
                 "duration_seconds": 3600.0,
                 "speaker_count": 3,
+                "word_count": 42,
             }
         }
         stats = _extract_metadata_stats(doc)
@@ -27,7 +27,34 @@ class TestExtractMetadataStats:
         assert stats["duration_seconds"] == 3600.0
         assert stats["duration_minutes"] == 60.0
         assert stats["speaker_count"] == 3
-        assert stats["word_count"] == 0
+        assert stats["word_count"] == 42
+
+    def test_legacy_words_alias(self) -> None:
+        doc = {"metadata": {"words": 99}}
+        stats = _extract_metadata_stats(doc)
+        assert stats["word_count"] == 99
+
+    def test_segment_fallback_when_metadata_lacks_word_count(self) -> None:
+        doc = {
+            "metadata": {"segment_count": 2},
+            "segments": [
+                {"text": "one two three"},
+                {"text": "four five"},
+            ],
+        }
+        stats = _extract_metadata_stats(doc)
+        assert stats["word_count"] == 5
+
+    def test_no_segment_fallback_without_loaded_segments(self) -> None:
+        from transcriptx.io.metadata_stats import word_count_from_document
+
+        assert (
+            word_count_from_document(
+                {"metadata": {"segment_count": 2}},
+                allow_segment_fallback=True,
+            )
+            == 0
+        )
 
     def test_legacy_metadata_keys(self) -> None:
         doc = {
@@ -166,7 +193,11 @@ class TestFileService:
                 "segment_count": 10,
                 "duration_seconds": 600.0,
                 "speaker_count": 2,
-            }
+            },
+            "segments": [
+                {"text": "one two three"},
+                {"text": "four five"},
+            ],
         }
 
         with (
@@ -193,5 +224,5 @@ class TestFileService:
         assert len(sessions) == 2
         assert mock_load_transcript.call_count == 1
         assert sessions[0]["segment_count"] == 10
-        assert sessions[0]["word_count"] == 0
+        assert sessions[0]["word_count"] == 5
         assert sessions[1]["duration_minutes"] == 10.0

@@ -92,12 +92,12 @@ class _DummyStreamlit:
 
 
 def test_format_duration_display() -> None:
-    import transcriptx.web.page_modules.library as mod
+    from transcriptx.utils.text_utils import format_duration_display
 
-    assert mod._format_duration_display(None) == "-"
-    assert mod._format_duration_display(125.0) == "2m"
-    assert mod._format_duration_display(3599.0) == "60m"
-    assert mod._format_duration_display(3720.0) == "1h 2m"
+    assert format_duration_display(None) == "-"
+    assert format_duration_display(125.0) == "2m"
+    assert format_duration_display(3599.0) == "60m"
+    assert format_duration_display(3720.0) == "1h 2m"
 
 
 def test_render_library_summary_shows_has_audio_and_duration(monkeypatch) -> None:

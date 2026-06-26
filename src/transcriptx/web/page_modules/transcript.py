@@ -48,6 +48,7 @@ from transcriptx.web.state import (
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.web.models.search import NavRequest, SegmentRef
+from transcriptx.utils.text_utils import format_duration_display_from_config
 
 logger = get_logger()
 
@@ -152,7 +153,10 @@ def _render_metadata_metrics(transcript_data: dict) -> None:
     seg_count, total_words, avg_words = segment_word_stats(segments)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Duration", f"{metadata.get('duration_seconds', 0) / 60:.1f} min")
+        st.metric(
+            "Duration",
+            format_duration_display_from_config(metadata.get("duration_seconds", 0)),
+        )
     with col2:
         st.metric("Speakers", metadata.get("speaker_count", 0), help=speaker_help)
     with col3:

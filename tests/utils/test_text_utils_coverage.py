@@ -65,6 +65,48 @@ def test_filename_helpers_validate_and_sanitize() -> None:
 
 
 @pytest.mark.unit
+def test_format_duration_display_thresholds() -> None:
+    assert tu.format_duration_display(None) == "-"
+    assert tu.format_duration_display(0) == "0m"
+    assert tu.format_duration_display(125.0) == "2m"
+    assert tu.format_duration_display(45 * 60) == "45m"
+    assert tu.format_duration_display(59 * 60) == "59m"
+    assert tu.format_duration_display(3599.0) == "60m"
+    assert tu.format_duration_display(60 * 60) == "1h 0m"
+    assert tu.format_duration_display(62 * 60) == "1h 2m"
+    assert tu.format_duration_display(3720.0) == "1h 2m"
+    assert tu.format_duration_display(8917 * 60) == "148h 37m"
+
+
+@pytest.mark.unit
+def test_compute_word_count_from_segments() -> None:
+    assert tu.compute_word_count_from_segments([]) == 0
+    assert (
+        tu.compute_word_count_from_segments(
+            [
+                {"text": "one two"},
+                {"text": None},
+                {"text": "three"},
+                "not a dict",
+            ]
+        )
+        == 3
+    )
+    assert tu.compute_word_count_from_segments([{"text": " one   two "}]) == 2
+
+
+@pytest.mark.unit
+def test_format_duration_display_minutes_only_style() -> None:
+    assert tu.format_duration_display(8917 * 60, style="minutes_only") == "8917m"
+    assert (
+        tu.format_duration_display(
+            62 * 60, hours_threshold_seconds=7200, style="compact"
+        )
+        == "62m"
+    )
+
+
+@pytest.mark.unit
 def test_normalize_speaker_name_and_text() -> None:
     assert tu.normalize_speaker_name("") == "Unknown"
     assert tu.normalize_speaker_name("dr.  ada   lovelace") == "Ada Lovelace"

@@ -21,15 +21,30 @@ _LAST_MODIFIED_BY = "_last_modified_by"
 _LAST_MODIFIED_AT = "_last_modified_at"
 
 
+def _maybe_refresh_metadata(data: Dict[str, Any]) -> None:
+    """Recompute derived metadata when configured and segments are present."""
+    if not isinstance(data.get("segments"), list):
+        return
+    try:
+        from transcriptx.io.metadata_display_options import get_metadata_config
+        from transcriptx.io.transcript_schema import refresh_document_metadata
+
+        if get_metadata_config().auto_refresh_on_write:
+            refresh_document_metadata(data)
+    except Exception:
+        logger.debug("Skipping metadata refresh before transcript write", exc_info=True)
+
+
 def _stamp_and_write(path: Path, data: Dict[str, Any], reason: str) -> None:
     """Internal: stamp data and atomic write to path (caller must hold lock if needed)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = dict(data)
-    data[_LAST_MODIFIED_BY] = reason
-    data[_LAST_MODIFIED_AT] = datetime.now(timezone.utc).isoformat()
+    working = dict(data)
+    _maybe_refresh_metadata(working)
+    working[_LAST_MODIFIED_BY] = reason
+    working[_LAST_MODIFIED_AT] = datetime.now(timezone.utc).isoformat()
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     with open(tmp_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+        json.dump(working, f, indent=2, ensure_ascii=False)
         f.flush()
         os.fsync(f.fileno())
     os.replace(tmp_path, path)

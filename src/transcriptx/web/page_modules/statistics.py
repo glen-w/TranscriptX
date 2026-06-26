@@ -14,6 +14,7 @@ from transcriptx.web.utils import (
     get_all_sessions_statistics,
     list_available_sessions,
 )
+from transcriptx.utils.text_utils import format_duration_display_from_config
 
 _STATISTICS_HELP = (
     "**Statistics** shows workspace-wide session counts, duration, words, "
@@ -52,7 +53,7 @@ def render_statistics() -> None:
     with col2:
         st.metric(
             "Total duration",
-            f"{stats.get('total_duration_minutes', 0):.0f} min",
+            format_duration_display_from_config(stats.get("total_duration_seconds", 0)),
             help="Sum of all transcript durations",
         )
     with col3:
@@ -70,11 +71,15 @@ def render_statistics() -> None:
     st.subheader("Per-session statistics")
 
     rows = []
-    for s in sessions:
+    for s in sorted(
+        sessions, key=lambda session: session.get("duration_seconds", 0), reverse=True
+    ):
         rows.append(
             {
                 "Session": s.get("name", ""),
-                "Duration (min)": s.get("duration_minutes", 0),
+                "Duration": format_duration_display_from_config(
+                    s.get("duration_seconds", 0)
+                ),
                 "Words": s.get("word_count", 0),
                 "Segments": s.get("segment_count", 0),
                 "Speakers": s.get("speaker_count", 0),

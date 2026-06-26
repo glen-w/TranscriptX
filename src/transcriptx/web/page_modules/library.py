@@ -30,19 +30,7 @@ from transcriptx.web.navigation import (
     consume_library_transcript_nav,
     library_transcript_index,
 )
-
-
-def _format_duration_display(duration_seconds: float | None) -> str:
-    """Format duration for table display in minutes/hours."""
-    if duration_seconds is None:
-        return "-"
-    total_minutes = int(round(duration_seconds / 60.0))
-    if duration_seconds > 0 and total_minutes == 0:
-        total_minutes = 1
-    if duration_seconds < 3600:
-        return f"{total_minutes}m"
-    hours, minutes = divmod(total_minutes, 60)
-    return f"{hours}h {minutes}m"
+from transcriptx.utils.text_utils import format_duration_display_from_config
 
 
 def _format_path_created_at(path: Path) -> str:
@@ -128,7 +116,7 @@ def _library_browser_fragment(
                     _format_path_created_at(audio_path) if audio_path else "—"
                 ),
                 "Speakers": ("-" if m.speaker_count is None else str(m.speaker_count)),
-                "Duration": _format_duration_display(m.duration_seconds),
+                "Duration": format_duration_display_from_config(m.duration_seconds),
                 "Has Audio": "✓" if has_resolvable_audio(m.path) else "—",
                 "Has Analysis": "✓" if m.has_analysis_outputs else "—",
                 "Fully Mapped": fully_mapped,

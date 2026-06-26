@@ -6,6 +6,7 @@ used across the TranscriptX codebase.
 """
 
 import re
+from typing import Literal
 
 # Lazy import to avoid startup delays
 # import nltk
@@ -153,6 +154,65 @@ def format_time(seconds: float) -> str:
     minutes = int(seconds) // 60
     seconds_remainder = int(seconds) % 60
     return f"{minutes}:{seconds_remainder:02d}"
+
+
+def format_duration_display(
+    seconds: float | int | None,
+    *,
+    hours_threshold_seconds: int = 3600,
+    style: Literal["compact", "minutes_only"] = "compact",
+) -> str:
+    """Format duration for summary UI display in minutes or hours+minutes.
+
+    Summary-style formatter for tables and metric cards. For clock timestamps
+    (``2:05``, ``1:02:34``) use :func:`format_time` or
+    ``RecordingsService.format_duration`` instead.
+
+    Uses rounded whole minutes (``round(seconds / 60)``). Sub-minute positive
+    durations display as ``1m``. In ``compact`` style, durations at or above
+    *hours_threshold_seconds* render as ``Xh Ym``.
+
+    Raw duration remains in seconds internally; this is display-only formatting.
+    """
+    if seconds is None:
+        return "-"
+    total_minutes = int(round(float(seconds) / 60.0))
+    if seconds > 0 and total_minutes == 0:
+        total_minutes = 1
+    if style == "minutes_only" or float(seconds) < hours_threshold_seconds:
+        return f"{total_minutes}m"
+    hours, minutes = divmod(total_minutes, 60)
+    return f"{hours}h {minutes}m"
+
+
+def format_duration_display_from_config(seconds: float | int | None) -> str:
+    """Format duration using dashboard settings from :func:`get_config`."""
+    try:
+        from transcriptx.io.metadata_display_options import get_duration_display_options
+
+        opts = get_duration_display_options()
+        return format_duration_display(
+            seconds,
+            hours_threshold_seconds=opts.hours_threshold_seconds,
+            style=opts.style,
+        )
+    except Exception:
+        return format_duration_display(seconds)
+
+
+def compute_word_count_from_segments(segments) -> int:
+    """Sum word counts across all segment text using :func:`count_words`."""
+    total = 0
+    for seg in segments:
+        if not isinstance(seg, dict):
+            continue
+        text = seg.get("text")
+        if text is None:
+            text = ""
+        elif not isinstance(text, str):
+            text = str(text)
+        total += count_words(text)
+    return total
 
 
 def format_time_detailed(seconds: float) -> str:

@@ -8,8 +8,8 @@ from typing import Sequence
 from transcriptx.io.intermediate_transcript import TranscriptSegment
 from transcriptx.io.transcript_schema import (
     SourceInfo,
-    TranscriptMetadata,
     compute_content_hash,
+    compute_metadata_from_segments,
     create_transcript_document,
     validate_transcript_document,
 )
@@ -26,17 +26,7 @@ class CanonicalBuildInput:
 
 
 def build_canonical_document(input_data: CanonicalBuildInput) -> dict:
-    duration = max(
-        (float(seg.get("end", 0.0)) for seg in input_data.segments), default=0.0
-    )
-    speaker_ids = {
-        seg.get("speaker") for seg in input_data.segments if seg.get("speaker")
-    }
-    metadata = TranscriptMetadata(
-        duration_seconds=float(duration),
-        segment_count=len(input_data.segments),
-        speaker_count=len(speaker_ids),
-    )
+    metadata = compute_metadata_from_segments(input_data.segments)
     source_info = SourceInfo(
         type=input_data.source_type,
         original_path=input_data.source_original_path

@@ -16,6 +16,8 @@ from transcriptx.core.utils.paths import (
 )
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.pipeline.manifest_loader import load_artifact_manifest
+from transcriptx.io.metadata_display_options import get_metadata_config
+from transcriptx.io.metadata_stats import word_count_from_document
 
 logger = get_logger()
 
@@ -38,12 +40,16 @@ def _coerce_stat_number(value: Any, *, as_int: bool = False) -> int | float | No
 
 
 def _extract_metadata_stats(doc: dict) -> dict[str, int | float]:
-    """Map document.metadata to session stats. Never scans segments."""
+    """Map document.metadata to session stats.
+
+    Word count is metadata-first; legacy fallback uses in-memory segments only
+    when the document is already loaded — never loads segments solely for stats.
+    """
     stats = dict(DEFAULT_SESSION_STATS)
 
     metadata = doc.get("metadata")
     if not isinstance(metadata, dict):
-        return stats
+        metadata = {}
 
     segment_count = _coerce_stat_number(metadata.get("segment_count"), as_int=True)
     if segment_count is None:
@@ -63,6 +69,13 @@ def _extract_metadata_stats(doc: dict) -> dict[str, int | float]:
         speaker_count = _coerce_stat_number(metadata.get("num_speakers"), as_int=True)
     if speaker_count is not None:
         stats["speaker_count"] = speaker_count
+
+    meta_cfg = get_metadata_config()
+    stats["word_count"] = word_count_from_document(
+        doc,
+        allow_segment_fallback=meta_cfg.listing_word_count_fallback == "in_memory",
+        allow_legacy_words_alias=meta_cfg.legacy_words_alias,
+    )
 
     return stats
 
@@ -418,7 +431,7 @@ class FileService:
                         "last_updated": last_updated,
                         "analysis_completion": analysis_completion,
                     }
-                    # Session listings use document.metadata only; word_count stays 0.
+                    # word_count is metadata-first; in-memory segment fallback when doc is cached.
                     transcript_path = FileService.resolve_transcript_path(session_id)
                     if transcript_path is not None:
                         try:

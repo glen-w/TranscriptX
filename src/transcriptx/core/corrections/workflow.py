@@ -30,6 +30,7 @@ from transcriptx.core.utils.speaker_extraction import (
 )
 from transcriptx.io import load_segments, load_transcript, save_json
 from transcriptx.io.speaker_map_resolver import SpeakerMapResolver
+from transcriptx.core.store import TranscriptStore
 
 logger = get_logger()
 
@@ -145,7 +146,9 @@ def _write_updated_transcript(
     transcript_data = load_transcript(transcript_path)
     if isinstance(transcript_data, dict):
         transcript_data["segments"] = updated_segments
-        save_json(transcript_data, transcript_path)
+        TranscriptStore().write(
+            transcript_path, transcript_data, reason="corrections_update"
+        )
     else:
         save_json(updated_segments, transcript_path)
     logger.info(f"Updated transcript file: {transcript_path}")
@@ -400,7 +403,9 @@ def write_corrected_transcript(
     transcript_data = load_transcript(transcript_path)
     if isinstance(transcript_data, dict):
         transcript_data["segments"] = updated_segments
-        save_json(transcript_data, transcript_path)
+        TranscriptStore().write(
+            transcript_path, transcript_data, reason="corrections_update"
+        )
     else:
         save_json(updated_segments, transcript_path)
     logger.info(f"Updated transcript file: {transcript_path}")

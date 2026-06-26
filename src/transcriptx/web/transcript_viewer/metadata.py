@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from transcriptx.utils.text_utils import compute_word_count_from_segments
+
 
 def speaker_tooltip(segments: list[dict[str, Any]]) -> str | None:
     """Build tooltip listing unique speaker names."""
@@ -27,13 +29,8 @@ def speaker_tooltip(segments: list[dict[str, Any]]) -> str | None:
 def segment_word_stats(segments: list[dict[str, Any]]) -> tuple[int, int, float]:
     """Return segment count, total words, and avg words per segment."""
     seg_count = len(segments)
-    total_words = 0
     try:
-        for seg in segments:
-            if not isinstance(seg, dict):
-                continue
-            text = seg.get("text") or ""
-            total_words += len(str(text).split())
+        total_words = compute_word_count_from_segments(segments)
     except Exception:
         total_words = 0
     avg_words = (total_words / seg_count) if seg_count else 0.0

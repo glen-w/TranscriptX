@@ -82,15 +82,16 @@ def generate_human_friendly_transcript(
             [name for name in set(unique_speakers.values()) if is_named_speaker(name)]
         )
 
+        from transcriptx.io.transcript_schema import compute_metadata_from_segments
+
+        derived = compute_metadata_from_segments(segments)
         summary_data = {
             "transcript_file": txt_path,
             "csv_file": csv_path,
             "srt_file": srt_path,
-            "total_segments": len(segments),
+            "total_segments": derived.segment_count,
             "speakers": speaker_names,
-            "duration_minutes": (
-                max(seg.get("end", 0) for seg in segments) / 60 if segments else 0
-            ),
+            "duration_minutes": derived.duration_seconds / 60.0,
         }
 
         logger.info(f"Human-friendly transcript generated successfully: {txt_path}")

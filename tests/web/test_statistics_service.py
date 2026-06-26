@@ -11,14 +11,21 @@ from transcriptx.web.services.statistics_service import StatisticsService
 class TestStatisticsService:
     """Tests for StatisticsService."""
 
+    @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
     @patch("transcriptx.web.services.statistics_service.FileService")
     @patch("transcriptx.web.services.statistics_service.get_analysis_modules")
     @patch("transcriptx.web.services.statistics_service.get_total_module_count")
     @patch("transcriptx.web.services.statistics_service.Path")
     def test_get_session_statistics(
-        self, mock_path, mock_total_count, mock_get_modules, mock_file_service
+        self,
+        mock_path,
+        mock_total_count,
+        mock_get_modules,
+        mock_file_service,
+        mock_list_sessions,
     ):
         """Test getting session statistics."""
+        mock_list_sessions.return_value = []
         # Setup mocks
         mock_file_service.load_transcript_by_session.return_value = {
             "segments": [
@@ -50,9 +57,42 @@ class TestStatisticsService:
         assert stats["analysis_completion"] > 0
         assert stats["last_updated"] is not None
 
+    @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
+    @patch("transcriptx.web.services.statistics_service.get_analysis_modules")
+    @patch("transcriptx.web.services.statistics_service.get_total_module_count")
+    @patch("transcriptx.web.services.statistics_service.Path")
+    def test_get_session_statistics_prefers_listing_entry(
+        self, mock_path, mock_total_count, mock_get_modules, mock_list_sessions
+    ):
+        mock_list_sessions.return_value = [
+            {
+                "name": "slug/run-a",
+                "segment_count": 9,
+                "duration_seconds": 120.0,
+                "speaker_count": 4,
+                "word_count": 800,
+            }
+        ]
+        mock_get_modules.return_value = []
+        mock_total_count.return_value = 18
+        session_dir = MagicMock()
+        session_dir.exists.return_value = False
+        mock_path.return_value.__truediv__ = lambda self, other: session_dir
+
+        stats = StatisticsService.get_session_statistics("slug/run-a")
+
+        assert stats["segment_count"] == 9
+        assert stats["duration_seconds"] == 120.0
+        assert stats["speaker_count"] == 4
+        assert stats["word_count"] == 800
+
+    @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
     @patch("transcriptx.web.services.statistics_service.FileService")
-    def test_get_session_statistics_no_transcript(self, mock_file_service):
+    def test_get_session_statistics_no_transcript(
+        self, mock_file_service, mock_list_sessions
+    ):
         """Test getting statistics when transcript doesn't exist."""
+        mock_list_sessions.return_value = []
         mock_file_service.load_transcript_by_session.return_value = None
 
         with patch(
@@ -99,6 +139,7 @@ class TestStatisticsService:
         stats = StatisticsService.get_all_sessions_statistics()
 
         assert stats["total_sessions"] == 2
+        assert stats["total_duration_seconds"] == 300
         assert stats["total_duration_minutes"] == 5.0  # 300 seconds / 60
         assert stats["total_word_count"] == 1500
         assert stats["total_speakers"] == 3  # max of speaker counts
@@ -112,6 +153,7 @@ class TestStatisticsService:
         stats = StatisticsService.get_all_sessions_statistics()
 
         assert stats["total_sessions"] == 0
+        assert stats["total_duration_seconds"] == 0
         assert stats["total_duration_minutes"] == 0
         assert stats["total_word_count"] == 0
         assert stats["average_completion"] == 0

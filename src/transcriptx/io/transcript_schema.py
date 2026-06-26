@@ -8,11 +8,15 @@ source metadata, and validation functions.
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Literal, Optional, Sequence
 
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.io.metadata_stats import duration_seconds_from_segments
+from transcriptx.utils.text_utils import compute_word_count_from_segments
 
 logger = get_logger()
+
+DurationCalculation = Literal["max_end", "span"]
 
 # Current schema version
 SCHEMA_VERSION = "1.0"
@@ -57,11 +61,65 @@ class SourceInfo:
 
 @dataclass
 class TranscriptMetadata:
-    """Metadata about the transcript."""
+    """Metadata about the transcript.
+
+    ``word_count`` is the sum of all segment text via ``count_words()`` and is
+    stored at import/edit time so listings can read metadata without scanning
+    segments on disk.
+    """
 
     duration_seconds: float
     segment_count: int
     speaker_count: int
+    word_count: int = 0
+
+
+def compute_metadata_from_segments(
+    segments: Sequence[Dict[str, Any]],
+    *,
+    duration_calculation: DurationCalculation | None = None,
+) -> TranscriptMetadata:
+    """Compute derived transcript metadata from segment dicts."""
+    if duration_calculation is None:
+        try:
+            from transcriptx.io.metadata_display_options import get_metadata_config
+
+            duration_calculation = get_metadata_config().duration_calculation
+        except Exception:
+            duration_calculation = "max_end"
+    segment_list = list(segments)
+    duration = duration_seconds_from_segments(segment_list, method=duration_calculation)
+    segment_count = len(segment_list)
+    speaker_ids = {seg.get("speaker") for seg in segment_list if seg.get("speaker")}
+    speaker_count = len(speaker_ids)
+    word_count = compute_word_count_from_segments(segment_list)
+    return TranscriptMetadata(
+        duration_seconds=float(duration),
+        segment_count=segment_count,
+        speaker_count=speaker_count,
+        word_count=word_count,
+    )
+
+
+def refresh_document_metadata(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """Recompute derived metadata fields from ``doc['segments']``.
+
+    Preserves non-derived keys already present in ``doc['metadata']`` (title,
+    language, provenance, audit stamps, etc.).
+    """
+    segments = doc.get("segments")
+    if not isinstance(segments, list):
+        segments = []
+    derived = compute_metadata_from_segments(segments)
+    metadata = doc.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+        doc["metadata"] = metadata
+    metadata["duration_seconds"] = derived.duration_seconds
+    metadata["segment_count"] = derived.segment_count
+    metadata["speaker_count"] = derived.speaker_count
+    metadata["word_count"] = derived.word_count
+    return doc
 
 
 # ── Hash utilities ─────────────────────────────────────────────────────────────
@@ -122,15 +180,15 @@ def create_transcript_document(
     Returns:
         Standardised transcript document dict.
     """
+    computed = compute_metadata_from_segments(segments)
     if metadata is None:
-        duration = max((seg.get("end", 0) for seg in segments), default=0.0)
-        segment_count = len(segments)
-        speaker_ids = {seg.get("speaker") for seg in segments if seg.get("speaker")}
-        speaker_count = len(speaker_ids)
+        metadata = computed
+    else:
         metadata = TranscriptMetadata(
-            duration_seconds=duration,
-            segment_count=segment_count,
-            speaker_count=speaker_count,
+            duration_seconds=metadata.duration_seconds,
+            segment_count=metadata.segment_count,
+            speaker_count=metadata.speaker_count,
+            word_count=computed.word_count,
         )
 
     if source_info.type not in PERMITTED_SOURCE_TYPES:
@@ -152,6 +210,7 @@ def create_transcript_document(
             "duration_seconds": metadata.duration_seconds,
             "segment_count": metadata.segment_count,
             "speaker_count": metadata.speaker_count,
+            "word_count": metadata.word_count,
         },
         "segments": list(segments),
     }
