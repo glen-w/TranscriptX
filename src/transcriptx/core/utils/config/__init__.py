@@ -18,6 +18,7 @@ from .workflow import (
     OutputConfig,
     GroupAnalysisConfig,
     DashboardConfig,
+    MetadataConfig,
     SpeakerGateConfig,
 )
 from .system import LLMConfig, LoggingConfig, AudioPreprocessingConfig
@@ -95,6 +96,7 @@ __all__ = [
     "OutputConfig",
     "GroupAnalysisConfig",
     "DashboardConfig",
+    "MetadataConfig",
     "SpeakerGateConfig",
     "LLMConfig",
     "LoggingConfig",

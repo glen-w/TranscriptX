@@ -11,6 +11,7 @@ from transcriptx.core.utils.config.workflow import (
     DashboardConfig,
     GroupAnalysisConfig,
     InputConfig,
+    MetadataConfig,
     OutputConfig,
     WorkflowConfig,
 )
@@ -197,6 +198,7 @@ class TranscriptXConfig:
         self.workflow = WorkflowConfig()
         self.group_analysis = GroupAnalysisConfig()
         self.dashboard = DashboardConfig()
+        self.metadata = MetadataConfig()
 
         # Global settings
         self.mode = "simple"  # 'simple' or 'advanced' - controls UI complexity

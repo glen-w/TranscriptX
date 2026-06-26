@@ -1,0 +1,64 @@
+{
+  "metadata.auto_refresh_on_write": {
+    "advanced": false,
+    "category": "metadata",
+    "choices": null,
+    "default": true,
+    "description": "Recompute derived transcript metadata on TranscriptStore writes.",
+    "key": "metadata.auto_refresh_on_write",
+    "max": null,
+    "min": null,
+    "path": "metadata.auto_refresh_on_write",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "metadata.duration_calculation": {
+    "advanced": false,
+    "category": "metadata",
+    "choices": [
+      "max_end",
+      "span"
+    ],
+    "default": "max_end",
+    "description": "How duration_seconds is derived from segments when recomputing metadata.",
+    "key": "metadata.duration_calculation",
+    "max": null,
+    "min": null,
+    "path": "metadata.duration_calculation",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "metadata.legacy_words_alias": {
+    "advanced": false,
+    "category": "metadata",
+    "choices": null,
+    "default": true,
+    "description": "Accept legacy metadata.words as a word_count alias when reading documents.",
+    "key": "metadata.legacy_words_alias",
+    "max": null,
+    "min": null,
+    "path": "metadata.legacy_words_alias",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "metadata.listing_word_count_fallback": {
+    "advanced": false,
+    "category": "metadata",
+    "choices": [
+      "in_memory",
+      "metadata_only"
+    ],
+    "default": "in_memory",
+    "description": "Whether listing views may scan loaded segments for word_count when metadata is absent.",
+    "key": "metadata.listing_word_count_fallback",
+    "max": null,
+    "min": null,
+    "path": "metadata.listing_word_count_fallback",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  }
+}

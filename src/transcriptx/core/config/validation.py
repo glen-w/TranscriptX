@@ -7,15 +7,12 @@ from typing import Any, Dict, List
 
 from pydantic import ValidationError as PydanticValidationError
 
-from .models.semantic_similarity_v2 import SemanticSimilarityV2SettingsModel
-from .registry import (
-    SEMANTIC_SIMILARITY_V2_PREFIX,
-    FieldMetadata,
-    build_registry,
-    flatten,
+from .pydantic_bridge import (
+    PYDANTIC_REGISTRY_PILOTS,
+    extract_subtree_overrides,
+    is_pydantic_validated_field_key,
 )
-
-PYDANTIC_VALIDATED_PREFIXES = (f"{SEMANTIC_SIMILARITY_V2_PREFIX}.",)
+from .registry import FieldMetadata, build_registry, flatten
 
 
 @dataclass(frozen=True)
@@ -25,7 +22,7 @@ class ValidationError:
 
 
 def _is_pydantic_validated_key(key: str) -> bool:
-    return any(key.startswith(prefix) for prefix in PYDANTIC_VALIDATED_PREFIXES)
+    return is_pydantic_validated_field_key(key)
 
 
 def pydantic_errors_to_validation_errors(
@@ -37,9 +34,7 @@ def pydantic_errors_to_validation_errors(
     for err in exc.errors():
         loc = err.get("loc", ())
         field_suffix = ".".join(str(part) for part in loc) if loc else ""
-        dotpath = (
-            f"{dotpath_prefix}.{field_suffix}" if field_suffix else dotpath_prefix
-        )
+        dotpath = f"{dotpath_prefix}.{field_suffix}" if field_suffix else dotpath_prefix
         message = str(err.get("msg", "Invalid value."))
         errors.setdefault(dotpath, []).append(
             ValidationError(field=dotpath, message=message)
@@ -47,25 +42,33 @@ def pydantic_errors_to_validation_errors(
     return errors
 
 
-def validate_semantic_similarity_v2_subtree(
-    subtree: Dict[str, Any],
+def validate_pydantic_subtrees(
+    flattened: Dict[str, Any],
 ) -> Dict[str, List[ValidationError]]:
-    """Validate semantic_similarity_v2 overrides merged with model defaults."""
-    merged = {**SemanticSimilarityV2SettingsModel().model_dump(), **subtree}
-    try:
-        SemanticSimilarityV2SettingsModel.model_validate(merged)
-        return {}
-    except PydanticValidationError as exc:
-        return pydantic_errors_to_validation_errors(exc, SEMANTIC_SIMILARITY_V2_PREFIX)
+    """Validate all Pydantic pilot subtrees present in a flattened config map."""
+    errors: Dict[str, List[ValidationError]] = {}
+    for spec in PYDANTIC_REGISTRY_PILOTS:
+        overrides = extract_subtree_overrides(flattened, spec)
+        if not overrides:
+            continue
+        merged = {**spec.model().model_dump(), **overrides}
+        try:
+            spec.model.model_validate(merged)
+        except PydanticValidationError as exc:
+            pilot_errors = pydantic_errors_to_validation_errors(
+                exc, spec.dotpath_prefix
+            )
+            for key, field_errors in pilot_errors.items():
+                if key in flattened:
+                    errors[key] = field_errors
+    return errors
 
 
 def _is_valid_type(value: Any, expected_type: type, allow_none: bool = False) -> bool:
     """Check if a value matches the expected type, with special handling for tuples."""
-    # Handle type(None) - this means the field can be None
     if expected_type is type(None):
         return value is None
 
-    # Allow None if explicitly allowed (for optional fields)
     if value is None:
         return allow_none
 
@@ -76,12 +79,8 @@ def _is_valid_type(value: Any, expected_type: type, allow_none: bool = False) ->
     if expected_type is float:
         return isinstance(value, (int, float)) and not isinstance(value, bool)
     if expected_type is tuple:
-        # Tuples are often serialized as lists in JSON/config files
-        # Accept both tuples and lists for tuple-typed fields
         return isinstance(value, (tuple, list))
     if expected_type is list:
-        # Lists can also be tuples in some cases (though less common)
-        # But for strict validation, we'll accept both
         return isinstance(value, (list, tuple))
     if expected_type is dict:
         return isinstance(value, dict)
@@ -93,12 +92,9 @@ def _is_valid_type(value: Any, expected_type: type, allow_none: bool = False) ->
 def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
     errors: List[ValidationError] = []
 
-    # Handle None values - allow if default is None or type is None
     if value is None:
-        # Allow None if the default is None (optional field) or type is None
         if field_meta.default is None or field_meta.type is type(None):
             return errors
-        # Otherwise, None is not allowed
         errors.append(
             ValidationError(
                 field_meta.key,
@@ -107,16 +103,9 @@ def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
         )
         return errors
 
-    # For optional fields (default is None), allow both the specified type and None
-    # But we've already handled None above, so here we just check the type
-    # Special case: if type is type(None) but we have a non-None value, and default is None,
-    # this is likely an optional field where the type was incorrectly inferred
-    # Allow common types (str, int, float, bool, list, dict) for optional fields
     if field_meta.type is type(None) and field_meta.default is None:
-        # This is an optional field - allow common types
         if isinstance(value, (str, int, float, bool, list, dict, tuple)):
-            # Value is acceptable for an optional field
-            pass  # Continue to other validations (min, max, choices, etc.)
+            pass
         else:
             errors.append(
                 ValidationError(
@@ -126,7 +115,6 @@ def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
             )
             return errors
     elif field_meta.type is type(None):
-        # Type is None but default is not None - this shouldn't happen, but be strict
         errors.append(
             ValidationError(
                 field_meta.key,
@@ -135,8 +123,6 @@ def validate(value: Any, field_meta: FieldMetadata) -> List[ValidationError]:
         )
         return errors
 
-    # For optional fields (default is None), allow both the type and None
-    # This handles cases like transcription.language which is str | None
     allow_none = field_meta.default is None
     if field_meta.type is not type(None) and not _is_valid_type(
         value, field_meta.type, allow_none=allow_none
@@ -187,17 +173,8 @@ def validate_config(config_dict: Dict[str, Any]) -> Dict[str, List[ValidationErr
     flattened = flatten(config_dict)
     errors: Dict[str, List[ValidationError]] = {}
 
-    v2_prefix = f"{SEMANTIC_SIMILARITY_V2_PREFIX}."
-    v2_overrides = {
-        key[len(v2_prefix) :]: value
-        for key, value in flattened.items()
-        if key.startswith(v2_prefix)
-    }
-    if v2_overrides:
-        pydantic_errors = validate_semantic_similarity_v2_subtree(v2_overrides)
-        for key, field_errors in pydantic_errors.items():
-            if key in flattened:
-                errors[key] = field_errors
+    pydantic_errors = validate_pydantic_subtrees(flattened)
+    errors.update(pydantic_errors)
 
     for key, value in flattened.items():
         if _is_pydantic_validated_key(key):

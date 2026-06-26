@@ -221,6 +221,42 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
     _env_key("TRANSCRIPTX_LOG_LEVEL", ("logging", "level"), coerce_str),
     _env_key("TRANSCRIPTX_USE_EMOJIS", ("use_emojis",), coerce_bool_on_off),
     _env_key(
+        "TRANSCRIPTX_METADATA_DURATION_CALCULATION",
+        ("metadata", "duration_calculation"),
+        coerce_lower_strip,
+        allowed_values=("max_end", "span"),
+        invalid_policy="warn_skip",
+    ),
+    _env_key(
+        "TRANSCRIPTX_METADATA_LISTING_WORD_COUNT_FALLBACK",
+        ("metadata", "listing_word_count_fallback"),
+        coerce_lower_strip,
+        allowed_values=("in_memory", "metadata_only"),
+        invalid_policy="warn_skip",
+    ),
+    _env_key(
+        "TRANSCRIPTX_METADATA_AUTO_REFRESH_ON_WRITE",
+        ("metadata", "auto_refresh_on_write"),
+        coerce_bool_on_off,
+    ),
+    _env_key(
+        "TRANSCRIPTX_METADATA_LEGACY_WORDS_ALIAS",
+        ("metadata", "legacy_words_alias"),
+        coerce_bool_on_off,
+    ),
+    _env_key(
+        "TRANSCRIPTX_DASHBOARD_DURATION_HOURS_THRESHOLD",
+        ("dashboard", "duration_hours_threshold_seconds"),
+        coerce_int,
+    ),
+    _env_key(
+        "TRANSCRIPTX_DASHBOARD_DURATION_SUMMARY_STYLE",
+        ("dashboard", "duration_summary_style"),
+        coerce_lower_strip,
+        allowed_values=("compact", "minutes_only"),
+        invalid_policy="warn_skip",
+    ),
+    _env_key(
         "TRANSCRIPTX_AUDIO_PREPROCESSING_MODE",
         ("audio_preprocessing", "preprocessing_mode"),
         coerce_lower_strip,

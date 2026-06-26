@@ -13,6 +13,7 @@ _ALLOWED_TOP_LEVEL_KEYS = frozenset(
         "input",
         "output",
         "dashboard",
+        "metadata",
         "logging",
         "audio_preprocessing",
         "workflow",

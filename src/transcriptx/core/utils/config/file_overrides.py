@@ -66,6 +66,13 @@ def load_config_file_into(config: Any, config_file: str) -> None:
                     if hasattr(config.dashboard, key):
                         setattr(config.dashboard, key, value)
 
+        if "metadata" in config_data:
+            metadata_data = config_data["metadata"]
+            if isinstance(metadata_data, dict):
+                for key, value in metadata_data.items():
+                    if hasattr(config.metadata, key):
+                        setattr(config.metadata, key, value)
+
         if "logging" in config_data:
             for key, value in config_data["logging"].items():
                 if hasattr(config.logging, key):

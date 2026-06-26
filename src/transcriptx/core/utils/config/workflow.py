@@ -172,6 +172,16 @@ class GroupAnalysisConfig:
 
 
 @dataclass
+class MetadataConfig:
+    """Transcript metadata derivation and listing behavior."""
+
+    duration_calculation: Literal["max_end", "span"] = "max_end"
+    listing_word_count_fallback: Literal["in_memory", "metadata_only"] = "in_memory"
+    auto_refresh_on_write: bool = True
+    legacy_words_alias: bool = True
+
+
+@dataclass
 class DashboardConfig:
     """Configuration for dashboard and UI settings."""
 
@@ -179,6 +189,8 @@ class DashboardConfig:
     overview_charts: list[str] = field(default_factory=list)
     overview_missing_behavior: str = "skip"
     overview_max_items: int | None = None
+    duration_hours_threshold_seconds: int = 3600
+    duration_summary_style: Literal["compact", "minutes_only"] = "compact"
 
     def __post_init__(self) -> None:
         if not self.overview_charts:

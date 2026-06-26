@@ -1,0 +1,4 @@
+{
+  "duration_hours_threshold_seconds": 3600,
+  "duration_summary_style": "compact"
+}

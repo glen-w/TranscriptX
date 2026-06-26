@@ -9,8 +9,6 @@ import copy
 
 from transcriptx.core.utils.config import TranscriptXConfig  # type: ignore[import-untyped]
 
-from .models.semantic_similarity_v2 import SemanticSimilarityV2SettingsModel
-
 SEMANTIC_SIMILARITY_V2_PREFIX = "analysis.semantic_similarity_v2"
 
 
@@ -185,17 +183,7 @@ def build_registry() -> Dict[str, FieldMetadata]:
                 "description": "Language code for transcription (e.g., 'en', 'fr'). Default is 'en'.",
             }
         )
-    registry.update(
-        _pydantic_semantic_v2_field_metadata()
-    )
+    from .pydantic_bridge import apply_pydantic_registry_overrides
+
+    apply_pydantic_registry_overrides(registry)
     return registry
-
-
-def _pydantic_semantic_v2_field_metadata() -> Dict[str, FieldMetadata]:
-    from .pydantic_registry import pydantic_model_to_field_metadata
-
-    return pydantic_model_to_field_metadata(
-        SemanticSimilarityV2SettingsModel,
-        dotpath_prefix=SEMANTIC_SIMILARITY_V2_PREFIX,
-        category="analysis",
-    )

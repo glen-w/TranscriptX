@@ -1,0 +1,6 @@
+{
+  "auto_refresh_on_write": true,
+  "duration_calculation": "max_end",
+  "legacy_words_alias": true,
+  "listing_word_count_fallback": "in_memory"
+}

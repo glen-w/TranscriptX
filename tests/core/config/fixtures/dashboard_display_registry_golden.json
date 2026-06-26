@@ -1,0 +1,33 @@
+{
+  "dashboard.duration_hours_threshold_seconds": {
+    "advanced": false,
+    "category": "dashboard",
+    "choices": null,
+    "default": 3600,
+    "description": "Seconds at or above which compact duration display switches to hours+minutes.",
+    "key": "dashboard.duration_hours_threshold_seconds",
+    "max": null,
+    "min": 1.0,
+    "path": "dashboard.duration_hours_threshold_seconds",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "dashboard.duration_summary_style": {
+    "advanced": false,
+    "category": "dashboard",
+    "choices": [
+      "compact",
+      "minutes_only"
+    ],
+    "default": "compact",
+    "description": "Duration summary formatting style for library and statistics views.",
+    "key": "dashboard.duration_summary_style",
+    "max": null,
+    "min": null,
+    "path": "dashboard.duration_summary_style",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  }
+}

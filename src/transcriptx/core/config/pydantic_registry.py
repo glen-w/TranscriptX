@@ -104,11 +104,14 @@ def pydantic_model_to_field_metadata(
 def serialize_field_metadata(meta: FieldMetadata) -> dict[str, Any]:
     """Serialize FieldMetadata for golden snapshot comparison."""
     type_name = meta.type.__name__ if meta.type is not type(None) else "NoneType"
+    default = meta.default
+    if isinstance(default, tuple):
+        default = list(default)
     return {
         "key": meta.key,
         "path": meta.path,
         "type": type_name,
-        "default": meta.default,
+        "default": default,
         "min": meta.min,
         "max": meta.max,
         "choices": list(meta.choices) if meta.choices is not None else None,

@@ -72,6 +72,18 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_OUTPUT_DIR": ("/tmp/out", "/tmp/out"),
         "TRANSCRIPTX_LOG_LEVEL": ("DEBUG", "DEBUG"),
         "TRANSCRIPTX_USE_EMOJIS": ("off", False),
+        "TRANSCRIPTX_METADATA_DURATION_CALCULATION": ("span", "span"),
+        "TRANSCRIPTX_METADATA_LISTING_WORD_COUNT_FALLBACK": (
+            "metadata_only",
+            "metadata_only",
+        ),
+        "TRANSCRIPTX_METADATA_AUTO_REFRESH_ON_WRITE": ("0", False),
+        "TRANSCRIPTX_METADATA_LEGACY_WORDS_ALIAS": ("1", True),
+        "TRANSCRIPTX_DASHBOARD_DURATION_HOURS_THRESHOLD": ("7200", 7200),
+        "TRANSCRIPTX_DASHBOARD_DURATION_SUMMARY_STYLE": (
+            "minutes_only",
+            "minutes_only",
+        ),
         "TRANSCRIPTX_AUDIO_PREPROCESSING_MODE": ("auto", "auto"),
         "TRANSCRIPTX_AUDIO_CONVERT_TO_MONO": ("true", "auto"),
         "TRANSCRIPTX_AUDIO_DOWNSAMPLE": ("0", "off"),

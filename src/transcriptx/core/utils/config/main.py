@@ -32,6 +32,7 @@ from .workflow import (
     OutputConfig,
     GroupAnalysisConfig,
     DashboardConfig,
+    MetadataConfig,
 )
 from .system import LLMConfig, LoggingConfig, AudioPreprocessingConfig
 
@@ -80,6 +81,7 @@ class TranscriptXConfig:
         self.workflow = WorkflowConfig()
         self.group_analysis = GroupAnalysisConfig()
         self.dashboard = DashboardConfig()
+        self.metadata = MetadataConfig()
 
         # Global settings
         self.mode = "simple"  # 'simple' or 'advanced' - controls UI complexity
@@ -345,6 +347,7 @@ class TranscriptXConfig:
             "workflow": self._config_to_dict(self.workflow),
             "group_analysis": self._config_to_dict(self.group_analysis),
             "dashboard": self._config_to_dict(self.dashboard),
+            "metadata": self._config_to_dict(self.metadata),
             **root_active_profiles,
             "use_emojis": self.use_emojis,
             "core_mode": self.core_mode,
