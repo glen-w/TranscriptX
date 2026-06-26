@@ -46,6 +46,7 @@ Incremental adoption pattern for moving config subtrees to Pydantic as the singl
 | `semantic_similarity_v2` | `analysis.semantic_similarity_v2` | `SemanticSimilarityV2Config` |
 | `metadata` | `metadata` | `MetadataConfig` |
 | `dashboard_display` | `dashboard` (display fields only) | `DashboardConfig` (partial) |
+| `llm` | `llm` | `LLMConfig` |
 
 ## Regression gate
 

@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "provider": "null",
+  "model": null,
+  "base_url": null,
+  "api_key": null,
+  "request_timeout": 120.0,
+  "availability_timeout": 5.0,
+  "seed": 42,
+  "max_input_chars": 48000,
+  "max_output_tokens": 2048,
+  "default_temperature": 0.3
+}

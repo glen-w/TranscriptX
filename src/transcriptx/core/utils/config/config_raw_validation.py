@@ -150,23 +150,10 @@ def validate_raw_config_dict(config_data: dict[str, Any]) -> None:
 
 
 def validate_llm_config_values(llm: Any) -> None:
-    """Reject ``max_input_chars`` below the runtime-derived prompt wrapper overhead."""
-    from transcriptx.core.analysis.llm_common import llm_prompt_overhead_chars
+    """Validate LLM subtree via the Pydantic pilot (shared with validate_config)."""
+    from transcriptx.core.config.models.llm import validate_llm_settings_applied
 
-    raw_max = (
-        llm.get("max_input_chars")
-        if isinstance(llm, dict)
-        else getattr(llm, "max_input_chars", None)
-    )
-    if raw_max is None:
-        return
-    min_chars = llm_prompt_overhead_chars()
-    if int(raw_max) < min_chars:
-        raise ConfigLoadError(
-            f"llm.max_input_chars ({int(raw_max)}) is below the minimum required "
-            f"for the LLM prompt wrapper ({min_chars} characters).",
-            code="invalid_value",
-        )
+    validate_llm_settings_applied(llm)
 
 
 def validate_applied_llm_config(llm: Any) -> None:
