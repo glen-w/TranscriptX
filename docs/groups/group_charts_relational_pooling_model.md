@@ -1,3 +1,6 @@
+Type: CONTRACT
+Authority: self
+
 # Relational pooling model (group charts)
 
 Normative reference for **speaker-pooled** vs **edge-pooled** relational modules and for `interactions_pooled` / `contagion_pooled`. Module contracts (`group_charts_interactions_pooled_contract.md`, `group_charts_contagion_pooled_contract.md`) must stay aligned with this document.

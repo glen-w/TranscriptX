@@ -85,10 +85,7 @@ Then open http://localhost:8501 in your browser.
 
 For detailed installation, environment variables, NLP setup, and troubleshooting, see [docs/runtime/installation.md](docs/runtime/installation.md).
 
-Settings precedence note: effective configuration resolves by layer strength as
-Environment > Run override (or Draft override when no run is selected) >
-Project config > Defaults. Current source labels in the settings UI keep draft
-overrides under the run-layer source model.
+Configuration precedence (settings UI): Environment → Run/Draft override → Project config → Defaults. See [installation guide](docs/runtime/installation.md) for env vars and gates.
 
 ## Canonical sample transcript (development)
 
@@ -110,7 +107,7 @@ Supported public surfaces are:
 - **Python API** — scripting and automation via typed workflows.
 - **Managed import workflow** — the supported way to admit transcripts into managed storage.
 
-See `docs/public_surfaces.md` for the full public-surface contract, including unsupported patterns (e.g. direct CLI analysis subcommands, ad hoc JSON ingestion, and direct filesystem operations on managed storage).
+See `docs/public_surfaces.md` for the full public-surface contract, including Docker usage, unsupported patterns (e.g. direct CLI analysis subcommands, ad hoc JSON ingestion, and direct filesystem operations on managed storage).
 
 ## What TranscriptX does today
 
@@ -148,6 +145,8 @@ Next phases:
 
 ## Links
 
+- [Contract index](docs/CONTRACT_INDEX.md) — where each concept is defined
+- [Terminology index](docs/TERMS.md) — canonical vocabulary (links to contracts)
 - [Installation & configuration](docs/runtime/installation.md) — NLP setup, gates, core mode, env vars, troubleshooting
 - [Transcription guide](docs/runtime/transcription.md) — Canonical schema, how to produce transcript JSON
 - [Docker guide](docs/runtime/docker.md) — Volume layout, Apple Silicon, pitfalls

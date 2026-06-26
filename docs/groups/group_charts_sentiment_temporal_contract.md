@@ -1,3 +1,6 @@
+Type: CONTRACT
+Authority: self
+
 # Contract: group aggregate sentiment temporal overlay (Tier 2)
 
 Authority for the cross-session **compound sentiment** line chart emitted when `SentimentGroupChartGenerator` has `per_transcript_results`. One chart family: one line per session (no per-speaker split in v1).

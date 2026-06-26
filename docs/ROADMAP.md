@@ -42,6 +42,7 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - Improve speaker identification workflow
 - Improve installation reliability
 - Stabilize output contracts
+- **Transcript-first by default** (especially Docker); optional orchestrated transcribe→import workflow later — see [Transcription architecture](#phase-2--transcription-architecture-analysis-first-integration-deferred)
 
 **Later (v0.3+)**
 
@@ -55,7 +56,8 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 
 Future integration with:
 
-- **Local Ollama models** — summarization, conversational insights, semantic analysis
+- **Local Ollama models** — summarization, conversational insights, semantic analysis (`TRANSCRIPTX_LLM_BASE_URL`; from Docker on Mac use `http://host.docker.internal:11434`)
+- **Host-side transcription services (optional)** — same bridge pattern as Ollama: HTTP provider on the Mac, GUI in Docker calls `host.docker.internal`; see [Transcription architecture](#phase-2--transcription-architecture-analysis-first-integration-deferred)
 - **Optional remote compute** (e.g. Colab) — for users who prefer cloud-based inference
 
 These would enable summarization, conversational insights, and semantic analysis while keeping TranscriptX local-first and modular.
@@ -78,9 +80,53 @@ These would enable summarization, conversational insights, and semantic analysis
 
 ---
 
-### Phase 2 — Optional transcription integration (non-goal for v0.1)
+### Phase 2 — Transcription architecture (analysis-first; integration deferred)
 
-TranscriptX is analysis-only; transcription is external. Users bring their own transcript JSON from tools such as WhisperX, AssemblyAI, Deepgram, Otter, or manual export (see [transcription.md](transcription.md)). A future phase could introduce an optional **TranscriptionProvider** protocol for external integrations (e.g. WhisperX via HTTP, AssemblyAI, Colab) — configuration-only, no built-in transcription engine. No provider code ships in v0.1.
+**Default stance:** TranscriptX is **analysis-first**. Users arrive with transcript JSON from WhisperX, whispermlx, AssemblyAI, Deepgram, Otter, manual export, etc. Managed import is the admission gate; analysis runs on library-valid canonical transcripts. See [transcription.md](runtime/transcription.md).
+
+**Keep transcription separate from the analysis runtime.** This is intentional, not a temporary gap:
+
+| Layer | Role | Typical host |
+|-------|------|----------------|
+| Transcription | Audio → JSON (segments, speakers, timestamps) | Mac host venv (whispermlx), WhisperX Docker, SaaS |
+| TranscriptX | Import → analyze → artifacts | Docker (`transcriptx-web`) or native `./transcriptx.sh` |
+
+**Why not one integrated engine?**
+
+- **Docker (recommended install)** runs Linux. **whispermlx** requires macOS + Apple MLX; a Mac binary cannot run inside the container.
+- The integrated **Transcribe Audio** page (whispermlx v1) uses `subprocess` on a local CLI — it only works when Streamlit and whispermlx share the **same native macOS host**, not when the GUI is in Docker.
+- Merging stacks would couple analysis releases to transcription toolchains (ffmpeg, HF tokens, model weights, platform quirks).
+
+**Current state (v0.1.x)**
+
+- [x] **Transcribe Audio** GUI + `whispermlx` provider — native macOS only (`sys.platform == darwin`, local binary).
+- [x] **Import Transcript** GUI + `run_managed_import_workflow()` — all platforms; primary handoff for Docker users.
+- [ ] **WhisperX (Docker)** provider in picker — stub (“coming soon”); external recipe at `docs/recipes/whisperx/`.
+- [ ] Remote / HTTP `TranscriptionProvider` implementations.
+
+**Recommended workflows today**
+
+- **Docker + Mac:** transcribe on the host (whispermlx script or WhisperX recipe) → **Import Transcript** in the web UI (or programmatic managed import). Do not expect `docker exec` or sourcing `whisperx.env` inside `transcriptx-web` to run whispermlx.
+- **Native Mac:** `./transcriptx.sh` can use integrated transcribe when whispermlx and ffmpeg are on PATH.
+
+**Future: integrated *workflow*, not integrated *engine***
+
+For non-technical users, the goal is a **single guided pipeline** in the GUI — not running MLX inside the Linux container. Pattern: same as **Ollama** today (`TRANSCRIPTX_LLM_BASE_URL` → `http://host.docker.internal:11434`): the container calls a **host-side HTTP service**; it does not execute the host binary.
+
+Planned direction (optional Phase 2+):
+
+- [ ] **HTTP `TranscriptionProvider`** — e.g. `WHISPERMLX_BASE_URL` / `WHISPERX_SERVICE_URL` pointing at a daemon on the host (`host.docker.internal` from Docker on Mac/Windows).
+- [ ] **Host transcribe service** — thin wrapper around whispermlx CLI or WhisperX; health check + job status + JSON output compatible with existing import adapters (WhisperX-style segments; diarization preserved).
+- [ ] **Orchestrated UI flow** — Transcribe → managed import → optional auto-analyze, with progress and presets; no terminal, venv, or manual upload step for casual users.
+- [ ] **WhisperX Docker GUI orchestration** — compose/exec or HTTP against the reference recipe, not a bespoke engine in the main image.
+
+**Explicit non-goals for transcription integration**
+
+- Running whispermlx or MLX inside `transcriptx-web` on Mac Docker.
+- Replacing external tools with a built-in transcription engine in the core package.
+- Realtime / streaming transcription (see [Out of scope](#out-of-scope-next-6-months)).
+
+Configuration remains env-driven (`whisperx.env`, provider registry); no transcription engine ships as a required dependency of the analysis core.
 
 ---
 

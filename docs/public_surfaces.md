@@ -35,6 +35,13 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - It enforces the storage and metadata mirroring invariants.
 - Importing raw JSON directly into the canonical library without going through a managed import path is not supported for library-valid analysis.
 
+### 1.4 Docker (operational surface)
+
+- **Docker Compose** is a supported way to run the Streamlit web app without a local Python install.
+- Supported operations mirror the GUI: import, analysis, browsing results, and settings exposed in the UI.
+- Compose mounts and environment variables are operational configuration only; storage layout, output layout, and run-truth rules are defined in the contracts linked from §1.
+- See `docs/runtime/docker.md` for build commands, volume mounts, and container-specific pitfalls.
+
 ## 2. Not supported surfaces / patterns
 
 The following patterns are **explicitly not supported** and should be avoided in user flows, docs, and contributions:

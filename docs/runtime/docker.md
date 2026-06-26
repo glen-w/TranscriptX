@@ -114,47 +114,49 @@ print('success:', result.success)
 
 ## Volume layout
 
-Mount your app working data at `/data` and **mount source audio from outside the git clone**:
+Compose mounts app working data at `/data` and maps host folders to container paths via `HOST_*` variables in `.env` (see `.env.example`):
 
 ```yaml
 volumes:
   - ./data:/data
+  - transcriptx_cache:/home/transcriptx/.cache
+  - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
+  - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
   - ${HOST_RECORDINGS_DIR}:/mnt/recordings
   - ${HOST_RECORDINGS_DIR}/imports:/mnt/recordings/imports
+  - ${HOST_WAV_BACKUP_DIR:-./data/backups/wav}:/mnt/wav
 ```
 
-`HOST_RECORDINGS_DIR` must be set in `.env` to a host folder that is **not** under the repository (see `.env.example`). Do not keep recordings inside the clone; they are user-owned media and are excluded from version control.
+`HOST_RECORDINGS_DIR` is **required** in `.env` and must point at a host folder **outside the repository** (your source-audio library). Create `imports/` under that folder for uploads if needed.
 
-Typical layout:
+| Host variable | Container path | App env (`TRANSCRIPTX_*`) | Notes |
+|---------------|----------------|---------------------------|-------|
+| (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, config copies, HF/Numba caches |
+| `HOST_TRANSCRIPTS_DIR` (default `./data/transcripts`) | `/mnt/transcripts` | `TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts` | **Read-only** in base compose |
+| `HOST_OUTPUT_DIR` (default `./data/outputs`) | `/mnt/outputs` | `TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs` | Analysis run outputs |
+| `HOST_RECORDINGS_DIR` | `/mnt/recordings` | `TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings` | Source audio (read-only root) |
+| `HOST_RECORDINGS_DIR/imports` | `/mnt/recordings/imports` | `TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports` | Writable uploads staging |
+| `HOST_WAV_BACKUP_DIR` (default `./data/backups/wav`) | `/mnt/wav` | `TRANSCRIPTX_WAV_BACKUP_DIR=/mnt/wav` | WAV archive |
 
-- **On the host (outside the repo):** `recordings/` (and `recordings/imports/` for uploads)
-- **Under `./data` (mounted at `/data`):** transcripts, outputs, cache, state, and other app-managed paths
+**Local dev override:** `docker-compose.override.yml` (optional, often gitignored) repeats these mounts but drops `:ro` on transcripts so the web UI can write speaker-map sidecars beside JSON files. For production-like read-only transcripts, use only `docker-compose.yml` or remove the override.
 
-Optional separate mounts for large transcript libraries (same pattern as recordings):
-
-```yaml
-volumes:
-  - ./data:/data
-  - /path/to/recordings:/mnt/recordings
-  - /path/to/transcripts:/mnt/transcripts
-```
-
-Then set environment variables (as in `docker-compose.yml`):
-
-```
-TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings
-TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts
-```
+Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/STORAGE.md).
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `HOST_RECORDINGS_DIR` | (required in `.env`) | Host path to source audio library (outside repo) |
+| `HOST_TRANSCRIPTS_DIR` | `./data/transcripts` | Host path mounted at `/mnt/transcripts` |
+| `HOST_OUTPUT_DIR` | `./data/outputs` | Host path mounted at `/mnt/outputs` |
+| `HOST_WAV_BACKUP_DIR` | `./data/backups/wav` | Host path mounted at `/mnt/wav` |
 | `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
 | `TRANSCRIPTX_DATA_DIR` | `/data` | Base data directory inside container |
-| `TRANSCRIPTX_RECORDINGS_DIR` | `$DATA_DIR/recordings` (native only; **Docker compose sets `/mnt/recordings`**) | Source audio |
-| `TRANSCRIPTX_TRANSCRIPTS_DIR` | `$DATA_DIR/transcripts` | Transcript JSON files |
-| `TRANSCRIPTX_OUTPUT_DIR` | `$DATA_DIR/outputs` | Analysis outputs |
+| `TRANSCRIPTX_RECORDINGS_DIR` | `/mnt/recordings` (compose) | Source audio |
+| `TRANSCRIPTX_IMPORTS_DIR` | `/mnt/recordings/imports` (compose) | Writable upload staging |
+| `TRANSCRIPTX_TRANSCRIPTS_DIR` | `/mnt/transcripts` (compose) | Transcript JSON files |
+| `TRANSCRIPTX_OUTPUT_DIR` | `/mnt/outputs` (compose) | Analysis outputs |
+| `TRANSCRIPTX_WAV_BACKUP_DIR` | `/mnt/wav` (compose) | WAV archive |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | `0` | Enable model/resource downloads (`1` disables) |
 | `TRANSCRIPTX_HOST` | `0.0.0.0` | Streamlit bind host |
 | `TRANSCRIPTX_PORT` | `8501` | Streamlit port |

@@ -8,7 +8,9 @@ import math
 import re
 import time
 
-from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore[import-untyped]
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+from transcriptx.utils.text_utils import count_words
 
 # SpeakerExemplarsConfig is defined in the config layer, but some environments
 # can end up with stale/partial imports during rapid refactors or editable installs.
@@ -114,7 +116,7 @@ def _normalize_text(text: str) -> str:
 
 
 def _word_count(text: str) -> int:
-    return len(text.split())
+    return count_words(text)
 
 
 def _percentile(values: list[float], pct: float) -> float:

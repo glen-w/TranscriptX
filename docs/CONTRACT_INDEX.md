@@ -16,14 +16,7 @@ All other docs (README, guides, architecture, runtime docs) may only summarize t
 
 ---
 
-## Truth hierarchy
+## Truth hierarchy (summary)
 
-When interpreting a run, the system observes the following **truth hierarchy**:
-
-1. `run_results.json` — **execution truth** (what actually happened in a run).
-2. CONTRACT docs — **rules** (what must be true about structure, behavior, and invariants).
-3. `manifest.json` — **index** (mapping between runs, outputs, and filesystem artifacts).
-4. Filesystem — **implementation artifact** (the concrete files and directories on disk).
-
-Lower levels **must not contradict** higher levels. In any apparent conflict, higher levels are authoritative and lower levels are considered invalid or stale until corrected.
+When interpreting a run, precedence is defined in **`docs/run_outcome_contract.md`** (execution truth in `run_results.json` over `manifest.json` and raw file presence). This index does not restate those rules — see that contract for allowed statuses, projection rules, and invalid combinations.
 

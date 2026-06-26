@@ -41,7 +41,11 @@ def test_bool_string_coercion_passes() -> None:
 
 def test_empty_subtree_no_errors() -> None:
     errors = validate_config({})
-    v2_errors = {k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity_v2.")}
+    v2_errors = {
+        k: v
+        for k, v in errors.items()
+        if k.startswith("analysis.semantic_similarity_v2.")
+    }
     assert v2_errors == {}
 
 
@@ -56,7 +60,11 @@ def test_partial_override_only() -> None:
     errors = validate_config(
         {"analysis": {"semantic_similarity_v2": {"batch_size": 32}}}
     )
-    v2_errors = {k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity_v2.")}
+    v2_errors = {
+        k: v
+        for k, v in errors.items()
+        if k.startswith("analysis.semantic_similarity_v2.")
+    }
     assert v2_errors == {}
 
 
@@ -76,16 +84,16 @@ def test_multiple_invalid_fields() -> None:
 
 
 def test_no_double_validation_for_v2_field() -> None:
-    errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"mode": "bad"}}}
-    )
+    errors = validate_config({"analysis": {"semantic_similarity_v2": {"mode": "bad"}}})
     assert len(errors[V2_MODE_KEY]) == 1
 
 
 def test_validate_default_config_has_no_v2_errors() -> None:
     errors = validate_config(get_default_config_dict())
     v2_errors = {
-        k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity_v2.")
+        k: v
+        for k, v in errors.items()
+        if k.startswith("analysis.semantic_similarity_v2.")
     }
     assert v2_errors == {}
 

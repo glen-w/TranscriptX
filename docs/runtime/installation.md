@@ -134,7 +134,7 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 
 **Models:** defaults, higher-accuracy presets, and per-module guidance — [models.md](models.md).
 
-**Configuration:** TranscriptX uses env-first configuration with explicit overrides. Unknown/unmapped speakers are excluded from analysis by default; excluded segment counts are reported in run summaries. See [ARCHITECTURE.md](ARCHITECTURE.md) for data layout.
+**Configuration:** TranscriptX uses env-first configuration with explicit overrides. Unknown/unmapped speakers are excluded from analysis by default; excluded segment counts are reported in run summaries. See [STORAGE.md](STORAGE.md) for storage layout.
 
 ## Web interface (Streamlit)
 

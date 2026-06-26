@@ -105,7 +105,7 @@ WhisperX writes JSON with segments (often with `words` arrays). TranscriptX can 
 
 ## Canonical validation and import (Python API)
 
-There is no `transcriptx transcript …` terminal subcommand. Validate and normalize JSON from code or a short script. **Canonical validation is a hard gate for library admission and analysis**: any API that consumes a transcript path must either receive a pre-validated canonical transcript handle or perform validation itself and fail closed.
+There is no `transcriptx transcript …` terminal subcommand. Validate and normalize JSON from code or a short script. Canonical validation is required for library admission and analysis — see [`docs/runtime/STORAGE.md`](STORAGE.md) (canonical transcript validation) for the contract.
 
 **Validate** a document already loaded as a dict (raises `ValueError` if invalid):
 
@@ -157,7 +157,7 @@ Import alternate-language versions of an existing transcript using a flat filena
 2. Import the language variant via the same managed import path (web **Import Transcript** or `run_managed_import_workflow`).
 3. On import, speaker-map inheritance runs automatically when the base has a speaker-map sidecar and the variant does not yet.
 
-**Requirements:** variant segments must use the same diarized speaker IDs as the base (`SPEAKER_00`, `SPEAKER_01`, …).
+**Requirements:** variant segments should use the same diarized speaker IDs as the base (`SPEAKER_00`, `SPEAKER_01`, …). See [`STORAGE.md`](STORAGE.md) for managed variant rules.
 
 **What is copied:** display names, ignored speakers, and `speaker_id_to_db_id`. Each variant gets its own sidecar under `metadata/speaker_maps/` (see [STORAGE.md](STORAGE.md)).
 

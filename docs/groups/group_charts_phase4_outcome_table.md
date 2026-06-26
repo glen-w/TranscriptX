@@ -1,3 +1,6 @@
+Type: PRODUCT
+Authority: self
+
 # Phase 4: group generic chart curation — outcome table
 
 Forced decision per `agg_id`. Registry and field allowlists live in

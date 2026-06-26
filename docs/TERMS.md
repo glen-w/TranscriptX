@@ -1,4 +1,4 @@
-Type: CONTRACT
+Type: GUIDE
 Authority: runtime/STORAGE.md + run_outcome_contract.md + contracts/output-contract-v1.md + public_surfaces.md
 
 # TranscriptX terminology index (non-authoritative)

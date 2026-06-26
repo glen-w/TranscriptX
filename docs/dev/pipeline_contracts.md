@@ -1,3 +1,6 @@
+Type: CONTRACT
+Authority: self
+
 # Pipeline Contracts (Authoritative)
 
 This document defines behavioral invariants for the core pipeline layering.  

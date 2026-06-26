@@ -14,7 +14,12 @@ from transcriptx.core.config.pydantic_registry import pydantic_model_to_field_me
 
 class _SampleModel(BaseModel):
     mode: Literal["basic", "advanced"] = "basic"
-    batch_size: int = Field(default=32, ge=1, description="Batch size.", json_schema_extra={"advanced": True})
+    batch_size: int = Field(
+        default=32,
+        ge=1,
+        description="Batch size.",
+        json_schema_extra={"advanced": True},
+    )
     threshold: float = Field(default=0.5, ge=0.0, le=1.0)
 
 

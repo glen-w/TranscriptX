@@ -31,7 +31,7 @@ Each core concept has exactly one authoritative contract:
 - **Run truth** → `docs/run_outcome_contract.md`
 - **Outputs** → `docs/contracts/output-contract-v1.md`
 - **Support surfaces** → `docs/public_surfaces.md`
-- **Terminology index** → `docs/TERMS.md` (index that aggregates terms from the contracts above; it is not authoritative by itself).
+- **Terminology index** → `docs/TERMS.md` (GUIDE; aggregates terms from contracts — not authoritative by itself).
 
 When you change behavior for any of these concepts, you **must** update the corresponding contract first, then adjust guides to summarize and link to it.
 

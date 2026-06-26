@@ -1,3 +1,6 @@
+Type: PRODUCT
+Authority: self
+
 # Web fragment / rerun audit (PR review aid)
 
 Copy this table into the PR description and update **Status** as work lands.

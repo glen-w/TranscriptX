@@ -1,3 +1,6 @@
+Type: GUIDE
+Authority: runtime/docker.md
+
 # Docker efficiency baseline
 
 Run these commands with the Docker daemon running to assess image size and find the layers that add the most. Record the output here (or in a local note) so you can compare before/after changes.

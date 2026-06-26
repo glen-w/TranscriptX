@@ -1,3 +1,6 @@
+Type: GUIDE
+Authority: runtime/docker.md
+
 # Local LLM integration (Ollama)
 
 LLM-backed analysis modules are **disabled by default**. Enable them only when you have a local Ollama daemon (or another configured endpoint) and understand that prompts may contain sensitive transcript content.
