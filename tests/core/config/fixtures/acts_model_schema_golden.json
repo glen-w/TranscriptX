@@ -1,0 +1,161 @@
+{
+  "description": "Canonical field definitions for dialogue acts classification configuration.",
+  "properties": {
+    "method": {
+      "default": "both",
+      "description": "Classification strategy: rules, machine learning, or both.",
+      "enum": [
+        "rules",
+        "ml",
+        "both"
+      ],
+      "title": "Method",
+      "type": "string"
+    },
+    "use_context": {
+      "default": true,
+      "description": "Include neighbouring segments as classification context.",
+      "title": "Use Context",
+      "type": "boolean"
+    },
+    "context_window_size": {
+      "default": 3,
+      "description": "Number of neighbouring segments in each context direction.",
+      "minimum": 1,
+      "title": "Context Window Size",
+      "type": "integer"
+    },
+    "context_window_type": {
+      "default": "sliding",
+      "description": "How the context window is constructed around each segment.",
+      "enum": [
+        "fixed",
+        "dynamic",
+        "sliding"
+      ],
+      "title": "Context Window Type",
+      "type": "string"
+    },
+    "include_speaker_info": {
+      "default": true,
+      "description": "Include speaker identity in context features.",
+      "title": "Include Speaker Info",
+      "type": "boolean"
+    },
+    "include_timing_info": {
+      "default": false,
+      "description": "Include timing deltas in context features.",
+      "title": "Include Timing Info",
+      "type": "boolean"
+    },
+    "min_confidence": {
+      "default": 0.7,
+      "description": "Minimum confidence to accept a classification.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Min Confidence",
+      "type": "number"
+    },
+    "high_confidence_threshold": {
+      "default": 0.9,
+      "description": "Threshold for high-confidence classifications.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "High Confidence Threshold",
+      "type": "number"
+    },
+    "ensemble_weight_transformer": {
+      "default": 0.5,
+      "description": "Ensemble weight for transformer-based scores.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Ensemble Weight Transformer",
+      "type": "number"
+    },
+    "ensemble_weight_ml": {
+      "default": 0.3,
+      "description": "Ensemble weight for traditional ML scores.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Ensemble Weight Ml",
+      "type": "number"
+    },
+    "ensemble_weight_rules": {
+      "default": 0.2,
+      "description": "Ensemble weight for rule-based scores.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Ensemble Weight Rules",
+      "type": "number"
+    },
+    "ml_model_name": {
+      "default": "bert-base-uncased",
+      "description": "Hugging Face model id for ML classification.",
+      "title": "Ml Model Name",
+      "type": "string"
+    },
+    "ml_use_gpu": {
+      "default": false,
+      "description": "Use GPU for ML classification when available.",
+      "title": "Ml Use Gpu",
+      "type": "boolean"
+    },
+    "ml_batch_size": {
+      "default": 32,
+      "description": "Batch size for ML inference.",
+      "minimum": 1,
+      "title": "Ml Batch Size",
+      "type": "integer"
+    },
+    "ml_max_length": {
+      "default": 512,
+      "description": "Maximum token length for ML model input.",
+      "minimum": 1,
+      "title": "Ml Max Length",
+      "type": "integer"
+    },
+    "rules_use_enhanced_patterns": {
+      "default": true,
+      "description": "Use enhanced regex patterns in rule-based classification.",
+      "title": "Rules Use Enhanced Patterns",
+      "type": "boolean"
+    },
+    "rules_use_fallback_logic": {
+      "default": true,
+      "description": "Apply fallback heuristics when rules are inconclusive.",
+      "title": "Rules Use Fallback Logic",
+      "type": "boolean"
+    },
+    "rules_confidence_boost_exact_match": {
+      "default": 0.1,
+      "description": "Confidence boost applied on exact pattern matches.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Rules Confidence Boost Exact Match",
+      "type": "number"
+    },
+    "rules_context_boost_factor": {
+      "default": 0.15,
+      "description": "Confidence boost factor from contextual cues.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Rules Context Boost Factor",
+      "type": "number"
+    },
+    "enable_caching": {
+      "default": true,
+      "description": "Cache classification results for repeated segments.",
+      "title": "Enable Caching",
+      "type": "boolean"
+    },
+    "cache_size": {
+      "default": 1000,
+      "description": "Maximum number of cached classification entries.",
+      "minimum": 1,
+      "title": "Cache Size",
+      "type": "integer"
+    }
+  },
+  "title": "ActsSettingsModel",
+  "type": "object"
+}

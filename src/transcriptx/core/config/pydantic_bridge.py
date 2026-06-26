@@ -7,10 +7,11 @@ from typing import Any, Dict, Type
 
 from pydantic import BaseModel
 
-from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
+from transcriptx.core.utils.config.analysis import ActsConfig, SemanticSimilarityV2Config
 from transcriptx.core.utils.config.system import LLMConfig
 from transcriptx.core.utils.config.workflow import MetadataConfig
 
+from .models.acts import ActsSettingsModel
 from .models.dashboard_display import DashboardDisplaySettingsModel
 from .models.llm import LLMSettingsModel
 from .models.metadata import MetadataSettingsModel
@@ -75,6 +76,13 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="llm",
         category="llm",
         dataclass_type=LLMConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="acts",
+        model=ActsSettingsModel,
+        dotpath_prefix="analysis.acts",
+        category="analysis",
+        dataclass_type=ActsConfig,
     ),
 )
 
