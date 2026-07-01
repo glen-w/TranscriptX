@@ -95,9 +95,8 @@ def navigate_to_audio_merge_with_paths(
 def navigate_to_transcribe_with_paths(
     session_state: dict[str, Any], paths: list[Path | str]
 ) -> None:
-    """Pre-select paths on Transcribe Audio and switch to that page."""
+    """Open Transcribe Audio with path hints for external transcription."""
     session_state[TRANSCRIPTION_NAV_PATHS_KEY] = [str(p) for p in paths]
-    session_state["transcription_active_tab"] = "Pick existing"
     session_state["page"] = "Transcribe Audio"
 
 

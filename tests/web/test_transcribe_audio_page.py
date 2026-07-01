@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from pathlib import Path
 
 import pytest
 
@@ -16,6 +16,17 @@ def test_transcribe_audio_page_callable():
     )
 
     assert callable(render_transcribe_audio_page)
+
+
+@pytest.mark.unit
+def test_transcribe_audio_page_is_instruction_only():
+    import transcriptx.web.page_modules.transcribe_audio as page
+
+    source = Path(page.__file__).read_text(encoding="utf-8")
+    assert "whispermlx-missing" in source
+    assert "Import Transcript" in source
+    assert "st.file_uploader" not in source
+    assert "TranscriptionController" not in source
 
 
 @pytest.mark.unit
@@ -42,16 +53,3 @@ def test_whisperx_docker_always_unavailable():
     )
     availability = provider.is_available(options)
     assert not availability.available
-
-
-@pytest.mark.unit
-@patch(
-    "transcriptx.web.page_modules.transcribe_audio._render_readiness",
-    return_value=False,
-)
-@patch("streamlit.button", return_value=False)
-def test_run_disabled_when_provider_unavailable(_mock_button, _mock_ready):
-    from transcriptx.web.page_modules import transcribe_audio as page
-
-    # Contract: disable_reason path exists when readiness fails
-    assert page._LARGE_BATCH_THRESHOLD == 50

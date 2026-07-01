@@ -1,18 +1,33 @@
 Type: GUIDE
 Authority: runtime/STORAGE.md
 
-# Integrated GUI transcription (macOS whispermlx v1)
+# Transcription (external workflow)
 
-TranscriptX now includes an integrated **Transcribe Audio** page for macOS hosts running **whispermlx**. WhisperX Docker GUI orchestration is listed in the provider picker as **coming soon**; use the external recipe below for manual Docker workflows.
+TranscriptX is **analysis-first**: transcription produces JSON elsewhere; the web app **imports** it. The **Transcribe Audio** page is an **instruction hub** (shell examples, `whispermlx-missing`); **Import Transcript** is the GUI admission gate. WhisperX Docker is documented as an external recipe, not orchestrated from Streamlit.
 
-## Integrated GUI (v1: macOS + whispermlx)
+## Design: why transcription stays outside the GUI
 
-1. Open **Transcribe Audio** in the web UI.
-2. Select **Whisper MLX (Mac)** as the provider (default when available).
-3. Add files via **Upload**, **Pick existing**, or **Folder path** (server-side path on the machine running Streamlit).
-4. Configure model, language, and diarization. **HF_TOKEN** is required only when diarization is enabled.
-5. Optionally enable **Import into library when done** (default on). Use **Overwrite existing transcript if names collide** only when you intend to replace an existing library entry (default off).
-6. Click **Transcribe**.
+We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, or WhisperX Docker); the GUI only documents the steps and imports the result.
+
+**Docker vs macOS venv.** The recommended install runs `transcriptx-web` in a **Linux** container. **whispermlx** typically lives in a **macOS** Python venv and depends on Apple MLX. That venv binary cannot be run reliably from inside the container: different OS, no MLX in Linux images, and paths like `~/venvs/whispermlx/bin/whispermlx` refer to the host—not the container filesystem. Mounting the venv or sourcing `whisperx.env` inside `transcriptx-web` does not fix this; at best you get “file not found” or an incompatible executable.
+
+**Practical split.**
+
+| Where | What runs |
+|-------|-----------|
+| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, optional WhisperX Docker |
+| `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts |
+
+**Why not merge stacks?** Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
+
+**Future (optional):** a **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) could let the GUI orchestrate jobs without executing MLX inside Linux. See [ROADMAP.md](../ROADMAP.md) Phase 2 transcription architecture.
+
+## Transcribe Audio page (external workflow)
+
+1. Open **Transcribe Audio** in the web UI for copy-paste shell examples and links to `scripts/whispermlx-missing.py`.
+2. On macOS, source `whisperx.env` at the repo root and run **whispermlx** against your audio files (see examples on that page).
+3. For batches where some files already have JSON transcripts, use **whispermlx-missing** (see script `--help`).
+4. Open **Import Transcript** and upload the resulting JSON (and optionally attach the source recording).
 
 ### Finding whispermlx
 
@@ -34,20 +49,10 @@ Copy `docs/recipes/whisperx/whisperx.env.example` to `whisperx.env` and configur
 | `WHISPERMLX_DIARIZE` | Default diarization on/off |
 | `WHISPERMLX_TIMEOUT_SECONDS` | Per-file timeout (0 = no limit) |
 | `HF_TOKEN` | Required when diarization is on |
-| `TRANSCRIPTX_TRANSCRIPTION_PROVIDER` | Default provider in picker |
-| `TRANSCRIPTION_MP3_*` | Conversion defaults (128k stereo MP3) |
-| `TRANSCRIPTION_FORCE_REENCODE` | Re-encode existing MP3 inputs |
-| `TRANSCRIPTION_KEEP_INTERMEDIATES` | Keep staged MP3 after success (request default) |
 
-### Workflows
+### whispermlx-missing bulk script
 
-- **Upload** — multi-file upload (500 MB per file); files saved via RecordingsService.
-- **Pick existing** — multiselect from recordings/imports with metadata.
-- **Folder path** — enter an absolute server path, click **Preview files**, then run. Large batches (>50 files) require an explicit acknowledgment.
-
-### Conversion defaults
-
-Inputs are converted to stereo MP3 (`libmp3lame`, 128k, 2 channels) unless the input is already MP3 and force re-encode is off. Sample rate defaults to keeping the source (`TRANSCRIPTION_MP3_SAMPLE_RATE=0`).
+Install `scripts/whispermlx-missing.py` as `whispermlx-missing` (see script header). It processes MP3s in a source folder that lack matching JSON in a transcripts folder, using paths and env from config or CLI.
 
 ---
 

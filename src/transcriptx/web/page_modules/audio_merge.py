@@ -464,8 +464,12 @@ def _render_result(result: object) -> None:
             except Exception as exc:
                 st.caption(f"Playback unavailable: {exc}")
             st.caption(f"`{r.output_path}`")
+            st.caption(
+                "Transcription runs outside the app — see **Transcribe Audio** for "
+                "whispermlx commands, then import JSON via **Import Transcript**."
+            )
             if st.button(
-                "Transcribe merged file",
+                "How to transcribe this file",
                 type="primary",
                 key="audio_merge_transcribe_result",
             ):

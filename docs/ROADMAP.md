@@ -93,21 +93,22 @@ These would enable summarization, conversational insights, and semantic analysis
 
 **Why not one integrated engine?**
 
-- **Docker (recommended install)** runs Linux. **whispermlx** requires macOS + Apple MLX; a Mac binary cannot run inside the container.
-- The integrated **Transcribe Audio** page (whispermlx v1) uses `subprocess` on a local CLI — it only works when Streamlit and whispermlx share the **same native macOS host**, not when the GUI is in Docker.
+- **Docker (recommended install)** runs Linux. **whispermlx** requires macOS + Apple MLX; a Mac venv binary cannot run inside the container (see [transcription.md](runtime/transcription.md#design-why-transcription-stays-outside-the-gui)).
+- An earlier **Transcribe Audio** experiment invoked whispermlx via `subprocess` on the same native macOS host as Streamlit. That broke down for Docker users and duplicated what a shell loop or `whispermlx-missing` already does well—so the page is now an **instruction hub** only.
 - Merging stacks would couple analysis releases to transcription toolchains (ffmpeg, HF tokens, model weights, platform quirks).
 
 **Current state (v0.1.x)**
 
-- [x] **Transcribe Audio** GUI + `whispermlx` provider — native macOS only (`sys.platform == darwin`, local binary).
-- [x] **Import Transcript** GUI + `run_managed_import_workflow()` — all platforms; primary handoff for Docker users.
-- [ ] **WhisperX (Docker)** provider in picker — stub (“coming soon”); external recipe at `docs/recipes/whisperx/`.
+- [x] **Transcribe Audio** GUI — instruction hub (shell examples, `whispermlx-missing`); no in-app transcription forms.
+- [x] **Import Transcript** GUI + `run_managed_import_workflow()` — all platforms; primary handoff after external transcribe.
+- [x] **`whispermlx` provider** (services layer) — retained for programmatic/CLI use; not wired to Streamlit forms.
+- [ ] **WhisperX (Docker)** GUI orchestration — external recipe at `docs/recipes/whisperx/`; not in-app yet.
 - [ ] Remote / HTTP `TranscriptionProvider` implementations.
 
 **Recommended workflows today**
 
-- **Docker + Mac:** transcribe on the host (whispermlx script or WhisperX recipe) → **Import Transcript** in the web UI (or programmatic managed import). Do not expect `docker exec` or sourcing `whisperx.env` inside `transcriptx-web` to run whispermlx.
-- **Native Mac:** `./transcriptx.sh` can use integrated transcribe when whispermlx and ffmpeg are on PATH.
+- **Docker + Mac:** transcribe on the host (`whispermlx`, `whispermlx-missing`, or WhisperX recipe) → **Import Transcript** in the web UI (or programmatic managed import). Do not expect `docker exec` or sourcing `whisperx.env` inside `transcriptx-web` to run whispermlx.
+- **Native Mac:** same host transcribe → **Import Transcript**; use **Transcribe Audio** in the UI for copy-paste commands.
 
 **Future: integrated *workflow*, not integrated *engine***
 
