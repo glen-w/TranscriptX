@@ -1,0 +1,16 @@
+{
+  "ner_batch_size": 100,
+  "ner_include_geocoding": true,
+  "ner_labels": [
+    "PERSON",
+    "ORG",
+    "GPE",
+    "LOC",
+    "DATE",
+    "TIME",
+    "MONEY"
+  ],
+  "ner_max_segments": 5000,
+  "ner_min_confidence": 0.5,
+  "ner_use_light_model": false
+}

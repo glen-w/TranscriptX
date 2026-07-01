@@ -1,0 +1,12 @@
+{
+  "file_selection_mode": "prompt",
+  "playback_skip_seconds_long": 60.0,
+  "playback_skip_seconds_short": 10.0,
+  "prefill_rename_with_date_prefix": true,
+  "recordings_folders": [
+    "/Users/89298/Documents/transcriptx/data/recordings"
+  ],
+  "wav_folders": [
+    "/Volumes/DVT1600/RECORD/A"
+  ]
+}

@@ -288,12 +288,23 @@ class TranscriptXConfig:
                 "speaker_exemplars": self._config_to_dict(
                     self.analysis.speaker_exemplars
                 ),
+                "corrections": self._config_to_dict(self.analysis.corrections),
+                "highlights": self._config_to_dict(self.analysis.highlights),
+                "summary": self._config_to_dict(self.analysis.summary),
+                "bertopic": self._config_to_dict(self.analysis.bertopic),
+                "pauses": self._config_to_dict(self.analysis.pauses),
+                "echoes": self._config_to_dict(self.analysis.echoes),
+                "momentum": self._config_to_dict(self.analysis.momentum),
+                "moments": self._config_to_dict(self.analysis.moments),
                 # Active profiles
                 **analysis_active_profiles,
             },
             "input": {
                 "wav_folders": self.input.wav_folders,
                 "recordings_folders": self.input.recordings_folders,
+                "prefill_rename_with_date_prefix": getattr(
+                    self.input, "prefill_rename_with_date_prefix", True
+                ),
                 "file_selection_mode": getattr(
                     self.input, "file_selection_mode", "prompt"
                 ),

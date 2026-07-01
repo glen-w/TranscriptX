@@ -1,0 +1,11 @@
+{
+  "enable_stats_aggregation": true,
+  "enabled": true,
+  "output_dir": "/Users/89298/Documents/transcriptx/.test_outputs/groups",
+  "persist_groups": false,
+  "scaffold_by_session": true,
+  "scaffold_by_speaker": true,
+  "scaffold_comparisons": true,
+  "wordcloud_pooled_emit_full_transcript_global": false,
+  "wordcloud_pooled_global_tfidf": false
+}

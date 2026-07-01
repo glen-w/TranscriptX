@@ -8,7 +8,12 @@ from unittest.mock import MagicMock, patch
 
 
 from transcriptx.core.utils import config as config_module
-from transcriptx.core.utils.config import TranscriptXConfig, get_config, load_config
+from transcriptx.core.utils.config import (
+    TranscriptXConfig,
+    get_config,
+    load_config,
+    reset_config_for_tests,
+)
 
 
 class TestConfig:
@@ -33,16 +38,19 @@ class TestConfig:
         config_file = tmp_path / "config.json"
         config_file.write_text('{"output": {"base_output_dir": "/tmp/test"}}')
 
-        with patch(
-            "transcriptx.core.utils.config.TranscriptXConfig"
-        ) as mock_config_class:
-            mock_config = MagicMock()
-            mock_config_class.return_value = mock_config
+        try:
+            with patch(
+                "transcriptx.core.utils.config.TranscriptXConfig"
+            ) as mock_config_class:
+                mock_config = MagicMock()
+                mock_config_class.return_value = mock_config
 
-            load_config(str(config_file))
+                load_config(str(config_file))
 
-            # Should load config
-            assert mock_config_class.called
+                # Should load config
+                assert mock_config_class.called
+        finally:
+            reset_config_for_tests()
 
     def test_config_output_settings(self, mock_config):
         """Test configuration output settings."""

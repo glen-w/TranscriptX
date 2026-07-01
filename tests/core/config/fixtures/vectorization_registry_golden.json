@@ -1,0 +1,92 @@
+{
+  "analysis.vectorization.max_df": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.95,
+    "description": "",
+    "key": "analysis.vectorization.max_df",
+    "max": null,
+    "min": null,
+    "path": "analysis.vectorization.max_df",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.vectorization.max_features": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 1000,
+    "description": "",
+    "key": "analysis.vectorization.max_features",
+    "max": null,
+    "min": null,
+    "path": "analysis.vectorization.max_features",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.vectorization.min_df": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 1,
+    "description": "",
+    "key": "analysis.vectorization.min_df",
+    "max": null,
+    "min": null,
+    "path": "analysis.vectorization.min_df",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.vectorization.ngram_range": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": [
+      1,
+      2
+    ],
+    "description": "",
+    "key": "analysis.vectorization.ngram_range",
+    "max": null,
+    "min": null,
+    "path": "analysis.vectorization.ngram_range",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "tuple"
+  },
+  "analysis.vectorization.wordcloud_max_features": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 300,
+    "description": "",
+    "key": "analysis.vectorization.wordcloud_max_features",
+    "max": null,
+    "min": null,
+    "path": "analysis.vectorization.wordcloud_max_features",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.vectorization.wordcloud_ngram_range": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": [
+      1,
+      2
+    ],
+    "description": "",
+    "key": "analysis.vectorization.wordcloud_ngram_range",
+    "max": null,
+    "min": null,
+    "path": "analysis.vectorization.wordcloud_ngram_range",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "tuple"
+  }
+}

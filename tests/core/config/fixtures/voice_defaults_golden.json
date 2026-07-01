@@ -1,0 +1,20 @@
+{
+  "bin_seconds": 30.0,
+  "deep_max_seconds": 12.0,
+  "deep_mode": false,
+  "deep_model_name": "superb/wav2vec2-base-superb-er",
+  "drift_threshold": 2.5,
+  "egemaps_enabled": true,
+  "enabled": true,
+  "include_unnamed_in_global_curves": true,
+  "max_seconds_for_pitch": 20.0,
+  "max_segments_considered": null,
+  "mismatch_threshold": 0.6,
+  "pad_s": 0.15,
+  "sample_rate": 16000,
+  "smoothing_alpha": 0.25,
+  "store_parquet": "auto",
+  "strict_audio_hash": false,
+  "top_k_moments": 30,
+  "vad_mode": 2
+}

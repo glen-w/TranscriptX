@@ -1,0 +1,31 @@
+{
+  "analysis_mode": "quick",
+  "clustering_eps": 0.3,
+  "clustering_min_samples": 2,
+  "cross_speaker_similarity_threshold": 0.6,
+  "cross_speaker_time_window": 600.0,
+  "include_legacy_modules": false,
+  "max_segments_for_cross_speaker": 500,
+  "max_segments_for_semantic": 1000,
+  "max_segments_per_speaker": 200,
+  "max_semantic_comparisons": 50000,
+  "min_segment_quality_score": 0.0,
+  "module_progress_log_interval_seconds": 60.0,
+  "output_formats": [
+    "json",
+    "csv",
+    "png"
+  ],
+  "quality_filtering_profile": "balanced",
+  "quality_indicators_override": null,
+  "quality_thresholds_override": null,
+  "quality_weights_override": null,
+  "repetition_time_window": 300.0,
+  "semantic_batch_size": 64,
+  "semantic_model_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "semantic_progress_log_interval_seconds": 60.0,
+  "semantic_similarity_method": "simple",
+  "semantic_similarity_threshold": 0.7,
+  "semantic_timeout_seconds": 300,
+  "use_quality_filtering": true
+}

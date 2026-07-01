@@ -1,0 +1,49 @@
+{
+  "analysis.entity_min_mentions": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 2,
+    "description": "",
+    "key": "analysis.entity_min_mentions",
+    "max": null,
+    "min": null,
+    "path": "analysis.entity_min_mentions",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.entity_sentiment_threshold": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.05,
+    "description": "",
+    "key": "analysis.entity_sentiment_threshold",
+    "max": null,
+    "min": null,
+    "path": "analysis.entity_sentiment_threshold",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.entity_types": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": [
+      "PERSON",
+      "ORG",
+      "GPE",
+      "LOC"
+    ],
+    "description": "",
+    "key": "analysis.entity_types",
+    "max": null,
+    "min": null,
+    "path": "analysis.entity_types",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "list"
+  }
+}

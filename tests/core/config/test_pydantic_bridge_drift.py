@@ -8,11 +8,14 @@ from pathlib import Path
 from transcriptx.core.config.pydantic_bridge import (
     PYDANTIC_REGISTRY_PILOTS,
     all_pydantic_field_dotpaths,
+    dotpath_belongs_to_model,
     find_pilot_for_dotpath_key,
-    pilot_field_dotpath,
     serialize_non_pydantic_registry_baseline,
 )
-from transcriptx.core.config.pydantic_registry import serialize_field_metadata
+from transcriptx.core.config.pydantic_registry import (
+    collect_model_leaf_dotpaths,
+    serialize_field_metadata,
+)
 from transcriptx.core.config.registry import build_registry
 from transcriptx.core.utils.config import TranscriptXConfig
 from transcriptx.core.utils.config.env_key_registry import (
@@ -46,18 +49,41 @@ def test_env_registry_pydantic_paths_match_model_fields() -> None:
         spec = find_pilot_for_dotpath_key(dotpath)
         if spec is None:
             continue
-        field_name = entry.target_path[-1]
-        assert (
-            field_name in spec.model.model_fields
+        assert dotpath_belongs_to_model(
+            dotpath,
+            dotpath_prefix=spec.dotpath_prefix,
+            model=spec.model,
         ), f"{entry.env_name} -> {dotpath} not on {spec.pilot_id} model"
 
 
 def test_pydantic_pilot_fields_appear_in_registry() -> None:
     reg = build_registry()
     for spec in PYDANTIC_REGISTRY_PILOTS:
-        for name in spec.model.model_fields:
-            key = pilot_field_dotpath(spec, name)
+        for key in collect_model_leaf_dotpaths(
+            spec.model,
+            dotpath_prefix=spec.dotpath_prefix,
+        ):
             assert key in reg, key
+
+
+def test_pydantic_pilot_registry_goldens_are_complete() -> None:
+    reg = build_registry()
+    for spec in PYDANTIC_REGISTRY_PILOTS:
+        fixture = FIXTURES / f"{spec.pilot_id}_registry_golden.json"
+        assert fixture.exists(), f"missing golden fixture for {spec.pilot_id}"
+        golden_keys = set(json.loads(fixture.read_text()).keys())
+        owned = {
+            key
+            for key in reg
+            if find_pilot_for_dotpath_key(key) is not None
+            and find_pilot_for_dotpath_key(key).pilot_id == spec.pilot_id
+        }
+        missing_from_golden = owned - golden_keys
+        extra_in_golden = golden_keys - owned
+        assert owned == golden_keys, (
+            f"{spec.pilot_id}: owned-golden={sorted(missing_from_golden)} "
+            f"golden-owned={sorted(extra_in_golden)}"
+        )
 
 
 def test_pydantic_pilot_registry_matches_golden_fixtures() -> None:
@@ -78,33 +104,9 @@ def test_non_pydantic_registry_matches_baseline() -> None:
     )
     reg = build_registry()
     actual = serialize_non_pydantic_registry_baseline(reg)
-    path_suffixes = ("_dir", "_path", "_folder")
     for key, expected in baseline.items():
         assert key in actual, key
-        act = actual[key]
-        default = expected.get("default")
-        if isinstance(default, str) and (
-            default.startswith("/") or key.endswith(path_suffixes)
-        ):
-            assert act["type"] == expected["type"]
-            assert act["description"] == expected["description"]
-            assert act["choices"] == expected["choices"]
-            assert act["min"] == expected["min"]
-            assert act["max"] == expected["max"]
-            assert act["advanced"] == expected["advanced"]
-            assert act["category"] == expected["category"]
-            continue
-        assert act == expected, f"{key}: {act!r} != {expected!r}"
-
-
-def test_manual_enrichers_still_present() -> None:
-    reg = build_registry()
-    assert reg["output.dynamic_charts"].choices == ["auto", "on", "off"]
-    assert reg["dashboard.overview_missing_behavior"].choices == [
-        "skip",
-        "show_placeholder",
-    ]
-    assert reg["dashboard.overview_max_items"].min == 1
+        assert actual[key] == expected, f"{key}: {actual[key]!r} != {expected!r}"
 
 
 def test_pydantic_field_dotpaths_disjoint_from_non_pydantic_baseline() -> None:

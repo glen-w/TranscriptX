@@ -1,0 +1,20 @@
+{
+  "bandpass_high": 3400,
+  "bandpass_low": 300,
+  "bandpass_mode": "off",
+  "convert_to_mono": "auto",
+  "denoise_mode": "suggest",
+  "denoise_strength": "medium",
+  "downsample": "auto",
+  "highpass_cutoff": 80,
+  "highpass_mode": "suggest",
+  "limiter_enabled": true,
+  "limiter_peak_db": -1.0,
+  "lowpass_cutoff": 8000,
+  "lowpass_mode": "off",
+  "normalize_mode": "auto",
+  "preprocessing_mode": "selected",
+  "skip_if_already_compliant": true,
+  "target_lufs": -18.0,
+  "target_sample_rate": 16000
+}

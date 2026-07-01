@@ -1,0 +1,5 @@
+{
+  "min_long_pause_seconds": 2.0,
+  "percentile_long_pause": 0.95,
+  "post_question_multiplier": 1.5
+}

@@ -42,6 +42,28 @@ def pydantic_errors_to_validation_errors(
     return errors
 
 
+def _attach_pilot_errors(
+    errors: Dict[str, List[ValidationError]],
+    pilot_errors: Dict[str, List[ValidationError]],
+    flattened: Dict[str, Any],
+    *,
+    had_overrides: bool,
+) -> None:
+    """Attach pilot validation errors, fanning parent errors to submitted descendants."""
+    for key, field_errors in pilot_errors.items():
+        if key in flattened:
+            errors[key] = field_errors
+            continue
+        prefix = f"{key}."
+        descendants = sorted(k for k in flattened if k.startswith(prefix))
+        if descendants:
+            for descendant in descendants:
+                errors[descendant] = field_errors
+            continue
+        if had_overrides:
+            errors[key] = field_errors
+
+
 def validate_pydantic_subtrees(
     flattened: Dict[str, Any],
 ) -> Dict[str, List[ValidationError]]:
@@ -58,9 +80,7 @@ def validate_pydantic_subtrees(
             pilot_errors = pydantic_errors_to_validation_errors(
                 exc, spec.dotpath_prefix
             )
-            for key, field_errors in pilot_errors.items():
-                if key in flattened:
-                    errors[key] = field_errors
+            _attach_pilot_errors(errors, pilot_errors, flattened, had_overrides=True)
     return errors
 
 

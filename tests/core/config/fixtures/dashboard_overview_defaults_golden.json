@@ -1,0 +1,21 @@
+{
+  "overview_charts": [
+    "sentiment.multi_speaker_sentiment.global",
+    "emotion.radar.global",
+    "interactions.network.global",
+    "interactions.dominance.global",
+    "interactions.heatmap.global",
+    "momentum.momentum.global",
+    "interactions.timeline.global",
+    "acts.acts_temporal_all.global",
+    "acts.acts_temporal.speaker",
+    "conversation_loops.loop_timeline.global",
+    "temporal_dynamics.temporal_dashboard.global",
+    "temporal_dynamics.temporal_dashboard_speaking_rate.global",
+    "understandability.readability_indices.global",
+    "wordcloud.wordcloud.global.basic"
+  ],
+  "overview_max_items": null,
+  "overview_missing_behavior": "skip",
+  "schema_version": 2
+}

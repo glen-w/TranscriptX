@@ -14,6 +14,45 @@ from transcriptx.core.utils.config.config_raw_validation import (
 )
 from transcriptx.core.utils.config.profile_loading import apply_profile_to_config
 
+_NESTED_ANALYSIS_SUBTREES = frozenset(
+    {
+        "corrections",
+        "highlights",
+        "summary",
+        "bertopic",
+        "pauses",
+        "echoes",
+        "momentum",
+        "moments",
+    }
+)
+
+
+def _apply_nested_dict_config(config_obj: Any, data: dict[str, Any]) -> None:
+    """Recursively apply nested dict payloads onto dataclass config objects."""
+    from dataclasses import is_dataclass
+
+    for key, value in data.items():
+        if not hasattr(config_obj, key):
+            continue
+        current = getattr(config_obj, key)
+        if isinstance(value, dict):
+            if is_dataclass(type(current)):
+                _apply_nested_dict_config(current, value)
+                continue
+            if isinstance(current, dict):
+                setattr(config_obj, key, {**current, **value})
+                continue
+        if isinstance(value, list) and len(value) == 2:
+            try:
+                if all(isinstance(x, (int, float)) for x in value):
+                    value = tuple(value)
+            except (ValueError, TypeError):
+                pass
+        setattr(config_obj, key, value)
+    if hasattr(config_obj, "validate"):
+        config_obj.validate()
+
 
 def load_config_file_into(config: Any, config_file: str) -> None:
     """
@@ -46,6 +85,8 @@ def load_config_file_into(config: Any, config_file: str) -> None:
                 elif key in analysis_target_config_keys and isinstance(value, dict):
                     # Adapter-owned target config application happens below.
                     continue
+                elif key in _NESTED_ANALYSIS_SUBTREES and isinstance(value, dict):
+                    _apply_nested_dict_config(getattr(config.analysis, key), value)
                 elif hasattr(config.analysis, key):
                     setattr(config.analysis, key, value)
 

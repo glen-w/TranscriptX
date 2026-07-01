@@ -1,0 +1,14 @@
+{
+  "interaction_include_overlaps": true,
+  "interaction_include_responses": true,
+  "interaction_min_gap": 0.1,
+  "interaction_min_interactions": 2,
+  "interaction_min_segment_length": 0.5,
+  "interaction_overlap_threshold": 0.5,
+  "interaction_response_threshold": 2.0,
+  "interaction_time_window": 30.0,
+  "loop_exclude_monologues": true,
+  "loop_max_gap": 10.0,
+  "loop_max_intermediate_turns": 2,
+  "loop_min_gap": 0.1
+}

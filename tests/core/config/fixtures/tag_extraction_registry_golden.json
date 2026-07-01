@@ -1,0 +1,44 @@
+{
+  "analysis.tag_extraction.early_segments": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 10,
+    "description": "",
+    "key": "analysis.tag_extraction.early_segments",
+    "max": null,
+    "min": null,
+    "path": "analysis.tag_extraction.early_segments",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.tag_extraction.early_window_seconds": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 60,
+    "description": "",
+    "key": "analysis.tag_extraction.early_window_seconds",
+    "max": null,
+    "min": null,
+    "path": "analysis.tag_extraction.early_window_seconds",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.tag_extraction.min_confidence": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.6,
+    "description": "",
+    "key": "analysis.tag_extraction.min_confidence",
+    "max": null,
+    "min": null,
+    "path": "analysis.tag_extraction.min_confidence",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  }
+}

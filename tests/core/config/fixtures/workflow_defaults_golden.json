@@ -1,0 +1,17 @@
+{
+  "cli_pruning_enabled": false,
+  "conversion_time_factor": 0.5,
+  "default_config_save_path": "",
+  "max_size_mb": 30,
+  "mp3_bitrate": "192k",
+  "speaker_gate": {
+    "exemplar_count": 2,
+    "mode": "warn",
+    "threshold_type": "absolute",
+    "threshold_value": 0.0
+  },
+  "subprocess_timeout": 5,
+  "timeout_full_seconds": 7200,
+  "timeout_quick_seconds": 3600,
+  "update_interval": 10.0
+}

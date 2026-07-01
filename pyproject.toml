@@ -194,6 +194,9 @@ extend-exclude = [
 "src/transcriptx/core/utils/chart_registry.py" = ["E402"]
 "tests/io/test_transcript_normalizer.py" = ["E402"]
 "src/transcriptx/web/app.py" = ["E402"]
+"scripts/generate_dict_profile_models.py" = ["E402"]
+"scripts/generate_pydantic_pilots.py" = ["E402"]
+"scripts/validate_registry.py" = ["E402"]
 # Star exports in __init__
 "src/transcriptx/core/pipeline/__init__.py" = ["F403", "F405"]
 "src/transcriptx/core/utils/__init__.py" = ["F403", "F405"]

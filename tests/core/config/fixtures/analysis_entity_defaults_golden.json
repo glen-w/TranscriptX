@@ -1,0 +1,10 @@
+{
+  "entity_min_mentions": 2,
+  "entity_sentiment_threshold": 0.05,
+  "entity_types": [
+    "PERSON",
+    "ORG",
+    "GPE",
+    "LOC"
+  ]
+}

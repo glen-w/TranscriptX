@@ -1,0 +1,10 @@
+{
+  "emotion_min_confidence": 0.3,
+  "emotion_model_name": "bhadresh-savani/distilbert-base-uncased-emotion",
+  "emotion_output_mode": "top1",
+  "emotion_score_threshold": 0.3,
+  "sentiment_backend": "vader",
+  "sentiment_min_confidence": 0.1,
+  "sentiment_model_name": "cardiffnlp/twitter-roberta-base-sentiment-latest",
+  "sentiment_window_size": 10
+}

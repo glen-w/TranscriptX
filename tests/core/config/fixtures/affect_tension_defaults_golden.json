@@ -1,0 +1,11 @@
+{
+  "mismatch_compound_threshold": -0.1,
+  "pos_emotion_threshold": 0.3,
+  "trust_like_threshold": 0.3,
+  "weight_entropy": 0.15,
+  "weight_posneg_mismatch": 0.4,
+  "weight_trust_neutral": 0.3,
+  "weight_volatility": 0.15,
+  "window_seconds": null,
+  "window_segments": 5
+}

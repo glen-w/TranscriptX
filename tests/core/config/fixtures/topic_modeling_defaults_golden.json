@@ -1,0 +1,20 @@
+{
+  "alpha_H": 0.1,
+  "k_range": [
+    3,
+    15
+  ],
+  "learning_method": "batch",
+  "max_df": 0.95,
+  "max_features": 1000,
+  "max_iter_lda": 50,
+  "max_iter_nmf": 10000,
+  "min_df": 2,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "random_state": 42,
+  "test_size": 0.2,
+  "tol": 0.01
+}

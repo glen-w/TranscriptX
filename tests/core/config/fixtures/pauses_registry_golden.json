@@ -1,0 +1,44 @@
+{
+  "analysis.pauses.min_long_pause_seconds": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 2.0,
+    "description": "",
+    "key": "analysis.pauses.min_long_pause_seconds",
+    "max": null,
+    "min": null,
+    "path": "analysis.pauses.min_long_pause_seconds",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.pauses.percentile_long_pause": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.95,
+    "description": "",
+    "key": "analysis.pauses.percentile_long_pause",
+    "max": null,
+    "min": null,
+    "path": "analysis.pauses.percentile_long_pause",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.pauses.post_question_multiplier": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 1.5,
+    "description": "",
+    "key": "analysis.pauses.post_question_multiplier",
+    "max": null,
+    "min": null,
+    "path": "analysis.pauses.post_question_multiplier",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "backup_count": 5,
+  "file_logging": true,
+  "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+  "level": "INFO",
+  "log_file": "transcriptx.log",
+  "max_log_size": 10485760
+}

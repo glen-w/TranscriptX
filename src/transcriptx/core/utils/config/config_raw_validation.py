@@ -147,6 +147,19 @@ def validate_raw_config_dict(config_data: dict[str, Any]) -> None:
                     'Use mode strings: "auto", "suggest", or "off".',
                     code="unsupported_legacy_shape",
                 )
+        validate_audio_preprocessing_config_values(audio)
+
+
+def validate_audio_preprocessing_config_values(audio: Any) -> None:
+    """Validate audio_preprocessing subtree via the Pydantic pilot."""
+    from transcriptx.core.config.models.audio_preprocessing import (
+        validate_audio_preprocessing_applied,
+    )
+
+    try:
+        validate_audio_preprocessing_applied(audio)
+    except ValueError as exc:
+        raise ConfigLoadError(str(exc), code="invalid_value") from exc
 
 
 def validate_llm_config_values(llm: Any) -> None:

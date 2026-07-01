@@ -39,7 +39,8 @@ def test_dashboard_display_defaults_match_golden() -> None:
     assert {k: dash[k] for k in golden} == golden
 
 
-def test_overview_fields_remain_legacy_enriched() -> None:
+def test_dashboard_overview_fields_use_pydantic_metadata() -> None:
     reg = build_registry()
     assert reg["dashboard.overview_max_items"].min == 1
     assert "skip" in reg["dashboard.overview_missing_behavior"].choices
+    assert reg["dashboard.overview_charts"].description

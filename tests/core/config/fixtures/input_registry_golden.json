@@ -1,0 +1,94 @@
+{
+  "input.file_selection_mode": {
+    "advanced": false,
+    "category": "input",
+    "choices": [
+      "prompt",
+      "explore",
+      "direct"
+    ],
+    "default": "prompt",
+    "description": "",
+    "key": "input.file_selection_mode",
+    "max": null,
+    "min": null,
+    "path": "input.file_selection_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "input.playback_skip_seconds_long": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": 60.0,
+    "description": "",
+    "key": "input.playback_skip_seconds_long",
+    "max": null,
+    "min": null,
+    "path": "input.playback_skip_seconds_long",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "input.playback_skip_seconds_short": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": 10.0,
+    "description": "",
+    "key": "input.playback_skip_seconds_short",
+    "max": null,
+    "min": null,
+    "path": "input.playback_skip_seconds_short",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "input.prefill_rename_with_date_prefix": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": true,
+    "description": "",
+    "key": "input.prefill_rename_with_date_prefix",
+    "max": null,
+    "min": null,
+    "path": "input.prefill_rename_with_date_prefix",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "input.recordings_folders": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": [
+      "/Users/89298/Documents/transcriptx/data/recordings"
+    ],
+    "description": "",
+    "key": "input.recordings_folders",
+    "max": null,
+    "min": null,
+    "path": "input.recordings_folders",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "list"
+  },
+  "input.wav_folders": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": [
+      "/Volumes/DVT1600/RECORD/A"
+    ],
+    "description": "",
+    "key": "input.wav_folders",
+    "max": null,
+    "min": null,
+    "path": "input.wav_folders",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "list"
+  }
+}

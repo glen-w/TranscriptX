@@ -1,0 +1,25 @@
+{
+  "allow_degraded": false,
+  "commitments": {
+    "max_per_owner": 3,
+    "rules": [
+      "\\b(I|we)\\s+(will|can|shall|need to|have to)\\s+.+",
+      "\\b(let's|lets)\\s+.+",
+      "\\b(action item|to-do|next step)\\b.+"
+    ]
+  },
+  "compute_highlights_if_missing": true,
+  "counts": {
+    "commitments": 8,
+    "tension_bullets": 5,
+    "theme_bullets": 6
+  },
+  "enabled": true,
+  "require_highlights": false,
+  "sections": {
+    "commitments_enabled": true,
+    "key_themes_enabled": true,
+    "overview_enabled": true,
+    "tension_points_enabled": true
+  }
+}

@@ -1,0 +1,291 @@
+{
+  "audio_preprocessing.bandpass_high": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": 3400,
+    "description": "",
+    "key": "audio_preprocessing.bandpass_high",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.bandpass_high",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "audio_preprocessing.bandpass_low": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": 300,
+    "description": "",
+    "key": "audio_preprocessing.bandpass_low",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.bandpass_low",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "audio_preprocessing.bandpass_mode": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "off",
+    "description": "",
+    "key": "audio_preprocessing.bandpass_mode",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.bandpass_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.convert_to_mono": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "auto",
+    "description": "",
+    "key": "audio_preprocessing.convert_to_mono",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.convert_to_mono",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.denoise_mode": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "suggest",
+    "description": "",
+    "key": "audio_preprocessing.denoise_mode",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.denoise_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.denoise_strength": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "default": "medium",
+    "description": "",
+    "key": "audio_preprocessing.denoise_strength",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.denoise_strength",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.downsample": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "auto",
+    "description": "",
+    "key": "audio_preprocessing.downsample",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.downsample",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.highpass_cutoff": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": 80,
+    "description": "",
+    "key": "audio_preprocessing.highpass_cutoff",
+    "max": 100.0,
+    "min": 70.0,
+    "path": "audio_preprocessing.highpass_cutoff",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "audio_preprocessing.highpass_mode": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "suggest",
+    "description": "",
+    "key": "audio_preprocessing.highpass_mode",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.highpass_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.limiter_enabled": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": true,
+    "description": "",
+    "key": "audio_preprocessing.limiter_enabled",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.limiter_enabled",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "audio_preprocessing.limiter_peak_db": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": -1.0,
+    "description": "",
+    "key": "audio_preprocessing.limiter_peak_db",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.limiter_peak_db",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "audio_preprocessing.lowpass_cutoff": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": 8000,
+    "description": "",
+    "key": "audio_preprocessing.lowpass_cutoff",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.lowpass_cutoff",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "audio_preprocessing.lowpass_mode": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "off",
+    "description": "",
+    "key": "audio_preprocessing.lowpass_mode",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.lowpass_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.normalize_mode": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "auto",
+    "description": "",
+    "key": "audio_preprocessing.normalize_mode",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.normalize_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.preprocessing_mode": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": [
+      "selected",
+      "auto",
+      "suggest",
+      "off"
+    ],
+    "default": "selected",
+    "description": "",
+    "key": "audio_preprocessing.preprocessing_mode",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.preprocessing_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "audio_preprocessing.skip_if_already_compliant": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": true,
+    "description": "",
+    "key": "audio_preprocessing.skip_if_already_compliant",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.skip_if_already_compliant",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "audio_preprocessing.target_lufs": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": -18.0,
+    "description": "",
+    "key": "audio_preprocessing.target_lufs",
+    "max": -16.0,
+    "min": -20.0,
+    "path": "audio_preprocessing.target_lufs",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "audio_preprocessing.target_sample_rate": {
+    "advanced": false,
+    "category": "audio_preprocessing",
+    "choices": null,
+    "default": 16000,
+    "description": "",
+    "key": "audio_preprocessing.target_sample_rate",
+    "max": null,
+    "min": null,
+    "path": "audio_preprocessing.target_sample_rate",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  }
+}

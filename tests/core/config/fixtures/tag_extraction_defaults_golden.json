@@ -1,0 +1,5 @@
+{
+  "early_segments": 10,
+  "early_window_seconds": 60,
+  "min_confidence": 0.6
+}
