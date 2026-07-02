@@ -1,0 +1,41 @@
+"""Compatibility re-exports; prefer transcriptx.core.observability.perf in engine code."""
+
+from transcriptx.core.observability.perf import (
+    FileReadRecord,
+    RunMetrics,
+    finish_run,
+    increment_count,
+    instrument_cached_call,
+    mark_cache_miss,
+    maybe_set_scenario,
+    observe_transcript_path,
+    record_elapsed_section,
+    record_file_read,
+    reset_output,
+    section,
+    section_total,
+    set_cache_state,
+    set_count,
+    start_run,
+    summarize_duplicate_reads,
+)
+
+__all__ = [
+    "FileReadRecord",
+    "RunMetrics",
+    "finish_run",
+    "increment_count",
+    "instrument_cached_call",
+    "mark_cache_miss",
+    "maybe_set_scenario",
+    "observe_transcript_path",
+    "record_elapsed_section",
+    "record_file_read",
+    "reset_output",
+    "section",
+    "section_total",
+    "set_cache_state",
+    "set_count",
+    "start_run",
+    "summarize_duplicate_reads",
+]

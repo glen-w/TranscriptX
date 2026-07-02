@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from transcriptx.core.utils.paths import OUTPUTS_DIR, GROUP_OUTPUTS_DIR
-from transcriptx.core.pipeline.manifest_loader import load_artifact_manifest
+from transcriptx.web.services.run_visibility import has_user_artifacts, is_viewable_run
 
 
 @dataclass(frozen=True)
@@ -24,32 +24,12 @@ class RunIndex:
 
     @staticmethod
     def _has_user_artifacts(run_dir: Path) -> bool:
-        manifest_path = run_dir / "manifest.json"
-        if not manifest_path.is_file():
-            return False
-        try:
-            manifest = load_artifact_manifest(manifest_path)
-        except Exception:
-            return False
-        artifacts = manifest.get("artifacts")
-        if not isinstance(artifacts, list) or not artifacts:
-            return False
-        for artifact in artifacts:
-            if not isinstance(artifact, dict):
-                continue
-            rel_path = str(artifact.get("rel_path") or "")
-            if (
-                rel_path
-                and not rel_path.startswith(".transcriptx/")
-                and rel_path not in {"run_results.json", "run_report.json"}
-            ):
-                return True
-        return False
+        return has_user_artifacts(run_dir)
 
     @staticmethod
     def _is_viewable_run(run_dir: Path) -> bool:
         """Only expose runs that produced at least one user-visible artifact."""
-        return RunIndex._has_user_artifacts(run_dir)
+        return is_viewable_run(run_dir)
 
     @staticmethod
     def list_runs(scope: Any, subject_id: Optional[str] = None) -> List[RunSummary]:

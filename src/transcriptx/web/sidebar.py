@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import streamlit as st
 
-from transcriptx.web.navigation import context_readiness, evaluate_page_access
+from transcriptx.web.navigation import (
+    context_readiness,
+    evaluate_page_access,
+    should_hydrate_workspace_context,
+)
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.sidebar_options import get_transcript_dropdown_options
 from transcriptx.web.sidebar_state import (
@@ -23,7 +29,19 @@ from transcriptx.web.state import (
     TX_NAV_EXPANDER_TOOLS,
     TX_NAV_EXPANDER_VIEW,
     TX_NAV_EXPANDER_WORKFLOW,
+    TX_NAV_WORKSPACE_SELECTOR_REQUESTED,
 )
+
+
+def _sidebar_section(
+    title: str, state_key: str, render_body: Callable[[], None]
+) -> None:
+    """Render a collapsible sidebar section driven by explicit session-state toggles."""
+    open_ = bool(st.session_state.get(state_key, False))
+    is_open = st.toggle(title, value=open_, key=state_key)
+    st.session_state[state_key] = is_open
+    if is_open:
+        render_body()
 
 
 def render_sidebar(
@@ -33,6 +51,8 @@ def render_sidebar(
     prerequisites: dict,
 ) -> None:
     """Sidebar: global nav, context strip, collapsible groups."""
+    # First paint contract: primary navigation must render without hydrating
+    # transcript/group/run workspace data.
 
     def _apply_navigation(page_key: str) -> None:
         st.session_state[PAGE_KEY] = page_key
@@ -89,12 +109,7 @@ def render_sidebar(
         prioritize_view=sidebar_state.prioritize_view,
     )
 
-    with st.expander(  # type: ignore[call-arg]
-        "Workflow",
-        expanded=st.session_state[TX_NAV_EXPANDER_WORKFLOW],
-        key=TX_NAV_EXPANDER_WORKFLOW,
-        on_change="rerun",
-    ):
+    def _render_workflow_section() -> None:
         # tx_sidebar_workflow_nav (order asserted in tests/web/test_upload_transcript_page.py)
         _nav_button("Transcribe Audio", "Transcribe Audio")
         _nav_button("Import Transcript", "Import Transcript")
@@ -103,12 +118,22 @@ def render_sidebar(
         _nav_button("Batch Ops", "Batch Analysis")
         _nav_button("Groups", "Groups")
 
-    with st.expander(  # type: ignore[call-arg]
-        "View",
-        expanded=st.session_state[TX_NAV_EXPANDER_VIEW],
-        key=TX_NAV_EXPANDER_VIEW,
-        on_change="rerun",
-    ):
+    _sidebar_section("Workflow", TX_NAV_EXPANDER_WORKFLOW, _render_workflow_section)
+
+    view_open = bool(st.session_state.get(TX_NAV_EXPANDER_VIEW, False))
+    view_open = st.toggle("View", value=view_open, key=TX_NAV_EXPANDER_VIEW)
+    st.session_state[TX_NAV_EXPANDER_VIEW] = view_open
+
+    explicit_request = bool(
+        st.session_state.get(TX_NAV_WORKSPACE_SELECTOR_REQUESTED, False)
+    )
+    should_load_workspace = should_hydrate_workspace_context(
+        current_page,
+        view_opened=view_open,
+        explicit_request=explicit_request,
+    )
+
+    if should_load_workspace:
         subject_type_label = st.radio(
             "Type",
             ["Transcript", "Group"],
@@ -119,11 +144,14 @@ def render_sidebar(
         )
         subject_type = "transcript" if subject_type_label == "Transcript" else "group"
         current_run_id = st.session_state.get(RUN_ID_KEY)
-
         if subject_type == "transcript":
             transcript_options, transcript_format = get_transcript_dropdown_options()
             if not transcript_options:
-                st.caption("No transcripts yet")
+                st.caption(
+                    "Workspace list loading..."
+                    if explicit_request
+                    else "No transcripts yet"
+                )
                 apply_sidebar_selection(
                     st.session_state,
                     SidebarSelectionResult(
@@ -162,7 +190,9 @@ def render_sidebar(
             except Exception:
                 groups = []
             if not groups:
-                st.caption("No groups yet")
+                st.caption(
+                    "Workspace list loading..." if explicit_request else "No groups yet"
+                )
                 apply_sidebar_selection(
                     st.session_state,
                     SidebarSelectionResult(
@@ -223,7 +253,7 @@ def render_sidebar(
                     ),
                 )
             else:
-                st.caption("No runs yet")
+                st.caption("No transcript selected")
                 apply_sidebar_selection(
                     st.session_state,
                     SidebarSelectionResult(
@@ -233,6 +263,7 @@ def render_sidebar(
                     ),
                 )
         else:
+            st.caption("No transcript selected")
             apply_sidebar_selection(
                 st.session_state,
                 SidebarSelectionResult(
@@ -241,7 +272,17 @@ def render_sidebar(
                     run_id=None,
                 ),
             )
+    elif not view_open:
+        st.caption("Open View to load transcript and run selectors")
+        if st.button(
+            "Open View to load selectors",
+            key="tx_nav_open_view_selectors",
+            width="stretch",
+        ):
+            st.session_state[TX_NAV_EXPANDER_VIEW] = True
+            st.rerun()
 
+    if view_open:
         _subject_section("Pages")
         view_page_sections = (
             ("Read", (("Transcript", "Transcript"),)),
@@ -274,24 +315,18 @@ def render_sidebar(
                 )
 
     # tx_sidebar_tools_group (test anchor: workflow nav must appear above this)
-    with st.expander(  # type: ignore[call-arg]
-        "Tools",
-        expanded=st.session_state[TX_NAV_EXPANDER_TOOLS],
-        key=TX_NAV_EXPANDER_TOOLS,
-        on_change="rerun",
-    ):
+    def _render_tools_section() -> None:
         if corrections_studio_available:
             _nav_button("Corrections Studio", "Corrections Studio")
         _nav_button("Audio Prep", "Audio Pre-processing")
         _nav_button("Audio Merge", "Audio Merge")
         _nav_button("Dashboard Builder", "Dashboard Builder")
 
-    with st.expander(  # type: ignore[call-arg]
-        "Settings",
-        expanded=st.session_state[TX_NAV_EXPANDER_CONFIG],
-        key=TX_NAV_EXPANDER_CONFIG,
-        on_change="rerun",
-    ):
+    _sidebar_section("Tools", TX_NAV_EXPANDER_TOOLS, _render_tools_section)
+
+    def _render_settings_section() -> None:
         _nav_button("Settings", "Settings")
         _nav_button("Profiles", "Profiles")
         _nav_button("Diagnostics", "Diagnostics")
+
+    _sidebar_section("Settings", TX_NAV_EXPANDER_CONFIG, _render_settings_section)

@@ -19,6 +19,8 @@ Execute from the workspace root: `/Users/89298/Documents/transcriptx`.
 3. **Create zip (code only — exclude data, models, caches)**
    - Stage filtered files to a temp directory, then zip and remove the staging dir.
    - **Goal:** source code, config, docs, and tests — not user data, model weights, or generated artifacts.
+   - **Expected size:** ~2–5 MB compressed (~10–15 MB uncompressed). Small zips are correct; old subfolder backups were huge because they copied `data/`, `.test_outputs/`, and model caches.
+   - **Foundational paths (must end up in the zip):** `src/`, `tests/`, `scripts/`, `docs/`, `config/`, `assets/`, `examples/`, root manifests (`pyproject.toml`, `requirements*.txt`, `Dockerfile`, `docker-compose*.yml`, `Makefile`, `pytest.ini`, `.env.example`), and `.cursor/commands/`.
    - **Always exclude** (these dominate backup size if included):
      - `data/` — recordings, caches, model weights (`data/cache/voice` is ~7 GB), corrections, outputs
      - `.test_outputs/` — local test run artifacts (~20 GB)
@@ -73,10 +75,41 @@ Execute from the workspace root: `/Users/89298/Documents/transcriptx`.
        --exclude='coverage.xml' \
        --exclude='coverage.json' \
        --exclude='htmlcov' \
+       --include='src/***' \
+       --include='tests/***' \
+       --include='scripts/***' \
+       --include='docs/***' \
+       --include='config/***' \
+       --include='assets/***' \
+       --include='examples/***' \
+       --include='archive/***' \
+       --include='artifacts/***' \
+       --include='reports/***' \
+       --include='.cursor/***' \
+       --include='*.md' \
+       --include='*.toml' \
+       --include='*.txt' \
+       --include='*.yml' \
+       --include='*.yaml' \
+       --include='*.ini' \
+       --include='*.sh' \
+       --include='*.example' \
+       --include='Makefile' \
+       --include='Dockerfile' \
+       --include='LICENSE' \
+       --include='.coveragerc' \
+       --include='.dockerignore' \
+       --include='.gitignore' \
+       --include='TranscriptX.code-workspace' \
+       --exclude='*' \
        --exclude-from='.gitignore' \
        . "$STAGING/"
      (cd "$STAGING" && zip -rq "$ZIP_PATH" .)
      rm -rf "$STAGING"
+     # Verify foundational paths made it into the archive
+     for req in src/transcriptx tests scripts pyproject.toml requirements.txt docs config; do
+       unzip -l "$ZIP_PATH" | grep -q "$req" || { echo "BACKUP VERIFY FAILED: missing $req in $ZIP_PATH"; exit 1; }
+     done
      ```
 
 4. **Back up Cursor custom commands to the backup folder**

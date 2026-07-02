@@ -15,6 +15,12 @@ from transcriptx.core.utils.paths import (
 )
 from transcriptx.core.utils.logger import log_warning
 from transcriptx.core.utils._path_core import get_transcript_dir  # noqa: F401
+from transcriptx.core.observability.perf import (
+    increment_count,
+    observe_transcript_path,
+    section,
+    set_count,
+)
 
 # Supported audio extensions for merge, convert, preprocessing, and batch
 AUDIO_EXTENSIONS = (".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac")
@@ -114,33 +120,56 @@ def discover_managed_transcript_paths(root: Optional[Path] = None) -> list[Path]
     )
     from transcriptx.io.import_metadata_sidecar import validate_managed_transcript
 
-    candidates = discover_all_transcript_paths(root)
-    valid_paths: list[Path] = []
-    for candidate in candidates:
-        # First check canonical JSON semantics; skip early if it fails.
-        canonical = validate_canonical_transcript(candidate)
-        if not canonical.ok:
-            log_warning(
-                "file_discovery",
-                f"Excluding transcript from managed listing (canonical={canonical.category.value}): {canonical.message}",
-                context=str(candidate),
-            )
-            continue
+    with section(
+        "file_discovery.discover_managed_transcript_paths",
+        bucket="transcript_discovery",
+    ):
+        with section(
+            "file_discovery.candidate_enumeration", bucket="transcript_discovery"
+        ):
+            candidates = discover_all_transcript_paths(root)
+            set_count("transcript_json_files", len(candidates))
+        valid_paths: list[Path] = []
+        for candidate in candidates:
+            observe_transcript_path(candidate)
+            # First check canonical JSON semantics; skip early if it fails.
+            with section(
+                "file_discovery.validate_canonical_transcript",
+                bucket="transcript_validation",
+                extra={"candidate": str(candidate)},
+            ):
+                canonical = validate_canonical_transcript(candidate)
+            if not canonical.ok:
+                increment_count("invalid_or_legacy_files")
+                log_warning(
+                    "file_discovery",
+                    f"Excluding transcript from managed listing (canonical={canonical.category.value}): {canonical.message}",
+                    context=str(candidate),
+                )
+                continue
+            increment_count("valid_canonical_transcripts")
 
-        result = validate_managed_transcript(candidate)
-        if result.ok:
-            valid_paths.append(candidate)
-        else:
-            # Be defensive about result shape to accommodate older test stubs.
-            category = getattr(getattr(result, "category", None), "value", None)
-            message = getattr(result, "message", "")
-            details = "Excluding transcript from managed listing"
-            if category is not None:
-                details += f" (category={category})"
-            if message:
-                details += f": {message}"
-            log_warning("file_discovery", details, context=str(candidate))
-    return sorted(valid_paths, key=lambda p: str(p.resolve()))
+            with section(
+                "file_discovery.validate_managed_transcript",
+                bucket="transcript_validation",
+                extra={"candidate": str(candidate)},
+            ):
+                result = validate_managed_transcript(candidate)
+            if result.ok:
+                increment_count("valid_managed_transcripts")
+                valid_paths.append(candidate)
+            else:
+                increment_count("invalid_or_legacy_files")
+                # Be defensive about result shape to accommodate older test stubs.
+                category = getattr(getattr(result, "category", None), "value", None)
+                message = getattr(result, "message", "")
+                details = "Excluding transcript from managed listing"
+                if category is not None:
+                    details += f" (category={category})"
+                if message:
+                    details += f": {message}"
+                log_warning("file_discovery", details, context=str(candidate))
+        return sorted(valid_paths, key=lambda p: str(p.resolve()))
 
 
 def get_recordings_folder_start_path(config) -> Path:

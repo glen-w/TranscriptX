@@ -6,10 +6,13 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web.perf import mark_cache_miss
+
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cached_list_available_sessions() -> list[dict]:
     """Cached session scan for sidebar/navigation (web layer only)."""
+    mark_cache_miss("cached_list_available_sessions")
     from transcriptx.web.services.file_service import FileService
 
     return FileService.list_available_sessions()
@@ -17,6 +20,7 @@ def cached_list_available_sessions() -> list[dict]:
 
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_list_transcripts(_transcripts_dir: str = "") -> list:
+    mark_cache_miss("cached_list_transcripts")
     from transcriptx.app.controllers.library_controller import LibraryController
 
     return LibraryController().list_transcripts()
@@ -31,6 +35,7 @@ def get_cached_list_transcripts() -> list:
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_get_transcript_summaries_for_paths(paths_key: tuple[str, ...]) -> list:
     """Return transcript summaries (segment_count, speaker_map_status) for given paths."""
+    mark_cache_miss("cached_get_transcript_summaries_for_paths")
     if not paths_key:
         return []
     from transcriptx.services.speaker_studio.controller import SpeakerStudioController
@@ -58,6 +63,7 @@ def clear_rename_related_caches() -> None:
 
 @st.cache_data(show_spinner=False)
 def cached_get_available_modules() -> list[str]:
+    mark_cache_miss("cached_get_available_modules")
     from transcriptx.app.controllers.analysis_controller import AnalysisController
     from transcriptx.web.module_ui_groups import order_module_ids
 
@@ -67,6 +73,7 @@ def cached_get_available_modules() -> list[str]:
 
 @st.cache_data(show_spinner=False)
 def cached_get_default_modules(transcript_path_str: str) -> list[str]:
+    mark_cache_miss("cached_get_default_modules")
     from transcriptx.app.controllers.analysis_controller import AnalysisController
 
     return AnalysisController().get_default_modules([transcript_path_str])
@@ -74,6 +81,7 @@ def cached_get_default_modules(transcript_path_str: str) -> list[str]:
 
 @st.cache_data(show_spinner=False)
 def cached_get_default_modules_for_paths(paths: tuple[str, ...]) -> list[str]:
+    mark_cache_miss("cached_get_default_modules_for_paths")
     from transcriptx.app.controllers.analysis_controller import AnalysisController
 
     return AnalysisController().get_default_modules(list(paths))
@@ -106,6 +114,7 @@ _MODULE_INFO_CACHE_ATTRS = (
 
 @st.cache_data(show_spinner=False)
 def cached_get_module_info_list() -> list[dict]:
+    mark_cache_miss("cached_get_module_info_list")
     from transcriptx.app.module_resolution import get_module_info_list
     from transcriptx.web.module_ui_groups import order_module_ids
 
@@ -137,6 +146,7 @@ def cached_get_module_info_list() -> list[dict]:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cached_list_recent_runs(limit: int = 20) -> list:
+    mark_cache_miss("cached_list_recent_runs")
     from transcriptx.app.controllers.run_controller import RunController
 
     return RunController().list_recent_runs(limit=limit)
@@ -144,6 +154,7 @@ def cached_list_recent_runs(limit: int = 20) -> list:
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cached_doctor_report() -> dict:
+    mark_cache_miss("cached_doctor_report")
     from transcriptx.app.controllers.diagnostics_controller import DiagnosticsController
 
     return DiagnosticsController().get_doctor_report()
@@ -152,6 +163,7 @@ def cached_doctor_report() -> dict:
 @st.cache_data(ttl=60, show_spinner=False)
 def _cached_groups_workspace() -> tuple:
     """List loadable groups and warnings for skipped / invalid manifests."""
+    mark_cache_miss("cached_list_groups")
     from transcriptx.core.store.group_manifest_store import GroupManifestStore
 
     groups, warnings = GroupManifestStore().list_groups_best_effort()

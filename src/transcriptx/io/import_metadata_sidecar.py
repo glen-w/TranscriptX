@@ -15,6 +15,7 @@ from transcriptx.core.utils.paths import (
     TRANSCRIPTS_METADATA_DIR,
 )
 from transcriptx.io.transcript_schema import validate_transcript_document
+from transcriptx.core.observability.perf import observe_transcript_path, record_file_read
 
 logger = get_logger()
 
@@ -76,6 +77,7 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
 
 
 def load_sidecar(path: Path) -> dict[str, Any]:
+    record_file_read(path, section="load_sidecar", purpose="metadata_extraction")
     with open(path, "r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
@@ -187,6 +189,12 @@ def validate_managed_transcript(transcript_path: str | Path) -> ValidationResult
         )
 
     try:
+        observe_transcript_path(transcript)
+        record_file_read(
+            transcript,
+            section="validate_managed_transcript",
+            purpose="transcript_validation",
+        )
         with open(transcript, "r", encoding="utf-8") as handle:
             doc = json.load(handle)
     except Exception as exc:

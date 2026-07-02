@@ -24,6 +24,11 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from transcriptx.io.transcript_schema import validate_transcript_document
+from transcriptx.core.observability.perf import (
+    increment_count,
+    observe_transcript_path,
+    record_file_read,
+)
 
 
 class TranscriptLoadResult(NamedTuple):
@@ -99,11 +104,19 @@ def load_segments(path: str, data: Optional[Any] = None) -> List[Dict[str, Any]]
             raise FileNotFoundError(f"Transcript file not found: {path}")
 
     with open(resolved_path, encoding="utf-8") as f:
+        observe_transcript_path(resolved_path)
+        record_file_read(
+            resolved_path,
+            section="load_segments",
+            purpose="segment_loading",
+        )
         file_data = json.load(f)
 
-    return _require_canonical_v1_document(
+    segments = _require_canonical_v1_document(
         file_data, label=f"transcript file {resolved_path!r}"
     )
+    increment_count("segments_loaded", len(segments))
+    return segments
 
 
 def load_canonical_transcript(path: str) -> "CanonicalTranscript":
@@ -139,6 +152,12 @@ def load_transcript(path: str) -> Any:
         except FileNotFoundError:
             raise FileNotFoundError(f"Transcript file not found: {path}") from None
     with open(resolved_path, encoding="utf-8", errors="replace") as f:
+        observe_transcript_path(resolved_path)
+        record_file_read(
+            resolved_path,
+            section="load_transcript",
+            purpose="metadata_extraction",
+        )
         content = f.read()
     try:
         return json.loads(content)

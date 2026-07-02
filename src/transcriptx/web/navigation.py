@@ -12,6 +12,14 @@ from transcriptx.web.services.subject_service import SubjectService
 
 RequiredContext = Literal["none", "subject", "run_scoped", "transcript_or_group"]
 FallbackBehavior = Literal["stay", "home", "overview", "library", "run_analysis"]
+_RUN_SCOPED_PAGES = {
+    "Overview",
+    "Charts",
+    "Insights",
+    "Data",
+    "Explorer",
+    "Transcript",
+}
 
 
 @dataclass(frozen=True)
@@ -25,6 +33,26 @@ class PagePrerequisite:
 class PageAccessResult:
     allowed: bool
     help_text: str | None = None
+
+
+def should_hydrate_workspace_context(
+    page: str | None,
+    *,
+    view_opened: bool = False,
+    explicit_request: bool = False,
+) -> bool:
+    """
+    Central gate for workspace/session hydration.
+
+    First paint may always render shell, primary nav, and page skeletons. Only after
+    that should workspace-heavy data hydrate, either because the user explicitly
+    requested it or because the current page is run-scoped.
+    """
+    if explicit_request:
+        return True
+    if page in _RUN_SCOPED_PAGES:
+        return True
+    return view_opened
 
 
 def _is_transcript_path(value: str | None) -> bool:

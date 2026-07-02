@@ -61,3 +61,29 @@ def test_run_index_is_viewable_run_requires_user_artifact(tmp_path: Path) -> Non
 
     _write_artifact_manifest(run_dir, rel_paths=["stats/summary.json"])
     assert RunIndex._is_viewable_run(run_dir) is True
+
+
+def test_file_service_and_run_index_agree_on_viewability(tmp_path: Path) -> None:
+    from transcriptx.web.services.file_service import FileService
+    from transcriptx.web.services.run_index import RunIndex
+
+    cases: list[tuple[str, list[str] | None]] = [
+        ("no_manifest", None),
+        ("run_results_only", ["run_results.json"]),
+        ("run_report_only", ["run_report.json"]),
+        ("internal_only", [".transcriptx/run_config_effective.json"]),
+        ("user_visible_stats", ["stats/summary.json"]),
+        ("user_visible_chart", ["charts/summary.png"]),
+    ]
+
+    for label, rel_paths in cases:
+        run_dir = tmp_path / label
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / ".transcriptx").mkdir(parents=True, exist_ok=True)
+        (run_dir / ".transcriptx" / "manifest.json").write_text("{}", encoding="utf-8")
+        if rel_paths is not None:
+            _write_artifact_manifest(run_dir, rel_paths=rel_paths)
+
+        file_service_result = FileService._is_viewable_run(run_dir)
+        run_index_result = RunIndex._is_viewable_run(run_dir)
+        assert file_service_result == run_index_result, label

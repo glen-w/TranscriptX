@@ -11,6 +11,7 @@ from transcriptx.web.navigation import (
     evaluate_page_access,
     library_transcript_index,
     normalize_navigation_context_from_session,
+    should_hydrate_workspace_context,
 )
 from transcriptx.web.sidebar_state import (
     SidebarSelectionResult,
@@ -169,3 +170,12 @@ def test_apply_transitional_sidebar_backfill_promotes_view_when_prioritize_toggl
     apply_transitional_sidebar_backfill(ss, prioritize_view=True)
     assert ss[TX_NAV_EXPANDER_VIEW] is True
     assert ss[TX_NAV_EXPANDER_WORKFLOW] is False
+
+
+def test_workspace_hydration_gate_prefers_explicit_request_and_run_scoped_pages() -> (
+    None
+):
+    assert should_hydrate_workspace_context("Home") is False
+    assert should_hydrate_workspace_context("Home", view_opened=True) is True
+    assert should_hydrate_workspace_context("Library", explicit_request=True) is True
+    assert should_hydrate_workspace_context("Charts") is True

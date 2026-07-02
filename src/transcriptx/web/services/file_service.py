@@ -15,69 +15,25 @@ from transcriptx.core.utils.paths import (
     OUTPUTS_DIR,
 )
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.pipeline.manifest_loader import load_artifact_manifest
 from transcriptx.io.metadata_display_options import get_metadata_config
-from transcriptx.io.metadata_stats import word_count_from_document
+from transcriptx.io.metadata_stats import (
+    DEFAULT_SESSION_STATS,
+    listing_stats_from_document,
+)
+from transcriptx.web.services.run_visibility import has_user_artifacts, is_viewable_run
+from transcriptx.web.perf import (
+    increment_count,
+    observe_transcript_path,
+    record_file_read,
+    section,
+)
 
 logger = get_logger()
 
-DEFAULT_SESSION_STATS: dict[str, int | float] = {
-    "segment_count": 0,
-    "duration_seconds": 0,
-    "duration_minutes": 0,
-    "speaker_count": 0,
-    "word_count": 0,
-}
-
-
-def _coerce_stat_number(value: Any, *, as_int: bool = False) -> int | float | None:
-    try:
-        if as_int:
-            return int(value)
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
 
 def _extract_metadata_stats(doc: dict) -> dict[str, int | float]:
-    """Map document.metadata to session stats.
-
-    Word count is metadata-first; legacy fallback uses in-memory segments only
-    when the document is already loaded — never loads segments solely for stats.
-    """
-    stats = dict(DEFAULT_SESSION_STATS)
-
-    metadata = doc.get("metadata")
-    if not isinstance(metadata, dict):
-        metadata = {}
-
-    segment_count = _coerce_stat_number(metadata.get("segment_count"), as_int=True)
-    if segment_count is None:
-        segment_count = _coerce_stat_number(metadata.get("segments"), as_int=True)
-    if segment_count is not None:
-        stats["segment_count"] = segment_count
-
-    duration_seconds = _coerce_stat_number(metadata.get("duration_seconds"))
-    if duration_seconds is None:
-        duration_seconds = _coerce_stat_number(metadata.get("duration"))
-    if duration_seconds is not None:
-        stats["duration_seconds"] = duration_seconds
-        stats["duration_minutes"] = round(duration_seconds / 60, 1)
-
-    speaker_count = _coerce_stat_number(metadata.get("speaker_count"), as_int=True)
-    if speaker_count is None:
-        speaker_count = _coerce_stat_number(metadata.get("num_speakers"), as_int=True)
-    if speaker_count is not None:
-        stats["speaker_count"] = speaker_count
-
-    meta_cfg = get_metadata_config()
-    stats["word_count"] = word_count_from_document(
-        doc,
-        allow_segment_fallback=meta_cfg.listing_word_count_fallback == "in_memory",
-        allow_legacy_words_alias=meta_cfg.legacy_words_alias,
-    )
-
-    return stats
+    """Thin wrapper around shared listing stat resolution."""
+    return listing_stats_from_document(doc, meta_cfg=get_metadata_config())
 
 
 class FileService:
@@ -85,32 +41,17 @@ class FileService:
 
     @staticmethod
     def _has_user_artifacts(run_dir: Path) -> bool:
-        manifest_path = run_dir / "manifest.json"
-        if not manifest_path.is_file():
-            return False
-        try:
-            manifest = load_artifact_manifest(manifest_path)
-        except Exception:
-            return False
-        artifacts = manifest.get("artifacts")
-        if not isinstance(artifacts, list) or not artifacts:
-            return False
-        for artifact in artifacts:
-            if not isinstance(artifact, dict):
-                continue
-            rel_path = str(artifact.get("rel_path") or "")
-            if (
-                rel_path
-                and not rel_path.startswith(".transcriptx/")
-                and rel_path not in {"run_results.json", "run_report.json"}
-            ):
-                return True
-        return False
+        return has_user_artifacts(run_dir)
 
     @staticmethod
     def _is_viewable_run(run_dir: Path) -> bool:
         """Only index runs that produced at least one user-visible artifact."""
-        return FileService._has_user_artifacts(run_dir)
+        with section(
+            "file_service._is_viewable_run",
+            bucket="session_discovery",
+            extra={"run_dir": str(run_dir)},
+        ):
+            return is_viewable_run(run_dir)
 
     @staticmethod
     def _resolve_session_dir(session_id: str) -> Path:
@@ -153,48 +94,62 @@ class FileService:
         Returns:
             Path to the transcript file, or None if not found
         """
-        session_dir = FileService._resolve_session_dir(session_name)
-        manifest_path = session_dir / ".transcriptx" / "manifest.json"
+        with section(
+            "file_service.resolve_transcript_path",
+            bucket="session_discovery",
+            extra={"session_name": session_name},
+        ):
+            session_dir = FileService._resolve_session_dir(session_name)
+            manifest_path = session_dir / ".transcriptx" / "manifest.json"
 
-        slug = session_name.split("/", 1)[0] if "/" in session_name else session_name
+            slug = (
+                session_name.split("/", 1)[0] if "/" in session_name else session_name
+            )
 
-        if manifest_path.exists():
-            try:
-                from transcriptx.core.pipeline.manifest_loader import load_run_manifest
+            if manifest_path.exists():
+                try:
+                    from transcriptx.core.pipeline.manifest_loader import (
+                        load_run_manifest,
+                    )
 
-                manifest = load_run_manifest(manifest_path)
-                manifest_path_value = manifest.get("transcript_path")
-                if manifest_path_value:
-                    path = Path(manifest_path_value)
-                    if path.exists():
-                        return path
-                    # Manifest path often absolute host path; in Docker it may not exist.
-                    # Fallback: transcript copied into run dir (same basename).
-                    run_dir_candidate = session_dir / path.name
-                    if run_dir_candidate.exists():
-                        return run_dir_candidate
-            except Exception as e:
-                logger.warning(f"Failed to read manifest for {session_name}: {e}")
+                    manifest = load_run_manifest(manifest_path)
+                    manifest_path_value = manifest.get("transcript_path")
+                    if manifest_path_value:
+                        path = Path(manifest_path_value)
+                        if path.exists():
+                            observe_transcript_path(path)
+                            return path
+                        # Manifest path often absolute host path; in Docker it may not exist.
+                        # Fallback: transcript copied into run dir (same basename).
+                        run_dir_candidate = session_dir / path.name
+                        if run_dir_candidate.exists():
+                            observe_transcript_path(run_dir_candidate)
+                            return run_dir_candidate
+                except Exception as e:
+                    logger.warning(f"Failed to read manifest for {session_name}: {e}")
 
-        # Run dir: transcript may live next to manifest (e.g. pipeline or Docker layout)
-        for candidate in [
-            session_dir / f"{slug}.json",
-            session_dir / "transcript.json",
-            session_dir / f"{slug}_transcript_diarised.json",
-        ]:
-            if candidate.exists():
-                return candidate
+            # Run dir: transcript may live next to manifest (e.g. pipeline or Docker layout)
+            for candidate in [
+                session_dir / f"{slug}.json",
+                session_dir / "transcript.json",
+                session_dir / f"{slug}_transcript_diarised.json",
+            ]:
+                if candidate.exists():
+                    observe_transcript_path(candidate)
+                    return candidate
 
-        for candidate in [
-            Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",
-            Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}_transcript_diarised.json",
-            Path(DIARISED_TRANSCRIPTS_DIR) / f"{slug}.json",
-            Path(DIARISED_TRANSCRIPTS_DIR) / f"{slug}_transcript_diarised.json",
-        ]:
-            if candidate.exists():
-                return candidate
+            for candidate in [
+                Path(DIARISED_TRANSCRIPTS_DIR) / f"{session_name}.json",
+                Path(DIARISED_TRANSCRIPTS_DIR)
+                / f"{session_name}_transcript_diarised.json",
+                Path(DIARISED_TRANSCRIPTS_DIR) / f"{slug}.json",
+                Path(DIARISED_TRANSCRIPTS_DIR) / f"{slug}_transcript_diarised.json",
+            ]:
+                if candidate.exists():
+                    observe_transcript_path(candidate)
+                    return candidate
 
-        return None
+            return None
 
     @staticmethod
     def resolve_session_for_transcript_path(
@@ -362,103 +317,133 @@ class FileService:
         Returns:
             List of session dictionaries with metadata
         """
-        sessions: List[Dict[str, Any]] = []
-        outputs_dir = Path(OUTPUTS_DIR)
+        with section(
+            "file_service.list_available_sessions", bucket="session_discovery"
+        ):
+            sessions: List[Dict[str, Any]] = []
+            outputs_dir = Path(OUTPUTS_DIR)
 
-        if not outputs_dir.exists():
-            logger.warning(f"Outputs directory does not exist: {outputs_dir}")
-            return sessions
+            if not outputs_dir.exists():
+                logger.warning(f"Outputs directory does not exist: {outputs_dir}")
+                return sessions
 
-        # Load index to get transcript_key for slug-based folders
-        from datetime import datetime
+            # Load index to get transcript_key for slug-based folders
+            from datetime import datetime
 
-        from transcriptx.core.utils.slug_manager import get_transcript_key_for_slug
-        from transcriptx.web.module_registry import (
-            get_analysis_modules as _get_analysis_modules,
-            get_total_module_count,
-        )
+            from transcriptx.core.utils.slug_manager import get_transcript_key_for_slug
+            from transcriptx.web.module_registry import (
+                get_analysis_modules as _get_analysis_modules,
+                get_total_module_count,
+            )
 
-        group_root = Path(GROUP_OUTPUTS_DIR)
-        doc_cache: dict[str, dict] = {}
-        for transcript_dir in outputs_dir.iterdir():
-            if not transcript_dir.is_dir() or transcript_dir.name.startswith("."):
-                continue
-            # outputs/groups/<uuid>/<run_id> is not slug/run transcript sessions; skip entirely.
-            try:
-                if transcript_dir.resolve() == group_root.resolve():
-                    continue
-            except (OSError, ValueError):
-                if transcript_dir.name == "groups":
-                    continue
-
-            # Prefer transcript_key from index; use slug as fallback so runs still appear in dropdown
-            # (e.g. when index wasn't updated or run was created in Docker with different paths)
-            transcript_key = get_transcript_key_for_slug(transcript_dir.name)
-            if transcript_key is None:
-                transcript_key = transcript_dir.name
-
-            total_modules = get_total_module_count()
-            for run_dir in transcript_dir.iterdir():
-                if not run_dir.is_dir() or run_dir.name.startswith("."):
-                    continue
-                if not FileService._is_viewable_run(run_dir):
-                    continue
-                try:
-                    session_id = f"{transcript_dir.name}/{run_dir.name}"
-                    # Include session even when transcript path is not resolvable (e.g. Docker path
-                    # in manifest); run will appear in dropdown and may load transcript from run dir
-                    modules = _get_analysis_modules(session_id)
-                    module_count = len(modules)
-                    analysis_completion = (
-                        int((module_count / total_modules) * 100)
-                        if total_modules > 0
-                        else 0
-                    )
+            group_root = Path(GROUP_OUTPUTS_DIR)
+            doc_cache: dict[str, dict] = {}
+            with section(
+                "file_service.outputs_dir_iteration",
+                bucket="session_discovery",
+                extra={"outputs_dir": str(outputs_dir)},
+            ):
+                for transcript_dir in outputs_dir.iterdir():
+                    if not transcript_dir.is_dir() or transcript_dir.name.startswith(
+                        "."
+                    ):
+                        continue
+                    # outputs/groups/<uuid>/<run_id> is not slug/run transcript sessions; skip entirely.
                     try:
-                        mtime = run_dir.stat().st_mtime
-                        last_updated = datetime.fromtimestamp(mtime).isoformat()
-                    except Exception:
-                        last_updated = None
-                    session_info = {
-                        "name": session_id,
-                        "slug": transcript_dir.name,  # Human-readable slug
-                        "transcript_key": transcript_key,  # Hash for identity
-                        "run_id": run_dir.name,
-                        "path": str(run_dir),
-                        "modules": modules,
-                        "module_count": module_count,
-                        **DEFAULT_SESSION_STATS,
-                        "last_updated": last_updated,
-                        "analysis_completion": analysis_completion,
-                    }
-                    # word_count is metadata-first; in-memory segment fallback when doc is cached.
-                    transcript_path = FileService.resolve_transcript_path(session_id)
-                    if transcript_path is not None:
+                        if transcript_dir.resolve() == group_root.resolve():
+                            continue
+                    except (OSError, ValueError):
+                        if transcript_dir.name == "groups":
+                            continue
+
+                    # Prefer transcript_key from index; use slug as fallback so runs still appear in dropdown
+                    # (e.g. when index wasn't updated or run was created in Docker with different paths)
+                    transcript_key = get_transcript_key_for_slug(transcript_dir.name)
+                    if transcript_key is None:
+                        transcript_key = transcript_dir.name
+
+                    total_modules = get_total_module_count()
+                    for run_dir in transcript_dir.iterdir():
+                        if not run_dir.is_dir() or run_dir.name.startswith("."):
+                            continue
+                        increment_count("output_run_dirs")
+                        if not FileService._is_viewable_run(run_dir):
+                            continue
                         try:
-                            cache_key = str(transcript_path.resolve())
-                        except (OSError, RuntimeError):
-                            cache_key = str(transcript_path)
-                        if cache_key not in doc_cache:
-                            from transcriptx.io.transcript_loader import load_transcript
-
-                            try:
-                                doc_cache[cache_key] = load_transcript(
-                                    str(transcript_path)
-                                )
-                            except Exception as exc:
-                                logger.debug(
-                                    "Skipping metadata stats for %s: %s",
-                                    transcript_path,
-                                    exc,
-                                )
-                                doc_cache[cache_key] = {}
-                        if doc_cache[cache_key]:
-                            session_info.update(
-                                _extract_metadata_stats(doc_cache[cache_key])
+                            session_id = f"{transcript_dir.name}/{run_dir.name}"
+                            # Include session even when transcript path is not resolvable (e.g. Docker path
+                            # in manifest); run will appear in dropdown and may load transcript from run dir
+                            modules = _get_analysis_modules(session_id)
+                            module_count = len(modules)
+                            analysis_completion = (
+                                int((module_count / total_modules) * 100)
+                                if total_modules > 0
+                                else 0
                             )
-                    sessions.append(session_info)
-                except Exception as e:
-                    logger.warning(f"Failed to load session {run_dir.name}: {e}")
-                    continue
+                            try:
+                                mtime = run_dir.stat().st_mtime
+                                last_updated = datetime.fromtimestamp(mtime).isoformat()
+                            except Exception:
+                                last_updated = None
+                            session_info = {
+                                "name": session_id,
+                                "slug": transcript_dir.name,  # Human-readable slug
+                                "transcript_key": transcript_key,  # Hash for identity
+                                "run_id": run_dir.name,
+                                "path": str(run_dir),
+                                "modules": modules,
+                                "module_count": module_count,
+                                **DEFAULT_SESSION_STATS,
+                                "last_updated": last_updated,
+                                "analysis_completion": analysis_completion,
+                            }
+                            # word_count is metadata-first; in-memory segment fallback when doc is cached.
+                            transcript_path = FileService.resolve_transcript_path(
+                                session_id
+                            )
+                            if transcript_path is not None:
+                                try:
+                                    cache_key = str(transcript_path.resolve())
+                                except (OSError, RuntimeError):
+                                    cache_key = str(transcript_path)
+                                if cache_key not in doc_cache:
+                                    from transcriptx.io.transcript_loader import (
+                                        load_transcript,
+                                    )
 
-        return sorted(sessions, key=lambda x: x.get("last_updated") or "", reverse=True)
+                                    with section(
+                                        "file_service.load_transcript_for_session_stats",
+                                        bucket="session_discovery",
+                                        extra={"transcript_path": str(transcript_path)},
+                                    ):
+                                        try:
+                                            observe_transcript_path(transcript_path)
+                                            record_file_read(
+                                                transcript_path,
+                                                section="file_service.list_available_sessions",
+                                                purpose="metadata_extraction",
+                                            )
+                                            doc_cache[cache_key] = load_transcript(
+                                                str(transcript_path)
+                                            )
+                                        except Exception as exc:
+                                            logger.debug(
+                                                "Skipping metadata stats for %s: %s",
+                                                transcript_path,
+                                                exc,
+                                            )
+                                            doc_cache[cache_key] = {}
+                                if doc_cache[cache_key]:
+                                    session_info.update(
+                                        _extract_metadata_stats(doc_cache[cache_key])
+                                    )
+                            sessions.append(session_info)
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to load session {run_dir.name}: {e}"
+                            )
+                            continue
+
+            return sorted(
+                sessions, key=lambda x: x.get("last_updated") or "", reverse=True
+            )

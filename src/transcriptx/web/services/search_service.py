@@ -109,20 +109,9 @@ def _build_transcript_index(
     )
 
 
-def _resolve_transcript_path(session_name: str) -> Optional[str]:
-    session_dir = FileService._resolve_session_dir(session_name)
-    manifest_path = session_dir / ".transcriptx" / "manifest.json"
-    if manifest_path.exists():
-        try:
-            from transcriptx.core.pipeline.manifest_loader import load_run_manifest
-
-            manifest = load_run_manifest(manifest_path)
-            transcript_path = manifest.get("transcript_path")
-            if transcript_path:
-                return str(Path(transcript_path).resolve())
-        except Exception as exc:
-            logger.warning(f"Failed to read manifest for {session_name}: {exc}")
-    return None
+def _resolve_session_path_for_search(session_name: str) -> str:
+    resolved = FileService.resolve_transcript_path(session_name)
+    return str(resolved) if resolved else session_name
 
 
 def _resolve_transcript_mtime(session_name: str) -> Optional[float]:
@@ -150,7 +139,7 @@ def get_speakers_from_transcripts(
         session_name = session_info.get("name", "")
         if not session_name:
             continue
-        transcript_path = _resolve_transcript_path(session_name) or session_name
+        transcript_path = _resolve_session_path_for_search(session_name)
         transcript_mtime = _resolve_transcript_mtime(session_name)
         index = _build_transcript_index(session_name, transcript_path, transcript_mtime)
         if not index:
@@ -179,7 +168,7 @@ class FileSearchBackend:
             session_name = session_info.get("name", "")
             if not session_name:
                 continue
-            transcript_path = _resolve_transcript_path(session_name) or session_name
+            transcript_path = _resolve_session_path_for_search(session_name)
             transcript_mtime = _resolve_transcript_mtime(session_name)
             index = _build_transcript_index(
                 session_name, transcript_path, transcript_mtime
@@ -296,7 +285,7 @@ class SearchService:
             session_name = session_info.get("name", "")
             if not session_name:
                 continue
-            transcript_path = _resolve_transcript_path(session_name) or session_name
+            transcript_path = _resolve_session_path_for_search(session_name)
             transcript_mtime = _resolve_transcript_mtime(session_name)
             index = _build_transcript_index(
                 session_name, transcript_path, transcript_mtime

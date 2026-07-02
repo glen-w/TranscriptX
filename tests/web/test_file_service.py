@@ -13,76 +13,19 @@ from transcriptx.web.services.file_service import (
 
 class TestExtractMetadataStats:
 
-    def test_canonical_metadata(self) -> None:
+    def test_wrapper_delegates_to_listing_stats(self) -> None:
         doc = {
             "metadata": {
-                "segment_count": 120,
-                "duration_seconds": 3600.0,
-                "speaker_count": 3,
-                "word_count": 42,
+                "segment_count": 3,
+                "duration_seconds": 90.0,
+                "speaker_count": 1,
+                "word_count": 12,
             }
         }
         stats = _extract_metadata_stats(doc)
-        assert stats["segment_count"] == 120
-        assert stats["duration_seconds"] == 3600.0
-        assert stats["duration_minutes"] == 60.0
-        assert stats["speaker_count"] == 3
-        assert stats["word_count"] == 42
-
-    def test_legacy_words_alias(self) -> None:
-        doc = {"metadata": {"words": 99}}
-        stats = _extract_metadata_stats(doc)
-        assert stats["word_count"] == 99
-
-    def test_segment_fallback_when_metadata_lacks_word_count(self) -> None:
-        doc = {
-            "metadata": {"segment_count": 2},
-            "segments": [
-                {"text": "one two three"},
-                {"text": "four five"},
-            ],
-        }
-        stats = _extract_metadata_stats(doc)
-        assert stats["word_count"] == 5
-
-    def test_no_segment_fallback_without_loaded_segments(self) -> None:
-        from transcriptx.io.metadata_stats import word_count_from_document
-
-        assert (
-            word_count_from_document(
-                {"metadata": {"segment_count": 2}},
-                allow_segment_fallback=True,
-            )
-            == 0
-        )
-
-    def test_legacy_metadata_keys(self) -> None:
-        doc = {
-            "metadata": {
-                "segments": 50,
-                "duration": 120.0,
-                "num_speakers": 2,
-            }
-        }
-        stats = _extract_metadata_stats(doc)
-        assert stats["segment_count"] == 50
-        assert stats["duration_seconds"] == 120.0
-        assert stats["duration_minutes"] == 2.0
-        assert stats["speaker_count"] == 2
-        assert stats["word_count"] == 0
-
-    def test_missing_metadata_returns_defaults(self) -> None:
-        assert _extract_metadata_stats({}) == dict(DEFAULT_SESSION_STATS)
-        assert _extract_metadata_stats({"metadata": "bad"}) == dict(
-            DEFAULT_SESSION_STATS
-        )
-
-    def test_partial_metadata_merges_with_defaults(self) -> None:
-        stats = _extract_metadata_stats({"metadata": {"segment_count": 10}})
-        assert stats["segment_count"] == 10
-        assert stats["duration_seconds"] == 0
-        assert stats["speaker_count"] == 0
-        assert stats["word_count"] == 0
+        assert stats["segment_count"] == 3
+        assert stats["duration_minutes"] == 1.5
+        assert stats["word_count"] == 12
 
 
 class TestFileService:
