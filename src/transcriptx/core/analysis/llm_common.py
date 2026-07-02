@@ -517,6 +517,8 @@ def build_bounded_user_prompt(
     prompt = f"{prefix}{truncated_block}{suffix}"
     meta = dict(trunc_meta)
     meta["input_chars"] = len(prompt)
+    meta["transcript_chars_total"] = len(transcript_block or "")
+    meta["transcript_chars_used"] = len(truncated_block)
     return prompt, meta
 
 

@@ -1,7 +1,7 @@
 {
   "bin_seconds": 30.0,
   "deep_max_seconds": 12.0,
-  "deep_mode": false,
+  "deep_mode": true,
   "deep_model_name": "superb/wav2vec2-base-superb-er",
   "drift_threshold": 2.5,
   "egemaps_enabled": true,

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from transcriptx.core.utils.config.system import TranscriptXConfig
 
 _DEFAULT_OLLAMA_MODEL = "qwen3:8b"
+DEFAULT_OLLAMA_MODEL = _DEFAULT_OLLAMA_MODEL
 _DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 
 
@@ -67,6 +68,7 @@ __all__ = [
     "OllamaClient",
     "LLMConfigurationError",
     "LLM_CONFIGURATION_ERROR",
+    "DEFAULT_OLLAMA_MODEL",
     "get_llm_client",
     "normalize_base_url",
 ]

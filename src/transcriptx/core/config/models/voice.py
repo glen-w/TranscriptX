@@ -11,7 +11,7 @@ class VoiceSettingsModel(BaseModel):
     max_seconds_for_pitch: float = Field(default=20.0)
     max_segments_considered: int | None = Field(default=None)
     egemaps_enabled: bool = Field(default=True)
-    deep_mode: bool = Field(default=False)
+    deep_mode: bool = Field(default=True)
     deep_model_name: str = Field(default="superb/wav2vec2-base-superb-er")
     deep_max_seconds: float = Field(default=12.0)
     store_parquet: str = Field(default="auto")

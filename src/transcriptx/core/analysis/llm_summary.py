@@ -19,9 +19,14 @@ from transcriptx.core.analysis.llm_common import (
     sha256_llm_request,
     write_llm_artifacts,
 )
+from transcriptx.core.analysis.llm_summary_effort import (
+    build_llm_summary_input_coverage,
+    build_llm_summary_ollama_client,
+    require_llm_summary_ollama,
+    resolve_llm_summary_runtime,
+)
 from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
 from transcriptx.core.errors.coded import CodedError
-from transcriptx.core.llm import get_llm_client
 from transcriptx.core.llm.errors import LLMResponseError
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.config import get_config
@@ -51,21 +56,6 @@ def _render_llm_summary_markdown(payload: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _effective_max_output_tokens(
-    client: Any,
-    llm_cfg: Any,
-    *,
-    max_tokens: Any,
-) -> int | None:
-    if max_tokens is not None:
-        return int(max_tokens)
-    client_default = getattr(client, "_max_output_tokens", None)
-    if client_default is not None:
-        return int(client_default)
-    cfg_default = getattr(llm_cfg, "max_output_tokens", None)
-    return int(cfg_default) if cfg_default is not None else None
-
-
 class LLMSummaryAnalysis(AnalysisModule):
     """Abstractive summary of readable transcript text via a local LLM."""
 
@@ -85,7 +75,20 @@ class LLMSummaryAnalysis(AnalysisModule):
             log_analysis_start(self.module_name, context.transcript_path)
             config = get_config()
             llm_cfg = config.llm
-            client = get_llm_client(config)
+
+            require_llm_summary_ollama(llm_cfg)
+            # Effort profiles replace llm.max_input_chars, request_timeout, and
+            # max_output_tokens for llm_summary when provider is ollama.
+            effort_runtime = resolve_llm_summary_runtime(
+                llm_cfg=llm_cfg,
+                effort=config.analysis.llm_summary.effort,
+            )
+            client = build_llm_summary_ollama_client(
+                llm_cfg=llm_cfg,
+                runtime=effort_runtime,
+            )
+            max_input_chars = int(effort_runtime.max_input_chars)
+            max_output_tokens = effort_runtime.max_output_tokens
 
             segments = context.get_segments()
             lines = format_transcript_lines(segments)
@@ -96,7 +99,7 @@ class LLMSummaryAnalysis(AnalysisModule):
             user_prompt, trunc_meta = build_bounded_user_prompt(
                 instruction=LLM_SUMMARY_INSTRUCTION,
                 transcript_block=transcript_block,
-                max_input_chars=int(llm_cfg.max_input_chars),
+                max_input_chars=max_input_chars,
             )
             system_prompt = _build_llm_summary_system_prompt()
             llm_request_sha256 = sha256_llm_request(
@@ -104,17 +107,12 @@ class LLMSummaryAnalysis(AnalysisModule):
                 system_prompt=system_prompt,
             )
             temperature = float(llm_cfg.default_temperature)
-            effective_max_tokens = _effective_max_output_tokens(
-                client,
-                llm_cfg,
-                max_tokens=llm_cfg.max_output_tokens,
-            )
 
             raw = client.generate(
                 prompt=user_prompt,
                 system_prompt=system_prompt,
                 temperature=temperature,
-                max_tokens=llm_cfg.max_output_tokens,
+                max_tokens=max_output_tokens,
             )
             summary_text = raw.strip()
             if not summary_text:
@@ -123,10 +121,13 @@ class LLMSummaryAnalysis(AnalysisModule):
             generation_options: Dict[str, Any] = {
                 "temperature": temperature,
                 "seed": int(llm_cfg.seed),
+                "num_predict": max_output_tokens,
             }
-            if effective_max_tokens is not None:
-                generation_options["num_predict"] = effective_max_tokens
 
+            coverage = build_llm_summary_input_coverage(
+                transcript_block=transcript_block,
+                trunc_meta=trunc_meta,
+            )
             provenance = build_llm_provenance(
                 module_name=self.module_name,
                 prompt_version=LLM_SUMMARY_PROMPT_VERSION,
@@ -134,10 +135,20 @@ class LLMSummaryAnalysis(AnalysisModule):
                 model=getattr(client, "model", llm_cfg.model or ""),
                 seed=int(llm_cfg.seed),
                 temperature=temperature,
-                max_output_tokens=effective_max_tokens,
+                max_output_tokens=max_output_tokens,
                 llm_request_sha256=llm_request_sha256,
                 truncation=trunc_meta,
                 generation_options=generation_options,
+            )
+            provenance.update(
+                {
+                    "effort": effort_runtime.effort,
+                    "effort_profile": effort_runtime.profile_name,
+                    "request_timeout": effort_runtime.request_timeout,
+                    "max_input_chars": effort_runtime.max_input_chars,
+                    "max_output_tokens": effort_runtime.max_output_tokens,
+                    **coverage,
+                }
             )
 
             payload: Dict[str, Any] = {

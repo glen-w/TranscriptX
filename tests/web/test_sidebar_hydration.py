@@ -97,10 +97,6 @@ def test_collapsed_view_does_not_hydrate_workspace(monkeypatch) -> None:
     )
 
     assert calls == {"transcripts": 0, "runs": 0, "subject": 0, "groups": 0}
-    assert (
-        "Open View to load transcript and run selectors"
-        in _DummySidebarStreamlit.captions
-    )
     for key in ("subject_type", "subject_id", "run_id", SELECTED_TRANSCRIPT_PATH):
         assert _DummySidebarStreamlit.session_state.get(key) == before.get(key)
 

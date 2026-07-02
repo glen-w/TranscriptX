@@ -885,6 +885,9 @@
     "early_window_seconds": 60,
     "min_confidence": 0.6
   },
+  "llm_summary": {
+    "effort": "medium"
+  },
   "temporal_dynamics": {
     "closing_phase_max_seconds": 120.0,
     "closing_phase_percentage": 0.1,
@@ -939,7 +942,7 @@
   "voice": {
     "bin_seconds": 30.0,
     "deep_max_seconds": 12.0,
-    "deep_mode": false,
+    "deep_mode": true,
     "deep_model_name": "superb/wav2vec2-base-superb-er",
     "drift_threshold": 2.5,
     "egemaps_enabled": true,

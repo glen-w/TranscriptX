@@ -106,7 +106,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 | **Emotion** | `TRANSCRIPTX_EMOTION_MODEL` | Larger HF `text-classification` emotion models (English-tuned) |
 | **Sentiment** | `TRANSCRIPTX_SENTIMENT_BACKEND=transformers` + `sentiment_model_name` | RoBERTa default; larger HF sentiment models |
 | **LLM summary / narrative** | `TRANSCRIPTX_LLM_MODEL` | Larger Ollama model (8B+, etc.) |
-| **Voice deep ER** | `analysis.voice.deep_mode`, `deep_model_name` | Enable deep mode; larger SUPERB / wav2vec ER checkpoints |
+| **Voice deep ER** | `analysis.voice.deep_mode` (default **on**), `deep_model_name` | Larger SUPERB / wav2vec ER checkpoints |
 | **Transcription** (external) | WhisperX `WHISPERX_MODEL` | `large-v2`, `large-v3` — see [recipes/whisperx](../recipes/whisperx/README.md) |
 
 ### Where larger models do **not** apply

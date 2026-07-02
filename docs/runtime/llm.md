@@ -46,9 +46,37 @@ Both modules are included in the **recommended** default module list. Uncheck **
 
 Selecting `narrative_summary` automatically runs the `summary` dependency chain first.
 
+## `llm_summary` effort (not `llm.effort`)
+
+The setting **`analysis.llm_summary.effort`** controls summary effort for the **`llm_summary` module only** (full-transcript abstractive summary). It is **not** `llm.effort` and does **not** affect `narrative_summary`, global `llm.*` provider settings, or other analysis modules.
+
+Valid values: `low`, `medium`, `high`, `max` (default: `medium`).
+
+```json
+{
+  "analysis": {
+    "llm_summary": {
+      "effort": "medium"
+    }
+  }
+}
+```
+
+When `llm.enabled` is true and `llm.provider` is `ollama`, `llm_summary` resolves builtin effort profiles that set `max_input_chars`, `request_timeout`, and `max_output_tokens` for that module run. Those effort limits **replace** the corresponding `llm.*` values for `llm_summary` only; they are not merged with user-tuned `llm.max_input_chars` / `llm.request_timeout` / `llm.max_output_tokens`. The model still defaults to `llm.model` unless a future profile sets an override.
+
+**Tier intent:**
+- `low` — useful preview mode
+- `medium` — default completeness-oriented mode for normal long transcripts (not legacy `llm.*` defaults)
+- `high` — patient mode for long meetings, workshops, lectures, and dense transcripts
+- `max` — push-the-laptop mode; prefers waiting over truncating or timing out
+
+This pass supports `provider="ollama"` only for `llm_summary`; other non-null providers raise configuration errors.
+
+Artifact provenance records `effort`, `effort_profile`, resolved limits, and input coverage (`input_truncated`, `input_chars_total`, `input_chars_used`, `input_coverage_ratio`). The legacy `input_chars` field remains the full prompt size including wrapper text.
+
 ## Truncation
 
-`llm_summary` caps the full user prompt (instructions, delimiters, and transcript block) to `max_input_chars`. When the formatted transcript exceeds the budget, TranscriptX uses a deterministic **head/tail** strategy:
+`llm_summary` caps the full user prompt (instructions, delimiters, and transcript block) to an input budget using the existing head/tail truncation algorithm. On the Ollama effort path, the budget comes from the selected effort profile's `max_input_chars`. When the formatted transcript exceeds the budget, TranscriptX uses a deterministic **head/tail** strategy:
 
 - Reserve space for an omission marker in the middle.
 - Allocate roughly **60%** of the remaining budget to early segments and **40%** to late segments (whole segments only).

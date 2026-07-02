@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.3.1"
+version = "0.3.2"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -151,6 +151,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "transcriptx.core.utils" = ["chart_definitions.json"]
+"transcriptx.web.layouts" = ["presets/*.yaml"]
 
 [tool.black]
 line-length = 88

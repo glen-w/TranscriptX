@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-02
+
+### Added
+
+- `analysis.llm_summary.effort` config (low/medium/high/max) with builtin Ollama profiles for input size, timeout, and output tokens.
+- Pydantic pilot for `llm_summary` settings and integration tests with golden fixtures.
+- Input coverage metadata in llm_summary provenance.
+
+### Changed
+
+- `llm_summary` uses effort-tier runtime resolution instead of global `llm.max_input_chars` / `max_output_tokens` on the Ollama path.
+- Dockerfile builds the wheel after spaCy/NLTK/TextBlob downloads so NLP assets are baked into the image.
+- Transcript viewer segment timestamps render with millisecond precision when sub-second.
+
+### Removed
+
+- `speaker_profiling` utility and its unit tests (unused).
+
 ## [0.3.1] - 2026-07-02
 
 ### Added

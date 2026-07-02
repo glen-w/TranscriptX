@@ -277,7 +277,6 @@ def render_sidebar(
                 ),
             )
     elif not view_open:
-        st.caption("Open View to load transcript and run selectors")
         if st.button(
             "Open View to load selectors",
             key="tx_nav_open_view_selectors",

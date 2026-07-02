@@ -11,10 +11,17 @@ from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.transcript_viewer.highlight import render_highlight_html
 
 
+def _format_single_timestamp(seconds: float, format_key: str) -> str:
+    if format_key == "seconds" and seconds < 60:
+        return f"{seconds:.1f}s"
+    return format_time_detailed(seconds)
+
+
 def _format_timestamp_range(start: float, end: float, format_key: str) -> str:
-    if format_key == "seconds":
-        return f"{start:.1f}s - {end:.1f}s"
-    return f"{format_time_detailed(start)} - {format_time_detailed(end)}"
+    return (
+        f"{_format_single_timestamp(start, format_key)}"
+        f" - {_format_single_timestamp(end, format_key)}"
+    )
 
 
 def group_segments_by_speaker(

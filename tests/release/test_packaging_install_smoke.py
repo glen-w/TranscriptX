@@ -71,3 +71,23 @@ def test_wheel_build_and_import_smoke(tmp_path: Path) -> None:
         stderr=subprocess.PIPE,
         text=True,
     )
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from transcriptx.web.blocks.builtin import register_builtin_blocks; "
+                "from transcriptx.web.layouts.store import LayoutProfileStore; "
+                "register_builtin_blocks(); "
+                "spec = LayoutProfileStore.load_layout('default'); "
+                "assert spec.id == 'default'"
+            ),
+        ],
+        check=True,
+        cwd=repo_root,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )

@@ -914,6 +914,7 @@ class AnalysisConfig:
     tag_extraction: TagExtractionConfig = field(
         default_factory=lambda: TagExtractionConfig()
     )
+    llm_summary: LLMSummaryConfig = field(default_factory=lambda: LLMSummaryConfig())
     qa_analysis: QAAnalysisConfig = field(default_factory=lambda: QAAnalysisConfig())
     temporal_dynamics: TemporalDynamicsConfig = field(
         default_factory=lambda: TemporalDynamicsConfig()
@@ -1007,6 +1008,13 @@ class TagExtractionConfig:
     early_window_seconds: int = 60
     early_segments: int = 10
     min_confidence: float = 0.6
+
+
+@dataclass
+class LLMSummaryConfig:
+    """Configuration for the llm_summary analysis module."""
+
+    effort: str = "medium"
 
 
 @dataclass

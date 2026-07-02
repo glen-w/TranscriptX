@@ -62,7 +62,7 @@ Multi-arch (e.g. for publishing):
 docker buildx build --platform linux/amd64,linux/arm64 -t transcriptx:latest .
 ```
 
-The image includes the spaCy language models (`en_core_web_md` and `en_core_web_sm`), so NLP modules (topic modeling, NER, etc.) work out of the box—no need to run `python -m spacy download` inside the container.
+The image includes the spaCy language models (`en_core_web_sm`, `en_core_web_md`, and `en_core_web_lg`), so NLP modules (topic modeling, NER, etc.) work out of the box—no need to run `python -m spacy download` inside the container.
 
 **Apple Silicon (M1/M2/M3):** Prefer a CPU torch build — `docker-compose.override.yml` sets `TRANSCRIPTX_TORCH_VARIANT=cpu` for local dev. Docker on Mac cannot use GPU acceleration anyway. If arm64 builds still fail, you can build the amd64 image under emulation:
 

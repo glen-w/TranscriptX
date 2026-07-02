@@ -302,41 +302,6 @@ def generate_edge_case_transcript(case: str = "empty") -> Dict[str, Any]:
         raise ValueError(f"Unknown edge case: {case}")
 
 
-def generate_speaker_profile_data(
-    speaker_id: str = "Alice", conversation_id: str = "test_conversation_1"
-) -> Dict[str, Any]:
-    """
-    Generate speaker profile data for testing.
-
-    Args:
-        speaker_id: Speaker identifier
-        conversation_id: Conversation identifier
-
-    Returns:
-        Dictionary containing speaker profile data
-    """
-    return {
-        "speaker_id": speaker_id,
-        "conversation_id": conversation_id,
-        "behavioral_data": {
-            "avg_sentiment": random.uniform(-1.0, 1.0),
-            "avg_emotion": random.choice(
-                ["joy", "sadness", "anger", "fear", "neutral"]
-            ),
-            "speaking_rate": random.uniform(100.0, 200.0),
-            "interruption_rate": random.uniform(0.0, 0.5),
-            "avg_sentence_length": random.uniform(10.0, 30.0),
-            "vocabulary_diversity": random.uniform(0.5, 1.0),
-        },
-        "confidence_score": random.uniform(0.5, 1.0),
-        "metadata": {
-            "first_seen": datetime.now().isoformat(),
-            "last_seen": datetime.now().isoformat(),
-            "total_segments": random.randint(10, 100),
-        },
-    }
-
-
 def generate_analysis_result_data(
     module_name: str = "sentiment", conversation_id: str = "test_conversation_1"
 ) -> Dict[str, Any]:

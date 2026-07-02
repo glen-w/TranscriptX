@@ -39,7 +39,7 @@ _SUBTREE_PROBES: list[dict[str, str]] = [
     },
     {
         "subtree": "voice",
-        "partial": {"deep_mode": True},
+        "partial": {"deep_mode": False},
         "sibling_path": "enabled",
     },
     {

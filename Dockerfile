@@ -56,20 +56,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     fi; \
     pip_retry install -c constraints.txt -r requirements.txt
 
-# Install build tool and build wheel
-RUN --mount=type=cache,target=/root/.cache/pip pip install build
-COPY pyproject.toml README.md ./
-COPY src ./src
-RUN python -m build
-
-# Install the application wheel into the venv (no editable install)
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -c constraints.txt dist/*.whl
-
 # Download spaCy language models so NLP modules work out of the box.
 # lg is used by the documented higher-accuracy preset (TRANSCRIPTX_SPACY_MODEL=en_core_web_lg);
 # runtime download fails in compose because /opt/venv is root-owned and the service runs as host UID.
-RUN python -m spacy download en_core_web_md \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m spacy download en_core_web_md \
     && python -m spacy download en_core_web_sm \
     && python -m spacy download en_core_web_lg
 
@@ -83,6 +74,16 @@ nltk.download('cmudict', download_dir='/opt/venv/nltk_data')"
 
 # Pre-download TextBlob corpora for emotion module (NRCLex)
 RUN python -m textblob.download_corpora
+
+# Install build tool and build wheel
+RUN --mount=type=cache,target=/root/.cache/pip pip install build
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN python -m build
+
+# Install the application wheel into the venv (no editable install)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -c constraints.txt dist/*.whl
 
 # -----------------------------------------------------------------------------
 # Runtime: copy venv only; no pip, no build tools

@@ -31,7 +31,7 @@
     "advanced": false,
     "category": "analysis",
     "choices": null,
-    "default": false,
+    "default": true,
     "description": "",
     "key": "analysis.voice.deep_mode",
     "max": null,

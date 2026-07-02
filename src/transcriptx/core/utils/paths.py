@@ -167,7 +167,6 @@ def ensure_data_dirs() -> None:
         PATHS.voice_cache_dir,
         PATHS.profiles_dir,
         PATHS.state_dir,
-        PATHS.data_dir / "speaker_profiles",
         PATHS.data_dir / "groups",
         PATHS.data_dir / "corrections",
     ]

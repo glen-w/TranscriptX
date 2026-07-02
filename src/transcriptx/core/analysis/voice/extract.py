@@ -60,7 +60,7 @@ def compute_voice_config_hash(config: Any) -> str:
         "pad_s": getattr(voice, "pad_s", 0.15),
         "max_seconds_for_pitch": getattr(voice, "max_seconds_for_pitch", 20.0),
         "egemaps_enabled": getattr(voice, "egemaps_enabled", True),
-        "deep_mode": getattr(voice, "deep_mode", False),
+        "deep_mode": getattr(voice, "deep_mode", True),
         "deep_model_name": getattr(
             voice, "deep_model_name", "superb/wav2vec2-base-superb-er"
         ),
@@ -121,7 +121,7 @@ def load_or_compute_voice_features(
     pad_s = float(getattr(voice_cfg, "pad_s", 0.15))
     max_pitch = float(getattr(voice_cfg, "max_seconds_for_pitch", 20.0))
     egemaps_enabled = bool(getattr(voice_cfg, "egemaps_enabled", True))
-    deep_mode = bool(getattr(voice_cfg, "deep_mode", False))
+    deep_mode = bool(getattr(voice_cfg, "deep_mode", True))
     deep_model_name = str(
         getattr(voice_cfg, "deep_model_name", "superb/wav2vec2-base-superb-er")
     )
