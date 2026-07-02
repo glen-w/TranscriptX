@@ -21,6 +21,7 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "summary",
         "bertopic",
         "pauses",
+        "voice",
         "echoes",
         "momentum",
         "moments",

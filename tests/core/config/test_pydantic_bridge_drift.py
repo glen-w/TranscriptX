@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from transcriptx.core.config.pydantic_bridge import (
     PYDANTIC_REGISTRY_PILOTS,
@@ -16,7 +17,7 @@ from transcriptx.core.config.pydantic_registry import (
     collect_model_leaf_dotpaths,
     serialize_field_metadata,
 )
-from transcriptx.core.config.registry import build_registry
+from transcriptx.core.config.registry import build_registry, get_default_config_dict
 from transcriptx.core.utils.config import TranscriptXConfig
 from transcriptx.core.utils.config.env_key_registry import (
     ENV_KEY_REGISTRY,
@@ -24,6 +25,16 @@ from transcriptx.core.utils.config.env_key_registry import (
 )
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def _normalize_for_json(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return [_normalize_for_json(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _normalize_for_json(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_normalize_for_json(v) for v in value]
+    return value
 
 
 def _walk_config_path(root: object, path: tuple[str, ...]) -> object:
@@ -116,3 +127,48 @@ def test_pydantic_field_dotpaths_disjoint_from_non_pydantic_baseline() -> None:
     )
     overlap = pilot_keys & set(baseline)
     assert not overlap, f"pilot keys leaked into baseline: {overlap}"
+
+
+def _pilot_defaults_subtree(spec) -> dict:
+    """Extract default config subtree for a pilot from get_default_config_dict()."""
+    from dataclasses import asdict
+
+    from transcriptx.core.utils.config.analysis import AnalysisConfig
+
+    defaults = get_default_config_dict()
+    prefix = spec.dotpath_prefix
+    if spec.dataclass_type is not None:
+        return asdict(spec.dataclass_type())
+    if spec.pilot_id in {
+        "quality_filtering_profiles",
+        "semantic_similarity_v2_profiles",
+        "quick_analysis_settings",
+        "full_analysis_settings",
+    }:
+        return getattr(AnalysisConfig(), spec.pilot_id)
+    if prefix == "dashboard":
+        dash = defaults["dashboard"]
+        keys = list(spec.model.model_fields)
+        return {k: dash[k] for k in keys}
+    if prefix == "analysis" and spec.pilot_id.startswith("analysis_"):
+        inst = AnalysisConfig()
+        return {f: getattr(inst, f) for f in spec.model.model_fields}
+    parts = prefix.split(".")
+    node = defaults
+    for part in parts:
+        node = node[part]
+    return node
+
+
+def test_pydantic_pilot_defaults_goldens_are_complete() -> None:
+    for spec in PYDANTIC_REGISTRY_PILOTS:
+        fixture = FIXTURES / f"{spec.pilot_id}_defaults_golden.json"
+        assert fixture.exists(), f"missing defaults golden for {spec.pilot_id}"
+
+
+def test_pydantic_pilot_defaults_match_golden_fixtures() -> None:
+    for spec in PYDANTIC_REGISTRY_PILOTS:
+        fixture = FIXTURES / f"{spec.pilot_id}_defaults_golden.json"
+        golden = json.loads(fixture.read_text())
+        actual = _normalize_for_json(_pilot_defaults_subtree(spec))
+        assert actual == golden, f"{spec.pilot_id}: defaults drift"

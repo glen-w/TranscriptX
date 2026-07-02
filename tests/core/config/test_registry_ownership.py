@@ -116,3 +116,56 @@ def test_no_orphan_registry_keys() -> None:
     baseline_keys = set(serialize_non_pydantic_registry_baseline(reg))
     orphans = sorted(set(reg) - pilot_keys - baseline_keys)
     assert not orphans, "registry-only keys with no owner: " + ", ".join(orphans)
+
+
+def _build_ownership_snapshot() -> dict:
+    reg = build_registry()
+    pilot_keys = all_pydantic_field_dotpaths()
+    baseline = serialize_non_pydantic_registry_baseline(reg)
+    per_pilot: dict[str, int] = {}
+    for spec in PYDANTIC_REGISTRY_PILOTS:
+        per_pilot[spec.pilot_id] = len(
+            collect_model_leaf_dotpaths(
+                spec.model,
+                dotpath_prefix=spec.dotpath_prefix,
+            )
+        )
+    baseline_reasons = {
+        "active_workflow_profile": "profile activation selector",
+        "analysis.active_acts_profile": "profile activation selector",
+        "analysis.active_qa_analysis_profile": "profile activation selector",
+        "analysis.active_semantic_similarity_v2_profile": "profile activation selector",
+        "analysis.active_tag_extraction_profile": "profile activation selector",
+        "analysis.active_temporal_dynamics_profile": "profile activation selector",
+        "analysis.active_topic_modeling_profile": "profile activation selector",
+        "analysis.active_vectorization_profile": "profile activation selector",
+        "core_mode": "install/runtime flag — permanent legacy",
+        "use_emojis": "global flag — permanent legacy",
+    }
+    return {
+        "total_registry_keys": len(reg),
+        "pydantic_owned_keys": len(pilot_keys),
+        "non_pydantic_baseline_keys": len(baseline),
+        "pilot_count": len(PYDANTIC_REGISTRY_PILOTS),
+        "per_pilot_key_counts": per_pilot,
+        "baseline_keys": {
+            k: {"reason": baseline_reasons.get(k, "intentional non-Pydantic baseline")}
+            for k in sorted(baseline)
+        },
+        "deferred_keys": {},
+    }
+
+
+def test_ownership_snapshot_matches_committed_fixture() -> None:
+    expected = json.loads((FIXTURES / "registry_ownership_snapshot.json").read_text())
+    actual = _build_ownership_snapshot()
+    assert actual == expected
+
+
+def test_ownership_invariant_counts() -> None:
+    """Delegation PRs must preserve 38 pilots / 585 owned / 10 baseline."""
+    snap = _build_ownership_snapshot()
+    assert snap["pilot_count"] == 38
+    assert snap["pydantic_owned_keys"] == 585
+    assert snap["non_pydantic_baseline_keys"] == 10
+    assert snap["total_registry_keys"] == 595

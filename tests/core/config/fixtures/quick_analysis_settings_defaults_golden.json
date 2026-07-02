@@ -1,0 +1,12 @@
+{
+  "max_segments_for_semantic": 800,
+  "max_semantic_comparisons": 15000,
+  "ner_max_segments": 2000,
+  "ner_use_light_model": false,
+  "reduced_chart_generation": true,
+  "semantic_method": "simple",
+  "semantic_profile": "balanced",
+  "skip_advanced_semantic": true,
+  "skip_geocoding": false,
+  "use_lightweight_models": true
+}

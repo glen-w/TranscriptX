@@ -24,6 +24,7 @@ _NEW_SUBTREES = (
     "summary",
     "bertopic",
     "pauses",
+    "voice",
     "echoes",
     "momentum",
     "moments",
@@ -59,6 +60,12 @@ _SUBTREE_CASES: list[dict[str, Any]] = [
         "partial": {"min_long_pause_seconds": 3.0},
         "invalid_payload": {"min_long_pause_seconds": "long"},
         "invalid_dotpath": "analysis.pauses.min_long_pause_seconds",
+    },
+    {
+        "subtree": "voice",
+        "partial": {"deep_mode": True},
+        "invalid_payload": {"vad_mode": "loud"},
+        "invalid_dotpath": "analysis.voice.vad_mode",
     },
     {
         "subtree": "echoes",

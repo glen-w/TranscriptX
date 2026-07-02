@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-02
+
+### Added
+
+- Config delegation tests and golden fixtures for pauses, voice, and corrections settings.
+- Contract tests for stale surface references and expanded unit coverage (lazy imports, perf instrumentation, voice skip paths).
+
+### Changed
+
+- `src/transcriptx/web/streamlit_app.py` is now a deprecation stub. Use `transcriptx`, `python -m transcriptx.web`, or `streamlit run src/transcriptx/web/app.py`.
+- Analysis config helpers delegate pauses, voice, and corrections to dedicated Pydantic pilots.
+- Dependency pins: `watchdog==5.0.3` (dagster-compatible), `marshmallow==4.1.2` and `scikit-learn==1.5.0` aligned across `pyproject.toml` and `requirements.txt`.
+
+### Removed
+
+- Tracked pre-release report artifacts under `artifacts/pre-release/` and `reports/pre_release*/` (now gitignored).
+
 ## [0.3.0] - 2026-07-02
 
 ### Added

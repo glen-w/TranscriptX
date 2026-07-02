@@ -1,0 +1,481 @@
+{
+  "academic": {
+    "description": "Optimized for academic discussions, research presentations, and debates",
+    "indicators": {
+      "agreement_disagreement": [
+        "agree",
+        "disagree",
+        "yes",
+        "no",
+        "correct",
+        "wrong",
+        "exactly",
+        "absolutely",
+        "precisely",
+        "inaccurate",
+        "valid",
+        "invalid"
+      ],
+      "complex_reasoning": [
+        "because",
+        "however",
+        "therefore",
+        "although",
+        "meanwhile",
+        "consequently",
+        "furthermore",
+        "moreover",
+        "nevertheless",
+        "nonetheless",
+        "thus",
+        "hence"
+      ],
+      "filler_words": [
+        "um",
+        "uh",
+        "like",
+        "you know",
+        "i mean",
+        "sort of",
+        "kind of",
+        "basically",
+        "actually"
+      ],
+      "opinions_ideas": [
+        "think",
+        "believe",
+        "suggest",
+        "propose",
+        "recommend",
+        "consider",
+        "hypothesize",
+        "conclude",
+        "argue",
+        "demonstrate",
+        "theorize",
+        "postulate"
+      ]
+    },
+    "thresholds": {
+      "good_word_range": [
+        5,
+        150
+      ],
+      "min_words": 5,
+      "optimal_word_range": [
+        8,
+        80
+      ],
+      "overlap_threshold": 0.8
+    },
+    "weights": {
+      "agreement_disagreement": 2.0,
+      "complex_reasoning": 4.0,
+      "dialogue_acts": {
+        "acknowledgement": 0.5,
+        "agreement": 2.5,
+        "disagreement": 3.0,
+        "hesitation": -1.5,
+        "question": 4.0,
+        "statement": 2.0,
+        "suggestion": 3.0
+      },
+      "entity_engagement": 2.0,
+      "exact_repetition_penalty": -3.0,
+      "filler_penalty": -1.0,
+      "high_overlap_penalty": -2.0,
+      "length_good": 1.5,
+      "length_optimal": 4.0,
+      "opinions_ideas": 3.0,
+      "optimal_readability": 3.0,
+      "sentiment_strength": 1.0,
+      "topic_relevance": 2.5,
+      "verbal_tic_penalty": -2.5
+    }
+  },
+  "balanced": {
+    "description": "Balanced approach for general conversations",
+    "indicators": {
+      "agreement_disagreement": [
+        "agree",
+        "disagree",
+        "yes",
+        "no",
+        "correct",
+        "wrong"
+      ],
+      "complex_reasoning": [
+        "because",
+        "however",
+        "therefore",
+        "although",
+        "meanwhile"
+      ],
+      "filler_words": [
+        "um",
+        "uh",
+        "like",
+        "you know",
+        "i mean",
+        "sort of",
+        "kind of"
+      ],
+      "opinions_ideas": [
+        "think",
+        "believe",
+        "suggest",
+        "propose",
+        "recommend"
+      ]
+    },
+    "thresholds": {
+      "good_word_range": [
+        3,
+        100
+      ],
+      "min_words": 3,
+      "optimal_word_range": [
+        5,
+        50
+      ],
+      "overlap_threshold": 0.7
+    },
+    "weights": {
+      "agreement_disagreement": 1.0,
+      "complex_reasoning": 2.0,
+      "exact_repetition_penalty": -5.0,
+      "filler_penalty": -0.5,
+      "high_overlap_penalty": -3.0,
+      "length_good": 1.0,
+      "length_optimal": 3.0,
+      "opinions_ideas": 2.0
+    }
+  },
+  "business": {
+    "description": "Optimized for business meetings, negotiations, and professional discussions",
+    "indicators": {
+      "agreement_disagreement": [
+        "agree",
+        "disagree",
+        "yes",
+        "no",
+        "correct",
+        "wrong",
+        "exactly",
+        "absolutely",
+        "sounds good",
+        "i'm on board",
+        "approved",
+        "rejected"
+      ],
+      "complex_reasoning": [
+        "because",
+        "however",
+        "therefore",
+        "although",
+        "meanwhile",
+        "consequently"
+      ],
+      "filler_words": [
+        "um",
+        "uh",
+        "like",
+        "you know",
+        "i mean",
+        "sort of",
+        "kind of"
+      ],
+      "opinions_ideas": [
+        "think",
+        "believe",
+        "suggest",
+        "propose",
+        "recommend",
+        "consider",
+        "feel",
+        "assume",
+        "recommend",
+        "advise",
+        "propose",
+        "plan"
+      ]
+    },
+    "thresholds": {
+      "good_word_range": [
+        3,
+        120
+      ],
+      "min_words": 3,
+      "optimal_word_range": [
+        5,
+        60
+      ],
+      "overlap_threshold": 0.75
+    },
+    "weights": {
+      "agreement_disagreement": 2.5,
+      "complex_reasoning": 2.5,
+      "dialogue_acts": {
+        "acknowledgement": 1.0,
+        "agreement": 3.0,
+        "disagreement": 2.5,
+        "hesitation": -0.5,
+        "question": 3.5,
+        "statement": 2.5,
+        "suggestion": 4.0
+      },
+      "entity_engagement": 2.5,
+      "exact_repetition_penalty": -4.0,
+      "filler_penalty": -0.3,
+      "high_overlap_penalty": -2.5,
+      "length_good": 1.0,
+      "length_optimal": 3.5,
+      "opinions_ideas": 4.0,
+      "optimal_readability": 2.5,
+      "sentiment_strength": 1.5,
+      "topic_relevance": 3.0,
+      "verbal_tic_penalty": -1.5
+    }
+  },
+  "casual": {
+    "description": "Optimized for casual conversations, social discussions, and informal chats",
+    "indicators": {
+      "agreement_disagreement": [
+        "yeah",
+        "no",
+        "right",
+        "wrong",
+        "sure",
+        "okay",
+        "cool"
+      ],
+      "complex_reasoning": [
+        "because",
+        "but",
+        "so",
+        "though",
+        "anyway"
+      ],
+      "filler_words": [
+        "um",
+        "uh",
+        "like",
+        "you know",
+        "i mean",
+        "sort of",
+        "kind of",
+        "basically",
+        "actually",
+        "literally"
+      ],
+      "opinions_ideas": [
+        "think",
+        "feel",
+        "like",
+        "guess",
+        "suppose",
+        "maybe"
+      ]
+    },
+    "thresholds": {
+      "good_word_range": [
+        2,
+        80
+      ],
+      "min_words": 2,
+      "optimal_word_range": [
+        3,
+        40
+      ],
+      "overlap_threshold": 0.6
+    },
+    "weights": {
+      "agreement_disagreement": 2.0,
+      "complex_reasoning": 1.5,
+      "dialogue_acts": {
+        "acknowledgement": 1.5,
+        "agreement": 2.5,
+        "disagreement": 2.0,
+        "hesitation": -0.3,
+        "question": 2.5,
+        "statement": 2.0,
+        "suggestion": 2.0
+      },
+      "entity_engagement": 1.5,
+      "exact_repetition_penalty": -3.0,
+      "filler_penalty": -0.2,
+      "high_overlap_penalty": -2.0,
+      "length_good": 1.5,
+      "length_optimal": 2.5,
+      "opinions_ideas": 2.5,
+      "optimal_readability": 1.5,
+      "sentiment_strength": 2.0,
+      "topic_relevance": 1.0,
+      "verbal_tic_penalty": -0.5
+    }
+  },
+  "interview": {
+    "description": "Optimized for job interviews, Q&A sessions, and structured conversations",
+    "indicators": {
+      "agreement_disagreement": [
+        "agree",
+        "disagree",
+        "yes",
+        "no",
+        "correct",
+        "wrong",
+        "exactly",
+        "absolutely"
+      ],
+      "complex_reasoning": [
+        "because",
+        "however",
+        "therefore",
+        "although",
+        "meanwhile"
+      ],
+      "filler_words": [
+        "um",
+        "uh",
+        "like",
+        "you know",
+        "i mean",
+        "sort of",
+        "kind of"
+      ],
+      "opinions_ideas": [
+        "think",
+        "believe",
+        "suggest",
+        "propose",
+        "recommend",
+        "consider",
+        "feel",
+        "experience",
+        "worked",
+        "developed"
+      ]
+    },
+    "thresholds": {
+      "good_word_range": [
+        4,
+        100
+      ],
+      "min_words": 4,
+      "optimal_word_range": [
+        6,
+        60
+      ],
+      "overlap_threshold": 0.75
+    },
+    "weights": {
+      "agreement_disagreement": 1.5,
+      "complex_reasoning": 2.0,
+      "dialogue_acts": {
+        "acknowledgement": 1.0,
+        "agreement": 1.5,
+        "disagreement": 2.0,
+        "hesitation": -1.0,
+        "question": 4.5,
+        "statement": 3.0,
+        "suggestion": 2.0
+      },
+      "entity_engagement": 2.0,
+      "exact_repetition_penalty": -3.5,
+      "filler_penalty": -0.5,
+      "high_overlap_penalty": -2.5,
+      "length_good": 1.0,
+      "length_optimal": 3.5,
+      "opinions_ideas": 3.5,
+      "optimal_readability": 2.5,
+      "sentiment_strength": 1.5,
+      "topic_relevance": 3.5,
+      "verbal_tic_penalty": -1.5
+    }
+  },
+  "technical": {
+    "description": "Optimized for technical discussions, code reviews, and troubleshooting sessions",
+    "indicators": {
+      "agreement_disagreement": [
+        "agree",
+        "disagree",
+        "yes",
+        "no",
+        "correct",
+        "wrong",
+        "exactly",
+        "absolutely",
+        "precisely",
+        "inaccurate",
+        "false"
+      ],
+      "complex_reasoning": [
+        "because",
+        "however",
+        "therefore",
+        "although",
+        "meanwhile",
+        "consequently",
+        "furthermore",
+        "moreover",
+        "nevertheless"
+      ],
+      "filler_words": [
+        "um",
+        "uh",
+        "like",
+        "you know",
+        "i mean",
+        "sort of",
+        "kind of"
+      ],
+      "opinions_ideas": [
+        "think",
+        "believe",
+        "suggest",
+        "propose",
+        "recommend",
+        "consider",
+        "argue",
+        "demonstrate",
+        "prove"
+      ]
+    },
+    "thresholds": {
+      "good_word_range": [
+        4,
+        130
+      ],
+      "min_words": 4,
+      "optimal_word_range": [
+        6,
+        70
+      ],
+      "overlap_threshold": 0.85
+    },
+    "weights": {
+      "agreement_disagreement": 3.0,
+      "complex_reasoning": 3.5,
+      "dialogue_acts": {
+        "acknowledgement": 1.0,
+        "agreement": 2.5,
+        "disagreement": 3.5,
+        "hesitation": -1.0,
+        "question": 4.0,
+        "statement": 2.5,
+        "suggestion": 3.5
+      },
+      "entity_engagement": 3.0,
+      "exact_repetition_penalty": -2.0,
+      "filler_penalty": -0.8,
+      "high_overlap_penalty": -1.5,
+      "length_good": 1.0,
+      "length_optimal": 3.0,
+      "opinions_ideas": 2.0,
+      "optimal_readability": 2.0,
+      "sentiment_strength": 1.0,
+      "topic_relevance": 4.0,
+      "verbal_tic_penalty": -2.0
+    }
+  }
+}

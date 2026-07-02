@@ -28,5 +28,6 @@ memory-profiler>=0.61.0
 line-profiler>=4.1.0
 py-spy>=0.3.0 
 
-# Optional analysis extras
-# convokit>=2.5.3
+# Optional analysis extras (incompatible with pinned numpy<2 / spacy 3.7 stack)
+# convokit>=3.5 requires numpy>=2 and spacy>=3.8; use convokit<3.5 if needed
+# convokit>=2.5.3,<3.5

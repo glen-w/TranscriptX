@@ -1,0 +1,14 @@
+{
+  "max_segments_for_cross_speaker": 1000,
+  "max_segments_for_semantic": 1000,
+  "max_segments_per_speaker": 400,
+  "max_semantic_comparisons": 30000,
+  "ner_max_segments": 5000,
+  "ner_use_light_model": false,
+  "reduced_chart_generation": false,
+  "semantic_method": "advanced",
+  "semantic_profile": "balanced",
+  "skip_advanced_semantic": false,
+  "skip_geocoding": false,
+  "use_lightweight_models": false
+}

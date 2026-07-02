@@ -12,7 +12,7 @@ help:
 	@echo "  docs-clean   Remove generated docs and build artifacts"
 	@echo ""
 	@echo "Docker:"
-	@echo "  run            Interactive CLI in Docker (full TTY; arrow keys work)"
+	@echo "  run            Streamlit web app in Docker (full TTY)"
 	@echo ""
 	@echo "Testing targets:"
 	@echo "  test-smoke       Run CI smoke gate"
@@ -24,18 +24,18 @@ help:
 	@echo "  test-all         Run all tests except quarantined"
 	@echo "  test-coverage    Default fast suite + coverage (fail_under from .coveragerc)"
 	@echo "  test-release-only  Run release-only packaging/install smoke"
-	@echo "  docker-smoke     Run Docker first-run smoke test (build + validate/canonicalize/analyze)"
+	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  clean-test-artifacts  Remove test artifact slugs (e.g. test__*) from outputs and index (run manually if needed)"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make run          # Docker interactive CLI (use this for menus)"
+	@echo "  make run          # Docker Streamlit web app"
 	@echo "  make docs        # Generate docs from code"
 	@echo "  make docker-smoke  # Docker smoke test (requires docker compose build)"
 
 run:
-	docker compose run -it --rm transcriptx
+	docker compose run -it --rm transcriptx-web
 
 docs-gen:
 	@echo "CLI docs are in docs/generated/ and maintained manually. Run transcriptx --help and transcriptx <command> --help, then update docs/generated/cli.md when commands change (see docs/CONTRIBUTING.md)."

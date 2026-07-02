@@ -54,7 +54,17 @@ The following patterns are **explicitly not supported** and should be avoided in
   - Accepts `--host` and `--port` flags.
 - Any usage of `transcriptx analyze ...`, `transcriptx transcript ...`, or similar subcommands is considered deprecated and unsupported.
 
-### 2.2 Ad hoc JSON ingestion
+### 2.2 Legacy Streamlit entry (`web/streamlit_app.py`)
+
+- `src/transcriptx/web/streamlit_app.py` is a **deprecation stub** only (not a supported GUI).
+- Canonical GUI module: `transcriptx.web.app`.
+- Supported launch commands:
+  - `transcriptx`
+  - `python -m transcriptx.web`
+  - `streamlit run src/transcriptx/web/app.py`
+- The stub is scheduled for removal after 1–2 release batches.
+
+### 2.3 Ad hoc JSON ingestion
 
 - Directly pointing analysis at arbitrary JSON files that:
   - Have not gone through canonical validation, and
@@ -62,7 +72,7 @@ The following patterns are **explicitly not supported** and should be avoided in
 - is **not supported** as a stable surface.
 - Codepaths that “guess” based on filenames or directory placement (e.g. “any `.json` under `transcripts_dir`”) violate the storage and admission contracts.
 
-### 2.3 Direct filesystem operations on managed storage
+### 2.4 Direct filesystem operations on managed storage
 
 - Direct filesystem writes, renames, or deletions under:
   - `transcripts_dir` and its metadata subtrees,

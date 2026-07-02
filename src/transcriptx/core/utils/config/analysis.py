@@ -4,25 +4,39 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+from pydantic import BaseModel
+
 from .base import DEFAULT_NER_LABELS, DEFAULT_STOPWORDS
+
+
+def _hydrate_dataclass_from_pydantic(instance: object, model: BaseModel) -> None:
+    """Populate dataclass fields from a Pydantic model defaults dump (no revalidation)."""
+    for key, value in model.model_dump().items():
+        object.__setattr__(instance, key, value)
 
 
 @dataclass
 class CorrectionsConfig:
-    enabled: bool = True
-    interactive_review: bool = True
-    consistency_similarity_threshold: float = 0.88
-    fuzzy_similarity_threshold: float = 0.92
-    known_acronyms: list[str] = field(default_factory=lambda: ["CSE", "REN21"])
-    known_org_phrases: dict[str, list[str]] = field(
-        default_factory=lambda: {"REN21": ["ren twenty one", "wren twenty one"]}
-    )
-    write_csv_summary: bool = True
-    store_corrected_transcript: bool = True
-    default_rule_scope: str = "project"
-    enable_fuzzy: bool = False
-    update_original_file: bool = False
-    create_backup: bool = True
+    """Configuration for transcript corrections. Defaults owned by CorrectionsSettingsModel."""
+
+    enabled: bool = field(init=False, repr=True)
+    interactive_review: bool = field(init=False, repr=True)
+    consistency_similarity_threshold: float = field(init=False, repr=True)
+    fuzzy_similarity_threshold: float = field(init=False, repr=True)
+    known_acronyms: list[str] = field(init=False, repr=True)
+    known_org_phrases: dict[str, list[str]] = field(init=False, repr=True)
+    write_csv_summary: bool = field(init=False, repr=True)
+    store_corrected_transcript: bool = field(init=False, repr=True)
+    default_rule_scope: str = field(init=False, repr=True)
+    enable_fuzzy: bool = field(init=False, repr=True)
+    update_original_file: bool = field(init=False, repr=True)
+    create_backup: bool = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.corrections import CorrectionsSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, CorrectionsSettingsModel())
 
 
 @dataclass
@@ -1067,11 +1081,16 @@ class AffectTensionConfig:
 
 @dataclass
 class PausesConfig:
-    """Configuration for pauses analysis."""
+    """Configuration for pauses analysis. Defaults owned by PausesSettingsModel."""
 
-    min_long_pause_seconds: float = 2.0
-    post_question_multiplier: float = 1.5
-    percentile_long_pause: float = 0.95
+    min_long_pause_seconds: float = field(init=False, repr=True)
+    post_question_multiplier: float = field(init=False, repr=True)
+    percentile_long_pause: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.pauses import PausesSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, PausesSettingsModel())
 
 
 @dataclass
@@ -1156,39 +1175,31 @@ class VectorizationConfig:
 
 @dataclass
 class VoiceConfig:
-    """Configuration for voice modality analysis (CPU-first)."""
+    """Configuration for voice modality analysis (CPU-first).
 
-    enabled: bool = True
+    Defaults owned by VoiceSettingsModel.
+    """
 
-    # Feature extraction
-    sample_rate: int = 16000
-    vad_mode: int = 2
-    pad_s: float = 0.15
-    max_seconds_for_pitch: float = 20.0
-    max_segments_considered: int | None = None
+    enabled: bool = field(init=False, repr=True)
+    sample_rate: int = field(init=False, repr=True)
+    vad_mode: int = field(init=False, repr=True)
+    pad_s: float = field(init=False, repr=True)
+    max_seconds_for_pitch: float = field(init=False, repr=True)
+    max_segments_considered: int | None = field(init=False, repr=True)
+    egemaps_enabled: bool = field(init=False, repr=True)
+    deep_mode: bool = field(init=False, repr=True)
+    deep_model_name: str = field(init=False, repr=True)
+    deep_max_seconds: float = field(init=False, repr=True)
+    store_parquet: str = field(init=False, repr=True)
+    strict_audio_hash: bool = field(init=False, repr=True)
+    mismatch_threshold: float = field(init=False, repr=True)
+    top_k_moments: int = field(init=False, repr=True)
+    drift_threshold: float = field(init=False, repr=True)
+    bin_seconds: float = field(init=False, repr=True)
+    smoothing_alpha: float = field(init=False, repr=True)
+    include_unnamed_in_global_curves: bool = field(init=False, repr=True)
 
-    # openSMILE eGeMAPS extraction
-    egemaps_enabled: bool = True
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.voice import VoiceSettingsModel
 
-    # Optional deep mode (lazy imports; best-effort)
-    # When enabled, TranscriptX will try to infer segment-level vocal emotion and
-    # a coarse valence proxy using an audio emotion recognition model (CPU ok, slow).
-    # If dependencies/models are unavailable, it falls back to classic proxies.
-    deep_mode: bool = False
-    deep_model_name: str = "superb/wav2vec2-base-superb-er"
-    deep_max_seconds: float = 12.0
-
-    # Cache / storage
-    store_parquet: str = "auto"  # auto|on|off
-    strict_audio_hash: bool = False
-
-    # Aggregations
-    mismatch_threshold: float = 0.6
-    top_k_moments: int = 30
-    drift_threshold: float = 2.5
-
-    bin_seconds: float = 30.0
-    smoothing_alpha: float = 0.25
-
-    # Speaker filtering behavior for global curves
-    include_unnamed_in_global_curves: bool = True
+        _hydrate_dataclass_from_pydantic(self, VoiceSettingsModel())

@@ -1,0 +1,79 @@
+{
+  "baseline_keys": {
+    "active_workflow_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_acts_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_qa_analysis_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_semantic_similarity_v2_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_tag_extraction_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_temporal_dynamics_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_topic_modeling_profile": {
+      "reason": "profile activation selector"
+    },
+    "analysis.active_vectorization_profile": {
+      "reason": "profile activation selector"
+    },
+    "core_mode": {
+      "reason": "install/runtime flag \u2014 permanent legacy"
+    },
+    "use_emojis": {
+      "reason": "global flag \u2014 permanent legacy"
+    }
+  },
+  "deferred_keys": {},
+  "non_pydantic_baseline_keys": 10,
+  "per_pilot_key_counts": {
+    "acts": 21,
+    "affect_tension": 9,
+    "analysis_entity": 3,
+    "analysis_interaction": 12,
+    "analysis_legacy_semantic": 25,
+    "analysis_ner": 6,
+    "analysis_sentiment": 8,
+    "analysis_wordcloud": 5,
+    "audio_preprocessing": 18,
+    "bertopic": 6,
+    "corrections": 12,
+    "dashboard_display": 2,
+    "dashboard_overview": 4,
+    "echoes": 12,
+    "full_analysis_settings": 12,
+    "group_analysis": 9,
+    "highlights": 30,
+    "input": 6,
+    "llm": 11,
+    "logging": 6,
+    "metadata": 4,
+    "moments": 15,
+    "momentum": 11,
+    "output": 9,
+    "pauses": 3,
+    "qa_analysis": 11,
+    "quality_filtering_profiles": 162,
+    "quick_analysis_settings": 10,
+    "semantic_similarity_v2": 17,
+    "semantic_similarity_v2_profiles": 22,
+    "speaker_exemplars": 26,
+    "summary": 13,
+    "tag_extraction": 3,
+    "temporal_dynamics": 13,
+    "topic_modeling": 12,
+    "vectorization": 6,
+    "voice": 18,
+    "workflow": 13
+  },
+  "pilot_count": 38,
+  "pydantic_owned_keys": 585,
+  "total_registry_keys": 595
+}

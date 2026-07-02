@@ -84,7 +84,7 @@ To avoid drift between the web launcher, Docker setup, Python API docs, and arch
    Ensure [docs/runtime/docker.md](../runtime/docker.md) and README Docker sections match [docker-compose.yml](../docker-compose.yml) (service names, volume paths, ENTRYPOINT usage). Docker docs must describe operational behavior only; detailed storage layout and output rules belong in contracts.
 
 4. **Confirm no removed interfaces are referenced**  
-   Search docs and README for old terminal subcommands (e.g. `transcriptx transcript …`, `transcriptx analyze`). Replace them with the web UI or `app.workflows` / `io.managed_import_workflow` as appropriate, and verify that `docs/public_surfaces.md` accurately reflects supported surfaces.
+   Search docs and README for old terminal subcommands (e.g. `transcriptx transcript …`, `transcriptx analyze`) and deprecated entry paths (e.g. `streamlit_app.py`, `transcriptx web-viewer`). Replace runnable examples with supported surfaces from [public_surfaces.md](../public_surfaces.md). Automated coverage: `tests/contracts/test_stale_surface_references.py`.
 
 5. **Confirm version consistency**  
    If the package version is displayed anywhere (e.g. in docs or image labels), it should match [pyproject.toml](../pyproject.toml) `version`.

@@ -34,6 +34,10 @@ data/preprocessing/
 .release-test-env/
 .docs-verify-venv/
 
+# Pre-release local run artifacts (logs, sanity runs, flaky history)
+artifacts/pre-release/
+reports/pre_release*/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -38,6 +38,11 @@ _SUBTREE_PROBES: list[dict[str, str]] = [
         "sibling_path": "percentile_long_pause",
     },
     {
+        "subtree": "voice",
+        "partial": {"deep_mode": True},
+        "sibling_path": "enabled",
+    },
+    {
         "subtree": "echoes",
         "partial": {"lookback_seconds": 300.0},
         "sibling_path": "max_candidates",

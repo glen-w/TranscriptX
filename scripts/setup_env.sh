@@ -109,7 +109,7 @@ case $choice in
         install_mpv
         echo "✅ Core CLI environment ready!"
         echo "💡 Use: transcriptx --help"
-        echo "💡 Web viewer: transcriptx web-viewer"
+        echo "💡 Web viewer: transcriptx"
         echo "💡 To activate: source .venv/bin/activate"
         ;;
     2)
@@ -119,7 +119,7 @@ case $choice in
         install_mpv
         echo "✅ Full ML environment ready!"
         echo "💡 Use: transcriptx --help"
-        echo "💡 Web viewer: transcriptx web-viewer"
+        echo "💡 Web viewer: transcriptx"
         echo "💡 To activate: source .venv/bin/activate"
         ;;
     3)
@@ -134,7 +134,7 @@ case $choice in
         install_mpv
         echo "✅ Development environment ready!"
         echo "💡 Use: pytest for testing"
-        echo "💡 Web viewer: transcriptx web-viewer"
+        echo "💡 Web viewer: transcriptx"
         echo "💡 To activate: source .venv/bin/activate"
         ;;
     5)

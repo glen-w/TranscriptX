@@ -1,0 +1,46 @@
+{
+  "asdict": {
+    "consistency_similarity_threshold": 0.88,
+    "create_backup": true,
+    "default_rule_scope": "project",
+    "enable_fuzzy": false,
+    "enabled": true,
+    "fuzzy_similarity_threshold": 0.92,
+    "interactive_review": true,
+    "known_acronyms": [
+      "CSE",
+      "REN21"
+    ],
+    "known_org_phrases": {
+      "REN21": [
+        "ren twenty one",
+        "wren twenty one"
+      ]
+    },
+    "store_corrected_transcript": true,
+    "update_original_file": false,
+    "write_csv_summary": true
+  },
+  "to_dict": {
+    "consistency_similarity_threshold": 0.88,
+    "create_backup": true,
+    "default_rule_scope": "project",
+    "enable_fuzzy": false,
+    "enabled": true,
+    "fuzzy_similarity_threshold": 0.92,
+    "interactive_review": true,
+    "known_acronyms": [
+      "CSE",
+      "REN21"
+    ],
+    "known_org_phrases": {
+      "REN21": [
+        "ren twenty one",
+        "wren twenty one"
+      ]
+    },
+    "store_corrected_transcript": true,
+    "update_original_file": false,
+    "write_csv_summary": true
+  }
+}

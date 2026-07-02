@@ -19,7 +19,7 @@ Incremental adoption pattern for moving config subtrees to Pydantic as the singl
 - [`pydantic_bridge_helpers.py`](../src/transcriptx/core/config/pydantic_bridge_helpers.py) — shared behavioral helpers (`dotpath_belongs_to_model`, `extract_subtree_overrides`). Covered by [`test_pydantic_bridge_helpers.py`](../../tests/core/config/test_pydantic_bridge_helpers.py).
 - [`scripts/generate_dict_profile_models.py`](../scripts/generate_dict_profile_models.py) — regenerates dictionary-profile model files only; never touches the bridge.
 - Bridge registration in `pydantic_bridge.py` is **hand-reviewed** in each PR.
-- Structural ownership tests in `test_registry_ownership.py` and `test_pydantic_pilot_parity.py` are the source of truth; goldens are snapshot guards only.
+- Structural ownership tests in `test_registry_ownership.py` are canonical; `test_pydantic_pilot_parity.py` covers defaults parity only.
 
 ## Checklist per subtree
 
@@ -109,7 +109,7 @@ pytest \
   -q
 ```
 
-## End state (migration complete)
+## End state (registry ownership complete)
 
 **38 Pydantic pilots** own **585** registry leaf keys. The non-pydantic baseline is **10 keys** by design:
 
@@ -121,6 +121,47 @@ pytest \
 | `core_mode` | Install/runtime mode flag — kept legacy (Wave 9: no empty-prefix bridge) |
 
 Wave 9 evaluated two single-key pilots and empty-prefix bridge hacks; **legacy retention** was chosen to avoid destabilizing `collect_model_leaf_dotpaths`, `find_pilot_for_dotpath_key`, and env drift tests.
+
+**Do not add new registry pilots** unless product scope explicitly requires new config keys. Registry leaf migration is complete; further work is runtime delegation and safety hardening.
+
+Ownership snapshot fixture: [`tests/core/config/fixtures/registry_ownership_snapshot.json`](../../tests/core/config/fixtures/registry_ownership_snapshot.json) (guarded by `test_ownership_snapshot_matches_committed_fixture`).
+
+## Phase 2: Runtime delegation (Batch 5 — in progress)
+
+Registry ownership and runtime dataclass defaults are **separate phases**:
+
+| Phase | Status | Meaning |
+|-------|--------|---------|
+| Registry ownership | Complete (38 / 585 / 10) | Pydantic models own field definitions, validation, registry metadata |
+| Runtime delegation | Partial | Thin dataclasses hydrate from Pydantic models; duplicate literals removed per subtree |
+
+Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. `setattr` on leaf fields does **not** revalidate through Pydantic (matches legacy dataclass behaviour); validation remains at `validate_config()` / file-load boundaries.
+
+Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pauses,voice,corrections}_pre.json`.
+
+### Delegation status
+
+| Pilot | Prefix | Keys | Runtime target | Tests | Status |
+|-------|--------|------|----------------|-------|--------|
+| `pauses` | `analysis.pauses` | 3 | `PausesConfig` | `test_pauses_config_delegation.py` | delegated |
+| `voice` | `analysis.voice` | 18 | `VoiceConfig` | `test_voice_config_delegation.py` | delegated |
+| `corrections` | `analysis.corrections` | 12 | `CorrectionsConfig` | `test_corrections_config_delegation.py` | delegated |
+
+### Delegation follow-ups (not Batch 5)
+
+- `analysis.summary` — next candidate after corrections (nested `counts` / `sections` / `commitments`)
+- Remaining nested dataclasses: `highlights`, `acts`, `topic_modeling`, `speaker_exemplars`, partial flat `analysis_*` slices, dict-profile stores, top-level `LLMConfig` / `OutputConfig`, etc.
+- No greenfield module config keys (`llm_summary`, `narrative_summary`, export tuning) without explicit product scope
+
+### Batch 5 safety rails
+
+| Artifact | Purpose |
+|----------|---------|
+| `test_registry_ownership.py` | Ownership inventory snapshot, 38/585/10 invariant |
+| `test_delegation_shape_snapshots.py` | Pre-delegation default shapes |
+| `test_registry_metadata_constraints.py` | Bounded choices/defaults/type agreement |
+| `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all 38 pilots) |
+| `test_pydantic_pilot_parity.py` | Dataclass / partial-analysis defaults parity |
 
 ### Hardening gates (completed)
 
