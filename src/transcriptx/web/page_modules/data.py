@@ -18,9 +18,14 @@ from transcriptx.web.blocks.filters.subview_slice import (
 from transcriptx.web.blocks.implementations.data import render_artifact_file_preview
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.run_scoped_page import (
+    RunScopedPageConfig,
+    RunScopedPageContext,
+    render_run_scoped_page,
+)
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.module_ui_groups import module_sort_key
-from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
+from transcriptx.web.services import ArtifactService
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_ARTIFACT,
     DATA_KEY_ARTIFACT_PRESET,
@@ -30,6 +35,17 @@ _DATA_HELP_PREREQ = (
     "**Data** lists structured outputs (tables, JSON) produced by analysis modules."
 )
 _DATA_HELP_LOADED = "Choose a subview or slice if present, then pick a file to preview."
+
+_DATA_CONFIG = RunScopedPageConfig(
+    title="Data",
+    description="Preview JSON, CSV, and text artifacts from the current run.",
+    prereq_help_md=_DATA_HELP_PREREQ,
+    empty_headline="Select a subject and run",
+    empty_detail="Pick a transcript or group and run in the sidebar to browse data files.",
+    primary_action=("Open Library", "Library"),
+    secondary_action=("Overview", "Overview"),
+    loaded_help_md=_DATA_HELP_LOADED,
+)
 
 
 @st.fragment
@@ -86,32 +102,8 @@ def _data_browser_fragment(run_root: Path, data_artifacts: list[Artifact]) -> No
     render_artifact_file_preview(run_root, selected)
 
 
-def render_data() -> None:
-    subject = SubjectService.resolve_current_subject(st.session_state)
-    run_id = st.session_state.get("run_id")
-    if not subject or not run_id:
-        render_page_shell(
-            "Data",
-            "Preview JSON, CSV, and text artifacts from the current run.",
-            badges=None,
-            actions=None,
-        )
-        render_empty_state(
-            "missing_prerequisite",
-            "Select a subject and run",
-            "Pick a transcript or group and run in the sidebar to browse data files.",
-            primary_action=("Open Library", "Library"),
-            secondary_action=("Overview", "Overview"),
-        )
-        render_page_help(_DATA_HELP_PREREQ)
-        return
-
-    run_root = RunIndex.get_run_root(
-        subject.scope,
-        run_id,
-        subject_id=subject.subject_id,
-    )
-
+def _render_data_body(ctx: RunScopedPageContext) -> None:
+    run_root = ctx.run_root
     artifacts = ArtifactService.list_artifacts(run_root)
     data_artifacts = [
         a for a in artifacts if a.kind in {"data_json", "data_csv", "data_txt"}
@@ -142,3 +134,7 @@ def render_data() -> None:
 
     _data_browser_fragment(run_root, data_artifacts)
     render_page_help(_DATA_HELP_LOADED)
+
+
+def render_data() -> None:
+    render_run_scoped_page(_DATA_CONFIG, render_body=_render_data_body)

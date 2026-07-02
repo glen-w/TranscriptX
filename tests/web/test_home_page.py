@@ -3,61 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-
-class _DummyColumn:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        return False
-
-
-class _DummyExpander:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        return False
-
-
-class _DummyHomeStreamlit:
-    session_state: dict[str, object] = {}
-
-    @staticmethod
-    def subheader(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def columns(n):
-        return tuple(_DummyColumn() for _ in range(n))
-
-    @staticmethod
-    def markdown(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def divider():
-        return None
-
-    @staticmethod
-    def caption(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def button(*_args, **_kwargs):
-        return False
-
-    @staticmethod
-    def rerun():
-        return None
-
-    @staticmethod
-    def expander(*_args, **_kwargs):
-        return _DummyExpander()
-
-    @staticmethod
-    def error(*_args, **_kwargs):
-        return None
+from tests.web.streamlit_doubles import DummyHomeStreamlit
 
 
 def test_home_initial_render_skips_workspace_summary_and_transcript_listing(
@@ -65,8 +11,8 @@ def test_home_initial_render_skips_workspace_summary_and_transcript_listing(
 ) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    _DummyHomeStreamlit.session_state = {}
-    monkeypatch.setattr(mod, "st", _DummyHomeStreamlit)
+    DummyHomeStreamlit.session_state = {}
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_page_help", lambda *_args, **_kwargs: None)
     slug_label_calls = {"count": 0}
@@ -111,8 +57,8 @@ def test_home_initial_render_skips_workspace_summary_and_transcript_listing(
 def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    _DummyHomeStreamlit.session_state = {}
-    monkeypatch.setattr(mod, "st", _DummyHomeStreamlit)
+    DummyHomeStreamlit.session_state = {}
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_page_help", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_empty_state", lambda *_args, **_kwargs: None)
@@ -140,8 +86,8 @@ def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
 def test_home_workspace_summary_button_loads_groups(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    _DummyHomeStreamlit.session_state = {}
-    monkeypatch.setattr(mod, "st", _DummyHomeStreamlit)
+    DummyHomeStreamlit.session_state = {}
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_page_help", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
@@ -165,7 +111,7 @@ def test_home_workspace_summary_button_loads_groups(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
 
-    class _ButtonHomeStreamlit(_DummyHomeStreamlit):
+    class _ButtonHomeStreamlit(DummyHomeStreamlit):
         @staticmethod
         def button(*_args, key=None, **_kwargs):
             return key == "home_load_workspace_summary"
@@ -177,7 +123,7 @@ def test_home_workspace_summary_button_loads_groups(monkeypatch) -> None:
         is True
     )
 
-    class _PlainHomeStreamlit(_DummyHomeStreamlit):
+    class _PlainHomeStreamlit(DummyHomeStreamlit):
         @staticmethod
         def button(*_args, **_kwargs):
             return False

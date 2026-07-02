@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.web.streamlit_doubles import DummyRenameStreamlit
+
 
 def test_normalize_and_validate_target_name() -> None:
     from transcriptx.web.services.rename_service import RenameService
@@ -107,15 +109,14 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
         def clear() -> None:
             calls["recordings"] += 1
 
-    class _DummyStreamlit:
-        session_state = {
-            "selected_transcript_path": "/tmp/old.json",
-            "subject_id": "/tmp/old.json",
-            "run_id": "run_1",
-            "audio_prep_selected_file": "/tmp/old.mp3",
-            "audio_prep_selected_files": ["/tmp/old.mp3", "/tmp/other.mp3"],
-            "audio_merge_ordered_paths": ["/tmp/old.mp3"],
-        }
+    DummyRenameStreamlit.session_state = {
+        "selected_transcript_path": "/tmp/old.json",
+        "subject_id": "/tmp/old.json",
+        "run_id": "run_1",
+        "audio_prep_selected_file": "/tmp/old.mp3",
+        "audio_prep_selected_files": ["/tmp/old.mp3", "/tmp/other.mp3"],
+        "audio_merge_ordered_paths": ["/tmp/old.mp3"],
+    }
 
     class _DummyService:
         list_recordings = _DummyRecordings()
@@ -127,7 +128,7 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     monkeypatch.setattr(
         "transcriptx.web.services.rename_service.RecordingsService", _DummyService
     )
-    monkeypatch.setattr("transcriptx.web.services.rename_service.st", _DummyStreamlit())
+    monkeypatch.setattr("transcriptx.web.services.rename_service.st", DummyRenameStreamlit())
 
     RenameService.refresh_after_rename(
         RenameResult(
@@ -141,15 +142,15 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     )
 
     assert calls == {"listing_caches": 1, "recordings": 1}
-    assert _DummyStreamlit.session_state["selected_transcript_path"] == "/tmp/new.json"
-    assert _DummyStreamlit.session_state["subject_id"] == "/tmp/new.json"
-    assert _DummyStreamlit.session_state["run_id"] is None
-    assert _DummyStreamlit.session_state["audio_prep_selected_file"] == "/tmp/new.mp3"
+    assert DummyRenameStreamlit.session_state["selected_transcript_path"] == "/tmp/new.json"
+    assert DummyRenameStreamlit.session_state["subject_id"] == "/tmp/new.json"
+    assert DummyRenameStreamlit.session_state["run_id"] is None
+    assert DummyRenameStreamlit.session_state["audio_prep_selected_file"] == "/tmp/new.mp3"
     assert (
-        _DummyStreamlit.session_state["audio_prep_selected_files"][0] == "/tmp/new.mp3"
+        DummyRenameStreamlit.session_state["audio_prep_selected_files"][0] == "/tmp/new.mp3"
     )
     assert (
-        _DummyStreamlit.session_state["audio_merge_ordered_paths"][0] == "/tmp/new.mp3"
+        DummyRenameStreamlit.session_state["audio_merge_ordered_paths"][0] == "/tmp/new.mp3"
     )
 
 
@@ -177,19 +178,18 @@ def test_after_rename_patches_slug_subject_and_library_select(
         def clear() -> None:
             pass
 
-    class _DummyStreamlit:
-        session_state = {
-            "selected_transcript_path": old_t,
-            "subject_id": "old_name",
-            "run_id": "run_1",
-            "library_transcript_select": 0,
-        }
+    DummyRenameStreamlit.session_state = {
+        "selected_transcript_path": old_t,
+        "subject_id": "old_name",
+        "run_id": "run_1",
+        "library_transcript_select": 0,
+    }
 
     monkeypatch.setattr(
         "transcriptx.web.services.rename_service.RecordingsService",
         type("R", (), {"list_recordings": _DummyRecordings})(),
     )
-    monkeypatch.setattr("transcriptx.web.services.rename_service.st", _DummyStreamlit())
+    monkeypatch.setattr("transcriptx.web.services.rename_service.st", DummyRenameStreamlit())
 
     RenameService.after_rename(
         RenameResult(
@@ -204,10 +204,10 @@ def test_after_rename_patches_slug_subject_and_library_select(
     )
 
     assert calls["caches"] == 1
-    assert _DummyStreamlit.session_state["selected_transcript_path"] == new_t
-    assert _DummyStreamlit.session_state["subject_id"] == "new_name"
-    assert _DummyStreamlit.session_state["run_id"] is None
-    assert _DummyStreamlit.session_state["library_transcript_select"] == 1
+    assert DummyRenameStreamlit.session_state["selected_transcript_path"] == new_t
+    assert DummyRenameStreamlit.session_state["subject_id"] == "new_name"
+    assert DummyRenameStreamlit.session_state["run_id"] is None
+    assert DummyRenameStreamlit.session_state["library_transcript_select"] == 1
 
 
 def test_unified_rename_entry_point_delegates_to_transcript_path(

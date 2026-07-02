@@ -5,7 +5,6 @@ Tests for file service.
 from unittest.mock import MagicMock, patch
 
 from transcriptx.web.services.file_service import (
-    DEFAULT_SESSION_STATS,
     FileService,
     _extract_metadata_stats,
 )

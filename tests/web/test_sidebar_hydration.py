@@ -7,47 +7,12 @@ from transcriptx.web.state import (
     TX_NAV_EXPANDER_TOOLS,
     TX_NAV_EXPANDER_VIEW,
     TX_NAV_EXPANDER_WORKFLOW,
+    TX_NAV_PENDING_OPEN_VIEW,
     TX_NAV_WORKSPACE_SELECTOR_REQUESTED,
 )
+from tests.web.streamlit_doubles import DummySidebarStreamlit
 
-
-class _DummySidebarStreamlit:
-    session_state: dict[str, object] = {}
-    captions: list[str] = []
-    button_presses: set[str] = set()
-    toggle_calls: list[tuple[str, str | None, bool]] = []
-
-    @staticmethod
-    def markdown(*_args, **_kwargs):
-        return None
-
-    @classmethod
-    def button(cls, _label, key=None, **_kwargs):
-        return bool(key and key in cls.button_presses)
-
-    @staticmethod
-    def rerun():
-        return None
-
-    @staticmethod
-    def radio(_label, options, index=0, **_kwargs):
-        return options[index]
-
-    @staticmethod
-    def selectbox(_label, options, index=0, **_kwargs):
-        return options[index]
-
-    @classmethod
-    def caption(cls, text, **_kwargs):
-        cls.captions.append(text)
-        return None
-
-    @classmethod
-    def toggle(cls, label, *, value=False, key=None, **_kwargs):
-        cls.toggle_calls.append((label, key, value))
-        if key is not None and key in cls.session_state:
-            return bool(cls.session_state[key])
-        return value
+_DummySidebarStreamlit = DummySidebarStreamlit
 
 
 def _seed_sidebar_state() -> dict[str, object]:
@@ -86,6 +51,9 @@ def _patch_sidebar_basics(monkeypatch, mod) -> None:
         "derive_sidebar_state",
         lambda _ss: type("S", (), {"prioritize_view": False})(),
     )
+    import transcriptx.web.sidebar_workspace as workspace_mod
+
+    monkeypatch.setattr(workspace_mod, "st", _DummySidebarStreamlit)
 
 
 def test_collapsed_view_does_not_hydrate_workspace(monkeypatch) -> None:
@@ -271,3 +239,38 @@ def test_sidebar_explicit_load_still_works_when_view_collapsed(monkeypatch) -> N
 
 def test_sidebar_explicit_load_populates_transcript_selector(monkeypatch) -> None:
     test_sidebar_explicit_load_still_works_when_view_collapsed(monkeypatch)
+
+
+def test_pending_open_view_hydrates_workspace_on_next_render(monkeypatch) -> None:
+    import transcriptx.web.sidebar as mod
+
+    _DummySidebarStreamlit.session_state = {
+        **_seed_sidebar_state(),
+        TX_NAV_PENDING_OPEN_VIEW: True,
+    }
+    _DummySidebarStreamlit.captions = []
+    _DummySidebarStreamlit.button_presses = set()
+    _DummySidebarStreamlit.toggle_calls = []
+    _patch_sidebar_basics(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod, "apply_transitional_sidebar_backfill", lambda *_args, **_kwargs: None
+    )
+    calls = {"transcripts": 0}
+    monkeypatch.setattr(
+        mod,
+        "get_transcript_dropdown_options",
+        lambda: calls.__setitem__("transcripts", calls["transcripts"] + 1)
+        or (["slug-1"], lambda value: value),
+    )
+    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
+    monkeypatch.setattr(mod.RunIndex, "list_runs", lambda *_args, **_kwargs: [])
+
+    mod.render_sidebar(
+        current_page="Home",
+        corrections_studio_available=False,
+        prerequisites={},
+    )
+
+    assert TX_NAV_PENDING_OPEN_VIEW not in _DummySidebarStreamlit.session_state
+    assert _DummySidebarStreamlit.session_state[TX_NAV_EXPANDER_VIEW] is True
+    assert calls["transcripts"] == 1

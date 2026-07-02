@@ -3,98 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from transcriptx.app.models.metadata import TranscriptMetadata
+from tests.web.streamlit_doubles import DummyStreamlitWithDataframe
 
 
-class _DummyForm:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        return False
-
-
-class _DummyColumn:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        return False
-
-
-class _DummyStreamlit:
-    captured_df = None
-    session_state = {}
-    captions = []
-
-    @staticmethod
-    def markdown(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def info(*_args, **_kwargs):
-        return None
-
-    @classmethod
-    def dataframe(cls, df, **_kwargs):
-        cls.captured_df = df.copy()
-        return None
-
-    @staticmethod
-    def divider():
-        return None
-
-    @staticmethod
-    def subheader(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def selectbox(*_args, **_kwargs):
-        return 0
-
-    @staticmethod
-    def columns(_n):
-        return (_DummyColumn(), _DummyColumn())
-
-    @staticmethod
-    def button(*_args, **_kwargs):
-        return False
-
-    @staticmethod
-    def rerun():
-        return None
-
-    @staticmethod
-    def caption(*_args, **_kwargs):
-        _DummyStreamlit.captions.append(_args[0] if _args else "")
-        return None
-
-    @staticmethod
-    def form(*_args, **_kwargs):
-        return _DummyForm()
-
-    @staticmethod
-    def text_input(*_args, **_kwargs):
-        return ""
-
-    @staticmethod
-    def form_submit_button(*_args, **_kwargs):
-        return False
-
-    @staticmethod
-    def error(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def success(*_args, **_kwargs):
-        return None
-
-    @staticmethod
-    def toggle(*_args, **_kwargs):
-        return False
-
-    @staticmethod
-    def expander(*_args, **_kwargs):
-        return _DummyForm()
+_DummyStreamlit = DummyStreamlitWithDataframe
 
 
 def test_format_duration_display() -> None:

@@ -17,8 +17,13 @@ from transcriptx.core.config import (
 from transcriptx.web.blocks.filters.subview_slice import render_subview_slice_filter
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.run_scoped_page import (
+    RunScopedPageConfig,
+    RunScopedPageContext,
+    render_run_scoped_page,
+)
 from transcriptx.web.models.artifact import Artifact
-from transcriptx.web.services import ArtifactService, RunIndex, SubjectService
+from transcriptx.web.services import ArtifactService
 from transcriptx.web.services.chart_view_model_service import (
     ChartGalleryFamily,
     apply_chart_filters,
@@ -68,6 +73,17 @@ _CHARTS_HELP_LOADED = (
     "another run. **Filters:** Narrow by module, scope, tags, or chart type; **Reset filters** "
     "restores defaults for this page.\n\n**Reading charts:** Each chart shows a short "
     "interpretation caption under its title when one is available."
+)
+
+_CHARTS_CONFIG = RunScopedPageConfig(
+    title="Charts Gallery",
+    description="Browse static and dynamic chart artifacts for the current run.",
+    prereq_help_md=_CHARTS_HELP_PREREQ,
+    empty_headline="No subject or run selected",
+    empty_detail="Pick a transcript or group and a run in the sidebar to view charts.",
+    primary_action=("Open Library", "Library"),
+    secondary_action=("Run Analysis", "Run Analysis"),
+    loaded_help_md=_CHARTS_HELP_LOADED,
 )
 
 
@@ -544,35 +560,10 @@ def _charts_filters_and_gallery_fragment(
                     st.divider()
 
 
-def render_charts() -> None:
-    subject = SubjectService.resolve_current_subject(st.session_state)
-    run_id = st.session_state.get("run_id")
+def _render_charts_body(ctx: RunScopedPageContext) -> None:
+    _ensure_charts_filters_for_run(ctx.subject.subject_id, ctx.run_id)
 
-    if not subject or not run_id:
-        render_page_shell(
-            "Charts Gallery",
-            "Browse static and dynamic chart artifacts for the current run.",
-            badges=None,
-            actions=None,
-        )
-        render_empty_state(
-            "missing_prerequisite",
-            "No subject or run selected",
-            "Pick a transcript or group and a run in the sidebar to view charts.",
-            primary_action=("Open Library", "Library"),
-            secondary_action=("Run Analysis", "Run Analysis"),
-        )
-        render_page_help(_CHARTS_HELP_PREREQ)
-        return
-
-    _ensure_charts_filters_for_run(subject.subject_id, run_id)
-
-    run_root = RunIndex.get_run_root(
-        subject.scope,
-        run_id,
-        subject_id=subject.subject_id,
-    )
-
+    run_root = ctx.run_root
     all_artifacts = ArtifactService.list_artifacts(run_root)
     all_charts = [
         a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}
@@ -625,3 +616,7 @@ def render_charts() -> None:
         missing_behavior,
     )
     render_page_help(_CHARTS_HELP_LOADED)
+
+
+def render_charts() -> None:
+    render_run_scoped_page(_CHARTS_CONFIG, render_body=_render_charts_body)

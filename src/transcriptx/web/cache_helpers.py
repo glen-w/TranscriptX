@@ -1,5 +1,11 @@
 """
 Shared @st.cache_data helpers to avoid expensive recomputation on every Streamlit rerun.
+
+Cache policy tiers (implementation stays distributed until a later pass):
+1. hot-path discovery — session/transcript listing (this module)
+2. metadata/index — search speaker index, run index
+3. expensive artifact/content — manifests, artifact health
+4. page-local UI-only — page modules until consolidated
 """
 
 from __future__ import annotations
