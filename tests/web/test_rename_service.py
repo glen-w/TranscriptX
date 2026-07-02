@@ -128,7 +128,9 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     monkeypatch.setattr(
         "transcriptx.web.services.rename_service.RecordingsService", _DummyService
     )
-    monkeypatch.setattr("transcriptx.web.services.rename_service.st", DummyRenameStreamlit())
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.st", DummyRenameStreamlit()
+    )
 
     RenameService.refresh_after_rename(
         RenameResult(
@@ -142,15 +144,22 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     )
 
     assert calls == {"listing_caches": 1, "recordings": 1}
-    assert DummyRenameStreamlit.session_state["selected_transcript_path"] == "/tmp/new.json"
+    assert (
+        DummyRenameStreamlit.session_state["selected_transcript_path"]
+        == "/tmp/new.json"
+    )
     assert DummyRenameStreamlit.session_state["subject_id"] == "/tmp/new.json"
     assert DummyRenameStreamlit.session_state["run_id"] is None
-    assert DummyRenameStreamlit.session_state["audio_prep_selected_file"] == "/tmp/new.mp3"
     assert (
-        DummyRenameStreamlit.session_state["audio_prep_selected_files"][0] == "/tmp/new.mp3"
+        DummyRenameStreamlit.session_state["audio_prep_selected_file"] == "/tmp/new.mp3"
     )
     assert (
-        DummyRenameStreamlit.session_state["audio_merge_ordered_paths"][0] == "/tmp/new.mp3"
+        DummyRenameStreamlit.session_state["audio_prep_selected_files"][0]
+        == "/tmp/new.mp3"
+    )
+    assert (
+        DummyRenameStreamlit.session_state["audio_merge_ordered_paths"][0]
+        == "/tmp/new.mp3"
     )
 
 
@@ -189,7 +198,9 @@ def test_after_rename_patches_slug_subject_and_library_select(
         "transcriptx.web.services.rename_service.RecordingsService",
         type("R", (), {"list_recordings": _DummyRecordings})(),
     )
-    monkeypatch.setattr("transcriptx.web.services.rename_service.st", DummyRenameStreamlit())
+    monkeypatch.setattr(
+        "transcriptx.web.services.rename_service.st", DummyRenameStreamlit()
+    )
 
     RenameService.after_rename(
         RenameResult(

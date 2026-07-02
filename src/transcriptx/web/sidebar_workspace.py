@@ -8,7 +8,10 @@ from typing import Any
 import streamlit as st
 
 from transcriptx.web.sidebar_hydration import SidebarStatus
-from transcriptx.web.state import SELECTBOX_PLACEHOLDER_GROUP, SELECTBOX_PLACEHOLDER_TRANSCRIPT
+from transcriptx.web.state import (
+    SELECTBOX_PLACEHOLDER_GROUP,
+    SELECTBOX_PLACEHOLDER_TRANSCRIPT,
+)
 
 
 def render_sidebar_stats(

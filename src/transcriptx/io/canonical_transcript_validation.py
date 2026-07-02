@@ -13,7 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from transcriptx.io.transcript_schema import validate_transcript_document
-from transcriptx.core.observability.perf import observe_transcript_path, record_file_read
+from transcriptx.core.observability.perf import (
+    observe_transcript_path,
+    record_file_read,
+)
 
 
 class CanonicalTranscriptCategory(str, Enum):

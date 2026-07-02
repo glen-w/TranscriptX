@@ -181,9 +181,7 @@ def render_sidebar(
 
         if subject_type == "transcript":
             if not transcript_options:
-                render_sidebar_stats(
-                    status=pre_state.status, subject_type=subject_type
-                )
+                render_sidebar_stats(status=pre_state.status, subject_type=subject_type)
                 apply_sidebar_selection(
                     st.session_state,
                     SidebarSelectionResult(
@@ -255,7 +253,9 @@ def render_sidebar(
                     ),
                 )
             else:
-                render_sidebar_stats(show_no_selection=True, status="ready", subject_type=subject_type)
+                render_sidebar_stats(
+                    show_no_selection=True, status="ready", subject_type=subject_type
+                )
                 apply_sidebar_selection(
                     st.session_state,
                     SidebarSelectionResult(
@@ -265,7 +265,9 @@ def render_sidebar(
                     ),
                 )
         else:
-            render_sidebar_stats(show_no_selection=True, status="ready", subject_type=subject_type)
+            render_sidebar_stats(
+                show_no_selection=True, status="ready", subject_type=subject_type
+            )
             apply_sidebar_selection(
                 st.session_state,
                 SidebarSelectionResult(

@@ -15,7 +15,10 @@ from transcriptx.core.utils.paths import (
     TRANSCRIPTS_METADATA_DIR,
 )
 from transcriptx.io.transcript_schema import validate_transcript_document
-from transcriptx.core.observability.perf import observe_transcript_path, record_file_read
+from transcriptx.core.observability.perf import (
+    observe_transcript_path,
+    record_file_read,
+)
 
 logger = get_logger()
 

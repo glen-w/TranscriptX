@@ -5,7 +5,6 @@ from pathlib import Path
 from transcriptx.app.models.metadata import TranscriptMetadata
 from tests.web.streamlit_doubles import DummyStreamlitWithDataframe
 
-
 _DummyStreamlit = DummyStreamlitWithDataframe
 
 

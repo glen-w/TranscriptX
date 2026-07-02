@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-02
+
+### Added
+
+- Module registry snapshot and contract tests with golden fixture for 39 modules.
+- Domain-split module definition builders under `module_specs/` composed via explicit `MODULE_REGISTRY_ORDER`.
+
+### Changed
+
+- `build_module_definitions` in `module_registry_specs.py` is now a thin compatibility wrapper; `MODULE_CLASS_MAP` and `EXTRA_REPRESENTATIVE` remain on the public façade.
+
 ## [0.2.0] - 2026-06-17
 
 ### Added
