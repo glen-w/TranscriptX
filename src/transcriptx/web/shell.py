@@ -62,6 +62,9 @@ def inject_global_styles() -> None:
         line-height: 1.2;
         user-select: none;
     }
+    .nav-section-items {
+        padding-left: 0.35rem;
+    }
     /* Style navigation buttons to look like sidebar links */
     div[data-testid="stButton"] > button[kind="secondary"] {
         background: transparent;

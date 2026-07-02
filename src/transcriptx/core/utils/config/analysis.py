@@ -1014,7 +1014,7 @@ class TagExtractionConfig:
 class LLMSummaryConfig:
     """Configuration for the llm_summary analysis module."""
 
-    effort: str = "medium"
+    effort: str = "high"
 
 
 @dataclass

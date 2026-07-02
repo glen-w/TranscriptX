@@ -3,7 +3,7 @@
     "key": "analysis.llm_summary.effort",
     "path": "analysis.llm_summary.effort",
     "type": "str",
-    "default": "medium",
+    "default": "high",
     "min": null,
     "max": null,
     "choices": [

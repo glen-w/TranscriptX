@@ -19,8 +19,11 @@ def test_build_page_renderers_contains_core_pages() -> None:
         corrections_studio_available=False,
         render_corrections_studio=None,
     )
+    optional_without_renderer = {"Corrections Studio"}
     for key in PAGE_PREREQUISITES:
-        assert key in renderers or key == "Transcript"
+        if key in optional_without_renderer:
+            continue
+        assert key in renderers
 
 
 def test_build_page_renderers_includes_corrections_studio_when_available() -> None:

@@ -13,7 +13,7 @@ class LLMSummarySettingsModel(BaseModel):
     """Effort tier for the llm_summary analysis module (Ollama path only)."""
 
     effort: LLMSummaryEffort = Field(
-        default="medium",
+        default="high",
         description=(
             "Summary effort tier for llm_summary when llm.provider is ollama. "
             "Controls max_input_chars, request_timeout, and max_output_tokens "

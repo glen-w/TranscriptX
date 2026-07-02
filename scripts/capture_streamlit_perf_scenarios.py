@@ -14,23 +14,27 @@ PERF_DIR = REPO_ROOT / "data" / "perf"
 SCENARIOS: list[tuple[str, dict[str, object]]] = [
     (
         "first_browser_load_after_cold_start",
-        {"page": "Home", "tx_nav_exp_view": False},
+        {"page": "Home"},
     ),
     (
         "warm_refresh_within_cache_ttl",
-        {"page": "Home", "tx_nav_exp_view": False, "_repeat": 2},
+        {"page": "Home", "_repeat": 2},
     ),
     (
         "refresh_after_cache_ttl_expires",
-        {"page": "Home", "tx_nav_exp_view": False, "_clear_cache": True},
-    ),
-    (
-        "widget_triggered_rerun",
-        {"page": "Home", "tx_nav_exp_view": True},
+        {"page": "Home", "_clear_cache": True},
     ),
     (
         "navigation_rerun_library",
-        {"page": "Library", "tx_nav_exp_view": False},
+        {"page": "Library"},
+    ),
+    (
+        "navigation_rerun_search",
+        {"page": "Search"},
+    ),
+    (
+        "navigation_rerun_charts",
+        {"page": "Charts"},
     ),
 ]
 

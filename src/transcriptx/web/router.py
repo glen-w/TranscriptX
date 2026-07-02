@@ -8,6 +8,7 @@ import streamlit as st
 
 from transcriptx.web.navigation import (
     PagePrerequisite,
+    build_prerequisites,
     context_readiness,
     evaluate_page_access,
 )
@@ -35,32 +36,7 @@ from transcriptx.web.page_modules.transcript import render_transcript_viewer
 from transcriptx.web.page_modules.upload_transcript import render_upload_transcript_page
 from transcriptx.web.state import PAGE_KEY
 
-PAGE_PREREQUISITES: dict[str, PagePrerequisite] = {
-    "Home": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Library": PagePrerequisite("none", "stay", may_mutate_context=True),
-    "Search": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Overview": PagePrerequisite("run_scoped", "home", may_mutate_context=False),
-    "Transcript": PagePrerequisite(
-        "transcript_or_group", "home", may_mutate_context=True
-    ),
-    "Charts": PagePrerequisite("run_scoped", "overview", may_mutate_context=False),
-    "Insights": PagePrerequisite("run_scoped", "overview", may_mutate_context=False),
-    "Data": PagePrerequisite("run_scoped", "overview", may_mutate_context=False),
-    "Explorer": PagePrerequisite("run_scoped", "overview", may_mutate_context=False),
-    "Groups": PagePrerequisite("none", "stay", may_mutate_context=True),
-    "Run Analysis": PagePrerequisite("none", "stay", may_mutate_context=True),
-    "Transcribe Audio": PagePrerequisite("none", "stay", may_mutate_context=True),
-    "Import Transcript": PagePrerequisite("none", "stay", may_mutate_context=True),
-    "Settings": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Profiles": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Speaker ID": PagePrerequisite("none", "stay", may_mutate_context=True),
-    "Audio Prep": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Audio Merge": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Batch Ops": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Dashboard Builder": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Diagnostics": PagePrerequisite("none", "stay", may_mutate_context=False),
-    "Statistics": PagePrerequisite("none", "stay", may_mutate_context=False),
-}
+PAGE_PREREQUISITES: dict[str, PagePrerequisite] = build_prerequisites()
 
 
 def fallback_for_page(page: str) -> str | None:

@@ -1,30 +1,35 @@
 from __future__ import annotations
 
-from transcriptx.web.sidebar_state import apply_transitional_sidebar_backfill
-from transcriptx.web.state import (
-    SELECTED_TRANSCRIPT_PATH,
-    TX_NAV_EXPANDER_CONFIG,
-    TX_NAV_EXPANDER_TOOLS,
-    TX_NAV_EXPANDER_VIEW,
-    TX_NAV_EXPANDER_WORKFLOW,
-    TX_NAV_PENDING_OPEN_VIEW,
-    TX_NAV_WORKSPACE_SELECTOR_REQUESTED,
-)
+import pytest
+
+from transcriptx.web.navigation import build_prerequisites
+from transcriptx.web.state import SELECTED_TRANSCRIPT_PATH
 from tests.web.streamlit_doubles import DummySidebarStreamlit
 
 _DummySidebarStreamlit = DummySidebarStreamlit
+_PREREQUISITES = build_prerequisites()
+
+_NO_HYDRATION_PAGES = (
+    "Home",
+    "Library",
+    "Search",
+    "Settings",
+    "Profiles",
+    "Diagnostics",
+    "Statistics",
+    "Transcribe Audio",
+    "Import Transcript",
+)
+
+_HYDRATION_PAGES = (
+    "Charts",
+    "Overview",
+    "Transcript",
+)
 
 
-def _seed_sidebar_state() -> dict[str, object]:
-    return {
-        "page": "Home",
-        TX_NAV_EXPANDER_WORKFLOW: False,
-        TX_NAV_EXPANDER_VIEW: False,
-        TX_NAV_EXPANDER_TOOLS: False,
-        TX_NAV_EXPANDER_CONFIG: False,
-        "tx_nav_sidebar_seeded": True,
-        "tx_nav_prev_should_prioritize_view": False,
-    }
+def _seed_sidebar_state(page: str = "Home") -> dict[str, object]:
+    return {"page": page}
 
 
 def _canonical_context() -> dict[str, object]:
@@ -38,41 +43,17 @@ def _canonical_context() -> dict[str, object]:
 
 def _patch_sidebar_basics(monkeypatch, mod) -> None:
     monkeypatch.setattr(mod, "st", _DummySidebarStreamlit)
-    monkeypatch.setattr(mod, "context_readiness", lambda _ss: {})
-    monkeypatch.setattr(
-        mod,
-        "evaluate_page_access",
-        lambda *_args, **_kwargs: type(
-            "A", (), {"allowed": False, "help_text": None}
-        )(),
-    )
-    monkeypatch.setattr(
-        mod,
-        "derive_sidebar_state",
-        lambda _ss: type("S", (), {"prioritize_view": False})(),
-    )
     import transcriptx.web.sidebar_workspace as workspace_mod
 
     monkeypatch.setattr(workspace_mod, "st", _DummySidebarStreamlit)
 
 
-def test_collapsed_view_does_not_hydrate_workspace(monkeypatch) -> None:
-    import transcriptx.web.sidebar as mod
-
-    _DummySidebarStreamlit.session_state = _seed_sidebar_state()
-    _DummySidebarStreamlit.captions = []
-    _DummySidebarStreamlit.button_presses = set()
-    _DummySidebarStreamlit.toggle_calls = []
-    _patch_sidebar_basics(monkeypatch, mod)
-    monkeypatch.setattr(
-        mod, "apply_transitional_sidebar_backfill", lambda *_args, **_kwargs: None
-    )
+def _discovery_mocks(monkeypatch, mod) -> dict[str, int]:
     calls = {"transcripts": 0, "runs": 0, "subject": 0, "groups": 0}
     monkeypatch.setattr(
-        mod,
-        "get_transcript_dropdown_options",
+        "transcriptx.web.sidebar_options.get_transcript_dropdown_options",
         lambda: calls.__setitem__("transcripts", calls["transcripts"] + 1)
-        or ([], lambda x: x),
+        or (["slug-1"], lambda value: value),
     )
     monkeypatch.setattr(
         mod.SubjectService,
@@ -88,12 +69,23 @@ def test_collapsed_view_does_not_hydrate_workspace(monkeypatch) -> None:
         "transcriptx.web.cache_helpers.cached_list_groups",
         lambda: calls.__setitem__("groups", calls["groups"] + 1) or [],
     )
+    return calls
+
+
+@pytest.mark.parametrize("page", _NO_HYDRATION_PAGES)
+def test_lightweight_pages_do_not_hydrate_workspace(monkeypatch, page: str) -> None:
+    import transcriptx.web.sidebar as mod
+
+    _DummySidebarStreamlit.session_state = _seed_sidebar_state(page)
+    _DummySidebarStreamlit.button_presses = set()
+    _patch_sidebar_basics(monkeypatch, mod)
+    calls = _discovery_mocks(monkeypatch, mod)
 
     before = {**_DummySidebarStreamlit.session_state}
     mod.render_sidebar(
-        current_page="Home",
+        current_page=page,
         corrections_studio_available=False,
-        prerequisites={},
+        prerequisites=_PREREQUISITES,
     )
 
     assert calls == {"transcripts": 0, "runs": 0, "subject": 0, "groups": 0}
@@ -101,172 +93,94 @@ def test_collapsed_view_does_not_hydrate_workspace(monkeypatch) -> None:
         assert _DummySidebarStreamlit.session_state.get(key) == before.get(key)
 
 
-def test_open_view_hydrates_workspace_on_home(monkeypatch) -> None:
+@pytest.mark.parametrize("page", _HYDRATION_PAGES)
+def test_context_pages_hydrate_workspace(monkeypatch, page: str) -> None:
     import transcriptx.web.sidebar as mod
 
-    _DummySidebarStreamlit.session_state = {
-        **_seed_sidebar_state(),
-        TX_NAV_EXPANDER_VIEW: True,
-    }
-    _DummySidebarStreamlit.captions = []
+    _DummySidebarStreamlit.session_state = _seed_sidebar_state(page)
     _DummySidebarStreamlit.button_presses = set()
-    _DummySidebarStreamlit.toggle_calls = []
     _patch_sidebar_basics(monkeypatch, mod)
-    monkeypatch.setattr(
-        mod, "apply_transitional_sidebar_backfill", lambda *_args, **_kwargs: None
-    )
-    calls = {"transcripts": 0}
-    monkeypatch.setattr(
-        mod,
-        "get_transcript_dropdown_options",
-        lambda: calls.__setitem__("transcripts", calls["transcripts"] + 1)
-        or (["slug-1"], lambda value: value),
-    )
-    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
-    monkeypatch.setattr(mod.RunIndex, "list_runs", lambda *_args, **_kwargs: [])
+    calls = _discovery_mocks(monkeypatch, mod)
 
     mod.render_sidebar(
-        current_page="Home",
+        current_page=page,
         corrections_studio_available=False,
-        prerequisites={},
+        prerequisites=_PREREQUISITES,
     )
 
     assert calls["transcripts"] == 1
+    assert calls["subject"] >= 1
 
 
-def test_run_scoped_page_hydrates_workspace(monkeypatch) -> None:
+def test_charts_does_not_call_cached_list_groups_for_transcript_mode(
+    monkeypatch,
+) -> None:
     import transcriptx.web.sidebar as mod
 
-    _DummySidebarStreamlit.session_state = _seed_sidebar_state()
-    _DummySidebarStreamlit.captions = []
+    _DummySidebarStreamlit.session_state = _seed_sidebar_state("Charts")
     _DummySidebarStreamlit.button_presses = set()
-    _DummySidebarStreamlit.toggle_calls = []
     _patch_sidebar_basics(monkeypatch, mod)
-    monkeypatch.setattr(
-        mod, "apply_transitional_sidebar_backfill", lambda *_args, **_kwargs: None
-    )
-    calls = {"transcripts": 0}
-    monkeypatch.setattr(
-        mod,
-        "get_transcript_dropdown_options",
-        lambda: calls.__setitem__("transcripts", calls["transcripts"] + 1)
-        or (["slug-1"], lambda value: value),
-    )
-    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
-    monkeypatch.setattr(mod.RunIndex, "list_runs", lambda *_args, **_kwargs: [])
+    calls = _discovery_mocks(monkeypatch, mod)
 
     mod.render_sidebar(
         current_page="Charts",
         corrections_studio_available=False,
-        prerequisites={},
+        prerequisites=_PREREQUISITES,
     )
 
-    assert calls["transcripts"] == 1
+    assert calls["groups"] == 0
 
 
-def test_collapsed_view_does_not_mutate_canonical_context(monkeypatch) -> None:
+def test_home_preserves_canonical_context(monkeypatch) -> None:
     import transcriptx.web.sidebar as mod
 
     _DummySidebarStreamlit.session_state = {
-        **_seed_sidebar_state(),
+        **_seed_sidebar_state("Home"),
         **_canonical_context(),
     }
-    _DummySidebarStreamlit.captions = []
     _DummySidebarStreamlit.button_presses = set()
-    _DummySidebarStreamlit.toggle_calls = []
     _patch_sidebar_basics(monkeypatch, mod)
-    monkeypatch.setattr(
-        mod,
-        "get_transcript_dropdown_options",
-        lambda: (["slug-1"], lambda value: value),
-    )
-    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
-    monkeypatch.setattr(mod.RunIndex, "list_runs", lambda *_args, **_kwargs: [])
+    _discovery_mocks(monkeypatch, mod)
 
     before = {k: _DummySidebarStreamlit.session_state[k] for k in _canonical_context()}
-    apply_transitional_sidebar_backfill(
-        _DummySidebarStreamlit.session_state,
-        prioritize_view=False,
-    )
     mod.render_sidebar(
         current_page="Home",
         corrections_studio_available=False,
-        prerequisites={},
+        prerequisites=_PREREQUISITES,
     )
     after = {k: _DummySidebarStreamlit.session_state[k] for k in _canonical_context()}
     assert before == after
 
 
-def test_sidebar_explicit_load_still_works_when_view_collapsed(monkeypatch) -> None:
+def test_unknown_page_does_not_hydrate_workspace(monkeypatch) -> None:
     import transcriptx.web.sidebar as mod
 
-    _DummySidebarStreamlit.session_state = {
-        **_seed_sidebar_state(),
-        TX_NAV_WORKSPACE_SELECTOR_REQUESTED: True,
-    }
-    _DummySidebarStreamlit.captions = []
+    _DummySidebarStreamlit.session_state = _seed_sidebar_state("Not A Real Page")
     _DummySidebarStreamlit.button_presses = set()
-    _DummySidebarStreamlit.toggle_calls = []
     _patch_sidebar_basics(monkeypatch, mod)
-    monkeypatch.setattr(
-        mod, "apply_transitional_sidebar_backfill", lambda *_args, **_kwargs: None
+    calls = _discovery_mocks(monkeypatch, mod)
+
+    mod.render_sidebar(
+        current_page="Not A Real Page",
+        corrections_studio_available=False,
+        prerequisites=_PREREQUISITES,
     )
-    monkeypatch.setattr(
-        mod,
-        "get_transcript_dropdown_options",
-        lambda: (["slug-1"], lambda value: value),
-    )
-    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
-    monkeypatch.setattr(mod.RunIndex, "list_runs", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(
-        _DummySidebarStreamlit,
-        "selectbox",
-        lambda _label, options, index=0, **_kwargs: options[1],
-    )
+
+    assert calls == {"transcripts": 0, "runs": 0, "subject": 0, "groups": 0}
+
+
+def test_home_does_not_resolve_subject_for_nav_access(monkeypatch) -> None:
+    import transcriptx.web.sidebar as mod
+
+    _DummySidebarStreamlit.session_state = _seed_sidebar_state("Home")
+    _DummySidebarStreamlit.button_presses = set()
+    _patch_sidebar_basics(monkeypatch, mod)
+    calls = _discovery_mocks(monkeypatch, mod)
 
     mod.render_sidebar(
         current_page="Home",
         corrections_studio_available=False,
-        prerequisites={},
+        prerequisites=_PREREQUISITES,
     )
 
-    assert _DummySidebarStreamlit.session_state["subject_id"] == "slug-1"
-
-
-def test_sidebar_explicit_load_populates_transcript_selector(monkeypatch) -> None:
-    test_sidebar_explicit_load_still_works_when_view_collapsed(monkeypatch)
-
-
-def test_pending_open_view_hydrates_workspace_on_next_render(monkeypatch) -> None:
-    import transcriptx.web.sidebar as mod
-
-    _DummySidebarStreamlit.session_state = {
-        **_seed_sidebar_state(),
-        TX_NAV_PENDING_OPEN_VIEW: True,
-    }
-    _DummySidebarStreamlit.captions = []
-    _DummySidebarStreamlit.button_presses = set()
-    _DummySidebarStreamlit.toggle_calls = []
-    _patch_sidebar_basics(monkeypatch, mod)
-    monkeypatch.setattr(
-        mod, "apply_transitional_sidebar_backfill", lambda *_args, **_kwargs: None
-    )
-    calls = {"transcripts": 0}
-    monkeypatch.setattr(
-        mod,
-        "get_transcript_dropdown_options",
-        lambda: calls.__setitem__("transcripts", calls["transcripts"] + 1)
-        or (["slug-1"], lambda value: value),
-    )
-    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
-    monkeypatch.setattr(mod.RunIndex, "list_runs", lambda *_args, **_kwargs: [])
-
-    mod.render_sidebar(
-        current_page="Home",
-        corrections_studio_available=False,
-        prerequisites={},
-    )
-
-    assert TX_NAV_PENDING_OPEN_VIEW not in _DummySidebarStreamlit.session_state
-    assert _DummySidebarStreamlit.session_state[TX_NAV_EXPANDER_VIEW] is True
-    assert calls["transcripts"] == 1
+    assert calls["subject"] == 0

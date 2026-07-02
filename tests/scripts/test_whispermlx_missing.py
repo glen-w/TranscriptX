@@ -133,11 +133,13 @@ class TestResolveConfig:
         )
 
         args = wm.parse_args(["--source", "/from/cli", "--model", "large-v3"])
-        cfg = wm.resolve_config(args)
+        cfg = wm.resolve_config(args, config_path=config_path)
         assert str(cfg.source) == "/from/cli"
         assert str(cfg.transcripts) == "/transcripts/file"
         assert cfg.model == "large-v3"
         assert cfg.language == "en"
+        assert cfg.provenance.source == "cli"
+        assert cfg.provenance.transcripts == "json"
 
 
 @pytest.mark.unit
@@ -712,3 +714,114 @@ class TestCleanFailedSummary:
         assert failed is not None
         assert failed.temp_dir is None
         assert "temp removed" in failed.reason
+
+
+@pytest.mark.unit
+class TestPortableConfig:
+    def test_portable_defaults_do_not_trigger_processing(self, wm, monkeypatch):
+        monkeypatch.setattr(wm, "CONFIG_PATH", Path("/nonexistent/config.json"))
+        monkeypatch.delenv("TRANSCRIPTX_RECORDINGS_DIR", raising=False)
+        monkeypatch.delenv("TRANSCRIPTX_TRANSCRIPTS_DIR", raising=False)
+        cfg = wm.resolve_config(wm.parse_args([]))
+        assert cfg.provenance.source == "portable"
+        assert cfg.provenance.transcripts == "portable"
+        assert not wm._processing_will_run(wm.parse_args([]), cfg)
+
+    def test_env_transcripts_appends_originals(self, wm, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "missing.json")
+        base = tmp_path / "transcripts-base"
+        monkeypatch.setenv("TRANSCRIPTX_TRANSCRIPTS_DIR", str(base))
+        monkeypatch.delenv("TRANSCRIPTX_RECORDINGS_DIR", raising=False)
+        cfg = wm.resolve_config(wm.parse_args([]))
+        assert cfg.transcripts == base / "originals"
+        assert cfg.provenance.transcripts == "env"
+
+    def test_json_transcripts_used_exactly(self, wm, tmp_path: Path, monkeypatch):
+        config_path = tmp_path / "config.json"
+        exact = tmp_path / "custom-output"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "source": "/audio",
+                    "transcripts": str(exact),
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(wm, "CONFIG_PATH", config_path)
+        cfg = wm.resolve_config(wm.parse_args([]))
+        assert cfg.transcripts == exact
+        assert cfg.provenance.transcripts == "json"
+
+    def test_cli_transcripts_used_exactly(self, wm, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "missing.json")
+        exact = tmp_path / "cli-output"
+        cfg = wm.resolve_config(
+            wm.parse_args(["--source", "/audio", "--transcripts", str(exact)])
+        )
+        assert cfg.transcripts == exact
+        assert cfg.provenance.transcripts == "cli"
+
+    def test_custom_config_path_outside_transcriptx(
+        self, wm, tmp_path: Path, monkeypatch
+    ):
+        custom = tmp_path / "standalone.json"
+        custom.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "source": "/standalone/audio",
+                    "transcripts": "/standalone/out",
+                    "env_file": "/standalone/whisperx.env",
+                    "whispermlx": "/standalone/whispermlx",
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(wm, "find_repo_root", lambda: None)
+        args = wm.parse_args(["--config", str(custom)])
+        assert wm.resolve_config_path(args) == custom
+        cfg = wm.resolve_config(args, config_path=custom)
+        assert str(cfg.source) == "/standalone/audio"
+        assert cfg.provenance.source == "json"
+
+    def test_whispermlx_missing_config_env_overrides_default(
+        self, wm, tmp_path: Path, monkeypatch
+    ):
+        custom = tmp_path / "from-env.json"
+        monkeypatch.setenv(wm.CONFIG_ENV_VAR, str(custom))
+        monkeypatch.setattr(wm, "find_repo_root", lambda: None)
+        args = wm.parse_args([])
+        assert wm.resolve_config_path(args) == custom
+
+    def test_env_paths_trigger_processing(self, wm, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "missing.json")
+        monkeypatch.setenv("TRANSCRIPTX_RECORDINGS_DIR", str(tmp_path / "rec"))
+        monkeypatch.setenv("TRANSCRIPTX_TRANSCRIPTS_DIR", str(tmp_path / "tx"))
+        cfg = wm.resolve_config(wm.parse_args([]))
+        assert wm._processing_will_run(wm.parse_args([]), cfg)
+
+    def test_save_config_alone_no_subprocess(self, wm, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "cfg.json")
+        with patch.object(wm.subprocess, "run") as mock_run:
+            rc = wm.main(["--save-config"])
+        mock_run.assert_not_called()
+        assert rc == 0
+
+
+@pytest.mark.unit
+class TestNoPersonalPathsInTouchedFiles:
+    _FILES = (
+        Path("scripts/whispermlx-missing.py"),
+        Path("config/whispermlx-missing.example.json"),
+        Path("docs/runtime/transcription.md"),
+        Path("src/transcriptx/web/page_modules/transcribe_audio.py"),
+    )
+
+    def test_no_machine_specific_paths(self):
+        repo = Path(__file__).resolve().parent.parent.parent
+        needle = "/Users/89298"
+        for rel in self._FILES:
+            text = (repo / rel).read_text(encoding="utf-8")
+            assert needle not in text, f"{rel} contains personal path"

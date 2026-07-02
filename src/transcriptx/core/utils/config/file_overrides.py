@@ -25,6 +25,7 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "echoes",
         "momentum",
         "moments",
+        "llm_summary",
     }
 )
 

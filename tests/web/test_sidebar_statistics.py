@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from transcriptx.web.navigation import PAGE_SPECS, get_page_spec
 from transcriptx.web.router import PAGE_PREREQUISITES, build_page_renderers
 
 
@@ -15,12 +18,23 @@ def test_statistics_in_page_prerequisites_and_renderers() -> None:
     assert callable(renderers["Statistics"])
 
 
-def test_view_page_sections_defined_in_sidebar_source() -> None:
-    from pathlib import Path
+def test_statistics_required_context_is_none() -> None:
+    spec = get_page_spec("Statistics")
+    assert spec.required_context == "none"
+    assert spec.section == "view"
 
+
+def test_view_subsections_defined_in_page_registry() -> None:
+    subsections = {
+        spec.subsection
+        for spec in PAGE_SPECS
+        if spec.section == "view" and spec.subsection
+    }
+    assert subsections == {"Read", "Summarise", "Explore"}
+
+
+def test_sidebar_uses_registry_driven_view_sections() -> None:
     text = Path("src/transcriptx/web/sidebar.py").read_text(encoding="utf-8")
-    assert "view_page_sections" in text
-    assert '"Read"' in text
-    assert '"Summarise"' in text
-    assert '"Explore"' in text
-    assert '_nav_button("Statistics", "Statistics")' in text
+    assert "pages_in_section" in text
+    assert "_VIEW_SUBSECTION_ORDER" in text
+    assert 'pages_in_section("view")' in text

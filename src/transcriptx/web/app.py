@@ -31,7 +31,7 @@ import transcriptx.web.blocks  # noqa: F401 — register built-in view blocks
 from transcriptx.web.components.context_bar import render_context_bar
 from transcriptx.web.navigation import (
     normalize_navigation_context_from_session,
-    should_hydrate_workspace_context,
+    page_requires_workspace_hydration,
 )
 from transcriptx.web.page_flash import consume_page_flash
 from transcriptx.web.page_modules.transcript import navigate_to_segment
@@ -46,11 +46,7 @@ from transcriptx.web.router import PAGE_PREREQUISITES, route_current_page
 from transcriptx.web.shell import configure_streamlit_page, inject_global_styles
 from transcriptx.web.sidebar import render_sidebar
 from transcriptx.web.sidebar_options import get_cached_session_data
-from transcriptx.web.state import (
-    PAGE_KEY,
-    TX_NAV_EXPANDER_VIEW,
-    TX_NAV_WORKSPACE_SELECTOR_REQUESTED,
-)
+from transcriptx.web.state import PAGE_KEY
 
 logger = get_logger()
 
@@ -85,15 +81,7 @@ def main() -> None:
         extra={"current_page": current_page},
     )
     load_error = None
-    # First paint contract: do not hydrate workspace/session data here unless the
-    # current page needs run-scoped context or the user explicitly requested it.
-    should_hydrate = should_hydrate_workspace_context(
-        current_page,
-        view_opened=bool(st.session_state.get(TX_NAV_EXPANDER_VIEW, False)),
-        explicit_request=bool(
-            st.session_state.get(TX_NAV_WORKSPACE_SELECTOR_REQUESTED, False)
-        ),
-    )
+    should_hydrate = page_requires_workspace_hydration(current_page)
     if should_hydrate:
         try:
             instrument_cached_call(

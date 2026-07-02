@@ -17,6 +17,7 @@ from transcriptx.core.config.pydantic_bridge import (
 from transcriptx.core.config.pydantic_registry import serialize_field_metadata
 from transcriptx.core.config.registry import build_registry, get_default_config_dict
 from transcriptx.core.utils.config.analysis import LLMSummaryConfig
+from transcriptx.core.utils.config.file_overrides import load_config_file_into
 from transcriptx.core.utils.config.main import TranscriptXConfig
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -29,8 +30,21 @@ def _llm_summary_spec():
     raise AssertionError("llm_summary_settings pilot not registered")
 
 
-def test_default_effort_is_medium() -> None:
-    assert TranscriptXConfig().analysis.llm_summary.effort == "medium"
+def test_default_effort_is_high() -> None:
+    assert TranscriptXConfig().analysis.llm_summary.effort == "high"
+
+
+def test_file_load_preserves_llm_summary_dataclass(tmp_path: Path) -> None:
+    cfg = TranscriptXConfig()
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        json.dumps({"analysis": {"llm_summary": {"effort": "high"}}}),
+        encoding="utf-8",
+    )
+    load_config_file_into(cfg, str(config_file))
+
+    assert isinstance(cfg.analysis.llm_summary, LLMSummaryConfig)
+    assert cfg.analysis.llm_summary.effort == "high"
 
 
 def test_pydantic_defaults_match_dataclass_defaults() -> None:

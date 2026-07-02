@@ -22,9 +22,16 @@ Extra whispermlx flags (use equals form, or --whisper-args at end of command):
 Normal run (uses config file; see --config):
     whispermlx-missing
 
-Config file (default ~/.config/whispermlx-missing/config.json):
+Config file (default .transcriptx/whispermlx-missing.json when run from repo):
     --config /path/to/config.json
     or env WHISPERMLX_MISSING_CONFIG=/path/to/config.json
+
+Config sources (merge order: portable defaults <- env <- local JSON <- CLI):
+    Paths from portable defaults alone do not trigger processing on a fresh clone.
+    Set paths via CLI, .transcriptx/whispermlx-missing.json, or TRANSCRIPTX_* env.
+    TRANSCRIPTX_TRANSCRIPTS_DIR is the transcripts base; the script appends /originals.
+    JSON/CLI --transcripts is the exact output directory (no /originals append).
+    whisperx.env is used only for the whispermlx subprocess environment (HF_TOKEN).
 
 Dry run:
     whispermlx-missing --dry-run
@@ -76,15 +83,14 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Literal, Sequence
 
 CONFIG_VERSION = 1
-DEFAULT_CONFIG_PATH = Path.home() / ".config" / "whispermlx-missing" / "config.json"
-CONFIG_PATH = DEFAULT_CONFIG_PATH  # tests may monkeypatch
+CONFIG_PATH: Path | None = None  # tests may monkeypatch; else repo .transcriptx default
 CONFIG_ENV_VAR = "WHISPERMLX_MISSING_CONFIG"
 
-DEFAULT_ENV_FILE = Path("/Users/89298/Documents/transcriptx/whisperx.env")
-DEFAULT_WHISPERMLX = Path("/Users/89298/venvs/whispermlx/bin/whispermlx")
+ConfigSource = Literal["cli", "json", "env", "portable", "unset"]
+_MEANINGFUL_PATH_SOURCES = frozenset({"cli", "json", "env"})
 
 KNOWN_CONFIG_KEYS = frozenset(
     {
@@ -138,6 +144,14 @@ class RunStats:
 
 
 @dataclass
+class ConfigProvenance:
+    source: ConfigSource = "unset"
+    transcripts: ConfigSource = "unset"
+    env_file: ConfigSource = "unset"
+    whispermlx: ConfigSource = "unset"
+
+
+@dataclass
 class EffectiveConfig:
     source: Path | None
     transcripts: Path | None
@@ -153,6 +167,7 @@ class EffectiveConfig:
     pass_hf_token_arg: bool
     fuzzy_json_match: bool
     follow_output: bool
+    provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -167,7 +182,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=None,
         metavar="PATH",
         help=(
-            "Config JSON path (default: ~/.config/whispermlx-missing/config.json). "
+            "Config JSON path (default: .transcriptx/whispermlx-missing.json in repo). "
             f"Override with {CONFIG_ENV_VAR} env var."
         ),
     )
@@ -302,13 +317,96 @@ def require_list_of_str(value: Any, key: str) -> list[str]:
     return result
 
 
-def default_config_dict() -> dict[str, Any]:
+def find_repo_root() -> Path | None:
+    """Return repo root when script lives at scripts/whispermlx-missing.py."""
+    script_dir = Path(__file__).resolve().parent
+    if script_dir.name != "scripts":
+        return None
+    return script_dir.parent
+
+
+def bootstrap_repo_env(repo_root: Path) -> None:
+    """Load repo .env into os.environ without overriding existing shell values."""
+    dotenv_path = repo_root / ".env"
+    for key, value in parse_env_file(dotenv_path).items():
+        os.environ.setdefault(key, value)
+
+
+def portable_defaults(
+    repo_root: Path | None,
+) -> tuple[dict[str, Any], ConfigProvenance]:
+    """Repo-relative path suggestions when no higher layer provides a value."""
+    provenance = ConfigProvenance()
+    defaults: dict[str, Any] = {}
+    if repo_root is None:
+        return defaults, provenance
+
+    defaults["source"] = str(repo_root / "data" / "recordings")
+    provenance.source = "portable"
+    defaults["transcripts"] = str(repo_root / "data" / "transcripts" / "originals")
+    provenance.transcripts = "portable"
+    defaults["env_file"] = str(repo_root / "whisperx.env")
+    provenance.env_file = "portable"
+
+    whispermlx_bin = shutil.which("whispermlx")
+    if whispermlx_bin:
+        defaults["whispermlx"] = whispermlx_bin
+        provenance.whispermlx = "portable"
+    else:
+        defaults["whispermlx"] = ""
+        provenance.whispermlx = "unset"
+
+    return defaults, provenance
+
+
+def _parse_bool_env(value: str | None, *, default: bool) -> bool:
+    if value is None or not value.strip():
+        return default
+    normalized = value.strip().lower()
+    if normalized in ("true", "1", "yes", "on"):
+        return True
+    if normalized in ("false", "0", "no", "off"):
+        return False
+    return default
+
+
+def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
+    """Build path config from os.environ (after optional repo .env bootstrap)."""
+    provenance = ConfigProvenance()
+    derived: dict[str, Any] = {}
+
+    recordings = os.environ.get("TRANSCRIPTX_RECORDINGS_DIR", "").strip()
+    if recordings:
+        derived["source"] = recordings
+        provenance.source = "env"
+
+    transcripts_base = os.environ.get("TRANSCRIPTX_TRANSCRIPTS_DIR", "").strip()
+    if transcripts_base:
+        derived["transcripts"] = str(Path(transcripts_base).expanduser() / "originals")
+        provenance.transcripts = "env"
+
+    whispermlx_bin = os.environ.get("WHISPERMLX", "").strip()
+    if whispermlx_bin:
+        derived["whispermlx"] = whispermlx_bin
+        provenance.whispermlx = "env"
+
+    model = os.environ.get("WHISPERMLX_MODEL", "").strip()
+    if model:
+        derived["model"] = model
+    language = os.environ.get("WHISPERMLX_LANGUAGE", "").strip()
+    if language:
+        derived["language"] = language
+    if os.environ.get("WHISPERMLX_DIARIZE", "").strip():
+        derived["diarize"] = _parse_bool_env(
+            os.environ.get("WHISPERMLX_DIARIZE"), default=True
+        )
+
+    return derived, provenance
+
+
+def base_config_dict() -> dict[str, Any]:
     return {
         "version": CONFIG_VERSION,
-        "source": None,
-        "transcripts": None,
-        "env_file": str(DEFAULT_ENV_FILE),
-        "whispermlx": str(DEFAULT_WHISPERMLX),
         "model": "large-v3",
         "language": "en",
         "diarize": True,
@@ -322,25 +420,50 @@ def default_config_dict() -> dict[str, Any]:
     }
 
 
+_PATH_KEYS = ("source", "transcripts", "env_file", "whispermlx")
+
+
+def _apply_path_layer(
+    merged: dict[str, Any],
+    provenance: ConfigProvenance,
+    layer: dict[str, Any],
+    source: ConfigSource,
+) -> None:
+    for key in _PATH_KEYS:
+        value = layer.get(key)
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            if key == "whispermlx":
+                continue
+            continue
+        merged[key] = str(value)
+        setattr(provenance, key, source)
+
+
 def resolve_config_path(args: argparse.Namespace) -> Path:
     if args.config is not None:
         return args.config.expanduser()
     env_val = os.environ.get(CONFIG_ENV_VAR, "").strip()
     if env_val:
         return Path(env_val).expanduser()
-    return CONFIG_PATH
+    if CONFIG_PATH is not None:
+        return CONFIG_PATH
+    repo_root = find_repo_root()
+    if repo_root is not None:
+        return repo_root / ".transcriptx" / "whispermlx-missing.json"
+    return Path.cwd() / ".whispermlx-missing-no-config.json"
 
 
-def load_config(path: Path | None = None) -> dict[str, Any]:
-    config_path = path or CONFIG_PATH
-    if not config_path.is_file():
+def load_config(path: Path) -> dict[str, Any]:
+    if not path.is_file():
         return {}
     try:
-        data = json.loads(config_path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
-        raise SystemExit(f"ERROR: invalid config file {config_path}: {exc}") from exc
+        raise SystemExit(f"ERROR: invalid config file {path}: {exc}") from exc
     if not isinstance(data, dict):
-        raise SystemExit(f"ERROR: config file must be a JSON object: {config_path}")
+        raise SystemExit(f"ERROR: config file must be a JSON object: {path}")
     for key in data:
         if key not in KNOWN_CONFIG_KEYS:
             print(f"WARNING: ignoring unknown config key: {key}", file=sys.stderr)
@@ -367,31 +490,52 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
     }
 
 
-def save_config(cfg: EffectiveConfig, path: Path | None = None) -> None:
-    config_path = path or CONFIG_PATH
-    config_path.parent.mkdir(parents=True, exist_ok=True)
+def save_config(cfg: EffectiveConfig, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(config_to_dict(cfg), indent=2) + "\n"
-    config_path.write_text(text, encoding="utf-8")
-    os.chmod(config_path, stat.S_IRUSR | stat.S_IWUSR)
+    path.write_text(text, encoding="utf-8")
+    os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 def resolve_config(
     args: argparse.Namespace, *, config_path: Path | None = None
 ) -> EffectiveConfig:
-    defaults = default_config_dict()
+    repo_root = find_repo_root()
+    if repo_root is not None:
+        bootstrap_repo_env(repo_root)
+
     active_config = config_path or resolve_config_path(args)
     file_cfg = load_config(active_config)
 
-    merged: dict[str, Any] = {**defaults, **file_cfg}
+    portable_layer, provenance = portable_defaults(repo_root)
+    env_layer, env_prov = env_derived_config()
+
+    merged: dict[str, Any] = {**base_config_dict(), **portable_layer}
+    _apply_path_layer(merged, provenance, env_layer, "env")
+    for key in _PATH_KEYS:
+        if getattr(env_prov, key) != "unset":
+            setattr(provenance, key, getattr(env_prov, key))
+
+    json_path_layer = {
+        k: file_cfg[k] for k in _PATH_KEYS if k in file_cfg and file_cfg[k] is not None
+    }
+    _apply_path_layer(merged, provenance, json_path_layer, "json")
+
+    for key in set(file_cfg) - set(_PATH_KEYS):
+        merged[key] = file_cfg[key]
 
     if args.source is not None:
         merged["source"] = str(args.source)
+        provenance.source = "cli"
     if args.transcripts is not None:
         merged["transcripts"] = str(args.transcripts)
+        provenance.transcripts = "cli"
     if args.env_file is not None:
         merged["env_file"] = str(args.env_file)
+        provenance.env_file = "cli"
     if args.whispermlx is not None:
         merged["whispermlx"] = str(args.whispermlx)
+        provenance.whispermlx = "cli"
     if args.model is not None:
         merged["model"] = args.model
     if args.language is not None:
@@ -422,15 +566,23 @@ def resolve_config(
         Path(merged["transcripts"]).expanduser() if merged.get("transcripts") else None
     )
 
+    whispermlx_raw = require_str(merged.get("whispermlx", ""), "whispermlx")
+    whispermlx_path = Path(whispermlx_raw).expanduser() if whispermlx_raw else Path()
+
     extra = require_list_of_str(
         merged.get("extra_whisper_args") or [], "extra_whisper_args"
     )
 
+    env_file_raw = require_str(merged.get("env_file", ""), "env_file")
+    env_file_path = Path(env_file_raw).expanduser()
+    if not env_file_path.is_absolute() and repo_root is not None:
+        env_file_path = (repo_root / env_file_path).resolve()
+
     return EffectiveConfig(
         source=source,
         transcripts=transcripts,
-        env_file=Path(require_str(merged["env_file"], "env_file")).expanduser(),
-        whispermlx=Path(require_str(merged["whispermlx"], "whispermlx")).expanduser(),
+        env_file=env_file_path,
+        whispermlx=whispermlx_path,
         model=require_str(merged["model"], "model"),
         language=require_str(merged["language"], "language"),
         diarize=require_bool(merged["diarize"], "diarize"),
@@ -445,6 +597,7 @@ def resolve_config(
         ),
         fuzzy_json_match=require_bool(merged["fuzzy_json_match"], "fuzzy_json_match"),
         follow_output=require_bool(merged["follow_output"], "follow_output"),
+        provenance=provenance,
     )
 
 
@@ -696,9 +849,9 @@ def _build_proc_env(env_file: Path) -> tuple[dict[str, str], str | None]:
 
 
 def validate_config_shape(cfg: EffectiveConfig) -> None:
-    if not cfg.env_file:
+    if not str(cfg.env_file).strip():
         raise SystemExit("ERROR: env_file is required")
-    if not cfg.whispermlx:
+    if not str(cfg.whispermlx).strip():
         raise SystemExit("ERROR: whispermlx path is required")
     if not cfg.model:
         raise SystemExit("ERROR: model is required")
@@ -986,9 +1139,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.save_config:
-        validate_config_shape(cfg)
-        will_process = _processing_will_run(args, cfg)
-        if not will_process:
+        will_process = _processing_will_run(args, cfg, save_config_only=True)
+        if will_process:
+            validate_config_shape(cfg)
+        else:
             warn_missing_paths(cfg)
         save_config(cfg, config_path)
         print(f"Saved config: {config_path}")
@@ -1074,20 +1228,39 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1 if stats.failed > 0 else 0
 
     print(
-        "Nothing to do. Use --show-config, --save-config, or run with saved paths.",
+        "Nothing to do. Set paths via CLI, .transcriptx/whispermlx-missing.json, "
+        "or TRANSCRIPTX_* env; or use --show-config / --save-config.",
         file=sys.stderr,
     )
     return 2
 
 
-def _processing_will_run(args: argparse.Namespace, cfg: EffectiveConfig) -> bool:
+def _has_meaningful_paths(provenance: ConfigProvenance) -> bool:
+    return (
+        provenance.source in _MEANINGFUL_PATH_SOURCES
+        and provenance.transcripts in _MEANINGFUL_PATH_SOURCES
+    )
+
+
+def _processing_will_run(
+    args: argparse.Namespace,
+    cfg: EffectiveConfig,
+    *,
+    save_config_only: bool = False,
+) -> bool:
+    provenance = cfg.provenance
+    if not _has_meaningful_paths(provenance):
+        return False
+
     if args.dry_run:
         return True
-    if args.source is not None or args.transcripts is not None:
-        return True
-    if cfg.source is not None and cfg.transcripts is not None:
-        return True
-    return False
+
+    if save_config_only:
+        cli_paths = args.source is not None or args.transcripts is not None
+        json_paths = provenance.source == "json" and provenance.transcripts == "json"
+        return cli_paths or json_paths
+
+    return True
 
 
 if __name__ == "__main__":

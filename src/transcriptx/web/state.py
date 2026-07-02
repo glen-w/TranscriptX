@@ -42,16 +42,6 @@ SETTINGS_DRAFT = "settings_draft"
 PAGE_FLASH_MESSAGE = "page_flash_message"
 PAGE_FLASH_KIND = "page_flash_kind"
 
-# Sidebar: keyed expanders (Streamlit session_state holds open/closed when on_change="rerun")
-TX_NAV_EXPANDER_WORKFLOW = "tx_nav_exp_workflow"
-TX_NAV_EXPANDER_TOOLS = "tx_nav_exp_tools"
-TX_NAV_EXPANDER_VIEW = "tx_nav_exp_view"
-TX_NAV_EXPANDER_CONFIG = "tx_nav_exp_config"
-TX_NAV_SIDEBAR_SEEDED = "tx_nav_sidebar_seeded"
-TX_NAV_PREV_SHOULD_PRIORITIZE_VIEW = "tx_nav_prev_should_prioritize_view"
-TX_NAV_WORKSPACE_SELECTOR_REQUESTED = "tx_nav_workspace_selector_requested"
-TX_NAV_PENDING_OPEN_VIEW = "tx_nav_pending_open_view"
-
 FlashKind = Literal["success", "info", "warning", "error"]
 SubjectType = Literal["transcript", "group"]
 

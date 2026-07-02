@@ -4,19 +4,20 @@ from pathlib import Path
 
 from transcriptx.app.models.metadata import TranscriptMetadata
 from transcriptx.web.navigation import (
-    PagePrerequisite,
     apply_library_rename_navigation,
     apply_transcript_selection_context,
+    build_prerequisites,
     consume_library_transcript_nav,
     evaluate_page_access,
+    get_page_spec,
     library_transcript_index,
     normalize_navigation_context_from_session,
-    should_hydrate_workspace_context,
+    page_requires_workspace_hydration,
+    session_only_context_readiness,
 )
 from transcriptx.web.sidebar_state import (
     SidebarSelectionResult,
     apply_sidebar_selection,
-    apply_transitional_sidebar_backfill,
 )
 
 
@@ -99,21 +100,8 @@ def test_apply_transcript_selection_context_updates_subject_tuple(monkeypatch) -
     assert ss["run_id"] == "run-2"
 
 
-def test_sidebar_noop_backfill_does_not_rewrite_canonical_context() -> None:
-    ss = {
-        "subject_type": "transcript",
-        "subject_id": "slug-1",
-        "run_id": "run-1",
-    }
-    apply_transitional_sidebar_backfill(ss, prioritize_view=True)
-    before = (ss["subject_type"], ss["subject_id"], ss["run_id"])
-    apply_transitional_sidebar_backfill(ss, prioritize_view=True)
-    after = (ss["subject_type"], ss["subject_id"], ss["run_id"])
-    assert before == after
-
-
 def test_page_prerequisite_access_uses_readiness_flags() -> None:
-    prereqs = {"Overview": PagePrerequisite("run_scoped", "home")}
+    prereqs = build_prerequisites()
     denied = evaluate_page_access(
         "Overview",
         prereqs,
@@ -151,31 +139,41 @@ def test_normalize_navigation_context_ignores_non_json_paths() -> None:
     assert "subject_id" not in ss
 
 
-def test_apply_transitional_sidebar_backfill_promotes_view_when_prioritize_toggles_true() -> (
-    None
-):
-    from transcriptx.web.state import (
-        TX_NAV_EXPANDER_VIEW,
-        TX_NAV_EXPANDER_WORKFLOW,
-        TX_NAV_PREV_SHOULD_PRIORITIZE_VIEW,
-        TX_NAV_SIDEBAR_SEEDED,
-    )
+def test_page_hydration_gate_follows_required_context_only() -> None:
+    assert page_requires_workspace_hydration("Home") is False
+    assert page_requires_workspace_hydration("Library") is False
+    assert page_requires_workspace_hydration("Search") is False
+    assert page_requires_workspace_hydration("Statistics") is False
+    assert page_requires_workspace_hydration("Settings") is False
+    assert page_requires_workspace_hydration("Charts") is True
+    assert page_requires_workspace_hydration("Overview") is True
+    assert page_requires_workspace_hydration("Transcript") is True
 
+
+def test_unknown_page_spec_is_non_hydrating() -> None:
+    spec = get_page_spec("Totally Unknown Page")
+    assert spec.required_context == "none"
+    assert page_requires_workspace_hydration("Totally Unknown Page") is False
+
+
+def test_build_prerequisites_matches_page_specs() -> None:
+    from transcriptx.web.navigation import PAGE_SPECS
+
+    prereqs = build_prerequisites()
+    for spec in PAGE_SPECS:
+        prereq = prereqs[spec.key]
+        assert prereq.required_context == spec.required_context
+        assert prereq.allowed_fallback == spec.allowed_fallback
+        assert prereq.may_mutate_context == spec.may_mutate_context
+
+
+def test_session_only_context_readiness_is_session_backed() -> None:
     ss = {
-        TX_NAV_SIDEBAR_SEEDED: True,
-        TX_NAV_PREV_SHOULD_PRIORITIZE_VIEW: False,
-        TX_NAV_EXPANDER_WORKFLOW: True,
-        TX_NAV_EXPANDER_VIEW: False,
+        "subject_type": "transcript",
+        "subject_id": "slug-1",
+        "run_id": "run-1",
     }
-    apply_transitional_sidebar_backfill(ss, prioritize_view=True)
-    assert ss[TX_NAV_EXPANDER_VIEW] is True
-    assert ss[TX_NAV_EXPANDER_WORKFLOW] is False
-
-
-def test_workspace_hydration_gate_prefers_explicit_request_and_run_scoped_pages() -> (
-    None
-):
-    assert should_hydrate_workspace_context("Home") is False
-    assert should_hydrate_workspace_context("Home", view_opened=True) is True
-    assert should_hydrate_workspace_context("Library", explicit_request=True) is True
-    assert should_hydrate_workspace_context("Charts") is True
+    readiness = session_only_context_readiness(ss)
+    assert readiness["subject_ready"] is True
+    assert readiness["run_scoped_ready"] is True
+    assert readiness["transcript_ready"] is True

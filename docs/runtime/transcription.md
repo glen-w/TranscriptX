@@ -52,7 +52,32 @@ Copy `docs/recipes/whisperx/whisperx.env.example` to `whisperx.env` and configur
 
 ### whispermlx-missing bulk script
 
-Install `scripts/whispermlx-missing.py` as `whispermlx-missing` (see script header). It processes MP3s in a source folder that lack matching JSON in a transcripts folder, using paths and env from config or CLI.
+Install `scripts/whispermlx-missing.py` as `whispermlx-missing` (see script header). It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
+
+**Local config (gitignored):** copy [`config/whispermlx-missing.example.json`](../config/whispermlx-missing.example.json) to `.transcriptx/whispermlx-missing.json` and set your paths. For standalone use outside the repo, pass `--config /path/to/config.json` or set `WHISPERMLX_MISSING_CONFIG`.
+
+**Config merge order:** portable repo defaults ← `TRANSCRIPTX_*` / `WHISPERMLX*` env ← local JSON ← CLI flags.
+
+**When the script will process**
+
+- `source` and `transcripts` are each set via **CLI**, **local JSON**, or **`TRANSCRIPTX_*` env** (not portable defaults alone).
+- A fresh clone with no local JSON and no env overrides will **not** auto-run batch transcription.
+
+**When it only saves or prints config**
+
+- `--show-config` — print effective settings; never runs whispermlx.
+- `--save-config` without meaningful paths — writes `.transcriptx/whispermlx-missing.json` and exits.
+- Normal run with portable defaults only — prints guidance; does not process.
+
+**Transcripts path semantics**
+
+| Source | Meaning |
+|--------|---------|
+| `TRANSCRIPTX_TRANSCRIPTS_DIR` env | Transcripts **base** directory; script appends `/originals` for batch output |
+| `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory (no `/originals` append; use `.../originals` explicitly if desired) |
+| `TRANSCRIPTX_RECORDINGS_DIR` env | Maps directly to `source` (recordings folder) |
+
+**`whisperx.env`** is used only for the whispermlx **subprocess** environment (`HF_TOKEN`, etc.), not for resolving config paths. Repo `.env` is loaded early (without overriding existing shell env) for `TRANSCRIPTX_*` path overrides — same pattern as Docker/native TranscriptX.
 
 ---
 

@@ -13,7 +13,7 @@ TranscriptX viewing pages are composed from **blocks** (reusable render units) a
 
 ## Track B (ship notes)
 
-- **Sidebar**: View expander uses Read / Summarise / Explore sections; **Statistics** is top-level nav.
+- **Sidebar**: View section uses static Read / Summarise / Explore headers; **Statistics** lives under View; workspace pickers hydrate only from `PageSpec.required_context`.
 - **Layout picker**: Overview and Insights expose `default` and `executive` layouts; `developer_debug` requires `show_debug_layouts` in session.
 - **Module metrics**: `module_metrics` block uses `SummaryService` for the sidebar-selected analysis module.
 - **Deep links** (``transcriptx.web.navigation``):

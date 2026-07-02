@@ -142,25 +142,21 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
 
 
 def test_app_workflow_menu_order_under_workflow() -> None:
+    from transcriptx.web.navigation import pages_in_section
+
+    workflow_keys = [spec.key for spec in pages_in_section("workflow")]
+    assert workflow_keys == [
+        "Transcribe Audio",
+        "Import Transcript",
+        "Speaker ID",
+        "Run Analysis",
+        "Batch Ops",
+        "Groups",
+    ]
+
     import transcriptx.web.sidebar as sidebar_mod
 
     source = Path(sidebar_mod.__file__).read_text(encoding="utf-8")
     workflow_start = source.index("tx_sidebar_workflow_nav")
-    transcribe_idx = source.index('_nav_button("Transcribe Audio", "Transcribe Audio")')
-    import_idx = source.index('_nav_button("Import Transcript", "Import Transcript")')
-    speaker_idx = source.index('_nav_button("Speaker ID", "Speaker Identification")')
-    run_analysis_idx = source.index('_nav_button("Run Analysis", "Run Analysis")')
-    batch_idx = source.index('_nav_button("Batch Ops", "Batch Analysis")')
-    groups_idx = source.index('_nav_button("Groups", "Groups")')
-    # Workflow items must stay inside the Workflow group, before the Tools group.
     tools_group_idx = source.index("tx_sidebar_tools_group")
-    assert (
-        workflow_start
-        < transcribe_idx
-        < import_idx
-        < speaker_idx
-        < run_analysis_idx
-        < batch_idx
-        < groups_idx
-        < tools_group_idx
-    )
+    assert workflow_start < tools_group_idx

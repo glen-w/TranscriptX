@@ -75,15 +75,22 @@ def render_transcribe_audio_page() -> None:
         "It skips stems that already have matching JSON in your transcripts folder."
     )
     st.code(
-        f"""# First-time setup (save paths, then run when folders exist)
+        """# First-time setup: copy config/whispermlx-missing.example.json to
+# .transcriptx/whispermlx-missing.json and edit paths (gitignored).
+cp config/whispermlx-missing.example.json .transcriptx/whispermlx-missing.json
+
+# Or save paths once from the CLI:
 whispermlx-missing \\
     --source /path/to/audio \\
-    --transcripts /path/to/transcripts \\
-    --env-file "{_ENV_FILE}" \\
+    --transcripts /path/to/transcripts/originals \\
+    --env-file whisperx.env \\
     --save-config
 
-# Normal run (uses saved config)
-whispermlx-missing""",
+# Normal run (uses .transcriptx/whispermlx-missing.json when run from repo)
+whispermlx-missing
+
+# Standalone / custom config path:
+whispermlx-missing --config /path/to/whispermlx-missing.json""",
         language="bash",
     )
     st.caption(

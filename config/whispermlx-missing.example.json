@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "source": "/path/to/recordings",
+  "transcripts": "/path/to/transcripts/originals",
+  "env_file": "whisperx.env",
+  "whispermlx": "",
+  "model": "large-v3",
+  "language": "en",
+  "diarize": true,
+  "output_format": "json",
+  "use_output_format_flag": true,
+  "clean_non_json": true,
+  "extra_whisper_args": [],
+  "pass_hf_token_arg": false,
+  "fuzzy_json_match": false,
+  "follow_output": true
+}

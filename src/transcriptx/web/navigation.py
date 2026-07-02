@@ -10,16 +10,23 @@ from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
 
+NavSection = Literal["primary", "workflow", "view", "tools", "settings"]
 RequiredContext = Literal["none", "subject", "run_scoped", "transcript_or_group"]
 FallbackBehavior = Literal["stay", "home", "overview", "library", "run_analysis"]
-_RUN_SCOPED_PAGES = {
-    "Overview",
-    "Charts",
-    "Insights",
-    "Data",
-    "Explorer",
-    "Transcript",
-}
+_HYDRATING_CONTEXTS: frozenset[RequiredContext] = frozenset(
+    {"subject", "run_scoped", "transcript_or_group"}
+)
+
+
+@dataclass(frozen=True)
+class PageSpec:
+    key: str
+    label: str
+    section: NavSection
+    subsection: str | None
+    required_context: RequiredContext
+    allowed_fallback: FallbackBehavior
+    may_mutate_context: bool = False
 
 
 @dataclass(frozen=True)
@@ -35,24 +42,159 @@ class PageAccessResult:
     help_text: str | None = None
 
 
-def should_hydrate_workspace_context(
-    page: str | None,
+def _spec(
+    key: str,
+    label: str,
+    section: NavSection,
     *,
-    view_opened: bool = False,
-    explicit_request: bool = False,
-) -> bool:
-    """
-    Central gate for workspace/session hydration.
+    subsection: str | None = None,
+    required_context: RequiredContext = "none",
+    allowed_fallback: FallbackBehavior = "stay",
+    may_mutate_context: bool = False,
+) -> PageSpec:
+    return PageSpec(
+        key=key,
+        label=label,
+        section=section,
+        subsection=subsection,
+        required_context=required_context,
+        allowed_fallback=allowed_fallback,
+        may_mutate_context=may_mutate_context,
+    )
 
-    First paint may always render shell, primary nav, and page skeletons. Only after
-    that should workspace-heavy data hydrate, either because the user explicitly
-    requested it or because the current page is run-scoped.
-    """
-    if explicit_request:
-        return True
-    if page in _RUN_SCOPED_PAGES:
-        return True
-    return view_opened
+
+PAGE_SPECS: tuple[PageSpec, ...] = (
+    _spec("Home", "Home", "primary"),
+    _spec("Transcribe Audio", "Transcribe Audio", "workflow", may_mutate_context=True),
+    _spec(
+        "Import Transcript", "Import Transcript", "workflow", may_mutate_context=True
+    ),
+    _spec(
+        "Speaker ID",
+        "Speaker Identification",
+        "workflow",
+        may_mutate_context=True,
+    ),
+    _spec("Run Analysis", "Run Analysis", "workflow", may_mutate_context=True),
+    _spec("Batch Ops", "Batch Analysis", "workflow", may_mutate_context=False),
+    _spec("Groups", "Groups", "workflow", may_mutate_context=True),
+    _spec("Library", "Library", "view", may_mutate_context=True),
+    _spec("Search", "Search", "view"),
+    _spec("Statistics", "Statistics", "view"),
+    _spec(
+        "Transcript",
+        "Transcript",
+        "view",
+        subsection="Read",
+        required_context="transcript_or_group",
+        allowed_fallback="home",
+        may_mutate_context=True,
+    ),
+    _spec(
+        "Overview",
+        "Overview",
+        "view",
+        subsection="Summarise",
+        required_context="run_scoped",
+        allowed_fallback="home",
+    ),
+    _spec(
+        "Insights",
+        "Insights",
+        "view",
+        subsection="Summarise",
+        required_context="run_scoped",
+        allowed_fallback="overview",
+    ),
+    _spec(
+        "Charts",
+        "Charts",
+        "view",
+        subsection="Explore",
+        required_context="run_scoped",
+        allowed_fallback="overview",
+    ),
+    _spec(
+        "Data",
+        "Data",
+        "view",
+        subsection="Explore",
+        required_context="run_scoped",
+        allowed_fallback="overview",
+    ),
+    _spec(
+        "Explorer",
+        "File List",
+        "view",
+        subsection="Explore",
+        required_context="run_scoped",
+        allowed_fallback="overview",
+    ),
+    _spec("Corrections Studio", "Corrections Studio", "tools"),
+    _spec("Audio Prep", "Audio Pre-processing", "tools"),
+    _spec("Audio Merge", "Audio Merge", "tools"),
+    _spec("Dashboard Builder", "Dashboard Builder", "tools"),
+    _spec("Settings", "Settings", "settings"),
+    _spec("Profiles", "Profiles", "settings"),
+    _spec("Diagnostics", "Diagnostics", "settings"),
+)
+
+_PAGE_SPECS_BY_KEY: dict[str, PageSpec] = {spec.key: spec for spec in PAGE_SPECS}
+
+
+def get_page_spec(page: str | None) -> PageSpec:
+    """Return registered page metadata, or a safe non-hydrating default for unknown keys."""
+    if page and page in _PAGE_SPECS_BY_KEY:
+        return _PAGE_SPECS_BY_KEY[page]
+    return PageSpec(
+        key=page or "Home",
+        label=page or "Home",
+        section="primary",
+        subsection=None,
+        required_context="none",
+        allowed_fallback="home",
+        may_mutate_context=False,
+    )
+
+
+def page_requires_workspace_hydration(page: str | None) -> bool:
+    """True when the active page needs sidebar workspace pickers / session discovery."""
+    return get_page_spec(page).required_context in _HYDRATING_CONTEXTS
+
+
+def pages_in_section(section: NavSection) -> list[PageSpec]:
+    """Ordered sidebar pages for a nav section."""
+    return [spec for spec in PAGE_SPECS if spec.section == section]
+
+
+def build_prerequisites() -> dict[str, PagePrerequisite]:
+    """Build router prerequisites from PageSpec (single source of truth)."""
+    return {
+        spec.key: PagePrerequisite(
+            required_context=spec.required_context,
+            allowed_fallback=spec.allowed_fallback,
+            may_mutate_context=spec.may_mutate_context,
+        )
+        for spec in PAGE_SPECS
+    }
+
+
+def session_only_context_readiness(session_state: dict[str, Any]) -> dict[str, bool]:
+    """Session-only readiness booleans without filesystem/subject resolution."""
+    subject_type = session_state.get("subject_type")
+    subject_id = session_state.get("subject_id")
+    run_id = session_state.get("run_id")
+    subject_ready = bool(subject_type in ("transcript", "group") and subject_id)
+    run_scoped_ready = bool(subject_ready and run_id)
+    transcript_ready = bool(
+        subject_ready
+        and (subject_type == "group" or (subject_type == "transcript" and bool(run_id)))
+    )
+    return {
+        "subject_ready": subject_ready,
+        "run_scoped_ready": run_scoped_ready,
+        "transcript_ready": transcript_ready,
+    }
 
 
 def _is_transcript_path(value: str | None) -> bool:
