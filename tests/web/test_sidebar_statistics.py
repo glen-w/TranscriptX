@@ -24,17 +24,17 @@ def test_statistics_required_context_is_none() -> None:
     assert spec.section == "view"
 
 
-def test_view_subsections_defined_in_page_registry() -> None:
+def test_view_pages_use_flat_nav_grouping() -> None:
     subsections = {
         spec.subsection
         for spec in PAGE_SPECS
         if spec.section == "view" and spec.subsection
     }
-    assert subsections == {"Read", "Summarise", "Explore"}
+    assert subsections == set()
 
 
 def test_sidebar_uses_registry_driven_view_sections() -> None:
     text = Path("src/transcriptx/web/sidebar.py").read_text(encoding="utf-8")
     assert "pages_in_section" in text
-    assert "_VIEW_SUBSECTION_ORDER" in text
     assert 'pages_in_section("view")' in text
+    assert "_VIEW_SUBSECTION_ORDER" not in text

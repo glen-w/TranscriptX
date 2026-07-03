@@ -29,10 +29,7 @@ except ImportError:
 from transcriptx.core.utils.logger import get_logger
 import transcriptx.web.blocks  # noqa: F401 — register built-in view blocks
 from transcriptx.web.components.context_bar import render_context_bar
-from transcriptx.web.navigation import (
-    normalize_navigation_context_from_session,
-    page_requires_workspace_hydration,
-)
+from transcriptx.web.navigation import page_requires_workspace_hydration
 from transcriptx.web.page_flash import consume_page_flash
 from transcriptx.web.page_modules.transcript import navigate_to_segment
 from transcriptx.web.perf import (
@@ -64,6 +61,7 @@ def _init_defaults() -> None:
     if st.session_state.get(PAGE_KEY) == "Configuration":
         st.session_state[PAGE_KEY] = "Settings"
         st.rerun()
+    st.session_state.pop("selected_transcript_path", None)
     st.session_state.setdefault("analysis_artifacts_version", 0)
     st.session_state.setdefault("analysis_run_in_progress", False)
 
@@ -93,8 +91,6 @@ def main() -> None:
             logger.warning(f"Failed to load session list: {exc}", exc_info=True)
             load_error = str(exc)
 
-    if should_hydrate:
-        normalize_navigation_context_from_session(st.session_state)
     current_page = st.session_state.get(PAGE_KEY, "Home")
     try:
         with section(

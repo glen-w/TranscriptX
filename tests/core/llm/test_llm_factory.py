@@ -47,6 +47,7 @@ def test_factory_default_model_and_base_url() -> None:
     cfg.llm.enabled = True
     cfg.llm.provider = "ollama"
     cfg.llm.base_url = "http://localhost:11434/"
+    cfg.llm.model = None
     client = get_llm_client(cfg)
     assert isinstance(client, OllamaClient)
     assert client.model == "qwen3:8b"

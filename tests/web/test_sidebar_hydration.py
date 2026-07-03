@@ -3,25 +3,18 @@ from __future__ import annotations
 import pytest
 
 from transcriptx.web.navigation import build_prerequisites
-from transcriptx.web.state import SELECTED_TRANSCRIPT_PATH
 from tests.web.streamlit_doubles import DummySidebarStreamlit
 
 _DummySidebarStreamlit = DummySidebarStreamlit
 _PREREQUISITES = build_prerequisites()
 
-_NO_HYDRATION_PAGES = (
+_HYDRATION_PAGES = (
     "Home",
     "Library",
     "Search",
-    "Settings",
-    "Profiles",
-    "Diagnostics",
     "Statistics",
+    "Settings",
     "Transcribe Audio",
-    "Import Transcript",
-)
-
-_HYDRATION_PAGES = (
     "Charts",
     "Overview",
     "Transcript",
@@ -37,7 +30,6 @@ def _canonical_context() -> dict[str, object]:
         "subject_type": "transcript",
         "subject_id": "slug-keep",
         "run_id": "run-keep",
-        SELECTED_TRANSCRIPT_PATH: "/tmp/keep.json",
     }
 
 
@@ -72,29 +64,8 @@ def _discovery_mocks(monkeypatch, mod) -> dict[str, int]:
     return calls
 
 
-@pytest.mark.parametrize("page", _NO_HYDRATION_PAGES)
-def test_lightweight_pages_do_not_hydrate_workspace(monkeypatch, page: str) -> None:
-    import transcriptx.web.sidebar as mod
-
-    _DummySidebarStreamlit.session_state = _seed_sidebar_state(page)
-    _DummySidebarStreamlit.button_presses = set()
-    _patch_sidebar_basics(monkeypatch, mod)
-    calls = _discovery_mocks(monkeypatch, mod)
-
-    before = {**_DummySidebarStreamlit.session_state}
-    mod.render_sidebar(
-        current_page=page,
-        corrections_studio_available=False,
-        prerequisites=_PREREQUISITES,
-    )
-
-    assert calls == {"transcripts": 0, "runs": 0, "subject": 0, "groups": 0}
-    for key in ("subject_type", "subject_id", "run_id", SELECTED_TRANSCRIPT_PATH):
-        assert _DummySidebarStreamlit.session_state.get(key) == before.get(key)
-
-
 @pytest.mark.parametrize("page", _HYDRATION_PAGES)
-def test_context_pages_hydrate_workspace(monkeypatch, page: str) -> None:
+def test_sidebar_always_hydrates_workspace(monkeypatch, page: str) -> None:
     import transcriptx.web.sidebar as mod
 
     _DummySidebarStreamlit.session_state = _seed_sidebar_state(page)
@@ -140,7 +111,32 @@ def test_home_preserves_canonical_context(monkeypatch) -> None:
     }
     _DummySidebarStreamlit.button_presses = set()
     _patch_sidebar_basics(monkeypatch, mod)
-    _discovery_mocks(monkeypatch, mod)
+    fake_scope = type("Scope", (), {})()
+    fake_subject = type(
+        "ResolvedSubject",
+        (),
+        {
+            "scope": fake_scope,
+            "subject_id": "slug-keep",
+            "subject_type": "transcript",
+        },
+    )()
+    monkeypatch.setattr(
+        "transcriptx.web.sidebar_options.get_transcript_dropdown_options",
+        lambda: (["slug-keep"], lambda value: value),
+    )
+    monkeypatch.setattr(
+        mod.SubjectService,
+        "resolve_current_subject",
+        lambda ss: fake_subject if ss.get("subject_id") == "slug-keep" else None,
+    )
+    monkeypatch.setattr(
+        mod.RunIndex,
+        "list_runs",
+        lambda *_args, **_kwargs: [
+            type("Run", (), {"run_id": "run-keep"})(),
+        ],
+    )
 
     before = {k: _DummySidebarStreamlit.session_state[k] for k in _canonical_context()}
     mod.render_sidebar(
@@ -152,7 +148,7 @@ def test_home_preserves_canonical_context(monkeypatch) -> None:
     assert before == after
 
 
-def test_unknown_page_does_not_hydrate_workspace(monkeypatch) -> None:
+def test_unknown_page_hydrates_workspace(monkeypatch) -> None:
     import transcriptx.web.sidebar as mod
 
     _DummySidebarStreamlit.session_state = _seed_sidebar_state("Not A Real Page")
@@ -166,10 +162,11 @@ def test_unknown_page_does_not_hydrate_workspace(monkeypatch) -> None:
         prerequisites=_PREREQUISITES,
     )
 
-    assert calls == {"transcripts": 0, "runs": 0, "subject": 0, "groups": 0}
+    assert calls["transcripts"] == 1
+    assert calls["subject"] >= 1
 
 
-def test_home_does_not_resolve_subject_for_nav_access(monkeypatch) -> None:
+def test_home_resolves_subject_for_nav_access(monkeypatch) -> None:
     import transcriptx.web.sidebar as mod
 
     _DummySidebarStreamlit.session_state = _seed_sidebar_state("Home")
@@ -183,4 +180,4 @@ def test_home_does_not_resolve_subject_for_nav_access(monkeypatch) -> None:
         prerequisites=_PREREQUISITES,
     )
 
-    assert calls["subject"] == 0
+    assert calls["subject"] >= 1

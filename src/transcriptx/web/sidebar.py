@@ -7,10 +7,9 @@ import streamlit as st
 from transcriptx.web.navigation import (
     NavSection,
     PageSpec,
+    context_readiness,
     evaluate_page_access,
-    page_requires_workspace_hydration,
     pages_in_section,
-    session_only_context_readiness,
 )
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.sidebar_hydration import hydrate_sidebar_state
@@ -27,7 +26,6 @@ from transcriptx.web.sidebar_workspace import (
 )
 from transcriptx.web.state import PAGE_KEY, RUN_ID_KEY, SUBJECT_ID_KEY
 
-_VIEW_SUBSECTION_ORDER = ("Read", "Summarise", "Explore")
 _SECTION_TITLES: dict[NavSection, str] = {
     "workflow": "Workflow",
     "view": "View",
@@ -192,14 +190,8 @@ def render_sidebar(
     corrections_studio_available: bool,
     prerequisites: dict,
 ) -> None:
-    """Sidebar: static grouped nav and page-gated workspace pickers."""
+    """Sidebar: static grouped nav with always-visible workspace pickers."""
     session_state = st.session_state
-    should_load_workspace = page_requires_workspace_hydration(current_page)
-    readiness = (
-        session_only_context_readiness(session_state)
-        if not should_load_workspace
-        else None
-    )
 
     def _apply_navigation(page_key: str) -> None:
         session_state[PAGE_KEY] = page_key
@@ -237,14 +229,9 @@ def render_sidebar(
     def _render_nav_spec(spec: PageSpec, *, key_suffix: str = "") -> None:
         if spec.key == "Corrections Studio" and not corrections_studio_available:
             return
-        if readiness is not None:
-            access = evaluate_page_access(spec.key, prerequisites, readiness)
-        else:
-            from transcriptx.web.navigation import context_readiness
-
-            access = evaluate_page_access(
-                spec.key, prerequisites, context_readiness(session_state)
-            )
+        access = evaluate_page_access(
+            spec.key, prerequisites, context_readiness(session_state)
+        )
         _nav_button(
             spec,
             key_suffix=key_suffix,
@@ -266,23 +253,16 @@ def render_sidebar(
 
     _nav_section(_SECTION_TITLES["view"])
     st.markdown('<div class="nav-section-items">', unsafe_allow_html=True)
-    for spec in pages_in_section("view"):
-        if spec.subsection is not None:
-            continue
+    view_specs = pages_in_section("view")
+    browse_specs = [s for s in view_specs if s.required_context == "none"]
+    context_page_specs = [s for s in view_specs if s.required_context != "none"]
+    for spec in browse_specs:
         _render_nav_spec(spec, key_suffix="_view")
 
-    if should_load_workspace:
-        _nav_section("Context")
-        _render_workspace_pickers(session_state)
+    _render_workspace_pickers(session_state)
 
-    view_specs = pages_in_section("view")
-    for subsection in _VIEW_SUBSECTION_ORDER:
-        subsection_specs = [s for s in view_specs if s.subsection == subsection]
-        if not subsection_specs:
-            continue
-        _nav_section(subsection)
-        for spec in subsection_specs:
-            _render_nav_spec(spec, key_suffix="_subject")
+    for spec in context_page_specs:
+        _render_nav_spec(spec, key_suffix="_subject")
     st.markdown("</div>", unsafe_allow_html=True)
 
     # tx_sidebar_tools_group (test anchor: workflow nav must appear above this)

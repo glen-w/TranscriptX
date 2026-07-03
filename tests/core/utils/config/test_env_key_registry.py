@@ -149,6 +149,22 @@ def test_registry_completeness_from_env_example() -> None:
 
 
 @pytest.mark.unit
+def test_env_example_documents_all_registry_keys() -> None:
+    env_example = (Path(__file__).resolve().parents[4] / ".env.example").read_text(
+        encoding="utf-8"
+    )
+    env_keys = {
+        line.split("=", 1)[0].strip()
+        for line in env_example.splitlines()
+        if line.strip().startswith("TRANSCRIPTX_")
+    }
+    missing = sorted(
+        key.env_name for key in ENV_KEY_REGISTRY if key.env_name not in env_keys
+    )
+    assert missing == []
+
+
+@pytest.mark.unit
 def test_shim_modules_do_not_read_transcriptx_env_directly() -> None:
     root = Path(__file__).resolve().parents[4]
     shim_files = (

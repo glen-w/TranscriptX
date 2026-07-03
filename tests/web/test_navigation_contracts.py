@@ -5,30 +5,25 @@ from pathlib import Path
 from transcriptx.app.models.metadata import TranscriptMetadata
 from transcriptx.web.navigation import (
     apply_library_rename_navigation,
-    apply_transcript_selection_context,
     build_prerequisites,
     consume_library_transcript_nav,
     evaluate_page_access,
     get_page_spec,
     library_transcript_index,
-    normalize_navigation_context_from_session,
     page_requires_workspace_hydration,
-    session_only_context_readiness,
 )
+from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.sidebar_state import (
     SidebarSelectionResult,
     apply_sidebar_selection,
 )
+from transcriptx.web.state import LIBRARY_NAV_TRANSCRIPT_PATH
 
 
-def test_library_rename_navigation_preselects_library_selectbox(
+def test_library_rename_navigation_sets_canonical_context_and_one_shot_nav(
     monkeypatch, tmp_path
 ) -> None:
     from transcriptx.web import navigation as nav_mod
-    from transcriptx.web.state import (
-        LIBRARY_NAV_TRANSCRIPT_PATH,
-        SELECTED_TRANSCRIPT_PATH,
-    )
 
     transcript = tmp_path / "interview.json"
     transcript.write_text("{}", encoding="utf-8")
@@ -40,21 +35,50 @@ def test_library_rename_navigation_preselects_library_selectbox(
     ]
 
     ss: dict[str, object] = {}
-    monkeypatch.setattr(nav_mod, "cached_list_available_sessions", lambda: [])
     monkeypatch.setattr(
-        nav_mod.FileService,
-        "resolve_session_for_transcript_path",
-        lambda _p, _s: ("slug-1", "run-1"),
+        nav_mod,
+        "make_session_path_resolver",
+        lambda: (lambda _p: ("slug-1", "run-1")),
     )
 
     apply_library_rename_navigation(ss, transcript)
 
-    assert ss[SELECTED_TRANSCRIPT_PATH] == str(transcript.resolve())
+    assert ss["subject_type"] == "transcript"
+    assert ss["subject_id"] == "slug-1"
+    assert ss["run_id"] == "run-1"
     assert ss[LIBRARY_NAV_TRANSCRIPT_PATH] == str(transcript.resolve())
+    assert "selected_transcript_path" not in ss
 
     consume_library_transcript_nav(ss, transcripts)
     assert LIBRARY_NAV_TRANSCRIPT_PATH not in ss
     assert ss["library_transcript_select"] == 2
+
+
+def test_library_nav_path_is_one_shot_and_does_not_write_legacy_path(
+    monkeypatch, tmp_path
+) -> None:
+    from transcriptx.web import navigation as nav_mod
+
+    transcript = tmp_path / "call.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict[str, object] = {
+        LIBRARY_NAV_TRANSCRIPT_PATH: str(transcript.resolve()),
+    }
+    monkeypatch.setattr(
+        nav_mod,
+        "make_session_path_resolver",
+        lambda: (lambda _p: None),
+    )
+
+    SubjectService.set_transcript_context_from_path(ss, transcript)
+    consume_library_transcript_nav(
+        ss,
+        [TranscriptMetadata(path=transcript, base_name="call")],
+    )
+
+    assert LIBRARY_NAV_TRANSCRIPT_PATH not in ss
+    assert ss["subject_type"] == "transcript"
+    assert "selected_transcript_path" not in ss
 
 
 def test_library_transcript_index_matches_resolved_paths(tmp_path) -> None:
@@ -66,35 +90,20 @@ def test_library_transcript_index_matches_resolved_paths(tmp_path) -> None:
     assert library_transcript_index([meta], Path("missing.json")) == 0
 
 
-def test_legacy_transcript_path_normalizes_to_canonical_context(monkeypatch) -> None:
-    from transcriptx.web import navigation as nav_mod
-
-    ss = {"selected_transcript_path": "/tmp/a.json"}
-    monkeypatch.setattr(nav_mod, "cached_list_available_sessions", lambda: [])
-    monkeypatch.setattr(
-        nav_mod.FileService,
-        "resolve_session_for_transcript_path",
-        lambda _p, _s: ("slug-1", "run-9"),
-    )
-    changed = normalize_navigation_context_from_session(ss)
-    assert changed is True
-    assert ss["subject_type"] == "transcript"
-    assert ss["subject_id"] == "slug-1"
-    assert ss["run_id"] == "run-9"
-
-
-def test_apply_transcript_selection_context_updates_subject_tuple(monkeypatch) -> None:
-    from transcriptx.web import navigation as nav_mod
-
+def test_set_transcript_context_from_path_updates_subject_tuple(monkeypatch) -> None:
     ss: dict[str, str] = {}
-    monkeypatch.setattr(nav_mod, "cached_list_available_sessions", lambda: [])
     monkeypatch.setattr(
-        nav_mod.FileService,
-        "resolve_session_for_transcript_path",
-        lambda _p, _s: ("slug-2", "run-2"),
+        "transcriptx.web.services.transcript_context_resolver.load_index",
+        lambda: {"transcripts": {}},
     )
-    apply_transcript_selection_context(ss, "/tmp/test.json")
-    assert ss["selected_transcript_path"].endswith("test.json")
+
+    SubjectService.set_transcript_context_from_path(
+        ss,
+        "/tmp/test.json",
+        session_resolver=lambda _p: ("slug-2", "run-2"),
+    )
+
+    assert "selected_transcript_path" not in ss
     assert ss["subject_type"] == "transcript"
     assert ss["subject_id"] == "slug-2"
     assert ss["run_id"] == "run-2"
@@ -131,14 +140,6 @@ def test_sidebar_selection_result_updates_context() -> None:
     assert ss["run_id"] == "run-7"
 
 
-def test_normalize_navigation_context_ignores_non_json_paths() -> None:
-    ss = {"selected_transcript_path": "/tmp/not_a_transcript.txt"}
-    changed = normalize_navigation_context_from_session(ss)
-    assert changed is False
-    assert "subject_type" not in ss
-    assert "subject_id" not in ss
-
-
 def test_page_hydration_gate_follows_required_context_only() -> None:
     assert page_requires_workspace_hydration("Home") is False
     assert page_requires_workspace_hydration("Library") is False
@@ -165,15 +166,3 @@ def test_build_prerequisites_matches_page_specs() -> None:
         assert prereq.required_context == spec.required_context
         assert prereq.allowed_fallback == spec.allowed_fallback
         assert prereq.may_mutate_context == spec.may_mutate_context
-
-
-def test_session_only_context_readiness_is_session_backed() -> None:
-    ss = {
-        "subject_type": "transcript",
-        "subject_id": "slug-1",
-        "run_id": "run-1",
-    }
-    readiness = session_only_context_readiness(ss)
-    assert readiness["subject_ready"] is True
-    assert readiness["run_scoped_ready"] is True
-    assert readiness["transcript_ready"] is True

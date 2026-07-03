@@ -310,6 +310,9 @@ def build_output_manifest(
         if isinstance(meta, dict) and "scope" in meta:
             scope = meta.get("scope")
             speaker = meta.get("speaker") if scope == "speaker" else None
+            if scope == "speaker" and not speaker:
+                _, path_speaker = _infer_scope_and_speaker(parts)
+                speaker = path_speaker
         else:
             scope, speaker = _infer_scope_and_speaker(parts)
         if isinstance(meta, dict) and "subview" in meta:

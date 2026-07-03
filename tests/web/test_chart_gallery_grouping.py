@@ -8,6 +8,7 @@ from transcriptx.web.services.chart_view_model_service import (
     ChartGalleryFamily,
     group_charts_into_families,
     infer_session_slice_from_title,
+    infer_speaker_from_chart_path,
 )
 
 
@@ -204,6 +205,37 @@ def test_infer_session_slice_from_title():
     assert infer_session_slice_from_title("session_a: Chart Title") == "session_a"
     assert infer_session_slice_from_title("No Prefix Title") is None
     assert infer_session_slice_from_title(None) is None
+
+
+def test_tfidf_wordcloud_slice_uses_path_speaker_not_filename_title():
+    viz_id = "wordcloud.wordcloud.speaker.tfidf"
+    art = _artifact(
+        id="ana-tfidf",
+        viz_id=viz_id,
+        kind="chart_static",
+        module="wordclouds",
+        scope="speaker",
+        speaker=None,
+        rel_path="wordclouds/charts/speakers/Ana/static/tfidf/tfidf.png",
+        title="Tfidf",
+        meta={"viz_id": viz_id, "scope": "speaker"},
+    )
+    families = group_charts_into_families([art])
+    assert len(families) == 1
+    assert families[0].key == viz_id
+    assert len(families[0].slices) == 1
+    assert families[0].slices[0].key == "Ana"
+    assert families[0].slices[0].label == "Ana"
+
+
+def test_infer_speaker_from_chart_path():
+    assert (
+        infer_speaker_from_chart_path(
+            "wordclouds/charts/speakers/Ana/static/tfidf/tfidf.png"
+        )
+        == "Ana"
+    )
+    assert infer_speaker_from_chart_path("wordclouds/charts/global/static/tfidf/tfidf-ALL.png") is None
 
 
 def test_member_session_title_prefix_fallback():

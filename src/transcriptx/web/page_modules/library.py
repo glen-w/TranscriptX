@@ -29,13 +29,12 @@ from transcriptx.web.components.rename_form import render_transcript_rename_form
 from transcriptx.web.perf import instrument_cached_call
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
-    SELECTED_TRANSCRIPT_PATH,
 )
 from transcriptx.web.navigation import (
-    apply_transcript_selection_context,
     consume_library_transcript_nav,
     library_transcript_index,
 )
+from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.utils.text_utils import format_duration_display_from_config
 
 
@@ -147,9 +146,9 @@ def _library_browser_fragment(transcripts: list) -> None:
     st.divider()
     st.subheader("Selected Transcript")
     consume_library_transcript_nav(st.session_state, transcripts)
-    selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
+    current_path = SubjectService.current_transcript_path(st.session_state)
     default_idx = (
-        library_transcript_index(transcripts, selected_path) if selected_path else 0
+        library_transcript_index(transcripts, current_path) if current_path else 0
     )
     selected_idx = st.selectbox(
         "Select transcript",
@@ -171,7 +170,11 @@ def _library_browser_fragment(transcripts: list) -> None:
         return
 
     selected = transcripts[selected_idx - 1]
-    apply_transcript_selection_context(st.session_state, str(selected.path))
+    SubjectService.set_transcript_context_from_path(
+        st.session_state,
+        selected.path,
+        linked_run_dirs=selected.linked_run_dirs,
+    )
     st.caption(f"Path: {selected.path}")
     st.caption(
         f"Duration: {format_duration_display_from_config(selected.duration_seconds)}"

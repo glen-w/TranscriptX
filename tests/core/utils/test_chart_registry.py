@@ -344,6 +344,24 @@ def test_matcher_falls_back_to_path():
     assert chart_def.match.matches(artifact, chart_def) is True
 
 
+def test_matcher_falls_back_to_path_when_viz_id_is_legacy_derived():
+    chart_def = get_chart_definition("wordcloud.wordcloud.speaker.tfidf")
+    assert chart_def is not None
+    artifact = FakeArtifact(
+        id="speaker-tfidf",
+        kind="chart_static",
+        module="wordclouds",
+        scope="speaker",
+        speaker="Ana",
+        rel_path="wordclouds/charts/speakers/Ana/static/tfidf/tfidf.png",
+        meta={"viz_id": "wordclouds.tfidf.speaker"},
+    )
+    assert chart_def.match.matches(artifact, chart_def) is True
+    cd = find_chart_definition_for_artifact(artifact)
+    assert cd is not None
+    assert cd.viz_id == "wordcloud.wordcloud.speaker.tfidf"
+
+
 def test_find_chart_definition_for_artifact_prefers_viz_id():
     """When both viz_id and path could match, the viz_id lookup wins."""
     artifact = FakeArtifact(

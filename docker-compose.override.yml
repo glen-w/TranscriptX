@@ -5,6 +5,7 @@
 # mounts as the base file but drop the `:ro` flag on transcripts so the app can
 # write `.speaker_map.json` sidecars next to transcript JSON files.
 #
+# Mount ./src so sidebar and other web UI edits apply without rebuilding the image.
 # For production-like read-only transcripts, use only docker-compose.yml (or delete
 # this file) so /mnt/transcripts stays :ro.
 #
@@ -18,6 +19,7 @@ services:
     volumes:
       - ./data:/data
       - transcriptx_cache:/home/transcriptx/.cache
+      - ./src/transcriptx:/opt/venv/lib/python3.10/site-packages/transcriptx
       - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts
       - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
       - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings

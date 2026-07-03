@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
+from transcriptx.web.services.transcript_context_resolver import paths_match, tolerant_resolve
 
 NavSection = Literal["primary", "workflow", "view", "tools", "settings"]
 RequiredContext = Literal["none", "subject", "run_scoped", "transcript_or_group"]
@@ -85,7 +85,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Transcript",
         "Transcript",
         "view",
-        subsection="Read",
         required_context="transcript_or_group",
         allowed_fallback="home",
         may_mutate_context=True,
@@ -94,7 +93,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Overview",
         "Overview",
         "view",
-        subsection="Summarise",
         required_context="run_scoped",
         allowed_fallback="home",
     ),
@@ -102,7 +100,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Insights",
         "Insights",
         "view",
-        subsection="Summarise",
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
@@ -110,7 +107,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Charts",
         "Charts",
         "view",
-        subsection="Explore",
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
@@ -118,7 +114,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Data",
         "Data",
         "view",
-        subsection="Explore",
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
@@ -126,7 +121,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Explorer",
         "File List",
         "view",
-        subsection="Explore",
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
@@ -179,75 +173,24 @@ def build_prerequisites() -> dict[str, PagePrerequisite]:
     }
 
 
-def session_only_context_readiness(session_state: dict[str, Any]) -> dict[str, bool]:
-    """Session-only readiness booleans without filesystem/subject resolution."""
-    subject_type = session_state.get("subject_type")
-    subject_id = session_state.get("subject_id")
-    run_id = session_state.get("run_id")
-    subject_ready = bool(subject_type in ("transcript", "group") and subject_id)
-    run_scoped_ready = bool(subject_ready and run_id)
-    transcript_ready = bool(
-        subject_ready
-        and (subject_type == "group" or (subject_type == "transcript" and bool(run_id)))
-    )
-    return {
-        "subject_ready": subject_ready,
-        "run_scoped_ready": run_scoped_ready,
-        "transcript_ready": transcript_ready,
-    }
+def make_session_path_resolver():
+    """Build an injected session resolver using cached session listing."""
+    from transcriptx.web.cache_helpers import cached_list_available_sessions
 
-
-def _is_transcript_path(value: str | None) -> bool:
-    if not value:
-        return False
-    try:
-        resolved = Path(value).expanduser().resolve()
-    except Exception:
-        return False
-    return resolved.suffix.lower() == ".json"
-
-
-def normalize_navigation_context_from_session(session_state: dict[str, Any]) -> bool:
-    """
-    Transitional one-way shim: derive canonical subject context from legacy transcript path.
-
-    Returns True when canonical context was updated.
-    """
-    if session_state.get("subject_type") in (
-        "transcript",
-        "group",
-    ) and session_state.get("subject_id"):
-        return False
-    selected_path = session_state.get("selected_transcript_path")
-    if not _is_transcript_path(selected_path):
-        return False
-    selected_path = str(Path(selected_path).expanduser().resolve())
     sessions = cached_list_available_sessions()
-    resolved = FileService.resolve_session_for_transcript_path(selected_path, sessions)
-    session_state["subject_type"] = "transcript"
-    if resolved:
-        slug, run_id = resolved
-        session_state["subject_id"] = slug
-        if not session_state.get("run_id"):
-            session_state["run_id"] = run_id
-    else:
-        session_state["subject_id"] = selected_path
-    return True
+
+    def _resolve(path: str) -> tuple[str, str] | None:
+        return FileService.resolve_session_for_transcript_path(path, sessions)
+
+    return _resolve
 
 
 def library_transcript_index(transcripts: list, transcript_path: str | Path) -> int:
     """Return 1-based Library selectbox index, or 0 when transcript is not listed."""
-    try:
-        target = str(Path(transcript_path).expanduser().resolve())
-    except (OSError, ValueError):
-        target = str(transcript_path)
+    target = tolerant_resolve(transcript_path)
     for i, meta in enumerate(transcripts):
-        try:
-            if str(Path(meta.path).resolve()) == target:
-                return i + 1
-        except (OSError, ValueError):
-            if str(meta.path) == target:
-                return i + 1
+        if paths_match(meta.path, target):
+            return i + 1
     return 0
 
 
@@ -296,12 +239,12 @@ def apply_library_rename_navigation(
     """
     from transcriptx.web.state import LIBRARY_NAV_TRANSCRIPT_PATH
 
-    apply_transcript_selection_context(session_state, str(transcript_path))
-    try:
-        normalized = str(Path(transcript_path).expanduser().resolve())
-    except (OSError, ValueError):
-        normalized = str(transcript_path)
-    session_state[LIBRARY_NAV_TRANSCRIPT_PATH] = normalized
+    SubjectService.set_transcript_context_from_path(
+        session_state,
+        transcript_path,
+        session_resolver=make_session_path_resolver(),
+    )
+    session_state[LIBRARY_NAV_TRANSCRIPT_PATH] = tolerant_resolve(transcript_path)
 
 
 def consume_library_transcript_nav(
@@ -319,27 +262,6 @@ def consume_library_transcript_nav(
     idx = library_transcript_index(transcripts, nav_path)
     if idx > 0:
         session_state[library_select_key] = idx
-
-
-def apply_transcript_selection_context(
-    session_state: dict[str, Any], transcript_path: str
-) -> None:
-    """Canonical entry-point helper for pages selecting a transcript."""
-    try:
-        normalized_path = str(Path(transcript_path).expanduser().resolve())
-    except Exception:
-        normalized_path = transcript_path
-    session_state["selected_transcript_path"] = normalized_path
-    sessions = cached_list_available_sessions()
-    resolved = FileService.resolve_session_for_transcript_path(
-        normalized_path, sessions
-    )
-    session_state["subject_type"] = "transcript"
-    if resolved:
-        session_state["subject_id"] = resolved[0]
-        session_state["run_id"] = resolved[1]
-    else:
-        session_state["subject_id"] = normalized_path
 
 
 def context_readiness(session_state: dict[str, Any]) -> dict[str, bool]:

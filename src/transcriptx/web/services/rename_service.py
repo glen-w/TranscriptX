@@ -18,7 +18,7 @@ from transcriptx.core.utils.processing_state import load_processing_state
 from transcriptx.core.utils.slug_manager import update_index_after_transcript_rename
 from transcriptx.web.cache_helpers import clear_rename_related_caches
 from transcriptx.web.services.recordings_service import RecordingsService
-from transcriptx.web.state import IMPORT_LAST_TRANSCRIPT_PATH, SELECTED_TRANSCRIPT_PATH
+from transcriptx.web.state import IMPORT_LAST_TRANSCRIPT_PATH
 
 _INVALID_NAME_CHARS = {"/", "\\", ":", "*", "?", '"', "<", ">", "|"}
 _KNOWN_EXTENSIONS = {
@@ -250,10 +250,6 @@ class RenameService:
         new_a = result.new_audio_path
         old_slug = result.old_slug
         new_slug = result.new_slug
-
-        selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
-        if RenameService._paths_equal(selected_path, old_t) and new_t:
-            st.session_state[SELECTED_TRANSCRIPT_PATH] = new_t
 
         subject_id = st.session_state.get("subject_id")
         if subject_id is not None:

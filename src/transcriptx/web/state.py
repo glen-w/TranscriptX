@@ -15,7 +15,6 @@ SUBJECT_TYPE_KEY = "subject_type"
 SUBJECT_ID_KEY = "subject_id"
 RUN_ID_KEY = "run_id"
 NAV_REQUEST_KEY = "nav_request"
-SELECTED_TRANSCRIPT_PATH = "selected_transcript_path"
 # One-shot: Home (etc.) sets this before navigating to Library rename workflow.
 LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
@@ -70,13 +69,6 @@ def set_current_subject_context(
     st.session_state[SUBJECT_TYPE_KEY] = subject_type
     st.session_state[SUBJECT_ID_KEY] = subject_id
     st.session_state[RUN_ID_KEY] = run_id
-
-
-def set_selected_transcript_path(path: str | None) -> None:
-    """Set legacy transcript path key while migration to canonical context is in progress."""
-    import streamlit as st
-
-    st.session_state[SELECTED_TRANSCRIPT_PATH] = path
 
 
 def set_page_flash(kind: FlashKind, message: str) -> None:

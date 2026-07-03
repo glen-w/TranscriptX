@@ -117,7 +117,11 @@ def test_library_detail_toggle_enriches_selected_transcript_only(monkeypatch) ->
                 "has_resolvable", audio_calls["has_resolvable"] + 1
             ),
         )
-    monkeypatch.setattr(mod, "apply_transcript_selection_context", lambda *_args: None)
+    monkeypatch.setattr(
+        mod.SubjectService,
+        "set_transcript_context_from_path",
+        lambda *_args, **_kwargs: None,
+    )
     monkeypatch.setattr(
         mod,
         "_library_browser_fragment",

@@ -19,7 +19,6 @@ from transcriptx.web.components.page_shell import render_page_help, render_page_
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
-    SELECTED_TRANSCRIPT_PATH,
     set_page_flash,
     try_page_toast,
 )
@@ -40,7 +39,8 @@ from transcriptx.web.services.group_service import GroupService
 from transcriptx.web.transcript_option_format import (
     format_transcript_option_with_speaker_status,
 )
-from transcriptx.web.navigation import apply_transcript_selection_context
+from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.services.subject_service import SubjectService
 
 _RUN_ANALYSIS_HELP = (
     "**Quick** uses a lighter preset; **full** lets you pick a profile. "
@@ -310,10 +310,9 @@ def render_run_analysis_page() -> None:
             )
             transcript_path = None
         else:
-            selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
-            default_idx = 0
-            if selected_path and selected_path in transcript_options:
-                default_idx = transcript_options.index(selected_path) + 1
+            default_idx = SubjectService.index_in_path_options(
+                st.session_state, transcript_options
+            )
 
             transcript_choice = st.selectbox(
                 "Transcript",
@@ -336,8 +335,10 @@ def render_run_analysis_page() -> None:
                 else None
             )
             if transcript_path is not None:
-                apply_transcript_selection_context(
-                    st.session_state, str(transcript_path)
+                SubjectService.set_transcript_context_from_path(
+                    st.session_state,
+                    transcript_path,
+                    session_resolver=make_session_path_resolver(),
                 )
     else:
         groups = cached_list_groups()

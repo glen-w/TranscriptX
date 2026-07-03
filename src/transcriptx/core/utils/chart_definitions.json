@@ -2301,7 +2301,7 @@
     "match": {
       "by_viz_id": "wordcloud.wordcloud.speaker.basic",
       "by_artifact_key_prefix": "wordclouds/charts/speakers/",
-      "by_chart_slug_regex": "/wordcloud\\\\.(png|html)$",
+      "by_chart_slug_regex": "/wordcloud\\.(png|html)$",
       "by_filename_glob": null
     },
     "description": "Word cloud of a single speaker's most frequent words, with stopwords removed. Larger words were said more often by that speaker. One cloud per speaker.",
@@ -2322,7 +2322,7 @@
     "match": {
       "by_viz_id": "wordcloud.wordcloud.global.basic",
       "by_artifact_key_prefix": "wordclouds/charts/",
-      "by_chart_slug_regex": "_wordcloud\\\\.(png|html)$",
+      "by_chart_slug_regex": "_wordcloud\\.(png|html)$",
       "by_filename_glob": null
     },
     "description": "Word cloud of the most frequent words across all speakers, with stopwords removed. Larger words appear more often in the conversation.",
@@ -2385,7 +2385,7 @@
     "match": {
       "by_viz_id": "wordcloud.wordcloud.speaker.tfidf",
       "by_artifact_key_prefix": "wordclouds/charts/speakers/",
-      "by_chart_slug_regex": "/tfidf\\\\.(png|html)$",
+      "by_chart_slug_regex": "/tfidf\\.(png|html)$",
       "by_filename_glob": null
     },
     "description": "Word cloud of a single speaker's most distinctive words by TF-IDF, which highlights words characteristic of that speaker rather than merely frequent. One cloud per speaker.",

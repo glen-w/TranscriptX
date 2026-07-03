@@ -110,7 +110,6 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
             calls["recordings"] += 1
 
     DummyRenameStreamlit.session_state = {
-        "selected_transcript_path": "/tmp/old.json",
         "subject_id": "/tmp/old.json",
         "run_id": "run_1",
         "audio_prep_selected_file": "/tmp/old.mp3",
@@ -144,10 +143,7 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     )
 
     assert calls == {"listing_caches": 1, "recordings": 1}
-    assert (
-        DummyRenameStreamlit.session_state["selected_transcript_path"]
-        == "/tmp/new.json"
-    )
+    assert "selected_transcript_path" not in DummyRenameStreamlit.session_state
     assert DummyRenameStreamlit.session_state["subject_id"] == "/tmp/new.json"
     assert DummyRenameStreamlit.session_state["run_id"] is None
     assert (
@@ -188,7 +184,6 @@ def test_after_rename_patches_slug_subject_and_library_select(
             pass
 
     DummyRenameStreamlit.session_state = {
-        "selected_transcript_path": old_t,
         "subject_id": "old_name",
         "run_id": "run_1",
         "library_transcript_select": 0,
@@ -215,7 +210,7 @@ def test_after_rename_patches_slug_subject_and_library_select(
     )
 
     assert calls["caches"] == 1
-    assert DummyRenameStreamlit.session_state["selected_transcript_path"] == new_t
+    assert "selected_transcript_path" not in DummyRenameStreamlit.session_state
     assert DummyRenameStreamlit.session_state["subject_id"] == "new_name"
     assert DummyRenameStreamlit.session_state["run_id"] is None
     assert DummyRenameStreamlit.session_state["library_transcript_select"] == 1

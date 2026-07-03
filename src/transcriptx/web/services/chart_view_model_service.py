@@ -122,6 +122,67 @@ def infer_session_slice_from_title(title: str | None) -> str | None:
     return prefix or None
 
 
+def infer_speaker_slice_from_title(title: str | None) -> str | None:
+    """Parse ``Speaker – Chart label`` titles emitted by wordcloud generators."""
+    if not title:
+        return None
+    for separator in (" – ", " - "):
+        if separator in title:
+            prefix = title.split(separator, 1)[0].strip()
+            if prefix and prefix.lower() not in {"all speakers"}:
+                return prefix
+    return None
+
+
+def infer_speaker_from_chart_path(rel_path: str | None) -> str | None:
+    """Read the speaker directory from standard ``.../speakers/<name>/...`` chart paths."""
+    if not rel_path:
+        return None
+    parts = rel_path.split("/")
+    if "speakers" not in parts:
+        return None
+    idx = parts.index("speakers")
+    if idx + 1 >= len(parts):
+        return None
+    speaker = parts[idx + 1].strip()
+    return speaker or None
+
+
+_CHART_SLUG_LABELS = frozenset(
+    {
+        "tfidf",
+        "wordcloud",
+        "wordcloud-bigrams",
+        "tfidf-bigrams",
+        "tfidf-all",
+        "wordcloud-tics",
+        "wordcloud-noun",
+        "wordcloud-verb",
+        "wordcloud-adj",
+    }
+)
+
+
+def _is_chart_slug_label(text: str | None) -> bool:
+    if not text:
+        return False
+    normalized = text.strip().lower().replace(" ", "-").replace("_", "-")
+    if normalized in _CHART_SLUG_LABELS:
+        return True
+    return normalized.startswith(("wordcloud-", "tfidf-"))
+
+
+def _resolve_artifact_speaker_name(artifact: Artifact) -> str | None:
+    """Best-effort speaker display for gallery slices and unregistered families."""
+    path_speaker = infer_speaker_from_chart_path(artifact.rel_path)
+    meta_display = _meta_str(artifact, "speaker_display")
+    speaker = artifact.speaker or _meta_str(artifact, "speaker_id")
+    if speaker and _is_chart_slug_label(str(speaker)):
+        speaker = None
+    title_speaker = infer_speaker_slice_from_title(artifact.title)
+    return meta_display or path_speaker or title_speaker or speaker
+
+
 def _get_gallery_family_key(
     artifact: Artifact, chart_def: ChartDefinition | None
 ) -> str:
@@ -139,6 +200,11 @@ def _get_gallery_family_label(
 ) -> str:
     if chart_def is not None:
         return chart_def.label
+    resolved_speaker = _resolve_artifact_speaker_name(artifact)
+    if resolved_speaker and (
+        not artifact.title or _is_chart_slug_label(artifact.title)
+    ):
+        return resolved_speaker
     if artifact.title:
         return artifact.title
     stem_label = _cleaned_filename_stem(artifact)
@@ -212,12 +278,8 @@ def _get_gallery_slice_key(
         )
 
     if cardinality == "speaker_set" or artifact.scope == "speaker":
-        return (
-            artifact.speaker
-            or _meta_str(artifact, "speaker_id")
-            or _meta_str(artifact, "speaker_display")
-            or "unknown-speaker"
-        )
+        resolved = _resolve_artifact_speaker_name(artifact)
+        return resolved or "unknown-speaker"
 
     return "all"
 
@@ -240,9 +302,7 @@ def _get_gallery_slice_label(artifact: Artifact, slice_key: str) -> str:
         )
 
     return (
-        _meta_str(artifact, "speaker_display")
-        or artifact.speaker
-        or _meta_str(artifact, "speaker_name")
+        _resolve_artifact_speaker_name(artifact)
         or (
             slice_key
             if slice_key not in {"unknown-speaker", "unknown-session"}

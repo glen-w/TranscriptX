@@ -28,14 +28,12 @@ from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
 from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
-from transcriptx.web.state import (
-    SELECTBOX_PLACEHOLDER_TRANSCRIPT,
-    SELECTED_TRANSCRIPT_PATH,
-)
+from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
 from transcriptx.web.transcript_option_format import (
     format_transcript_option_with_speaker_status,
 )
-from transcriptx.web.navigation import apply_transcript_selection_context
+from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.services.subject_service import SubjectService
 
 # How many sample lines to show per speaker by default
 _LINES_PER_PAGE = 8
@@ -194,11 +192,11 @@ def render_speaker_id_page() -> None:
         return
 
     # ── transcript picker ────────────────────────────────────────────────────
-    selected_path = st.session_state.get(SELECTED_TRANSCRIPT_PATH)
+    selected_path = SubjectService.current_transcript_path(st.session_state)
     options = [t.path for t in transcripts]
     labels = [_speaker_id_transcript_label(t) for t in transcripts]
     n = len(options)
-    default_idx = options.index(selected_path) + 1 if selected_path in options else 0
+    default_idx = SubjectService.index_in_path_options(st.session_state, options)
 
     idx = st.selectbox(
         "Transcript",
@@ -213,7 +211,11 @@ def render_speaker_id_page() -> None:
         st.info("Select a transcript to continue.")
         return
     transcript_path = options[idx - 1]
-    apply_transcript_selection_context(st.session_state, transcript_path)
+    SubjectService.set_transcript_context_from_path(
+        st.session_state,
+        transcript_path,
+        session_resolver=make_session_path_resolver(),
+    )
 
     # Re-load whenever transcript changes
     prev_key = "speaker_id_prev_transcript"

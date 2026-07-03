@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Sequence
 
 from transcriptx.core.pipeline.target_resolver import (
     GroupRef,
@@ -14,6 +14,11 @@ from transcriptx.core.pipeline.target_resolver import (
 from transcriptx.core.store.group_manifest_store import manifest_path_for
 from transcriptx.core.domain.group import GroupMember
 from transcriptx.web.services.file_service import FileService
+from transcriptx.web.services.transcript_context_resolver import (
+    SessionResolver,
+    paths_match,
+    resolve_transcript_context,
+)
 
 SubjectType = Literal["transcript", "group"]
 
@@ -117,3 +122,47 @@ class SubjectService:
             members=members,
             display=display,
         )
+
+    @staticmethod
+    def set_transcript_context_from_path(
+        session_state: Dict[str, Any],
+        transcript_path: str | Path,
+        *,
+        linked_run_dirs: Sequence[str | Path] | None = None,
+        slug_hint: str | None = None,
+        latest_run_hint: str | None = None,
+        session_resolver: SessionResolver | None = None,
+    ) -> None:
+        """Write canonical transcript context; never persists legacy path keys."""
+        session_state.pop("selected_transcript_path", None)
+        resolution = resolve_transcript_context(
+            transcript_path,
+            linked_run_dirs=linked_run_dirs,
+            slug_hint=slug_hint,
+            latest_run_hint=latest_run_hint,
+            session_resolver=session_resolver,
+        )
+        session_state["subject_type"] = "transcript"
+        session_state["subject_id"] = resolution.subject_id
+        session_state["run_id"] = resolution.run_id
+
+    @staticmethod
+    def current_transcript_path(session_state: Dict[str, Any]) -> str | None:
+        """Cheap read-only path from canonical subject; no discovery I/O."""
+        subject = SubjectService.resolve_current_subject(session_state)
+        if subject is None or subject.subject_type != "transcript":
+            return None
+        return str(subject.ref.path)
+
+    @staticmethod
+    def index_in_path_options(
+        session_state: Dict[str, Any], options: list[str]
+    ) -> int:
+        """Return 0-based Streamlit selectbox index (0 = placeholder)."""
+        current = SubjectService.current_transcript_path(session_state)
+        if not current or not options:
+            return 0
+        for index, option in enumerate(options):
+            if paths_match(option, current):
+                return index + 1
+        return 0

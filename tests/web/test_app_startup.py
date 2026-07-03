@@ -3,6 +3,20 @@ from __future__ import annotations
 from transcriptx.web.state import PAGE_KEY
 from tests.web.streamlit_doubles import DummySidebar, DummyStreamlit
 
+_LEGACY_TRANSCRIPT_PATH_KEY = "selected_transcript_path"
+
+
+def test_init_defaults_purges_legacy_transcript_path(monkeypatch) -> None:
+    import transcriptx.web.app as mod
+
+    dummy_st = DummyStreamlit()
+    dummy_st.session_state = {_LEGACY_TRANSCRIPT_PATH_KEY: "/tmp/a.json"}
+    monkeypatch.setattr(mod, "st", dummy_st)
+
+    mod._init_defaults()
+
+    assert _LEGACY_TRANSCRIPT_PATH_KEY not in dummy_st.session_state
+
 
 def test_home_cold_render_skips_session_discovery(monkeypatch) -> None:
     import transcriptx.web.app as mod
@@ -17,7 +31,7 @@ def test_home_cold_render_skips_session_discovery(monkeypatch) -> None:
     monkeypatch.setattr(mod, "route_current_page", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_sidebar", lambda **_kwargs: None)
     monkeypatch.setattr(mod, "section", lambda *_args, **_kwargs: DummySidebar())
-    called = {"sessions": 0, "normalize": 0}
+    called = {"sessions": 0}
     monkeypatch.setattr(
         mod,
         "instrument_cached_call",
@@ -25,16 +39,10 @@ def test_home_cold_render_skips_session_discovery(monkeypatch) -> None:
             "sessions", called["sessions"] + 1
         ),
     )
-    monkeypatch.setattr(
-        mod,
-        "normalize_navigation_context_from_session",
-        lambda _ss: called.__setitem__("normalize", called["normalize"] + 1),
-    )
 
     mod.main()
 
     assert called["sessions"] == 0
-    assert called["normalize"] == 0
 
 
 def test_charts_page_triggers_session_discovery(monkeypatch) -> None:
@@ -59,40 +67,7 @@ def test_charts_page_triggers_session_discovery(monkeypatch) -> None:
             "sessions", called["sessions"] + 1
         ),
     )
-    monkeypatch.setattr(
-        mod, "normalize_navigation_context_from_session", lambda _ss: None
-    )
 
     mod.main()
 
     assert called["sessions"] == 1
-
-
-def test_home_with_legacy_transcript_path_skips_normalization(monkeypatch) -> None:
-    import transcriptx.web.app as mod
-
-    dummy_st = DummyStreamlit()
-    dummy_st.session_state = {
-        PAGE_KEY: "Home",
-        "selected_transcript_path": "/tmp/a.json",
-    }
-    monkeypatch.setattr(mod, "st", dummy_st)
-    monkeypatch.setattr(mod, "start_run", lambda **_kwargs: "run-1")
-    monkeypatch.setattr(mod, "record_elapsed_section", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(mod, "finish_run", lambda **_kwargs: None)
-    monkeypatch.setattr(mod, "consume_page_flash", lambda: None)
-    monkeypatch.setattr(mod, "render_context_bar", lambda _ss: None)
-    monkeypatch.setattr(mod, "route_current_page", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(mod, "render_sidebar", lambda **_kwargs: None)
-    monkeypatch.setattr(mod, "section", lambda *_args, **_kwargs: DummySidebar())
-    called = {"normalize": 0}
-    monkeypatch.setattr(
-        mod,
-        "normalize_navigation_context_from_session",
-        lambda _ss: called.__setitem__("normalize", called["normalize"] + 1),
-    )
-    monkeypatch.setattr(mod, "instrument_cached_call", lambda *_args, **_kwargs: None)
-
-    mod.main()
-
-    assert called["normalize"] == 0

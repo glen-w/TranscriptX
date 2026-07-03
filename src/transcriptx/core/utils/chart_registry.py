@@ -43,7 +43,10 @@ class ChartMatcher:
 
         artifact_viz_id = _artifact_meta_value(artifact, "viz_id")
         if artifact_viz_id and self.by_viz_id:
-            return artifact_viz_id == self.by_viz_id
+            if artifact_viz_id == self.by_viz_id:
+                return True
+            # Stale or legacy derived ids (e.g. wordclouds.tfidf.speaker) must not
+            # block filename-based registry matching.
 
         artifact_module = getattr(artifact, "module", None)
         artifact_scope = getattr(artifact, "scope", None)

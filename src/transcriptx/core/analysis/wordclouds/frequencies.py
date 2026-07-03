@@ -103,6 +103,8 @@ def generate_bigram_wordclouds(
                 "wordcloud-bigrams",
                 dpi=300,
                 chart_type="bigrams",
+                title=f"{speaker} – Bigrams Only",
+                viz_id="wordcloud.wordcloud.speaker.bigrams",
             )
         finally:
             plt.close(fig)
@@ -210,6 +212,8 @@ def generate_tfidf_wordclouds(
                 "tfidf",
                 dpi=300,
                 chart_type="tfidf",
+                title=f"{speaker} – TF-IDF Keywords",
+                viz_id="wordcloud.wordcloud.speaker.tfidf",
             )
         finally:
             plt.close(fig)
@@ -264,6 +268,8 @@ def generate_tfidf_wordclouds(
             "tfidf-ALL",
             dpi=300,
             chart_type="tfidf",
+            title="All Speakers – TF-IDF",
+            viz_id="wordcloud.wordcloud.global.tfidf",
         )
     finally:
         plt.close(fig)
@@ -353,6 +359,8 @@ def generate_bigram_tfidf_wordclouds(
                 "tfidf-bigrams",
                 dpi=300,
                 chart_type="tfidf_bigrams",
+                title=f"{speaker} – TF-IDF Bigrams",
+                viz_id="wordcloud.wordcloud.speaker.tfidf_bigrams",
             )
         finally:
             plt.close(fig)
@@ -411,6 +419,8 @@ def generate_bigram_tfidf_wordclouds(
             "tfidf-bigrams-ALL",
             dpi=300,
             chart_type="tfidf_bigrams",
+            title="All Speakers – TF-IDF Bigrams",
+            viz_id="wordcloud.wordcloud.global.tfidf_bigrams",
         )
     finally:
         plt.close(fig)
@@ -471,6 +481,8 @@ def generate_tic_wordclouds(
                 "wordcloud-tics",
                 dpi=300,
                 chart_type="tics",
+                title=f"{speaker} – Verbal Tics",
+                viz_id="wordcloud.wordcloud.speaker.tics",
             )
         finally:
             plt.close(fig)
@@ -533,6 +545,8 @@ def generate_pos_wordclouds(
                 f"wordcloud-{pos_filter}",
                 dpi=300,
                 chart_type=f"pos_{pos_filter}",
+                title=f"{speaker} – {pos_filter.title()}s",
+                viz_id=f"wordcloud.wordcloud.speaker.{pos_filter}",
             )
         finally:
             plt.close(fig)

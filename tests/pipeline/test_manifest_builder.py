@@ -76,6 +76,49 @@ def test_manifest_is_deterministic(tmp_path: Path, monkeypatch) -> None:
     assert first["artifacts"] == second["artifacts"]
 
 
+def test_manifest_uses_path_speaker_when_metadata_scope_without_speaker(
+    tmp_path: Path, monkeypatch
+) -> None:
+    run_dir = tmp_path / "run"
+    chart_dir = run_dir / "wordclouds" / "charts" / "speakers" / "Ana" / "static" / "tfidf"
+    chart_dir.mkdir(parents=True)
+    chart_path = chart_dir / "tfidf.png"
+    chart_path.write_bytes(b"png")
+
+    meta_dir = run_dir / ".transcriptx"
+    meta_dir.mkdir()
+    rel = chart_path.relative_to(run_dir).as_posix()
+    (meta_dir / "artifacts_meta.json").write_text(
+        json.dumps(
+            {
+                rel: {
+                    "scope": "speaker",
+                    "module": "wordclouds",
+                    "viz_id": "wordcloud.wordcloud.speaker.tfidf",
+                }
+            }
+        )
+    )
+
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.manifest_builder.compute_module_source_hash",
+        lambda module: "hash123",
+    )
+
+    manifest = build_output_manifest(
+        run_dir=run_dir,
+        run_id="run-1",
+        transcript_key="tkey",
+        modules_enabled=["wordclouds"],
+    )
+    chart_artifacts = [
+        a for a in manifest["artifacts"] if a["rel_path"].endswith("tfidf.png")
+    ]
+    assert len(chart_artifacts) == 1
+    assert chart_artifacts[0]["speaker"] == "Ana"
+    assert chart_artifacts[0]["title"] == "Tfidf"
+
+
 def test_manifest_tags_eligibility_artifacts(tmp_path: Path, monkeypatch) -> None:
     run_dir = tmp_path / "run"
     run_dir.mkdir()
