@@ -141,7 +141,7 @@ def test_workflow_optional_nested_model_leaf_dotpaths() -> None:
         ("llm.model", str, None, None, None),
         ("llm.base_url", str, None, None, None),
         ("llm.max_output_tokens", int, 2048, None, None),
-        ("llm.request_timeout", float, 120.0, None, None),
+        ("llm.request_timeout", float, 1350.0, None, None),
     ],
 )
 def test_llm_registry_metadata_fields(

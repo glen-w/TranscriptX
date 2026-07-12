@@ -1,6 +1,6 @@
 {
   "api_key": null,
-  "availability_timeout": 5.0,
+  "availability_timeout": 7.5,
   "base_url": null,
   "default_temperature": 0.3,
   "enabled": false,
@@ -8,6 +8,6 @@
   "max_output_tokens": 2048,
   "model": null,
   "provider": "null",
-  "request_timeout": 120.0,
+  "request_timeout": 1350.0,
   "seed": 42
 }

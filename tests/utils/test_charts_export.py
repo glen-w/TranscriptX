@@ -144,8 +144,8 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
     assert html.index(">Other<") < html.index(">sentiment<")
 
 
-def test_generate_charts_index_html_includes_description_tooltip() -> None:
-    """A chart with a registry-backed viz_id renders the info tooltip markup."""
+def test_generate_charts_index_html_includes_visible_description() -> None:
+    """A chart with a registry-backed viz_id renders a visible description caption."""
     item = _ExportableItem(
         artifact=_artifact(
             artifact_id="at",
@@ -161,12 +161,12 @@ def test_generate_charts_index_html_includes_description_tooltip() -> None:
         size_bytes=10,
     )
     html = generate_charts_index_html([item], omitted_count=0, run_title="run-x")
-    assert '<span class="tx-info"' in html
-    assert '<span class="tx-tooltip">' in html
+    assert '<p class="chart-desc">' in html
+    assert '<span class="tx-info"' not in html
 
 
-def test_generate_charts_index_html_omits_tooltip_when_unknown() -> None:
-    """A chart with no registry match renders no info tooltip."""
+def test_generate_charts_index_html_omits_description_when_unknown() -> None:
+    """A chart with no registry match renders no description paragraph."""
     item = _ExportableItem(
         artifact=_artifact(
             artifact_id="unk",
@@ -180,6 +180,7 @@ def test_generate_charts_index_html_omits_tooltip_when_unknown() -> None:
         size_bytes=10,
     )
     html = generate_charts_index_html([item], omitted_count=0, run_title="run-y")
+    assert '<p class="chart-desc">' not in html
     assert '<span class="tx-info"' not in html
 
 

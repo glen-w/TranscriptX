@@ -235,7 +235,12 @@ def test_infer_speaker_from_chart_path():
         )
         == "Ana"
     )
-    assert infer_speaker_from_chart_path("wordclouds/charts/global/static/tfidf/tfidf-ALL.png") is None
+    assert (
+        infer_speaker_from_chart_path(
+            "wordclouds/charts/global/static/tfidf/tfidf-ALL.png"
+        )
+        is None
+    )
 
 
 def test_member_session_title_prefix_fallback():

@@ -87,8 +87,8 @@ class ArtifactService:
         return [str(x) for x in raw if x is not None]
 
     @staticmethod
-    def _merge_group_member_chart_artifacts(run_root: Path) -> List[Artifact]:
-        """Attach chart artifacts from each member's transcript run (group analysis)."""
+    def _merge_group_member_artifacts(run_root: Path) -> List[Artifact]:
+        """Attach artifacts from each member's transcript run (group analysis)."""
         members = load_group_member_runs(run_root / "group_member_runs.json")
         if not members:
             return []
@@ -113,8 +113,6 @@ class ArtifactService:
             order = m.get("order_index", 0)
             base_root = str(p.resolve())
             for item in man.get("artifacts", []):
-                if item.get("kind") not in ("chart_static", "chart_dynamic"):
-                    continue
                 d = dict(item)
                 orig_id = str(d.get("id", ""))
                 d["id"] = hashlib.sha1(
@@ -132,6 +130,39 @@ class ArtifactService:
         return merged
 
     @staticmethod
+    def _artifacts_for_export(
+        run_root: Path, artifact_ids: List[str]
+    ) -> List[Artifact]:
+        """Resolve export selection, augmenting full exports with a fresh disk scan."""
+        catalog = ArtifactService.list_artifacts(run_root)
+        by_id = {artifact.id: artifact for artifact in catalog}
+        selected = [
+            by_id[artifact_id] for artifact_id in artifact_ids if artifact_id in by_id
+        ]
+        if not selected:
+            return []
+
+        if set(artifact_ids) != set(by_id.keys()):
+            return selected
+
+        try:
+            fresh_manifest = build_output_manifest(
+                run_root, run_root.name, "unknown", []
+            )
+            fresh_artifacts = [
+                Artifact.from_dict(item)
+                for item in fresh_manifest.get("artifacts", [])
+                if isinstance(item, dict)
+            ]
+        except Exception:
+            fresh_artifacts = []
+
+        by_rel = {artifact.rel_path: artifact for artifact in catalog}
+        for artifact in fresh_artifacts:
+            by_rel.setdefault(artifact.rel_path, artifact)
+        return list(by_rel.values())
+
+    @staticmethod
     def list_artifacts(
         run_root: Path, filters: Optional[ArtifactFilters] = None
     ) -> List[Artifact]:
@@ -139,7 +170,7 @@ class ArtifactService:
         mtime = manifest_path.stat().st_mtime if manifest_path.exists() else 0
         artifacts_payload = _cached_artifacts(str(run_root), mtime)
         artifacts = [Artifact.from_dict(item) for item in artifacts_payload]
-        artifacts.extend(ArtifactService._merge_group_member_chart_artifacts(run_root))
+        artifacts.extend(ArtifactService._merge_group_member_artifacts(run_root))
         return filter_artifacts(artifacts, filters)
 
     @staticmethod
@@ -166,8 +197,7 @@ class ArtifactService:
 
     @staticmethod
     def zip_artifacts(run_root: Path, artifact_ids: List[str]) -> Optional[Path]:
-        artifacts = ArtifactService.list_artifacts(run_root)
-        selected = [a for a in artifacts if a.id in artifact_ids]
+        selected = ArtifactService._artifacts_for_export(run_root, artifact_ids)
         if not selected:
             return None
         total_bytes = sum(a.bytes for a in selected)
@@ -205,7 +235,7 @@ class ArtifactService:
     ) -> None:
         """Write a self-contained ``index.html`` approximating the GUI.
 
-        Renders a basic transcript displayer, optional LLM transcript summary, and an
+        Renders a basic transcript displayer, optional module summaries, and an
         unfiltered charts gallery for the copied artifacts. Each section fails
         independently; the file is written when at least one section is produced and
         skipped only when none are. Never raises: index generation must not break
@@ -215,8 +245,8 @@ class ArtifactService:
             from transcriptx.utils.charts_export import _ExportableItem
             from transcriptx.utils.export_index import (
                 build_export_index_html,
-                resolve_export_llm_summary,
                 resolve_export_page_title,
+                resolve_export_text_summaries,
                 resolve_export_transcript_data,
             )
 
@@ -225,7 +255,7 @@ class ArtifactService:
                 run_root=run_root,
                 copied=copied,
             )
-            llm_summary = resolve_export_llm_summary(
+            text_summaries = resolve_export_text_summaries(
                 staging_dir=staging_dir,
                 copied=copied,
             )
@@ -251,7 +281,7 @@ class ArtifactService:
                 page_title=page_title,
                 transcript_data=transcript_data,
                 chart_items=chart_items,
-                llm_summary=llm_summary,
+                text_summaries=text_summaries,
             )
             if html_payload:
                 (staging_dir / "index.html").write_text(html_payload, encoding="utf-8")

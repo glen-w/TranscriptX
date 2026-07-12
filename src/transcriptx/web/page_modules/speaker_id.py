@@ -192,7 +192,6 @@ def render_speaker_id_page() -> None:
         return
 
     # ── transcript picker ────────────────────────────────────────────────────
-    selected_path = SubjectService.current_transcript_path(st.session_state)
     options = [t.path for t in transcripts]
     labels = [_speaker_id_transcript_label(t) for t in transcripts]
     n = len(options)

@@ -40,6 +40,7 @@ def test_llm_modules_in_default_recommended_list() -> None:
     modules = get_default_modules()
     assert "llm_summary" in modules
     assert "narrative_summary" in modules
+    assert "llm_speaker_summary" in modules
 
 
 @pytest.mark.unit
@@ -55,6 +56,14 @@ def test_llm_summary_requires_llm_registered() -> None:
     info = get_module_info("llm_summary")
     assert info is not None
     assert info.requires_llm is True
+
+
+@pytest.mark.unit
+def test_llm_speaker_summary_requires_llm_registered() -> None:
+    info = get_module_info("llm_speaker_summary")
+    assert info is not None
+    assert info.requires_llm is True
+    assert info.exclude_from_default is False
 
 
 @pytest.mark.unit

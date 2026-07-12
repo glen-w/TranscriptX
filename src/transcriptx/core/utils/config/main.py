@@ -279,6 +279,9 @@ class TranscriptXConfig:
                 "acts": self._config_to_dict(self.analysis.acts),
                 "tag_extraction": self._config_to_dict(self.analysis.tag_extraction),
                 "llm_summary": self._config_to_dict(self.analysis.llm_summary),
+                "llm_speaker_summary": self._config_to_dict(
+                    self.analysis.llm_speaker_summary
+                ),
                 "qa_analysis": self._config_to_dict(self.analysis.qa_analysis),
                 "temporal_dynamics": self._config_to_dict(
                     self.analysis.temporal_dynamics

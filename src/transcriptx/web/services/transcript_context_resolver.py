@@ -6,7 +6,6 @@ import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from transcriptx.core.utils.slug_manager import load_index
 

@@ -888,6 +888,9 @@
   "llm_summary": {
     "effort": "high"
   },
+  "llm_speaker_summary": {
+    "effort": "high"
+  },
   "temporal_dynamics": {
     "closing_phase_max_seconds": 120.0,
     "closing_phase_percentage": 0.1,

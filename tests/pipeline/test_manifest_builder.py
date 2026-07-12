@@ -80,7 +80,9 @@ def test_manifest_uses_path_speaker_when_metadata_scope_without_speaker(
     tmp_path: Path, monkeypatch
 ) -> None:
     run_dir = tmp_path / "run"
-    chart_dir = run_dir / "wordclouds" / "charts" / "speakers" / "Ana" / "static" / "tfidf"
+    chart_dir = (
+        run_dir / "wordclouds" / "charts" / "speakers" / "Ana" / "static" / "tfidf"
+    )
     chart_dir.mkdir(parents=True)
     chart_path = chart_dir / "tfidf.png"
     chart_path.write_bytes(b"png")

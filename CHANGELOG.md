@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-07-13
+
+### Added
+
+- `llm_speaker_summary` analysis module: abstractive Ollama summaries for each named speaker, with per-speaker artifacts and a global index.
+- `analysis.llm_speaker_summary.effort` config (low/medium/high/max), mirroring `llm_summary` effort tiers.
+- Insights block for per-speaker LLM summaries.
+
 ## [0.3.2] - 2026-07-02
 
 ### Added

@@ -27,11 +27,14 @@ Or in `config.json`:
     "model": "qwen3:8b",
     "base_url": "http://localhost:11434",
     "seed": 42,
+    "request_timeout": 1350,
     "max_input_chars": 48000,
     "default_temperature": 0.3
   }
 }
 ```
+
+Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` (default **1350** seconds / 22.5 minutes).
 
 **Remote endpoints:** the default `base_url` is local. A non-local URL sends transcript content to that endpoint. TranscriptX does not block remote URLs but you are responsible for where your data is sent.
 
@@ -41,8 +44,11 @@ Or in `config.json`:
 |--------|-------------|------------|
 | `narrative_summary` | Grounded executive narrative from deterministic `summary` output (temperature 0.0, JSON) | `summary` chain (highlights + upstream) |
 | `llm_summary` | Abstractive transcript summary from readable transcript text (plain text, `default_temperature`) | segments only |
+| `llm_speaker_summary` | Abstractive summary per **named** speaker from that speaker's utterances only (plain text, `default_temperature`) | segments + speaker labels |
 
-Both modules are included in the **recommended** default module list. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`.
+All three LLM modules are included in the **recommended** default module list. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out of any of them. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`.
+
+`llm_speaker_summary` is skipped when the transcript has no eligible named speakers (for example, before Speaker ID mapping). Ignored speakers are excluded.
 
 Selecting `narrative_summary` automatically runs the `summary` dependency chain first.
 
@@ -70,9 +76,30 @@ When `llm.enabled` is true and `llm.provider` is `ollama`, `llm_summary` resolve
 - `high` — patient mode for long meetings, workshops, lectures, and dense transcripts
 - `max` — push-the-laptop mode; prefers waiting over truncating or timing out
 
-This pass supports `provider="ollama"` only for `llm_summary`; other non-null providers raise configuration errors.
+This pass supports `provider="ollama"` only for `llm_summary` and `llm_speaker_summary`; other non-null providers raise configuration errors.
 
 Artifact provenance records `effort`, `effort_profile`, resolved limits, and input coverage (`input_truncated`, `input_chars_total`, `input_chars_used`, `input_coverage_ratio`). The legacy `input_chars` field remains the full prompt size including wrapper text.
+
+## `llm_speaker_summary` effort
+
+The setting **`analysis.llm_speaker_summary.effort`** controls per-speaker summary effort for the **`llm_speaker_summary` module only**. It uses the same builtin tiers as `llm_summary` (`low`, `medium`, `high`, `max`; default **`high`** in code).
+
+```json
+{
+  "analysis": {
+    "llm_speaker_summary": {
+      "effort": "high"
+    }
+  }
+}
+```
+
+Each named speaker triggers one sequential Ollama call over that speaker's utterances. Per-speaker failures (for example, an empty model response) are recorded in the index artifact; the module succeeds when at least one speaker summary is written.
+
+**Artifacts:**
+
+- `llm_speaker_summary/data/speakers/{base}_{Speaker}_llm_speaker_summary.json` (+ `.md`) per speaker
+- `llm_speaker_summary/data/global/{base}_llm_speaker_summary_index.json` (+ `.md`) listing speakers and statuses
 
 ## Truncation
 
@@ -132,7 +159,7 @@ from transcriptx.app.workflows.analysis import run_analysis
 
 result = run_analysis(AnalysisRequest(
     transcript_path=Path('tests/fixtures/mini_transcript.json'),
-    modules=['summary', 'narrative_summary', 'llm_summary'],
+    modules=['summary', 'narrative_summary', 'llm_summary', 'llm_speaker_summary'],
 ))
 print('success:', result.success)
 print('errors:', result.errors)
@@ -143,6 +170,8 @@ Expected artifacts per module under the run output directory:
 
 - `narrative_summary/data/global/*_narrative_summary.json` (+ `.md`)
 - `llm_summary/data/global/*_llm_summary.json` (+ `.md`)
+- `llm_speaker_summary/data/speakers/*_llm_speaker_summary.json` (+ `.md`) per named speaker
+- `llm_speaker_summary/data/global/*_llm_speaker_summary_index.json` (+ `.md`)
 
 **Partial failure:** if a selected LLM module fails, the overall run is partially failed. Deterministic modules (e.g. `summary`) and their artifacts remain available. Failed LLM modules produce no canonical LLM artifacts.
 

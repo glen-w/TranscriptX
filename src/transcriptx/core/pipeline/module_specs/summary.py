@@ -57,6 +57,19 @@ def build_summary_module_definitions(
             "enhancements": [],
             "requires_llm": True,
         },
+        "llm_speaker_summary": {
+            "description": "Abstractive per-speaker summaries via local LLM",
+            "dependencies": [],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [
+                Requirement.SEGMENTS,
+                Requirement.SPEAKER_LABELS,
+            ],
+            "enhancements": [],
+            "requires_llm": True,
+            "min_named_speakers": 1,
+        },
         "insights": {
             "description": "Content-first insights layer separated from style markers",
             "dependencies": ["insight_eligibility", "highlights", "topic_modeling"],

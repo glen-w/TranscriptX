@@ -883,3 +883,48 @@ Two pure-logic, low-coverage critical-path modules pushed well past the 75% goal
 - Integration fixture test remains `integration` marker (excluded from default gate).
 - FFmpeg-marked conversion integration optional behind `requires_ffmpeg`.
 
+## 42. Suite review (2026-07-13) – `/tests` command + pipeline executor/persistence expansion
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260713.zip` (2.6M); `custom-commands/` mirrored under backup root.
+
+### Review and baseline
+
+- **Collection (`pytest --co -q`):** `4160/4319` selected under default marker filter (`159` deselected); no collection/import errors.
+- **Default run (`pytest -q`):** `4159 passed`, `1 skipped`, `159 deselected`, `13` warnings (green baseline before expansion).
+- **Cleanup:** destructive test-artifact cleanup remains disabled.
+- **Quarantined:** `0` `@pytest.mark.quarantined` tests in the active tree (`tests/quarantine/COUNT` baseline is historical).
+- **Skipped:** `tests/regression/test_pipeline_determinism.py` (one test: requires full pipeline setup). `tests/analysis/test_rules.py` now imports `transcriptx.core.analysis.acts.rules` (no longer skipped-at-collection).
+- **Markers / addopts:** unchanged; default excludes `quarantined`, `smoke`, `release_only`, `integration`/`integration_core`/`integration_extended`, `requires_*`, `slow`, `legacy`, `semantic_v2_slow`.
+
+### Coverage gaps targeted (offline, deterministic, high-leverage)
+
+Selected critical-path modules with low/medium coverage and little or no dedicated unit coverage:
+
+- `core/pipeline/dag_executor.py` (legacy→canonical outcome vocabulary, blocked-from-plan).
+- `core/pipeline/pipeline_write_phases.py` (preset explanation + write ordering).
+- `core/pipeline/run_persistence.py` / `adapters/file_run_state_store.py` (persistence outcomes).
+- `core/pipeline/run_configurator.py` (config source lifecycle).
+- `core/pipeline/dag_pipeline_factory.py` (create/run/close contract).
+- `core/config/validation.py` field helpers (`_is_valid_type`, `validate`, pilot fan-out).
+
+### New / expanded unit tests (tests-only; no production changes)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/pipeline/test_dag_executor_unit.py` | 8 | `reduce_outcome` succeeded/skipped/blocked/failed error vocabulary + unknown fall-through; `outcome_from_legacy` status map; `blocked_from_plan` sorted deterministic outcomes. |
+| `tests/pipeline/test_pipeline_write_phases.py` | 5 | `build_preset_explanation` empty/dict/string skips; `persist_canonical_run_outcomes` wiring; write-order contract; integration write of `run_results.json` + `manifest.json`. |
+| `tests/pipeline/test_run_persistence.py` | 7 | `PersistenceLayer` success/failure for canonical outputs, processing state (missing file / missing entry / update / exception), run report, artifact-index manifest. |
+| `tests/pipeline/test_run_configurator.py` | 5 | `resolve_and_apply` default/draft-override/project sources; validation `ValueError`; `clear_draft_override` flag. |
+| `tests/pipeline/test_dag_pipeline_factory.py` | 4 | registry-backed create; execute+close; close-on-raise; swallow close errors. |
+| `tests/core/config/test_validation_helpers.py` | 27 | `_is_valid_type` matrix; `validate` None/type/min/max/choices; pydantic error mapping; `_attach_pilot_errors` fan-out. |
+| `tests/pipeline/test_pipeline_file_adapters.py` | +3 | FileRunStateStore empty path, missing entry, successful update. |
+
+### Validation
+
+- **Default suite (post-expansion):** `4218 passed`, `1 skipped`, `159 deselected`, `0` failed (+59 vs baseline).
+- **`pytest -m integration_core`:** `44 passed`.
+- **Production code:** none changed (tests-only expansion).
+- **Quarantined tests:** remain quarantined / none active to re-enable.
+

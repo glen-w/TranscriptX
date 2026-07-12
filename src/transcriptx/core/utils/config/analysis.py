@@ -915,6 +915,9 @@ class AnalysisConfig:
         default_factory=lambda: TagExtractionConfig()
     )
     llm_summary: LLMSummaryConfig = field(default_factory=lambda: LLMSummaryConfig())
+    llm_speaker_summary: LLMSpeakerSummaryConfig = field(
+        default_factory=lambda: LLMSpeakerSummaryConfig()
+    )
     qa_analysis: QAAnalysisConfig = field(default_factory=lambda: QAAnalysisConfig())
     temporal_dynamics: TemporalDynamicsConfig = field(
         default_factory=lambda: TemporalDynamicsConfig()
@@ -1013,6 +1016,13 @@ class TagExtractionConfig:
 @dataclass
 class LLMSummaryConfig:
     """Configuration for the llm_summary analysis module."""
+
+    effort: str = "high"
+
+
+@dataclass
+class LLMSpeakerSummaryConfig:
+    """Configuration for the llm_speaker_summary analysis module."""
 
     effort: str = "high"
 

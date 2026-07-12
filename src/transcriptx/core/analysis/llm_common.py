@@ -18,7 +18,12 @@ from transcriptx.core.analysis.llm_module_errors import (
 from transcriptx.core.llm.errors import LLMResponseError
 from transcriptx.core.output.output_service import OutputService
 from transcriptx.core.utils.artifact_writer import write_json, write_text
-from transcriptx.core.utils.speaker_extraction import resolve_segment_speaker_label
+from transcriptx.core.utils.speaker_extraction import (
+    get_unique_speakers,
+    group_segments_by_speaker,
+    resolve_segment_speaker_label,
+)
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 _UNNAMED_SPEAKER_LABEL = "Speaker"
 _OMISSION_MARKER = "\n\n[... transcript content omitted ...]\n\n"
@@ -582,6 +587,89 @@ def llm_prompt_overhead_chars(
     return len(prefix) + len(suffix)
 
 
+def _safe_speaker_filename(speaker: str) -> str:
+    return str(speaker).replace(" ", "_").replace("/", "_")
+
+
+def _speaker_key_for_eligibility(
+    display_name: str,
+    grouping_key: Any,
+    runtime_flags: Dict[str, Any],
+) -> str:
+    speaker_key = str(grouping_key)
+    aliases = runtime_flags.get("speaker_key_aliases", {})
+    if isinstance(aliases, dict):
+        return str(aliases.get(display_name, speaker_key))
+    return speaker_key
+
+
+def is_named_speaker_eligible_for_llm(
+    display_name: str,
+    grouping_key: Any,
+    *,
+    runtime_flags: Dict[str, Any],
+) -> bool:
+    """Return True when a speaker should receive an llm_speaker_summary artifact."""
+    if not display_name:
+        return False
+    ignored_ids = runtime_flags.get("ignored_speaker_ids")
+    if not isinstance(ignored_ids, set):
+        ignored_ids = set()
+    speaker_key = _speaker_key_for_eligibility(
+        display_name,
+        grouping_key,
+        runtime_flags,
+    )
+    named_keys = runtime_flags.get("named_speaker_keys")
+    if isinstance(named_keys, set):
+        return speaker_key in named_keys or str(grouping_key) in named_keys
+    return is_eligible_named_speaker(
+        display_name=display_name,
+        speaker_id=speaker_key,
+        ignored_ids=ignored_ids,
+    )
+
+
+def collect_named_speaker_groups_for_llm(
+    segments: List[Dict[str, Any]],
+    *,
+    runtime_flags: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """
+    Return eligible named speakers with non-empty transcript lines.
+
+    Each entry contains ``display_name``, ``speaker_key``, ``grouping_key``,
+    and ``segments`` (chronological utterances for that speaker).
+    """
+    grouped = group_segments_by_speaker(segments)
+    display_map = get_unique_speakers(segments)
+    entries: List[Dict[str, Any]] = []
+
+    for grouping_key, speaker_segments in grouped.items():
+        display_name = display_map.get(grouping_key)
+        if not display_name:
+            continue
+        if not is_named_speaker_eligible_for_llm(
+            display_name,
+            grouping_key,
+            runtime_flags=runtime_flags,
+        ):
+            continue
+        if not format_transcript_lines(speaker_segments):
+            continue
+        entries.append(
+            {
+                "display_name": display_name,
+                "speaker_key": str(grouping_key),
+                "grouping_key": grouping_key,
+                "segments": speaker_segments,
+            }
+        )
+
+    entries.sort(key=lambda item: str(item["display_name"]).lower())
+    return entries
+
+
 def _rollback_promoted_file(
     final_path: Path,
     backup_path: Optional[Path],
@@ -592,6 +680,65 @@ def _rollback_promoted_file(
         os.replace(str(backup_path), str(final_path))
     elif final_path.exists():
         final_path.unlink()
+
+
+def write_llm_speaker_artifacts(
+    output_service: OutputService,
+    *,
+    speaker: str,
+    artifact_filename: str,
+    payload: Dict[str, Any],
+    markdown: str,
+) -> Tuple[str, str]:
+    """
+    Write per-speaker JSON and Markdown atomically under ``data/speakers/``.
+    """
+    structure = output_service.get_output_structure()
+    out_dir = Path(structure.speaker_data_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    base = output_service.base_name
+    safe_speaker = _safe_speaker_filename(speaker)
+
+    json_final = out_dir / f"{base}_{safe_speaker}_{artifact_filename}.json"
+    md_final = out_dir / f"{base}_{safe_speaker}_{artifact_filename}.md"
+    staging = out_dir / ".staging" / str(uuid.uuid4())
+    staging.mkdir(parents=True, exist_ok=True)
+
+    json_staging = staging / json_final.name
+    md_staging = staging / md_final.name
+    had_json = json_final.exists()
+    had_md = md_final.exists()
+    json_backup = staging / f".backup.{json_final.name}" if had_json else None
+    md_backup = staging / f".backup.{md_final.name}" if had_md else None
+    if had_json and json_backup is not None:
+        shutil.copy2(json_final, json_backup)
+    if had_md and md_backup is not None:
+        shutil.copy2(md_final, md_backup)
+
+    json_promoted = False
+    try:
+        write_json(str(json_staging), payload)
+        write_text(str(md_staging), markdown)
+        os.replace(str(json_staging), str(json_final))
+        json_promoted = True
+        try:
+            os.replace(str(md_staging), str(md_final))
+        except Exception:
+            _rollback_promoted_file(json_final, json_backup, had_prior=had_json)
+            raise
+        output_service.record_file(json_final, "json")
+        output_service.record_file(md_final, "md")
+        return str(json_final), str(md_final)
+    except Exception:
+        if json_promoted:
+            _rollback_promoted_file(json_final, json_backup, had_prior=had_json)
+        raise
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        staging_parent = out_dir / ".staging"
+        if staging_parent.exists() and not any(staging_parent.iterdir()):
+            staging_parent.rmdir()
 
 
 def write_llm_artifacts(

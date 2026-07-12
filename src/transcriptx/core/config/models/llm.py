@@ -34,12 +34,12 @@ class LLMSettingsModel(BaseModel):
         json_schema_extra=_HIDDEN_ADVANCED,
     )
     request_timeout: float = Field(
-        default=120.0,
+        default=1350.0,
         gt=0,
         description="Per-request timeout in seconds for LLM calls.",
     )
     availability_timeout: float = Field(
-        default=5.0,
+        default=7.5,
         gt=0,
         description="Timeout in seconds when probing provider availability.",
     )

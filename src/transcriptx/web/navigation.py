@@ -8,7 +8,10 @@ from typing import Any, Literal
 
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
-from transcriptx.web.services.transcript_context_resolver import paths_match, tolerant_resolve
+from transcriptx.web.services.transcript_context_resolver import (
+    paths_match,
+    tolerant_resolve,
+)
 
 NavSection = Literal["primary", "workflow", "view", "tools", "settings"]
 RequiredContext = Literal["none", "subject", "run_scoped", "transcript_or_group"]

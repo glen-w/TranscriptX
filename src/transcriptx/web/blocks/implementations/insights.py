@@ -446,3 +446,102 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
             st.write(f"Provider: {provider}")
         if prov.get("truncated"):
             st.caption("Input was truncated to fit the model context window.")
+
+
+def _safe_speaker_artifact_token(speaker: str) -> str:
+    return str(speaker).replace(" ", "_").replace("/", "_")
+
+
+def render_llm_speaker_summary_block(
+    ctx: BlockContext, placement: BlockPlacement
+) -> None:
+    module = "llm_speaker_summary"
+    title = placement.title_override or str(
+        placement.params.get("title", "Per-Speaker LLM Summaries")
+    )
+    empty_hint = str(
+        placement.params.get(
+            "empty_hint",
+            "Run the `llm_speaker_summary` module (with LLM enabled and named "
+            "speakers) to populate this view.",
+        )
+    )
+
+    st.subheader(title)
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None or run_root is None:
+        st.info(empty_hint)
+        return
+
+    failure_hint = _module_failure_hint(run_root, module)
+    index_payload = loader.load_json(module, "_llm_speaker_summary_index.json")
+    if not index_payload:
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            st.info(empty_hint)
+        return
+
+    speakers = index_payload.get("speakers") or []
+    if not speakers:
+        st.info(empty_hint)
+        return
+
+    for entry in speakers:
+        speaker = str(entry.get("speaker", "") or "")
+        status = str(entry.get("status", "") or "")
+        if not speaker:
+            continue
+        safe = _safe_speaker_artifact_token(speaker)
+        suffix_json = f"_{safe}_llm_speaker_summary.json"
+        suffix_md = f"_{safe}_llm_speaker_summary.md"
+        with st.expander(speaker, expanded=len(speakers) == 1):
+            if status != "success":
+                code = entry.get("error_code")
+                message = entry.get("error_message") or "Summary generation failed"
+                detail = f"[{code}] {message}" if code else message
+                st.warning(detail)
+                continue
+            md = loader.load_text(module, suffix_md)
+            payload = loader.load_json(module, suffix_json)
+            if md:
+                st.markdown(md)
+            elif payload and payload.get("summary"):
+                st.markdown(str(payload["summary"]))
+            elif payload:
+                st.json(payload)
+            else:
+                st.caption("Artifact missing for this speaker.")
+                continue
+            _render_view_raw_file_link(
+                ctx,
+                module,
+                suffix_json,
+                link_key=f"llm_speaker_raw_{safe}",
+            )
+            prov = (payload or {}).get("provenance") or {}
+            if prov.get("truncated"):
+                st.caption("Input was truncated to fit the model context window.")
+
+    prov = index_payload.get("provenance") or {}
+    if prov:
+        with st.expander("Generation details"):
+            model = prov.get("model")
+            provider = prov.get("provider")
+            if model:
+                st.write(f"Model: {model}")
+            if provider:
+                st.write(f"Provider: {provider}")
+            success_count = prov.get("success_count")
+            failure_count = prov.get("failure_count")
+            if success_count is not None:
+                st.write(f"Summaries generated: {success_count}")
+            if failure_count:
+                st.write(f"Failed speakers: {failure_count}")
+    _render_view_raw_file_link(
+        ctx,
+        module,
+        "_llm_speaker_summary_index.json",
+        link_key="llm_speaker_index_raw",
+    )

@@ -50,6 +50,47 @@ def resolve_chart_description(artifact: Artifact) -> str | None:
     return None
 
 
+def resolve_group_aggregate_semantics_caption(artifact: Artifact) -> str:
+    """Short caption for group aggregate charts when registry text is unavailable."""
+    if artifact.has_tag("group_visual_special_path"):
+        return "Group word cloud via wordclouds module path (not GROUP_CHART_REGISTRY)"
+    meta = artifact.meta or {}
+    vid = meta.get("viz_id")
+    if not isinstance(vid, str):
+        vid = ""
+    rel_path = (artifact.rel_path or "").lower()
+    if not vid and "wordcloud" in rel_path:
+        return "Group word cloud via wordclouds module path (not GROUP_CHART_REGISTRY)"
+    if ".temporal_overlay." in vid:
+        return (
+            "Multi-session overlay (session-relative time — not a single wall-clock "
+            "timeline)"
+        )
+    if "cross_session_speaker" in vid:
+        return "Same canonical speaker compared across sessions in this group"
+    if ".pooled." in vid:
+        return (
+            "Pooled single view (corpus-level merge; see module / docs for semantics)"
+        )
+    if ".session." in vid:
+        return "One value per transcript in this group"
+    if "global_acts_pie" in vid:
+        return "Corpus-level dialogue-act mix for this group (audited pooled view)"
+    if vid.startswith("group."):
+        return "Group run summary chart"
+    return "Group run chart"
+
+
+def resolve_chart_display_description(artifact: Artifact) -> str | None:
+    """Return the user-facing chart description shown in gallery and export views."""
+    description = resolve_chart_description(artifact)
+    if description:
+        return description
+    if artifact.has_tag("group_aggregate"):
+        return resolve_group_aggregate_semantics_caption(artifact)
+    return None
+
+
 def compute_chart_badges(all_charts: List[Artifact]) -> List[str]:
     st_c = sum(1 for a in all_charts if a.kind == "chart_static")
     dyn_c = sum(1 for a in all_charts if a.kind == "chart_dynamic")
@@ -301,13 +342,10 @@ def _get_gallery_slice_label(artifact: Artifact, slice_key: str) -> str:
             )
         )
 
-    return (
-        _resolve_artifact_speaker_name(artifact)
-        or (
-            slice_key
-            if slice_key not in {"unknown-speaker", "unknown-session"}
-            else "Unknown speaker"
-        )
+    return _resolve_artifact_speaker_name(artifact) or (
+        slice_key
+        if slice_key not in {"unknown-speaker", "unknown-session"}
+        else "Unknown speaker"
     )
 
 

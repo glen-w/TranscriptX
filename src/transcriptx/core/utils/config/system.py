@@ -46,8 +46,8 @@ class LLMConfig:
     model: str | None = None
     base_url: str | None = None
     api_key: str | None = None
-    request_timeout: float = 120.0
-    availability_timeout: float = 5.0
+    request_timeout: float = 1350.0
+    availability_timeout: float = 7.5
 
     # Generation defaults (callers pass explicit temperature to generate())
     seed: int = 42

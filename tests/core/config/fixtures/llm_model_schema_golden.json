@@ -59,14 +59,14 @@
       "title": "Api Key"
     },
     "request_timeout": {
-      "default": 120.0,
+      "default": 1350.0,
       "description": "Per-request timeout in seconds for LLM calls.",
       "exclusiveMinimum": 0.0,
       "title": "Request Timeout",
       "type": "number"
     },
     "availability_timeout": {
-      "default": 5.0,
+      "default": 7.5,
       "description": "Timeout in seconds when probing provider availability.",
       "exclusiveMinimum": 0.0,
       "title": "Availability Timeout",

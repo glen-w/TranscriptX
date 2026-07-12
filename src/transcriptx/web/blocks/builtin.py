@@ -152,6 +152,16 @@ def _register_insights_blocks() -> None:
             render=insights_blocks.render_llm_summary_block,
             supports_instance_id=True,
         ),
+        BlockSpec(
+            id="llm_speaker_summary_block",
+            title="Per-Speaker LLM Summaries",
+            group="Insights",
+            description="LLM-generated summary for each named speaker.",
+            module_deps=("llm_speaker_summary",),
+            artifact_patterns=("_llm_speaker_summary_index.json",),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_blocks.render_llm_speaker_summary_block,
+        ),
     ]
     for spec in specs:
         register_block(spec)

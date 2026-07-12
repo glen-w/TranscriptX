@@ -44,25 +44,25 @@ BUILTIN_LLM_SUMMARY_EFFORT_PROFILES: dict[LLMSummaryEffort, LLMSummaryEffortProf
     "low": LLMSummaryEffortProfile(
         effort="low",
         max_input_chars=48_000,
-        request_timeout=180.0,
+        request_timeout=270.0,
         max_output_tokens=2048,
     ),
     "medium": LLMSummaryEffortProfile(
         effort="medium",
         max_input_chars=128_000,
-        request_timeout=600.0,
+        request_timeout=1350.0,
         max_output_tokens=4096,
     ),
     "high": LLMSummaryEffortProfile(
         effort="high",
         max_input_chars=256_000,
-        request_timeout=1200.0,
+        request_timeout=1800.0,
         max_output_tokens=8192,
     ),
     "max": LLMSummaryEffortProfile(
         effort="max",
         max_input_chars=512_000,
-        request_timeout=2400.0,
+        request_timeout=3600.0,
         max_output_tokens=16_384,
     ),
 }

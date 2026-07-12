@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
+import pytest
+
+import transcriptx.core.utils.paths as paths_mod
 from transcriptx.utils.charts_export import _ExportableItem
 from transcriptx.utils.export_index import (
     build_export_index_html,
@@ -10,9 +14,32 @@ from transcriptx.utils.export_index import (
     render_transcript_section,
     resolve_export_llm_summary,
     resolve_export_page_title,
+    resolve_export_text_summaries,
+    resolve_export_transcript_data,
 )
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services.artifact_service import ArtifactService
+
+
+def _patch_transcript_library_paths(
+    monkeypatch: pytest.MonkeyPatch, root: Path
+) -> None:
+    metadata_dir = root / "metadata"
+    speaker_maps_dir = metadata_dir / "speaker_maps"
+    originals_dir = root / "originals"
+    for directory in (root, metadata_dir, speaker_maps_dir, originals_dir):
+        directory.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(
+        paths_mod,
+        "PATHS",
+        replace(
+            paths_mod.PATHS,
+            transcripts_dir=root,
+            transcripts_metadata_dir=metadata_dir,
+            transcripts_speaker_maps_dir=speaker_maps_dir,
+            transcripts_originals_dir=originals_dir,
+        ),
+    )
 
 
 def _artifact(
@@ -100,6 +127,24 @@ def test_render_transcript_prefers_speaker_display() -> None:
     assert "SPEAKER_00" not in html
 
 
+def test_render_transcript_section_groups_contiguous_speaker_segments() -> None:
+    data = {
+        "segments": [
+            {"start": 0.0, "end": 1.0, "speaker_display": "Alice", "text": "Hello."},
+            {"start": 1.0, "end": 2.0, "speaker_display": "Alice", "text": "Again."},
+            {"start": 2.0, "end": 3.0, "speaker_display": "Bob", "text": "Hi."},
+        ]
+    }
+    html = render_transcript_section(data)
+    assert html.count('class="tx-segment"') == 2
+    assert html.count('class="tx-speaker-chip"') == 2
+    assert "Hello." in html
+    assert "Again." in html
+    assert "Hi." in html
+    assert "0:00 - 0:02" in html
+    assert "0:02 - 0:03" in html
+
+
 def test_build_index_transcript_only() -> None:
     html = build_export_index_html(
         page_title="run-1", transcript_data=_transcript_data(), chart_items=[]
@@ -141,18 +186,39 @@ def test_build_index_mixed_uses_posix_paths() -> None:
 def test_build_index_llm_summary_only() -> None:
     html = build_export_index_html(
         page_title="run-1",
-        llm_summary={
-            "section_id": "llm-summary",
-            "title": "LLM Transcript Summary",
-            "body": "A concise abstractive summary.",
-            "provenance": {"model": "qwen3:8b", "provider": "ollama"},
-        },
+        text_summaries=[
+            {
+                "section_id": "summary-llm-summary-demo-llm-summary",
+                "title": "LLM Transcript Summary",
+                "body": "A concise abstractive summary.",
+                "provenance": {"model": "qwen3:8b", "provider": "ollama"},
+            }
+        ],
     )
     assert html is not None
-    assert 'id="llm-summary"' in html
+    assert 'id="summaries"' in html
     assert "A concise abstractive summary." in html
     assert "qwen3:8b" in html
     assert ">LLM Transcript Summary</a>" in html
+    assert 'class="card-grid"' not in html
+
+
+def test_build_index_summaries_render_above_charts() -> None:
+    items = [_chart_item(artifact_id="a", rel_path="sentiment/charts/global/a.png")]
+    html = build_export_index_html(
+        page_title="run-1",
+        text_summaries=[
+            {
+                "section_id": "summary-executive",
+                "title": "Executive Summary",
+                "body": "Executive prose.",
+                "provenance": {},
+            }
+        ],
+        chart_items=items,
+    )
+    assert html is not None
+    assert html.index('id="summaries"') < html.index('class="card-grid"')
 
 
 def test_build_index_mixed_includes_llm_summary() -> None:
@@ -161,17 +227,78 @@ def test_build_index_mixed_includes_llm_summary() -> None:
         page_title="run-1",
         transcript_data=_transcript_data(),
         chart_items=items,
-        llm_summary={
-            "section_id": "llm-summary",
-            "title": "LLM Transcript Summary",
-            "body": "Summary from the LLM.",
-            "provenance": {},
-        },
+        text_summaries=[
+            {
+                "section_id": "summary-llm-summary",
+                "title": "LLM Transcript Summary",
+                "body": "Summary from the LLM.",
+                "provenance": {},
+            }
+        ],
     )
     assert html is not None
     assert 'id="transcript"' in html
+    assert 'id="summaries"' in html
     assert "Summary from the LLM." in html
+    assert html.index('id="summaries"') < html.index('class="card-grid"')
     assert 'class="card-grid"' in html
+
+
+def test_resolve_export_text_summaries_collects_module_outputs(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "summary/data/global").mkdir(parents=True)
+    (staging / "llm_summary/data/global").mkdir(parents=True)
+    (staging / "narrative_summary/data/global").mkdir(parents=True)
+    (staging / "summary/data/global/demo_summary.md").write_text(
+        "# Executive Summary\n\nExecutive body.\n",
+        encoding="utf-8",
+    )
+    (staging / "llm_summary/data/global/demo_llm_summary.json").write_text(
+        json.dumps({"summary": "LLM body", "provenance": {"model": "qwen3:8b"}}),
+        encoding="utf-8",
+    )
+    (staging / "narrative_summary/data/global/demo_narrative_summary.json").write_text(
+        json.dumps({"narrative": "Narrative body", "provenance": {}}),
+        encoding="utf-8",
+    )
+    copied = [
+        (
+            _artifact(
+                artifact_id="e",
+                rel_path="summary/data/global/demo_summary.md",
+                kind="data_txt",
+                module="summary",
+            ),
+            Path("summary/data/global/demo_summary.md"),
+        ),
+        (
+            _artifact(
+                artifact_id="j",
+                rel_path="llm_summary/data/global/demo_llm_summary.json",
+                kind="data_json",
+                module="llm_summary",
+            ),
+            Path("llm_summary/data/global/demo_llm_summary.json"),
+        ),
+        (
+            _artifact(
+                artifact_id="n",
+                rel_path="narrative_summary/data/global/demo_narrative_summary.json",
+                kind="data_json",
+                module="narrative_summary",
+            ),
+            Path("narrative_summary/data/global/demo_narrative_summary.json"),
+        ),
+    ]
+    resolved = resolve_export_text_summaries(staging_dir=staging, copied=copied)
+    assert [item["title"] for item in resolved] == [
+        "Executive Summary",
+        "LLM Transcript Summary",
+        "Narrative Summary",
+    ]
+    assert resolved[0]["body"] == "Executive body."
+    assert resolved[1]["body"] == "LLM body"
+    assert resolved[2]["body"] == "Narrative body"
 
 
 def test_resolve_export_llm_summary_prefers_json(tmp_path: Path) -> None:
@@ -237,7 +364,7 @@ def test_write_export_index_includes_llm_summary(tmp_path: Path) -> None:
     html = _write_index(staging, copied)
     assert html is not None
     assert "Exported LLM summary" in html
-    assert 'id="llm-summary"' in html
+    assert 'id="summaries"' in html
 
 
 def test_build_index_neither_returns_none() -> None:
@@ -429,6 +556,106 @@ def test_resolve_export_page_title_from_report(tmp_path: Path) -> None:
         staging_dir=run_root, run_root=run_root, fallback="run-id"
     )
     assert title == "my_transcript"
+
+
+def test_resolve_export_transcript_data_applies_speaker_map_from_run_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    transcripts = tmp_path / "transcripts"
+    _patch_transcript_library_paths(monkeypatch, transcripts)
+    transcript_path = transcripts / "meeting.json"
+    transcript_path.write_text(
+        json.dumps(
+            {
+                "segments": [
+                    {
+                        "start": 0.0,
+                        "end": 2.0,
+                        "speaker": "SPEAKER_08",
+                        "text": "My name is Yuichi.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    sidecar_path = (
+        transcripts / "metadata" / "speaker_maps" / "meeting.speaker_map.json"
+    )
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    sidecar_path.write_text(
+        json.dumps({"speaker_map": {"SPEAKER_08": "Yuichi"}, "ignored_speakers": []}),
+        encoding="utf-8",
+    )
+
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    (run_root / "report.json").write_text(
+        json.dumps({"meta": {"base_name": "meeting"}}),
+        encoding="utf-8",
+    )
+    staging = tmp_path / "staging"
+    staging.mkdir()
+
+    resolved = resolve_export_transcript_data(
+        staging_dir=staging,
+        run_root=run_root,
+        copied=[],
+    )
+    assert resolved is not None
+    assert resolved["segments"][0]["speaker_display"] == "Yuichi"
+    assert resolved["segments"][0]["speaker"] == "Yuichi"
+
+
+def test_write_export_index_applies_copied_speaker_map_sidecar(
+    tmp_path: Path,
+) -> None:
+    staging = tmp_path / "staging"
+    (staging / "transcripts").mkdir(parents=True)
+    (staging / "transcripts/t.json").write_text(
+        json.dumps(
+            {
+                "segments": [
+                    {
+                        "start": 0.0,
+                        "end": 1.0,
+                        "speaker": "SPEAKER_00",
+                        "text": "Hello there.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    (staging / "transcripts/t.speaker_map.json").write_text(
+        json.dumps({"speaker_map": {"SPEAKER_00": "Alice"}, "ignored_speakers": []}),
+        encoding="utf-8",
+    )
+
+    copied = [
+        (
+            _artifact(
+                artifact_id="t",
+                rel_path="transcripts/t.json",
+                kind="transcript",
+                module=None,
+            ),
+            Path("transcripts/t.json"),
+        ),
+        (
+            _artifact(
+                artifact_id="m",
+                rel_path="transcripts/t.speaker_map.json",
+                kind="data_json",
+                module=None,
+            ),
+            Path("transcripts/t.speaker_map.json"),
+        ),
+    ]
+    html = _write_index(staging, copied)
+    assert html is not None
+    assert "Alice" in html
+    assert "SPEAKER_00" not in html
 
 
 def test_write_export_index_uses_enriched_transcript_fallback(tmp_path: Path) -> None:

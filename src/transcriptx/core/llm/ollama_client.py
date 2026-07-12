@@ -118,8 +118,8 @@ class OllamaClient(LLMClient):
         base_url: str = "http://localhost:11434",
         model: str = "qwen3:8b",
         seed: int = 42,
-        request_timeout: float = 120.0,
-        availability_timeout: float = 5.0,
+        request_timeout: float = 1350.0,
+        availability_timeout: float = 7.5,
         max_output_tokens: Optional[int] = 2048,
     ) -> None:
         _validate_client_config(

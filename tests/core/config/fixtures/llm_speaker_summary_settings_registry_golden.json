@@ -1,0 +1,21 @@
+{
+  "analysis.llm_speaker_summary.effort": {
+    "key": "analysis.llm_speaker_summary.effort",
+    "path": "analysis.llm_speaker_summary.effort",
+    "type": "str",
+    "default": "high",
+    "min": null,
+    "max": null,
+    "choices": [
+      "low",
+      "medium",
+      "high",
+      "max"
+    ],
+    "description": "Summary effort tier for llm_speaker_summary when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that module only. Medium and above are completeness-oriented.",
+    "scope": "project",
+    "sensitivity": "normal",
+    "category": "analysis",
+    "advanced": false
+  }
+}

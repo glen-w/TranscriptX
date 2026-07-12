@@ -21,6 +21,12 @@ import json
 from pathlib import Path
 from typing import Any, Optional, Sequence, TypedDict
 
+from transcriptx.io.speaker_map_resolver import (
+    SpeakerMapResolver,
+    SpeakerMapState,
+    normalize_diarized_id,
+    normalize_display_name,
+)
 from transcriptx.utils.charts_export import (
     _EXPORT_INDEX_CSS,
     _ExportableItem,
@@ -34,8 +40,15 @@ _TRANSCRIPT_SIDECAR_MARKERS = (
     "_simplified_transcript_summary.json",
 )
 _ENRICHED_TRANSCRIPT_MARKER = "_with_"
-_LLM_SUMMARY_JSON_SUFFIX = "_llm_summary.json"
-_LLM_SUMMARY_MD_SUFFIX = "_llm_summary.md"
+_SUMMARY_JSON_SUFFIX = ".json"
+_SUMMARY_MD_SUFFIX = ".md"
+_SUMMARY_KIND_ORDER = {
+    "executive": 0,
+    "llm_summary": 1,
+    "narrative_summary": 2,
+    "llm_speaker_summary": 3,
+    "run_report": 4,
+}
 
 
 class ExportTextSummary(TypedDict, total=False):
@@ -111,13 +124,11 @@ def _run_root_transcript_candidates(run_root: Path) -> list[Path]:
             meta = payload.get("meta") or payload.get("metadata") or {}
             base_name = meta.get("base_name")
             if base_name:
-                from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+                from transcriptx.core.utils.paths import PATHS
 
-                _add(Path(DIARISED_TRANSCRIPTS_DIR) / f"{base_name}.json")
-                _add(
-                    Path(DIARISED_TRANSCRIPTS_DIR)
-                    / f"{base_name}_transcript_diarised.json"
-                )
+                transcripts_dir = PATHS.transcripts_dir
+                _add(transcripts_dir / f"{base_name}.json")
+                _add(transcripts_dir / f"{base_name}_transcript_diarised.json")
         except Exception:
             pass
 
@@ -132,13 +143,122 @@ def _run_root_transcript_candidates(run_root: Path) -> list[Path]:
                 _add(Path(str(transcript_path)))
             source_basename = manifest.get("source_basename")
             if source_basename:
-                from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+                from transcriptx.core.utils.paths import PATHS
 
-                _add(Path(DIARISED_TRANSCRIPTS_DIR) / f"{source_basename}.json")
+                _add(PATHS.transcripts_dir / f"{source_basename}.json")
         except Exception:
             pass
 
     return candidates
+
+
+def _speaker_map_state_from_export_copies(
+    staging_dir: Path,
+    copied: Sequence[tuple[Any, Path]],
+) -> Optional[SpeakerMapState]:
+    """Load speaker-map state from a copied ``.speaker_map.json`` export artifact."""
+    for _artifact, rel in copied:
+        rel_posix = rel.as_posix()
+        if not rel_posix.endswith(".speaker_map.json"):
+            continue
+        path = staging_dir / rel
+        if not path.is_file():
+            continue
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(raw, dict):
+            continue
+        speaker_map_raw = raw.get("speaker_map") or {}
+        if not isinstance(speaker_map_raw, dict) or not speaker_map_raw:
+            continue
+        normalized_map = {
+            normalize_diarized_id(speaker_id): normalize_display_name(display_name)
+            for speaker_id, display_name in speaker_map_raw.items()
+            if normalize_diarized_id(speaker_id)
+        }
+        if not normalized_map:
+            continue
+        ignored_raw = raw.get("ignored_speakers") or []
+        ignored = (
+            [
+                normalize_diarized_id(speaker_id)
+                for speaker_id in ignored_raw
+                if normalize_diarized_id(speaker_id)
+            ]
+            if isinstance(ignored_raw, list)
+            else []
+        )
+        return SpeakerMapState(
+            has_sidecar=True,
+            speaker_map=normalized_map,
+            ignored_speakers=ignored,
+        )
+    return None
+
+
+def _resolve_speaker_map_transcript_path(
+    *,
+    run_root: Optional[Path],
+    loaded_from: Optional[Path],
+) -> Optional[Path]:
+    """Pick the canonical on-disk transcript path for sidecar speaker-map lookup."""
+    if run_root is not None:
+        for candidate in _run_root_transcript_candidates(run_root):
+            if candidate.is_file():
+                return candidate
+
+    if loaded_from is not None and loaded_from.is_file():
+        return loaded_from
+    return None
+
+
+def _apply_export_speaker_names(
+    transcript_data: dict[str, Any],
+    *,
+    run_root: Optional[Path] = None,
+    loaded_from: Optional[Path] = None,
+    staging_dir: Optional[Path] = None,
+    copied: Optional[Sequence[tuple[Any, Path]]] = None,
+) -> dict[str, Any]:
+    """Resolve diarized speaker IDs to mapped display names for export rendering."""
+    segments = transcript_data.get("segments")
+    if not isinstance(segments, list) or not segments:
+        return transcript_data
+
+    resolver = SpeakerMapResolver()
+    state: Optional[SpeakerMapState] = None
+
+    transcript_path = _resolve_speaker_map_transcript_path(
+        run_root=run_root,
+        loaded_from=loaded_from,
+    )
+    if transcript_path is not None:
+        try:
+            candidate_state = resolver.load_mapping(transcript_path)
+            if candidate_state.speaker_map:
+                state = candidate_state
+        except Exception:
+            state = None
+
+    if state is None and staging_dir is not None and copied:
+        state = _speaker_map_state_from_export_copies(staging_dir, copied)
+
+    if state is None or not state.speaker_map:
+        return transcript_data
+
+    resolved_segments = resolver.resolve_segments(segments, state)
+    for segment in resolved_segments:
+        if not isinstance(segment, dict):
+            continue
+        speaker = segment.get("speaker")
+        if speaker and not segment.get("speaker_display"):
+            segment["speaker_display"] = str(speaker)
+
+    updated = dict(transcript_data)
+    updated["segments"] = resolved_segments
+    return updated
 
 
 def resolve_export_page_title(
@@ -196,13 +316,20 @@ def resolve_export_transcript_data(
         for candidate in _run_root_transcript_candidates(run_root):
             normalized = _try_load_transcript_json(candidate)
             if normalized is not None:
-                return normalized
+                return _apply_export_speaker_names(
+                    normalized,
+                    run_root=run_root,
+                    loaded_from=candidate,
+                    staging_dir=staging_dir,
+                    copied=copied,
+                )
 
     best: Optional[dict[str, Any]] = None
     best_count = 0
+    best_source: Optional[Path] = None
 
-    def _consider(raw: Any) -> None:
-        nonlocal best, best_count
+    def _consider(path: Path, raw: Any) -> None:
+        nonlocal best, best_count, best_source
         normalized = normalize_transcript_payload(raw)
         if normalized is None:
             return
@@ -210,6 +337,7 @@ def resolve_export_transcript_data(
         if count > best_count:
             best = normalized
             best_count = count
+            best_source = path
 
     for _artifact, rel in copied:
         rel_posix = rel.as_posix()
@@ -232,13 +360,21 @@ def resolve_export_transcript_data(
             raw = json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             continue
-        _consider(raw)
+        _consider(path, raw)
 
-    return best
+    if best is None:
+        return None
+    return _apply_export_speaker_names(
+        best,
+        run_root=run_root,
+        loaded_from=best_source,
+        staging_dir=staging_dir,
+        copied=copied,
+    )
 
 
-def _strip_llm_summary_markdown(md: str) -> str:
-    """Drop the generated markdown title and provenance footer when JSON is absent."""
+def _strip_summary_markdown(md: str) -> str:
+    """Drop generated markdown titles and provenance footers when JSON is absent."""
     lines = md.splitlines()
     body_lines: list[str] = []
     for line in lines:
@@ -251,25 +387,74 @@ def _strip_llm_summary_markdown(md: str) -> str:
     return "\n".join(body_lines).strip()
 
 
-def resolve_export_llm_summary(
+def _summary_text_from_payload(payload: dict[str, Any], *, kind: str) -> str:
+    if kind == "narrative_summary":
+        return str(payload.get("narrative") or payload.get("summary") or "").strip()
+    if kind == "llm_speaker_summary":
+        return str(payload.get("summary") or "").strip()
+    return str(payload.get("summary") or payload.get("narrative") or "").strip()
+
+
+def _summary_kind_from_rel_path(
+    rel_posix: str,
     *,
-    staging_dir: Path,
-    copied: Sequence[tuple[Any, Path]],
-) -> Optional[ExportTextSummary]:
-    """Load LLM transcript summary text from copied export artifacts, if present."""
-    json_path: Optional[Path] = None
-    md_path: Optional[Path] = None
+    module: Optional[str],
+) -> Optional[str]:
+    name = Path(rel_posix).name.lower()
+    if name == "report.md":
+        return "run_report"
+    if name.endswith("_llm_summary.json") or name.endswith("_llm_summary.md"):
+        return "llm_summary"
+    if name.endswith("_narrative_summary.json") or name.endswith(
+        "_narrative_summary.md"
+    ):
+        return "narrative_summary"
+    if name.endswith("_llm_speaker_summary.json") or name.endswith(
+        "_llm_speaker_summary.md"
+    ):
+        return "llm_speaker_summary"
+    if (
+        module == "summary"
+        and (name.endswith("_summary.json") or name.endswith("_summary.md"))
+        and "_llm_" not in name
+        and "_narrative_" not in name
+        and "_simplified_transcript_" not in name
+    ):
+        return "executive"
+    return None
 
-    for artifact, rel in copied:
-        if getattr(artifact, "module", None) != "llm_summary":
-            continue
-        rel_posix = rel.as_posix()
-        path = staging_dir / rel
-        if rel_posix.endswith(_LLM_SUMMARY_JSON_SUFFIX):
-            json_path = path
-        elif rel_posix.endswith(_LLM_SUMMARY_MD_SUFFIX):
-            md_path = path
 
+def _default_summary_title(kind: str, *, rel_posix: str) -> str:
+    if kind == "executive":
+        return "Executive Summary"
+    if kind == "llm_summary":
+        return "LLM Transcript Summary"
+    if kind == "narrative_summary":
+        return "Narrative Summary"
+    if kind == "run_report":
+        return "Run Report"
+    if kind == "llm_speaker_summary":
+        stem = Path(rel_posix).stem
+        marker = "_llm_speaker_summary"
+        if stem.endswith(marker):
+            speaker_token = stem[: -len(marker)].rsplit("_", 1)[-1]
+            if speaker_token:
+                return f"Speaker Summary — {speaker_token.replace('_', ' ')}"
+        return "Speaker Summary"
+    return "Summary"
+
+
+def _summary_section_id(kind: str, rel_posix: str) -> str:
+    stem = Path(rel_posix).stem.replace("_", "-")
+    return f"summary-{kind}-{stem}"
+
+
+def _load_summary_body(
+    *,
+    json_path: Optional[Path],
+    md_path: Optional[Path],
+    kind: str,
+) -> tuple[str, dict[str, Any]]:
     payload: Optional[dict[str, Any]] = None
     if json_path is not None and json_path.is_file():
         try:
@@ -280,24 +465,120 @@ def resolve_export_llm_summary(
             payload = None
 
     body = ""
-    if payload and payload.get("summary"):
-        body = str(payload["summary"]).strip()
-    elif md_path is not None and md_path.is_file():
+    if payload:
+        body = _summary_text_from_payload(payload, kind=kind)
+    if not body and md_path is not None and md_path.is_file():
         try:
-            body = _strip_llm_summary_markdown(md_path.read_text(encoding="utf-8"))
+            if kind == "run_report":
+                body = md_path.read_text(encoding="utf-8").strip()
+            else:
+                body = _strip_summary_markdown(md_path.read_text(encoding="utf-8"))
         except Exception:
             body = ""
 
-    if not body:
-        return None
-
     provenance = payload.get("provenance") if isinstance(payload, dict) else {}
-    return ExportTextSummary(
-        section_id="llm-summary",
-        title="LLM Transcript Summary",
-        body=body,
-        provenance=provenance if isinstance(provenance, dict) else {},
+    if kind == "llm_speaker_summary" and isinstance(payload, dict):
+        speaker = payload.get("speaker")
+        if speaker:
+            provenance = {**provenance, "speaker": speaker}
+    return body, provenance if isinstance(provenance, dict) else {}
+
+
+def resolve_export_text_summaries(
+    *,
+    staging_dir: Path,
+    copied: Sequence[tuple[Any, Path]],
+) -> list[ExportTextSummary]:
+    """Load prose summaries from copied export artifacts for the index page."""
+    grouped: dict[str, dict[str, Any]] = {}
+
+    for artifact, rel in copied:
+        rel_posix = rel.as_posix()
+        module = getattr(artifact, "module", None)
+        kind = _summary_kind_from_rel_path(rel_posix, module=module)
+        if kind is None:
+            continue
+        if kind == "llm_speaker_summary" and rel_posix.endswith(
+            "_llm_speaker_summary_index.json"
+        ):
+            continue
+
+        stem = Path(rel_posix).stem
+        group_key = f"{kind}|{stem}"
+        entry = grouped.setdefault(
+            group_key,
+            {
+                "kind": kind,
+                "rel_posix": rel_posix,
+                "title": getattr(artifact, "title", None),
+                "json_path": None,
+                "md_path": None,
+            },
+        )
+        path = staging_dir / rel
+        if rel_posix.endswith(_SUMMARY_JSON_SUFFIX):
+            entry["json_path"] = path
+        elif rel_posix.endswith(_SUMMARY_MD_SUFFIX):
+            entry["md_path"] = path
+
+    summaries: list[ExportTextSummary] = []
+    ordered = sorted(
+        grouped.values(),
+        key=lambda item: (
+            _SUMMARY_KIND_ORDER.get(str(item["kind"]), 99),
+            str(item["rel_posix"]),
+        ),
     )
+    for entry in ordered:
+        kind = str(entry["kind"])
+        rel_posix = str(entry["rel_posix"])
+        body, provenance = _load_summary_body(
+            json_path=entry.get("json_path"),
+            md_path=entry.get("md_path"),
+            kind=kind,
+        )
+        if not body:
+            continue
+        title = str(entry.get("title") or "").strip()
+        if not title:
+            title = _default_summary_title(kind, rel_posix=rel_posix)
+        if kind == "llm_speaker_summary":
+            speaker = provenance.get("speaker")
+            if speaker:
+                title = f"Speaker Summary — {speaker}"
+        summaries.append(
+            ExportTextSummary(
+                section_id=_summary_section_id(kind, rel_posix),
+                title=title,
+                body=body,
+                provenance=provenance,
+            )
+        )
+    return summaries
+
+
+def resolve_export_llm_summary(
+    *,
+    staging_dir: Path,
+    copied: Sequence[tuple[Any, Path]],
+) -> Optional[ExportTextSummary]:
+    """Backward-compatible helper returning the first LLM transcript summary."""
+    for summary in resolve_export_text_summaries(
+        staging_dir=staging_dir, copied=copied
+    ):
+        if summary.get("title") == "LLM Transcript Summary":
+            return summary
+    return None
+
+
+def render_summaries_section(summaries: Sequence[ExportTextSummary]) -> str:
+    """Render a grouped summaries block for the export index page."""
+    blocks = "".join(render_text_summary_section(summary) for summary in summaries)
+    return f'<section id="summaries"><h2>Summaries</h2>{blocks}</section>'
+
+
+def _strip_llm_summary_markdown(md: str) -> str:
+    return _strip_summary_markdown(md)
 
 
 def render_text_summary_section(summary: ExportTextSummary) -> str:
@@ -333,6 +614,33 @@ def render_text_summary_section(summary: ExportTextSummary) -> str:
     )
 
 
+def _segment_speaker_label(segment: dict[str, Any]) -> str:
+    return str(segment.get("speaker_display") or segment.get("speaker") or "Unknown")
+
+
+def _group_contiguous_segments_by_speaker(
+    segments: list[dict[str, Any]],
+) -> list[tuple[str, list[dict[str, Any]]]]:
+    """Group contiguous transcript segments by resolved speaker label."""
+    groups: list[tuple[str, list[dict[str, Any]]]] = []
+    current_speaker: str | None = None
+    current_group: list[dict[str, Any]] = []
+    for segment in segments:
+        if not isinstance(segment, dict):
+            continue
+        speaker = _segment_speaker_label(segment)
+        if speaker != current_speaker:
+            if current_group:
+                groups.append((str(current_speaker), current_group))
+            current_speaker = speaker
+            current_group = [segment]
+        else:
+            current_group.append(segment)
+    if current_group:
+        groups.append((str(current_speaker), current_group))
+    return groups
+
+
 def _format_timestamp_range(start: Any, end: Any) -> str:
     try:
         return (
@@ -345,9 +653,9 @@ def _format_timestamp_range(start: Any, end: Any) -> str:
 def render_transcript_section(transcript_data: dict[str, Any]) -> str:
     """Render a basic transcript displayer section from transcript JSON.
 
-    Mirrors the GUI plain view: a metadata summary line followed by one block
-    per segment (speaker chip, optional timestamp range, text). Every dynamic
-    value is HTML-escaped.
+    Mirrors the GUI segmented view: a metadata summary line followed by one block
+    per contiguous speaker run (speaker chip, optional timestamp range, text).
+    Every dynamic value is HTML-escaped.
     """
     segments = transcript_data.get("segments") or []
     metadata = transcript_data.get("metadata") or {}
@@ -382,22 +690,25 @@ def render_transcript_section(transcript_data: dict[str, Any]) -> str:
     meta_line = " · ".join(html.escape(str(bit)) for bit in meta_bits)
 
     blocks: list[str] = []
-    for segment in segments:
-        speaker = segment.get("speaker_display") or segment.get("speaker") or "Unknown"
-        text = str(segment.get("text", ""))
-        timestamp = _format_timestamp_range(
-            segment.get("start", 0), segment.get("end", 0)
-        )
+    for speaker_name, group_segments in _group_contiguous_segments_by_speaker(segments):
+        group_start = group_segments[0].get("start", 0)
+        group_end = group_segments[-1].get("end", 0)
+        timestamp = _format_timestamp_range(group_start, group_end)
         time_html = (
             f'<span class="tx-time">{html.escape(timestamp)}</span>'
             if timestamp
             else ""
         )
+        text_blocks = "".join(
+            f'<p class="tx-text">{html.escape(str(segment.get("text", "")))}</p>'
+            for segment in group_segments
+            if str(segment.get("text", "")).strip()
+        )
         blocks.append(
             '<div class="tx-segment">'
-            f'<span class="tx-speaker-chip">{html.escape(str(speaker))}</span>'
+            f'<span class="tx-speaker-chip">{html.escape(speaker_name)}</span>'
             f"{time_html}"
-            f'<p class="tx-text">{html.escape(text)}</p>'
+            f"{text_blocks}"
             "</div>"
         )
 
@@ -420,13 +731,14 @@ def build_export_index_html(
     page_title: str,
     transcript_data: Optional[dict[str, Any]] = None,
     chart_items: Optional[list[_ExportableItem]] = None,
+    text_summaries: Optional[Sequence[ExportTextSummary]] = None,
     llm_summary: Optional[ExportTextSummary] = None,
     omitted_count: int = 0,
     included_files: Optional[Sequence[str]] = None,
 ) -> Optional[str]:
     """Build the combined Overview-export ``index.html``.
 
-    Renders a transcript section, optional LLM summary, and/or a charts gallery
+    Renders a transcript section, optional summaries, and/or a charts gallery
     section. Each section is produced independently; a failure in one does not drop
     the others. Returns ``None`` when no section could be produced (the caller
     then skips writing the file).
@@ -439,12 +751,20 @@ def build_export_index_html(
         except Exception:
             transcript_section = None
 
-    llm_summary_section: Optional[str] = None
-    if llm_summary and llm_summary.get("body"):
+    summary_items: list[ExportTextSummary] = []
+    if text_summaries:
+        summary_items.extend(
+            summary for summary in text_summaries if summary.get("body")
+        )
+    elif llm_summary and llm_summary.get("body"):
+        summary_items.append(llm_summary)
+
+    summaries_section: Optional[str] = None
+    if summary_items:
         try:
-            llm_summary_section = render_text_summary_section(llm_summary)
+            summaries_section = render_summaries_section(summary_items)
         except Exception:
-            llm_summary_section = None
+            summaries_section = None
 
     chart_toc: list[str] = []
     chart_sections: list[str] = []
@@ -455,16 +775,22 @@ def build_export_index_html(
             chart_toc, chart_sections = [], []
 
     has_transcript = transcript_section is not None
-    has_llm_summary = llm_summary_section is not None
+    has_summaries = summaries_section is not None
     has_charts = bool(chart_sections)
-    if not has_transcript and not has_llm_summary and not has_charts:
+    if not has_transcript and not has_summaries and not has_charts:
         return None
 
     nav_entries: list[str] = []
     if has_transcript:
         nav_entries.append('<li><a href="#transcript">Transcript</a></li>')
-    if has_llm_summary:
-        nav_entries.append('<li><a href="#llm-summary">LLM Transcript Summary</a></li>')
+    if has_summaries and summary_items:
+        nav_entries.append('<li><a href="#summaries">Summaries</a></li>')
+        for summary in summary_items:
+            section_id = summary.get("section_id") or "summary"
+            title = summary.get("title") or "Summary"
+            nav_entries.append(
+                f'<li><a href="#{html.escape(section_id)}">{html.escape(title)}</a></li>'
+            )
     if has_charts:
         nav_entries.append("<li><strong>Charts</strong></li>")
         nav_entries.extend(chart_toc)
@@ -481,8 +807,8 @@ def build_export_index_html(
     body_sections: list[str] = []
     if has_transcript and transcript_section is not None:
         body_sections.append(transcript_section)
-    if has_llm_summary and llm_summary_section is not None:
-        body_sections.append(llm_summary_section)
+    if has_summaries and summaries_section is not None:
+        body_sections.append(summaries_section)
     body_sections.extend(chart_sections)
     if included_files:
         body_sections.append(_render_included_files(included_files))

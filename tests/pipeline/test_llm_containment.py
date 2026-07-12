@@ -69,7 +69,7 @@ def test_disabled_llm_modules_skip_without_client(tmp_path) -> None:
         },
     )
     registry = get_module_registry()
-    for name in ("llm_summary", "narrative_summary"):
+    for name in ("llm_summary", "narrative_summary", "llm_speaker_summary"):
         info = registry.get_module_info(name)
         if info:
             pipeline.nodes[name] = SimpleNamespace(
@@ -109,11 +109,16 @@ def test_disabled_llm_modules_skip_without_client(tmp_path) -> None:
         review = compute_review_before_run_for_pipeline(
             pipeline,
             transcript_path=str(tmp_path / "mini.json"),
-            selected_modules=["llm_summary", "narrative_summary"],
+            selected_modules=[
+                "llm_summary",
+                "narrative_summary",
+                "llm_speaker_summary",
+            ],
             output_dir=str(tmp_path / "out"),
         )
 
     skipped = {row["module"]: row["reason"] for row in review["modules_skipped"]}
     assert skipped.get("llm_summary") == "LLM disabled"
     assert skipped.get("narrative_summary") == "LLM disabled"
+    assert skipped.get("llm_speaker_summary") == "LLM disabled"
     assert review["modules_will_run"] == []

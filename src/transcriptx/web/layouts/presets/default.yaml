@@ -60,3 +60,9 @@ pages:
           artifact_stem: _narrative_summary
           text_field: narrative
           empty_hint: Run the `narrative_summary` module (with LLM enabled) to populate this view.
+      - placement_id: insights_llm_speaker_summary
+        block_id: llm_speaker_summary_block
+        visible: true
+        params:
+          title: Per-Speaker LLM Summaries
+          empty_hint: Run the `llm_speaker_summary` module (with LLM enabled and named speakers) to populate this view.

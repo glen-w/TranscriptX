@@ -155,9 +155,7 @@ class SubjectService:
         return str(subject.ref.path)
 
     @staticmethod
-    def index_in_path_options(
-        session_state: Dict[str, Any], options: list[str]
-    ) -> int:
+    def index_in_path_options(session_state: Dict[str, Any], options: list[str]) -> int:
         """Return 0-based Streamlit selectbox index (0 = placeholder)."""
         current = SubjectService.current_transcript_path(session_state)
         if not current or not options:

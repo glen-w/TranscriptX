@@ -30,7 +30,7 @@ def _llm_cfg(**overrides: object) -> LLMConfig:
 def test_medium_profile_is_completeness_oriented() -> None:
     profile = BUILTIN_LLM_SUMMARY_EFFORT_PROFILES["medium"]
     assert profile.max_input_chars == 128_000
-    assert profile.request_timeout == 600.0
+    assert profile.request_timeout == 1350.0
     assert profile.max_output_tokens == 4096
 
 
@@ -38,10 +38,10 @@ def test_medium_profile_is_completeness_oriented() -> None:
 @pytest.mark.parametrize(
     ("effort", "max_input_chars", "request_timeout", "max_output_tokens"),
     [
-        ("low", 48_000, 180.0, 2048),
-        ("medium", 128_000, 600.0, 4096),
-        ("high", 256_000, 1200.0, 8192),
-        ("max", 512_000, 2400.0, 16_384),
+        ("low", 48_000, 270.0, 2048),
+        ("medium", 128_000, 1350.0, 4096),
+        ("high", 256_000, 1800.0, 8192),
+        ("max", 512_000, 3600.0, 16_384),
     ],
 )
 def test_resolve_effort_profile_limits(
@@ -97,7 +97,7 @@ def test_explicit_profile_model_override_wins() -> None:
     override_profiles["medium"] = LLMSummaryEffortProfile(
         effort="medium",
         max_input_chars=128_000,
-        request_timeout=600.0,
+        request_timeout=1350.0,
         max_output_tokens=4096,
         model="override-model:13b",
     )
@@ -129,7 +129,7 @@ def test_build_llm_summary_ollama_client_uses_runtime_limits() -> None:
     runtime = resolve_llm_summary_runtime(llm_cfg=llm_cfg, effort="low")
     client = build_llm_summary_ollama_client(llm_cfg=llm_cfg, runtime=runtime)
     assert client.model == "custom-model:7b"
-    assert client._request_timeout == 180.0
+    assert client._request_timeout == 270.0
     assert client._max_output_tokens == 2048
 
 

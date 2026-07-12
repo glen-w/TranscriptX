@@ -124,6 +124,83 @@ def test_file_run_state_store_skips_when_no_state_file(
 
 
 @pytest.mark.unit
+def test_file_run_state_store_skips_when_transcript_path_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = FileRunStateStore()
+    state_file = tmp_path / "state.json"
+    state_file.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.PROCESSING_STATE_FILE",
+        state_file,
+    )
+    out = store.update({})
+    assert out.success is True
+    assert out.severity == "optional"
+
+
+@pytest.mark.unit
+def test_file_run_state_store_skips_when_entry_not_found(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = FileRunStateStore()
+    state_file = tmp_path / "state.json"
+    state_file.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.PROCESSING_STATE_FILE",
+        state_file,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.load_processing_state",
+        lambda: {"processed_files": {}},
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.find_processed_entry_for_path",
+        lambda *_a, **_k: (None, None),
+    )
+    out = store.update({"transcript_path": str(tmp_path / "t.json")})
+    assert out.success is True
+    assert out.severity == "optional"
+
+
+@pytest.mark.unit
+def test_file_run_state_store_updates_matching_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = FileRunStateStore()
+    state_file = tmp_path / "state.json"
+    state_file.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.PROCESSING_STATE_FILE",
+        state_file,
+    )
+    state = {"processed_files": {"k1": {"path": "t.json"}}}
+    saved: list = []
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.load_processing_state",
+        lambda: state,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.find_processed_entry_for_path",
+        lambda *_a, **_k: ("k1", state["processed_files"]["k1"]),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.update_analysis_state",
+        lambda entry, results: {**entry, "modules_run": results.get("modules_run")},
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.adapters.file_run_state_store.save_processing_state",
+        lambda s: saved.append(s),
+    )
+    out = store.update(
+        {"transcript_path": str(tmp_path / "t.json"), "modules_run": ["stats"]}
+    )
+    assert out.success is True
+    assert out.severity == "required"
+    assert saved[0]["processed_files"]["k1"]["modules_run"] == ["stats"]
+
+
+@pytest.mark.unit
 def test_file_run_state_store_failure_returns_outcome(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

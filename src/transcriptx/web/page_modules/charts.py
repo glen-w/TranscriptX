@@ -32,7 +32,7 @@ from transcriptx.web.services.chart_view_model_service import (
     compute_chart_badges,
     family_from_overview_slot,
     group_charts_into_families,
-    resolve_chart_description,
+    resolve_chart_display_description,
 )
 from transcriptx.web.services.artifact_service import (
     MAX_INLINE_HTML_BYTES,
@@ -87,40 +87,6 @@ _CHARTS_CONFIG = RunScopedPageConfig(
 )
 
 
-def _group_aggregate_semantics_caption(chart: Artifact) -> str:
-    """
-    Short caption aligned with real group chart semantics (not a generic
-    "aggregated across sessions" for temporal overlays, pooled views, etc.).
-    """
-    if chart.has_tag("group_visual_special_path"):
-        return "Group word cloud via wordclouds module path (not GROUP_CHART_REGISTRY)"
-    meta = chart.meta or {}
-    vid = meta.get("viz_id")
-    if not isinstance(vid, str):
-        vid = ""
-    rp = (chart.rel_path or "").lower()
-    if not vid and "wordcloud" in rp:
-        return "Group word cloud via wordclouds module path (not GROUP_CHART_REGISTRY)"
-    if ".temporal_overlay." in vid:
-        return (
-            "Multi-session overlay (session-relative time — not a single wall-clock "
-            "timeline)"
-        )
-    if "cross_session_speaker" in vid:
-        return "Same canonical speaker compared across sessions in this group"
-    if ".pooled." in vid:
-        return (
-            "Pooled single view (corpus-level merge; see module / docs for semantics)"
-        )
-    if ".session." in vid:
-        return "One value per transcript in this group"
-    if "global_acts_pie" in vid:
-        return "Corpus-level dialogue-act mix for this group (audited pooled view)"
-    if vid.startswith("group."):
-        return "Group run summary chart"
-    return "Group run chart"
-
-
 def _overview_candidate_charts(
     all_charts: list[Artifact], chart_source: str, tag_filter: list[str]
 ) -> list[Artifact]:
@@ -148,11 +114,9 @@ def _render_chart_gallery_card(
             unsafe_allow_html=True,
         )
         st.caption(chart.title or chart.rel_path)
-        description = resolve_chart_description(chart)
+        description = resolve_chart_display_description(chart)
         if description:
             st.caption(description)
-        elif chart.has_tag("group_aggregate"):
-            st.caption(_group_aggregate_semantics_caption(chart))
         if chart.kind == "chart_static":
             thumb_path = ArtifactService.generate_thumbnail(run_root, chart)
             if thumb_path and Path(thumb_path).exists():
@@ -460,11 +424,9 @@ def _charts_filters_and_gallery_fragment(
         selected = next((a for a in all_charts if a.id == full_screen_id), None)
         if selected:
             st.subheader(selected.title or selected.rel_path)
-            selected_description = resolve_chart_description(selected)
+            selected_description = resolve_chart_display_description(selected)
             if selected_description:
                 st.caption(selected_description)
-            elif selected.has_tag("group_aggregate"):
-                st.caption(_group_aggregate_semantics_caption(selected))
             if st.button("Close Full Screen"):
                 st.session_state[CHARTS_KEY_FULL_SCREEN] = None
                 st.rerun()
