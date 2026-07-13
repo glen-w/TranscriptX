@@ -13,11 +13,8 @@ from transcriptx.core.pipeline.run_outcome_truth import (
 )
 from transcriptx.web.blocks.context import BlockContext
 from transcriptx.web.blocks.placement import BlockPlacement
-from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.components.export_panel import render_export_panel_ui
 from transcriptx.web.module_ui_groups import module_sort_key
-from transcriptx.web.module_ui_groups import order_module_ids
-from transcriptx.web.services.export_service import ExportService
-from transcriptx.web.services import ArtifactService
 from transcriptx.web.services.summary_service import SummaryService
 from transcriptx.web.transcript_viewer.modules_panel import render_modules_panel
 
@@ -184,91 +181,8 @@ def render_module_summary_table(ctx: BlockContext, _placement: BlockPlacement) -
     )
 
 
-@st.fragment
-def _export_panel_fragment(run_root: Path, artifacts: tuple) -> None:
-    st.subheader("Export")
-    export_mode = st.radio(
-        "Export Options",
-        [
-            "All",
-            "Module",
-            "Speaker",
-            "Charts Only",
-            "Static Charts Only",
-            "Data Only",
-            "Custom Selection",
-        ],
-        key="overview_export_mode",
-    )
-    selected = list(artifacts)
-    if export_mode == "Module":
-        module_options = order_module_ids({a.module for a in artifacts if a.module})
-        module_choice = st.selectbox(
-            "Module",
-            module_options,
-            format_func=format_module_option,
-            key="overview_export_module",
-        )
-        selected = [a for a in artifacts if a.module == module_choice]
-    elif export_mode == "Speaker":
-        speaker_options = sorted({a.speaker for a in artifacts if a.speaker})
-        speaker_choice = st.selectbox(
-            "Speaker",
-            speaker_options,
-            key="overview_export_speaker",
-        )
-        selected = [a for a in artifacts if a.speaker == speaker_choice]
-    elif export_mode == "Charts Only":
-        selected = [a for a in artifacts if a.kind.startswith("chart")]
-    elif export_mode == "Static Charts Only":
-        selected = [a for a in artifacts if a.kind == "chart_static"]
-    elif export_mode == "Data Only":
-        selected = [a for a in artifacts if a.kind.startswith("data")]
-    elif export_mode == "Custom Selection":
-        options = {a.id: a.rel_path for a in artifacts}
-        chosen = st.multiselect(
-            "Artifacts",
-            list(options.keys()),
-            format_func=lambda key: options.get(key, key),
-            key="overview_export_artifacts",
-        )
-        selected = [a for a in artifacts if a.id in chosen]
-
-    if not selected:
-        st.info("No artifacts selected for export.")
-        return
-
-    total_bytes = sum(a.bytes for a in selected)
-    st.caption(f"Selection size: {total_bytes / (1024 * 1024):.1f} MB")
-    confirm_large = True
-    if total_bytes > 500 * 1024 * 1024:
-        st.warning("Large export (> 500MB). Confirm before exporting.")
-        confirm_large = st.checkbox(
-            "I understand this may take time.",
-            key="overview_export_confirm_large",
-        )
-    if total_bytes > 2 * 1024 * 1024 * 1024:
-        st.error("Export exceeds 2GB hard cap.")
-        return
-    if st.button(
-        "Create Export", disabled=not confirm_large, key="overview_create_export"
-    ):
-        export_path = ExportService.zip_artifacts(run_root, [a.id for a in selected])
-        if export_path:
-            try:
-                payload = ArtifactService.read_for_download(export_path)
-                st.download_button(
-                    "Download Export",
-                    data=payload,
-                    file_name=export_path.name,
-                    key="overview_download_export",
-                )
-            except Exception as exc:
-                st.error(f"Export failed: {exc}")
-
-
 def render_export_panel(ctx: BlockContext, _placement: BlockPlacement) -> None:
     if ctx.run_root is None:
         st.info("Select a run to export artifacts.")
         return
-    _export_panel_fragment(ctx.run_root, ctx.artifacts)
+    render_export_panel_ui(ctx.run_root, ctx.artifacts, key_prefix="overview_export")

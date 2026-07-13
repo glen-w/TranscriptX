@@ -1,59 +1,88 @@
-"""Highlights and Summary insights viewer — composed from layout profiles."""
+"""Insights viewer — sectioned composition from layout profiles."""
 
 from __future__ import annotations
 
 import streamlit as st
 
 from transcriptx.web.blocks.builtin import register_builtin_blocks
-from transcriptx.web.blocks.layout_picker import render_layout_profile_picker
 from transcriptx.web.blocks.rendering import render_block
 from transcriptx.web.blocks.session_context import (
     build_context_from_session,
     load_active_layout,
 )
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
-from transcriptx.web.services import RunIndex, SubjectService
+from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.components.run_scoped_page import (
+    RunScopedPageConfig,
+    RunScopedPageContext,
+    render_run_scoped_page,
+)
 
-_INSIGHTS_HELP = (
-    "**Insights** shows curated narrative views from analysis modules "
-    "(highlights, summary, LLM outputs)."
+INSIGHTS_SECTION_KEY = "insights_section"
+INSIGHTS_SECTIONS = (
+    ("summary", "Summary"),
+    ("speakers", "Speakers"),
+    ("actions", "Actions"),
+    ("highlights", "Highlights"),
+    ("analysis", "Analysis"),
+)
+
+_INSIGHTS_HELP_PREREQ = (
+    "**Insights** is a structured analysis workspace for summaries, speakers, "
+    "actions, highlights, and deeper analysis."
+)
+
+_INSIGHTS_CONFIG = RunScopedPageConfig(
+    title="Insights",
+    description="Structured analysis for the selected run.",
+    prereq_help_md=_INSIGHTS_HELP_PREREQ,
+    empty_headline="Select a subject and run",
+    empty_detail="Use the sidebar to choose a transcript or group, then pick a run.",
+    primary_action=("Open Library", "Library"),
+    secondary_action=("Run Analysis", "Run Analysis"),
+    loaded_help_md=None,
 )
 
 
-def render_insights() -> None:
-    register_builtin_blocks()
-    subject = SubjectService.resolve_current_subject(st.session_state)
-    run_id = st.session_state.get("run_id")
-    if not subject or not run_id:
-        render_page_shell(
-            "Insights",
-            "Curated narrative views for the selected run.",
-            badges=None,
-            actions=None,
+def _render_section_nav() -> str:
+    labels = [label for _, label in INSIGHTS_SECTIONS]
+    keys = [key for key, _ in INSIGHTS_SECTIONS]
+    current = st.session_state.get(INSIGHTS_SECTION_KEY, "summary")
+    if current not in keys:
+        current = "summary"
+        st.session_state[INSIGHTS_SECTION_KEY] = current
+    try:
+        choice = st.segmented_control(
+            "Insights section",
+            options=labels,
+            default=dict(INSIGHTS_SECTIONS)[current],
+            key="insights_section_control",
+            label_visibility="collapsed",
         )
-        st.info("Select a subject and run to view insights.")
-        render_page_help(_INSIGHTS_HELP)
-        return
+    except Exception:
+        choice = st.radio(
+            "Insights section",
+            labels,
+            index=keys.index(current),
+            horizontal=True,
+            key="insights_section_radio",
+            label_visibility="collapsed",
+        )
+    selected_key = next(k for k, lab in INSIGHTS_SECTIONS if lab == choice)
+    st.session_state[INSIGHTS_SECTION_KEY] = selected_key
+    return selected_key
 
-    run_root = RunIndex.get_run_root(
-        subject.scope,
-        run_id,
-        subject_id=subject.subject_id,
-    )
-    if not run_root.exists():
-        st.info("Run folder not found.")
-        return
 
+def _render_insights_body(ctx: RunScopedPageContext) -> None:
     render_page_shell(
         "Insights",
-        "Themes, highlights, summaries, and LLM narrative outputs.",
+        "Themes, summaries, speakers, actions, and deeper analysis.",
         badges=None,
         actions=None,
-        extra=lambda: render_layout_profile_picker(key_prefix="insights"),
     )
+    section = _render_section_nav()
 
-    ctx = build_context_from_session(st.session_state)
-    if ctx is None:
+    block_ctx = build_context_from_session(st.session_state)
+    if block_ctx is None:
         return
 
     layout = load_active_layout(st.session_state)
@@ -62,10 +91,29 @@ def render_insights() -> None:
         st.warning("Active layout has no insights page.")
         return
 
-    for index, block in enumerate(page.blocks):
-        placement = block.to_placement()
+    placements = [b.to_placement() for b in page.blocks]
+    section_blocks = [
+        p for p in placements if (p.section or "analysis") == section and p.visible
+    ]
+    # Layouts without section tags (v1 executive): show all on Summary only.
+    if not any(p.section for p in placements):
+        if section != "summary":
+            st.info(
+                "This layout does not define sections. Switch to Summary, or open Dashboard Builder."
+            )
+            return
+        section_blocks = [p for p in placements if p.visible]
+
+    if not section_blocks:
+        st.info("No blocks for this section in the active layout.")
+        return
+
+    for index, placement in enumerate(section_blocks):
         if index > 0:
             st.divider()
-        render_block(placement.block_id, ctx, placement)
+        render_block(placement.block_id, block_ctx, placement)
 
-    render_page_help(_INSIGHTS_HELP)
+
+def render_insights() -> None:
+    register_builtin_blocks()
+    render_run_scoped_page(_INSIGHTS_CONFIG, render_body=_render_insights_body)

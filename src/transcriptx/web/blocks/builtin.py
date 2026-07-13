@@ -6,6 +6,7 @@ from transcriptx.web.blocks.implementations import charts as charts_blocks
 from transcriptx.web.blocks.implementations import data as data_blocks
 from transcriptx.web.blocks.implementations import insights as insights_blocks
 from transcriptx.web.blocks.implementations import overview as overview_blocks
+from transcriptx.web.blocks.implementations import overview_curated as curated_blocks
 from transcriptx.web.blocks.registry import register_block
 from transcriptx.web.blocks.specs import BlockPrereq, BlockSpec
 
@@ -17,9 +18,79 @@ def register_builtin_blocks() -> None:
     if _BUILTIN_REGISTERED:
         return
     _register_overview_blocks()
+    _register_curated_overview_blocks()
     _register_insights_blocks()
     _register_charts_data_blocks()
     _BUILTIN_REGISTERED = True
+
+
+def _register_curated_overview_blocks() -> None:
+    specs = [
+        BlockSpec(
+            id="transcript_summary_hero",
+            title="Transcript summary",
+            group="Overview",
+            description="Primary transcript summary with LLM → narrative → executive precedence.",
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_transcript_summary_hero,
+        ),
+        BlockSpec(
+            id="other_summaries",
+            title="Other summaries",
+            group="Insights",
+            description="Secondary summary alternatives under the primary hero.",
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_other_summaries,
+        ),
+        BlockSpec(
+            id="at_a_glance",
+            title="At a glance",
+            group="Overview",
+            description="Compact duration, speakers, modules, and artifact counts.",
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_at_a_glance,
+        ),
+        BlockSpec(
+            id="speaker_summary_cards",
+            title="Speaker summaries",
+            group="Overview",
+            description="Compact per-speaker LLM summary cards.",
+            module_deps=("llm_speaker_summary",),
+            artifact_patterns=("_llm_speaker_summary_index.json",),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_speaker_summary_cards,
+        ),
+        BlockSpec(
+            id="action_items_compact",
+            title="Action items",
+            group="Overview",
+            description="Compact LLM action items list.",
+            module_deps=("llm_action_items",),
+            artifact_patterns=("_llm_action_items.json", "_llm_action_items.md"),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_action_items_compact,
+        ),
+        BlockSpec(
+            id="highlights_compact",
+            title="Highlights",
+            group="Overview",
+            description="Compact top highlights and themes.",
+            module_deps=("highlights",),
+            artifact_patterns=("_highlights.json",),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_highlights_compact,
+        ),
+        BlockSpec(
+            id="run_status_compact",
+            title="Run status",
+            group="Overview",
+            description="Quiet run status with separate artifact health and execution details.",
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_run_status_compact,
+        ),
+    ]
+    for spec in specs:
+        register_block(spec)
 
 
 def _register_overview_blocks() -> None:
@@ -147,6 +218,12 @@ def _register_insights_blocks() -> None:
             group="Insights",
             description="LLM-generated transcript or narrative summary.",
             module_deps=("llm_summary", "narrative_summary"),
+            artifact_patterns=(
+                "_llm_summary.json",
+                "_llm_summary.md",
+                "_narrative_summary.json",
+                "_narrative_summary.md",
+            ),
             prerequisites=BlockPrereq.RUN_SCOPED,
             params_schema=llm_params_schema,
             render=insights_blocks.render_llm_summary_block,

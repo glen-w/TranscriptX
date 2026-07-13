@@ -113,6 +113,40 @@ CHARTS_KEY_EXPORT_SIG = "charts_export_signature"
 
 DATA_KEY_ARTIFACT_PRESET = "data_artifact_preset"
 
+# Artifacts page (Browse / Preview / Export)
+ARTIFACTS_KEY_SECTION = "artifacts_section"
+ARTIFACTS_KEY_SELECTED_IDS = "artifacts_selected_ids"
+ARTIFACTS_KEY_PREVIEW_ID = "artifacts_preview_id"
+ARTIFACTS_KEY_SCOPE = "artifacts_selection_scope"
+ARTIFACTS_KEY_SHOW_MORE = "artifacts_show_more"
+ARTIFACTS_KEY_SOURCE_FILTER = "artifacts_source_filter"
+
+
+def reconcile_artifact_selection(
+    session_state: Any,
+    *,
+    subject_type: str | None,
+    subject_id: str | None,
+    run_id: str | None,
+) -> None:
+    """Clear artifact selection when subject/run changes."""
+    scope = (subject_type or "", subject_id or "", run_id or "")
+    prev = session_state.get(ARTIFACTS_KEY_SCOPE)
+    if prev != scope:
+        session_state[ARTIFACTS_KEY_SCOPE] = scope
+        session_state[ARTIFACTS_KEY_SELECTED_IDS] = []
+        session_state[ARTIFACTS_KEY_PREVIEW_ID] = None
+        session_state[ARTIFACTS_KEY_SHOW_MORE] = None
+
+
+def consume_artifact_preset(session_state: Any) -> str | None:
+    """One-shot artifact preset (legacy data_artifact_preset)."""
+    preset = session_state.pop(DATA_KEY_ARTIFACT_PRESET, None)
+    if preset:
+        return str(preset)
+    return None
+
+
 CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_FILTER_MODULE: None,
     CHARTS_KEY_FILTER_SCOPE: None,

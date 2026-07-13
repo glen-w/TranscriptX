@@ -22,6 +22,8 @@ def test_navigate_to_charts_sets_page_and_module(mock_rerun) -> None:
 def test_navigate_to_data_artifact_preset(mock_rerun) -> None:
     st.session_state.clear()
     navigate_to_data_artifact(artifact_id="art_123")
-    assert st.session_state["page"] == "Data"
+    assert st.session_state["page"] == "Artifacts"
+    assert st.session_state["artifacts_section"] == "Preview"
     assert st.session_state["data_artifact_preset"] == "art_123"
+    assert st.session_state["artifacts_preview_id"] == "art_123"
     mock_rerun.assert_called_once()

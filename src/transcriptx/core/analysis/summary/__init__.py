@@ -88,7 +88,7 @@ class SummaryAnalysis(AnalysisModule):
 
             summary_payload.update(
                 {
-                    "schema_version": 1,
+                    "schema_version": 2,
                     "schema_id": "transcriptx.summary.v1",
                     "schema_url": None,
                     "module": self.module_name,

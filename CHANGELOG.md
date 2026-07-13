@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-07-13
+
+### Added
+
+- Shared `phrase_quality` analyser and theme-phrase resources for deterministic key-theme / highlight / insight phrase filtering.
+- Curated Overview blocks (summary hero, at-a-glance, speaker cards, compact highlights/status) and primary-summary precedence across LLM, narrative, and executive summaries.
+- Merged **Artifacts** page (Browse / Preview / Export) replacing legacy Data and Explorer routes, with presentation-oriented artifact index and export selection helpers.
+- Run-health presentation helpers separating artifact storage health from execution outcomes.
+
+### Changed
+
+- Summary and highlights key-theme extraction prefer noun-led topical phrases and diversity fill over discourse formulas and light-verb constructions.
+- Default Overview layout uses the curated Standard profile; Insights gains quieter empty states and related summary blocks.
+
+### Fixed
+
+- Overview composer contract tests updated for curated block IDs; Black/Ruff hygiene on new surfaces.
+
 ## [0.3.5] - 2026-07-13
 
 ### Added

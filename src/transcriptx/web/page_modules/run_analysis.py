@@ -238,7 +238,7 @@ def _run_analysis_config_and_launch_fragment(
                     st.rerun()
             with oc3:
                 if st.button("Open Data", key="post_run_data"):
-                    st.session_state["page"] = "Data"
+                    st.session_state["page"] = "Artifacts"
                     st.rerun()
             if result.warnings:
                 for w in result.warnings[:5]:

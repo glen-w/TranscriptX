@@ -1039,3 +1039,35 @@ Selected critical-path modules with remaining uncovered loader/hashing/compat br
 ### Notes
 - Prefer unit placement under `tests/unit/` when path substring would otherwise auto-mark `integration_core`.
 - Full end-to-end `run_group_analysis` without mocked pipeline remains optional/heavy; coverage focuses on glue layers.
+
+## 46. Expansion (2026-07-13) – GUI viewing + key themes + core ≥75%
+
+### Backup (mandatory)
+- Workspace zip: `/Users/89298/Documents/transcriptx backup/260713-1708.zip` (2.8M); `custom-commands/` mirrored.
+
+### Review
+- **Collection:** `4438/4606` under default addopts (`168` deselected); no collection/import errors.
+- **Baseline default run:** `4436 passed`, `1 skipped`, `1` intermittent fail on `test_view_pages_use_flat_nav_grouping` (isolated re-run green; classified transient).
+- **Cleanup:** disabled (not run).
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` historical).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+
+### Coverage gaps targeted
+1. **GUI viewing:** summary precedence, run-health labels/outcomes, Artifacts index roles/sizes/order, export selection, artifact preset/reconcile.
+2. **Key themes extraction:** phrase_quality matching/candidates/policies/scoring, summary key_themes + resolve/render, insight eligibility gate/scoring, emblematic helpers.
+3. **Core → 75%:** charts PDF build, transcript simplifier, aggregation registry blob aggs, interactions visualization specs, named-entity / entity-polarity group aggs under unit paths that avoid auto `requires_models` filename heuristics.
+
+### New / expanded tests (tests-only for this expansion)
+
+| Area | Files |
+|------|-------|
+| GUI viewing | `tests/web/test_summary_precedence.py`, `test_run_health_presentation.py`, `test_export_selection.py`, `test_artifacts_navigation.py`, `tests/web/services/test_artifact_index.py` |
+| Key themes | `tests/analysis/test_phrase_quality_extended.py`, `test_summary.py` (+), `test_summary_module_resolve.py`, `test_insight_eligibility_phrase_quality.py`, `test_key_themes_helpers.py` |
+| Core ≥75% | `test_charts_pdf_build.py`, `test_simplified_transcript_simplify.py`, `test_aggregation_registry_blob_aggs.py`, `tests/analysis/interactions/test_visualization_specs.py`, `tests/unit/test_group_named_entity_agg.py`, `tests/unit/test_group_entity_polarity_agg.py`, `test_exemplars_helpers.py` |
+
+### Validation
+- **Default suite:** `4519 passed`, `1 skipped`, `168 deselected`, `0` failed.
+- **Core coverage (`--cov=src/transcriptx/core`):** **75.56%** (`28458 / 37661`) — was ~73.2% before this expansion.
+- **Production code:** none changed by this `/tests` expansion (pre-existing WIP production edits remain uncommitted separately).
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.

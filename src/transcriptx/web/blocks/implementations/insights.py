@@ -97,6 +97,28 @@ def _render_view_raw_file_link(
         navigate_to_data_artifact(artifact_id=artifact.id)
 
 
+def _render_quiet_module_empty(
+    *,
+    label: str,
+    run_root: Path | None,
+    module: str,
+    empty_hint: str,
+) -> None:
+    """User-facing empty/failed message with optional Technical details."""
+    from transcriptx.web.run_health_presentation import module_outcome_state
+    from transcriptx.web.summary_precedence import quiet_unavailable_message
+
+    outcome = module_outcome_state(run_root, module) if run_root else "unknown"
+    if outcome in {"failed", "skipped", "blocked"}:
+        st.info(quiet_unavailable_message(label, outcome=outcome))
+        hint = _module_failure_hint(run_root, module) if run_root else None
+        if hint:
+            with st.expander("Technical details"):
+                st.caption(hint)
+        return
+    st.info(empty_hint)
+
+
 def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Content vs Style")
     loader = _loader(ctx)
@@ -425,10 +447,12 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
     elif payload:
         st.json(payload)
     else:
-        if failure_hint:
-            st.warning(failure_hint)
-        else:
-            st.info(empty_hint)
+        _render_quiet_module_empty(
+            label=title,
+            run_root=run_root,
+            module=module,
+            empty_hint=empty_hint if not failure_hint else empty_hint,
+        )
         return
     suffix = f"{artifact_stem}.json"
     _render_view_raw_file_link(
@@ -474,18 +498,24 @@ def render_llm_speaker_summary_block(
         st.info(empty_hint)
         return
 
-    failure_hint = _module_failure_hint(run_root, module)
     index_payload = loader.load_json(module, "_llm_speaker_summary_index.json")
     if not index_payload:
-        if failure_hint:
-            st.warning(failure_hint)
-        else:
-            st.info(empty_hint)
+        _render_quiet_module_empty(
+            label="Per-speaker summaries",
+            run_root=run_root,
+            module=module,
+            empty_hint=empty_hint,
+        )
         return
 
     speakers = index_payload.get("speakers") or []
     if not speakers:
-        st.info(empty_hint)
+        _render_quiet_module_empty(
+            label="Per-speaker summaries",
+            run_root=run_root,
+            module=module,
+            empty_hint=empty_hint,
+        )
         return
 
     for entry in speakers:
@@ -567,7 +597,6 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
         st.info(empty_hint)
         return
 
-    failure_hint = _module_failure_hint(run_root, module)
     payload = loader.load_json(module, f"{artifact_stem}.json")
     md = loader.load_text(module, f"{artifact_stem}.md")
     if md:
@@ -593,10 +622,12 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
     elif payload:
         st.json(payload)
     else:
-        if failure_hint:
-            st.warning(failure_hint)
-        else:
-            st.info(empty_hint)
+        _render_quiet_module_empty(
+            label="Action items",
+            run_root=run_root,
+            module=module,
+            empty_hint=empty_hint,
+        )
         return
 
     _render_view_raw_file_link(

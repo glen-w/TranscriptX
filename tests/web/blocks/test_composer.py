@@ -35,5 +35,7 @@ def test_render_layout_page_invokes_blocks(monkeypatch) -> None:
         health={"status": "ok"},
     )
     render_layout_page("overview", ctx, layout)
-    assert "run_health" in rendered
-    assert "export_panel" in rendered
+    # Default Overview layout uses curated Standard blocks (not legacy run_health/export_panel).
+    assert "transcript_summary_hero" in rendered
+    assert "run_status_compact" in rendered
+    assert "at_a_glance" in rendered

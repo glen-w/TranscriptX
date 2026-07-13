@@ -24,3 +24,4 @@ class BlockPlacement:
     visible: bool = True
     params: Mapping[str, Any] = field(default_factory=dict)
     grid: GridSpec | None = None
+    section: str | None = None

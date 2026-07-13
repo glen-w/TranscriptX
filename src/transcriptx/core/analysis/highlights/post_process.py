@@ -6,24 +6,12 @@ from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from transcriptx.core.analysis.exemplars import _normalize_text, _tokenize
-from transcriptx.core.utils.nlp_runtime import get_nlp_model
-from transcriptx.core.utils.nlp_utils import (
-    DISCOURSE_HEDGE_TERMS,
-    build_tic_mask,
-    get_all_stopwords,
+from transcriptx.core.analysis.phrase_quality import (
+    analyse_phrase,
+    highlight_label_policy,
 )
-
-LOW_INFORMATION_LABELS = {
-    "a lot",
-    "lot of",
-    "lots of",
-    "kind of",
-    "sort of",
-    "i mean",
-    "you know",
-    "things like that",
-    "stuff like this",
-}
+from transcriptx.core.analysis.phrase_quality.analyser import annotations_from_surfaces
+from transcriptx.core.utils.nlp_utils import build_tic_mask
 
 
 @dataclass
@@ -95,55 +83,18 @@ def _jaccard(a: Set[str], b: Set[str]) -> float:
 
 
 def _label_is_low_information(label: str) -> bool:
-    normalized = _normalize_text(label or "")
-    tokens = _tokenize(normalized)
-    if not tokens:
+    """Backward-compatible wrapper: hard-reject via highlight_label policy."""
+    surfaces = _tokenize(_normalize_text(label or ""))
+    if not surfaces:
         return True
-
-    stopwords = get_all_stopwords()
-    tic_mask = build_tic_mask()
-    stopword_ratio = float(sum(1 for t in tokens if t in stopwords)) / float(
-        len(tokens)
+    # Prefer precomputed quality on emblematic phrases when present; for bare
+    # labels, use lexical annotations (no spaCy reparse required).
+    result = analyse_phrase(
+        annotations_from_surfaces(surfaces),
+        tic_mask=build_tic_mask(),
     )
-    meaningful_tokens = [
-        t for t in tokens if len(t) > 1 and t not in stopwords and t not in tic_mask
-    ]
-
-    nlp = get_nlp_model()
-    doc = nlp(normalized)
-    content_pos = {"NOUN", "PROPN", "VERB"}
-    content_tokens = [
-        tok
-        for tok in doc
-        if tok.is_alpha
-        and tok.pos_ in content_pos
-        and tok.text.lower() not in stopwords
-    ]
-    has_content_pos = bool(content_tokens)
-    strong_content_head = bool(content_tokens) and content_tokens[0].pos_ in {
-        "NOUN",
-        "PROPN",
-        "VERB",
-    }
-
-    known_filler = normalized in tic_mask or normalized in DISCOURSE_HEDGE_TERMS
-    if normalized in LOW_INFORMATION_LABELS:
-        return True
-    low_information_structure = (
-        any(t in DISCOURSE_HEDGE_TERMS for t in tokens)
-        or all(t in stopwords or t in tic_mask for t in tokens)
-        or not has_content_pos
-    )
-
-    if known_filler:
-        return True
-    if stopword_ratio > 0.7 and low_information_structure:
-        return True
-    if (len(meaningful_tokens) < 2) and (
-        not strong_content_head or low_information_structure
-    ):
-        return True
-    return False
+    decision = highlight_label_policy(result)
+    return not decision.include
 
 
 def collect_highlight_quotes(highlights: Dict[str, Any]) -> List[Dict[str, Any]]:

@@ -56,9 +56,20 @@ def test_render_dashboard_builder_schema_mode_without_run(monkeypatch) -> None:
         def error(msg):
             calls.append(f"err:{msg}")
 
+        @staticmethod
+        def info(msg):
+            calls.append(f"info:{msg}")
+
+        @staticmethod
+        def text_input(label, value="", **kwargs):
+            return value
+
+        @staticmethod
+        def button(label, **kwargs):
+            return False
+
     monkeypatch.setattr(mod, "st", _DummySt)
     monkeypatch.setattr(mod, "render_page_shell", lambda *a, **k: None)
-    monkeypatch.setattr(mod, "render_page_help", lambda _h: None)
     register_builtin_blocks()
 
     mod.render_dashboard_builder()

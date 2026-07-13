@@ -18,6 +18,7 @@ from transcriptx.web.layouts.specs import (
 
 UI_LAYOUTS_DIR = PROFILES_DIR / "ui_layouts"
 PRESETS_DIR = Path(__file__).resolve().parent / "presets"
+BUILTIN_LAYOUT_IDS = frozenset({"default", "executive", "developer_debug"})
 
 
 class LayoutValidationError(ValueError):
@@ -32,6 +33,10 @@ class LayoutProfileStore:
     @staticmethod
     def layouts_dir(base: Path | None = None) -> Path:
         return base if base is not None else _default_layouts_dir()
+
+    @staticmethod
+    def is_builtin(layout_id: str) -> bool:
+        return layout_id in BUILTIN_LAYOUT_IDS
 
     @staticmethod
     def list_layouts(base: Path | None = None) -> list[str]:
@@ -60,6 +65,10 @@ class LayoutProfileStore:
 
     @staticmethod
     def save_layout(spec: LayoutSpec, base: Path | None = None) -> Path:
+        if LayoutProfileStore.is_builtin(spec.id):
+            raise LayoutValidationError(
+                f"Built-in layout '{spec.id}' is immutable. Save as a custom layout id."
+            )
         LayoutProfileStore.validate_layout(spec)
         root = LayoutProfileStore.layouts_dir(base)
         root.mkdir(parents=True, exist_ok=True)
@@ -67,6 +76,28 @@ class LayoutProfileStore:
         payload = spec.model_dump(mode="json")
         path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
         return path
+
+    @staticmethod
+    def save_as_custom(
+        source: LayoutSpec,
+        new_id: str,
+        *,
+        title: str | None = None,
+        base: Path | None = None,
+    ) -> Path:
+        """Clone a layout (including builtins) into a custom user layout."""
+        if LayoutProfileStore.is_builtin(new_id):
+            raise LayoutValidationError(
+                f"Cannot use built-in id '{new_id}' for a custom layout."
+            )
+        cloned = source.model_copy(
+            update={
+                "id": new_id,
+                "title": title or new_id,
+                "schema_version": CURRENT_LAYOUT_SCHEMA_VERSION,
+            }
+        )
+        return LayoutProfileStore.save_layout(cloned, base=base)
 
     @staticmethod
     def validate_layout_dict(data: dict[str, Any]) -> LayoutSpec:
@@ -80,7 +111,7 @@ class LayoutProfileStore:
 
     @staticmethod
     def validate_layout(spec: LayoutSpec) -> None:
-        if spec.schema_version != CURRENT_LAYOUT_SCHEMA_VERSION:
+        if spec.schema_version not in (1, CURRENT_LAYOUT_SCHEMA_VERSION):
             raise LayoutValidationError(
                 f"schema_version mismatch: {spec.schema_version}"
             )

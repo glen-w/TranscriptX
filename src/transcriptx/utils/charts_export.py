@@ -119,10 +119,12 @@ def render_chart_sections(
     Returns a tuple of (toc_entries, section_html). Shared by the charts-only
     export index and the combined Overview export index.
     """
+    from transcriptx.web.module_ui_groups import order_strings_like_modules
+
     grouped: dict[str, list[_ExportableItem]] = defaultdict(list)
     for item in sorted(items, key=_sort_key):
         grouped[item.artifact.module or "Other"].append(item)
-    ordered_modules = sorted(grouped.keys(), key=str.lower)
+    ordered_modules = order_strings_like_modules(list(grouped.keys()))
 
     toc_entries: list[str] = []
     section_html: list[str] = []

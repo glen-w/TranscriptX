@@ -8,10 +8,27 @@ import math
 
 from transcriptx.utils.text_utils import is_named_speaker, count_words
 from transcriptx.core.utils.nlp_utils import (
-    ALL_STOPWORDS,
-    DISCOURSE_HEDGE_TERMS,
     build_tic_mask,
 )
+from transcriptx.core.analysis.phrase_quality import (
+    PHRASE_QUALITY_VERSION,
+    analyse_phrase,
+    adjust_theme_score,
+    resource_fingerprint,
+    theme_label_policy,
+    theme_sort_key,
+)
+from transcriptx.core.analysis.phrase_quality.candidates import (
+    annotations_from_spacy_doc,
+    annotations_from_spacy_span,
+    cluster_prefer_longer,
+    dominant_display,
+    iter_ngram_spans,
+    merge_candidate_stats,
+    token_annotations_from_spacy_token,
+)
+from transcriptx.core.analysis.phrase_quality.analyser import annotations_from_surfaces
+from transcriptx.core.utils.nlp_runtime import get_nlp_model
 from transcriptx.core.analysis.exemplars import (
     SegmentRecord,
     SpeakerExemplarsConfig,
@@ -561,10 +578,12 @@ def compute_highlights(
         phrases = _compute_emblematic_phrases(named_segments, cfg, effective_mask)
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "schema_id": "transcriptx.highlights.v1",
         "schema_url": None,
         "scope": "global",
+        "phrase_quality_version": PHRASE_QUALITY_VERSION,
+        "phrase_quality_resource_fingerprint": resource_fingerprint(),
         "sections": {
             "cold_open": {
                 "window": {"start": window_start, "end": window_end},
@@ -839,83 +858,187 @@ def _compute_emblematic_phrases(
         docs, max_features=1000, ngram_range=(1, 2)
     )
 
+    nlp = None
+    try:
+        nlp = get_nlp_model()
+    except Exception:
+        nlp = None
+
     phrase_stats: Dict[str, Dict[str, Any]] = {}
+    doc_offset = 0
     for idx, seg in enumerate(segments):
-        tokens = [t for t in _tokenize(seg.text)]
-        if not tokens:
+        text = (seg.text or "").strip()
+        if not text:
             continue
-        for n in range(min_len, max_len + 1):
-            for i in range(len(tokens) - n + 1):
-                phrase_tokens = tokens[i : i + n]
-                if any(token in mask for token in phrase_tokens):
-                    continue
-                if any(token in DISCOURSE_HEDGE_TERMS for token in phrase_tokens):
-                    continue
-                if all(token in ALL_STOPWORDS for token in phrase_tokens):
-                    continue
-                phrase = " ".join(phrase_tokens)
-                stats = phrase_stats.setdefault(
-                    phrase,
-                    {
-                        "tokens": phrase_tokens,
-                        "count": 0,
-                        "speakers": set(),
-                        "first_seen": seg.start,
-                        "last_seen": seg.end,
-                        "examples": [],
-                        "tfidf_scores": [],
-                    },
-                )
-                stats["count"] += 1
-                stats["speakers"].add(seg.speaker_display)
-                stats["first_seen"] = min(stats["first_seen"], seg.start)
-                stats["last_seen"] = max(stats["last_seen"], seg.end)
-                stats["examples"].append((seg.segment_index, seg))
-                if idx < len(vectorizer_scores):
-                    stats["tfidf_scores"].append(vectorizer_scores[idx])
+        tfidf = (
+            vectorizer_scores[doc_offset]
+            if doc_offset < len(vectorizer_scores)
+            else None
+        )
+        doc_offset += 1
+
+        annotations: List[Any] = []
+        noun_chunk_spans: List[List[Any]] = []
+        entity_spans: List[List[Any]] = []
+        if nlp is not None:
+            try:
+                doc = nlp(text)
+                annotations = annotations_from_spacy_doc(doc)
+                try:
+                    noun_chunk_spans = [
+                        annotations_from_spacy_span(chunk) for chunk in doc.noun_chunks
+                    ]
+                except Exception:
+                    noun_chunk_spans = []
+                entity_spans = [
+                    annotations_from_spacy_span(ent)
+                    for ent in getattr(doc, "ents", [])
+                    if annotations_from_spacy_span(ent)
+                ]
+                # Strong single nouns / PROPN from the doc.
+                for tok in doc:
+                    ann = token_annotations_from_spacy_token(tok)
+                    if ann is None:
+                        continue
+                    if ann.pos in {"NOUN", "PROPN"} and not ann.is_stop:
+                        merge_candidate_stats(
+                            phrase_stats,
+                            tokens=[ann],
+                            source="strong_noun",
+                            speaker=seg.speaker_display,
+                            start=seg.start,
+                            end=seg.end,
+                            example=(seg.segment_index, seg),
+                            tfidf=tfidf,
+                        )
+            except Exception:
+                annotations = []
+                noun_chunk_spans = []
+                entity_spans = []
+
+        if not annotations:
+            # Lexical fallback: surface tokens only (no POS).
+            surfaces = [t for t in _tokenize(text)]
+            annotations = annotations_from_surfaces(surfaces)
+
+        for _start, _end, window in iter_ngram_spans(annotations, min_len, max_len):
+            merge_candidate_stats(
+                phrase_stats,
+                tokens=window,
+                source="ngram",
+                speaker=seg.speaker_display,
+                start=seg.start,
+                end=seg.end,
+                example=(seg.segment_index, seg),
+                tfidf=tfidf,
+            )
+        for chunk_tokens in noun_chunk_spans:
+            if not chunk_tokens:
+                continue
+            if len(chunk_tokens) < 1 or len(chunk_tokens) > max_len + 2:
+                continue
+            merge_candidate_stats(
+                phrase_stats,
+                tokens=chunk_tokens,
+                source="noun_chunk",
+                speaker=seg.speaker_display,
+                start=seg.start,
+                end=seg.end,
+                example=(seg.segment_index, seg),
+                tfidf=tfidf,
+            )
+        for ent_tokens in entity_spans:
+            merge_candidate_stats(
+                phrase_stats,
+                tokens=ent_tokens,
+                source="entity",
+                speaker=seg.speaker_display,
+                start=seg.start,
+                end=seg.end,
+                example=(seg.segment_index, seg),
+                tfidf=tfidf,
+            )
 
     phrases = []
     max_speakers = max((len(v["speakers"]) for v in phrase_stats.values()), default=1)
-    for phrase, stats in phrase_stats.items():
-        if stats["count"] < min_freq:
-            continue
-        frequency_score = math.log(1 + stats["count"])
-        dispersion_score = len(stats["speakers"]) / max_speakers
+    for _key, stats in phrase_stats.items():
+        if stats["count"] < min_freq and "entity" not in stats["sources"]:
+            # Entities may be rarer; allow frequency 1 for entity/PROPN sources.
+            if not (stats.get("has_entity") or stats.get("has_propn")):
+                continue
+            if stats["count"] < 1:
+                continue
+        annotations = stats.get("annotations") or annotations_from_surfaces(
+            stats.get("tokens") or []
+        )
         distinctiveness = (
             sum(stats["tfidf_scores"]) / len(stats["tfidf_scores"])
             if stats["tfidf_scores"]
             else 0.0
         )
-        total = frequency_score + dispersion_score + distinctiveness
+        quality = analyse_phrase(
+            annotations,
+            tic_mask=mask,
+            distinctiveness=distinctiveness,
+        )
+        decision = theme_label_policy(quality)
+        if not decision.include:
+            continue
+
+        frequency_score = math.log(1 + stats["count"])
+        dispersion_score = len(stats["speakers"]) / max_speakers
+        base = frequency_score + dispersion_score + distinctiveness
+        source = (
+            "noun_chunk"
+            if "noun_chunk" in stats["sources"]
+            else ("entity" if "entity" in stats["sources"] else "ngram")
+        )
+        adjusted = adjust_theme_score(
+            base,
+            quality,
+            source=source,
+            policy_rank_penalty=decision.rank_penalty,
+        )
+        display = dominant_display(stats)
         phrases.append(
             {
-                "phrase": phrase,
+                "phrase": display,
+                "canonical_key": stats["canonical_key"],
                 "tokens": stats["tokens"],
+                "head_lemma": quality.features.head_lemma,
                 "count_total": stats["count"],
                 "count_speakers": len(stats["speakers"]),
                 "first_seen": stats["first_seen"],
                 "last_seen": stats["last_seen"],
                 "examples": _select_phrase_examples(stats["examples"]),
+                "sources": sorted(stats["sources"]),
+                "has_entity": bool(stats.get("has_entity")),
+                "has_propn": bool(stats.get("has_propn")),
+                "quality": {
+                    "penalties": list(quality.penalties),
+                    "preference_tier": decision.preference_tier,
+                    "content_token_count": quality.features.content_token_count,
+                },
                 "score": {
-                    "total": total,
+                    "total": adjusted,
                     "breakdown": {
                         "frequency": frequency_score,
                         "dispersion": dispersion_score,
                         "distinctiveness": distinctiveness,
+                        "adjusted": adjusted,
+                        "base": base,
                     },
                 },
+                "_sort_key": theme_sort_key(
+                    adjusted, quality, preference_tier=decision.preference_tier
+                ),
             }
         )
 
-    phrases.sort(
-        key=lambda p: (
-            -p["score"]["total"],
-            -len(p["phrase"]),
-            p["first_seen"],
-            p["phrase"],
-        )
-    )
-    phrases = _dedupe_phrases(phrases)
+    phrases.sort(key=lambda p: p["_sort_key"])
+    for phrase in phrases:
+        phrase.pop("_sort_key", None)
+    phrases = cluster_prefer_longer(phrases)
     return phrases[: cfg.counts.emblematic_phrases]
 
 

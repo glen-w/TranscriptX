@@ -141,7 +141,8 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
     assert 'href="sentiment/charts/global/d.html"' in html
     assert "<iframe" in html
     assert "Interactive HTML" in html
-    assert html.index(">Other<") < html.index(">sentiment<")
+    # Known taxonomy modules sort before unknown/Other sentinel buckets.
+    assert html.index(">sentiment<") < html.index(">Other<")
 
 
 def test_generate_charts_index_html_includes_visible_description() -> None:

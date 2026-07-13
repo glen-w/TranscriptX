@@ -26,7 +26,9 @@ def render_block(
     if spec is None:
         render_unavailable_placeholder(block_id, f"Unknown block: {block_id}")
         return
-    availability = check_block_availability(spec, ctx)
+    availability = check_block_availability(
+        spec, ctx, placement_params=placement.params
+    )
     if not availability.available:
         title = placement.title_override or spec.title
         render_unavailable_placeholder(title, availability.reason)

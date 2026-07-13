@@ -86,3 +86,38 @@ def test_highlights_available_with_artifact() -> None:
     )
     result = check_block_availability(spec, ctx)
     assert result.available
+
+
+def test_llm_summary_placement_narrows_module_deps() -> None:
+    clear_registry_for_tests()
+    register_builtin_blocks()
+    spec = get_block("llm_summary_block")
+    assert spec is not None
+    art = _artifact(
+        "narrative_summary", "narrative_summary/out/_narrative_summary.json"
+    )
+    ctx = build_block_context(
+        run_root=Path("/tmp/run"),
+        subject_type="transcript",
+        subject_id="slug",
+        run_id="run1",
+        session_name="slug/run1",
+        artifacts=(art,),
+        run_results=None,
+        layout_profile_id="default",
+    )
+    available_for_narrative = check_block_availability(
+        spec,
+        ctx,
+        placement_params={
+            "module": "narrative_summary",
+            "artifact_stem": "_narrative_summary",
+        },
+    )
+    assert available_for_narrative.available
+    unavailable_for_llm = check_block_availability(
+        spec,
+        ctx,
+        placement_params={"module": "llm_summary", "artifact_stem": "_llm_summary"},
+    )
+    assert not unavailable_for_llm.available

@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
+from transcriptx.core.analysis.phrase_quality import (
+    PHRASE_QUALITY_VERSION,
+    resource_fingerprint,
+)
 
 
 def _top_phrases(eligibility: Dict[str, Any], limit: int = 8) -> List[Dict[str, Any]]:
@@ -85,6 +89,9 @@ class InsightsAnalysis(AnalysisModule):
         )[:8]
 
         return {
+            "schema_version": 2,
+            "phrase_quality_version": PHRASE_QUALITY_VERSION,
+            "phrase_quality_resource_fingerprint": resource_fingerprint(),
             "key_themes": key_themes,
             "recurring_ideas": recurring_ideas,
             "style_markers": style_markers,

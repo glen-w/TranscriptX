@@ -16,7 +16,7 @@ from transcriptx.core.config import (
 )
 from transcriptx.web.blocks.filters.subview_slice import render_subview_slice_filter
 from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.run_scoped_page import (
     RunScopedPageConfig,
     RunScopedPageContext,
@@ -67,13 +67,6 @@ _CHARTS_HELP_PREREQ = (
     "**What this shows:** Chart artifacts for the selected run.\n\n"
     "**If empty:** Select a subject and run in the sidebar."
 )
-_CHARTS_HELP_LOADED = (
-    "**What this shows:** All chart artifacts produced by analysis modules for the "
-    "selected run.\n\n**If empty:** Run analysis for this transcript or group, or pick "
-    "another run. **Filters:** Narrow by module, scope, tags, or chart type; **Reset filters** "
-    "restores defaults for this page.\n\n**Reading charts:** Each chart shows a short "
-    "interpretation caption under its title when one is available."
-)
 
 _CHARTS_CONFIG = RunScopedPageConfig(
     title="Charts Gallery",
@@ -83,7 +76,7 @@ _CHARTS_CONFIG = RunScopedPageConfig(
     empty_detail="Pick a transcript or group and a run in the sidebar to view charts.",
     primary_action=("Open Library", "Library"),
     secondary_action=("Run Analysis", "Run Analysis"),
-    loaded_help_md=_CHARTS_HELP_LOADED,
+    loaded_help_md=None,
 )
 
 
@@ -282,8 +275,9 @@ def _charts_filters_and_gallery_fragment(
     elif chart_source == "Member sessions":
         st.session_state[CHARTS_KEY_FILTER_TAGS] = ["member_session"]
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
+    # Responsive: stack filters in at most two columns (avoid 4 cramped columns).
+    row1a, row1b = st.columns(2)
+    with row1a:
         st.selectbox(
             "Module",
             [None] + modules,
@@ -292,26 +286,26 @@ def _charts_filters_and_gallery_fragment(
             ),
             key=CHARTS_KEY_FILTER_MODULE,
         )
-    with col2:
+    with row1b:
         st.selectbox(
             "Scope",
             [None] + scopes,
             key=CHARTS_KEY_FILTER_SCOPE,
         )
-    with col3:
+
+    row2a, row2b = st.columns(2)
+    with row2a:
         st.markdown("**Type**")
-        col3a, col3b = st.columns(2)
-        with col3a:
+        t1, t2 = st.columns(2)
+        with t1:
             st.toggle("Static", key=CHARTS_KEY_STATIC_TOGGLE)
-        with col3b:
+        with t2:
             st.toggle("Dynamic", key=CHARTS_KEY_DYNAMIC_TOGGLE)
-    with col4:
+    with row2b:
         if chart_source == "All":
             st.multiselect("Tags", tags, key=CHARTS_KEY_TAGS_MULTI)
         else:
             locked_defaults = st.session_state.get(CHARTS_KEY_FILTER_TAGS) or []
-            # Preset filters use tags that may not appear on any artifact in this run;
-            # multiselect defaults must be subsets of options.
             tag_options = sorted(set(tags) | set(locked_defaults))
             st.multiselect(
                 "Tags",
@@ -548,7 +542,6 @@ def _render_charts_body(ctx: RunScopedPageContext) -> None:
             primary_action=("Run Analysis", "Run Analysis"),
             secondary_action=("Overview", "Overview"),
         )
-        render_page_help(_CHARTS_HELP_LOADED)
         return
 
     modules, scopes, tags, subviews = build_filter_options(all_charts)
@@ -577,7 +570,6 @@ def _render_charts_body(ctx: RunScopedPageContext) -> None:
         max_ov_items,
         missing_behavior,
     )
-    render_page_help(_CHARTS_HELP_LOADED)
 
 
 def render_charts() -> None:

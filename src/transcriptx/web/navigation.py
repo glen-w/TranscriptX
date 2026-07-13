@@ -114,9 +114,18 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         allowed_fallback="overview",
     ),
     _spec(
+        "Artifacts",
+        "Artifacts",
+        "view",
+        required_context="run_scoped",
+        allowed_fallback="overview",
+    ),
+    # Legacy keys retained for redirect aliases (not shown in sidebar — filtered out).
+    _spec(
         "Data",
         "Data",
         "view",
+        subsection="legacy",
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
@@ -124,6 +133,7 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Explorer",
         "File List",
         "view",
+        subsection="legacy",
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
@@ -160,8 +170,28 @@ def page_requires_workspace_hydration(page: str | None) -> bool:
 
 
 def pages_in_section(section: NavSection) -> list[PageSpec]:
-    """Ordered sidebar pages for a nav section."""
-    return [spec for spec in PAGE_SPECS if spec.section == section]
+    """Ordered sidebar pages for a nav section (excludes legacy redirect aliases)."""
+    return [
+        spec
+        for spec in PAGE_SPECS
+        if spec.section == section and spec.subsection != "legacy"
+    ]
+
+
+LEGACY_PAGE_REDIRECTS: dict[str, tuple[str, str | None]] = {
+    # page_key -> (target_page, artifacts_section or None)
+    "Data": ("Artifacts", "Preview"),
+    "Explorer": ("Artifacts", "Browse"),
+}
+
+
+def migrate_legacy_page_key(page: str | None) -> tuple[str, str | None]:
+    """Map legacy Data/Explorer keys to Artifacts before prereq evaluation."""
+    if not page:
+        return "Home", None
+    if page in LEGACY_PAGE_REDIRECTS:
+        return LEGACY_PAGE_REDIRECTS[page]
+    return page, None
 
 
 def build_prerequisites() -> dict[str, PagePrerequisite]:
@@ -327,14 +357,27 @@ def navigate_to_charts(*, module: str | None = None) -> None:
 
 
 def navigate_to_data_artifact(*, artifact_id: str) -> None:
-    """Open Data with a specific artifact preselected."""
+    """Open Artifacts Preview with a specific artifact preselected (one-shot)."""
     import streamlit as st
 
-    from transcriptx.web.state import DATA_KEY_ARTIFACT_PRESET, PAGE_KEY
+    from transcriptx.web.state import (
+        ARTIFACTS_KEY_PREVIEW_ID,
+        ARTIFACTS_KEY_SECTION,
+        DATA_KEY_ARTIFACT_PRESET,
+        PAGE_KEY,
+    )
 
-    st.session_state[PAGE_KEY] = "Data"
+    st.session_state[PAGE_KEY] = "Artifacts"
+    st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
+    st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = artifact_id
     st.session_state[DATA_KEY_ARTIFACT_PRESET] = artifact_id
+    st.session_state["_artifacts_force_preview"] = True
     st.rerun()
+
+
+def navigate_to_artifact_preview(*, artifact_id: str) -> None:
+    """Alias for navigate_to_data_artifact."""
+    navigate_to_data_artifact(artifact_id=artifact_id)
 
 
 def navigate_highlight_to_transcript(

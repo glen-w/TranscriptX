@@ -1,114 +1,54 @@
-"""Phrase extraction with phrase-level tic/discourse rejection."""
+"""Phrase extraction with shared phrase-quality analyser."""
 
 from __future__ import annotations
 
 from collections import Counter
 from typing import Any, Dict, List, Sequence, Set, Tuple
 
+from transcriptx.core.analysis.phrase_quality import (
+    analyse_phrase,
+    content_phrase_policy,
+)
+from transcriptx.core.analysis.phrase_quality.analyser import annotations_from_surfaces
+from transcriptx.core.analysis.phrase_quality.candidates import (
+    annotations_from_spacy_span,
+    token_annotations_from_spacy_token,
+)
+from transcriptx.core.analysis.phrase_quality.types import TokenAnnotation
 from transcriptx.core.utils.nlp_runtime import get_nlp_model
-from transcriptx.core.utils.nlp_utils import DISCOURSE_HEDGE_TERMS, get_all_stopwords
 
 from .content_filter import FilteredSegment
 from .content_scoring import score_content_phrases
 
 
-def _tokenize_text(text: str) -> List[Tuple[str, str]]:
+def _annotations_from_text(text: str) -> List[TokenAnnotation]:
     nlp = get_nlp_model()
-    doc = nlp(text.lower())
-    return [
-        (token.text.lower(), token.pos_)
-        for token in doc
-        if token.is_alpha and token.text.strip()
-    ]
+    doc = nlp(text)
+    out: List[TokenAnnotation] = []
+    for tok in doc:
+        ann = token_annotations_from_spacy_token(tok)
+        if ann is not None:
+            out.append(ann)
+    if out:
+        return out
+    # Lexical fallback if spaCy yields nothing useful.
+    surfaces = [t for t in text.casefold().split() if t.isalpha()]
+    return annotations_from_surfaces(surfaces)
 
 
-def _is_single_char_alpha(token: str) -> bool:
-    return len(token) == 1 and token.isalpha()
-
-
-def _head_index(tokens_with_pos: Sequence[Tuple[str, str]]) -> int:
-    # Prefer semantic anchors. Keep non-AUX verbs to retain verb-led insights.
-    for idx, (_, pos) in enumerate(tokens_with_pos):
-        if pos in {"NOUN", "PROPN"}:
-            return idx
-    for idx, (_, pos) in enumerate(tokens_with_pos):
-        if pos == "VERB":
-            return idx
-    return 0
-
-
-def _is_meaningful_token(token: str, pos: str, tic_mask: Set[str]) -> bool:
-    if not token or not token.isalpha():
-        return False
-    if _is_single_char_alpha(token):
-        return False
-    if token in tic_mask:
-        return False
-    if token in DISCOURSE_HEDGE_TERMS:
-        return False
-    if pos in {"PRON", "DET", "ADP", "CCONJ", "SCONJ", "PART", "INTJ"}:
-        return False
-    if token in get_all_stopwords() and pos not in {"NOUN", "PROPN", "VERB"}:
-        return False
-    return True
-
-
-def _phrase_quality(tokens_with_pos: Sequence[Tuple[str, str]]) -> Dict[str, float]:
-    stopword_count = sum(
-        1 for token, _ in tokens_with_pos if token in get_all_stopwords()
-    )
-    meaningful_count = sum(
-        1
-        for token, pos in tokens_with_pos
-        if token not in get_all_stopwords() and pos in {"NOUN", "PROPN", "VERB"}
-    )
-    token_count = max(1, len(tokens_with_pos))
-    head_pos = tokens_with_pos[_head_index(tokens_with_pos)][1]
-    if head_pos in {"NOUN", "PROPN"}:
+def _phrase_quality_from_result(result: Any) -> Dict[str, float]:
+    feats = result.features
+    if feats.head_pos in {"NOUN", "PROPN"}:
         pos_weight = 1.0
-    elif head_pos == "VERB":
+    elif feats.head_pos == "VERB":
         pos_weight = 0.9
     else:
         pos_weight = 0.7
     return {
-        "stopword_ratio": float(stopword_count) / float(token_count),
-        "content_token_ratio": float(meaningful_count) / float(token_count),
+        "stopword_ratio": float(feats.stopword_ratio),
+        "content_token_ratio": float(feats.content_token_ratio),
         "pos_weight": pos_weight,
     }
-
-
-def _has_low_information_structure(
-    tokens_with_pos: Sequence[Tuple[str, str]],
-    tic_mask: Set[str],
-) -> bool:
-    tokens = [token for token, _ in tokens_with_pos]
-    if any(_is_single_char_alpha(token) for token in tokens):
-        return True
-    phrase = " ".join(tokens).strip()
-    if not phrase:
-        return True
-    if phrase in tic_mask:
-        return True
-    if any(token in tic_mask for token in tokens):
-        return True
-    if any(token in DISCOURSE_HEDGE_TERMS for token in tokens):
-        return True
-    if all(token in get_all_stopwords() for token in tokens):
-        return True
-    if (
-        len(tokens) == 1
-        and len(tokens[0]) <= 2
-        and tokens[0] not in {"ai", "ml", "ui", "ux"}
-    ):
-        return True
-    if len(tokens) > 1 and all(len(token) <= 2 for token in tokens):
-        return True
-    if all(
-        pos in {"PRON", "DET", "ADP", "CCONJ", "SCONJ", "PART", "INTJ"}
-        for _, pos in tokens_with_pos
-    ):
-        return True
-    return False
 
 
 def _passes_phrase_quality_gate(
@@ -117,38 +57,17 @@ def _passes_phrase_quality_gate(
     *,
     stopword_ratio_threshold: float = 0.6,
 ) -> bool:
+    """Compatibility wrapper used by tests; delegates to content_phrase policy."""
     if not tokens_with_pos:
         return False
-
-    # 1) Phrase has at least one meaningful token.
-    meaningful_count = sum(
-        1
-        for token, pos in tokens_with_pos
-        if _is_meaningful_token(token, pos, tic_mask)
-    )
-    if meaningful_count <= 0:
+    surfaces = [t for t, _ in tokens_with_pos]
+    pos_tags = [p for _, p in tokens_with_pos]
+    anns = annotations_from_surfaces(surfaces, pos_tags=pos_tags, lemmas=surfaces)
+    result = analyse_phrase(anns, tic_mask=set(tic_mask))
+    decision = content_phrase_policy(result)
+    if not decision.include:
         return False
-
-    # 2) Head token is content-bearing.
-    hidx = _head_index(tokens_with_pos)
-    head_token, head_pos = tokens_with_pos[hidx]
-    if head_token in tic_mask:
-        return False
-    if head_token in get_all_stopwords() and head_pos not in {"NOUN", "PROPN", "VERB"}:
-        return False
-    if head_pos not in {"NOUN", "PROPN", "VERB"}:
-        return False
-
-    # 3) Stopword ratio is acceptable.
-    stopword_count = sum(
-        1 for token, _ in tokens_with_pos if token in get_all_stopwords()
-    )
-    stopword_ratio = float(stopword_count) / float(len(tokens_with_pos))
-    if stopword_ratio > stopword_ratio_threshold:
-        return False
-
-    # 4) Phrase is not a known low-information pattern.
-    if _has_low_information_structure(tokens_with_pos, tic_mask):
+    if result.features.stopword_ratio > stopword_ratio_threshold:
         return False
     return True
 
@@ -159,24 +78,25 @@ def _extract_noun_chunks(
     nlp = get_nlp_model()
     phrases: List[Dict[str, Any]] = []
     for segment in segments:
-        doc = nlp(segment.raw_text.lower())
+        doc = nlp(segment.raw_text)
         try:
             chunks = list(doc.noun_chunks)
         except Exception:
             chunks = []
         for chunk in chunks:
-            phrase_tokens: List[Tuple[str, str]] = [
-                (token.lemma_.lower(), token.pos_)
-                for token in chunk
-                if token.is_alpha and token.lemma_.strip()
-            ]
-            if not _passes_phrase_quality_gate(phrase_tokens, tic_mask):
+            anns = annotations_from_spacy_span(chunk)
+            if not anns:
                 continue
-            phrase = " ".join(token for token, _ in phrase_tokens).strip()
+            result = analyse_phrase(anns, tic_mask=tic_mask)
+            decision = content_phrase_policy(result)
+            if not decision.include:
+                continue
+            phrase = result.features.display_form or result.features.canonical_key
             if phrase:
-                phrases.append(
-                    {"phrase": phrase, "quality": _phrase_quality(phrase_tokens)}
-                )
+                quality = _phrase_quality_from_result(result)
+                quality["rank_penalty"] = decision.rank_penalty
+                quality["penalties"] = list(result.penalties)
+                phrases.append({"phrase": phrase, "quality": quality})
     return phrases
 
 
@@ -189,17 +109,22 @@ def _extract_ngrams(
     counter: Counter[str] = Counter()
     quality_map: Dict[str, Dict[str, float]] = {}
     for segment in segments:
-        tokens = _tokenize_text(segment.raw_text)
+        tokens = _annotations_from_text(segment.raw_text)
         for n in (2, 3):
             for i in range(0, max(0, len(tokens) - n + 1)):
                 ngram_tokens = tokens[i : i + n]
-                if not _passes_phrase_quality_gate(ngram_tokens, tic_mask):
+                result = analyse_phrase(ngram_tokens, tic_mask=tic_mask)
+                decision = content_phrase_policy(result)
+                if not decision.include:
                     continue
-                phrase = " ".join(token for token, _ in ngram_tokens).strip()
+                phrase = result.features.display_form or result.features.canonical_key
                 if phrase:
                     counter[phrase] += 1
                     if phrase not in quality_map:
-                        quality_map[phrase] = _phrase_quality(ngram_tokens)
+                        quality = _phrase_quality_from_result(result)
+                        quality["rank_penalty"] = decision.rank_penalty
+                        quality["penalties"] = list(result.penalties)
+                        quality_map[phrase] = quality
     phrases = [
         {"phrase": phrase, "quality": quality_map.get(phrase, {})}
         for phrase, freq in counter.items()

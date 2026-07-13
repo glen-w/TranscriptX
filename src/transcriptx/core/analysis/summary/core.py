@@ -14,6 +14,20 @@ from transcriptx.core.analysis.highlights.post_process import (  # type: ignore[
     assign_themes,
     stable_quote_id,
 )
+from transcriptx.core.analysis.phrase_quality import (
+    PHRASE_QUALITY_VERSION,
+    analyse_phrase,
+    resource_fingerprint,
+    theme_label_policy,
+)
+from transcriptx.core.analysis.phrase_quality.analyser import annotations_from_surfaces
+from transcriptx.core.analysis.phrase_quality.policies import (
+    TIER_ENTITY_PROPN,
+    TIER_MULTI_CONTENT_NOUN,
+    TIER_STRONG_SINGLE_NOUN,
+)
+from transcriptx.core.analysis.phrase_quality.scoring import select_diverse_themes
+from transcriptx.core.utils.nlp_utils import build_tic_mask
 from transcriptx.utils.text_utils import is_named_speaker
 
 
@@ -30,6 +44,8 @@ def compute_summary(
         "key_themes": {"bullets": key_themes},
         "tension_points": {"bullets": tension_points},
         "commitments": {"items": commitments},
+        "phrase_quality_version": PHRASE_QUALITY_VERSION,
+        "phrase_quality_resource_fingerprint": resource_fingerprint(),
     }
 
 
@@ -150,20 +166,54 @@ def _build_key_themes(highlights: Dict[str, Any], cfg: Any) -> List[Dict[str, An
     phrases = (
         highlights.get("sections", {}).get("emblematic_phrases", {}).get("phrases", [])
     )
-    bullets = []
+    mask = build_tic_mask()
+    limit = int(cfg.counts.theme_bullets)
+
+    ranked: List[Dict[str, Any]] = []
     for phrase in phrases:
         text = str(phrase.get("phrase") or "").strip()
-        if not text or _label_is_low_information(text):
+        if not text:
             continue
-        bullets.append(
+        tokens = [str(t) for t in (phrase.get("tokens") or text.split())]
+        quality = analyse_phrase(annotations_from_surfaces(tokens), tic_mask=mask)
+        decision = theme_label_policy(quality)
+        if not decision.include:
+            continue
+        ranked.append(
             {
                 "text": text,
+                "phrase": text,
+                "tokens": tokens,
+                "canonical_key": phrase.get("canonical_key")
+                or quality.features.canonical_key,
+                "head_lemma": quality.features.head_lemma,
                 "evidence_quotes": phrase.get("examples", []),
+                "preference_tier": decision.preference_tier,
+                "score_total": float((phrase.get("score") or {}).get("total") or 0.0),
             }
         )
-        if len(bullets) >= cfg.counts.theme_bullets:
-            break
-    return bullets
+
+    ranked.sort(
+        key=lambda row: (
+            int(row["preference_tier"]),
+            -float(row["score_total"]),
+            -len(row.get("tokens") or []),
+            str(row.get("canonical_key") or ""),
+        )
+    )
+
+    preferred = [
+        row
+        for row in ranked
+        if int(row["preference_tier"])
+        in {TIER_MULTI_CONTENT_NOUN, TIER_ENTITY_PROPN, TIER_STRONG_SINGLE_NOUN}
+    ]
+    pool = preferred if preferred else ranked
+    selected = select_diverse_themes(pool, limit=limit)
+    return [
+        {"text": row["text"], "evidence_quotes": row.get("evidence_quotes") or []}
+        for row in selected
+    ]
 
 
 def _build_tension_points(highlights: Dict[str, Any], cfg: Any) -> List[Dict[str, Any]]:

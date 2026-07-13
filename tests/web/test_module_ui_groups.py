@@ -3,15 +3,24 @@
 from transcriptx.core.pipeline.module_registry_specs import MODULE_CLASS_MAP
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_ui_groups import (
+    TECHNICAL_OTHER_TITLE,
     flattened_spec_module_ids,
     group_modules_for_ui,
     module_sort_key,
     order_module_ids,
     order_strings_like_modules,
+    presentation_group_for_module,
 )
 
 # Drift detector: update this tuple when intentionally changing MODULE_UI_GROUPS order/content.
 EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
+    "llm_summary",
+    "narrative_summary",
+    "llm_speaker_summary",
+    "llm_action_items",
+    "summary",
+    "highlights",
+    "insights",
     "stats",
     "transcript_output",
     "simplified_transcript",
@@ -38,10 +47,6 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "momentum",
     "moments",
     "affect_tension",
-    "highlights",
-    "summary",
-    "llm_action_items",
-    "insights",
     "voice_features",
     "voice_mismatch",
     "voice_tension",
@@ -60,6 +65,12 @@ def test_flattened_spec_matches_pinned_order() -> None:
 def test_spec_module_ids_are_registry_keys() -> None:
     for mid in flattened_spec_module_ids():
         assert mid in MODULE_CLASS_MAP, f"missing from MODULE_CLASS_MAP: {mid}"
+
+
+def test_summary_synthesis_before_foundations() -> None:
+    flat = flattened_spec_module_ids()
+    assert flat.index("llm_summary") < flat.index("stats")
+    assert flat.index("llm_action_items") < flat.index("stats")
 
 
 def test_order_module_ids_known_then_unknown_alpha() -> None:
@@ -82,10 +93,17 @@ def test_group_modules_for_ui_str_only_ignores_none() -> None:
     assert flat == ["stats", "emotion"]
 
 
-def test_group_modules_for_ui_no_other_bucket_for_unknown() -> None:
+def test_group_modules_for_ui_unknown_under_technical_other() -> None:
     groups = group_modules_for_ui(["stats", "unknown_mod"])
-    assert len(groups) == 1
     assert groups[0][1] == ["stats"]
+    assert groups[-1][0] == TECHNICAL_OTHER_TITLE
+    assert groups[-1][1] == ["unknown_mod"]
+
+
+def test_presentation_group_for_llm() -> None:
+    key, title = presentation_group_for_module("llm_summary")
+    assert key == "summary_synthesis"
+    assert title == "Summary & Synthesis"
 
 
 def test_module_sort_key_tiers() -> None:
@@ -93,6 +111,7 @@ def test_module_sort_key_tiers() -> None:
     assert module_sort_key("aaa_unknown") < module_sort_key(None)
     assert module_sort_key("aaa_unknown") < module_sort_key("other")
     assert module_sort_key("other") == module_sort_key("Other")
+    assert module_sort_key("llm_summary") < module_sort_key("stats")
 
 
 def test_order_strings_like_modules_sentinel_last() -> None:
@@ -105,5 +124,7 @@ def test_order_strings_like_modules_sentinel_last() -> None:
 def test_format_module_option_known_vs_unknown() -> None:
     known = format_module_option("stats")
     assert known.startswith("Foundations ·")
+    llm = format_module_option("llm_summary")
+    assert llm.startswith("Summary & Synthesis ·")
     unknown = format_module_option("not_a_real_module_id_zzz")
     assert unknown.startswith("Other ·")

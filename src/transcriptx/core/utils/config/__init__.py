@@ -35,6 +35,7 @@ from .base import (
     STOPWORDS_FILE,
     TICS_FILE,
     DISCOURSE_STOPLIST_FILE,
+    THEME_PHRASE_RESOURCES_FILE,
 )
 
 _global_config = None
@@ -113,4 +114,5 @@ __all__ = [
     "STOPWORDS_FILE",
     "TICS_FILE",
     "DISCOURSE_STOPLIST_FILE",
+    "THEME_PHRASE_RESOURCES_FILE",
 ]

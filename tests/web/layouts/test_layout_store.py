@@ -23,7 +23,13 @@ def test_preset_layout_yaml_loads() -> None:
     for layout_id in ("default", "executive", "developer_debug"):
         spec = LayoutProfileStore.load_layout(layout_id)
         assert spec.id == layout_id
-        assert spec.schema_version == 1
+        assert spec.schema_version in (1, 2)
+    default = LayoutProfileStore.load_layout("default")
+    assert default.title == "Standard"
+    assert default.schema_version == 2
+    overview_ids = [b.block_id for b in default.pages["overview"].blocks]
+    assert overview_ids[0] == "transcript_summary_hero"
+    assert "export_panel" not in overview_ids
 
 
 def test_unknown_block_id_fails_validation(tmp_path: Path) -> None:
@@ -100,16 +106,26 @@ def test_unsupported_param_fails() -> None:
 
 def test_save_and_load_roundtrip(tmp_path: Path) -> None:
     spec = LayoutProfileStore.load_layout("default")
-    LayoutProfileStore.save_layout(spec, base=tmp_path)
-    loaded = LayoutProfileStore.load_layout("default", base=tmp_path)
-    assert loaded.id == spec.id
+    path = LayoutProfileStore.save_as_custom(
+        spec, "my_custom", title="My Custom", base=tmp_path
+    )
+    assert path.exists()
+    loaded = LayoutProfileStore.load_layout("my_custom", base=tmp_path)
+    assert loaded.id == "my_custom"
     assert "overview" in loaded.pages
 
 
-def test_default_layout_includes_module_metrics() -> None:
+def test_builtin_layout_cannot_be_overwritten(tmp_path: Path) -> None:
+    spec = LayoutProfileStore.load_layout("default")
+    with pytest.raises(LayoutValidationError, match="immutable"):
+        LayoutProfileStore.save_layout(spec, base=tmp_path)
+
+
+def test_default_layout_is_standard_curated() -> None:
     layout = LayoutProfileStore.load_layout("default")
+    assert layout.title == "Standard"
     block_ids = [b.block_id for b in layout.pages["overview"].blocks]
-    assert "module_metrics" in block_ids
-    nav_index = block_ids.index("module_navigator")
-    metrics_index = block_ids.index("module_metrics")
-    assert metrics_index == nav_index + 1
+    assert block_ids[0] == "transcript_summary_hero"
+    assert "module_metrics" not in block_ids
+    assert "export_panel" not in block_ids
+    assert "run_status_compact" in block_ids

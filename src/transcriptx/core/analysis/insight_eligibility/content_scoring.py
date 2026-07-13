@@ -5,6 +5,23 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from transcriptx.core.analysis.phrase_quality.types import (
+    BORDERLINE_STOPWORD_RATIO,
+    LIGHT_VERB_HEAD,
+    LOW_CONTENT_RATIO,
+    LOW_DISTINCTIVENESS,
+    WEAK_BARE_NOUN,
+)
+
+# Soft-penalty coefficients applied to content-phrase totals.
+_CONTENT_PENALTY_COEFFS = {
+    WEAK_BARE_NOUN: 0.20,
+    LOW_CONTENT_RATIO: 0.15,
+    LOW_DISTINCTIVENESS: 0.10,
+    BORDERLINE_STOPWORD_RATIO: 0.10,
+    LIGHT_VERB_HEAD: 0.05,
+}
+
 
 def score_content_phrases(
     phrases: List[str] | List[Dict[str, Any]],
@@ -17,6 +34,7 @@ def score_content_phrases(
     window_hits: Dict[str, int] = defaultdict(int)
     block_hits: Dict[str, int] = defaultdict(int)
     quality_rows: Dict[str, List[Tuple[float, float, float]]] = defaultdict(list)
+    penalty_rows: Dict[str, List[str]] = defaultdict(list)
     entity_set = {e.lower() for e in (entities or [])}
 
     for row in phrases:
@@ -29,6 +47,8 @@ def score_content_phrases(
             quality_rows[phrase].append(
                 (stopword_ratio, content_token_ratio, pos_weight)
             )
+            for code in quality.get("penalties") or []:
+                penalty_rows[phrase].append(str(code))
         else:
             phrase = str(row).strip()
         if not phrase:
@@ -60,7 +80,6 @@ def score_content_phrases(
             0.4 * frequency + 0.3 * spread + 0.2 * recurrence + 0.1 * entity_linkage
         )
 
-        # Semantic gravity: bounded correction to avoid a full rank personality change.
         quality = quality_rows.get(phrase) or []
         if quality:
             qn = float(len(quality))
@@ -77,6 +96,14 @@ def score_content_phrases(
         )
         semantic_gravity = min(1.2, max(0.6, 0.6 + (0.6 * raw_gravity)))
         total = base_total * semantic_gravity
+
+        penalty_codes = set(penalty_rows.get(phrase) or [])
+        soft_penalty = sum(
+            _CONTENT_PENALTY_COEFFS.get(code, 0.0) for code in penalty_codes
+        )
+        # Do not also add policy rank_penalty here — it already encodes the same codes.
+        total = max(0.0, total - soft_penalty)
+
         scores[phrase] = {
             "frequency": frequency,
             "spread": spread,
@@ -87,6 +114,7 @@ def score_content_phrases(
             "stopword_ratio": stopword_ratio,
             "content_token_ratio": content_token_ratio,
             "pos_weight": pos_weight,
+            "soft_penalty": soft_penalty,
             "total": total,
         }
 

@@ -13,9 +13,10 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Supported operations include:
   - Importing transcripts into managed storage (managed import workflow).
   - Running analysis on individual transcripts and groups.
-  - Browsing results, charts, and reports.
+  - Viewing results via **Transcript → Overview → Insights → Charts → Artifacts**.
   - Managing basic settings exposed in the UI.
-
+- Legacy GUI routes `Data` and `Explorer` (File List) redirect to **Artifacts**.
+- Built-in layout profile id `default` is displayed as **Standard** and is immutable; clone via Dashboard Builder.
 ### 1.2 Python API
 
 - The **Python API** is a supported surface for scripting and automation.

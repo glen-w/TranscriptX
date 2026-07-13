@@ -1,6 +1,8 @@
-"""Dashboard Builder — schema inspection and layout preview (Phase 1)."""
+"""Dashboard Builder — schema inspection, preview, and Save as custom layout."""
 
 from __future__ import annotations
+
+import re
 
 import streamlit as st
 import yaml
@@ -16,12 +18,12 @@ from transcriptx.web.blocks.session_context import (
     load_active_layout,
     set_active_layout_id,
 )
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.layouts.store import LayoutProfileStore, LayoutValidationError
 
-_BUILDER_HELP = (
+_BUILDER_HELP_PREREQ = (
     "**Dashboard Builder** inspects registered view blocks and layout profiles. "
-    "**Schema** mode works without a run; **Preview** renders blocks for the selected run."
+    "Built-in presets are previewable but immutable — use **Save as custom layout**."
 )
 
 
@@ -42,13 +44,46 @@ def _render_schema_mode(layout_id: str) -> None:
     st.subheader("Active layout profile")
     try:
         layout = LayoutProfileStore.load_layout(layout_id)
-        st.write(f"**{layout.title}** — {layout.description}")
+        builtin = LayoutProfileStore.is_builtin(layout_id)
+        title_note = " (built-in, read-only)" if builtin else ""
+        st.write(f"**{layout.title}**{title_note} — {layout.description}")
+        if builtin:
+            st.info(
+                "Built-in layouts cannot be edited in place. "
+                "Use **Save as custom layout** below to clone."
+            )
         st.code(
             yaml.safe_dump(layout.model_dump(mode="json"), sort_keys=False),
             language="yaml",
         )
         LayoutProfileStore.validate_layout(layout)
         st.success("Layout validation passed.")
+
+        st.subheader("Save as custom layout")
+        new_id = st.text_input(
+            "New layout id",
+            value=f"{layout_id}_custom" if builtin else f"{layout_id}_copy",
+            key="dashboard_builder_save_as_id",
+        )
+        new_title = st.text_input(
+            "Title",
+            value=f"{layout.title} (custom)",
+            key="dashboard_builder_save_as_title",
+        )
+        if st.button("Save as custom layout", key="dashboard_builder_save_as_btn"):
+            slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", (new_id or "").strip())
+            if not slug:
+                st.error("Enter a valid layout id.")
+            else:
+                try:
+                    path = LayoutProfileStore.save_as_custom(
+                        layout, slug, title=new_title or slug
+                    )
+                    set_active_layout_id(slug)
+                    st.success(f"Saved custom layout to {path}")
+                    st.rerun()
+                except LayoutValidationError as exc:
+                    st.error(str(exc))
     except LayoutValidationError as exc:
         st.error(f"Layout validation failed: {exc}")
     except FileNotFoundError as exc:
@@ -84,7 +119,7 @@ def render_dashboard_builder() -> None:
     register_builtin_blocks()
     render_page_shell(
         "Dashboard Builder",
-        "Inspect blocks, validate layouts, and preview composed pages.",
+        "Inspect blocks, validate layouts, preview pages, and clone built-ins.",
         badges=None,
         actions=None,
     )
@@ -92,17 +127,27 @@ def render_dashboard_builder() -> None:
     layouts = LayoutProfileStore.list_layouts()
     if not layouts:
         st.error("No layout profiles found.")
-        render_page_help(_BUILDER_HELP)
+        st.info(_BUILDER_HELP_PREREQ)
         return
 
     current = active_layout_id()
     if current not in layouts:
         current = layouts[0]
     layout_index = layouts.index(current)
+
+    def _format_layout(lid: str) -> str:
+        try:
+            title = LayoutProfileStore.load_layout(lid).title
+        except Exception:
+            title = lid
+        suffix = " (built-in)" if LayoutProfileStore.is_builtin(lid) else ""
+        return f"{title} — {lid}{suffix}"
+
     chosen = st.selectbox(
         "Layout profile",
         layouts,
         index=layout_index,
+        format_func=_format_layout,
         key="dashboard_builder_layout_select",
     )
     if chosen != active_layout_id():
@@ -119,5 +164,3 @@ def render_dashboard_builder() -> None:
         _render_schema_mode(chosen)
     else:
         _render_preview_mode(chosen)
-
-    render_page_help(_BUILDER_HELP)

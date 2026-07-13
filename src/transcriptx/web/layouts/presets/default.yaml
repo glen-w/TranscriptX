@@ -1,80 +1,74 @@
-schema_version: 1
+schema_version: 2
 id: default
-title: Default
-description: Standard Overview and Insights layouts matching legacy pages.
+title: Standard
+description: Curated Overview and sectioned Insights for normal viewing.
 pages:
   overview:
     page_id: overview
     blocks:
-      - placement_id: overview_health
-        block_id: run_health
+      - placement_id: overview_summary_hero
+        block_id: transcript_summary_hero
         visible: true
-      - placement_id: overview_outcomes
-        block_id: run_outcomes
+      - placement_id: overview_at_a_glance
+        block_id: at_a_glance
         visible: true
-      - placement_id: overview_metrics
-        block_id: artifact_metrics
+      - placement_id: overview_speaker_cards
+        block_id: speaker_summary_cards
         visible: true
-      - placement_id: overview_module_nav
-        block_id: module_navigator
+      - placement_id: overview_action_items
+        block_id: action_items_compact
         visible: true
-      - placement_id: overview_module_metrics
-        block_id: module_metrics
+      - placement_id: overview_highlights
+        block_id: highlights_compact
         visible: true
-      - placement_id: overview_module_table
-        block_id: module_summary_table
-        visible: true
-      - placement_id: overview_export
-        block_id: export_panel
+      - placement_id: overview_run_status
+        block_id: run_status_compact
         visible: true
   insights:
     page_id: insights
     blocks:
-      - placement_id: insights_contract
-        block_id: insights_contract
+      - placement_id: insights_primary_summary
+        block_id: transcript_summary_hero
+        section: summary
         visible: true
-      - placement_id: insights_highlights
-        block_id: highlights
+      - placement_id: insights_other_summaries
+        block_id: other_summaries
+        section: summary
         visible: true
-      - placement_id: insights_exec_summary
-        block_id: executive_summary
-        visible: true
-      - placement_id: insights_commitments
-        block_id: commitments_table
-        visible: true
-      - placement_id: insights_llm_summary
-        block_id: llm_summary_block
-        visible: true
-        params:
-          module: llm_summary
-          title: LLM Transcript Summary
-          artifact_stem: _llm_summary
-          text_field: summary
-          empty_hint: Run the `llm_summary` module (with LLM enabled) to populate this view.
-      - placement_id: insights_narrative
-        block_id: llm_summary_block
-        visible: true
-        params:
-          module: narrative_summary
-          title: Narrative Summary
-          artifact_stem: _narrative_summary
-          text_field: narrative
-          empty_hint: Run the `narrative_summary` module (with LLM enabled) to populate this view.
       - placement_id: insights_llm_speaker_summary
         block_id: llm_speaker_summary_block
+        section: speakers
         visible: true
         params:
           title: Per-Speaker LLM Summaries
           empty_hint: Run the `llm_speaker_summary` module (with LLM enabled and named speakers) to populate this view.
       - placement_id: insights_llm_action_items
         block_id: llm_action_items_block
+        section: actions
         visible: true
         params:
           title: Action Items
           artifact_stem: _llm_action_items
           empty_hint: Run the `llm_action_items` module (with LLM enabled) to populate this view.
+      - placement_id: insights_commitments
+        block_id: commitments_table
+        section: actions
+        visible: true
+      - placement_id: insights_highlights
+        block_id: highlights
+        section: highlights
+        visible: true
+      - placement_id: insights_contract
+        block_id: insights_contract
+        section: analysis
+        visible: true
+      - placement_id: insights_exec_summary
+        block_id: executive_summary
+        section: analysis
+        visible: true
       - placement_id: insights_lexical_diversity
         block_id: lexical_diversity_block
+        section: analysis
         visible: true
         params:
           title: Lexical Diversity

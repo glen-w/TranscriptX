@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from transcriptx.web.blocks.placement import BlockPlacement, GridSpec
 
 SUPPORTED_LAYOUT_PAGES = frozenset({"overview", "insights", "dashboard_builder"})
-CURRENT_LAYOUT_SCHEMA_VERSION = 1
+# Bumped for optional placement.section field (Insights local navigation).
+CURRENT_LAYOUT_SCHEMA_VERSION = 2
+
+INSIGHTS_SECTIONS = frozenset(
+    {"summary", "speakers", "actions", "highlights", "analysis"}
+)
+
+LayoutSection = Literal["summary", "speakers", "actions", "highlights", "analysis"]
 
 
 class GridSpecModel(BaseModel):
@@ -36,6 +43,18 @@ class BlockPlacementModel(BaseModel):
     visible: bool = True
     params: dict[str, Any] = Field(default_factory=dict)
     grid: GridSpecModel | None = None
+    section: str | None = None
+
+    @field_validator("section")
+    @classmethod
+    def known_section(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if value not in INSIGHTS_SECTIONS:
+            raise ValueError(
+                f"Unsupported section {value!r}; expected one of {sorted(INSIGHTS_SECTIONS)}"
+            )
+        return value
 
     def to_placement(self) -> BlockPlacement:
         return BlockPlacement(
@@ -45,6 +64,7 @@ class BlockPlacementModel(BaseModel):
             visible=self.visible,
             params=dict(self.params),
             grid=self.grid.to_grid_spec() if self.grid else None,
+            section=self.section,
         )
 
 
@@ -72,9 +92,10 @@ class LayoutSpec(BaseModel):
     @field_validator("schema_version")
     @classmethod
     def supported_version(cls, value: int) -> int:
-        if value != CURRENT_LAYOUT_SCHEMA_VERSION:
+        # Accept v1 (no section) and v2 (section field).
+        if value not in (1, CURRENT_LAYOUT_SCHEMA_VERSION):
             raise ValueError(
-                f"Unsupported schema_version {value}; expected {CURRENT_LAYOUT_SCHEMA_VERSION}"
+                f"Unsupported schema_version {value}; expected 1 or {CURRENT_LAYOUT_SCHEMA_VERSION}"
             )
         return value
 

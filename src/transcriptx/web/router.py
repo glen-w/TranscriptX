@@ -11,15 +11,15 @@ from transcriptx.web.navigation import (
     build_prerequisites,
     context_readiness,
     evaluate_page_access,
+    migrate_legacy_page_key,
 )
+from transcriptx.web.page_modules.artifacts import render_artifacts
 from transcriptx.web.page_modules.audio_merge import render_audio_merge_page
 from transcriptx.web.page_modules.audio_prep import render_audio_prep_page
 from transcriptx.web.page_modules.batch_ops import render_batch_ops_page
 from transcriptx.web.page_modules.charts import render_charts
-from transcriptx.web.page_modules.data import render_data
 from transcriptx.web.page_modules.dashboard_builder import render_dashboard_builder
 from transcriptx.web.page_modules.diagnostics import render_diagnostics_page
-from transcriptx.web.page_modules.explorer import render_explorer
 from transcriptx.web.page_modules.groups import render_groups
 from transcriptx.web.page_modules.home import render_home
 from transcriptx.web.page_modules.insights import render_insights
@@ -34,7 +34,7 @@ from transcriptx.web.page_modules.statistics import render_statistics
 from transcriptx.web.page_modules.transcribe_audio import render_transcribe_audio_page
 from transcriptx.web.page_modules.transcript import render_transcript_viewer
 from transcriptx.web.page_modules.upload_transcript import render_upload_transcript_page
-from transcriptx.web.state import PAGE_KEY
+from transcriptx.web.state import ARTIFACTS_KEY_SECTION, PAGE_KEY
 
 PAGE_PREREQUISITES: dict[str, PagePrerequisite] = build_prerequisites()
 
@@ -52,6 +52,21 @@ def fallback_for_page(page: str) -> str | None:
     return mapping.get(prereq.allowed_fallback)
 
 
+def _redirect_legacy_data() -> None:
+    """Thin alias for bookmarked Data sessions."""
+    st.session_state[PAGE_KEY] = "Artifacts"
+    if not st.session_state.get(ARTIFACTS_KEY_SECTION):
+        st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
+    render_artifacts()
+
+
+def _redirect_legacy_explorer() -> None:
+    """Thin alias for bookmarked File List / Explorer sessions."""
+    st.session_state[PAGE_KEY] = "Artifacts"
+    st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
+    render_artifacts()
+
+
 def build_page_renderers(
     *,
     corrections_studio_available: bool,
@@ -65,8 +80,9 @@ def build_page_renderers(
         "Search": render_search,
         "Insights": render_insights,
         "Charts": render_charts,
-        "Data": render_data,
-        "Explorer": render_explorer,
+        "Artifacts": render_artifacts,
+        "Data": _redirect_legacy_data,
+        "Explorer": _redirect_legacy_explorer,
         "Run Analysis": render_run_analysis_page,
         "Transcribe Audio": render_transcribe_audio_page,
         "Import Transcript": render_upload_transcript_page,
@@ -94,6 +110,14 @@ def route_current_page(
     corrections_studio_available: bool,
     render_corrections_studio: Callable[[], None] | None,
 ) -> None:
+    # Redirect legacy routes before prerequisite evaluation.
+    raw_page = session_state.get(PAGE_KEY, "Home")
+    migrated, artifacts_section = migrate_legacy_page_key(raw_page)
+    if migrated != raw_page:
+        session_state[PAGE_KEY] = migrated
+        if artifacts_section:
+            session_state[ARTIFACTS_KEY_SECTION] = artifacts_section
+
     readiness = context_readiness(session_state)
     current = session_state.get(PAGE_KEY, "Home")
     access = evaluate_page_access(current, PAGE_PREREQUISITES, readiness)

@@ -174,11 +174,11 @@ def render_home() -> None:
                             st.session_state["page"] = "Charts"
                             st.rerun()
                     with c3:
-                        if st.button("Data", key=f"home_run_dt_{run.run_id}"):
+                        if st.button("Artifacts", key=f"home_run_dt_{run.run_id}"):
                             st.session_state["subject_type"] = "transcript"
                             st.session_state["subject_id"] = run.run_dir.parent.name
                             st.session_state["run_id"] = run.run_dir.name
-                            st.session_state["page"] = "Data"
+                            st.session_state["page"] = "Artifacts"
                             st.rerun()
                     with c4:
                         if st.button("Export ZIP", key=f"home_run_ex_{run.run_id}"):
