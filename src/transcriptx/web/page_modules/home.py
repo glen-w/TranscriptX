@@ -17,6 +17,8 @@ from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
 from transcriptx.web.navigation import navigate_to_library_rename_workflow
 from transcriptx.web.perf import instrument_cached_call, set_count
+from transcriptx.web.services.artifact_service import ArtifactService
+from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.sidebar_options import _slug_display_labels_from_index
 
@@ -35,6 +37,55 @@ def _transcript_path_for_recent_run(run) -> Path | None:
         if candidate.exists():
             return candidate
     return None
+
+
+def _home_export_session_key(run_id: str) -> str:
+    return f"home_export_zip_{run_id}"
+
+
+def _prepare_recent_run_export(run) -> None:
+    """Build a full-run artifact ZIP and stash bytes for download."""
+    export_key = _home_export_session_key(run.run_id)
+    try:
+        artifacts = ArtifactService.list_artifacts(run.run_dir)
+        if not artifacts:
+            st.session_state.pop(export_key, None)
+            st.warning("No artifacts to export for this run.")
+            return
+        export_path = ExportService.zip_artifacts(
+            run.run_dir, [artifact.id for artifact in artifacts]
+        )
+        if export_path is None:
+            st.session_state.pop(export_key, None)
+            st.warning("Export failed.")
+            return
+        st.session_state[export_key] = {
+            "bytes": ArtifactService.read_for_download(export_path),
+            "filename": export_path.name,
+        }
+    except ValueError as exc:
+        st.session_state.pop(export_key, None)
+        st.error(str(exc))
+    except Exception as exc:
+        st.session_state.pop(export_key, None)
+        st.error(f"Export failed: {exc}")
+
+
+def _render_recent_run_export_download(run_id: str) -> None:
+    stored = st.session_state.get(_home_export_session_key(run_id))
+    if not isinstance(stored, dict):
+        return
+    payload = stored.get("bytes")
+    filename = stored.get("filename")
+    if not isinstance(payload, (bytes, bytearray)) or not isinstance(filename, str):
+        return
+    st.download_button(
+        "Download ZIP",
+        data=bytes(payload),
+        file_name=filename,
+        mime="application/zip",
+        key=f"home_run_dl_{run_id}",
+    )
 
 
 def render_home() -> None:
@@ -107,7 +158,7 @@ def render_home() -> None:
                     st.caption(
                         f"Modules: {', '.join(run.selected_modules[:5])}{'...' if len(run.selected_modules) > 5 else ''}"
                     )
-                    c1, c2, c3, c4 = st.columns(4)
+                    c1, c2, c3, c4, c5 = st.columns(5)
                     with c1:
                         if st.button("Overview", key=f"home_run_ov_{run.run_id}"):
                             st.session_state["subject_type"] = "transcript"
@@ -130,6 +181,9 @@ def render_home() -> None:
                             st.session_state["page"] = "Data"
                             st.rerun()
                     with c4:
+                        if st.button("Export ZIP", key=f"home_run_ex_{run.run_id}"):
+                            _prepare_recent_run_export(run)
+                    with c5:
                         if st.button("Rename", key=f"home_run_rn_{run.run_id}"):
                             transcript_path = _transcript_path_for_recent_run(run)
                             if transcript_path is not None:
@@ -139,6 +193,7 @@ def render_home() -> None:
                             else:
                                 st.session_state["page"] = "Library"
                             st.rerun()
+                    _render_recent_run_export_download(run.run_id)
 
         st.subheader("Workspace Summary")
         if not st.session_state.get(_HOME_WORKSPACE_SUMMARY_REQUESTED, False):

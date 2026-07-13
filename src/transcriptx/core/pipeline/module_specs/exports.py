@@ -18,6 +18,7 @@ def build_exports_module_definitions(
             "determinism_tier": "T0",
             "requirements": default_requirements,
             "enhancements": [Enhancement.SPEAKER_DISPLAY_NAMES],
+            "supports_group": False,
         },
         "simplified_transcript": {
             "description": "Simplified transcript (tics, agreements, repetitions removed)",
@@ -26,5 +27,6 @@ def build_exports_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "supports_group": False,
         },
     }

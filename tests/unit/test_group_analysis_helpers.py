@@ -576,3 +576,157 @@ def test_finalize_group_analysis_enabled_runs_registry_rows_blobs_and_warnings(
         "INNER_WARN",
         "GROUP_CHART_FAILED",
     } <= warning_codes
+
+
+@pytest.mark.unit
+def test_finalize_omits_identity_maps_when_member_ids_absent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    class FakeGroupOutputService:
+        def __init__(self, *, group_uuid, run_id, output_dir, **_kwargs):
+            self.base_dir = tmp_path / "groups" / group_uuid / run_id
+            self.base_dir.mkdir(parents=True)
+
+        def write_group_run_metadata(self, **_kwargs):
+            return None
+
+        def save_summary(self, _text):
+            return None
+
+        def write_group_manifest(self, **_kwargs):
+            return None
+
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.GroupOutputService",
+        FakeGroupOutputService,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.write_run_results_summary",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.write_output_manifest",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.save_json",
+        lambda *_args, **_kwargs: None,
+    )
+
+    config = TranscriptXConfig()
+    config.group_analysis.enabled = False
+    config.group_analysis.output_dir = str(tmp_path / "groups")
+    scope = AnalysisScope(
+        scope_type="group",
+        uuid="no-ids",
+        key="no-ids",
+        display_name="No IDs",
+    )
+    member = SimpleNamespace(
+        file_path="/tmp/a.json",
+        file_name="a.json",
+        id=None,
+        uuid=None,
+    )
+    result = finalize_group_analysis(
+        scope=scope,
+        members=[member],
+        resolved_paths=["/tmp/a.json"],
+        per_transcript_results=[
+            PerTranscriptResult(
+                transcript_path="/tmp/a.json",
+                transcript_key="a",
+                run_id="r1",
+                order_index=0,
+                output_dir="out/a",
+                module_results={},
+            )
+        ],
+        group_errors=[],
+        selected_modules=["stats"],
+        config=config,
+    )
+    meta = result["transcript_set"]["metadata"]
+    assert "transcript_id_map" not in meta
+    assert "transcript_uuid_map" not in meta
+
+
+@pytest.mark.unit
+def test_finalize_skips_none_aggregate_outcome(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    class FakeGroupOutputService:
+        def __init__(self, *, group_uuid, run_id, output_dir, **_kwargs):
+            self.base_dir = tmp_path / "groups" / group_uuid / run_id
+            self.base_dir.mkdir(parents=True)
+
+        def write_group_run_metadata(self, **_kwargs):
+            return None
+
+        def save_summary(self, _text):
+            return None
+
+        def write_group_manifest(self, **_kwargs):
+            return None
+
+    entry = SimpleNamespace(
+        agg_id="stats",
+        selector=lambda selected: "stats" in selected,
+        deps=[],
+        aggregate_fn=lambda *_args, **_kwargs: None,
+        output_type="rows",
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.GroupOutputService",
+        FakeGroupOutputService,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.aggregation.registry.build_registry",
+        lambda: [entry],
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.speaker_normalizer.normalize_speakers_across_transcripts",
+        lambda _results: CanonicalSpeakerMap({}, {}, {}),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.write_run_results_summary",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.write_output_manifest",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.group_analysis_runner.save_json",
+        lambda *_args, **_kwargs: None,
+    )
+
+    config = TranscriptXConfig()
+    config.group_analysis.enabled = True
+    config.group_analysis.output_dir = str(tmp_path / "groups")
+    scope = AnalysisScope(
+        scope_type="group",
+        uuid="none-outcome",
+        key="none-outcome",
+        display_name="None Outcome",
+    )
+    result = finalize_group_analysis(
+        scope=scope,
+        members=[],
+        resolved_paths=["/x/a.json"],
+        per_transcript_results=[
+            PerTranscriptResult(
+                transcript_path="/x/a.json",
+                transcript_key="a",
+                run_id="r1",
+                order_index=0,
+                output_dir="out/a",
+                module_results={"stats": {"payload": {}}},
+            )
+        ],
+        group_errors=[],
+        selected_modules=["stats"],
+        config=config,
+    )
+    assert result["status"] == "completed"
+    assert result["aggregations"] == {}

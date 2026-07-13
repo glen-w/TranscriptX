@@ -88,6 +88,12 @@ GROUP_AGGREGATE_CHART_FAMILIES: Dict[str, Tuple[str, ...]] = {
     "entity_sentiment": ("pooled_single_view",),
     "topic_modeling": ("pooled_single_view",),
     "contagion": ("pooled_single_view",),
+    "llm_action_items": ("session_bars",),
+    "insights": ("session_bars",),
+    "semantic_similarity": ("session_bars",),
+    "voice_mismatch": ("session_bars",),
+    "voice_tension": ("session_bars",),
+    "voice_fingerprint": ("session_bars",),
 }
 
 
@@ -95,8 +101,9 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
     """
     Generators for group row aggregations.
 
-    Omitted: ``wordclouds`` (charts written by run_group_wordclouds), ``summary``
-    (blob output).
+    Omitted: ``wordclouds`` (charts written by run_group_wordclouds), ``summary`` /
+    ``llm_summary`` / ``narrative_summary`` (blob output), ``llm_speaker_summary``
+    (speaker text rows; Data/Insights only).
 
     ``ner``, ``entity_sentiment``, ``topic_modeling``, ``interactions`` (composite),
     and ``contagion`` (pooled-only) use dedicated or composite generators for
@@ -113,6 +120,12 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
         "affect_tension",
         "qa_analysis",
         "echoes",
+        "llm_action_items",
+        "insights",
+        "semantic_similarity",
+        "voice_mismatch",
+        "voice_tension",
+        "voice_fingerprint",
     )
     reg: Dict[str, GroupChartGenerator] = {
         "acts": ActsGroupChartGenerator(),

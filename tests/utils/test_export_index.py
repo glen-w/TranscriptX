@@ -11,6 +11,7 @@ from transcriptx.utils.charts_export import _ExportableItem
 from transcriptx.utils.export_index import (
     build_export_index_html,
     normalize_transcript_payload,
+    render_text_summary_section,
     render_transcript_section,
     resolve_export_llm_summary,
     resolve_export_page_title,
@@ -200,7 +201,43 @@ def test_build_index_llm_summary_only() -> None:
     assert "A concise abstractive summary." in html
     assert "qwen3:8b" in html
     assert ">LLM Transcript Summary</a>" in html
+    assert '<li class="nav-heading"><strong>Summaries</strong></li>' in html
+    assert 'href="#summaries"' not in html
     assert 'class="card-grid"' not in html
+
+
+def test_build_index_nav_splits_summary_and_speaker_headings() -> None:
+    html = build_export_index_html(
+        page_title="run-1",
+        text_summaries=[
+            {
+                "section_id": "summary-llm-summary-demo",
+                "title": "LLM Transcript Summary",
+                "body": "General summary body.",
+                "provenance": {},
+            },
+            {
+                "section_id": "summary-llm_speaker_summary-demo-ana",
+                "title": "Speaker Summary — Ana",
+                "body": "Ana spoke about the roadmap.",
+                "provenance": {"speaker": "Ana"},
+            },
+        ],
+        chart_items=[
+            _chart_item(
+                artifact_id="a", rel_path="acts/charts/global/a.png", module="acts"
+            )
+        ],
+    )
+    assert html is not None
+    assert '<li class="nav-heading"><strong>Summaries</strong></li>' in html
+    assert '<li class="nav-heading"><strong>Speaker Summaries</strong></li>' in html
+    assert '<li class="nav-heading"><strong>Charts</strong></li>' in html
+    assert 'href="#summaries"' not in html
+    assert 'id="speaker-summaries"' in html
+    assert html.index('id="summaries"') < html.index('id="speaker-summaries"')
+    assert html.index("LLM Transcript Summary") < html.index("Speaker Summaries")
+    assert html.index("Speaker Summary — Ana") < html.index(">Charts</strong>")
 
 
 def test_build_index_summaries_render_above_charts() -> None:
@@ -403,9 +440,104 @@ def test_write_export_index_includes_llm_action_items(tmp_path: Path) -> None:
     assert len(summaries) == 1
     assert summaries[0]["title"] == "Action Items"
     assert "Send the report" in summaries[0]["body"]
+    assert "**Send the report**" in summaries[0]["body"]
     html = _write_index(staging, copied)
     assert html is not None
     assert "Send the report" in html
+    assert "<strong>Send the report</strong>" in html
+    assert "**Send the report**" not in html
+
+
+def test_build_index_renders_markdown_summary_bodies() -> None:
+    html = build_export_index_html(
+        page_title="run-1",
+        text_summaries=[
+            {
+                "section_id": "summary-run-report",
+                "title": "Run Report",
+                "body": (
+                    "## Speaker breakdown\n\n"
+                    "- **Alice**: 58 words (50%)\n"
+                    "- **Bob**: 57 words (50%)\n"
+                ),
+                "provenance": {},
+            }
+        ],
+    )
+    assert html is not None
+    assert 'class="tx-summary-body"' in html
+    assert "<h3>Speaker breakdown</h3>" in html
+    assert "<strong>Alice</strong>" in html
+    assert "## Speaker breakdown" not in html
+    assert "**Alice**" not in html
+
+
+def test_build_index_summary_escapes_html_in_markdown() -> None:
+    section = render_text_summary_section(
+        {
+            "section_id": "summary-xss",
+            "title": "Summary",
+            "body": "## Hello <script>alert(1)</script>\n\n**ok**",
+            "provenance": {},
+        }
+    )
+    assert "<script>" not in section
+    assert "&lt;script&gt;" in section
+    assert "<strong>ok</strong>" in section
+
+
+def test_resolve_export_executive_summary_from_structured_json(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "summary/data/global").mkdir(parents=True)
+    (staging / "summary/data/global/demo_summary.json").write_text(
+        json.dumps(
+            {
+                "overview": {"paragraph": "The meeting covered shipping."},
+                "key_themes": {"bullets": [{"text": "Deadlines"}]},
+                "tension_points": {
+                    "bullets": [
+                        {
+                            "text": "Timeline pressure",
+                            "anchor_quote": {
+                                "speaker": "Alice",
+                                "quote": "We must ship Friday.",
+                            },
+                        }
+                    ]
+                },
+                "commitments": {
+                    "items": [{"owner_display": "Bob", "action": "Draft the summary"}]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    copied = [
+        (
+            _artifact(
+                artifact_id="ex",
+                rel_path="summary/data/global/demo_summary.json",
+                kind="data_json",
+                module="summary",
+                title="Executive Summary",
+            ),
+            Path("summary/data/global/demo_summary.json"),
+        ),
+    ]
+    summaries = resolve_export_text_summaries(staging_dir=staging, copied=copied)
+    assert len(summaries) == 1
+    body = summaries[0]["body"]
+    assert "## Overview" in body
+    assert "The meeting covered shipping." in body
+    assert "**Alice**" in body
+    assert "**Bob**: Draft the summary" in body
+    html = _write_index(staging, copied)
+    assert html is not None
+    assert "<h3>Overview</h3>" in html
+    assert "<strong>Alice</strong>" in html
+    assert "<strong>Bob</strong>" in html
+    assert "## Overview" not in html
+    assert "**Alice**" not in html
 
 
 def test_build_index_neither_returns_none() -> None:

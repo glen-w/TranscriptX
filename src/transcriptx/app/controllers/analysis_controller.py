@@ -20,6 +20,7 @@ from transcriptx.core.pipeline.module_registry import (
     get_available_modules,
     get_default_modules,
 )
+from transcriptx.core.utils.audio_availability import has_resolvable_audio
 from transcriptx.app.models.errors import ValidationError, WorkflowExecutionError
 
 
@@ -66,9 +67,15 @@ class AnalysisController:
         """Return list of available module IDs."""
         return get_available_modules()
 
-    def get_default_modules(self, transcript_paths: list[str]) -> list[str]:
+    def get_default_modules(
+        self, transcript_paths: list[str], *, for_group: bool = False
+    ) -> list[str]:
         """Return default module list for given transcript(s)."""
-        return get_default_modules(transcript_paths)
+        return get_default_modules(
+            transcript_paths,
+            audio_resolver=has_resolvable_audio,
+            for_group=for_group,
+        )
 
     def resolve_modules(
         self,
@@ -76,6 +83,8 @@ class AnalysisController:
         mode: str = "quick",
         profile: str | None = None,
         custom_ids: list[str] | None = None,
+        *,
+        for_group: bool = False,
     ) -> list[str]:
         """Resolve effective module list. Single source of truth."""
         return resolve_modules(
@@ -83,4 +92,5 @@ class AnalysisController:
             mode=mode,
             profile=profile,
             custom_ids=custom_ids,
+            for_group=for_group,
         )

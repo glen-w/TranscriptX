@@ -219,6 +219,41 @@ def strip_json_fence(text: str) -> str:
     return stripped
 
 
+def _repair_common_llm_json_issues(text: str) -> str:
+    """Apply conservative fixes for common local-LLM JSON mistakes."""
+    repaired = re.sub(r",(\s*[}\]])", r"\1", text)
+    repaired = re.sub(r"}\s*{", "},{", repaired)
+    repaired = re.sub(r"]\s*\[", "],[", repaired)
+    return repaired
+
+
+def loads_llm_json(text: str) -> Any:
+    """Parse JSON from an LLM response with light repair for common defects.
+
+    Tries strict ``json.loads`` first, then trailing-comma / missing-comma
+    repairs, then ``raw_decode`` of the first object (tolerates trailing junk).
+    """
+    candidate = strip_json_fence(text)
+    attempts = (candidate, _repair_common_llm_json_issues(candidate))
+    last_error: Optional[json.JSONDecodeError] = None
+    for attempt in attempts:
+        try:
+            return json.loads(attempt)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+        start = attempt.find("{")
+        if start < 0:
+            continue
+        try:
+            data, _end = json.JSONDecoder().raw_decode(attempt, start)
+            return data
+        except json.JSONDecodeError as exc:
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+    raise json.JSONDecodeError("Expecting value", candidate, 0)
+
+
 def parse_narrative_json(
     text: str,
     *,
@@ -324,10 +359,10 @@ def parse_action_items_json(
     *,
     max_output_tokens: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
-    """Parse action-items JSON: strip one fence, validate strict schema."""
+    """Parse action-items JSON: strip one fence, lightly repair, validate schema."""
     candidate = strip_json_fence(text)
     try:
-        data = json.loads(candidate)
+        data = loads_llm_json(text)
     except json.JSONDecodeError as exc:
         raise LLMResponseError(f"Action items output is not valid JSON: {exc}") from exc
     if not isinstance(data, dict):

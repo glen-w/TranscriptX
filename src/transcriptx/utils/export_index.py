@@ -32,6 +32,7 @@ from transcriptx.utils.charts_export import (
     _ExportableItem,
     render_chart_sections,
 )
+from transcriptx.utils.export_markdown import summary_markdown_to_html
 from transcriptx.utils.text_utils import format_time_detailed
 
 _TRANSCRIPT_SIDECAR_MARKERS = (
@@ -375,49 +376,139 @@ def resolve_export_transcript_data(
 
 
 def _strip_summary_markdown(md: str) -> str:
-    """Drop generated markdown titles and provenance footers when JSON is absent."""
+    """Drop generated top-level titles and provenance footers from markdown bodies."""
     lines = md.splitlines()
     body_lines: list[str] = []
     for line in lines:
         stripped = line.strip()
         if stripped == "---":
             break
-        if stripped.startswith("# "):
+        # Drop document H1 only; keep ##+ for rendered section headings.
+        if stripped.startswith("# ") and not stripped.startswith("##"):
             continue
         body_lines.append(line)
     return "\n".join(body_lines).strip()
 
 
+def _executive_summary_markdown(payload: dict[str, Any]) -> str:
+    """Build markdown for executive summary JSON (overview / themes / commitments)."""
+    overview = payload.get("overview") or {}
+    overview_text = ""
+    if isinstance(overview, dict):
+        overview_text = str(overview.get("paragraph") or "").strip()
+    elif overview:
+        overview_text = str(overview).strip()
+
+    key_themes = payload.get("key_themes") or {}
+    theme_bullets = (
+        key_themes.get("bullets") if isinstance(key_themes, dict) else None
+    ) or []
+    tension_points = payload.get("tension_points") or {}
+    tension_bullets = (
+        tension_points.get("bullets") if isinstance(tension_points, dict) else None
+    ) or []
+    commitments = payload.get("commitments") or {}
+    commitment_items = (
+        commitments.get("items") if isinstance(commitments, dict) else None
+    ) or []
+
+    lines: list[str] = []
+    if overview_text:
+        lines.extend(["## Overview", overview_text, ""])
+
+    theme_lines: list[str] = []
+    if isinstance(theme_bullets, list):
+        for bullet in theme_bullets:
+            if isinstance(bullet, dict):
+                text = str(bullet.get("text") or "").strip()
+            else:
+                text = str(bullet or "").strip()
+            if text:
+                theme_lines.append(f"- {text}")
+    if theme_lines:
+        lines.extend(["## Key themes", *theme_lines, ""])
+
+    tension_lines: list[str] = []
+    if isinstance(tension_bullets, list):
+        for bullet in tension_bullets:
+            if not isinstance(bullet, dict):
+                text = str(bullet or "").strip()
+                if text:
+                    tension_lines.append(f"- {text}")
+                continue
+            text = str(bullet.get("text") or "").strip()
+            if text:
+                tension_lines.append(f"- {text}")
+            anchor = bullet.get("anchor_quote") or {}
+            if isinstance(anchor, dict):
+                speaker = str(anchor.get("speaker") or "").strip()
+                quote = str(anchor.get("quote") or "").strip()
+                if speaker or quote:
+                    label = speaker or "Quote"
+                    tension_lines.append(f"  - **{label}**: {quote}")
+    if tension_lines:
+        lines.extend(["## Tension points", *tension_lines, ""])
+
+    commitment_lines: list[str] = []
+    if isinstance(commitment_items, list):
+        for item in commitment_items:
+            if not isinstance(item, dict):
+                continue
+            owner = str(item.get("owner_display") or item.get("owner") or "").strip()
+            action = str(item.get("action") or "").strip()
+            if not action:
+                continue
+            if owner:
+                commitment_lines.append(f"- **{owner}**: {action}")
+            else:
+                commitment_lines.append(f"- {action}")
+    if commitment_lines:
+        lines.extend(["## Commitments / Next steps", *commitment_lines, ""])
+
+    if lines:
+        return "\n".join(lines).strip()
+
+    # Legacy / alternate shapes
+    return str(payload.get("summary") or payload.get("narrative") or "").strip()
+
+
+def _action_items_markdown(payload: dict[str, Any]) -> str:
+    items = payload.get("items") or []
+    if not isinstance(items, list) or not items:
+        return "No action items found."
+    lines: list[str] = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            continue
+        text = str(item.get("text") or "").strip()
+        if not text:
+            continue
+        lines.append(f"{index}. **{text}**")
+        status = item.get("status")
+        if status:
+            lines.append(f"   - Status: {status}")
+        owner = item.get("owner")
+        if owner:
+            lines.append(f"   - Owner: {owner}")
+        deadline = item.get("deadline")
+        if deadline:
+            lines.append(f"   - Deadline: {deadline}")
+        quote = item.get("quote")
+        if quote:
+            lines.append(f'   - Quote: "{quote}"')
+        lines.append("")
+    return "\n".join(lines).strip()
+
+
 def _summary_text_from_payload(payload: dict[str, Any], *, kind: str) -> str:
+    if kind == "executive":
+        return _executive_summary_markdown(payload)
     if kind == "narrative_summary":
         return str(payload.get("narrative") or payload.get("summary") or "").strip()
     if kind == "llm_speaker_summary":
         return str(payload.get("summary") or "").strip()
     if kind == "llm_action_items":
-        items = payload.get("items") or []
-        if not isinstance(items, list) or not items:
-            return "No action items found."
-        lines: list[str] = []
-        for index, item in enumerate(items, start=1):
-            if not isinstance(item, dict):
-                continue
-            text = str(item.get("text") or "").strip()
-            if not text:
-                continue
-            lines.append(f"{index}. {text}")
-            status = item.get("status")
-            if status:
-                lines.append(f"   Status: {status}")
-            owner = item.get("owner")
-            if owner:
-                lines.append(f"   Owner: {owner}")
-            deadline = item.get("deadline")
-            if deadline:
-                lines.append(f"   Deadline: {deadline}")
-            quote = item.get("quote")
-            if quote:
-                lines.append(f'   Quote: "{quote}"')
-        return "\n".join(lines).strip()
+        return _action_items_markdown(payload)
     return str(payload.get("summary") or payload.get("narrative") or "").strip()
 
 
@@ -499,10 +590,7 @@ def _load_summary_body(
         body = _summary_text_from_payload(payload, kind=kind)
     if not body and md_path is not None and md_path.is_file():
         try:
-            if kind == "run_report":
-                body = md_path.read_text(encoding="utf-8").strip()
-            else:
-                body = _strip_summary_markdown(md_path.read_text(encoding="utf-8"))
+            body = _strip_summary_markdown(md_path.read_text(encoding="utf-8"))
         except Exception:
             body = ""
 
@@ -601,10 +689,34 @@ def resolve_export_llm_summary(
     return None
 
 
+def _is_speaker_summary(summary: ExportTextSummary) -> bool:
+    title = str(summary.get("title") or "")
+    section_id = str(summary.get("section_id") or "")
+    return (
+        title.startswith("Speaker Summary")
+        or "llm_speaker_summary" in section_id
+        or "llm-speaker-summary" in section_id
+    )
+
+
+def _nav_heading(label: str) -> str:
+    return f'<li class="nav-heading"><strong>{html.escape(label)}</strong></li>'
+
+
 def render_summaries_section(summaries: Sequence[ExportTextSummary]) -> str:
-    """Render a grouped summaries block for the export index page."""
-    blocks = "".join(render_text_summary_section(summary) for summary in summaries)
-    return f'<section id="summaries"><h2>Summaries</h2>{blocks}</section>'
+    """Render grouped summary blocks for the export index page."""
+    general = [s for s in summaries if not _is_speaker_summary(s)]
+    speakers = [s for s in summaries if _is_speaker_summary(s)]
+    parts: list[str] = []
+    if general:
+        blocks = "".join(render_text_summary_section(summary) for summary in general)
+        parts.append(f'<section id="summaries"><h2>Summaries</h2>{blocks}</section>')
+    if speakers:
+        blocks = "".join(render_text_summary_section(summary) for summary in speakers)
+        parts.append(
+            f'<section id="speaker-summaries"><h2>Speaker Summaries</h2>{blocks}</section>'
+        )
+    return "".join(parts)
 
 
 def _strip_llm_summary_markdown(md: str) -> str:
@@ -633,12 +745,14 @@ def render_text_summary_section(summary: ExportTextSummary) -> str:
         meta_line = " · ".join(html.escape(str(bit)) for bit in meta_bits)
         meta_html = f'<p class="meta">{meta_line}</p>'
 
+    body_html = summary_markdown_to_html(str(body))
+    if not body_html:
+        body_html = f"<p>{html.escape(str(body))}</p>" if str(body).strip() else ""
+
     return (
         f'<section id="{html.escape(section_id)}">'
         f"<h2>{html.escape(title)}</h2>"
-        '<div class="tx-summary">'
-        f'<p class="tx-text">{html.escape(body)}</p>'
-        "</div>"
+        f'<div class="tx-summary"><div class="tx-summary-body">{body_html}</div></div>'
         f"{meta_html}"
         "</section>"
     )
@@ -814,15 +928,28 @@ def build_export_index_html(
     if has_transcript:
         nav_entries.append('<li><a href="#transcript">Transcript</a></li>')
     if has_summaries and summary_items:
-        nav_entries.append('<li><a href="#summaries">Summaries</a></li>')
-        for summary in summary_items:
-            section_id = summary.get("section_id") or "summary"
-            title = summary.get("title") or "Summary"
-            nav_entries.append(
-                f'<li><a href="#{html.escape(section_id)}">{html.escape(title)}</a></li>'
-            )
+        general_summaries = [s for s in summary_items if not _is_speaker_summary(s)]
+        speaker_summaries = [s for s in summary_items if _is_speaker_summary(s)]
+        if general_summaries:
+            nav_entries.append(_nav_heading("Summaries"))
+            for summary in general_summaries:
+                section_id = summary.get("section_id") or "summary"
+                title = summary.get("title") or "Summary"
+                nav_entries.append(
+                    f'<li><a href="#{html.escape(section_id)}">'
+                    f"{html.escape(title)}</a></li>"
+                )
+        if speaker_summaries:
+            nav_entries.append(_nav_heading("Speaker Summaries"))
+            for summary in speaker_summaries:
+                section_id = summary.get("section_id") or "summary"
+                title = summary.get("title") or "Speaker Summary"
+                nav_entries.append(
+                    f'<li><a href="#{html.escape(section_id)}">'
+                    f"{html.escape(title)}</a></li>"
+                )
     if has_charts:
-        nav_entries.append("<li><strong>Charts</strong></li>")
+        nav_entries.append(_nav_heading("Charts"))
         nav_entries.extend(chart_toc)
 
     omitted_banner = ""

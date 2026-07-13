@@ -30,6 +30,15 @@ subsets are in
 | stats | dedicated | n/a (`StatsGroupChartGenerator`) | Session/speaker summary bars; gallery **cross-session speaker**: word count `group.stats.cross_session_speaker.speaker_{id}`; **segment count across sessions** `group.stats.cross_session_speaker.segment_count.speaker_{id}` ([contract](group_charts_stats_cross_session_contract.md)). **Pooled totals:** `stats_pooled` → `group.stats.pooled.totals.global` ([contract](group_charts_stats_pooled_contract.md)); speaker **shares** deferred. |
 | acts | dedicated | n/a (`ActsGroupChartGenerator`) | **Pooled audited:** `group.acts.global_acts_pie.global` (and bar when emitted) = corpus act mix ([contract](group_charts_acts_pooled_contract.md)). |
 | sentiment | dedicated | n/a (`SentimentGroupChartGenerator`) | Includes gallery **cross-session speaker** compound-style charts ([contract](group_charts_sentiment_cross_session_contract.md)). |
+| llm_action_items | keep generic | `item_count` | Session action-item counts; content rows in Data. |
+| insights | keep generic | `theme_count`, `recurring_idea_count`, `notable_moment_count` | Session insight counts; content rows in Data. |
+| semantic_similarity | keep generic | `total_repetitions`, `unique_patterns` | Covers legacy/advanced/v2 via one agg; no embedding re-pool. |
+| voice_mismatch | keep generic | `moments_count`, `mismatch_score_mean`, `mismatch_score_max` | Moment content rows in Data. |
+| voice_tension | keep generic | `bins`, `tension_mean`, `tension_max` | Curve points as content rows; temporal overlay deferred. |
+| voice_fingerprint | keep generic | `speakers`, `drift_moment_count` | Speaker baselines + drift content rows. |
+| llm_summary | blob only | n/a | Collect per-member summaries; no charts. |
+| narrative_summary | blob only | n/a | Collect per-member narratives; no charts. |
+| llm_speaker_summary | data only | n/a | Speaker summary rows; no charts. |
 
 **Temporal overlay viz_ids** (normalized pattern `group.{agg_id}.temporal_overlay.global`):
 

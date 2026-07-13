@@ -30,7 +30,9 @@ from transcriptx.core.analysis.selection import (
 from transcriptx.core.pipeline.module_registry import (
     get_available_modules,
     get_default_modules,
+    get_module_info,
 )
+from transcriptx.core.utils.audio_availability import has_resolvable_audio
 from transcriptx.core.pipeline.pipeline import run_analysis_pipeline
 from transcriptx.core.pipeline.run_outcome_truth import project_group_outcomes
 from transcriptx.core.pipeline.run_options import SpeakerRunOptions
@@ -84,11 +86,27 @@ def _validate_or_fail(
     return ValidationOutcome(valid=False, result=_failure_result(errors))
 
 
+def _modules_unsupported_for_group(module_ids: list[str]) -> list[str]:
+    unsupported: list[str] = []
+    for module_id in module_ids:
+        info = get_module_info(module_id)
+        if info is not None and not info.supports_group:
+            unsupported.append(module_id)
+    return unsupported
+
+
 def _resolve_modules(
-    request_modules: list[str] | None, defaults_for_paths: list[str]
+    request_modules: list[str] | None,
+    defaults_for_paths: list[str],
+    *,
+    for_group: bool = False,
 ) -> tuple[list[str], str | None]:
     available = get_available_modules()
-    default = get_default_modules(defaults_for_paths)
+    default = get_default_modules(
+        defaults_for_paths,
+        audio_resolver=has_resolvable_audio,
+        for_group=for_group,
+    )
     if request_modules is None or (
         isinstance(request_modules, list) and len(request_modules) == 0
     ):
@@ -102,7 +120,15 @@ def _resolve_modules(
     invalid = [module for module in request_modules if module not in available]
     if invalid:
         return [], f"Invalid modules: {', '.join(invalid)}"
-    return list(request_modules), None
+    selected = list(request_modules)
+    if for_group:
+        unsupported = _modules_unsupported_for_group(selected)
+        if unsupported:
+            return (
+                [],
+                "Modules not supported for group analysis: " + ", ".join(unsupported),
+            )
+    return selected, None
 
 
 def validate_analysis_readiness(request: AnalysisRequest) -> list[str]:
@@ -424,6 +450,13 @@ def validate_group_analysis_readiness(request: GroupAnalysisRequest) -> list[str
         invalid = [m for m in request.modules if m not in available]
         if invalid:
             errors.append(f"Invalid modules: {', '.join(invalid)}")
+        unsupported = _modules_unsupported_for_group(
+            [m for m in request.modules if m in available]
+        )
+        if unsupported:
+            errors.append(
+                "Modules not supported for group analysis: " + ", ".join(unsupported)
+            )
     return errors
 
 
@@ -479,7 +512,9 @@ def run_group_analysis(
         )
         return _failure_result(["No member transcript paths exist on disk."])
 
-    selected, module_error = _resolve_modules(request.modules, resolved_paths)
+    selected, module_error = _resolve_modules(
+        request.modules, resolved_paths, for_group=True
+    )
     if module_error:
         _update_snapshot(snapshot, status="failed", phase="failed", error=module_error)
         return _failure_result([module_error])

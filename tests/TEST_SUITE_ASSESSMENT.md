@@ -978,3 +978,64 @@ Selected critical-path modules with remaining uncovered loader/hashing/compat br
 - **Production code:** none changed (tests-only expansion).
 - **Quarantined tests:** remain quarantined / none active to re-enable.
 
+
+## 44. Expansion (2026-07-13) – group module aggregations
+
+### Backup
+- Workspace code zip: `/Users/89298/Documents/transcriptx backup/260713-0438.zip` (~2.8M); `custom-commands/` mirrored.
+
+### Review
+- Default collection: ~4343/4507 (164 deselected by addopts).
+- Quarantined: `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` historical).
+- Cleanup: disabled (not run).
+
+### Baseline failure classification (pre-expansion)
+| Failure | Classification | Fix |
+|---------|----------------|-----|
+| `test_resolve_modules_*` kwargs TypeError | Test drift from `for_group`/`audio_resolver` wiring | Updated mocks to accept `**kwargs`; added unsupported-for-group case |
+| `test_root_and_web_package_versions_match` (`0.3.4` vs `0.3.3`) | Metadata drift | Synced `transcriptx.web.__version__` to `0.3.4` |
+
+### Expansion (group modules)
+| File | Role |
+|------|------|
+| `tests/core/analysis/test_group_new_modules_deep.py` | Deeper unit coverage: blob/row edge cases, registry uniqueness, chart allowlists, generic chart write |
+| `tests/integration/core/test_group_finalize_new_modules_integration.py` | `integration_core`: finalize writes blobs/rows for llm_summary, llm_action_items, insights, semantic_similarity, voice_mismatch |
+| `tests/core/analysis/test_group_module_aggregations.py` | Existing unit aggregators (from feature work) |
+| `tests/core/analysis/test_group_module_support_contract.py` | supports_group ↔ aggregation coverage contract |
+| `tests/app/test_group_module_for_group_wiring.py` | readiness / for_group wiring |
+
+### Notes
+- Artifact cleanup disabled.
+- Quarantined tests not re-enabled.
+
+## 45. Expansion (2026-07-13) – group infrastructure (unit + integration)
+
+### Review
+- Default suite after infra expansion: **4407 passed**, 1 skipped, 167 deselected.
+- Integration: `integration_core` for MISSING_DEP finalize + disabled-scaffold real I/O (both green).
+
+### Expansion (group infrastructure glue)
+| File | Role |
+|------|------|
+| `tests/core/analysis/test_group_aggregation_schema.py` | `get_transcript_id`, row validation, `extract_payload`, warnings |
+| `tests/core/analysis/test_aggregation_registry_topo.py` | Real `build_registry()` acyclicity / topo |
+| `tests/pipeline/test_group_speaker_normalizer_cross_session.py` | Cross-session canonical speaker IDs |
+| `tests/core/output/test_group_row_writer_extended.py` | `content_rows` / `drop_csv_keys` |
+| `tests/core/output/test_group_output_service_scaffold.py` | Real disk scaffold toggles, save helpers, manifest/metadata |
+| `tests/core/pipeline/test_write_group_member_runs.py` | `group_member_runs.json` schema + order |
+| `tests/core/domain/test_transcript_set_group.py` | Group ↔ TranscriptSet bridge |
+| `tests/core/services/test_group_service_dedup.py` | `create_or_get` reuse / order sensitivity |
+| `tests/core/store/test_group_manifest_store_resolve.py` | `resolve_group_identifier` |
+| `tests/core/store/test_group_manifest_store_extended.py` | Member resolve order preserved (assert) |
+| `tests/core/test_group_key.py` | Empty/single/whitespace+case key edges |
+| `tests/web/services/test_run_index_group_scope.py` | GROUP_OUTPUTS_DIR listing |
+| `tests/web/services/test_subject_service_group.py` | Group subject resolve |
+| `tests/web/services/test_artifact_service_group_edges.py` | Multi-member merge, invalid members, health warning, bytes |
+| `tests/app/test_workflows.py` | Partial/all missing paths, pipeline exception |
+| `tests/unit/test_group_analysis_helpers.py` | None aggregate outcome; omit id/uuid maps |
+| `tests/integration/core/test_group_finalize_deps_integration.py` | `integration_core`: MISSING_DEP skips child agg |
+| `tests/integration/core/test_group_finalize_disabled_scaffold_integration.py` | `integration_core`: real scaffold when aggregation disabled |
+
+### Notes
+- Prefer unit placement under `tests/unit/` when path substring would otherwise auto-mark `integration_core`.
+- Full end-to-end `run_group_analysis` without mocked pipeline remains optional/heavy; coverage focuses on glue layers.

@@ -100,6 +100,22 @@ class VoiceFeaturesAnalysis(AnalysisModule):
             output_service.save_data(
                 locator, "voice_features_locator", format_type="json"
             )
+            meta = locator.get("meta") if isinstance(locator.get("meta"), dict) else {}
+            segment_count = meta.get("segment_count")
+            if segment_count is None:
+                segment_count = meta.get("n_segments")
+            scalar_summary = {
+                "voice_features.status": locator.get("status") or "ok",
+                "voice_features.cache_hit": 1.0 if meta.get("cache_hit") else 0.0,
+            }
+            if segment_count is not None:
+                try:
+                    scalar_summary["voice_features.segment_count"] = float(
+                        segment_count
+                    )
+                except (TypeError, ValueError):
+                    pass
+            output_service.save_summary(scalar_summary, {}, analysis_metadata={})
 
             # Record feature table artifacts if present (they're written directly to disk)
             for key, artifact_type in (

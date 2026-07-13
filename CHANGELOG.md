@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-13
+
+### Added
+
+- Group analysis aggregations for LLM modules (`llm_summary`, `narrative_summary`, `llm_speaker_summary`, `llm_action_items`), `insights`, semantic similarity (legacy/advanced/v2), and voice modules (`voice_mismatch`, `voice_tension`, `voice_fingerprint`).
+- Group chart allowlists and generic session-bar wiring for the new aggregations.
+- Expanded unit and integration coverage for group infrastructure (output scaffold, artifact merge edges, finalize deps/disabled paths, workflow missing-path branches).
+
+### Changed
+
+- Group module resolution/readiness honors `supports_group` / `for_group` so unsupported modules are filtered from group runs.
+- Prosody/group dashboard summary keys use session-prefixed fields for safer multi-transcript aggregation.
+
+### Fixed
+
+- Pre-release hygiene: document optional Streamlit perf env vars; ignore `.env.*` (keep `.env.example`) and `data/perf/`; stop tracking large streamlit load-profile JSONL.
+
 ## [0.3.4] - 2026-07-13
 
 ### Added

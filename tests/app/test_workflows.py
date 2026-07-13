@@ -261,7 +261,7 @@ def test_run_analysis_uses_default_modules_when_all_keyword(
     )
     monkeypatch.setattr(
         "transcriptx.app.workflows.analysis.get_default_modules",
-        lambda _paths: ["stats"],
+        lambda *_args, **_kwargs: ["stats"],
     )
     monkeypatch.setattr(
         "transcriptx.app.workflows.analysis.filter_modules_by_mode",
@@ -303,7 +303,7 @@ def test_run_analysis_restores_output_base_dir_after_custom_output(
     )
     monkeypatch.setattr(
         "transcriptx.app.workflows.analysis.get_default_modules",
-        lambda _paths: ["stats"],
+        lambda *_args, **_kwargs: ["stats"],
     )
     monkeypatch.setattr(
         "transcriptx.app.workflows.analysis.filter_modules_by_mode",
@@ -336,6 +336,145 @@ def test_run_analysis_restores_output_base_dir_after_custom_output(
     assert config.output.base_output_dir == str(tmp_path / "original")
 
 
+def test_run_group_analysis_partial_missing_member_paths(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    present = tmp_path / "present.json"
+    present.write_text('{"segments": []}', encoding="utf-8")
+    missing = tmp_path / "missing.json"
+    request = GroupAnalysisRequest(
+        group_uuid="00000000-0000-0000-0000-000000000111",
+        mode="quick",
+        modules=["stats"],
+    )
+
+    class _Present:
+        file_path = str(present)
+
+    class _Missing:
+        file_path = str(missing)
+
+    captured: dict = {}
+
+    def _fake_resolve_modules(modules, resolved_paths, **_kwargs):
+        captured["resolved_paths"] = list(resolved_paths)
+        return (["stats"], None)
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.validate_group_analysis_readiness",
+        lambda _request: [],
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.resolve_analysis_target",
+        lambda _target: (object(), [_Present(), _Missing()]),
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis._resolve_modules",
+        _fake_resolve_modules,
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.filter_modules_by_mode",
+        lambda selected, _mode: selected,
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.apply_analysis_mode_settings",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.run_analysis_pipeline",
+        lambda **_kwargs: {
+            "group_output_dir": str(tmp_path / "group_out"),
+            "errors": [],
+            "modules_run": ["stats"],
+            "status": "completed",
+            "aggregation_warnings": [],
+        },
+    )
+
+    result = run_group_analysis(request, progress=NullProgress())
+    assert result.success is True
+    assert captured["resolved_paths"] == [str(present)]
+    assert any("member paths missing" in w for w in result.warnings)
+
+
+def test_run_group_analysis_all_member_paths_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    request = GroupAnalysisRequest(
+        group_uuid="00000000-0000-0000-0000-000000000112",
+        mode="quick",
+        modules=["stats"],
+    )
+
+    class _Missing:
+        file_path = str(tmp_path / "gone.json")
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.validate_group_analysis_readiness",
+        lambda _request: [],
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.resolve_analysis_target",
+        lambda _target: (object(), [_Missing()]),
+    )
+
+    result = run_group_analysis(request, progress=NullProgress())
+    assert result.success is False
+    assert result.status == "failed"
+    assert any("exist on disk" in e for e in result.errors)
+
+
+def test_run_group_analysis_pipeline_exception(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    transcript = tmp_path / "member.json"
+    transcript.write_text('{"segments": []}', encoding="utf-8")
+    request = GroupAnalysisRequest(
+        group_uuid="00000000-0000-0000-0000-000000000113",
+        mode="quick",
+        modules=["stats"],
+    )
+    snapshot: dict = {}
+
+    class _Member:
+        file_path = str(transcript)
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.validate_group_analysis_readiness",
+        lambda _request: [],
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.resolve_analysis_target",
+        lambda _target: (object(), [_Member()]),
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.get_available_modules",
+        lambda: ["stats"],
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.get_default_modules",
+        lambda *_args, **_kwargs: ["stats"],
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.filter_modules_by_mode",
+        lambda selected, _mode: selected,
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.apply_analysis_mode_settings",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.analysis.run_analysis_pipeline",
+        lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("pipeline boom")),
+    )
+
+    result = run_group_analysis(request, progress=NullProgress(), snapshot=snapshot)
+    assert result.success is False
+    assert result.status == "failed"
+    assert any("pipeline boom" in e for e in result.errors)
+    assert snapshot.get("status") == "failed"
+
+
 def test_run_group_analysis_merges_chart_failure_warnings(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -364,7 +503,7 @@ def test_run_group_analysis_merges_chart_failure_warnings(
     )
     monkeypatch.setattr(
         "transcriptx.app.workflows.analysis.get_default_modules",
-        lambda _paths: ["stats"],
+        lambda *_args, **_kwargs: ["stats"],
     )
     monkeypatch.setattr(
         "transcriptx.app.workflows.analysis.filter_modules_by_mode",

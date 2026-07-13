@@ -70,6 +70,56 @@ def test_parse_action_items_json_success() -> None:
 
 
 @pytest.mark.unit
+def test_parse_action_items_repairs_missing_comma_between_objects() -> None:
+    raw = """
+    {
+      "items": [
+        {
+          "text": "Send the report",
+          "owner": "Alice",
+          "deadline": "Friday",
+          "status": "open",
+          "quote": null,
+          "confidence": 0.9
+        }
+        {
+          "text": "Completed prior task",
+          "owner": null,
+          "deadline": null,
+          "status": "done",
+          "quote": null,
+          "confidence": 0.8
+        }
+      ]
+    }
+    """
+    items = parse_action_items_json(raw)
+    assert len(items) == 2
+    assert items[1]["status"] == "done"
+
+
+@pytest.mark.unit
+def test_parse_action_items_repairs_trailing_comma() -> None:
+    raw = """
+    {
+      "items": [
+        {
+          "text": "Send the report",
+          "owner": "Alice",
+          "deadline": null,
+          "status": "open",
+          "quote": null,
+          "confidence": 0.9,
+        },
+      ],
+    }
+    """
+    items = parse_action_items_json(raw)
+    assert len(items) == 1
+    assert items[0]["text"] == "Send the report"
+
+
+@pytest.mark.unit
 def test_parse_action_items_rejects_invalid_status() -> None:
     payload = json.dumps(
         {
@@ -214,6 +264,7 @@ def test_llm_action_items_success(tmp_path) -> None:
     assert payload["module_version"] == LLM_ACTION_ITEMS_MODULE_VERSION
     assert payload["provenance"]["prompt_version"] == LLM_ACTION_ITEMS_PROMPT_VERSION
     assert payload["provenance"]["cache_key"]
+    assert mock_client.generate.call_args.kwargs["response_format"] == "json"
     context.store_analysis_result.assert_called_once()
 
 

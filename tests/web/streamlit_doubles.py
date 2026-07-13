@@ -205,12 +205,20 @@ class DummyHomeStreamlit:
         return False
 
     @staticmethod
+    def download_button(*_args, **_kwargs):
+        return False
+
+    @staticmethod
     def rerun():
         return None
 
     @staticmethod
     def expander(*_args, **_kwargs):
         return DummyExpander()
+
+    @staticmethod
+    def warning(*_args, **_kwargs):
+        return None
 
     @staticmethod
     def error(*_args, **_kwargs):

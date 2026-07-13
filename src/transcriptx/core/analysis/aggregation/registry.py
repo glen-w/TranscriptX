@@ -746,6 +746,21 @@ def build_registry() -> List[AggregationEntry]:
     from transcriptx.core.analysis.aggregation.interactions import (
         aggregate_interactions_group,
     )
+    from transcriptx.core.analysis.aggregation.llm import (
+        aggregate_llm_action_items_group,
+        aggregate_llm_speaker_summary_group,
+        aggregate_llm_summary_blob,
+        aggregate_narrative_summary_blob,
+    )
+    from transcriptx.core.analysis.aggregation.insights import aggregate_insights_group
+    from transcriptx.core.analysis.aggregation.semantic_similarity import (
+        aggregate_semantic_similarity_group,
+    )
+    from transcriptx.core.analysis.aggregation.voice import (
+        aggregate_voice_fingerprint_group,
+        aggregate_voice_mismatch_group,
+        aggregate_voice_tension_group,
+    )
 
     def any_of(ids: List[str]) -> Callable[[List[str]], bool]:
         return lambda selected: any(module_id in selected for module_id in ids)
@@ -889,6 +904,68 @@ def build_registry() -> List[AggregationEntry]:
             deps=["highlights"],
             aggregate_fn=_aggregate_summary_blob,
             output_type="blob",
+        ),
+        AggregationEntry(
+            agg_id="llm_summary",
+            selector=any_of(["llm_summary"]),
+            deps=[],
+            aggregate_fn=aggregate_llm_summary_blob,
+            output_type="blob",
+        ),
+        AggregationEntry(
+            agg_id="narrative_summary",
+            selector=any_of(["narrative_summary"]),
+            deps=[],
+            aggregate_fn=aggregate_narrative_summary_blob,
+            output_type="blob",
+        ),
+        AggregationEntry(
+            agg_id="llm_speaker_summary",
+            selector=any_of(["llm_speaker_summary"]),
+            deps=[],
+            aggregate_fn=aggregate_llm_speaker_summary_group,
+        ),
+        AggregationEntry(
+            agg_id="llm_action_items",
+            selector=any_of(["llm_action_items"]),
+            deps=[],
+            aggregate_fn=aggregate_llm_action_items_group,
+        ),
+        AggregationEntry(
+            agg_id="insights",
+            selector=any_of(["insights"]),
+            deps=[],
+            aggregate_fn=aggregate_insights_group,
+        ),
+        AggregationEntry(
+            agg_id="semantic_similarity",
+            selector=any_of(
+                [
+                    "semantic_similarity",
+                    "semantic_similarity_advanced",
+                    "semantic_similarity_v2",
+                ]
+            ),
+            deps=[],
+            aggregate_fn=aggregate_semantic_similarity_group,
+        ),
+        AggregationEntry(
+            agg_id="voice_mismatch",
+            selector=any_of(["voice_mismatch"]),
+            deps=[],
+            aggregate_fn=aggregate_voice_mismatch_group,
+        ),
+        AggregationEntry(
+            agg_id="voice_tension",
+            selector=any_of(["voice_tension"]),
+            deps=[],
+            aggregate_fn=aggregate_voice_tension_group,
+        ),
+        AggregationEntry(
+            agg_id="voice_fingerprint",
+            selector=any_of(["voice_fingerprint"]),
+            deps=[],
+            aggregate_fn=aggregate_voice_fingerprint_group,
         ),
         AggregationEntry(
             agg_id="prosody",

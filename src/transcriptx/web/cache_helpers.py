@@ -86,11 +86,13 @@ def cached_get_default_modules(transcript_path_str: str) -> list[str]:
 
 
 @st.cache_data(show_spinner=False)
-def cached_get_default_modules_for_paths(paths: tuple[str, ...]) -> list[str]:
+def cached_get_default_modules_for_paths(
+    paths: tuple[str, ...], *, for_group: bool = False
+) -> list[str]:
     mark_cache_miss("cached_get_default_modules_for_paths")
     from transcriptx.app.controllers.analysis_controller import AnalysisController
 
-    return AnalysisController().get_default_modules(list(paths))
+    return AnalysisController().get_default_modules(list(paths), for_group=for_group)
 
 
 _MODULE_INFO_CACHE_ATTRS = (

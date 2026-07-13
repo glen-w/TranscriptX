@@ -31,6 +31,17 @@ def resolve_modules(
         if invalid:
             raise ValueError(f"Invalid modules: {', '.join(invalid)}")
         selected = list(custom_ids)
+        if for_group:
+            unsupported = [
+                m
+                for m in selected
+                if (info := get_module_info(m)) is not None and not info.supports_group
+            ]
+            if unsupported:
+                raise ValueError(
+                    "Modules not supported for group analysis: "
+                    + ", ".join(unsupported)
+                )
     else:
         selected = get_default_modules(
             transcript_paths,

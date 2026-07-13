@@ -1,5 +1,7 @@
 # Environment and secrets
 .env
+.env.*
+!.env.example
 .env.local
 .env.*.local
 whisperx.env
@@ -20,6 +22,8 @@ data/corrections/
 data/groups/
 data/preprocessing/
 data/performance_logs.jsonl
+data/perf/
+perf/
 data/processing_state.json.backup
 
 # Real user data (transcripts/corrections/groups/preprocessing). Contains PII;
@@ -60,6 +64,7 @@ build/
 .coverage.*
 coverage.xml
 coverage.json
+coverage-core.json
 htmlcov/
 .tox/
 

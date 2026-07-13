@@ -71,6 +71,16 @@ GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
         }
     ),
     "tics": frozenset({"total_tics"}),
+    "llm_action_items": frozenset({"item_count"}),
+    "insights": frozenset(
+        {"theme_count", "recurring_idea_count", "notable_moment_count"}
+    ),
+    "semantic_similarity": frozenset({"total_repetitions", "unique_patterns"}),
+    "voice_mismatch": frozenset(
+        {"moments_count", "mismatch_score_mean", "mismatch_score_max"}
+    ),
+    "voice_tension": frozenset({"bins", "tension_mean", "tension_max"}),
+    "voice_fingerprint": frozenset({"speakers", "drift_moment_count"}),
 }
 
 

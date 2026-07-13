@@ -33,6 +33,7 @@ class LLMClient(ABC):
         system_prompt: Optional[str] = None,
         temperature: float,
         max_tokens: Optional[int] = None,
+        response_format: Optional[str] = None,
     ) -> str:
         """
         Generate text from prompt.
@@ -42,6 +43,7 @@ class LLMClient(ABC):
             system_prompt: Optional system prompt for context
             temperature: Sampling temperature (0.0-2.0)
             max_tokens: Maximum tokens to generate
+            response_format: Optional structured output hint (e.g. ``"json"``)
 
         Returns:
             Generated text
@@ -77,6 +79,7 @@ class NullLLMClient(LLMClient):
         system_prompt: Optional[str] = None,
         temperature: float,
         max_tokens: Optional[int] = None,
+        response_format: Optional[str] = None,
     ) -> str:
         """Raise error - LLM client not configured."""
         raise LLMConfigurationError(

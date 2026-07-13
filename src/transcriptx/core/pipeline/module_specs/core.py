@@ -20,6 +20,7 @@ def build_core_module_definitions(
             "enhancements": [],
             "exclude_from_default": True,
             "post_processing_only": True,
+            "supports_group": False,
         },
         "stats": {
             "description": "Statistical Analysis",
@@ -44,6 +45,7 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "supports_group": False,
         },
         "temporal_dynamics": {
             "description": "Temporal Dynamics Analysis",

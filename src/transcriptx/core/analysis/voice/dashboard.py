@@ -556,8 +556,8 @@ class ProsodyDashboardAnalysis(AnalysisModule):
                             )
 
             summary = {
-                "speakers": len({str(s) for s in df_named["speaker"].dropna()}),
-                "segments": int(len(df)),
+                "prosody.speakers": len({str(s) for s in df_named["speaker"].dropna()}),
+                "prosody.segments": int(len(df)),
             }
             output_service.save_summary(summary, {}, analysis_metadata={})
 

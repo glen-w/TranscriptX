@@ -248,3 +248,29 @@ def test_generate_includes_system_when_provided() -> None:
             temperature=0.0,
         )
     assert captured["body"]["system"] == "be concise"
+
+
+@pytest.mark.unit
+def test_generate_includes_json_response_format() -> None:
+    client = OllamaClient()
+    captured: dict = {}
+
+    def _fake_post(path: str, body: dict, *, timeout: float) -> str:
+        captured["body"] = body
+        return json.dumps({"response": '{"items":[]}'})
+
+    with patch.object(client, "_http_post", side_effect=_fake_post):
+        out = client.generate(
+            prompt="user",
+            temperature=0.0,
+            response_format="json",
+        )
+    assert out == '{"items":[]}'
+    assert captured["body"]["format"] == "json"
+
+
+@pytest.mark.unit
+def test_generate_rejects_unknown_response_format() -> None:
+    client = OllamaClient()
+    with pytest.raises(LLMConfigurationError, match="response_format"):
+        client.generate(prompt="user", temperature=0.0, response_format="xml")

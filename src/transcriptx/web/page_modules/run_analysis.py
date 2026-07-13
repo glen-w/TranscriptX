@@ -33,6 +33,7 @@ from transcriptx.web.cache_helpers import (
     cached_get_available_modules,
     cached_get_default_modules,
     cached_get_default_modules_for_paths,
+    cached_get_module_info_list,
 )
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.services.group_service import GroupService
@@ -382,8 +383,16 @@ def render_run_analysis_page() -> None:
         default_modules = cached_get_default_modules(str(transcript_path))
     elif target_type == "Group" and resolved_member_paths:
         default_modules = cached_get_default_modules_for_paths(
-            tuple(resolved_member_paths)
+            tuple(resolved_member_paths), for_group=True
         )
+        group_supported = {
+            info["name"]
+            for info in cached_get_module_info_list()
+            if info.get("supports_group", True)
+        }
+        available = [
+            module_id for module_id in available if module_id in group_supported
+        ]
     else:
         default_modules = available[:5] if available else []
 

@@ -73,6 +73,24 @@ def test_resolve_group_path_uses_manifest(
     assert members[0].file_path == str(transcript.resolve())
 
 
+def test_resolve_group_with_no_members_raises(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project_root = _configure_project_root(monkeypatch, tmp_path)
+    transcript = project_root / "transcripts" / "one.json"
+    transcript.parent.mkdir(parents=True, exist_ok=True)
+    transcript.write_text("{}", encoding="utf-8")
+    store = GroupManifestStore()
+    group = store.create_group(name="SoonEmpty", members=[transcript])
+    monkeypatch.setattr(
+        group_service_module.GroupService,
+        "get_members",
+        staticmethod(lambda _group_id: []),
+    )
+    with pytest.raises(ValueError, match="no members"):
+        resolve_analysis_target(GroupRef(path=group.group_id))
+
+
 def test_transcript_path_must_exist(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         resolve_analysis_target(TranscriptRef(path=str(tmp_path / "missing.json")))

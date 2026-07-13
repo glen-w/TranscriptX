@@ -399,6 +399,22 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
             output_service.save_data(
                 summary, "voice_charts_core_summary", format_type="json"
             )
+            scalar_summary = {
+                "voice_charts_core.status": summary.get("status"),
+                "voice_charts_core.pause_count_rows": len(
+                    summary.get("pause_counts") or []
+                ),
+                "voice_charts_core.rhythm_index_count": len(
+                    summary.get("rhythm_indices") or []
+                ),
+                "voice_charts_core.burstiness_count": len(
+                    summary.get("burstiness") or []
+                ),
+                "voice_charts_core.sampled_segment_count": len(
+                    summary.get("sampled_segments") or []
+                ),
+            }
+            output_service.save_summary(scalar_summary, {}, analysis_metadata={})
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(
                 module_name=self.module_name,

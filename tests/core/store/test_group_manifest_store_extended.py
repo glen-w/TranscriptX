@@ -37,6 +37,8 @@ def test_group_manifest_roundtrip_and_member_resolution(tmp_path: Path) -> None:
     member_paths = {Path(m.file_path) for m in members}
     assert a in member_paths
     assert b in member_paths
+    # Preserve manifest member order.
+    assert [Path(m.file_path) for m in members] == [a, b]
 
 
 def test_canonicalize_group_member_paths_dedupes_absolute_and_relative() -> None:
