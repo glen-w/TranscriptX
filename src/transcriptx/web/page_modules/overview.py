@@ -24,8 +24,6 @@ from transcriptx.web.components.run_scoped_page import (
     RunScopedPageContext,
     render_run_scoped_page,
 )
-from transcriptx.web.run_health_presentation import build_run_status_summary
-from transcriptx.web.services import ArtifactService
 from transcriptx.web.services.artifact_index import build_artifact_index
 
 _OVERVIEW_HELP_PREREQ = (
@@ -64,13 +62,10 @@ def _render_overview_body(ctx: RunScopedPageContext) -> None:
         subject_id=ctx.subject.subject_id,
         run_id=ctx.run_id,
     )
-    health = ArtifactService.check_run_health(ctx.run_root)
-    status = build_run_status_summary(ctx.run_root, health=health)
-
     render_page_shell(
         "Overview",
         f"Run started: {run_datetime}.",
-        badges=[status.user_facing_label],
+        badges=None,
         actions=None,
     )
 

@@ -15,6 +15,11 @@ from transcriptx.core.pipeline.manifest_loader import load_run_results
 from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
 from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.llm_presentation import (
+    provenance_badges,
+    render_badge_row,
+    render_markdown_without_heading_or_provenance,
+)
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
@@ -599,8 +604,11 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
 
     payload = loader.load_json(module, f"{artifact_stem}.json")
     md = loader.load_text(module, f"{artifact_stem}.md")
+    render_badge_row(
+        provenance_badges((payload or {}).get("provenance") if payload else None)
+    )
     if md:
-        st.markdown(md)
+        render_markdown_without_heading_or_provenance(md)
     elif payload and isinstance(payload.get("items"), list):
         items = payload["items"]
         if not items:
@@ -633,16 +641,10 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
     _render_view_raw_file_link(
         ctx, module, f"{artifact_stem}.json", link_key="llm_action_items_raw"
     )
-    prov = (payload or {}).get("provenance") or {}
     diagnostics = (payload or {}).get("diagnostics") or {}
-    if prov or diagnostics:
+    if diagnostics:
         with st.expander("Generation details"):
-            if prov.get("model"):
-                st.write(f"Model: {prov.get('model')}")
-            if prov.get("provider"):
-                st.write(f"Provider: {prov.get('provider')}")
-            if diagnostics:
-                st.json(diagnostics)
+            st.json(diagnostics)
 
 
 def render_lexical_diversity_block(

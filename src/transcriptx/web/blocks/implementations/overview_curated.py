@@ -2,14 +2,25 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.llm_presentation import (
+    provenance_badges,
+    render_badge_row,
+    render_markdown_without_heading_or_provenance,
+    strip_leading_markdown_heading,
+    strip_provenance_footer,
+)
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.run_health_presentation import build_run_status_summary
+from transcriptx.web.services.artifact_service import USER_REPORT_JSON
 from transcriptx.web.summary_precedence import (
+    SummaryKind,
     resolve_primary_summary,
     quiet_unavailable_message,
 )
@@ -19,9 +30,28 @@ def _loader(ctx: BlockContext):
     return ctx.services.content_loader
 
 
-def _render_summary_body(candidate) -> None:
+def _summary_source_badge(kind: SummaryKind) -> str:
+    if kind in {"llm_summary", "narrative_summary"}:
+        return "LLM"
+    return "Standard"
+
+
+def _summary_hero_badges(candidate) -> list[str]:
+    badges = [_summary_source_badge(candidate.kind)]
+    badges.extend(provenance_badges((candidate.payload or {}).get("provenance")))
+    return badges
+
+
+def _render_summary_body(
+    candidate, *, strip_heading: bool = False, strip_provenance: bool = False
+) -> None:
     if candidate.markdown:
-        st.markdown(candidate.markdown)
+        body = candidate.markdown
+        if strip_heading:
+            body = strip_leading_markdown_heading(body)
+        if strip_provenance:
+            body = strip_provenance_footer(body)
+        st.markdown(body)
         return
     payload = candidate.payload or {}
     if payload.get(candidate.text_field):
@@ -47,8 +77,11 @@ def render_transcript_summary_hero(
                 for c in failed:
                     st.caption(f"{c.module}: {c.outcome}")
         return
-    st.subheader(result.primary.title)
-    _render_summary_body(result.primary)
+    st.markdown("# Transcript Summary")
+    render_badge_row(_summary_hero_badges(result.primary))
+    _render_summary_body(
+        result.primary, strip_heading=True, strip_provenance=True
+    )
 
 
 def render_other_summaries(ctx: BlockContext, _placement: BlockPlacement) -> None:
@@ -70,29 +103,81 @@ def render_other_summaries(ctx: BlockContext, _placement: BlockPlacement) -> Non
                 st.caption(quiet_unavailable_message(cand.title, outcome=cand.outcome))
 
 
+def _load_run_overview_payload(ctx: BlockContext) -> dict | None:
+    """Prefer report.json overview; fall back to legacy stats artifacts."""
+    if ctx.run_root is not None:
+        report_path = Path(ctx.run_root) / USER_REPORT_JSON
+        if report_path.is_file():
+            try:
+                payload = json.loads(report_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                payload = None
+            if isinstance(payload, dict):
+                return payload
+
+    loader = _loader(ctx)
+    if loader is None:
+        return None
+    for module, suffix in (
+        ("report.json", "report.json"),
+        ("stats", "_stats.json"),
+    ):
+        payload = loader.load_json(module, suffix)
+        if isinstance(payload, dict):
+            return payload
+    payload = loader.load_first_module_json("stats")
+    return payload if isinstance(payload, dict) else None
+
+
+def _duration_seconds_from_overview(payload: dict | None) -> float | None:
+    if not isinstance(payload, dict):
+        return None
+    overview = payload.get("overview")
+    if isinstance(overview, dict):
+        for key in ("total_duration_sec", "duration_seconds", "duration"):
+            value = overview.get(key)
+            if isinstance(value, (int, float)) and value > 0:
+                return float(value)
+    for key in ("duration_seconds", "duration", "total_duration_sec"):
+        value = payload.get(key)
+        if isinstance(value, (int, float)) and value > 0:
+            return float(value)
+    return None
+
+
+def _speaker_count_from_overview(payload: dict | None) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+    overview = payload.get("overview")
+    if isinstance(overview, dict):
+        for key in ("speaker_count_named", "speaker_count_total", "speaker_count"):
+            value = overview.get(key)
+            if isinstance(value, int) and value >= 0:
+                return value
+            if isinstance(value, float) and value >= 0:
+                return int(value)
+    speakers = payload.get("speakers")
+    if isinstance(speakers, list) and speakers:
+        return len(speakers)
+    return None
+
+
 def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("At a glance")
     artifacts = ctx.artifacts
-    speakers = sorted(
-        {a.speaker for a in artifacts if a.speaker},
-        key=lambda s: str(s).casefold(),
-    )
     modules = {a.module for a in artifacts if a.module}
     chart_count = sum(1 for a in artifacts if (a.kind or "").startswith("chart"))
     data_count = sum(1 for a in artifacts if (a.kind or "").startswith("data"))
 
-    duration_label = "—"
-    loader = _loader(ctx)
-    if loader is not None:
-        stats = loader.load_json(
-            "stats", "_stats.json"
-        ) or loader.load_first_module_json("stats")
-        if isinstance(stats, dict):
-            dur = stats.get("duration_seconds") or stats.get("duration")
-            if isinstance(dur, (int, float)) and dur > 0:
-                mins = int(dur) // 60
-                secs = int(dur) % 60
-                duration_label = f"{mins}m {secs:02d}s"
+    overview_payload = _load_run_overview_payload(ctx)
+    duration_sec = _duration_seconds_from_overview(overview_payload)
+    duration_label = (
+        format_duration_display_from_config(duration_sec)
+        if duration_sec is not None
+        else "—"
+    )
+    speaker_count = _speaker_count_from_overview(overview_payload)
+    speakers_label = str(speaker_count) if speaker_count is not None else "—"
 
     status = build_run_status_summary(
         Path(ctx.run_root) if ctx.run_root else Path("."),
@@ -104,7 +189,7 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
     with c1:
         st.metric("Duration", duration_label)
     with c2:
-        st.metric("Speakers", str(len(speakers) or "—"))
+        st.metric("Speakers", speakers_label)
     with c3:
         st.metric("Modules", str(len(modules)))
     with c4:
@@ -114,45 +199,83 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.caption(f"Run status: {status.user_facing_label}")
 
 
+def _format_pct(value: object) -> str:
+    try:
+        return f"{float(value):.0%}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _format_wpm(value: object) -> str:
+    try:
+        return f"{float(value):.0f}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _speaker_fourth_stat(entry: dict) -> tuple[str, str]:
+    """Pick one extra interesting metric for a speaker card."""
+    tic = entry.get("tic_rate")
+    try:
+        if tic is not None and float(tic) >= 0.02:
+            return "Tics", f"{float(tic):.0%}"
+    except (TypeError, ValueError):
+        pass
+
+    sentiment = entry.get("sentiment")
+    if isinstance(sentiment, dict):
+        compound = sentiment.get("compound")
+        try:
+            if compound is not None and abs(float(compound)) >= 0.15:
+                return "Tone", f"{float(compound):+.2f}"
+        except (TypeError, ValueError):
+            pass
+
+    words_pct = entry.get("pct_total_words")
+    if words_pct is not None:
+        return "Words", _format_pct(words_pct)
+
+    duration = str(entry.get("duration_hhmmss") or "").strip()
+    if duration:
+        return "Talk time", duration
+    return "Words", "—"
+
+
 def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Speakers")
-    loader = _loader(ctx)
-    if loader is None or ctx.run_root is None:
-        st.info(quiet_unavailable_message("Per-speaker summaries"))
-        return
-    index_payload = loader.load_json(
-        "llm_speaker_summary", "_llm_speaker_summary_index.json"
-    )
-    if not index_payload:
-        st.info(quiet_unavailable_message("Per-speaker summaries"))
-        return
-    speakers = index_payload.get("speakers") or []
-    if not speakers:
-        st.info(quiet_unavailable_message("Per-speaker summaries"))
+    overview = _load_run_overview_payload(ctx)
+    speakers = (overview or {}).get("speakers") if isinstance(overview, dict) else None
+    if not isinstance(speakers, list) or not speakers:
+        st.info(quiet_unavailable_message("Per-speaker stats"))
         return
 
-    cols = st.columns(min(3, len(speakers)))
-    for i, entry in enumerate(speakers[:6]):
-        speaker = str(entry.get("speaker") or "")
-        status = str(entry.get("status") or "")
+    ranked = sorted(
+        [s for s in speakers if isinstance(s, dict)],
+        key=lambda s: float(s.get("pct_total_duration") or 0),
+        reverse=True,
+    )
+    if not ranked:
+        st.info(quiet_unavailable_message("Per-speaker stats"))
+        return
+
+    cols = st.columns(min(3, len(ranked)))
+    for i, entry in enumerate(ranked[:6]):
+        name = str(entry.get("name") or "Speaker")
+        fourth_label, fourth_value = _speaker_fourth_stat(entry)
         with cols[i % len(cols)]:
-            st.markdown(f"**{speaker or 'Speaker'}**")
-            if status != "success":
-                st.caption("Unavailable")
-                continue
-            safe = str(speaker).replace(" ", "_").replace("/", "_")
-            md = loader.load_text(
-                "llm_speaker_summary", f"_{safe}_llm_speaker_summary.md"
-            )
-            payload = loader.load_json(
-                "llm_speaker_summary", f"_{safe}_llm_speaker_summary.json"
-            )
-            text = md or (payload or {}).get("summary") or ""
-            if text:
-                preview = str(text).strip().split("\n")[0][:220]
-                st.caption(preview + ("…" if len(str(text).strip()) > 220 else ""))
-            else:
-                st.caption("No summary text.")
+            st.markdown(f"**{name}**")
+            m1, m2 = st.columns(2)
+            m1.metric("Time", _format_pct(entry.get("pct_total_duration")))
+            m2.metric("WPM", _format_wpm(entry.get("words_per_min")))
+            m3, m4 = st.columns(2)
+            try:
+                segments = int(entry.get("segments") or 0)
+            except (TypeError, ValueError):
+                segments = 0
+            m3.metric("Segments", str(segments) if segments else "—")
+            m4.metric(fourth_label, fourth_value)
+    if len(ranked) > 6:
+        st.caption(f"+{len(ranked) - 6} more speakers in the report")
 
 
 def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:
@@ -162,24 +285,27 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         st.info(quiet_unavailable_message("Action items"))
         return
     payload = loader.load_json("llm_action_items", "_llm_action_items.json")
+    md = loader.load_text("llm_action_items", "_llm_action_items.md")
+    render_badge_row(
+        provenance_badges((payload or {}).get("provenance") if payload else None)
+    )
     items = (payload or {}).get("items") if isinstance(payload, dict) else None
-    if not items:
-        md = loader.load_text("llm_action_items", "_llm_action_items.md")
-        if md:
-            st.markdown(md[:800] + ("…" if len(md) > 800 else ""))
-            return
-        st.info(quiet_unavailable_message("Action items"))
+    if items:
+        for item in items[:5]:
+            if not isinstance(item, dict):
+                continue
+            text = str(item.get("text") or "").strip()
+            if text:
+                owner = item.get("owner")
+                suffix = f" — {owner}" if owner else ""
+                st.write(f"- {text}{suffix}")
+        if len(items) > 5:
+            st.caption(f"+{len(items) - 5} more on Insights → Actions")
         return
-    for item in items[:5]:
-        if not isinstance(item, dict):
-            continue
-        text = str(item.get("text") or "").strip()
-        if text:
-            owner = item.get("owner")
-            suffix = f" — {owner}" if owner else ""
-            st.write(f"- {text}{suffix}")
-    if len(items) > 5:
-        st.caption(f"+{len(items) - 5} more on Insights → Actions")
+    if md:
+        render_markdown_without_heading_or_provenance(md)
+        return
+    st.info(quiet_unavailable_message("Action items"))
 
 
 def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:
