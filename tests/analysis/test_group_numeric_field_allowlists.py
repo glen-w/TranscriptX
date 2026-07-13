@@ -35,6 +35,7 @@ def test_allowlist_map_keys_match_curated_generic_aggs() -> None:
             "affect_tension",
             "understandability",
             "tics",
+            "lexical_diversity",
         }
     )
     assert frozenset(GENERIC_SESSION_FIELD_ALLOWLISTS.keys()) == expected

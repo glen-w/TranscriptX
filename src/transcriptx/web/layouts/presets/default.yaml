@@ -66,3 +66,16 @@ pages:
         params:
           title: Per-Speaker LLM Summaries
           empty_hint: Run the `llm_speaker_summary` module (with LLM enabled and named speakers) to populate this view.
+      - placement_id: insights_llm_action_items
+        block_id: llm_action_items_block
+        visible: true
+        params:
+          title: Action Items
+          artifact_stem: _llm_action_items
+          empty_hint: Run the `llm_action_items` module (with LLM enabled) to populate this view.
+      - placement_id: insights_lexical_diversity
+        block_id: lexical_diversity_block
+        visible: true
+        params:
+          title: Lexical Diversity
+          empty_hint: Run the `lexical_diversity` module to populate this view.

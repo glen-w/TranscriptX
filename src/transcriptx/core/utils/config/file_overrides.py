@@ -27,6 +27,7 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "moments",
         "llm_summary",
         "llm_speaker_summary",
+        "llm_action_items",
     }
 )
 

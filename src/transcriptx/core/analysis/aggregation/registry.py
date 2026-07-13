@@ -228,6 +228,40 @@ def _aggregate_understandability(
     return {"session_rows": session_rows, "speaker_rows": speaker_rows}
 
 
+def _aggregate_lexical_diversity(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    session_rows: List[Dict[str, Any]] = []
+    speaker_rows: List[Dict[str, Any]] = []
+    for result in per_transcript_results:
+        payload = _extract_payload(result.module_results, "lexical_diversity")
+        if not payload:
+            continue
+        speaker_stats = payload.get("speaker_stats") or {}
+        global_stats = payload.get("global_stats") or {}
+        if not isinstance(global_stats, dict) or not isinstance(speaker_stats, dict):
+            return _warning_payload_shape(
+                "lexical_diversity", ["global_stats", "speaker_stats"]
+            )
+        rows = _build_rows_from_stats(
+            result, transcript_set, canonical_speaker_map, global_stats, speaker_stats
+        )
+        session_rows.extend(rows["session_rows"])
+        speaker_rows.extend(rows["speaker_rows"])
+    if not session_rows:
+        return None
+    return {
+        "session_rows": session_rows,
+        "speaker_rows": speaker_rows,
+        "aggregation_note": (
+            "Group lexical metrics are descriptive per-transcript means; "
+            "token_count sums are additive; ttr/mtld/hapax_rate are not pooled exactly."
+        ),
+    }
+
+
 def _aggregate_pauses(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
@@ -782,6 +816,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["understandability"]),
             deps=[],
             aggregate_fn=_aggregate_understandability,
+        ),
+        AggregationEntry(
+            agg_id="lexical_diversity",
+            selector=any_of(["lexical_diversity"]),
+            deps=[],
+            aggregate_fn=_aggregate_lexical_diversity,
         ),
         AggregationEntry(
             agg_id="pauses",

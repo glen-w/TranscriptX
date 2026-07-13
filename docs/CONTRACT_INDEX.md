@@ -11,6 +11,8 @@ Concept → Authority:
 - **Outputs & layout** → `docs/contracts/output-contract-v1.md`
 - **Public surfaces & support** → `docs/public_surfaces.md`
 - **Terms (index only)** → `docs/TERMS.md`
+- **Local LLM modules** → `docs/runtime/llm.md`
+- **Lexical diversity** → `docs/runtime/lexical_diversity.md`
 
 All other docs (README, guides, architecture, runtime docs) may only summarize these contracts briefly and must link back here for rules.
 

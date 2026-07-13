@@ -20,6 +20,15 @@ def build_qa_module_definitions(
             "enhancements": [],
             "gate_on_turn_taking_speakers": True,
         },
+        "lexical_diversity": {
+            "description": "Lexical diversity metrics (TTR, MTLD, hapax rate)",
+            "dependencies": [],
+            "category": "light",
+            "determinism_tier": "T0",
+            "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
+            "enhancements": [],
+            "gate_on_turn_taking_speakers": True,
+        },
         "qa_analysis": {
             "description": "Question-Answer Pairing and Response Quality",
             "dependencies": ["acts"],

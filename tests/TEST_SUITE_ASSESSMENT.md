@@ -928,3 +928,53 @@ Selected critical-path modules with low/medium coverage and little or no dedicat
 - **Production code:** none changed (tests-only expansion).
 - **Quarantined tests:** remain quarantined / none active to re-enable.
 
+## 43. Suite review (2026-07-13) – `/tests` command + manifest/hashing/legacy-compat expansion
+
+### Backup (mandatory)
+
+- Workspace backup completed: `/Users/89298/Documents/transcriptx backup/260713-0142.zip` (2.7M); `custom-commands/` mirrored under backup root.
+
+### Review and baseline
+
+- **Collection (`pytest --co -q`):** `4246/4406` selected under default marker filter (`160` deselected); no collection/import errors. Full collection (`-m ""`): `4406`.
+- **Default run (`pytest -q`):** first pass reported `4 failed, 4241 passed, 1 skipped, 160 deselected` — classified as unrelated env/WIP drift (see below). Re-check of the failing tests + related config/version slice passed; post-expansion default run is green.
+- **Cleanup:** destructive test-artifact cleanup remains disabled.
+- **Quarantined:** `0` `@pytest.mark.quarantined` tests in the active tree (`tests/quarantine/COUNT` baseline is historical).
+- **Skipped:** `tests/regression/test_pipeline_determinism.py` (one test: requires full pipeline setup). `tests/analysis/test_rules.py` imports `transcriptx.core.analysis.acts.rules` (not skipped-at-collection).
+- **Markers / addopts:** unchanged; default excludes `quarantined`, `smoke`, `release_only`, `integration`/`integration_core`/`integration_extended`, `requires_*`, `slow`, `legacy`, `semantic_v2_slow`.
+
+### Baseline failure classification (did not block expansion)
+
+| Failure | Classification | Notes |
+|---------|----------------|-------|
+| `test_package_version_matches_pyproject` (`0.3.3` vs `0.3.2`) | Env/metadata drift | Source + `pyproject.toml` are `0.3.3`; stale untracked `src/transcriptx.egg-info/PKG-INFO` still says `0.3.2`. Re-run green against source `__version__`. |
+| `test_ownership_invariant_unchanged` ×3 (`len(PYDANTIC_REGISTRY_PILOTS) == 40`) | Transient WIP drift | Current pilots include `llm_speaker_summary_settings` and still total `40`; isolated + related config slice re-run green. |
+
+### Coverage gaps targeted (offline, deterministic, high-leverage)
+
+Selected critical-path modules with remaining uncovered loader/hashing/compat branches:
+
+- `core/pipeline/manifest_loader.py` (`load_group_member_runs`, `load_group_phase_metadata`, run-results/outcome edge cases) — was ~46%.
+- `core/utils/module_hashing.py` — was ~63%, no dedicated unit file.
+- `core/utils/canonicalization.py` — was ~67% (identity/source hash + canonicalize helpers thin).
+- `core/pipeline/dag_legacy_compat.py` — was ~80% (validate/preflight error branches).
+- `core/utils/transcript_languages.py` candidates/exists/filter helpers.
+
+### New / expanded unit tests (tests-only; no production changes)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/unit/test_manifest_loader.py` | +14 (expanded) | empty `run_id`/`transcript_key`; non-object/unsupported schema; outcome context missing/invalid manifest; `load_group_member_runs` / `load_group_phase_metadata` missing/invalid/filter paths. |
+| `tests/unit/test_module_hashing.py` | 7 (new) | payload determinism; config/pipeline hash sensitivity; source-hash unknown/missing/exception/file-read paths. |
+| `tests/unit/test_canonicalization.py` | +4 | `normalize_timestamp`; `canonicalize_segments`; identity hash ignores speaker; `compute_source_hash` file bytes. |
+| `tests/pipeline/test_dag_legacy_compat_unit.py` | 9 (new) | validate missing/cycle/generic topo errors; resolve missing-deps; preflight resolve failure + function None/ImportError/Exception; dependency graph; deterministic sort. |
+| `tests/unit/test_transcript_helpers_high_leverage.py` | +2 | candidates/exists; `ensure_parent_dir` + `filter_existing_paths`. |
+
+### Validation
+
+- **Targeted run:** `66 passed` across the five files above.
+- **Default suite (post-expansion):** `4281 passed`, `1 skipped`, `159 deselected`, `0` failed.
+- **`pytest -m integration_core`:** `44 passed`.
+- **Production code:** none changed (tests-only expansion).
+- **Quarantined tests:** remain quarantined / none active to re-enable.
+

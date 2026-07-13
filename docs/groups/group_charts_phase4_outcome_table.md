@@ -22,6 +22,7 @@ subsets are in
 | entity_sentiment | **pooled only** | n/a | `EntitySentimentPooledGroupChartGenerator` ([contract](group_charts_entity_sentiment_pooled_contract.md)). |
 | topic_modeling | **pooled only** | n/a | `TopicModelingGroupChartGenerator`; `topic_modeling_pooled` ([contract](group_charts_topic_modeling_pooled_contract.md)). |
 | understandability | keep generic | readability metric keys (8) | Matches `compute_understandability_metrics` output. |
+| lexical_diversity | keep generic | `ttr`, `mtld`, `hapax_rate`, `token_count` | Descriptive per-session metrics; **do not** sum `type_count`. Ratio means are approximations, not pooled exact diversity. See [lexical_diversity.md](../runtime/lexical_diversity.md). |
 | pauses | replace | n/a | `PausesGroupChartGenerator`: **session_summary_bars** from `session_rows` + **temporal_overlay** from `pauses.events.json`. |
 | momentum | keep generic | momentum `stats` keys (5) | From `MomentumAnalysis` session stats dict. |
 | affect_tension | keep generic | derived global indices (3) | `polite_tension_index`, `suppressed_conflict_score`, `institutional_tone_affect_delta`. |

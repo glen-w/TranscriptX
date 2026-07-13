@@ -47,7 +47,8 @@ _SUMMARY_KIND_ORDER = {
     "llm_summary": 1,
     "narrative_summary": 2,
     "llm_speaker_summary": 3,
-    "run_report": 4,
+    "llm_action_items": 4,
+    "run_report": 5,
 }
 
 
@@ -392,6 +393,31 @@ def _summary_text_from_payload(payload: dict[str, Any], *, kind: str) -> str:
         return str(payload.get("narrative") or payload.get("summary") or "").strip()
     if kind == "llm_speaker_summary":
         return str(payload.get("summary") or "").strip()
+    if kind == "llm_action_items":
+        items = payload.get("items") or []
+        if not isinstance(items, list) or not items:
+            return "No action items found."
+        lines: list[str] = []
+        for index, item in enumerate(items, start=1):
+            if not isinstance(item, dict):
+                continue
+            text = str(item.get("text") or "").strip()
+            if not text:
+                continue
+            lines.append(f"{index}. {text}")
+            status = item.get("status")
+            if status:
+                lines.append(f"   Status: {status}")
+            owner = item.get("owner")
+            if owner:
+                lines.append(f"   Owner: {owner}")
+            deadline = item.get("deadline")
+            if deadline:
+                lines.append(f"   Deadline: {deadline}")
+            quote = item.get("quote")
+            if quote:
+                lines.append(f'   Quote: "{quote}"')
+        return "\n".join(lines).strip()
     return str(payload.get("summary") or payload.get("narrative") or "").strip()
 
 
@@ -413,6 +439,8 @@ def _summary_kind_from_rel_path(
         "_llm_speaker_summary.md"
     ):
         return "llm_speaker_summary"
+    if name.endswith("_llm_action_items.json") or name.endswith("_llm_action_items.md"):
+        return "llm_action_items"
     if (
         module == "summary"
         and (name.endswith("_summary.json") or name.endswith("_summary.md"))
@@ -441,6 +469,8 @@ def _default_summary_title(kind: str, *, rel_posix: str) -> str:
             if speaker_token:
                 return f"Speaker Summary — {speaker_token.replace('_', ' ')}"
         return "Speaker Summary"
+    if kind == "llm_action_items":
+        return "Action Items"
     return "Summary"
 
 

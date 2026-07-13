@@ -23,10 +23,10 @@ def assert_ownership_invariant_unchanged() -> None:
     reg = build_registry()
     pilot_keys = all_pydantic_field_dotpaths()
     baseline = serialize_non_pydantic_registry_baseline(reg)
-    assert len(PYDANTIC_REGISTRY_PILOTS) == 40
-    assert len(pilot_keys) == 587
+    assert len(PYDANTIC_REGISTRY_PILOTS) == 41
+    assert len(pilot_keys) == 588
     assert len(baseline) == 10
-    assert len(reg) == 597
+    assert len(reg) == 598
 
 
 def assert_three_path_access(subtree: str, field: str, expected: Any) -> None:

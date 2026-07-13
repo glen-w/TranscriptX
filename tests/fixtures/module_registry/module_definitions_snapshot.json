@@ -18,6 +18,7 @@
     "transcript_output",
     "simplified_transcript",
     "understandability",
+    "lexical_diversity",
     "wordclouds",
     "tics",
     "insight_eligibility",
@@ -32,6 +33,7 @@
     "narrative_summary",
     "llm_summary",
     "llm_speaker_summary",
+    "llm_action_items",
     "insights",
     "voice_features",
     "voice_mismatch",
@@ -268,6 +270,18 @@
         "speaker_labels"
       ]
     },
+    "lexical_diversity": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Lexical diversity metrics (TTR, MTLD, hapax rate)",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "gate_on_turn_taking_speakers": true,
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
     "wordclouds": {
       "category": "light",
       "dependencies": [
@@ -443,6 +457,18 @@
       "determinism_tier": "T2",
       "enhancements": [],
       "min_named_speakers": 1,
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ],
+      "requires_llm": true
+    },
+    "llm_action_items": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Extract structured action items via local LLM",
+      "determinism_tier": "T2",
+      "enhancements": [],
       "requirements": [
         "segments",
         "speaker_labels"

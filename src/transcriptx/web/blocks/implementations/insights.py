@@ -545,3 +545,159 @@ def render_llm_speaker_summary_block(
         "_llm_speaker_summary_index.json",
         link_key="llm_speaker_index_raw",
     )
+
+
+def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) -> None:
+    module = "llm_action_items"
+    title = placement.title_override or str(
+        placement.params.get("title", "Action Items")
+    )
+    empty_hint = str(
+        placement.params.get(
+            "empty_hint",
+            "Run the `llm_action_items` module (with LLM enabled) to populate this view.",
+        )
+    )
+    artifact_stem = str(placement.params.get("artifact_stem", "_llm_action_items"))
+
+    st.subheader(title)
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None or run_root is None:
+        st.info(empty_hint)
+        return
+
+    failure_hint = _module_failure_hint(run_root, module)
+    payload = loader.load_json(module, f"{artifact_stem}.json")
+    md = loader.load_text(module, f"{artifact_stem}.md")
+    if md:
+        st.markdown(md)
+    elif payload and isinstance(payload.get("items"), list):
+        items = payload["items"]
+        if not items:
+            st.caption("No action items found.")
+        else:
+            rows = [
+                {
+                    "text": item.get("text", ""),
+                    "status": item.get("status", ""),
+                    "owner": item.get("owner") or "—",
+                    "deadline": item.get("deadline") or "—",
+                    "quote": item.get("quote") or "",
+                    "confidence": item.get("confidence"),
+                }
+                for item in items
+                if isinstance(item, dict)
+            ]
+            st.dataframe(rows, width="stretch", hide_index=True)
+    elif payload:
+        st.json(payload)
+    else:
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            st.info(empty_hint)
+        return
+
+    _render_view_raw_file_link(
+        ctx, module, f"{artifact_stem}.json", link_key="llm_action_items_raw"
+    )
+    prov = (payload or {}).get("provenance") or {}
+    diagnostics = (payload or {}).get("diagnostics") or {}
+    if prov or diagnostics:
+        with st.expander("Generation details"):
+            if prov.get("model"):
+                st.write(f"Model: {prov.get('model')}")
+            if prov.get("provider"):
+                st.write(f"Provider: {prov.get('provider')}")
+            if diagnostics:
+                st.json(diagnostics)
+
+
+def render_lexical_diversity_block(
+    ctx: BlockContext, placement: BlockPlacement
+) -> None:
+    module = "lexical_diversity"
+    title = placement.title_override or str(
+        placement.params.get("title", "Lexical Diversity")
+    )
+    empty_hint = str(
+        placement.params.get(
+            "empty_hint",
+            "Run the `lexical_diversity` module to populate this view.",
+        )
+    )
+
+    st.subheader(title)
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None or run_root is None:
+        st.info(empty_hint)
+        return
+
+    failure_hint = _module_failure_hint(run_root, module)
+    payload = loader.load_json(module, "_lexical_diversity.json")
+    if not payload:
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            st.info(empty_hint)
+        return
+
+    global_stats = payload.get("global_stats") or {}
+    if isinstance(global_stats, dict) and global_stats:
+        cols = st.columns(3)
+        metrics = [
+            ("TTR", global_stats.get("ttr")),
+            ("MTLD", global_stats.get("mtld")),
+            ("Hapax rate", global_stats.get("hapax_rate")),
+        ]
+        for col, (label, value) in zip(cols, metrics):
+            if value is None:
+                col.metric(label, "n/a")
+            else:
+                col.metric(label, f"{float(value):.3f}")
+
+    speaker_stats = payload.get("speaker_stats") or {}
+    if isinstance(speaker_stats, dict) and speaker_stats:
+        rows = []
+        for speaker in sorted(speaker_stats):
+            stats = speaker_stats[speaker]
+            if not isinstance(stats, dict):
+                continue
+            rows.append(
+                {
+                    "speaker": speaker,
+                    "token_count": stats.get("token_count"),
+                    "type_count": stats.get("type_count"),
+                    "ttr": stats.get("ttr"),
+                    "mtld": stats.get("mtld"),
+                    "hapax_rate": stats.get("hapax_rate"),
+                }
+            )
+        if rows:
+            st.caption(
+                "Per-speaker metrics (TTR is length-sensitive; interpret in context)."
+            )
+            st.dataframe(rows, width="stretch", hide_index=True)
+
+    time_buckets = payload.get("time_buckets") or []
+    if isinstance(time_buckets, list) and time_buckets:
+        bucket_rows = [
+            {
+                "bucket_start": bucket.get("bucket_start"),
+                "bucket_end": bucket.get("bucket_end"),
+                "ttr": bucket.get("ttr"),
+                "mtld": bucket.get("mtld"),
+                "token_count": bucket.get("token_count"),
+            }
+            for bucket in time_buckets
+            if isinstance(bucket, dict)
+        ]
+        if bucket_rows:
+            with st.expander("Time buckets"):
+                st.dataframe(bucket_rows, width="stretch", hide_index=True)
+
+    _render_view_raw_file_link(
+        ctx, module, "_lexical_diversity.json", link_key="lexical_diversity_raw"
+    )

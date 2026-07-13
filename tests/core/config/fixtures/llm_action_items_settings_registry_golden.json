@@ -1,0 +1,21 @@
+{
+  "analysis.llm_action_items.effort": {
+    "key": "analysis.llm_action_items.effort",
+    "path": "analysis.llm_action_items.effort",
+    "type": "str",
+    "default": "high",
+    "min": null,
+    "max": null,
+    "choices": [
+      "low",
+      "medium",
+      "high",
+      "max"
+    ],
+    "description": "Effort tier for llm_action_items when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that module only. Defaults to high because action extraction is completeness-oriented across long meetings.",
+    "scope": "project",
+    "sensitivity": "normal",
+    "category": "analysis",
+    "advanced": false
+  }
+}

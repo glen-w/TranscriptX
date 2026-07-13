@@ -1,4 +1,5 @@
 {
+  "schema_version": 2,
   "overview_charts": [
     "sentiment.multi_speaker_sentiment.global",
     "emotion.radar.global",
@@ -15,7 +16,6 @@
     "understandability.readability_indices.global",
     "wordcloud.wordcloud.global.basic"
   ],
-  "overview_max_items": null,
   "overview_missing_behavior": "skip",
-  "schema_version": 2
+  "overview_max_items": null
 }

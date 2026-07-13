@@ -367,6 +367,47 @@ def test_write_export_index_includes_llm_summary(tmp_path: Path) -> None:
     assert 'id="summaries"' in html
 
 
+def test_write_export_index_includes_llm_action_items(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    (staging / "llm_action_items/data/global").mkdir(parents=True)
+    (staging / "llm_action_items/data/global/demo_llm_action_items.json").write_text(
+        json.dumps(
+            {
+                "items": [
+                    {
+                        "text": "Send the report",
+                        "owner": "Alice",
+                        "deadline": "Friday",
+                        "status": "open",
+                        "quote": "I will send the report by Friday.",
+                        "confidence": 0.9,
+                    }
+                ],
+                "provenance": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    copied = [
+        (
+            _artifact(
+                artifact_id="ai",
+                rel_path="llm_action_items/data/global/demo_llm_action_items.json",
+                kind="data_json",
+                module="llm_action_items",
+            ),
+            Path("llm_action_items/data/global/demo_llm_action_items.json"),
+        ),
+    ]
+    summaries = resolve_export_text_summaries(staging_dir=staging, copied=copied)
+    assert len(summaries) == 1
+    assert summaries[0]["title"] == "Action Items"
+    assert "Send the report" in summaries[0]["body"]
+    html = _write_index(staging, copied)
+    assert html is not None
+    assert "Send the report" in html
+
+
 def test_build_index_neither_returns_none() -> None:
     assert build_export_index_html(page_title="run-1") is None
     assert (

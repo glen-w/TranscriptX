@@ -75,8 +75,8 @@ def get_llm_summary_effort_profiles() -> (
     return dict(BUILTIN_LLM_SUMMARY_EFFORT_PROFILES)
 
 
-def require_llm_summary_ollama(llm_cfg: Any) -> None:
-    """Mirror ``get_llm_client()`` eligibility for llm_summary without calling it."""
+def require_ollama_analysis(llm_cfg: Any) -> None:
+    """Mirror ``get_llm_client()`` eligibility for Ollama effort-path modules."""
     provider = (llm_cfg.provider or "null").strip().lower()
     if not llm_cfg.enabled or provider in ("null", ""):
         raise LLMConfigurationError(_NULL_LLM_CLIENT_MESSAGE)
@@ -86,6 +86,11 @@ def require_llm_summary_ollama(llm_cfg: Any) -> None:
         )
     if provider != "ollama":
         raise LLMConfigurationError(f"Unsupported LLM provider: {llm_cfg.provider!r}")
+
+
+def require_llm_summary_ollama(llm_cfg: Any) -> None:
+    """Backward-compatible alias for ``require_ollama_analysis``."""
+    require_ollama_analysis(llm_cfg)
 
 
 def resolve_llm_summary_runtime(

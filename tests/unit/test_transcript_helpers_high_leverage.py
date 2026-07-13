@@ -87,6 +87,36 @@ def test_get_transcript_path_for_language_en_vs_locale(
 
 
 @pytest.mark.unit
+def test_get_transcript_candidates_and_exists(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "diarised"
+    root.mkdir()
+    monkeypatch.setattr(tl_module, "DIARISED_TRANSCRIPTS_DIR", root)
+    en_candidates = tl_module.get_transcript_candidates_for_language("talk", "en")
+    assert en_candidates == [
+        root / "talk.json",
+        root / "talk_transcript_diarised.json",
+    ]
+    assert tl_module.transcript_exists_for_language("talk", "en") is False
+    (root / "talk.json").write_text("{}", encoding="utf-8")
+    assert tl_module.transcript_exists_for_language("talk", None) is True
+    es_candidates = tl_module.get_transcript_candidates_for_language("talk", "es")
+    assert es_candidates == [root / "es" / "talk_es.json"]
+
+
+@pytest.mark.unit
+def test_ensure_parent_dir_and_filter_existing_paths(tmp_path: Path) -> None:
+    nested = tmp_path / "a" / "b" / "c.json"
+    tl_module.ensure_parent_dir(nested)
+    assert nested.parent.is_dir()
+    present = tmp_path / "yes.txt"
+    present.write_text("ok", encoding="utf-8")
+    missing = tmp_path / "no.txt"
+    assert tl_module.filter_existing_paths([present, missing]) == [present]
+
+
+@pytest.mark.unit
 def test_charts_pdf_natural_sort_key_orders_numeric_suffixes() -> None:
     p2 = Path("chart_2.png")
     p10 = Path("chart_10.png")

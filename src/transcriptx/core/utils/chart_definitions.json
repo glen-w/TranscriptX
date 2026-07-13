@@ -2288,6 +2288,72 @@
     "variant": null
   },
   {
+    "viz_id": "lexical_diversity.ttr.speaker",
+    "label": "Lexical Diversity — TTR (All Speakers)",
+    "rank_default": 761,
+    "kind": "chart",
+    "module": "lexical_diversity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "lexical_diversity.ttr.speaker",
+      "by_artifact_key_prefix": "lexical_diversity/charts/",
+      "by_chart_slug_regex": "lexical-ttr",
+      "by_filename_glob": null
+    },
+    "description": "Type-token ratio (TTR) per speaker. Higher values mean more unique words relative to total words, but TTR is length-sensitive.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "lexical_diversity.mtld.speaker",
+    "label": "Lexical Diversity — MTLD (All Speakers)",
+    "rank_default": 762,
+    "kind": "chart",
+    "module": "lexical_diversity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "lexical_diversity.mtld.speaker",
+      "by_artifact_key_prefix": "lexical_diversity/charts/",
+      "by_chart_slug_regex": "lexical-mtld",
+      "by_filename_glob": null
+    },
+    "description": "Measure of Textual Lexical Diversity (MTLD) per speaker. Omits speakers with too few tokens for a stable estimate.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "lexical_diversity.hapax_rate.speaker",
+    "label": "Lexical Diversity — Hapax Rate (All Speakers)",
+    "rank_default": 763,
+    "kind": "chart",
+    "module": "lexical_diversity",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "lexical_diversity.hapax_rate.speaker",
+      "by_artifact_key_prefix": "lexical_diversity/charts/",
+      "by_chart_slug_regex": "lexical-hapax-rate",
+      "by_filename_glob": null
+    },
+    "description": "Share of word types that appear only once (hapax legomena) per speaker.",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "wordcloud.wordcloud.speaker.basic",
     "label": "Word Cloud (Per Speaker)",
     "rank_default": 600,

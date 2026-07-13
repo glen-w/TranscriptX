@@ -50,6 +50,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "semantic_similarity_advanced",
             "semantic_similarity_v2",
             "understandability",
+            "lexical_diversity",
         ),
     ),
     ModuleUIGroup(
@@ -72,7 +73,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
     ModuleUIGroup(
         "insights_highlights",
         "Insights & Highlights",
-        ("highlights", "summary", "insights"),
+        ("highlights", "summary", "llm_action_items", "insights"),
     ),
     ModuleUIGroup(
         "voice_audio",

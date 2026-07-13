@@ -67,6 +67,33 @@ def test_llm_speaker_summary_requires_llm_registered() -> None:
 
 
 @pytest.mark.unit
+def test_llm_action_items_requires_llm_registered() -> None:
+    info = get_module_info("llm_action_items")
+    assert info is not None
+    assert info.requires_llm is True
+
+
+@pytest.mark.unit
+def test_lexical_diversity_registry_metadata() -> None:
+    info = get_module_info("lexical_diversity")
+    assert info is not None
+    assert info.requires_llm is False
+    from transcriptx.core.domain.module_requirements import Requirement
+
+    assert Requirement.SEGMENTS in info.requirements
+    assert Requirement.SPEAKER_LABELS in info.requirements
+    assert Requirement.SEGMENT_TIMESTAMPS not in info.requirements
+
+
+@pytest.mark.unit
+def test_llm_action_items_registry_import() -> None:
+    from transcriptx.core.analysis.llm_action_items import LLMActionItemsAnalysis
+
+    module = LLMActionItemsAnalysis()
+    assert module.module_name == "llm_action_items"
+
+
+@pytest.mark.unit
 def test_dag_planner_expands_narrative_summary_dependencies() -> None:
     from transcriptx.core.pipeline.contracts import (
         RegistryModuleSnapshot,

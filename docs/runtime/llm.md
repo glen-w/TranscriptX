@@ -45,8 +45,11 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 | `narrative_summary` | Grounded executive narrative from deterministic `summary` output (temperature 0.0, JSON) | `summary` chain (highlights + upstream) |
 | `llm_summary` | Abstractive transcript summary from readable transcript text (plain text, `default_temperature`) | segments only |
 | `llm_speaker_summary` | Abstractive summary per **named** speaker from that speaker's utterances only (plain text, `default_temperature`) | segments + speaker labels |
+| `llm_action_items` | Structured action items (owner, deadline, status, quote) from transcript text (strict JSON, `default_temperature`) | segments + speaker labels |
 
-All three LLM modules are included in the **recommended** default module list. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out of any of them. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`.
+All four LLM modules are included in the **recommended** default module list when enabled. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out of any of them. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`.
+
+**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`).
 
 `llm_speaker_summary` is skipped when the transcript has no eligible named speakers (for example, before Speaker ID mapping). Ignored speakers are excluded.
 
@@ -76,7 +79,7 @@ When `llm.enabled` is true and `llm.provider` is `ollama`, `llm_summary` resolve
 - `high` — patient mode for long meetings, workshops, lectures, and dense transcripts
 - `max` — push-the-laptop mode; prefers waiting over truncating or timing out
 
-This pass supports `provider="ollama"` only for `llm_summary` and `llm_speaker_summary`; other non-null providers raise configuration errors.
+This pass supports `provider="ollama"` only for `llm_summary`, `llm_speaker_summary`, and `llm_action_items`; other non-null providers raise configuration errors. Shared eligibility is enforced via `require_ollama_analysis` (with `require_llm_summary_ollama` kept as a compatibility alias).
 
 Artifact provenance records `effort`, `effort_profile`, resolved limits, and input coverage (`input_truncated`, `input_chars_total`, `input_chars_used`, `input_coverage_ratio`). The legacy `input_chars` field remains the full prompt size including wrapper text.
 
@@ -101,9 +104,52 @@ Each named speaker triggers one sequential Ollama call over that speaker's utter
 - `llm_speaker_summary/data/speakers/{base}_{Speaker}_llm_speaker_summary.json` (+ `.md`) per speaker
 - `llm_speaker_summary/data/global/{base}_llm_speaker_summary_index.json` (+ `.md`) listing speakers and statuses
 
+## `llm_action_items` effort
+
+The setting **`analysis.llm_action_items.effort`** controls action-item extraction effort for the **`llm_action_items` module only**. It uses the same builtin tiers as `llm_summary` (`low`, `medium`, `high`, `max`; default **`high`** because extraction is completeness-oriented across long meetings).
+
+```json
+{
+  "analysis": {
+    "llm_action_items": {
+      "effort": "high"
+    }
+  }
+}
+```
+
+**Artifacts:**
+
+- `llm_action_items/data/global/{base}_llm_action_items.json` (+ `.md`)
+
+### Output contract
+
+`schema_id`: `transcriptx.llm_action_items.v1`
+
+| Field | Notes |
+|-------|-------|
+| `items[]` | Ordered list; empty list is a successful result |
+| `items[].text` | Non-empty trimmed action description |
+| `items[].owner` / `deadline` | Verbatim transcript wording or `null` (no entity/date normalisation in v1) |
+| `items[].status` | `open` \| `done` \| `unclear` — `done` only when completion is explicit; do not infer from tense alone |
+| `items[].quote` | Exact transcript substring after whitespace normalisation, or `null` |
+| `items[].confidence` | Finite float in `[0, 1]` |
+| `diagnostics` | `items_parsed`, `items_grounded`, `items_dropped`, `quotes_nulled` |
+| `provenance` | Includes `module_version`, `prompt_version`, `cache_key`, effort/runtime, input coverage |
+
+Malformed model JSON, unknown keys, or invalid fields fail with `llm_invalid_response` — no partially trusted items are stored. Ungrounded quotes are set to `null` (confidence reduced); items that cannot be grounded on text or quote are dropped. Deduplication prefers grounded quotes and higher confidence; ordering uses transcript occurrence of quote/text with stable model-order fallback.
+
+Identity for future caching is a distinct namespace (`provenance.cache_key`); it is not shared with `llm_summary` artifacts.
+
+### UI and export
+
+- **Insights** layout (`default`, `executive`): block `llm_action_items_block` renders Markdown or a structured table.
+- **Overview** module metrics: summary extractor surfaces item counts by status.
+- **Zip export**: JSON/MD are included in module/data exports; `index.html` lists an **Action Items** summary section (see `resolve_export_text_summaries` in `export_index.py`).
+
 ## Truncation
 
-`llm_summary` caps the full user prompt (instructions, delimiters, and transcript block) to an input budget using the existing head/tail truncation algorithm. On the Ollama effort path, the budget comes from the selected effort profile's `max_input_chars`. When the formatted transcript exceeds the budget, TranscriptX uses a deterministic **head/tail** strategy:
+`llm_summary` and other transcript-direct Ollama modules (including `llm_action_items`) cap the full user prompt (instructions, delimiters, and transcript block) to an input budget using the existing head/tail truncation algorithm. On the Ollama effort path, the budget comes from the selected effort profile's `max_input_chars`. When the formatted transcript exceeds the budget, TranscriptX uses a deterministic **head/tail** strategy:
 
 - Reserve space for an omission marker in the middle.
 - Allocate roughly **60%** of the remaining budget to early segments and **40%** to late segments (whole segments only).
@@ -137,6 +183,7 @@ Successful LLM artifacts include mandatory provenance fields:
 - `llm_request_sha256` — SHA-256 of canonical JSON `{user, system?}` sent to `client.generate()`
 - `model`, `provider`, `seed`, `temperature`, `max_output_tokens`, `generation_options` (including effective `num_predict`)
 - `transcriptx_version` when importable
+- For `llm_action_items`: also `module_version`, `prompt_version`, and `cache_key` (distinct cache identity namespace)
 
 Optional metadata such as `model_digest` is included only when already cached (e.g. from a prior `is_available()` tags fetch); no extra `/api/tags` call is made solely for provenance.
 
@@ -159,7 +206,7 @@ from transcriptx.app.workflows.analysis import run_analysis
 
 result = run_analysis(AnalysisRequest(
     transcript_path=Path('tests/fixtures/mini_transcript.json'),
-    modules=['summary', 'narrative_summary', 'llm_summary', 'llm_speaker_summary'],
+    modules=['summary', 'narrative_summary', 'llm_summary', 'llm_speaker_summary', 'llm_action_items'],
 ))
 print('success:', result.success)
 print('errors:', result.errors)
@@ -172,16 +219,32 @@ Expected artifacts per module under the run output directory:
 - `llm_summary/data/global/*_llm_summary.json` (+ `.md`)
 - `llm_speaker_summary/data/speakers/*_llm_speaker_summary.json` (+ `.md`) per named speaker
 - `llm_speaker_summary/data/global/*_llm_speaker_summary_index.json` (+ `.md`)
+- `llm_action_items/data/global/*_llm_action_items.json` (+ `.md`)
 
 **Partial failure:** if a selected LLM module fails, the overall run is partially failed. Deterministic modules (e.g. `summary`) and their artifacts remain available. Failed LLM modules produce no canonical LLM artifacts.
 
 **Graceful failure when Ollama is stopped:** modules report `failed` with `error_code=llm_unavailable` after up to 3 connection retries (~2s backoff cap).
 
-## Optional live integration test
+## Optional live integration tests
+
+Client smoke + LLM analysis modules (`llm_summary`, `llm_speaker_summary`,
+`llm_action_items`):
 
 ```bash
 export TRANSCRIPTX_LLM_LIVE_TEST=1
-pytest tests/core/llm/test_ollama_live.py -m integration
+# optional: export TRANSCRIPTX_LLM_MODEL=qwen3:8b
+# optional: export TRANSCRIPTX_LLM_SMOKE_MODEL=llama3.2:3b
+# optional: export TRANSCRIPTX_LLM_ACTION_ITEMS_MODEL=llama3.2:3b
+# optional (host-side): export TRANSCRIPTX_LLM_LIVE_BASE_URL=http://127.0.0.1:11434
+pytest tests/core/llm/test_ollama_live.py tests/core/analysis/test_llm_modules_live.py -m "integration and requires_api"
 ```
 
 Requires a running Ollama daemon and the configured model installed locally.
+These tests are excluded from the default fast suite (`integration` /
+`requires_api` / `slow`). Module live tests use `analysis.*.effort=low` to keep
+runtime bounded.
+
+On the Mac host, prefer `TRANSCRIPTX_LLM_LIVE_BASE_URL=http://127.0.0.1:11434`.
+A project `.env` value of `http://host.docker.internal:11434` is for the Docker
+GUI container and is ignored by these host-side live tests unless you set the
+live-specific override.

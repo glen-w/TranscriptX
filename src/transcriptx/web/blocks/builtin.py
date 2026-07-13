@@ -162,6 +162,26 @@ def _register_insights_blocks() -> None:
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=insights_blocks.render_llm_speaker_summary_block,
         ),
+        BlockSpec(
+            id="llm_action_items_block",
+            title="Action Items",
+            group="Insights",
+            description="Structured action items extracted via local LLM.",
+            module_deps=("llm_action_items",),
+            artifact_patterns=("_llm_action_items.json", "_llm_action_items.md"),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_blocks.render_llm_action_items_block,
+        ),
+        BlockSpec(
+            id="lexical_diversity_block",
+            title="Lexical Diversity",
+            group="Insights",
+            description="TTR, MTLD, and hapax rate metrics by speaker.",
+            module_deps=("lexical_diversity",),
+            artifact_patterns=("_lexical_diversity.json", "_lexical_diversity.csv"),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_blocks.render_lexical_diversity_block,
+        ),
     ]
     for spec in specs:
         register_block(spec)

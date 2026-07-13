@@ -165,6 +165,12 @@ MODULE_VALIDATION_RULES = {
         min_files=1,  # At least 1 main data file
         file_extensions={".json", ".csv"},
     ),
+    "lexical_diversity": ModuleValidationRule(
+        required_files=["*_lexical_diversity.json"],
+        required_dirs=["data"],
+        min_files=1,
+        file_extensions={".json", ".csv"},
+    ),
     "semantic_similarity_advanced": ModuleValidationRule(
         required_files=["*_semantic_advanced_global.json"],  # Actual file pattern used
         required_dirs=["data"],  # Just check for data directory

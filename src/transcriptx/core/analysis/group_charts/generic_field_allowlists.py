@@ -62,6 +62,14 @@ GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
             "sentence_count",
         }
     ),
+    "lexical_diversity": frozenset(
+        {
+            "ttr",
+            "mtld",
+            "hapax_rate",
+            "token_count",
+        }
+    ),
     "tics": frozenset({"total_tics"}),
 }
 

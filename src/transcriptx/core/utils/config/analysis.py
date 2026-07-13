@@ -918,6 +918,9 @@ class AnalysisConfig:
     llm_speaker_summary: LLMSpeakerSummaryConfig = field(
         default_factory=lambda: LLMSpeakerSummaryConfig()
     )
+    llm_action_items: LLMActionItemsConfig = field(
+        default_factory=lambda: LLMActionItemsConfig()
+    )
     qa_analysis: QAAnalysisConfig = field(default_factory=lambda: QAAnalysisConfig())
     temporal_dynamics: TemporalDynamicsConfig = field(
         default_factory=lambda: TemporalDynamicsConfig()
@@ -1023,6 +1026,13 @@ class LLMSummaryConfig:
 @dataclass
 class LLMSpeakerSummaryConfig:
     """Configuration for the llm_speaker_summary analysis module."""
+
+    effort: str = "high"
+
+
+@dataclass
+class LLMActionItemsConfig:
+    """Configuration for the llm_action_items analysis module."""
 
     effort: str = "high"
 

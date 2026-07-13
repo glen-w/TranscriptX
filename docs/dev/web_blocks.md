@@ -18,6 +18,17 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 3. Add placement to a preset under `web/layouts/presets/`.
 4. Add a smoke test under `tests/web/blocks/`.
 
+## Insights blocks for new analysis modules
+
+| Block id | Module | Layouts |
+|----------|--------|---------|
+| `llm_summary_block` | `llm_summary` / `narrative_summary` (parametric) | `default` |
+| `llm_speaker_summary_block` | `llm_speaker_summary` | `default` |
+| `llm_action_items_block` | `llm_action_items` | `default`, `executive` |
+| `lexical_diversity_block` | `lexical_diversity` | `default` |
+
+Overview **module metrics** use summary extractors under `web/summary_extractors/`. Zip export summaries for LLM prose/list modules are resolved in `utils/export_index.py`.
+
 ## Adding a layout
 
 1. Copy `presets/default.yaml` to `data/profiles/ui_layouts/my_layout.yaml` (or add a new preset).

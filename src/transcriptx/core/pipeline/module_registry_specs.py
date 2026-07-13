@@ -83,6 +83,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "transcriptx.core.analysis.understandability",
         "UnderstandabilityAnalysis",
     ),
+    "lexical_diversity": (
+        "transcriptx.core.analysis.lexical_diversity",
+        "LexicalDiversityAnalysis",
+    ),
     "temporal_dynamics": (
         "transcriptx.core.analysis.temporal_dynamics.analysis",
         "TemporalDynamicsAnalysis",
@@ -105,6 +109,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
     "llm_speaker_summary": (
         "transcriptx.core.analysis.llm_speaker_summary",
         "LLMSpeakerSummaryAnalysis",
+    ),
+    "llm_action_items": (
+        "transcriptx.core.analysis.llm_action_items",
+        "LLMActionItemsAnalysis",
     ),
     "insights": ("transcriptx.core.analysis.insights", "InsightsAnalysis"),
     "voice_features": (

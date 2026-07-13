@@ -33,6 +33,12 @@ VIZ_QA_RESPONSE_TIME_ANALYSIS = "qa_analysis.response_time_analysis.global"
 # Tics
 VIZ_TICS_SPEAKER = "tics.tics.speaker"
 
+# Lexical diversity
+VIZ_LEXICAL_DIVERSITY_TTR_SPEAKER = "lexical_diversity.ttr.speaker"
+VIZ_LEXICAL_DIVERSITY_MTLD_SPEAKER = "lexical_diversity.mtld.speaker"
+VIZ_LEXICAL_DIVERSITY_HAPAX_RATE_SPEAKER = "lexical_diversity.hapax_rate.speaker"
+VIZ_LEXICAL_DIVERSITY_TTR_TIME_BUCKET = "lexical_diversity.ttr.time_bucket"
+
 # Entity sentiment
 VIZ_ENTITY_SENTIMENT_HEATMAP = "entity_sentiment.sentiment_heatmap.global"
 VIZ_ENTITY_SENTIMENT_TYPE_ANALYSIS = "entity_sentiment.entity_type_analysis.global"

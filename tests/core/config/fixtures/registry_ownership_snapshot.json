@@ -1,8 +1,8 @@
 {
-  "total_registry_keys": 597,
-  "pydantic_owned_keys": 587,
+  "total_registry_keys": 598,
+  "pydantic_owned_keys": 588,
   "non_pydantic_baseline_keys": 10,
-  "pilot_count": 40,
+  "pilot_count": 41,
   "per_pilot_key_counts": {
     "semantic_similarity_v2": 17,
     "metadata": 4,
@@ -22,6 +22,7 @@
     "tag_extraction": 3,
     "llm_summary_settings": 1,
     "llm_speaker_summary_settings": 1,
+    "llm_action_items_settings": 1,
     "workflow": 13,
     "speaker_exemplars": 26,
     "highlights": 30,

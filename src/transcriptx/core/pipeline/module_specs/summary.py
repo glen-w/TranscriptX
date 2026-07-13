@@ -70,6 +70,18 @@ def build_summary_module_definitions(
             "requires_llm": True,
             "min_named_speakers": 1,
         },
+        "llm_action_items": {
+            "description": "Extract structured action items via local LLM",
+            "dependencies": [],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [
+                Requirement.SEGMENTS,
+                Requirement.SPEAKER_LABELS,
+            ],
+            "enhancements": [],
+            "requires_llm": True,
+        },
         "insights": {
             "description": "Content-first insights layer separated from style markers",
             "dependencies": ["insight_eligibility", "highlights", "topic_modeling"],

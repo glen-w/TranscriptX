@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-13
+
+### Added
+
+- `llm_action_items` analysis module: structured Ollama extraction of action items (owner, deadline, status, quote) with quote grounding, dedupe, and distinct cache identity.
+- `analysis.llm_action_items.effort` config (low/medium/high/max; default `high`).
+- Insights/executive UI blocks and zip-export summary section for action items.
+- `lexical_diversity` analysis module: deterministic TTR, MTLD, and hapax-rate metrics (optional time buckets), CSV/JSON artifacts, and chart gallery entries.
+- Insights block and overview summary extractor for lexical diversity; group aggregation allowlist for descriptive session metrics.
+
 ## [0.3.3] - 2026-07-13
 
 ### Added

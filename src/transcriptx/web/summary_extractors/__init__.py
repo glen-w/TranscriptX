@@ -75,6 +75,8 @@ def _register_all_extractors():
         "semantic_similarity",
         "entity_sentiment",
         "understandability",
+        "lexical_diversity",
+        "llm_action_items",
         "temporal_dynamics",
         "qa_analysis",
         "generic",

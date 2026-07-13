@@ -22,6 +22,8 @@ Modules that need a stable, versioned contract write under `<run_root>/<namespac
 - **Canonical base name:** From `_path_core.get_canonical_base_name(transcript_path)` (used for run dir and file prefixes). See contract for naming rules.
 - **Manifest and run summary:** `manifest.json` and `run_results.json` at run root. Built by `manifest_builder.py`; schema validated in tests (see `run_schema.py` and `tests/contracts/test_run_results_and_manifest_contracts.py`).
 - **Module data/charts:** Use `create_standard_output_structure()` and the helpers in `output_standards.py` (e.g. `save_global_data`, `save_speaker_data`) so paths stay consistent.
+- **LLM list/prose modules:** `llm_summary`, `narrative_summary`, `llm_speaker_summary`, and `llm_action_items` write JSON+Markdown under `<module>/data/global/` (and speakers for per-speaker summaries). See [runtime/llm.md](../runtime/llm.md).
+- **Lexical diversity:** `lexical_diversity` writes JSON+CSV under `data/global/` and chart PNGs via `OutputService.save_chart`. See [runtime/lexical_diversity.md](../runtime/lexical_diversity.md).
 
 ## Single canonical path source
 
