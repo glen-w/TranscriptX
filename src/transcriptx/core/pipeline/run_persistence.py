@@ -1,3 +1,5 @@
+"""Persist pipeline run artifacts and state layers."""
+
 from __future__ import annotations
 
 from pathlib import Path

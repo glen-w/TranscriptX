@@ -1,3 +1,5 @@
+"""Tests for managed import metadata sidecar read/write."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Disk cache for computed voice feature tables."""
+
 from __future__ import annotations
 
 import json

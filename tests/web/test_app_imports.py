@@ -1,3 +1,5 @@
+"""Tests for app imports."""
+
 from __future__ import annotations
 
 

@@ -1,3 +1,5 @@
+"""Unit tests for state utils queries."""
+
 import json
 
 import pytest

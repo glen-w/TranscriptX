@@ -1,3 +1,5 @@
+"""Tests for coercion."""
+
 import pytest
 
 from transcriptx.core.config.coercion import coerce

@@ -1,3 +1,5 @@
+"""Tests for group output service metadata."""
+
 import json
 
 from transcriptx.core.output.group_output_service import GroupOutputService

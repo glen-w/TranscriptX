@@ -1,3 +1,5 @@
+"""Tests for wordclouds group aggregation."""
+
 from typing import Any
 
 from transcriptx.core.analysis.aggregation.wordclouds import (  # type: ignore[import]

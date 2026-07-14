@@ -1,3 +1,5 @@
+"""Tests for insight eligibility."""
+
 from transcriptx.core.analysis.insight_eligibility.content_filter import (
     filter_segments_for_insights,
 )

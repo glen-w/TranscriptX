@@ -1,3 +1,5 @@
+"""Registry that selects and invokes import adapters."""
+
 from __future__ import annotations
 
 import json

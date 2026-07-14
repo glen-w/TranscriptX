@@ -1,3 +1,5 @@
+"""Rhythm metrics (nPVI, Varco) for speech timing analysis."""
+
 from __future__ import annotations
 
 import numpy as np

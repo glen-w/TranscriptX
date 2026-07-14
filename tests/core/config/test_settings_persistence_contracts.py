@@ -1,3 +1,5 @@
+"""Tests for settings persistence contracts."""
+
 from __future__ import annotations
 
 import json

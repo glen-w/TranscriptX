@@ -1,3 +1,5 @@
+"""Tests for transcript page refactor contracts."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

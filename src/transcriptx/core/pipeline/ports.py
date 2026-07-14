@@ -1,3 +1,5 @@
+"""Port interfaces for pipeline sinks and persistence stores."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

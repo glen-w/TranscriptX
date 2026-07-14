@@ -1,3 +1,5 @@
+"""Tests for gui support contracts."""
+
 from __future__ import annotations
 
 from transcriptx.core.config import (

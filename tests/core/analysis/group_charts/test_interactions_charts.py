@@ -1,3 +1,5 @@
+"""Tests for interactions charts."""
+
 from __future__ import annotations
 
 from pathlib import Path

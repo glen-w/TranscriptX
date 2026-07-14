@@ -1,3 +1,5 @@
+"""DTOs for prepared, planned, and executed pipeline phases."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

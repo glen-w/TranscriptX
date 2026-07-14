@@ -70,3 +70,21 @@ def test_factory_openai_raises() -> None:
     cfg.llm.provider = "openai"
     with pytest.raises(LLMConfigurationError):
         get_llm_client(cfg)
+
+
+@pytest.mark.unit
+def test_factory_uses_global_config_when_none(monkeypatch) -> None:
+    cfg = TranscriptXConfig()
+    cfg.llm.enabled = False
+    monkeypatch.setattr(
+        "transcriptx.core.utils.config.get_config", lambda: cfg
+    )
+    assert isinstance(get_llm_client(None), NullLLMClient)
+
+
+@pytest.mark.unit
+def test_null_client_generate_raises_and_never_available() -> None:
+    client = NullLLMClient()
+    assert client.is_available() is False
+    with pytest.raises(LLMConfigurationError, match="not configured"):
+        client.generate(prompt="hi", temperature=0.0)

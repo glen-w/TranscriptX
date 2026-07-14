@@ -1,3 +1,5 @@
+"""Tests for registry."""
+
 from transcriptx.core.config.registry import flatten, unflatten, build_registry
 
 

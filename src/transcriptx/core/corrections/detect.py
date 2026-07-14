@@ -1,3 +1,5 @@
+"""Detect correction candidates from memory, acronyms, and fuzzy matches."""
+
 from __future__ import annotations
 
 import re

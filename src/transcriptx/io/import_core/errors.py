@@ -1,3 +1,5 @@
+"""Typed errors for unsupported, ambiguous, or malformed imports."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

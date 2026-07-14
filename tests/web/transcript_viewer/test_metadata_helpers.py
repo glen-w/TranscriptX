@@ -1,3 +1,5 @@
+"""Tests for metadata helpers."""
+
 from __future__ import annotations
 
 from transcriptx.web.transcript_viewer.metadata import (

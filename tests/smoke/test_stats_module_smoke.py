@@ -1,3 +1,5 @@
+"""Smoke tests for stats module smoke."""
+
 from __future__ import annotations
 
 import json

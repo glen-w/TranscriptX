@@ -1,3 +1,5 @@
+"""Tests for app init defaults."""
+
 from __future__ import annotations
 
 import transcriptx.web.app as app_mod

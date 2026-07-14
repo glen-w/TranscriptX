@@ -1,3 +1,5 @@
+"""Integration tests for ignored speaker artifacts."""
+
 from __future__ import annotations
 
 import json

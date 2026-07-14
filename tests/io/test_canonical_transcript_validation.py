@@ -1,3 +1,5 @@
+"""Tests for canonical transcript validation."""
+
 from pathlib import Path
 
 from transcriptx.io.canonical_transcript_validation import (

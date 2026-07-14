@@ -1,3 +1,5 @@
+"""ChartSpec builders for voice tension and mismatch visuals."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

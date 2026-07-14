@@ -1,3 +1,5 @@
+"""Tests for momentum."""
+
 from transcriptx.core.analysis.dynamics.momentum import MomentumAnalysis
 from transcriptx.core.models.events import Event
 

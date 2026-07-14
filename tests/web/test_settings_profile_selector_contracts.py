@@ -1,3 +1,5 @@
+"""Tests for settings profile selector contracts."""
+
 from __future__ import annotations
 
 from transcriptx.app.controllers.profile_controller import ProfileController

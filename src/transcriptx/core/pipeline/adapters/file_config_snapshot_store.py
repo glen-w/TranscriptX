@@ -1,3 +1,5 @@
+"""Filesystem adapter for run config snapshots."""
+
 from __future__ import annotations
 
 from pathlib import Path

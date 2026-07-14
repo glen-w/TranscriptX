@@ -1,3 +1,5 @@
+"""Normalization policy for import pipelines."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

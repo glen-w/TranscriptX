@@ -1,3 +1,5 @@
+"""Tests for default modules audio gating."""
+
 from transcriptx.core.pipeline.module_registry import (
     get_available_modules,
     get_default_modules,

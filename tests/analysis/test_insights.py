@@ -1,3 +1,5 @@
+"""Tests for insights."""
+
 from transcriptx.core.analysis.insights.analysis import InsightsAnalysis
 
 

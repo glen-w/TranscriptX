@@ -1,3 +1,5 @@
+"""Tests for highlight."""
+
 from __future__ import annotations
 
 from transcriptx.web.transcript_viewer.highlight import render_highlight_html

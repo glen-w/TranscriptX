@@ -1,3 +1,5 @@
+"""Tests for events models."""
+
 from transcriptx.core.models.events import (
     Event,
     generate_event_id,

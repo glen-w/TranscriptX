@@ -12,6 +12,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
+from transcriptx.core.utils._path_cache import invalidate_path_cache
 from transcriptx.core.utils._path_core import get_base_name, get_canonical_base_name
 from transcriptx.core.utils._path_resolution import resolve_file_path
 from transcriptx.core.utils.logger import get_logger, log_error
@@ -402,6 +403,7 @@ __all__ = [
     "resolve_file_path",
     "validate_managed_transcript",
     "update_processing_state",
+    "invalidate_path_cache",
     "_audio_lookup_bases",
     "_build_audio_candidates_from_recordings",
     "_compute_processing_state_rename_mutation",

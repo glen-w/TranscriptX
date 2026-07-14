@@ -1,3 +1,5 @@
+"""Core voice rhythm charts analysis module."""
+
 from __future__ import annotations
 
 import json

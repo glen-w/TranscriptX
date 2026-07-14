@@ -1,3 +1,5 @@
+"""Tests for pauses."""
+
 from transcriptx.core.analysis.dynamics.pauses import PausesAnalysis
 
 

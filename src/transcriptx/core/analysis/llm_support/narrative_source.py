@@ -79,7 +79,7 @@ def _load_registered_summary_path(
     if run_results_path.exists():
         try:
             from transcriptx.core.pipeline.manifest_loader import load_run_results
-            from transcriptx.core.pipeline.module_outcomes import (
+            from transcriptx.core.pipeline.run_outcome_truth import (
                 project_canonical_outcomes,
             )
 
@@ -88,13 +88,13 @@ def _load_registered_summary_path(
                 (
                     row
                     for row in project_canonical_outcomes(run_results)
-                    if row.get("module_id") == "summary"
+                    if row.module_id == "summary"
                 ),
                 None,
             )
             if (
                 summary_row
-                and summary_row.get("execution_status") == "run"
+                and summary_row.status == "succeeded"
                 and canonical_path.exists()
             ):
                 return canonical_path

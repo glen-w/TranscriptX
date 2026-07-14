@@ -1,3 +1,5 @@
+"""Present pipeline run progress to reporters and UIs."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

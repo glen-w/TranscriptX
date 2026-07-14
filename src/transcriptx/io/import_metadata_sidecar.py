@@ -1,3 +1,5 @@
+"""Import metadata sidecars for managed transcript provenance."""
+
 from __future__ import annotations
 
 import json

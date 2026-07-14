@@ -1,3 +1,5 @@
+"""Transcript simplification for readability and analysis prep."""
+
 import json
 import re
 from dataclasses import dataclass

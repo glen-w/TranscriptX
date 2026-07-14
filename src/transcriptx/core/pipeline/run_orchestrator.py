@@ -1,3 +1,5 @@
+"""Orchestrate prepare → plan → execute → persist for a run."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

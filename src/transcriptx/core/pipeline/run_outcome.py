@@ -1,3 +1,5 @@
+"""Combine run status and emit terminal pipeline events."""
+
 from __future__ import annotations
 
 from typing import Any, List, Optional

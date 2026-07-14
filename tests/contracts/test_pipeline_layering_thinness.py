@@ -1,3 +1,5 @@
+"""Contract tests for pipeline layering thinness."""
+
 from __future__ import annotations
 
 import ast

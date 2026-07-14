@@ -1,3 +1,5 @@
+"""Orchestrate detect → parse → normalize → write for imports."""
+
 from __future__ import annotations
 
 import json

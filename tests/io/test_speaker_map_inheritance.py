@@ -1,3 +1,5 @@
+"""Tests for speaker map inheritance."""
+
 from __future__ import annotations
 
 from dataclasses import replace

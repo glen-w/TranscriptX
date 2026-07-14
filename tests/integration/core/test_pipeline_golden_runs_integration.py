@@ -1,3 +1,5 @@
+"""Integration tests for pipeline golden runs integration."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Tests for validation."""
+
 from transcriptx.core.config.validation import validate_config
 
 

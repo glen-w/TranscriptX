@@ -1,3 +1,5 @@
+"""Tests for resolve speaker names from db session."""
+
 import json
 
 

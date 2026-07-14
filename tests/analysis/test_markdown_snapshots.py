@@ -1,3 +1,5 @@
+"""Tests for markdown snapshots."""
+
 from pathlib import Path
 
 from transcriptx.core.analysis.highlights import (  # type: ignore[import-untyped]

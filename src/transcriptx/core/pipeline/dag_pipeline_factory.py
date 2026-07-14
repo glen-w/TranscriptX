@@ -1,3 +1,5 @@
+"""Factory helpers to construct and run DAG pipelines."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

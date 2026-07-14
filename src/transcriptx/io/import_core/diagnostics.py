@@ -1,3 +1,5 @@
+"""Structured diagnostics emitted during import."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

@@ -1,3 +1,5 @@
+"""Tests for segments timestamp."""
+
 from __future__ import annotations
 
 from transcriptx.web.transcript_viewer.segments import _format_timestamp_range

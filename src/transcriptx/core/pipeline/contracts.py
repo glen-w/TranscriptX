@@ -1,3 +1,5 @@
+"""Shared pipeline status, error, and schema contracts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

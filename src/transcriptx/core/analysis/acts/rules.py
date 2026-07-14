@@ -1,3 +1,5 @@
+"""Dialogue-act classification rules and cue phrases."""
+
 from __future__ import annotations
 
 import re

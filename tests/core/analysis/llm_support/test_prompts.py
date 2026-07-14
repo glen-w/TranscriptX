@@ -168,3 +168,71 @@ def test_format_transcript_lines_uses_stable_unnamed_label() -> None:
     segments = [{"speaker": "", "text": "hello world"}]
     lines = format_transcript_lines(segments)
     assert lines == ["Speaker: hello world"]
+
+
+@pytest.mark.unit
+def test_format_transcript_lines_skips_empty_segments() -> None:
+    segments = [
+        {"speaker": "Alice", "text": "   "},
+        {"speaker": "Bob", "text": "kept  line"},
+    ]
+    assert format_transcript_lines(segments) == ["Bob: kept line"]
+
+
+@pytest.mark.unit
+def test_truncate_marker_only_tail_when_tail_budget_too_small() -> None:
+    # Head fits one short line; tail allocation cannot fit the long last line,
+    # so the output ends with the omission marker and no tail content.
+    lines = ["Speaker: a", "Speaker: " + ("x" * 300), "Speaker: " + ("y" * 300)]
+    text, meta = truncate_transcript_block(lines, max_chars=80)
+    assert meta["truncated"] is True
+    assert meta["truncation_strategy"] == "head_tail"
+    assert text.rstrip().endswith("[... transcript content omitted ...]")
+    assert meta["included_segments"] == 1
+    assert meta["omitted_segments"] == 2
+
+
+@pytest.mark.unit
+def test_truncate_shrink_loop_keeps_result_within_budget() -> None:
+    # Many similarly sized lines with a budget that forces the head/tail
+    # balancing to overshoot and then shrink back below max_chars.
+    lines = [f"Speaker: segment number {i:03d} with some padding" for i in range(30)]
+    for max_chars in (150, 200, 250, 300, 351):
+        text, meta = truncate_transcript_block(lines, max_chars=max_chars)
+        assert len(text) <= max_chars, f"budget {max_chars} violated"
+        assert meta["truncated"] is True
+        assert (
+            meta["omitted_segments"]
+            == meta["total_segments"] - meta["included_segments"]
+        )
+
+
+@pytest.mark.unit
+def test_truncate_multi_segment_hard_truncate_appends_marker() -> None:
+    # First segment alone exceeds any allocation, so single-segment hard
+    # truncate applies while more segments remain omitted.
+    lines = ["Speaker: " + ("z" * 400), "Speaker: short"]
+    text, meta = truncate_transcript_block(lines, max_chars=60)
+    assert meta["truncation_strategy"] == "single_segment_hard_truncate"
+    assert meta["omitted_segments"] == 1
+    assert len(text) <= 60
+
+
+@pytest.mark.unit
+def test_truncate_zero_budget_returns_empty() -> None:
+    text, meta = truncate_transcript_block(["Speaker: hello"], max_chars=0)
+    assert text == ""
+    assert meta["truncated"] is True
+
+
+@pytest.mark.unit
+def test_build_bounded_user_prompt_empty_block_meta() -> None:
+    prompt, meta = build_bounded_user_prompt(
+        instruction=_SUMMARY_INSTRUCTION,
+        transcript_block="",
+        max_input_chars=10_000,
+    )
+    assert meta["transcript_chars_total"] == 0
+    assert meta["transcript_chars_used"] == 0
+    assert meta["truncated"] is False
+    assert prompt.startswith(_SUMMARY_INSTRUCTION)

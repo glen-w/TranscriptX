@@ -1,3 +1,5 @@
+"""Integration tests for highlights summary integration."""
+
 import json
 from pathlib import Path
 

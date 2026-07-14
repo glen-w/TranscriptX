@@ -1,3 +1,5 @@
+"""Tests for corrections service additional."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

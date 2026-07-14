@@ -1,3 +1,5 @@
+"""Tests for topic visualization unit."""
+
 from __future__ import annotations
 
 import pytest

@@ -1,3 +1,5 @@
+"""Normalization pipeline stages for imported transcripts."""
+
 from __future__ import annotations
 
 from dataclasses import replace

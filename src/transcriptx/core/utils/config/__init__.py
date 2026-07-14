@@ -1,3 +1,5 @@
+"""Config package facade for get/set/load and test resets."""
+
 from .analysis import (
     AnalysisConfig,
     SpeakerExemplarsConfig,

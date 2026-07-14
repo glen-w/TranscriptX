@@ -1,3 +1,5 @@
+"""Tests for profiles page contracts."""
+
 from __future__ import annotations
 
 from transcriptx.web.page_modules.profiles import (

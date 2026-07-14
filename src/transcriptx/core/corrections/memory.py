@@ -1,3 +1,5 @@
+"""Load, save, and promote persistent correction memory rules."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Tests for config loading contracts."""
+
 from __future__ import annotations
 
 import json

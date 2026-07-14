@@ -1,3 +1,5 @@
+"""End-to-end corrections workflow over transcript segments."""
+
 from __future__ import annotations
 
 import shutil

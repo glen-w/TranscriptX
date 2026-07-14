@@ -1,3 +1,5 @@
+"""Geocoding helpers with a local coordinate cache."""
+
 import json
 
 from geopy.geocoders import Nominatim

@@ -1,3 +1,5 @@
+"""Tests for dag pipeline finalize progress."""
+
 from __future__ import annotations
 
 import transcriptx.core.pipeline.dag_pipeline_finalize as finalize_module

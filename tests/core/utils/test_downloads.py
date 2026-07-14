@@ -1,3 +1,5 @@
+"""Tests for downloads."""
+
 from __future__ import annotations
 
 from transcriptx.core.utils.downloads import (

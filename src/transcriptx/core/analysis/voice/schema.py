@@ -1,3 +1,5 @@
+"""Schemas and tables for canonical voice feature rows."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

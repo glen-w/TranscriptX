@@ -1,3 +1,5 @@
+"""Import adapter for WhisperX JSON transcripts."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.whisperx_adapter import (

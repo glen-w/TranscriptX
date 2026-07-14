@@ -1,3 +1,5 @@
+"""Tests for paths transcripts helpers."""
+
 from pathlib import Path
 
 import pytest

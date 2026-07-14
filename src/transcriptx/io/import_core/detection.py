@@ -1,3 +1,5 @@
+"""Adapter selection ranking policies for import detection."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

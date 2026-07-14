@@ -1,3 +1,5 @@
+"""Tests for moments."""
+
 from transcriptx.core.analysis.dynamics.moments import (
     MomentsAnalysis,
     _overlapping_segments,

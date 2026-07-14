@@ -1,3 +1,5 @@
+"""Import adapter for Rev plain-text transcripts."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.rev_adapter import RevAdapter as LegacyRevAdapter

@@ -1,3 +1,5 @@
+"""Tests for group manifest store extended."""
+
 from __future__ import annotations
 
 from pathlib import Path

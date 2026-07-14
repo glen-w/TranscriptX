@@ -1,3 +1,5 @@
+"""Tests for import core pipeline."""
+
 from __future__ import annotations
 
 from transcriptx.io.import_core.normalization_policy import NormalizationPolicy

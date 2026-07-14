@@ -1,3 +1,5 @@
+"""Tests for group key."""
+
 from transcriptx.core.domain.group import Group
 
 

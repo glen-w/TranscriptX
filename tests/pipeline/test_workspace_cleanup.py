@@ -1,3 +1,5 @@
+"""Tests for workspace cleanup."""
+
 from __future__ import annotations
 
 from transcriptx.core.pipeline.run_workspace import RunWorkspaceService

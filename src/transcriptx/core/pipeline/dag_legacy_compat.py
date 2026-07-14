@@ -1,3 +1,5 @@
+"""Legacy compatibility helpers retained for DAG pipeline callers."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

@@ -1,3 +1,5 @@
+"""Integration tests for corrections studio roundtrip integration."""
+
 from __future__ import annotations
 
 import json

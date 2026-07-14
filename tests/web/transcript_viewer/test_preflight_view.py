@@ -1,3 +1,5 @@
+"""Tests for preflight view."""
+
 from __future__ import annotations
 
 from transcriptx.web.page_modules.transcript import _render_preflight_empty_state

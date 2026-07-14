@@ -1,3 +1,5 @@
+"""Tests for app startup."""
+
 from __future__ import annotations
 
 from transcriptx.web.state import PAGE_KEY

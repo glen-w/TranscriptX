@@ -1,3 +1,5 @@
+"""Tests for env key registry."""
+
 from __future__ import annotations
 
 import os

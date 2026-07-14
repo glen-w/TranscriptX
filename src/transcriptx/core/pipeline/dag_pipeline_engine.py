@@ -1,3 +1,5 @@
+"""Runtime entry that executes a planned DAG pipeline."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

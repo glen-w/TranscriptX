@@ -1,3 +1,5 @@
+"""Optional dependency checks for the voice analysis extras."""
+
 from __future__ import annotations
 
 import importlib.util

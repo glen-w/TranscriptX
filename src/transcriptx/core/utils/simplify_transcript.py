@@ -1,3 +1,5 @@
+"""CLI/utility entry for simplifying transcript text."""
+
 import json
 import re
 from typing import Any

@@ -1,3 +1,5 @@
+"""Tests for chart registry."""
+
 from __future__ import annotations
 
 """Tests for chart registry defaults."""

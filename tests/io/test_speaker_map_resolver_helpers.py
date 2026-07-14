@@ -1,3 +1,5 @@
+"""Tests for speaker map resolver helpers."""
+
 from __future__ import annotations
 
 from transcriptx.io.speaker_map_resolver import (

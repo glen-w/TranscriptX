@@ -1,3 +1,5 @@
+"""Tests for run lifecycle harness."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

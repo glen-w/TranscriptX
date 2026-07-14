@@ -1,3 +1,5 @@
+"""Tests for segments grouping."""
+
 from __future__ import annotations
 
 from transcriptx.web.transcript_viewer.segments import group_segments_by_speaker

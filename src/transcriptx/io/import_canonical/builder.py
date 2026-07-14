@@ -1,3 +1,5 @@
+"""Build canonical transcript documents from adapter output."""
+
 from __future__ import annotations
 
 import os

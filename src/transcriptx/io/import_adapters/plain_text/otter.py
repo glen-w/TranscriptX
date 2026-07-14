@@ -1,3 +1,5 @@
+"""Import adapter for Otter.ai plain-text transcripts."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.otter_adapter import OtterAdapter as LegacyOtterAdapter

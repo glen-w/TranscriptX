@@ -1,3 +1,5 @@
+"""Data models for corrections rules, candidates, and memory."""
+
 from __future__ import annotations
 
 from hashlib import sha1

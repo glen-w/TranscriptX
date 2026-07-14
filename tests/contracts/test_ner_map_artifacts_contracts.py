@@ -1,3 +1,5 @@
+"""Contract tests for ner map artifacts contracts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

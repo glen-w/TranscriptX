@@ -1,3 +1,5 @@
+"""Tests for group aggregation contracts."""
+
 from typing import Any
 
 from transcriptx.core.analysis.aggregation.emotion import aggregate_emotion_group

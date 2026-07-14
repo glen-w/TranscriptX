@@ -1,3 +1,5 @@
+"""Tests for aggregation registry branches."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Tests for exemplars."""
+
 from transcriptx.core.analysis.exemplars import SegmentRecord, compute_speaker_exemplars
 from transcriptx.core.utils.config import SpeakerExemplarsConfig
 

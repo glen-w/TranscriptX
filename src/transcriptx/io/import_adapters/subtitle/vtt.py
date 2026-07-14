@@ -1,3 +1,5 @@
+"""Import adapter for WebVTT subtitle files."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.vtt_adapter import VTTAdapter as LegacyVTTAdapter

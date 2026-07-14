@@ -1,3 +1,5 @@
+"""Tests for misc utils coverage."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

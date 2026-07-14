@@ -1,3 +1,5 @@
+"""Tests for settings draft state contracts."""
+
 from __future__ import annotations
 
 from transcriptx.web.ui.settings.configuration_panel import (

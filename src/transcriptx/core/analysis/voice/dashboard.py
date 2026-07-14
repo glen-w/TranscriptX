@@ -1,3 +1,5 @@
+"""Prosody dashboard analysis aggregating headline voice features."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

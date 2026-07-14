@@ -1,3 +1,5 @@
+"""Tests for profile manager guardrails."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Tests for group row writer."""
+
 from pathlib import Path
 
 from transcriptx.core.output.group_row_writer import write_row_outputs  # type: ignore[import]

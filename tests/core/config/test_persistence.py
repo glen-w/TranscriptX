@@ -1,3 +1,5 @@
+"""Tests for config persistence and round-trip loading."""
+
 import transcriptx.core.config.persistence as persistence
 from transcriptx.core.utils.config.main import TranscriptXConfig as MainConfig
 

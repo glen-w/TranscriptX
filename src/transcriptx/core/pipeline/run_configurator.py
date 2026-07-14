@@ -1,3 +1,5 @@
+"""Resolve effective configuration for a pipeline run."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,3 +1,5 @@
+"""Tests for highlights."""
+
 from transcriptx.core.analysis.highlights.core import (  # type: ignore[import-untyped]
     SegmentLite,
     compute_highlights,

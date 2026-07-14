@@ -1,3 +1,5 @@
+"""Tests for slug manager additional."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""Tests for activation write guardrails."""
+
 from __future__ import annotations
 
 import ast

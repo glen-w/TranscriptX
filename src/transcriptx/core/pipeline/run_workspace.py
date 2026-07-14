@@ -1,3 +1,5 @@
+"""Allocate and manage per-run workspace directories."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

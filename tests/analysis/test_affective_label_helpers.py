@@ -1,3 +1,5 @@
+"""Tests for affective label helpers."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

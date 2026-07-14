@@ -1,3 +1,5 @@
+"""Tests for srt writer."""
+
 from pathlib import Path
 
 from transcriptx.io.srt_parser import parse_srt_file, parse_srt_timestamp

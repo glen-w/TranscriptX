@@ -1,3 +1,5 @@
+"""Tests for run orchestrator behavior characterization."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

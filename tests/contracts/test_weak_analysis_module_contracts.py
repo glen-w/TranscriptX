@@ -1,3 +1,5 @@
+"""Contract tests for weak analysis module contracts."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

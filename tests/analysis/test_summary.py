@@ -1,3 +1,5 @@
+"""Tests for summary."""
+
 from transcriptx.core.analysis.highlights.core import (  # type: ignore[import-untyped]
     SegmentLite,
 )

@@ -1,3 +1,5 @@
+"""Managed-import re-exports for transcript sidecar helpers."""
+
 from transcriptx.io.import_metadata_sidecar import (  # noqa: F401
     ValidationResult as ManagedTranscriptValidation,
     sidecar_path_for_transcript,

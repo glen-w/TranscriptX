@@ -12,6 +12,7 @@ from transcriptx.core.analysis.llm_support.runtime import (
     LLMRuntime,
     build_input_coverage,
     build_ollama_analysis_client,
+    get_llm_effort_profiles,
     require_ollama_analysis,
     resolve_llm_runtime,
 )
@@ -217,3 +218,65 @@ def test_input_coverage_keys_golden() -> None:
         "input_chars_used": 60,
         "input_coverage_ratio": 0.6,
     }
+
+
+@pytest.mark.unit
+def test_require_ollama_analysis_unsupported_provider_raises() -> None:
+    with pytest.raises(LLMConfigurationError, match="Unsupported LLM provider"):
+        require_ollama_analysis(_llm_cfg(provider="azure"))
+
+
+@pytest.mark.unit
+def test_get_llm_effort_profiles_returns_defensive_copy() -> None:
+    profiles = get_llm_effort_profiles()
+    assert profiles == BUILTIN_LLM_EFFORT_PROFILES
+    profiles.pop("low")
+    assert "low" in BUILTIN_LLM_EFFORT_PROFILES
+
+
+@pytest.mark.unit
+def test_input_coverage_truncated_without_used_field_reports_zero() -> None:
+    coverage = build_input_coverage(
+        transcript_block="abcdef",
+        trunc_meta={"truncated": True},
+    )
+    assert coverage == {
+        "input_truncated": True,
+        "input_chars_total": 6,
+        "input_chars_used": 0,
+        "input_coverage_ratio": 0.0,
+    }
+
+
+@pytest.mark.unit
+def test_input_coverage_untruncated_without_used_field_reports_full() -> None:
+    coverage = build_input_coverage(
+        transcript_block="abcdef",
+        trunc_meta={"truncated": False},
+    )
+    assert coverage == {
+        "input_truncated": False,
+        "input_chars_total": 6,
+        "input_chars_used": 6,
+        "input_coverage_ratio": 1.0,
+    }
+
+
+@pytest.mark.unit
+def test_input_coverage_empty_transcript_ratio_is_one() -> None:
+    coverage = build_input_coverage(transcript_block="", trunc_meta={})
+    assert coverage["input_chars_total"] == 0
+    assert coverage["input_coverage_ratio"] == 1.0
+
+
+@pytest.mark.unit
+def test_input_coverage_used_capped_at_ratio_one() -> None:
+    coverage = build_input_coverage(
+        transcript_block="ab",
+        trunc_meta={
+            "truncated": False,
+            "transcript_chars_total": 10,
+            "transcript_chars_used": 20,
+        },
+    )
+    assert coverage["input_coverage_ratio"] == 1.0

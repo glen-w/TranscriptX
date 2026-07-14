@@ -1,3 +1,5 @@
+"""Tests for transcript page segments tooltip."""
+
 from __future__ import annotations
 
 

@@ -1,3 +1,5 @@
+"""Tests for ner group aggregation."""
+
 from typing import Any
 
 from transcriptx.core.analysis.aggregation import ner as ner_aggregation  # type: ignore[import]

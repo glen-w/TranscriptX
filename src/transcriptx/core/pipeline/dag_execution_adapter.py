@@ -1,3 +1,5 @@
+"""Execute a single DAG module and apply side effects."""
+
 from __future__ import annotations
 
 import threading

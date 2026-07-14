@@ -1,3 +1,5 @@
+"""Plan DAG execution order from selected modules."""
+
 from __future__ import annotations
 
 import hashlib

@@ -1,3 +1,5 @@
+"""Tests for pipeline layering contracts."""
+
 from __future__ import annotations
 
 from transcriptx.core.pipeline.contracts import (

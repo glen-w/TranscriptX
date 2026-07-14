@@ -1,3 +1,5 @@
+"""Shared types for DAG module execution outcomes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

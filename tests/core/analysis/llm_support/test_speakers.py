@@ -67,3 +67,54 @@ def test_is_named_speaker_eligible_respects_named_speaker_keys() -> None:
         is_named_speaker_eligible_for_llm("Bob", "SPEAKER_02", runtime_flags=flags)
         is False
     )
+
+
+@pytest.mark.unit
+def test_is_named_speaker_eligible_alias_maps_display_to_named_key() -> None:
+    flags = {
+        "named_speaker_keys": {"canonical_alice"},
+        "speaker_key_aliases": {"Alice": "canonical_alice"},
+    }
+    assert (
+        is_named_speaker_eligible_for_llm("Alice", "SPEAKER_00", runtime_flags=flags)
+        is True
+    )
+
+
+@pytest.mark.unit
+def test_is_named_speaker_eligible_non_dict_aliases_falls_back_to_key() -> None:
+    flags = {
+        "named_speaker_keys": {"SPEAKER_00"},
+        "speaker_key_aliases": ["not", "a", "dict"],
+    }
+    assert (
+        is_named_speaker_eligible_for_llm("Alice", "SPEAKER_00", runtime_flags=flags)
+        is True
+    )
+
+
+@pytest.mark.unit
+def test_collect_named_speaker_groups_skips_speaker_with_only_empty_text() -> None:
+    segments = [
+        {"speaker": "Alice", "text": "Hello."},
+        {"speaker": "Bob", "text": "   "},
+    ]
+    groups = collect_named_speaker_groups_for_llm(segments, runtime_flags={})
+    assert [g["display_name"] for g in groups] == ["Alice"]
+
+
+@pytest.mark.unit
+def test_collect_named_speaker_groups_entry_shape() -> None:
+    groups = collect_named_speaker_groups_for_llm(
+        [{"speaker": "Alice", "text": "Hello."}],
+        runtime_flags={},
+    )
+    (entry,) = groups
+    assert set(entry.keys()) == {
+        "display_name",
+        "speaker_key",
+        "grouping_key",
+        "segments",
+    }
+    assert entry["speaker_key"] == str(entry["grouping_key"])
+    assert entry["segments"] == [{"speaker": "Alice", "text": "Hello."}]

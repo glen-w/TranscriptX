@@ -1,3 +1,5 @@
+"""Tests for run orchestrator helpers."""
+
 from __future__ import annotations
 
 from transcriptx.core.pipeline.contracts import ErrorKind, PersistenceOutcome

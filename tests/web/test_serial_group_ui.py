@@ -1,3 +1,5 @@
+"""Tests for serial group ui."""
+
 from __future__ import annotations
 
 from pathlib import Path

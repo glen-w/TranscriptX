@@ -1,3 +1,5 @@
+"""Pipeline module that materializes per-segment voice features."""
+
 from __future__ import annotations
 
 from typing import Any, Dict

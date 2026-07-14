@@ -1,3 +1,5 @@
+"""Integration tests for playwright docker runtime integration."""
+
 from __future__ import annotations
 
 import subprocess

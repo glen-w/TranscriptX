@@ -1,3 +1,5 @@
+"""Tests for export index generation."""
+
 from __future__ import annotations
 
 import json

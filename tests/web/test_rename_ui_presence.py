@@ -1,3 +1,5 @@
+"""Tests that rename UI controls are present where expected."""
+
 from __future__ import annotations
 
 from pathlib import Path

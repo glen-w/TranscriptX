@@ -1,3 +1,5 @@
+"""Pitch and energy contour extraction for voice analysis."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,5 @@
+"""Tests for group browser view."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

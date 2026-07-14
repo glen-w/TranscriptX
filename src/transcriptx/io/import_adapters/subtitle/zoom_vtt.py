@@ -1,3 +1,5 @@
+"""Import adapter for Zoom WebVTT subtitle exports."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.zoom_adapter import ZoomAdapter as LegacyZoomAdapter

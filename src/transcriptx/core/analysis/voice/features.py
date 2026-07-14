@@ -1,3 +1,5 @@
+"""Low-level acoustic feature extraction helpers for voice analysis."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Tuple

@@ -1,3 +1,5 @@
+"""Tests for the web rename service."""
+
 from __future__ import annotations
 
 from pathlib import Path

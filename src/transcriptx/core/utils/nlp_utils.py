@@ -1,3 +1,5 @@
+"""Shared NLP utilities: stopwords, spaCy loading, and TIC phrases."""
+
 from __future__ import annotations
 
 import json

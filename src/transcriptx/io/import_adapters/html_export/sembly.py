@@ -1,3 +1,5 @@
+"""Import adapter for Sembly HTML exports."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.sembly_adapter import SemblyAdapter as LegacySemblyAdapter

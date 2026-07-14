@@ -1,3 +1,5 @@
+"""Resolve, fingerprint, and read audio segments for voice analysis."""
+
 from __future__ import annotations
 
 import hashlib

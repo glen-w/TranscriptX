@@ -1,3 +1,5 @@
+"""Unit tests for audit guardrails."""
+
 import re
 from pathlib import Path
 

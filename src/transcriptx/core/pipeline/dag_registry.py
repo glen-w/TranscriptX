@@ -1,3 +1,5 @@
+"""Registry of DAG nodes built from the module registry."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

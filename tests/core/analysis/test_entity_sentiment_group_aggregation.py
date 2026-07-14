@@ -1,3 +1,5 @@
+"""Tests for entity sentiment group aggregation."""
+
 from transcriptx.core.analysis.aggregation.entity_sentiment import (  # type: ignore[import]
     aggregate_entity_sentiment_group,
 )

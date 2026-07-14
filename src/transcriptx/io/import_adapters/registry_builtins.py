@@ -1,3 +1,5 @@
+"""Register built-in import adapters on the default registry."""
+
 from __future__ import annotations
 
 from transcriptx.io.import_adapters.html_export.sembly import SemblyImportAdapter

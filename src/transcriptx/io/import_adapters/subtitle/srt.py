@@ -1,3 +1,5 @@
+"""Import adapter for SRT subtitle files."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.srt_adapter import SRTAdapter as LegacySRTAdapter

@@ -1,3 +1,5 @@
+"""Contract tests for conftest."""
+
 from __future__ import annotations
 
 import warnings

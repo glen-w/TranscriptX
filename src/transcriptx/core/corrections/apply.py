@@ -1,3 +1,5 @@
+"""Apply planned correction replacements to transcript segments."""
+
 from __future__ import annotations
 
 import re

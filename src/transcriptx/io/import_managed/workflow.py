@@ -1,3 +1,5 @@
+"""Managed import workflow that admits transcripts into library storage."""
+
 from __future__ import annotations
 
 import json

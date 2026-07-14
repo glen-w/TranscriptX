@@ -1,3 +1,5 @@
+"""Validate canonical transcript documents before admission."""
+
 from __future__ import annotations
 
 from typing import Mapping, Any

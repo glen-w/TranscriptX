@@ -1,3 +1,5 @@
+"""Tests for run visibility filters."""
+
 from pathlib import Path
 
 

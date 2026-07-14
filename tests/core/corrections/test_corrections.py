@@ -1,3 +1,5 @@
+"""Tests for corrections."""
+
 import tempfile
 from pathlib import Path
 

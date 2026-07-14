@@ -1,3 +1,5 @@
+"""Tests for router behavior."""
+
 from __future__ import annotations
 
 import transcriptx.web.router as router

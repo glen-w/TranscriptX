@@ -1,3 +1,5 @@
+"""Aggregate arousal, valence, and mismatch scores from voice features."""
+
 from __future__ import annotations
 
 from typing import Any, Tuple

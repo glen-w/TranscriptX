@@ -1,3 +1,5 @@
+"""Import adapter for Fireflies plain-text transcripts."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.fireflies_adapter import (

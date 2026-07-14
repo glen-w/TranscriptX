@@ -1,3 +1,5 @@
+"""Import adapter for generic plain-text transcripts."""
+
 from __future__ import annotations
 
 from transcriptx.io.adapters.generic_diarised_text_adapter import (

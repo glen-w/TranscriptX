@@ -1,3 +1,5 @@
+"""Release/packaging tests for packaging install smoke."""
+
 from __future__ import annotations
 
 import os

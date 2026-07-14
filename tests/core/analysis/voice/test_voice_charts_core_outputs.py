@@ -1,3 +1,5 @@
+"""Tests for voice charts core outputs."""
+
 import json
 from pathlib import Path
 

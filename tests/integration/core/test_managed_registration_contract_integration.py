@@ -1,3 +1,5 @@
+"""Integration tests for managed transcript registration contracts."""
+
 from __future__ import annotations
 
 import shutil

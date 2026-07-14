@@ -1,3 +1,5 @@
+"""Tests for modules panel."""
+
 from __future__ import annotations
 
 from transcriptx.web.transcript_viewer.modules_panel import build_module_panel_layout

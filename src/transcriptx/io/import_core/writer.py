@@ -1,3 +1,5 @@
+"""Writers for canonical and atomic transcript persistence."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

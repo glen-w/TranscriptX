@@ -1,3 +1,5 @@
+"""Language-code helpers and multi-language transcript path resolution."""
+
 from __future__ import annotations
 
 import re

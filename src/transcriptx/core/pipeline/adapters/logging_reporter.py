@@ -1,3 +1,5 @@
+"""Reporter sink that logs pipeline progress via logging."""
+
 from __future__ import annotations
 
 from transcriptx.core.pipeline.ports import ReporterSink

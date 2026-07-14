@@ -1,3 +1,5 @@
+"""Tests for pipeline managed transcript gate."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

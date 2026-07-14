@@ -1,3 +1,5 @@
+"""Detect whether a transcript has resolvable associated audio."""
+
 from __future__ import annotations
 
 from pathlib import Path

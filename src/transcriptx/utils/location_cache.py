@@ -1,3 +1,5 @@
+"""Persistent geocoding cache for location enrichment."""
+
 # src/transcriptx/utils/location_cache.py
 
 import json

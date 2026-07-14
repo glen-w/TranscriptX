@@ -1,3 +1,5 @@
+"""Base helpers bridging legacy adapters into the import registry."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

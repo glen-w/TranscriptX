@@ -1,3 +1,5 @@
+"""Rich/console prompts used by interactive IO flows."""
+
 import os
 import sys
 from pathlib import Path

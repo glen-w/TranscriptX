@@ -1,3 +1,5 @@
+"""Load or compute per-segment voice features with cache keys."""
+
 from __future__ import annotations
 
 import hashlib

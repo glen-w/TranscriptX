@@ -1,3 +1,5 @@
+"""Tests for voice extract heavy."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

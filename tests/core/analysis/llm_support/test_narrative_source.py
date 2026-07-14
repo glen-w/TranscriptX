@@ -9,6 +9,7 @@ import pytest
 from transcriptx.core.analysis.llm_module_errors import (
     LLM_DEPENDENCY_MISSING,
     ModuleDependencyMissingError,
+    ModuleEmptyInputError,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_text
 from transcriptx.core.analysis.llm_support.narrative_source import (
@@ -100,6 +101,177 @@ def test_resolve_summary_payload_rejects_unregistered_disk_file(tmp_path) -> Non
     )()
     with pytest.raises(ModuleDependencyMissingError):
         resolve_summary_payload(context)
+
+
+def _ctx(tmp_path, stored=None, base: str = "mini"):
+    return type(
+        "Ctx",
+        (),
+        {
+            "get_analysis_result": lambda self, name: stored,
+            "get_base_name": lambda self: base,
+            "get_transcript_dir": lambda self: str(tmp_path),
+        },
+    )()
+
+
+def _write_summary_artifact(tmp_path, payload, base: str = "mini") -> str:
+    summary_dir = tmp_path / "summary" / "data" / "global"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    rel = f"summary/data/global/{base}_summary.json"
+    (summary_dir / f"{base}_summary.json").write_text(
+        json.dumps(payload), encoding="utf-8"
+    )
+    return rel
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_corrupt_artifacts_meta_falls_through(
+    tmp_path,
+) -> None:
+    _write_summary_artifact(tmp_path, {"overview": {"paragraph": "on disk"}})
+    meta_dir = tmp_path / ".transcriptx"
+    meta_dir.mkdir(parents=True)
+    (meta_dir / "artifacts_meta.json").write_text("{not json", encoding="utf-8")
+
+    with pytest.raises(ModuleDependencyMissingError):
+        resolve_summary_payload(_ctx(tmp_path))
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_registered_but_empty_signal_raises(tmp_path) -> None:
+    rel = _write_summary_artifact(
+        tmp_path, {"overview": {}, "key_themes": {"bullets": []}}
+    )
+    meta_dir = tmp_path / ".transcriptx"
+    meta_dir.mkdir(parents=True)
+    (meta_dir / "artifacts_meta.json").write_text(
+        json.dumps({rel: {"module": "summary"}}), encoding="utf-8"
+    )
+
+    with pytest.raises(ModuleEmptyInputError):
+        resolve_summary_payload(_ctx(tmp_path))
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_registered_meta_but_missing_file(tmp_path) -> None:
+    rel = "summary/data/global/mini_summary.json"
+    meta_dir = tmp_path / ".transcriptx"
+    meta_dir.mkdir(parents=True)
+    (meta_dir / "artifacts_meta.json").write_text(
+        json.dumps({rel: {"module": "summary"}}), encoding="utf-8"
+    )
+
+    with pytest.raises(ModuleDependencyMissingError) as exc:
+        resolve_summary_payload(_ctx(tmp_path))
+    assert exc.value.error_context == {"dependency": "summary", "state": "missing"}
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_from_manifest_registration(tmp_path) -> None:
+    rel = _write_summary_artifact(tmp_path, {"overview": {"paragraph": "manifest"}})
+    manifest = {
+        "manifest_type": "artifact_manifest",
+        "artifacts": [
+            {"module": "summary", "rel_path": rel},
+            {"module": "stats", "rel_path": "stats/data/x.json"},
+            "junk-entry",
+        ],
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    resolved = resolve_summary_payload(_ctx(tmp_path))
+    assert resolved["overview"]["paragraph"] == "manifest"
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_manifest_without_summary_module(tmp_path) -> None:
+    _write_summary_artifact(tmp_path, {"overview": {"paragraph": "unregistered"}})
+    manifest = {
+        "manifest_type": "artifact_manifest",
+        "artifacts": [{"module": "stats", "rel_path": "stats/data/x.json"}],
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ModuleDependencyMissingError):
+        resolve_summary_payload(_ctx(tmp_path))
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_invalid_run_results_falls_through(tmp_path) -> None:
+    _write_summary_artifact(tmp_path, {"overview": {"paragraph": "x"}})
+    (tmp_path / "run_results.json").write_text("{not json", encoding="utf-8")
+
+    with pytest.raises(ModuleDependencyMissingError):
+        resolve_summary_payload(_ctx(tmp_path))
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_from_run_results_projection(tmp_path) -> None:
+    _write_summary_artifact(tmp_path, {"overview": {"paragraph": "via run_results"}})
+    run_results = {
+        "schema_version": 2,
+        "run_id": "r1",
+        "transcript_key": "mini",
+        "modules_enabled": ["summary"],
+        "modules_run": ["summary"],
+        "modules_skipped": [],
+        "modules_failed": [],
+        "errors": [],
+    }
+    (tmp_path / "run_results.json").write_text(
+        json.dumps(run_results), encoding="utf-8"
+    )
+
+    resolved = resolve_summary_payload(_ctx(tmp_path))
+    assert resolved["overview"]["paragraph"] == "via run_results"
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_run_results_without_summary_run(tmp_path) -> None:
+    _write_summary_artifact(tmp_path, {"overview": {"paragraph": "stale"}})
+    run_results = {
+        "schema_version": 2,
+        "run_id": "r1",
+        "transcript_key": "mini",
+        "modules_enabled": ["summary"],
+        "modules_run": [],
+        "modules_skipped": [{"module": "summary", "reason": "gated"}],
+        "modules_failed": [],
+        "errors": [],
+    }
+    (tmp_path / "run_results.json").write_text(
+        json.dumps(run_results), encoding="utf-8"
+    )
+
+    with pytest.raises(ModuleDependencyMissingError):
+        resolve_summary_payload(_ctx(tmp_path))
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_stored_payload_with_content(tmp_path) -> None:
+    stored = {"status": "success", "payload": {"overview": {"paragraph": "stored"}}}
+    resolved = resolve_summary_payload(_ctx(tmp_path, stored=stored))
+    assert resolved == {"overview": {"paragraph": "stored"}}
+
+
+@pytest.mark.unit
+def test_resolve_summary_payload_stored_payload_without_signal_raises(
+    tmp_path,
+) -> None:
+    stored = {"status": "success", "payload": {"overview": {}}}
+    with pytest.raises(ModuleEmptyInputError):
+        resolve_summary_payload(_ctx(tmp_path, stored=stored))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("state", ["skipped", "blocked"])
+def test_resolve_summary_payload_skipped_or_blocked_dependency(
+    tmp_path, state
+) -> None:
+    with pytest.raises(ModuleDependencyMissingError) as exc:
+        resolve_summary_payload(_ctx(tmp_path, stored={"status": state}))
+    assert exc.value.error_context == {"dependency": "summary", "state": state}
 
 
 @pytest.mark.unit

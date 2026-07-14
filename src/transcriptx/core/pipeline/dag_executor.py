@@ -1,3 +1,5 @@
+"""DAG executor state machine for ordered module runs."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

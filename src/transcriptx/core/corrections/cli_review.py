@@ -1,3 +1,5 @@
+"""Interactive CLI review of correction candidates."""
+
 from __future__ import annotations
 
 from typing import List, Optional

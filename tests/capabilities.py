@@ -1,3 +1,5 @@
+"""Shared test capability / skip markers for optional dependency gates."""
+
 from __future__ import annotations
 
 import os

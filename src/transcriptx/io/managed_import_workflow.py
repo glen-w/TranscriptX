@@ -1,3 +1,5 @@
+"""Public managed-import workflow entry and result types."""
+
 from __future__ import annotations
 
 import json

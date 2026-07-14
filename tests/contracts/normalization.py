@@ -1,3 +1,5 @@
+"""Shared normalization helpers for contract tests."""
+
 from __future__ import annotations
 
 import csv

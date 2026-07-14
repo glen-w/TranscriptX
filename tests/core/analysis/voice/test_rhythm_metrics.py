@@ -1,3 +1,5 @@
+"""Tests for rhythm metrics."""
+
 from transcriptx.core.analysis.voice.rhythm import npvi, varco
 
 
