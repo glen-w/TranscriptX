@@ -88,16 +88,13 @@ class EntitySentimentAnalysis(AnalysisModule):
         Returns:
             Dictionary containing entity sentiment analysis results
         """
+        # ner_data retained for API compatibility; per-segment NER is used instead
+        # of a pipeline NER reuse path (the previous stub never populated a map).
+        _ = ner_data
+
         # Initialize data structures
         entity_mentions = defaultdict(list)
         entity_speaker_mentions = defaultdict(lambda: defaultdict(list))
-
-        # Build entity map from NER data if available
-        entity_map = {}
-        if ner_data and isinstance(ner_data, dict):
-            # Extract entity information from NER results
-            # This is a simplified approach - full implementation would parse NER results
-            pass
 
         # Build sentiment map from sentiment data if available
         sentiment_map = {}
@@ -132,12 +129,8 @@ class EntitySentimentAnalysis(AnalysisModule):
             if not speaker or not is_named_speaker(speaker):
                 continue
 
-            # Extract entities from this segment
-            # Use cached NER data if available, otherwise compute
-            if i in entity_map:
-                entities = entity_map[i]
-            else:
-                entities = extract_named_entities(text)
+            # Extract entities from this segment (per-segment NER; no pipeline reuse)
+            entities = extract_named_entities(text)
 
             # Calculate sentiment for this segment
             # Use cached sentiment data if available, otherwise compute

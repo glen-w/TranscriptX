@@ -51,9 +51,13 @@ def render_data_artifact_preview(ctx: BlockContext, _placement: BlockPlacement) 
     if ctx.run_root is None:
         st.info("Select a run to preview data artifacts.")
         return
-    selected_id = st.session_state.get("data_artifact_selector")
+    from transcriptx.web.state import ARTIFACTS_KEY_PREVIEW_ID
+
+    selected_id = st.session_state.get(
+        ARTIFACTS_KEY_PREVIEW_ID
+    ) or st.session_state.get("data_artifact_selector")
     if not selected_id:
-        st.caption("Select a data artifact in the browser above.")
+        st.caption("Select a data artifact in Artifacts → Preview.")
         return
     selected = next((a for a in ctx.artifacts if a.id == selected_id), None)
     if selected is None:

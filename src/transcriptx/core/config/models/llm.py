@@ -6,8 +6,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-_HIDDEN_ADVANCED = {"advanced": True, "sensitivity": "hidden"}
-
 
 class LLMSettingsModel(BaseModel):
     """Canonical field definitions for LLM provider configuration."""
@@ -27,11 +25,6 @@ class LLMSettingsModel(BaseModel):
     base_url: str | None = Field(
         default=None,
         description="Provider base URL (e.g. http://localhost:11434/).",
-    )
-    api_key: str | None = Field(
-        default=None,
-        description="Optional API key for providers that require authentication.",
-        json_schema_extra=_HIDDEN_ADVANCED,
     )
     request_timeout: float = Field(
         default=1350.0,

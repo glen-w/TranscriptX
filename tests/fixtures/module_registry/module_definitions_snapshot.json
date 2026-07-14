@@ -1,6 +1,5 @@
 {
   "module_order": [
-    "corrections",
     "acts",
     "conversation_loops",
     "contagion",
@@ -44,19 +43,6 @@
     "voice_contours"
   ],
   "modules": {
-    "corrections": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Semi-automatic transcription accuracy tuning",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "exclude_from_default": true,
-      "post_processing_only": true,
-      "requirements": [
-        "segments"
-      ],
-      "supports_group": false
-    },
     "acts": {
       "category": "medium",
       "dependencies": [],

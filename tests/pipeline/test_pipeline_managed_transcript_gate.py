@@ -26,7 +26,6 @@ def _patch_minimal_single_run_dependencies(monkeypatch: pytest.MonkeyPatch) -> N
     def _fake_from_segments(
         cls: type,
         _segments: list,
-        speaker_identity_hints: object = None,
     ) -> SimpleNamespace:
         return SimpleNamespace(
             content_hash="content-hash",

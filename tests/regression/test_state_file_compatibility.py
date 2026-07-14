@@ -225,10 +225,18 @@ class TestPartialMigrationCompatibility:
         with open(state_file, "w") as f:
             json.dump(old_state, f)
 
-        # New code should be able to read it
+        # New code should be able to read it (may migrate path keys -> UUID keys).
         new_state = load_processing_state(validate=True)
         assert "processed_files" in new_state
-        assert "old_file" in new_state["processed_files"]
+        files = new_state["processed_files"]
+        assert "old_file" in files or any(
+            (
+                entry.get("transcript_path") == "/path/to/old.json"
+                or entry.get("original_transcript_path") == "/path/to/old.json"
+            )
+            for entry in files.values()
+            if isinstance(entry, dict)
+        )
 
     def test_new_write_old_read(self, tmp_path, monkeypatch):
         """New code writes, old code reads (forward compatibility)."""
@@ -340,10 +348,17 @@ class TestStateRecoveryBehavior:
         }
         save_processing_state(state)
 
-        # Load and validate - paths should be normalized
+        # Load and validate - paths should be normalized / keys may migrate to UUIDs
         loaded = load_processing_state(validate=True)
 
         # Should have normalized paths
         assert "processed_files" in loaded
-        # Path normalization depends on implementation
-        assert "test" in loaded["processed_files"]
+        files = loaded["processed_files"]
+        assert "test" in files or any(
+            (
+                entry.get("transcript_path") == "./relative/path.json"
+                or entry.get("original_transcript_path") == "./relative/path.json"
+            )
+            for entry in files.values()
+            if isinstance(entry, dict)
+        )

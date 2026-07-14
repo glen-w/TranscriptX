@@ -36,14 +36,30 @@ def test_update_analysis_state_partial_run():
 @pytest.mark.unit
 def test_load_processing_state_when_locked(tmp_path, monkeypatch):
     """Locked state file should return empty state to avoid corruption."""
+    import threading
+
     state_file = tmp_path / "processing_state.json"
     state_file.write_text(
         json.dumps({"processed_files": {"file": {"status": "completed"}}})
     )
     monkeypatch.setattr(processing_state, "PROCESSING_STATE_FILE", state_file)
 
-    with FileLock(state_file, blocking=True) as lock:
-        assert lock.acquired is True
+    held = threading.Event()
+    release = threading.Event()
+
+    def _hold_lock() -> None:
+        with FileLock(state_file, blocking=True) as lock:
+            assert lock.acquired is True
+            held.set()
+            release.wait(timeout=5)
+
+    holder = threading.Thread(target=_hold_lock, daemon=True)
+    holder.start()
+    assert held.wait(timeout=2)
+    try:
         loaded = processing_state.load_processing_state(validate=False)
+    finally:
+        release.set()
+        holder.join(timeout=2)
 
     assert loaded == {"processed_files": {}}

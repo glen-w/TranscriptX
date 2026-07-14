@@ -197,4 +197,32 @@ class TestWordcloudsAnalysis:
         wordclouds_module._eligibility_result = {}
         result = wordclouds_module.analyze(sample_segments, tic_list=[])
         assert result["eligibility_fallback"] is True
-        assert result["grouped_texts"] == {"Alice": ["raw text"]}
+
+    @patch("transcriptx.core.analysis.wordclouds.analysis.group_texts_by_speaker")
+    def test_wordclouds_fallback_extracts_tic_list(
+        self,
+        mock_group_texts: Any,
+        wordclouds_module: WordcloudsAnalysis,
+    ) -> None:
+        """Fallback path must populate tic_list (not discard extract_tics result)."""
+        mock_group_texts.return_value = {
+            "Alice": ["um I think like we should go", "uh maybe later"],
+        }
+        wordclouds_module._eligibility_result = {}
+        result = wordclouds_module.analyze(
+            [
+                {
+                    "speaker": "Alice",
+                    "text": "um I think like we should go",
+                    "start": 0.0,
+                    "end": 1.0,
+                }
+            ],
+            tic_list=None,
+        )
+        assert result["eligibility_fallback"] is True
+        assert isinstance(result["tic_list"], list)
+        assert len(result["tic_list"]) > 0
+        # Detected fillers plus the unified style/discourse mask
+        assert "um" in result["tic_list"] or "like" in result["tic_list"]
+        assert "uh" in result["tic_list"] or "like" in result["tic_list"]

@@ -61,8 +61,9 @@ def test_corrections_studio_file_backed_roundtrip(
 
     generated = svc.generate_candidates(session.session_id, force=True)
     listed = svc.list_candidates(session.session_id, offset=0, limit=500)
-    assert isinstance(generated, list)
-    assert listed == generated
+    assert hasattr(generated, "candidates")
+    assert generated.commit_aborted is False
+    assert listed == generated.candidates
 
     if listed:
         svc.record_decision(
@@ -77,13 +78,18 @@ def test_corrections_studio_file_backed_roundtrip(
         )
 
     preview = svc.compute_preview(session.session_id)
-    assert isinstance(preview, dict)
+    from transcriptx.services.corrections_studio.schema import (
+        StudioExportResult,
+        StudioPreviewResult,
+    )
+
+    assert isinstance(preview, StudioPreviewResult)
 
     export_path = tmp_path / "exported.json"
     export_result = svc.apply_and_export(
         session.session_id, export_path=str(export_path)
     )
-    assert isinstance(export_result, dict)
+    assert isinstance(export_result, StudioExportResult)
     assert export_path.exists()
 
     # File-backed persistence contract: session snapshot + index entries exist under corrections root.

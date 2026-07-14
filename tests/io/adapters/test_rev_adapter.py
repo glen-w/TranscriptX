@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from transcriptx.io.adapters.rev_adapter import RevAdapter
+from transcriptx.io.import_adapters.plain_text.rev_engine import RevAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "rev"

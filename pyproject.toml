@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.3.7"
+version = "0.3.8"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -245,7 +245,7 @@ module = [
     "transcriptx.core.utils._path_core",
     "transcriptx.core.integration.error_handler",
     "transcriptx.core.data_extraction.base_extractor",
-    "transcriptx.io.adapters.sembly_adapter",
+    "transcriptx.io.import_adapters.html_export.sembly_engine",
     "transcriptx.utils.html_utils",
     "transcriptx.utils.error_handling",
     "transcriptx.utils.location_cache",

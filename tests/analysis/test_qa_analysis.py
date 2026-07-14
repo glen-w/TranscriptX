@@ -496,3 +496,70 @@ class TestQAAnalysis:
 
         assert 0.0 <= length_score <= 1.0
         # May be lower if answer is too long relative to question
+
+    def test_similarity_index_lookup_uses_pair_score(self, qa_module):
+        """Indexed semantic pairs replace hardcoded 0.5/0.7 placeholders."""
+        similarity_data = {
+            "cross_speaker_repetitions": [
+                {
+                    "segment1": {"index": 0, "start": 0.0, "text": "What time?"},
+                    "segment2": {"index": 1, "start": 2.5, "text": "At three."},
+                    "similarity": 0.91,
+                    "type": "cross",
+                }
+            ],
+            "speaker_repetitions": {},
+        }
+        index = qa_module._build_similarity_index(similarity_data)
+        question = {
+            "text": "What time?",
+            "index": 0,
+            "timestamp": 0.0,
+            "speaker_id": "Alice",
+        }
+        answer = {"text": "At three.", "start": 2.5, "speaker": "Bob"}
+        assert qa_module._lookup_pair_similarity(
+            question, answer, index, answer_index=1
+        ) == pytest.approx(0.91)
+
+        quality = qa_module._assess_response_quality(
+            question, answer, index, answer_index=1
+        )
+        assert quality["relevance"] == pytest.approx(0.91)
+
+        match = qa_module._calculate_match_score(
+            question, answer, response_time=2.5, similarity_index=index, answer_index=1
+        )
+        # time + sim + speaker-change contributions; sim term is 0.3 * 0.91
+        assert match == pytest.approx(
+            0.4 * (1.0 - 2.5 / qa_module.response_time_threshold) + 0.3 * 0.91 + 0.3
+        )
+
+    def test_similarity_miss_falls_back_to_lexical(self, qa_module):
+        """Presence of similarity payload without a matching pair uses lexical scoring."""
+        index = qa_module._build_similarity_index(
+            {"cross_speaker_repetitions": [], "speaker_repetitions": {}}
+        )
+        question = {
+            "text": "What time is the meeting?",
+            "index": 0,
+            "timestamp": 0.0,
+            "speaker_id": "Alice",
+        }
+        answer = {
+            "text": "The meeting is at 3 PM.",
+            "start": 2.5,
+            "speaker": "Bob",
+        }
+        assert (
+            qa_module._lookup_pair_similarity(question, answer, index, answer_index=1)
+            is None
+        )
+        quality = qa_module._assess_response_quality(
+            question, answer, index, answer_index=1
+        )
+        expected = qa_module._calculate_relevance(
+            question["text"].lower(), answer["text"].lower()
+        )
+        assert quality["relevance"] == pytest.approx(expected)
+        assert quality["relevance"] != pytest.approx(0.7)

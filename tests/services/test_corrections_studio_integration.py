@@ -56,11 +56,58 @@ class FakeCorrectionsSessionStore:
         *,
         timeout: int = 15,
     ) -> None:
-        _ = transcript_path, timeout
+        self.write_snapshot_and_event_batch(
+            transcript_path, session_dict, [event_obj], timeout=timeout
+        )
+
+    def write_snapshot_and_event_batch(
+        self,
+        transcript_path: str,
+        session_dict: Dict[str, Any],
+        event_objs: List[Dict[str, Any]],
+        *,
+        expected_last_event_sequence: Optional[int] = None,
+        expected_current_generation_id: Optional[int] = None,
+        check_generation_id: bool = False,
+        allocate_sequences: bool = False,
+        timeout: int = 15,
+        update_index: bool = True,
+    ) -> List[Dict[str, Any]]:
+        _ = (
+            transcript_path,
+            expected_current_generation_id,
+            check_generation_id,
+            timeout,
+            update_index,
+        )
         sid = str(session_dict["session_id"])
-        line = json.dumps(event_obj, ensure_ascii=False, separators=(",", ":"))
-        self._lines.setdefault(sid, []).append(line)
+        lines = self._lines.setdefault(sid, [])
+        last = 0
+        for line in lines:
+            try:
+                last = max(last, int(json.loads(line).get("event_sequence", 0)))
+            except Exception:
+                continue
+        if expected_last_event_sequence is not None and last != int(
+            expected_last_event_sequence
+        ):
+            from transcriptx.core.store.corrections_session_store import (
+                GenerationCommitConflict,
+            )
+
+            raise GenerationCommitConflict(
+                "seq conflict", reason="event_sequence_conflict"
+            )
+        next_seq = last + 1 if last else 1
+        assigned: List[Dict[str, Any]] = []
+        for i, raw in enumerate(event_objs):
+            ev = dict(raw)
+            if allocate_sequences:
+                ev["event_sequence"] = next_seq + i
+            assigned.append(ev)
+            lines.append(json.dumps(ev, ensure_ascii=False, separators=(",", ":")))
         self._blob_by_session[sid] = dict(session_dict)
+        return assigned
 
 
 def _cand(cid: str, gen: int, *, wrong: str = "w", right: str = "r") -> dict:
@@ -226,3 +273,66 @@ def test_record_decision_then_reconcile_from_events() -> None:
     assert doc.candidates[0].review_status == ReviewStatus.rejected
     assert len(doc.review_records) == 1
     assert doc.review_records[0].review_action == ReviewAction.reject
+
+
+@pytest.mark.unit
+def test_learn_record_decision_emits_rule_and_review_events() -> None:
+    events_pre = _events_session_candidates_review()[:2]
+    doc_pre = reconcile_snapshot_from_events(events=events_pre)
+    blob = session_document_to_persistence(doc_pre)
+    lines = [json.dumps(e.model_dump(mode="json")) for e in events_pre]
+
+    store = FakeCorrectionsSessionStore()
+    store.seed_events("sid", lines)
+    store.seed_blob("sid", blob)
+
+    session_svc = CorrectionsStudioSessionService(store=store)
+    review_svc = CorrectionsStudioReviewService(session_svc)
+    review_svc.record_decision(
+        "sid",
+        "c1",
+        "learn",
+        learn_rule_params={
+            "rule_hash": "rule_learn_1",
+            "rule_type": "phrase",
+            "wrong_variants_json": ["foo"],
+            "replacement_text": "bar",
+            "scope": "global",
+            "confidence": 0.8,
+            "auto_apply": False,
+        },
+    )
+
+    raw_lines = store.read_event_lines("sid")
+    types = [json.loads(ln)["event_type"] for ln in raw_lines]
+    assert "rule_state_changed" in types
+    assert "review_recorded" in types
+    appended = [json.loads(ln) for ln in raw_lines[2:]]
+    assert appended[0]["event_type"] == "rule_state_changed"
+    assert appended[1]["event_type"] == "review_recorded"
+    assert appended[1]["event_sequence"] == appended[0]["event_sequence"] + 1
+
+    doc = session_svc.reconcile_from_events("sid")
+    assert "rule_learn_1" in doc.rules
+    assert doc.review_records[-1].learn_rule_id == "rule_learn_1"
+    assert doc.review_records[-1].review_action == ReviewAction.learn
+
+
+@pytest.mark.unit
+def test_migrated_from_generation_id_survives_event_replay() -> None:
+    events = list(_events_session_candidates_review()[:2])
+    migrated = StudioEventEnvelope(
+        session_id="sid",
+        event_type="review_recorded",
+        event_sequence=3,
+        generation_id=1,
+        payload={
+            "generation_id": 1,
+            "candidate_id": "c1",
+            "review_action": "accept",
+            "apply_scope": "all",
+            "migrated_from_generation_id": 1,
+        },
+    )
+    doc = reconcile_snapshot_from_events(events=events + [migrated])
+    assert any(r.migrated_from_generation_id == 1 for r in doc.review_records)

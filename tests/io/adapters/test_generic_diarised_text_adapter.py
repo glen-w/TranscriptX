@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.io.adapters.generic_diarised_text_adapter import (
+from transcriptx.io.import_adapters.plain_text.generic_text_engine import (
     GenericDiarisedTextAdapter,
 )
 from transcriptx.io.intermediate_transcript import IntermediateTranscript

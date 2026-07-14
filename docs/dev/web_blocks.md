@@ -15,7 +15,7 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 
 1. Implement `render_*` in `web/blocks/implementations/` — adapt an existing page renderer; do not duplicate `ArtifactService` logic.
 2. Register in `web/blocks/builtin.py`.
-3. Add placement to a preset under `web/layouts/presets/`.
+3. Add placement to a curated preset under `web/layouts/presets/` (the built-in `all` layout picks up new blocks automatically).
 4. Add a smoke test under `tests/web/blocks/`.
 
 ## Insights blocks for new analysis modules

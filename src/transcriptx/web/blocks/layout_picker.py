@@ -11,9 +11,10 @@ from transcriptx.web.blocks.session_context import (
 from transcriptx.web.layouts.store import LayoutProfileStore
 
 _LAYOUT_LABELS = {
-    "default": "Default",
+    "default": "Standard",
     "executive": "Executive",
     "developer_debug": "Developer debug",
+    "all": "All",
 }
 
 

@@ -70,6 +70,85 @@ class FuzzySkippedReason(str, Enum):
     not_applicable = "not_applicable"
 
 
+class CandidateSource(str, Enum):
+    detector_memory = "detector_memory"
+    detector_acronym = "detector_acronym"
+    detector_consistency = "detector_consistency"
+    detector_fuzzy = "detector_fuzzy"
+    llm_discovery = "llm_discovery"
+
+
+class EvidenceStrength(str, Enum):
+    strong = "strong"
+    moderate = "moderate"
+    weak = "weak"
+    disputed = "disputed"
+
+
+class EvidenceSignal(str, Enum):
+    memory_match = "memory_match"
+    repeated_form = "repeated_form"
+    speaker_context = "speaker_context"
+    acronym_pattern = "acronym_pattern"
+    cross_segment_consistency = "cross_segment_consistency"
+    model_suggestion = "model_suggestion"
+    homophone_pattern = "homophone_pattern"
+
+
+class CandidateEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+
+    strength: EvidenceStrength = EvidenceStrength.moderate
+    signals: List[EvidenceSignal] = Field(default_factory=list)
+    rationale: str = ""
+    review_priority: Literal["high", "normal", "low", "inspect"] = "normal"
+    model_certainty_label: Optional[Literal["confident", "tentative"]] = None
+
+
+class LlmCandidateProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid", protected_namespaces=())
+
+    llm_run_id: str
+    prompt_version: str
+    schema_version: str
+    model: str
+    provider: str = "ollama"
+    effort: str
+    llm_request_sha256: str
+    chunk_index: Optional[int] = None
+    validation_status: Literal["valid"] = "valid"
+
+
+class ReviewMigrationSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    carried: int = 0
+    reset: int = 0
+    orphaned_prior: int = 0
+
+
+class LlmGenerationDiagnostics(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    attempted: bool = False
+    available: bool = False
+    outcome: Literal["skipped", "success", "partial", "failed", "unavailable"] = (
+        "skipped"
+    )
+    chunks_total: int = 0
+    chunks_succeeded: int = 0
+    chunks_failed: int = 0
+    candidates_raw: int = 0
+    candidates_grounded: int = 0
+    candidates_rejected: int = 0
+    candidates_after_merge: int = 0
+    overlapping_conflicts: int = 0
+    error_code: Optional[str] = None
+    budget_reason: Optional[str] = None
+    review_migration: Optional[ReviewMigrationSummary] = None
+
+
 # ---------------------------------------------------------------------------
 # Snapshot entities
 # ---------------------------------------------------------------------------
@@ -85,6 +164,10 @@ class GenerationManifest(BaseModel):
     speaker_map_fingerprint: str = ""
     studio_session_rules_fingerprint: str = ""
     tool_build_id: Optional[str] = None
+    llm_fingerprint: str = ""
+    llm_prompt_version: str = ""
+    llm_schema_version: str = ""
+    context_pack_version: str = ""
 
     @field_validator("speaker_map_fingerprint", mode="before")
     @classmethod
@@ -120,6 +203,7 @@ class CandidateGenerationDiagnostics(BaseModel):
     fuzzy_named_speaker_count: int = 0
     fuzzy_skipped_reason: FuzzySkippedReason
     observed_named_speaker_count: int = 0
+    llm: Optional[LlmGenerationDiagnostics] = None
 
 
 class StudioGenerationRecord(BaseModel):
@@ -167,6 +251,10 @@ class StudioCandidate(BaseModel):
     rule_id: Optional[str] = None
     occurrences: List[StudioOccurrence] = Field(default_factory=list)
     review_status: ReviewStatus = ReviewStatus.pending
+    sources: List[CandidateSource] = Field(default_factory=list)
+    evidence: Optional[CandidateEvidence] = None
+    llm_provenance: Optional[LlmCandidateProvenance] = None
+    semantic_identity_key: str = ""
 
 
 class StudioReviewRecord(BaseModel):
@@ -183,6 +271,7 @@ class StudioReviewRecord(BaseModel):
     review_target_text: Optional[str] = None
     recorded_at: str
     event_sequence: int
+    migrated_from_generation_id: Optional[int] = None
 
 
 class StudioRule(BaseModel):
@@ -222,7 +311,7 @@ class ConflictSet(BaseModel):
 class StudioSessionDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    studio_schema_version: int = 1
+    studio_schema_version: int = 2
     session_id: str
     transcript_path: str
     recorded_transcript_identity_hash: str
@@ -240,6 +329,8 @@ class StudioSessionDocument(BaseModel):
     # Ephemeral / UI cache (not persisted in v1 hot path unless needed)
     candidates_stale: bool = False
     generation_inputs_stale: bool = False
+    last_generation_commit_aborted: bool = False
+    last_generation_abort_reason: str = ""
 
 
 class StudioTranscriptSummary(BaseModel):
@@ -310,6 +401,8 @@ class ExportProvenance(BaseModel):
     export_timestamp_utc: str
     tool_version: str = ""
     build_id: str = ""
+    llm_influenced_candidate_ids: List[str] = Field(default_factory=list)
+    llm_fingerprint_at_export: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -350,6 +443,17 @@ class ReviewRecordedPayload(BaseModel):
     learn_intent: Optional[LearnIntent] = None
     learn_rule_id: Optional[str] = None
     review_target_text: Optional[str] = None
+    migrated_from_generation_id: Optional[int] = None
+
+
+class RuleStateChangedPayload(BaseModel):
+    """Authoritative session-rule mutation (create / update / disable)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rule_id: str
+    change: Literal["upsert", "disable", "enable"] = "upsert"
+    rule: Optional[Dict[str, Any]] = None
 
 
 class PreviewComputedPayload(BaseModel):
@@ -366,6 +470,33 @@ class ExportCompletedPayload(BaseModel):
     generation_id: int
     export_paths: List[str] = Field(default_factory=list)
     provenance_path: Optional[str] = None
+
+
+class StudioPreviewStats(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    applied_count: int = 0
+    total_accepted: int = 0
+
+
+class StudioPreviewResult(BaseModel):
+    """Typed return for Corrections Studio compute_preview."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    updated_segments: List[Dict[str, Any]] = Field(default_factory=list)
+    patch_log: List[Dict[str, Any]] = Field(default_factory=list)
+    stats: StudioPreviewStats = Field(default_factory=StudioPreviewStats)
+
+
+class StudioExportResult(BaseModel):
+    """Typed return for Corrections Studio apply_and_export."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    export_path: str
+    provenance_path: str
+    applied_count: int = 0
 
 
 class StudioEventEnvelope(BaseModel):

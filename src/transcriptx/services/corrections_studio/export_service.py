@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from transcriptx.io import save_json
 from transcriptx.services.corrections_studio.preview_service import (
@@ -16,6 +16,7 @@ from transcriptx.services.corrections_studio.schema import (
     ExportCompletedPayload,
     ExportProvenance,
     StudioEventEnvelope,
+    StudioExportResult,
 )
 from transcriptx.services.corrections_studio.session_service import (
     CorrectionsStudioSessionService,
@@ -33,10 +34,10 @@ class CorrectionsStudioExportService:
 
     def apply_and_export(
         self, session_id: str, export_path: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> StudioExportResult:
         doc = self._session.load_document(session_id)
         preview = self._preview.compute_preview(session_id)
-        updated_segments = preview["updated_segments"]
+        updated_segments = preview.updated_segments
 
         transcript_path = doc.transcript_path
         source_path = Path(transcript_path)
@@ -62,6 +63,29 @@ class CorrectionsStudioExportService:
             if doc.current_generation
             else ""
         )
+        # Mirror compile: only the latest review per candidate counts.
+        reviews_cur = [r for r in doc.review_records if r.generation_id == gen]
+        latest_by_candidate = {}
+        for r in sorted(reviews_cur, key=lambda x: x.event_sequence):
+            latest_by_candidate[r.candidate_id] = r
+        applied_ids = [
+            cid
+            for cid, r in latest_by_candidate.items()
+            if r.review_action.value in ("accept", "learn")
+        ]
+        llm_influenced = []
+        for cid in applied_ids:
+            cand = next((c for c in doc.candidates if c.candidate_id == cid), None)
+            if cand is None:
+                continue
+            sources = [
+                s.value if hasattr(s, "value") else str(s) for s in (cand.sources or [])
+            ]
+            if "llm_discovery" in sources or cand.kind == "ner_variant":
+                llm_influenced.append(cid)
+        llm_fp = ""
+        if manifest is not None:
+            llm_fp = getattr(manifest, "llm_fingerprint", "") or ""
         prov = ExportProvenance(
             session_id=session_id,
             generation_id=gen,
@@ -70,18 +94,15 @@ class CorrectionsStudioExportService:
             generation_manifest=manifest,
             studio_schema_version=doc.studio_schema_version,
             detector_version=manifest.detector_version if manifest else "",
-            applied_candidate_ids=[
-                r.candidate_id
-                for r in doc.review_records
-                if r.generation_id == gen
-                and r.review_action.value in ("accept", "learn")
-            ],
+            applied_candidate_ids=applied_ids,
             review_summary_counts={},
             review_actions_summary={},
             exported_artifact_paths=[str(export_p.resolve())],
             export_timestamp_utc=datetime.now(timezone.utc)
             .isoformat()
             .replace("+00:00", "Z"),
+            llm_influenced_candidate_ids=llm_influenced,
+            llm_fingerprint_at_export=llm_fp,
         )
         try:
             save_json({"segments": updated_segments}, str(tmp_export))
@@ -90,7 +111,7 @@ class CorrectionsStudioExportService:
             os.replace(str(tmp_prov), str(prov_path))
             now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             doc = doc.model_copy(update={"status": "completed", "updated_at": now})
-            seq = self._session.next_event_sequence(session_id)
+            # Sequence allocated under lock by persist(); placeholder 0 is overwritten.
             payload = ExportCompletedPayload(
                 generation_id=gen,
                 export_paths=[str(export_p.resolve())],
@@ -99,7 +120,7 @@ class CorrectionsStudioExportService:
             event = StudioEventEnvelope(
                 session_id=session_id,
                 event_type="export_completed",
-                event_sequence=seq,
+                event_sequence=0,
                 generation_id=gen,
                 payload=payload.model_dump(mode="json"),
             )
@@ -113,8 +134,8 @@ class CorrectionsStudioExportService:
                         pass
             raise
 
-        return {
-            "export_path": str(export_p),
-            "provenance_path": str(prov_path),
-            "applied_count": preview["stats"]["applied_count"],
-        }
+        return StudioExportResult(
+            export_path=str(export_p),
+            provenance_path=str(prov_path),
+            applied_count=preview.stats.applied_count,
+        )

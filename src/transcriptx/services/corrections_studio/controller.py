@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 from transcriptx.services.corrections_studio.schema import (
     CandidateLocalDiffResult,
     StudioCandidate,
+    StudioExportResult,
+    StudioPreviewResult,
     StudioReviewStats,
     StudioSessionDocument,
     StudioTranscriptSummary,
@@ -26,9 +28,7 @@ class CorrectionsStudioController:
     def load_session(self, session_id: str) -> Optional[StudioSessionDocument]:
         return self._svc.load_session(session_id)
 
-    def generate_candidates(
-        self, session_id: str, force: bool = False
-    ) -> List[StudioCandidate]:
+    def generate_candidates(self, session_id: str, force: bool = False):
         return self._svc.generate_candidates(session_id, force=force)
 
     def list_candidates(
@@ -37,6 +37,7 @@ class CorrectionsStudioController:
         status_filter: Optional[str] = None,
         kind_filter: Optional[List[str]] = None,
         confidence_min: Optional[float] = None,
+        source_filter: Optional[List[str]] = None,
         offset: int = 0,
         limit: int = 100,
     ) -> List[StudioCandidate]:
@@ -45,6 +46,7 @@ class CorrectionsStudioController:
             status_filter=status_filter,
             kind_filter=kind_filter,
             confidence_min=confidence_min,
+            source_filter=source_filter,
             offset=offset,
             limit=limit,
         )
@@ -55,13 +57,18 @@ class CorrectionsStudioController:
         status_filter: Optional[str] = None,
         kind_filter: Optional[List[str]] = None,
         confidence_min: Optional[float] = None,
+        source_filter: Optional[List[str]] = None,
     ) -> int:
         return self._svc.count_candidates(
             session_id,
             status_filter=status_filter,
             kind_filter=kind_filter,
             confidence_min=confidence_min,
+            source_filter=source_filter,
         )
+
+    def get_generation_diagnostics(self, session_id: str) -> Optional[dict]:
+        return self._svc.get_generation_diagnostics(session_id)
 
     def record_decision(
         self,
@@ -81,12 +88,12 @@ class CorrectionsStudioController:
             review_target_raw=review_target_raw,
         )
 
-    def compute_preview(self, session_id: str) -> dict[str, Any]:
+    def compute_preview(self, session_id: str) -> StudioPreviewResult:
         return self._svc.compute_preview(session_id)
 
     def apply_and_export(
         self, session_id: str, export_path: Optional[str] = None
-    ) -> dict[str, Any]:
+    ) -> StudioExportResult:
         return self._svc.apply_and_export(session_id, export_path=export_path)
 
     def get_session_stats(self, session_id: str) -> StudioReviewStats:

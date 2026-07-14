@@ -12,6 +12,7 @@ from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.web.cache_helpers import (
     cached_list_groups,
     cached_list_recent_runs,
+    get_cached_list_transcripts,
 )
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_help, render_page_shell
@@ -211,7 +212,13 @@ def render_home() -> None:
                 cached_list_groups,
                 bucket="home_summary",
             )
+            transcripts = instrument_cached_call(
+                "get_cached_list_transcripts",
+                get_cached_list_transcripts,
+                bucket="home_summary",
+            )
             set_count("groups_returned", len(groups))
+            set_count("transcripts_returned", len(transcripts))
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown(
@@ -222,7 +229,7 @@ def render_home() -> None:
             with col2:
                 st.markdown(
                     '<div class="stat-card"><strong>Transcripts</strong><br/>'
-                    "<span style='font-size:0.95rem'>Open Library to browse</span></div>",
+                    f"<span style='font-size:1.4rem'>{len(transcripts)}</span></div>",
                     unsafe_allow_html=True,
                 )
 

@@ -71,8 +71,8 @@ def dedupe_candidates(
     **Determinism:** For a given ``candidates`` list and ``rules_by_id``, iteration
     order over the dedupe map follows insertion order (Python 3.7+ dict order).
 
-    **Duplicate collapse:** Candidates with the same ``(kind, proposed_wrong.lower(),
-    proposed_right.lower(), rule_condition_signature)`` merge into one row.
+    **Duplicate collapse:** Candidates with the same ``(kind, proposed_wrong.casefold(),
+    proposed_right.casefold(), rule_condition_signature)`` merge into one row.
     The condition signature comes from :func:`_rule_signature_for_dedupe` when a
     ``rule_id`` resolves in ``rules_by_id``.
 
@@ -89,7 +89,12 @@ def dedupe_candidates(
     for c in candidates:
         rule = rules_by_id.get(c.rule_id) if c.rule_id else None
         cond_sig, _ = _rule_signature_for_dedupe(rule)
-        key = (c.kind, c.proposed_wrong.lower(), c.proposed_right.lower(), cond_sig)
+        key = (
+            c.kind,
+            c.proposed_wrong.casefold(),
+            c.proposed_right.casefold(),
+            cond_sig,
+        )
         existing = key_to_candidate.get(key)
         if existing is None:
             key_to_candidate[key] = c

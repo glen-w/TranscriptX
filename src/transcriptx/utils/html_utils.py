@@ -108,21 +108,6 @@ def generate_html_content(
           </div>
         </div>
       </div>
-      <!-- Placeholder for global charts (sentiment, emotion, etc.) -->
-      <div class="row mt-4">
-        <div class="col">
-          <figure class="text-center">
-            <img src="global_sentiment.png" alt="Global Sentiment Timeline" class="img-fluid" style="max-width:500px;">
-            <figcaption>Global Sentiment Timeline</figcaption>
-          </figure>
-        </div>
-        <div class="col">
-          <figure class="text-center">
-            <img src="global_emotion.png" alt="Global Emotion Timeline" class="img-fluid" style="max-width:500px;">
-            <figcaption>Global Emotion Timeline</figcaption>
-          </figure>
-        </div>
-      </div>
     </section>
     """
 

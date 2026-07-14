@@ -14,6 +14,8 @@ from transcriptx.services.corrections_studio.schema import (
     ReviewAction,
     ReviewRecordedPayload,
     ReviewStatus,
+    RuleLifecycleState,
+    RuleStateChangedPayload,
     StudioEventEnvelope,
     StudioReviewRecord,
     StudioRule,
@@ -60,6 +62,7 @@ class CorrectionsStudioReviewService:
             None,
         )
         learn_rule_id: Optional[str] = None
+        sr: Optional[StudioRule] = None
         if learn_rule_params:
             sr = StudioRule(
                 rule_id=str(learn_rule_params["rule_hash"]),
@@ -69,6 +72,7 @@ class CorrectionsStudioReviewService:
                 scope=str(learn_rule_params.get("scope", "global")),
                 confidence=float(learn_rule_params.get("confidence", 0.0)),
                 auto_apply=bool(learn_rule_params.get("auto_apply", False)),
+                lifecycle=RuleLifecycleState.session_active,
             )
             new_rules = dict(doc.rules)
             new_rules[sr.rule_id] = sr
@@ -89,7 +93,8 @@ class CorrectionsStudioReviewService:
             )
 
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        seq = self._session.next_event_sequence(session_id)
+        # Placeholder; locked batch writer allocates the real event_sequence.
+        placeholder_seq = 0
 
         rec = StudioReviewRecord(
             session_id=session_id,
@@ -102,7 +107,7 @@ class CorrectionsStudioReviewService:
             learn_rule_id=learn_rule_id,
             review_target_text=review_target_text,
             recorded_at=now,
-            event_sequence=seq,
+            event_sequence=placeholder_seq,
         )
 
         kept = [
@@ -126,6 +131,24 @@ class CorrectionsStudioReviewService:
             update={"review_records": kept, "candidates": new_cands, "updated_at": now}
         )
 
+        events: List[StudioEventEnvelope] = []
+        if sr is not None:
+            rule_payload = RuleStateChangedPayload(
+                rule_id=sr.rule_id,
+                change="upsert",
+                rule=sr.model_dump(mode="json"),
+            )
+            events.append(
+                StudioEventEnvelope(
+                    session_id=session_id,
+                    event_type="rule_state_changed",
+                    event_sequence=placeholder_seq,
+                    generation_id=gen,
+                    payload=rule_payload.model_dump(mode="json"),
+                    timestamp=now,
+                )
+            )
+
         payload = ReviewRecordedPayload(
             generation_id=gen,
             candidate_id=candidate_id,
@@ -136,11 +159,14 @@ class CorrectionsStudioReviewService:
             learn_rule_id=learn_rule_id,
             review_target_text=review_target_text,
         )
-        event = StudioEventEnvelope(
-            session_id=session_id,
-            event_type="review_recorded",
-            event_sequence=seq,
-            generation_id=gen,
-            payload=payload.model_dump(mode="json"),
+        events.append(
+            StudioEventEnvelope(
+                session_id=session_id,
+                event_type="review_recorded",
+                event_sequence=placeholder_seq,
+                generation_id=gen,
+                payload=payload.model_dump(mode="json"),
+                timestamp=now,
+            )
         )
-        self._session.persist(doc.transcript_path, doc, event)
+        self._session.persist_event_batch(doc.transcript_path, doc, events)

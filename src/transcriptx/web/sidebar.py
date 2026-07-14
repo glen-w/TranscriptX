@@ -49,7 +49,9 @@ def _list_runs_for_subject(subject) -> list:
         subject, "subject_type", "transcript"
     )
     if scope_type == "group":
-        return cached_list_runs("group", group_uuid=getattr(subject.scope, "uuid", None))
+        return cached_list_runs(
+            "group", group_uuid=getattr(subject.scope, "uuid", None)
+        )
     return cached_list_runs("transcript", subject_id=subject.subject_id)
 
 

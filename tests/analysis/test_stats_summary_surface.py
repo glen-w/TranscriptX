@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 from transcriptx.core.analysis.stats import summary as stats_summary
 
 
@@ -50,7 +48,7 @@ def _module_data() -> dict:
 
 def test_summary_module_imports_cleanly() -> None:
     assert hasattr(stats_summary, "create_comprehensive_summary")
-    assert hasattr(stats_summary, "generate_enhanced_html_summary")
+    assert not hasattr(stats_summary, "generate_enhanced_html_summary")
     assert not hasattr(stats_summary, "generate_summary_stats")
 
 
@@ -134,65 +132,3 @@ def test_create_comprehensive_summary_respects_alias_filtering() -> None:
     )
     assert "AliasName" not in text
     assert "No data available for this section." in text
-
-
-def test_generate_enhanced_html_summary_retained_with_deprecation(tmp_path) -> None:
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        stats_summary.generate_enhanced_html_summary(
-            transcript_dir=str(tmp_path),
-            base_name="sample",
-            module_data={},
-            speaker_map={},
-        )
-    assert any(item.category is DeprecationWarning for item in caught)
-    assert (tmp_path / "sample_comprehensive_summary.html").is_file()
-
-
-def test_generate_enhanced_html_summary_collects_classified_assets(tmp_path) -> None:
-    (tmp_path / "emotion_plot.png").write_text("img", encoding="utf-8")
-    (tmp_path / "location_entities.png").write_text("img", encoding="utf-8")
-    (tmp_path / "location_map.html").write_text("<html></html>", encoding="utf-8")
-
-    stats_summary.generate_enhanced_html_summary(
-        transcript_dir=str(tmp_path),
-        base_name="sample",
-        module_data={},
-        speaker_map={},
-    )
-    html = (tmp_path / "sample_comprehensive_summary.html").read_text(encoding="utf-8")
-    assert "Emotion Detection" in html
-    assert "location_map.html" in html
-
-
-def test_create_enhanced_html_content_minimal_compatibility_smoke() -> None:
-    html = stats_summary.create_enhanced_html_content(
-        base_name='sample"><script>alert(1)</script>',
-        timestamp="2026-01-01 12:00:00",
-        module_images={
-            "sentiment": ["sentiment_chart.png"],
-            "other": ["misc_chart.png"],
-        },
-        module_html_files={"sentiment": ["sentiment_map.html"]},
-        module_data={"sentiment": "High-level narrative"},
-        speaker_map={"SPEAKER_01": "Alice"},
-    )
-    assert "Comprehensive Analysis Summary" in html
-    assert "Table of Contents" in html
-    assert "Sentiment Analysis" in html
-    assert "Other Visualizations" in html
-    assert "sentiment_chart.png" in html
-    assert "sentiment_map.html" in html
-    assert "sample&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;" in html
-
-
-def test_create_enhanced_html_content_skips_structured_or_long_module_summary() -> None:
-    html = stats_summary.create_enhanced_html_content(
-        base_name="sample",
-        timestamp="2026-01-01 12:00:00",
-        module_images={"sentiment": ["sentiment_chart.png"]},
-        module_html_files={},
-        module_data={"sentiment": {"structured": "payload"}, "emotion": "x" * 600},
-        speaker_map={"SPEAKER_01": "Alice"},
-    )
-    assert '<h5><i class="fas fa-clipboard-list me-2"></i>Summary</h5>' not in html

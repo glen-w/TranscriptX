@@ -43,21 +43,6 @@
       "description": "Provider base URL (e.g. http://localhost:11434/).",
       "title": "Base Url"
     },
-    "api_key": {
-      "advanced": true,
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "Optional API key for providers that require authentication.",
-      "sensitivity": "hidden",
-      "title": "Api Key"
-    },
     "request_timeout": {
       "default": 1350.0,
       "description": "Per-request timeout in seconds for LLM calls.",

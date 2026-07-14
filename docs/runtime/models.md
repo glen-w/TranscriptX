@@ -21,7 +21,7 @@ Shipped defaults target CPU-friendly English analysis:
 | BERTopic embeddings | `all-MiniLM-L6-v2` |
 | Sentiment | `vader` (lexicon) |
 | Emotion (transformer leg) | `bhadresh-savani/distilbert-base-uncased-emotion` |
-| Dialogue acts ML | rules + untrained TF-IDF (transformer path disabled) |
+| Dialogue acts | rule/heuristic classification (transformer disabled; TF-IDF/RF untrained scaffolding only) |
 | Topic modeling (LDA/NMF) | sklearn bag-of-words (no neural embedding) |
 
 The Docker image pre-installs `en_core_web_sm`, `en_core_web_md`, and `en_core_web_lg` (the latter matches the higher-accuracy preset below). Other spaCy models download on first use when downloads are enabled.
@@ -64,7 +64,7 @@ Compose does **not** inject every `TRANSCRIPTX_*` variable automatically—only 
 | `TRANSCRIPTX_EMOTION_MODEL` | `analysis.emotion_model_name` | Transformer emotion classifier (alongside NRCLex) |
 | `TRANSCRIPTX_SENTIMENT_BACKEND` | `analysis.sentiment_backend` | `vader`, `transformers`, or `textblob` |
 | `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | `analysis.bertopic.embedding_model` | BERTopic only |
-| `TRANSCRIPTX_ACTS_MODEL` | `analysis.acts.ml_model_name` | **Low impact today** — transformer acts classifier is disabled; mostly rules/TF-IDF |
+| `TRANSCRIPTX_ACTS_MODEL` | `analysis.acts.ml_model_name` | **No effect today** — acts use heuristics; transformer classifier is disabled |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | — | `1` blocks HF emotion/sentiment downloads (spaCy uses `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD`) |
 | `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD` | — | `1` blocks spaCy auto-download (install models manually) |
 
@@ -114,7 +114,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 | Module | Why |
 |--------|-----|
 | **Topic modeling (LDA/NMF)** | sklearn `CountVectorizer` / `TfidfVectorizer`; no embedding model knob |
-| **Dialogue acts (`acts`)** | Transformer classifier intentionally disabled; `TRANSCRIPTX_ACTS_MODEL` does not enable BERT inference |
+| **Dialogue acts (`acts`)** | Heuristic/rule classification only; transformer path disabled; `TRANSCRIPTX_ACTS_MODEL` does not enable BERT inference |
 | **Wordclouds, deterministic summary, insights** | Heuristics / TF-IDF / templates |
 | **Geocoding (NER maps)** | Nominatim lookup, not ML |
 

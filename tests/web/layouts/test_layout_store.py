@@ -20,7 +20,7 @@ def _registry():
 
 
 def test_preset_layout_yaml_loads() -> None:
-    for layout_id in ("default", "executive", "developer_debug"):
+    for layout_id in ("default", "executive", "developer_debug", "all"):
         spec = LayoutProfileStore.load_layout(layout_id)
         assert spec.id == layout_id
         assert spec.schema_version in (1, 2)
@@ -30,6 +30,22 @@ def test_preset_layout_yaml_loads() -> None:
     overview_ids = [b.block_id for b in default.pages["overview"].blocks]
     assert overview_ids[0] == "transcript_summary_hero"
     assert "export_panel" not in overview_ids
+
+
+def test_all_layout_includes_every_block_alphabetically() -> None:
+    from transcriptx.web.blocks.registry import list_blocks
+
+    expected = sorted(spec.id for spec in list_blocks())
+    assert expected  # registry must be populated
+    layout = LayoutProfileStore.load_layout("all")
+    assert layout.title == "All"
+    assert LayoutProfileStore.is_builtin("all")
+    assert "all" in LayoutProfileStore.list_layouts()
+    for page_id in ("overview", "insights"):
+        block_ids = [b.block_id for b in layout.pages[page_id].blocks]
+        assert block_ids == expected
+    with pytest.raises(LayoutValidationError, match="immutable"):
+        LayoutProfileStore.save_layout(layout)
 
 
 def test_unknown_block_id_fails_validation(tmp_path: Path) -> None:

@@ -5,6 +5,7 @@ This module provides a single source of truth for all analysis modules,
 centralizing module metadata, dependencies, and lazy import functions.
 """
 
+import warnings
 from typing import Dict, List, Optional, Callable, Iterable, Set
 from dataclasses import dataclass, field
 
@@ -15,6 +16,11 @@ from transcriptx.core.pipeline.module_registry_specs import (
     build_module_definitions,
 )
 from transcriptx.core.utils.audio_availability import has_resolvable_audio
+
+_LEGACY_MODULES_DEPRECATION = (
+    "analysis.include_legacy_modules / include_legacy=True is deprecated and "
+    "will be removed in a future release. Prefer explicit module selection."
+)
 
 
 def is_extra_available(extra_name: str) -> bool:
@@ -178,6 +184,13 @@ class ModuleRegistry:
                 include_legacy = bool(get_config().analysis.include_legacy_modules)
             except Exception:
                 include_legacy = False
+
+        if include_legacy:
+            warnings.warn(
+                _LEGACY_MODULES_DEPRECATION,
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         audio_available: Optional[bool] = None
         if transcript_targets is not None:

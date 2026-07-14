@@ -85,7 +85,20 @@
     "default_rule_scope": "project",
     "enable_fuzzy": false,
     "update_original_file": false,
-    "create_backup": true
+    "create_backup": true,
+    "llm": {
+      "enabled": false,
+      "effort": "low",
+      "request_timeout_seconds": 120.0,
+      "total_wall_clock_seconds": 180.0,
+      "max_chunks": 25,
+      "chunk_max_segments": 40,
+      "chunk_overlap_segments": 4,
+      "max_candidates_per_chunk": 10,
+      "max_candidates_per_transcript": 80,
+      "continue_on_failure": true,
+      "assess_deterministic": false
+    }
   },
   "speaker_exemplars": {
     "enabled": true,

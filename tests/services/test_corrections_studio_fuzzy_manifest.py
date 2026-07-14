@@ -279,13 +279,15 @@ def test_generate_candidates_passes_fuzzy_names(tmp_path: Path) -> None:
     mock_session_svc = MagicMock()
     mock_session_svc.store.read_event_lines.return_value = ["{}"]
     mock_session_svc.load_document.return_value = doc
+    mock_session_svc.last_event_sequence.return_value = 1
 
     captured: dict = {}
 
-    def persist(tp: str, d: StudioSessionDocument, ev: object) -> None:
+    def persist_batch(tp, d, events, preconditions=None):
         captured["doc"] = d
+        return events
 
-    mock_session_svc.persist.side_effect = persist
+    mock_session_svc.persist_event_batch.side_effect = persist_batch
     mock_session_svc.next_event_sequence.return_value = 2
 
     with patch(
@@ -297,7 +299,9 @@ def test_generate_candidates_passes_fuzzy_names(tmp_path: Path) -> None:
         corrections.consistency_similarity_threshold = 0.99
         corrections.fuzzy_similarity_threshold = 0.5
         corrections.enable_fuzzy = True
+        corrections.llm = MagicMock(enabled=False)
         mock_cfg.return_value.analysis.corrections = corrections
+        mock_cfg.return_value.llm = MagicMock(enabled=False)
 
         with patch(
             "transcriptx.services.corrections_studio.candidate_service.load_memory"

@@ -349,7 +349,8 @@ def tag_acts(
             ml_seg = seg.copy()
             ml_seg["dialogue_act"] = ml_result.get("act_type", "statement")
             ml_seg["act_confidence"] = ml_result.get("confidence", 0.5)
-            ml_seg["act_method"] = "ml"
+            # Heuristic/rule path ships under the historical "ml" slot.
+            ml_seg["act_method"] = ml_result.get("method", "heuristics")
             ml_segments.append(ml_seg)
 
             rules_seg = seg.copy()

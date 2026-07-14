@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.io.adapters.sembly_adapter import SemblyAdapter
+from transcriptx.io.import_adapters.html_export.sembly_engine import SemblyAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "sembly"

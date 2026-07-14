@@ -141,7 +141,9 @@ def test_archival_audio_is_not_renamed(
     assert outcome.audio_renamed is False
     assert archival.exists()
     assert archival.name == "old_name.wav"
-    assert any("archival" in w.lower() or "stable" in w.lower() for w in outcome.warnings)
+    assert any(
+        "archival" in w.lower() or "stable" in w.lower() for w in outcome.warnings
+    )
 
 
 def test_external_audio_warning_and_no_rename(
@@ -317,7 +319,10 @@ def test_repair_increments_attempt_counter(
     assert reloaded is not None
     assert reloaded.repair_attempt_count == 1
     assert len(reloaded.repair_attempts) == 1
-    assert reloaded.repair_attempts[0]["from_phase"] == JournalPhase.transaction_committed.value
+    assert (
+        reloaded.repair_attempts[0]["from_phase"]
+        == JournalPhase.transaction_committed.value
+    )
 
 
 @pytest.mark.unit
@@ -398,9 +403,7 @@ def test_update_index_after_transcript_rename_updates_entry(
             "slug_to_key": {"old_name": key},
         },
     )
-    old_slug, new_slug = slug_manager.update_index_after_transcript_rename(
-        old_t, new_t
-    )
+    old_slug, new_slug = slug_manager.update_index_after_transcript_rename(old_t, new_t)
     assert old_slug == "old_name"
     assert new_slug == "new_name"
     index = json.loads(index_path.read_text(encoding="utf-8"))

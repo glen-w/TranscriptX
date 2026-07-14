@@ -171,7 +171,20 @@ class GenericDiarisedTextAdapter:
             if not m:
                 if not found_first:
                     continue  # preamble before first match — skip
-                # Could be continuation of previous turn; ignore for now
+                # Continuation of previous turn (no new speaker/timestamp header)
+                stripped = line.strip()
+                if stripped and turns:
+                    prev = turns[-1]
+                    turns[-1] = IntermediateTurn(
+                        text=(
+                            f"{prev.text} {stripped}".strip() if prev.text else stripped
+                        ),
+                        speaker=prev.speaker,
+                        start=prev.start,
+                        end=prev.end,
+                        turn_index=prev.turn_index,
+                        raw=(f"{prev.raw}\n{line}" if prev.raw else line),
+                    )
                 continue
 
             found_first = True

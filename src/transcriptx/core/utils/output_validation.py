@@ -190,15 +190,23 @@ def check_module_has_outputs(
     module_dir: Path, module_name: str
 ) -> tuple[bool, list[str]]:
     """
-    Check if a specific module has generated valid outputs.
-    Now returns warnings instead of failures to be more lenient.
+    Advisory check that a module output directory looks populated.
+
+    Rule violations (missing required files/dirs, low file counts) are reported
+    as **warnings only** — the first element of the return tuple stays ``True``
+    for those cases. Callers must not treat ``True`` as a hard validation
+    guarantee that every expected artifact exists.
+
+    Hard ``False`` is reserved for missing/empty module directories (and for
+    modules with no rule when the directory has no files).
 
     Args:
         module_dir: Path to the module's output directory
         module_name: Name of the module to validate
 
     Returns:
-        Tuple of (is_valid, list_of_warnings)
+        Tuple of (advisory_ok, list_of_warnings). ``advisory_ok`` is not a
+        hard pass/fail gate for rule completeness.
     """
     if not module_dir.exists():
         return False, [f"Module directory does not exist: {module_dir}"]
@@ -254,7 +262,7 @@ def check_module_has_outputs(
             f"Insufficient files: found {total_files}, expected at least {rule.min_files}"
         )
 
-    # Always return True now (warnings instead of failures)
+    # Advisory-only: rule gaps become warnings; do not fail the run.
     return True, warnings
 
 
@@ -262,15 +270,17 @@ def validate_module_outputs(
     basename_dir: Path, expected_modules: list[str]
 ) -> dict[str, tuple[bool, list[str]]]:
     """
-    Validate that all expected modules have generated outputs.
-    Now returns warnings instead of failures to be more lenient.
+    Advisory validation that expected modules have output directories.
+
+    Returns warnings instead of hard failures for incomplete artifact sets.
+    See ``check_module_has_outputs`` — the bool is not a completeness guarantee.
 
     Args:
         basename_dir: Base directory containing all module outputs
         expected_modules: List of modules to validate
 
     Returns:
-        Dict mapping module_name -> (is_valid, list_of_warnings)
+        Dict mapping module_name -> (advisory_ok, list_of_warnings)
     """
     results = {}
 

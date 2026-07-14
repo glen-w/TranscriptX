@@ -15,7 +15,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - Running analysis on individual transcripts and groups.
   - Viewing results via **Transcript → Overview → Insights → Charts → Artifacts**.
   - Managing basic settings exposed in the UI.
-- Legacy GUI routes `Data` and `Explorer` (File List) redirect to **Artifacts**.
+- Legacy GUI routes `Data` and `Explorer` (File List) redirect to **Artifacts**; these redirect routes will be removed after one more release.
 - Built-in layout profile id `default` is displayed as **Standard** and is immutable; clone via Dashboard Builder.
 ### 1.2 Python API
 
@@ -57,13 +57,12 @@ The following patterns are **explicitly not supported** and should be avoided in
 
 ### 2.2 Legacy Streamlit entry (`web/streamlit_app.py`)
 
-- `src/transcriptx/web/streamlit_app.py` is a **deprecation stub** only (not a supported GUI).
+- The former `src/transcriptx/web/streamlit_app.py` stub has been **removed**.
 - Canonical GUI module: `transcriptx.web.app`.
 - Supported launch commands:
   - `transcriptx`
   - `python -m transcriptx.web`
   - `streamlit run src/transcriptx/web/app.py`
-- The stub is scheduled for removal after 1–2 release batches.
 
 ### 2.3 Ad hoc JSON ingestion
 

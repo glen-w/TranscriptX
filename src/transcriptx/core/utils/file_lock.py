@@ -4,10 +4,15 @@ File locking utilities for safe concurrent access.
 Provides cross-platform file locking using fcntl (Unix) or msvcrt (Windows).
 When the target file's directory is read-only (e.g. read-only Docker mount),
 the lock file is created in a writable temp directory so locking still works.
+
+Nested locks on the same path in one thread are re-entrant: Darwin flock is
+per-open-file-description, so a second open()+flock on the same path would
+self-deadlock without depth tracking.
 """
 
 import hashlib
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -18,14 +23,40 @@ logger = get_logger()
 # errno 30 = EROFS (read-only file system)
 _ERRNO_EROFS = 30
 
+# Per-thread re-entrancy depths keyed by resolved target path.
+_held_lock_depths = threading.local()
+
+
+class LockAcquisitionError(RuntimeError):
+    """Raised when a blocking FileLock context cannot acquire the lock."""
+
+
+# Keep a module-level alias used by older call sites / tests.
+LockTimeoutError = LockAcquisitionError
+
+
+def _lock_identity(file_path: Path) -> str:
+    """Stable identity for re-entrancy tracking."""
+    try:
+        return str(file_path.resolve())
+    except (OSError, RuntimeError):
+        return str(file_path)
+
+
+def _thread_depths() -> dict:
+    depths = getattr(_held_lock_depths, "depths", None)
+    if depths is None:
+        depths = {}
+        _held_lock_depths.depths = depths
+    return depths
+
 
 def _fallback_lock_path(file_path: Path) -> Path:
     """Path for lock file in temp dir when target dir is read-only. Deterministic per file."""
-    try:
-        resolved = str(file_path.resolve())
-    except (OSError, RuntimeError):
-        resolved = str(file_path)
-    name = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:32] + ".lock"
+    name = (
+        hashlib.sha256(_lock_identity(file_path).encode("utf-8")).hexdigest()[:32]
+        + ".lock"
+    )
     return Path(tempfile.gettempdir()) / "transcriptx_locks" / name
 
 
@@ -66,10 +97,16 @@ class FileLock:
         self.lock_file = file_path.with_suffix(file_path.suffix + ".lock")
         self.lock_fd = None
         self.acquired = False
+        self._reentrant = False
+        self._identity = _lock_identity(file_path)
 
     def __enter__(self):
-        """Acquire lock."""
-        self.acquire()
+        """Acquire lock; raise if a blocking acquire fails."""
+        ok = self.acquire()
+        if not ok and self.blocking:
+            raise LockAcquisitionError(
+                f"Could not acquire file lock within {self.timeout}s: {self.lock_file}"
+            )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -86,6 +123,14 @@ class FileLock:
         if self.acquired:
             return True
 
+        depths = _thread_depths()
+        if depths.get(self._identity, 0) > 0:
+            depths[self._identity] += 1
+            self.acquired = True
+            self._reentrant = True
+            logger.debug("Re-entrant lock acquire: %s", self._identity)
+            return True
+
         # Check if locking is available
         if WINDOWS and msvcrt is None:
             logger.warning("File locking not available on Windows")
@@ -96,7 +141,7 @@ class FileLock:
 
         lock_path = self.lock_file
         try:
-            return self._acquire_at_path(lock_path)
+            ok = self._acquire_at_path(lock_path)
         except OSError as e:
             if getattr(e, "errno", None) != _ERRNO_EROFS:
                 raise
@@ -109,7 +154,12 @@ class FileLock:
                 lock_path,
             )
             self.lock_file = lock_path
-            return self._acquire_at_path(lock_path)
+            ok = self._acquire_at_path(lock_path)
+
+        if ok:
+            depths[self._identity] = 1
+            self._reentrant = False
+        return ok
 
     def _acquire_at_path(self, lock_path: Path) -> bool:
         """Try to create and acquire lock at the given path. On EROFS, raises OSError."""
@@ -177,6 +227,18 @@ class FileLock:
         if not self.acquired:
             return
 
+        depths = _thread_depths()
+        depth = depths.get(self._identity, 0)
+        if depth > 1 or self._reentrant:
+            if depth > 0:
+                depths[self._identity] = depth - 1
+                if depths[self._identity] <= 0:
+                    depths.pop(self._identity, None)
+            self.acquired = False
+            self._reentrant = False
+            logger.debug("Re-entrant lock release: %s", self._identity)
+            return
+
         try:
             if self.lock_fd:
                 if WINDOWS:
@@ -195,6 +257,7 @@ class FileLock:
                 except OSError as unlink_err:
                     logger.debug("Error removing lock file: %s", unlink_err)
 
+            depths.pop(self._identity, None)
             self.acquired = False
             logger.debug(f"Released lock: {self.lock_file}")
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from transcriptx.io.adapters.srt_adapter import SRTAdapter
+from transcriptx.io.import_adapters.subtitle.srt_engine import SRTAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "srt"

@@ -6,9 +6,11 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from transcriptx.web.blocks.placement import BlockPlacement, GridSpec
+from transcriptx.web.blocks.placement import BlockPlacement
 
-SUPPORTED_LAYOUT_PAGES = frozenset({"overview", "insights", "dashboard_builder"})
+SUPPORTED_LAYOUT_PAGES = frozenset(
+    {"overview", "insights", "charts", "dashboard_builder"}
+)
 # Bumped for optional placement.section field (Insights local navigation).
 CURRENT_LAYOUT_SCHEMA_VERSION = 2
 
@@ -19,30 +21,12 @@ INSIGHTS_SECTIONS = frozenset(
 LayoutSection = Literal["summary", "speakers", "actions", "highlights", "analysis"]
 
 
-class GridSpecModel(BaseModel):
-    col: int = 0
-    row: int = 0
-    w: int = 12
-    h: int = 1
-
-    @field_validator("w", "h")
-    @classmethod
-    def positive_span(cls, value: int) -> int:
-        if value < 1:
-            raise ValueError("grid w and h must be >= 1")
-        return value
-
-    def to_grid_spec(self) -> GridSpec:
-        return GridSpec(col=self.col, row=self.row, w=self.w, h=self.h)
-
-
 class BlockPlacementModel(BaseModel):
     placement_id: str
     block_id: str
     title_override: str | None = None
     visible: bool = True
     params: dict[str, Any] = Field(default_factory=dict)
-    grid: GridSpecModel | None = None
     section: str | None = None
 
     @field_validator("section")
@@ -63,7 +47,6 @@ class BlockPlacementModel(BaseModel):
             title_override=self.title_override,
             visible=self.visible,
             params=dict(self.params),
-            grid=self.grid.to_grid_spec() if self.grid else None,
             section=self.section,
         )
 

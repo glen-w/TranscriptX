@@ -302,6 +302,7 @@ class QAAnalysis(AnalysisModule):
     ) -> List[Dict[str, Any]]:
         """Match questions to their answers."""
         qa_pairs = []
+        similarity_index = self._build_similarity_index(semantic_similarity_data)
 
         for question in questions:
             question_index = question["index"]
@@ -332,7 +333,11 @@ class QAAnalysis(AnalysisModule):
 
                 # Calculate match score
                 match_score = self._calculate_match_score(
-                    question, answer_seg, response_time, semantic_similarity_data
+                    question,
+                    answer_seg,
+                    response_time,
+                    similarity_index,
+                    answer_index=i,
                 )
 
                 if match_score > best_score:
@@ -355,7 +360,10 @@ class QAAnalysis(AnalysisModule):
 
                 # Assess response quality
                 quality = self._assess_response_quality(
-                    question, answer_seg, semantic_similarity_data
+                    question,
+                    answer_seg,
+                    similarity_index,
+                    answer_index=best_match["index"],
                 )
 
                 qa_pairs.append(
@@ -401,12 +409,117 @@ class QAAnalysis(AnalysisModule):
 
         return qa_pairs
 
+    @staticmethod
+    def _segment_lookup_keys(
+        seg: Dict[str, Any], list_index: Optional[int] = None
+    ) -> List[str]:
+        """Build multi-scheme keys for matching semantic-similarity pair stubs."""
+        keys: List[str] = []
+        sid = seg.get("id")
+        if sid is None:
+            sid = seg.get("segment_id")
+        if sid is not None:
+            keys.append(f"id:{sid}")
+        if "start" in seg and seg.get("start") is not None:
+            try:
+                keys.append(f"start:{float(seg['start']):.3f}")
+            except (TypeError, ValueError):
+                pass
+        if "index" in seg and seg.get("index") is not None:
+            try:
+                keys.append(f"idx:{int(seg['index'])}")
+            except (TypeError, ValueError):
+                pass
+        elif list_index is not None:
+            keys.append(f"idx:{int(list_index)}")
+        return keys
+
+    def _build_similarity_index(
+        self, semantic_similarity_data: Optional[Dict[str, Any]]
+    ) -> Dict[frozenset, float]:
+        """Index threshold-gated repetition pairs for O(1) Q–A similarity lookup.
+
+        Semantic modules only store high-similarity pairs, so misses are normal
+        and callers must fall back to lexical scoring.
+        """
+        index: Dict[frozenset, float] = {}
+        if not isinstance(semantic_similarity_data, dict):
+            return index
+
+        reps: List[Dict[str, Any]] = []
+        speaker_reps = semantic_similarity_data.get("speaker_repetitions") or {}
+        if isinstance(speaker_reps, dict):
+            for lst in speaker_reps.values():
+                if isinstance(lst, list):
+                    reps.extend(item for item in lst if isinstance(item, dict))
+        cross = semantic_similarity_data.get("cross_speaker_repetitions") or []
+        if isinstance(cross, list):
+            reps.extend(item for item in cross if isinstance(item, dict))
+
+        for rep in reps:
+            s1 = rep.get("segment1") or {}
+            s2 = rep.get("segment2") or {}
+            if not isinstance(s1, dict) or not isinstance(s2, dict):
+                continue
+            try:
+                sim = float(rep.get("similarity", 0.0))
+            except (TypeError, ValueError):
+                continue
+            for k1 in self._segment_lookup_keys(s1):
+                for k2 in self._segment_lookup_keys(s2):
+                    key = frozenset({k1, k2})
+                    if len(key) < 2:
+                        continue
+                    prev = index.get(key)
+                    if prev is None or sim > prev:
+                        index[key] = sim
+        return index
+
+    def _lookup_pair_similarity(
+        self,
+        question: Dict[str, Any],
+        answer_seg: Dict[str, Any],
+        similarity_index: Dict[frozenset, float],
+        answer_index: Optional[int] = None,
+    ) -> Optional[float]:
+        """Return indexed similarity for a Q–A pair, or None on miss."""
+        if not similarity_index:
+            return None
+        q_stub = {
+            "id": question.get("id") or question.get("segment_id"),
+            "segment_id": question.get("segment_id"),
+            "start": question.get("timestamp", question.get("start")),
+            "index": question.get("index"),
+        }
+        q_keys = self._segment_lookup_keys(q_stub, list_index=question.get("index"))
+        a_keys = self._segment_lookup_keys(answer_seg, list_index=answer_index)
+        best: Optional[float] = None
+        for k1 in q_keys:
+            for k2 in a_keys:
+                key = frozenset({k1, k2})
+                if len(key) < 2:
+                    continue
+                sim = similarity_index.get(key)
+                if sim is not None and (best is None or sim > best):
+                    best = sim
+        return best
+
+    def _keyword_overlap_score(
+        self, question: Dict[str, Any], answer_seg: Dict[str, Any]
+    ) -> float:
+        question_words = set(str(question.get("text", "")).lower().split())
+        answer_words = set(str(answer_seg.get("text", "")).lower().split())
+        if not question_words:
+            return 0.0
+        return len(question_words & answer_words) / max(len(question_words), 1)
+
     def _calculate_match_score(
         self,
         question: Dict[str, Any],
         answer_seg: Dict[str, Any],
         response_time: float,
-        semantic_similarity_data: Optional[Dict[str, Any]] = None,
+        similarity_index: Optional[Dict[frozenset, float]] = None,
+        answer_index: Optional[int] = None,
     ) -> float:
         """Calculate how well an answer segment matches a question."""
         score = 0.0
@@ -415,18 +528,13 @@ class QAAnalysis(AnalysisModule):
         time_score = max(0, 1.0 - (response_time / self.response_time_threshold))
         score += 0.4 * time_score
 
-        # Semantic similarity (if available)
-        if semantic_similarity_data:
-            # Try to get similarity score if available
-            # This is a placeholder - would need actual similarity calculation
-            similarity_score = 0.5  # Default
-            score += 0.3 * similarity_score
-        else:
-            # Keyword overlap as fallback
-            question_words = set(question["text"].lower().split())
-            answer_words = set(answer_seg.get("text", "").lower().split())
-            overlap = len(question_words & answer_words) / max(len(question_words), 1)
-            score += 0.3 * overlap
+        # Semantic similarity when an indexed pair exists; else keyword overlap
+        similarity_score = self._lookup_pair_similarity(
+            question, answer_seg, similarity_index or {}, answer_index=answer_index
+        )
+        if similarity_score is None:
+            similarity_score = self._keyword_overlap_score(question, answer_seg)
+        score += 0.3 * similarity_score
 
         # Speaker change (different speaker is better)
         if question["speaker_id"] != answer_seg.get("speaker", "UNKNOWN"):
@@ -438,7 +546,8 @@ class QAAnalysis(AnalysisModule):
         self,
         question: Dict[str, Any],
         answer_seg: Dict[str, Any],
-        semantic_similarity_data: Optional[Dict[str, Any]] = None,
+        similarity_index: Optional[Dict[frozenset, float]] = None,
+        answer_index: Optional[int] = None,
     ) -> Dict[str, float]:
         """Assess the quality of a response to a question."""
         question_text = question["text"].lower()
@@ -454,9 +563,12 @@ class QAAnalysis(AnalysisModule):
             question_text, answer_text, question.get("type")
         )
 
-        # Relevance: Semantic relevance between question and answer
-        if semantic_similarity_data:
-            relevance = 0.7  # Placeholder - would use actual similarity
+        # Relevance: indexed semantic score when available, else lexical
+        similarity_score = self._lookup_pair_similarity(
+            question, answer_seg, similarity_index or {}, answer_index=answer_index
+        )
+        if similarity_score is not None:
+            relevance = similarity_score
         else:
             relevance = self._calculate_relevance(question_text, answer_text)
 

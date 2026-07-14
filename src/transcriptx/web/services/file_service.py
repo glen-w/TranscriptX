@@ -428,9 +428,7 @@ class FileService:
                                 run_dir_mtime = 0.0
                             # Include session even when transcript path is not resolvable (e.g. Docker path
                             # in manifest); run will appear in dropdown and may load transcript from run dir
-                            modules = _cached_session_modules(
-                                session_id, run_dir_mtime
-                            )
+                            modules = _cached_session_modules(session_id, run_dir_mtime)
                             module_count = len(modules)
                             analysis_completion = (
                                 int((module_count / total_modules) * 100)

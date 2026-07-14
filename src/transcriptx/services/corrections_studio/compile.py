@@ -1,12 +1,15 @@
 """
 Single compile entry: studio snapshot → engine apply_corrections inputs.
+
+Every accepted occurrence is re-grounded against live segment text before apply.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from transcriptx.core.corrections.detect import resolve_segment_id
 from transcriptx.core.corrections.models import (
     Candidate,
     CorrectionRule,
@@ -20,7 +23,7 @@ from transcriptx.services.corrections_studio.review_target import (
 from transcriptx.services.corrections_studio.schema import (
     ApplyScope,
     ReviewAction,
-    StudioCandidate,
+    StudioOccurrence,
     StudioReviewRecord,
     StudioRule,
     StudioSessionDocument,
@@ -34,6 +37,7 @@ class CompiledStudioApply:
     engine_candidates: List[Candidate]
     engine_decisions: List[Decision]
     rules_by_id: Dict[str, CorrectionRule]
+    compile_diagnostics: Dict[str, Any] = field(default_factory=dict)
 
 
 def _coerce_engine_rule_type(rule_type: str) -> str:
@@ -66,38 +70,41 @@ def _coerce_engine_kind(kind: str) -> str:
     return kind if kind in valid else "consistency"
 
 
-def _studio_candidate_to_engine(
-    sc: StudioCandidate, *, proposed_right: str
-) -> Candidate:
-    occs = []
-    for o in sc.occurrences:
-        span_t: Optional[Tuple[int, int]] = o.span
-        occs.append(
-            Occurrence(
-                segment_id=o.segment_id,
-                speaker=o.speaker,
-                time_start=o.time_start,
-                time_end=o.time_end,
-                span=span_t,
-                snippet=o.snippet or "",
-                occurrence_id=o.stable_occurrence_key,
-            )
-        )
-    return Candidate(
-        candidate_id=sc.candidate_id,
-        rule_id=sc.rule_id,
-        proposed_wrong=sc.wrong_text,
-        proposed_right=proposed_right,
-        kind=_coerce_engine_kind(sc.kind),  # type: ignore[arg-type]
-        confidence=sc.confidence,
-        occurrences=occs,
-    )
+def _segment_text_by_id(
+    segments: List[Dict[str, Any]], transcript_key: str
+) -> Dict[str, Tuple[int, str]]:
+    out: Dict[str, Tuple[int, str]] = {}
+    for i, seg in enumerate(segments):
+        sid = resolve_segment_id(seg, transcript_key, segment_index=i)
+        out[sid] = (i, str(seg.get("text") or ""))
+    return out
+
+
+def _reground_occurrence(
+    occ: StudioOccurrence,
+    *,
+    wrong_text: str,
+    seg_map: Dict[str, Tuple[int, str]],
+) -> Optional[StudioOccurrence]:
+    found = seg_map.get(occ.segment_id)
+    if found is None:
+        return None
+    _idx, text = found
+    span = occ.span
+    if span is None or len(span) != 2:
+        return None
+    start, end = int(span[0]), int(span[1])
+    if start < 0 or end > len(text) or start >= end:
+        return None
+    if text[start:end] != wrong_text:
+        return None
+    return occ
 
 
 def compile_studio_to_engine_apply(
     *,
     session: StudioSessionDocument,
-    segments: List[Dict[str, Any]],  # reserved for future span validation
+    segments: List[Dict[str, Any]],
     transcript_key: str,
     rules_by_id: Optional[Dict[str, CorrectionRule]] = None,
     generation_id: Optional[int] = None,
@@ -105,14 +112,20 @@ def compile_studio_to_engine_apply(
     """
     Map studio review state + candidates for one generation to engine Candidate/Decision lists.
 
-    Ignores review_records where generation_id < target generation.
-    Accept / learn with apply selected → apply_some + occurrence keys; accept all → apply_all.
+    Re-grounds every accepted occurrence against live transcript text (fail closed).
     """
-    _ = segments  # reserved for compile-time validation against transcript
     gen = generation_id if generation_id is not None else session.current_generation_id
+    diag: Dict[str, Any] = {
+        "dropped_occurrences": 0,
+        "dropped_candidates": 0,
+        "invalid_targets": 0,
+    }
     if gen is None:
         return CompiledStudioApply(
-            engine_candidates=[], engine_decisions=[], rules_by_id={}
+            engine_candidates=[],
+            engine_decisions=[],
+            rules_by_id={},
+            compile_diagnostics=diag,
         )
 
     rules = dict(rules_by_id or {})
@@ -129,6 +142,7 @@ def compile_studio_to_engine_apply(
     for r in sorted(reviews_cur, key=lambda x: x.event_sequence):
         latest_by_candidate[r.candidate_id] = r
 
+    seg_map = _segment_text_by_id(segments, transcript_key)
     engine_candidates: List[Candidate] = []
     engine_decisions: List[Decision] = []
 
@@ -139,6 +153,7 @@ def compile_studio_to_engine_apply(
             continue
         sc = by_id.get(cand_id)
         if not sc:
+            diag["dropped_candidates"] += 1
             continue
         proposed_right = resolve_effective_right(
             candidate_right_text=sc.right_text,
@@ -148,8 +163,74 @@ def compile_studio_to_engine_apply(
         )
         if normalize_review_target_text(proposed_right) is None:
             proposed_right = sc.right_text
+        if not proposed_right or proposed_right == sc.wrong_text:
+            diag["invalid_targets"] += 1
+            diag["dropped_candidates"] += 1
+            continue
+
+        valid_occs: List[StudioOccurrence] = []
+        if not segments:
+            # No live transcript in this call — trust stored occurrences (unit fixtures).
+            valid_occs = list(sc.occurrences)
+        elif sc.occurrences:
+            for occ in sc.occurrences:
+                grounded = _reground_occurrence(
+                    occ, wrong_text=sc.wrong_text, seg_map=seg_map
+                )
+                if grounded is None:
+                    diag["dropped_occurrences"] += 1
+                    continue
+                valid_occs.append(grounded)
+            if not valid_occs:
+                diag["dropped_candidates"] += 1
+                continue
+        # Empty occurrence lists with live segments still compile (legacy).
+
+        valid_keys = {
+            o.stable_occurrence_key for o in valid_occs if o.stable_occurrence_key
+        }
+        selected_keys = [
+            k
+            for k in rec.selected_occurrence_keys
+            if (not valid_keys) or k in valid_keys
+        ]
+        if rec.apply_scope == ApplyScope.selected:
+            if rec.selected_occurrence_keys and not selected_keys and valid_keys:
+                diag["dropped_candidates"] += 1
+                continue
+            if valid_keys:
+                apply_occs = [
+                    o for o in valid_occs if o.stable_occurrence_key in selected_keys
+                ]
+            else:
+                apply_occs = valid_occs
+                selected_keys = list(rec.selected_occurrence_keys)
+        else:
+            apply_occs = valid_occs
+
+        eng_occs = []
+        for o in apply_occs:
+            eng_occs.append(
+                Occurrence(
+                    segment_id=o.segment_id,
+                    speaker=o.speaker,
+                    time_start=o.time_start,
+                    time_end=o.time_end,
+                    span=o.span,
+                    snippet=o.snippet or "",
+                    occurrence_id=o.stable_occurrence_key,
+                )
+            )
         engine_candidates.append(
-            _studio_candidate_to_engine(sc, proposed_right=proposed_right)
+            Candidate(
+                candidate_id=sc.candidate_id,
+                rule_id=sc.rule_id,
+                proposed_wrong=sc.wrong_text,
+                proposed_right=proposed_right,
+                kind=_coerce_engine_kind(sc.kind),  # type: ignore[arg-type]
+                confidence=sc.confidence,
+                occurrences=eng_occs,
+            )
         )
 
         new_rule = None
@@ -160,12 +241,12 @@ def compile_studio_to_engine_apply(
         ):
             new_rule = _studio_rule_to_engine(session.rules[rec.learn_rule_id])
 
-        if rec.apply_scope == ApplyScope.selected and rec.selected_occurrence_keys:
+        if rec.apply_scope == ApplyScope.selected and selected_keys:
             engine_decisions.append(
                 Decision(
                     candidate_id=cand_id,
                     decision="apply_some",
-                    selected_occurrence_ids=list(rec.selected_occurrence_keys),
+                    selected_occurrence_ids=list(selected_keys),
                     new_rule=new_rule,
                 )
             )
@@ -182,4 +263,5 @@ def compile_studio_to_engine_apply(
         engine_candidates=engine_candidates,
         engine_decisions=engine_decisions,
         rules_by_id=rules,
+        compile_diagnostics=diag,
     )

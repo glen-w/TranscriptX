@@ -344,13 +344,16 @@ def validate_and_sanitize_inputs(
     modules: list[str] | None = None,
 ) -> dict[str, Any]:
     """
-    Comprehensive validation and sanitization of all inputs.
+    Validate and sanitize common analysis inputs.
+
+    Module list validation is **basic structure only** (must be a list when
+    provided). This function does not check module IDs against the registry.
 
     Args:
         transcript_path: Path to transcript file
         audio_path: Path to audio file
         output_dir: Output directory path
-        modules: List of analysis modules
+        modules: List of analysis modules (structure-checked only)
 
     Returns:
         Dictionary of validated and sanitized inputs
@@ -381,10 +384,8 @@ def validate_and_sanitize_inputs(
         validate_output_directory(output_dir, create_if_missing=True)
         validated_inputs["output_dir"] = output_dir
 
-    # Validate modules (if available_modules provided)
+    # Basic structure only — does not verify module IDs against the registry.
     if modules:
-        # Note: available_modules would need to be passed or imported
-        # For now, just validate basic structure
         if not isinstance(modules, list):
             raise ValueError("Modules must be a list")
         validated_inputs["modules"] = modules

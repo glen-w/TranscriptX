@@ -8,8 +8,11 @@ import time
 from unittest.mock import patch, mock_open
 
 
+import pytest
+
 from transcriptx.core.utils.file_lock import (
     FileLock,
+    LockAcquisitionError,
     cleanup_stale_locks,
 )
 
@@ -101,6 +104,37 @@ class TestFileLock:
             assert lock.acquired is False
             # Should have attempted to sleep
             assert mock_sleep.called
+
+    def test_context_manager_raises_on_blocking_timeout(self, tmp_path):
+        """Blocking context managers must not proceed unlocked on timeout."""
+        test_file = tmp_path / "test.txt"
+
+        with (
+            patch("transcriptx.core.utils.file_lock.fcntl") as mock_fcntl,
+            patch("builtins.open", mock_open()),
+            patch("time.sleep"),
+        ):
+            mock_fcntl.LOCK_EX = 2
+            mock_fcntl.LOCK_NB = 4
+            mock_fcntl.flock.side_effect = IOError("Resource temporarily unavailable")
+
+            with pytest.raises(LockAcquisitionError):
+                with FileLock(test_file, timeout=0.1, blocking=True):
+                    pass
+
+    def test_nested_locks_same_path_are_reentrant(self, tmp_path):
+        """Same-thread nested locks on one path must not self-deadlock."""
+        test_file = tmp_path / "nested.txt"
+        test_file.write_text("x", encoding="utf-8")
+
+        with FileLock(test_file, timeout=2) as outer:
+            assert outer.acquired is True
+            with FileLock(test_file, timeout=2) as inner:
+                assert inner.acquired is True
+                assert inner._reentrant is True
+            assert outer.acquired is True
+        assert outer.acquired is False
+        assert not test_file.with_suffix(".txt.lock").exists()
 
     def test_release_lock(self, tmp_path):
         """Test lock release."""

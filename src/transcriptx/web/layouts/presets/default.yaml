@@ -73,3 +73,12 @@ pages:
         params:
           title: Lexical Diversity
           empty_hint: Run the `lexical_diversity` module to populate this view.
+  charts:
+    page_id: charts
+    blocks:
+      - placement_id: charts_overview_slots
+        block_id: chart_overview_slots
+        visible: true
+      - placement_id: charts_gallery
+        block_id: chart_gallery
+        visible: true

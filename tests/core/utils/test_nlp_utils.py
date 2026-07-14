@@ -323,7 +323,9 @@ class TestPreprocessForAnalysisMocked:
             ),
             patch("transcriptx.core.utils.nlp_utils.ALL_VERBAL_TICS", set()),
         ):
-            result = preprocess_for_analysis("She quickly reviewed the budget", content_words_only=True)
+            result = preprocess_for_analysis(
+                "She quickly reviewed the budget", content_words_only=True
+            )
         assert result == "quickly reviewed budget"
 
     def test_explicit_pos_filter_overrides_content_tags(self):

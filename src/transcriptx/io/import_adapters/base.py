@@ -1,10 +1,10 @@
-"""Base helpers bridging legacy adapters into the import registry."""
+"""Shared helpers for ImportAdapter implementations."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from transcriptx.io.import_core.contracts import (
     AdapterCapabilities,
@@ -18,11 +18,49 @@ from transcriptx.io.import_core.contracts import (
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 
-@dataclass
-class LegacyAdapterBridge:
-    """Bridge legacy adapters to new ImportAdapter contract."""
+class DetectParseEngine(Protocol):
+    def detect_confidence(self, path: Path, content: bytes) -> float: ...
 
-    legacy: Any
+    def parse(self, path: Path, content: bytes) -> IntermediateTranscript: ...
+
+
+def confidence_probe(path: Path, content: bytes, score: float) -> DetectionOutcome:
+    """Map a 0..1 confidence score to DetectionOutcome (full-file probe semantics)."""
+    if score >= 0.95:
+        cls = DetectionClass.DEFINITIVE
+    elif score >= 0.6:
+        cls = DetectionClass.LIKELY
+    elif score > 0.0:
+        cls = DetectionClass.POSSIBLE
+    else:
+        cls = DetectionClass.REJECT
+    return DetectionOutcome(
+        detection_class=cls,
+        score=score,
+        signals=(f"confidence:{score:.2f}",) if score else (),
+        hard_rejects=() if score else ("confidence_reject",),
+        recognized_family=score > 0.0,
+    )
+
+
+def probe_with_engine(
+    engine: DetectParseEngine, input_data: DetectionInput
+) -> DetectionOutcome:
+    """Probe using an engine; prefer full file bytes over truncated snippet."""
+    content = input_data.snippet
+    try:
+        content = input_data.path.read_bytes()
+    except Exception:
+        pass
+    score = float(engine.detect_confidence(input_data.path, content))
+    return confidence_probe(input_data.path, content, score)
+
+
+@dataclass
+class EngineBackedImportAdapter:
+    """ImportAdapter that delegates detect/parse to an engine object."""
+
+    engine: Any
     adapter_id: str
     display_name: str
     adapter_kind: AdapterKind
@@ -32,41 +70,10 @@ class LegacyAdapterBridge:
     capabilities: AdapterCapabilities
 
     def probe(self, input_data: DetectionInput) -> DetectionOutcome:
-        # Legacy adapters expect to see the full file content, not a truncated snippet.
-        # For JSON/vendor formats (notably WhisperX), large files can exceed the
-        # snippet window, and attempting to parse only the snippet leads to
-        # JSONDecodeError and spurious UNKNOWN_INPUT outcomes.
-        #
-        # To keep the modern detection contract stable while preserving legacy
-        # behaviour, prefer the full file content when available and fall back to
-        # the snippet if a read fails.
-        content = input_data.snippet
-        try:
-            # Re-read from disk so we don't have to plumb full content through
-            # DetectionInput; this keeps the bridge self-contained.
-            content = input_data.path.read_bytes()
-        except Exception:
-            pass
-
-        score = float(self.legacy.detect_confidence(input_data.path, content))
-        if score >= 0.95:
-            cls = DetectionClass.DEFINITIVE
-        elif score >= 0.6:
-            cls = DetectionClass.LIKELY
-        elif score > 0.0:
-            cls = DetectionClass.POSSIBLE
-        else:
-            cls = DetectionClass.REJECT
-        return DetectionOutcome(
-            detection_class=cls,
-            score=score,
-            signals=(f"legacy_confidence:{score:.2f}",) if score else (),
-            hard_rejects=() if score else ("legacy_reject",),
-            recognized_family=score > 0.0,
-        )
+        return probe_with_engine(self.engine, input_data)
 
     def parse(self, input_data: ParseInput) -> IntermediateTranscript:
-        return self.legacy.parse(Path(input_data.path), input_data.content)
+        return self.engine.parse(Path(input_data.path), input_data.content)
 
 
 def ensure_import_adapter(adapter: ImportAdapter) -> ImportAdapter:

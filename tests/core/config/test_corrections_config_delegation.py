@@ -21,7 +21,19 @@ from .delegation_test_utils import (
     assert_three_path_access,
 )
 
-_FIELDS = tuple(CorrectionsSettingsModel.model_fields.keys())
+_FIELDS = tuple(
+    k
+    for k in CorrectionsSettingsModel.model_fields.keys()
+    if k != "llm"  # nested dataclass; covered by shape / asdict parity
+)
+
+
+def test_llm_nested_defaults() -> None:
+    from dataclasses import asdict
+
+    expected = CorrectionsSettingsModel().model_dump()["llm"]
+    assert asdict(AnalysisConfig().corrections.llm) == expected
+    assert TranscriptXConfig().to_dict()["analysis"]["corrections"]["llm"] == expected
 
 
 def test_ownership_invariant_unchanged() -> None:

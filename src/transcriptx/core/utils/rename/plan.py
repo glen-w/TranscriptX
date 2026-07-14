@@ -264,9 +264,7 @@ def _plan_file_and_sidecar_renames(
         rename_history_at_iso=rename_history_at_iso,
     )
     if isinstance(sidecar_result, str):
-        return _blocked_plan(
-            sidecar_result, vals, names, paths, warnings=plan_warnings
-        )
+        return _blocked_plan(sidecar_result, vals, names, paths, warnings=plan_warnings)
     sidecar_moves = sidecar_result
     for move in sidecar_moves:
         if move.source != move.dest:

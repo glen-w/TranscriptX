@@ -33,5 +33,3 @@ class BlockSpec:
     prerequisites: BlockPrereq = BlockPrereq.RUN_SCOPED
     params_schema: Mapping[str, Any] = field(default_factory=dict)
     render: BlockRenderFn | None = None
-    fragment: bool = False
-    supports_instance_id: bool = False

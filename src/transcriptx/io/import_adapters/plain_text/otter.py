@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from transcriptx.io.adapters.otter_adapter import OtterAdapter as LegacyOtterAdapter
-from transcriptx.io.import_adapters.base import LegacyAdapterBridge
+from transcriptx.io.import_adapters.base import EngineBackedImportAdapter
+from transcriptx.io.import_adapters.plain_text.otter_engine import OtterAdapter
 from transcriptx.io.import_core.contracts import AdapterCapabilities, AdapterKind
 
 
-class OtterImportAdapter(LegacyAdapterBridge):
+class OtterImportAdapter(EngineBackedImportAdapter):
     def __init__(self) -> None:
         super().__init__(
-            legacy=LegacyOtterAdapter(),
+            engine=OtterAdapter(),
             adapter_id="otter",
             display_name="Otter",
             adapter_kind=AdapterKind.VENDOR,

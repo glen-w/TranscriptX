@@ -115,7 +115,7 @@ class TestSpeakerNormalizer:
 
     def test_normalize_speakers_with_hints(self):
         """Test normalizing speakers from a VTT file via the adapter pipeline."""
-        from transcriptx.io.adapters.vtt_adapter import VTTAdapter
+        from transcriptx.io.import_adapters.subtitle.vtt_engine import VTTAdapter
         from transcriptx.io.transcript_normalizer import TranscriptNormalizer
 
         vtt_path = FIXTURES_DIR / "with_speakers.vtt"
@@ -133,7 +133,7 @@ class TestSpeakerNormalizer:
 
     def test_normalize_speakers_without_hints(self):
         """Test normalizing when no speaker hints exist."""
-        from transcriptx.io.adapters.vtt_adapter import VTTAdapter
+        from transcriptx.io.import_adapters.subtitle.vtt_engine import VTTAdapter
         from transcriptx.io.transcript_normalizer import TranscriptNormalizer
 
         vtt_path = FIXTURES_DIR / "simple.vtt"

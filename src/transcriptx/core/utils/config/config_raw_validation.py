@@ -31,7 +31,6 @@ _LLM_ALLOWED_KEYS = frozenset(
         "provider",
         "model",
         "base_url",
-        "api_key",
         "request_timeout",
         "availability_timeout",
         "seed",

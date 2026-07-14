@@ -299,4 +299,6 @@ def validate_transcript_document(
 
     if empty_text_count:
         prefix = f"Transcript {label}" if label else "Transcript document"
-        logger.warning(f"{prefix} has {empty_text_count} segments with empty text")
+        # Common in real ASR/VTT exports; not a schema failure. Debug only so
+        # library scans do not drown the log in non-actionable noise.
+        logger.debug(f"{prefix} has {empty_text_count} segments with empty text")

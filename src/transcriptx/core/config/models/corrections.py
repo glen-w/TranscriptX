@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from transcriptx.core.config.models.corrections_llm import CorrectionsLlmSettingsModel
+
 
 class CorrectionsKnownOrgPhrasesModel(BaseModel):
     REN21: list[str] = Field(
@@ -24,3 +26,6 @@ class CorrectionsSettingsModel(BaseModel):
     enable_fuzzy: bool = Field(default=False)
     update_original_file: bool = Field(default=False)
     create_backup: bool = Field(default=True)
+    llm: CorrectionsLlmSettingsModel = Field(
+        default_factory=CorrectionsLlmSettingsModel
+    )

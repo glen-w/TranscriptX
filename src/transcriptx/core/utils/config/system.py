@@ -17,10 +17,9 @@ class LLMConfig:
 
     # Provider / connection
     enabled: bool = False
-    provider: str = "null"  # null, ollama
+    provider: str = "null"  # null | ollama
     model: str | None = None
     base_url: str | None = None
-    api_key: str | None = None
     request_timeout: float = 1350.0
     availability_timeout: float = 7.5
 

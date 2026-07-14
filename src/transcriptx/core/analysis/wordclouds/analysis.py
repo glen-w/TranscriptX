@@ -141,10 +141,16 @@ class WordcloudsAnalysis(AnalysisModule):
         # Extract tics if not provided
         if tic_list is None:
             from transcriptx.core.analysis.tics import extract_tics_and_top_words
+            from transcriptx.core.utils.nlp_utils import build_tic_mask
 
-            _, _ = extract_tics_and_top_words(grouped)
-            # Note: tic_list extraction would need to be done here
-            tic_list = []
+            per_speaker_tics, _ = extract_tics_and_top_words(grouped)
+            detected: set[str] = set()
+            for counts in (per_speaker_tics or {}).values():
+                if isinstance(counts, dict):
+                    detected.update(str(term).lower() for term in counts.keys())
+                elif isinstance(counts, (list, set, tuple)):
+                    detected.update(str(term).lower() for term in counts)
+            tic_list = sorted(build_tic_mask(detected))
 
         return {
             "grouped_texts": dict(grouped),

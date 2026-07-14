@@ -20,7 +20,7 @@ from transcriptx.core.utils.paths import TRANSCRIPTS_IMPORTS_DIR
 from transcriptx.core.utils.slug_manager import register_transcript
 from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.io.adapters.base import UnsupportedFormatError
+from transcriptx.io.import_core.errors import UnsupportedImportError
 from transcriptx.io.import_metadata_sidecar import validate_managed_transcript
 from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 from transcriptx.web.cache_helpers import clear_transcript_listing_caches
@@ -104,7 +104,7 @@ def _import_uploaded_transcript(uploaded: Any) -> tuple[str, Path]:
             overwrite=False,
             delete_staging_on_success=True,
         )
-    except UnsupportedFormatError:
+    except UnsupportedImportError:
         raise
     except ValueError:
         raise
@@ -190,7 +190,7 @@ def render_upload_transcript_page() -> None:
                     slug, transcript_path = _import_uploaded_transcript_with_timeout(
                         uploaded_transcript
                     )
-                except UnsupportedFormatError as e:
+                except UnsupportedImportError as e:
                     failures.append(
                         (uploaded_transcript.name, f"Unsupported format: {e}")
                     )

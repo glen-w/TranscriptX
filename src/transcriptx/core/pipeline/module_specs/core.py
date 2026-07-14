@@ -11,17 +11,6 @@ def build_core_module_definitions(
     default_requirements: List[Requirement],
 ) -> Dict[str, Dict]:
     return {
-        "corrections": {
-            "description": "Semi-automatic transcription accuracy tuning",
-            "dependencies": [],
-            "category": "light",
-            "determinism_tier": "T0",
-            "requirements": [Requirement.SEGMENTS],
-            "enhancements": [],
-            "exclude_from_default": True,
-            "post_processing_only": True,
-            "supports_group": False,
-        },
         "stats": {
             "description": "Statistical Analysis",
             "dependencies": [],

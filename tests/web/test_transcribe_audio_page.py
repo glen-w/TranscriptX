@@ -30,16 +30,16 @@ def test_transcribe_audio_page_is_instruction_only():
 
 
 @pytest.mark.unit
-def test_providers_include_whispermlx_and_docker_stub():
+def test_providers_include_whispermlx_only():
     from transcriptx.services.transcription.registry import get_transcription_providers
 
     ids = {p.provider_id for p in get_transcription_providers()}
     assert "whispermlx" in ids
-    assert "whisperx_docker" in ids
+    assert "whisperx_docker" not in ids
 
 
 @pytest.mark.unit
-def test_whisperx_docker_always_unavailable():
+def test_whisperx_docker_provider_file_still_unavailable():
     from transcriptx.services.transcription.whisperx_docker_provider import (
         WhisperXDockerProvider,
     )

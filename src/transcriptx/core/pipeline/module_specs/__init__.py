@@ -18,7 +18,6 @@ from .topics import build_topics_module_definitions
 # Registry insertion order only — NOT UI display order.
 # UI grouping/order remains owned by web/module_ui_groups.py.
 MODULE_REGISTRY_ORDER: tuple[str, ...] = (
-    "corrections",
     "acts",
     "conversation_loops",
     "contagion",

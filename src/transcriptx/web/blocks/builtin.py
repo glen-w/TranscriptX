@@ -150,7 +150,6 @@ def _register_overview_blocks() -> None:
             description="Zip export for selected artifacts.",
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=overview_blocks.render_export_panel,
-            fragment=True,
         ),
     ]
     for spec in specs:
@@ -189,7 +188,6 @@ def _register_insights_blocks() -> None:
             artifact_patterns=("_highlights.json",),
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=insights_blocks.render_highlights,
-            fragment=True,
         ),
         BlockSpec(
             id="executive_summary",
@@ -226,7 +224,6 @@ def _register_insights_blocks() -> None:
             prerequisites=BlockPrereq.RUN_SCOPED,
             params_schema=llm_params_schema,
             render=insights_blocks.render_llm_summary_block,
-            supports_instance_id=True,
         ),
         BlockSpec(
             id="llm_speaker_summary_block",

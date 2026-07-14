@@ -98,6 +98,10 @@ def test_generate_candidates_len_matches_post_dedupe_after_dedupe() -> None:
     mock_session = MagicMock()
     mock_session.store.read_event_lines.return_value = ["{}"]
     mock_session.next_event_sequence.return_value = 2
+    mock_session.last_event_sequence.return_value = 1
+    mock_session.persist_event_batch.side_effect = (
+        lambda tp, doc, events, preconditions=None: list(doc.candidates)
+    )
     doc = StudioSessionDocument(
         session_id="sid",
         transcript_path="/tmp/x.json",
@@ -116,7 +120,9 @@ def test_generate_candidates_len_matches_post_dedupe_after_dedupe() -> None:
         ),
         patch(
             "transcriptx.services.corrections_studio.candidate_service.get_config",
-            return_value=MagicMock(analysis=MagicMock(corrections=None)),
+            return_value=MagicMock(
+                analysis=MagicMock(corrections=None), llm=MagicMock(enabled=False)
+            ),
         ),
         patch(
             "transcriptx.services.corrections_studio.candidate_service.load_memory",
@@ -129,10 +135,6 @@ def test_generate_candidates_len_matches_post_dedupe_after_dedupe() -> None:
         ) as mock_sms,
         patch(
             "transcriptx.services.corrections_studio.candidate_service.detect_memory_hits",
-            return_value=[],
-        ),
-        patch(
-            "transcriptx.services.corrections_studio.candidate_service.dedupe_candidates",
             return_value=deduped,
         ),
         patch(
@@ -144,6 +146,10 @@ def test_generate_candidates_len_matches_post_dedupe_after_dedupe() -> None:
         ),
         patch(
             "transcriptx.services.corrections_studio.candidate_service.logger",
+        ),
+        patch(
+            "transcriptx.services.corrections_studio.generation_manifest.studio_session_rules_fingerprint",
+            return_value="rulesfp",
         ),
     ):
         mock_mem.return_value = MagicMock(rules={})
@@ -160,6 +166,7 @@ def test_generate_candidates_len_matches_post_dedupe_after_dedupe() -> None:
         svc = CorrectionsStudioCandidateService(mock_session)
         out = svc.generate_candidates("sid", force=True)
 
-    assert len(out) == len(deduped)
+    assert len(out.candidates) == len(deduped)
+    assert out.commit_aborted is False
     post = _detector_counts_from_candidates(deduped)
-    assert _detector_counts_sum(post) == len(out)
+    assert _detector_counts_sum(post) == len(out.candidates)

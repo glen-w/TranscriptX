@@ -7,7 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 CANONICAL_SCHEMA_VERSION = "1.0"
 
@@ -72,13 +72,11 @@ class CanonicalTranscript:
     segments: List[Dict[str, Any]]
     capabilities: TranscriptCapabilities
     schema_version: str = CANONICAL_SCHEMA_VERSION
-    speaker_identity_hints: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_segments(
         cls,
         segments: List[Dict[str, Any]],
-        speaker_identity_hints: Optional[Dict[str, Any]] = None,
     ) -> "CanonicalTranscript":
         content_hash = compute_transcript_content_hash(segments)
         capabilities = TranscriptCapabilities.from_segments(segments)
@@ -86,5 +84,4 @@ class CanonicalTranscript:
             content_hash=content_hash,
             segments=segments,
             capabilities=capabilities,
-            speaker_identity_hints=speaker_identity_hints,
         )

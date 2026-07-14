@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from transcriptx.io.adapters.otter_adapter import OtterAdapter
+from transcriptx.io.import_adapters.plain_text.otter_engine import OtterAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "otter"

@@ -23,7 +23,6 @@ EXTRA_REPRESENTATIVE: Dict[str, str] = {
 }
 
 MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
-    "corrections": ("transcriptx.core.analysis.corrections", "CorrectionsAnalysis"),
     "emotion": ("transcriptx.core.analysis.emotion", "EmotionAnalysis"),
     "contagion": ("transcriptx.core.analysis.contagion", "ContagionAnalysis"),
     "sentiment": ("transcriptx.core.analysis.sentiment", "SentimentAnalysis"),

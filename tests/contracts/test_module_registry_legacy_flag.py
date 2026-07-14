@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 from transcriptx.core.pipeline.module_registry import (
     get_default_modules,
     get_module_info,
@@ -23,7 +25,10 @@ def test_default_modules_exclude_legacy_semantic_when_include_legacy_false() -> 
 
 
 def test_default_modules_include_legacy_semantic_when_include_legacy_true() -> None:
-    mods = get_default_modules(include_legacy=True)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        mods = get_default_modules(include_legacy=True)
+    assert any(item.category is DeprecationWarning for item in caught)
     assert "semantic_similarity" in mods
     assert "semantic_similarity_advanced" in mods
     assert "semantic_similarity_v2" in mods

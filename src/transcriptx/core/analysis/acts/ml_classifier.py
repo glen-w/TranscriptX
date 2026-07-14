@@ -1,14 +1,14 @@
 """
-Machine Learning-based Dialogue Act Classification for TranscriptX.
+Machine Learning-oriented dialogue act classification for TranscriptX.
 
-This module provides advanced dialogue act classification using:
-1. Transformer-based models (BERT, RoBERTa) - with graceful fallback
-2. Traditional ML methods (Random Forest with TF-IDF)
-3. Ensemble methods combining multiple approaches
-4. Context-aware classification with conversation history
+Public classification is **rule/heuristic-based** today:
+1. Transformer path is intentionally disabled (no trained dialogue-act model)
+2. Random Forest / TF-IDF scaffolding remains uninitialized / untrained
+3. Heuristic classification is the active path
+4. Optional conversation-context features feed the heuristic scorer
 
-The system is designed to gracefully degrade when ML models are unavailable
-or fail to load, falling back to rule-based classification.
+The class name retains "ML" for historical import stability; callers should treat
+``method="heuristics"`` as the shipped behavior, not a trained model.
 """
 
 import importlib.util
@@ -130,17 +130,15 @@ class MLDialogueActClassifier:
             )
 
     def _initialize_transformer_model(self) -> bool:
-        """Initialize the transformer-based classification model with error handling."""
-        # Disable transformer-based classification to avoid loading untrained models
-        # The transformer models require specific training for dialogue act classification
-        # which is not available in the base BERT models
+        """Transformer acts path is disabled — no trained dialogue-act model ships."""
         logger.info(
-            "Transformer-based classification disabled - using traditional ML and rule-based approaches"
+            "Dialogue acts use rule/heuristic classification "
+            "(transformer path disabled; no trained model)"
         )
         return False
 
     def _initialize_traditional_ml(self) -> bool:
-        """Initialize traditional ML models with error handling."""
+        """Initialize untrained TF-IDF / RF scaffolding (heuristics remain active)."""
         try:
             from transcriptx.core.utils.config import get_config
 
@@ -155,10 +153,10 @@ class MLDialogueActClassifier:
                 random_state=42,
             )
 
-            # Note: Models are initialized but not trained
-            # They will be used for heuristic classification until trained
+            # Models are scaffolding only; classification uses heuristics.
             logger.info(
-                "Traditional ML models initialized successfully (untrained - using heuristics)"
+                "Acts TF-IDF/RF scaffolding initialized (untrained); "
+                "using heuristic classification"
             )
             return True
         except Exception as e:
@@ -169,14 +167,11 @@ class MLDialogueActClassifier:
         self, text: str, context: dict[str, Any] | None = None
     ) -> MLClassificationResult:
         """
-        Classify an utterance using available ML methods with fallback.
+        Classify an utterance via the ML-named entrypoint.
 
-        Args:
-            text: The utterance to classify
-            context: Optional context dictionary
-
-        Returns:
-            MLClassificationResult with classification details
+        Shipped behavior is heuristic classification (transformer disabled;
+        RandomForest/TF-IDF scaffolding is untrained). The method field on the
+        result reports ``heuristics`` (or rules fallback), not a trained model.
         """
         # Prepare input with context if available
         input_text = self._prepare_input_with_context(text, context)

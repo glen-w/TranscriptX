@@ -44,6 +44,8 @@ from transcriptx.services.corrections_studio.schema import (
     StalenessStatus,
     StudioCandidate,
     StudioEventEnvelope,
+    StudioExportResult,
+    StudioPreviewResult,
     StudioReviewRecord,
     StudioReviewStats,
     StudioSessionDocument,
@@ -108,7 +110,6 @@ class CorrectionService:
             created_at=now,
             updated_at=now,
         )
-        seq = self._session_svc.next_event_sequence(session_id)
         payload = SessionStartedPayload(
             transcript_path=normalized,
             recorded_transcript_identity_hash=fingerprint,
@@ -116,7 +117,7 @@ class CorrectionService:
         event = StudioEventEnvelope(
             session_id=session_id,
             event_type="session_started",
-            event_sequence=seq,
+            event_sequence=0,
             payload=payload.model_dump(mode="json"),
         )
         self._session_svc.persist(normalized, doc, event)
@@ -130,12 +131,11 @@ class CorrectionService:
         doc = normalize_cutover_session_blob(raw)
         return _session_document_for_api(doc)
 
-    def generate_candidates(
-        self, session_id: str, force: bool = False
-    ) -> List[StudioCandidate]:
-        rows = self._candidate_svc.generate_candidates(session_id, force=force)
-        studio_metrics.increment("candidates_generated")
-        return list(rows)
+    def generate_candidates(self, session_id: str, force: bool = False):
+        result = self._candidate_svc.generate_candidates(session_id, force=force)
+        if not result.commit_aborted:
+            studio_metrics.increment("candidates_generated")
+        return result
 
     def list_candidates(
         self,
@@ -143,6 +143,7 @@ class CorrectionService:
         status_filter: Optional[str] = None,
         kind_filter: Optional[List[str]] = None,
         confidence_min: Optional[float] = None,
+        source_filter: Optional[List[str]] = None,
         offset: int = 0,
         limit: int = 100,
     ) -> List[StudioCandidate]:
@@ -156,6 +157,31 @@ class CorrectionService:
             candidates = [c for c in candidates if c.kind in kind_filter]
         if confidence_min is not None:
             candidates = [c for c in candidates if c.confidence >= confidence_min]
+        if source_filter:
+            wanted = set(source_filter)
+            mapped = set()
+            if "memory" in wanted:
+                mapped.add("detector_memory")
+            if "deterministic" in wanted:
+                mapped.update(
+                    {
+                        "detector_acronym",
+                        "detector_consistency",
+                        "detector_fuzzy",
+                    }
+                )
+            if "llm" in wanted:
+                mapped.add("llm_discovery")
+            mapped |= wanted
+            filtered = []
+            for c in candidates:
+                srcs = {
+                    s.value if hasattr(s, "value") else str(s)
+                    for s in (c.sources or [])
+                }
+                if srcs & mapped:
+                    filtered.append(c)
+            candidates = filtered
         return candidates[offset : offset + limit]
 
     def count_candidates(
@@ -164,6 +190,7 @@ class CorrectionService:
         status_filter: Optional[str] = None,
         kind_filter: Optional[List[str]] = None,
         confidence_min: Optional[float] = None,
+        source_filter: Optional[List[str]] = None,
     ) -> int:
         return len(
             self.list_candidates(
@@ -171,10 +198,20 @@ class CorrectionService:
                 status_filter=status_filter,
                 kind_filter=kind_filter,
                 confidence_min=confidence_min,
+                source_filter=source_filter,
                 offset=0,
                 limit=10_000,
             )
         )
+
+    def get_generation_diagnostics(self, session_id: str) -> Optional[dict]:
+        doc = self._session_svc.load_document(session_id)
+        if (
+            not doc.current_generation
+            or not doc.current_generation.generation_diagnostics
+        ):
+            return None
+        return doc.current_generation.generation_diagnostics.model_dump(mode="json")
 
     def record_decision(
         self,
@@ -195,14 +232,14 @@ class CorrectionService:
         )
         studio_metrics.increment("reviews_recorded")
 
-    def compute_preview(self, session_id: str) -> dict[str, Any]:
+    def compute_preview(self, session_id: str) -> StudioPreviewResult:
         out = self._preview_svc.compute_preview(session_id)
         studio_metrics.increment("previews_computed")
         return out
 
     def apply_and_export(
         self, session_id: str, export_path: Optional[str] = None
-    ) -> dict[str, Any]:
+    ) -> StudioExportResult:
         result = self._export_svc.apply_and_export(session_id, export_path=export_path)
         studio_metrics.increment("exports_completed")
         return result

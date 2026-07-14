@@ -12,13 +12,18 @@ from transcriptx.core.utils.paths import PROFILES_DIR
 from transcriptx.web.blocks.registry import validate_block_id
 from transcriptx.web.layouts.specs import (
     CURRENT_LAYOUT_SCHEMA_VERSION,
+    BlockPlacementModel,
+    LayoutPageSpec,
     LayoutSpec,
     SUPPORTED_LAYOUT_PAGES,
 )
 
 UI_LAYOUTS_DIR = PROFILES_DIR / "ui_layouts"
 PRESETS_DIR = Path(__file__).resolve().parent / "presets"
-BUILTIN_LAYOUT_IDS = frozenset({"default", "executive", "developer_debug"})
+ALL_LAYOUT_ID = "all"
+BUILTIN_LAYOUT_IDS = frozenset(
+    {"default", "executive", "developer_debug", ALL_LAYOUT_ID}
+)
 
 
 class LayoutValidationError(ValueError):
@@ -27,6 +32,33 @@ class LayoutValidationError(ValueError):
 
 def _default_layouts_dir() -> Path:
     return UI_LAYOUTS_DIR
+
+
+def _build_all_layout() -> LayoutSpec:
+    """Every registered block once per page, sorted by block_id."""
+    from transcriptx.web.blocks.registry import list_blocks
+
+    block_ids = sorted(spec.id for spec in list_blocks())
+    pages: dict[str, LayoutPageSpec] = {}
+    for page_id in ("overview", "insights", "charts"):
+        pages[page_id] = LayoutPageSpec(
+            page_id=page_id,
+            blocks=[
+                BlockPlacementModel(
+                    placement_id=f"all_{page_id}_{block_id}",
+                    block_id=block_id,
+                    visible=True,
+                )
+                for block_id in block_ids
+            ],
+        )
+    return LayoutSpec(
+        schema_version=CURRENT_LAYOUT_SCHEMA_VERSION,
+        id=ALL_LAYOUT_ID,
+        title="All",
+        description="Every registered view block in alphabetical order.",
+        pages=pages,
+    )
 
 
 class LayoutProfileStore:
@@ -40,7 +72,7 @@ class LayoutProfileStore:
 
     @staticmethod
     def list_layouts(base: Path | None = None) -> list[str]:
-        ids: set[str] = set()
+        ids: set[str] = {ALL_LAYOUT_ID}
         root = LayoutProfileStore.layouts_dir(base)
         if root.exists():
             ids.update(p.stem for p in root.glob("*.yaml"))
@@ -50,6 +82,10 @@ class LayoutProfileStore:
 
     @staticmethod
     def load_layout(layout_id: str, base: Path | None = None) -> LayoutSpec:
+        if layout_id == ALL_LAYOUT_ID:
+            spec = _build_all_layout()
+            LayoutProfileStore.validate_layout(spec)
+            return spec
         root = LayoutProfileStore.layouts_dir(base)
         path = root / f"{layout_id}.yaml"
         if not path.exists():

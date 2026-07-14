@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from transcriptx.io.adapters.sembly_adapter import SemblyAdapter as LegacySemblyAdapter
-from transcriptx.io.import_adapters.base import LegacyAdapterBridge
+from transcriptx.io.import_adapters.base import EngineBackedImportAdapter
+from transcriptx.io.import_adapters.html_export.sembly_engine import SemblyAdapter
 from transcriptx.io.import_core.contracts import AdapterCapabilities, AdapterKind
 
 
-class SemblyImportAdapter(LegacyAdapterBridge):
+class SemblyImportAdapter(EngineBackedImportAdapter):
     def __init__(self) -> None:
         super().__init__(
-            legacy=LegacySemblyAdapter(),
+            engine=SemblyAdapter(),
             adapter_id="sembly",
             display_name="Sembly",
             adapter_kind=AdapterKind.VENDOR,

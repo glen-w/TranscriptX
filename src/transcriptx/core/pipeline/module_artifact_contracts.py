@@ -43,14 +43,8 @@ _CATEGORY_DEFAULTS: dict[str, ModuleArtifactContract] = {
     ),
 }
 
-# Post-processing-only modules often emit no standard tree layout.
-_OVERRIDES: dict[str, ModuleArtifactContract] = {
-    "corrections": ModuleArtifactContract(
-        expects_artifacts="conditional",
-        artifact_mode="report_only",
-        missing_artifacts_affects_status="ignore",
-    ),
-}
+# Per-module overrides when category defaults are insufficient.
+_OVERRIDES: dict[str, ModuleArtifactContract] = {}
 
 
 def get_artifact_contract(module_id: str) -> ModuleArtifactContract:

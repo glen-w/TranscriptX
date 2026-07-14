@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from transcriptx.io.adapters.generic_diarised_text_adapter import (
-    GenericDiarisedTextAdapter as LegacyGenericDiarisedTextAdapter,
+from transcriptx.io.import_adapters.base import EngineBackedImportAdapter
+from transcriptx.io.import_adapters.plain_text.generic_text_engine import (
+    GenericDiarisedTextAdapter,
 )
-from transcriptx.io.import_adapters.base import LegacyAdapterBridge
 from transcriptx.io.import_core.contracts import AdapterCapabilities, AdapterKind
 
 
-class GenericTextImportAdapter(LegacyAdapterBridge):
+class GenericTextImportAdapter(EngineBackedImportAdapter):
     def __init__(self) -> None:
         super().__init__(
-            legacy=LegacyGenericDiarisedTextAdapter(),
+            engine=GenericDiarisedTextAdapter(),
             adapter_id="generic_text",
             display_name="Generic Diarized Text",
             adapter_kind=AdapterKind.GENERIC,

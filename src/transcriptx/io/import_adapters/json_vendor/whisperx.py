@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from transcriptx.io.adapters.whisperx_adapter import (
-    WhisperXAdapter as LegacyWhisperXAdapter,
-)
-from transcriptx.io.import_adapters.base import LegacyAdapterBridge
+from transcriptx.io.import_adapters.base import EngineBackedImportAdapter
+from transcriptx.io.import_adapters.json_vendor.whisperx_engine import WhisperXAdapter
 from transcriptx.io.import_core.contracts import AdapterCapabilities, AdapterKind
 
 
-class WhisperXImportAdapter(LegacyAdapterBridge):
+class WhisperXImportAdapter(EngineBackedImportAdapter):
     def __init__(self) -> None:
         super().__init__(
-            legacy=LegacyWhisperXAdapter(),
+            engine=WhisperXAdapter(),
             adapter_id="whisperx",
             display_name="WhisperX JSON",
             adapter_kind=AdapterKind.VENDOR,

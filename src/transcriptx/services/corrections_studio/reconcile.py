@@ -16,9 +16,11 @@ from transcriptx.services.corrections_studio.schema import (
     GenerationManifest,
     ReviewAction,
     ReviewStatus,
+    RuleLifecycleState,
     StudioCandidate,
     StudioEventEnvelope,
     StudioReviewRecord,
+    StudioRule,
     StudioSessionDocument,
 )
 
@@ -43,7 +45,7 @@ class _ReplayState:
 def _replay_session_started(state: _ReplayState, env: StudioEventEnvelope) -> None:
     payload = env.payload or {}
     state.doc = {
-        "studio_schema_version": 1,
+        "studio_schema_version": 2,
         "session_id": env.session_id,
         "transcript_path": payload.get("transcript_path", ""),
         "recorded_transcript_identity_hash": payload.get(
@@ -100,6 +102,7 @@ def _replay_review_recorded(state: _ReplayState, env: StudioEventEnvelope) -> No
     keys = [str(x) for x in (payload.get("selected_occurrence_keys") or [])]
     lr = payload.get("learn_rule_id")
     rt = normalize_review_target_text(payload.get("review_target_text"))
+    migrated = payload.get("migrated_from_generation_id")
     rec = StudioReviewRecord(
         session_id=env.session_id,
         generation_id=gen_id,
@@ -111,6 +114,7 @@ def _replay_review_recorded(state: _ReplayState, env: StudioEventEnvelope) -> No
         review_target_text=rt,
         recorded_at=env.timestamp,
         event_sequence=env.event_sequence,
+        migrated_from_generation_id=(int(migrated) if migrated is not None else None),
     )
     reviews = [
         r
@@ -128,6 +132,47 @@ def _replay_review_recorded(state: _ReplayState, env: StudioEventEnvelope) -> No
     doc["candidates"] = list(state.candidates_by_id.values())
 
 
+def _replay_rule_state_changed(state: _ReplayState, env: StudioEventEnvelope) -> None:
+    doc = state.doc
+    payload = env.payload or {}
+    rule_id = str(payload.get("rule_id") or "")
+    if not rule_id:
+        return
+    change = str(payload.get("change") or "upsert")
+    rules = dict(doc.get("rules") or {})
+    if change == "disable":
+        existing = rules.get(rule_id)
+        if isinstance(existing, StudioRule):
+            rules[rule_id] = existing.model_copy(
+                update={"lifecycle": RuleLifecycleState.disabled}
+            )
+        elif isinstance(existing, dict):
+            existing = dict(existing)
+            existing["lifecycle"] = RuleLifecycleState.disabled.value
+            rules[rule_id] = existing
+        doc["rules"] = rules
+        return
+    if change == "enable":
+        existing = rules.get(rule_id)
+        if isinstance(existing, StudioRule):
+            rules[rule_id] = existing.model_copy(
+                update={"lifecycle": RuleLifecycleState.session_active}
+            )
+        elif isinstance(existing, dict):
+            existing = dict(existing)
+            existing["lifecycle"] = RuleLifecycleState.session_active.value
+            rules[rule_id] = existing
+        doc["rules"] = rules
+        return
+    raw_rule = payload.get("rule")
+    if isinstance(raw_rule, dict):
+        try:
+            rules[rule_id] = StudioRule.model_validate(raw_rule)
+        except Exception:
+            return
+        doc["rules"] = rules
+
+
 def _replay_noop(_state: _ReplayState, _env: StudioEventEnvelope) -> None:
     return None
 
@@ -138,7 +183,7 @@ _EVENT_HANDLERS: Dict[str, Callable[[_ReplayState, StudioEventEnvelope], None]] 
     "review_recorded": _replay_review_recorded,
     "preview_computed": _replay_noop,
     "export_completed": _replay_noop,
-    "rule_state_changed": _replay_noop,
+    "rule_state_changed": _replay_rule_state_changed,
     "session_forked": _replay_noop,
     "staleness_detected": _replay_noop,
     "incompatible_transcript_detected": _replay_noop,
@@ -170,7 +215,12 @@ def reconcile_snapshot_from_events(
     doc["candidates"] = list(state.candidates_by_id.values())
     if last_env is not None:
         doc["updated_at"] = last_env.timestamp
-    return StudioSessionDocument.model_validate(doc)
+    from transcriptx.services.corrections_studio.normalize import (
+        migrate_session_document_to_v2,
+    )
+
+    rebuilt = StudioSessionDocument.model_validate(doc)
+    return migrate_session_document_to_v2(rebuilt)
 
 
 def parse_events_jsonl(lines: List[str]) -> List[StudioEventEnvelope]:

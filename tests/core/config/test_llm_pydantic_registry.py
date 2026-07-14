@@ -48,16 +48,6 @@ def test_llm_model_json_schema_snapshot() -> None:
     assert LLMSettingsModel.model_json_schema() == golden
 
 
-def test_api_key_registry_metadata_hidden_and_advanced() -> None:
-    reg = build_registry()
-    meta = reg["llm.api_key"]
-    assert meta.sensitivity == "hidden"
-    assert meta.advanced is True
-    serialized = serialize_field_metadata(meta)
-    assert "sk-" not in json.dumps(serialized)
-    assert serialized["default"] is None
-
-
 def test_capture_pilot_schema_golden_matches_registry() -> None:
     spec = _llm_spec()
     captured = capture_pilot_schema_golden(spec)

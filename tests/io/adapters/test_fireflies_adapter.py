@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from transcriptx.io.adapters.fireflies_adapter import FirefliesAdapter
+from transcriptx.io.import_adapters.plain_text.fireflies_engine import FirefliesAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = (

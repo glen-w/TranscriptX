@@ -19,15 +19,15 @@ class TestRegistry:
         ids = {p.provider_id for p in get_transcription_providers()}
         assert "whispermlx" in ids
 
-    def test_whisperx_docker_listed(self):
+    def test_whisperx_docker_not_registered(self):
         ids = {p.provider_id for p in get_transcription_providers()}
-        assert "whisperx_docker" in ids
+        assert "whisperx_docker" not in ids
 
     def test_unknown_provider_error(self):
         with pytest.raises(UnknownTranscriptionProviderError):
             get_provider("nonexistent")
 
-    def test_default_provider_fallback(self):
+    def test_default_provider_fallback_from_unregistered_stub(self):
         options = TranscriptionOptions(
             provider_id="whisperx_docker",
             model="large-v3",
@@ -35,7 +35,7 @@ class TestRegistry:
             diarize=False,
         )
         provider = resolve_default_provider(options)
-        assert provider.provider_id in {"whispermlx", "whisperx_docker"}
+        assert provider.provider_id == "whispermlx"
 
     def test_resolve_default_unknown_provider_falls_back(self):
         options = TranscriptionOptions(

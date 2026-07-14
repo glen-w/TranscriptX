@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from transcriptx.io.adapters.vtt_adapter import VTTAdapter as LegacyVTTAdapter
-from transcriptx.io.import_adapters.base import LegacyAdapterBridge
+from transcriptx.io.import_adapters.base import EngineBackedImportAdapter
+from transcriptx.io.import_adapters.subtitle.vtt_engine import VTTAdapter
 from transcriptx.io.import_core.contracts import AdapterCapabilities, AdapterKind
 
 
-class VTTImportAdapter(LegacyAdapterBridge):
+class VTTImportAdapter(EngineBackedImportAdapter):
     def __init__(self) -> None:
         super().__init__(
-            legacy=LegacyVTTAdapter(),
+            engine=VTTAdapter(),
             adapter_id="vtt",
             display_name="WebVTT",
             adapter_kind=AdapterKind.FAMILY,

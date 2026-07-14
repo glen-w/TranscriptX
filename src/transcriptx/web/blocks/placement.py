@@ -7,14 +7,6 @@ from typing import Any, Mapping
 
 
 @dataclass(frozen=True)
-class GridSpec:
-    col: int = 0
-    row: int = 0
-    w: int = 12
-    h: int = 1
-
-
-@dataclass(frozen=True)
 class BlockPlacement:
     """One block instance in a layout (placement_id is unique within the page)."""
 
@@ -23,5 +15,4 @@ class BlockPlacement:
     title_override: str | None = None
     visible: bool = True
     params: Mapping[str, Any] = field(default_factory=dict)
-    grid: GridSpec | None = None
     section: str | None = None

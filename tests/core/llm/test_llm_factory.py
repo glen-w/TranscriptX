@@ -64,15 +64,6 @@ def test_factory_unsupported_provider_raises() -> None:
 
 
 @pytest.mark.unit
-def test_factory_openai_raises() -> None:
-    cfg = TranscriptXConfig()
-    cfg.llm.enabled = True
-    cfg.llm.provider = "openai"
-    with pytest.raises(LLMConfigurationError):
-        get_llm_client(cfg)
-
-
-@pytest.mark.unit
 def test_factory_uses_global_config_when_none(monkeypatch) -> None:
     cfg = TranscriptXConfig()
     cfg.llm.enabled = False

@@ -189,7 +189,7 @@ def test_require_ollama_analysis_disabled_raises() -> None:
 
 
 @pytest.mark.unit
-def test_require_ollama_analysis_openai_raises() -> None:
+def test_require_ollama_analysis_unsupported_provider_raises() -> None:
     with pytest.raises(LLMConfigurationError) as exc:
         require_ollama_analysis(_llm_cfg(provider="openai"))
     assert exc.value.error_code == LLM_CONFIGURATION_ERROR
@@ -221,7 +221,7 @@ def test_input_coverage_keys_golden() -> None:
 
 
 @pytest.mark.unit
-def test_require_ollama_analysis_unsupported_provider_raises() -> None:
+def test_require_ollama_analysis_azure_provider_raises() -> None:
     with pytest.raises(LLMConfigurationError, match="Unsupported LLM provider"):
         require_ollama_analysis(_llm_cfg(provider="azure"))
 

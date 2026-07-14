@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-07-15
+
+### Added
+
+- Corrections Studio LLM discovery path (`corrections_studio/llm/`) with chunking, grounding, merge, and confidence controls; config via `corrections.llm` / `docs/runtime/corrections-llm.md`.
+- Import adapter engine modules for vendor formats (WhisperX, Zoom, SRT/VTT, Otter, Rev, Fireflies, Sembly, generic text).
+- FileLock same-thread re-entrancy to avoid Darwin nested-lock self-deadlocks during managed import.
+
+### Changed
+
+- Removed legacy `core/adapters` and `io/adapters` packages in favor of store + `io/import_adapters`.
+- Makefile `test-fast` / `test-coverage` marker filters aligned with `pytest.ini` (`legacy`, `semantic_v2_slow`).
+- Web composition/layout and public-surface docs updated for current block and entrypoint contracts.
+
+### Fixed
+
+- Blocking FileLock timeouts no longer proceed unlocked; processing-state lock tests use cross-thread contention.
+- Version surfaces kept in sync (`transcriptx` / `transcriptx.web`).
+
 ## [0.3.7] - 2026-07-14
 
 ### Added

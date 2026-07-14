@@ -72,7 +72,7 @@ class TestRegistryDetection:
     def test_detects_whisperx_large_json_beyond_snippet_window(self):
         """WhisperX JSON larger than the registry snippet window is still detected.
 
-        Regression test: ensure LegacyAdapterBridge.probe reads full content and
+        Regression test: ensure ImportAdapter.probe reads full content and
         does not rely solely on the truncated snippet, which can be invalid JSON
         for large WhisperX outputs.
         """

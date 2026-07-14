@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 
-from transcriptx.io.adapters.whisperx_adapter import WhisperXAdapter
+from transcriptx.io.import_adapters.json_vendor.whisperx_engine import WhisperXAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "whisperx"

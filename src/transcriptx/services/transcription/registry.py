@@ -5,13 +5,9 @@ from __future__ import annotations
 from transcriptx.app.models.requests import TranscriptionOptions
 from transcriptx.services.transcription.provider import TranscriptionProvider
 from transcriptx.services.transcription.whispermlx_provider import WhisperMLXProvider
-from transcriptx.services.transcription.whisperx_docker_provider import (
-    WhisperXDockerProvider,
-)
 
 _PROVIDERS: dict[str, TranscriptionProvider] = {
     WhisperMLXProvider.provider_id: WhisperMLXProvider(),
-    WhisperXDockerProvider.provider_id: WhisperXDockerProvider(),
 }
 
 _DEFAULT_FALLBACK_ID = WhisperMLXProvider.provider_id

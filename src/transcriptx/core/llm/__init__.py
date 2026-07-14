@@ -54,11 +54,6 @@ def get_llm_client(config: "TranscriptXConfig | None" = None) -> LLMClient:
             max_output_tokens=llm.max_output_tokens,
         )
 
-    if provider == "openai":
-        raise LLMConfigurationError(
-            "OpenAI provider is not implemented yet. Use provider 'ollama' or disable LLM."
-        )
-
     raise LLMConfigurationError(f"Unsupported LLM provider: {llm.provider!r}")
 
 

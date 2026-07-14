@@ -11,7 +11,7 @@ TranscriptX's primary native JSON source.  Handles three WhisperX input shapes:
 WhisperXAdapter is an explicit structured JSON adapter with dedicated detection
 logic.  It is TranscriptX's primary JSON workflow and is *not* the fallback for
 unknown or unrecognised JSON.  A ``.json`` file that matches no adapter's
-confidence threshold must raise ``UnsupportedFormatError``; there is no implicit
+confidence threshold must raise; there is no implicit
 WhisperX default.
 """
 

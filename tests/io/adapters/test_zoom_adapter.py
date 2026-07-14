@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.io.adapters.zoom_adapter import ZoomAdapter
-from transcriptx.io.adapters.vtt_adapter import VTTAdapter
+from transcriptx.io.import_adapters.subtitle.zoom_engine import ZoomAdapter
+from transcriptx.io.import_adapters.subtitle.vtt_engine import VTTAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "transcripts" / "zoom"

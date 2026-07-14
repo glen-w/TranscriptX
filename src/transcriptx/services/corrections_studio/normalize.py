@@ -1,21 +1,18 @@
 """
 Temporary cutover: legacy on-disk session dict → StudioSessionDocument.
 
-Delete once no legacy blobs remain in the wild.
-
 **Import surface:** External code should only rely on
 ``normalize_cutover_session_blob`` for loading legacy session blobs into
-``StudioSessionDocument``. Other helpers in this module are internal to the
-Corrections Studio package.
+``StudioSessionDocument``.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from transcriptx.services.corrections_studio.schema import (
     ApplyScope,
+    CandidateSource,
     GenerationManifest,
     ReviewAction,
     ReviewStatus,
@@ -32,9 +29,17 @@ from transcriptx.services.corrections_studio.identity import (
 from transcriptx.services.corrections_studio.occurrence_keys import (
     stable_occurrence_key,
 )
+from transcriptx.services.corrections_studio.semantic_identity import (
+    compute_semantic_identity_key,
+    sources_from_kind,
+)
+
+STUDIO_SCHEMA_VERSION = 2
 
 
 def _now_iso() -> str:
+    from datetime import datetime, timezone
+
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
@@ -85,13 +90,55 @@ def _rule_from_legacy(k: str, v: Dict[str, Any]) -> StudioRule:
     )
 
 
+def _upgrade_candidate_v2(c: StudioCandidate) -> StudioCandidate:
+    updates: Dict[str, Any] = {}
+    if not c.sources:
+        updates["sources"] = sources_from_kind(c.kind)
+    if not c.semantic_identity_key:
+        updates["semantic_identity_key"] = compute_semantic_identity_key(
+            c.wrong_text, c.right_text
+        )
+    if updates:
+        return c.model_copy(update=updates)
+    return c
+
+
+def migrate_session_document_to_v2(doc: StudioSessionDocument) -> StudioSessionDocument:
+    """Deterministic schema v1 → v2 upgrade (idempotent for v2 docs)."""
+    candidates = [_upgrade_candidate_v2(c) for c in doc.candidates]
+    return doc.model_copy(
+        update={
+            "studio_schema_version": STUDIO_SCHEMA_VERSION,
+            "candidates": candidates,
+        }
+    )
+
+
 def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument:
-    """Upgrade legacy flat session.json to StudioSessionDocument."""
+    """Upgrade legacy flat session.json to StudioSessionDocument (schema v2)."""
+    from transcriptx.core.utils.logger import get_logger
+
+    logger = get_logger()
     if raw.get("studio_schema_version"):
         try:
-            return StudioSessionDocument.model_validate(raw)
-        except Exception:
-            pass
+            doc = StudioSessionDocument.model_validate(raw)
+            return migrate_session_document_to_v2(doc)
+        except Exception as exc:
+            # Fail closed for corrupted v2 blobs rather than silently
+            # reconstructing a lossy legacy shape.
+            ver = raw.get("studio_schema_version")
+            if ver is not None and int(ver) >= 2:
+                logger.error(
+                    "corrections_session_v2_validate_failed session_id=%s err=%s",
+                    raw.get("session_id"),
+                    exc,
+                )
+                raise
+            logger.warning(
+                "corrections_session_validate_fallback_legacy session_id=%s err=%s",
+                raw.get("session_id"),
+                exc,
+            )
 
     session_id = str(raw.get("session_id", ""))
     transcript_path = str(raw.get("transcript_path", ""))
@@ -126,14 +173,24 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
         cid = str(row.get("candidate_id") or row.get("candidate_hash") or "")
         if not cid:
             continue
-        occs = row.get("occurrences_json") or []
+        occs = row.get("occurrences_json") or row.get("occurrences") or []
         wrong = str(row.get("wrong_text", ""))
         right = str(row.get("right_text") or row.get("suggested_text", ""))
+        kind = str(row.get("kind", "phrase"))
+        sources_raw = row.get("sources") or []
+        sources: List[CandidateSource] = []
+        for s in sources_raw:
+            try:
+                sources.append(CandidateSource(s))
+            except ValueError:
+                continue
+        if not sources:
+            sources = sources_from_kind(kind)
         candidates.append(
             StudioCandidate(
                 candidate_id=cid,
                 generation_id=current_generation_id or 1,
-                kind=str(row.get("kind", "phrase")),
+                kind=kind,
                 wrong_text=wrong,
                 right_text=right,
                 confidence=float(row.get("confidence", 0.0)),
@@ -144,7 +201,12 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
                     if isinstance(o, dict)
                 ],
                 review_status=_review_status_from_str(
-                    str(row.get("status", "pending"))
+                    str(row.get("review_status") or row.get("status", "pending"))
+                ),
+                sources=sources,
+                semantic_identity_key=str(
+                    row.get("semantic_identity_key")
+                    or compute_semantic_identity_key(wrong, right)
                 ),
             )
         )
@@ -153,7 +215,6 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
     seq = 0
     for d in raw.get("review_records") or []:
         seq += 1
-        # already canonical
         try:
             review_records.append(StudioReviewRecord.model_validate(d))
         except Exception:
@@ -208,8 +269,8 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
             ),
         )
 
-    return StudioSessionDocument(
-        studio_schema_version=1,
+    doc = StudioSessionDocument(
+        studio_schema_version=STUDIO_SCHEMA_VERSION,
         session_id=session_id,
         transcript_path=transcript_path,
         recorded_transcript_identity_hash=fp,
@@ -223,11 +284,19 @@ def normalize_cutover_session_blob(raw: Dict[str, Any]) -> StudioSessionDocument
         status=str(raw.get("status", "active")),
         candidates_stale=bool(raw.get("candidates_stale", False)),
     )
+    return migrate_session_document_to_v2(doc)
 
 
 def session_document_to_persistence(doc: StudioSessionDocument) -> Dict[str, Any]:
     """JSON-serializable dict for session.json (drops ephemeral UI fields)."""
     d = doc.model_dump(
-        mode="json", exclude={"candidates_stale", "generation_inputs_stale"}
+        mode="json",
+        exclude={
+            "candidates_stale",
+            "generation_inputs_stale",
+            "last_generation_commit_aborted",
+            "last_generation_abort_reason",
+        },
     )
+    d["studio_schema_version"] = STUDIO_SCHEMA_VERSION
     return d

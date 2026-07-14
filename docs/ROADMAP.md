@@ -54,9 +54,11 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 
 ## Local AI roadmap
 
-Future integration with:
+**Shipped today:** local **Ollama** only (`provider` = `null` | `ollama`).
 
-- **Local Ollama models** — summarization, conversational insights, semantic analysis (`TRANSCRIPTX_LLM_BASE_URL`; from Docker on Mac use `http://host.docker.internal:11434`)
+**Deferred (post-beta / Phase 2+):**
+
+- [ ] **OpenAI and other remote LLM providers** — beyond Ollama; reintroduce when local-first beta is stable
 - **Host-side transcription services (optional)** — same bridge pattern as Ollama: HTTP provider on the Mac, GUI in Docker calls `host.docker.internal`; see [Transcription architecture](#phase-2--transcription-architecture-analysis-first-integration-deferred)
 - **Optional remote compute** (e.g. Colab) — for users who prefer cloud-based inference
 
@@ -102,8 +104,8 @@ These would enable summarization, conversational insights, and semantic analysis
 - [x] **Transcribe Audio** GUI — instruction hub (shell examples, `whispermlx-missing`); no in-app transcription forms.
 - [x] **Import Transcript** GUI + `run_managed_import_workflow()` — all platforms; primary handoff after external transcribe.
 - [x] **`whispermlx` provider** (services layer) — retained for programmatic/CLI use; not wired to Streamlit forms.
-- [ ] **WhisperX (Docker)** GUI orchestration — external recipe at `docs/recipes/whisperx/`; not in-app yet.
-- [ ] Remote / HTTP `TranscriptionProvider` implementations.
+- [ ] **WhisperX (Docker) GUI orchestration** — **deferred** (not beta). External recipe at `docs/recipes/whisperx/`; provider file kept unregistered until this lands.
+- [ ] Remote / HTTP `TranscriptionProvider` implementations — **deferred** with WhisperX GUI / host service work.
 
 **Recommended workflows today**
 
@@ -160,8 +162,10 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 
 The following are explicitly **not** part of the beta-ready scope; they are planned for a later release:
 
-- **Longitudinal speaker identity with visualization** — speaker-over-time charts, cross-session views, and richer cross-session analytics (file-backed or similar).
-- Speaker-over-time **visualization** and deeper longitudinal analytics are planned for a later release.
+- **WhisperX Docker GUI orchestration** (+ host HTTP transcribe service and orchestrated Transcribe → Import → Analyze UI) — see Phase 2 transcription architecture above.
+- **OpenAI and other remote LLM providers** — Ollama only until then.
+- **Longitudinal speaker tracking / Speakers UI** — speaker-over-time charts, cross-session views, restored Speakers / Speaker Detail pages, and related extended speaker features.
+- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit/BERTopic rewire, large export-system and config-knobs refactors.
 
 ### ConvoKit analysis (archived)
 
@@ -183,7 +187,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 ## Sprint plan (archived backlog)
 
-The detailed sprint plan (Sprints 1–12) is archived at [sprint_archive.md](sprint_archive.md). (“Legacy” here means historical sprint items, not deprecated runtime code paths.) Focus is Phase 1 then Phase 2.
+Historical sprint notes (Sprints 1–12) were previously linked from this file; the archive file is no longer in-tree. Focus remains Phase 1 (beta harden) then Phase 2.
 
 ---
 

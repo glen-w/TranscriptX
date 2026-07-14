@@ -1,5 +1,5 @@
 """
-Diagnostics page - doctor, dependency status.
+Diagnostics page - doctor, dependency status, incomplete rename repair.
 """
 
 from __future__ import annotations
@@ -10,6 +10,58 @@ from transcriptx.web.cache_helpers import (
     cached_doctor_report,
     cached_group_manifest_warnings,
 )
+
+
+def _render_rename_repair_section() -> None:
+    st.subheader("Incomplete renames")
+    try:
+        from transcriptx.core.utils.rename import (
+            discover_incomplete_renames,
+            repair_managed_rename,
+        )
+    except Exception as e:
+        st.caption(f"Rename repair unavailable: {e}")
+        return
+
+    try:
+        incomplete = list(discover_incomplete_renames())
+    except Exception as e:
+        st.error(f"Could not scan rename journal: {e}")
+        return
+
+    if not incomplete:
+        st.caption("No incomplete managed rename operations found.")
+        return
+
+    st.warning(
+        f"Found {len(incomplete)} incomplete rename operation"
+        f"{'s' if len(incomplete) != 1 else ''}. "
+        "Use Repair to resume a crash-safe rename, or inspect the journal manually."
+    )
+    for record in incomplete:
+        op_id = getattr(record, "operation_id", None) or "?"
+        with st.container(border=True):
+            st.markdown(f"**Operation** `{op_id}`")
+            st.caption(f"Phase: {getattr(record, 'phase', '?')}")
+            old_p = getattr(record, "old_transcript_path", "") or "?"
+            new_p = getattr(record, "new_transcript_path", "") or "?"
+            st.caption(f"{old_p} → {new_p}")
+            if st.button(
+                "Repair incomplete rename",
+                key=f"repair_rename_{op_id}",
+                type="primary",
+            ):
+                try:
+                    outcome = repair_managed_rename(str(op_id))
+                    ok = bool(getattr(outcome, "ok", False))
+                    message = getattr(outcome, "message", None) or str(outcome)
+                    if ok:
+                        st.success(message)
+                    else:
+                        st.error(message)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Repair failed: {e}")
 
 
 def render_diagnostics_page() -> None:
@@ -31,6 +83,8 @@ def render_diagnostics_page() -> None:
         )
         for line in group_warnings:
             st.code(line, language=None)
+
+    _render_rename_repair_section()
 
     st.subheader("Environment")
     st.write(

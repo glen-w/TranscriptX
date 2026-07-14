@@ -1,18 +1,4 @@
 {
-  "llm.api_key": {
-    "advanced": true,
-    "category": "llm",
-    "choices": null,
-    "default": null,
-    "description": "Optional API key for providers that require authentication.",
-    "key": "llm.api_key",
-    "max": null,
-    "min": null,
-    "path": "llm.api_key",
-    "scope": "project",
-    "sensitivity": "hidden",
-    "type": "str"
-  },
   "llm.availability_timeout": {
     "advanced": false,
     "category": "llm",

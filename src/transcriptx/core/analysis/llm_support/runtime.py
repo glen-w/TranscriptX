@@ -93,10 +93,6 @@ def require_ollama_analysis(llm_cfg: Any) -> None:
     provider = (llm_cfg.provider or "null").strip().lower()
     if not llm_cfg.enabled or provider in ("null", ""):
         raise LLMConfigurationError(_NULL_LLM_CLIENT_MESSAGE)
-    if provider == "openai":
-        raise LLMConfigurationError(
-            "OpenAI provider is not implemented yet. Use provider 'ollama' or disable LLM."
-        )
     if provider != "ollama":
         raise LLMConfigurationError(f"Unsupported LLM provider: {llm_cfg.provider!r}")
 

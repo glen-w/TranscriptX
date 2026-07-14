@@ -24,20 +24,19 @@ class TestLLMConfig:
         assert cfg.provider == "null"
         assert cfg.model is None
         assert cfg.base_url is None
-        assert cfg.api_key is None
 
     def test_custom_values(self) -> None:
         """LLMConfig accepts custom values."""
         cfg = LLMConfig(
             enabled=True,
-            provider="openai",
-            model="gpt-4",
-            base_url="https://api.openai.com",
+            provider="ollama",
+            model="qwen3:8b",
+            base_url="http://localhost:11434",
         )
         assert cfg.enabled is True
-        assert cfg.provider == "openai"
-        assert cfg.model == "gpt-4"
-        assert cfg.base_url == "https://api.openai.com"
+        assert cfg.provider == "ollama"
+        assert cfg.model == "qwen3:8b"
+        assert cfg.base_url == "http://localhost:11434"
 
 
 class TestLoggingConfig:

@@ -2,8 +2,8 @@
 Abstract LLM client interface for TranscriptX.
 
 This module provides a pluggable abstraction for LLM providers, allowing
-future integration with OpenAI, Ollama, and other LLM services without
-requiring changes to analysis modules that use LLM capabilities.
+integration with Ollama (and future providers) without requiring changes
+to analysis modules that use LLM capabilities.
 """
 
 from abc import ABC, abstractmethod

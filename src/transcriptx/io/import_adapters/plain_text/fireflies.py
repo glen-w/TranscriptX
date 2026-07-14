@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from transcriptx.io.adapters.fireflies_adapter import (
-    FirefliesAdapter as LegacyFirefliesAdapter,
-)
-from transcriptx.io.import_adapters.base import LegacyAdapterBridge
+from transcriptx.io.import_adapters.base import EngineBackedImportAdapter
+from transcriptx.io.import_adapters.plain_text.fireflies_engine import FirefliesAdapter
 from transcriptx.io.import_core.contracts import AdapterCapabilities, AdapterKind
 
 
-class FirefliesImportAdapter(LegacyAdapterBridge):
+class FirefliesImportAdapter(EngineBackedImportAdapter):
     def __init__(self) -> None:
         super().__init__(
-            legacy=LegacyFirefliesAdapter(),
+            engine=FirefliesAdapter(),
             adapter_id="fireflies",
             display_name="Fireflies",
             adapter_kind=AdapterKind.VENDOR,

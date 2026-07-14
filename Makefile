@@ -57,7 +57,7 @@ test-smoke:
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"
+	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow"
 
 test-heavy:
 	@echo "Running heavy profile (excluding quarantined)..."
@@ -90,7 +90,7 @@ test-all:
 test-coverage:
 	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
 	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
-		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"
+		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow"
 
 test-release-only:
 	@echo "Running release-only packaging smoke..."

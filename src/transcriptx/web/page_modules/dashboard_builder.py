@@ -10,6 +10,7 @@ import yaml
 from transcriptx.web.blocks import register_builtin_blocks  # noqa: F401 — side effect
 from transcriptx.web.blocks.availability import check_block_availability
 from transcriptx.web.blocks.composer import render_layout_page
+from transcriptx.web.blocks.layout_picker import render_layout_profile_picker
 from transcriptx.web.blocks.registry import list_blocks_by_group
 from transcriptx.web.blocks.session_context import (
     active_layout_id,
@@ -117,6 +118,8 @@ def _render_preview_mode(layout_id: str) -> None:
 
 def render_dashboard_builder() -> None:
     register_builtin_blocks()
+    # Dashboard Builder is the supported place to switch layouts (including built-in `all`).
+    st.session_state["show_debug_layouts"] = True
     render_page_shell(
         "Dashboard Builder",
         "Inspect blocks, validate layouts, preview pages, and clone built-ins.",
@@ -130,27 +133,10 @@ def render_dashboard_builder() -> None:
         st.info(_BUILDER_HELP_PREREQ)
         return
 
-    current = active_layout_id()
-    if current not in layouts:
-        current = layouts[0]
-    layout_index = layouts.index(current)
-
-    def _format_layout(lid: str) -> str:
-        try:
-            title = LayoutProfileStore.load_layout(lid).title
-        except Exception:
-            title = lid
-        suffix = " (built-in)" if LayoutProfileStore.is_builtin(lid) else ""
-        return f"{title} — {lid}{suffix}"
-
-    chosen = st.selectbox(
-        "Layout profile",
-        layouts,
-        index=layout_index,
-        format_func=_format_layout,
-        key="dashboard_builder_layout_select",
-    )
-    if chosen != active_layout_id():
+    render_layout_profile_picker(key_prefix="dashboard_builder")
+    chosen = active_layout_id()
+    if chosen not in layouts:
+        chosen = layouts[0]
         set_active_layout_id(chosen)
 
     mode = st.radio(

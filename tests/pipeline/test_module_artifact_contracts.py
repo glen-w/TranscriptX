@@ -11,14 +11,6 @@ from transcriptx.core.pipeline.module_artifact_contracts import (
 
 
 @pytest.mark.unit
-def test_get_artifact_contract_corrections_override() -> None:
-    c = get_artifact_contract("corrections")
-    assert c.expects_artifacts == "conditional"
-    assert c.artifact_mode == "report_only"
-    assert c.missing_artifacts_affects_status == "ignore"
-
-
-@pytest.mark.unit
 def test_get_artifact_contract_known_module_uses_registry_category() -> None:
     c = get_artifact_contract("stats")
     assert isinstance(c, ModuleArtifactContract)

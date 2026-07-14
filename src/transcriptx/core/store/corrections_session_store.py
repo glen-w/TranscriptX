@@ -99,6 +99,42 @@ def _atomic_append_line(path: Path, line: str) -> None:
         os.fsync(handle.fileno())
 
 
+def _atomic_append_lines(path: Path, lines: List[str]) -> None:
+    """Append multiple JSONL lines then fsync once (caller holds session lock)."""
+    if not lines:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as handle:
+        for line in lines:
+            handle.write(line)
+            if not line.endswith("\n"):
+                handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _last_event_sequence_from_lines(lines: List[str]) -> int:
+    m = 0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            d = json.loads(line)
+            m = max(m, int(d.get("event_sequence", 0)))
+        except Exception:
+            continue
+    return m
+
+
+class GenerationCommitConflict(Exception):
+    """Optimistic concurrency precondition failed for a generation commit."""
+
+    def __init__(self, message: str, *, reason: str = "precondition_failed") -> None:
+        super().__init__(message)
+        self.reason = reason
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -317,6 +353,38 @@ class CorrectionsSessionStore:
         timeout: int = 15,
     ) -> None:
         """Append one JSONL event then write session.json under the session dir lock."""
+        self.write_snapshot_and_event_batch(
+            transcript_path,
+            session_dict,
+            [event_obj],
+            timeout=timeout,
+        )
+
+    def write_snapshot_and_event_batch(
+        self,
+        transcript_path: str | Path,
+        session_dict: Dict[str, Any],
+        event_objs: List[Dict[str, Any]],
+        *,
+        expected_last_event_sequence: Optional[int] = None,
+        expected_current_generation_id: Optional[int] = None,
+        check_generation_id: bool = False,
+        allocate_sequences: bool = False,
+        timeout: int = 15,
+        update_index: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """
+        Append an ordered event batch then write the final snapshot under one lock.
+
+        When ``allocate_sequences`` is True, event_sequence values are assigned
+        contiguously from the live last sequence while holding the lock.
+
+        When ``expected_last_event_sequence`` is set, abort with
+        ``GenerationCommitConflict`` if the on-disk last sequence differs.
+
+        When ``check_generation_id`` is True, also require
+        ``expected_current_generation_id`` to match the on-disk session snapshot.
+        """
         transcript_path = str(Path(transcript_path).expanduser().resolve())
         sid = str(session_dict["session_id"])
         sdir = session_dir_for_session_id(sid)
@@ -324,24 +392,98 @@ class CorrectionsSessionStore:
         lock_path = sdir / "session.dir.lock"
         sj = sdir / "session.json"
         ej = sdir / "events.jsonl"
-        line = json.dumps(event_obj, ensure_ascii=False, separators=(",", ":"))
         gen_id = session_dict.get("current_generation_id")
+
+        assigned: List[Dict[str, Any]] = []
         with FileLock(lock_path, timeout=timeout):
-            _atomic_append_line(ej, line)
+            existing_lines = (
+                ej.read_text(encoding="utf-8").splitlines() if ej.exists() else []
+            )
+            last_seq = _last_event_sequence_from_lines(existing_lines)
+
+            if expected_last_event_sequence is not None:
+                if last_seq != int(expected_last_event_sequence):
+                    raise GenerationCommitConflict(
+                        f"Event sequence conflict for {sid}: "
+                        f"expected last={expected_last_event_sequence}, live={last_seq}",
+                        reason="event_sequence_conflict",
+                    )
+
+            if check_generation_id:
+                live_gen: Optional[int] = None
+                if sj.exists():
+                    try:
+                        with open(sj, "r", encoding="utf-8") as handle:
+                            live_doc = json.load(handle)
+                        if isinstance(live_doc, dict):
+                            raw_g = live_doc.get("current_generation_id")
+                            live_gen = int(raw_g) if raw_g is not None else None
+                    except Exception:
+                        live_gen = None
+                if live_gen != expected_current_generation_id:
+                    raise GenerationCommitConflict(
+                        f"Generation id conflict for {sid}: "
+                        f"expected={expected_current_generation_id}, live={live_gen}",
+                        reason="generation_id_conflict",
+                    )
+
+            next_seq = last_seq + 1 if last_seq else 1
+            lines_out: List[str] = []
+            for i, raw in enumerate(event_objs):
+                ev = dict(raw)
+                if allocate_sequences:
+                    ev["event_sequence"] = next_seq + i
+                assigned.append(ev)
+                lines_out.append(
+                    json.dumps(ev, ensure_ascii=False, separators=(",", ":"))
+                )
+
+            # Align snapshot review_records.event_sequence with allocated events.
+            reviews = session_dict.get("review_records")
+            if isinstance(reviews, list):
+                for ev in assigned:
+                    if ev.get("event_type") != "review_recorded":
+                        continue
+                    payload = ev.get("payload") or {}
+                    cand_id = str(payload.get("candidate_id") or "")
+                    gen = payload.get("generation_id")
+                    seq = int(ev.get("event_sequence") or 0)
+                    for i, rec in enumerate(reviews):
+                        if not isinstance(rec, dict):
+                            continue
+                        if str(rec.get("candidate_id") or "") != cand_id:
+                            continue
+                        if gen is not None and rec.get("generation_id") != gen:
+                            continue
+                        reviews[i] = dict(rec)
+                        reviews[i]["event_sequence"] = seq
+
+            _atomic_append_lines(ej, lines_out)
             _atomic_write(sj, dict(session_dict))
-        self._update_index_entry(
-            sid,
-            transcript_path,
-            current_generation_id=gen_id if gen_id is not None else None,
-            timeout=timeout,
-        )
+
+        if update_index:
+            try:
+                self._update_index_entry(
+                    sid,
+                    transcript_path,
+                    current_generation_id=gen_id if gen_id is not None else None,
+                    timeout=timeout,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Index update failed after authoritative batch commit for %s: %s",
+                    sid,
+                    exc,
+                )
+
         leg = session_path_for_transcript(transcript_path)
         if leg.exists() and leg.resolve() != sj.resolve():
             try:
                 leg.unlink()
             except OSError:
                 logger.warning("Could not remove legacy session file %s", leg)
-        logger.debug("Wrote session+event for %s", sid)
+        logger.debug("Wrote session+event batch (%d events) for %s", len(assigned), sid)
+        return assigned
 
     def ensure_session(
         self, transcript_path: str | Path, *, session_id: Optional[str] = None

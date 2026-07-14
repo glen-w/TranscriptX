@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict
+from typing import Dict
 
 from transcriptx.core.corrections.apply import apply_corrections
 from transcriptx.core.corrections.memory import load_memory
@@ -14,6 +14,10 @@ from transcriptx.io import load_segments
 from transcriptx.services.corrections_studio.compile import (
     compile_studio_to_engine_apply,
 )
+from transcriptx.services.corrections_studio.schema import (
+    StudioPreviewResult,
+    StudioPreviewStats,
+)
 from transcriptx.services.corrections_studio.session_service import (
     CorrectionsStudioSessionService,
 )
@@ -23,7 +27,7 @@ class CorrectionsStudioPreviewService:
     def __init__(self, session_service: CorrectionsStudioSessionService) -> None:
         self._session = session_service
 
-    def compute_preview(self, session_id: str) -> Dict[str, Any]:
+    def compute_preview(self, session_id: str) -> StudioPreviewResult:
         doc = self._session.load_document(session_id)
         transcript_path = doc.transcript_path
         segments = load_segments(transcript_path)
@@ -78,11 +82,11 @@ class CorrectionsStudioPreviewService:
             }
             accept_n = len(accepted_ids)
 
-        return {
-            "updated_segments": updated_segments,
-            "patch_log": patch_log,
-            "stats": {
-                "applied_count": applied,
-                "total_accepted": accept_n,
-            },
-        }
+        return StudioPreviewResult(
+            updated_segments=updated_segments,
+            patch_log=patch_log,
+            stats=StudioPreviewStats(
+                applied_count=applied,
+                total_accepted=accept_n,
+            ),
+        )

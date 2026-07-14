@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-from transcriptx.io.adapters.vtt_adapter import VTTAdapter
+from transcriptx.io.import_adapters.subtitle.vtt_engine import VTTAdapter
 from transcriptx.io.intermediate_transcript import IntermediateTranscript
 
 FIXTURES = Path(__file__).parent.parent.parent / "fixtures" / "vtt"
