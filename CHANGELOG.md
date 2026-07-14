@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-07-14
+
+### Added
+
+- `io/import_metadata/` package (paths, schema, persist, validate, layout) with a thin `import_metadata_sidecar` facade.
+- `io/atomic_json.py` for crash-safe JSON writes (re-exported from `rename.io_atomic` for compatibility).
+- Mocked-spaCy golden tests characterizing `nlp_utils` preprocess variants before any future split.
+- Rename robustness contract tests (lock failure, rollback incomplete, audio classification, speaker-map moves, repair prepared-phase matrix, slug index reconcile).
+
+### Changed
+
+- Managed rename: extracted phase helpers in `plan.py` and `pipeline.py`; migrated remaining production callers off the `file_rename` shim to `rename.*`.
+- Consolidated managed import onto `managed_import_workflow`; removed the `import_managed` package.
+- Moved import sidecar layout resolution into IO to break the IO↔rename import cycle.
+
+### Fixed
+
+- Library audio-resolution contract tests retargeted to `rename.audio_association` after caller migration.
+
 ## [0.3.6] - 2026-07-13
 
 ### Added
