@@ -17,7 +17,7 @@ from transcriptx.io.speaker_mapping import build_speaker_map
 from transcriptx.core.utils.processing_state import (
     get_current_transcript_path_from_state,
 )
-from transcriptx.core.utils.file_rename import rename_transcript_after_speaker_mapping
+from transcriptx.core.utils.rename.cli import rename_transcript_after_speaker_mapping
 
 
 def identify_speakers(

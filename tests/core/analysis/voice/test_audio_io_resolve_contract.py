@@ -22,7 +22,7 @@ def test_resolve_audio_path_returns_find_original_hit_first(
         return mp3
 
     monkeypatch.setattr(
-        "transcriptx.core.utils.file_rename.find_original_audio_file",
+        "transcriptx.core.utils.rename.audio_association.find_original_audio_file",
         fake_find,
     )
     got = audio_io.resolve_audio_path(
@@ -40,7 +40,7 @@ def test_resolve_audio_path_scans_output_dir_when_find_original_misses(
     wav.write_bytes(b"1")
 
     monkeypatch.setattr(
-        "transcriptx.core.utils.file_rename.find_original_audio_file",
+        "transcriptx.core.utils.rename.audio_association.find_original_audio_file",
         lambda _tp: None,
     )
     got = audio_io.resolve_audio_path(

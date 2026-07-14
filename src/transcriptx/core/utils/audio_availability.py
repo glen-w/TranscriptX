@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable, Optional, Union, TYPE_CHECKING, cast
 
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
-from transcriptx.core.utils.file_rename import find_original_audio_file
+from transcriptx.core.utils.rename.audio_association import find_original_audio_file
 
 if TYPE_CHECKING:
     from transcriptx.core.pipeline.pipeline_context import PipelineContext

@@ -23,7 +23,9 @@ def resolve_audio_path(*, transcript_path: str, output_dir: str | None) -> str |
     Fallback: scan output_dir for any audio artifacts.
     """
     try:
-        from transcriptx.core.utils.file_rename import find_original_audio_file
+        from transcriptx.core.utils.rename.audio_association import (
+            find_original_audio_file,
+        )
 
         p = find_original_audio_file(transcript_path)
         if p and Path(p).exists():

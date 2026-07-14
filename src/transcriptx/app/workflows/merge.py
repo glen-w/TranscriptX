@@ -20,7 +20,7 @@ from transcriptx.app.progress import NullProgress, ProgressCallback
 from transcriptx.core.audio.backup import backup_audio_files_to_storage
 from transcriptx.core.audio.conversion import merge_audio_files
 from transcriptx.core.audio.tools import check_ffmpeg_available
-from transcriptx.core.utils.file_rename import extract_date_prefix
+from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import RECORDINGS_DIR
 

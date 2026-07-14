@@ -18,7 +18,7 @@ import streamlit as st
 import pandas as pd
 
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
-from transcriptx.core.utils.file_rename import find_original_audio_file
+from transcriptx.core.utils.rename.audio_association import find_original_audio_file
 from transcriptx.web.cache_helpers import (
     cached_get_transcript_summaries_for_paths,
     get_cached_list_transcripts,

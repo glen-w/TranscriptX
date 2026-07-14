@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.core.utils import file_rename as fr
 from transcriptx.core.utils.audio_availability import has_resolvable_audio
+from transcriptx.core.utils.rename import audio_association
 
 
 def test_has_resolvable_audio_true_when_processing_state_audio_exists(
@@ -34,9 +34,9 @@ def test_has_resolvable_audio_true_when_processing_state_audio_exists(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(fr, "PROCESSING_STATE_FILE", state_file)
-    monkeypatch.setattr(fr, "RECORDINGS_DIR", tmp_path / "rec")
-    monkeypatch.setattr(fr, "OUTPUTS_DIR", tmp_path / "outputs")
+    monkeypatch.setattr(audio_association, "PROCESSING_STATE_FILE", state_file)
+    monkeypatch.setattr(audio_association, "RECORDINGS_DIR", tmp_path / "rec")
+    monkeypatch.setattr(audio_association, "OUTPUTS_DIR", tmp_path / "outputs")
     (tmp_path / "rec").mkdir()
 
     assert has_resolvable_audio(str(transcript)) is True
@@ -50,9 +50,9 @@ def test_has_resolvable_audio_false_when_no_state_and_no_fallback(
     state_file = tmp_path / "processing_state.json"
     state_file.write_text(json.dumps({"processed_files": {}}), encoding="utf-8")
 
-    monkeypatch.setattr(fr, "PROCESSING_STATE_FILE", state_file)
-    monkeypatch.setattr(fr, "RECORDINGS_DIR", tmp_path / "rec")
-    monkeypatch.setattr(fr, "OUTPUTS_DIR", tmp_path / "outputs")
+    monkeypatch.setattr(audio_association, "PROCESSING_STATE_FILE", state_file)
+    monkeypatch.setattr(audio_association, "RECORDINGS_DIR", tmp_path / "rec")
+    monkeypatch.setattr(audio_association, "OUTPUTS_DIR", tmp_path / "outputs")
     (tmp_path / "rec").mkdir()
 
     monkeypatch.setattr(

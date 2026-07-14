@@ -19,7 +19,7 @@ from transcriptx.app.models.requests import MergeRequest
 from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.audio.serial_groups import detect_serial_audio_groups
 from transcriptx.core.audio.utils import get_audio_duration
-from transcriptx.core.utils.file_rename import extract_date_prefix
+from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
 from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
 from transcriptx.web.components.progress_panel import (
     MERGE_SNAPSHOT_KEY,
