@@ -122,37 +122,51 @@ def preflight_transaction_rename_map(
     return None
 
 
-def build_rename_plan(
-    ctx: RenameContext,
-    state_snapshot: Optional[dict],
-    rename_history_at_iso: str,
+def _blocked_plan(
+    message: str,
+    vals: list[RenamePlanValidation],
+    names: RenameNames,
+    paths: RenamePaths,
     *,
-    processing_state_file: Path | None = None,
+    warnings: list[str] | None = None,
+    audio: AudioAssociation | None = None,
 ) -> RenamePlan:
-    """Build a deterministic rename plan (read-only: no filesystem mutations)."""
-    transcript_file = Path(ctx.transcript_file)
-    new_transcript_path = Path(ctx.new_transcript_path)
-    names = ctx.names or RenameNames.from_paths(transcript_file, new_transcript_path)
-    paths = ctx.paths or RenamePaths.from_transcripts(
-        transcript_file, new_transcript_path
+    """Assemble a blocked RenamePlan with only the fields set by the caller."""
+    plan = RenamePlan(
+        blocked=True,
+        block_message=message,
+        validations=tuple(vals),
+        names=names,
+        paths=paths,
     )
-    old_name = names.old_stem
-    new_name = names.new_stem
-    transcript_path = str(paths.old_transcript)
-    state_file_str = str(processing_state_file) if processing_state_file else ""
+    if warnings is not None:
+        plan.warnings = warnings
+    if audio is not None:
+        plan.audio = audio
+    return plan
 
-    vals: list[RenamePlanValidation] = []
 
+def _validate_rename_gates(
+    transcript_file: Path,
+    new_transcript_path: Path,
+    names: RenameNames,
+    paths: RenamePaths,
+    transcript_path: str,
+    vals: list[RenamePlanValidation],
+) -> tuple[RenamePlan | None, list[str]]:
+    """Gate validations (existence, managed library, target collisions).
+
+    Returns (blocked_plan, plan_warnings); blocked_plan is None when all gates pass.
+    """
     if not transcript_file.exists():
         vals.append(
             RenamePlanValidation("transcript_file_exists", False, str(transcript_path))
         )
-        return RenamePlan(
-            blocked=True,
-            block_message=f"Transcript file not found: {transcript_path}",
-            validations=tuple(vals),
-            names=names,
-            paths=paths,
+        return (
+            _blocked_plan(
+                f"Transcript file not found: {transcript_path}", vals, names, paths
+            ),
+            [],
         )
     vals.append(
         RenamePlanValidation("transcript_file_exists", True, str(transcript_file))
@@ -160,22 +174,12 @@ def build_rename_plan(
 
     managed_validation = validate_managed_transcript(transcript_file)
     if not managed_validation.ok:
-        vals.append(
-            RenamePlanValidation(
-                "managed_library_transcript",
-                False,
-                managed_validation.message
-                or "transcript is not library-valid managed transcript",
-            )
+        message = (
+            managed_validation.message
+            or "transcript is not library-valid managed transcript"
         )
-        return RenamePlan(
-            blocked=True,
-            block_message=managed_validation.message
-            or "transcript is not library-valid managed transcript",
-            validations=tuple(vals),
-            names=names,
-            paths=paths,
-        )
+        vals.append(RenamePlanValidation("managed_library_transcript", False, message))
+        return _blocked_plan(message, vals, names, paths), []
     vals.append(RenamePlanValidation("managed_library_transcript", True, ""))
 
     plan_warnings: list[str] = list(managed_validation.warnings or [])
@@ -191,12 +195,14 @@ def build_rename_plan(
                 str(new_transcript_path),
             )
         )
-        return RenamePlan(
-            blocked=True,
-            block_message=f"Rename blocked: file already exists: {new_transcript_path}",
-            validations=tuple(vals),
-            names=names,
-            paths=paths,
+        return (
+            _blocked_plan(
+                f"Rename blocked: file already exists: {new_transcript_path}",
+                vals,
+                names,
+                paths,
+            ),
+            plan_warnings,
         )
     vals.append(RenamePlanValidation("target_transcript_path_available", True, ""))
 
@@ -214,18 +220,35 @@ def build_rename_plan(
                 str(new_out),
             )
         )
-        return RenamePlan(
-            blocked=True,
-            block_message=(
-                f"Rename blocked: output directory already exists: {new_out}"
+        return (
+            _blocked_plan(
+                f"Rename blocked: output directory already exists: {new_out}",
+                vals,
+                names,
+                paths,
             ),
-            validations=tuple(vals),
-            names=names,
-            paths=paths,
+            plan_warnings,
         )
     vals.append(RenamePlanValidation("target_output_dir_available", True, ""))
+    return None, plan_warnings
 
-    transaction_file_renames: list[tuple[Path, Path, str]] = []
+
+def _plan_file_and_sidecar_renames(
+    transcript_file: Path,
+    new_transcript_path: Path,
+    old_name: str,
+    new_name: str,
+    rename_history_at_iso: str,
+    names: RenameNames,
+    paths: RenamePaths,
+    vals: list[RenamePlanValidation],
+    plan_warnings: list[str],
+    transaction_file_renames: list[tuple[Path, Path, str]],
+) -> RenamePlan | tuple[SidecarMove, ...]:
+    """Plan transcript + sidecar renames (appends into transaction_file_renames).
+
+    Returns a blocked RenamePlan or the tuple of sidecar moves.
+    """
     if transcript_file != new_transcript_path:
         transaction_file_renames.append(
             (
@@ -241,13 +264,8 @@ def build_rename_plan(
         rename_history_at_iso=rename_history_at_iso,
     )
     if isinstance(sidecar_result, str):
-        return RenamePlan(
-            blocked=True,
-            block_message=sidecar_result,
-            validations=tuple(vals),
-            warnings=plan_warnings,
-            names=names,
-            paths=paths,
+        return _blocked_plan(
+            sidecar_result, vals, names, paths, warnings=plan_warnings
         )
     sidecar_moves = sidecar_result
     for move in sidecar_moves:
@@ -256,15 +274,12 @@ def build_rename_plan(
         if move.quarantine_legacy and move.quarantine_legacy.exists():
             qdest = unique_quarantine_path(move.quarantine_legacy)
             if qdest.exists():
-                return RenamePlan(
-                    blocked=True,
-                    block_message=(
-                        f"Rename blocked: quarantine destination already exists: {qdest}"
-                    ),
-                    validations=tuple(vals),
+                return _blocked_plan(
+                    f"Rename blocked: quarantine destination already exists: {qdest}",
+                    vals,
+                    names,
+                    paths,
                     warnings=plan_warnings,
-                    names=names,
-                    paths=paths,
                 )
             transaction_file_renames.append(
                 (
@@ -281,8 +296,24 @@ def build_rename_plan(
                     # Same dest as a file rename of a different source — ok if
                     # this is an in-place write after rename to dest.
                     pass
+    return sidecar_moves
 
-    # Audio association (single resolve)
+
+def _plan_audio_association(
+    transcript_path: str,
+    state_snapshot: Optional[dict],
+    new_name: str,
+    names: RenameNames,
+    paths: RenamePaths,
+    vals: list[RenamePlanValidation],
+    plan_warnings: list[str],
+    transaction_file_renames: list[tuple[Path, Path, str]],
+) -> RenamePlan | tuple[AudioAssociation, Path | None, Path | None, bool]:
+    """Resolve audio association and plan the optional working-copy audio rename.
+
+    Returns a blocked RenamePlan or
+    (audio, planned_old_audio, planned_new_audio, audio_renamed).
+    """
     audio = resolve_audio_association(transcript_path, state_snapshot=state_snapshot)
     planned_old_audio: Path | None = None
     planned_new_audio: Path | None = None
@@ -297,16 +328,13 @@ def build_rename_plan(
         if planned_new_audio.exists() and not paths_are_case_only_rename(
             planned_old_audio, planned_new_audio
         ):
-            return RenamePlan(
-                blocked=True,
-                block_message=(
-                    "Rename blocked: linked working-copy audio target already exists: "
-                    f"{planned_new_audio}"
-                ),
-                validations=tuple(vals),
+            return _blocked_plan(
+                "Rename blocked: linked working-copy audio target already exists: "
+                f"{planned_new_audio}",
+                vals,
+                names,
+                paths,
                 warnings=plan_warnings,
-                names=names,
-                paths=paths,
                 audio=audio,
             )
         if planned_old_audio != planned_new_audio:
@@ -319,77 +347,113 @@ def build_rename_plan(
             )
             audio_renamed = True
     vals.append(RenamePlanValidation("audio_association", True, audio.kind.value))
+    return audio, planned_old_audio, planned_new_audio, audio_renamed
 
+
+def _plan_processing_state_mutation(
+    state_snapshot: Optional[dict],
+    transcript_path: str,
+    names: RenameNames,
+    paths: RenamePaths,
+    planned_old_audio: Path | None,
+    planned_new_audio: Path | None,
+    audio_renamed: bool,
+    rename_history_at_iso: str,
+    processing_state_file: Path | None,
+    vals: list[RenamePlanValidation],
+    plan_warnings: list[str],
+) -> (
+    RenamePlan
+    | tuple[
+        ProcessingStateRenameMutation | None, bool, StagedProcessingStateWrite | None
+    ]
+):
+    """Compute the processing-state mutation and staged write.
+
+    Returns a blocked RenamePlan or
+    (state_mutation, missing_state_row_warning, staged_state_write).
+    """
     state_mutation: ProcessingStateRenameMutation | None = None
     missing_state_row_warning = False
     staged_state_write: StagedProcessingStateWrite | None = None
 
     if state_snapshot is None:
         vals.append(RenamePlanValidation("processing_state", True, "absent_noop"))
-    else:
-        from transcriptx.core.utils.processing_state import (
-            find_processed_entry_for_path,
+        return state_mutation, missing_state_row_warning, staged_state_write
+
+    from transcriptx.core.utils.processing_state import (
+        find_processed_entry_for_path,
+    )
+
+    key, _meta = find_processed_entry_for_path(transcript_path, state_snapshot)
+    if key is None:
+        missing_state_row_warning = True
+        plan_warnings.append(
+            "Processing state file has no matching row for this transcript; "
+            "state paths will not be updated"
         )
+        vals.append(RenamePlanValidation("processing_state", True, "no_matching_row"))
+        return state_mutation, missing_state_row_warning, staged_state_write
 
-        key, _meta = find_processed_entry_for_path(transcript_path, state_snapshot)
-        if key is None:
-            missing_state_row_warning = True
-            plan_warnings.append(
-                "Processing state file has no matching row for this transcript; "
-                "state paths will not be updated"
-            )
-            vals.append(
-                RenamePlanValidation("processing_state", True, "no_matching_row")
-            )
-        else:
-            state_mutation = compute_processing_state_rename_mutation(
-                state_snapshot,
-                names=names,
-                paths=paths,
-                planned_old_audio=planned_old_audio if audio_renamed else None,
-                planned_new_audio=planned_new_audio if audio_renamed else None,
-                rename_timestamp_iso=rename_history_at_iso,
-            )
-            if state_mutation is None:
-                return RenamePlan(
-                    blocked=True,
-                    block_message="Failed to compute processing-state rename mutation",
-                    validations=tuple(vals),
-                    warnings=plan_warnings,
-                    names=names,
-                    paths=paths,
-                )
-            if state_mutation.sibling_path_validation_msgs:
-                return RenamePlan(
-                    blocked=True,
-                    block_message=(
-                        "Rename blocked: invalid proposed processing-state document: "
-                        + "; ".join(state_mutation.sibling_path_validation_msgs)
-                    ),
-                    validations=tuple(vals),
-                    warnings=plan_warnings,
-                    names=names,
-                    paths=paths,
-                )
-            if processing_state_file is not None:
-                staged_state_write = StagedProcessingStateWrite(
-                    state_file=str(processing_state_file),
-                    mutation=state_mutation,
-                    state_snapshot=state_snapshot,
-                )
-            vals.append(RenamePlanValidation("processing_state", True, "planned"))
+    state_mutation = compute_processing_state_rename_mutation(
+        state_snapshot,
+        names=names,
+        paths=paths,
+        planned_old_audio=planned_old_audio if audio_renamed else None,
+        planned_new_audio=planned_new_audio if audio_renamed else None,
+        rename_timestamp_iso=rename_history_at_iso,
+    )
+    if state_mutation is None:
+        return _blocked_plan(
+            "Failed to compute processing-state rename mutation",
+            vals,
+            names,
+            paths,
+            warnings=plan_warnings,
+        )
+    if state_mutation.sibling_path_validation_msgs:
+        return _blocked_plan(
+            "Rename blocked: invalid proposed processing-state document: "
+            + "; ".join(state_mutation.sibling_path_validation_msgs),
+            vals,
+            names,
+            paths,
+            warnings=plan_warnings,
+        )
+    if processing_state_file is not None:
+        staged_state_write = StagedProcessingStateWrite(
+            state_file=str(processing_state_file),
+            mutation=state_mutation,
+            state_snapshot=state_snapshot,
+        )
+    vals.append(RenamePlanValidation("processing_state", True, "planned"))
+    return state_mutation, missing_state_row_warning, staged_state_write
 
-    # Finalize / remap preflight (before commit)
+
+def _plan_finalize_and_collision_preflight(
+    old_out: Path,
+    new_out: Path,
+    names: RenameNames,
+    paths: RenamePaths,
+    vals: list[RenamePlanValidation],
+    plan_warnings: list[str],
+    transaction_file_renames: list[tuple[Path, Path, str]],
+) -> (
+    RenamePlan
+    | tuple[list[tuple[Path, Path, str]], FinalizePlan, bool, tuple[str, ...]]
+):
+    """Build the artifact remap / finalize plan and run global collision preflight.
+
+    Remap entries are temporarily added to transaction_file_renames for the
+    collision check, then stripped back out (they execute during finalize, not
+    the transaction). Returns a blocked RenamePlan or
+    (transaction_file_renames, finalize_plan, needs_finalize, finalize_ops).
+    """
     remap_scan_dir = old_out if old_out.exists() else new_out
     artifact_remap = build_artifact_remap_plan(remap_scan_dir, names)
     if artifact_remap.blocked:
-        return RenamePlan(
-            blocked=True,
-            block_message=artifact_remap.block_message,
-            validations=tuple(vals),
-            warnings=plan_warnings,
-            names=names,
-            paths=paths,
+        return _blocked_plan(
+            artifact_remap.block_message, vals, names, paths, warnings=plan_warnings
         )
 
     adjusted_moves: list[tuple[Path, Path]] = []
@@ -416,14 +480,7 @@ def build_rename_plan(
 
     collision = preflight_transaction_rename_map(transaction_file_renames)
     if collision:
-        return RenamePlan(
-            blocked=True,
-            block_message=collision,
-            validations=tuple(vals),
-            warnings=plan_warnings,
-            names=names,
-            paths=paths,
-        )
+        return _blocked_plan(collision, vals, names, paths, warnings=plan_warnings)
 
     # Remap entries are planned for finalize, not the transaction — strip them back.
     remap_set = {(str(s), str(d)) for s, d in artifact_remap.moves}
@@ -443,8 +500,11 @@ def build_rename_plan(
         finalize_ops = finalize_ops + ("output_dir_move",)
     if artifact_remap.moves:
         finalize_ops = finalize_ops + ("artifact_remap",)
+    return transaction_file_renames, finalize_plan, needs_finalize, finalize_ops
 
-    # Planned slug preview (deterministic from paths)
+
+def _preview_slug_mapping(paths: RenamePaths) -> tuple[str | None, str | None]:
+    """Best-effort slug preview (planned_old_slug, planned_new_slug); errors swallowed."""
     planned_old_slug: str | None = None
     planned_new_slug: str | None = None
     try:
@@ -469,6 +529,96 @@ def build_rename_plan(
                     break
     except Exception as exc:
         logger.debug("Could not preview slug mapping: %s", exc)
+    return planned_old_slug, planned_new_slug
+
+
+def build_rename_plan(
+    ctx: RenameContext,
+    state_snapshot: Optional[dict],
+    rename_history_at_iso: str,
+    *,
+    processing_state_file: Path | None = None,
+) -> RenamePlan:
+    """Build a deterministic rename plan (read-only: no filesystem mutations)."""
+    transcript_file = Path(ctx.transcript_file)
+    new_transcript_path = Path(ctx.new_transcript_path)
+    names = ctx.names or RenameNames.from_paths(transcript_file, new_transcript_path)
+    paths = ctx.paths or RenamePaths.from_transcripts(
+        transcript_file, new_transcript_path
+    )
+    old_name = names.old_stem
+    new_name = names.new_stem
+    transcript_path = str(paths.old_transcript)
+    state_file_str = str(processing_state_file) if processing_state_file else ""
+
+    vals: list[RenamePlanValidation] = []
+
+    blocked, plan_warnings = _validate_rename_gates(
+        transcript_file, new_transcript_path, names, paths, transcript_path, vals
+    )
+    if blocked is not None:
+        return blocked
+
+    old_out, new_out = paths.old_output_dir, paths.new_output_dir
+    transaction_file_renames: list[tuple[Path, Path, str]] = []
+
+    sidecar_phase = _plan_file_and_sidecar_renames(
+        transcript_file,
+        new_transcript_path,
+        old_name,
+        new_name,
+        rename_history_at_iso,
+        names,
+        paths,
+        vals,
+        plan_warnings,
+        transaction_file_renames,
+    )
+    if isinstance(sidecar_phase, RenamePlan):
+        return sidecar_phase
+    sidecar_moves = sidecar_phase
+
+    audio_phase = _plan_audio_association(
+        transcript_path,
+        state_snapshot,
+        new_name,
+        names,
+        paths,
+        vals,
+        plan_warnings,
+        transaction_file_renames,
+    )
+    if isinstance(audio_phase, RenamePlan):
+        return audio_phase
+    audio, planned_old_audio, planned_new_audio, audio_renamed = audio_phase
+
+    state_phase = _plan_processing_state_mutation(
+        state_snapshot,
+        transcript_path,
+        names,
+        paths,
+        planned_old_audio,
+        planned_new_audio,
+        audio_renamed,
+        rename_history_at_iso,
+        processing_state_file,
+        vals,
+        plan_warnings,
+    )
+    if isinstance(state_phase, RenamePlan):
+        return state_phase
+    state_mutation, missing_state_row_warning, staged_state_write = state_phase
+
+    finalize_phase = _plan_finalize_and_collision_preflight(
+        old_out, new_out, names, paths, vals, plan_warnings, transaction_file_renames
+    )
+    if isinstance(finalize_phase, RenamePlan):
+        return finalize_phase
+    transaction_file_renames, finalize_plan, needs_finalize, finalize_ops = (
+        finalize_phase
+    )
+
+    planned_old_slug, planned_new_slug = _preview_slug_mapping(paths)
 
     vals.append(RenamePlanValidation("rename_plan_complete", True, ""))
 

@@ -128,6 +128,209 @@ def rename_managed_transcript(
         return _run_under_lock(names=names, paths=paths, dry_run=dry_run)
 
 
+def _staged_json_writes(plan: RenamePlan) -> list[dict]:
+    staged_json: list[dict] = []
+    for move in plan.sidecar_moves:
+        if move.staged_payload is not None:
+            staged_json.append(
+                {
+                    "path": str(move.dest),
+                    "payload": move.staged_payload,
+                    "description": f"Write import sidecar payload: {move.dest}",
+                }
+            )
+    return staged_json
+
+
+def _journal_from_plan(
+    plan: RenamePlan,
+    *,
+    operation_id: str,
+    names: RenameNames,
+    paths: RenamePaths,
+    state_file: Path,
+    state_snapshot: dict | None,
+    warnings: list[str],
+    staged_json: list[dict],
+) -> RenameJournalRecord:
+    """Assemble the prepared-phase journal record from a successful plan."""
+    remap_moves = []
+    if plan.finalize_plan is not None:
+        remap_moves = [
+            [str(s), str(d)] for s, d in plan.finalize_plan.artifact_remap.moves
+        ]
+
+    return RenameJournalRecord(
+        operation_id=operation_id,
+        phase=JournalPhase.prepared.value,
+        old_transcript_path=str(paths.old_transcript),
+        new_transcript_path=str(paths.new_transcript),
+        old_output_dir=str(paths.old_output_dir),
+        new_output_dir=str(paths.new_output_dir),
+        artifact_remap_moves=remap_moves,
+        needs_output_dir_move=bool(
+            plan.finalize_plan and plan.finalize_plan.needs_output_dir_move
+        ),
+        old_audio_path=str(plan.planned_old_audio or ""),
+        new_audio_path=str(plan.planned_new_audio or ""),
+        audio_kind=plan.audio.kind.value if plan.audio else "",
+        audio_renamed=plan.audio_renamed,
+        warnings=list(warnings),
+        names={
+            "old_stem": names.old_stem,
+            "new_stem": names.new_stem,
+            "old_canonical": names.old_canonical,
+            "new_canonical": names.new_canonical,
+        },
+        transaction_file_renames=[
+            [str(s), str(d), desc] for s, d, desc in plan.transaction_file_renames
+        ],
+        staged_json_writes=staged_json,
+        processing_state_file=str(state_file),
+        processing_state_mutation=(
+            plan.state_mutation.to_serializable() if plan.state_mutation else None
+        ),
+        planned_old_slug=plan.planned_old_slug,
+        planned_new_slug=plan.planned_new_slug,
+        processing_state_snapshot=state_snapshot,
+    )
+
+
+def _execute_rename_transaction(
+    plan: RenamePlan,
+    *,
+    journal: RenameJournalRecord,
+    operation_id: str,
+    state_file: Path,
+    staged_json: list[dict],
+    paths: RenamePaths,
+    warnings: list[str],
+    errors: list[RenameError],
+) -> RenameManagedOutcome | None:
+    """Execute the rename transaction; returns a failure outcome or None on success."""
+    transaction = RenameTransaction(
+        processing_state_file=state_file,
+        dry_run=False,
+    )
+    for src, dest, desc in plan.transaction_file_renames:
+        transaction.add_rename(src, dest, desc)
+    if plan.staged_state_write is not None:
+        sw = plan.staged_state_write
+        transaction.add_state_update(
+            apply_planned_processing_state_update,
+            state_snapshot=sw.state_snapshot,
+            mutation=sw.mutation,
+            state_file=Path(sw.state_file),
+        )
+    for write in staged_json:
+        transaction.add_json_write(
+            Path(write["path"]),
+            write["payload"],
+            description=write.get("description", ""),
+        )
+
+    txn_result = transaction.execute()
+    if txn_result.ok:
+        return None
+
+    journal.phase = JournalPhase.prepared.value
+    primary = RenameError(
+        code=txn_result.failure_code or "transaction_failed",
+        message=txn_result.failure_message or "rename transaction failed",
+        phase="transaction",
+    )
+    errors.append(primary)
+    journal.errors.append(
+        {"code": primary.code, "message": primary.message, "phase": primary.phase}
+    )
+    if txn_result.rollback is not None:
+        for rb_err in txn_result.rollback.errors:
+            err = RenameError(
+                code="rollback_failed",
+                message=rb_err,
+                phase="rollback",
+            )
+            errors.append(err)
+            journal.errors.append(
+                {"code": err.code, "message": err.message, "phase": err.phase}
+            )
+    journal.error_history.extend(journal.errors)
+    _safe_persist_journal(journal)
+
+    if txn_result.rollback is not None and not txn_result.rollback.ok:
+        status = RenameStatus.failed_rollback_incomplete
+        message = (
+            "Rename transaction failed and rollback did not fully complete. "
+            "Manual repair may be required."
+        )
+    else:
+        status = RenameStatus.failed_rolled_back
+        message = (
+            f"Rename transaction failed; changes rolled back "
+            f"({primary.code}: {primary.message})"
+        )
+    return RenameManagedOutcome(
+        status=status,
+        message=message,
+        operation_id=operation_id,
+        transaction_attempted=True,
+        transaction_succeeded=False,
+        transaction_committed=False,
+        warnings=warnings,
+        last_error=primary.message,
+        old_transcript_path=str(paths.old_transcript),
+        new_transcript_path=str(paths.new_transcript),
+        errors=errors,
+    )
+
+
+def _mark_transaction_committed(
+    journal: RenameJournalRecord,
+    *,
+    operation_id: str,
+    paths: RenamePaths,
+    warnings: list[str],
+    errors: list[RenameError],
+) -> RenameManagedOutcome | None:
+    """Persist the non-rollbackable transaction_committed journal marker.
+
+    Returns a committed_partial outcome if the marker cannot be persisted,
+    else None.
+    """
+    journal.phase = JournalPhase.transaction_committed.value
+    jerr = _safe_persist_journal(journal)
+    if jerr is None:
+        return None
+    errors.append(jerr)
+    journal.errors.append(
+        {"code": jerr.code, "message": jerr.message, "phase": jerr.phase}
+    )
+    journal.error_history.append(
+        {"code": jerr.code, "message": jerr.message, "phase": jerr.phase}
+    )
+    # Still proceed as committed_partial with the new path.
+    return RenameManagedOutcome(
+        status=RenameStatus.committed_partial,
+        message=(
+            "Transcript rename committed on disk, but the transaction_committed "
+            f"journal marker could not be persisted. operation_id={operation_id}"
+        ),
+        operation_id=operation_id,
+        transaction_committed=True,
+        transaction_attempted=True,
+        transaction_succeeded=True,
+        warnings=warnings,
+        errors=errors,
+        last_error=jerr.message,
+        old_transcript_path=str(paths.old_transcript),
+        new_transcript_path=str(paths.new_transcript),
+        old_audio_path=journal.old_audio_path,
+        new_audio_path=journal.new_audio_path if journal.audio_renamed else "",
+        audio_kind=journal.audio_kind,
+        audio_renamed=journal.audio_renamed,
+    )
+
+
 def _run_under_lock(
     *,
     names: RenameNames,
@@ -182,56 +385,16 @@ def _run_under_lock(
             ],
         )
 
-    remap_moves = []
-    if plan.finalize_plan is not None:
-        remap_moves = [
-            [str(s), str(d)] for s, d in plan.finalize_plan.artifact_remap.moves
-        ]
-
-    staged_json = []
-    for move in plan.sidecar_moves:
-        if move.staged_payload is not None:
-            staged_json.append(
-                {
-                    "path": str(move.dest),
-                    "payload": move.staged_payload,
-                    "description": f"Write import sidecar payload: {move.dest}",
-                }
-            )
-
-    journal = RenameJournalRecord(
+    staged_json = _staged_json_writes(plan)
+    journal = _journal_from_plan(
+        plan,
         operation_id=operation_id,
-        phase=JournalPhase.prepared.value,
-        old_transcript_path=str(paths.old_transcript),
-        new_transcript_path=str(paths.new_transcript),
-        old_output_dir=str(paths.old_output_dir),
-        new_output_dir=str(paths.new_output_dir),
-        artifact_remap_moves=remap_moves,
-        needs_output_dir_move=bool(
-            plan.finalize_plan and plan.finalize_plan.needs_output_dir_move
-        ),
-        old_audio_path=str(plan.planned_old_audio or ""),
-        new_audio_path=str(plan.planned_new_audio or ""),
-        audio_kind=plan.audio.kind.value if plan.audio else "",
-        audio_renamed=plan.audio_renamed,
-        warnings=list(warnings),
-        names={
-            "old_stem": names.old_stem,
-            "new_stem": names.new_stem,
-            "old_canonical": names.old_canonical,
-            "new_canonical": names.new_canonical,
-        },
-        transaction_file_renames=[
-            [str(s), str(d), desc] for s, d, desc in plan.transaction_file_renames
-        ],
-        staged_json_writes=staged_json,
-        processing_state_file=str(state_file),
-        processing_state_mutation=(
-            plan.state_mutation.to_serializable() if plan.state_mutation else None
-        ),
-        planned_old_slug=plan.planned_old_slug,
-        planned_new_slug=plan.planned_new_slug,
-        processing_state_snapshot=state_snapshot,
+        names=names,
+        paths=paths,
+        state_file=state_file,
+        state_snapshot=state_snapshot,
+        warnings=warnings,
+        staged_json=staged_json,
     )
 
     if dry_run:
@@ -272,111 +435,29 @@ def _run_under_lock(
             new_transcript_path=str(paths.new_transcript),
         )
 
-    transaction = RenameTransaction(
-        processing_state_file=state_file,
-        dry_run=False,
+    txn_failure = _execute_rename_transaction(
+        plan,
+        journal=journal,
+        operation_id=operation_id,
+        state_file=state_file,
+        staged_json=staged_json,
+        paths=paths,
+        warnings=warnings,
+        errors=errors,
     )
-    for src, dest, desc in plan.transaction_file_renames:
-        transaction.add_rename(src, dest, desc)
-    if plan.staged_state_write is not None:
-        sw = plan.staged_state_write
-        transaction.add_state_update(
-            apply_planned_processing_state_update,
-            state_snapshot=sw.state_snapshot,
-            mutation=sw.mutation,
-            state_file=Path(sw.state_file),
-        )
-    for write in staged_json:
-        transaction.add_json_write(
-            Path(write["path"]),
-            write["payload"],
-            description=write.get("description", ""),
-        )
-
-    txn_result = transaction.execute()
-    if not txn_result.ok:
-        journal.phase = JournalPhase.prepared.value
-        primary = RenameError(
-            code=txn_result.failure_code or "transaction_failed",
-            message=txn_result.failure_message or "rename transaction failed",
-            phase="transaction",
-        )
-        errors.append(primary)
-        journal.errors.append(
-            {"code": primary.code, "message": primary.message, "phase": primary.phase}
-        )
-        if txn_result.rollback is not None:
-            for rb_err in txn_result.rollback.errors:
-                err = RenameError(
-                    code="rollback_failed",
-                    message=rb_err,
-                    phase="rollback",
-                )
-                errors.append(err)
-                journal.errors.append(
-                    {"code": err.code, "message": err.message, "phase": err.phase}
-                )
-        journal.error_history.extend(journal.errors)
-        _safe_persist_journal(journal)
-
-        if txn_result.rollback is not None and not txn_result.rollback.ok:
-            status = RenameStatus.failed_rollback_incomplete
-            message = (
-                "Rename transaction failed and rollback did not fully complete. "
-                "Manual repair may be required."
-            )
-        else:
-            status = RenameStatus.failed_rolled_back
-            message = (
-                f"Rename transaction failed; changes rolled back "
-                f"({primary.code}: {primary.message})"
-            )
-        return RenameManagedOutcome(
-            status=status,
-            message=message,
-            operation_id=operation_id,
-            transaction_attempted=True,
-            transaction_succeeded=False,
-            transaction_committed=False,
-            warnings=warnings,
-            last_error=primary.message,
-            old_transcript_path=str(paths.old_transcript),
-            new_transcript_path=str(paths.new_transcript),
-            errors=errors,
-        )
+    if txn_failure is not None:
+        return txn_failure
 
     # Domain ops committed — non-rollbackable journal marker.
-    journal.phase = JournalPhase.transaction_committed.value
-    jerr = _safe_persist_journal(journal)
-    if jerr is not None:
-        errors.append(jerr)
-        journal.errors.append(
-            {"code": jerr.code, "message": jerr.message, "phase": jerr.phase}
-        )
-        journal.error_history.append(
-            {"code": jerr.code, "message": jerr.message, "phase": jerr.phase}
-        )
-        # Still proceed as committed_partial with the new path.
-        return RenameManagedOutcome(
-            status=RenameStatus.committed_partial,
-            message=(
-                "Transcript rename committed on disk, but the transaction_committed "
-                f"journal marker could not be persisted. operation_id={operation_id}"
-            ),
-            operation_id=operation_id,
-            transaction_committed=True,
-            transaction_attempted=True,
-            transaction_succeeded=True,
-            warnings=warnings,
-            errors=errors,
-            last_error=jerr.message,
-            old_transcript_path=str(paths.old_transcript),
-            new_transcript_path=str(paths.new_transcript),
-            old_audio_path=journal.old_audio_path,
-            new_audio_path=journal.new_audio_path if journal.audio_renamed else "",
-            audio_kind=journal.audio_kind,
-            audio_renamed=journal.audio_renamed,
-        )
+    marker_failure = _mark_transaction_committed(
+        journal,
+        operation_id=operation_id,
+        paths=paths,
+        warnings=warnings,
+        errors=errors,
+    )
+    if marker_failure is not None:
+        return marker_failure
 
     return _post_commit_pipeline(
         journal=journal,
@@ -389,17 +470,17 @@ def _run_under_lock(
     )
 
 
-def _post_commit_pipeline(
-    *,
+def _run_finalize_phase(
     journal: RenameJournalRecord,
-    plan: RenamePlan | None,
-    names: RenameNames | None,
-    paths: RenamePaths,
     warnings: list[str],
     errors: list[RenameError],
-    transaction_attempted: bool,
-) -> RenameManagedOutcome:
-    operation_id = journal.operation_id
+) -> tuple[bool, bool, bool, bool]:
+    """Output-dir move + artifact remap; journal advances to finalized when done.
+
+    Returns (finalize_attempted, finalize_succeeded, output_dir_move_completed,
+    artifact_remap_completed). Mutates journal/warnings/errors in place; errors
+    appended here downgrade the final journal phase to reconciled.
+    """
     finalize_attempted = False
     finalize_succeeded = True
     output_dir_move_completed = journal.output_dir_move_completed
@@ -487,7 +568,24 @@ def _post_commit_pipeline(
     if jerr is not None:
         errors.append(jerr)
 
-    # Slug reconciliation
+    return (
+        finalize_attempted,
+        finalize_succeeded,
+        output_dir_move_completed,
+        artifact_remap_completed,
+    )
+
+
+def _run_reconcile_phase(
+    journal: RenameJournalRecord,
+    warnings: list[str],
+    errors: list[RenameError],
+) -> tuple[bool, str | None, str | None]:
+    """Slug reconcile + path-cache invalidation + abandoned-temp cleanup.
+
+    Returns (reconciliation_succeeded, old_slug, new_slug). Mutates
+    journal/warnings/errors in place.
+    """
     old_slug = journal.old_slug or journal.planned_old_slug
     new_slug = journal.new_slug or journal.planned_new_slug
     reconciliation_succeeded = True
@@ -537,7 +635,25 @@ def _post_commit_pipeline(
         reconciliation_succeeded = False
 
     cleanup_abandoned_temps(recorded_temps=journal.recorded_temps)
+    return reconciliation_succeeded, old_slug, new_slug
 
+
+def _close_journal_and_build_outcome(
+    journal: RenameJournalRecord,
+    *,
+    operation_id: str,
+    transaction_attempted: bool,
+    finalize_attempted: bool,
+    finalize_succeeded: bool,
+    output_dir_move_completed: bool,
+    artifact_remap_completed: bool,
+    reconciliation_succeeded: bool,
+    old_slug: str | None,
+    new_slug: str | None,
+    warnings: list[str],
+    errors: list[RenameError],
+) -> RenameManagedOutcome:
+    """Close journal (reconciled vs complete) and build the final outcome."""
     if errors:
         journal.phase = JournalPhase.reconciled.value
         journal.warnings = warnings
@@ -597,6 +713,46 @@ def _post_commit_pipeline(
         audio_renamed=journal.audio_renamed,
         old_slug=old_slug,
         new_slug=new_slug,
+    )
+
+
+def _post_commit_pipeline(
+    *,
+    journal: RenameJournalRecord,
+    plan: RenamePlan | None,
+    names: RenameNames | None,
+    paths: RenamePaths,
+    warnings: list[str],
+    errors: list[RenameError],
+    transaction_attempted: bool,
+) -> RenameManagedOutcome:
+    """Finalize + reconcile + close journal (also used journal-only by repair)."""
+    operation_id = journal.operation_id
+
+    (
+        finalize_attempted,
+        finalize_succeeded,
+        output_dir_move_completed,
+        artifact_remap_completed,
+    ) = _run_finalize_phase(journal, warnings, errors)
+
+    reconciliation_succeeded, old_slug, new_slug = _run_reconcile_phase(
+        journal, warnings, errors
+    )
+
+    return _close_journal_and_build_outcome(
+        journal,
+        operation_id=operation_id,
+        transaction_attempted=transaction_attempted,
+        finalize_attempted=finalize_attempted,
+        finalize_succeeded=finalize_succeeded,
+        output_dir_move_completed=output_dir_move_completed,
+        artifact_remap_completed=artifact_remap_completed,
+        reconciliation_succeeded=reconciliation_succeeded,
+        old_slug=old_slug,
+        new_slug=new_slug,
+        warnings=warnings,
+        errors=errors,
     )
 
 
