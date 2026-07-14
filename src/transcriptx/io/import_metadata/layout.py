@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from transcriptx.io.import_metadata.paths import (
+    legacy_flat_sidecar_path_for_transcript,
+    mirrored_import_sidecar_path_for_transcript,
+)
+
 
 class ImportSidecarLayout(str, Enum):
     mirrored = "mirrored"
@@ -27,11 +32,6 @@ class ImportSidecarResolution:
 
 def resolve_import_sidecar_layout(transcript: Path) -> ImportSidecarResolution:
     """Fail-closed finite resolution of mirrored vs legacy flat import sidecars."""
-    from transcriptx.io.import_metadata_sidecar import (
-        legacy_flat_sidecar_path_for_transcript,
-        mirrored_import_sidecar_path_for_transcript,
-    )
-
     mirrored = mirrored_import_sidecar_path_for_transcript(transcript)
     legacy = legacy_flat_sidecar_path_for_transcript(transcript)
     mirrored_exists = mirrored.exists()

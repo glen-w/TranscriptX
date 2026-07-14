@@ -41,11 +41,11 @@ def _patch_managed_dirs(monkeypatch, transcript_root: Path) -> None:
         originals_dir,
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR",
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR",
         metadata_dir,
     )
 

@@ -65,11 +65,11 @@ def test_managed_transcript_pipeline_preserves_sidecar_metadata(
 
     # Wire import-metadata sidecar to the same managed transcript roots.
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript.parent,
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR",
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR",
         transcript.parent / "metadata",
     )
 

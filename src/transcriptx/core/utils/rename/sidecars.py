@@ -14,11 +14,11 @@ from transcriptx.io.import_metadata.layout import (  # noqa: F401 — re-exporte
     ImportSidecarResolution,
     resolve_import_sidecar_layout,
 )
-from transcriptx.io.import_metadata_sidecar import (
-    compute_rename_history_payload,
+from transcriptx.io.import_metadata.paths import (
     legacy_flat_sidecar_path_for_transcript,
     mirrored_import_sidecar_path_for_transcript,
 )
+from transcriptx.io.import_metadata.persist import compute_rename_history_payload
 from transcriptx.io.speaker_map_resolver import (
     sidecar_path_for as speaker_map_sidecar_path,
 )

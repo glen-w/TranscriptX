@@ -49,10 +49,10 @@ def test_validate_managed_transcript_clean_success_has_empty_warnings(
     _write_valid_transcript(transcript, "originals/sample.srt")
 
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
     write_initial_sidecar(
@@ -77,7 +77,7 @@ def test_validate_managed_transcript_missing_sidecar(
     transcript = transcript_root / "sample.json"
     _write_valid_transcript(transcript, "originals/sample.srt")
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR",
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR",
         transcript_root / "metadata",
     )
     result = validate_managed_transcript(transcript)
@@ -93,7 +93,7 @@ def test_validate_managed_transcript_parse_vs_schema_errors(
     transcript_root.mkdir(parents=True)
     metadata_dir.mkdir(parents=True)
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
 
     malformed = transcript_root / "bad_parse.json"
@@ -129,10 +129,10 @@ def test_sidecar_parse_and_filename_mismatch(tmp_path: Path, monkeypatch) -> Non
     transcript_root.mkdir(parents=True)
     metadata_dir.mkdir(parents=True)
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
 
@@ -172,10 +172,10 @@ def test_validate_managed_transcript_wrong_path_conflict(
     (originals_dir / "foo.srt").write_text("x", encoding="utf-8")
     (originals_dir / "bar.srt").write_text("y", encoding="utf-8")
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
 
@@ -221,10 +221,10 @@ def test_nested_same_basename_sidecars_do_not_false_conflict(
     (originals_dir / "foo.srt").write_text("x", encoding="utf-8")
     (originals_dir / "bar.srt").write_text("y", encoding="utf-8")
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
 
@@ -264,10 +264,10 @@ def test_legacy_only_validates_with_migration_warning(
     originals_dir.mkdir(parents=True)
     (originals_dir / "foo.srt").write_text("x", encoding="utf-8")
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
     transcript = transcript_root / "foo.json"
@@ -303,7 +303,7 @@ def test_write_initial_sidecar_uses_supplied_import_id(
     transcript_root.mkdir(parents=True)
     metadata_dir.mkdir(parents=True)
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     transcript = transcript_root / "sample.json"
     transcript.write_text("{}", encoding="utf-8")

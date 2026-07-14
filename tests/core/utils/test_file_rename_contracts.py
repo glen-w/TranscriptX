@@ -31,10 +31,10 @@ def _managed_old_name_transcript_env(
     (originals / "f.srt").write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
 
     transcript = transcripts / "old_name.json"
@@ -332,10 +332,10 @@ def test_rename_finalize_failure_returns_false_without_transaction_rollback(
     (originals / "f.srt").write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
 
     transcript = transcripts / "old_name.json"
@@ -470,10 +470,10 @@ def test_dry_run_skips_finalize_filesystem_and_cache(
     (originals / "f.srt").write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
 
     transcript = transcripts / "old_name.json"
@@ -746,10 +746,10 @@ def test_rename_transaction_execute_failure_skips_finalize(
     (originals / "f.srt").write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
 
     transcript = transcripts / "old_name.json"

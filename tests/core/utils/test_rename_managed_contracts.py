@@ -116,10 +116,10 @@ def test_nested_mirrored_import_sidecar_path(tmp_path: Path, monkeypatch) -> Non
     (transcripts / "foo").mkdir(parents=True)
     metadata.mkdir(parents=True)
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata
     )
     t = transcripts / "foo" / "bar.json"
     t.write_text("{}")
@@ -142,10 +142,10 @@ def _managed_env(
         d.mkdir(parents=True, exist_ok=True)
     (originals / "f.srt").write_text("x", encoding="utf-8")
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata_dir
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
     transcript = transcripts / f"{stem}.json"
     doc = create_transcript_document(

@@ -184,10 +184,10 @@ def test_resolve_import_sidecar_both_identical_and_ambiguous(
     transcripts.mkdir()
     metadata.mkdir()
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata
     )
     t = transcripts / "meet.json"
     t.write_text("{}")
