@@ -293,7 +293,7 @@ def validate_managed_transcript(transcript_path: str | Path) -> ValidationResult
         )
 
     # Finite mirrored/legacy resolution (same policy as rename planning).
-    from transcriptx.core.utils.rename.sidecars import (
+    from transcriptx.io.import_metadata.layout import (
         ImportSidecarLayout,
         resolve_import_sidecar_layout,
     )
