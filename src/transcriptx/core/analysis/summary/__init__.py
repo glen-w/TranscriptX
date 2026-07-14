@@ -224,7 +224,14 @@ def _resolve_highlights(
     )
 
 
-def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
+def render_summary_markdown(
+    summary_payload: Dict[str, Any], *, include_meta: bool = True
+) -> str:
+    """Render executive summary markdown.
+
+    When ``include_meta`` is False, omit intensity chrome, input flags, and
+    provenance footers (used by export HTML adapters).
+    """
     inputs = summary_payload.get("inputs", {})
     highlights_source = inputs.get("highlights_source")
     sentiment_flag = "✅" if inputs.get("used_sentiment") else "❌"
@@ -232,9 +239,20 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
     highlights_flag = "✅" if inputs.get("used_highlights") else "❌"
 
     overview = summary_payload.get("overview", {})
-    key_themes = summary_payload.get("key_themes", {}).get("bullets", [])
-    tension_points = summary_payload.get("tension_points", {}).get("bullets", [])
-    commitments = summary_payload.get("commitments", {}).get("items", [])
+    if not isinstance(overview, dict):
+        overview = {}
+    key_themes_raw = summary_payload.get("key_themes") or {}
+    key_themes = (
+        key_themes_raw.get("bullets", []) if isinstance(key_themes_raw, dict) else []
+    )
+    tension_raw = summary_payload.get("tension_points") or {}
+    tension_points = (
+        tension_raw.get("bullets", []) if isinstance(tension_raw, dict) else []
+    )
+    commitments_raw = summary_payload.get("commitments") or {}
+    commitments = (
+        commitments_raw.get("items", []) if isinstance(commitments_raw, dict) else []
+    )
 
     has_content = bool(
         overview.get("paragraph") or key_themes or tension_points or commitments
@@ -244,16 +262,17 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
         intensity_value = min(1.0, len(tension_points) / 3) if tension_points else 0.0
 
     lines = ["# Executive Summary", ""]
-    lines.append(render_intensity_line("Summary", intensity_value))
-    lines.append("")
-    lines.append(
-        f"Generated from: highlights {highlights_flag} / sentiment {sentiment_flag} / emotion {emotion_flag}"
-    )
-    if highlights_source == "computed_by_summary":
+    if include_meta:
+        lines.append(render_intensity_line("Summary", intensity_value))
+        lines.append("")
         lines.append(
-            "Note: Highlights were computed implicitly by the summary module for this run."
+            f"Generated from: highlights {highlights_flag} / sentiment {sentiment_flag} / emotion {emotion_flag}"
         )
-    lines.append("")
+        if highlights_source == "computed_by_summary":
+            lines.append(
+                "Note: Highlights were computed implicitly by the summary module for this run."
+            )
+        lines.append("")
 
     if not has_content:
         lines.append(
@@ -263,9 +282,10 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
             ).rstrip()
         )
         lines.append("")
-        prov = build_md_provenance("summary", payload=summary_payload)
-        lines.append(render_provenance_footer_md(prov).rstrip())
-        lines.append("")
+        if include_meta:
+            prov = build_md_provenance("summary", payload=summary_payload)
+            lines.append(render_provenance_footer_md(prov).rstrip())
+            lines.append("")
         return "\n".join(lines).rstrip() + "\n"
 
     lines.append("## Overview")
@@ -274,11 +294,17 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
 
     lines.append("## Key themes")
     for bullet in key_themes:
-        lines.append(f"- {bullet.get('text', '')}")
+        if isinstance(bullet, dict):
+            lines.append(f"- {bullet.get('text', '')}")
+        else:
+            lines.append(f"- {bullet}")
     lines.append("")
 
     lines.append("## Tension points")
     for bullet in tension_points:
+        if not isinstance(bullet, dict):
+            lines.append(f"- {bullet}")
+            continue
         anchor = bullet.get("anchor_quote", {})
         lines.append(f"- {bullet.get('text', '')}")
         if anchor:
@@ -291,21 +317,20 @@ def render_summary_markdown(summary_payload: Dict[str, Any]) -> str:
                 segment_db_ids=refs.get("segment_db_ids") or [],
                 segment_uuids=refs.get("segment_uuids") or [],
             )
-            lines.append(
-                f"  - **{anchor.get('speaker', '')}**: {anchor.get('quote', '')} {anchor_md}"
+            quote_line = (
+                f"  - **{anchor.get('speaker', '')}**: {anchor.get('quote', '')}"
             )
+            if include_meta and anchor_md:
+                quote_line = f"{quote_line} {anchor_md}"
+            lines.append(quote_line)
     lines.append("")
 
-    lines.append("## Commitments / Next steps")
-    for item in commitments:
-        owner = item.get("owner_display", "")
-        action = item.get("action", "")
-        lines.append(f"- **{owner}**: {action}")
-    lines.append("")
+    # Commitments live in the Insights Actions block (commitments_table), not here.
 
-    prov = build_md_provenance("summary", payload=summary_payload)
-    lines.append(render_provenance_footer_md(prov).rstrip())
-    lines.append("")
+    if include_meta:
+        prov = build_md_provenance("summary", payload=summary_payload)
+        lines.append(render_provenance_footer_md(prov).rstrip())
+        lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
 

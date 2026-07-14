@@ -12,11 +12,15 @@ from typing import Dict, List, Optional, Any
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils._path_core import get_canonical_base_name
-from transcriptx.core.utils.artifact_writer import write_json
+from transcriptx.core.utils.rename.io_atomic import write_json_atomic
 
 logger = get_logger()
 
 INDEX_FILE = Path(OUTPUTS_DIR) / ".transcriptx_index.json"
+
+
+class SlugConflictError(RuntimeError):
+    """Desired slug is owned by a different transcript."""
 
 
 def load_index() -> Dict[str, Any]:
@@ -52,14 +56,14 @@ def load_index() -> Dict[str, Any]:
 
 def save_index(index: Dict[str, Any]) -> None:
     """
-    Save the transcript index to disk.
+    Save the transcript index to disk (crash-safe staged write).
 
     Args:
         index: Index dictionary to save
     """
     try:
         INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
-        write_json(INDEX_FILE, index, indent=2, ensure_ascii=False)
+        write_json_atomic(INDEX_FILE, index, indent=2)
     except Exception as e:
         logger.error(f"Failed to save index file: {e}")
         raise
@@ -340,10 +344,15 @@ def update_index_after_transcript_rename(
     """
     Refresh slug index metadata after a managed transcript rename.
 
+    Idempotent when the old path is already gone and the new path is already
+    registered. Raises ``SlugConflictError`` when the desired new slug is owned
+    by a different transcript (never overwrites).
+
     Returns (old_slug, new_slug) when an index entry was updated, else (None, None).
     """
     index = load_index()
     transcripts = index.get("transcripts", {})
+    slug_to_key = index.get("slug_to_key", {})
 
     try:
         old_resolved = str(Path(old_transcript_path).expanduser().resolve())
@@ -354,26 +363,50 @@ def update_index_after_transcript_rename(
 
     transcript_key: str | None = None
     old_slug: str | None = None
+
     for key, entry in transcripts.items():
         source_path = entry.get("source_path", "")
         if not source_path:
             continue
         try:
-            matches = str(Path(source_path).expanduser().resolve()) == old_resolved
+            resolved = str(Path(source_path).expanduser().resolve())
         except OSError:
-            matches = source_path == old_resolved
-        if matches:
+            resolved = source_path
+        if resolved == old_resolved:
             transcript_key = key
             old_slug = entry.get("slug")
             break
+        if resolved == new_resolved:
+            # Already pointing at new path — idempotent no-op.
+            return entry.get("slug"), entry.get("slug")
 
     if transcript_key is None:
         return None, None
 
-    new_slug = register_transcript(
-        transcript_key,
-        new_resolved,
-        source_basename=get_canonical_base_name(new_resolved),
-        source_path=new_resolved,
-    )
-    return old_slug, new_slug
+    desired_slug = generate_slug_from_path(new_resolved)
+    owner = slug_to_key.get(desired_slug)
+    if owner is not None and owner != transcript_key:
+        raise SlugConflictError(
+            f"Desired slug {desired_slug!r} is owned by transcript key {owner!r}"
+        )
+
+    from transcriptx.core.utils.file_lock import FileLock
+
+    with FileLock(Path(INDEX_FILE), timeout=30) as lock:
+        if not lock.acquired:
+            raise RuntimeError("Could not acquire slug index lock")
+        # Re-check conflict under lock after reload.
+        index = load_index()
+        slug_to_key = index.get("slug_to_key", {})
+        owner = slug_to_key.get(desired_slug)
+        if owner is not None and owner != transcript_key:
+            raise SlugConflictError(
+                f"Desired slug {desired_slug!r} is owned by transcript key {owner!r}"
+            )
+        new_slug = register_transcript(
+            transcript_key,
+            new_resolved,
+            source_basename=get_canonical_base_name(new_resolved),
+            source_path=new_resolved,
+        )
+        return old_slug, new_slug

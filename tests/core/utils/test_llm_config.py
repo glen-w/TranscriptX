@@ -139,9 +139,9 @@ def test_llm_env_overrides_each_key_over_file(
 
 @pytest.mark.unit
 def test_llm_max_input_chars_below_minimum_rejected(tmp_path) -> None:
-    from transcriptx.core.analysis.llm_common import llm_prompt_overhead_chars
+    from transcriptx.core.llm.prompting import prompt_envelope_min_chars
 
-    min_chars = llm_prompt_overhead_chars()
+    min_chars = prompt_envelope_min_chars()
     path = tmp_path / "config.json"
     path.write_text(
         json.dumps({"llm": {"max_input_chars": min_chars - 1}}),

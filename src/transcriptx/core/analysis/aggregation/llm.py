@@ -15,16 +15,15 @@ from transcriptx.core.analysis.aggregation.rows import (
     _fallback_canonical_id,
     _session_row_base,
 )
-from transcriptx.core.analysis.llm_common import dedupe_action_items
+from transcriptx.core.analysis.llm_support.action_items_contract import (
+    dedupe_action_items,
+)
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
 from transcriptx.core.analysis.aggregation.schema import get_transcript_id
+from transcriptx.core.analysis.llm_support.filenames import safe_speaker_filename
 from transcriptx.core.utils._path_core import get_canonical_base_name
-
-
-def _safe_speaker_filename(speaker: str) -> str:
-    return str(speaker).replace(" ", "_").replace("/", "_")
 
 
 def _artifact_relpath(result: Dict[str, Any], needle: str) -> Optional[str]:
@@ -110,7 +109,7 @@ def _load_speaker_summary_payload(
     if not result.output_dir:
         return {}
     base = get_canonical_base_name(result.transcript_path)
-    safe = _safe_speaker_filename(speaker)
+    safe = safe_speaker_filename(speaker)
     candidate = (
         Path(result.output_dir)
         / "llm_speaker_summary"

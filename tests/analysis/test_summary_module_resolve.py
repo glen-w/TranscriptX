@@ -24,11 +24,11 @@ def _config(
     compute_if_missing: bool = False,
     allow_degraded: bool = True,
 ):
-    summary = SummaryConfig(
-        require_highlights=require_highlights,
-        compute_highlights_if_missing=compute_if_missing,
-        allow_degraded=allow_degraded,
-    )
+    # SummaryConfig fields are hydrated from SummarySettingsModel (init=False).
+    summary = SummaryConfig()
+    summary.require_highlights = require_highlights
+    summary.compute_highlights_if_missing = compute_if_missing
+    summary.allow_degraded = allow_degraded
     return SimpleNamespace(
         analysis=SimpleNamespace(summary=summary, highlights=HighlightsConfig())
     )
@@ -163,7 +163,9 @@ def test_render_summary_markdown_no_signal_and_computed_note() -> None:
     )
     assert "budget risk" in filled
     assert "computed implicitly" in filled.lower()
-    assert "Bob" in filled
+    # Commitments render in Insights Actions, not executive summary markdown.
+    assert "Bob" not in filled
+    assert "will ship" not in filled
 
 
 def test_extract_transcript_file_id_edges() -> None:

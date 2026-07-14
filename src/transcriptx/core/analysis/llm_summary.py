@@ -11,28 +11,29 @@ from transcriptx.core.analysis.common import (
     log_analysis_error,
     log_analysis_start,
 )
-from transcriptx.core.analysis.llm_common import (
-    LLM_SUMMARY_INSTRUCTION,
-    build_bounded_user_prompt,
-    build_llm_provenance,
-    format_transcript_lines,
-    sha256_llm_request,
-    write_llm_artifacts,
-)
-from transcriptx.core.analysis.llm_summary_effort import (
-    build_llm_summary_input_coverage,
-    build_llm_summary_ollama_client,
-    require_llm_summary_ollama,
-    resolve_llm_summary_runtime,
-)
 from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
+from transcriptx.core.analysis.llm_support.artifacts import write_llm_artifacts
+from transcriptx.core.analysis.llm_support.hashing import sha256_llm_request
+from transcriptx.core.analysis.llm_support.prompts import (
+    build_bounded_user_prompt,
+    format_transcript_lines,
+)
+from transcriptx.core.analysis.llm_support.provenance import build_llm_provenance
+from transcriptx.core.analysis.llm_support.runtime import (
+    build_input_coverage,
+    build_ollama_analysis_client,
+    require_ollama_analysis,
+    resolve_llm_runtime,
+)
 from transcriptx.core.errors.coded import CodedError
 from transcriptx.core.llm.errors import LLMResponseError
+from transcriptx.core.llm.prompting import require_prompt_budget
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.module_result import build_module_result, now_iso
 
 LLM_SUMMARY_PROMPT_VERSION = "1"
+LLM_SUMMARY_INSTRUCTION = "Summarise this transcript:"
 _SCHEMA_ID = "transcriptx.llm_summary.v1"
 
 
@@ -76,14 +77,19 @@ class LLMSummaryAnalysis(AnalysisModule):
             config = get_config()
             llm_cfg = config.llm
 
-            require_llm_summary_ollama(llm_cfg)
+            require_ollama_analysis(llm_cfg)
             # Effort profiles replace llm.max_input_chars, request_timeout, and
             # max_output_tokens for llm_summary when provider is ollama.
-            effort_runtime = resolve_llm_summary_runtime(
+            effort_runtime = resolve_llm_runtime(
                 llm_cfg=llm_cfg,
                 effort=config.analysis.llm_summary.effort,
             )
-            client = build_llm_summary_ollama_client(
+            require_prompt_budget(
+                max_input_chars=int(effort_runtime.max_input_chars),
+                instruction=LLM_SUMMARY_INSTRUCTION,
+                module_name=self.module_name,
+            )
+            client = build_ollama_analysis_client(
                 llm_cfg=llm_cfg,
                 runtime=effort_runtime,
             )
@@ -124,7 +130,7 @@ class LLMSummaryAnalysis(AnalysisModule):
                 "num_predict": max_output_tokens,
             }
 
-            coverage = build_llm_summary_input_coverage(
+            coverage = build_input_coverage(
                 transcript_block=transcript_block,
                 trunc_meta=trunc_meta,
             )

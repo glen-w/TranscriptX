@@ -7,7 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from transcriptx.core.analysis.llm_common import collect_named_speaker_groups_for_llm
+from transcriptx.core.analysis.llm_support.speakers import (
+    collect_named_speaker_groups_for_llm,
+)
 from transcriptx.core.analysis.llm_module_errors import (
     LLM_EMPTY_INPUT,
     ModuleEmptyInputError,
@@ -71,7 +73,7 @@ def test_llm_speaker_summary_success(tmp_path) -> None:
             return_value=cfg,
         ),
         patch(
-            "transcriptx.core.analysis.llm_speaker_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_speaker_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(
@@ -116,7 +118,7 @@ def test_llm_speaker_summary_empty_input_error_code() -> None:
             return_value=cfg,
         ),
         patch(
-            "transcriptx.core.analysis.llm_speaker_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_speaker_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
     ):
@@ -151,7 +153,7 @@ def test_llm_speaker_summary_partial_success_when_one_speaker_fails(tmp_path) ->
             return_value=cfg,
         ),
         patch(
-            "transcriptx.core.analysis.llm_speaker_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_speaker_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(
@@ -205,7 +207,7 @@ def test_llm_speaker_summary_all_failed_raises_invalid_response(tmp_path) -> Non
             return_value=cfg,
         ),
         patch(
-            "transcriptx.core.analysis.llm_speaker_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_speaker_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(

@@ -137,6 +137,7 @@ def test_sidecar_parse_and_filename_mismatch(tmp_path: Path, monkeypatch) -> Non
     transcript = transcript_root / "foo.json"
     _write_valid_transcript(transcript, "originals/foo.srt")
     sidecar = sidecar_path_for_transcript(transcript)
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
     sidecar.write_text("{bad", encoding="utf-8")
     parse_result = validate_managed_transcript(transcript)
     assert parse_result.ok is False
@@ -202,6 +203,94 @@ def test_validate_managed_transcript_wrong_path_conflict(
     result = validate_managed_transcript(transcript)
     assert result.ok is False
     assert result.category == ManagedTranscriptCategory.wrong_path
+
+
+def test_nested_same_basename_sidecars_do_not_false_conflict(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Item 72: foo/meeting.json and bar/meeting.json must not conflict."""
+    transcript_root = tmp_path / "transcripts"
+    metadata_dir = transcript_root / "metadata"
+    originals_dir = transcript_root / "originals"
+    (transcript_root / "foo").mkdir(parents=True)
+    (transcript_root / "bar").mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    originals_dir.mkdir(parents=True)
+    (originals_dir / "foo.srt").write_text("x", encoding="utf-8")
+    (originals_dir / "bar.srt").write_text("y", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+    )
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        transcript_root,
+    )
+
+    t_foo = transcript_root / "foo" / "meeting.json"
+    t_bar = transcript_root / "bar" / "meeting.json"
+    _write_valid_transcript(t_foo, "originals/foo.srt")
+    _write_valid_transcript(t_bar, "originals/bar.srt")
+    write_initial_sidecar(
+        t_foo,
+        imported_at="2026-01-01T00:00:00+00:00",
+        adapter_source_id="srt",
+        source_upload_basename="foo.srt",
+        archived_original_relpath="originals/foo.srt",
+    )
+    write_initial_sidecar(
+        t_bar,
+        imported_at="2026-01-01T00:00:00+00:00",
+        adapter_source_id="srt",
+        source_upload_basename="bar.srt",
+        archived_original_relpath="originals/bar.srt",
+    )
+
+    foo_result = validate_managed_transcript(t_foo)
+    bar_result = validate_managed_transcript(t_bar)
+    assert foo_result.ok is True
+    assert bar_result.ok is True
+
+
+def test_legacy_only_validates_with_migration_warning(
+    tmp_path: Path, monkeypatch
+) -> None:
+    transcript_root = tmp_path / "transcripts"
+    metadata_dir = transcript_root / "metadata"
+    originals_dir = transcript_root / "originals"
+    transcript_root.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    originals_dir.mkdir(parents=True)
+    (originals_dir / "foo.srt").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
+    )
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR",
+        transcript_root,
+    )
+    transcript = transcript_root / "foo.json"
+    _write_valid_transcript(transcript, "originals/foo.srt")
+    from transcriptx.io.import_metadata_sidecar import (
+        build_initial_sidecar,
+        legacy_flat_sidecar_path_for_transcript,
+        write_json_atomic,
+    )
+
+    legacy = legacy_flat_sidecar_path_for_transcript(transcript)
+    write_json_atomic(
+        legacy,
+        build_initial_sidecar(
+            import_id="id",
+            imported_at="2026-01-01T00:00:00+00:00",
+            adapter_source_id="srt",
+            source_upload_basename="foo.srt",
+            archived_original_relpath="originals/foo.srt",
+            current_json_filename=transcript.name,
+        ),
+    )
+    result = validate_managed_transcript(transcript)
+    assert result.ok is True
+    assert any("Legacy" in w or "legacy" in w for w in result.warnings)
 
 
 def test_write_initial_sidecar_uses_supplied_import_id(

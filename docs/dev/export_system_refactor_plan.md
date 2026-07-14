@@ -2,6 +2,19 @@
 
 # TranscriptX Export System — Incremental Refactor Plan
 
+**Last reviewed:** 2026-07-14 (post 0.3.5 / 0.3.6). Core refactor steps 1–9 are **not started**.
+
+## Status vs plan (changelog)
+
+| Release | What changed for export | Plan impact |
+|---|---|---|
+| **0.3.5** | Added `utils/export_markdown.py`; expanded `export_index.py` with `_executive_summary_markdown` / `_action_items_markdown`, speaker-summary grouping in nav/body, MD→HTML via safe subset | Step 7 is more urgent (new parallel markdown builders). `export_markdown` is the right home for later `markdown_html.py` move. |
+| **0.3.6** | Extracted `web/components/export_panel.py`; Artifacts page hosts export UI; Overview block delegates to shared panel; layout block id `export_panel`; `charts_export` imports `web.module_ui_groups.order_strings_like_modules` | Update entry-point map. Third `HARD_CAP_BYTES` copy in `export_panel.py`. Extra utils→web edge (module ordering). |
+
+**Still true / unchanged:** `_ExportableItem` private cross-package use; `charts_export` imports `ArtifactService` + `HARD_CAP_BYTES` + chart view-model; no `transcriptx.export` package; LOC ~985 `export_index.py`, ~254 `charts_export.py`, ~179 `export_markdown.py`.
+
+---
+
 ## 1. Current map (entry points → call graph)
 
 ### UI entry points
@@ -9,10 +22,12 @@
 | Entry | File | Call |
 |---|---|---|
 | Home “export recent run” | `src/transcriptx/web/page_modules/home.py` | `ExportService.zip_artifacts` → `ArtifactService.zip_artifacts` |
-| Overview export panel | `src/transcriptx/web/blocks/implementations/overview.py` | same |
+| Shared export panel (Overview block) | `web/components/export_panel.py` via `blocks/implementations/overview.py` (`render_export_panel`) | `ExportService.zip_artifacts` |
+| Shared export panel (Artifacts page) | `web/page_modules/artifacts.py` → `render_export_panel_ui` | same |
+| Layout presets | `export_panel` block in `layouts/presets/{default,executive,developer_debug}.yaml` | same panel |
 | Charts “Export Visible Charts” | `src/transcriptx/web/page_modules/charts.py` | `ExportService.zip_charts` → `prepare_charts_export_zip` |
 
-`ExportService` (`web/services/export_service.py`) is a thin facade only.
+`ExportService` (`web/services/export_service.py`) is a thin facade only. Selection UX lives in `export_panel.py` (`resolve_export_selection` is pure/testable).
 
 ### Data flow A — Overview / full-run ZIP
 
@@ -52,14 +67,19 @@ export_index.py
 charts_export.py
   ├── **web.models.artifact.Artifact**
   ├── **web.services.artifact_service (ArtifactService, HARD_CAP_BYTES)**
-  └── **web.services.chart_view_model_service**
+  ├── **web.services.chart_view_model_service**
+  └── **web.module_ui_groups.order_strings_like_modules**  (added 0.3.6)
 
 artifact_service.py
   ├── **charts_export._ExportableItem**  (private across packages)
   └── export_index (build_* / resolve_*)
 
+export_panel.py
+  └── **local HARD_CAP_BYTES duplicate** (same 2GB literal as artifact_service)
+
 export_index also reimplements:
   • executive / action-items MD vs core render_summary_markdown / render_action_items_markdown
+    (expanded in 0.3.5 — includes commitments/speaker-summary sectioning)
   • contiguous speaker grouping vs web/transcript_viewer/segments.py
   • HTML shell + omitted-charts banner (duplicated with generate_charts_index_html)
 ```
@@ -101,10 +121,11 @@ src/transcriptx/export/
 Web stays orchestration-only:
 
 ```
-web/services/export_service.py     # only UI-facing facade
-web/services/artifact_service.py   # list/resolve/read artifacts; zip_artifacts delegates staging+index to export/
-web/page_modules/{home,charts}.py
-web/blocks/implementations/overview.py
+web/services/export_service.py          # only UI-facing facade
+web/services/artifact_service.py        # list/resolve/read; zip delegates staging+index to export/
+web/components/export_panel.py          # selection UX + download (imports HARD_CAP from export/)
+web/page_modules/{home,charts,artifacts}.py
+web/blocks/implementations/overview.py  # thin wrapper → export_panel
 ```
 
 ### Public types (no more `_ExportableItem` across packages)
@@ -114,7 +135,7 @@ web/blocks/implementations/overview.py
 | `ExportableItem` | artifact + source_path + export_rel_path + size_bytes |
 | `ChartsExportResult` | zip bytes + filename + counts (unchanged contract for Streamlit) |
 | `ExportTextSummary` | TypedDict already in export_index — keep public |
-| `HARD_CAP_BYTES` | live in `export/types.py` (or `export/zipping.py`); web imports from export |
+| `HARD_CAP_BYTES` | **one** definition in `export/types.py` (or `export/zipping.py`); `artifact_service`, `charts_export`, and `export_panel` all import it |
 
 `Artifact` can remain in `web.models` for early PRs (pure dataclass). Longer-term optional: Protocol/`ChartExportView` with only fields charts need (`id`, `kind`, `module`, `rel_path`, `title`, `tags`, `storage_root`, `meta`) so chart HTML rendering does not import Streamlit-adjacent services.
 
@@ -123,8 +144,9 @@ web/blocks/implementations/overview.py
 1. **HTML shell** — one CSS string + `wrap_export_page(title, nav_html, content_html)` + `omitted_charts_banner(n)`
 2. **Zip/staging** — one hard-cap check + copy-to-staging + `make_archive` used by both artifact and charts paths
 3. **Chart descriptions** — inject callable / thin adapter so `export/charts.py` does not import `chart_view_model_service` (web passes `resolve_chart_display_description` or a precomputed `description` field on `ExportableItem`)
-4. **Summary bodies** — prefer core `render_*_markdown` with an export-oriented strip/adapter; keep fallbacks for legacy shapes
-5. **Speaker grouping** — one pure function over `list[dict]` (export signature); transcript viewer adapts its `(idx, seg)` list to that
+4. **Module ordering** — inject `order_modules` callable (or pre-sorted module ids) so charts export does not import `web.module_ui_groups`
+5. **Summary bodies** — prefer core `render_*_markdown` with an export-oriented strip/adapter; keep fallbacks for legacy shapes (speaker-summary grouping stays in export)
+6. **Speaker grouping** — one pure function over `list[dict]` (export signature); transcript viewer adapts its `(idx, seg)` list to that
 
 ### Naming convention (adopt going forward)
 
@@ -165,14 +187,14 @@ Avoid adding new `generate_*` for the same job as `build_*`.
 
 ---
 
-### Step 2 — Break utils → web inversion (hard-cap + path resolve)
+### Step 2 — Break utils → web inversion (hard-cap + path resolve + module order)
 
 | | |
 |---|---|
-| **Goal** | Move `HARD_CAP_BYTES` to a neutral module (`utils/export_constants.py` or early `export/types.py`). Have `charts_export` accept a path-resolver callable (default: `ArtifactService.resolve_artifact_source_path` injected from `ExportService` / web). Charts zip no longer imports `ArtifactService` at module top-level. |
-| **Files** | `charts_export.py`, `export_service.py`, `artifact_service.py` (import HARD_CAP from new home), tests |
-| **Risk** | med (wire-up mistakes break charts export / hard-cap) |
-| **Test** | `test_charts_export.py` hard-cap + omitted; smoke `ExportService.zip_charts` path; overview zip still works |
+| **Goal** | Move `HARD_CAP_BYTES` to a neutral module (`utils/export_constants.py` or early `export/types.py`) and **delete the duplicate** in `export_panel.py`. Have `charts_export` accept a path-resolver callable (default: `ArtifactService.resolve_artifact_source_path` injected from `ExportService` / web) and an optional module-order callable (default injected from `order_strings_like_modules`). Charts zip no longer imports `ArtifactService` / `module_ui_groups` at module top-level. |
+| **Files** | `charts_export.py`, `export_service.py`, `artifact_service.py`, `export_panel.py`, tests |
+| **Risk** | med (wire-up mistakes break charts export / hard-cap / module sort order) |
+| **Test** | `test_charts_export.py` hard-cap + omitted + module order; smoke `ExportService.zip_charts`; Overview + Artifacts panel zip still works |
 | **Rollback** | restore imports; keep constant duplicated briefly if needed |
 
 ---
@@ -229,10 +251,10 @@ Avoid adding new `generate_*` for the same job as `build_*`.
 
 | | |
 |---|---|
-| **Goal** | Replace `_action_items_markdown` / `_executive_summary_markdown` with adapters over `render_action_items_markdown` / `render_summary_markdown` **without** dumping provenance/intensity chrome into the export HTML unless desired. Prefer: call core → strip leading `# Title` / provenance footer for export display, OR add `include_meta: bool = True` to core renderers (small, explicit API). Keep legacy payload fallbacks. |
-| **Files** | `export_index.py` (summary_bodies), possibly `core/analysis/summary/__init__.py`, `core/analysis/llm_common.py`, `test_export_index.py` |
-| **Risk** | med (export HTML content changes; emoji/provenance differences) |
-| **Test** | action-items / executive fixtures in `test_export_index.py`; golden body snippets; ensure `.md` sidecars still preferred over JSON when present |
+| **Goal** | Replace `_action_items_markdown` / `_executive_summary_markdown` (added/expanded in 0.3.5) with adapters over `render_action_items_markdown` / `render_summary_markdown` **without** dumping provenance/intensity chrome into the export HTML unless desired. Prefer: call core → strip leading `# Title` / provenance footer for export display, OR add `include_meta: bool = True` to core renderers (small, explicit API). Keep legacy payload fallbacks and **speaker-summary section grouping** from 0.3.5. Continue routing bodies through `export_markdown.summary_markdown_to_html`. |
+| **Files** | `export_index.py` (summary_bodies), possibly `core/analysis/summary/__init__.py`, `core/analysis/llm_support/action_items_render.py`, `test_export_index.py` |
+| **Risk** | med (export HTML content changes; emoji/provenance differences; commitments shape) |
+| **Test** | action-items / executive / speaker-summary fixtures in `test_export_index.py`; golden body snippets; ensure `.md` sidecars still preferred over JSON when present |
 | **Rollback** | feature-flag or keep old private renderers behind fallback |
 
 ---
@@ -305,16 +327,18 @@ Avoid adding new `generate_*` for the same job as `build_*`.
 
 ### Success criteria
 
-- No `transcriptx.utils.*` module imports `transcriptx.web.services.*`
+- No `transcriptx.utils.*` module imports `transcriptx.web.services.*` or `transcriptx.web.module_ui_groups`
 - No private `_`-prefixed export types imported outside their defining module
 - One HTML shell + one omitted-banner implementation
-- One hard-cap constant
-- Overview ZIP and charts ZIP share staging/archive primitives
+- One hard-cap constant (shared by artifact zip, charts zip, and export panel)
+- Overview / Artifacts ZIP and charts ZIP share staging/archive primitives
 - Existing three test modules stay green with only intentional assertion updates in PR7
 
 ### Manual QA checklist (once per PR that touches HTML/zip)
 
-1. Overview export with transcript + summary + charts → open `index.html` via `file://`
-2. Charts-only export with static + dynamic charts
-3. Hard-cap / large selection messaging still correct in Overview UI
-4. Omitted chart notice when a chart file is missing
+1. Overview export panel with transcript + summary + charts → open `index.html` via `file://`
+2. Artifacts page export panel (All / Module / Charts Only / Custom)
+3. Charts-only export with static + dynamic charts (module order matches UI grouping)
+4. Hard-cap / large selection messaging still correct in export panel
+5. Omitted chart notice when a chart file is missing
+6. Speaker summaries appear under their own nav/section when present

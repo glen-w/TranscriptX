@@ -1071,3 +1071,37 @@ Selected critical-path modules with remaining uncovered loader/hashing/compat br
 - **Production code:** none changed by this `/tests` expansion (pre-existing WIP production edits remain uncommitted separately).
 - **Quarantined tests:** not re-enabled.
 - **Artifact cleanup:** disabled.
+
+## 47. Expansion (2026-07-14) – managed rename utils (unit + integration)
+
+### Backup (mandatory)
+- Workspace zip: `/Users/89298/Documents/transcriptx backup/260714-1732.zip` (2.9M); `custom-commands/` mirrored.
+
+### Review
+- **Collection:** `4594/4762` under default addopts (`168` deselected); no collection/import errors.
+- **Baseline default run:** `4591 passed`, `1 skipped`, **2 failed** in `tests/analysis/test_summary_module_resolve.py` (unrelated to rename: `SummaryConfig` no longer accepts `require_highlights`; markdown assertion expects speaker name that current render omits). Classified as pre-existing config-API drift — not fixed in this expansion (tests-only bias toward rename).
+- **Cleanup:** disabled (not run).
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` historical).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+
+### Coverage gaps targeted (file renaming)
+Prior rename package coverage ~79% with weak finalize (66%), journal classifier, and thin integration (`test_rename_e2e` broken by fail-closed processing-state schema).
+
+### New / expanded tests (tests-only)
+
+| File | Focus |
+|------|-------|
+| `tests/core/utils/test_rename_finalize_and_layout.py` (**new**) | Finalize idempotency (`already_done` / `both_absent` / merge); remap already-done + missing source; operation-scoped temp cleanup; prepared-phase classification; global rename-map collision; unique quarantine; dual-sidecar identical/ambiguous layout |
+| `tests/core/utils/test_rename_managed_contracts.py` (+) | Journal persist failure after txn → `committed_partial`; global collision helper |
+| `tests/integration/test_rename_e2e.py` (+) | Fixed state schema fields; dry-run leaves FS unchanged; repair after finalize failure; slug conflict → `committed_partial` with `slug_conflict` |
+
+### Targeted coverage (rename modules)
+- **Package total:** **82%** (was ~79%).
+- Notable: `journal.py` **91%**, `finalize.py` **75%** (was 66%), `pipeline.py` **82%**, `sidecars.py` **87%**, `rename_transaction.py` **81%**.
+
+### Validation
+- Rename unit + integration slice: `53 passed` (finalize/layout + managed + transaction + journal + processing_state + e2e).
+- Broader rename-related slice: `152 passed`.
+- **Quarantined tests:** not re-enabled.
+- **Production code:** none changed by this `/tests` expansion.
+- **Artifact cleanup:** disabled.

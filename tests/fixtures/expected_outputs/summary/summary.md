@@ -14,9 +14,6 @@ Overview paragraph.
 - Tension here.
   - **Alice**: Anchor quote. [-- | Alice]
 
-## Commitments / Next steps
-- **Alice**: Do X
-
 ---
 Provenance
 - Used: highlights, emotion

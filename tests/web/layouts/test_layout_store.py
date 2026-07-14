@@ -129,3 +129,15 @@ def test_default_layout_is_standard_curated() -> None:
     assert "module_metrics" not in block_ids
     assert "export_panel" not in block_ids
     assert "run_status_compact" in block_ids
+
+
+def test_default_insights_commitments_live_in_actions() -> None:
+    layout = LayoutProfileStore.load_layout("default")
+    insights = layout.pages["insights"].blocks
+    by_id = {b.placement_id: b for b in insights}
+    assert by_id["insights_commitments"].section == "actions"
+    assert by_id["insights_llm_action_items"].section == "actions"
+    assert by_id["insights_primary_summary"].section == "summary"
+    assert "commitments_table" not in {
+        b.block_id for b in insights if b.section == "summary"
+    }

@@ -12,17 +12,21 @@ from transcriptx.core.analysis.common import (
     log_analysis_error,
     log_analysis_start,
 )
-from transcriptx.core.analysis.llm_common import (
-    build_llm_provenance,
-    parse_narrative_json,
-    resolve_summary_payload,
-    serialise_summary_input,
+from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
+from transcriptx.core.analysis.llm_support.artifacts import write_llm_artifacts
+from transcriptx.core.analysis.llm_support.hashing import (
     sha256_llm_request,
     sha256_text,
-    summary_has_content,
-    write_llm_artifacts,
 )
-from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
+from transcriptx.core.analysis.llm_support.narrative_contract import (
+    parse_narrative_json,
+)
+from transcriptx.core.analysis.llm_support.narrative_source import (
+    resolve_summary_payload,
+    serialise_summary_input,
+    summary_has_content,
+)
+from transcriptx.core.analysis.llm_support.provenance import build_llm_provenance
 from transcriptx.core.errors.coded import CodedError
 from transcriptx.core.llm import get_llm_client
 from transcriptx.core.output.output_service import create_output_service

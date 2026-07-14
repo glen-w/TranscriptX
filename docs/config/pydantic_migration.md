@@ -12,6 +12,17 @@ Incremental adoption pattern for moving config subtrees to Pydantic as the singl
 - Do not replace resolver temp-file loading until most sections are Pydantic-backed.
 - Do not introduce Hydra, Dynaconf, or OmegaConf.
 
+## Freeze policy (enforce now)
+
+1. **No new literal defaults** in `utils/config/analysis.py` / `system.py` / `workflow.py` / `main.py` unless the knob is one of the permanent **10** legacy keys (`active_*_profile` ×7, `active_workflow_profile`, `use_emojis`, `core_mode`).
+2. **New product knobs:** add/extend a Pydantic model → register/update pilot in `pydantic_bridge.py` (hand review) → regenerate goldens → update `to_dict()` / `file_overrides` visibility if a new subtree → env key only if needed in `env_key_registry.py`.
+3. **No new registry pilots** for vanity; only when product adds keys. Prefer extending an existing model.
+4. **No new validators** (Cerberus/Marshmallow/jsonschema/ad-hoc). Validation goes through Pydantic pilots + existing `validate_config`.
+5. **Do not grow** a second facade — only `main.TranscriptXConfig` is constructible.
+6. PR checklist: ownership snapshot invariant **41 / 588 / 10** (or update fixture intentionally) + `tests/core/config/` gate.
+
+Canonical stepwise plan: [`docs/config/config_knobs_refactor_plan.md`](config_knobs_refactor_plan.md).
+
 ## Generator scripts (regen helpers only)
 
 - [`scripts/generate_pydantic_pilots.py`](../scripts/generate_pydantic_pilots.py) — default (no flags): regenerates model files and golden fixtures; **never** modifies [`pydantic_bridge.py`](../src/transcriptx/core/config/pydantic_bridge.py) (hand-maintained only).
@@ -68,6 +79,9 @@ Incremental adoption pattern for moving config subtrees to Pydantic as the singl
 | `temporal_dynamics` | `analysis.temporal_dynamics` | `TemporalDynamicsConfig` |
 | `vectorization` | `analysis.vectorization` | `VectorizationConfig` |
 | `tag_extraction` | `analysis.tag_extraction` | `TagExtractionConfig` |
+| `llm_summary_settings` | `analysis.llm_summary` | `LLMSummaryConfig` |
+| `llm_speaker_summary_settings` | `analysis.llm_speaker_summary` | `LLMSpeakerSummaryConfig` |
+| `llm_action_items_settings` | `analysis.llm_action_items` | `LLMActionItemsConfig` |
 | `workflow` | `workflow` | `WorkflowConfig` |
 | `speaker_exemplars` | `analysis.speaker_exemplars` | `SpeakerExemplarsConfig` |
 | `highlights` | `analysis.highlights` | `HighlightsConfig` |
@@ -111,7 +125,7 @@ pytest \
 
 ## End state (registry ownership complete)
 
-**38 Pydantic pilots** own **585** registry leaf keys. The non-pydantic baseline is **10 keys** by design:
+**41 Pydantic pilots** own **588** registry leaf keys. The non-pydantic baseline is **10 keys** by design:
 
 | Key | Reason |
 |-----|--------|
@@ -126,18 +140,18 @@ Wave 9 evaluated two single-key pilots and empty-prefix bridge hacks; **legacy r
 
 Ownership snapshot fixture: [`tests/core/config/fixtures/registry_ownership_snapshot.json`](../../tests/core/config/fixtures/registry_ownership_snapshot.json) (guarded by `test_ownership_snapshot_matches_committed_fixture`).
 
-## Phase 2: Runtime delegation (Batch 5 — in progress)
+## Phase 2: Runtime delegation (Batch 5+)
 
 Registry ownership and runtime dataclass defaults are **separate phases**:
 
 | Phase | Status | Meaning |
 |-------|--------|---------|
-| Registry ownership | Complete (38 / 585 / 10) | Pydantic models own field definitions, validation, registry metadata |
+| Registry ownership | Complete (**41 / 588 / 10**) | Pydantic models own field definitions, validation, registry metadata |
 | Runtime delegation | Partial | Thin dataclasses hydrate from Pydantic models; duplicate literals removed per subtree |
 
-Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. `setattr` on leaf fields does **not** revalidate through Pydantic (matches legacy dataclass behaviour); validation remains at `validate_config()` / file-load boundaries.
+Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. Nested dict dumps are reconstructed as nested dataclasses when field annotations require it. `setattr` on leaf fields does **not** revalidate through Pydantic (matches legacy dataclass behaviour); validation remains at `validate_config()` / file-load boundaries.
 
-Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pauses,voice,corrections}_pre.json`.
+Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pauses,voice,corrections,summary,highlights,llm_*}_pre.json`.
 
 ### Delegation status
 
@@ -146,21 +160,25 @@ Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pa
 | `pauses` | `analysis.pauses` | 3 | `PausesConfig` | `test_pauses_config_delegation.py` | delegated |
 | `voice` | `analysis.voice` | 18 | `VoiceConfig` | `test_voice_config_delegation.py` | delegated |
 | `corrections` | `analysis.corrections` | 12 | `CorrectionsConfig` | `test_corrections_config_delegation.py` | delegated |
+| `summary` | `analysis.summary` | 13 | `SummaryConfig` | `test_summary_config_delegation.py` | delegated |
+| `highlights` | `analysis.highlights` | 30 | `HighlightsConfig` | `test_highlights_config_delegation.py` | delegated |
+| `llm_summary_settings` | `analysis.llm_summary` | 1 | `LLMSummaryConfig` | `test_llm_summary_config_delegation.py` | delegated |
+| `llm_speaker_summary_settings` | `analysis.llm_speaker_summary` | 1 | `LLMSpeakerSummaryConfig` | `test_llm_speaker_summary_config_delegation.py` | delegated |
+| `llm_action_items_settings` | `analysis.llm_action_items` | 1 | `LLMActionItemsConfig` | `test_llm_action_items_config_delegation.py` | delegated |
 
-### Delegation follow-ups (not Batch 5)
+### Delegation follow-ups
 
-- `analysis.summary` — next candidate after corrections (nested `counts` / `sections` / `commitments`)
-- Remaining nested dataclasses: `highlights`, `acts`, `topic_modeling`, `speaker_exemplars`, partial flat `analysis_*` slices, dict-profile stores, top-level `LLMConfig` / `OutputConfig`, etc.
-- No greenfield module config keys (`llm_summary`, `narrative_summary`, export tuning) without explicit product scope
+- Remaining nested dataclasses: `acts`, `topic_modeling`, `speaker_exemplars`, partial flat `analysis_*` slices, dict-profile stores, top-level `LLMConfig` / `OutputConfig`, etc.
+- No greenfield module config keys without explicit product scope
 
 ### Batch 5 safety rails
 
 | Artifact | Purpose |
 |----------|---------|
-| `test_registry_ownership.py` | Ownership inventory snapshot, 38/585/10 invariant |
+| `test_registry_ownership.py` | Ownership inventory snapshot, **41/588/10** invariant |
 | `test_delegation_shape_snapshots.py` | Pre-delegation default shapes |
 | `test_registry_metadata_constraints.py` | Bounded choices/defaults/type agreement |
-| `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all 38 pilots) |
+| `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all 41 pilots) |
 | `test_pydantic_pilot_parity.py` | Dataclass / partial-analysis defaults parity |
 
 ### Hardening gates (completed)

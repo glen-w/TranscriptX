@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import transcriptx.core.utils.paths as paths_mod
-from transcriptx.utils.charts_export import _ExportableItem
+from transcriptx.export import ExportableItem
 from transcriptx.utils.export_index import (
     build_export_index_html,
     normalize_transcript_payload,
@@ -89,8 +89,8 @@ def _transcript_data() -> dict:
 
 def _chart_item(
     *, artifact_id: str, rel_path: str, kind: str = "chart_static", **kwargs
-) -> _ExportableItem:
-    return _ExportableItem(
+) -> ExportableItem:
+    return ExportableItem(
         artifact=_artifact(
             artifact_id=artifact_id, rel_path=rel_path, kind=kind, **kwargs
         ),

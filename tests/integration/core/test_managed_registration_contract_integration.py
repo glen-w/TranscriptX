@@ -54,7 +54,8 @@ def test_managed_registration_layout_and_identity_loadability(
 
     assert result.json_path.parent == transcripts
     assert result.archived_original_path.parent == transcripts / "originals"
-    assert result.sidecar_path.parent == transcripts / "metadata"
+    # Mirrored import sidecars live under metadata/imports/ (STORAGE.md).
+    assert result.sidecar_path.parent == transcripts / "metadata" / "imports"
 
     canonical = load_canonical_transcript(str(result.json_path))
     segments = getattr(canonical, "segments", None)

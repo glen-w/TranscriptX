@@ -59,7 +59,7 @@ Selecting `narrative_summary` automatically runs the `summary` dependency chain 
 
 The setting **`analysis.llm_summary.effort`** controls summary effort for the **`llm_summary` module only** (full-transcript abstractive summary). It is **not** `llm.effort` and does **not** affect `narrative_summary`, global `llm.*` provider settings, or other analysis modules.
 
-Valid values: `low`, `medium`, `high`, `max` (default: `medium`).
+Valid values: `low`, `medium`, `high`, `max` (default: `high`).
 
 ```json
 {
@@ -79,7 +79,7 @@ When `llm.enabled` is true and `llm.provider` is `ollama`, `llm_summary` resolve
 - `high` — patient mode for long meetings, workshops, lectures, and dense transcripts
 - `max` — push-the-laptop mode; prefers waiting over truncating or timing out
 
-This pass supports `provider="ollama"` only for `llm_summary`, `llm_speaker_summary`, and `llm_action_items`; other non-null providers raise configuration errors. Shared eligibility is enforced via `require_ollama_analysis` (with `require_llm_summary_ollama` kept as a compatibility alias).
+This pass supports `provider="ollama"` only for `llm_summary`, `llm_speaker_summary`, and `llm_action_items`; other non-null providers raise configuration errors. Shared eligibility is enforced via `require_ollama_analysis` in `core/analysis/llm_support/runtime.py`, which also owns the shared effort-profile map (`resolve_llm_runtime`), the analysis Ollama client factory (`build_ollama_analysis_client`), and input-coverage provenance (`build_input_coverage`). These helpers are shared by all three transcript-direct modules; there are no summary-specific aliases.
 
 Artifact provenance records `effort`, `effort_profile`, resolved limits, and input coverage (`input_truncated`, `input_chars_total`, `input_chars_used`, `input_coverage_ratio`). The legacy `input_chars` field remains the full prompt size including wrapper text.
 
@@ -174,7 +174,10 @@ Failed LLM modules return `execution_status=failed` with a stable `error_code` i
 
 `llm_dependency_missing` may include structured `error_context` on the module error envelope, for example `{"dependency": "summary", "state": "missing|skipped|blocked|failed"}`. UI and canonical outcome rows surface `error_code` alongside human-readable messages.
 
-`max_input_chars` must be at least the runtime-derived prompt wrapper overhead (instruction text, delimiters, and safety copy). Config load rejects lower values.
+Prompt-budget validation happens at two levels:
+
+- **Config load (global):** `llm.max_input_chars` must be at least the fixed prompt-envelope minimum (delimiters and safety copy only, no feature instruction; `core/llm/prompting.py::prompt_envelope_min_chars`). Config load rejects lower values.
+- **Runtime (per feature):** because effort-profile limits replace the global `llm.max_input_chars`, each transcript-direct module (`llm_summary`, `llm_speaker_summary`, `llm_action_items`) validates its resolved effort budget against its exact instruction plus delimiters (`core/llm/prompting.py::require_prompt_budget`) before constructing a client or making a network call. `narrative_summary` is excluded: it uses a findings-rewrite prompt, not the bounded transcript envelope.
 
 ## Provenance
 
@@ -186,6 +189,18 @@ Successful LLM artifacts include mandatory provenance fields:
 - For `llm_action_items`: also `module_version`, `prompt_version`, and `cache_key` (distinct cache identity namespace)
 
 Optional metadata such as `model_digest` is included only when already cached (e.g. from a prior `is_available()` tags fetch); no extra `/api/tags` call is made solely for provenance.
+
+## Artifact writes
+
+LLM modules write JSON/Markdown pairs through `core/analysis/llm_support/artifacts.py` under an **atomic pair promotion with rollback, then registration** contract:
+
+1. Both files are fully staged (and prior canonical files backed up) in a per-write `.staging/` subdirectory before any promotion.
+2. JSON is promoted first, then Markdown. If the Markdown promotion fails, the JSON promotion is undone exactly once — restored from backup, or removed when there was no prior file. Prior canonical files are never deleted optimistically.
+3. If the rollback itself fails, the original promotion error is propagated (the rollback failure is logged and attached as exception context).
+4. The staging directory is cleaned up in `finally`.
+5. Artifact registration (`record_file`) begins only after both promotions succeed, and there is **no filesystem rollback after registration begins**. Registration is not transactional: if the first (JSON) registration fails, both files remain promoted and nothing is registered; if the second (Markdown) registration fails, both files remain promoted and the JSON registration remains. Undoing a registration would require an `OutputService` unregister API, which does not exist.
+
+Speaker artifact filenames sanitise display names by replacing spaces and slashes with underscores (`llm_support/filenames.py`). Distinct names can collide to the same filename (e.g. `A B`, `A_B`, and `A/B` all map to `A_B`); this is documented, tested behaviour — collision-safe identity is tracked as separate work because changing it would change artifact paths.
 
 ## Manual smoke test
 

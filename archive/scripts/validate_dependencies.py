@@ -32,10 +32,6 @@ class DependencyValidator:
             "keyring": "25.6.0",
             "cryptography": "45.0.5",
             "pydantic": "2.9.2",
-            "pydantic-settings": "2.10.1",
-            "cerberus": "1.3.7",
-            "marshmallow": "4.0.0",
-            "jsonschema": "4.25.0",
             "networkx": "3.4.2",
         }
 

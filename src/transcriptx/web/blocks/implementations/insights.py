@@ -19,6 +19,7 @@ from transcriptx.web.blocks.llm_presentation import (
     provenance_badges,
     render_badge_row,
     render_markdown_without_heading_or_provenance,
+    strip_commitments_section,
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.navigation import (
@@ -386,9 +387,14 @@ def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> N
     summary = loader.load_json("summary", "_summary.json")
     md = loader.load_text("summary", "_summary.md")
     if md:
-        st.markdown(md)
+        st.markdown(strip_commitments_section(md))
     elif summary:
-        st.json(summary)
+        display = (
+            {k: v for k, v in summary.items() if k != "commitments"}
+            if isinstance(summary, dict)
+            else summary
+        )
+        st.json(display)
     else:
         st.info("Run the `summary` module to populate this view.")
         return

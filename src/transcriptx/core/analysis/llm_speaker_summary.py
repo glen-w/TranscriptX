@@ -11,24 +11,29 @@ from transcriptx.core.analysis.common import (
     log_analysis_error,
     log_analysis_start,
 )
-from transcriptx.core.analysis.llm_common import (
-    build_bounded_user_prompt,
-    build_llm_provenance,
-    collect_named_speaker_groups_for_llm,
-    format_transcript_lines,
-    sha256_llm_request,
+from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
+from transcriptx.core.analysis.llm_support.artifacts import (
     write_llm_artifacts,
     write_llm_speaker_artifacts,
 )
-from transcriptx.core.analysis.llm_summary_effort import (
-    build_llm_summary_input_coverage,
-    build_llm_summary_ollama_client,
-    require_llm_summary_ollama,
-    resolve_llm_summary_runtime,
+from transcriptx.core.analysis.llm_support.hashing import sha256_llm_request
+from transcriptx.core.analysis.llm_support.prompts import (
+    build_bounded_user_prompt,
+    format_transcript_lines,
 )
-from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
+from transcriptx.core.analysis.llm_support.provenance import build_llm_provenance
+from transcriptx.core.analysis.llm_support.runtime import (
+    build_input_coverage,
+    build_ollama_analysis_client,
+    require_ollama_analysis,
+    resolve_llm_runtime,
+)
+from transcriptx.core.analysis.llm_support.speakers import (
+    collect_named_speaker_groups_for_llm,
+)
 from transcriptx.core.errors.coded import CodedError
 from transcriptx.core.llm.errors import LLM_INVALID_RESPONSE, LLMResponseError
+from transcriptx.core.llm.prompting import require_prompt_budget
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.module_result import build_module_result, now_iso
@@ -99,12 +104,17 @@ class LLMSpeakerSummaryAnalysis(AnalysisModule):
             llm_cfg = config.llm
             runtime_flags = context.get_runtime_flags() or {}
 
-            require_llm_summary_ollama(llm_cfg)
-            effort_runtime = resolve_llm_summary_runtime(
+            require_ollama_analysis(llm_cfg)
+            effort_runtime = resolve_llm_runtime(
                 llm_cfg=llm_cfg,
                 effort=config.analysis.llm_speaker_summary.effort,
             )
-            client = build_llm_summary_ollama_client(
+            require_prompt_budget(
+                max_input_chars=int(effort_runtime.max_input_chars),
+                instruction=_SPEAKER_SUMMARY_INSTRUCTION,
+                module_name=self.module_name,
+            )
+            client = build_ollama_analysis_client(
                 llm_cfg=llm_cfg,
                 runtime=effort_runtime,
             )
@@ -180,7 +190,7 @@ class LLMSpeakerSummaryAnalysis(AnalysisModule):
                 except CodedError:
                     raise
 
-                coverage = build_llm_summary_input_coverage(
+                coverage = build_input_coverage(
                     transcript_block=transcript_block,
                     trunc_meta=trunc_meta,
                 )

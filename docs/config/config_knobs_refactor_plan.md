@@ -2,6 +2,21 @@
 
 # TranscriptX config knobs — stepwise refactor plan
 
+**Last reviewed:** 2026-07-14 (post 0.3.5 / 0.3.6). No runtime-delegation or load-path PRs landed since this plan was written.
+
+## Status vs plan (changelog)
+
+| Check | Current | Plan impact |
+|---|---|---|
+| Ownership snapshot | Still **598 / 588 / 10**, **41** pilots | Metrics unchanged |
+| Runtime delegation | `pauses`, `voice`, `corrections`, `summary`, `highlights`, `llm_*` | Continue with remaining nested / top-level |
+| `docs/config/pydantic_migration.md` | Aligned to **41 / 588** + freeze policy | Step 0 done |
+| Unused deps | Removed from `pyproject.toml` / requirements | Step 7 done |
+| Deprecated `system.TranscriptXConfig` | Removed | Step 2 done |
+| Product releases 0.3.5–0.3.6 | Export / Overview / Artifacts — not config knobs | No reordering of this plan |
+
+---
+
 ## Current state (important)
 
 Registry ownership is **already complete**. Do not restart a “migrate all knobs to Pydantic” program.
@@ -11,9 +26,9 @@ Registry ownership is **already complete**. Do not restart a “migrate all knob
 | Registry leaf keys | **598** |
 | Pydantic-owned | **588** (41 pilots) |
 | Permanent legacy | **10** (`active_*_profile` ×7, `active_workflow_profile`, `use_emojis`, `core_mode`) |
-| Runtime delegation | **Partial** — only `pauses`, `voice`, `corrections` |
+| Runtime delegation | **Partial** — `pauses`, `voice`, `corrections`, `summary`, `highlights`, `llm_*` |
 
-Canonical checklist: [`docs/config/pydantic_migration.md`](docs/config/pydantic_migration.md) (slightly stale on pilot count: says 38/585; tree is **41/588** after `llm_*` pilots).
+Canonical checklist: [`docs/config/pydantic_migration.md`](pydantic_migration.md) (**41/588** after `llm_*` pilots).
 
 ---
 
@@ -165,15 +180,15 @@ flowchart TD
 
 ## 5. Ordered incremental steps (shippable)
 
-### Step 0 — Align docs + freeze enforcement (0.5–1 d)
+### Step 0 — Align docs + freeze enforcement (0.5–1 d) — **done**
 
 | | |
 |--|--|
 | **Goal** | Make docs match tree (41/588); publish freeze policy |
-| **Files** | `docs/config/pydantic_migration.md`; optional PR template / AGENTS note |
+| **Files** | `docs/config/pydantic_migration.md` (replace 38/585 language throughout Phase 2 / Batch 5 tables); optional PR template / AGENTS note |
 | **Risk** | Low |
 | **Tests** | `test_registry_ownership.py`, `test_ownership_snapshot_matches_committed_fixture` |
-| **Example** | Document that `llm_summary_settings` etc. already count toward 41 |
+| **Example** | Document that `llm_summary_settings` etc. already count toward 41; keep “do not add vanity pilots” |
 
 ### Step 1 — Continue runtime delegation (Batch 5+) (multi-PR, ~1–2 d each)
 
@@ -187,7 +202,7 @@ flowchart TD
 | **Tests** | Pre-delegation shape snapshot → parity → three-path access (`AnalysisConfig` / `TranscriptXConfig` / `to_dict`) → ownership invariant → file-load roundtrip → settings pilot validation |
 | **Example knob — `analysis.summary.enabled`** | See migration pattern below |
 
-### Step 2 — Delete deprecated duplicate facade (1–2 d)
+### Step 2 — Delete deprecated duplicate facade (1–2 d) — **done**
 
 | | |
 |--|--|
@@ -236,7 +251,7 @@ flowchart TD
 | **Risk** | High if done early — **defer until Step 1 mostly done** |
 | **Tests** | `resolve_effective_config` parity vs current; run configurator; UI save/load |
 
-### Step 7 — Dependency cleanup (0.5 d)
+### Step 7 — Dependency cleanup (0.5 d) — **done**
 
 | | |
 |--|--|
@@ -303,16 +318,16 @@ Same pattern for a **new** knob (freeze-compliant):
 
 ## 9. PR sequence and rough effort
 
-| PR | Scope | Effort |
-|----|--------|--------|
-| **A** | Docs + freeze policy; ownership numbers | 0.5 d |
-| **B1…Bn** | Delegation PRs: `summary`, `highlights`, `llm_*`, then remaining nested, then top-level | 1–2 d each; ~8–15 PRs total |
-| **C** | Delete `system.TranscriptXConfig` duplicate | 1 d |
-| **D** | Genericize `file_overrides` | 2–3 d |
-| **E** | Collapse `config_validator` into `core/config/validation` | 1–2 d |
-| **F** | Generate `to_dict()` analysis section | 2–3 d |
-| **G** | Drop unused deps | 0.5 d |
-| **H** (optional) | Resolver in-memory apply | 2–4 d |
+| PR | Scope | Effort | Status (2026-07-14) |
+|----|--------|--------|---------------------|
+| **A** | Docs + freeze policy; ownership numbers | 0.5 d | **Done** |
+| **B1…Bn** | Delegation PRs: `summary`, `highlights`, `llm_*`, then remaining nested, then top-level | 1–2 d each; ~8–15 PRs total | **Partial** (`summary` / `highlights` / `llm_*` done; more remain) |
+| **C** | Delete `system.TranscriptXConfig` duplicate | 1 d | **Done** |
+| **D** | Genericize `file_overrides` | 2–3 d | Not started |
+| **E** | Collapse `config_validator` into `core/config/validation` | 1–2 d | Not started |
+| **F** | Generate `to_dict()` analysis section | 2–3 d | Not started (after more delegations) |
+| **G** | Drop unused deps | 0.5 d | **Done** |
+| **H** (optional) | Resolver in-memory apply | 2–4 d | Deferred |
 
 **Total to “unified definitions + thin facade + clean load/validate”:** ~4–8 engineer-weeks of incremental PRs.  
 **Registry unification:** already done — do not budget for it.

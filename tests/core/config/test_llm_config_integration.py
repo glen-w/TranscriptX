@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from transcriptx.core.analysis.llm_common import llm_prompt_overhead_chars
+from transcriptx.core.llm.prompting import prompt_envelope_min_chars
 from transcriptx.core.config import (
     resolve_effective_config,
     save_project_config,
@@ -48,25 +48,25 @@ def test_llm_invalid_provider_fails_validation() -> None:
 
 
 def test_llm_max_input_chars_below_floor_fails_validation() -> None:
-    floor = llm_prompt_overhead_chars()
+    floor = prompt_envelope_min_chars()
     errors = validate_config({"llm": {"max_input_chars": floor - 1}})
     assert "llm.max_input_chars" in errors
 
 
 def test_llm_max_input_chars_at_floor_accepts() -> None:
-    floor = llm_prompt_overhead_chars()
+    floor = prompt_envelope_min_chars()
     errors = validate_config({"llm": {"max_input_chars": floor}})
     assert "llm.max_input_chars" not in errors
 
 
 def test_llm_max_input_chars_above_floor_accepts() -> None:
-    floor = llm_prompt_overhead_chars()
+    floor = prompt_envelope_min_chars()
     errors = validate_config({"llm": {"max_input_chars": floor + 100}})
     assert "llm.max_input_chars" not in errors
 
 
 def test_raw_and_validate_config_reject_same_invalid_max_input_chars(tmp_path) -> None:
-    floor = llm_prompt_overhead_chars()
+    floor = prompt_envelope_min_chars()
     payload = {"llm": {"max_input_chars": floor - 1}}
     with pytest.raises(ConfigLoadError, match="max_input_chars"):
         validate_raw_config_dict(payload)

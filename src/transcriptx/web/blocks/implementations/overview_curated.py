@@ -13,6 +13,7 @@ from transcriptx.web.blocks.llm_presentation import (
     provenance_badges,
     render_badge_row,
     render_markdown_without_heading_or_provenance,
+    strip_commitments_section,
     strip_leading_markdown_heading,
     strip_provenance_footer,
 )
@@ -47,6 +48,8 @@ def _render_summary_body(
 ) -> None:
     if candidate.markdown:
         body = candidate.markdown
+        if candidate.kind == "executive_summary":
+            body = strip_commitments_section(body)
         if strip_heading:
             body = strip_leading_markdown_heading(body)
         if strip_provenance:
@@ -58,6 +61,9 @@ def _render_summary_body(
         st.markdown(str(payload[candidate.text_field]))
         return
     if payload:
+        # Keep commitments out of inline JSON dumps; Actions owns that table.
+        if candidate.kind == "executive_summary" and "commitments" in payload:
+            payload = {k: v for k, v in payload.items() if k != "commitments"}
         st.json(payload)
 
 
@@ -79,9 +85,7 @@ def render_transcript_summary_hero(
         return
     st.markdown("# Transcript Summary")
     render_badge_row(_summary_hero_badges(result.primary))
-    _render_summary_body(
-        result.primary, strip_heading=True, strip_provenance=True
-    )
+    _render_summary_body(result.primary, strip_heading=True, strip_provenance=True)
 
 
 def render_other_summaries(ctx: BlockContext, _placement: BlockPlacement) -> None:

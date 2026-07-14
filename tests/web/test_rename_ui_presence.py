@@ -7,8 +7,9 @@ def test_rename_ui_component_has_shared_form_text() -> None:
     import transcriptx.web.components.rename_form as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "Rename transcript + linked audio" in source
-    assert "Rename linked transcript + audio" in source
+    assert "working-copy audio" in source
+    assert "render_transcript_rename_form" in source
+    assert "render_audio_linked_rename_form" in source
     assert "Rename linked files" in source
 
 

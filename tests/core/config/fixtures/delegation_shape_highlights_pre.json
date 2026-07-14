@@ -1,0 +1,98 @@
+{
+  "asdict": {
+    "cold_open": {
+      "window_policy": "seconds",
+      "window_seconds": 90.0
+    },
+    "conflict": {
+      "merge_gap_seconds": 10.0,
+      "step_seconds": 10.0,
+      "window_seconds": 30.0
+    },
+    "counts": {
+      "cold_open_quotes": 5,
+      "conflict_windows": 6,
+      "emblematic_phrases": 12,
+      "total_highlights": 15
+    },
+    "enabled": true,
+    "merge_adjacent": {
+      "enabled": true,
+      "max_gap_seconds": 1.0,
+      "max_segments": 3
+    },
+    "output": {
+      "write_conflict_csv": false
+    },
+    "sections": {
+      "cold_open_enabled": true,
+      "conflict_points_enabled": true,
+      "emblematic_phrases_enabled": true
+    },
+    "thresholds": {
+      "conflict_spike_percentile": 95.0,
+      "max_consecutive_per_speaker": 2,
+      "max_phrase_len": 5,
+      "max_quote_words": 60,
+      "min_gap_seconds": 30.0,
+      "min_phrase_frequency": 3,
+      "min_phrase_len": 2,
+      "min_quote_words": 4
+    },
+    "weights": {
+      "conflict": 0.3,
+      "content_density": 0.15,
+      "intensity": 0.4,
+      "keyword_richness": 0.1,
+      "uniqueness": 0.2
+    }
+  },
+  "to_dict": {
+    "cold_open": {
+      "window_policy": "seconds",
+      "window_seconds": 90.0
+    },
+    "conflict": {
+      "merge_gap_seconds": 10.0,
+      "step_seconds": 10.0,
+      "window_seconds": 30.0
+    },
+    "counts": {
+      "cold_open_quotes": 5,
+      "conflict_windows": 6,
+      "emblematic_phrases": 12,
+      "total_highlights": 15
+    },
+    "enabled": true,
+    "merge_adjacent": {
+      "enabled": true,
+      "max_gap_seconds": 1.0,
+      "max_segments": 3
+    },
+    "output": {
+      "write_conflict_csv": false
+    },
+    "sections": {
+      "cold_open_enabled": true,
+      "conflict_points_enabled": true,
+      "emblematic_phrases_enabled": true
+    },
+    "thresholds": {
+      "conflict_spike_percentile": 95.0,
+      "max_consecutive_per_speaker": 2,
+      "max_phrase_len": 5,
+      "max_quote_words": 60,
+      "min_gap_seconds": 30.0,
+      "min_phrase_frequency": 3,
+      "min_phrase_len": 2,
+      "min_quote_words": 4
+    },
+    "weights": {
+      "conflict": 0.3,
+      "content_density": 0.15,
+      "intensity": 0.4,
+      "keyword_richness": 0.1,
+      "uniqueness": 0.2
+    }
+  }
+}

@@ -31,10 +31,36 @@ from transcriptx.core.llm.llm_client import LLMClient
 _DEFAULT_MAX_ATTEMPTS = 3
 _DEFAULT_BACKOFF_MAX = 2
 _MODEL_NOT_FOUND_RE = re.compile(r"model\b.*\bnot found", re.IGNORECASE)
+DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 
 
 def normalize_base_url(base_url: str) -> str:
     return base_url.rstrip("/")
+
+
+def build_ollama_client(
+    *,
+    model: str,
+    seed: int,
+    request_timeout: float,
+    availability_timeout: float,
+    base_url: Optional[str] = None,
+    max_output_tokens: Optional[int] = None,
+) -> "OllamaClient":
+    """Generic provider-layer factory taking explicit transport parameters.
+
+    Callers (e.g. analysis runtime resolution) own policy such as effort
+    profiles; this factory only normalizes the base URL and constructs the
+    client.
+    """
+    return OllamaClient(
+        base_url=normalize_base_url(base_url or DEFAULT_OLLAMA_BASE_URL),
+        model=model,
+        seed=seed,
+        request_timeout=request_timeout,
+        availability_timeout=availability_timeout,
+        max_output_tokens=max_output_tokens,
+    )
 
 
 def _validate_client_config(

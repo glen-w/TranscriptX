@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 from transcriptx.web.services import ArtifactService
 
 if TYPE_CHECKING:
+    from transcriptx.export.types import ChartsExportResult
     from transcriptx.web.models.artifact import Artifact
-    from transcriptx.utils.charts_export import ChartsExportResult
 
 
 class ExportService:
@@ -25,6 +25,17 @@ class ExportService:
         charts: list[Artifact],
         run_id: str,
     ) -> ChartsExportResult:
-        from transcriptx.utils.charts_export import prepare_charts_export_zip
+        from transcriptx.export.charts import prepare_charts_export_zip
+        from transcriptx.web.module_ui_groups import order_strings_like_modules
+        from transcriptx.web.services.chart_view_model_service import (
+            resolve_chart_display_description,
+        )
 
-        return prepare_charts_export_zip(run_root, charts, run_id)
+        return prepare_charts_export_zip(
+            run_root,
+            charts,
+            run_id,
+            resolve_path=ArtifactService.resolve_artifact_source_path,
+            order_modules=order_strings_like_modules,
+            description_fn=resolve_chart_display_description,
+        )

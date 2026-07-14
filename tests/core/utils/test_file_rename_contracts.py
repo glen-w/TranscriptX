@@ -60,14 +60,26 @@ def _managed_old_name_transcript_env(
 
     outputs = tmp_path / "outputs"
     recordings = tmp_path / "recordings"
+    state_dir = tmp_path / "state"
     outputs.mkdir(parents=True)
     recordings.mkdir(parents=True)
+    state_dir.mkdir(parents=True)
     (outputs / "old_name").mkdir()
     (outputs / "old_name" / "marker.txt").write_text("x")
 
-    state_file = tmp_path / "processing_state.json"
+    state_file = state_dir / "processing_state.json"
     state_file.write_text(
-        json.dumps({"processed_files": {"u1": {"transcript_path": str(transcript)}}}),
+        json.dumps(
+            {
+                "processed_files": {
+                    "u1": {
+                        "transcript_path": str(transcript),
+                        "processed_at": "2020-01-01T00:00:00",
+                        "status": "completed",
+                    }
+                }
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -79,12 +91,36 @@ def _managed_old_name_transcript_env(
     monkeypatch.setattr(
         "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.PROCESSING_STATE_FILE", state_file
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.audio_association.PROCESSING_STATE_FILE",
+        state_file,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.audio_association.RECORDINGS_DIR", recordings
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.audio_association.OUTPUTS_DIR", outputs
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.processing_state.PROCESSING_STATE_FILE",
+        state_file,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.processing_state.OUTPUTS_DIR", outputs
+    )
+    monkeypatch.setattr("transcriptx.core.utils.rename.journal.STATE_DIR", state_dir)
 
     return {
         "transcript": transcript,
         "outputs": outputs,
         "recordings": recordings,
         "state_file": state_file,
+        "state_dir": state_dir,
+        "metadata_dir": metadata_dir,
+        "transcripts": transcripts,
     }
 
 
@@ -239,64 +275,19 @@ def test_update_processing_state_matches_resolved_transcript_path(
     assert entry["current_transcript_path"] == str(new_tp)
 
 
-def test_rename_transcript_skips_audio_when_target_exists(
+def test_rename_transcript_blocks_when_working_audio_target_exists(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """If new_name audio already exists in recordings, do not enqueue audio rename."""
-    from transcriptx.io.import_metadata_sidecar import write_initial_sidecar
-    from transcriptx.io.transcript_schema import (
-        SourceInfo,
-        TranscriptMetadata,
-        create_transcript_document,
-    )
+    """If renameable working-copy audio target already exists, block the whole rename."""
+    env = _managed_old_name_transcript_env(tmp_path, monkeypatch)
+    transcript = env["transcript"]
+    recordings = env["recordings"]
+    state_file = env["state_file"]
 
-    root = tmp_path / "lib"
-    transcripts = root / "transcripts"
-    metadata_dir = root / "metadata"
-    originals = root / "originals"
-    for d in (transcripts, metadata_dir, originals):
-        d.mkdir(parents=True)
-    (originals / "f.srt").write_text("x", encoding="utf-8")
-
-    monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.TRANSCRIPTS_METADATA_DIR", metadata_dir
-    )
-    monkeypatch.setattr(
-        "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts
-    )
-
-    transcript = transcripts / "old_name.json"
-    doc = create_transcript_document(
-        [{"speaker": "SPEAKER_00", "text": "Hi", "start": 0.0, "end": 1.0}],
-        SourceInfo(
-            type="srt",
-            original_path="originals/f.srt",
-            imported_at="2026-01-01T00:00:00+00:00",
-            file_hash="h",
-            file_mtime=0.0,
-        ),
-        TranscriptMetadata(duration_seconds=1.0, segment_count=1, speaker_count=1),
-    )
-    transcript.write_text(json.dumps(doc), encoding="utf-8")
-    write_initial_sidecar(
-        transcript,
-        imported_at="2026-01-01T00:00:00+00:00",
-        adapter_source_id="srt",
-        source_upload_basename="f.srt",
-        archived_original_relpath="originals/f.srt",
-    )
-
-    outputs = tmp_path / "outputs"
-    recordings = tmp_path / "recordings"
-    outputs.mkdir(parents=True)
-    recordings.mkdir(parents=True)
-    (outputs / "old_name").mkdir()
     old_audio = recordings / "old_name.mp3"
     new_audio = recordings / "new_name.mp3"
     old_audio.write_bytes(b"old")
     new_audio.write_bytes(b"pre")
-
-    state_file = tmp_path / "processing_state.json"
     state_file.write_text(
         json.dumps(
             {
@@ -311,32 +302,14 @@ def test_rename_transcript_skips_audio_when_target_exists(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr("transcriptx.core.utils.paths.OUTPUTS_DIR", outputs)
-    monkeypatch.setattr("transcriptx.core.utils._path_core.OUTPUTS_DIR", outputs)
-    monkeypatch.setattr(fr, "OUTPUTS_DIR", outputs)
-    monkeypatch.setattr(fr, "RECORDINGS_DIR", recordings)
-    monkeypatch.setattr(fr, "PROCESSING_STATE_FILE", state_file)
-    monkeypatch.setattr(
-        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
+    outcome = fr.rename_transcript_files_with_outcome(
+        "old_name", "new_name", str(transcript)
     )
-
-    from transcriptx.core.utils.rename_transaction import RenameTransaction
-
-    added_renames: list[tuple[str, str, str]] = []
-    real_add = RenameTransaction.add_rename
-
-    def _capture(self, src, dest, desc=""):
-        added_renames.append((str(src), str(dest), desc))
-        return real_add(self, src, dest, desc)
-
-    monkeypatch.setattr(RenameTransaction, "add_rename", _capture)
-
-    assert fr.rename_transcript_files("old_name", "new_name", str(transcript)) is True
-
-    assert not any(
-        s.endswith("old_name.mp3") and d.endswith("new_name.mp3")
-        for s, d, _ in added_renames
-    )
+    assert outcome.ok is False
+    assert outcome.transaction_committed is False
+    assert transcript.exists()
+    assert old_audio.exists()
+    assert new_audio.read_bytes() == b"pre"
 
 
 def test_rename_finalize_failure_returns_false_without_transaction_rollback(
@@ -402,6 +375,8 @@ def test_rename_finalize_failure_returns_false_without_transaction_rollback(
                     "u1": {
                         "transcript_path": str(transcript),
                         "mp3_path": "",
+                        "processed_at": "2020-01-01T00:00:00",
+                        "status": "completed",
                     }
                 }
             }
@@ -417,16 +392,20 @@ def test_rename_finalize_failure_returns_false_without_transaction_rollback(
         "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
-    calls = {"n": 0}
-    real_move = fr.shutil.move
-
-    def _boom(*args, **kwargs):
-        calls["n"] += 1
-        if calls["n"] == 1:
-            raise OSError("simulated finalize move failure")
-        return real_move(*args, **kwargs)
-
-    monkeypatch.setattr(fr.shutil, "move", _boom)
+    monkeypatch.setattr(fr, "PROCESSING_STATE_FILE", state_file)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.PROCESSING_STATE_FILE", state_file
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.journal.STATE_DIR", tmp_path / "state"
+    )
+    (tmp_path / "state").mkdir(exist_ok=True)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        lambda *a, **k: (_ for _ in ()).throw(
+            OSError("simulated finalize move failure")
+        ),
+    )
 
     outcome = fr.rename_transcript_files_with_outcome(
         "old_name", "new_name", str(transcript), dry_run=False
@@ -527,7 +506,17 @@ def test_dry_run_skips_finalize_filesystem_and_cache(
 
     state_file = tmp_path / "processing_state.json"
     state_file.write_text(
-        json.dumps({"processed_files": {"u1": {"transcript_path": str(transcript)}}}),
+        json.dumps(
+            {
+                "processed_files": {
+                    "u1": {
+                        "transcript_path": str(transcript),
+                        "processed_at": "2020-01-01T00:00:00",
+                        "status": "completed",
+                    }
+                }
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -546,14 +535,31 @@ def test_dry_run_skips_finalize_filesystem_and_cache(
         moved["v"] = True
         raise AssertionError("finalize should not shutil.move under dry_run")
 
-    monkeypatch.setattr(fr.shutil, "move", _no_move)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.journal.STATE_DIR", tmp_path / "state"
+    )
+    (tmp_path / "state").mkdir(exist_ok=True)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.PROCESSING_STATE_FILE", state_file
+    )
+
+    def _no_finalize(*a, **k):
+        moved["v"] = True
+        raise AssertionError("finalize should not run under dry_run")
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        _no_finalize,
+    )
 
     inv = {"n": 0}
 
     def _track_inv(*a, **k):
         inv["n"] += 1
 
-    monkeypatch.setattr(fr, "invalidate_path_cache", _track_inv)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.invalidate_path_cache", _track_inv
+    )
 
     assert (
         fr.rename_transcript_files(
@@ -567,22 +573,23 @@ def test_dry_run_skips_finalize_filesystem_and_cache(
     assert not (outputs / "new_name").exists()
 
 
-def test_update_processing_state_naive_str_replace_in_mp3_path(
+def test_update_processing_state_exact_path_audio_basename_rewrite(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Freeze current mp3_path str.replace(old_name, new_name) behavior (substring)."""
+    """mp3_path updates via exact Path/basename, not substring replace through parents."""
     from transcriptx.core.utils.processing_state import save_processing_state
 
     old_tp = tmp_path / "session.json"
     new_tp = tmp_path / "session_new.json"
     old_tp.write_text("{}", encoding="utf-8")
-    # Path contains old_name as substring in two places (current naive replace behavior)
     mp3 = str(tmp_path / "archive" / "old_name_backup" / "old_name.mp3")
     (tmp_path / "archive" / "old_name_backup").mkdir(parents=True)
 
     state = {
         "processed_files": {
             "k": {
+                "processed_at": "2020-01-01T00:00:00",
+                "status": "completed",
                 "transcript_path": str(old_tp.resolve()),
                 "mp3_path": mp3,
                 "output_dir_path": str(tmp_path / "out"),
@@ -598,13 +605,17 @@ def test_update_processing_state_naive_str_replace_in_mp3_path(
     monkeypatch.setattr(
         "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.processing_state.PROCESSING_STATE_FILE",
+        state_file,
+    )
     monkeypatch.setattr(fr, "OUTPUTS_DIR", outs)
 
     fr.update_processing_state(str(old_tp), str(new_tp), "old_name", "new_name")
     loaded = json.loads(state_file.read_text(encoding="utf-8"))
     updated_mp3 = loaded["processed_files"]["k"]["mp3_path"]
-    assert "new_name" in updated_mp3
-    assert updated_mp3 == str(tmp_path / "archive" / "new_name_backup" / "new_name.mp3")
+    # Only the basename changes; parent dirs are preserved
+    assert updated_mp3 == str(tmp_path / "archive" / "old_name_backup" / "new_name.mp3")
 
 
 def test_ordered_audio_candidate_plan_matches_public_api(
@@ -691,6 +702,8 @@ def test_compute_processing_state_rename_mutation_leaves_state_untouched(
     state = {
         "processed_files": {
             "key1": {
+                "processed_at": "2020-01-01T00:00:00",
+                "status": "completed",
                 "transcript_path": str(old_tp),
                 "mp3_path": "",
                 "output_dir_path": str(tmp_path / "out"),
@@ -768,7 +781,17 @@ def test_rename_transaction_execute_failure_skips_finalize(
 
     state_file = tmp_path / "processing_state.json"
     state_file.write_text(
-        json.dumps({"processed_files": {"u1": {"transcript_path": str(transcript)}}}),
+        json.dumps(
+            {
+                "processed_files": {
+                    "u1": {
+                        "transcript_path": str(transcript),
+                        "processed_at": "2020-01-01T00:00:00",
+                        "status": "completed",
+                    }
+                }
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -781,7 +804,24 @@ def test_rename_transaction_execute_failure_skips_finalize(
         "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE", state_file
     )
 
-    monkeypatch.setattr(fr.RenameTransaction, "execute", lambda self: False)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.journal.STATE_DIR", tmp_path / "state"
+    )
+    (tmp_path / "state").mkdir(exist_ok=True)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.pipeline.PROCESSING_STATE_FILE", state_file
+    )
+    from transcriptx.core.utils.rename_transaction import TransactionResult
+
+    monkeypatch.setattr(
+        fr.RenameTransaction,
+        "execute",
+        lambda self: TransactionResult(
+            ok=False,
+            failure_code="injected",
+            failure_message="injected failure",
+        ),
+    )
 
     outcome = fr.rename_transcript_files_with_outcome(
         "old_name", "new_name", str(transcript), dry_run=False
@@ -867,7 +907,7 @@ def test_build_rename_plan_non_blocked_sets_finalize_ops_when_output_dirs_differ
     )
     assert not plan.blocked
     assert plan.needs_output_finalize is True
-    assert plan.finalize_ops == ("output_dir_merge", "rename_files_in_directory")
+    assert "output_dir_move" in plan.finalize_ops
     assert any(v.name == "rename_plan_complete" and v.passed for v in plan.validations)
 
 
@@ -886,6 +926,8 @@ def test_persist_processing_state_mutation_writes_processing_state_file(
     state = {
         "processed_files": {
             "k": {
+                "processed_at": "2020-01-01T00:00:00",
+                "status": "completed",
                 "transcript_path": str(old_tp),
                 "mp3_path": "",
                 "output_dir_path": str(tmp_path / "out"),

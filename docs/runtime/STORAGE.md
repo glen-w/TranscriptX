@@ -122,9 +122,22 @@ This model separates:
 
 Managed transcript files participate in a broader contract that includes metadata sidecars, indices, and archival audio linkage. Moving them directly on disk can silently corrupt that contract.
 
-- **Managed transcript renames must go through the storage rename service.**
+- **Managed transcript renames must go through the storage rename service** (`rename_managed_transcript` / web `RenameService`).
 - Direct filesystem renames of canonical transcripts (for example, calling `Path.rename()` on files under `transcripts_dir` or its metadata subtrees) are **not supported** and may leave metadata, indices, or cached state pointing at stale paths.
-- The rename service is responsible for updating transcript locations, associated metadata sidecars, and any registered indices **without** renaming or relocating archival/original audio files.
+- **Archival/original audio** under `transcripts/originals/` (and `wav_backup_dir`) is **never** renamed. Associations stay via metadata.
+- **Recordings working copies** under `recordings_dir` **may** be renamed when the service classifies them as renameable and the target is free; a working-copy target collision **blocks** the entire rename.
+- Import metadata sidecars use the mirrored layout (`metadata/imports/<rel>.import_meta.json`). Legacy flat `metadata/<stem>.import_meta.json` is migrated fail-closed during rename (never left as the authoritative location after success).
+- A durable rename journal under `state_dir/rename_journal/` records the full
+  transaction plan at `prepared`, then post-commit progress
+  (`transaction_committed` → `finalized` → `reconciled` → `complete`).
+  Incomplete ops are recoverable via `repair_managed_rename(operation_id)` /
+  `discover_incomplete_renames()`. Prepared-phase recovery is limited to
+  deterministic classification (all committed / none started / ambiguous);
+  partial in-flight transaction states require manual inspection.
+- Journal records include `schema_version`, planned slug mapping, and structured
+  error history. Malformed journals are reported separately from incomplete ones.
+- Global lock: `state_dir/managed_rename.lock` (held through plan, transaction, finalization, and journal updates).
+- Dry-run may acquire the lock transiently but must make **no persistent domain-state changes**.
 
 Contributors should treat direct filesystem moves of canonical transcript or metadata files as bugs.
 
@@ -171,8 +184,8 @@ To keep the storage contract hardened, follow these guidelines:
 - **Don’t** call `Path.rename()` (or equivalent raw filesystem operations) on canonical transcript or metadata files.  
   **Do** use the storage rename service for any move/rename of canonical transcript artifacts.
 
-- **Don’t** assume that renaming a transcript implies the associated audio file will also be renamed.  
-  **Do** treat audio as separately archived, with associations maintained via metadata and indices rather than shared filenames.
+- **Don’t** assume that renaming a transcript always renames audio.  
+  **Do** expect archival originals to stay put; only linked recordings working copies may rename when planned, and conflict blocks the whole rename.
 
 - **Don’t** build discovery, indexing, or production features on top of `imports/` contents.  
   **Do** target only canonical managed storage for discovery and analysis.

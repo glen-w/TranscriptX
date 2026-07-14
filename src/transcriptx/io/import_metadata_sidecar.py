@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -13,6 +11,9 @@ from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import (
     DIARISED_TRANSCRIPTS_DIR,
     TRANSCRIPTS_METADATA_DIR,
+)
+from transcriptx.core.utils.rename.io_atomic import (
+    write_json_atomic as _write_json_atomic,
 )
 from transcriptx.io.transcript_schema import validate_transcript_document
 from transcriptx.core.observability.perf import (
@@ -56,27 +57,81 @@ class ImportMetadata:
     schema_version: int = SIDECAR_SCHEMA_VERSION
 
 
-def sidecar_path_for_transcript(transcript_path: str | Path) -> Path:
+def mirrored_import_sidecar_path_for_transcript(transcript_path: str | Path) -> Path:
+    """Authoritative mirrored path: metadata/imports/<transcript-rel>.import_meta.json.
+
+    Uses module-level ``DIARISED_TRANSCRIPTS_DIR`` / ``TRANSCRIPTS_METADATA_DIR`` so tests
+    can monkeypatch storage roots without replacing PATHS.
+    """
+    transcript = Path(transcript_path)
+    transcripts_root = Path(DIARISED_TRANSCRIPTS_DIR)
+    metadata_root = Path(TRANSCRIPTS_METADATA_DIR)
+    try:
+        rel = transcript.resolve().relative_to(transcripts_root.resolve())
+    except (ValueError, OSError):
+        try:
+            rel = transcript.relative_to(transcripts_root)
+        except ValueError:
+            rel = Path(transcript.name)
+    if rel.suffix:
+        base = rel.with_suffix(SIDECAR_SUFFIX)
+    else:
+        base = rel.parent / (rel.name + SIDECAR_SUFFIX)
+    return metadata_root / "imports" / base
+
+
+def legacy_flat_sidecar_path_for_transcript(transcript_path: str | Path) -> Path:
+    """Legacy flat layout (to be migrated away): metadata/<stem>.import_meta.json."""
     transcript = Path(transcript_path)
     return Path(TRANSCRIPTS_METADATA_DIR) / f"{transcript.stem}{SIDECAR_SUFFIX}"
 
 
+def sidecar_path_for_transcript(transcript_path: str | Path) -> Path:
+    """Return the authoritative (mirrored) import-metadata sidecar path."""
+    return mirrored_import_sidecar_path_for_transcript(transcript_path)
+
+
+def find_existing_import_sidecar(transcript_path: str | Path) -> Path | None:
+    """Locate an existing sidecar: mirrored preferred, else legacy flat (finite)."""
+    mirrored = mirrored_import_sidecar_path_for_transcript(transcript_path)
+    if mirrored.exists():
+        return mirrored
+    legacy = legacy_flat_sidecar_path_for_transcript(transcript_path)
+    if legacy.exists():
+        return legacy
+    return None
+
+
 def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp_path = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
-    temp = Path(temp_path)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(payload, handle, ensure_ascii=False, indent=2)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(str(temp), str(path))
-    finally:
-        if temp.exists():
-            try:
-                temp.unlink()
-            except OSError:
-                pass
+    """Crash-safe staged JSON write (fsync file + best-effort parent dir)."""
+    _write_json_atomic(path, payload, indent=2)
+
+
+def compute_rename_history_payload(
+    sidecar_path: str | Path,
+    *,
+    old_filename: str,
+    new_filename: str,
+    at_iso: str,
+) -> dict[str, Any]:
+    """Validate sidecar and return the mutated payload (no write)."""
+    sidecar = Path(sidecar_path)
+    payload = load_sidecar(sidecar)
+    history = payload.get("rename_history")
+    if not isinstance(history, list):
+        raise ValueError("rename_history must be a list")
+    history = list(history)
+    history.append(
+        {
+            "at": at_iso,
+            "from_filename": old_filename,
+            "to_filename": new_filename,
+        }
+    )
+    payload = dict(payload)
+    payload["rename_history"] = history
+    payload["current_json_filename"] = new_filename
+    return payload
 
 
 def load_sidecar(path: Path) -> dict[str, Any]:
@@ -145,26 +200,87 @@ def _validate_sidecar_schema(
     )
 
 
-def _has_wrong_path_sidecar(transcript: Path, derived_sidecar: Path) -> bool:
-    """Detect sidecars outside derived path claiming this transcript filename."""
+def _transcript_relative_identity(transcript: Path) -> str:
+    """Stable relative identity under transcripts root (posix)."""
+    transcripts_root = Path(DIARISED_TRANSCRIPTS_DIR)
+    try:
+        return transcript.resolve().relative_to(transcripts_root.resolve()).as_posix()
+    except (ValueError, OSError):
+        try:
+            return transcript.relative_to(transcripts_root).as_posix()
+        except ValueError:
+            return transcript.name
+
+
+def _sidecar_claims_transcript(
+    data: dict[str, Any], transcript: Path, *, candidate: Path
+) -> bool:
+    """True when sidecar content claims this transcript's identity."""
+    if data.get("current_json_filename") != transcript.name:
+        return False
+    claimed_rel = data.get("transcript_relpath") or data.get("current_json_relpath")
+    identity = _transcript_relative_identity(transcript)
+    if isinstance(claimed_rel, str) and claimed_rel:
+        return claimed_rel.replace("\\", "/") == identity
+
+    metadata_root = Path(TRANSCRIPTS_METADATA_DIR)
+    imports_root = metadata_root / "imports"
+    try:
+        rel = candidate.resolve().relative_to(imports_root.resolve())
+    except (ValueError, OSError):
+        # Flat / non-mirrored: basename claim is a conflict for this stem's
+        # transcript (legacy duplicates are excluded via allowed_extra).
+        return True
+    name = rel.name
+    if name.endswith(SIDECAR_SUFFIX):
+        stem_name = name[: -len(SIDECAR_SUFFIX)] + ".json"
+        inferred = (rel.parent / stem_name).as_posix()
+        return inferred == identity
+    return False
+
+
+def _has_wrong_path_sidecar(
+    transcript: Path,
+    derived_sidecar: Path,
+    *,
+    allowed_extra: frozenset[Path] | None = None,
+) -> bool:
+    """Detect sidecars claiming this transcript's identity from wrong paths."""
     metadata_dir = Path(TRANSCRIPTS_METADATA_DIR)
     if not metadata_dir.exists():
         return False
-    for candidate in metadata_dir.glob(f"*{SIDECAR_SUFFIX}"):
-        if candidate.resolve() == derived_sidecar.resolve():
+    allowed = set(allowed_extra or ())
+    try:
+        derived_resolved = derived_sidecar.resolve()
+    except OSError:
+        derived_resolved = derived_sidecar
+    allowed_resolved = {derived_resolved}
+    for extra in allowed:
+        try:
+            allowed_resolved.add(extra.resolve())
+        except OSError:
+            allowed_resolved.add(extra)
+
+    for candidate in metadata_dir.rglob(f"*{SIDECAR_SUFFIX}"):
+        if candidate.name.startswith(".quarantine_"):
+            continue
+        try:
+            cand_resolved = candidate.resolve()
+        except OSError:
+            cand_resolved = candidate
+        if cand_resolved in allowed_resolved:
             continue
         try:
             data = load_sidecar(candidate)
         except Exception:
             continue
-        if data.get("current_json_filename") == transcript.name:
+        if _sidecar_claims_transcript(data, transcript, candidate=candidate):
             return True
     return False
 
 
 def validate_managed_transcript(transcript_path: str | Path) -> ValidationResult:
     transcript = Path(transcript_path)
-    sidecar = sidecar_path_for_transcript(transcript)
 
     if not transcript.exists() or transcript.suffix.lower() != ".json":
         return ValidationResult(
@@ -173,20 +289,57 @@ def validate_managed_transcript(transcript_path: str | Path) -> ValidationResult
             message=f"Transcript not found or invalid extension: {transcript}",
             warnings=[],
         )
-    if not sidecar.exists():
+
+    # Finite mirrored/legacy resolution (same policy as rename planning).
+    from transcriptx.core.utils.rename.sidecars import (
+        ImportSidecarLayout,
+        resolve_import_sidecar_layout,
+    )
+
+    resolution = resolve_import_sidecar_layout(transcript)
+    layout_warnings: list[str] = []
+    if resolution.layout == ImportSidecarLayout.missing:
         return ValidationResult(
             ok=False,
             category=ManagedTranscriptCategory.missing_sidecar,
-            message=f"Missing import sidecar for transcript: {transcript.name}",
+            message=resolution.block_message
+            or f"Missing import sidecar for transcript: {transcript.name}",
             warnings=[],
         )
-    if _has_wrong_path_sidecar(transcript, sidecar):
+    if resolution.layout == ImportSidecarLayout.ambiguous:
+        return ValidationResult(
+            ok=False,
+            category=ManagedTranscriptCategory.wrong_path,
+            message=resolution.block_message
+            or "Ambiguous import sidecar layout (mirrored and legacy differ)",
+            warnings=[],
+        )
+    if resolution.warning:
+        layout_warnings.append(resolution.warning)
+
+    sidecar = resolution.authoritative_source
+    assert sidecar is not None
+    allowed_extra: frozenset[Path] | None = None
+    if resolution.layout in (
+        ImportSidecarLayout.both_identical,
+        ImportSidecarLayout.legacy_flat,
+    ):
+        allowed_extra = frozenset({resolution.legacy_path})
+
+    # Wrong-path scan uses mirrored path as the derived identity when present;
+    # for legacy-only, allow the legacy path and still scan for other claimants.
+    derived_for_scan = resolution.mirrored_path
+    if _has_wrong_path_sidecar(
+        transcript,
+        derived_for_scan,
+        allowed_extra=allowed_extra,
+    ):
         return ValidationResult(
             ok=False,
             category=ManagedTranscriptCategory.wrong_path,
             message=(
-                "Found conflicting sidecar outside derived path claiming "
-                f"current_json_filename={transcript.name!r}"
+                "Found conflicting sidecar outside derived path claiming this "
+                f"transcript ({_transcript_relative_identity(transcript)!r})"
             ),
             warnings=[],
         )
@@ -251,7 +404,7 @@ def validate_managed_transcript(transcript_path: str | Path) -> ValidationResult
             warnings=[],
         )
 
-    warnings: list[str] = []
+    warnings: list[str] = list(layout_warnings)
     archive_path = Path(DIARISED_TRANSCRIPTS_DIR) / str(sidecar_archive_relpath)
     if not archive_path.exists():
         warnings.append(ManagedTranscriptCategory.archive_missing.value)
@@ -314,18 +467,10 @@ def append_rename_history(
     new_filename: str,
     at_iso: str,
 ) -> None:
-    sidecar = Path(sidecar_path)
-    payload = load_sidecar(sidecar)
-    history = payload.get("rename_history")
-    if not isinstance(history, list):
-        raise ValueError("rename_history must be a list")
-    history.append(
-        {
-            "at": at_iso,
-            "from_filename": old_filename,
-            "to_filename": new_filename,
-        }
+    payload = compute_rename_history_payload(
+        sidecar_path,
+        old_filename=old_filename,
+        new_filename=new_filename,
+        at_iso=at_iso,
     )
-    payload["rename_history"] = history
-    payload["current_json_filename"] = new_filename
-    write_json_atomic(sidecar, payload)
+    write_json_atomic(Path(sidecar_path), payload)

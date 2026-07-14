@@ -13,14 +13,16 @@ from transcriptx.core.analysis.llm_action_items import (
     LLM_ACTION_ITEMS_SCHEMA_ID,
     LLMActionItemsAnalysis,
 )
-from transcriptx.core.analysis.llm_common import (
+from transcriptx.core.analysis.llm_support.action_items_contract import (
     dedupe_action_items,
     ground_action_items,
     parse_action_items_json,
+)
+from transcriptx.core.analysis.llm_support.action_items_render import (
     render_action_items_markdown,
 )
 from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
-from transcriptx.core.analysis.llm_summary_effort import LLMSummaryRuntime
+from transcriptx.core.analysis.llm_support.runtime import LLMRuntime
 from transcriptx.core.llm.errors import LLMResponseError
 from transcriptx.core.utils.config.main import TranscriptXConfig
 
@@ -225,7 +227,7 @@ def test_llm_action_items_success(tmp_path) -> None:
     mock_client = MagicMock()
     mock_client.model = "qwen3:8b"
     mock_client.generate.return_value = _valid_items_json()
-    runtime = LLMSummaryRuntime(
+    runtime = LLMRuntime(
         effort="high",
         profile_name="high",
         model="qwen3:8b",
@@ -239,11 +241,11 @@ def test_llm_action_items_success(tmp_path) -> None:
             "transcriptx.core.analysis.llm_action_items.get_config", return_value=cfg
         ),
         patch(
-            "transcriptx.core.analysis.llm_action_items.resolve_llm_summary_runtime",
+            "transcriptx.core.analysis.llm_action_items.resolve_llm_runtime",
             return_value=runtime,
         ),
         patch(
-            "transcriptx.core.analysis.llm_action_items.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_action_items.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(
@@ -302,7 +304,7 @@ def test_llm_action_items_empty_items_success(tmp_path) -> None:
     mock_client = MagicMock()
     mock_client.model = "qwen3:8b"
     mock_client.generate.return_value = '{"items": []}'
-    runtime = LLMSummaryRuntime(
+    runtime = LLMRuntime(
         effort="high",
         profile_name="high",
         model="qwen3:8b",
@@ -316,11 +318,11 @@ def test_llm_action_items_empty_items_success(tmp_path) -> None:
             "transcriptx.core.analysis.llm_action_items.get_config", return_value=cfg
         ),
         patch(
-            "transcriptx.core.analysis.llm_action_items.resolve_llm_summary_runtime",
+            "transcriptx.core.analysis.llm_action_items.resolve_llm_runtime",
             return_value=runtime,
         ),
         patch(
-            "transcriptx.core.analysis.llm_action_items.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_action_items.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(

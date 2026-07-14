@@ -1,6 +1,5 @@
 import transcriptx.core.config.persistence as persistence
 from transcriptx.core.utils.config.main import TranscriptXConfig as MainConfig
-from transcriptx.core.utils.config.system import TranscriptXConfig as SystemConfig
 
 
 def test_save_load_project_config(tmp_path, monkeypatch):
@@ -59,24 +58,6 @@ def test_save_config_atomic_failure_preserves_last_valid_artifact(
 def test_main_config_save_to_file_uses_atomic_persistence(tmp_path, monkeypatch):
     target = tmp_path / "config.json"
     cfg = MainConfig()
-    cfg.save_to_file(str(target))
-    before = target.read_text(encoding="utf-8")
-
-    def _raise_dump(*_args, **_kwargs):
-        raise OSError("simulated write failure")
-
-    monkeypatch.setattr(persistence.json, "dump", _raise_dump)
-    try:
-        cfg.save_to_file(str(target))
-    except OSError:
-        pass
-
-    assert target.read_text(encoding="utf-8") == before
-
-
-def test_system_config_save_to_file_uses_atomic_persistence(tmp_path, monkeypatch):
-    target = tmp_path / "system_config.json"
-    cfg = SystemConfig()
     cfg.save_to_file(str(target))
     before = target.read_text(encoding="utf-8")
 

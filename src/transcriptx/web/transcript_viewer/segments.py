@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.export.grouping import group_contiguous_segments_by_speaker
 from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.transcript_viewer.highlight import render_highlight_html
 
@@ -28,21 +29,9 @@ def group_segments_by_speaker(
     display_segments: list[tuple[int, dict[str, Any]]],
 ) -> list[tuple[str, list[dict[str, Any]]]]:
     """Group contiguous display segments by speaker."""
-    speaker_groups: list[tuple[str, list[dict[str, Any]]]] = []
-    current_speaker: str | None = None
-    current_group: list[dict[str, Any]] = []
-    for _, segment in display_segments:
-        speaker = segment.get("speaker_display") or segment.get("speaker", "Unknown")
-        if speaker != current_speaker:
-            if current_group:
-                speaker_groups.append((str(current_speaker), current_group))
-            current_speaker = str(speaker)
-            current_group = [segment]
-        else:
-            current_group.append(segment)
-    if current_group:
-        speaker_groups.append((str(current_speaker), current_group))
-    return speaker_groups
+    return group_contiguous_segments_by_speaker(
+        [segment for _, segment in display_segments]
+    )
 
 
 def render_plain_segments(

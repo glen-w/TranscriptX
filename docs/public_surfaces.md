@@ -80,7 +80,7 @@ The following patterns are **explicitly not supported** and should be avoided in
   - managed outputs and state defined in the storage and output contracts,
 - are **not supported** and may corrupt invariants.
 - Supported behavior:
-  - Use the storage rename service for managed transcript moves.
+  - Use the storage rename service (`rename_managed_transcript` / web `RenameService`) for managed transcript moves; repair incomplete ops via `repair_managed_rename`.
   - Use public APIs to modify or regenerate artifacts.
 
 ## 3. Contributor guidance

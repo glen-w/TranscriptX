@@ -7,13 +7,13 @@ from typing import Sequence
 
 import streamlit as st
 
+from transcriptx.export.types import HARD_CAP_BYTES
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_ui_groups import order_module_ids
 from transcriptx.web.services import ArtifactService
 from transcriptx.web.services.export_service import ExportService
 
-HARD_CAP_BYTES = 2 * 1024 * 1024 * 1024
 WARN_BYTES = 500 * 1024 * 1024
 
 

@@ -11,6 +11,10 @@ _PROVENANCE_FOOTER = re.compile(
     r"\n---\s*\n(?:Prompt version:[^\n]*\n)?(?:Model:[^\n]*\n?)?\s*$",
     re.IGNORECASE,
 )
+_COMMITMENTS_SECTION = re.compile(
+    r"(?:^|\n)##\s+Commitments\s*/\s*Next steps\s*\n.*?(?=\n##\s|\n---\s*\n|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def provenance_badges(provenance: dict | None) -> list[str]:
@@ -34,8 +38,16 @@ def strip_provenance_footer(markdown: str) -> str:
     return _PROVENANCE_FOOTER.sub("\n", markdown).rstrip() + "\n"
 
 
+def strip_commitments_section(markdown: str) -> str:
+    """Remove embedded commitments; the Insights Actions block owns that content."""
+    cleaned = _COMMITMENTS_SECTION.sub("\n", markdown)
+    return re.sub(r"\n{3,}", "\n\n", cleaned).strip() + "\n"
+
+
 def render_badge_row(labels: list[str]) -> None:
-    parts = "".join(f'<span class="tx-badge">{label}</span>' for label in labels if label)
+    parts = "".join(
+        f'<span class="tx-badge">{label}</span>' for label in labels if label
+    )
     if parts:
         st.markdown(
             f'<div style="margin:0.15rem 0 0.65rem 0;">{parts}</div>',

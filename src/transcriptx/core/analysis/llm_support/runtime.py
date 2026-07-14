@@ -1,4 +1,9 @@
-"""Builtin effort profiles and runtime resolution for llm_summary."""
+"""Effort profiles and resolved runtime for transcript-direct LLM analysis.
+
+This is analysis policy (effort tiers, Ollama eligibility, input coverage),
+kept out of the ``core.llm`` provider layer. Client construction delegates to
+the generic provider factory in :mod:`transcriptx.core.llm.ollama_client`.
+"""
 
 from __future__ import annotations
 
@@ -9,16 +14,26 @@ from typing import Any
 from transcriptx.core.config.models.llm_summary import LLMSummaryEffort
 from transcriptx.core.llm import DEFAULT_OLLAMA_MODEL
 from transcriptx.core.llm.errors import LLMConfigurationError
-from transcriptx.core.llm.ollama_client import OllamaClient, normalize_base_url
+from transcriptx.core.llm.ollama_client import OllamaClient, build_ollama_client
 
-_DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+__all__ = [
+    "LLMEffortProfile",
+    "LLMRuntime",
+    "BUILTIN_LLM_EFFORT_PROFILES",
+    "get_llm_effort_profiles",
+    "require_ollama_analysis",
+    "resolve_llm_runtime",
+    "build_ollama_analysis_client",
+    "build_input_coverage",
+]
+
 _NULL_LLM_CLIENT_MESSAGE = (
     "LLM client not configured. Please configure an LLM provider in the config file."
 )
 
 
 @dataclass(frozen=True)
-class LLMSummaryEffortProfile:
+class LLMEffortProfile:
     """Immutable builtin limits for one effort tier."""
 
     effort: LLMSummaryEffort
@@ -29,8 +44,8 @@ class LLMSummaryEffortProfile:
 
 
 @dataclass(frozen=True)
-class LLMSummaryRuntime:
-    """Resolved llm_summary execution parameters for one run."""
+class LLMRuntime:
+    """Resolved execution parameters for one transcript-direct module run."""
 
     effort: LLMSummaryEffort
     profile_name: str
@@ -40,26 +55,26 @@ class LLMSummaryRuntime:
     max_output_tokens: int
 
 
-BUILTIN_LLM_SUMMARY_EFFORT_PROFILES: dict[LLMSummaryEffort, LLMSummaryEffortProfile] = {
-    "low": LLMSummaryEffortProfile(
+BUILTIN_LLM_EFFORT_PROFILES: dict[LLMSummaryEffort, LLMEffortProfile] = {
+    "low": LLMEffortProfile(
         effort="low",
         max_input_chars=48_000,
         request_timeout=270.0,
         max_output_tokens=2048,
     ),
-    "medium": LLMSummaryEffortProfile(
+    "medium": LLMEffortProfile(
         effort="medium",
         max_input_chars=128_000,
         request_timeout=1350.0,
         max_output_tokens=4096,
     ),
-    "high": LLMSummaryEffortProfile(
+    "high": LLMEffortProfile(
         effort="high",
         max_input_chars=256_000,
         request_timeout=1800.0,
         max_output_tokens=8192,
     ),
-    "max": LLMSummaryEffortProfile(
+    "max": LLMEffortProfile(
         effort="max",
         max_input_chars=512_000,
         request_timeout=3600.0,
@@ -68,11 +83,9 @@ BUILTIN_LLM_SUMMARY_EFFORT_PROFILES: dict[LLMSummaryEffort, LLMSummaryEffortProf
 }
 
 
-def get_llm_summary_effort_profiles() -> (
-    dict[LLMSummaryEffort, LLMSummaryEffortProfile]
-):
+def get_llm_effort_profiles() -> dict[LLMSummaryEffort, LLMEffortProfile]:
     """Return the builtin effort profile map (tests/future overrides use resolve kwarg)."""
-    return dict(BUILTIN_LLM_SUMMARY_EFFORT_PROFILES)
+    return dict(BUILTIN_LLM_EFFORT_PROFILES)
 
 
 def require_ollama_analysis(llm_cfg: Any) -> None:
@@ -88,26 +101,25 @@ def require_ollama_analysis(llm_cfg: Any) -> None:
         raise LLMConfigurationError(f"Unsupported LLM provider: {llm_cfg.provider!r}")
 
 
-def require_llm_summary_ollama(llm_cfg: Any) -> None:
-    """Backward-compatible alias for ``require_ollama_analysis``."""
-    require_ollama_analysis(llm_cfg)
-
-
-def resolve_llm_summary_runtime(
+def resolve_llm_runtime(
     *,
     llm_cfg: Any,
     effort: str,
-    profiles: Mapping[LLMSummaryEffort, LLMSummaryEffortProfile] | None = None,
-) -> LLMSummaryRuntime:
-    """Return resolved llm_summary limits without mutating ``llm_cfg``."""
-    profile_map = profiles or BUILTIN_LLM_SUMMARY_EFFORT_PROFILES
+    profiles: Mapping[LLMSummaryEffort, LLMEffortProfile] | None = None,
+) -> LLMRuntime:
+    """Return resolved effort limits without mutating ``llm_cfg``.
+
+    Effort-profile limits replace (never merge with) the global ``llm.*``
+    values for the calling module.
+    """
+    profile_map = profiles or BUILTIN_LLM_EFFORT_PROFILES
     normalized = str(effort).strip().lower()
     profile = profile_map.get(normalized)  # type: ignore[arg-type]
     if profile is None:
-        raise ValueError(f"Unknown llm_summary effort: {effort!r}")
+        raise ValueError(f"Unknown llm effort: {effort!r}")
 
     model = profile.model or llm_cfg.model or DEFAULT_OLLAMA_MODEL
-    return LLMSummaryRuntime(
+    return LLMRuntime(
         effort=profile.effort,
         profile_name=profile.effort,
         model=str(model),
@@ -117,15 +129,14 @@ def resolve_llm_summary_runtime(
     )
 
 
-def build_llm_summary_ollama_client(
+def build_ollama_analysis_client(
     *,
     llm_cfg: Any,
-    runtime: LLMSummaryRuntime,
+    runtime: LLMRuntime,
 ) -> OllamaClient:
-    """Instantiate Ollama for llm_summary using effort-resolved limits."""
-    base_url = normalize_base_url(llm_cfg.base_url or _DEFAULT_OLLAMA_BASE_URL)
-    return OllamaClient(
-        base_url=base_url,
+    """Instantiate Ollama for a transcript-direct module using resolved limits."""
+    return build_ollama_client(
+        base_url=llm_cfg.base_url,
         model=runtime.model,
         seed=int(llm_cfg.seed),
         request_timeout=float(runtime.request_timeout),
@@ -134,7 +145,7 @@ def build_llm_summary_ollama_client(
     )
 
 
-def build_llm_summary_input_coverage(
+def build_input_coverage(
     *,
     transcript_block: str,
     trunc_meta: dict[str, Any],

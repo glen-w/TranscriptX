@@ -21,7 +21,7 @@ def test_normalize_and_validate_target_name() -> None:
 
     ok, msg = RenameService.validate_target_name("old_name", "bad/name")
     assert ok is False
-    assert "invalid characters" in msg
+    assert "path separators" in msg or "invalid" in msg
 
     ok, msg = RenameService.validate_target_name("old_name", "new_name")
     assert ok is True
@@ -38,22 +38,34 @@ def test_rename_transcript_and_audio_uses_core_rename(
 
     calls = {"args": None}
 
-    def _fake_outcome(
-        old_name: str, new_name: str, transcript_path: str, dry_run: bool = False
-    ):
-        from transcriptx.core.utils.file_rename import RenameTranscriptOutcome
+    def _fake_outcome(transcript_path, raw_target_name, *, dry_run=False):
+        from transcriptx.core.utils.rename.outcome import (
+            RenameManagedOutcome,
+            RenameStatus,
+        )
 
-        calls["args"] = (old_name, new_name, transcript_path)
-        return RenameTranscriptOutcome(
+        calls["args"] = (
+            Path(transcript_path).stem,
+            raw_target_name,
+            str(transcript_path),
+        )
+        return RenameManagedOutcome(
+            status=RenameStatus.committed_complete,
+            message="ok",
             transaction_attempted=True,
             transaction_succeeded=True,
             transaction_committed=True,
             finalize_attempted=False,
             finalize_succeeded=True,
+            reconciliation_succeeded=True,
+            old_transcript_path=str(transcript_path),
+            new_transcript_path=str(
+                Path(transcript_path).with_name(f"{raw_target_name}.json")
+            ),
         )
 
     monkeypatch.setattr(
-        "transcriptx.web.services.rename_service.rename_transcript_files_with_outcome",
+        "transcriptx.web.services.rename_service.rename_managed_transcript",
         _fake_outcome,
     )
     monkeypatch.setattr(
@@ -266,26 +278,34 @@ def test_rename_from_audio_returns_unlinked_message_when_no_state_match(
 def test_rename_transcript_and_audio_partial_finalize_surfaces_distinct_message(
     monkeypatch, tmp_path: Path
 ) -> None:
-    from transcriptx.core.utils.file_rename import RenameTranscriptOutcome
+    from transcriptx.core.utils.rename.outcome import (
+        RenameManagedOutcome,
+        RenameStatus,
+    )
     from transcriptx.web.services.rename_service import RenameService
 
     transcript = tmp_path / "cur.json"
     transcript.write_text("{}", encoding="utf-8")
 
-    def _partial_outcome(
-        old_name: str, new_name: str, transcript_path: str, dry_run: bool = False
-    ) -> RenameTranscriptOutcome:
-        return RenameTranscriptOutcome(
+    def _partial_outcome(transcript_path, raw_target_name, *, dry_run=False):
+        return RenameManagedOutcome(
+            status=RenameStatus.committed_partial,
+            message="partial",
+            operation_id="op-123",
             transaction_attempted=True,
             transaction_succeeded=True,
             transaction_committed=True,
             finalize_attempted=True,
             finalize_succeeded=False,
             last_error="simulated",
+            old_transcript_path=str(transcript_path),
+            new_transcript_path=str(
+                Path(transcript_path).with_name(f"{raw_target_name}.json")
+            ),
         )
 
     monkeypatch.setattr(
-        "transcriptx.web.services.rename_service.rename_transcript_files_with_outcome",
+        "transcriptx.web.services.rename_service.rename_managed_transcript",
         _partial_outcome,
     )
     monkeypatch.setattr(
@@ -296,9 +316,12 @@ def test_rename_transcript_and_audio_partial_finalize_surfaces_distinct_message(
 
     result = RenameService.rename_transcript_and_audio(transcript, "new_base")
     assert result.ok is False
+    assert result.transaction_committed is True
     assert result.transaction_phase_ok is True
     assert result.finalize_phase_ok is False
-    assert "output" in result.message.lower() and "folder" in result.message.lower()
+    assert "committed" in result.message.lower()
+    assert result.operation_id == "op-123"
+    assert "incomplete" in result.message.lower() or "repair" in result.message.lower()
 
 
 def test_find_audio_path_for_transcript_delegates_to_core_lookup(

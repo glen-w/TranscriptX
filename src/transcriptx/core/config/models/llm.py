@@ -64,13 +64,13 @@ class LLMSettingsModel(BaseModel):
     @field_validator("max_input_chars")
     @classmethod
     def _max_input_chars_floor(cls, value: int) -> int:
-        from transcriptx.core.analysis.llm_common import llm_prompt_overhead_chars
+        from transcriptx.core.llm.prompting import prompt_envelope_min_chars
 
-        min_chars = llm_prompt_overhead_chars()
+        min_chars = prompt_envelope_min_chars()
         if value < min_chars:
             raise ValueError(
                 f"llm.max_input_chars ({value}) is below the minimum required "
-                f"for the LLM prompt wrapper ({min_chars} characters)."
+                f"for the LLM prompt envelope ({min_chars} characters)."
             )
         return value
 

@@ -11,29 +11,35 @@ from transcriptx.core.analysis.common import (
     log_analysis_error,
     log_analysis_start,
 )
-from transcriptx.core.analysis.llm_common import (
-    LLM_ACTION_ITEMS_INSTRUCTION,
-    build_bounded_user_prompt,
+from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
+from transcriptx.core.analysis.llm_support.action_items_contract import (
     build_llm_action_items_cache_key,
-    build_llm_provenance,
     dedupe_action_items,
-    format_transcript_lines,
     ground_action_items,
     order_action_items,
     parse_action_items_json,
+)
+from transcriptx.core.analysis.llm_support.action_items_render import (
     render_action_items_markdown,
+)
+from transcriptx.core.analysis.llm_support.artifacts import write_llm_artifacts
+from transcriptx.core.analysis.llm_support.hashing import (
     sha256_llm_request,
     sha256_text,
-    write_llm_artifacts,
 )
-from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
-from transcriptx.core.analysis.llm_summary_effort import (
-    build_llm_summary_input_coverage,
-    build_llm_summary_ollama_client,
+from transcriptx.core.analysis.llm_support.prompts import (
+    build_bounded_user_prompt,
+    format_transcript_lines,
+)
+from transcriptx.core.analysis.llm_support.provenance import build_llm_provenance
+from transcriptx.core.analysis.llm_support.runtime import (
+    build_input_coverage,
+    build_ollama_analysis_client,
     require_ollama_analysis,
-    resolve_llm_summary_runtime,
+    resolve_llm_runtime,
 )
 from transcriptx.core.errors.coded import CodedError
+from transcriptx.core.llm.prompting import require_prompt_budget
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.module_result import build_module_result, now_iso
@@ -41,6 +47,7 @@ from transcriptx.core.utils.module_result import build_module_result, now_iso
 LLM_ACTION_ITEMS_SCHEMA_ID = "transcriptx.llm_action_items.v1"
 LLM_ACTION_ITEMS_PROMPT_VERSION = "2"
 LLM_ACTION_ITEMS_MODULE_VERSION = "1"
+LLM_ACTION_ITEMS_INSTRUCTION = "Extract action items from this transcript:"
 
 
 def _build_action_items_system_prompt() -> str:
@@ -85,11 +92,16 @@ class LLMActionItemsAnalysis(AnalysisModule):
             config = get_config()
             llm_cfg = config.llm
             require_ollama_analysis(llm_cfg)
-            effort_runtime = resolve_llm_summary_runtime(
+            effort_runtime = resolve_llm_runtime(
                 llm_cfg=llm_cfg,
                 effort=config.analysis.llm_action_items.effort,
             )
-            client = build_llm_summary_ollama_client(
+            require_prompt_budget(
+                max_input_chars=int(effort_runtime.max_input_chars),
+                instruction=LLM_ACTION_ITEMS_INSTRUCTION,
+                module_name=self.module_name,
+            )
+            client = build_ollama_analysis_client(
                 llm_cfg=llm_cfg,
                 runtime=effort_runtime,
             )
@@ -146,7 +158,7 @@ class LLMActionItemsAnalysis(AnalysisModule):
                 "num_predict": max_output_tokens,
                 "format": "json",
             }
-            coverage = build_llm_summary_input_coverage(
+            coverage = build_input_coverage(
                 transcript_block=transcript_block,
                 trunc_meta=trunc_meta,
             )

@@ -12,7 +12,16 @@ from transcriptx.core.utils.config.analysis import AnalysisConfig
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
-_DELEGATION_SUBTREES = ("pauses", "voice", "corrections")
+_DELEGATION_SUBTREES = (
+    "pauses",
+    "voice",
+    "corrections",
+    "summary",
+    "highlights",
+    "llm_summary",
+    "llm_speaker_summary",
+    "llm_action_items",
+)
 
 
 def _normalize_for_json(value: Any) -> Any:

@@ -10,27 +10,24 @@ from typing import Any, Callable
 
 import streamlit as st
 
-from transcriptx.core.utils.file_rename import (
-    find_original_audio_file,
-    rename_transcript_files_with_outcome,
+from transcriptx.core.utils.rename.audio_association import find_original_audio_file
+from transcriptx.core.utils.rename.names import (
+    normalize_base_name,
+    validate_target_name,
 )
+from transcriptx.core.utils.rename.outcome import RenameStatus
+from transcriptx.core.utils.rename.pipeline import rename_managed_transcript
 from transcriptx.core.utils.processing_state import load_processing_state
-from transcriptx.core.utils.slug_manager import update_index_after_transcript_rename
 from transcriptx.web.cache_helpers import clear_rename_related_caches
 from transcriptx.web.services.recordings_service import RecordingsService
 from transcriptx.web.state import IMPORT_LAST_TRANSCRIPT_PATH
 
-_INVALID_NAME_CHARS = {"/", "\\", ":", "*", "?", '"', "<", ">", "|"}
-_KNOWN_EXTENSIONS = {
-    ".json",
-    ".wav",
-    ".mp3",
-    ".m4a",
-    ".flac",
-    ".ogg",
-    ".aac",
-    ".wma",
-}
+
+@dataclass(frozen=True)
+class RenameResultError:
+    code: str
+    message: str
+    phase: str = ""
 
 
 @dataclass(frozen=True)
@@ -45,12 +42,16 @@ class RenameResult:
     new_transcript_path: str = ""
     old_audio_path: str = ""
     new_audio_path: str = ""
-    #: From core rename pipeline: transaction phase (file + state + history) succeeded
     transaction_phase_ok: bool | None = None
-    #: From core rename pipeline: finalize phase (output dir / in-tree renames) succeeded
     finalize_phase_ok: bool | None = None
+    transaction_committed: bool = False
+    operation_id: str | None = None
+    status: str = ""
+    audio_kind: str = ""
+    audio_renamed: bool = False
     old_slug: str | None = None
     new_slug: str | None = None
+    errors: tuple[RenameResultError, ...] = ()
 
 
 class RenameService:
@@ -58,25 +59,13 @@ class RenameService:
 
     @staticmethod
     def normalize_base_name(raw_name: str) -> str:
-        name = (raw_name or "").strip().rstrip(".")
-        suffix = Path(name).suffix.lower()
-        if suffix in _KNOWN_EXTENSIONS:
-            name = name[: -len(suffix)]
-        return name.strip()
+        return normalize_base_name(raw_name)
 
     @staticmethod
     def validate_target_name(
         current_base_name: str, raw_target_name: str
     ) -> tuple[bool, str]:
-        target = RenameService.normalize_base_name(raw_target_name)
-        if not target:
-            return False, "Please provide a new file name."
-        if any(char in target for char in _INVALID_NAME_CHARS):
-            bad = ", ".join(sorted(_INVALID_NAME_CHARS))
-            return False, f"File name contains invalid characters: {bad}"
-        if target == current_base_name:
-            return False, "New file name must be different from the current name."
-        return True, ""
+        return validate_target_name(current_base_name, raw_target_name)
 
     @staticmethod
     def rename(
@@ -86,13 +75,14 @@ class RenameService:
         new_base_name: str,
         dry_run: bool = False,
     ) -> RenameResult:
-        """Unified rename entry point for transcript and/or audio-linked flows."""
         if transcript_path is not None:
             return RenameService._rename_transcript_path(
                 Path(transcript_path), new_base_name, dry_run=dry_run
             )
         if audio_path is not None:
-            return RenameService.rename_from_audio(audio_path, new_base_name)
+            return RenameService.rename_from_audio(
+                audio_path, new_base_name, dry_run=dry_run
+            )
         return RenameResult(ok=False, message="No transcript or audio path provided.")
 
     @staticmethod
@@ -117,65 +107,83 @@ class RenameService:
             return RenameResult(ok=False, message=error, old_base_name=old_base)
 
         new_base = RenameService.normalize_base_name(raw_target_name)
-        new_transcript = transcript.with_name(f"{new_base}.json")
+        outcome = rename_managed_transcript(transcript, new_base, dry_run=dry_run)
 
-        old_audio_path = RenameService._find_audio_path_for_transcript(transcript)
-        old_audio_suffix = old_audio_path.suffix if old_audio_path else ""
-        new_audio = (
-            old_audio_path.with_name(f"{new_base}{old_audio_suffix}")
-            if old_audio_path and old_audio_suffix
-            else None
-        )
+        # Slug is already reconciled inside the pipeline when committed
+        committed = outcome.transaction_committed
+        complete = outcome.status == RenameStatus.committed_complete
+        partial = outcome.status == RenameStatus.committed_partial
+        dry = outcome.status == RenameStatus.dry_run
 
-        outcome = rename_transcript_files_with_outcome(
-            old_base, new_base, str(transcript), dry_run=dry_run
-        )
-        if not outcome.ok:
-            partial = outcome.partial_success_after_transaction
+        msg = outcome.message
+        if partial:
             msg = (
-                "Transcript and processing state were updated, but moving the output "
-                "folder failed. Check output directories; you may need to merge or fix "
-                "paths manually."
-                if partial
-                else "Rename failed. Check for name conflicts or locked files."
+                "Transcript rename committed, but some follow-up work is incomplete "
+                "and can be repaired. "
+                f"Repair id: {outcome.operation_id}"
             )
-            return RenameResult(
-                ok=False,
-                message=msg,
-                old_base_name=old_base,
-                new_base_name=new_base,
-                old_transcript_path=str(transcript),
-                new_transcript_path=str(new_transcript),
-                old_audio_path=str(old_audio_path) if old_audio_path else "",
-                new_audio_path=str(new_audio) if new_audio else "",
-                transaction_phase_ok=outcome.transaction_succeeded,
-                finalize_phase_ok=outcome.finalize_succeeded,
+            if outcome.errors:
+                detail = "; ".join(f"{e.phase}:{e.code}" for e in outcome.errors[:5])
+                msg = f"{msg} ({detail})"
+        elif outcome.status == RenameStatus.blocked:
+            msg = outcome.message
+        elif outcome.status == RenameStatus.failed_rolled_back:
+            msg = "Rename failed and was rolled back. " f"{outcome.message}"
+        elif outcome.status == RenameStatus.failed_rollback_incomplete:
+            msg = (
+                "Rename failed and rollback did not fully complete. "
+                "Manual repair may be required. "
+                f"{outcome.message}"
             )
 
-        old_slug, new_slug = None, None
-        if not dry_run:
-            old_slug, new_slug = update_index_after_transcript_rename(
-                transcript, new_transcript
-            )
+        audio_msg = RenameService._audio_outcome_phrase(
+            outcome.audio_kind, outcome.audio_renamed
+        )
+        if complete or dry:
+            msg = f"{msg} ({audio_msg})" if audio_msg else msg
 
         return RenameResult(
-            ok=True,
-            message="Renamed transcript and linked audio files.",
+            ok=complete or dry,
+            message=msg,
             old_base_name=old_base,
             new_base_name=new_base,
-            old_transcript_path=str(transcript),
-            new_transcript_path=str(new_transcript),
-            old_audio_path=str(old_audio_path) if old_audio_path else "",
-            new_audio_path=str(new_audio) if new_audio else "",
+            old_transcript_path=outcome.old_transcript_path or str(transcript),
+            new_transcript_path=outcome.new_transcript_path,
+            old_audio_path=outcome.old_audio_path,
+            new_audio_path=outcome.new_audio_path,
             transaction_phase_ok=outcome.transaction_succeeded,
             finalize_phase_ok=outcome.finalize_succeeded,
-            old_slug=old_slug,
-            new_slug=new_slug,
+            transaction_committed=committed,
+            operation_id=outcome.operation_id,
+            status=outcome.status.value,
+            audio_kind=outcome.audio_kind,
+            audio_renamed=outcome.audio_renamed,
+            old_slug=outcome.old_slug,
+            new_slug=outcome.new_slug,
+            errors=tuple(
+                RenameResultError(code=e.code, message=e.message, phase=e.phase)
+                for e in outcome.errors
+            ),
         )
 
     @staticmethod
+    def _audio_outcome_phrase(kind: str, renamed: bool) -> str:
+        if renamed:
+            return "linked working-copy audio renamed"
+        if kind == "archival_original":
+            return "preserved archival/external association"
+        if kind == "external_or_unknown":
+            return "preserved archival/external association"
+        if kind in {"missing", "none", ""}:
+            return "no linked working-copy audio"
+        return "audio association unchanged"
+
+    @staticmethod
     def rename_from_audio(
-        raw_audio_path: str | Path, raw_target_name: str
+        raw_audio_path: str | Path,
+        raw_target_name: str,
+        *,
+        dry_run: bool = False,
     ) -> RenameResult:
         audio_path = Path(raw_audio_path)
         transcript = RenameService.find_linked_transcript_for_audio(audio_path)
@@ -187,7 +195,9 @@ class RenameService:
                     "so synchronized rename is unavailable."
                 ),
             )
-        return RenameService.rename_transcript_and_audio(transcript, raw_target_name)
+        return RenameService._rename_transcript_path(
+            transcript, raw_target_name, dry_run=dry_run
+        )
 
     @staticmethod
     def find_linked_transcript_for_audio(audio_path: str | Path) -> Path | None:
@@ -226,7 +236,6 @@ class RenameService:
         library_transcripts: list | None = None,
         extra_session_patch: Callable[[RenameResult], None] | None = None,
     ) -> None:
-        """Clear caches and patch session state after a successful or partial rename."""
         RenameService.refresh_after_rename(
             result,
             library_transcripts=library_transcripts,
@@ -240,7 +249,6 @@ class RenameService:
         library_transcripts: list | None = None,
         extra_session_patch: Callable[[RenameResult], None] | None = None,
     ) -> None:
-        """Clear caches and patch stale selections in session_state."""
         clear_rename_related_caches()
         RecordingsService.list_recordings.clear()  # type: ignore[attr-defined]
 

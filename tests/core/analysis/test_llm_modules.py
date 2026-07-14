@@ -14,7 +14,7 @@ from transcriptx.core.analysis.llm_module_errors import (
     ModuleEmptyInputError,
 )
 from transcriptx.core.analysis.llm_summary import LLMSummaryAnalysis
-from transcriptx.core.analysis.llm_summary_effort import LLMSummaryRuntime
+from transcriptx.core.analysis.llm_support.runtime import LLMRuntime
 from transcriptx.core.analysis.narrative_summary import NarrativeSummaryAnalysis
 from transcriptx.core.llm.errors import (
     LLM_CONFIGURATION_ERROR,
@@ -150,7 +150,7 @@ def test_llm_summary_success(tmp_path) -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(
@@ -186,7 +186,7 @@ def test_llm_summary_empty_transcript_error_code() -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
     ):
@@ -208,7 +208,7 @@ def test_llm_summary_generation_failure_error_code() -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
     ):
@@ -295,7 +295,7 @@ def test_llm_summary_empty_model_response_error_code() -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
     ):
@@ -326,7 +326,7 @@ def test_llm_summary_provenance_includes_truncation_metadata(tmp_path) -> None:
     cfg.llm.provider = "ollama"
     cfg.llm.default_temperature = 0.25
 
-    effort_runtime = LLMSummaryRuntime(
+    effort_runtime = LLMRuntime(
         effort="low",
         profile_name="low",
         model="qwen3:8b",
@@ -342,11 +342,11 @@ def test_llm_summary_provenance_includes_truncation_metadata(tmp_path) -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.resolve_llm_summary_runtime",
+            "transcriptx.core.analysis.llm_summary.resolve_llm_runtime",
             return_value=effort_runtime,
         ),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(
@@ -400,7 +400,7 @@ def test_llm_summary_ignores_llm_cfg_max_input_chars_when_effort_active(
     cfg.llm.provider = "ollama"
     cfg.llm.max_input_chars = 999_999
 
-    effort_runtime = LLMSummaryRuntime(
+    effort_runtime = LLMRuntime(
         effort="low",
         profile_name="low",
         model="qwen3:8b",
@@ -416,11 +416,11 @@ def test_llm_summary_ignores_llm_cfg_max_input_chars_when_effort_active(
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.resolve_llm_summary_runtime",
+            "transcriptx.core.analysis.llm_summary.resolve_llm_runtime",
             return_value=effort_runtime,
         ) as mock_resolve,
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(
@@ -462,7 +462,7 @@ def test_llm_summary_uses_effort_specific_client(tmp_path) -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ) as mock_build_client,
         patch(
@@ -495,10 +495,10 @@ def test_llm_summary_non_ollama_raises_configuration_error() -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
         ) as mock_build_client,
         patch(
-            "transcriptx.core.analysis.llm_summary.resolve_llm_summary_runtime",
+            "transcriptx.core.analysis.llm_summary.resolve_llm_runtime",
         ) as mock_resolve,
     ):
         with pytest.raises(LLMConfigurationError) as exc:
@@ -521,10 +521,10 @@ def test_llm_summary_disabled_raises_configuration_error() -> None:
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
         ) as mock_build_client,
         patch(
-            "transcriptx.core.analysis.llm_summary.resolve_llm_summary_runtime",
+            "transcriptx.core.analysis.llm_summary.resolve_llm_runtime",
         ) as mock_resolve,
     ):
         with pytest.raises(LLMConfigurationError) as exc:
@@ -557,7 +557,7 @@ def test_llm_summary_provenance_retains_input_chars_with_coverage_fields(
     with (
         patch("transcriptx.core.analysis.llm_summary.get_config", return_value=cfg),
         patch(
-            "transcriptx.core.analysis.llm_summary.build_llm_summary_ollama_client",
+            "transcriptx.core.analysis.llm_summary.build_ollama_analysis_client",
             return_value=mock_client,
         ),
         patch(

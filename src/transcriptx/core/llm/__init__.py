@@ -17,7 +17,7 @@ from transcriptx.core.llm.llm_client import LLMClient, NullLLMClient
 from transcriptx.core.llm.ollama_client import OllamaClient, normalize_base_url
 
 if TYPE_CHECKING:
-    from transcriptx.core.utils.config.system import TranscriptXConfig
+    from transcriptx.core.utils.config.main import TranscriptXConfig
 
 _DEFAULT_OLLAMA_MODEL = "qwen3:8b"
 DEFAULT_OLLAMA_MODEL = _DEFAULT_OLLAMA_MODEL

@@ -10,10 +10,51 @@ from pydantic import BaseModel
 from .base import DEFAULT_NER_LABELS, DEFAULT_STOPWORDS
 
 
+def _dataclass_from_nested_dump(cls: type, data: dict[str, Any]) -> object:
+    """Build a nested dataclass instance from a model_dump() dict (no __init__)."""
+    from dataclasses import is_dataclass
+    from typing import get_type_hints
+
+    instance = object.__new__(cls)
+    annotations = get_type_hints(cls)
+    for key, value in data.items():
+        field_type = annotations.get(key)
+        if (
+            isinstance(value, dict)
+            and field_type is not None
+            and is_dataclass(field_type)
+        ):
+            object.__setattr__(
+                instance, key, _dataclass_from_nested_dump(field_type, value)
+            )
+        else:
+            object.__setattr__(instance, key, value)
+    return instance
+
+
 def _hydrate_dataclass_from_pydantic(instance: object, model: BaseModel) -> None:
-    """Populate dataclass fields from a Pydantic model defaults dump (no revalidation)."""
+    """Populate dataclass fields from a Pydantic model defaults dump (no revalidation).
+
+    Nested dict values are reconstructed as nested dataclass instances when the
+    corresponding field annotation is a dataclass type (needed for summary /
+    highlights attribute access and file-override merge).
+    """
+    from dataclasses import is_dataclass
+    from typing import get_type_hints
+
+    annotations = get_type_hints(type(instance))
     for key, value in model.model_dump().items():
-        object.__setattr__(instance, key, value)
+        field_type = annotations.get(key)
+        if (
+            isinstance(value, dict)
+            and field_type is not None
+            and is_dataclass(field_type)
+        ):
+            object.__setattr__(
+                instance, key, _dataclass_from_nested_dump(field_type, value)
+            )
+        else:
+            object.__setattr__(instance, key, value)
 
 
 @dataclass
@@ -86,116 +127,122 @@ class SpeakerExemplarsConfig:
 
 @dataclass
 class HighlightsCounts:
-    cold_open_quotes: int = 5
-    total_highlights: int = 15
-    conflict_windows: int = 6
-    emblematic_phrases: int = 12
+    cold_open_quotes: int = field(init=False, repr=True)
+    total_highlights: int = field(init=False, repr=True)
+    conflict_windows: int = field(init=False, repr=True)
+    emblematic_phrases: int = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsThresholds:
-    conflict_spike_percentile: float = 95.0
-    min_gap_seconds: float = 30.0
-    min_quote_words: int = 4
-    max_quote_words: int = 60
-    max_consecutive_per_speaker: int = 2
-    min_phrase_len: int = 2
-    max_phrase_len: int = 5
-    min_phrase_frequency: int = 3
+    conflict_spike_percentile: float = field(init=False, repr=True)
+    min_gap_seconds: float = field(init=False, repr=True)
+    min_quote_words: int = field(init=False, repr=True)
+    max_quote_words: int = field(init=False, repr=True)
+    max_consecutive_per_speaker: int = field(init=False, repr=True)
+    min_phrase_len: int = field(init=False, repr=True)
+    max_phrase_len: int = field(init=False, repr=True)
+    min_phrase_frequency: int = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsWeights:
-    intensity: float = 0.40
-    conflict: float = 0.30
-    uniqueness: float = 0.20
-    keyword_richness: float = 0.10
-    content_density: float = 0.15
+    intensity: float = field(init=False, repr=True)
+    conflict: float = field(init=False, repr=True)
+    uniqueness: float = field(init=False, repr=True)
+    keyword_richness: float = field(init=False, repr=True)
+    content_density: float = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsSections:
-    cold_open_enabled: bool = True
-    conflict_points_enabled: bool = True
-    emblematic_phrases_enabled: bool = True
+    cold_open_enabled: bool = field(init=False, repr=True)
+    conflict_points_enabled: bool = field(init=False, repr=True)
+    emblematic_phrases_enabled: bool = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsOutput:
-    write_conflict_csv: bool = False
+    write_conflict_csv: bool = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsMergeAdjacent:
-    enabled: bool = True
-    max_gap_seconds: float = 1.0
-    max_segments: int = 3
+    enabled: bool = field(init=False, repr=True)
+    max_gap_seconds: float = field(init=False, repr=True)
+    max_segments: int = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsConflict:
-    window_seconds: float = 30.0
-    step_seconds: float = 10.0
-    merge_gap_seconds: float = 10.0
+    window_seconds: float = field(init=False, repr=True)
+    step_seconds: float = field(init=False, repr=True)
+    merge_gap_seconds: float = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsColdOpen:
-    window_seconds: float = 90.0
-    window_policy: str = "seconds"  # "seconds" or "segments"
+    window_seconds: float = field(init=False, repr=True)
+    window_policy: str = field(init=False, repr=True)
 
 
 @dataclass
 class HighlightsConfig:
-    enabled: bool = True
-    counts: HighlightsCounts = field(default_factory=HighlightsCounts)
-    thresholds: HighlightsThresholds = field(default_factory=HighlightsThresholds)
-    weights: HighlightsWeights = field(default_factory=HighlightsWeights)
-    sections: HighlightsSections = field(default_factory=HighlightsSections)
-    output: HighlightsOutput = field(default_factory=HighlightsOutput)
-    merge_adjacent: HighlightsMergeAdjacent = field(
-        default_factory=HighlightsMergeAdjacent
-    )
-    conflict: HighlightsConflict = field(default_factory=HighlightsConflict)
-    cold_open: HighlightsColdOpen = field(default_factory=HighlightsColdOpen)
+    """Configuration for highlights. Defaults owned by HighlightsSettingsModel."""
+
+    enabled: bool = field(init=False, repr=True)
+    counts: HighlightsCounts = field(init=False, repr=True)
+    thresholds: HighlightsThresholds = field(init=False, repr=True)
+    weights: HighlightsWeights = field(init=False, repr=True)
+    sections: HighlightsSections = field(init=False, repr=True)
+    output: HighlightsOutput = field(init=False, repr=True)
+    merge_adjacent: HighlightsMergeAdjacent = field(init=False, repr=True)
+    conflict: HighlightsConflict = field(init=False, repr=True)
+    cold_open: HighlightsColdOpen = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.highlights import HighlightsSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, HighlightsSettingsModel())
 
 
 @dataclass
 class SummaryCounts:
-    theme_bullets: int = 6
-    tension_bullets: int = 5
-    commitments: int = 8
+    theme_bullets: int = field(init=False, repr=True)
+    tension_bullets: int = field(init=False, repr=True)
+    commitments: int = field(init=False, repr=True)
 
 
 @dataclass
 class SummarySections:
-    overview_enabled: bool = True
-    key_themes_enabled: bool = True
-    tension_points_enabled: bool = True
-    commitments_enabled: bool = True
+    overview_enabled: bool = field(init=False, repr=True)
+    key_themes_enabled: bool = field(init=False, repr=True)
+    tension_points_enabled: bool = field(init=False, repr=True)
+    commitments_enabled: bool = field(init=False, repr=True)
 
 
 @dataclass
 class SummaryCommitments:
-    rules: list[str] = field(
-        default_factory=lambda: [
-            r"\b(I|we)\s+(will|can|shall|need to|have to)\s+.+",
-            r"\b(let's|lets)\s+.+",
-            r"\b(action item|to-do|next step)\b.+",
-        ]
-    )
-    max_per_owner: int = 3
+    rules: list[str] = field(init=False, repr=True)
+    max_per_owner: int = field(init=False, repr=True)
 
 
 @dataclass
 class SummaryConfig:
-    enabled: bool = True
-    require_highlights: bool = False
-    compute_highlights_if_missing: bool = True
-    allow_degraded: bool = False
-    counts: SummaryCounts = field(default_factory=SummaryCounts)
-    sections: SummarySections = field(default_factory=SummarySections)
-    commitments: SummaryCommitments = field(default_factory=SummaryCommitments)
+    """Configuration for summary. Defaults owned by SummarySettingsModel."""
+
+    enabled: bool = field(init=False, repr=True)
+    require_highlights: bool = field(init=False, repr=True)
+    compute_highlights_if_missing: bool = field(init=False, repr=True)
+    allow_degraded: bool = field(init=False, repr=True)
+    counts: SummaryCounts = field(init=False, repr=True)
+    sections: SummarySections = field(init=False, repr=True)
+    commitments: SummaryCommitments = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.summary import SummarySettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, SummarySettingsModel())
 
 
 @dataclass
@@ -1018,23 +1065,42 @@ class TagExtractionConfig:
 
 @dataclass
 class LLMSummaryConfig:
-    """Configuration for the llm_summary analysis module."""
+    """Configuration for llm_summary. Defaults owned by LLMSummarySettingsModel."""
 
-    effort: str = "high"
+    effort: str = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.llm_summary import LLMSummarySettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, LLMSummarySettingsModel())
 
 
 @dataclass
 class LLMSpeakerSummaryConfig:
-    """Configuration for the llm_speaker_summary analysis module."""
+    """Defaults owned by LLMSpeakerSummarySettingsModel."""
 
-    effort: str = "high"
+    effort: str = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.llm_speaker_summary import (
+            LLMSpeakerSummarySettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, LLMSpeakerSummarySettingsModel())
 
 
 @dataclass
 class LLMActionItemsConfig:
-    """Configuration for the llm_action_items analysis module."""
+    """Defaults owned by LLMActionItemsSettingsModel."""
 
-    effort: str = "high"
+    effort: str = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.llm_action_items import (
+            LLMActionItemsSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, LLMActionItemsSettingsModel())
 
 
 @dataclass

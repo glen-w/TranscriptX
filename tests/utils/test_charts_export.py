@@ -6,16 +6,20 @@ import zipfile
 
 import pytest
 
-from transcriptx.utils.charts_export import (
+from transcriptx.export import (
     ChartsExportResult,
-    _ExportableItem,
-    _export_rel_path_for_chart,
-    _resolve_exportable,
+    ExportableItem,
+    export_rel_path_for_chart,
     generate_charts_index_html,
     prepare_charts_export_zip,
+    resolve_exportable,
 )
 from transcriptx.web.models.artifact import Artifact
+from transcriptx.web.module_ui_groups import order_strings_like_modules
 from transcriptx.web.services.artifact_service import ArtifactService
+from transcriptx.web.services.chart_view_model_service import (
+    resolve_chart_display_description,
+)
 
 
 def _artifact(
@@ -57,8 +61,8 @@ def test_export_rel_path_for_chart_normal_and_group_member() -> None:
         rel_path="sentiment/charts/global/b.png",
         storage_root="/tmp/member",
     )
-    assert _export_rel_path_for_chart(normal) == Path("sentiment/charts/global/a.png")
-    assert _export_rel_path_for_chart(member) == Path("0123456789abcdef") / Path(
+    assert export_rel_path_for_chart(normal) == Path("sentiment/charts/global/a.png")
+    assert export_rel_path_for_chart(member) == Path("0123456789abcdef") / Path(
         "sentiment/charts/global/b.png"
     )
 
@@ -98,14 +102,14 @@ def test_resolve_exportable_prefers_stat_size_and_omits_missing(tmp_path: Path) 
         rel_path="sentiment/charts/global/does_not_exist.png",
         bytes_size=9999,
     )
-    items = _resolve_exportable(run_root, [ok, missing])
+    items = resolve_exportable(run_root, [ok, missing])
     assert len(items) == 1
     assert items[0].artifact.id == "ok"
     assert items[0].size_bytes == 10
 
 
 def test_generate_charts_index_html_structure_and_ordering() -> None:
-    item_other = _ExportableItem(
+    item_other = ExportableItem(
         artifact=_artifact(
             artifact_id="a",
             rel_path="zmod/charts/global/z.png",
@@ -116,7 +120,7 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
         export_rel_path=Path("zmod/charts/global/z.png"),
         size_bytes=10,
     )
-    item_dyn = _ExportableItem(
+    item_dyn = ExportableItem(
         artifact=_artifact(
             artifact_id="b",
             rel_path="sentiment/charts/global/d.html",
@@ -132,6 +136,7 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
         [item_other, item_dyn],
         omitted_count=2,
         run_title="run-123",
+        order_modules=order_strings_like_modules,
     )
     assert "cdn.jsdelivr.net" not in html
     assert "<style>" in html
@@ -147,7 +152,7 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
 
 def test_generate_charts_index_html_includes_visible_description() -> None:
     """A chart with a registry-backed viz_id renders a visible description caption."""
-    item = _ExportableItem(
+    item = ExportableItem(
         artifact=_artifact(
             artifact_id="at",
             rel_path="affect_tension/charts/global/static/run_mismatch_heatmap.png",
@@ -161,14 +166,19 @@ def test_generate_charts_index_html_includes_visible_description() -> None:
         ),
         size_bytes=10,
     )
-    html = generate_charts_index_html([item], omitted_count=0, run_title="run-x")
+    html = generate_charts_index_html(
+        [item],
+        omitted_count=0,
+        run_title="run-x",
+        description_fn=resolve_chart_display_description,
+    )
     assert '<p class="chart-desc">' in html
     assert '<span class="tx-info"' not in html
 
 
 def test_generate_charts_index_html_omits_description_when_unknown() -> None:
     """A chart with no registry match renders no description paragraph."""
-    item = _ExportableItem(
+    item = ExportableItem(
         artifact=_artifact(
             artifact_id="unk",
             rel_path="mystery/charts/global/static/unknown_chart.png",
@@ -180,7 +190,12 @@ def test_generate_charts_index_html_omits_description_when_unknown() -> None:
         export_rel_path=Path("mystery/charts/global/static/unknown_chart.png"),
         size_bytes=10,
     )
-    html = generate_charts_index_html([item], omitted_count=0, run_title="run-y")
+    html = generate_charts_index_html(
+        [item],
+        omitted_count=0,
+        run_title="run-y",
+        description_fn=resolve_chart_display_description,
+    )
     assert '<p class="chart-desc">' not in html
     assert '<span class="tx-info"' not in html
 
@@ -215,6 +230,8 @@ def test_prepare_charts_export_zip_contents_and_member_prefix(tmp_path: Path) ->
         run_root,
         [static_artifact, member_artifact],
         "run_1",
+        resolve_path=ArtifactService.resolve_artifact_source_path,
+        order_modules=order_strings_like_modules,
     )
     assert result.filename == "run_1_charts.zip"
     assert result.exported_count == 2
@@ -238,7 +255,12 @@ def test_prepare_charts_export_zip_missing_is_omitted(tmp_path: Path) -> None:
     ok = _artifact(artifact_id="ok", rel_path="sentiment/charts/global/a.png")
     missing = _artifact(artifact_id="missing", rel_path="sentiment/charts/global/m.png")
 
-    result = prepare_charts_export_zip(run_root, [ok, missing], "run_2")
+    result = prepare_charts_export_zip(
+        run_root,
+        [ok, missing],
+        "run_2",
+        resolve_path=ArtifactService.resolve_artifact_source_path,
+    )
     assert result.exported_count == 1
     assert result.omitted_count == 1
 
@@ -258,18 +280,24 @@ def test_prepare_charts_export_zip_size_cap_raises_before_copy(
     big.write_bytes(b"X" * 20)
     artifact = _artifact(artifact_id="big", rel_path="sentiment/charts/global/a.png")
 
-    import transcriptx.utils.charts_export as charts_export
+    import transcriptx.export.charts as charts_mod
+    import transcriptx.export.zipping as zipping_mod
 
-    monkeypatch.setattr(charts_export, "HARD_CAP_BYTES", 5)
+    monkeypatch.setattr(charts_mod, "HARD_CAP_BYTES", 5)
     called = {"copy": False}
 
     def _copy_spy(*args, **kwargs):
         called["copy"] = True
         return None
 
-    monkeypatch.setattr(charts_export.shutil, "copy2", _copy_spy)
+    monkeypatch.setattr(zipping_mod.shutil, "copy2", _copy_spy)
     with pytest.raises(ValueError, match="hard cap"):
-        prepare_charts_export_zip(run_root, [artifact], "run_3")
+        prepare_charts_export_zip(
+            run_root,
+            [artifact],
+            "run_3",
+            resolve_path=ArtifactService.resolve_artifact_source_path,
+        )
     assert called["copy"] is False
 
 
@@ -287,12 +315,15 @@ def test_prepare_charts_export_zip_temp_cleanup(
     zip_dir = tmp_path / "ziptmp"
     paths = iter([str(staging_dir), str(zip_dir)])
 
-    import transcriptx.utils.charts_export as charts_export
+    import transcriptx.export.zipping as zipping_mod
 
-    monkeypatch.setattr(
-        charts_export.tempfile, "mkdtemp", lambda prefix="": next(paths)
+    monkeypatch.setattr(zipping_mod.tempfile, "mkdtemp", lambda prefix="": next(paths))
+    result = prepare_charts_export_zip(
+        run_root,
+        [artifact],
+        "run_4",
+        resolve_path=ArtifactService.resolve_artifact_source_path,
     )
-    result = prepare_charts_export_zip(run_root, [artifact], "run_4")
     assert result.bytes
     assert not staging_dir.exists()
     assert not zip_dir.exists()

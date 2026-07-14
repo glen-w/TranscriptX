@@ -6,8 +6,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
-import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -32,7 +30,6 @@ USER_REPORT_JSON = "report.json"
 USER_REPORT_MD = "report.md"
 USER_REPORT_TXT = "report.txt"
 
-HARD_CAP_BYTES = 2 * 1024 * 1024 * 1024
 MAX_INLINE_HTML_BYTES = 5 * 1024 * 1024
 MAX_FULLSCREEN_HTML_BYTES = 10 * 1024 * 1024
 
@@ -197,33 +194,39 @@ class ArtifactService:
 
     @staticmethod
     def zip_artifacts(run_root: Path, artifact_ids: List[str]) -> Optional[Path]:
+        from transcriptx.export.zipping import assert_under_hard_cap, stage_copy_and_zip
+
         selected = ArtifactService._artifacts_for_export(run_root, artifact_ids)
         if not selected:
             return None
         total_bytes = sum(a.bytes for a in selected)
-        if total_bytes > HARD_CAP_BYTES:
-            raise ValueError("Export exceeds hard cap.")
+        assert_under_hard_cap(total_bytes)
 
-        temp_dir = Path(tempfile.mkdtemp(prefix="transcriptx_export_"))
-        zip_path = temp_dir / f"{run_root.name}_export.zip"
-        with tempfile.TemporaryDirectory() as staging:
-            staging_dir = Path(staging)
-            copied: List[tuple[Artifact, Path]] = []
-            for artifact in selected:
-                path = ArtifactService.resolve_artifact_source_path(run_root, artifact)
-                if path is None or not path.exists():
-                    continue
-                prefix = Path(artifact.id[:16]) if artifact.storage_root else Path()
-                rel = prefix / artifact.rel_path
-                target = staging_dir / rel
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(path, target)
-                copied.append((artifact, rel))
+        copy_pairs: List[tuple[Path, Path]] = []
+        copied_meta: List[tuple[Artifact, Path]] = []
+        for artifact in selected:
+            path = ArtifactService.resolve_artifact_source_path(run_root, artifact)
+            if path is None or not path.exists():
+                continue
+            prefix = Path(artifact.id[:16]) if artifact.storage_root else Path()
+            rel = prefix / artifact.rel_path
+            copy_pairs.append((path, rel))
+            copied_meta.append((artifact, rel))
+
+        def _write_index(staging_dir: Path) -> None:
             ArtifactService._write_export_index(
-                staging_dir, run_root.name, copied, run_root=run_root
+                staging_dir, run_root.name, copied_meta, run_root=run_root
             )
-            shutil.make_archive(str(zip_path).replace(".zip", ""), "zip", staging_dir)
-        return zip_path
+
+        result = stage_copy_and_zip(
+            copy_pairs,
+            zip_basename=f"{run_root.name}_export",
+            write_index=_write_index,
+            return_bytes=False,
+            staging_prefix="transcriptx_export_",
+        )
+        assert isinstance(result, Path)
+        return result
 
     @staticmethod
     def _write_export_index(
@@ -242,12 +245,16 @@ class ArtifactService:
         the raw-file export.
         """
         try:
-            from transcriptx.utils.charts_export import _ExportableItem
-            from transcriptx.utils.export_index import (
+            from transcriptx.export import (
+                ExportableItem,
                 build_export_index_html,
                 resolve_export_page_title,
                 resolve_export_text_summaries,
                 resolve_export_transcript_data,
+            )
+            from transcriptx.web.module_ui_groups import order_strings_like_modules
+            from transcriptx.web.services.chart_view_model_service import (
+                resolve_chart_display_description,
             )
 
             transcript_data = resolve_export_transcript_data(
@@ -265,15 +272,21 @@ class ArtifactService:
                 fallback=run_title,
             )
 
-            chart_items: List[_ExportableItem] = []
+            chart_items: List[ExportableItem] = []
             for artifact, rel in copied:
                 if artifact.kind in {"chart_static", "chart_dynamic"}:
+                    description = None
+                    try:
+                        description = resolve_chart_display_description(artifact)
+                    except Exception:
+                        description = None
                     chart_items.append(
-                        _ExportableItem(
+                        ExportableItem(
                             artifact=artifact,
                             source_path=staging_dir / rel,
                             export_rel_path=rel,
                             size_bytes=0,
+                            description=description,
                         )
                     )
 
@@ -282,6 +295,7 @@ class ArtifactService:
                 transcript_data=transcript_data,
                 chart_items=chart_items,
                 text_summaries=text_summaries,
+                order_modules=order_strings_like_modules,
             )
             if html_payload:
                 (staging_dir / "index.html").write_text(html_payload, encoding="utf-8")
