@@ -33,7 +33,9 @@ def render_run_health(ctx: BlockContext, _placement: BlockPlacement) -> None:
 
     if has_issues:
         if st.button("Re-scan health checks", key="block_run_health_rescan"):
-            st.cache_data.clear()
+            from transcriptx.web.services.artifact_service import clear_artifact_caches
+
+            clear_artifact_caches()
             st.rerun()
 
     if health.get("errors"):

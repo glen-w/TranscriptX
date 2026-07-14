@@ -48,6 +48,21 @@ def _is_raw_transcript_path(subject_id: str) -> bool:
         return False
 
 
+def _resolve_transcript_path_fast(session_name: str) -> Path | None:
+    """Session -> transcript path via short-lived cache, falling back to full resolve."""
+    try:
+        from transcriptx.web.cache_helpers import cached_resolve_transcript_path
+
+        path_str = cached_resolve_transcript_path(session_name)
+        if path_str:
+            path = Path(path_str)
+            if path.exists():
+                return path
+    except Exception:
+        pass
+    return FileService.resolve_transcript_path(session_name)
+
+
 class SubjectService:
     @staticmethod
     def resolve_current_subject(
@@ -85,7 +100,7 @@ class SubjectService:
             session_name = subject_id
             if run_id:
                 session_name = f"{subject_id}/{run_id}"
-            transcript_path = FileService.resolve_transcript_path(session_name)
+            transcript_path = _resolve_transcript_path_fast(session_name)
             if transcript_path is None:
                 return None
             ref = TranscriptRef(path=str(transcript_path))

@@ -28,23 +28,52 @@ def set_active_layout_id(
     state[ACTIVE_LAYOUT_KEY] = layout_id
 
 
+def _layout_file_signature(layout_id: str) -> tuple[str, float] | None:
+    """Return (path, mtime) of the yaml backing a layout id, or None if missing."""
+    from transcriptx.web.layouts.store import PRESETS_DIR
+
+    root = LayoutProfileStore.layouts_dir(None)
+    for path in (root / f"{layout_id}.yaml", PRESETS_DIR / f"{layout_id}.yaml"):
+        try:
+            return str(path), path.stat().st_mtime
+        except OSError:
+            continue
+    return None
+
+
+@st.cache_data(show_spinner=False)
+def _cached_layout(layout_id: str, path: str, mtime: float):
+    return LayoutProfileStore.load_layout(layout_id)
+
+
 def load_active_layout(session_state: dict[str, Any] | None = None):
     layout_id = active_layout_id(session_state)
-    try:
-        return LayoutProfileStore.load_layout(layout_id)
-    except FileNotFoundError:
+    signature = _layout_file_signature(layout_id)
+    if signature is None:
+        layout_id = DEFAULT_LAYOUT_ID
+        signature = _layout_file_signature(layout_id)
+    if signature is None:
+        # Preserve original behavior: missing default layout raises FileNotFoundError.
         return LayoutProfileStore.load_layout(DEFAULT_LAYOUT_ID)
+    return _cached_layout(layout_id, *signature)
+
+
+@st.cache_data(show_spinner=False)
+def _cached_run_results(path_str: str, mtime: float) -> dict | None:
+    try:
+        return load_run_results(Path(path_str))
+    except Exception:
+        return None
 
 
 def load_run_results_dict(run_root: Path) -> dict | None:
-    """Load run_results.json if present."""
+    """Load run_results.json if present (cached by file mtime)."""
     path = run_root / "run_results.json"
-    if not path.exists():
-        return None
     try:
-        return load_run_results(path)
-    except Exception:
+        mtime = path.stat().st_mtime
+    except OSError:
         return None
+    return _cached_run_results(str(path), mtime)
 
 
 def _load_run_results(run_root: Path) -> dict | None:

@@ -167,7 +167,13 @@ class ArtifactService:
         mtime = manifest_path.stat().st_mtime if manifest_path.exists() else 0
         artifacts_payload = _cached_artifacts(str(run_root), mtime)
         artifacts = [Artifact.from_dict(item) for item in artifacts_payload]
-        artifacts.extend(ArtifactService._merge_group_member_artifacts(run_root))
+        member_runs_path = run_root / "group_member_runs.json"
+        if member_runs_path.exists():
+            artifacts.extend(
+                _cached_group_member_artifacts(
+                    str(run_root), member_runs_path.stat().st_mtime
+                )
+            )
         return filter_artifacts(artifacts, filters)
 
     @staticmethod
@@ -363,6 +369,25 @@ class ArtifactService:
         manifest_path = run_dir / "manifest.json"
         manifest_mtime = manifest_path.stat().st_mtime if manifest_path.exists() else 0
         return _cached_health(str(run_root), manifest_mtime, bool(manifest))
+
+
+def clear_artifact_caches() -> None:
+    """Invalidate artifact/health caches only (avoids nuking all app caches)."""
+    _cached_manifest.clear()  # type: ignore[attr-defined]
+    _cached_artifacts.clear()  # type: ignore[attr-defined]
+    _cached_health.clear()  # type: ignore[attr-defined]
+    _cached_group_member_artifacts.clear()  # type: ignore[attr-defined]
+    from transcriptx.web.services.artifact_index import _cached_artifact_index
+
+    _cached_artifact_index.clear()  # type: ignore[attr-defined]
+
+
+@st.cache_data(show_spinner=False)
+def _cached_group_member_artifacts(
+    run_root: str, member_runs_mtime: float
+) -> List[Artifact]:
+    """Merged group-member artifacts (rebuilds member manifests; expensive uncached)."""
+    return ArtifactService._merge_group_member_artifacts(Path(run_root))
 
 
 @st.cache_data(show_spinner=False)

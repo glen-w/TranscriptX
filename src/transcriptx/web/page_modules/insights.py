@@ -72,21 +72,15 @@ def _render_section_nav() -> str:
     return selected_key
 
 
-def _render_insights_body(ctx: RunScopedPageContext) -> None:
-    render_page_shell(
-        "Insights",
-        "Themes, summaries, speakers, actions, and deeper analysis.",
-        badges=None,
-        actions=None,
-    )
+@st.fragment
+def _insights_sections_fragment(block_ctx, layout) -> None:
+    """Section nav + block rendering; switching sections reruns only this fragment."""
     section = _render_section_nav()
 
-    block_ctx = build_context_from_session(st.session_state)
     if block_ctx is None:
         return
 
-    layout = load_active_layout(st.session_state)
-    page = layout.pages.get("insights")
+    page = layout.pages.get("insights") if layout is not None else None
     if page is None:
         st.warning("Active layout has no insights page.")
         return
@@ -112,6 +106,18 @@ def _render_insights_body(ctx: RunScopedPageContext) -> None:
         if index > 0:
             st.divider()
         render_block(placement.block_id, block_ctx, placement)
+
+
+def _render_insights_body(ctx: RunScopedPageContext) -> None:
+    render_page_shell(
+        "Insights",
+        "Themes, summaries, speakers, actions, and deeper analysis.",
+        badges=None,
+        actions=None,
+    )
+    block_ctx = build_context_from_session(st.session_state)
+    layout = load_active_layout(st.session_state) if block_ctx is not None else None
+    _insights_sections_fragment(block_ctx, layout)
 
 
 def render_insights() -> None:

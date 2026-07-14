@@ -54,6 +54,21 @@ def _parse_run_datetime(run_id: str) -> str:
     return run_id
 
 
+@st.fragment
+def _overview_blocks_fragment(session_ctx, layout) -> None:
+    """Block composition; interactions inside blocks rerun only this fragment."""
+    page = layout.pages.get("overview")
+    if page is None:
+        st.warning("Active layout has no overview page.")
+        return
+
+    placements = [b.to_placement() for b in page.blocks]
+    for index_i, placement in enumerate(placements):
+        if index_i > 0:
+            st.divider()
+        render_block(placement.block_id, session_ctx, placement)
+
+
 def _render_overview_body(ctx: RunScopedPageContext) -> None:
     run_datetime = _parse_run_datetime(ctx.run_id)
     index = build_artifact_index(
@@ -84,16 +99,7 @@ def _render_overview_body(ctx: RunScopedPageContext) -> None:
         return
 
     layout = load_active_layout(st.session_state)
-    page = layout.pages.get("overview")
-    if page is None:
-        st.warning("Active layout has no overview page.")
-        return
-
-    placements = [b.to_placement() for b in page.blocks]
-    for index_i, placement in enumerate(placements):
-        if index_i > 0:
-            st.divider()
-        render_block(placement.block_id, session_ctx, placement)
+    _overview_blocks_fragment(session_ctx, layout)
 
 
 def render_overview() -> None:

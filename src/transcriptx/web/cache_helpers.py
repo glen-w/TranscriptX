@@ -15,21 +15,72 @@ import streamlit as st
 from transcriptx.web.perf import mark_cache_miss
 
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=120, show_spinner=False)
 def cached_list_available_sessions() -> list[dict]:
-    """Cached session scan for sidebar/navigation (web layer only)."""
+    """Cached session scan for sidebar/navigation (web layer only).
+
+    TTL is aligned with cached_list_transcripts so both hot-path scans expire
+    together instead of causing staggered slow reruns.
+    """
     mark_cache_miss("cached_list_available_sessions")
     from transcriptx.web.services.file_service import FileService
 
     return FileService.list_available_sessions()
 
 
+def _transcript_metadata_signature(path) -> tuple[float, int, float]:
+    """(file mtime, size, speaker-map sidecar mtime) for metadata cache keying."""
+    import os
+
+    try:
+        file_stat = os.stat(path)
+        mtime, size = file_stat.st_mtime, file_stat.st_size
+    except OSError:
+        mtime, size = 0.0, 0
+    sidecar_mtime = 0.0
+    try:
+        from transcriptx.io.speaker_map_resolver import speaker_map_sidecar_candidates
+
+        for candidate in speaker_map_sidecar_candidates(path):
+            try:
+                sidecar_mtime = candidate.stat().st_mtime
+                break
+            except OSError:
+                continue
+    except Exception:
+        pass
+    return mtime, size, sidecar_mtime
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_transcript_metadata(path_str: str, signature: tuple[float, int, float]):
+    """Per-file library metadata; unchanged files skip segment re-parsing."""
+    mark_cache_miss("cached_transcript_metadata")
+    from pathlib import Path
+
+    from transcriptx.app.controllers.library_controller import LibraryController
+
+    return LibraryController().get_transcript_metadata(Path(path_str))
+
+
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_list_transcripts(_transcripts_dir: str = "") -> list:
     mark_cache_miss("cached_list_transcripts")
-    from transcriptx.app.controllers.library_controller import LibraryController
+    from transcriptx.app.models.errors import PathConfigError
+    from transcriptx.core.utils.file_discovery import (
+        discover_managed_transcript_paths,
+    )
 
-    return LibraryController().list_transcripts()
+    try:
+        paths = discover_managed_transcript_paths(None)
+        return [
+            _cached_transcript_metadata(str(p), _transcript_metadata_signature(p))
+            for p in paths
+        ]
+    except PathConfigError:
+        raise
+    except Exception as e:
+        raise PathConfigError(str(e)) from e
 
 
 def get_cached_list_transcripts() -> list:
@@ -72,6 +123,31 @@ def clear_run_listing_caches() -> None:
     cached_list_recent_runs.clear()  # type: ignore[attr-defined]
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_resolve_transcript_path(
+    session_name: str, outputs_dir: str, transcripts_dir: str
+) -> str | None:
+    """Cached session -> transcript path resolution (manifest reads + path probes)."""
+    mark_cache_miss("cached_resolve_transcript_path")
+    from transcriptx.web.services.file_service import FileService
+
+    path = FileService.resolve_transcript_path(session_name)
+    return str(path) if path is not None else None
+
+
+def cached_resolve_transcript_path(session_name: str) -> str | None:
+    """Resolve a session name to its transcript path via a short-lived cache.
+
+    Callers must verify the returned path still exists (renames can leave the
+    cache stale within the TTL) and fall back to a direct resolve when it doesn't.
+    """
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR, OUTPUTS_DIR
+
+    return _cached_resolve_transcript_path(
+        session_name, str(OUTPUTS_DIR), str(DIARISED_TRANSCRIPTS_DIR)
+    )
+
+
 def clear_transcript_listing_caches() -> None:
     """
     Clear only transcript-listing related caches.
@@ -81,6 +157,8 @@ def clear_transcript_listing_caches() -> None:
     cached_list_available_sessions.clear()  # type: ignore[attr-defined]
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
     cached_get_transcript_summaries_for_paths.clear()  # type: ignore[attr-defined]
+    _cached_resolve_transcript_path.clear()  # type: ignore[attr-defined]
+    _cached_transcript_metadata.clear()  # type: ignore[attr-defined]
 
 
 def clear_rename_related_caches() -> None:

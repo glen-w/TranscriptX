@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from typing import Any, Callable
 
 import streamlit as st
@@ -13,30 +14,37 @@ from transcriptx.web.navigation import (
     evaluate_page_access,
     migrate_legacy_page_key,
 )
-from transcriptx.web.page_modules.artifacts import render_artifacts
-from transcriptx.web.page_modules.audio_merge import render_audio_merge_page
-from transcriptx.web.page_modules.audio_prep import render_audio_prep_page
-from transcriptx.web.page_modules.batch_ops import render_batch_ops_page
-from transcriptx.web.page_modules.charts import render_charts
-from transcriptx.web.page_modules.dashboard_builder import render_dashboard_builder
-from transcriptx.web.page_modules.diagnostics import render_diagnostics_page
-from transcriptx.web.page_modules.groups import render_groups
-from transcriptx.web.page_modules.home import render_home
-from transcriptx.web.page_modules.insights import render_insights
-from transcriptx.web.page_modules.library import render_library
-from transcriptx.web.page_modules.overview import render_overview
-from transcriptx.web.page_modules.profiles import render_profiles_page
-from transcriptx.web.page_modules.run_analysis import render_run_analysis_page
-from transcriptx.web.page_modules.search import render_search
-from transcriptx.web.page_modules.settings import render_settings_page
-from transcriptx.web.page_modules.speaker_id import render_speaker_id_page
-from transcriptx.web.page_modules.statistics import render_statistics
-from transcriptx.web.page_modules.transcribe_audio import render_transcribe_audio_page
-from transcriptx.web.page_modules.transcript import render_transcript_viewer
-from transcriptx.web.page_modules.upload_transcript import render_upload_transcript_page
 from transcriptx.web.state import ARTIFACTS_KEY_SECTION, PAGE_KEY
 
 PAGE_PREREQUISITES: dict[str, PagePrerequisite] = build_prerequisites()
+
+_PAGE_MODULES_PKG = "transcriptx.web.page_modules"
+
+
+def _lazy_renderer(module_name: str, func_name: str) -> Callable[[], None]:
+    """Import the page module on first render instead of at app startup.
+
+    Keeps heavy page dependencies (pandas, PIL, pipeline stack) off the
+    cold-start path for pages the user never opens.
+    """
+
+    def _render() -> None:
+        module = import_module(f"{_PAGE_MODULES_PKG}.{module_name}")
+        getattr(module, func_name)()
+
+    return _render
+
+
+def _render_home() -> None:
+    from transcriptx.web.page_modules.home import render_home
+
+    render_home()
+
+
+def _render_artifacts() -> None:
+    from transcriptx.web.page_modules.artifacts import render_artifacts
+
+    render_artifacts()
 
 
 def fallback_for_page(page: str) -> str | None:
@@ -57,14 +65,14 @@ def _redirect_legacy_data() -> None:
     st.session_state[PAGE_KEY] = "Artifacts"
     if not st.session_state.get(ARTIFACTS_KEY_SECTION):
         st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
-    render_artifacts()
+    _render_artifacts()
 
 
 def _redirect_legacy_explorer() -> None:
     """Thin alias for bookmarked File List / Explorer sessions."""
     st.session_state[PAGE_KEY] = "Artifacts"
     st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
-    render_artifacts()
+    _render_artifacts()
 
 
 def build_page_renderers(
@@ -73,29 +81,35 @@ def build_page_renderers(
     render_corrections_studio: Callable[[], None] | None,
 ) -> dict[str, Callable[[], None]]:
     page_renderers: dict[str, Callable[[], None]] = {
-        "Home": render_home,
-        "Library": render_library,
-        "Overview": render_overview,
-        "Transcript": render_transcript_viewer,
-        "Search": render_search,
-        "Insights": render_insights,
-        "Charts": render_charts,
-        "Artifacts": render_artifacts,
+        "Home": _render_home,
+        "Library": _lazy_renderer("library", "render_library"),
+        "Overview": _lazy_renderer("overview", "render_overview"),
+        "Transcript": _lazy_renderer("transcript", "render_transcript_viewer"),
+        "Search": _lazy_renderer("search", "render_search"),
+        "Insights": _lazy_renderer("insights", "render_insights"),
+        "Charts": _lazy_renderer("charts", "render_charts"),
+        "Artifacts": _render_artifacts,
         "Data": _redirect_legacy_data,
         "Explorer": _redirect_legacy_explorer,
-        "Run Analysis": render_run_analysis_page,
-        "Transcribe Audio": render_transcribe_audio_page,
-        "Import Transcript": render_upload_transcript_page,
-        "Settings": render_settings_page,
-        "Profiles": render_profiles_page,
-        "Speaker ID": render_speaker_id_page,
-        "Audio Prep": render_audio_prep_page,
-        "Audio Merge": render_audio_merge_page,
-        "Batch Ops": render_batch_ops_page,
-        "Dashboard Builder": render_dashboard_builder,
-        "Diagnostics": render_diagnostics_page,
-        "Groups": render_groups,
-        "Statistics": render_statistics,
+        "Run Analysis": _lazy_renderer("run_analysis", "render_run_analysis_page"),
+        "Transcribe Audio": _lazy_renderer(
+            "transcribe_audio", "render_transcribe_audio_page"
+        ),
+        "Import Transcript": _lazy_renderer(
+            "upload_transcript", "render_upload_transcript_page"
+        ),
+        "Settings": _lazy_renderer("settings", "render_settings_page"),
+        "Profiles": _lazy_renderer("profiles", "render_profiles_page"),
+        "Speaker ID": _lazy_renderer("speaker_id", "render_speaker_id_page"),
+        "Audio Prep": _lazy_renderer("audio_prep", "render_audio_prep_page"),
+        "Audio Merge": _lazy_renderer("audio_merge", "render_audio_merge_page"),
+        "Batch Ops": _lazy_renderer("batch_ops", "render_batch_ops_page"),
+        "Dashboard Builder": _lazy_renderer(
+            "dashboard_builder", "render_dashboard_builder"
+        ),
+        "Diagnostics": _lazy_renderer("diagnostics", "render_diagnostics_page"),
+        "Groups": _lazy_renderer("groups", "render_groups"),
+        "Statistics": _lazy_renderer("statistics", "render_statistics"),
         "Speakers": lambda: st.info("Speaker pages were removed."),
         "Speaker Detail": lambda: st.info("Speaker pages were removed."),
     }
@@ -131,6 +145,6 @@ def route_current_page(
     renderer = page_renderers.get(effective_page)
     if renderer is None:
         st.warning(f"Unknown page: {effective_page}")
-        render_home()
+        _render_home()
     else:
         renderer()

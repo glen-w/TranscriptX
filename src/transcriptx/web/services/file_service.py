@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import streamlit as st
+
 from transcriptx.core.utils.paths import (
     DIARISED_TRANSCRIPTS_DIR,
     GROUP_OUTPUTS_DIR,
@@ -34,6 +36,45 @@ logger = get_logger()
 def _extract_metadata_stats(doc: dict) -> dict[str, int | float]:
     """Thin wrapper around shared listing stat resolution."""
     return listing_stats_from_document(doc, meta_cfg=get_metadata_config())
+
+
+@st.cache_data(show_spinner=False)
+def _cached_transcript_listing_stats(
+    path_str: str, mtime: float, size: int
+) -> dict[str, int | float]:
+    """Listing stats per transcript file, keyed by (path, mtime, size).
+
+    Unchanged files are parsed at most once per process instead of on every
+    session-listing cache miss.
+    """
+    from transcriptx.io.transcript_loader import load_transcript
+
+    path = Path(path_str)
+    with section(
+        "file_service.load_transcript_for_session_stats",
+        bucket="session_discovery",
+        extra={"transcript_path": path_str},
+    ):
+        try:
+            observe_transcript_path(path)
+            record_file_read(
+                path,
+                section="file_service.list_available_sessions",
+                purpose="metadata_extraction",
+            )
+            doc = load_transcript(path_str)
+        except Exception as exc:
+            logger.debug("Skipping metadata stats for %s: %s", path_str, exc)
+            return {}
+    return _extract_metadata_stats(doc) if doc else {}
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_session_modules(session_id: str, run_dir_mtime: float) -> List[str]:
+    """Module dir scan per run, keyed by run dir mtime (new module dirs bump it)."""
+    from transcriptx.web.module_registry import get_analysis_modules
+
+    return get_analysis_modules(session_id)
 
 
 class FileService:
@@ -211,7 +252,20 @@ class FileService:
         if not session_name or len(session_name) <= 1:
             logger.debug("Skipping invalid session name (too short): %r", session_name)
             return None
-        path = FileService.resolve_transcript_path(session_name)
+        path: Optional[Path] = None
+        try:
+            from transcriptx.web.cache_helpers import cached_resolve_transcript_path
+
+            path_str = cached_resolve_transcript_path(session_name)
+            if path_str:
+                path = Path(path_str)
+                if not path.exists():
+                    # Stale cached resolution (renamed/moved file): re-resolve below.
+                    path = None
+        except Exception:
+            path = None
+        if path is None:
+            path = FileService.resolve_transcript_path(session_name)
         if path is None:
             logger.warning(f"Transcript not found for session: {session_name}")
             return None
@@ -331,13 +385,11 @@ class FileService:
             from datetime import datetime
 
             from transcriptx.core.utils.slug_manager import get_transcript_key_for_slug
-            from transcriptx.web.module_registry import (
-                get_analysis_modules as _get_analysis_modules,
-                get_total_module_count,
-            )
+            from transcriptx.web.module_registry import get_total_module_count
 
             group_root = Path(GROUP_OUTPUTS_DIR)
-            doc_cache: dict[str, dict] = {}
+            total_modules = get_total_module_count()
+            stats_cache: dict[str, dict] = {}
             with section(
                 "file_service.outputs_dir_iteration",
                 bucket="session_discovery",
@@ -362,7 +414,6 @@ class FileService:
                     if transcript_key is None:
                         transcript_key = transcript_dir.name
 
-                    total_modules = get_total_module_count()
                     for run_dir in transcript_dir.iterdir():
                         if not run_dir.is_dir() or run_dir.name.startswith("."):
                             continue
@@ -371,20 +422,26 @@ class FileService:
                             continue
                         try:
                             session_id = f"{transcript_dir.name}/{run_dir.name}"
+                            try:
+                                run_dir_mtime = run_dir.stat().st_mtime
+                            except Exception:
+                                run_dir_mtime = 0.0
                             # Include session even when transcript path is not resolvable (e.g. Docker path
                             # in manifest); run will appear in dropdown and may load transcript from run dir
-                            modules = _get_analysis_modules(session_id)
+                            modules = _cached_session_modules(
+                                session_id, run_dir_mtime
+                            )
                             module_count = len(modules)
                             analysis_completion = (
                                 int((module_count / total_modules) * 100)
                                 if total_modules > 0
                                 else 0
                             )
-                            try:
-                                mtime = run_dir.stat().st_mtime
-                                last_updated = datetime.fromtimestamp(mtime).isoformat()
-                            except Exception:
-                                last_updated = None
+                            last_updated = (
+                                datetime.fromtimestamp(run_dir_mtime).isoformat()
+                                if run_dir_mtime
+                                else None
+                            )
                             session_info = {
                                 "name": session_id,
                                 "slug": transcript_dir.name,  # Human-readable slug
@@ -397,7 +454,8 @@ class FileService:
                                 "last_updated": last_updated,
                                 "analysis_completion": analysis_completion,
                             }
-                            # word_count is metadata-first; in-memory segment fallback when doc is cached.
+                            # word_count is metadata-first; stats cached per (path, mtime, size)
+                            # so unchanged transcripts are not re-parsed on later scans.
                             transcript_path = FileService.resolve_transcript_path(
                                 session_id
                             )
@@ -406,37 +464,20 @@ class FileService:
                                     cache_key = str(transcript_path.resolve())
                                 except (OSError, RuntimeError):
                                     cache_key = str(transcript_path)
-                                if cache_key not in doc_cache:
-                                    from transcriptx.io.transcript_loader import (
-                                        load_transcript,
-                                    )
-
-                                    with section(
-                                        "file_service.load_transcript_for_session_stats",
-                                        bucket="session_discovery",
-                                        extra={"transcript_path": str(transcript_path)},
-                                    ):
-                                        try:
-                                            observe_transcript_path(transcript_path)
-                                            record_file_read(
-                                                transcript_path,
-                                                section="file_service.list_available_sessions",
-                                                purpose="metadata_extraction",
+                                if cache_key not in stats_cache:
+                                    try:
+                                        file_stat = os.stat(cache_key)
+                                        stats_cache[cache_key] = (
+                                            _cached_transcript_listing_stats(
+                                                cache_key,
+                                                file_stat.st_mtime,
+                                                file_stat.st_size,
                                             )
-                                            doc_cache[cache_key] = load_transcript(
-                                                str(transcript_path)
-                                            )
-                                        except Exception as exc:
-                                            logger.debug(
-                                                "Skipping metadata stats for %s: %s",
-                                                transcript_path,
-                                                exc,
-                                            )
-                                            doc_cache[cache_key] = {}
-                                if doc_cache[cache_key]:
-                                    session_info.update(
-                                        _extract_metadata_stats(doc_cache[cache_key])
-                                    )
+                                        )
+                                    except OSError:
+                                        stats_cache[cache_key] = {}
+                                if stats_cache[cache_key]:
+                                    session_info.update(stats_cache[cache_key])
                             sessions.append(session_info)
                         except Exception as e:
                             logger.warning(

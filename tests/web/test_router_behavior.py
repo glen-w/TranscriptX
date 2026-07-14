@@ -14,7 +14,7 @@ def test_route_current_page_unknown_page_warns_and_home(monkeypatch) -> None:
         lambda _page, _prereq, _ready: type("A", (), {"allowed": True})(),
     )
     monkeypatch.setattr(router.st, "warning", lambda _msg: calls.__setitem__("warn", 1))
-    monkeypatch.setattr(router, "render_home", lambda: calls.__setitem__("home", 1))
+    monkeypatch.setattr(router, "_render_home", lambda: calls.__setitem__("home", 1))
     monkeypatch.setattr(router, "build_page_renderers", lambda **_kwargs: {})
 
     router.route_current_page(

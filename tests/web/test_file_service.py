@@ -102,11 +102,12 @@ class TestFileService:
         mock_viewable,
         mock_resolve_path,
         mock_load_transcript,
+        tmp_path,
     ) -> None:
         """Two runs sharing a transcript path should load the document once."""
         mock_viewable.return_value = True
-        shared = MagicMock()
-        shared.resolve.return_value = shared
+        shared = tmp_path / "shared_transcript.json"
+        shared.write_text("{}", encoding="utf-8")
         mock_resolve_path.return_value = shared
 
         run_a = MagicMock()
