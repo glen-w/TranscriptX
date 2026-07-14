@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.io.import_managed.workflow import run_managed_import_workflow
+from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 from transcriptx.io.import_metadata_sidecar import (
     sidecar_path_for_transcript,
     validate_managed_transcript,
@@ -26,10 +26,10 @@ def _patch_managed_roots(monkeypatch: pytest.MonkeyPatch, root: Path) -> Path:
     metadata.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(
-        "transcriptx.io.import_managed.workflow.DIARISED_TRANSCRIPTS_DIR", transcripts
+        "transcriptx.io.managed_import_workflow.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
     monkeypatch.setattr(
-        "transcriptx.io.import_managed.workflow.TRANSCRIPTS_ORIGINALS_DIR", originals
+        "transcriptx.io.managed_import_workflow.TRANSCRIPTS_ORIGINALS_DIR", originals
     )
     monkeypatch.setattr(
         "transcriptx.io.import_metadata_sidecar.DIARISED_TRANSCRIPTS_DIR", transcripts

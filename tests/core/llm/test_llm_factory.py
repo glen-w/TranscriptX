@@ -76,9 +76,7 @@ def test_factory_openai_raises() -> None:
 def test_factory_uses_global_config_when_none(monkeypatch) -> None:
     cfg = TranscriptXConfig()
     cfg.llm.enabled = False
-    monkeypatch.setattr(
-        "transcriptx.core.utils.config.get_config", lambda: cfg
-    )
+    monkeypatch.setattr("transcriptx.core.utils.config.get_config", lambda: cfg)
     assert isinstance(get_llm_client(None), NullLLMClient)
 
 

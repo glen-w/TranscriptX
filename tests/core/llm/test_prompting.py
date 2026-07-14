@@ -35,9 +35,7 @@ def test_overhead_equals_envelope_length() -> None:
 def test_prompt_envelope_min_chars_is_instructionless_overhead() -> None:
     assert prompt_envelope_min_chars() == llm_prompt_overhead_chars(instruction="")
     # Any non-empty instruction strictly increases the overhead.
-    assert (
-        llm_prompt_overhead_chars(instruction="x") > prompt_envelope_min_chars()
-    )
+    assert llm_prompt_overhead_chars(instruction="x") > prompt_envelope_min_chars()
 
 
 @pytest.mark.unit

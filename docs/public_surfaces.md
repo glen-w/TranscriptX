@@ -21,7 +21,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
 
 - The **Python API** is a supported surface for scripting and automation.
 - Core entrypoints include:
-  - `run_managed_import_workflow` (managed import).
+  - `run_managed_import_workflow` (managed import) — canonical import path: `from transcriptx.io.managed_import_workflow import run_managed_import_workflow`.
   - `run_analysis` (single-transcript analysis).
   - Batch and group workflows as documented in `docs/generated/cli.md` and dev guides.
 - These APIs expect:

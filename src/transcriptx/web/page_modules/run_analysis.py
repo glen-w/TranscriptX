@@ -178,6 +178,9 @@ def _run_analysis_config_and_launch_fragment(
             captured = stdout_buf.getvalue() + stderr_buf.getvalue()
 
         if result.success:
+            from transcriptx.web.cache_helpers import clear_run_listing_caches
+
+            clear_run_listing_caches()
             rd = result.run_dir
             if target_type == "Transcript":
                 st.session_state["subject_type"] = "transcript"

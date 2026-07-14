@@ -9,7 +9,10 @@ from typing import Any, Optional
 
 from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.paths import OUTPUTS_DIR, PROCESSING_STATE_FILE
+from transcriptx.core.utils.paths import (  # noqa: F401 — OUTPUTS_DIR is a monkeypatch surface (see __all_patch_surface__)
+    OUTPUTS_DIR,
+    PROCESSING_STATE_FILE,
+)
 from transcriptx.core.utils.rename.io_atomic import write_json_atomic
 from transcriptx.core.utils.rename.names import RenameNames, RenamePaths
 

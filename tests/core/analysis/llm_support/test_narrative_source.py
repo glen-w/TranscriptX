@@ -266,9 +266,7 @@ def test_resolve_summary_payload_stored_payload_without_signal_raises(
 
 @pytest.mark.unit
 @pytest.mark.parametrize("state", ["skipped", "blocked"])
-def test_resolve_summary_payload_skipped_or_blocked_dependency(
-    tmp_path, state
-) -> None:
+def test_resolve_summary_payload_skipped_or_blocked_dependency(tmp_path, state) -> None:
     with pytest.raises(ModuleDependencyMissingError) as exc:
         resolve_summary_payload(_ctx(tmp_path, stored={"status": state}))
     assert exc.value.error_context == {"dependency": "summary", "state": state}

@@ -50,6 +50,28 @@ def cached_get_transcript_summaries_for_paths(paths_key: tuple[str, ...]) -> lis
     return controller.list_transcripts_from_paths(list(paths_key))
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def cached_list_runs(
+    scope_type: str,
+    subject_id: str | None = None,
+    group_uuid: str | None = None,
+) -> list:
+    """Cached run listing for the sidebar run picker (dir scan + manifest checks)."""
+    mark_cache_miss("cached_list_runs")
+    from types import SimpleNamespace
+
+    from transcriptx.web.services.run_index import RunIndex
+
+    scope = SimpleNamespace(scope_type=scope_type, uuid=group_uuid)
+    return RunIndex.list_runs(scope, subject_id=subject_id)
+
+
+def clear_run_listing_caches() -> None:
+    """Invalidate cached run listings (call after an analysis run completes)."""
+    cached_list_runs.clear()  # type: ignore[attr-defined]
+    cached_list_recent_runs.clear()  # type: ignore[attr-defined]
+
+
 def clear_transcript_listing_caches() -> None:
     """
     Clear only transcript-listing related caches.
@@ -65,6 +87,7 @@ def clear_rename_related_caches() -> None:
     """Invalidate caches that can show stale names/paths after a transcript rename."""
     clear_transcript_listing_caches()
     cached_list_recent_runs.clear()  # type: ignore[attr-defined]
+    cached_list_runs.clear()  # type: ignore[attr-defined]
 
 
 @st.cache_data(show_spinner=False)

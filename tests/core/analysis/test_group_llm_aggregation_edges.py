@@ -235,9 +235,7 @@ class TestSpeakerSummaryGroupEdges:
         assert row["summary"] == ""
 
     def test_summary_loaded_from_speaker_artifact(self, tmp_path) -> None:
-        base_dir = (
-            tmp_path / "llm_speaker_summary" / "data" / "speakers"
-        )
+        base_dir = tmp_path / "llm_speaker_summary" / "data" / "speakers"
         base_dir.mkdir(parents=True)
         (base_dir / "a_Alice_llm_speaker_summary.json").write_text(
             json.dumps({"summary": "Alice speaks"}), encoding="utf-8"
@@ -268,9 +266,7 @@ class TestSpeakerSummaryGroupEdges:
             "{corrupt", encoding="utf-8"
         )
         result = _result("/x/a.json", "a", 0, {}, output_dir=str(tmp_path))
-        payload = _load_speaker_summary_payload(
-            result, "Alice", "llm_speaker_summary"
-        )
+        payload = _load_speaker_summary_payload(result, "Alice", "llm_speaker_summary")
         assert payload == {}
 
     def test_non_dict_speaker_artifact_yields_empty_payload(self, tmp_path) -> None:
@@ -280,7 +276,5 @@ class TestSpeakerSummaryGroupEdges:
             json.dumps(["not", "a", "dict"]), encoding="utf-8"
         )
         result = _result("/x/a.json", "a", 0, {}, output_dir=str(tmp_path))
-        payload = _load_speaker_summary_payload(
-            result, "Alice", "llm_speaker_summary"
-        )
+        payload = _load_speaker_summary_payload(result, "Alice", "llm_speaker_summary")
         assert payload == {}

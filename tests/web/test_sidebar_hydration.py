@@ -55,8 +55,7 @@ def _discovery_mocks(monkeypatch, mod) -> dict[str, int]:
         lambda _ss: calls.__setitem__("subject", calls["subject"] + 1),
     )
     monkeypatch.setattr(
-        mod.RunIndex,
-        "list_runs",
+        "transcriptx.web.cache_helpers.cached_list_runs",
         lambda *_args, **_kwargs: calls.__setitem__("runs", calls["runs"] + 1) or [],
     )
     monkeypatch.setattr(
@@ -133,8 +132,7 @@ def test_home_preserves_canonical_context(monkeypatch) -> None:
         lambda ss: fake_subject if ss.get("subject_id") == "slug-keep" else None,
     )
     monkeypatch.setattr(
-        mod.RunIndex,
-        "list_runs",
+        "transcriptx.web.cache_helpers.cached_list_runs",
         lambda *_args, **_kwargs: [
             type("Run", (), {"run_id": "run-keep"})(),
         ],

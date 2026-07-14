@@ -75,10 +75,7 @@ class TestStripCommitmentsSection:
         assert "Kept" in out
 
     def test_commitments_at_end_removed_up_to_footer(self) -> None:
-        md = (
-            "Overview\n\n## Commitments / Next steps\n- item\n\n"
-            "---\nModel: m\n"
-        )
+        md = "Overview\n\n## Commitments / Next steps\n- item\n\n" "---\nModel: m\n"
         out = lp.strip_commitments_section(md)
         assert "item" not in out
         assert "Model: m" in out

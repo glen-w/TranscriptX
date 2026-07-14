@@ -1072,6 +1072,47 @@ Selected critical-path modules with remaining uncovered loader/hashing/compat br
 - **Quarantined tests:** not re-enabled.
 - **Artifact cleanup:** disabled.
 
+## 48. Expansion (2026-07-14) – LLM features deep-coverage pass
+
+### Backup (mandatory)
+- Workspace zip: `/Users/89298/Documents/transcriptx backup/260714-1803.zip` (3.0M); `custom-commands/` mirrored.
+
+### Review and baseline
+- **Collection:** `4699/4870` under default addopts (`171` deselected); no collection/import errors.
+- **Baseline default run:** `4685 passed`, `13 failed`, `1 skipped` — all 13 failures in the rename area, caused by the `llm_support`/rename package extraction (commit `438302a`): tests monkeypatch `transcriptx.core.utils.rename.processing_state.OUTPUTS_DIR` and expect `file_rename.invalidate_path_cache`, but the moved modules no longer imported those names. Classified as trivial import/path compatibility drift and fixed in production shims (allowed by command policy):
+  - `src/transcriptx/core/utils/rename/processing_state.py`: re-import `OUTPUTS_DIR` (declared patch surface `__all_patch_surface__` referenced it without importing it).
+  - `src/transcriptx/core/utils/file_rename.py`: re-export `invalidate_path_cache` (used by `rename/pipeline.py`, listed in the shim import contract).
+- Also fixed one stale-API bug found while expanding: `llm_support/narrative_source.py` imported `project_canonical_outcomes` from `module_outcomes` (moved to `run_outcome_truth`) and read dict keys off what are now `CanonicalOutcomeRow` dataclasses — the `run_results.json` resumable-artifact branch silently never resolved (swallowed by `except Exception`). Updated to the current API; behavior now matches the documented contract.
+- **Cleanup:** disabled (not run). **Quarantined:** none active; not re-enabled.
+
+### Coverage gaps targeted (LLM features)
+Pre-expansion targeted slice: `web/blocks/llm_presentation.py` 0%, `aggregation/llm.py` 87%, `narrative_source.py` 71%, `ollama_client.py` 77%, `prompts.py` 84%, `runtime.py` 90%, `action_items_contract.py` 90%, `config/models/llm.py` 96% (validator branches untested).
+
+### New / expanded tests (tests-only apart from the two shim fixes + one bug fix above)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/web/blocks/test_llm_presentation.py` (**new**) | 20 | provenance badges, heading/footer/commitments stripping, badge-row + markdown rendering via patched `st.markdown` |
+| `tests/core/llm/test_prompting.py` (**new**) | 5 | envelope shape, overhead identity, instructionless floor, `require_prompt_budget` pass/reject |
+| `tests/core/analysis/test_group_llm_aggregation_edges.py` (**new**) | 17 | `_artifact_relpath`, `_status_counts`, malformed payloads (non-list items/speakers, non-dict entries), speaker artifact load (missing/corrupt/non-dict/valid), per-blob skip-and-none contracts |
+| `tests/core/analysis/test_narrative_summary_helpers.py` (**new**) | 6 | `_effective_max_output_tokens` precedence, `_render_narrative_markdown` footer |
+| `tests/core/config/test_llm_settings_model.py` (**new**) | 6 | `max_output_tokens` validator, `_first_pydantic_message` default, applied-payload merge, `ConfigLoadError` mapping |
+| `tests/core/llm/test_ollama_client.py` (+19) | 39 total | config validation (base_url/scheme/timeouts/max_output_tokens), temperature bounds, `build_ollama_client` defaults/normalization, tags cache, array body, model-not-found matrix, real-`urlopen` transport wraps (404 model body, refused, OSError, raw socket timeout, ConnectionError), `_read_http_error_body` failure |
+| `tests/core/llm/test_llm_factory.py` (+2) | global-config default path; `NullLLMClient` generate/is_available contract |
+| `tests/core/analysis/llm_support/test_narrative_source.py` (+11) | corrupt artifacts_meta, registered-but-empty/missing artifact, manifest registration hit/miss, run_results projection hit/miss/corrupt, stored payload content/skipped/blocked states |
+| `tests/core/analysis/llm_support/test_action_items_contract.py` (+11) | invalid JSON/root/items, non-dict item, missing text, non-string optionals, blank-optional normalization, fenced output, quote-only grounding, drop diagnostics, ungrounded ordering sentinel |
+| `tests/core/analysis/llm_support/test_prompts.py` (+6) | empty-segment skip, marker-only tail, shrink-loop budget property, multi-segment hard truncate, zero budget, empty-block meta |
+| `tests/core/analysis/llm_support/test_runtime.py` (+6) | unsupported provider, profile-map defensive copy, input-coverage branch matrix (truncated/untruncated missing `used`, empty block, ratio cap) |
+| `tests/core/analysis/llm_support/test_speakers.py` (+4) | alias mapping, non-dict aliases fallback, empty-text speaker skip, entry shape |
+
+### Targeted coverage result (LLM slice)
+- `web/blocks/llm_presentation.py` **0% → 100%**; `aggregation/llm.py` **87% → 100%**; `config/models/llm.py` **96% → 100%**; `llm_support/runtime.py` **90% → 100%**; `core/llm/prompting.py` **95% → 100%**; `narrative_source.py` **71% → 97%**; `action_items_contract.py` **90% → 99%**; `narrative_summary.py` **93% → 99%**; `ollama_client.py` **77% → 94%**; `speakers.py` **92% → 97%**; `prompts.py` **84% → 85%** (remaining: defensive shrink-loop interior).
+
+### Validation
+- **Default suite (post-expansion):** `4812 passed`, `1 skipped`, `171 deselected`, `0` failed (+127 vs green baseline).
+- **Production code changed:** two rename-shim import fixes + one `narrative_source` stale-API fix (documented above); everything else tests-only.
+- **Artifact cleanup:** disabled. **Quarantined tests:** unchanged.
+
 ## 47. Expansion (2026-07-14) – managed rename utils (unit + integration)
 
 ### Backup (mandatory)

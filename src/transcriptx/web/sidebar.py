@@ -11,7 +11,7 @@ from transcriptx.web.navigation import (
     evaluate_page_access,
     pages_in_section,
 )
-from transcriptx.web.services import RunIndex, SubjectService
+from transcriptx.web.services import SubjectService
 from transcriptx.web.sidebar_hydration import hydrate_sidebar_state
 from transcriptx.web.sidebar_state import (
     SidebarSelectionResult,
@@ -39,6 +39,18 @@ def _nav_section(title: str) -> None:
     st.markdown(
         f'<p class="subject-section-header">{title}</p>', unsafe_allow_html=True
     )
+
+
+def _list_runs_for_subject(subject) -> list:
+    """Cached run listing for a resolved subject (avoids a dir scan per rerun)."""
+    from transcriptx.web.cache_helpers import cached_list_runs
+
+    scope_type = getattr(subject.scope, "scope_type", None) or getattr(
+        subject, "subject_type", "transcript"
+    )
+    if scope_type == "group":
+        return cached_list_runs("group", group_uuid=getattr(subject.scope, "uuid", None))
+    return cached_list_runs("transcript", subject_id=subject.subject_id)
 
 
 def _render_workspace_pickers(session_state: dict) -> None:
@@ -70,11 +82,7 @@ def _render_workspace_pickers(session_state: dict) -> None:
             groups = []
 
     pre_subject = SubjectService.resolve_current_subject(session_state)
-    pre_runs = (
-        RunIndex.list_runs(pre_subject.scope, subject_id=pre_subject.subject_id)
-        if pre_subject
-        else []
-    )
+    pre_runs = _list_runs_for_subject(pre_subject) if pre_subject else []
     pre_state = hydrate_sidebar_state(
         session_state,
         subject_type=subject_type,
@@ -134,7 +142,14 @@ def _render_workspace_pickers(session_state: dict) -> None:
 
     subject = SubjectService.resolve_current_subject(session_state)
     if subject:
-        runs = RunIndex.list_runs(subject.scope, subject_id=subject.subject_id)
+        if (
+            pre_subject is not None
+            and pre_subject.subject_type == subject.subject_type
+            and pre_subject.subject_id == subject.subject_id
+        ):
+            runs = pre_runs
+        else:
+            runs = _list_runs_for_subject(subject)
         run_options = [r.run_id for r in runs]
         post_state = hydrate_sidebar_state(
             session_state,
