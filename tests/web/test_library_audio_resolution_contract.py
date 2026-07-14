@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from transcriptx.core.utils import file_rename as fr
+from transcriptx.core.utils.rename import audio_association
 from transcriptx.web.page_modules import library as library_mod
 
 
@@ -34,9 +34,9 @@ def test_resolve_audio_for_transcript_returns_find_original_hit(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(fr, "PROCESSING_STATE_FILE", state_file)
-    monkeypatch.setattr(fr, "RECORDINGS_DIR", tmp_path / "rec")
-    monkeypatch.setattr(fr, "OUTPUTS_DIR", tmp_path / "outputs")
+    monkeypatch.setattr(audio_association, "PROCESSING_STATE_FILE", state_file)
+    monkeypatch.setattr(audio_association, "RECORDINGS_DIR", tmp_path / "rec")
+    monkeypatch.setattr(audio_association, "OUTPUTS_DIR", tmp_path / "outputs")
     (tmp_path / "rec").mkdir()
 
     resolved = library_mod._resolve_audio_for_transcript(transcript)
