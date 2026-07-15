@@ -90,7 +90,8 @@ def _endpoint_is_local(base_url: str) -> bool:
         host = (urlparse(base_url).hostname or "").lower()
     except Exception:
         return True
-    return host in {"localhost", "127.0.0.1", "::1"}
+    # host.docker.internal is the Docker Desktop bridge to host Ollama.
+    return host in {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
 
 
 def _error_code(exc: BaseException) -> str:

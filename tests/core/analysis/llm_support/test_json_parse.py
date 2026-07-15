@@ -50,3 +50,21 @@ def test_loads_llm_json_tolerates_trailing_junk() -> None:
 def test_loads_llm_json_raises_on_garbage() -> None:
     with pytest.raises(json.JSONDecodeError):
         loads_llm_json("no json here")
+
+
+@pytest.mark.unit
+def test_loads_llm_json_accepts_bare_array() -> None:
+    assert loads_llm_json('[{"a": 1}]') == [{"a": 1}]
+
+
+@pytest.mark.unit
+def test_loads_llm_json_raises_on_truncated_object() -> None:
+    with pytest.raises(json.JSONDecodeError):
+        loads_llm_json('{"candidates":[{"source_text":"a"')
+
+
+@pytest.mark.unit
+def test_loads_llm_json_bare_array_trailing_junk_may_extract_nested_object() -> None:
+    # After json.loads fails, raw_decode starts at the first '{', so a trailing
+    # junk array can accidentally yield the first nested object.
+    assert loads_llm_json('[{"a": 1}] trailing prose') == {"a": 1}

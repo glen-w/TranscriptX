@@ -112,7 +112,7 @@ def test_render_transcript_viewer_does_not_consume_nav_request_on_empty_segments
     monkeypatch.setattr(mod, "st", _DummySt)
     monkeypatch.setattr(mod, "render_page_shell", lambda *a, **k: None)
     monkeypatch.setattr(mod, "_render_transcript_help", lambda _h: None)
-    monkeypatch.setattr(mod, "_render_metadata_metrics", lambda _d: None)
+    monkeypatch.setattr(mod, "_render_metadata_metrics", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "render_download_row", lambda *a, **k: None)
     monkeypatch.setattr(mod, "render_empty_state", lambda *a, **k: None)
     monkeypatch.setattr(

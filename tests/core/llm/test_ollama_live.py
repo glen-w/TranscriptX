@@ -12,6 +12,7 @@ import pytest
 
 from transcriptx.core.llm import get_llm_client
 from transcriptx.core.utils.config.main import TranscriptXConfig
+from tests.core.llm.ollama_live_helpers import live_base_url
 
 pytestmark = [
     pytest.mark.integration,
@@ -26,14 +27,10 @@ pytestmark = [
 
 @pytest.mark.timeout(300)
 def test_live_ollama_generate_smoke() -> None:
-    # Host-side live smoke: ignore docker-oriented host.docker.internal from .env.
-    base_url = os.getenv(
-        "TRANSCRIPTX_LLM_LIVE_BASE_URL", "http://127.0.0.1:11434"
-    ).strip()
     cfg = TranscriptXConfig()
     cfg.llm.enabled = True
     cfg.llm.provider = "ollama"
-    cfg.llm.base_url = base_url
+    cfg.llm.base_url = live_base_url()
     # Dedicated smoke model (avoid qwen3 thinking models that can emit empty
     # ``response`` when num_predict is small).
     cfg.llm.model = os.getenv("TRANSCRIPTX_LLM_SMOKE_MODEL", "llama3.2:3b")

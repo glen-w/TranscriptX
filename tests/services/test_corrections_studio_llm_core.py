@@ -14,7 +14,6 @@ from transcriptx.services.corrections_studio.compile import (
 )
 from transcriptx.services.corrections_studio.llm.budgets import BudgetTracker
 from transcriptx.services.corrections_studio.llm.chunking import build_segment_chunks
-from transcriptx.services.corrections_studio.llm.contract import parse_discovery_json
 from transcriptx.services.corrections_studio.llm.grounding import (
     ground_discovery_candidates,
 )
@@ -48,17 +47,6 @@ def _seg(i: int, text: str) -> Dict[str, Any]:
         "start": float(i),
         "end": float(i) + 1,
     }
-
-
-@pytest.mark.unit
-def test_parse_discovery_valid_and_reject_extra() -> None:
-    raw = '{"candidates":[{"source_text":"Foo","replacement_text":"Bar","segment_ref":0,"rationale":"x","certainty_label":"confident","evidence_signals":["model_suggestion"]}]}'
-    got = parse_discovery_json(raw)
-    assert len(got) == 1
-    with pytest.raises(LLMResponseError):
-        parse_discovery_json(
-            '{"candidates":[{"source_text":"a","replacement_text":"b","segment_ref":0,"extra":1}]}'
-        )
 
 
 @pytest.mark.unit
@@ -734,4 +722,165 @@ def test_run_llm_discovery_setup_failure_degrades(monkeypatch) -> None:
         known_org_phrases={},
     )
     assert result.diagnostics.outcome == "failed"
+    assert result.candidates == []
+
+
+def _discovery_runtime_and_cfgs(
+    monkeypatch, *, FakeClient, chunk_max_segments: int = 40
+):
+    from unittest.mock import MagicMock
+
+    from transcriptx.core.analysis.llm_support.runtime import LLMRuntime
+    from transcriptx.services.corrections_studio.llm import discovery as disc
+
+    monkeypatch.setattr(disc, "build_ollama_analysis_client", lambda **kw: FakeClient())
+    monkeypatch.setattr(
+        disc,
+        "resolve_llm_runtime",
+        lambda **kw: LLMRuntime(
+            effort="low",
+            profile_name="low",
+            model="m",
+            max_input_chars=50_000,
+            request_timeout=30.0,
+            max_output_tokens=512,
+        ),
+    )
+    corrections_llm = MagicMock(
+        enabled=True,
+        effort="low",
+        request_timeout_seconds=30.0,
+        total_wall_clock_seconds=180.0,
+        max_chunks=25,
+        chunk_max_segments=chunk_max_segments,
+        chunk_overlap_segments=0,
+        max_candidates_per_chunk=5,
+        max_candidates_per_transcript=80,
+        continue_on_failure=True,
+        assess_deterministic=False,
+    )
+    llm_cfg = MagicMock(
+        enabled=True,
+        provider="ollama",
+        base_url="http://127.0.0.1:11434",
+        default_temperature=0.0,
+        model="m",
+    )
+    return disc, llm_cfg, corrections_llm
+
+
+@pytest.mark.unit
+def test_run_llm_discovery_accepts_gemma_bare_array_shape(monkeypatch) -> None:
+    from transcriptx.services.corrections_studio.llm import discovery as disc
+
+    segs = [_seg(0, "Hello Foo today"), _seg(1, "More text")]
+    generate_kwargs: list[dict] = []
+
+    class FakeClient:
+        def is_available(self):
+            return True
+
+        def generate(self, **kwargs):
+            generate_kwargs.append(kwargs)
+            # gemma3 mid: fenced bare array + short_rationale
+            return (
+                "```json\n"
+                '[{"source_text":"Foo","replacement_text":"Bar","segment_ref":0,'
+                '"short_rationale":"phonetic","certainty_label":"tentative",'
+                '"evidence_signals":["model_suggestion"]}]\n'
+                "```"
+            )
+
+    _, llm_cfg, corrections_llm = _discovery_runtime_and_cfgs(
+        monkeypatch, FakeClient=FakeClient, chunk_max_segments=40
+    )
+    result = disc.run_llm_discovery(
+        segments=segs,
+        transcript_key="tk",
+        llm_cfg=llm_cfg,
+        corrections_llm=corrections_llm,
+        speaker_names=[],
+        memory_pairs=[],
+        known_acronyms=[],
+        known_org_phrases={},
+    )
+    assert result.diagnostics.chunks_succeeded >= 1
+    assert result.diagnostics.outcome == "success"
+    assert len(result.candidates) >= 1
+    assert generate_kwargs
+    assert "response_format" not in generate_kwargs[0] or generate_kwargs[0].get(
+        "response_format"
+    ) in (None,)
+
+
+@pytest.mark.unit
+def test_run_llm_discovery_continues_after_chunk_invalid_response(monkeypatch) -> None:
+    segs = [
+        _seg(0, "Hello Foo today"),
+        _seg(1, "Hello Foo again"),
+    ]
+    calls = {"n": 0}
+
+    class FakeClient:
+        def is_available(self):
+            return True
+
+        def generate(self, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return "not-json-at-all"
+            return (
+                '{"candidates":[{"source_text":"Foo","replacement_text":"Bar",'
+                '"segment_ref":1,"rationale":"x","certainty_label":"tentative",'
+                '"evidence_signals":["model_suggestion"]}]}'
+            )
+
+    disc, llm_cfg, corrections_llm = _discovery_runtime_and_cfgs(
+        monkeypatch, FakeClient=FakeClient, chunk_max_segments=1
+    )
+    result = disc.run_llm_discovery(
+        segments=segs,
+        transcript_key="tk",
+        llm_cfg=llm_cfg,
+        corrections_llm=corrections_llm,
+        speaker_names=[],
+        memory_pairs=[],
+        known_acronyms=[],
+        known_org_phrases={},
+    )
+    assert result.diagnostics.chunks_failed >= 1
+    assert result.diagnostics.chunks_succeeded >= 1
+    assert result.diagnostics.error_code == "llm_invalid_response"
+    assert result.diagnostics.outcome in {"partial", "success"}
+    assert len(result.candidates) >= 1
+
+
+@pytest.mark.unit
+def test_run_llm_discovery_all_chunks_invalid_marks_failed(monkeypatch) -> None:
+    segs = [_seg(0, "Hello Foo today"), _seg(1, "More")]
+
+    class FakeClient:
+        def is_available(self):
+            return True
+
+        def generate(self, **kwargs):
+            raise LLMResponseError("Corrections discovery output is not valid JSON")
+
+    disc, llm_cfg, corrections_llm = _discovery_runtime_and_cfgs(
+        monkeypatch, FakeClient=FakeClient, chunk_max_segments=1
+    )
+    result = disc.run_llm_discovery(
+        segments=segs,
+        transcript_key="tk",
+        llm_cfg=llm_cfg,
+        corrections_llm=corrections_llm,
+        speaker_names=[],
+        memory_pairs=[],
+        known_acronyms=[],
+        known_org_phrases={},
+    )
+    assert result.diagnostics.chunks_failed >= 1
+    assert result.diagnostics.chunks_succeeded == 0
+    assert result.diagnostics.outcome == "failed"
+    assert result.diagnostics.error_code == "llm_invalid_response"
     assert result.candidates == []

@@ -14,6 +14,31 @@ from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services import ArtifactService
 
+_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+_TEXT_SUFFIXES = {".txt", ".md", ".csv", ".json", ".html", ".htm", ".svg"}
+
+
+def _is_image_artifact(selected: Artifact, path: Path) -> bool:
+    kind = (selected.kind or "").lower()
+    mime = (selected.mime or "").lower()
+    if mime == "image/svg+xml" or path.suffix.lower() == ".svg":
+        return False
+    return (
+        kind == "chart_static"
+        or mime.startswith("image/")
+        or path.suffix.lower() in _IMAGE_SUFFIXES
+    )
+
+
+def _is_html_artifact(selected: Artifact, path: Path) -> bool:
+    kind = (selected.kind or "").lower()
+    mime = (selected.mime or "").lower()
+    return (
+        kind == "chart_dynamic"
+        or mime in {"text/html", "application/xhtml+xml"}
+        or path.suffix.lower() in {".html", ".htm"}
+    )
+
 
 def render_artifact_file_preview(run_root: Path, selected: Artifact) -> None:
     """Preview a single data artifact on disk."""
@@ -43,8 +68,20 @@ def render_artifact_file_preview(run_root: Path, selected: Artifact) -> None:
             st.markdown(content)
         else:
             st.text_area("Text", content, height=400)
+    elif _is_image_artifact(selected, path):
+        st.image(str(path), width="stretch")
+    elif _is_html_artifact(selected, path):
+        html = path.read_text(encoding="utf-8", errors="ignore")
+        st.iframe(html, height=500)
     else:
-        st.write(Path(path).read_text())
+        mime = (selected.mime or "").lower()
+        if mime.startswith("text/") or path.suffix.lower() in _TEXT_SUFFIXES:
+            try:
+                st.write(path.read_text(encoding="utf-8"))
+            except UnicodeDecodeError:
+                st.info("Unable to decode this file as text. Use Download instead.")
+        else:
+            st.info("No inline preview for this binary artifact. Use Download instead.")
 
 
 def render_data_artifact_preview(ctx: BlockContext, _placement: BlockPlacement) -> None:

@@ -10,6 +10,8 @@ from typing import Any
 from transcriptx.core.utils.config import TranscriptXConfig
 from transcriptx.core.utils.config.analysis import AnalysisConfig
 
+from .delegation_test_utils import without_transcriptx_env
+
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 _DELEGATION_SUBTREES = (
@@ -35,10 +37,11 @@ def _normalize_for_json(value: Any) -> Any:
 
 
 def _subtree_shapes(subtree: str) -> dict:
-    return {
-        "asdict": _normalize_for_json(asdict(getattr(AnalysisConfig(), subtree))),
-        "to_dict": TranscriptXConfig().to_dict()["analysis"][subtree],
-    }
+    with without_transcriptx_env():
+        return {
+            "asdict": _normalize_for_json(asdict(getattr(AnalysisConfig(), subtree))),
+            "to_dict": TranscriptXConfig().to_dict()["analysis"][subtree],
+        }
 
 
 def test_pre_delegation_subtree_shapes_match_fixtures() -> None:

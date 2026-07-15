@@ -161,7 +161,7 @@ Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/
 | `TRANSCRIPTX_HOST` | `0.0.0.0` | Streamlit bind host |
 | `TRANSCRIPTX_PORT` | `8501` | Streamlit port |
 
-Optional **model overrides** (`TRANSCRIPTX_SPACY_MODEL`, `TRANSCRIPTX_SEMANTIC_MODEL`, etc.) and **LLM / Ollama** settings (`TRANSCRIPTX_LLM_ENABLED`, `TRANSCRIPTX_LLM_BASE_URL`, …) are passed from the host `.env` into the container. See [models.md](models.md) and [llm.md](llm.md). On Mac/Windows Docker, point `TRANSCRIPTX_LLM_BASE_URL` at `http://host.docker.internal:11434` so the container can reach Ollama on the host.
+Optional **model overrides** (`TRANSCRIPTX_SPACY_MODEL`, `TRANSCRIPTX_SEMANTIC_MODEL`, etc.) and **LLM / Ollama** settings (`TRANSCRIPTX_LLM_ENABLED`, `TRANSCRIPTX_LLM_BASE_URL`, `TRANSCRIPTX_CORRECTIONS_LLM_ENABLED`, …) are passed from the host `.env` into the container. See [models.md](models.md), [llm.md](llm.md), and [corrections-llm.md](corrections-llm.md). On Mac/Windows Docker, point `TRANSCRIPTX_LLM_BASE_URL` at `http://host.docker.internal:11434` so the container can reach Ollama on the host. Local `docker-compose.override.yml` defaults LLM + Corrections Studio discovery on when those vars are unset.
 
 ## Health check
 

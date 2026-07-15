@@ -88,6 +88,32 @@ def test_generate_empty_response_field() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        {
+            "response": "",
+            "thinking": "Let me reason about the transcript before answering...",
+            "done": True,
+        },
+        {
+            "response": "  ",
+            "thinking": "step 1... step 2...",
+            "done": True,
+        },
+    ],
+    ids=["qwen3_empty", "deepseek_whitespace"],
+)
+def test_generate_thinking_model_empty_response_is_invalid(envelope: dict) -> None:
+    """Thinking models may fill ``thinking`` while leaving ``response`` empty."""
+    client = OllamaClient(model="qwen3:8b")
+    with patch.object(client, "_http_post", return_value=json.dumps(envelope)):
+        with pytest.raises(LLMResponseError) as exc:
+            client.generate(prompt="hi", temperature=0.0)
+    assert exc.value.error_code == LLM_INVALID_RESPONSE
+
+
+@pytest.mark.unit
 def test_http_404_maps_to_model_missing() -> None:
     client = OllamaClient(model="missing:1b")
     err = urllib.error.HTTPError(

@@ -145,10 +145,17 @@ def _render_preflight_empty_state(preflight: ViewerPreflight) -> None:
         )
 
 
-def _render_metadata_metrics(transcript_data: dict) -> None:
-    """Render top-level transcript metadata metrics."""
+def _render_metadata_metrics(
+    transcript_data: dict, segments: list[dict[str, Any]] | None = None
+) -> None:
+    """Render top-level transcript metadata metrics.
+
+    Prefer resolved ``segments`` (with mapped speaker names) for the Speakers
+    tooltip; fall back to raw transcript segments when not provided.
+    """
     metadata = transcript_data.get("metadata", {})
-    segments = transcript_data.get("segments", []) or []
+    if segments is None:
+        segments = transcript_data.get("segments", []) or []
     speaker_help = speaker_tooltip(segments)
     seg_count, total_words, avg_words = segment_word_stats(segments)
     col1, col2, col3, col4 = st.columns(4)
@@ -302,7 +309,8 @@ def render_transcript_viewer() -> None:
             _render_transcript_help(transcript_help)
             return
 
-        _render_metadata_metrics(transcript_data)
+        segments = _resolve_and_prepare_segments(transcript_data, selected)
+        _render_metadata_metrics(transcript_data, segments)
         artifacts = resolve_transcript_artifacts(
             run_root=run_root,
             selected_session=session_slug,
@@ -311,7 +319,6 @@ def render_transcript_viewer() -> None:
         render_download_row(artifacts, transcript_data, selected)
         st.divider()
 
-        segments = _resolve_and_prepare_segments(transcript_data, selected)
         if not segments:
             render_empty_state(
                 "no_results_yet",

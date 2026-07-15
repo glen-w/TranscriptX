@@ -386,6 +386,11 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         ("llm", "default_temperature"),
         coerce_float,
     ),
+    _env_key(
+        "TRANSCRIPTX_CORRECTIONS_LLM_ENABLED",
+        ("analysis", "corrections", "llm", "enabled"),
+        coerce_bool_on_off,
+    ),
 )
 
 KNOWN_OVERRIDE_KEYS = frozenset(entry.env_name for entry in ENV_KEY_REGISTRY)

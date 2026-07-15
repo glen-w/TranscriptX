@@ -114,6 +114,7 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_LLM_MAX_INPUT_CHARS": ("12000", 12000),
         "TRANSCRIPTX_LLM_MAX_OUTPUT_TOKENS": ("1024", 1024),
         "TRANSCRIPTX_LLM_DEFAULT_TEMPERATURE": ("0.25", 0.25),
+        "TRANSCRIPTX_CORRECTIONS_LLM_ENABLED": ("1", True),
     }
     return table[env_name]
 

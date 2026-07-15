@@ -78,6 +78,7 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "workflow",
         may_mutate_context=True,
     ),
+    _spec("Corrections Studio", "Corrections Studio", "workflow"),
     _spec("Run Analysis", "Run Analysis", "workflow", may_mutate_context=True),
     _spec("Batch Ops", "Batch Analysis", "workflow", may_mutate_context=False),
     _spec("Groups", "Groups", "workflow", may_mutate_context=True),
@@ -137,12 +138,11 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
-    _spec("Corrections Studio", "Corrections Studio", "tools"),
     _spec("Audio Prep", "Audio Pre-processing", "tools"),
     _spec("Audio Merge", "Audio Merge", "tools"),
-    _spec("Dashboard Builder", "Dashboard Builder", "tools"),
     _spec("Settings", "Settings", "settings"),
     _spec("Profiles", "Profiles", "settings"),
+    _spec("Dashboard Builder", "Dashboard Builder", "settings"),
     _spec("Diagnostics", "Diagnostics", "settings"),
 )
 

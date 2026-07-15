@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8.1] - 2026-07-15
+
+### Fixed
+
+- Corrections Studio LLM discovery accepts common local-model JSON shapes (bare candidate arrays, `short_rationale` / related aliases) instead of failing every chunk with `llm_invalid_response`.
+- Action-items optional fields coerce common LLM scalar/list mistakes instead of failing the whole parse.
+- Artifact file preview no longer crashes on binary files (UTF-8 decode).
+- Config default-shape tests isolate `TRANSCRIPTX_*` env from repo `.env` bootstrap.
+
+### Added
+
+- Multi-model LLM response fixture corpus and deeper unit coverage for discovery, narrative, action-items, and summary intake.
+- Gated live Ollama diversity helpers/matrix for corrections discovery, overall summary, and speaker summaries.
+- Local compose defaults and docs for enabling Corrections Studio LLM against host Ollama.
+
 ## [0.3.8] - 2026-07-15
 
 ### Added

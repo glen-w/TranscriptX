@@ -51,6 +51,45 @@ def _validate_confidence(value: Any) -> float:
     return confidence
 
 
+def _optional_string_field(
+    value: Any,
+    *,
+    coerce_scalars: bool,
+) -> Optional[str]:
+    """Normalise optional string fields from common LLM shape mistakes.
+
+    Strings are stripped (blank -> null). When ``coerce_scalars`` is true,
+    numbers become strings and non-empty lists of string/number parts are
+    joined with \", \". Unusable shapes become null instead of failing the
+    whole parse (owner/deadline/quote are optional).
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.strip() or None
+    if not coerce_scalars:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, list):
+        parts: List[str] = []
+        for part in value:
+            if isinstance(part, str):
+                cleaned = part.strip()
+                if cleaned:
+                    parts.append(cleaned)
+            elif isinstance(part, bool):
+                continue
+            elif isinstance(part, (int, float)):
+                parts.append(str(part))
+            else:
+                return None
+        return ", ".join(parts) or None
+    return None
+
+
 def _validate_action_item(raw: Any, *, index: int) -> Dict[str, Any]:
     if not isinstance(raw, dict):
         raise LLMResponseError(f"Action item at index {index} must be an object")
@@ -64,32 +103,16 @@ def _validate_action_item(raw: Any, *, index: int) -> Dict[str, Any]:
         raise LLMResponseError(
             f"Action item at index {index} missing non-empty 'text' field"
         )
-    owner = raw.get("owner")
-    if owner is not None:
-        if not isinstance(owner, str):
-            raise LLMResponseError(
-                f"Action item at index {index} owner must be string or null"
-            )
-        owner = owner.strip() or None
-    deadline = raw.get("deadline")
-    if deadline is not None:
-        if not isinstance(deadline, str):
-            raise LLMResponseError(
-                f"Action item at index {index} deadline must be string or null"
-            )
-        deadline = deadline.strip() or None
+    # owner/deadline: coerce common LLM mistakes; quote: string or null only
+    # (coerced quotes would break verbatim grounding).
+    owner = _optional_string_field(raw.get("owner"), coerce_scalars=True)
+    deadline = _optional_string_field(raw.get("deadline"), coerce_scalars=True)
     status = raw.get("status")
     if status not in _VALID_ACTION_STATUSES:
         raise LLMResponseError(
             f"Action item at index {index} status must be one of: open, done, unclear"
         )
-    quote = raw.get("quote")
-    if quote is not None:
-        if not isinstance(quote, str):
-            raise LLMResponseError(
-                f"Action item at index {index} quote must be string or null"
-            )
-        quote = quote.strip() or None
+    quote = _optional_string_field(raw.get("quote"), coerce_scalars=False)
     confidence = _validate_confidence(raw.get("confidence"))
     return {
         "text": text.strip(),

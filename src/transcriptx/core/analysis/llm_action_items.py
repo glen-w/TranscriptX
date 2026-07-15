@@ -45,7 +45,7 @@ from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.module_result import build_module_result, now_iso
 
 LLM_ACTION_ITEMS_SCHEMA_ID = "transcriptx.llm_action_items.v1"
-LLM_ACTION_ITEMS_PROMPT_VERSION = "2"
+LLM_ACTION_ITEMS_PROMPT_VERSION = "3"
 LLM_ACTION_ITEMS_MODULE_VERSION = "1"
 LLM_ACTION_ITEMS_INSTRUCTION = "Extract action items from this transcript:"
 
@@ -55,6 +55,8 @@ def _build_action_items_system_prompt() -> str:
         "You extract action items from transcripts. "
         'Respond with strict JSON only: {"items": [...]}. '
         "Each item must include text, owner, deadline, status, quote, confidence. "
+        "owner and deadline must each be a single string or null "
+        "(never an array or object). "
         "Use null for unknown owner or deadline. "
         "Use verbatim names and deadline phrases from the transcript. "
         "status must be open, done, or unclear: "

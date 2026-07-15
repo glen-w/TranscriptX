@@ -138,6 +138,12 @@ def test_parse_action_items_rejects_invalid_json() -> None:
 
 
 @pytest.mark.unit
+def test_parse_action_items_rejects_truncated_json() -> None:
+    with pytest.raises(LLMResponseError, match="not valid JSON"):
+        parse_action_items_json('{"items":[{"text":"Send the report","status":"open"')
+
+
+@pytest.mark.unit
 def test_parse_action_items_rejects_non_object_root() -> None:
     with pytest.raises(LLMResponseError, match="must be an object"):
         parse_action_items_json(json.dumps([_item()]))
@@ -164,10 +170,29 @@ def test_parse_action_items_rejects_missing_text() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("field", ["owner", "deadline", "quote"])
-def test_parse_action_items_rejects_non_string_optional_fields(field: str) -> None:
-    with pytest.raises(LLMResponseError, match=f"{field} must be string or null"):
-        parse_action_items_json(json.dumps({"items": [_item(**{field: 123})]}))
+def test_parse_action_items_coerces_owner_and_deadline_scalars() -> None:
+    payload = json.dumps({"items": [_item(owner=3, deadline=15)]})
+    (parsed,) = parse_action_items_json(payload)
+    assert parsed["owner"] == "3"
+    assert parsed["deadline"] == "15"
+
+
+@pytest.mark.unit
+def test_parse_action_items_joins_owner_list() -> None:
+    payload = json.dumps({"items": [_item(owner=["Alice", "Bob"])]})
+    (parsed,) = parse_action_items_json(payload)
+    assert parsed["owner"] == "Alice, Bob"
+
+
+@pytest.mark.unit
+def test_parse_action_items_nulls_unusable_optional_shapes() -> None:
+    payload = json.dumps(
+        {"items": [_item(owner={"name": "Alice"}, deadline=True, quote=123)]}
+    )
+    (parsed,) = parse_action_items_json(payload)
+    assert parsed["owner"] is None
+    assert parsed["deadline"] is None
+    assert parsed["quote"] is None
 
 
 @pytest.mark.unit

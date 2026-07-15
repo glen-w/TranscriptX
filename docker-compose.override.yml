@@ -11,11 +11,20 @@
 #
 # Mac / Apple Silicon: use CPU-only PyTorch wheels at build time (no 500MB+ NVIDIA
 # CUDA deps; Docker on Mac cannot use GPU anyway). Override via .env if needed.
+#
+# Local LLM defaults: enable Ollama + Corrections Studio discovery when unset in
+# .env (see docs/runtime/corrections-llm.md). Requires Ollama on the host.
 services:
   transcriptx-web:
     build:
       args:
         TRANSCRIPTX_TORCH_VARIANT: cpu
+    environment:
+      - TRANSCRIPTX_LLM_ENABLED=${TRANSCRIPTX_LLM_ENABLED:-1}
+      - TRANSCRIPTX_LLM_PROVIDER=${TRANSCRIPTX_LLM_PROVIDER:-ollama}
+      - TRANSCRIPTX_LLM_MODEL=${TRANSCRIPTX_LLM_MODEL:-qwen3:8b}
+      - TRANSCRIPTX_LLM_BASE_URL=${TRANSCRIPTX_LLM_BASE_URL:-http://host.docker.internal:11434}
+      - TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=${TRANSCRIPTX_CORRECTIONS_LLM_ENABLED:-1}
     volumes:
       - ./data:/data
       - transcriptx_cache:/home/transcriptx/.cache

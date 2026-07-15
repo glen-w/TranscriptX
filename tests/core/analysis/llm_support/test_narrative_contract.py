@@ -8,6 +8,7 @@ from transcriptx.core.analysis.llm_support.narrative_contract import (
     parse_narrative_json,
 )
 from transcriptx.core.llm.errors import LLMResponseError
+from tests.fixtures.llm_responses import NARRATIVE_FIXTURES, NarrativeFixture
 
 
 @pytest.mark.unit
@@ -56,3 +57,25 @@ def test_parse_narrative_json_enforces_output_length_gate() -> None:
             f'{{"narrative": "{long_text}"}}',
             max_output_tokens=10,
         )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "fixture",
+    NARRATIVE_FIXTURES,
+    ids=[f.id for f in NARRATIVE_FIXTURES],
+)
+def test_parse_narrative_corpus(fixture: NarrativeFixture) -> None:
+    if fixture.expect == "parse_ok":
+        parsed = parse_narrative_json(fixture.body)
+        assert isinstance(parsed.get("narrative"), str)
+        assert parsed["narrative"].strip()
+    else:
+        with pytest.raises(LLMResponseError):
+            parse_narrative_json(fixture.body)
+
+
+@pytest.mark.unit
+def test_parse_narrative_json_rejects_truncated_json() -> None:
+    with pytest.raises(LLMResponseError):
+        parse_narrative_json('{"narrative": "The team agreed on ne')

@@ -19,6 +19,7 @@ from .delegation_test_utils import (
     assert_ownership_invariant_unchanged,
     assert_subtree_shape_matches_pre_snapshot,
     assert_three_path_access,
+    without_transcriptx_env,
 )
 
 _FIELDS = tuple(
@@ -33,7 +34,10 @@ def test_llm_nested_defaults() -> None:
 
     expected = CorrectionsSettingsModel().model_dump()["llm"]
     assert asdict(AnalysisConfig().corrections.llm) == expected
-    assert TranscriptXConfig().to_dict()["analysis"]["corrections"]["llm"] == expected
+    with without_transcriptx_env():
+        assert (
+            TranscriptXConfig().to_dict()["analysis"]["corrections"]["llm"] == expected
+        )
 
 
 def test_ownership_invariant_unchanged() -> None:

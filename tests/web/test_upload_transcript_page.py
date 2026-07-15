@@ -149,6 +149,7 @@ def test_app_workflow_menu_order_under_workflow() -> None:
         "Transcribe Audio",
         "Import Transcript",
         "Speaker ID",
+        "Corrections Studio",
         "Run Analysis",
         "Batch Ops",
         "Groups",

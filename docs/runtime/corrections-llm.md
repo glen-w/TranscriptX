@@ -11,7 +11,21 @@ Requires **both**:
 
 When disabled, Corrections Studio is fully deterministic: zero model calls and no LLM UI artefacts beyond an empty diagnostics `outcome=skipped`.
 
-Example config:
+### Environment / Docker
+
+```bash
+export TRANSCRIPTX_LLM_ENABLED=1
+export TRANSCRIPTX_LLM_PROVIDER=ollama
+export TRANSCRIPTX_LLM_MODEL=qwen3:8b
+export TRANSCRIPTX_LLM_BASE_URL=http://host.docker.internal:11434  # Docker → host Ollama
+export TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=1
+```
+
+Local `docker compose up` (with `docker-compose.override.yml`) defaults these on when unset. Production-like runs that use only `docker-compose.yml` leave Corrections Studio LLM off unless you set the vars.
+
+Ollama must be running on the host with the configured model pulled.
+
+### Config file
 
 ```yaml
 llm:
@@ -32,6 +46,13 @@ analysis:
       continue_on_failure: true
 ```
 
+## When generation runs
+
+LLM discovery does **not** run on page open alone. It runs during **candidate generation**:
+
+1. **Start / Resume Session** — generates if the session has no candidates yet (spinner: “Generating candidates…”).
+2. **Regenerate Candidates** — force-regenerates (needed after enabling LLM on a session that already has deterministic-only candidates).
+
 ## Behaviour
 
 - LLM runs **only during candidate generation**, before compile/export.
@@ -43,8 +64,8 @@ analysis:
 
 ## Privacy
 
-- Disabled by default.
-- Non-localhost Ollama hosts trigger a UI warning (generation is still allowed).
+- Disabled by default (except local compose override defaults above).
+- Non-local Ollama hosts trigger a UI warning (generation is still allowed). `localhost` / `127.0.0.1` / `host.docker.internal` count as local.
 - Logs record chunk indices and error codes only — not transcript bodies, prompts, or raw model responses.
 
 ## Provenance

@@ -71,6 +71,8 @@ services:
       - TRANSCRIPTX_LLM_MODEL=${TRANSCRIPTX_LLM_MODEL:-}
       - TRANSCRIPTX_LLM_BASE_URL=${TRANSCRIPTX_LLM_BASE_URL:-}
       - TRANSCRIPTX_LLM_SEED=${TRANSCRIPTX_LLM_SEED:-}
+      # Corrections Studio LLM discovery (see docs/runtime/corrections-llm.md).
+      - TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=${TRANSCRIPTX_CORRECTIONS_LLM_ENABLED:-}
     ports:
       - "8501:8501"
     healthcheck:
