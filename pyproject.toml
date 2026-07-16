@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.3.9"
+version = "0.3.9.1"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -38,7 +38,7 @@ dependencies = [
     "numpy==1.26.4",
     "psutil==7.0.0",
     "tqdm==4.67.1",
-    "click==8.2.1",
+    "click==8.3.3",
     "python-dotenv==1.2.2",
     "structlog==25.4.0",
     "tenacity==9.1.2",

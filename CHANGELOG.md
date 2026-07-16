@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9.1] - 2026-07-16
+
+### Security
+
+- Bump `click` to `8.3.3` to address a published vulnerability on the previous pin.
+
 ## [0.3.9] - 2026-07-16
 
 ### Changed
