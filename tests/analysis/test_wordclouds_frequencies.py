@@ -86,7 +86,9 @@ def test_generate_bigram_wordclouds_writes_with_stubs(tmp_path) -> None:
         ),
         patch.object(freq_mod, "_get_wordcloud_class", return_value=fake_wc_cls),
         patch.object(freq_mod, "_wordcloud_figure", return_value=(fake_fig, fake_ax)),
-        patch.object(freq_mod, "save_speaker_chart", return_value="/tmp/c.png") as save_chart,
+        patch.object(
+            freq_mod, "save_speaker_chart", return_value="/tmp/c.png"
+        ) as save_chart,
         patch.object(freq_mod, "_build_terms_payload", return_value={"terms": []}),
         patch.object(freq_mod, "_save_terms_json", return_value="/tmp/t.json"),
         patch.object(freq_mod, "_relative_to_transcript", return_value="rel"),
@@ -175,15 +177,11 @@ def test_generate_tfidf_wordclouds_success_and_empty_vocab(tmp_path) -> None:
     # Empty vocabulary branch
     with (
         patch.object(freq_mod, "get_config", return_value=config),
-        patch.object(
-            freq_mod, "tokenize_and_filter", return_value=["alpha", "beta"]
-        ),
+        patch.object(freq_mod, "tokenize_and_filter", return_value=["alpha", "beta"]),
         patch.object(freq_mod, "is_eligible_named_speaker", return_value=True),
         patch.object(freq_mod, "_resolve_speaker_key", return_value="a"),
         patch.object(freq_mod, "_get_ignored_ids", return_value=set()),
-        patch(
-            "sklearn.feature_extraction.text.TfidfVectorizer"
-        ) as vec_cls,
+        patch("sklearn.feature_extraction.text.TfidfVectorizer") as vec_cls,
         patch.object(freq_mod, "notify_user") as notify,
     ):
         vec = MagicMock()
@@ -221,9 +219,7 @@ def test_generate_tfidf_wordclouds_success_and_empty_vocab(tmp_path) -> None:
             patch.object(freq_mod, "_get_ignored_ids", return_value=set())
         )
         stack.enter_context(
-            patch(
-                "sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec2
-            )
+            patch("sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec2)
         )
         _enter_wc_stubs(stack, fake_wc_cls, fake_fig, fake_ax)
         freq_mod.generate_tfidf_wordclouds(
@@ -274,9 +270,7 @@ def test_generate_bigram_tfidf_wordclouds_paths(tmp_path) -> None:
             )
         )
         stack.enter_context(
-            patch(
-                "sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec
-            )
+            patch("sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec)
         )
         _enter_wc_stubs(stack, fake_wc_cls, fake_fig, fake_ax)
         freq_mod.generate_bigram_tfidf_wordclouds(
@@ -286,12 +280,8 @@ def test_generate_bigram_tfidf_wordclouds_paths(tmp_path) -> None:
     # empty vocabulary
     with (
         patch.object(freq_mod, "get_config", return_value=config),
-        patch.object(
-            freq_mod, "tokenize_and_filter", return_value=["alpha", "beta"]
-        ),
-        patch(
-            "sklearn.feature_extraction.text.TfidfVectorizer"
-        ) as vec_cls,
+        patch.object(freq_mod, "tokenize_and_filter", return_value=["alpha", "beta"]),
+        patch("sklearn.feature_extraction.text.TfidfVectorizer") as vec_cls,
         patch.object(freq_mod, "notify_user") as notify2,
     ):
         v = MagicMock()
@@ -370,7 +360,5 @@ def test_generate_tic_and_pos_wordclouds(tmp_path) -> None:
         patch.object(freq_mod, "ALL_STOPWORDS", set()),
         patch.object(freq_mod, "_get_wordcloud_class") as wc2,
     ):
-        freq_mod.generate_pos_wordclouds(
-            {"Alice": ["Battery"]}, out, "base", "unknown"
-        )
+        freq_mod.generate_pos_wordclouds({"Alice": ["Battery"]}, out, "base", "unknown")
     wc2.assert_not_called()

@@ -72,3 +72,14 @@ def test_member_session_label_truncates_to_48_chars() -> None:
     label = member_session_label(r, ts)
     assert len(label) == 48
     assert label.startswith("S1 ")
+
+
+def test_make_group_output_service_has_no_outcome_param() -> None:
+    import inspect
+
+    from transcriptx.core.analysis.group_charts.helpers import make_group_output_service
+
+    sig = inspect.signature(make_group_output_service)
+    assert "outcome" not in sig.parameters
+    assert "module_name" in sig.parameters
+    assert "agg_id" in sig.parameters

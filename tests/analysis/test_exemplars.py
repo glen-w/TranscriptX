@@ -16,8 +16,15 @@ def _make_segment(idx: int, text: str) -> SegmentRecord:
     )
 
 
+def _cfg(**kwargs) -> SpeakerExemplarsConfig:
+    config = SpeakerExemplarsConfig()
+    for key, value in kwargs.items():
+        setattr(config, key, value)
+    return config
+
+
 def test_rank_normalization_tiebreaker_order() -> None:
-    config = SpeakerExemplarsConfig(
+    config = _cfg(
         count=5,
         min_words=1,
         max_words=20,
@@ -36,7 +43,7 @@ def test_rank_normalization_tiebreaker_order() -> None:
 
 
 def test_weights_renormalize_when_method_unavailable() -> None:
-    config = SpeakerExemplarsConfig(
+    config = _cfg(
         count=6,
         min_words=1,
         max_words=20,
@@ -60,7 +67,7 @@ def test_weights_renormalize_when_method_unavailable() -> None:
 
 
 def test_near_dedupe_collapses_similar_tokens() -> None:
-    config = SpeakerExemplarsConfig(
+    config = _cfg(
         count=10,
         min_words=1,
         max_words=20,
@@ -89,7 +96,7 @@ def test_near_dedupe_collapses_similar_tokens() -> None:
 
 
 def test_caps_enforced_on_large_inputs() -> None:
-    config = SpeakerExemplarsConfig(
+    config = _cfg(
         count=5,
         min_words=1,
         max_words=10,

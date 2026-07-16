@@ -186,7 +186,7 @@ def test_post_commit_both_absent_output_dirs_is_partial(
 ) -> None:
     env = _managed_env(tmp_path, monkeypatch)
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        "transcriptx.core.utils.rename.finalize_phase.finalize_output_directory_move",
         lambda *_a, **_k: "both_absent",
     )
     outcome = rename_managed_transcript(env["transcript"], "partial_out")

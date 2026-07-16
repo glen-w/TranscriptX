@@ -116,9 +116,7 @@ def test_run_all_wordclouds_empty_grouped_returns_early(tmp_path) -> None:
         speaker_data_dir=tmp_path / "s",
     )
     with (
-        patch.object(
-            wc, "create_standard_output_structure", return_value=structure
-        ),
+        patch.object(wc, "create_standard_output_structure", return_value=structure),
         patch.object(wc, "create_output_service", return_value=MagicMock()),
         patch.object(wc, "notify_user") as notify,
         patch.object(wc, "generate_wordcloud") as gen,
@@ -133,9 +131,7 @@ def test_run_all_wordclouds_load_failure_notifies(tmp_path) -> None:
     transcript = tmp_path / "missing.json"
     structure = SimpleNamespace(transcript_dir=str(tmp_path))
     with (
-        patch.object(
-            wc, "create_standard_output_structure", return_value=structure
-        ),
+        patch.object(wc, "create_standard_output_structure", return_value=structure),
         patch.object(wc, "create_output_service", return_value=MagicMock()),
         patch.object(wc, "load_segments", side_effect=RuntimeError("boom")),
         patch.object(wc, "notify_user") as notify,
@@ -159,15 +155,15 @@ def test_run_all_wordclouds_with_stubbed_generators(tmp_path) -> None:
     fake_ax = MagicMock()
     fake_wc = MagicMock()
     fake_wc_cls = MagicMock(
-        return_value=MagicMock(generate_from_frequencies=MagicMock(return_value=fake_wc))
+        return_value=MagicMock(
+            generate_from_frequencies=MagicMock(return_value=fake_wc)
+        )
     )
     fake_token = MagicMock(text="noun", pos_="NOUN")
     fake_doc = [fake_token]
 
     with (
-        patch.object(
-            wc, "create_standard_output_structure", return_value=structure
-        ),
+        patch.object(wc, "create_standard_output_structure", return_value=structure),
         patch.object(wc, "create_output_service", return_value=MagicMock()),
         patch.object(
             wc, "generate_wordcloud", return_value=Counter({"hello": 2})
@@ -213,9 +209,7 @@ def test_run_all_wordclouds_tolerates_generator_errors(tmp_path) -> None:
     transcript.write_text("{}")
     structure = SimpleNamespace(transcript_dir=str(tmp_path))
     with (
-        patch.object(
-            wc, "create_standard_output_structure", return_value=structure
-        ),
+        patch.object(wc, "create_standard_output_structure", return_value=structure),
         patch.object(wc, "create_output_service", return_value=MagicMock()),
         patch.object(wc, "generate_wordcloud", side_effect=RuntimeError("fail")),
         patch.object(wc, "generate_tfidf_wordclouds", side_effect=RuntimeError("x")),

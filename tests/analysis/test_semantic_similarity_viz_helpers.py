@@ -28,9 +28,7 @@ def test_create_visualizations_advanced_full_path() -> None:
         "cross_speaker_repetitions": [{"similarity": 0.65}],
     }
     with patch.object(viz, "log_info"), patch.object(viz, "log_error"):
-        paths = viz.create_visualizations_advanced(
-            results, service, "base", "SEMANTIC"
-        )
+        paths = viz.create_visualizations_advanced(results, service, "base", "SEMANTIC")
     assert len(paths) >= 3
     assert service.save_chart.call_count >= 3
 
@@ -47,9 +45,7 @@ def test_create_visualizations_advanced_error_returns_empty() -> None:
         }
     }
     with patch.object(viz, "log_error") as log_err, patch.object(viz, "log_info"):
-        paths = viz.create_visualizations_advanced(
-            results, service, "base", "SEMANTIC"
-        )
+        paths = viz.create_visualizations_advanced(results, service, "base", "SEMANTIC")
     assert paths == []
     log_err.assert_called()
 
@@ -70,9 +66,7 @@ def test_create_visualizations_basic_full_path() -> None:
         "cross_speaker_repetitions": [{"similarity": 0.5}],
     }
     with patch.object(viz, "log_error"):
-        paths = viz.create_visualizations_basic(
-            results, service, "session", "SEMANTIC"
-        )
+        paths = viz.create_visualizations_basic(results, service, "session", "SEMANTIC")
     assert len(paths) >= 2
 
 
@@ -82,8 +76,6 @@ def test_create_visualizations_basic_error_path() -> None:
     # Missing keys triggers exception in similarities loop
     results = {"summary": {"speaker_repetition_frequency": {"Alice": 1}}}
     with patch.object(viz, "log_error") as log_err:
-        paths = viz.create_visualizations_basic(
-            results, service, "base", "SEMANTIC"
-        )
+        paths = viz.create_visualizations_basic(results, service, "base", "SEMANTIC")
     assert paths == []
     log_err.assert_called()

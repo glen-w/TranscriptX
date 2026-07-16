@@ -6,14 +6,16 @@ Computes a stall/flow index across time windows and detects stall zones and clif
 
 from __future__ import annotations
 
-import os
 import re
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule
-from transcriptx.core.io.events_io import save_events_json
+from transcriptx.core.analysis.dynamics.artifact_io import (
+    ensure_dynamics_dirs,
+    write_events_and_stats,
+)
 from transcriptx.core.models.events import Event, generate_event_id
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
@@ -428,16 +430,14 @@ class MomentumAnalysis(AnalysisModule):
         self, results: Dict[str, Any], output_service: "OutputService"
     ) -> None:
         output_structure = output_service.get_output_structure()
-        os.makedirs(output_structure.global_data_dir, exist_ok=True)
-        os.makedirs(output_structure.global_charts_dir, exist_ok=True)
+        ensure_dynamics_dirs(output_structure)
 
         events: List[Event] = results.get("events", [])
         stats: Dict[str, Any] = results.get("stats", {})
         timeseries: List[Dict[str, Any]] = results.get("timeseries", [])
         zones: List[Dict[str, Any]] = results.get("zones", [])
 
-        save_events_json(events, output_structure, "momentum.events.json")
-        save_json(stats, str(output_structure.global_data_dir / "momentum.stats.json"))
+        write_events_and_stats(output_structure, self.module_name, events, stats)
         save_json(
             timeseries,
             str(output_structure.global_data_dir / "momentum.timeseries.json"),

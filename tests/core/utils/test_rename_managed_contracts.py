@@ -303,7 +303,7 @@ def test_journal_discover_and_repair_after_partial(
 ) -> None:
     env = _managed_env(tmp_path, monkeypatch)
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        "transcriptx.core.utils.rename.finalize_phase.finalize_output_directory_move",
         lambda *a, **k: (_ for _ in ()).throw(OSError("boom")),
     )
     outcome = rename_managed_transcript(env["transcript"], "new_name")
@@ -315,7 +315,7 @@ def test_journal_discover_and_repair_after_partial(
 
     # Clear finalize boom and repair
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        "transcriptx.core.utils.rename.finalize_phase.finalize_output_directory_move",
         lambda *a, **k: None,
     )
     repaired = repair_managed_rename(outcome.operation_id)
@@ -400,7 +400,7 @@ def test_journal_persist_failure_after_txn_returns_committed_partial(
         return real_persist(record)
 
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.persist_journal", flaky_persist
+        "transcriptx.core.utils.rename.journal.persist_journal", flaky_persist
     )
     outcome = rename_managed_transcript(env["transcript"], "after_journal_fail")
     assert outcome.status == RenameStatus.committed_partial

@@ -204,11 +204,6 @@ def test_save_results_writes_summary_and_matrix(monkeypatch) -> None:
     module._save_results(results, output)
     create_matrix.assert_called_once()
     assert output.save_summary.called
-    texts = [
-        c.args[0]
-        for c in output.save_data.call_args_list
-        if c.kwargs.get("format_type") == "txt" or (len(c.args) > 2 and False)
-    ]
     # At least one txt summary call
     assert any(
         c.args[1] == "contagion_summary" and isinstance(c.args[0], str)

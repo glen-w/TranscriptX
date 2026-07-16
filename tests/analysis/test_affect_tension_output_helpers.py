@@ -8,7 +8,6 @@ import pytest
 
 from transcriptx.core.analysis.affect_tension import output as at_out
 
-
 _SPEAKER_IDS = {"Alice": 1, "Bob": 2, "SPEAKER_00": 100}
 
 

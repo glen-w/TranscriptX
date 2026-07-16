@@ -1,0 +1,38 @@
+{
+  "asdict": {
+    "echo_burst_min_events": 3,
+    "echo_burst_percentile_threshold": 0.95,
+    "echo_burst_window_seconds": 25.0,
+    "enable_semantic_paraphrase": false,
+    "exclude_phrases": [
+      "yeah",
+      "exactly",
+      "right"
+    ],
+    "explicit_quote_weight": 1.0,
+    "lexical_echo_threshold": 0.6,
+    "lookback_seconds": 240.0,
+    "max_candidates": 50,
+    "min_tokens": 5,
+    "paraphrase_threshold": 0.75,
+    "semantic_model_name": null
+  },
+  "to_dict": {
+    "echo_burst_min_events": 3,
+    "echo_burst_percentile_threshold": 0.95,
+    "echo_burst_window_seconds": 25.0,
+    "enable_semantic_paraphrase": false,
+    "exclude_phrases": [
+      "yeah",
+      "exactly",
+      "right"
+    ],
+    "explicit_quote_weight": 1.0,
+    "lexical_echo_threshold": 0.6,
+    "lookback_seconds": 240.0,
+    "max_candidates": 50,
+    "min_tokens": 5,
+    "paraphrase_threshold": 0.75,
+    "semantic_model_name": null
+  }
+}

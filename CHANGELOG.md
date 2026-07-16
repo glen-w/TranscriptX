@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-07-16
+
+### Changed
+
+- Split rename and Corrections Studio orchestrators into focused phase modules while preserving public import contracts.
+- Advance config ownership collapse: broader nested/system/workflow delegation and flatter analysis config ownership.
+- Share dynamics/group-chart artifact I/O helpers and tighten affect/sentiment module boundaries.
+
+### Added
+
+- Characterization and contract tests for shared analysis I/O, rename phase matrix, corrections studio public imports, and config delegation slices.
+
 ## [0.3.8.2] - 2026-07-16
 
 ### Added

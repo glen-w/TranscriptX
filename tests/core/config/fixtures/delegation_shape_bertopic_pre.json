@@ -1,0 +1,18 @@
+{
+  "asdict": {
+    "calculate_probabilities": false,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "label_words": 3,
+    "min_topic_size": 5,
+    "nr_topics": "auto",
+    "top_n_words": 10
+  },
+  "to_dict": {
+    "calculate_probabilities": false,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "label_words": 3,
+    "min_topic_size": 5,
+    "nr_topics": "auto",
+    "top_n_words": 10
+  }
+}

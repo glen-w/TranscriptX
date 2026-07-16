@@ -1,0 +1,12 @@
+{
+  "asdict": {
+    "early_segments": 10,
+    "early_window_seconds": 60,
+    "min_confidence": 0.6
+  },
+  "to_dict": {
+    "early_segments": 10,
+    "early_window_seconds": 60,
+    "min_confidence": 0.6
+  }
+}

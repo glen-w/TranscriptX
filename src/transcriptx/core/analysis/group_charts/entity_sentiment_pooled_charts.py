@@ -6,12 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.analysis.group_charts.context import GroupChartContext
-from transcriptx.core.analysis.group_charts.helpers import chart_artifact_paths
-from transcriptx.core.analysis.group_charts.output_service import (
-    GroupChartOutputService,
-)
-from transcriptx.core.analysis.group_charts.virtual_path import (
-    build_group_virtual_transcript_path,
+from transcriptx.core.analysis.group_charts.helpers import (
+    make_group_output_service,
+    chart_artifact_paths,
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec
 
@@ -38,14 +35,8 @@ class EntitySentimentPooledGroupChartGenerator:
         if not isinstance(entities, list) or not entities:
             return None
 
-        virtual = build_group_virtual_transcript_path(ctx.group_run_root, self.agg_id)
-        svc = GroupChartOutputService(
-            virtual_transcript_path=virtual,
-            module_name=self.agg_id,
-            output_dir=str(ctx.group_run_root.resolve()),
-            run_id=ctx.group_run_id,
-            agg_id=self.agg_id,
-            group_uuid=ctx.group_uuid,
+        svc = make_group_output_service(
+            ctx, module_name=self.agg_id, agg_id=self.agg_id
         )
 
         top = entities[:15]

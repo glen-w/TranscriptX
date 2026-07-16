@@ -1,0 +1,32 @@
+{
+  "asdict": {
+    "min_stall_duration_seconds": 30.0,
+    "momentum_cliff_threshold": -0.2,
+    "novelty_lookback_windows": 3,
+    "stall_threshold_percentile": 0.15,
+    "weights": {
+      "loop_rate": -0.2,
+      "novelty": 0.4,
+      "pause_rate": -0.3,
+      "repetition_rate": -0.3,
+      "turn_energy": 0.3
+    },
+    "window_length_seconds": 60.0,
+    "window_step_seconds": 30.0
+  },
+  "to_dict": {
+    "min_stall_duration_seconds": 30.0,
+    "momentum_cliff_threshold": -0.2,
+    "novelty_lookback_windows": 3,
+    "stall_threshold_percentile": 0.15,
+    "weights": {
+      "loop_rate": -0.2,
+      "novelty": 0.4,
+      "pause_rate": -0.3,
+      "repetition_rate": -0.3,
+      "turn_energy": 0.3
+    },
+    "window_length_seconds": 60.0,
+    "window_step_seconds": 30.0
+  }
+}

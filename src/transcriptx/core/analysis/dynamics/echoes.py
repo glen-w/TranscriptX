@@ -6,14 +6,16 @@ Detects explicit quotes, lexical echoes, and optional paraphrases.
 
 from __future__ import annotations
 
-import os
 from collections import Counter, defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule
-from transcriptx.core.io.events_io import save_events_json
+from transcriptx.core.analysis.dynamics.artifact_io import (
+    ensure_dynamics_dirs,
+    write_events_and_stats,
+)
 from transcriptx.core.models.events import (
     Event,
     generate_event_id,
@@ -22,7 +24,7 @@ from transcriptx.core.models.events import (
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.core.utils.similarity_utils import SimilarityCalculator
-from transcriptx.io import save_csv, save_json
+from transcriptx.io import save_csv
 from transcriptx.core.utils.viz_ids import (
     VIZ_ECHOES_HEATMAP,
     VIZ_ECHOES_TIMELINE,
@@ -502,15 +504,13 @@ class EchoesAnalysis(AnalysisModule):
         self, results: Dict[str, Any], output_service: "OutputService"
     ) -> None:
         output_structure = output_service.get_output_structure()
-        os.makedirs(output_structure.global_data_dir, exist_ok=True)
-        os.makedirs(output_structure.global_charts_dir, exist_ok=True)
+        ensure_dynamics_dirs(output_structure)
 
         events: List[Event] = results.get("events", [])
         stats: Dict[str, Any] = results.get("stats", {})
         echo_network: List[Dict[str, Any]] = results.get("echo_network", [])
 
-        save_events_json(events, output_structure, "echoes.events.json")
-        save_json(stats, str(output_structure.global_data_dir / "echoes.stats.json"))
+        write_events_and_stats(output_structure, self.module_name, events, stats)
 
         if echo_network:
             save_csv(

@@ -9,8 +9,12 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import STATE_DIR
 from transcriptx.core.utils.rename.io_atomic import write_json_atomic
+from transcriptx.core.utils.rename.outcome import RenameError
+
+logger = get_logger()
 
 JOURNAL_SUBDIR = "rename_journal"
 JOURNAL_SCHEMA_VERSION = 1
@@ -162,6 +166,19 @@ def persist_journal(record: RenameJournalRecord) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     write_json_atomic(path, record.to_dict())
     return path
+
+
+def _safe_persist_journal(record: RenameJournalRecord) -> RenameError | None:
+    try:
+        persist_journal(record)
+        return None
+    except Exception as exc:
+        logger.error("Failed to persist rename journal: %s", exc)
+        return RenameError(
+            code="journal_persist_failed",
+            message=str(exc),
+            phase="journal",
+        )
 
 
 def load_journal(operation_id: str) -> RenameJournalRecord | None:

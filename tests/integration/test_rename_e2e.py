@@ -142,7 +142,7 @@ def test_rename_e2e_repair_after_finalize_failure(
         return fin.finalize_output_directory_move(old_dir, new_dir)
 
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        "transcriptx.core.utils.rename.finalize_phase.finalize_output_directory_move",
         flaky_finalize,
     )
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from copy import deepcopy
-from dataclasses import fields, replace
+from dataclasses import fields
 from pathlib import Path
 from typing import Any, Set
 
@@ -63,7 +63,10 @@ def resolve_semantic_similarity_v2_runtime(
     preset_raw = dict(analysis.semantic_similarity_v2_profiles[profile_name])
     preset_mode_supplied = "mode" in preset_raw
     preset_kwargs = {k: v for k, v in preset_raw.items() if k in _ALLOWED_PRESET_KEYS}
-    cfg = replace(_DEFAULT_V2, **preset_kwargs)
+    # Delegated config uses init=False fields; construct then setattr (not replace).
+    cfg = SemanticSimilarityV2Config()
+    for key, value in preset_kwargs.items():
+        setattr(cfg, key, deepcopy(value))
 
     user = analysis.semantic_similarity_v2
     for f in fields(SemanticSimilarityV2Config):

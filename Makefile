@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-release-only docker-smoke run clean-test-artifacts
+.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only docker-smoke run clean-test-artifacts
 
 help:
 	@echo "TranscriptX Makefile"
@@ -23,6 +23,7 @@ help:
 	@echo "  test-integration Run integration + integration_core + integration_extended lane"
 	@echo "  test-all         Run all tests except quarantined"
 	@echo "  test-coverage    Default fast suite + coverage (fail_under from .coveragerc)"
+	@echo "  test-config-coverage  Config package coverage gate (≥85% on core.config + utils.config)"
 	@echo "  test-release-only  Run release-only packaging/install smoke"
 	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
@@ -91,6 +92,14 @@ test-coverage:
 	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
 	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
 		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow"
+
+test-config-coverage:
+	@echo "Running config-scoped coverage gate (≥85% on transcriptx.core.config + utils.config)..."
+	@pytest tests/core/config/ \
+		tests/core/utils/config/ \
+		tests/core/utils/test_config_loading_contracts.py \
+		--cov=transcriptx.core.config --cov=transcriptx.core.utils.config \
+		--cov-report=term-missing --cov-fail-under=85 -q
 
 test-release-only:
 	@echo "Running release-only packaging smoke..."

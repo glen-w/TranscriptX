@@ -60,9 +60,7 @@ def test_validate_processing_state_branches(tmp_path) -> None:
 
     # Invalid entry
     with (
-        patch.object(
-            su, "validate_state_entry", return_value=(False, ["bad schema"])
-        ),
+        patch.object(su, "validate_state_entry", return_value=(False, ["bad schema"])),
     ):
         result2 = su.validate_processing_state(state)
     assert result2["entries_invalid"] == 1
@@ -106,7 +104,9 @@ def test_repair_processing_state_paths(tmp_path) -> None:
 
     with (
         patch.object(su, "migrate_state_entry", side_effect=lambda e: {**e, "v": 1}),
-        patch.object(su, "enrich_state_entry", side_effect=lambda e, p: {**e, "enriched": True}),
+        patch.object(
+            su, "enrich_state_entry", side_effect=lambda e, p: {**e, "enriched": True}
+        ),
         patch.object(
             su,
             "resolve_file_path",
@@ -115,9 +115,7 @@ def test_repair_processing_state_paths(tmp_path) -> None:
         patch.object(
             su,
             "validate_state_entry",
-            side_effect=lambda e: (False, ["invalid"])
-            if "nope" in e
-            else (True, []),
+            side_effect=lambda e: (False, ["invalid"]) if "nope" in e else (True, []),
         ),
     ):
         result = su.repair_processing_state(state, backup=True, dry_run=False)

@@ -8,9 +8,9 @@
 
 | Check | Current | Plan impact |
 |---|---|---|
-| Ownership snapshot | Still **598 / 588 / 10**, **41** pilots | Metrics unchanged |
-| Runtime delegation | `pauses`, `voice`, `corrections`, `summary`, `highlights`, `llm_*` | Continue with remaining nested / top-level |
-| `docs/config/pydantic_migration.md` | Aligned to **41 / 588** + freeze policy | Step 0 done |
+| Ownership snapshot | **41 / 598 / 10** (608 total registry keys) | Metrics match fixture |
+| Runtime delegation | Partial — follow [`config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md) | Authoritative for Candidate 1 sequencing |
+| `docs/config/pydantic_migration.md` | Aligned to **41 / 598 / 10** + freeze policy | Step 0 done |
 | Unused deps | Removed from `pyproject.toml` / requirements | Step 7 done |
 | Deprecated `system.TranscriptXConfig` | Removed | Step 2 done |
 | Product releases 0.3.5–0.3.6 | Export / Overview / Artifacts — not config knobs | No reordering of this plan |
@@ -23,12 +23,14 @@ Registry ownership is **already complete**. Do not restart a “migrate all knob
 
 | Metric | Value (from `tests/core/config/fixtures/registry_ownership_snapshot.json`) |
 |--------|-----------------------------------------------------------------------------|
-| Registry leaf keys | **598** |
-| Pydantic-owned | **588** (41 pilots) |
+| Registry leaf keys (total) | **608** |
+| Pydantic-owned | **598** (41 pilots; flattened registry-leaf counts) |
 | Permanent legacy | **10** (`active_*_profile` ×7, `active_workflow_profile`, `use_emojis`, `core_mode`) |
-| Runtime delegation | **Partial** — `pauses`, `voice`, `corrections`, `summary`, `highlights`, `llm_*` |
+| Runtime delegation | **Partial** — `pauses`, `voice`, `corrections`, `summary`, `highlights`, `llm_*`; see ownership collapse plan |
 
-Canonical checklist: [`docs/config/pydantic_migration.md`](pydantic_migration.md) (**41/588** after `llm_*` pilots).
+Canonical freeze checklist: [`docs/config/pydantic_migration.md`](pydantic_migration.md) (**41 / 598 / 10**).  
+**Authoritative for delegation, file-override, and `to_dict()` sequencing:** [`config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md).  
+Validation consolidation and resolver redesign stay separate from ownership-collapse PRs.
 
 ---
 
@@ -174,7 +176,7 @@ flowchart TD
 3. **No new registry pilots** for vanity; only when product adds keys (per migration doc). Prefer extending an existing model.
 4. **No new validators** (Cerberus/Marshmallow/jsonschema/ad-hoc). Validation goes through Pydantic pilots + existing `validate_config`.
 5. **Do not grow** `system.py`’s deprecated `TranscriptXConfig` — schedule deletion.
-6. PR checklist: ownership snapshot invariant `41/588/10` (or update fixture intentionally) + `tests/core/config/` gate.
+6. PR checklist: ownership snapshot invariant `41/598/10` (608 total; or update fixture intentionally) + `tests/core/config/` gate.
 
 ---
 
@@ -184,23 +186,22 @@ flowchart TD
 
 | | |
 |--|--|
-| **Goal** | Make docs match tree (41/588); publish freeze policy |
+| **Goal** | Make docs match tree (41/598/10, 608 total); publish freeze policy |
 | **Files** | `docs/config/pydantic_migration.md` (replace 38/585 language throughout Phase 2 / Batch 5 tables); optional PR template / AGENTS note |
 | **Risk** | Low |
 | **Tests** | `test_registry_ownership.py`, `test_ownership_snapshot_matches_committed_fixture` |
 | **Example** | Document that `llm_summary_settings` etc. already count toward 41; keep “do not add vanity pilots” |
 
-### Step 1 — Continue runtime delegation (Batch 5+) (multi-PR, ~1–2 d each)
+### Step 1 — Continue runtime delegation (Batch 5+) (multi-PR)
 
-**Order (from docs + risk):** `summary` → `highlights` → `llm_*` → `acts` / `topic_modeling` / … → flat `analysis_*` slices → top-level `LLMConfig` / `OutputConfig` / dict-profile stores last.
+**Authoritative sequencing:** [`config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md) (Candidate 1 Steps 1.1–1.6). Do not invent a parallel order here.
 
 | | |
 |--|--|
 | **Goal** | Remove duplicate default literals; hydrate from Pydantic |
-| **Files** | `utils/config/analysis.py` (or `system.py`/`workflow.py`); `models/<x>.py` (defaults only if fixing drift); tests under `tests/core/config/test_*_config_delegation.py`; shape fixtures |
-| **Risk** | Medium — nested dataclasses (`summary.counts`) need recursive hydrate or nested model dump |
-| **Tests** | Pre-delegation shape snapshot → parity → three-path access (`AnalysisConfig` / `TranscriptXConfig` / `to_dict`) → ownership invariant → file-load roundtrip → settings pilot validation |
-| **Example knob — `analysis.summary.enabled`** | See migration pattern below |
+| **Files** | `utils/config/analysis.py` (or `system.py`/`workflow.py`); tests under `tests/core/config/test_*_config_delegation.py`; shape fixtures |
+| **Risk** | Medium — nested dataclasses need recursive hydrate |
+| **Tests** | Per ownership-collapse plan: pre-shape → normalized parity → three-path → ownership → file/env → full config suite |
 
 ### Step 2 — Delete deprecated duplicate facade (1–2 d) — **done**
 
@@ -214,15 +215,19 @@ flowchart TD
 
 ### Step 3 — Thin `file_overrides` (2–3 d)
 
+**Authoritative sequencing:** ownership-collapse Step **1.7** (only after 1.1–1.6 parity green; acceptance gate before 1.8).
+
 | | |
 |--|--|
 | **Goal** | Replace per-section branches with generic “section root → nested apply” + keep special cases (quality profiles tuples, workflow `speaker_gate`, adapters) |
 | **Files** | `file_overrides.py`; `config_raw_validation.py` (allowlist stays); tests `test_nested_file_overrides_probe.py`, `test_settings_file_load_pilots.py` |
 | **Risk** | Medium-high — merge semantics for dict profiles / adapters |
-| **Tests** | Nested probe + all settings file-load pilots + corrections/llm integration loads |
+| **Tests** | Nested probe + full config regression suite (must be green before Step 5 / 1.8) |
 | **Example** | Route `analysis.summary` only through `_apply_nested_dict_config` (already in `_NESTED_ANALYSIS_SUBTREES`) |
 
 ### Step 4 — Unify validation entrypoints (1–2 d)
+
+**Separate from ownership collapse.** Do not mix into Candidate 1 PRs.
 
 | | |
 |--|--|
@@ -234,21 +239,24 @@ flowchart TD
 
 ### Step 5 — Shrink `to_dict()` (2–3 d, after many delegations)
 
+**Authoritative sequencing:** ownership-collapse Step **1.8** (only after 1.7 acceptance). **Prohibit** raw `asdict(self.analysis)` — curated projection must keep `use_dag_pipeline` / `mode` absent and preserve Python types (incl. tuples).
+
 | | |
 |--|--|
-| **Goal** | Generate analysis subtree from `asdict` / pilot dumps instead of 100+ hand-listed keys in `main.py` |
+| **Goal** | Generate analysis subtree from curated projection / per-subtree dumps instead of 100+ hand-listed keys in `main.py` |
 | **Files** | `main.py`; visibility tests `test_analysis_config_visibility.py` |
-| **Risk** | Medium — key order / missing keys break UI/diff |
-| **Tests** | Full `to_dict` golden + ownership + settings panel smoke |
-| **Example** | `analysis.summary` comes solely from `asdict(self.analysis.summary)` |
+| **Risk** | Medium — key order / missing keys / aliasing vs deep-copy |
+| **Tests** | Exact Python-type parity + `json.dumps(to_dict())` + ownership suite |
 
 ### Step 6 — Resolver without temp file (optional, 2–4 d)
+
+**Separate from ownership collapse / deferred.** Not part of Candidate 1 done criteria.
 
 | | |
 |--|--|
 | **Goal** | Build `TranscriptXConfig` from nested dict without disk |
 | **Files** | `resolver.py`; shared apply helper with `file_overrides` |
-| **Risk** | High if done early — **defer until Step 1 mostly done** |
+| **Risk** | High if done early — **defer** |
 | **Tests** | `resolve_effective_config` parity vs current; run configurator; UI save/load |
 
 ### Step 7 — Dependency cleanup (0.5 d) — **done**

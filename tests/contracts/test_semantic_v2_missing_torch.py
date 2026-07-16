@@ -159,7 +159,8 @@ def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> Non
             "end": 2.0,
         },
     ]
-    cfg = SemanticSimilarityV2Config(timeout_seconds=0.0)
+    cfg = SemanticSimilarityV2Config()
+    cfg.timeout_seconds = 0.0
     with (
         patch(
             "transcriptx.core.analysis.semantic_similarity_v2.pipeline.get_torch",

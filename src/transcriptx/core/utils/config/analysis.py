@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
-
-from .base import DEFAULT_NER_LABELS, DEFAULT_STOPWORDS
 
 
 def _dataclass_from_nested_dump(cls: type, data: dict[str, Any]) -> object:
@@ -55,6 +53,31 @@ def _hydrate_dataclass_from_pydantic(instance: object, model: BaseModel) -> None
             )
         else:
             object.__setattr__(instance, key, value)
+
+
+def _hydrate_analysis_slice(instance: object, model: BaseModel) -> None:
+    """Hydrate only the fields owned by a partial analysis_* pilot model."""
+    from dataclasses import is_dataclass
+    from typing import get_type_hints
+
+    annotations = get_type_hints(type(instance))
+    for key, value in model.model_dump().items():
+        field_type = annotations.get(key)
+        if (
+            isinstance(value, dict)
+            and field_type is not None
+            and is_dataclass(field_type)
+        ):
+            object.__setattr__(
+                instance, key, _dataclass_from_nested_dump(field_type, value)
+            )
+        else:
+            object.__setattr__(instance, key, value)
+
+
+def _hydrate_mapping_store(instance: object, attr_name: str, model: BaseModel) -> None:
+    """Set one AnalysisConfig mapping attribute from a fresh model_dump()."""
+    object.__setattr__(instance, attr_name, model.model_dump())
 
 
 @dataclass
@@ -107,47 +130,37 @@ class CorrectionsConfig:
 
 @dataclass
 class SpeakerExemplarsConfig:
-    """Configuration for speaker exemplars on-demand analysis."""
+    """Configuration for speaker exemplars. Defaults owned by SpeakerExemplarsSettingsModel."""
 
-    enabled: bool = True
-    count: int = 10
-    min_words: int = 3
-    max_words: int = 80
-    max_segments_considered: int = 2000
-    merge_adjacent: bool = True
+    enabled: bool = field(init=False, repr=True)
+    count: int = field(init=False, repr=True)
+    min_words: int = field(init=False, repr=True)
+    max_words: int = field(init=False, repr=True)
+    max_segments_considered: int = field(init=False, repr=True)
+    merge_adjacent: bool = field(init=False, repr=True)
+    dedupe: bool = field(init=False, repr=True)
+    near_dedupe: bool = field(init=False, repr=True)
+    near_dedupe_threshold: float = field(init=False, repr=True)
+    near_dedupe_max_checks: int = field(init=False, repr=True)
+    methods_enabled: dict[str, bool] = field(init=False, repr=True)
+    weights: dict[str, float] = field(init=False, repr=True)
+    distinctive_scope: str = field(init=False, repr=True)
+    distinctive_min_other_segments: int = field(init=False, repr=True)
+    distinctive_max_other_speakers: int = field(init=False, repr=True)
+    distinctive_max_other_segments_total: int = field(init=False, repr=True)
+    distinctive_max_other_segments_per_speaker: int = field(init=False, repr=True)
+    tfidf_max_features: int = field(init=False, repr=True)
+    tfidf_ngram_range: tuple[int, int] = field(init=False, repr=True)
+    length_prior_enabled: bool = field(init=False, repr=True)
+    length_prior_center: float = field(init=False, repr=True)
+    length_prior_sigma: float = field(init=False, repr=True)
 
-    dedupe: bool = True
-    near_dedupe: bool = False
-    near_dedupe_threshold: float = 0.85
-    near_dedupe_max_checks: int = 200
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.speaker_exemplars import (
+            SpeakerExemplarsSettingsModel,
+        )
 
-    methods_enabled: dict[str, bool] = field(
-        default_factory=lambda: {
-            "unique": True,
-            "tfidf_within_speaker": True,
-            "distinctive_vs_others": True,
-        }
-    )
-    weights: dict[str, float] = field(
-        default_factory=lambda: {
-            "unique": 0.34,
-            "tfidf_within_speaker": 0.33,
-            "distinctive_vs_others": 0.33,
-        }
-    )
-
-    distinctive_scope: str = "transcript"
-    distinctive_min_other_segments: int = 50
-    distinctive_max_other_speakers: int = 6
-    distinctive_max_other_segments_total: int = 2000
-    distinctive_max_other_segments_per_speaker: int = 400
-
-    tfidf_max_features: int = 1000
-    tfidf_ngram_range: tuple[int, int] = (1, 2)
-
-    length_prior_enabled: bool = True
-    length_prior_center: float = 18.0
-    length_prior_sigma: float = 12.0
+        _hydrate_dataclass_from_pydantic(self, SpeakerExemplarsSettingsModel())
 
 
 @dataclass
@@ -272,37 +285,51 @@ class SummaryConfig:
 
 @dataclass
 class BERTopicConfig:
-    """Configuration for BERTopic analysis."""
+    """Configuration for BERTopic. Defaults owned by BERTopicSettingsModel."""
 
-    embedding_model: str = "all-MiniLM-L6-v2"
-    min_topic_size: int = 5
-    nr_topics: str = "auto"
-    top_n_words: int = 10
-    label_words: int = 3
-    calculate_probabilities: bool = False
+    embedding_model: str = field(init=False, repr=True)
+    min_topic_size: int = field(init=False, repr=True)
+    nr_topics: str = field(init=False, repr=True)
+    top_n_words: int = field(init=False, repr=True)
+    label_words: int = field(init=False, repr=True)
+    calculate_probabilities: bool = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.bertopic import (
+            BERTopicSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, BERTopicSettingsModel())
 
 
 @dataclass
 class SemanticSimilarityV2Config:
-    """Tunable settings for semantic_similarity_v2 (batched, vectorized path)."""
+    """Tunable settings for semantic_similarity_v2. Defaults owned by SemanticSimilarityV2SettingsModel."""
 
-    enabled: bool = True
-    mode: str = "basic"  # "basic" | "advanced"
-    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
-    batch_size: int = 64
-    min_text_length_words: int = 3
-    self_similarity_threshold: float = 0.7
-    cross_speaker_similarity_threshold: float = 0.6
-    self_time_window_seconds: float = 300.0
-    cross_speaker_time_window_seconds: float = 600.0
-    max_candidate_pairs: int = 50_000
-    top_k_per_segment: int = 50
-    timeout_seconds: float = 300.0
-    persist_embeddings: bool = False
-    lru_size: int = 50_000
-    use_lexical_prefilter: bool = False
-    lexical_prefilter_min_jaccard: float = 0.05
-    strict_advanced_inputs: bool = False
+    enabled: bool = field(init=False, repr=True)
+    mode: str = field(init=False, repr=True)
+    model_name: str = field(init=False, repr=True)
+    batch_size: int = field(init=False, repr=True)
+    min_text_length_words: int = field(init=False, repr=True)
+    self_similarity_threshold: float = field(init=False, repr=True)
+    cross_speaker_similarity_threshold: float = field(init=False, repr=True)
+    self_time_window_seconds: float = field(init=False, repr=True)
+    cross_speaker_time_window_seconds: float = field(init=False, repr=True)
+    max_candidate_pairs: int = field(init=False, repr=True)
+    top_k_per_segment: int = field(init=False, repr=True)
+    timeout_seconds: float = field(init=False, repr=True)
+    persist_embeddings: bool = field(init=False, repr=True)
+    lru_size: int = field(init=False, repr=True)
+    use_lexical_prefilter: bool = field(init=False, repr=True)
+    lexical_prefilter_min_jaccard: float = field(init=False, repr=True)
+    strict_advanced_inputs: bool = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.semantic_similarity_v2 import (
+            SemanticSimilarityV2SettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, SemanticSimilarityV2SettingsModel())
 
 
 @dataclass
@@ -320,36 +347,36 @@ class AnalysisConfig:
 
     # Sentiment analysis settings
     # Control the window size and confidence thresholds for sentiment analysis
-    sentiment_window_size: int = 10
-    sentiment_min_confidence: float = 0.1
+    sentiment_window_size: int = field(init=False, repr=True)
+    sentiment_min_confidence: float = field(init=False, repr=True)
 
     # Emotion analysis settings
     # Control the emotion detection model and confidence thresholds
-    emotion_min_confidence: float = 0.3
-    emotion_model_name: str = "bhadresh-savani/distilbert-base-uncased-emotion"
-    emotion_output_mode: str = "top1"  # "top1" | "multilabel"
-    emotion_score_threshold: float = 0.30  # for multilabel: keep labels above this
+    emotion_min_confidence: float = field(init=False, repr=True)
+    emotion_model_name: str = field(init=False, repr=True)
+    emotion_output_mode: str = field(init=False, repr=True)
+    emotion_score_threshold: float = field(init=False, repr=True)
 
     # Sentiment analysis backend
-    sentiment_backend: str = "vader"  # "vader" | "transformers"
-    sentiment_model_name: str = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+    sentiment_backend: str = field(init=False, repr=True)
+    sentiment_model_name: str = field(init=False, repr=True)
 
     # NER analysis settings
     # Control which entities to extract and how to process them
-    ner_labels: list[str] = field(default_factory=lambda: DEFAULT_NER_LABELS)
-    ner_min_confidence: float = 0.5
-    ner_include_geocoding: bool = True
-    ner_use_light_model: bool = False
-    ner_max_segments: int = 5000
-    ner_batch_size: int = 100
+    ner_labels: list[str] = field(init=False, repr=True)
+    ner_min_confidence: float = field(init=False, repr=True)
+    ner_include_geocoding: bool = field(init=False, repr=True)
+    ner_use_light_model: bool = field(init=False, repr=True)
+    ner_max_segments: int = field(init=False, repr=True)
+    ner_batch_size: int = field(init=False, repr=True)
 
     # Word clouds settings
     # Control the generation and appearance of word clouds
-    wordcloud_max_words: int = 100
-    wordcloud_min_font_size: int = 8
-    wordcloud_stopwords: list[str] = field(default_factory=lambda: DEFAULT_STOPWORDS)
+    wordcloud_max_words: int = field(init=False, repr=True)
+    wordcloud_min_font_size: int = field(init=False, repr=True)
+    wordcloud_stopwords: list[str] = field(init=False, repr=True)
     # When True, per-speaker charts/data only for named speakers
-    exclude_unidentified_from_speaker_charts: bool = True
+    exclude_unidentified_from_speaker_charts: bool = field(init=False, repr=True)
 
     # Corrections settings
     corrections: CorrectionsConfig = field(default_factory=CorrectionsConfig)
@@ -365,579 +392,81 @@ class AnalysisConfig:
 
     # Understandability settings
     # Control which readability metrics to calculate
-    readability_metrics: list[str] = field(
-        default_factory=lambda: [
-            "flesch_reading_ease",
-            "flesch_kincaid_grade",
-            "gunning_fog",
-        ]
-    )
+    readability_metrics: list[str] = field(init=False, repr=True)
 
     # Speaker interactions analysis settings (unified networks + interruptions)
     # Control how speaker interactions are detected and analyzed
-    interaction_overlap_threshold: float = 0.5  # seconds
-    interaction_min_gap: float = 0.1  # seconds
-    interaction_min_segment_length: float = 0.5  # seconds
-    interaction_response_threshold: float = 2.0  # seconds
-    interaction_include_responses: bool = True
-    interaction_include_overlaps: bool = True
-    interaction_min_interactions: int = 2
-    interaction_time_window: float = 30.0  # seconds
+    interaction_overlap_threshold: float = field(init=False, repr=True)
+    interaction_min_gap: float = field(init=False, repr=True)
+    interaction_min_segment_length: float = field(init=False, repr=True)
+    interaction_response_threshold: float = field(init=False, repr=True)
+    interaction_include_responses: bool = field(init=False, repr=True)
+    interaction_include_overlaps: bool = field(init=False, repr=True)
+    interaction_min_interactions: int = field(init=False, repr=True)
+    interaction_time_window: float = field(init=False, repr=True)
 
     # Entity sentiment analysis settings
     # Control how entity-focused sentiment analysis works
-    entity_min_mentions: int = 2
-    entity_types: list[str] = field(
-        default_factory=lambda: ["PERSON", "ORG", "GPE", "LOC"]
-    )
-    entity_sentiment_threshold: float = (
-        0.05  # Minimum sentiment difference to consider significant
-    )
+    entity_min_mentions: int = field(init=False, repr=True)
+    entity_types: list[str] = field(init=False, repr=True)
+    entity_sentiment_threshold: float = field(init=False, repr=True)
 
     # Conversation loop detection settings
     # Control how conversation patterns and loops are identified
-    loop_max_intermediate_turns: int = 2
-    loop_exclude_monologues: bool = True
-    loop_min_gap: float = 0.1  # seconds
-    loop_max_gap: float = 10.0  # seconds
+    loop_max_intermediate_turns: int = field(init=False, repr=True)
+    loop_exclude_monologues: bool = field(init=False, repr=True)
+    loop_min_gap: float = field(init=False, repr=True)
+    loop_max_gap: float = field(init=False, repr=True)
 
     # Semantic similarity and repetition detection settings
     # Control how semantic similarity analysis and repetition detection work
-    semantic_similarity_threshold: float = (
-        0.7  # Threshold for within-speaker repetition detection
-    )
-    cross_speaker_similarity_threshold: float = (
-        0.6  # Threshold for cross-speaker similarity
-    )
-    repetition_time_window: float = (
-        300.0  # 5 minutes - time window for repetition detection
-    )
-    cross_speaker_time_window: float = (
-        600.0  # 10 minutes - time window for cross-speaker analysis
-    )
-    semantic_model_name: str = (
-        "sentence-transformers/all-MiniLM-L6-v2"  # Model for semantic similarity
-    )
-    clustering_eps: float = 0.3  # DBSCAN epsilon for repetition clustering
-    clustering_min_samples: int = 2  # DBSCAN min_samples for repetition clustering
+    semantic_similarity_threshold: float = field(init=False, repr=True)
+    cross_speaker_similarity_threshold: float = field(init=False, repr=True)
+    repetition_time_window: float = field(init=False, repr=True)
+    cross_speaker_time_window: float = field(init=False, repr=True)
+    semantic_model_name: str = field(init=False, repr=True)
+    clustering_eps: float = field(init=False, repr=True)
+    clustering_min_samples: int = field(init=False, repr=True)
 
     # Performance limits for semantic similarity (to prevent hanging)
     # These settings help prevent the system from processing too much data
-    max_segments_for_semantic: int = 1000  # Maximum segments to process
-    max_segments_per_speaker: int = (
-        200  # Maximum segments per speaker for repetition detection
-    )
-    max_segments_for_cross_speaker: int = (
-        500  # Maximum segments for cross-speaker repetition detection
-    )
-    use_quality_filtering: bool = (
-        True  # Use quality-based filtering instead of simple truncation
-    )
-    min_segment_quality_score: float = 0.0  # Minimum quality score for segments
+    max_segments_for_semantic: int = field(init=False, repr=True)
+    max_segments_per_speaker: int = field(init=False, repr=True)
+    max_segments_for_cross_speaker: int = field(init=False, repr=True)
+    use_quality_filtering: bool = field(init=False, repr=True)
+    min_segment_quality_score: float = field(init=False, repr=True)
 
     # Quality filtering profile system
     # Different profiles optimize for different types of conversations
-    quality_filtering_profile: str = "balanced"  # Profile to use
-    semantic_similarity_method: str = "simple"  # "simple" or "advanced"
-    quality_filtering_profiles: dict[str, dict[str, Any]] = field(
-        default_factory=lambda: {
-            "balanced": {
-                "description": "Balanced approach for general conversations",
-                "weights": {
-                    "length_optimal": 3.0,
-                    "length_good": 1.0,
-                    "complex_reasoning": 2.0,
-                    "opinions_ideas": 2.0,
-                    "agreement_disagreement": 1.0,
-                    "filler_penalty": -0.5,
-                    "exact_repetition_penalty": -5.0,
-                    "high_overlap_penalty": -3.0,
-                },
-                "thresholds": {
-                    "min_words": 3,
-                    "optimal_word_range": (5, 50),
-                    "good_word_range": (3, 100),
-                    "overlap_threshold": 0.7,
-                },
-                "indicators": {
-                    "complex_reasoning": [
-                        "because",
-                        "however",
-                        "therefore",
-                        "although",
-                        "meanwhile",
-                    ],
-                    "opinions_ideas": [
-                        "think",
-                        "believe",
-                        "suggest",
-                        "propose",
-                        "recommend",
-                    ],
-                    "agreement_disagreement": [
-                        "agree",
-                        "disagree",
-                        "yes",
-                        "no",
-                        "correct",
-                        "wrong",
-                    ],
-                    "filler_words": [
-                        "um",
-                        "uh",
-                        "like",
-                        "you know",
-                        "i mean",
-                        "sort of",
-                        "kind of",
-                    ],
-                },
-            },
-            "academic": {
-                "description": "Optimized for academic discussions, research presentations, and debates",
-                "weights": {
-                    "length_optimal": 4.0,
-                    "length_good": 1.5,
-                    "complex_reasoning": 4.0,
-                    "opinions_ideas": 3.0,
-                    "agreement_disagreement": 2.0,
-                    "filler_penalty": -1.0,
-                    "exact_repetition_penalty": -3.0,
-                    "high_overlap_penalty": -2.0,
-                    "dialogue_acts": {
-                        "question": 4.0,
-                        "suggestion": 3.0,
-                        "agreement": 2.5,
-                        "disagreement": 3.0,
-                        "statement": 2.0,
-                        "acknowledgement": 0.5,
-                        "hesitation": -1.5,
-                    },
-                    "sentiment_strength": 1.0,
-                    "verbal_tic_penalty": -2.5,
-                    "optimal_readability": 3.0,
-                    "topic_relevance": 2.5,
-                    "entity_engagement": 2.0,
-                },
-                "thresholds": {
-                    "min_words": 5,
-                    "optimal_word_range": (8, 80),
-                    "good_word_range": (5, 150),
-                    "overlap_threshold": 0.8,
-                },
-                "indicators": {
-                    "complex_reasoning": [
-                        "because",
-                        "however",
-                        "therefore",
-                        "although",
-                        "meanwhile",
-                        "consequently",
-                        "furthermore",
-                        "moreover",
-                        "nevertheless",
-                        "nonetheless",
-                        "thus",
-                        "hence",
-                    ],
-                    "opinions_ideas": [
-                        "think",
-                        "believe",
-                        "suggest",
-                        "propose",
-                        "recommend",
-                        "consider",
-                        "hypothesize",
-                        "conclude",
-                        "argue",
-                        "demonstrate",
-                        "theorize",
-                        "postulate",
-                    ],
-                    "agreement_disagreement": [
-                        "agree",
-                        "disagree",
-                        "yes",
-                        "no",
-                        "correct",
-                        "wrong",
-                        "exactly",
-                        "absolutely",
-                        "precisely",
-                        "inaccurate",
-                        "valid",
-                        "invalid",
-                    ],
-                    "filler_words": [
-                        "um",
-                        "uh",
-                        "like",
-                        "you know",
-                        "i mean",
-                        "sort of",
-                        "kind of",
-                        "basically",
-                        "actually",
-                    ],
-                },
-            },
-            "business": {
-                "description": "Optimized for business meetings, negotiations, and professional discussions",
-                "weights": {
-                    "length_optimal": 3.5,
-                    "length_good": 1.0,
-                    "complex_reasoning": 2.5,
-                    "opinions_ideas": 4.0,
-                    "agreement_disagreement": 2.5,
-                    "filler_penalty": -0.3,
-                    "exact_repetition_penalty": -4.0,
-                    "high_overlap_penalty": -2.5,
-                    "dialogue_acts": {
-                        "question": 3.5,
-                        "suggestion": 4.0,
-                        "agreement": 3.0,
-                        "disagreement": 2.5,
-                        "statement": 2.5,
-                        "acknowledgement": 1.0,
-                        "hesitation": -0.5,
-                    },
-                    "sentiment_strength": 1.5,
-                    "verbal_tic_penalty": -1.5,
-                    "optimal_readability": 2.5,
-                    "topic_relevance": 3.0,
-                    "entity_engagement": 2.5,
-                },
-                "thresholds": {
-                    "min_words": 3,
-                    "optimal_word_range": (5, 60),
-                    "good_word_range": (3, 120),
-                    "overlap_threshold": 0.75,
-                },
-                "indicators": {
-                    "complex_reasoning": [
-                        "because",
-                        "however",
-                        "therefore",
-                        "although",
-                        "meanwhile",
-                        "consequently",
-                    ],
-                    "opinions_ideas": [
-                        "think",
-                        "believe",
-                        "suggest",
-                        "propose",
-                        "recommend",
-                        "consider",
-                        "feel",
-                        "assume",
-                        "recommend",
-                        "advise",
-                        "propose",
-                        "plan",
-                    ],
-                    "agreement_disagreement": [
-                        "agree",
-                        "disagree",
-                        "yes",
-                        "no",
-                        "correct",
-                        "wrong",
-                        "exactly",
-                        "absolutely",
-                        "sounds good",
-                        "i'm on board",
-                        "approved",
-                        "rejected",
-                    ],
-                    "filler_words": [
-                        "um",
-                        "uh",
-                        "like",
-                        "you know",
-                        "i mean",
-                        "sort of",
-                        "kind of",
-                    ],
-                },
-            },
-            "casual": {
-                "description": "Optimized for casual conversations, social discussions, and informal chats",
-                "weights": {
-                    "length_optimal": 2.5,
-                    "length_good": 1.5,
-                    "complex_reasoning": 1.5,
-                    "opinions_ideas": 2.5,
-                    "agreement_disagreement": 2.0,
-                    "filler_penalty": -0.2,
-                    "exact_repetition_penalty": -3.0,
-                    "high_overlap_penalty": -2.0,
-                    "dialogue_acts": {
-                        "question": 2.5,
-                        "suggestion": 2.0,
-                        "agreement": 2.5,
-                        "disagreement": 2.0,
-                        "statement": 2.0,
-                        "acknowledgement": 1.5,
-                        "hesitation": -0.3,
-                    },
-                    "sentiment_strength": 2.0,
-                    "verbal_tic_penalty": -0.5,
-                    "optimal_readability": 1.5,
-                    "topic_relevance": 1.0,
-                    "entity_engagement": 1.5,
-                },
-                "thresholds": {
-                    "min_words": 2,
-                    "optimal_word_range": (3, 40),
-                    "good_word_range": (2, 80),
-                    "overlap_threshold": 0.6,
-                },
-                "indicators": {
-                    "complex_reasoning": ["because", "but", "so", "though", "anyway"],
-                    "opinions_ideas": [
-                        "think",
-                        "feel",
-                        "like",
-                        "guess",
-                        "suppose",
-                        "maybe",
-                    ],
-                    "agreement_disagreement": [
-                        "yeah",
-                        "no",
-                        "right",
-                        "wrong",
-                        "sure",
-                        "okay",
-                        "cool",
-                    ],
-                    "filler_words": [
-                        "um",
-                        "uh",
-                        "like",
-                        "you know",
-                        "i mean",
-                        "sort of",
-                        "kind of",
-                        "basically",
-                        "actually",
-                        "literally",
-                    ],
-                },
-            },
-            "technical": {
-                "description": "Optimized for technical discussions, code reviews, and troubleshooting sessions",
-                "weights": {
-                    "length_optimal": 3.0,
-                    "length_good": 1.0,
-                    "complex_reasoning": 3.5,
-                    "opinions_ideas": 2.0,
-                    "agreement_disagreement": 3.0,
-                    "filler_penalty": -0.8,
-                    "exact_repetition_penalty": -2.0,
-                    "high_overlap_penalty": -1.5,
-                    "dialogue_acts": {
-                        "question": 4.0,
-                        "suggestion": 3.5,
-                        "agreement": 2.5,
-                        "disagreement": 3.5,
-                        "statement": 2.5,
-                        "acknowledgement": 1.0,
-                        "hesitation": -1.0,
-                    },
-                    "sentiment_strength": 1.0,
-                    "verbal_tic_penalty": -2.0,
-                    "optimal_readability": 2.0,
-                    "topic_relevance": 4.0,
-                    "entity_engagement": 3.0,
-                },
-                "thresholds": {
-                    "min_words": 4,
-                    "optimal_word_range": (6, 70),
-                    "good_word_range": (4, 130),
-                    "overlap_threshold": 0.85,
-                },
-                "indicators": {
-                    "complex_reasoning": [
-                        "because",
-                        "however",
-                        "therefore",
-                        "although",
-                        "meanwhile",
-                        "consequently",
-                        "furthermore",
-                        "moreover",
-                        "nevertheless",
-                    ],
-                    "opinions_ideas": [
-                        "think",
-                        "believe",
-                        "suggest",
-                        "propose",
-                        "recommend",
-                        "consider",
-                        "argue",
-                        "demonstrate",
-                        "prove",
-                    ],
-                    "agreement_disagreement": [
-                        "agree",
-                        "disagree",
-                        "yes",
-                        "no",
-                        "correct",
-                        "wrong",
-                        "exactly",
-                        "absolutely",
-                        "precisely",
-                        "inaccurate",
-                        "false",
-                    ],
-                    "filler_words": [
-                        "um",
-                        "uh",
-                        "like",
-                        "you know",
-                        "i mean",
-                        "sort of",
-                        "kind of",
-                    ],
-                },
-            },
-            "interview": {
-                "description": "Optimized for job interviews, Q&A sessions, and structured conversations",
-                "weights": {
-                    "length_optimal": 3.5,
-                    "length_good": 1.0,
-                    "complex_reasoning": 2.0,
-                    "opinions_ideas": 3.5,
-                    "agreement_disagreement": 1.5,
-                    "filler_penalty": -0.5,
-                    "exact_repetition_penalty": -3.5,
-                    "high_overlap_penalty": -2.5,
-                    "dialogue_acts": {
-                        "question": 4.5,
-                        "suggestion": 2.0,
-                        "agreement": 1.5,
-                        "disagreement": 2.0,
-                        "statement": 3.0,
-                        "acknowledgement": 1.0,
-                        "hesitation": -1.0,
-                    },
-                    "sentiment_strength": 1.5,
-                    "verbal_tic_penalty": -1.5,
-                    "optimal_readability": 2.5,
-                    "topic_relevance": 3.5,
-                    "entity_engagement": 2.0,
-                },
-                "thresholds": {
-                    "min_words": 4,
-                    "optimal_word_range": (6, 60),
-                    "good_word_range": (4, 100),
-                    "overlap_threshold": 0.75,
-                },
-                "indicators": {
-                    "complex_reasoning": [
-                        "because",
-                        "however",
-                        "therefore",
-                        "although",
-                        "meanwhile",
-                    ],
-                    "opinions_ideas": [
-                        "think",
-                        "believe",
-                        "suggest",
-                        "propose",
-                        "recommend",
-                        "consider",
-                        "feel",
-                        "experience",
-                        "worked",
-                        "developed",
-                    ],
-                    "agreement_disagreement": [
-                        "agree",
-                        "disagree",
-                        "yes",
-                        "no",
-                        "correct",
-                        "wrong",
-                        "exactly",
-                        "absolutely",
-                    ],
-                    "filler_words": [
-                        "um",
-                        "uh",
-                        "like",
-                        "you know",
-                        "i mean",
-                        "sort of",
-                        "kind of",
-                    ],
-                },
-            },
-        }
-    )
+    quality_filtering_profile: str = field(init=False, repr=True)
+    semantic_similarity_method: str = field(init=False, repr=True)
+    quality_filtering_profiles: dict[str, dict[str, Any]] = field(init=False, repr=True)
 
     # Individual override options (these override profile settings)
-    quality_weights_override: dict[str, float] | None = None
-    quality_thresholds_override: dict[str, Any] | None = None
-    quality_indicators_override: dict[str, list[str]] | None = None
+    quality_weights_override: dict[str, float] | None = field(init=False, repr=True)
+    quality_thresholds_override: dict[str, Any] | None = field(init=False, repr=True)
+    quality_indicators_override: dict[str, list[str]] | None = field(
+        init=False, repr=True
+    )
 
-    max_semantic_comparisons: int = 50000  # Maximum similarity comparisons to perform
-    semantic_timeout_seconds: int = 300  # Timeout for semantic analysis (5 minutes)
-    semantic_batch_size: int = (
-        64  # Batch size for processing (increased from 32 for better performance)
-    )
-    semantic_progress_log_interval_seconds: float = (
-        60.0  # Heartbeat interval for long-running semantic analysis
-    )
-    module_progress_log_interval_seconds: float = (
-        60.0  # Heartbeat interval for long-running module execution
-    )
+    max_semantic_comparisons: int = field(init=False, repr=True)
+    semantic_timeout_seconds: int = field(init=False, repr=True)
+    semantic_batch_size: int = field(init=False, repr=True)
+    semantic_progress_log_interval_seconds: float = field(init=False, repr=True)
+    module_progress_log_interval_seconds: float = field(init=False, repr=True)
 
     # General
-    output_formats: list[str] = field(default_factory=lambda: ["json", "csv", "png"])
+    output_formats: list[str] = field(init=False, repr=True)
     use_dag_pipeline: bool = True  # Use DAG pipeline for better dependency management
 
     # When True, legacy analysis modules marked `legacy` in the registry are included
     # in default module lists. Default False: only explicit module IDs run legacy paths.
-    include_legacy_modules: bool = False
+    include_legacy_modules: bool = field(init=False, repr=True)
 
     # Quick vs Full Analysis Mode
-    analysis_mode: str = "quick"  # "quick" or "full"
-    quick_analysis_settings: dict[str, Any] = field(
-        default_factory=lambda: {
-            "use_lightweight_models": True,
-            "semantic_method": "simple",
-            "max_segments_for_semantic": 800,
-            "max_semantic_comparisons": 15000,
-            "ner_use_light_model": False,
-            "ner_max_segments": 2000,
-            "skip_advanced_semantic": True,
-            "skip_geocoding": False,
-            "reduced_chart_generation": True,
-            "semantic_profile": "balanced",
-        }
-    )
-    full_analysis_settings: dict[str, Any] = field(
-        default_factory=lambda: {
-            "use_lightweight_models": False,
-            "semantic_method": "advanced",
-            "max_segments_for_semantic": 1000,
-            "max_semantic_comparisons": 30000,  # Reduced from 50000 for faster processing
-            "max_segments_per_speaker": 400,  # Increased from 200 for full mode
-            "max_segments_for_cross_speaker": 1000,  # Increased from 500 for full mode
-            "ner_use_light_model": False,
-            "ner_max_segments": 5000,
-            "skip_advanced_semantic": False,
-            "skip_geocoding": False,
-            "reduced_chart_generation": False,
-            "semantic_profile": "balanced",
-        }
-    )
+    analysis_mode: str = field(init=False, repr=True)
+    quick_analysis_settings: dict[str, Any] = field(init=False, repr=True)
+    full_analysis_settings: dict[str, Any] = field(init=False, repr=True)
 
     # Semantic similarity v2 (default semantic path; legacy IDs remain selectable)
     semantic_similarity_v2: SemanticSimilarityV2Config = field(
@@ -945,36 +474,7 @@ class AnalysisConfig:
     )
     active_semantic_similarity_v2_profile: str = "balanced_v2"
     semantic_similarity_v2_profiles: dict[str, dict[str, Any]] = field(
-        default_factory=lambda: {
-            "fast_v2": {
-                "self_similarity_threshold": 0.78,
-                "cross_speaker_similarity_threshold": 0.68,
-                "top_k_per_segment": 20,
-                "max_candidate_pairs": 15_000,
-                "timeout_seconds": 120.0,
-                "use_lexical_prefilter": True,
-                "lexical_prefilter_min_jaccard": 0.10,
-                "mode": "basic",
-            },
-            "balanced_v2": {
-                "self_similarity_threshold": 0.72,
-                "cross_speaker_similarity_threshold": 0.62,
-                "top_k_per_segment": 50,
-                "max_candidate_pairs": 50_000,
-                "timeout_seconds": 300.0,
-                "use_lexical_prefilter": True,
-                "lexical_prefilter_min_jaccard": 0.05,
-            },
-            "deep_v2": {
-                "mode": "advanced",
-                "self_similarity_threshold": 0.65,
-                "cross_speaker_similarity_threshold": 0.55,
-                "top_k_per_segment": 120,
-                "max_candidate_pairs": 150_000,
-                "timeout_seconds": 900.0,
-                "use_lexical_prefilter": False,
-            },
-        }
+        init=False, repr=True
     )
 
     # Module-specific configurations
@@ -1017,75 +517,134 @@ class AnalysisConfig:
     active_temporal_dynamics_profile: str = "default"
     active_vectorization_profile: str = "default"
 
+    def __post_init__(self) -> None:
+        # Flat analysis_* pilot slices (fixed order).
+        from transcriptx.core.config.models.analysis_sentiment import (
+            AnalysisSentimentSettingsModel,
+        )
+        from transcriptx.core.config.models.analysis_ner import (
+            AnalysisNerSettingsModel,
+        )
+        from transcriptx.core.config.models.analysis_wordcloud import (
+            AnalysisWordcloudSettingsModel,
+        )
+        from transcriptx.core.config.models.analysis_interaction import (
+            AnalysisInteractionSettingsModel,
+        )
+        from transcriptx.core.config.models.analysis_entity import (
+            AnalysisEntitySettingsModel,
+        )
+        from transcriptx.core.config.models.analysis_legacy_semantic import (
+            AnalysisLegacySemanticSettingsModel,
+        )
+        from transcriptx.core.config.models.quality_filtering_profiles import (
+            QualityFilteringProfilesSettingsModel,
+        )
+        from transcriptx.core.config.models.semantic_similarity_v2_profiles import (
+            SemanticSimilarityV2ProfilesSettingsModel,
+        )
+        from transcriptx.core.config.models.quick_analysis_settings import (
+            QuickAnalysisSettingsModel,
+        )
+        from transcriptx.core.config.models.full_analysis_settings import (
+            FullAnalysisSettingsModel,
+        )
+
+        _hydrate_analysis_slice(self, AnalysisSentimentSettingsModel())
+        _hydrate_analysis_slice(self, AnalysisNerSettingsModel())
+        _hydrate_analysis_slice(self, AnalysisWordcloudSettingsModel())
+        _hydrate_analysis_slice(self, AnalysisInteractionSettingsModel())
+        _hydrate_analysis_slice(self, AnalysisEntitySettingsModel())
+        _hydrate_analysis_slice(self, AnalysisLegacySemanticSettingsModel())
+        _hydrate_mapping_store(
+            self, "quality_filtering_profiles", QualityFilteringProfilesSettingsModel()
+        )
+        _hydrate_mapping_store(
+            self,
+            "semantic_similarity_v2_profiles",
+            SemanticSimilarityV2ProfilesSettingsModel(),
+        )
+        _hydrate_mapping_store(
+            self, "quick_analysis_settings", QuickAnalysisSettingsModel()
+        )
+        _hydrate_mapping_store(
+            self, "full_analysis_settings", FullAnalysisSettingsModel()
+        )
+
 
 @dataclass
 class TopicModelingConfig:
-    """Configuration for topic modeling analysis."""
+    """Configuration for topic modeling. Defaults owned by TopicModelingSettingsModel."""
 
-    # Vectorizer settings
-    max_features: int = 1000
-    min_df: int = 2
-    max_df: float = 0.95
-    ngram_range: tuple[int, int] = (1, 2)
+    max_features: int = field(init=False, repr=True)
+    min_df: int = field(init=False, repr=True)
+    max_df: float = field(init=False, repr=True)
+    ngram_range: tuple[int, int] = field(init=False, repr=True)
+    random_state: int = field(init=False, repr=True)
+    max_iter_lda: int = field(init=False, repr=True)
+    max_iter_nmf: int = field(init=False, repr=True)
+    alpha_H: float = field(init=False, repr=True)
+    tol: float = field(init=False, repr=True)
+    learning_method: str = field(init=False, repr=True)
+    k_range: tuple[int, int] = field(init=False, repr=True)
+    test_size: float = field(init=False, repr=True)
 
-    # Model settings
-    random_state: int = 42
-    max_iter_lda: int = 50
-    max_iter_nmf: int = 10000
-    alpha_H: float = 0.1  # NMF regularization
-    tol: float = 1e-2  # NMF tolerance
-    learning_method: str = "batch"  # LDA learning method
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.topic_modeling import (
+            TopicModelingSettingsModel,
+        )
 
-    # Search settings
-    k_range: tuple[int, int] = (3, 15)  # Topic count search range
-    test_size: float = 0.2  # Train/test split
+        _hydrate_dataclass_from_pydantic(self, TopicModelingSettingsModel())
 
 
 @dataclass
 class ActsConfig:
-    """Configuration for dialogue acts classification."""
+    """Configuration for dialogue acts. Defaults owned by ActsSettingsModel."""
 
-    # Classification method
-    method: str = "both"  # "rules", "ml", or "both"
+    method: str = field(init=False, repr=True)
+    use_context: bool = field(init=False, repr=True)
+    context_window_size: int = field(init=False, repr=True)
+    context_window_type: str = field(init=False, repr=True)
+    include_speaker_info: bool = field(init=False, repr=True)
+    include_timing_info: bool = field(init=False, repr=True)
+    min_confidence: float = field(init=False, repr=True)
+    high_confidence_threshold: float = field(init=False, repr=True)
+    ensemble_weight_transformer: float = field(init=False, repr=True)
+    ensemble_weight_ml: float = field(init=False, repr=True)
+    ensemble_weight_rules: float = field(init=False, repr=True)
+    ml_model_name: str = field(init=False, repr=True)
+    ml_use_gpu: bool = field(init=False, repr=True)
+    ml_batch_size: int = field(init=False, repr=True)
+    ml_max_length: int = field(init=False, repr=True)
+    rules_use_enhanced_patterns: bool = field(init=False, repr=True)
+    rules_use_fallback_logic: bool = field(init=False, repr=True)
+    rules_confidence_boost_exact_match: float = field(init=False, repr=True)
+    rules_context_boost_factor: float = field(init=False, repr=True)
+    enable_caching: bool = field(init=False, repr=True)
+    cache_size: int = field(init=False, repr=True)
 
-    # Context settings
-    use_context: bool = True
-    context_window_size: int = 3
-    context_window_type: str = "sliding"  # "fixed", "dynamic", or "sliding"
-    include_speaker_info: bool = True
-    include_timing_info: bool = False
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.acts import (
+            ActsSettingsModel,
+        )
 
-    # Confidence thresholds
-    min_confidence: float = 0.7
-    high_confidence_threshold: float = 0.9
-    ensemble_weight_transformer: float = 0.5
-    ensemble_weight_ml: float = 0.3
-    ensemble_weight_rules: float = 0.2
-
-    # Machine learning settings
-    ml_model_name: str = "bert-base-uncased"
-    ml_use_gpu: bool = False
-    ml_batch_size: int = 32
-    ml_max_length: int = 512
-
-    # Rule-based settings
-    rules_use_enhanced_patterns: bool = True
-    rules_use_fallback_logic: bool = True
-    rules_confidence_boost_exact_match: float = 0.1
-    rules_context_boost_factor: float = 0.15
-
-    # Performance settings
-    enable_caching: bool = True
-    cache_size: int = 1000
+        _hydrate_dataclass_from_pydantic(self, ActsSettingsModel())
 
 
 @dataclass
 class TagExtractionConfig:
-    """Configuration for tag extraction analysis."""
+    """Configuration for tag extraction. Defaults owned by TagExtractionSettingsModel."""
 
-    early_window_seconds: int = 60
-    early_segments: int = 10
-    min_confidence: float = 0.6
+    early_window_seconds: int = field(init=False, repr=True)
+    early_segments: int = field(init=False, repr=True)
+    min_confidence: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.tag_extraction import (
+            TagExtractionSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, TagExtractionSettingsModel())
 
 
 @dataclass
@@ -1130,72 +689,74 @@ class LLMActionItemsConfig:
 
 @dataclass
 class QAAnalysisConfig:
-    """Configuration for Q&A analysis."""
+    """Configuration for Q&A analysis. Defaults owned by QAAnalysisSettingsModel."""
 
-    response_time_threshold: float = 10.0  # seconds
+    response_time_threshold: float = field(init=False, repr=True)
+    weight_directness: float = field(init=False, repr=True)
+    weight_completeness: float = field(init=False, repr=True)
+    weight_relevance: float = field(init=False, repr=True)
+    weight_length: float = field(init=False, repr=True)
+    min_match_threshold: float = field(init=False, repr=True)
+    good_match_threshold: float = field(init=False, repr=True)
+    high_match_threshold: float = field(init=False, repr=True)
+    min_answer_length: int = field(init=False, repr=True)
+    optimal_answer_length: int = field(init=False, repr=True)
+    max_answer_length: int = field(init=False, repr=True)
 
-    # Scoring weights
-    weight_directness: float = 0.3
-    weight_completeness: float = 0.3
-    weight_relevance: float = 0.25
-    weight_length: float = 0.15
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.qa_analysis import (
+            QAAnalysisSettingsModel,
+        )
 
-    # Matching thresholds
-    min_match_threshold: float = 0.3
-    good_match_threshold: float = 0.5
-    high_match_threshold: float = 0.7
-
-    # Answer length thresholds
-    min_answer_length: int = 2
-    optimal_answer_length: int = 5
-    max_answer_length: int = 50
+        _hydrate_dataclass_from_pydantic(self, QAAnalysisSettingsModel())
 
 
 @dataclass
 class TemporalDynamicsConfig:
-    """Configuration for temporal dynamics analysis."""
+    """Configuration for temporal dynamics. Defaults owned by TemporalDynamicsSettingsModel."""
 
-    window_size: float = 30.0  # seconds
+    window_size: float = field(init=False, repr=True)
+    weight_segment_factor: float = field(init=False, repr=True)
+    weight_length_factor: float = field(init=False, repr=True)
+    weight_question_factor: float = field(init=False, repr=True)
+    max_segments_normalization: float = field(init=False, repr=True)
+    max_questions_normalization: float = field(init=False, repr=True)
+    opening_phase_percentage: float = field(init=False, repr=True)
+    opening_phase_max_seconds: float = field(init=False, repr=True)
+    closing_phase_percentage: float = field(init=False, repr=True)
+    closing_phase_max_seconds: float = field(init=False, repr=True)
+    sentiment_change_threshold: float = field(init=False, repr=True)
+    engagement_change_threshold: float = field(init=False, repr=True)
+    speaking_rate_change_threshold: float = field(init=False, repr=True)
 
-    # Engagement score weights
-    weight_segment_factor: float = 0.4
-    weight_length_factor: float = 0.3
-    weight_question_factor: float = 0.3
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.temporal_dynamics import (
+            TemporalDynamicsSettingsModel,
+        )
 
-    # Normalization factors
-    max_segments_normalization: float = 10.0
-    max_questions_normalization: float = 5.0
-
-    # Phase detection thresholds
-    opening_phase_percentage: float = 0.1  # First 10% or 2 minutes
-    opening_phase_max_seconds: float = 120.0  # 2 minutes
-    closing_phase_percentage: float = 0.1  # Last 10% or 2 minutes
-    closing_phase_max_seconds: float = 120.0  # 2 minutes
-
-    # Trend detection thresholds
-    sentiment_change_threshold: float = 0.1
-    engagement_change_threshold: float = 0.05
-    speaking_rate_change_threshold: float = 10.0  # words per minute
+        _hydrate_dataclass_from_pydantic(self, TemporalDynamicsSettingsModel())
 
 
 @dataclass
 class AffectTensionConfig:
-    """Configuration for affect_tension (emotion + sentiment mismatch) analysis."""
+    """Configuration for affect_tension. Defaults owned by AffectTensionSettingsModel."""
 
-    # Thresholds for mismatch and trust
-    mismatch_compound_threshold: float = -0.1  # sentiment compound below = negative
-    trust_like_threshold: float = 0.3  # emotion trust-like score above = high trust
-    pos_emotion_threshold: float = 0.3  # emotion score above = positive emotion
+    mismatch_compound_threshold: float = field(init=False, repr=True)
+    trust_like_threshold: float = field(init=False, repr=True)
+    pos_emotion_threshold: float = field(init=False, repr=True)
+    weight_posneg_mismatch: float = field(init=False, repr=True)
+    weight_trust_neutral: float = field(init=False, repr=True)
+    weight_entropy: float = field(init=False, repr=True)
+    weight_volatility: float = field(init=False, repr=True)
+    window_segments: int = field(init=False, repr=True)
+    window_seconds: float | None = field(init=False, repr=True)
 
-    # Weights for derived indices
-    weight_posneg_mismatch: float = 0.4
-    weight_trust_neutral: float = 0.3
-    weight_entropy: float = 0.15
-    weight_volatility: float = 0.15
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.affect_tension import (
+            AffectTensionSettingsModel,
+        )
 
-    # Rolling window: by segment count or by seconds (use one)
-    window_segments: int = 5  # rolling window in segments
-    window_seconds: Optional[float] = None  # if set, overrides window_segments by time
+        _hydrate_dataclass_from_pydantic(self, AffectTensionSettingsModel())
 
 
 @dataclass
@@ -1214,82 +775,88 @@ class PausesConfig:
 
 @dataclass
 class EchoesConfig:
-    """Configuration for echoes analysis."""
+    """Configuration for echoes. Defaults owned by EchoesSettingsModel."""
 
-    lookback_seconds: float = 240.0
-    max_candidates: int = 50
-    explicit_quote_weight: float = 1.0
-    lexical_echo_threshold: float = 0.6
-    paraphrase_threshold: float = 0.75
-    min_tokens: int = 5
-    exclude_phrases: list[str] = field(
-        default_factory=lambda: ["yeah", "exactly", "right"]
-    )
-    enable_semantic_paraphrase: bool = False
-    semantic_model_name: str | None = None
-    echo_burst_window_seconds: float = 25.0
-    echo_burst_min_events: int = 3
-    echo_burst_percentile_threshold: float = 0.95
+    lookback_seconds: float = field(init=False, repr=True)
+    max_candidates: int = field(init=False, repr=True)
+    explicit_quote_weight: float = field(init=False, repr=True)
+    lexical_echo_threshold: float = field(init=False, repr=True)
+    paraphrase_threshold: float = field(init=False, repr=True)
+    min_tokens: int = field(init=False, repr=True)
+    exclude_phrases: list[str] = field(init=False, repr=True)
+    enable_semantic_paraphrase: bool = field(init=False, repr=True)
+    semantic_model_name: str | None = field(init=False, repr=True)
+    echo_burst_window_seconds: float = field(init=False, repr=True)
+    echo_burst_min_events: int = field(init=False, repr=True)
+    echo_burst_percentile_threshold: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.echoes import (
+            EchoesSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, EchoesSettingsModel())
 
 
 @dataclass
 class MomentumConfig:
-    """Configuration for momentum analysis."""
+    """Configuration for momentum. Defaults owned by MomentumSettingsModel."""
 
-    window_length_seconds: float = 60.0
-    window_step_seconds: float = 30.0
-    stall_threshold_percentile: float = 0.15
-    min_stall_duration_seconds: float = 30.0
-    momentum_cliff_threshold: float = -0.2
-    novelty_lookback_windows: int = 3
-    weights: dict[str, float] = field(
-        default_factory=lambda: {
-            "pause_rate": -0.3,
-            "repetition_rate": -0.3,
-            "loop_rate": -0.2,
-            "novelty": 0.4,
-            "turn_energy": 0.3,
-        }
-    )
+    window_length_seconds: float = field(init=False, repr=True)
+    window_step_seconds: float = field(init=False, repr=True)
+    stall_threshold_percentile: float = field(init=False, repr=True)
+    min_stall_duration_seconds: float = field(init=False, repr=True)
+    momentum_cliff_threshold: float = field(init=False, repr=True)
+    novelty_lookback_windows: int = field(init=False, repr=True)
+    weights: dict[str, float] = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.momentum import (
+            MomentumSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, MomentumSettingsModel())
 
 
 @dataclass
 class MomentsConfig:
-    """Configuration for moments analysis."""
+    """Configuration for moments. Defaults owned by MomentsSettingsModel."""
 
-    top_n: int = 20
-    merge_seconds: float = 20.0
-    weight_map: dict[str, float] = field(
-        default_factory=lambda: {
-            "long_pause": 0.3,
-            "post_question_silence": 0.5,
-            "momentum_cliff": 0.4,
-            "echo_burst": 0.3,
-            "stall_zone": 0.35,
-            "emotion_switch": 0.4,
-            "unanswered_question": 0.5,
-        }
-    )
-    diversity_bonus: float = 0.2
-    multi_speaker_bonus: float = 0.15
-    write_markdown: bool = False
-    excerpt_max_chars: int = 200
-    excerpt_max_segments: int = 2
-    max_span_seconds: float = 120.0
+    top_n: int = field(init=False, repr=True)
+    merge_seconds: float = field(init=False, repr=True)
+    weight_map: dict[str, float] = field(init=False, repr=True)
+    diversity_bonus: float = field(init=False, repr=True)
+    multi_speaker_bonus: float = field(init=False, repr=True)
+    write_markdown: bool = field(init=False, repr=True)
+    excerpt_max_chars: int = field(init=False, repr=True)
+    excerpt_max_segments: int = field(init=False, repr=True)
+    max_span_seconds: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.moments import (
+            MomentsSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, MomentsSettingsModel())
 
 
 @dataclass
 class VectorizationConfig:
-    """Shared configuration for vectorization across modules."""
+    """Shared vectorization config. Defaults owned by VectorizationSettingsModel."""
 
-    max_features: int = 1000
-    min_df: int = 1
-    max_df: float = 0.95
-    ngram_range: tuple[int, int] = (1, 2)
+    max_features: int = field(init=False, repr=True)
+    min_df: int = field(init=False, repr=True)
+    max_df: float = field(init=False, repr=True)
+    ngram_range: tuple[int, int] = field(init=False, repr=True)
+    wordcloud_max_features: int = field(init=False, repr=True)
+    wordcloud_ngram_range: tuple[int, int] = field(init=False, repr=True)
 
-    # Word clouds specific
-    wordcloud_max_features: int = 300
-    wordcloud_ngram_range: tuple[int, int] = (1, 2)
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.vectorization import (
+            VectorizationSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, VectorizationSettingsModel())
 
 
 @dataclass

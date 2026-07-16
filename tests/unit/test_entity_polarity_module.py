@@ -280,9 +280,7 @@ def test_save_results_and_viz_helpers(tmp_path, monkeypatch) -> None:
     output.save_summary = MagicMock()
 
     fake_plt = MagicMock()
-    monkeypatch.setattr(
-        "transcriptx.core.analysis.entity_sentiment.plt", fake_plt
-    )
+    monkeypatch.setattr("transcriptx.core.analysis.entity_sentiment.plt", fake_plt)
     module._save_results(results, output)
     assert output.save_chart.call_count >= 2
     assert output.save_summary.called

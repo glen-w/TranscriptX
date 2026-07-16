@@ -22,7 +22,10 @@ from transcriptx.core.utils.config.system import LLMConfig
 
 
 def _llm_cfg(**overrides: object) -> LLMConfig:
-    cfg = LLMConfig(enabled=True, provider="ollama", model="custom-model:7b")
+    cfg = LLMConfig()
+    cfg.enabled = True
+    cfg.provider = "ollama"
+    cfg.model = "custom-model:7b"
     for key, value in overrides.items():
         setattr(cfg, key, value)
     return cfg

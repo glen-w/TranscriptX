@@ -155,7 +155,9 @@ def test_plot_understandability_charts_success_path(
         patch.object(ua.plt, "tight_layout"),
         patch.object(ua.plt, "close"),
         patch.object(ua.plt, "gcf", return_value=MagicMock()),
-        patch.object(ua.sns, "barplot", return_value=MagicMock(get_xticklabels=lambda: [])),
+        patch.object(
+            ua.sns, "barplot", return_value=MagicMock(get_xticklabels=lambda: [])
+        ),
         patch.object(ua.sns, "color_palette", return_value=MagicMock()),
     ):
         ua.plot_understandability_charts(
@@ -194,9 +196,7 @@ def test_compute_and_save_understandability_named_only(
         {"speaker": "Alice", "text": "Hello world. This is a readable sentence."},
         {"speaker": "SPEAKER_00", "text": "ignored diarization label content here."},
     ]
-    monkeypatch.setattr(
-        "transcriptx.core.utils.output_standards.OUTPUTS_DIR", outputs
-    )
+    monkeypatch.setattr("transcriptx.core.utils.output_standards.OUTPUTS_DIR", outputs)
     with (
         patch.object(ua, "notify_user"),
         patch.object(ua, "create_output_service", return_value=None),

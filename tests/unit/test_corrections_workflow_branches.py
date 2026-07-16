@@ -109,9 +109,10 @@ def test_backup_and_write_updated_transcript(tmp_path) -> None:
 
 @pytest.mark.unit
 def test_write_corrected_transcript_none_and_paths(tmp_path) -> None:
-    assert wf.write_corrected_transcript(
-        transcript_path="x", updated_segments=None
-    ) is None
+    assert (
+        wf.write_corrected_transcript(transcript_path="x", updated_segments=None)
+        is None
+    )
     assert (
         wf.write_corrected_transcript(transcript_path="x", updated_segments=[]) is None
     )
@@ -198,7 +199,9 @@ def test_run_corrections_on_segments_auto_apply_and_artifacts(tmp_path, monkeypa
         global_data_dir=tmp_path
     )
     fake_out.save_data = MagicMock(
-        side_effect=lambda payload, name, format_type="json": str(tmp_path / f"{name}.{format_type}")
+        side_effect=lambda payload, name, format_type="json": str(
+            tmp_path / f"{name}.{format_type}"
+        )
     )
     fake_out.get_artifacts.return_value = []
 
@@ -231,8 +234,7 @@ def test_run_corrections_on_segments_auto_apply_and_artifacts(tmp_path, monkeypa
     assert result["applied_count"] == 1
     assert result["corrected_transcript_path"]
     assert any(
-        c.args[1] == "corrections_summary"
-        for c in fake_out.save_data.call_args_list
+        c.args[1] == "corrections_summary" for c in fake_out.save_data.call_args_list
     )
 
 
@@ -274,7 +276,9 @@ def test_run_corrections_on_segments_external_decisions(tmp_path, monkeypatch):
     monkeypatch.setattr(wf, "detect_consistency_candidates", lambda *a, **k: [])
     monkeypatch.setattr(wf, "detect_fuzzy_candidates", lambda *a, **k: [])
     monkeypatch.setattr(
-        wf, "apply_corrections", lambda **k: ([{"text": "Foo"}], [{"status": "applied"}])
+        wf,
+        "apply_corrections",
+        lambda **k: ([{"text": "Foo"}], [{"status": "applied"}]),
     )
     promote = MagicMock()
     monkeypatch.setattr(wf, "promote_rule", promote)

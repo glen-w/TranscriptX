@@ -36,8 +36,10 @@ class TestAnalysisConfig:
         assert len(config.ner_labels) > 0
 
     def test_custom_values(self):
-        """Test that custom values can be set."""
-        config = AnalysisConfig(sentiment_window_size=20, sentiment_min_confidence=0.5)
+        """Test that custom values can be set via setattr (delegated init=False)."""
+        config = AnalysisConfig()
+        config.sentiment_window_size = 20
+        config.sentiment_min_confidence = 0.5
 
         assert config.sentiment_window_size == 20
         assert config.sentiment_min_confidence == 0.5
@@ -90,15 +92,14 @@ class TestAudioPreprocessingConfig:
 
     def test_custom_values(self):
         """Test that custom values can be set."""
-        config = AudioPreprocessingConfig(
-            preprocessing_mode="auto",
-            convert_to_mono="off",
-            target_sample_rate=22050,
-            normalize_mode="suggest",
-            target_lufs=-16.0,
-            denoise_mode="auto",
-            denoise_strength="high",
-        )
+        config = AudioPreprocessingConfig()
+        config.preprocessing_mode = "auto"
+        config.convert_to_mono = "off"
+        config.target_sample_rate = 22050
+        config.normalize_mode = "suggest"
+        config.target_lufs = -16.0
+        config.denoise_mode = "auto"
+        config.denoise_strength = "high"
 
         assert config.preprocessing_mode == "auto"
         assert config.convert_to_mono == "off"
@@ -110,15 +111,14 @@ class TestAudioPreprocessingConfig:
 
     def test_three_mode_values(self):
         """Test that all preprocessing steps support three modes."""
-        config = AudioPreprocessingConfig(
-            convert_to_mono="suggest",
-            downsample="off",
-            normalize_mode="auto",
-            denoise_mode="suggest",
-            highpass_mode="auto",
-            lowpass_mode="suggest",
-            bandpass_mode="off",
-        )
+        config = AudioPreprocessingConfig()
+        config.convert_to_mono = "suggest"
+        config.downsample = "off"
+        config.normalize_mode = "auto"
+        config.denoise_mode = "suggest"
+        config.highpass_mode = "auto"
+        config.lowpass_mode = "suggest"
+        config.bandpass_mode = "off"
 
         assert config.convert_to_mono == "suggest"
         assert config.downsample == "off"
@@ -130,12 +130,11 @@ class TestAudioPreprocessingConfig:
 
     def test_global_mode_override(self):
         """Test that global preprocessing_mode can override per-step settings."""
-        config = AudioPreprocessingConfig(
-            preprocessing_mode="auto",
-            convert_to_mono="suggest",
-            downsample="off",
-            normalize_mode="suggest",
-        )
+        config = AudioPreprocessingConfig()
+        config.preprocessing_mode = "auto"
+        config.convert_to_mono = "suggest"
+        config.downsample = "off"
+        config.normalize_mode = "suggest"
 
         # Global mode should be set
         assert config.preprocessing_mode == "auto"
@@ -158,7 +157,8 @@ class TestTranscriptXConfigClass:
 
     def test_custom_analysis_config(self):
         """Test that custom analysis config can be provided."""
-        analysis_config = AnalysisConfig(sentiment_window_size=15)
+        analysis_config = AnalysisConfig()
+        analysis_config.sentiment_window_size = 15
         config = TranscriptXConfig()
         config.analysis = analysis_config
 

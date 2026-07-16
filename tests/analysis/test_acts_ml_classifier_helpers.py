@@ -196,9 +196,7 @@ def test_create_ml_classifier_and_classify_utterance() -> None:
     with patch.object(ml, "create_ml_classifier", return_value=fake):
         assert ml.classify_utterance_ml("Why?") == "question"
 
-    with patch.object(
-        ml, "create_ml_classifier", side_effect=RuntimeError("nope")
-    ):
+    with patch.object(ml, "create_ml_classifier", side_effect=RuntimeError("nope")):
         assert ml.classify_utterance_ml("Why?") == "statement"
 
 

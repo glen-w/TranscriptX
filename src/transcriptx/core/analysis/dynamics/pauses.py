@@ -6,18 +6,20 @@ Detects long pauses and post-question silence events and produces summary stats.
 
 from __future__ import annotations
 
-import os
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule
-from transcriptx.core.io.events_io import save_events_json
+from transcriptx.core.analysis.dynamics.artifact_io import (
+    ensure_dynamics_dirs,
+    write_events_and_stats,
+    write_speaker_stats_files,
+)
 from transcriptx.core.models.events import Event, generate_event_id
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
-from transcriptx.core.utils.validation import sanitize_filename
 from transcriptx.io import save_json
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.viz_ids import (
@@ -305,25 +307,15 @@ class PausesAnalysis(AnalysisModule):
             "per_segment_pause_count", []
         )
 
-        # Ensure output directories exist
-        os.makedirs(output_structure.global_data_dir, exist_ok=True)
-        os.makedirs(output_structure.speaker_data_dir, exist_ok=True)
-        os.makedirs(output_structure.global_charts_dir, exist_ok=True)
-
-        save_events_json(events, output_structure, "pauses.events.json")
-        save_json(stats, str(output_structure.global_data_dir / "pauses.stats.json"))
+        ensure_dynamics_dirs(output_structure, include_speaker_data=True)
+        write_events_and_stats(output_structure, self.module_name, events, stats)
         if per_segment_pause_count:
             save_json(
                 per_segment_pause_count,
                 str(output_structure.global_data_dir / "pauses.per_segment.json"),
             )
 
-        for speaker, data in speaker_stats.items():
-            safe_speaker = sanitize_filename(speaker)
-            path = (
-                output_structure.speaker_data_dir / f"{safe_speaker}_pauses.stats.json"
-            )
-            save_json(data, str(path))
+        write_speaker_stats_files(output_structure, self.module_name, speaker_stats)
 
         # Charts
         gaps = [entry["gap_seconds"] for entry in gap_series]

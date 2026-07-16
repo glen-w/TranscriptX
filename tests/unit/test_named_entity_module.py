@@ -62,9 +62,7 @@ def test_get_ner_nlp_default_and_light(ner_cfg, monkeypatch) -> None:
         calls.append(name or "default")
         return MagicMock(name=name or "default")
 
-    monkeypatch.setattr(
-        "transcriptx.core.utils.nlp_runtime.get_nlp_model", fake_get
-    )
+    monkeypatch.setattr("transcriptx.core.utils.nlp_runtime.get_nlp_model", fake_get)
     with patch("transcriptx.core.analysis.ner.get_config", return_value=ner_cfg):
         named_entity_mod._get_ner_nlp()
     assert calls[-1] == "default"
@@ -83,9 +81,7 @@ def test_get_ner_nlp_light_falls_back_to_md(ner_cfg, monkeypatch) -> None:
             raise RuntimeError("missing")
         return MagicMock(name=name)
 
-    monkeypatch.setattr(
-        "transcriptx.core.utils.nlp_runtime.get_nlp_model", fake_get
-    )
+    monkeypatch.setattr("transcriptx.core.utils.nlp_runtime.get_nlp_model", fake_get)
     ner_cfg.analysis.ner_use_light_model = True
     with patch("transcriptx.core.analysis.ner.get_config", return_value=ner_cfg):
         model = named_entity_mod._get_ner_nlp()
@@ -177,9 +173,7 @@ def test_save_results_charts_and_summary(tmp_path, monkeypatch) -> None:
     module._save_results(results, output)
     assert output.save_chart.called
     assert output.save_summary.called
-    assert any(
-        c.args[1] == "ner-summary" for c in output.save_data.call_args_list
-    )
+    assert any(c.args[1] == "ner-summary" for c in output.save_data.call_args_list)
 
 
 @pytest.mark.unit
@@ -241,9 +235,7 @@ def test_save_location_maps_records_artifacts(tmp_path, monkeypatch) -> None:
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.ner.geocode_with_cache",
-        lambda items: [
-            {"name": name, "lat": 1.0, "lon": 2.0} for name, _ in items
-        ],
+        lambda items: [{"name": name, "lat": 1.0, "lon": 2.0} for name, _ in items],
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.ner.wrap_tooltip_text",
@@ -287,7 +279,9 @@ def test_render_html_to_png_playwright_none_warns(tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_render_html_to_png_success_and_crash_and_missing(tmp_path, monkeypatch) -> None:
+def test_render_html_to_png_success_and_crash_and_missing(
+    tmp_path, monkeypatch
+) -> None:
     module = named_entity_mod.NERAnalysis.__new__(named_entity_mod.NERAnalysis)
     html = tmp_path / "m.html"
     html.write_text("<html/>")

@@ -73,9 +73,11 @@ def test_transcript_store_refreshes_derived_metadata(tmp_path) -> None:
 def test_transcript_store_skips_refresh_when_disabled(tmp_path, monkeypatch) -> None:
     from transcriptx.core.utils.config.workflow import MetadataConfig
 
+    meta = MetadataConfig()
+    meta.auto_refresh_on_write = False
     monkeypatch.setattr(
         "transcriptx.io.metadata_display_options.get_metadata_config",
-        lambda: MetadataConfig(auto_refresh_on_write=False),
+        lambda: meta,
     )
     path = tmp_path / "t.json"
     data = {

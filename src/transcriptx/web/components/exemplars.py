@@ -23,9 +23,14 @@ logger = get_logger()
 
 
 def _config_from_dict(raw: Dict[str, Any]) -> SpeakerExemplarsConfig:
-    if "tfidf_ngram_range" in raw and isinstance(raw["tfidf_ngram_range"], list):
-        raw["tfidf_ngram_range"] = tuple(raw["tfidf_ngram_range"])
-    return SpeakerExemplarsConfig(**raw)
+    data = dict(raw)
+    if "tfidf_ngram_range" in data and isinstance(data["tfidf_ngram_range"], list):
+        data["tfidf_ngram_range"] = tuple(data["tfidf_ngram_range"])
+    cfg = SpeakerExemplarsConfig()
+    for key, value in data.items():
+        if hasattr(cfg, key):
+            setattr(cfg, key, value)
+    return cfg
 
 
 def _segment_to_record(segment: Dict[str, Any], index: int) -> SegmentRecord:

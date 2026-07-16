@@ -69,14 +69,10 @@ def test_advanced_quality_scorer_clamps_and_uses_analysis() -> None:
         {
             "sentiment": {"speaker_data": {"Alice": {"average_sentiment": 0.8}}},
             "tics": {"speaker_data": {"Alice": {"tic_ratio": 0.0}}},
-            "emotion": {
-                "speaker_data": {"Alice": {"emotion_scores": {"joy": 0.9}}}
-            },
+            "emotion": {"speaker_data": {"Alice": {"emotion_scores": {"joy": 0.9}}}},
             "acts": {
                 "speaker_data": {
-                    "Alice": {
-                        "act_distribution": {"inform": 0.4, "elaborate": 0.3}
-                    }
+                    "Alice": {"act_distribution": {"inform": 0.4, "elaborate": 0.3}}
                 }
             },
         },
@@ -108,7 +104,9 @@ def test_advanced_filter_segments_ranks_and_caps() -> None:
 
 
 @pytest.mark.unit
-def test_advanced_filter_segments_error_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_advanced_filter_segments_error_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     scorer = AdvancedQualityScorer(SimpleNamespace(), "TEST")
     segs = [{"speaker": "Alice", "text": f"token token token {i}"} for i in range(5)]
 

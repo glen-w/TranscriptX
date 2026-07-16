@@ -4,25 +4,26 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal
-from transcriptx.core.utils.paths import (  # type: ignore[import-untyped]
-    RECORDINGS_DIR,
-    READABLE_TRANSCRIPTS_DIR,
-    DIARISED_TRANSCRIPTS_DIR,
-    OUTPUTS_DIR,
-    GROUP_OUTPUTS_DIR,
+
+from .analysis import (
+    _hydrate_analysis_slice,
+    _hydrate_dataclass_from_pydantic,
 )
 
 
 @dataclass
 class SpeakerGateConfig:
-    """Configuration for speaker identification gating."""
+    """Defaults owned by SpeakerGateSettingsModel (nested under workflow)."""
 
-    threshold_value: float = 0.0
-    threshold_type: Literal["absolute", "percentage"] = "absolute"
-    mode: Literal["ignore", "warn", "enforce"] = "warn"
-    exemplar_count: int = 2
+    threshold_value: float = field(init=False, repr=True)
+    threshold_type: Literal["absolute", "percentage"] = field(init=False, repr=True)
+    mode: Literal["ignore", "warn", "enforce"] = field(init=False, repr=True)
+    exemplar_count: int = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
+        from transcriptx.core.config.models.workflow import SpeakerGateSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, SpeakerGateSettingsModel())
         self.validate()
 
     def validate(self) -> None:
@@ -91,114 +92,132 @@ class SpeakerGateConfig:
 
 @dataclass
 class WorkflowConfig:
-    """Configuration for workflow and batch processing."""
+    """Defaults owned by WorkflowSettingsModel."""
 
-    # Analysis timeouts
-    timeout_quick_seconds: int = 3600  # 1 hour for quick analysis
-    timeout_full_seconds: int = 7200  # 2 hours for full analysis
+    timeout_quick_seconds: int = field(init=False, repr=True)
+    timeout_full_seconds: int = field(init=False, repr=True)
+    update_interval: float = field(init=False, repr=True)
+    max_size_mb: int = field(init=False, repr=True)
+    subprocess_timeout: int = field(init=False, repr=True)
+    mp3_bitrate: str = field(init=False, repr=True)
+    conversion_time_factor: float = field(init=False, repr=True)
+    speaker_gate: SpeakerGateConfig = field(init=False, repr=True)
+    cli_pruning_enabled: bool = field(init=False, repr=True)
+    default_config_save_path: str = field(init=False, repr=True)
 
-    # Progress updates
-    update_interval: float = 10.0  # seconds
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.workflow import (
+            WorkflowSettingsModel,
+        )
 
-    # Batch processing
-    max_size_mb: int = 30  # File size filter threshold
-
-    # Audio processing
-    subprocess_timeout: int = 5  # seconds
-    mp3_bitrate: str = "192k"
-    conversion_time_factor: float = 0.5  # seconds per MB
-
-    # Speaker identification gate
-    speaker_gate: SpeakerGateConfig = field(default_factory=SpeakerGateConfig)
-
-    # Legacy workflow UI: show pruning options in post-processing (off by default)
-    cli_pruning_enabled: bool = False
-
-    # Default path when saving workflow config from UI (empty = use project config path)
-    default_config_save_path: str = ""
+        _hydrate_dataclass_from_pydantic(self, WorkflowSettingsModel())
 
 
 @dataclass
 class InputConfig:
-    """Configuration for input settings."""
+    """Defaults owned by InputSettingsModel."""
 
-    wav_folders: list[str] = field(
-        default_factory=lambda: ["/Volumes/DVT1600/RECORD/A"]
+    wav_folders: list[str] = field(init=False, repr=True)
+    recordings_folders: list[str] = field(init=False, repr=True)
+    prefill_rename_with_date_prefix: bool = field(init=False, repr=True)
+    file_selection_mode: Literal["prompt", "explore", "direct"] = field(
+        init=False, repr=True
     )
-    recordings_folders: list[str] = field(default_factory=lambda: [str(RECORDINGS_DIR)])
-    prefill_rename_with_date_prefix: bool = True
-    # How to choose file selection UI: "prompt" = ask each time; "explore" = file browser; "direct" = type path
-    file_selection_mode: Literal["prompt", "explore", "direct"] = "prompt"
-    # Playback skip amounts (seconds) in file selection TUI: short (,/.) and long ([/])
-    playback_skip_seconds_short: float = 10.0
-    playback_skip_seconds_long: float = 60.0
+    playback_skip_seconds_short: float = field(init=False, repr=True)
+    playback_skip_seconds_long: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.input import (
+            InputSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, InputSettingsModel())
 
 
 @dataclass
 class OutputConfig:
-    """Configuration for output settings."""
+    """Defaults owned by OutputSettingsModel."""
 
-    base_output_dir: str = field(default_factory=lambda: str(OUTPUTS_DIR))
-    create_subdirectories: bool = True
-    overwrite_existing: bool = False
-    dynamic_charts: Literal["auto", "on", "off"] = "auto"
-    dynamic_views: Literal["auto", "on", "off"] = "auto"
-    default_audio_folder: str = field(default_factory=lambda: str(RECORDINGS_DIR))
-    default_transcript_folder: str = field(
-        default_factory=lambda: str(DIARISED_TRANSCRIPTS_DIR)
-    )
-    default_readable_transcript_folder: str = field(
-        default_factory=lambda: str(READABLE_TRANSCRIPTS_DIR)
-    )
-    audio_deduplication_threshold: float = (
-        0.90  # Similarity threshold for audio duplicate detection (0.0 to 1.0)
-    )
+    base_output_dir: str = field(init=False, repr=True)
+    create_subdirectories: bool = field(init=False, repr=True)
+    overwrite_existing: bool = field(init=False, repr=True)
+    dynamic_charts: Literal["auto", "on", "off"] = field(init=False, repr=True)
+    dynamic_views: Literal["auto", "on", "off"] = field(init=False, repr=True)
+    default_audio_folder: str = field(init=False, repr=True)
+    default_transcript_folder: str = field(init=False, repr=True)
+    default_readable_transcript_folder: str = field(init=False, repr=True)
+    audio_deduplication_threshold: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.output import (
+            OutputSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, OutputSettingsModel())
 
 
 @dataclass
 class GroupAnalysisConfig:
-    """Configuration for group analysis (TranscriptSet)."""
+    """Defaults owned by GroupAnalysisSettingsModel."""
 
-    enabled: bool = True
-    output_dir: str = field(default_factory=lambda: str(GROUP_OUTPUTS_DIR))
-    persist_groups: bool = False
-    enable_stats_aggregation: bool = True
-    scaffold_by_session: bool = True
-    scaffold_by_speaker: bool = True
-    scaffold_comparisons: bool = True
-    # Pooled wordclouds (Phase 2): optional artifacts; default global meaning unchanged
-    wordcloud_pooled_emit_full_transcript_global: bool = False
-    wordcloud_pooled_global_tfidf: bool = False
+    enabled: bool = field(init=False, repr=True)
+    output_dir: str = field(init=False, repr=True)
+    persist_groups: bool = field(init=False, repr=True)
+    enable_stats_aggregation: bool = field(init=False, repr=True)
+    scaffold_by_session: bool = field(init=False, repr=True)
+    scaffold_by_speaker: bool = field(init=False, repr=True)
+    scaffold_comparisons: bool = field(init=False, repr=True)
+    wordcloud_pooled_emit_full_transcript_global: bool = field(init=False, repr=True)
+    wordcloud_pooled_global_tfidf: bool = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.group_analysis import (
+            GroupAnalysisSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, GroupAnalysisSettingsModel())
 
 
 @dataclass
 class MetadataConfig:
-    """Transcript metadata derivation and listing behavior."""
+    """Defaults owned by MetadataSettingsModel."""
 
-    duration_calculation: Literal["max_end", "span"] = "max_end"
-    listing_word_count_fallback: Literal["in_memory", "metadata_only"] = "in_memory"
-    auto_refresh_on_write: bool = True
-    legacy_words_alias: bool = True
+    duration_calculation: Literal["max_end", "span"] = field(init=False, repr=True)
+    listing_word_count_fallback: Literal["in_memory", "metadata_only"] = field(
+        init=False, repr=True
+    )
+    auto_refresh_on_write: bool = field(init=False, repr=True)
+    legacy_words_alias: bool = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.metadata import (
+            MetadataSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, MetadataSettingsModel())
 
 
 @dataclass
 class DashboardConfig:
-    """Configuration for dashboard and UI settings."""
+    """Defaults owned by dashboard_display + dashboard_overview pilots."""
 
-    schema_version: int = 2
-    overview_charts: list[str] = field(default_factory=list)
-    overview_missing_behavior: str = "skip"
-    overview_max_items: int | None = None
-    duration_hours_threshold_seconds: int = 3600
-    duration_summary_style: Literal["compact", "minutes_only"] = "compact"
+    schema_version: int = field(init=False, repr=True)
+    overview_charts: list[str] = field(init=False, repr=True)
+    overview_missing_behavior: str = field(init=False, repr=True)
+    overview_max_items: int | None = field(init=False, repr=True)
+    duration_hours_threshold_seconds: int = field(init=False, repr=True)
+    duration_summary_style: Literal["compact", "minutes_only"] = field(
+        init=False, repr=True
+    )
 
     def __post_init__(self) -> None:
-        if not self.overview_charts:
-            try:
-                from transcriptx.core.utils.chart_registry import (
-                    get_default_overview_charts,
-                )  # type: ignore[import-untyped]
+        from transcriptx.core.config.models.dashboard_display import (
+            DashboardDisplaySettingsModel,
+        )
+        from transcriptx.core.config.models.dashboard_overview import (
+            DashboardOverviewSettingsModel,
+        )
 
-                self.overview_charts = get_default_overview_charts()
-            except Exception:
-                self.overview_charts = []
+        # Fixed order: display then overview (disjoint field sets).
+        _hydrate_analysis_slice(self, DashboardDisplaySettingsModel())
+        _hydrate_analysis_slice(self, DashboardOverviewSettingsModel())

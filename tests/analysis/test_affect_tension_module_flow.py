@@ -41,9 +41,7 @@ def test_analyze_with_default_thresholds_and_named_speakers() -> None:
         {"text": "no speaker"},  # excluded
     ]
     cfg = SimpleNamespace(analysis=SimpleNamespace(affect_tension=None))
-    with patch(
-        "transcriptx.core.analysis.affect_tension.get_config", return_value=cfg
-    ):
+    with patch("transcriptx.core.analysis.affect_tension.get_config", return_value=cfg):
         out = mod.analyze(segments)
     assert "derived_indices" in out
     assert out["metadata"]["version"]
@@ -65,11 +63,11 @@ def test_analyze_with_custom_affect_tension_config() -> None:
         weight_volatility=0.1,
     )
     cfg = SimpleNamespace(analysis=SimpleNamespace(affect_tension=at_cfg))
-    with patch(
-        "transcriptx.core.analysis.affect_tension.get_config", return_value=cfg
-    ):
+    with patch("transcriptx.core.analysis.affect_tension.get_config", return_value=cfg):
         out = mod.analyze([_seg("Alice")])
-    assert out["metadata"]["params"]["thresholds"]["mismatch_compound_threshold"] == -0.2
+    assert (
+        out["metadata"]["params"]["thresholds"]["mismatch_compound_threshold"] == -0.2
+    )
     assert out["metadata"]["params"]["weights"]["weight_posneg_mismatch"] == 0.5
 
 
@@ -112,15 +110,19 @@ def test_save_results_handles_chart_import_and_build_errors() -> None:
         "derived_indices": {},
         "segments": [],
     }
-    with patch(
-        "transcriptx.core.analysis.affect_tension.output.build_derived_indices_charts",
-        side_effect=RuntimeError("bar fail"),
-    ), patch(
-        "transcriptx.core.analysis.affect_tension.output.build_dynamics_timeseries_charts",
-        side_effect=RuntimeError("ts fail"),
-    ), patch(
-        "transcriptx.core.analysis.affect_tension.output.build_tension_summary_heatmap",
-        side_effect=RuntimeError("heat fail"),
+    with (
+        patch(
+            "transcriptx.core.analysis.affect_tension.output.build_derived_indices_charts",
+            side_effect=RuntimeError("bar fail"),
+        ),
+        patch(
+            "transcriptx.core.analysis.affect_tension.output.build_dynamics_timeseries_charts",
+            side_effect=RuntimeError("ts fail"),
+        ),
+        patch(
+            "transcriptx.core.analysis.affect_tension.output.build_tension_summary_heatmap",
+            side_effect=RuntimeError("heat fail"),
+        ),
     ):
         mod._save_results(results, service)
     # json still saved
@@ -162,9 +164,7 @@ def test_run_from_context_empty_and_full(tmp_path) -> None:
         ),
         patch("transcriptx.core.analysis.affect_tension.log_analysis_start"),
         patch("transcriptx.core.analysis.affect_tension.log_analysis_complete"),
-        patch(
-            "transcriptx.core.analysis.affect_tension.get_config", return_value=cfg
-        ),
+        patch("transcriptx.core.analysis.affect_tension.get_config", return_value=cfg),
         patch.object(mod, "_save_results") as save,
     ):
         full = mod.run_from_context(context)

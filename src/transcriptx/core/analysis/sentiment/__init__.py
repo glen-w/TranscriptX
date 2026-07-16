@@ -23,8 +23,10 @@ from transcriptx.core.utils.downloads import (
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
-from transcriptx.io import save_transcript
-from transcriptx.core.utils._path_core import get_enriched_transcript_path
+from transcriptx.core.analysis.affect.output_helpers import (
+    save_rows_json_csv,
+    write_enriched_transcript,
+)
 from transcriptx.core.utils.artifact_writer import write_csv
 from transcriptx.core.utils.viz_ids import (
     VIZ_SENTIMENT_ROLLING_SPEAKER,
@@ -381,16 +383,8 @@ class SentimentAnalysis(AnalysisModule):
         segments = results["segments_with_sentiment"]
         speaker_segments = results["speaker_segments"]
         all_rows = results["all_rows"]
-        # Save enriched transcript with sentiment scores
-        enriched_path = get_enriched_transcript_path(
-            output_service.transcript_path, "sentiment"
-        )
-        os.makedirs(os.path.dirname(enriched_path), exist_ok=True)
-        save_transcript(segments, enriched_path)
-
-        # Save complete transcript-wide sentiment data
-        output_service.save_data(all_rows, "sentiment", format_type="json")
-        output_service.save_data(all_rows, "sentiment", format_type="csv")
+        write_enriched_transcript(output_service, segments, "sentiment")
+        save_rows_json_csv(output_service, all_rows, "sentiment")
 
         # Generate per-speaker analysis and visualizations
         for speaker, segs in speaker_segments.items():
@@ -408,18 +402,10 @@ class SentimentAnalysis(AnalysisModule):
                 for s in segs
             ]
 
-            # Save speaker data
-            output_service.save_data(
+            save_rows_json_csv(
+                output_service,
                 speaker_data,
                 f"{speaker}_sentiment",
-                format_type="json",
-                subdirectory="speakers",
-                speaker=speaker,
-            )
-            output_service.save_data(
-                speaker_data,
-                f"{speaker}_sentiment",
-                format_type="csv",
                 subdirectory="speakers",
                 speaker=speaker,
             )

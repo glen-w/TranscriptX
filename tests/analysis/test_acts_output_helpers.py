@@ -15,7 +15,9 @@ from transcriptx.core.analysis.acts.config import ClassificationMethod
 def _seg(speaker: str, text: str, start: float, act: str = "statement") -> dict:
     return {
         "speaker": speaker,
-        "speaker_db_id": {"Alice": 1, "Bob": 2}.get(speaker, abs(hash(speaker)) % 10000),
+        "speaker_db_id": {"Alice": 1, "Bob": 2}.get(
+            speaker, abs(hash(speaker)) % 10000
+        ),
         "text": text,
         "start": start,
         "end": start + 1.0,
@@ -49,9 +51,7 @@ def test_generate_acts_charts_saves_pie_bar_temporal() -> None:
     )
 
     assert output_service.save_chart.call_count >= 4
-    viz_ids = [
-        call.args[0].viz_id for call in output_service.save_chart.call_args_list
-    ]
+    viz_ids = [call.args[0].viz_id for call in output_service.save_chart.call_args_list]
     assert any(v.startswith("group.acts.") for v in viz_ids)
     titles = [call.args[0].title for call in output_service.save_chart.call_args_list]
     assert any(t.startswith("Run — ") for t in titles)
@@ -236,9 +236,7 @@ def test_tag_acts_happy_path_with_rules_method(tmp_path) -> None:
             return_value=str(out_dir / "enriched.json"),
         ),
     ):
-        acts_output.tag_acts(
-            segments, "call", str(out_dir), {}, str(transcript)
-        )
+        acts_output.tag_acts(segments, "call", str(out_dir), {}, str(transcript))
 
     save_tr.assert_called()
     gen_charts.assert_called_once()
@@ -300,21 +298,15 @@ def test_tag_acts_both_methods_creates_separate_outputs(tmp_path) -> None:
         patch.object(acts_output, "save_csv"),
         patch.object(acts_output, "create_summary_json"),
         patch.object(acts_output, "generate_acts_charts"),
-        patch.object(
-            acts_output, "_generate_method_summary"
-        ) as method_summary,
-        patch.object(
-            acts_output, "_generate_comparison_summary"
-        ) as comparison_summary,
+        patch.object(acts_output, "_generate_method_summary") as method_summary,
+        patch.object(acts_output, "_generate_comparison_summary") as comparison_summary,
         patch.object(
             acts_output,
             "get_enriched_transcript_path",
             return_value=str(out_dir / "enriched.json"),
         ),
     ):
-        acts_output.tag_acts(
-            segments, "call", str(out_dir), {}, str(transcript)
-        )
+        acts_output.tag_acts(segments, "call", str(out_dir), {}, str(transcript))
 
     assert method_summary.call_count == 2
     comparison_summary.assert_called_once()
@@ -333,10 +325,5 @@ def test_generate_acts_charts_skips_speaker_without_temporal_points() -> None:
         per_speaker,
         "base",
     )
-    temporal = [
-        c
-        for c in output_service.save_chart.call_args_list
-        if c.kwargs.get("chart_type") == "temporal"
-    ]
     # global temporal may exist via speakers list + act_counts_global; per-speaker skipped
     assert output_service.save_chart.called

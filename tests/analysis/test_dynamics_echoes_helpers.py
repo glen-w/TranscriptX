@@ -63,7 +63,9 @@ def test_trivial_token_and_candidates(echoes: EchoesAnalysis) -> None:
         _seg("Bob", "seven eight nine ten eleven twelve", 10.0),
         _seg("Alice", "as you said we should ship tomorrow", 20.0),
     ]
-    cands = echoes._collect_candidates(segments, 2, lookback_seconds=15.0, max_candidates=1)
+    cands = echoes._collect_candidates(
+        segments, 2, lookback_seconds=15.0, max_candidates=1
+    )
     assert cands == [1]
 
 
@@ -155,7 +157,9 @@ def test_detect_echo_bursts(echoes: EchoesAnalysis) -> None:
 
 
 @pytest.mark.unit
-def test_get_embedding_model_handles_import_failure(echoes: EchoesAnalysis, monkeypatch):
+def test_get_embedding_model_handles_import_failure(
+    echoes: EchoesAnalysis, monkeypatch
+):
     monkeypatch.setitem(
         __import__("sys").modules,
         "sentence_transformers",
@@ -166,7 +170,9 @@ def test_get_embedding_model_handles_import_failure(echoes: EchoesAnalysis, monk
 
 
 @pytest.mark.unit
-def test_run_from_context_success_and_error(tmp_path, echoes: EchoesAnalysis, monkeypatch):
+def test_run_from_context_success_and_error(
+    tmp_path, echoes: EchoesAnalysis, monkeypatch
+):
     context = SimpleNamespace(
         transcript_path=str(tmp_path / "t.json"),
         transcript_key="k",

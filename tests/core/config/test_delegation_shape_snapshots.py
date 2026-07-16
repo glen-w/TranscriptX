@@ -23,6 +23,19 @@ _DELEGATION_SUBTREES = (
     "llm_summary",
     "llm_speaker_summary",
     "llm_action_items",
+    "echoes",
+    "momentum",
+    "moments",
+    "affect_tension",
+    "acts",
+    "topic_modeling",
+    "speaker_exemplars",
+    "bertopic",
+    "semantic_similarity_v2",
+    "vectorization",
+    "tag_extraction",
+    "qa_analysis",
+    "temporal_dynamics",
 )
 
 
@@ -40,7 +53,9 @@ def _subtree_shapes(subtree: str) -> dict:
     with without_transcriptx_env():
         return {
             "asdict": _normalize_for_json(asdict(getattr(AnalysisConfig(), subtree))),
-            "to_dict": TranscriptXConfig().to_dict()["analysis"][subtree],
+            "to_dict": _normalize_for_json(
+                TranscriptXConfig().to_dict()["analysis"][subtree]
+            ),
         }
 
 

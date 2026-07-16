@@ -150,9 +150,7 @@ def test_run_from_context_skip_paths(tmp_path) -> None:
         patch.object(dash, "log_analysis_start"),
         patch.object(dash, "log_analysis_complete"),
         patch.object(dash, "get_config", return_value=cfg),
-        patch.object(
-            dash, "check_voice_optional_deps", return_value={"ok": True}
-        ),
+        patch.object(dash, "check_voice_optional_deps", return_value={"ok": True}),
     ):
         context.get_analysis_result.return_value = {"status": "skipped"}
         out2 = mod.run_from_context(context)
@@ -217,9 +215,7 @@ def test_run_from_context_success_builds_charts(tmp_path) -> None:
         patch.object(dash, "log_analysis_start"),
         patch.object(dash, "log_analysis_complete"),
         patch.object(dash, "get_config", return_value=cfg),
-        patch.object(
-            dash, "check_voice_optional_deps", return_value={"ok": True}
-        ),
+        patch.object(dash, "check_voice_optional_deps", return_value={"ok": True}),
         patch.object(dash, "load_voice_features", return_value=df),
         patch.object(
             dash,
@@ -247,9 +243,7 @@ def test_run_from_context_error_path(tmp_path) -> None:
     context = MagicMock()
     context.transcript_path = str(tmp_path / "t.json")
     with (
-        patch.object(
-            dash, "create_output_service", side_effect=RuntimeError("boom")
-        ),
+        patch.object(dash, "create_output_service", side_effect=RuntimeError("boom")),
         patch.object(dash, "log_analysis_start"),
         patch.object(dash, "log_analysis_error"),
     ):

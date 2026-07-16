@@ -26,13 +26,12 @@ class TestLLMConfig:
         assert cfg.base_url is None
 
     def test_custom_values(self) -> None:
-        """LLMConfig accepts custom values."""
-        cfg = LLMConfig(
-            enabled=True,
-            provider="ollama",
-            model="qwen3:8b",
-            base_url="http://localhost:11434",
-        )
+        """LLMConfig accepts custom values via setattr (delegated init=False)."""
+        cfg = LLMConfig()
+        cfg.enabled = True
+        cfg.provider = "ollama"
+        cfg.model = "qwen3:8b"
+        cfg.base_url = "http://localhost:11434"
         assert cfg.enabled is True
         assert cfg.provider == "ollama"
         assert cfg.model == "qwen3:8b"
@@ -53,8 +52,10 @@ class TestLoggingConfig:
         assert cfg.backup_count == 5
 
     def test_custom_values(self) -> None:
-        """LoggingConfig accepts custom values."""
-        cfg = LoggingConfig(level="DEBUG", backup_count=3)
+        """LoggingConfig accepts custom values via setattr (delegated init=False)."""
+        cfg = LoggingConfig()
+        cfg.level = "DEBUG"
+        cfg.backup_count = 3
         assert cfg.level == "DEBUG"
         assert cfg.backup_count == 3
 

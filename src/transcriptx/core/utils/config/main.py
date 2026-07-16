@@ -183,7 +183,14 @@ class TranscriptXConfig:
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Return a complete configuration snapshot as a dictionary.
+        Return a curated configuration snapshot as a dictionary.
+
+        Curated projection (not ``asdict(self.analysis)``): deliberately omits
+        runtime-only fields such as ``analysis.use_dag_pipeline`` and ``self.mode``.
+        Adapter ``active_*`` profile keys are emitted via
+        ``write_activation_value``. Nested dataclass subtrees use
+        ``_config_to_dict`` / ``asdict`` (deep copy); some flat list/dict
+        analysis fields are returned by reference (aliasing preserved).
         """
         from transcriptx.core.config import iter_all_profile_target_adapters
 
@@ -199,6 +206,7 @@ class TranscriptXConfig:
                 root_map=root_active_profiles,
             )
 
+        # Explicit curated analysis shell — do not dump the whole AnalysisConfig.
         return {
             "analysis": {
                 "sentiment_window_size": self.analysis.sentiment_window_size,

@@ -6,18 +6,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from transcriptx.core.analysis.group_charts.context import GroupChartContext
-from transcriptx.core.analysis.group_charts.helpers import chart_artifact_paths
+from transcriptx.core.analysis.group_charts.helpers import (
+    make_group_output_service,
+    chart_artifact_paths,
+)
 from transcriptx.core.analysis.group_charts.generic_field_allowlists import (
     allowed_numeric_keys_for_generic_agg,
 )
 from transcriptx.core.analysis.group_charts.generic_numeric import (
     GenericNumericGroupChartGenerator,
-)
-from transcriptx.core.analysis.group_charts.output_service import (
-    GroupChartOutputService,
-)
-from transcriptx.core.analysis.group_charts.virtual_path import (
-    build_group_virtual_transcript_path,
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec
 
@@ -108,16 +105,8 @@ class InteractionsGroupChartGenerator:
 
         speakers = _parse_interactions_pooled(outcome)
         if speakers and _any_positive_counts(speakers):
-            virtual = build_group_virtual_transcript_path(
-                ctx.group_run_root, self.agg_id
-            )
-            svc = GroupChartOutputService(
-                virtual_transcript_path=virtual,
-                module_name=self.agg_id,
-                output_dir=str(ctx.group_run_root.resolve()),
-                run_id=ctx.group_run_id,
-                agg_id=self.agg_id,
-                group_uuid=ctx.group_uuid,
+            svc = make_group_output_service(
+                ctx, module_name=self.agg_id, agg_id=self.agg_id
             )
             for metric, viz_id, title_part in (
                 (

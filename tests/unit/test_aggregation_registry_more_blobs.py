@@ -39,7 +39,9 @@ def _sm() -> CanonicalSpeakerMap:
     )
 
 
-def _result(tmp_path: Path, module_results: dict, key: str = "a") -> PerTranscriptResult:
+def _result(
+    tmp_path: Path, module_results: dict, key: str = "a"
+) -> PerTranscriptResult:
     return PerTranscriptResult(
         transcript_path=str(tmp_path / f"{key}.json"),
         transcript_key=key,
@@ -99,7 +101,10 @@ def test_aggregate_wordclouds_runs_group_and_merges_extra(tmp_path: Path) -> Non
     run_wc.assert_called_once()
     assert out is not None
     assert out["session_rows"][0]["speaker_count"] == 1
-    assert out["session_rows"][0]["pooled_cross_session_summary_path"] == "/tmp/pooled.json"
+    assert (
+        out["session_rows"][0]["pooled_cross_session_summary_path"]
+        == "/tmp/pooled.json"
+    )
     assert out["session_rows"][0]["skipped_variants"] == ["v0", "v1"]
 
 
@@ -117,91 +122,117 @@ def test_aggregate_wordclouds_none_when_no_summary(tmp_path: Path) -> None:
 def test_warning_paths_for_blob_helpers(tmp_path: Path) -> None:
     sm, ts = _sm(), _ts(tmp_path)
 
-    assert _aggregate_pauses(
-        [
-            _result(
-                tmp_path,
-                {"pauses": {"payload": {"stats": "bad", "speaker_stats": {}}}},
-            )
-        ],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "pauses"
+    assert (
+        _aggregate_pauses(
+            [
+                _result(
+                    tmp_path,
+                    {"pauses": {"payload": {"stats": "bad", "speaker_stats": {}}}},
+                )
+            ],
+            sm,
+            ts,
+        )["warning"]["aggregation_key"]
+        == "pauses"
+    )
 
-    assert _aggregate_momentum(
-        [_result(tmp_path, {"momentum": {"payload": {"stats": "bad"}}})],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "momentum"
+    assert (
+        _aggregate_momentum(
+            [_result(tmp_path, {"momentum": {"payload": {"stats": "bad"}}})],
+            sm,
+            ts,
+        )["warning"]["aggregation_key"]
+        == "momentum"
+    )
 
-    assert _aggregate_contagion(
-        [
-            _result(
-                tmp_path,
-                {"contagion": {"payload": {"contagion_summary": "bad"}}},
-            )
-        ],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "contagion"
+    assert (
+        _aggregate_contagion(
+            [
+                _result(
+                    tmp_path,
+                    {"contagion": {"payload": {"contagion_summary": "bad"}}},
+                )
+            ],
+            sm,
+            ts,
+        )["warning"]["aggregation_key"]
+        == "contagion"
+    )
 
-    assert _aggregate_conversation_loops(
-        [
-            _result(
-                tmp_path,
-                {"conversation_loops": {"payload": {"summary": "bad"}}},
-            )
-        ],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "conversation_loops"
+    assert (
+        _aggregate_conversation_loops(
+            [
+                _result(
+                    tmp_path,
+                    {"conversation_loops": {"payload": {"summary": "bad"}}},
+                )
+            ],
+            sm,
+            ts,
+        )["warning"]["aggregation_key"]
+        == "conversation_loops"
+    )
 
     # temporal_dynamics non-dict payload is filtered by extract_payload; force via patch
     with patch(
         "transcriptx.core.analysis.aggregation.registry._extract_payload",
         return_value=["not-a-dict"],
     ):
-        assert _aggregate_temporal_dynamics(
-            [_result(tmp_path, {"temporal_dynamics": {"payload": {}}})],
+        assert (
+            _aggregate_temporal_dynamics(
+                [_result(tmp_path, {"temporal_dynamics": {"payload": {}}})],
+                sm,
+                ts,
+            )["warning"]["aggregation_key"]
+            == "temporal_dynamics"
+        )
+
+    assert (
+        _aggregate_qa_analysis(
+            [_result(tmp_path, {"qa_analysis": {"payload": {"statistics": "bad"}}})],
             sm,
             ts,
-        )["warning"]["aggregation_key"] == "temporal_dynamics"
+        )["warning"]["aggregation_key"]
+        == "qa_analysis"
+    )
 
-    assert _aggregate_qa_analysis(
-        [_result(tmp_path, {"qa_analysis": {"payload": {"statistics": "bad"}}})],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "qa_analysis"
+    assert (
+        _aggregate_lexical_diversity(
+            [
+                _result(
+                    tmp_path,
+                    {
+                        "lexical_diversity": {
+                            "payload": {"global_stats": "bad", "speaker_stats": {}}
+                        }
+                    },
+                )
+            ],
+            sm,
+            ts,
+        )["warning"]["aggregation_key"]
+        == "lexical_diversity"
+    )
 
-    assert _aggregate_lexical_diversity(
-        [
-            _result(
-                tmp_path,
-                {
-                    "lexical_diversity": {
-                        "payload": {"global_stats": "bad", "speaker_stats": {}}
-                    }
-                },
-            )
-        ],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "lexical_diversity"
-
-    assert _aggregate_tics(
-        [
-            _result(
-                tmp_path,
-                {"tics": {"payload": {"global_stats": "bad", "speaker_stats": {}}}},
-            )
-        ],
-        sm,
-        ts,
-    )["warning"]["aggregation_key"] == "tics"
+    assert (
+        _aggregate_tics(
+            [
+                _result(
+                    tmp_path,
+                    {"tics": {"payload": {"global_stats": "bad", "speaker_stats": {}}}},
+                )
+            ],
+            sm,
+            ts,
+        )["warning"]["aggregation_key"]
+        == "tics"
+    )
 
 
 @pytest.mark.unit
-def test_aggregate_contagion_with_aggregation_warnings(tmp_path: Path, monkeypatch) -> None:
+def test_aggregate_contagion_with_aggregation_warnings(
+    tmp_path: Path, monkeypatch
+) -> None:
     result = _result(
         tmp_path,
         {

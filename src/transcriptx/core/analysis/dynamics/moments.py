@@ -17,11 +17,13 @@ How to interpret:
 
 from __future__ import annotations
 
-import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from transcriptx.core.analysis.base import AnalysisModule
-from transcriptx.core.io.events_io import save_events_json
+from transcriptx.core.analysis.dynamics.artifact_io import (
+    ensure_dynamics_dirs,
+    write_events_and_stats,
+)
 from transcriptx.core.models.events import Event, generate_event_id
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.artifact_writer import write_text
@@ -476,15 +478,13 @@ class MomentsAnalysis(AnalysisModule):
         self, results: Dict[str, Any], output_service: "OutputService"
     ) -> None:
         output_structure = output_service.get_output_structure()
-        os.makedirs(output_structure.global_data_dir, exist_ok=True)
-        os.makedirs(output_structure.global_charts_dir, exist_ok=True)
+        ensure_dynamics_dirs(output_structure)
 
         events: List[Event] = results.get("events", [])
         stats: Dict[str, Any] = results.get("stats", {})
         moments: List[Dict[str, Any]] = results.get("moments", [])
 
-        save_events_json(events, output_structure, "moments.events.json")
-        save_json(stats, str(output_structure.global_data_dir / "moments.stats.json"))
+        write_events_and_stats(output_structure, self.module_name, events, stats)
 
         if moments:
             save_csv(

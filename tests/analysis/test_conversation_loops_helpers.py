@@ -60,7 +60,10 @@ def _loop(
 def test_is_monologue_similarity_thresholds() -> None:
     det = ConversationLoopDetector()
     assert det._is_monologue("same words here now", "same words here now") is True
-    assert det._is_monologue("completely different text", "other content entirely") is False
+    assert (
+        det._is_monologue("completely different text", "other content entirely")
+        is False
+    )
     assert det._is_monologue("", "hello") is False
     assert det._is_monologue("hello", "") is False
 
@@ -179,7 +182,9 @@ def test_save_loop_data_writes_global_and_speaker(tmp_path) -> None:
         ) as save_s,
         pytest.warns(DeprecationWarning),
     ):
-        save_loop_data(loops, speaker_map={"a": "b"}, output_structure=structure, base_name="base")
+        save_loop_data(
+            loops, speaker_map={"a": "b"}, output_structure=structure, base_name="base"
+        )
     assert save_g.call_count == 2
     assert save_s.call_count == 4  # csv+json per Alice and Bob
 
@@ -194,9 +199,7 @@ def test_create_loop_network_and_timeline_and_act_charts() -> None:
     assert spec.chart_intent == "network_graph"
 
     output_service.reset_mock()
-    create_loop_timeline(
-        [_loop()], None, None, "base", output_service=output_service
-    )
+    create_loop_timeline([_loop()], None, None, "base", output_service=output_service)
     assert output_service.save_chart.called
     assert output_service.save_chart.call_args.kwargs.get("chart_type") == "timeline"
 
@@ -246,9 +249,7 @@ def test_conversation_loops_analysis_analyze_and_save() -> None:
         "detect_loops",
         return_value=[_loop()],
     ):
-        result = mod.analyze(
-            [{"speaker": "Alice", "text": "?", "start": 0, "end": 1}]
-        )
+        result = mod.analyze([{"speaker": "Alice", "text": "?", "start": 0, "end": 1}])
     assert result["summary"]["total_loops"] == 1
     assert result["statistics"] is result["summary"]
 
@@ -302,7 +303,9 @@ def test_analysis_viz_wrappers_delegate() -> None:
             "transcriptx.core.analysis.conversation_loops.create_analysis_summary"
         ) as summary,
     ):
-        mod._create_loop_network({"speaker_pair_counts": {}}, "struct", "base", output_service)
+        mod._create_loop_network(
+            {"speaker_pair_counts": {}}, "struct", "base", output_service
+        )
         mod._create_loop_timeline([_loop()], None, None, None, output_service)
         mod._create_loop_act_analysis([_loop()], "struct", "base", output_service)
         mod._create_analysis_summary(
@@ -326,9 +329,7 @@ def test_analyze_conversation_loops_entry_orchestrates(tmp_path) -> None:
             "transcriptx.core.analysis.conversation_loops.analysis.create_standard_output_structure",
             return_value=structure,
         ),
-        patch.object(
-            ConversationLoopDetector, "detect_loops", return_value=[_loop()]
-        ),
+        patch.object(ConversationLoopDetector, "detect_loops", return_value=[_loop()]),
         patch(
             "transcriptx.core.analysis.conversation_loops.analysis.save_loop_data"
         ) as save,

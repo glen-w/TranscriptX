@@ -188,9 +188,10 @@ def test_resolve_speaker_display_and_json_mapping(tmp_path: Path) -> None:
     )
     assert "Speaker 01" in remapped
     assert remapped["Speaker 01"]["speaker"] == "Speaker 01"
-    assert svc._apply_speaker_mapping_to_json([{"speaker": "Alice"}])[0][
-        "speaker"
-    ] == "Speaker 01"
+    assert (
+        svc._apply_speaker_mapping_to_json([{"speaker": "Alice"}])[0]["speaker"]
+        == "Speaker 01"
+    )
     assert svc._apply_speaker_mapping_to_json("plain") == "plain"
 
     svc_off = OutputService(

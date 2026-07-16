@@ -1,0 +1,40 @@
+{
+  "asdict": {
+    "batch_size": 64,
+    "cross_speaker_similarity_threshold": 0.6,
+    "cross_speaker_time_window_seconds": 600.0,
+    "enabled": true,
+    "lexical_prefilter_min_jaccard": 0.05,
+    "lru_size": 50000,
+    "max_candidate_pairs": 50000,
+    "min_text_length_words": 3,
+    "mode": "basic",
+    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+    "persist_embeddings": false,
+    "self_similarity_threshold": 0.7,
+    "self_time_window_seconds": 300.0,
+    "strict_advanced_inputs": false,
+    "timeout_seconds": 300.0,
+    "top_k_per_segment": 50,
+    "use_lexical_prefilter": false
+  },
+  "to_dict": {
+    "batch_size": 64,
+    "cross_speaker_similarity_threshold": 0.6,
+    "cross_speaker_time_window_seconds": 600.0,
+    "enabled": true,
+    "lexical_prefilter_min_jaccard": 0.05,
+    "lru_size": 50000,
+    "max_candidate_pairs": 50000,
+    "min_text_length_words": 3,
+    "mode": "basic",
+    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+    "persist_embeddings": false,
+    "self_similarity_threshold": 0.7,
+    "self_time_window_seconds": 300.0,
+    "strict_advanced_inputs": false,
+    "timeout_seconds": 300.0,
+    "top_k_per_segment": 50,
+    "use_lexical_prefilter": false
+  }
+}

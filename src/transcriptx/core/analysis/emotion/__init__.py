@@ -8,7 +8,6 @@ and temporal emotion tracking.
 
 from __future__ import annotations
 
-import os
 from collections import defaultdict
 from typing import Any, Dict, List
 
@@ -24,8 +23,7 @@ from transcriptx.core.utils.downloads import (
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
-from transcriptx.io import save_transcript
-from transcriptx.core.utils._path_core import get_enriched_transcript_path
+from transcriptx.core.analysis.affect.output_helpers import write_enriched_transcript
 from transcriptx.core.utils.viz_ids import (
     VIZ_EMOTION_RADAR_SPEAKER,
     VIZ_EMOTION_RADAR_GLOBAL,
@@ -380,14 +378,9 @@ class EmotionAnalysis(AnalysisModule):
         all_scores = results["all_scores"]
         plt = get_matplotlib_pyplot()
 
-        # Save enriched transcript
-        enriched_path = get_enriched_transcript_path(
-            output_service.transcript_path, "emotion"
-        )
-        os.makedirs(os.path.dirname(enriched_path), exist_ok=True)
-        save_transcript(segments, enriched_path)
+        write_enriched_transcript(output_service, segments, "emotion")
 
-        # Save global data
+        # Global NRC: JSON and CSV use different payloads — keep module-local paired calls
         output_service.save_data(nrc_scores, "nrc_emotion_scores", format_type="json")
         output_service.save_data(combined_rows, "nrc_emotion_scores", format_type="csv")
         output_service.save_data(
@@ -401,7 +394,6 @@ class EmotionAnalysis(AnalysisModule):
         for speaker, scores in nrc_scores.items():
             speaker_safe = speaker.replace(" ", "_")
 
-            # Save speaker data
             output_service.save_data(
                 scores,
                 f"{speaker_safe}_nrc_emotion",
@@ -410,7 +402,6 @@ class EmotionAnalysis(AnalysisModule):
                 speaker=speaker,
             )
 
-            # Save CSV
             csv_data = [[k, v] for k, v in scores.items()]
             output_service.save_data(
                 csv_data,

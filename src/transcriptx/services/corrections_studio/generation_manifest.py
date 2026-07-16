@@ -117,6 +117,49 @@ def build_generation_manifest(
     )
 
 
+def assemble_generation_manifest_for_run(
+    *,
+    inp: Any,
+    doc: StudioSessionDocument,
+    llm_diag: Any,
+    llm_result: Any,
+    build_manifest_fn=None,
+    compute_hash_fn=None,
+    compute_llm_fp_fn=None,
+) -> Tuple[GenerationManifest, str]:
+    """Assemble manifest + hash for one generate_candidates run."""
+    _build = build_manifest_fn or build_generation_manifest
+    _hash = compute_hash_fn or compute_generation_manifest_hash
+    _llm_fp = compute_llm_fp_fn or compute_llm_fingerprint
+
+    llm_fp = ""
+    llm_prompt_v = ""
+    llm_schema_v = ""
+    ctx_v = ""
+    if llm_diag.enabled:
+        mat = llm_result.llm_fingerprint_material
+        if mat:
+            llm_fp = _llm_fp(**mat)
+        llm_prompt_v = LLM_PROMPT_VERSION
+        llm_schema_v = LLM_SCHEMA_VERSION
+        ctx_v = CONTEXT_PACK_VERSION
+
+    manifest = _build(
+        transcript_identity_hash=inp.transcript_key,
+        corrections_config=inp.corrections_config,
+        memory=inp.memory,
+        studio_rules=doc.rules,
+        speaker_map_state=inp.speaker_map_state,
+        detector_version=STUDIO_DETECTOR_VERSION,
+        llm_fingerprint=llm_fp,
+        llm_prompt_version=llm_prompt_v,
+        llm_schema_version=llm_schema_v,
+        context_pack_version=ctx_v,
+    )
+    mh = _hash(manifest)
+    return manifest, mh
+
+
 def compute_llm_fingerprint(
     *,
     model: str,

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -33,7 +32,9 @@ def test_cluster_repetitions_advanced_empty() -> None:
 
 
 @pytest.mark.unit
-def test_cluster_repetitions_advanced_type_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cluster_repetitions_advanced_type_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Force the sklearn try-block to fail so type-based fallback runs.
     def boom_config():
         raise RuntimeError("no config")

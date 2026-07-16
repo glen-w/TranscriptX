@@ -28,6 +28,9 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "llm_summary",
         "llm_speaker_summary",
         "llm_action_items",
+        # Non-adapter nested dataclasses (adapter-owned targets are skipped above).
+        "affect_tension",
+        "speaker_exemplars",
     }
 )
 

@@ -88,9 +88,7 @@ def test_try_install_extra_fallback_to_package() -> None:
 
     with (
         patch.object(importlib, "import_module", side_effect=_import),
-        patch(
-            "transcriptx.core.utils.lazy_imports.subprocess.run", side_effect=_run
-        ),
+        patch("transcriptx.core.utils.lazy_imports.subprocess.run", side_effect=_run),
         patch.object(importlib, "invalidate_caches"),
     ):
         ok, err = li._try_install_package(
@@ -174,9 +172,7 @@ def test_optional_import_auto_install_fails_appends_msg(
     with (
         patch.object(li, "_core_mode", return_value=False),
         patch.object(li, "lazy_import", side_effect=ImportError("missing")),
-        patch.object(
-            li, "_try_install_package", return_value=(False, "pip blew up")
-        ),
+        patch.object(li, "_try_install_package", return_value=(False, "pip blew up")),
     ):
         with pytest.raises(ImportError, match="Auto-install failed"):
             li.optional_import("z", "testing", extra="viz", auto_install=True)
@@ -325,7 +321,9 @@ def test_ensure_playwright_browser_install_success(tmp_path: Path) -> None:
 
     with (
         patch.dict("sys.modules", {"playwright.sync_api": fake_mod}),
-        patch.object(li, "_check_playwright_browser_installed", side_effect=[False, True]),
+        patch.object(
+            li, "_check_playwright_browser_installed", side_effect=[False, True]
+        ),
         patch(
             "transcriptx.core.utils.lazy_imports.subprocess.run",
             return_value=MagicMock(returncode=0, stderr="", stdout=""),
@@ -378,15 +376,15 @@ def test_get_playwright_sync_api_and_ensure_ready() -> None:
     with patch.object(li, "get_playwright_sync_api", return_value=None):
         assert li.ensure_playwright_ready(silent=True) is False
 
-    with patch.object(
-        li, "get_playwright_sync_api", side_effect=RuntimeError("x")
-    ):
+    with patch.object(li, "get_playwright_sync_api", side_effect=RuntimeError("x")):
         assert li.ensure_playwright_ready(silent=True) is False
 
 
 @pytest.mark.unit
 def test_lazy_pyplot_proxy_loads() -> None:
-    with patch.object(li, "get_matplotlib_pyplot", return_value=MagicMock(close=lambda: None)):
+    with patch.object(
+        li, "get_matplotlib_pyplot", return_value=MagicMock(close=lambda: None)
+    ):
         proxy = li.lazy_pyplot()
         assert hasattr(proxy, "close")
 

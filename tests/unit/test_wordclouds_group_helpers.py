@@ -70,13 +70,9 @@ def test_emit_pooled_global_tfidf_success(tmp_path) -> None:
                 )
             ),
         ),
-        patch(
-            "transcriptx.io.transcript_service.TranscriptService"
-        ) as ts_cls,
+        patch("transcriptx.io.transcript_service.TranscriptService") as ts_cls,
         patch.object(gr, "tokenize_and_filter", return_value=["alpha", "beta"]),
-        patch(
-            "sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec
-        ),
+        patch("sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec),
         patch.object(gr, "_ACTIVE_OUTPUT_SERVICE", svc),
         patch.object(gr, "_get_wordcloud_class", return_value=fake_wc),
         patch.object(gr, "_wordcloud_figure", return_value=(fake_fig, fake_ax)),
@@ -99,6 +95,7 @@ def test_emit_pooled_global_tfidf_success(tmp_path) -> None:
     assert skipped == []
     svc.prepare_pooled_artifact.assert_called()
 
+
 @pytest.mark.unit
 def test_emit_pooled_global_tfidf_empty_vocab_and_no_scores(tmp_path) -> None:
     skipped: list = []
@@ -114,13 +111,9 @@ def test_emit_pooled_global_tfidf_empty_vocab_and_no_scores(tmp_path) -> None:
                 )
             ),
         ),
-        patch(
-            "transcriptx.io.transcript_service.TranscriptService"
-        ) as ts_cls,
+        patch("transcriptx.io.transcript_service.TranscriptService") as ts_cls,
         patch.object(gr, "tokenize_and_filter", return_value=["alpha"]),
-        patch(
-            "sklearn.feature_extraction.text.TfidfVectorizer"
-        ) as vec_cls,
+        patch("sklearn.feature_extraction.text.TfidfVectorizer") as vec_cls,
     ):
         ts_cls.return_value.load_segments.return_value = [{"text": "alpha"}]
         vec = MagicMock()
@@ -146,13 +139,9 @@ def test_emit_pooled_global_tfidf_empty_vocab_and_no_scores(tmp_path) -> None:
                 )
             ),
         ),
-        patch(
-            "transcriptx.io.transcript_service.TranscriptService"
-        ) as ts_cls,
+        patch("transcriptx.io.transcript_service.TranscriptService") as ts_cls,
         patch.object(gr, "tokenize_and_filter", return_value=["alpha"]),
-        patch(
-            "sklearn.feature_extraction.text.TfidfVectorizer"
-        ) as vec_cls,
+        patch("sklearn.feature_extraction.text.TfidfVectorizer") as vec_cls,
     ):
         ts_cls.return_value.load_segments.return_value = [{"text": "alpha"}]
 
@@ -178,9 +167,7 @@ def test_run_group_wordclouds_empty_and_basic(tmp_path) -> None:
     empty_out = gr.run_group_wordclouds({}, tmp_path, "g", "run1")
     assert empty_out["skipped_variants"] == []
     # whitespace-only chunks → early return
-    out2 = gr.run_group_wordclouds(
-        {"Alice": ["  ", ""]}, tmp_path, "g", "run1"
-    )
+    out2 = gr.run_group_wordclouds({"Alice": ["  ", ""]}, tmp_path, "g", "run1")
     assert "pooled_cross_session_summary_path" not in out2
 
     ga = SimpleNamespace(
@@ -189,9 +176,7 @@ def test_run_group_wordclouds_empty_and_basic(tmp_path) -> None:
     )
     cfg = SimpleNamespace(group_analysis=ga)
     fake_svc = MagicMock()
-    results = [
-        SimpleNamespace(order_index=0, transcript_path=str(tmp_path / "a.json"))
-    ]
+    results = [SimpleNamespace(order_index=0, transcript_path=str(tmp_path / "a.json"))]
     with (
         patch(
             "transcriptx.core.analysis.wordclouds.analysis.get_config",

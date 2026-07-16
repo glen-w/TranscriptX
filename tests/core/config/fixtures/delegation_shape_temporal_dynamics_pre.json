@@ -1,0 +1,32 @@
+{
+  "asdict": {
+    "closing_phase_max_seconds": 120.0,
+    "closing_phase_percentage": 0.1,
+    "engagement_change_threshold": 0.05,
+    "max_questions_normalization": 5.0,
+    "max_segments_normalization": 10.0,
+    "opening_phase_max_seconds": 120.0,
+    "opening_phase_percentage": 0.1,
+    "sentiment_change_threshold": 0.1,
+    "speaking_rate_change_threshold": 10.0,
+    "weight_length_factor": 0.3,
+    "weight_question_factor": 0.3,
+    "weight_segment_factor": 0.4,
+    "window_size": 30.0
+  },
+  "to_dict": {
+    "closing_phase_max_seconds": 120.0,
+    "closing_phase_percentage": 0.1,
+    "engagement_change_threshold": 0.05,
+    "max_questions_normalization": 5.0,
+    "max_segments_normalization": 10.0,
+    "opening_phase_max_seconds": 120.0,
+    "opening_phase_percentage": 0.1,
+    "sentiment_change_threshold": 0.1,
+    "speaking_rate_change_threshold": 10.0,
+    "weight_length_factor": 0.3,
+    "weight_question_factor": 0.3,
+    "weight_segment_factor": 0.4,
+    "window_size": 30.0
+  }
+}

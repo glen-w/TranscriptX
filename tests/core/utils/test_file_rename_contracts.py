@@ -401,7 +401,7 @@ def test_rename_finalize_failure_returns_false_without_transaction_rollback(
     )
     (tmp_path / "state").mkdir(exist_ok=True)
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        "transcriptx.core.utils.rename.finalize_phase.finalize_output_directory_move",
         lambda *a, **k: (_ for _ in ()).throw(
             OSError("simulated finalize move failure")
         ),
@@ -548,7 +548,7 @@ def test_dry_run_skips_finalize_filesystem_and_cache(
         raise AssertionError("finalize should not run under dry_run")
 
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.finalize_output_directory_move",
+        "transcriptx.core.utils.rename.finalize_phase.finalize_output_directory_move",
         _no_finalize,
     )
 
@@ -558,7 +558,7 @@ def test_dry_run_skips_finalize_filesystem_and_cache(
         inv["n"] += 1
 
     monkeypatch.setattr(
-        "transcriptx.core.utils.rename.pipeline.invalidate_path_cache", _track_inv
+        "transcriptx.core.utils.rename.reconcile.invalidate_path_cache", _track_inv
     )
 
     assert (

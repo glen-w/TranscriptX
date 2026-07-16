@@ -62,7 +62,9 @@ def test_basic_analyzer_calculate_and_tfidf_fallback() -> None:
         calc.calculate.return_value = 0.9
         calc.tfidf_similarity.return_value = 0.1
         calc_cls.return_value = calc
-        analyzer = az.SemanticSimilarityAnalyzer(config=_cfg(max_semantic_comparisons=2))
+        analyzer = az.SemanticSimilarityAnalyzer(
+            config=_cfg(max_semantic_comparisons=2)
+        )
         assert analyzer.calculate_semantic_similarity("a", "b") == 0.9
         assert analyzer.calculate_semantic_similarity("c", "d") == 0.9
         # third exceeds max_comparisons → tfidf fallback
@@ -277,17 +279,13 @@ def test_advanced_analyzer_loads_analysis_results_when_advanced() -> None:
         patch.object(az, "detect_speaker_repetitions_advanced", return_value=[]),
         patch.object(az, "detect_cross_speaker_repetitions_advanced", return_value=[]),
         patch.object(az, "cluster_repetitions_advanced", return_value=[]),
-        patch.object(
-            az, "generate_repetition_summary_advanced", return_value={}
-        ),
+        patch.object(az, "generate_repetition_summary_advanced", return_value={}),
         patch.object(az, "log_info"),
         patch.object(az, "log_analysis_error"),
     ):
         scorers.return_value.filter_segments.return_value = segs
         analyzer = az.AdvancedSemanticSimilarityAnalyzer(config=cfg)
-        result = analyzer.detect_repetitions(
-            segs, transcript_path="/tmp/t.json"
-        )
+        result = analyzer.detect_repetitions(segs, transcript_path="/tmp/t.json")
     load.assert_called_once()
     assert result["analysis_integration"]["integration_successful"] is True
 

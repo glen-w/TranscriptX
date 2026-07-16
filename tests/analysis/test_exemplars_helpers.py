@@ -30,6 +30,13 @@ def _seg(idx: int, text: str, *, speaker: str = "s1") -> SegmentRecord:
     )
 
 
+def _cfg(**kwargs) -> SpeakerExemplarsConfig:
+    config = SpeakerExemplarsConfig()
+    for key, value in kwargs.items():
+        setattr(config, key, value)
+    return config
+
+
 def test_exemplar_helper_edges() -> None:
     assert _tokenize("Hello, world!") == ["hello", "world"]
     assert _normalize_text("  Hi!! There  ") == "hi there"
@@ -41,7 +48,7 @@ def test_exemplar_helper_edges() -> None:
 
 
 def test_merge_adjacent_and_dedupe() -> None:
-    cfg = SpeakerExemplarsConfig(
+    cfg = _cfg(
         merge_adjacent=True,
         max_words=20,
         dedupe=True,
@@ -75,21 +82,17 @@ def test_rank_normalize_and_length_prior_application() -> None:
     assert max(ranks) == 1.0
     assert _rank_normalize(segs[:3], [1.0, 2.0, 3.0]) is None
 
-    cfg = SpeakerExemplarsConfig(
+    cfg = _cfg(
         length_prior_enabled=True, length_prior_center=3.0, length_prior_sigma=1.0
     )
     weighted = _apply_length_prior(segs, [1.0] * 5, cfg)
     assert all(w > 0 for w in weighted)
-    assert (
-        _apply_length_prior(
-            segs, [1.0] * 5, SpeakerExemplarsConfig(length_prior_enabled=False)
-        )
-        == [1.0] * 5
-    )
+    disabled = _cfg(length_prior_enabled=False)
+    assert _apply_length_prior(segs, [1.0] * 5, disabled) == [1.0] * 5
 
 
 def test_compute_with_merge_and_distinctive() -> None:
-    cfg = SpeakerExemplarsConfig(
+    cfg = _cfg(
         count=3,
         min_words=1,
         max_words=30,

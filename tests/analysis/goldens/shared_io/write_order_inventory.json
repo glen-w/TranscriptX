@@ -1,0 +1,18 @@
+{
+  "description": "Pre-refactor golden write-order inventories for shared analysis I/O characterization",
+  "sentiment_global_pair_order": ["json", "csv"],
+  "emotion_global_nrc_pair_order": ["json", "csv"],
+  "emotion_note": "JSON payload is nrc_scores; CSV payload is combined_rows — different shapes, no save_rows_json_csv",
+  "entity_sentiment_global_pair_order": ["csv", "json"],
+  "dynamics_core_order": ["events", "stats"],
+  "dynamics_event_filename": "{module}.events.json",
+  "dynamics_stats_filename": "{module}.stats.json",
+  "summary_normalize_paths": [
+    "output_structure.data_directory",
+    "output_structure.charts_directory",
+    "output_structure.global_data_directory",
+    "output_structure.global_charts_directory",
+    "output_structure.speaker_data_directory",
+    "output_structure.speaker_charts_directory"
+  ]
+}

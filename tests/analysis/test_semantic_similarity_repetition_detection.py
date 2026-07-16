@@ -44,7 +44,9 @@ def test_classify_agreement_disagreement_advanced_paths() -> None:
         == "disagreement"
     )
     assert (
-        classify_agreement_disagreement_advanced("plain text", "other text", 0.5, "TEST")
+        classify_agreement_disagreement_advanced(
+            "plain text", "other text", 0.5, "TEST"
+        )
         == "neutral"
     )
 

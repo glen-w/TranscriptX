@@ -19,9 +19,10 @@ Incremental adoption pattern for moving config subtrees to Pydantic as the singl
 3. **No new registry pilots** for vanity; only when product adds keys. Prefer extending an existing model.
 4. **No new validators** (Cerberus/Marshmallow/jsonschema/ad-hoc). Validation goes through Pydantic pilots + existing `validate_config`.
 5. **Do not grow** a second facade — only `main.TranscriptXConfig` is constructible.
-6. PR checklist: ownership snapshot invariant **41 / 588 / 10** (or update fixture intentionally) + `tests/core/config/` gate.
+6. PR checklist: ownership snapshot invariant **41 / 598 / 10** (608 total registry keys; or update fixture intentionally) + `tests/core/config/` gate.
 
-Canonical stepwise plan: [`docs/config/config_knobs_refactor_plan.md`](config_knobs_refactor_plan.md).
+Canonical freeze / registry checklist: [`docs/config/config_knobs_refactor_plan.md`](config_knobs_refactor_plan.md).  
+**Authoritative for runtime delegation, file-override, and `to_dict()` sequencing:** [`docs/config/config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md).
 
 ## Generator scripts (regen helpers only)
 
@@ -46,7 +47,8 @@ Canonical stepwise plan: [`docs/config/config_knobs_refactor_plan.md`](config_kn
 4. **Ensure visibility** — subtree must appear in `TranscriptXConfig.to_dict()` and [file_overrides.py](../src/transcriptx/core/utils/config/file_overrides.py) if file-configurable.
 
 5. **Dataclass parity test** (if runtime dataclass remains):
-   - `asdict(Dataclass()) == Model().model_dump()`
+   - Compare **normalized** JSON-safe values from `asdict(Dataclass())` and `Model().model_dump()` (enum/nested representations may differ raw).
+   - Separately assert runtime dataclass types and tuple types on the facade / `to_dict()` where consumers depend on them.
 
 6. **Pilot tests**:
    - Registry golden parity (`capture_pilot_schema_golden`)
@@ -125,7 +127,7 @@ pytest \
 
 ## End state (registry ownership complete)
 
-**41 Pydantic pilots** own **588** registry leaf keys. The non-pydantic baseline is **10 keys** by design:
+**41 Pydantic pilots** own **598** flattened registry leaf keys. The non-pydantic baseline is **10 keys** by design (**608** total registry keys):
 
 | Key | Reason |
 |-----|--------|
@@ -146,10 +148,12 @@ Registry ownership and runtime dataclass defaults are **separate phases**:
 
 | Phase | Status | Meaning |
 |-------|--------|---------|
-| Registry ownership | Complete (**41 / 588 / 10**) | Pydantic models own field definitions, validation, registry metadata |
-| Runtime delegation | Partial | Thin dataclasses hydrate from Pydantic models; duplicate literals removed per subtree |
+| Registry ownership | Complete (**41 / 598 / 10**, 608 total) | Pydantic models own field definitions, validation, registry metadata |
+| Runtime delegation | Partial — see [`config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md) | Thin dataclasses hydrate from Pydantic models; duplicate literals removed per subtree |
 
-Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. Nested dict dumps are reconstructed as nested dataclasses when field annotations require it. `setattr` on leaf fields does **not** revalidate through Pydantic (matches legacy dataclass behaviour); validation remains at `validate_config()` / file-load boundaries.
+Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. Nested dict dumps are reconstructed as nested dataclasses when field annotations require it. Direct programmatic `setattr` on leaf fields does **not** revalidate through Pydantic; profile application via `apply_profile_to_config` may call the target’s `validate()` after applying fields. Validation also remains at `validate_config()` / file-load boundaries.
+
+**Validation consolidation** and **resolver redesign** are separate from ownership collapse — do not mix them into Candidate 1 PRs.
 
 Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pauses,voice,corrections,summary,highlights,llm_*}_pre.json`.
 
@@ -175,7 +179,7 @@ Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pa
 
 | Artifact | Purpose |
 |----------|---------|
-| `test_registry_ownership.py` | Ownership inventory snapshot, **41/588/10** invariant |
+| `test_registry_ownership.py` | Ownership inventory snapshot, **41/598/10** (608 total) invariant |
 | `test_delegation_shape_snapshots.py` | Pre-delegation default shapes |
 | `test_registry_metadata_constraints.py` | Bounded choices/defaults/type agreement |
 | `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all 41 pilots) |

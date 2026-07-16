@@ -29,7 +29,11 @@ def _builder(**kwargs) -> PipelineContextBuilder:
 def test_builder_load_transcript_success_and_errors() -> None:
     builder = _builder()
     mock_service = MagicMock()
-    mock_service.load_transcript_data.return_value = ([{"speaker": "A"}], "base", "/out")
+    mock_service.load_transcript_data.return_value = (
+        [{"speaker": "A"}],
+        "base",
+        "/out",
+    )
     with patch(
         "transcriptx.core.pipeline.pipeline_context.TranscriptService",
         return_value=mock_service,
@@ -94,7 +98,9 @@ def test_builder_speaker_key_helpers() -> None:
         == "SPEAKER"
     )
     assert PipelineContextBuilder._get_speaker_key_from_segment({}) is None
-    assert PipelineContextBuilder._get_speaker_key_from_segment({"speaker": "  "}) is None
+    assert (
+        PipelineContextBuilder._get_speaker_key_from_segment({"speaker": "  "}) is None
+    )
 
     named = PipelineContextBuilder._collect_named_speaker_keys(
         [
@@ -330,10 +336,9 @@ def test_read_only_pipeline_context_properties_and_methods(
     assert ro.get_computed_value("k") == 1
     assert ro.has_computed_value("k") is True
     assert ro.get_transcript_service() is ctx.get_transcript_service()
-    assert (
-        ro.get_speaker_key_from_segment({"speaker": "Alice"})
-        == ctx.get_speaker_key_from_segment({"speaker": "Alice"})
-    )
+    assert ro.get_speaker_key_from_segment(
+        {"speaker": "Alice"}
+    ) == ctx.get_speaker_key_from_segment({"speaker": "Alice"})
     assert ro.get_speaker_key("Alice") == "Alice"
     assert ro.iter_speaker_keys_in_order([{"speaker": "A"}]) == ["A"]
     assert ro.get_speaker_display_name("missing") == "missing"

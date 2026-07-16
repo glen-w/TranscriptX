@@ -32,9 +32,7 @@ def _make_module(
     cfg.analysis.emotion_score_threshold = threshold
     with (
         patch("transcriptx.core.utils.config.get_config", return_value=cfg),
-        patch(
-            "transcriptx.core.analysis.emotion._load_nrclex", return_value=nrclex
-        ),
+        patch("transcriptx.core.analysis.emotion._load_nrclex", return_value=nrclex),
         patch(
             "transcriptx.core.analysis.emotion._load_emotion_model",
             return_value=emotion_model,
@@ -112,7 +110,9 @@ def test_ensure_textblob_corpora_success_and_notify_fallback(monkeypatch) -> Non
 @pytest.mark.unit
 def test_ensure_textblob_corpora_raises_after_failed_download(monkeypatch) -> None:
     monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: False)
-    fake_pkg = SimpleNamespace(download_all=lambda: (_ for _ in ()).throw(OSError("boom")))
+    fake_pkg = SimpleNamespace(
+        download_all=lambda: (_ for _ in ()).throw(OSError("boom"))
+    )
     with patch.dict("sys.modules", {"textblob.download_corpora": fake_pkg}):
         with patch(
             "transcriptx.core.analysis.emotion.notify_user",
@@ -349,11 +349,12 @@ def test_save_results_and_radar(tmp_path, monkeypatch) -> None:
     )
     monkeypatch.setattr(obj, "_create_emotion_radar", lambda *a, **k: fake_fig)
     monkeypatch.setattr(
-        "transcriptx.core.analysis.emotion.get_enriched_transcript_path",
+        "transcriptx.core.analysis.affect.output_helpers.get_enriched_transcript_path",
         lambda path, mod: str(tmp_path / "enriched.json"),
     )
     monkeypatch.setattr(
-        "transcriptx.core.analysis.emotion.save_transcript", lambda *a, **k: None
+        "transcriptx.core.analysis.affect.output_helpers.save_transcript",
+        lambda *a, **k: None,
     )
 
     output = MagicMock()

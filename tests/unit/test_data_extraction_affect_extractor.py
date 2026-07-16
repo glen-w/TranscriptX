@@ -26,9 +26,7 @@ def test_extract_data_casts_speaker_id(extractor: EmotionDataExtractor) -> None:
         mocked.assert_called_once_with({}, speaker_id=7)
         assert out["dominant_emotion"] == "joy"
 
-    with patch.object(
-        extractor, "extract_speaker_data", return_value={}
-    ) as mocked2:
+    with patch.object(extractor, "extract_speaker_data", return_value={}) as mocked2:
         extractor.extract_data({}, "not-int")
         mocked2.assert_called_once_with({}, speaker_id="not-int")
 
@@ -114,9 +112,7 @@ def test_transition_reactivity_consistency_edges(
     extractor: EmotionDataExtractor,
 ) -> None:
     assert extractor._calculate_transition_patterns(["joy"]) == {}
-    patterns = extractor._calculate_transition_patterns(
-        ["joy", "fear", "joy", "joy"]
-    )
+    patterns = extractor._calculate_transition_patterns(["joy", "fear", "joy", "joy"])
     assert patterns["total_transitions"] == 3
     assert "transition_probabilities" in patterns
     assert patterns["transitions"]["joy"]["fear"] == 1
@@ -129,9 +125,9 @@ def test_transition_reactivity_consistency_edges(
     assert 0.0 <= react <= 1.0
 
     assert extractor._calculate_emotion_consistency(["joy"]) is None
-    assert extractor._calculate_emotion_consistency(["joy", "joy", "fear"]) == pytest.approx(
-        2 / 3
-    )
+    assert extractor._calculate_emotion_consistency(
+        ["joy", "joy", "fear"]
+    ) == pytest.approx(2 / 3)
 
 
 @pytest.mark.unit

@@ -57,6 +57,16 @@ _SUBTREE_PROBES: list[dict[str, str]] = [
         "partial": {"weight_map": {"long_pause": 0.4}},
         "sibling_path": "weight_map.echo_burst",
     },
+    {
+        "subtree": "affect_tension",
+        "partial": {"window_segments": 9},
+        "sibling_path": "weight_posneg_mismatch",
+    },
+    {
+        "subtree": "speaker_exemplars",
+        "partial": {"count": 3},
+        "sibling_path": "min_words",
+    },
 ]
 
 
@@ -94,3 +104,97 @@ def test_partial_nested_load_merges_without_replacing_siblings(
     sibling = _get_nested(subtree_obj, probe["sibling_path"])
     assert sibling == expected_sibling
     assert after != before
+
+
+def test_dict_field_shallow_merge_on_nested_dataclass(tmp_path: Path) -> None:
+    cfg = TranscriptXConfig()
+    before_pause = cfg.analysis.momentum.weights["pause_rate"]
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        json.dumps({"analysis": {"momentum": {"weights": {"novelty": 0.99}}}}),
+        encoding="utf-8",
+    )
+    load_config_file_into(cfg, str(config_file))
+    assert cfg.analysis.momentum.weights["novelty"] == 0.99
+    assert cfg.analysis.momentum.weights["pause_rate"] == before_pause
+
+
+def test_list_field_replace_not_element_merge(tmp_path: Path) -> None:
+    cfg = TranscriptXConfig()
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        json.dumps({"analysis": {"echoes": {"exclude_phrases": ["custom-only"]}}}),
+        encoding="utf-8",
+    )
+    load_config_file_into(cfg, str(config_file))
+    assert cfg.analysis.echoes.exclude_phrases == ["custom-only"]
+
+
+def test_missing_config_file_is_noop(tmp_path: Path) -> None:
+    cfg = TranscriptXConfig()
+    before = cfg.analysis.pauses.min_long_pause_seconds
+    load_config_file_into(cfg, str(tmp_path / "does-not-exist.json"))
+    assert cfg.analysis.pauses.min_long_pause_seconds == before
+
+
+def test_quality_profiles_replacement_omission_and_tuples(tmp_path: Path) -> None:
+    cfg = TranscriptXConfig()
+    assert "balanced" in cfg.analysis.quality_filtering_profiles
+    payload = {
+        "analysis": {
+            "quality_filtering_profiles": {
+                "only_custom": {
+                    "description": "x",
+                    "weights": {"length_optimal": 1.0},
+                    "thresholds": {"length_optimal": [1, 2]},
+                    "indicators": {},
+                }
+            }
+        }
+    }
+    path = tmp_path / "q.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    load_config_file_into(cfg, str(path))
+    assert "balanced" not in cfg.analysis.quality_filtering_profiles
+    assert set(cfg.analysis.quality_filtering_profiles) == {"only_custom"}
+    assert cfg.analysis.quality_filtering_profiles["only_custom"]["thresholds"][
+        "length_optimal"
+    ] == (1, 2)
+
+
+def test_quality_file_replacement_accepts_extra_keys_without_pydantic_reject(
+    tmp_path: Path,
+) -> None:
+    """File replacements must not be model_validate'd (would strip/reject extras)."""
+    cfg = TranscriptXConfig()
+    payload = {
+        "analysis": {
+            "quality_filtering_profiles": {
+                "weird": {
+                    "description": "x",
+                    "weights": {},
+                    "thresholds": {},
+                    "indicators": {},
+                    "extra_user_key": {"nested": True},
+                }
+            }
+        }
+    }
+    path = tmp_path / "q.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    load_config_file_into(cfg, str(path))
+    assert cfg.analysis.quality_filtering_profiles["weird"]["extra_user_key"] == {
+        "nested": True
+    }
+
+
+def test_llm_summary_nested_partial_override(tmp_path: Path) -> None:
+    """Single-field llm_* subtrees still accept nested file merge."""
+    cfg = TranscriptXConfig()
+    path = tmp_path / "c.json"
+    path.write_text(
+        json.dumps({"analysis": {"llm_summary": {"effort": "high"}}}),
+        encoding="utf-8",
+    )
+    load_config_file_into(cfg, str(path))
+    assert cfg.analysis.llm_summary.effort == "high"

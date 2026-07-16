@@ -5,8 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Set, Tuple
 
+from transcriptx.core.analysis.group_charts.context import GroupChartContext
 from transcriptx.core.analysis.group_charts.output_service import (
     GroupChartOutputService,
+)
+from transcriptx.core.analysis.group_charts.virtual_path import (
+    build_group_virtual_transcript_path,
 )
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
@@ -26,6 +30,25 @@ SPEAKER_META_KEYS: Set[str] = {
     "display_name",
     "speaker_key",
 }
+
+
+def make_group_output_service(
+    ctx: GroupChartContext,
+    *,
+    module_name: str,
+    agg_id: str,
+) -> GroupChartOutputService:
+    """Construct GroupChartOutputService with the canonical group-run mapping."""
+    return GroupChartOutputService(
+        virtual_transcript_path=build_group_virtual_transcript_path(
+            ctx.group_run_root, agg_id
+        ),
+        module_name=module_name,
+        output_dir=str(ctx.group_run_root.resolve()),
+        run_id=ctx.group_run_id,
+        agg_id=agg_id,
+        group_uuid=ctx.group_uuid,
+    )
 
 
 def filter_chartable_speaker_rows(

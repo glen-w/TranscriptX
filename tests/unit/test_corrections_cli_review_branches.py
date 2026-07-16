@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
 
 import pytest
 
@@ -69,6 +68,7 @@ def test_reason_and_impact_labels() -> None:
     assert _reason_label(_cand(kind="consistency")) == "Consistency"
     assert _reason_label(_cand(kind="fuzzy")) == "Fuzzy match"
     assert _reason_label(_cand(kind="ner_variant")) == "NER variant"
+
     # force unknown via object without going through validator — use acronym default branch
     class _K:
         kind = "other"

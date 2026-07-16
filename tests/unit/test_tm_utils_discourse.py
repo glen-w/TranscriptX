@@ -19,7 +19,11 @@ def test_prepare_text_data_filters_and_returns_indices() -> None:
             "start": 1.0,
         },
         {"speaker": "Alice", "text": "  ", "start": 2.0},
-        {"speaker": "SPEAKER_00", "text": "ignored diarization labels here", "start": 3.0},
+        {
+            "speaker": "SPEAKER_00",
+            "text": "ignored diarization labels here",
+            "start": 3.0,
+        },
         {
             "speaker": "Bob",
             "text": "grid scale power infrastructure projects continue",
@@ -76,7 +80,12 @@ def test_analyze_discourse_topics_auto_phases() -> None:
         "main_discussion",
         "closing",
     }
-    assert "topic_by_phase" in out or "phase_topic_distribution" in out or "phases" in out or len(out) >= 2
+    assert (
+        "topic_by_phase" in out
+        or "phase_topic_distribution" in out
+        or "phases" in out
+        or len(out) >= 2
+    )
 
 
 @pytest.mark.unit
@@ -110,16 +119,16 @@ def test_calculate_topic_coherence_basic() -> None:
     ]
     vec = CountVectorizer()
     vec.fit(texts)
-    score = tm_utils.calculate_topic_coherence(
-        ["battery", "storage"], texts, vec
-    )
+    score = tm_utils.calculate_topic_coherence(["battery", "storage"], texts, vec)
     assert isinstance(score, float)
 
 
 @pytest.mark.unit
 def test_create_output_structure(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(tm_utils, "OUTPUTS_DIR", tmp_path / "outputs")
-    structure = tm_utils._create_output_structure(str(tmp_path / "run"), "topic_modeling")
+    structure = tm_utils._create_output_structure(
+        str(tmp_path / "run"), "topic_modeling"
+    )
     assert "global_data_dir" in structure
     assert structure["global_data_dir"].exists()
 
@@ -168,7 +177,11 @@ def test_prepare_text_data_from_windows_branches() -> None:
         {
             "windows": [
                 {"text": "  ", "speakers": ["Alice"], "start": 1.0},
-                {"text": "renewable energy storage", "speakers": ["Alice", "Bob"], "start": 2.0},
+                {
+                    "text": "renewable energy storage",
+                    "speakers": ["Alice", "Bob"],
+                    "start": 2.0,
+                },
                 {"text": "grid power", "speakers": [], "start": None},
                 "bad",
             ]
@@ -258,12 +271,12 @@ def test_find_optimal_k_fuller_lda_path() -> None:
     with patch.object(tm_utils, "get_config", create=True):
         pass
     with (
-        patch(
-            "transcriptx.core.utils.config.get_config", return_value=cfg
-        ),
+        patch("transcriptx.core.utils.config.get_config", return_value=cfg),
         patch.object(tm_utils, "calculate_topic_coherence", return_value=0.5),
     ):
-        out = tm_utils.find_optimal_k(texts, k_range=(3, 5), algorithm="lda", max_iter=5)
+        out = tm_utils.find_optimal_k(
+            texts, k_range=(3, 5), algorithm="lda", max_iter=5
+        )
     assert "optimal_k" in out
     assert out["optimal_k"] >= 3
     # Prefer diagnostics present when loop ran
@@ -287,9 +300,7 @@ def test_find_optimal_k_nmf_and_no_features() -> None:
     cfg = MagicMock()
     cfg.analysis.topic_modeling = topic_cfg
     with (
-        patch(
-            "transcriptx.core.utils.config.get_config", return_value=cfg
-        ),
+        patch("transcriptx.core.utils.config.get_config", return_value=cfg),
         patch.object(tm_utils, "calculate_topic_coherence", return_value=0.1),
     ):
         out = tm_utils.find_optimal_k(texts, algorithm="nmf", max_iter=5)
@@ -297,9 +308,7 @@ def test_find_optimal_k_nmf_and_no_features() -> None:
 
     # Force zero features path
     with (
-        patch(
-            "transcriptx.core.utils.config.get_config", return_value=cfg
-        ),
+        patch("transcriptx.core.utils.config.get_config", return_value=cfg),
         patch(
             "sklearn.feature_extraction.text.CountVectorizer.fit_transform",
             return_value=MagicMock(shape=(15, 0)),

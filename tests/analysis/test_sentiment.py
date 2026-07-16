@@ -184,10 +184,9 @@ class TestSentimentAnalysisModule:
 
         with (
             patch(
-                "transcriptx.core.analysis.sentiment.get_enriched_transcript_path",
+                "transcriptx.core.analysis.sentiment.write_enriched_transcript",
                 return_value=str(temp_transcript_file),
             ),
-            patch("transcriptx.core.analysis.sentiment.save_transcript"),
         ):
             sentiment_module._save_results(results, output_service)
 
