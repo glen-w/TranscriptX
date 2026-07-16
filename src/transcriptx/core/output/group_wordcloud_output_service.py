@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 
 from transcriptx.core.output.output_service import OutputService
+from transcriptx.core.utils.run_writer_locks import RunWriterLease
 
 # Stable basis string for cross-session speaker bucket merge (see plan).
 CANONICAL_MERGE_BASIS_VALUE = "canonical_display_from_cross_transcript_normalization"
@@ -85,6 +86,8 @@ class GroupWordcloudOutputService(OutputService):
         format_type: str = "json",
         subdirectory: Optional[str] = None,
         speaker: Optional[str] = None,
+        *,
+        lease: RunWriterLease | None = None,
     ) -> str:
         path_str = super().save_data(
             data,
@@ -92,6 +95,7 @@ class GroupWordcloudOutputService(OutputService):
             format_type=format_type,
             subdirectory=subdirectory,
             speaker=speaker,
+            lease=lease,
         )
         if not path_str or format_type != "json":
             return path_str

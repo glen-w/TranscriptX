@@ -19,6 +19,15 @@ NAV_REQUEST_KEY = "nav_request"
 LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
 
+# Sidebar workspace widget keys (must stay in sync with canonical subject/run keys)
+SUBJECT_TYPE_SELECTOR_KEY = "subject_type_selector"
+SUBJECT_ID_SELECTOR_KEY = "subject_id_selector"
+RUN_SELECTOR_KEY = "run_selector"
+_SUBJECT_TYPE_SELECTOR_LABELS: dict[str, str] = {
+    "transcript": "Transcript",
+    "group": "Group",
+}
+
 # Selectbox: explicit choice before loading dependent content (Streamlit has no empty selection)
 SELECTBOX_PLACEHOLDER_TRANSCRIPT = "— Select a transcript —"
 SELECTBOX_PLACEHOLDER_GROUP = "— Select a group —"
@@ -57,6 +66,30 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
+def apply_subject_context(
+    session_state: dict[str, Any],
+    *,
+    subject_type: SubjectType | None,
+    subject_id: str | None,
+    run_id: str | None,
+) -> None:
+    """Write canonical subject context and reset sidebar picker widgets.
+
+    Streamlit keeps prior selectbox values under widget keys. External
+    navigators that only update ``subject_id`` / ``run_id`` would otherwise
+    be overwritten by stale picker state on the next rerun (Charts/Artifacts
+    then fail run-scoped access and fall back to Overview).
+    """
+    session_state[SUBJECT_TYPE_KEY] = subject_type
+    session_state[SUBJECT_ID_KEY] = subject_id
+    session_state[RUN_ID_KEY] = run_id
+    label = _SUBJECT_TYPE_SELECTOR_LABELS.get(subject_type or "")
+    if label is not None:
+        session_state[SUBJECT_TYPE_SELECTOR_KEY] = label
+    session_state.pop(SUBJECT_ID_SELECTOR_KEY, None)
+    session_state.pop(RUN_SELECTOR_KEY, None)
+
+
 def set_current_subject_context(
     *,
     subject_type: SubjectType | None,
@@ -66,9 +99,12 @@ def set_current_subject_context(
     """Write canonical subject context tuple to session state."""
     import streamlit as st
 
-    st.session_state[SUBJECT_TYPE_KEY] = subject_type
-    st.session_state[SUBJECT_ID_KEY] = subject_id
-    st.session_state[RUN_ID_KEY] = run_id
+    apply_subject_context(
+        st.session_state,
+        subject_type=subject_type,
+        subject_id=subject_id,
+        run_id=run_id,
+    )
 
 
 def set_page_flash(kind: FlashKind, message: str) -> None:

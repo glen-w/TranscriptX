@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from transcriptx.core.utils.paths import OUTPUTS_DIR, GROUP_OUTPUTS_DIR
+from transcriptx.core.utils.run_identity import run_summary_newest_key
 from transcriptx.web.services.run_visibility import has_user_artifacts, is_viewable_run
 
 
@@ -17,6 +18,7 @@ class RunSummary:
     run_id: str
     run_root: Path
     last_updated: Optional[float]
+    mtime_ns: Optional[int] = None
 
 
 class RunIndex:
@@ -51,18 +53,24 @@ class RunIndex:
                 continue
             if not RunIndex._is_viewable_run(run_dir):
                 continue
+            mtime: Optional[float] = None
+            mtime_ns: Optional[int] = None
             try:
-                mtime = run_dir.stat().st_mtime
+                st = run_dir.lstat()
+                mtime = float(st.st_mtime)
+                mtime_ns = int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9)))
             except Exception:
                 mtime = None
+                mtime_ns = None
             runs.append(
                 RunSummary(
                     run_id=run_dir.name,
                     run_root=run_dir,
                     last_updated=mtime,
+                    mtime_ns=mtime_ns,
                 )
             )
-        runs.sort(key=lambda r: r.last_updated or 0, reverse=True)
+        runs.sort(key=run_summary_newest_key, reverse=True)
         return runs
 
     @staticmethod

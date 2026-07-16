@@ -420,3 +420,43 @@ def test_global_rename_map_collision_blocks_plan(
     msg = preflight_transaction_rename_map([(a, dest, "t1"), (b, dest, "t2")])
     assert msg is not None
     assert "multiple sources" in msg.lower()
+
+
+@pytest.mark.unit
+def test_reconcile_phase_records_generic_slug_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """0.3.9 reconcile: non-SlugConflictError failures map to slug_reconciliation_failed."""
+    from transcriptx.core.utils.rename import reconcile as reconcile_mod
+    from transcriptx.core.utils.rename.journal import RenameJournalRecord
+    from transcriptx.core.utils.rename.outcome import RenameError
+
+    journal = RenameJournalRecord(
+        operation_id="op1",
+        phase="finalize",
+        old_transcript_path="/tmp/old.json",
+        new_transcript_path="/tmp/new.json",
+        planned_old_slug="old",
+        planned_new_slug="new",
+    )
+    warnings: list[str] = []
+    errors: list[RenameError] = []
+
+    def _boom(*_a, **_k):
+        raise RuntimeError("index unavailable")
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.update_index_after_transcript_rename",
+        _boom,
+    )
+    monkeypatch.setattr(reconcile_mod, "invalidate_path_cache", lambda *_a, **_k: None)
+    monkeypatch.setattr(reconcile_mod, "cleanup_abandoned_temps", lambda **_k: None)
+
+    ok, old_slug, new_slug = reconcile_mod._run_reconcile_phase(
+        journal, warnings, errors
+    )
+    assert ok is False
+    assert old_slug == "old"
+    assert new_slug == "new"
+    assert any(e.code == "slug_reconciliation_failed" for e in errors)
+    assert any("index unavailable" in w for w in warnings)

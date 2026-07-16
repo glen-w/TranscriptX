@@ -181,7 +181,10 @@ def validate_output_directory(dir_path: str, create_if_missing: bool = True) -> 
             raise ValueError(f"No write permission for output directory: {dir_path}")
     elif create_if_missing:
         try:
-            os.makedirs(dir_path, exist_ok=True)
+            from transcriptx.core.utils.run_writer_locks import run_tree_mutation_gate
+
+            with run_tree_mutation_gate():
+                os.makedirs(dir_path, exist_ok=True)
             log_info("VALIDATION", f"Created output directory: {dir_path}")
         except OSError as e:
             raise ValueError(f"Cannot create output directory {dir_path}: {e}")

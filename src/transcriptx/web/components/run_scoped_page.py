@@ -10,7 +10,7 @@ from typing import Literal
 import streamlit as st
 
 from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.services.subject_service import ResolvedSubject
 
@@ -26,12 +26,10 @@ class RunScopedPageContext:
 class RunScopedPageConfig:
     title: str
     description: str
-    prereq_help_md: str
     empty_headline: str
     empty_detail: str
     primary_action: tuple[str, str]
     secondary_action: tuple[str, str]
-    loaded_help_md: str | None = None
 
 
 def render_run_scoped_page(
@@ -41,13 +39,15 @@ def render_run_scoped_page(
     on_missing_run_dir: Literal["info", "error", "empty_state"] | None = None,
 ) -> bool:
     """
-      Render run-scoped page guards and invoke ``render_body`` when context is ready.
+    Render run-scoped page guards and invoke ``render_body`` when context is ready.
 
-      Returns True when ``render_body`` was called; False when a guard shell was shown.
+    Returns True when ``render_body`` was called; False when a guard shell was shown.
 
-      When ``on_missing_run_dir`` is None, missing run directories are not blocked
+    When ``on_missing_run_dir`` is None, missing run directories are not blocked
     (legacy Overview/Charts/Data behaviour). Pass ``"info"``, ``"error"``, or
-      ``"empty_state"`` to enforce an existing run folder before calling ``render_body``.
+    ``"empty_state"`` to enforce an existing run folder before calling ``render_body``.
+
+    Structure on every path: title → description → content or empty/prereq state.
     """
     subject = SubjectService.resolve_current_subject(st.session_state)
     run_id = st.session_state.get("run_id")
@@ -65,7 +65,6 @@ def render_run_scoped_page(
             primary_action=config.primary_action,
             secondary_action=config.secondary_action,
         )
-        render_page_help(config.prereq_help_md)
         return False
 
     run_root = RunIndex.get_run_root(
@@ -92,7 +91,6 @@ def render_run_scoped_page(
                 primary_action=config.primary_action,
                 secondary_action=config.secondary_action,
             )
-        render_page_help(config.prereq_help_md)
         return False
 
     ctx = RunScopedPageContext(subject=subject, run_id=run_id, run_root=run_root)

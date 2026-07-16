@@ -176,7 +176,7 @@ def render_upload_transcript_page() -> None:
         import_submitted = st.form_submit_button(
             "Import Transcript",
             type="primary",
-            use_container_width=False,
+            width="content",
         )
 
     if import_submitted:

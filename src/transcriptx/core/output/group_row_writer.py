@@ -17,6 +17,7 @@ from transcriptx.core.analysis.aggregation.warnings import (
     build_warning,
 )
 from transcriptx.core.utils.artifact_writer import write_csv, write_json
+from transcriptx.core.utils.run_writer_locks import per_run_lock
 
 
 def _sort_header(required: List[str], keys: Iterable[str]) -> List[str]:
@@ -73,6 +74,32 @@ def write_row_outputs(
         )
         return False, warning
 
+    with per_run_lock(base_dir):
+        return _write_row_outputs_body(
+            base_dir=base_dir,
+            agg_id=agg_id,
+            session_rows=session_rows,
+            speaker_rows=speaker_rows,
+            metrics_spec=metrics_spec,
+            content_rows=content_rows,
+            content_rows_name=content_rows_name,
+            bundle=bundle,
+            drop_csv_keys=drop_csv_keys,
+        )
+
+
+def _write_row_outputs_body(
+    *,
+    base_dir: Path,
+    agg_id: str,
+    session_rows: List[Dict[str, Any]],
+    speaker_rows: List[Dict[str, Any]],
+    metrics_spec: Optional[List[Dict[str, Any]]] = None,
+    content_rows: Optional[List[Dict[str, Any]]] = None,
+    content_rows_name: Optional[str] = None,
+    bundle: bool = True,
+    drop_csv_keys: Optional[List[str]] = None,
+) -> Tuple[bool, Optional[AggregationWarning]]:
     agg_dir = base_dir / agg_id
     agg_dir.mkdir(parents=True, exist_ok=True)
 

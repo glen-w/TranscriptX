@@ -117,7 +117,10 @@ def load_run_override(run_dir: Path) -> Optional[Dict[str, Any]]:
 
 
 def save_run_override(run_dir: Path, config_dict: Dict[str, Any]) -> None:
-    save_config_atomic(config_dict, get_run_override_path(run_dir))
+    from transcriptx.core.utils.run_writer_locks import per_run_lock
+
+    with per_run_lock(run_dir):
+        save_config_atomic(config_dict, get_run_override_path(run_dir))
 
 
 def load_run_effective(run_dir: Path) -> Optional[Dict[str, Any]]:
@@ -125,7 +128,10 @@ def load_run_effective(run_dir: Path) -> Optional[Dict[str, Any]]:
 
 
 def save_run_effective(run_dir: Path, config_dict: Dict[str, Any]) -> None:
-    save_config_atomic(config_dict, get_run_effective_path(run_dir))
+    from transcriptx.core.utils.run_writer_locks import per_run_lock
+
+    with per_run_lock(run_dir):
+        save_config_atomic(config_dict, get_run_effective_path(run_dir))
 
 
 def compute_config_hash(config_dict: Dict[str, Any]) -> str:

@@ -109,7 +109,6 @@ def build_page_renderers(
         ),
         "Diagnostics": _lazy_renderer("diagnostics", "render_diagnostics_page"),
         "Groups": _lazy_renderer("groups", "render_groups"),
-        "Statistics": _lazy_renderer("statistics", "render_statistics"),
         "Speakers": lambda: st.info("Speaker pages were removed."),
         "Speaker Detail": lambda: st.info("Speaker pages were removed."),
     }

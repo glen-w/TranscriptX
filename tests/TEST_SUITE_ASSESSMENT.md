@@ -1191,3 +1191,151 @@ Four waves of unit tests (filenames avoid conftest `requires_models` auto-keywor
 - `audio/preprocessing.py`, `audio/fingerprinting.py` (ffmpeg-heavy)
 - `analysis/bertopic/*` (0%, model-heavy)
 - `analysis/voice/extract.py` and related audio I/O paths
+
+## 50. Expansion (2026-07-16) – 0.3–0.3.9.1 focus (corrections/rename/web shell)
+
+### Backup (mandatory)
+- Workspace zip: `/Users/89298/Documents/transcriptx backup/260716-1716.zip` (3.2M); `custom-commands/` mirrored.
+
+### Review
+- **Collection:** `5505/5679` under default addopts (`174` deselected); no collection/import errors on default gate.
+- **Baseline default run:** `5503 passed`, `1 failed`, `1 skipped`, `174` deselected.
+- **Baseline failure classification:** `tests/services/test_corrections_service_additional.py::test_get_candidate_local_diff_uses_review_target_for_accept` — WIP speaker-map display path in `CorrectionService.get_candidate_local_diff` requires `doc.transcript_path`; SimpleNamespace fixtures omitted it (and the except-handler logged the same missing attr). Tests-only fixture fix; no production change in this expansion.
+- **Cleanup:** disabled (not run).
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` historical = 14).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+- **Full collection (`-m ""`):** `5679` tests; overriding addopts alone surfaces collection errors in unrelated snapshot/registry modules (not selected by default gate).
+
+### Coverage gaps targeted (0.3 → 0.3.9.1)
+High-churn packages since `v0.3.0`: `core` (LLM modules, phrase_quality, rename orchestrator split), `services/corrections_studio` candidate_* split (0.3.9), `web` shell/nav/artifacts, `io` speaker-map helpers. Prior expansions already covered LLM deep-coverage, rename phase matrix, and core→85%. This pass closed residual gaps on:
+1. **Corrections Studio 0.3.9 inputs/commit** — `load_generation_inputs` speaker-map segment resolve + studio-rule append; `commit_generation_batch` migrated review statuses.
+2. **Rename 0.3.9 reconcile** — generic (non-SlugConflict) slug index failure → `slug_reconciliation_failed`.
+3. **Web shell WIP** — `action_links` key prefix + button forwarding (layout/context/run-id tests already present as untracked companions).
+
+### New / expanded tests (tests-only)
+
+| File | Focus |
+|------|-------|
+| `tests/services/test_corrections_service_additional.py` | Fixture `transcript_path` for local-diff speaker-map load |
+| `tests/services/test_corrections_studio_inputs.py` (**new**) | `load_generation_inputs` resolve-when-sidecar / skip-without / studio rules + bad-rule skip |
+| `tests/services/test_corrections_studio_commit_batch.py` (**new**) | `commit_generation_batch` accept/reject/skip migration status + event batch shape |
+| `tests/web/test_action_links.py` (**new**) | `action_link_key` idempotent prefix; `render_action_link` tertiary button contract |
+| `tests/core/utils/test_rename_managed_contracts.py` (+) | Reconcile generic exception → `slug_reconciliation_failed` |
+
+### Validation
+- **Default suite:** `5511 passed`, `1 skipped`, `174` deselected, `0` failed (+8 vs failed baseline; +7 net new tests).
+- **Collection after expansion:** `5512/5686` selected under default addopts.
+- **Production code:** none changed by this `/tests` expansion (pre-existing WIP production edits remain uncommitted separately).
+- **Proposed production note (not applied):** `get_candidate_local_diff` except-handler should use `getattr(doc, "transcript_path", None)` so a missing attr does not re-raise while logging.
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.
+
+## 51. Expansion (2026-07-16) – mid-versions 0.3.4–0.3.8 gaps
+
+### Scope
+Follow-on to §50, targeting intermediate releases (0.3.4–0.3.8) still thin after the 0.3.9 focus pass.
+
+### Gaps targeted
+| Version | Feature | Pre-gap | Action |
+|---------|---------|---------|--------|
+| 0.3.5 | `export/summary_bodies.py` | ~38% | Direct unit tests for strip/exec/action-items/kind dispatch |
+| 0.3.7 | `import_metadata` persist/layout | persist rename history + layout OSError compare | New unit file |
+| 0.3.8 | `file_lock` EROFS fallback + acquire exception cleanup | 77% | Two edge tests |
+| 0.3.4 | lexical diversity CSV/plot helpers | save/plot untested | CSV + chart skip/null paths |
+| 0.3.6 | curated Overview badge/body helpers | private helpers untested | Badge + render body contracts |
+
+### New / expanded tests (tests-only)
+
+| File | Tests |
+|------|-------|
+| `tests/utils/test_export_summary_bodies.py` (**new**) | 6 |
+| `tests/io/test_import_metadata_persist_unit.py` (**new**) | 4 |
+| `tests/analysis/test_lexical_diversity_csv_helpers.py` (**new**) | 3 |
+| `tests/web/blocks/test_overview_curated_helpers.py` (**new**) | 3 |
+| `tests/core/utils/test_file_lock.py` (+) | 2 (EROFS fallback, acquire exception closes fd) |
+
+### Validation
+- Mid-version slice: `18 passed`.
+- **Default suite:** `5529 passed`, `1 skipped`, `174` deselected, `0` failed (+18 vs prior green).
+- Targeted coverage: `summary_bodies` **96%** (was ~38%); `file_lock` **86%** (was 77%); `import_metadata.persist` complete in slice.
+- **Production code:** none changed.
+- **Quarantined / cleanup:** unchanged / disabled.
+
+## 52. Expansion (2026-07-16) – versions 0.3.1–0.3.5
+
+### Scope
+Follow-on covering early 0.3.x releases (config/nav/LLM modules/export/group aggs).
+
+### Gaps targeted
+| Version | Feature | Action |
+|---------|---------|--------|
+| 0.3.2 | LLM effort tiers | Reject unknown tiers; defaults `high` across summary/speaker/action-items models |
+| 0.3.2 | `transcript_context_resolver` | paths_match / lexical mtime fallback / index run_ids |
+| 0.3.4 | summary extractors | lexical_diversity + llm_action_items metrics; registry inventory |
+| 0.3.5 | `export/paths` + grouping | storage_root, traversal reject, AttributeError startswith fallback; non-dict skip |
+| 0.3.5 | insights/voice aggregators | `_theme_score`, artifact relpath, malformed lists, `_baseline_median` |
+
+### New / expanded tests (tests-only)
+
+| File | Tests |
+|------|-------|
+| `tests/core/config/test_llm_effort_tier_models.py` (**new**) | 5 |
+| `tests/web/test_transcript_context_resolver_edges.py` (**new**) | 4 |
+| `tests/web/test_summary_extractors_new_modules.py` (**new**) | 3 |
+| `tests/web/test_summary_extractors.py` (+) | lexical_diversity + llm_action_items in registry list |
+| `tests/utils/test_export_paths.py` (**new**) | 4 |
+| `tests/utils/test_export_grouping.py` (**new**) | 2 |
+| `tests/core/analysis/test_group_insights_voice_edges.py` (**new**) | 4 |
+
+### Notes
+- 0.3.1 streamlit stub / heavy config-delegation surfaces already covered by existing delegation golden tests; no new production surfaces needed.
+- 0.3.3 `llm_speaker_summary` already ~98% via dedicated module tests.
+
+### Validation
+- Early-0.3.x slice: `29 passed`.
+- **Default suite:** `5551 passed`, `1 skipped`, `174` deselected, `0` failed (+22 vs prior green).
+- **Production code:** none changed.
+- **Quarantined / cleanup:** unchanged / disabled.
+
+## 53. Expansion (2026-07-16) – Streamlit orchestration, registry, voice, BERTopic status
+
+### Scope
+Close remaining gaps called out after §49–52: Corrections Studio deferred-generate UI contracts, aggregation registry dep/row branches, voice schema/cache helpers, and a mocked `run_group_analysis` integration_core glue path. Investigate BERTopic package/wiring status before adding model-heavy tests.
+
+### BERTopic findings (2026-07-16)
+
+| Check | Result |
+|-------|--------|
+| Installable extra | `pyproject.toml` still declares `[project.optional-dependencies] bertopic = ["bertopic>=0.17.0"]` (also in `full`) |
+| Runtime install | `bertopic` **not** installed in the default env (`ModuleNotFoundError` / no dist metadata) |
+| Module wiring | **Unwired:** absent from `MODULE_CLASS_MAP` and `get_available_modules()`; not in aggregation `build_registry()` |
+| Code retained | `core/analysis/bertopic/` + `aggregation/bertopic.py` + config/chart registry entries remain |
+| Docs | `docs/dev/developer_quickstart.md` and `docs/archive/scikit-learn-upgrade-assessment.md` still describe conflicts; ROADMAP lists ConvoKit/BERTopic rewire as eng backlog |
+
+**Conflict stack (still real):**
+
+1. **scikit-learn:** base `requirements.txt` pins `scikit-learn==1.5.0`; BERTopic/hdbscan/umap historically need APIs from **≥1.6** (`validate_data`). The optional extra does **not** currently pin `scikit-learn>=1.6`.
+2. **transformers / sentence-transformers / huggingface_hub:** base pins `transformers>=4.6.0,<4.50.0` and `sentence-transformers==2.2.2`. Current env has `transformers==4.31.0`, `huggingface_hub==0.34.2`; **sentence-transformers 2.2.2 fails to import** (`cached_download` removed from huggingface_hub). Modern BERTopic wants sentence-transformers ≥3 / transformers ≥4.41, which fights the emotion/`spacy-transformers` pin band.
+3. **Recommendation:** keep BERTopic **out of the default gate**. Do **not** re-register the module until a dedicated env (or refreshed extra with compatible sklearn/transformers/ST pins) is verified. Offline unit coverage of retained shaping helpers is appropriate; full fit/transform tests stay skipped/excluded.
+
+### New / expanded tests (tests-only)
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `tests/core/analysis/test_bertopic_shaping_helpers.py` (**new**) | 8 | Unwired registry assert; `build_topic_objects` / `build_doc_topic_data` / `_validate_group_payload` with mocks (no bertopic install) |
+| `tests/web/test_corrections_studio_pending_generate.py` (**new**) | 5 | Start→`pending_generate`/`force=False`; regen→`force=True`; pending path calls `generate_candidates`; abort reason; generate error |
+| `tests/core/analysis/test_aggregation_registry_row_aggs.py` (**new**) | 6 | Dep edge matrix (incl. no `bertopic`); selector aliases; `_aggregate_acts` / `understandability` / `affect_tension` |
+| `tests/integration/core/test_run_group_analysis_mocked_pipeline.py` (**new**) | 1 | `integration_core`: `run_group_analysis` success with mocked pipeline (excluded from default addopts) |
+| `tests/core/analysis/voice/test_voice_schema_cache_helpers.py` (**new**) | 7 | `resolve_segment_id`, table↔frame eg columns, cache meta, JSONL save/load, parquet-on raise, rhythm zero-denom |
+
+### Intentionally skipped / not added
+- **AppTest:** not used in repo; Streamlit doubles preferred (matches existing `streamlit_doubles` pattern).
+- **BERTopic fit/transform / requires_models:** stack not usable offline in default env; only pure helpers tested.
+- **Full e2e `run_group_analysis` without mocks:** remains heavy; glue covered via mocked pipeline under `integration_core`.
+- **Home→Charts subject context:** already covered by `test_home_recent_run_action_links_navigate_to_target_page` + `apply_subject_context` contract; no duplicate.
+
+### Validation
+- New default-gate files: **26 passed**.
+- Related slice (registry branches/topo + rhythm + home + new files + integration with `-m ""`): **59 passed**.
+- **Production code:** none changed.
+- **Quarantined / cleanup:** unchanged / disabled.

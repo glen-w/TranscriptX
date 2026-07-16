@@ -29,7 +29,12 @@ def test_home_cold_render_skips_session_discovery(monkeypatch) -> None:
     monkeypatch.setattr(mod, "record_elapsed_section", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "finish_run", lambda **_kwargs: None)
     monkeypatch.setattr(mod, "consume_page_flash", lambda: None)
-    monkeypatch.setattr(mod, "render_context_bar", lambda _ss: None)
+    context_calls = {"n": 0}
+    monkeypatch.setattr(
+        mod,
+        "render_context_bar",
+        lambda _ss: context_calls.__setitem__("n", context_calls["n"] + 1),
+    )
     monkeypatch.setattr(mod, "route_current_page", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_sidebar", lambda **_kwargs: None)
     monkeypatch.setattr(mod, "section", lambda *_args, **_kwargs: DummySidebar())
@@ -45,6 +50,7 @@ def test_home_cold_render_skips_session_discovery(monkeypatch) -> None:
     mod.main()
 
     assert called["sessions"] == 0
+    assert context_calls["n"] == 0
 
 
 def test_charts_page_triggers_session_discovery(monkeypatch) -> None:
@@ -57,7 +63,12 @@ def test_charts_page_triggers_session_discovery(monkeypatch) -> None:
     monkeypatch.setattr(mod, "record_elapsed_section", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "finish_run", lambda **_kwargs: None)
     monkeypatch.setattr(mod, "consume_page_flash", lambda: None)
-    monkeypatch.setattr(mod, "render_context_bar", lambda _ss: None)
+    context_calls = {"n": 0}
+    monkeypatch.setattr(
+        mod,
+        "render_context_bar",
+        lambda _ss: context_calls.__setitem__("n", context_calls["n"] + 1),
+    )
     monkeypatch.setattr(mod, "route_current_page", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "render_sidebar", lambda **_kwargs: None)
     monkeypatch.setattr(mod, "section", lambda *_args, **_kwargs: DummySidebar())
@@ -73,3 +84,4 @@ def test_charts_page_triggers_session_discovery(monkeypatch) -> None:
     mod.main()
 
     assert called["sessions"] == 1
+    assert context_calls["n"] == 1

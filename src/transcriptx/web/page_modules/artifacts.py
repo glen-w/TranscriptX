@@ -9,6 +9,7 @@ from pathlib import Path
 import streamlit as st
 
 from transcriptx.web.blocks.implementations.data import render_artifact_file_preview
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.export_panel import render_export_panel_ui
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.run_scoped_page import (
@@ -43,20 +44,15 @@ ARTIFACTS_SECTIONS = (
 
 BROWSE_PAGE_SIZE = 75
 
-_ARTIFACTS_HELP_PREREQ = (
-    "**Artifacts** browses, previews, and exports run outputs grouped by "
-    "presentation taxonomy (not raw filesystem order)."
-)
-
 _ARTIFACTS_CONFIG = RunScopedPageConfig(
     title="Artifacts",
-    description="Browse, preview, and export run artifacts.",
-    prereq_help_md=_ARTIFACTS_HELP_PREREQ,
+    description=(
+        "Browse, preview, and export run outputs grouped by presentation taxonomy."
+    ),
     empty_headline="Select a subject and run",
     empty_detail="Pick a transcript or group and run in the sidebar.",
     primary_action=("Open Library", "Library"),
     secondary_action=("Overview", "Overview"),
-    loaded_help_md=None,
 )
 
 
@@ -163,7 +159,11 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
         with cols[2]:
             st.caption(entry.size_label)
         with cols[3]:
-            if entry.preview_eligible and st.button("Preview", key=f"art_prev_{a.id}"):
+            if entry.preview_eligible and render_action_link(
+                "Preview",
+                key=f"art_prev_{a.id}",
+                icon=":material/visibility:",
+            ):
                 st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = a.id
                 st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
                 st.rerun()

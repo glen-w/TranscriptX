@@ -860,3 +860,57 @@ def test_service_get_candidate_local_diff_transient_target() -> None:
     svc._session_svc.load_document = MagicMock(return_value=doc)
     r = svc.get_candidate_local_diff("s1", "c1", transient_target_raw="baz")
     assert r.diffs[0].after == "x baz y"
+
+
+def test_service_get_candidate_local_diff_resolves_speaker_display_name(
+    tmp_path, monkeypatch
+) -> None:
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    sidecar = tmp_path / "t.speaker_map.json"
+    sidecar.write_text(
+        '{"speaker_map": {"SPEAKER_00": "Alice Smith"}, "ignored_speakers": []}',
+        encoding="utf-8",
+    )
+
+    from transcriptx.io.speaker_map_resolver import SpeakerMapState
+
+    monkeypatch.setattr(
+        "transcriptx.services.corrections_studio.service.SpeakerMapResolver.load_mapping",
+        lambda self, path: SpeakerMapState(
+            has_sidecar=True,
+            speaker_map={"SPEAKER_00": "Alice Smith"},
+        ),
+    )
+
+    svc = CorrectionService()
+    doc = StudioSessionDocument(
+        session_id="s1",
+        transcript_path=str(transcript),
+        recorded_transcript_identity_hash="abc",
+        current_generation_id=1,
+        candidates=[
+            StudioCandidate(
+                candidate_id="c1",
+                generation_id=1,
+                kind="acronym",
+                wrong_text="foo",
+                right_text="bar",
+                confidence=0.9,
+                occurrences=[
+                    StudioOccurrence(
+                        segment_id="seg",
+                        stable_occurrence_key="ok",
+                        snippet="x foo y",
+                        speaker="SPEAKER_00",
+                        segment_index=0,
+                    )
+                ],
+                review_status=ReviewStatus.pending,
+            )
+        ],
+        review_records=[],
+    )
+    svc._session_svc.load_document = MagicMock(return_value=doc)
+    r = svc.get_candidate_local_diff("s1", "c1")
+    assert r.diffs[0].speaker == "Alice Smith"

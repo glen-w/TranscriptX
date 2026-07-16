@@ -20,6 +20,7 @@ from transcriptx.web.state import (
 def test_legacy_data_and_explorer_redirect_map() -> None:
     assert migrate_legacy_page_key("Data") == ("Artifacts", "Preview")
     assert migrate_legacy_page_key("Explorer") == ("Artifacts", "Browse")
+    assert migrate_legacy_page_key("Statistics") == ("Home", None)
     assert migrate_legacy_page_key("Overview") == ("Overview", None)
 
 
@@ -28,9 +29,9 @@ def test_view_section_excludes_legacy_and_includes_artifacts() -> None:
     assert "Artifacts" in keys
     assert "Data" not in keys
     assert "Explorer" not in keys
-    # Order: ... Transcript, Overview, Insights, Charts, Artifacts
-    assert keys.index("Transcript") < keys.index("Overview")
-    assert keys.index("Overview") < keys.index("Insights")
+    # Order: ... Overview, Transcript, Insights, Charts, Artifacts
+    assert keys.index("Overview") < keys.index("Transcript")
+    assert keys.index("Transcript") < keys.index("Insights")
     assert keys.index("Insights") < keys.index("Charts")
     assert keys.index("Charts") < keys.index("Artifacts")
 

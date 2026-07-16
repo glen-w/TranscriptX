@@ -11,7 +11,7 @@ from transcriptx.core.store.corrections_session_store import session_path_for_tr
 from transcriptx.core.utils.canonicalization import compute_transcript_identity_hash
 from transcriptx.core.utils.config import get_config
 from transcriptx.io import load_segments
-from transcriptx.io.speaker_map_resolver import SpeakerMapState
+from transcriptx.io.speaker_map_resolver import SpeakerMapResolver, SpeakerMapState
 from transcriptx.services.corrections_studio.candidate_mapping import (
     db_rule_to_engine_rule,
 )
@@ -89,6 +89,10 @@ def load_generation_inputs(
             continue
     fuzzy_resolution = _resolve_fuzzy(transcript_path, segments)
     speaker_map_state = _load_speaker_map(transcript_path)
+    # Prefer identified display names on segments so occurrence labels (and LLM
+    # context) show real speaker names instead of SPEAKER_00 placeholders.
+    if speaker_map_state.has_sidecar and speaker_map_state.speaker_map:
+        segments = SpeakerMapResolver().resolve_segments(segments, speaker_map_state)
     fuzzy_enabled = bool(
         corrections_config and getattr(corrections_config, "enable_fuzzy", False)
     )

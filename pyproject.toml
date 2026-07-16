@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.3.9.1"
+version = "0.4.0"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -54,7 +54,7 @@ dependencies = [
     "webrtcvad>=2.0.10",
     "textblob==0.17.1",
     "nltk==3.9.4",
-    "scikit-learn==1.5.0",
+    "scikit-learn==1.6.1",
     "networkx==3.4.2",
 ]
 
@@ -80,7 +80,8 @@ ner = [
 ]
 emotion = [
     "torch>=2.6.0",
-    "transformers>=4.53.0",
+    # Cap <4.53.3 keeps spacy-transformers 1.4.x (en_core_web_trf) installable.
+    "transformers>=4.53.0,<4.53.3",
     "nrclex>=3.0.0",
 ]
 voice = [
@@ -116,7 +117,7 @@ full = [
     "librosa>=0.10.0",
     "soundfile>=0.12.1",
     "torch>=2.6.0",
-    "transformers>=4.53.0",
+    "transformers>=4.53.0,<4.53.3",
     "nrclex>=3.0.0",
     "spacy==3.7.5",
     "thinc==8.2.5",
@@ -148,6 +149,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "transcriptx.core.utils" = ["chart_definitions.json"]
 "transcriptx.web.layouts" = ["presets/*.yaml"]
+"transcriptx.web" = ["assets/*"]
 
 [tool.black]
 line-length = 88

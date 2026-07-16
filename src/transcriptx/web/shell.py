@@ -6,14 +6,41 @@ Kept separate from ``app.py`` so the entry module focuses on routing and pages.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
+
+# Packaged under the web module so Docker (src mount / wheel install) can find them.
+# Repo-root ``assets/`` stays the docs/marketing copy; do not resolve via PROJECT_ROOT
+# (in containers that points at site-packages parent, not the git checkout).
+_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+_LOGO_ICON = _ASSETS_DIR / "transcriptx_icon.png"
+_LOGO_FULL = _ASSETS_DIR / "transcriptx_logo.png"
+_LOGO_DARK = _ASSETS_DIR / "transcriptx_logo_dark.png"
+_FAVICON = _ASSETS_DIR / "favicon.ico"
+
+
+def brand_logo_path(*, for_dark_chrome: bool = True) -> Path | None:
+    """Sidebar/brand mark path.
+
+    Prefer the light-wordmark variant on dark Streamlit chrome; fall back to the
+    standard full logo, then icon-only.
+    """
+    if for_dark_chrome and _LOGO_DARK.is_file():
+        return _LOGO_DARK
+    if _LOGO_FULL.is_file():
+        return _LOGO_FULL
+    if _LOGO_ICON.is_file():
+        return _LOGO_ICON
+    return None
 
 
 def configure_streamlit_page() -> None:
     """``st.set_page_config`` must run before other Streamlit commands."""
+    page_icon = str(_FAVICON) if _FAVICON.is_file() else "🎙️"
     st.set_page_config(
         page_title="TranscriptX",
-        page_icon="🎙️",
+        page_icon=page_icon,
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -24,6 +51,31 @@ def inject_global_styles() -> None:
     st.markdown(
         """
 <style>
+    /* Sidebar width — 256–264px; truncate long values */
+    section[data-testid="stSidebar"] {
+        min-width: 256px !important;
+        max-width: 264px !important;
+        width: 260px !important;
+    }
+    /* Tighten Streamlit's reserved collapse-header strip above brand */
+    section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] {
+        height: 2rem !important;
+        min-height: 2rem !important;
+        margin-bottom: 0.15rem !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+        padding-top: 0 !important;
+    }
+    section[data-testid="stSidebar"] * {
+        overflow-wrap: anywhere;
+    }
+    section[data-testid="stSidebar"] [data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] [data-baseweb="select"] span {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 100%;
+    }
     /* Global left alignment for main content */
     section[data-testid="stAppViewContainer"] .block-container,
     section[data-testid="stAppViewContainer"] .element-container {
@@ -37,10 +89,16 @@ def inject_global_styles() -> None:
         text-align: left;
     }
     .stat-card {
-        background-color: #f0f2f6;
+        background-color: var(--secondary-background-color, #262730);
+        color: var(--text-color, #fafafa);
+        border: 1px solid rgba(250, 250, 250, 0.12);
         padding: 1rem;
         border-radius: 0.5rem;
         text-align: left;
+    }
+    .stat-card strong,
+    .stat-card span {
+        color: inherit;
     }
     .speaker-badge {
         display: inline-block;
@@ -51,60 +109,98 @@ def inject_global_styles() -> None:
         margin-right: 0.5rem;
     }
     /* Navigation section headers */
-    .nav-section-header {
-        font-size: 0.65rem;
+    .nav-section-header,
+    .subject-section-header {
+        display: block;
+        font-size: 0.8rem !important;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: #8a9ab0;
-        margin: 1.1rem 0 0.25rem 0.1rem;
-        padding: 0;
+        margin: 0.85rem 0 0.15rem 0.1rem !important;
+        padding: 0.55rem 0 0.45rem 0 !important;
         line-height: 1.2;
         user-select: none;
     }
-    .nav-section-items {
-        padding-left: 0.35rem;
+    /* Extra breathing room around section labels (Streamlit zeros p margins) */
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]:has(.subject-section-header),
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]:has(.nav-section-header) {
+        margin-top: 0.55rem !important;
+        margin-bottom: 0.25rem !important;
+        padding-top: 0.15rem !important;
+        padding-bottom: 0.15rem !important;
     }
-    /* Style navigation buttons to look like sidebar links */
-    div[data-testid="stButton"] > button[kind="secondary"] {
-        background: transparent;
-        border: none;
-        border-radius: 6px;
-        color: #3d5166;
-        text-align: left;
-        padding: 0.35rem 0.6rem;
-        font-weight: normal;
-        font-size: 0.92rem;
-        box-shadow: none;
+    /* Sidebar nav density — denser than Streamlit defaults, with readable gaps */
+    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.35rem !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stButton"] {
+        margin: 0 !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+        min-height: 2.15rem !important;
+        height: auto !important;
+        line-height: 1.3 !important;
+    }
+    /* Sidebar nav — solid buttons (readable on dark theme) */
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"] {
+        background: rgba(250, 250, 250, 0.07) !important;
+        border: 1px solid rgba(250, 250, 250, 0.14) !important;
+        border-radius: 6px !important;
+        color: #d7dee8 !important;
+        text-align: center;
+        padding: 0.35rem 0.55rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        box-shadow: none !important;
         width: 100%;
-        transition: background 0.12s ease, color 0.12s ease;
+        opacity: 1 !important;
+        transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
-    div[data-testid="stButton"] > button[kind="secondary"]:hover {
-        color: #1f77b4;
-        background: #eef4fb;
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:hover {
+        color: #eef4fb !important;
+        background: rgba(31, 119, 180, 0.22) !important;
+        border-color: rgba(155, 208, 245, 0.35) !important;
         text-decoration: none;
     }
-    div[data-testid="stButton"] > button[kind="secondary"]:focus {
-        box-shadow: none;
-        outline: none;
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:focus-visible {
+        outline: 2px solid #1f77b4;
+        outline-offset: 2px;
+        box-shadow: none !important;
     }
-    /* Active nav item — left-bar highlight */
-    div[data-testid="stButton"] > button[kind="secondary"].nav-active,
-    .nav-active-item > div[data-testid="stButton"] > button[kind="secondary"] {
-        background: #ddeeff;
-        color: #1f77b4;
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:disabled {
+        background: rgba(250, 250, 250, 0.05) !important;
+        border-color: rgba(250, 250, 250, 0.10) !important;
+        color: #b8c2d0 !important;
+        opacity: 1 !important;
+    }
+    /* Active nav — brighter fill, same size/spacing as inactive */
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"] {
+        background: rgba(31, 119, 180, 0.38) !important;
+        border: 1px solid rgba(155, 208, 245, 0.45) !important;
+        border-radius: 6px !important;
+        color: #f3f9fd !important;
+        text-align: center;
+        padding: 0.35rem 0.55rem;
         font-weight: 600;
+        font-size: 0.9rem;
+        box-shadow: none !important;
+        width: 100%;
+        opacity: 1 !important;
     }
-    /* Subject panel section headers (CONTEXT / VIEWS / FILES / ADVANCED) */
-    .subject-section-header {
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #8a9ab0;
-        margin: 1rem 0 0.2rem 0.1rem;
-        line-height: 1.2;
-        user-select: none;
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"]:hover {
+        background: rgba(31, 119, 180, 0.48) !important;
+        border-color: rgba(155, 208, 245, 0.55) !important;
+        color: #ffffff !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"]:focus-visible {
+        outline: 2px solid #1f77b4;
+        outline-offset: 2px;
+        box-shadow: none !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button p,
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button span {
+        color: inherit !important;
     }
     /* Scroll to top button */
     #scroll-to-top-btn {
@@ -132,25 +228,88 @@ def inject_global_styles() -> None:
     #scroll-to-top-btn.show {
         display: block;
     }
-    /* Context bar — single quiet orientation line */
+    /* Context bar — single quiet orientation line; rule matches st.divider */
     .tx-context-bar-wrap {
         position: sticky;
         top: 0;
         z-index: 50;
         margin: 0 0 0.5rem 0;
-        padding: 0.2rem 0 0.35rem 0;
-        background: var(--background-color, rgba(255, 255, 255, 0.92));
-        backdrop-filter: blur(6px);
-        border-bottom: 1px solid rgba(120, 130, 145, 0.12);
+        padding: 0.2rem 0 0.45rem 0;
+        background: var(--background-color, transparent);
+        border-bottom: 1px solid rgba(250, 250, 250, 0.1);
     }
     .tx-context-bar-inner {
         line-height: 1.4;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
     }
     .tx-context-line {
         font-size: 0.76rem;
         font-weight: 400;
         color: #8a9ab0;
         letter-spacing: 0.01em;
+    }
+    /* Run ID info control — custom hover + focus tooltips */
+    .tx-run-id-info {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+    }
+    .tx-run-id-info-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.15rem;
+        height: 1.15rem;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 50%;
+        background: transparent;
+        color: #8a9ab0;
+        font-size: 0.78rem;
+        line-height: 1;
+        cursor: help;
+    }
+    .tx-run-id-info-btn:hover,
+    .tx-run-id-info-btn:focus {
+        color: #1f77b4;
+    }
+    .tx-run-id-info-btn:focus-visible {
+        outline: 2px solid #1f77b4;
+        outline-offset: 2px;
+    }
+    .tx-run-id-info-tip {
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 0.35rem);
+        transform: translateX(-50%);
+        min-width: 10rem;
+        max-width: 22rem;
+        padding: 0.35rem 0.5rem;
+        border-radius: 6px;
+        background: #2c3e50;
+        color: #f8fafc;
+        font-size: 0.72rem;
+        line-height: 1.35;
+        word-break: break-all;
+        white-space: normal;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        z-index: 80;
+        transition: opacity 0.12s ease;
+    }
+    .tx-run-id-info:hover .tx-run-id-info-tip,
+    .tx-run-id-info:focus-within .tx-run-id-info-tip,
+    .tx-run-id-info-btn:focus + .tx-run-id-info-tip,
+    .tx-run-id-info-btn:focus-visible + .tx-run-id-info-tip {
+        opacity: 1;
+        visibility: visible;
     }
     /* Badges (page shell + inline) */
     span.tx-badge {
@@ -186,27 +345,98 @@ def inject_global_styles() -> None:
         justify-content: flex-end;
         align-items: center;
     }
-    /* Page help expander — lighter than main content */
-    .tx-page-help {
-        margin-top: 1.25rem;
+    /* Recent Runs rows */
+    .tx-recent-run-row {
+        border: 1px solid rgba(250, 250, 250, 0.12);
+        border-radius: 10px;
+        padding: 0.75rem 0.9rem;
+        margin: 0 0 0.65rem 0;
+        background: var(--secondary-background-color, rgba(38, 39, 48, 0.9));
+        color: var(--text-color, #fafafa);
+        transition: border-color 0.12s ease, background 0.12s ease;
     }
-    .tx-page-help [data-testid="stExpander"] details summary,
-    .tx-page-help [data-testid="stExpander"] details summary p {
-        font-size: 0.82rem !important;
-        font-weight: 500;
-        color: #8a9ab0 !important;
+    .tx-recent-run-row:hover {
+        border-color: rgba(31, 119, 180, 0.55);
+        background: rgba(31, 119, 180, 0.12);
     }
-    .tx-page-help [data-testid="stExpander"] .streamlit-expanderContent {
-        font-size: 0.88rem;
-        color: #5a6b7d;
+    .tx-recent-run-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-color, #fafafa);
+        margin: 0 0 0.15rem 0;
+        line-height: 1.3;
+    }
+    .tx-recent-run-meta {
+        font-size: 0.82rem;
+        color: var(--text-color, #c9d1d9);
+        opacity: 0.85;
+        margin: 0 0 0.35rem 0;
+    }
+    .tx-recent-run-secondary {
+        font-size: 0.78rem;
+        color: var(--text-color, #8a9ab0);
+        opacity: 0.7;
+        margin: 0 0 0.45rem 0;
+    }
+    /* Compact tertiary action links (nav jumps: Recent Runs, Library, …) */
+    [class*="st-key-tx_al_"] [data-testid="stButton"] {
+        margin: 0 !important;
+    }
+    [class*="st-key-tx_al_"] [data-testid="stButton"] > button,
+    [class*="st-key-tx_al_"] > button {
+        min-height: unset !important;
+        height: auto !important;
+        padding: 0.1rem 0.15rem !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        color: #9ec9e6 !important;
+        gap: 0.28rem !important;
+    }
+    [class*="st-key-tx_al_"] [data-testid="stButton"] > button span[data-testid="stIconMaterial"],
+    [class*="st-key-tx_al_"] [data-testid="stButton"] > button [data-testid="stIconMaterial"],
+    [class*="st-key-tx_al_"] > button span[data-testid="stIconMaterial"],
+    [class*="st-key-tx_al_"] > button [data-testid="stIconMaterial"] {
+        font-size: 0.95rem !important;
+        color: inherit !important;
+        opacity: 0.9;
+    }
+    [class*="st-key-tx_al_"] [data-testid="stButton"] > button:hover,
+    [class*="st-key-tx_al_"] > button:hover {
+        color: #c5e3f6 !important;
+        text-decoration: underline;
+        background: transparent !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"]) {
+        gap: 0 !important;
+        justify-content: flex-start !important;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 0.15rem 0 0.55rem 0;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
+        [data-testid="stColumn"] {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: fit-content !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
+        [data-testid="stColumn"]:not(:last-child)
+        [data-testid="stButton"] > button::after {
+        content: " |";
+        color: rgba(250, 250, 250, 0.4);
+        text-decoration: none;
+        margin-left: 0.45rem;
+        font-weight: 400;
+        pointer-events: none;
     }
     /* Empty states */
     .tx-empty {
-        border: 1px solid rgba(120, 130, 145, 0.25);
+        border: 1px solid rgba(250, 250, 250, 0.14);
         border-radius: 10px;
         padding: 1.1rem 1.25rem;
         margin: 0.5rem 0 1rem 0;
-        background: rgba(248, 250, 252, 0.85);
+        background: var(--secondary-background-color, rgba(38, 39, 48, 0.85));
+        color: var(--text-color, #fafafa);
     }
     .tx-empty-hero {
         margin-top: 2.75rem;
@@ -216,11 +446,13 @@ def inject_global_styles() -> None:
     }
     .tx-empty-hero h4 {
         font-size: 1.18rem;
-        color: #2c3e50;
+        color: var(--text-color, #fafafa);
     }
     .tx-empty-hero p {
         font-size: 0.95rem;
         line-height: 1.45;
+        color: var(--text-color, #c9d1d9);
+        opacity: 0.9;
     }
     .tx-empty-missing_prerequisite { border-left: 4px solid #1f77b4; }
     .tx-empty-no_results_yet { border-left: 4px solid #8a9ab0; }
@@ -230,12 +462,13 @@ def inject_global_styles() -> None:
     .tx-empty h4 {
         margin: 0 0 0.35rem 0;
         font-size: 1.05rem;
-        color: #2c3e50;
+        color: var(--text-color, #fafafa);
     }
     .tx-empty p {
         margin: 0 0 0.75rem 0;
         font-size: 0.9rem;
-        color: #5a6b7d;
+        color: var(--text-color, #c9d1d9);
+        opacity: 0.85;
     }
     /* Chart gallery cards */
     .tx-chart-card {

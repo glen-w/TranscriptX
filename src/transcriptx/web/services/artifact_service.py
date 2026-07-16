@@ -322,26 +322,29 @@ class ArtifactService:
         source = ArtifactService.resolve_artifact_source_path(run_root, artifact)
         if source is None or not source.exists():
             return None
-        thumb_dir = source.parent / ".thumbnails"
-        thumb_dir.mkdir(parents=True, exist_ok=True)
-        thumb_path = thumb_dir / source.name
-        if thumb_path.exists():
-            return thumb_path
-        try:
-            from PIL import Image
+        from transcriptx.core.utils.run_writer_locks import per_run_lock
 
-            with Image.open(source) as img:
-                # Use higher resolution and high-quality resampling for crisp thumbnails
-                img.thumbnail((1024, 768), resample=Image.Resampling.LANCZOS)
-                # Save with high quality settings
-                if thumb_path.suffix.lower() in (".jpg", ".jpeg"):
-                    img.save(thumb_path, quality=95, optimize=True)
-                else:
-                    img.save(thumb_path, optimize=True)
-            return thumb_path
-        except Exception as exc:
-            logger.warning(f"Failed to generate thumbnail: {exc}")
-            return None
+        with per_run_lock(run_root):
+            thumb_dir = source.parent / ".thumbnails"
+            thumb_dir.mkdir(parents=True, exist_ok=True)
+            thumb_path = thumb_dir / source.name
+            if thumb_path.exists():
+                return thumb_path
+            try:
+                from PIL import Image
+
+                with Image.open(source) as img:
+                    # Use higher resolution and high-quality resampling for crisp thumbnails
+                    img.thumbnail((1024, 768), resample=Image.Resampling.LANCZOS)
+                    # Save with high quality settings
+                    if thumb_path.suffix.lower() in (".jpg", ".jpeg"):
+                        img.save(thumb_path, quality=95, optimize=True)
+                    else:
+                        img.save(thumb_path, optimize=True)
+                return thumb_path
+            except Exception as exc:
+                logger.warning(f"Failed to generate thumbnail: {exc}")
+                return None
 
     @staticmethod
     def load_html_artifact(

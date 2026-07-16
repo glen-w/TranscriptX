@@ -159,6 +159,34 @@ class SpeakerMapState:
         )
 
 
+def resolve_speaker_display_label(
+    speaker: Any,
+    speaker_map: Dict[str, str] | SpeakerMapState | None,
+) -> str:
+    """
+    Return the identified display name for a diarized speaker id when available.
+
+    Falls back to the original speaker string when the map is missing, empty,
+    or only has a placeholder self-map (e.g. SPEAKER_00 -> SPEAKER_00).
+    """
+    raw = "" if speaker is None else str(speaker).strip()
+    if not raw:
+        return ""
+    if isinstance(speaker_map, SpeakerMapState):
+        mapping = speaker_map.speaker_map
+    else:
+        mapping = speaker_map or {}
+    if not mapping:
+        return raw
+    nid = normalize_diarized_id(raw)
+    mapped = mapping.get(nid) if nid else None
+    if mapped is None:
+        mapped = mapping.get(raw)
+    if mapped is not None and is_effective_speaker_name(nid or raw, mapped):
+        return normalize_display_name(mapped)
+    return raw
+
+
 class SpeakerMapResolver:
     """Load and resolve speaker mapping state from sidecar files."""
 

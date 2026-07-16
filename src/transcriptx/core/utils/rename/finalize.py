@@ -13,6 +13,7 @@ from transcriptx.core.utils.rename.names import (
     paths_are_case_only_rename,
     unique_temp_name,
 )
+from transcriptx.core.utils.run_writer_locks import run_tree_mutation_gate
 
 logger = get_logger()
 
@@ -161,6 +162,11 @@ def finalize_output_directory_move(old_dir: Path, new_dir: Path) -> str:
     - ``completed`` / ``already_done`` / ``noop`` on success
     - ``both_absent`` / ``both_exist_conflict`` for repair-visible states
     """
+    with run_tree_mutation_gate():
+        return _finalize_output_directory_move_unlocked(old_dir, new_dir)
+
+
+def _finalize_output_directory_move_unlocked(old_dir: Path, new_dir: Path) -> str:
     if old_dir == new_dir:
         return "noop"
     old_exists = old_dir.exists()

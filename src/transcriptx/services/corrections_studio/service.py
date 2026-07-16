@@ -14,6 +14,10 @@ from transcriptx.core.store.corrections_session_store import CorrectionsSessionS
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.canonicalization import compute_transcript_identity_hash
 from transcriptx.io import load_segments
+from transcriptx.io.speaker_map_resolver import (
+    SpeakerMapResolver,
+    resolve_speaker_display_label,
+)
 from transcriptx.services.corrections_studio.candidate_service import (
     CorrectionsStudioCandidateService,
 )
@@ -290,6 +294,16 @@ class CorrectionService:
                 ),
             )
 
+        speaker_map_state = None
+        try:
+            speaker_map_state = SpeakerMapResolver().load_mapping(doc.transcript_path)
+        except Exception:
+            _logger.debug(
+                "Speaker map unavailable for local diff display on %s",
+                doc.transcript_path,
+                exc_info=True,
+            )
+
         diffs: List[CandidateOccurrenceDiff] = []
         for occ in candidate.occurrences:
             snippet = occ.snippet or ""
@@ -302,7 +316,9 @@ class CorrectionService:
                 CandidateOccurrenceDiff(
                     segment_id=occ.segment_id,
                     segment_index=occ.segment_index,
-                    speaker=occ.speaker or "",
+                    speaker=resolve_speaker_display_label(
+                        occ.speaker, speaker_map_state
+                    ),
                     time_start=occ.time_start,
                     time_end=occ.time_end,
                     before=before,

@@ -17,6 +17,11 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union, Literal
 
+from transcriptx.core.utils.run_writer_locks import (
+    RunWriterLease,
+    assert_lease_for_run,
+    per_run_lock,
+)
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils._path_core import (
@@ -138,6 +143,15 @@ class OutputService:
         except Exception:
             return
 
+    def _run_write(self, fn, *, lease: RunWriterLease | None = None):
+        """Run ``fn`` under per-run lock or a validated lease."""
+        root = Path(self.transcript_dir)
+        if lease is not None:
+            assert_lease_for_run(lease, root)
+            return fn()
+        with per_run_lock(root):
+            return fn()
+
     def save_data(
         self,
         data: Union[Dict[str, Any], List[Any], str],
@@ -145,19 +159,29 @@ class OutputService:
         format_type: str = "json",
         subdirectory: Optional[str] = None,
         speaker: Optional[str] = None,
+        *,
+        lease: RunWriterLease | None = None,
     ) -> str:
         """
         Save data in the specified format.
 
-        Args:
-            data: Data to save (dict, list, or string)
-            filename: Name of the file (without extension)
-            format_type: Format to save in ("json", "csv", "txt")
-            subdirectory: Optional subdirectory within the module directory
-
-        Returns:
-            Path to the saved file
+        Public writes acquire the per-run lock unless a valid ``lease`` is supplied.
         """
+        return self._run_write(
+            lambda: self._save_data_body(
+                data, filename, format_type, subdirectory, speaker
+            ),
+            lease=lease,
+        )
+
+    def _save_data_body(
+        self,
+        data: Union[Dict[str, Any], List[Any], str],
+        filename: str,
+        format_type: str = "json",
+        subdirectory: Optional[str] = None,
+        speaker: Optional[str] = None,
+    ) -> str:
         if speaker is not None and self._should_skip_speaker_artifact(speaker):
             return ""
         if format_type == "json":
@@ -322,6 +346,7 @@ class OutputService:
         ext: str = ".txt",
         subdirectory: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        lease: RunWriterLease | None = None,
     ) -> str:
         """
         Save text-based artifacts (e.g., .md, .txt, .log).
@@ -332,10 +357,27 @@ class OutputService:
             ext: File extension, including leading dot (default: ".txt")
             subdirectory: Optional subdirectory within the module data directory
             metadata: Optional artifact metadata to record
+            lease: Optional held RunWriterLease; otherwise acquires per-run lock
 
         Returns:
             Path to the saved file
         """
+        return self._run_write(
+            lambda: self._save_text_body(
+                content, filename, ext=ext, subdirectory=subdirectory, metadata=metadata
+            ),
+            lease=lease,
+        )
+
+    def _save_text_body(
+        self,
+        content: str,
+        filename: str,
+        *,
+        ext: str = ".txt",
+        subdirectory: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> str:
         if not ext.startswith("."):
             ext = f".{ext}"
         if subdirectory:
@@ -366,25 +408,43 @@ class OutputService:
         depends_on: List[str] | None = None,
         tags: List[str] | None = None,
         metadata: Dict[str, Any] | None = None,
+        lease: RunWriterLease | None = None,
     ) -> Optional[Path]:
         """
         Save an interactive HTML view artifact (not a ChartSpec).
 
-        Args:
-            name: Base filename for the view (without extension)
-            html_content: Full HTML content to write
-            module: Optional module name override for metadata
-            scope: "global" or "speaker"
-            speaker: Speaker name if scope="speaker"
-            view_kind: View type identifier (e.g. "wordcloud_explorer")
-            viz_id: Optional stable visualization identifier
-            depends_on: Artifact-relative paths within run this view depends on
-            tags: Optional list of tags
-            metadata: Additional metadata to merge
-
-        Returns:
-            Path to the saved HTML file
+        Public writes acquire the per-run lock unless a valid ``lease`` is supplied.
         """
+        return self._run_write(
+            lambda: self._save_view_html_body(
+                name,
+                html_content,
+                module=module,
+                scope=scope,
+                speaker=speaker,
+                view_kind=view_kind,
+                viz_id=viz_id,
+                depends_on=depends_on,
+                tags=tags,
+                metadata=metadata,
+            ),
+            lease=lease,
+        )
+
+    def _save_view_html_body(
+        self,
+        name: str,
+        html_content: str,
+        *,
+        module: str | None = None,
+        scope: Literal["global", "speaker"] = "global",
+        speaker: str | None = None,
+        view_kind: str | None = None,
+        viz_id: str | None = None,
+        depends_on: List[str] | None = None,
+        tags: List[str] | None = None,
+        metadata: Dict[str, Any] | None = None,
+    ) -> Optional[Path]:
         if scope == "speaker":
             if not speaker:
                 raise ValueError("speaker is required when scope='speaker'")
@@ -437,34 +497,30 @@ class OutputService:
         dynamic_fig: Optional[Any] = None,
         viz_id: Optional[str] = None,
         title: Optional[str] = None,
+        lease: RunWriterLease | None = None,
     ) -> Dict[str, Optional[Path]]:
         """
         Save static and/or dynamic charts.
 
-        Args:
-            spec: ChartSpec object defining the chart intent and payload
-            dpi: DPI for static chart
-            chart_type: Optional subdirectory for chart type
-            chart_id: Legacy chart identifier (used with static_fig/dynamic_fig)
-            scope: "global" or "speaker" (required for legacy usage)
-            speaker: Speaker name (required if scope="speaker")
-            static_fig: Matplotlib figure (legacy usage)
-            dynamic_fig: Plotly figure (legacy usage)
-            viz_id: Stable visualization identifier (preferred for legacy usage)
-            title: Optional display title override (legacy usage)
+        Public writes acquire the per-run lock unless a valid ``lease`` is supplied.
         """
-        if spec is not None:
-            return self._save_chart_spec(spec, dpi=dpi, chart_type=chart_type)
-        return self._save_chart_legacy(
-            chart_id=chart_id,
-            scope=scope,
-            speaker=speaker,
-            static_fig=static_fig,
-            dynamic_fig=dynamic_fig,
-            dpi=dpi,
-            chart_type=chart_type,
-            viz_id=viz_id,
-            title=title,
+        return self._run_write(
+            lambda: (
+                self._save_chart_spec(spec, dpi=dpi, chart_type=chart_type)
+                if spec is not None
+                else self._save_chart_legacy(
+                    chart_id=chart_id,
+                    scope=scope,
+                    speaker=speaker,
+                    static_fig=static_fig,
+                    dynamic_fig=dynamic_fig,
+                    dpi=dpi,
+                    chart_type=chart_type,
+                    viz_id=viz_id,
+                    title=title,
+                )
+            ),
+            lease=lease,
         )
 
     def _save_chart_spec(
@@ -707,18 +763,27 @@ class OutputService:
         global_data: Dict[str, Any],
         speaker_data: Dict[str, Any],
         analysis_metadata: Optional[Dict[str, Any]] = None,
+        *,
+        lease: RunWriterLease | None = None,
     ) -> Path:
         """
         Create and save a comprehensive summary JSON file.
 
-        Args:
-            global_data: Global analysis results
-            speaker_data: Per-speaker analysis results
-            analysis_metadata: Optional metadata about the analysis
-
-        Returns:
-            Path to the saved summary file
+        Public writes acquire the per-run lock unless a valid ``lease`` is supplied.
         """
+        return self._run_write(
+            lambda: self._save_summary_body(
+                global_data, speaker_data, analysis_metadata
+            ),
+            lease=lease,
+        )
+
+    def _save_summary_body(
+        self,
+        global_data: Dict[str, Any],
+        speaker_data: Dict[str, Any],
+        analysis_metadata: Optional[Dict[str, Any]] = None,
+    ) -> Path:
         if analysis_metadata is None:
             analysis_metadata = {}
 
@@ -734,9 +799,18 @@ class OutputService:
             self._record_artifact(Path(summary_path), "json", artifact_role="summary")
         return summary_path
 
-    def record_file(self, path: Path, artifact_type: str = "pdf") -> None:
+    def record_file(
+        self,
+        path: Path,
+        artifact_type: str = "pdf",
+        *,
+        lease: RunWriterLease | None = None,
+    ) -> None:
         """Record an existing file as an artifact (e.g. a PDF built outside save_*)."""
-        self._record_artifact(Path(path), artifact_type)
+        self._run_write(
+            lambda: self._record_artifact(Path(path), artifact_type),
+            lease=lease,
+        )
 
     def get_artifacts(self) -> List[Dict[str, Any]]:
         return list(self._artifacts)

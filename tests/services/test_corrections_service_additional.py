@@ -22,9 +22,21 @@ def _service_with_doc(doc):
     return svc
 
 
+def _doc(**kwargs):
+    """Minimal session doc for CorrectionService unit tests."""
+    base = {
+        "candidates": [],
+        "review_records": [],
+        "current_generation_id": 1,
+        "transcript_path": "/tmp/corrections_studio_fixture.json",
+    }
+    base.update(kwargs)
+    return SimpleNamespace(**base)
+
+
 @pytest.mark.unit
 def test_get_candidate_local_diff_returns_empty_when_candidate_missing():
-    doc = SimpleNamespace(candidates=[], review_records=[], current_generation_id=1)
+    doc = _doc()
     svc = _service_with_doc(doc)
     diff = svc.get_candidate_local_diff("sid", "missing")
     assert diff.diffs == []
@@ -55,9 +67,7 @@ def test_get_candidate_local_diff_uses_review_target_for_accept():
         recorded_at="2026-01-01T00:00:00Z",
         event_sequence=2,
     )
-    doc = SimpleNamespace(
-        candidates=[cand], review_records=[rec], current_generation_id=1
-    )
+    doc = _doc(candidates=[cand], review_records=[rec])
     svc = _service_with_doc(doc)
     diff = svc.get_candidate_local_diff("sid", "c1")
     assert diff.diffs[0].before == "foo baz"
@@ -106,9 +116,7 @@ def test_get_session_stats_counts_unknown_as_pending():
         occurrences=[],
         review_status=ReviewStatus.skipped,
     )
-    doc = SimpleNamespace(
-        candidates=[c1, c2, c3, c4], review_records=[], current_generation_id=1
-    )
+    doc = _doc(candidates=[c1, c2, c3, c4])
     svc = _service_with_doc(doc)
     stats = svc.get_session_stats("sid")
     assert (stats.pending, stats.accepted, stats.rejected, stats.skipped) == (

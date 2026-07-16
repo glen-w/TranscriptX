@@ -121,6 +121,7 @@ class TestStatisticsService:
         """Test getting aggregate statistics."""
         mock_list_sessions.return_value = [
             {
+                "transcript_key": "tk-a",
                 "duration_seconds": 100,
                 "word_count": 500,
                 "speaker_count": 2,
@@ -128,6 +129,7 @@ class TestStatisticsService:
                 "last_updated": "2024-01-01T00:00:00",
             },
             {
+                "transcript_key": "tk-b",
                 "duration_seconds": 200,
                 "word_count": 1000,
                 "speaker_count": 3,
@@ -138,6 +140,7 @@ class TestStatisticsService:
 
         stats = StatisticsService.get_all_sessions_statistics()
 
+        assert stats["total_transcripts"] == 2
         assert stats["total_sessions"] == 2
         assert stats["total_duration_seconds"] == 300
         assert stats["total_duration_minutes"] == 5.0  # 300 seconds / 60
@@ -146,12 +149,56 @@ class TestStatisticsService:
         assert stats["average_completion"] == 62.5  # (50 + 75) / 2
 
     @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
+    def test_get_all_sessions_statistics_dedupes_by_transcript(
+        self, mock_list_sessions
+    ):
+        """Multiple runs for one transcript count once in aggregates."""
+        mock_list_sessions.return_value = [
+            {
+                "transcript_key": "tk-a",
+                "name": "slug-a/run-2",
+                "duration_seconds": 100,
+                "word_count": 500,
+                "speaker_count": 2,
+                "analysis_completion": 80,
+                "last_updated": "2024-01-02T00:00:00",
+            },
+            {
+                "transcript_key": "tk-a",
+                "name": "slug-a/run-1",
+                "duration_seconds": 100,
+                "word_count": 500,
+                "speaker_count": 2,
+                "analysis_completion": 40,
+                "last_updated": "2024-01-01T00:00:00",
+            },
+            {
+                "transcript_key": "tk-b",
+                "name": "slug-b/run-1",
+                "duration_seconds": 50,
+                "word_count": 200,
+                "speaker_count": 1,
+                "analysis_completion": 100,
+                "last_updated": "2024-01-03T00:00:00",
+            },
+        ]
+
+        stats = StatisticsService.get_all_sessions_statistics()
+
+        assert stats["total_transcripts"] == 2
+        assert stats["total_sessions"] == 3
+        assert stats["total_duration_seconds"] == 150
+        assert stats["total_word_count"] == 700
+        assert stats["average_completion"] == 90.0  # (80 + 100) / 2
+
+    @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
     def test_get_all_sessions_statistics_empty(self, mock_list_sessions):
         """Test getting statistics when no sessions exist."""
         mock_list_sessions.return_value = []
 
         stats = StatisticsService.get_all_sessions_statistics()
 
+        assert stats["total_transcripts"] == 0
         assert stats["total_sessions"] == 0
         assert stats["total_duration_seconds"] == 0
         assert stats["total_duration_minutes"] == 0

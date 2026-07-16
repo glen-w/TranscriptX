@@ -87,7 +87,6 @@ def test_viewer_resolves_speakers_before_metadata_metrics(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _DummySt)
     monkeypatch.setattr(mod, "render_page_shell", lambda *a, **k: None)
-    monkeypatch.setattr(mod, "_render_transcript_help", lambda _h: None)
     monkeypatch.setattr(mod, "render_download_row", lambda *a, **k: None)
     monkeypatch.setattr(
         mod,

@@ -1,27 +1,22 @@
-"""Sidebar and Statistics navigation tests."""
+"""Sidebar view-section navigation tests."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from transcriptx.web.navigation import PAGE_SPECS, get_page_spec
+from transcriptx.web.navigation import PAGE_SPECS, migrate_legacy_page_key
 from transcriptx.web.router import PAGE_PREREQUISITES, build_page_renderers
 
 
-def test_statistics_in_page_prerequisites_and_renderers() -> None:
-    assert "Statistics" in PAGE_PREREQUISITES
+def test_statistics_page_removed_from_nav_and_renderers() -> None:
+    assert "Statistics" not in PAGE_PREREQUISITES
+    assert all(spec.key != "Statistics" for spec in PAGE_SPECS)
     renderers = build_page_renderers(
         corrections_studio_available=False,
         render_corrections_studio=None,
     )
-    assert "Statistics" in renderers
-    assert callable(renderers["Statistics"])
-
-
-def test_statistics_required_context_is_none() -> None:
-    spec = get_page_spec("Statistics")
-    assert spec.required_context == "none"
-    assert spec.section == "view"
+    assert "Statistics" not in renderers
+    assert migrate_legacy_page_key("Statistics") == ("Home", None)
 
 
 def test_view_pages_use_flat_nav_grouping() -> None:

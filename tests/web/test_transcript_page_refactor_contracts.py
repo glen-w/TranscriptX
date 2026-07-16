@@ -6,11 +6,23 @@ from contextlib import contextmanager
 
 import transcriptx.web.page_modules.transcript as mod
 from transcriptx.web.models.search import SegmentRef, TranscriptRef
+from transcriptx.web.state import (
+    NAV_REQUEST_KEY,
+    PAGE_KEY,
+    RUN_ID_KEY,
+    RUN_SELECTOR_KEY,
+    SUBJECT_ID_KEY,
+    SUBJECT_ID_SELECTOR_KEY,
+    SUBJECT_TYPE_KEY,
+)
 from transcriptx.web.transcript_view_state import transcript_context_result
 
 
 def test_navigate_to_segment_sets_canonical_state_and_reruns(monkeypatch) -> None:
-    state: dict = {}
+    state: dict = {
+        SUBJECT_ID_SELECTOR_KEY: "",
+        RUN_SELECTOR_KEY: "stale",
+    }
     called = {"rerun": 0}
 
     class _DummySt:
@@ -29,11 +41,13 @@ def test_navigate_to_segment_sets_canonical_state_and_reruns(monkeypatch) -> Non
 
     mod.navigate_to_segment(ref, highlight_query="hello")
 
-    assert state[mod.SUBJECT_TYPE_KEY] == "transcript"
-    assert state[mod.SUBJECT_ID_KEY] == "slug"
-    assert state[mod.RUN_ID_KEY] == "run1"
-    assert state[mod.PAGE_KEY] == "Transcript"
-    assert state[mod.NAV_REQUEST_KEY].highlight_query == "hello"
+    assert state[SUBJECT_TYPE_KEY] == "transcript"
+    assert state[SUBJECT_ID_KEY] == "slug"
+    assert state[RUN_ID_KEY] == "run1"
+    assert state[PAGE_KEY] == "Transcript"
+    assert state[NAV_REQUEST_KEY].highlight_query == "hello"
+    assert SUBJECT_ID_SELECTOR_KEY not in state
+    assert RUN_SELECTOR_KEY not in state
     assert called["rerun"] == 1
 
 
@@ -111,7 +125,6 @@ def test_render_transcript_viewer_does_not_consume_nav_request_on_empty_segments
 
     monkeypatch.setattr(mod, "st", _DummySt)
     monkeypatch.setattr(mod, "render_page_shell", lambda *a, **k: None)
-    monkeypatch.setattr(mod, "_render_transcript_help", lambda _h: None)
     monkeypatch.setattr(mod, "_render_metadata_metrics", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "render_download_row", lambda *a, **k: None)
     monkeypatch.setattr(mod, "render_empty_state", lambda *a, **k: None)

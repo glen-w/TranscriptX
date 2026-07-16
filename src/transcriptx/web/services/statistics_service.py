@@ -30,6 +30,36 @@ def _session_from_listing(session_name: str) -> dict[str, Any] | None:
     return None
 
 
+def _transcript_identity(session: dict[str, Any]) -> str:
+    """Stable key for unique-transcript aggregation (one row per source transcript)."""
+    for field in ("transcript_key", "slug"):
+        value = session.get(field)
+        if value:
+            return str(value)
+    name = session.get("name")
+    if name:
+        return str(name).split("/", 1)[0]
+    return str(id(session))
+
+
+def _unique_transcripts(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Collapse run-level sessions to one entry per transcript.
+
+    Listing is newest-first; keep the first (most recent) run per transcript so
+    duration/words are not double-counted across re-analyses.
+    """
+    seen: set[str] = set()
+    unique: list[dict[str, Any]] = []
+    for session in sessions:
+        key = _transcript_identity(session)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(session)
+    return unique
+
+
 class StatisticsService:
     """Service for calculating statistics."""
 
@@ -99,15 +129,20 @@ class StatisticsService:
     @staticmethod
     def get_all_sessions_statistics() -> Dict[str, Any]:
         """
-        Get aggregate statistics across all sessions.
+        Get aggregate statistics across unique transcripts.
+
+        Multiple analysis runs for the same transcript count once (duration,
+        words, speakers, and completion use the most recent run per transcript).
 
         Returns:
             Dictionary with aggregate statistics
         """
         sessions = cached_list_available_sessions()
+        transcripts = _unique_transcripts(sessions)
 
-        if not sessions:
+        if not transcripts:
             return {
+                "total_transcripts": 0,
                 "total_sessions": 0,
                 "total_duration_seconds": 0,
                 "total_duration_minutes": 0,
@@ -117,15 +152,14 @@ class StatisticsService:
                 "average_completion": 0,
             }
 
-        total_duration = sum(s.get("duration_seconds", 0) for s in sessions)
-        total_words = sum(s.get("word_count", 0) for s in sessions)
-        completion_rates = [s.get("analysis_completion", 0) for s in sessions]
+        total_duration = sum(s.get("duration_seconds", 0) for s in transcripts)
+        total_words = sum(s.get("word_count", 0) for s in transcripts)
+        completion_rates = [s.get("analysis_completion", 0) for s in transcripts]
 
-        total_speakers = (
-            max(s.get("speaker_count", 0) for s in sessions) if sessions else 0
-        )
+        total_speakers = max(s.get("speaker_count", 0) for s in transcripts)
 
         return {
+            "total_transcripts": len(transcripts),
             "total_sessions": len(sessions),
             "total_duration_seconds": total_duration,
             "total_duration_minutes": round(total_duration / 60, 1),
@@ -137,7 +171,5 @@ class StatisticsService:
                 if completion_rates
                 else 0
             ),
-            "recent_sessions": (
-                len([s for s in sessions if s.get("last_updated")]) if sessions else 0
-            ),
+            "recent_sessions": len([s for s in transcripts if s.get("last_updated")]),
         }

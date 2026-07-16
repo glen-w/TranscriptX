@@ -14,7 +14,6 @@ _HYDRATION_PAGES = (
     "Home",
     "Library",
     "Search",
-    "Statistics",
     "Settings",
     "Transcribe Audio",
     "Charts",
@@ -181,3 +180,53 @@ def test_home_resolves_subject_for_nav_access(monkeypatch) -> None:
     )
 
     assert calls["subject"] >= 1
+
+
+def test_selected_transcript_with_no_runs_shows_hint(monkeypatch) -> None:
+    import transcriptx.web.sidebar as mod
+
+    _DummySidebarStreamlit.session_state = {
+        **_seed_sidebar_state("Home"),
+        "subject_type": "transcript",
+        "subject_type_selector": "Transcript",
+        "subject_id": "slug-1",
+        "subject_id_selector": "slug-1",
+    }
+    _DummySidebarStreamlit.button_presses = set()
+    _DummySidebarStreamlit.captions = []
+    _patch_sidebar_basics(monkeypatch, mod)
+    fake_scope = type("Scope", (), {"scope_type": "transcript"})()
+    fake_subject = type(
+        "ResolvedSubject",
+        (),
+        {
+            "scope": fake_scope,
+            "subject_id": "slug-1",
+            "subject_type": "transcript",
+        },
+    )()
+    monkeypatch.setattr(
+        "transcriptx.web.sidebar_options.get_transcript_dropdown_options",
+        lambda: (["slug-1"], lambda value: value),
+    )
+    monkeypatch.setattr(
+        mod.SubjectService,
+        "resolve_current_subject",
+        lambda ss: fake_subject if ss.get("subject_id") == "slug-1" else None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.cached_list_runs",
+        lambda *_args, **_kwargs: [],
+    )
+
+    mod.render_sidebar(
+        current_page="Home",
+        corrections_studio_available=False,
+        prerequisites=_PREREQUISITES,
+    )
+
+    assert any(
+        "No runs for this transcript yet" in caption
+        for caption in _DummySidebarStreamlit.captions
+    )
+    assert _DummySidebarStreamlit.session_state.get("run_id") is None

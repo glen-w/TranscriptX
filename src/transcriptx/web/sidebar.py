@@ -20,11 +20,18 @@ from transcriptx.web.sidebar_state import (
 from transcriptx.web.sidebar_workspace import (
     build_group_labels,
     render_group_picker,
+    render_no_runs_hint,
     render_run_picker,
     render_sidebar_stats,
     render_transcript_picker,
 )
-from transcriptx.web.state import PAGE_KEY, RUN_ID_KEY, SUBJECT_ID_KEY
+from transcriptx.web.state import (
+    PAGE_KEY,
+    RUN_ID_KEY,
+    SUBJECT_ID_KEY,
+    SUBJECT_TYPE_KEY,
+    SUBJECT_TYPE_SELECTOR_KEY,
+)
 
 _SECTION_TITLES: dict[NavSection, str] = {
     "workflow": "Workflow",
@@ -33,11 +40,17 @@ _SECTION_TITLES: dict[NavSection, str] = {
     "settings": "Settings",
 }
 
+_SUBJECT_TYPE_OPTIONS = ("Transcript", "Group")
+_LABEL_TO_CANONICAL = {"Transcript": "transcript", "Group": "group"}
+_CANONICAL_TO_LABEL = {"transcript": "Transcript", "group": "Group"}
+_SUBJECT_TYPE_SELECTOR_KEY = SUBJECT_TYPE_SELECTOR_KEY
+
 
 def _nav_section(title: str) -> None:
     """Non-interactive sidebar section label."""
     st.markdown(
-        f'<p class="subject-section-header">{title}</p>', unsafe_allow_html=True
+        f'<div class="subject-section-header">{title}</div>',
+        unsafe_allow_html=True,
     )
 
 
@@ -55,17 +68,38 @@ def _list_runs_for_subject(subject) -> list:
     return cached_list_runs("transcript", subject_id=subject.subject_id)
 
 
+def _normalise_subject_type_selector(session_state: dict) -> str:
+    """Ensure ``subject_type_selector`` is a single valid non-empty UI label.
+
+    Prefers an already-valid widget value so unrelated reruns do not reset to
+    Transcript. Falls back to canonical ``subject_type``, then Transcript.
+    """
+    raw = session_state.get(_SUBJECT_TYPE_SELECTOR_KEY)
+    if raw in _SUBJECT_TYPE_OPTIONS:
+        return raw
+    if isinstance(raw, (list, tuple)) and raw:
+        first = raw[0]
+        if first in _SUBJECT_TYPE_OPTIONS:
+            session_state[_SUBJECT_TYPE_SELECTOR_KEY] = first
+            return first
+    canonical = session_state.get(SUBJECT_TYPE_KEY)
+    label = _CANONICAL_TO_LABEL.get(canonical, "Transcript")
+    session_state[_SUBJECT_TYPE_SELECTOR_KEY] = label
+    return label
+
+
 def _render_workspace_pickers(session_state: dict) -> None:
-    """Render transcript/group/run selectors when the active page requires context."""
-    subject_type_label = st.radio(
+    """Render transcript/group/run selectors in the sidebar workspace panel."""
+    _normalise_subject_type_selector(session_state)
+    subject_type_label = st.segmented_control(
         "Type",
-        ["Transcript", "Group"],
-        index=0,
-        horizontal=True,
-        key="subject_type_selector",
+        options=list(_SUBJECT_TYPE_OPTIONS),
+        key=_SUBJECT_TYPE_SELECTOR_KEY,
         label_visibility="collapsed",
     )
-    subject_type = "transcript" if subject_type_label == "Transcript" else "group"
+    if subject_type_label not in _SUBJECT_TYPE_OPTIONS:
+        subject_type_label = _normalise_subject_type_selector(session_state)
+    subject_type = _LABEL_TO_CANONICAL[subject_type_label]
     current_run_id = session_state.get(RUN_ID_KEY)
 
     if subject_type == "transcript":
@@ -176,9 +210,7 @@ def _render_workspace_pickers(session_state: dict) -> None:
                 ),
             )
         else:
-            render_sidebar_stats(
-                show_no_selection=True, status="ready", subject_type=subject_type
-            )
+            render_no_runs_hint(subject_type=subject_type)
             apply_sidebar_selection(
                 session_state,
                 SidebarSelectionResult(
@@ -188,9 +220,6 @@ def _render_workspace_pickers(session_state: dict) -> None:
                 ),
             )
     else:
-        render_sidebar_stats(
-            show_no_selection=True, status="ready", subject_type=subject_type
-        )
         apply_sidebar_selection(
             session_state,
             SidebarSelectionResult(
@@ -210,6 +239,12 @@ def render_sidebar(
     """Sidebar: static grouped nav with always-visible workspace pickers."""
     session_state = st.session_state
 
+    from transcriptx.web.shell import brand_logo_path
+
+    logo = brand_logo_path()
+    if logo is not None:
+        st.image(str(logo), width=200)
+
     def _apply_navigation(page_key: str) -> None:
         session_state[PAGE_KEY] = page_key
         st.rerun()
@@ -226,6 +261,7 @@ def render_sidebar(
         is_active = current_page == page_key and not disabled
         text = f"**{label}**" if is_active else label
         btn_key = f"nav_{page_key}{key_suffix}"
+        btn_type = "primary" if is_active else "secondary"
         if disabled:
             st.button(
                 text,
@@ -235,13 +271,8 @@ def render_sidebar(
                 disabled=True,
                 help=help,
             )
-            return
-        if is_active:
-            st.markdown('<div class="nav-active-item">', unsafe_allow_html=True)
-        if st.button(text, key=btn_key, width="stretch", type="secondary", help=help):
+        elif st.button(text, key=btn_key, width="stretch", type=btn_type, help=help):
             _apply_navigation(page_key)
-        if is_active:
-            st.markdown("</div>", unsafe_allow_html=True)
 
     def _render_nav_spec(spec: PageSpec, *, key_suffix: str = "") -> None:
         if spec.key == "Corrections Studio" and not corrections_studio_available:
@@ -253,23 +284,17 @@ def render_sidebar(
             spec,
             key_suffix=key_suffix,
             disabled=not access.allowed,
-            help=access.help_text,
         )
-
-    st.markdown("### 🎙️ TranscriptX")
 
     for spec in pages_in_section("primary"):
         _render_nav_spec(spec)
 
     # tx_sidebar_workflow_nav (order asserted in tests/web/test_upload_transcript_page.py)
     _nav_section(_SECTION_TITLES["workflow"])
-    st.markdown('<div class="nav-section-items">', unsafe_allow_html=True)
     for spec in pages_in_section("workflow"):
         _render_nav_spec(spec)
-    st.markdown("</div>", unsafe_allow_html=True)
 
     _nav_section(_SECTION_TITLES["view"])
-    st.markdown('<div class="nav-section-items">', unsafe_allow_html=True)
     view_specs = pages_in_section("view")
     browse_specs = [s for s in view_specs if s.required_context == "none"]
     context_page_specs = [s for s in view_specs if s.required_context != "none"]
@@ -280,17 +305,12 @@ def render_sidebar(
 
     for spec in context_page_specs:
         _render_nav_spec(spec, key_suffix="_subject")
-    st.markdown("</div>", unsafe_allow_html=True)
 
     # tx_sidebar_tools_group (test anchor: workflow nav must appear above this)
     _nav_section(_SECTION_TITLES["tools"])
-    st.markdown('<div class="nav-section-items">', unsafe_allow_html=True)
     for spec in pages_in_section("tools"):
         _render_nav_spec(spec)
-    st.markdown("</div>", unsafe_allow_html=True)
 
     _nav_section(_SECTION_TITLES["settings"])
-    st.markdown('<div class="nav-section-items">', unsafe_allow_html=True)
     for spec in pages_in_section("settings"):
         _render_nav_spec(spec)
-    st.markdown("</div>", unsafe_allow_html=True)

@@ -14,6 +14,7 @@ from transcriptx.core.utils.file_lock import (
     FileLock,
     LockAcquisitionError,
     cleanup_stale_locks,
+    _ERRNO_EROFS,
 )
 
 
@@ -298,3 +299,53 @@ class TestCleanupStaleLocks:
 
             # Should not raise error
             cleanup_stale_locks(lock_file, max_age_seconds=0)
+
+
+class TestFileLockErofsAndAcquireErrors:
+    """0.3.8 FileLock edges: read-only FS fallback and acquire failure cleanup."""
+
+    def test_acquire_falls_back_to_temp_lock_on_erofs(self, tmp_path, monkeypatch):
+        test_file = tmp_path / "ro" / "doc.json"
+        test_file.parent.mkdir()
+        test_file.write_text("{}", encoding="utf-8")
+        lock = FileLock(test_file, blocking=False)
+        calls = {"n": 0}
+        real = FileLock._acquire_at_path
+
+        def _acquire(self, lock_path):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise OSError(_ERRNO_EROFS, "Read-only file system")
+            return real(self, lock_path)
+
+        monkeypatch.setattr(FileLock, "_acquire_at_path", _acquire)
+
+        assert lock.acquire() is True
+        assert calls["n"] == 2
+        assert "transcriptx_locks" in str(lock.lock_file)
+        lock.release()
+
+    def test_acquire_at_path_exception_closes_fd(self, tmp_path):
+        test_file = tmp_path / "doc.json"
+        test_file.write_text("{}", encoding="utf-8")
+        lock = FileLock(test_file, blocking=False)
+        closed = {"n": 0}
+
+        class _Fd:
+            def fileno(self):
+                return 3
+
+            def close(self):
+                closed["n"] += 1
+
+        with (
+            patch("transcriptx.core.utils.file_lock.fcntl") as mock_fcntl,
+            patch("builtins.open", return_value=_Fd()),
+        ):
+            mock_fcntl.LOCK_EX = 2
+            mock_fcntl.LOCK_NB = 4
+            mock_fcntl.flock.side_effect = RuntimeError("unexpected flock failure")
+            assert lock.acquire() is False
+            assert closed["n"] == 1
+            assert lock.lock_fd is None
+            assert lock.acquired is False

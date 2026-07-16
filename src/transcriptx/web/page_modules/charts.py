@@ -63,20 +63,16 @@ from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_MODULE,
 )
 
-_CHARTS_HELP_PREREQ = (
-    "**What this shows:** Chart artifacts for the selected run.\n\n"
-    "**If empty:** Select a subject and run in the sidebar."
-)
-
 _CHARTS_CONFIG = RunScopedPageConfig(
     title="Charts Gallery",
-    description="Browse static and dynamic chart artifacts for the current run.",
-    prereq_help_md=_CHARTS_HELP_PREREQ,
+    description=(
+        "Browse static and dynamic chart artifacts for the current run. "
+        "Select a subject and run in the sidebar if the gallery is empty."
+    ),
     empty_headline="No subject or run selected",
     empty_detail="Pick a transcript or group and a run in the sidebar to view charts.",
     primary_action=("Open Library", "Library"),
     secondary_action=("Run Analysis", "Run Analysis"),
-    loaded_help_md=None,
 )
 
 

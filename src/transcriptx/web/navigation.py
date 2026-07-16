@@ -42,7 +42,6 @@ class PagePrerequisite:
 @dataclass(frozen=True)
 class PageAccessResult:
     allowed: bool
-    help_text: str | None = None
 
 
 def _spec(
@@ -68,6 +67,8 @@ def _spec(
 
 PAGE_SPECS: tuple[PageSpec, ...] = (
     _spec("Home", "Home", "primary"),
+    _spec("Library", "Library", "primary", may_mutate_context=True),
+    _spec("Search", "Search", "primary"),
     _spec("Transcribe Audio", "Transcribe Audio", "workflow", may_mutate_context=True),
     _spec(
         "Import Transcript", "Import Transcript", "workflow", may_mutate_context=True
@@ -82,9 +83,13 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
     _spec("Run Analysis", "Run Analysis", "workflow", may_mutate_context=True),
     _spec("Batch Ops", "Batch Analysis", "workflow", may_mutate_context=False),
     _spec("Groups", "Groups", "workflow", may_mutate_context=True),
-    _spec("Library", "Library", "view", may_mutate_context=True),
-    _spec("Search", "Search", "view"),
-    _spec("Statistics", "Statistics", "view"),
+    _spec(
+        "Overview",
+        "Overview",
+        "view",
+        required_context="run_scoped",
+        allowed_fallback="home",
+    ),
     _spec(
         "Transcript",
         "Transcript",
@@ -92,13 +97,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         required_context="transcript_or_group",
         allowed_fallback="home",
         may_mutate_context=True,
-    ),
-    _spec(
-        "Overview",
-        "Overview",
-        "view",
-        required_context="run_scoped",
-        allowed_fallback="home",
     ),
     _spec(
         "Insights",
@@ -164,6 +162,20 @@ def get_page_spec(page: str | None) -> PageSpec:
     )
 
 
+# Pages where the sticky context line adds noise (launch/setup/settings).
+_CONTEXT_BAR_HIDDEN_KEYS: frozenset[str] = frozenset(
+    {"Home", "Transcribe Audio", "Import Transcript"}
+)
+_CONTEXT_BAR_HIDDEN_SECTIONS: frozenset[NavSection] = frozenset({"tools", "settings"})
+
+
+def should_show_context_bar(page: str | None) -> bool:
+    """Return False on Home, ingest pages, and tools/settings destinations."""
+    if not page or page in _CONTEXT_BAR_HIDDEN_KEYS:
+        return False
+    return get_page_spec(page).section not in _CONTEXT_BAR_HIDDEN_SECTIONS
+
+
 def page_requires_workspace_hydration(page: str | None) -> bool:
     """True when the active page needs sidebar workspace pickers / session discovery."""
     return get_page_spec(page).required_context in _HYDRATING_CONTEXTS
@@ -182,11 +194,12 @@ LEGACY_PAGE_REDIRECTS: dict[str, tuple[str, str | None]] = {
     # page_key -> (target_page, artifacts_section or None)
     "Data": ("Artifacts", "Preview"),
     "Explorer": ("Artifacts", "Browse"),
+    "Statistics": ("Home", None),
 }
 
 
 def migrate_legacy_page_key(page: str | None) -> tuple[str, str | None]:
-    """Map legacy Data/Explorer keys to Artifacts before prereq evaluation."""
+    """Map legacy page keys before prereq evaluation."""
     if not page:
         return "Home", None
     if page in LEGACY_PAGE_REDIRECTS:
@@ -322,23 +335,23 @@ def evaluate_page_access(
 ) -> PageAccessResult:
     prereq = prerequisites.get(page)
     if prereq is None:
-        return PageAccessResult(allowed=True, help_text=None)
+        return PageAccessResult(allowed=True)
     required = prereq.required_context
     if required == "none":
-        return PageAccessResult(allowed=True, help_text=None)
+        return PageAccessResult(allowed=True)
     if required == "subject":
         if readiness.get("subject_ready"):
-            return PageAccessResult(allowed=True, help_text=None)
-        return PageAccessResult(False, "Select a subject in the sidebar.")
+            return PageAccessResult(allowed=True)
+        return PageAccessResult(allowed=False)
     if required == "run_scoped":
         if readiness.get("run_scoped_ready"):
-            return PageAccessResult(allowed=True, help_text=None)
-        return PageAccessResult(False, "Select a subject and run in the sidebar.")
+            return PageAccessResult(allowed=True)
+        return PageAccessResult(allowed=False)
     if required == "transcript_or_group":
         if readiness.get("transcript_ready"):
-            return PageAccessResult(allowed=True, help_text=None)
-        return PageAccessResult(False, "Select a transcript/group context and run.")
-    return PageAccessResult(allowed=True, help_text=None)
+            return PageAccessResult(allowed=True)
+        return PageAccessResult(allowed=False)
+    return PageAccessResult(allowed=True)
 
 
 # --- Cross-page deep links (Track B) ---

@@ -1,35 +1,13 @@
 # TranscriptX Assets
 
-This directory contains the visual assets for the TranscriptX project.
+Docs/marketing copies of the brand marks. The Streamlit app loads logos from
+`src/transcriptx/web/assets/` (packaged with the web module for Docker/src mounts).
 
 ## Files
 
-- `transcriptx_logo.png` - Main project logo (PNG format)
-- `transcriptx.ico` - Favicon for web applications (ICO format)
+- `transcriptx_logo.png` — Full logo (icon + navy wordmark), transparent; for light surfaces
+- `transcriptx_logo_dark.png` — Same mark with a light wordmark for dark UI chrome
+- `transcriptx_icon.png` — Icon-only mark
+- `favicon.ico` — Browser favicon derived from the icon
 
-## Usage
-
-### Logo
-The logo is used in:
-- Main project README
-- Documentation files
-- Web interfaces
-- Marketing materials
-
-### Favicon
-The favicon is used in:
-- Web browser tabs
-- Bookmarks
-- Web application headers
-
-## Formats
-
-- **PNG**: High-quality logo for documentation and web use
-- **ICO**: Favicon format for web browsers
-
-## Guidelines
-
-- Use the logo with appropriate spacing and sizing
-- Maintain aspect ratio when resizing
-- Use the favicon in all web interfaces
-- Keep assets organized and version-controlled 
+When updating brand art, copy the same files into `src/transcriptx/web/assets/`.

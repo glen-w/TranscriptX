@@ -26,20 +26,16 @@ INSIGHTS_SECTIONS = (
     ("analysis", "Analysis"),
 )
 
-_INSIGHTS_HELP_PREREQ = (
-    "**Insights** is a structured analysis workspace for summaries, speakers, "
-    "actions, highlights, and deeper analysis."
-)
-
 _INSIGHTS_CONFIG = RunScopedPageConfig(
     title="Insights",
-    description="Structured analysis for the selected run.",
-    prereq_help_md=_INSIGHTS_HELP_PREREQ,
+    description=(
+        "Structured analysis workspace for summaries, speakers, actions, "
+        "highlights, and deeper analysis."
+    ),
     empty_headline="Select a subject and run",
     empty_detail="Use the sidebar to choose a transcript or group, then pick a run.",
     primary_action=("Open Library", "Library"),
     secondary_action=("Run Analysis", "Run Analysis"),
-    loaded_help_md=None,
 )
 
 

@@ -433,38 +433,42 @@ class RunOrchestrator:
         state.prepared_workspace = self._prepare_workspace(
             state.prepared_transcript, request
         )
-        with self.workspace.scoped_transcript_output_dir(
-            transcript_path, state.prepared_workspace.output_dir
-        ):
-            state.planned = self._build_execution_plan(
-                state.prepared_transcript,
-                state.prepared_workspace,
-                request,
-                speaker_options,
-            )
-            state.persistence_outcomes.append(state.planned.execution_plan_outcome)
-            state.executed = self._execute_plan(
-                state.planned,
-                state.prepared_transcript,
-                state.prepared_workspace,
-                request,
-                speaker_options,
-                on_event,
-            )
-            state.context = state.executed.context
-            state.dag_results = state.executed.dag_results
-            state.summary = state.executed.summary
-            state.execution_status = state.executed.execution_status
-            state.persistence_outcomes.extend(
-                self._persist_success_outcome(
-                    state.executed,
+        from transcriptx.core.utils.run_writer_locks import per_run_lock
+
+        # Hold per-run lock for the full write lifetime (artifacts + manifests).
+        with per_run_lock(state.prepared_workspace.output_dir):
+            with self.workspace.scoped_transcript_output_dir(
+                transcript_path, state.prepared_workspace.output_dir
+            ):
+                state.planned = self._build_execution_plan(
+                    state.prepared_transcript,
+                    state.prepared_workspace,
+                    request,
+                    speaker_options,
+                )
+                state.persistence_outcomes.append(state.planned.execution_plan_outcome)
+                state.executed = self._execute_plan(
                     state.planned,
                     state.prepared_transcript,
                     state.prepared_workspace,
                     request,
+                    speaker_options,
+                    on_event,
                 )
-            )
-            state.persisted_main = True
+                state.context = state.executed.context
+                state.dag_results = state.executed.dag_results
+                state.summary = state.executed.summary
+                state.execution_status = state.executed.execution_status
+                state.persistence_outcomes.extend(
+                    self._persist_success_outcome(
+                        state.executed,
+                        state.planned,
+                        state.prepared_transcript,
+                        state.prepared_workspace,
+                        request,
+                    )
+                )
+                state.persisted_main = True
 
     def _handle_keyboard_interrupt(
         self, state: _RunComposerState, *, on_event: Optional[Any]

@@ -12,8 +12,9 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.services import FileService, RunIndex, SubjectService
 from transcriptx.web.utils import list_available_sessions
 from transcriptx.web.transcript_view_state import (
@@ -41,9 +42,6 @@ from transcriptx.web.utils import (
 from transcriptx.web.state import (
     NAV_REQUEST_KEY,
     PAGE_KEY,
-    RUN_ID_KEY,
-    SUBJECT_ID_KEY,
-    SUBJECT_TYPE_KEY,
 )
 
 from transcriptx.core.utils.logger import get_logger
@@ -64,9 +62,14 @@ def navigate_to_segment(
     segment_ref: SegmentRef, highlight_query: str | None = None
 ) -> None:
     """Jump from search results into Transcript page context and rerun."""
-    st.session_state[SUBJECT_TYPE_KEY] = "transcript"
-    st.session_state[SUBJECT_ID_KEY] = segment_ref.transcript_ref.session_slug
-    st.session_state[RUN_ID_KEY] = segment_ref.transcript_ref.run_id
+    from transcriptx.web.state import apply_subject_context
+
+    apply_subject_context(
+        st.session_state,
+        subject_type="transcript",
+        subject_id=segment_ref.transcript_ref.session_slug,
+        run_id=segment_ref.transcript_ref.run_id,
+    )
     st.session_state[PAGE_KEY] = "Transcript"
     st.session_state[NAV_REQUEST_KEY] = NavRequest(
         segment_ref=segment_ref,
@@ -96,13 +99,19 @@ def _render_group_browser(subject) -> None:
         if session_info:
             session_slug, session_run_id = session_info
             member_key = member.uuid or f"index_{index}"
-            if st.button(
+            if render_action_link(
                 f"View: {numbered_name}",
                 key=f"group_member_transcript_{member_key}",
+                icon=":material/article:",
             ):
-                st.session_state[SUBJECT_TYPE_KEY] = "transcript"
-                st.session_state[SUBJECT_ID_KEY] = session_slug
-                st.session_state[RUN_ID_KEY] = session_run_id
+                from transcriptx.web.state import apply_subject_context
+
+                apply_subject_context(
+                    st.session_state,
+                    subject_type="transcript",
+                    subject_id=session_slug,
+                    run_id=session_run_id,
+                )
                 st.session_state[PAGE_KEY] = "Transcript"
                 st.rerun()
         else:
@@ -174,11 +183,6 @@ def _render_metadata_metrics(
         )
     with col4:
         st.metric("Language", metadata.get("language", "Unknown"))
-
-
-def _render_transcript_help(help_markdown: str) -> None:
-    """Render transcript page help/footer content."""
-    render_page_help(help_markdown)
 
 
 def _render_transcript_controls() -> TranscriptControlsState:
@@ -258,15 +262,12 @@ def _transcript_interaction_fragment(
 
 def render_transcript_viewer() -> None:
     """Transcript viewer page."""
-    transcript_help = (
-        "**What this shows:** Segments for the selected transcript run.\n\n"
-        "**Search** filters the list. Use **Plain** for line-by-line reading or "
-        "**Segmented** for speaker blocks."
-    )
-
     render_page_shell(
         "Transcript",
-        "Read the diarized transcript for the current run and search segments.",
+        (
+            "Read diarized segments for the current run. Search filters the list; "
+            "use Plain for line-by-line reading or Segmented for speaker blocks."
+        ),
         badges=None,
         actions=None,
     )
@@ -284,11 +285,9 @@ def render_transcript_viewer() -> None:
         )
         if preflight.status == "group_browser":
             _render_group_browser(preflight.subject)
-            _render_transcript_help(transcript_help)
             return
         if preflight.status != "ok":
             _render_preflight_empty_state(preflight)
-            _render_transcript_help(transcript_help)
             return
         context = preflight.context_result
         selected = context.selected_session if context else None
@@ -299,14 +298,12 @@ def render_transcript_viewer() -> None:
             _render_preflight_empty_state(
                 ViewerPreflight(status="context_failed", context_result=context)
             )
-            _render_transcript_help(transcript_help)
             return
 
         with st.spinner(f"Loading transcript for {selected}..."):
             transcript_data = load_transcript_by_session(selected)
         if not transcript_data:
             st.error(f"Transcript not found for session: {selected}")
-            _render_transcript_help(transcript_help)
             return
 
         segments = _resolve_and_prepare_segments(transcript_data, selected)
@@ -327,7 +324,6 @@ def render_transcript_viewer() -> None:
                 primary_action=("Open Library", "Library"),
                 secondary_action=None,
             )
-            _render_transcript_help(transcript_help)
             return
 
         # Preserve existing behavior: nav_request is consumed only once transcript
@@ -341,9 +337,7 @@ def render_transcript_viewer() -> None:
             highlight_query=nav_state.highlight_query,
             jump_index=nav_state.jump_index,
         )
-        _render_transcript_help(transcript_help)
     except Exception as exc:
         logger.error(f"Error loading transcript: {exc}", exc_info=True)
         st.error(f"Error loading transcript: {exc}")
         st.exception(exc)
-        _render_transcript_help(transcript_help)

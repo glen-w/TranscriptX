@@ -146,7 +146,6 @@ def test_page_hydration_gate_follows_required_context_only() -> None:
     assert page_requires_workspace_hydration("Home") is False
     assert page_requires_workspace_hydration("Library") is False
     assert page_requires_workspace_hydration("Search") is False
-    assert page_requires_workspace_hydration("Statistics") is False
     assert page_requires_workspace_hydration("Settings") is False
     assert page_requires_workspace_hydration("Charts") is True
     assert page_requires_workspace_hydration("Overview") is True
@@ -157,6 +156,24 @@ def test_unknown_page_spec_is_non_hydrating() -> None:
     spec = get_page_spec("Totally Unknown Page")
     assert spec.required_context == "none"
     assert page_requires_workspace_hydration("Totally Unknown Page") is False
+
+
+def test_should_show_context_bar_hides_home_ingest_tools_settings() -> None:
+    from transcriptx.web.navigation import PAGE_SPECS, should_show_context_bar
+
+    assert should_show_context_bar("Home") is False
+    assert should_show_context_bar("Transcribe Audio") is False
+    assert should_show_context_bar("Import Transcript") is False
+    assert should_show_context_bar(None) is False
+
+    for spec in PAGE_SPECS:
+        shown = should_show_context_bar(spec.key)
+        if spec.key in {"Home", "Transcribe Audio", "Import Transcript"}:
+            assert shown is False
+        elif spec.section in {"tools", "settings"}:
+            assert shown is False
+        else:
+            assert shown is True
 
 
 def test_build_prerequisites_matches_page_specs() -> None:

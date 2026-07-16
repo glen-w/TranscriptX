@@ -195,36 +195,244 @@ def finalize_group_analysis(
         f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     )
     member_uuids = [member.uuid for member in members]
-    group_output_service = GroupOutputService(
-        group_uuid=group_uuid,
-        run_id=group_run_id,
-        output_dir=group_config.group_analysis.output_dir,
-        scaffold_by_session=group_config.group_analysis.scaffold_by_session,
-        scaffold_by_speaker=group_config.group_analysis.scaffold_by_speaker,
-        scaffold_comparisons=group_config.group_analysis.scaffold_comparisons,
+    from transcriptx.core.utils.run_writer_locks import (
+        RunWriterLock,
+        run_lock_path_for_canonical_root,
     )
-    transcript_set.metadata["group_output_dir"] = str(group_output_service.base_dir)
-    transcript_set.metadata["group_run_id"] = group_run_id
-    member_transcript_ids = [member.id for member in members]
-    member_display_names = [member.file_name for member in members]
-    group_output_service.write_group_run_metadata(
-        group_uuid=group_uuid,
-        group_name_at_run=scope.display_name,
-        group_key=group_key,
-        member_transcript_ids=member_transcript_ids,
-        member_display_names=member_display_names,
-        selected_modules=selected_modules,
-    )
-    _write_group_member_runs_json(
-        Path(group_output_service.base_dir), per_transcript_results
-    )
+    from transcriptx.core.utils.paths import GROUP_OUTPUTS_DIR
 
-    if not group_config.group_analysis.enabled:
+    group_base = (
+        Path(group_config.group_analysis.output_dir or GROUP_OUTPUTS_DIR)
+        / group_uuid
+        / group_run_id
+    )
+    _lock_path = run_lock_path_for_canonical_root(group_base)
+    _lock_path.parent.mkdir(parents=True, exist_ok=True)
+    _group_run_lock = RunWriterLock(_lock_path)
+    if not _group_run_lock.acquire():
+        raise RuntimeError(
+            f"Could not acquire per-run lock for group output: {group_base}"
+        )
+    try:
+        group_output_service = GroupOutputService(
+            group_uuid=group_uuid,
+            run_id=group_run_id,
+            output_dir=group_config.group_analysis.output_dir,
+            scaffold_by_session=group_config.group_analysis.scaffold_by_session,
+            scaffold_by_speaker=group_config.group_analysis.scaffold_by_speaker,
+            scaffold_comparisons=group_config.group_analysis.scaffold_comparisons,
+        )
+        transcript_set.metadata["group_output_dir"] = str(group_output_service.base_dir)
+        transcript_set.metadata["group_run_id"] = group_run_id
+        member_transcript_ids = [member.id for member in members]
+        member_display_names = [member.file_name for member in members]
+        group_output_service.write_group_run_metadata(
+            group_uuid=group_uuid,
+            group_name_at_run=scope.display_name,
+            group_key=group_key,
+            member_transcript_ids=member_transcript_ids,
+            member_display_names=member_display_names,
+            selected_modules=selected_modules,
+        )
+        _write_group_member_runs_json(
+            Path(group_output_service.base_dir), per_transcript_results
+        )
+
+        if not group_config.group_analysis.enabled:
+            summary_text = (
+                f"Group key: {transcript_set.key}\n"
+                f"Transcripts: {len(per_transcript_results)}\n"
+                f"Run ID: {group_run_id}\n"
+                "(Aggregation disabled in config.)\n"
+            )
+            group_output_service.save_summary(summary_text)
+            group_output_service.write_group_manifest(
+                group_id=group_uuid,
+                group_key=group_key or transcript_set.key,
+                transcript_file_uuids=member_uuids,
+                transcript_paths=resolved_paths,
+                run_id=group_run_id,
+            )
+            agg_run, agg_skipped = aggregate_group_module_lists(
+                selected_modules, per_transcript_results
+            )
+            write_run_results_summary(
+                run_dir=Path(group_output_service.base_dir),
+                run_id=group_run_id,
+                transcript_key=group_uuid,
+                modules_enabled=selected_modules,
+                modules_run=agg_run,
+                skipped_modules=agg_skipped,
+                errors=group_errors,
+                preset_explanation=None,
+            )
+            write_output_manifest(
+                run_dir=Path(group_output_service.base_dir),
+                run_id=group_run_id,
+                transcript_key=group_uuid,
+                modules_enabled=selected_modules,
+            )
+            return {
+                "status": "completed",
+                "group_key": transcript_set.key,
+                "group_uuid": group_uuid,
+                "group_run_id": group_run_id,
+                "group_output_dir": str(group_output_service.base_dir),
+                "transcript_set": transcript_set.to_dict(),
+                "transcripts": [result.to_dict() for result in per_transcript_results],
+                "errors": group_errors,
+                "warning": "Group analysis is disabled in config; aggregation skipped.",
+                "aggregation_warnings": [],
+                "group_phase_metadata": {
+                    "group_phase_terminal_failure": False,
+                    "aggregation_warning_count": 0,
+                    "chart_failure_count": 0,
+                    "terminal_errors": [],
+                },
+            }
+
+        from transcriptx.core.analysis.aggregation.registry import build_registry
+        from transcriptx.core.analysis.aggregation.schema import get_transcript_id
+        from transcriptx.core.analysis.aggregation.warnings import build_warning
+        from transcriptx.core.analysis.group_charts.runner import (
+            run_group_aggregate_charts,
+        )
+        from transcriptx.core.pipeline.chart_outcome import (
+            merge_optional_chart_outcome_keys,
+        )
+        from transcriptx.core.output.group_row_writer import write_row_outputs
+        from transcriptx.core.pipeline.speaker_normalizer import (
+            normalize_speakers_across_transcripts,
+        )
+
+        canonical_speaker_map = normalize_speakers_across_transcripts(
+            per_transcript_results
+        )
+
+        aggregation_warnings: List[Dict[str, Any]] = []
+        aggregations: Dict[str, Any] = {}
+        completed: set[str] = set()
+        registry = build_registry()
+        ordered = _topo_sort_entries(registry)
+        for entry in ordered:
+            if not entry.selector(selected_modules):
+                continue
+            missing_deps = [dep for dep in entry.deps if dep not in completed]
+            if missing_deps:
+                aggregation_warnings.append(
+                    build_warning(
+                        code="MISSING_DEP",
+                        message=f"Missing dependencies: {', '.join(missing_deps)}",
+                        aggregation_key=entry.agg_id,
+                        missing_deps=missing_deps,
+                        details={"missing_keys": missing_deps},
+                    )
+                )
+                continue
+
+            outcome = _call_aggregate_fn(
+                entry.aggregate_fn,
+                per_transcript_results,
+                canonical_speaker_map,
+                transcript_set,
+                aggregations,
+            )
+            if outcome is None:
+                continue
+            if isinstance(outcome, dict) and outcome.get("warning"):
+                aggregation_warnings.append(outcome["warning"])
+                continue
+
+            if isinstance(outcome, dict):
+                for w in outcome.get("aggregation_warnings") or []:
+                    if isinstance(w, dict) and w.get("code"):
+                        aggregation_warnings.append(w)
+
+            if entry.output_type == "blob":
+                blob_name = outcome.get("blob_name", "summary")
+                blob_payload = outcome.get("blob_payload", {})
+                blob_dir = Path(group_output_service.base_dir) / entry.agg_id
+                blob_dir.mkdir(parents=True, exist_ok=True)
+                save_json(blob_payload, str(blob_dir / f"{blob_name}.json"))
+                stored = dict(outcome)
+                stored["output_type"] = "blob"
+                stored["artifact"] = str(blob_dir / f"{blob_name}.json")
+                aggregations[entry.agg_id] = stored
+                completed.add(entry.agg_id)
+                continue
+
+            row_payload = _row_payload(outcome)
+            session_rows = row_payload.get("session_rows", [])
+            speaker_rows = row_payload.get("speaker_rows", [])
+            metrics_spec = row_payload.get("metrics_spec")
+            content_rows = row_payload.get("content_rows")
+            content_rows_name = row_payload.get("content_rows_name")
+            drop_csv_keys = row_payload.get("drop_csv_keys")
+
+            session_rows = _attach_session_identity(
+                session_rows,
+                per_transcript_results,
+                transcript_set,
+                get_transcript_id,
+            )
+            _written, warning = write_row_outputs(
+                base_dir=Path(group_output_service.base_dir),
+                agg_id=entry.agg_id,
+                session_rows=session_rows,
+                speaker_rows=speaker_rows,
+                metrics_spec=metrics_spec,
+                content_rows=content_rows,
+                content_rows_name=content_rows_name,
+                bundle=True,
+                drop_csv_keys=drop_csv_keys,
+            )
+            if warning:
+                aggregation_warnings.append(warning)
+                continue
+            chart_outcome = {
+                "session_rows": session_rows,
+                "speaker_rows": speaker_rows,
+                "metrics_spec": metrics_spec,
+                "content_rows": content_rows,
+                "content_rows_name": content_rows_name,
+            }
+            merge_optional_chart_outcome_keys(chart_outcome, outcome)
+            try:
+                chart_result = run_group_aggregate_charts(
+                    agg_id=entry.agg_id,
+                    group_run_root=Path(group_output_service.base_dir),
+                    group_run_id=group_run_id,
+                    outcome=chart_outcome,
+                    transcript_set=transcript_set,
+                    group_uuid=group_uuid,
+                    per_transcript_results=per_transcript_results,
+                    canonical_speaker_map=canonical_speaker_map,
+                )
+                aggregation_warnings.extend(chart_result.warnings)
+            except Exception as exc:
+                logger.warning(
+                    "Group chart runner dispatch failed for %s: %s",
+                    entry.agg_id,
+                    exc,
+                    exc_info=True,
+                )
+            stored = dict(outcome)
+            stored["output_type"] = "rows"
+            aggregations[entry.agg_id] = stored
+            completed.add(entry.agg_id)
+
+        aggregation_warnings.sort(
+            key=lambda w: (w.get("aggregation_key", ""), w.get("code", ""))
+        )
+        warnings_path = (
+            Path(group_output_service.base_dir) / "aggregation_warnings.json"
+        )
+        save_json(aggregation_warnings, str(warnings_path))
+
         summary_text = (
             f"Group key: {transcript_set.key}\n"
             f"Transcripts: {len(per_transcript_results)}\n"
             f"Run ID: {group_run_id}\n"
-            "(Aggregation disabled in config.)\n"
         )
         group_output_service.save_summary(summary_text)
         group_output_service.write_group_manifest(
@@ -247,12 +455,20 @@ def finalize_group_analysis(
             errors=group_errors,
             preset_explanation=None,
         )
+
         write_output_manifest(
             run_dir=Path(group_output_service.base_dir),
             run_id=group_run_id,
             transcript_key=group_uuid,
             modules_enabled=selected_modules,
         )
+
+        chart_failure_count = sum(
+            1
+            for w in aggregation_warnings
+            if isinstance(w, dict) and w.get("code") == "GROUP_CHART_FAILED"
+        )
+
         return {
             "status": "completed",
             "group_key": transcript_set.key,
@@ -262,212 +478,22 @@ def finalize_group_analysis(
             "transcript_set": transcript_set.to_dict(),
             "transcripts": [result.to_dict() for result in per_transcript_results],
             "errors": group_errors,
-            "warning": "Group analysis is disabled in config; aggregation skipped.",
-            "aggregation_warnings": [],
+            "aggregations": aggregations,
+            "canonical_speaker_map": {
+                "transcript_to_speakers": canonical_speaker_map.transcript_to_speakers,
+                "canonical_to_display": canonical_speaker_map.canonical_to_display,
+            },
+            "meta": {
+                "warnings_count": len(aggregation_warnings),
+            },
+            "aggregation_warnings": aggregation_warnings,
             "group_phase_metadata": {
                 "group_phase_terminal_failure": False,
-                "aggregation_warning_count": 0,
-                "chart_failure_count": 0,
-                "terminal_errors": [],
+                "aggregation_warning_count": len(aggregation_warnings),
+                "chart_failure_count": chart_failure_count,
+                "terminal_errors": list(group_errors),
             },
         }
 
-    from transcriptx.core.analysis.aggregation.registry import build_registry
-    from transcriptx.core.analysis.aggregation.schema import get_transcript_id
-    from transcriptx.core.analysis.aggregation.warnings import build_warning
-    from transcriptx.core.analysis.group_charts.runner import run_group_aggregate_charts
-    from transcriptx.core.pipeline.chart_outcome import (
-        merge_optional_chart_outcome_keys,
-    )
-    from transcriptx.core.output.group_row_writer import write_row_outputs
-    from transcriptx.core.pipeline.speaker_normalizer import (
-        normalize_speakers_across_transcripts,
-    )
-
-    canonical_speaker_map = normalize_speakers_across_transcripts(
-        per_transcript_results
-    )
-
-    aggregation_warnings: List[Dict[str, Any]] = []
-    aggregations: Dict[str, Any] = {}
-    completed: set[str] = set()
-    registry = build_registry()
-    ordered = _topo_sort_entries(registry)
-    for entry in ordered:
-        if not entry.selector(selected_modules):
-            continue
-        missing_deps = [dep for dep in entry.deps if dep not in completed]
-        if missing_deps:
-            aggregation_warnings.append(
-                build_warning(
-                    code="MISSING_DEP",
-                    message=f"Missing dependencies: {', '.join(missing_deps)}",
-                    aggregation_key=entry.agg_id,
-                    missing_deps=missing_deps,
-                    details={"missing_keys": missing_deps},
-                )
-            )
-            continue
-
-        outcome = _call_aggregate_fn(
-            entry.aggregate_fn,
-            per_transcript_results,
-            canonical_speaker_map,
-            transcript_set,
-            aggregations,
-        )
-        if outcome is None:
-            continue
-        if isinstance(outcome, dict) and outcome.get("warning"):
-            aggregation_warnings.append(outcome["warning"])
-            continue
-
-        if isinstance(outcome, dict):
-            for w in outcome.get("aggregation_warnings") or []:
-                if isinstance(w, dict) and w.get("code"):
-                    aggregation_warnings.append(w)
-
-        if entry.output_type == "blob":
-            blob_name = outcome.get("blob_name", "summary")
-            blob_payload = outcome.get("blob_payload", {})
-            blob_dir = Path(group_output_service.base_dir) / entry.agg_id
-            blob_dir.mkdir(parents=True, exist_ok=True)
-            save_json(blob_payload, str(blob_dir / f"{blob_name}.json"))
-            stored = dict(outcome)
-            stored["output_type"] = "blob"
-            stored["artifact"] = str(blob_dir / f"{blob_name}.json")
-            aggregations[entry.agg_id] = stored
-            completed.add(entry.agg_id)
-            continue
-
-        row_payload = _row_payload(outcome)
-        session_rows = row_payload.get("session_rows", [])
-        speaker_rows = row_payload.get("speaker_rows", [])
-        metrics_spec = row_payload.get("metrics_spec")
-        content_rows = row_payload.get("content_rows")
-        content_rows_name = row_payload.get("content_rows_name")
-        drop_csv_keys = row_payload.get("drop_csv_keys")
-
-        session_rows = _attach_session_identity(
-            session_rows,
-            per_transcript_results,
-            transcript_set,
-            get_transcript_id,
-        )
-        _written, warning = write_row_outputs(
-            base_dir=Path(group_output_service.base_dir),
-            agg_id=entry.agg_id,
-            session_rows=session_rows,
-            speaker_rows=speaker_rows,
-            metrics_spec=metrics_spec,
-            content_rows=content_rows,
-            content_rows_name=content_rows_name,
-            bundle=True,
-            drop_csv_keys=drop_csv_keys,
-        )
-        if warning:
-            aggregation_warnings.append(warning)
-            continue
-        chart_outcome = {
-            "session_rows": session_rows,
-            "speaker_rows": speaker_rows,
-            "metrics_spec": metrics_spec,
-            "content_rows": content_rows,
-            "content_rows_name": content_rows_name,
-        }
-        merge_optional_chart_outcome_keys(chart_outcome, outcome)
-        try:
-            chart_result = run_group_aggregate_charts(
-                agg_id=entry.agg_id,
-                group_run_root=Path(group_output_service.base_dir),
-                group_run_id=group_run_id,
-                outcome=chart_outcome,
-                transcript_set=transcript_set,
-                group_uuid=group_uuid,
-                per_transcript_results=per_transcript_results,
-                canonical_speaker_map=canonical_speaker_map,
-            )
-            aggregation_warnings.extend(chart_result.warnings)
-        except Exception as exc:
-            logger.warning(
-                "Group chart runner dispatch failed for %s: %s",
-                entry.agg_id,
-                exc,
-                exc_info=True,
-            )
-        stored = dict(outcome)
-        stored["output_type"] = "rows"
-        aggregations[entry.agg_id] = stored
-        completed.add(entry.agg_id)
-
-    aggregation_warnings.sort(
-        key=lambda w: (w.get("aggregation_key", ""), w.get("code", ""))
-    )
-    warnings_path = Path(group_output_service.base_dir) / "aggregation_warnings.json"
-    save_json(aggregation_warnings, str(warnings_path))
-
-    summary_text = (
-        f"Group key: {transcript_set.key}\n"
-        f"Transcripts: {len(per_transcript_results)}\n"
-        f"Run ID: {group_run_id}\n"
-    )
-    group_output_service.save_summary(summary_text)
-    group_output_service.write_group_manifest(
-        group_id=group_uuid,
-        group_key=group_key or transcript_set.key,
-        transcript_file_uuids=member_uuids,
-        transcript_paths=resolved_paths,
-        run_id=group_run_id,
-    )
-    agg_run, agg_skipped = aggregate_group_module_lists(
-        selected_modules, per_transcript_results
-    )
-    write_run_results_summary(
-        run_dir=Path(group_output_service.base_dir),
-        run_id=group_run_id,
-        transcript_key=group_uuid,
-        modules_enabled=selected_modules,
-        modules_run=agg_run,
-        skipped_modules=agg_skipped,
-        errors=group_errors,
-        preset_explanation=None,
-    )
-
-    write_output_manifest(
-        run_dir=Path(group_output_service.base_dir),
-        run_id=group_run_id,
-        transcript_key=group_uuid,
-        modules_enabled=selected_modules,
-    )
-
-    chart_failure_count = sum(
-        1
-        for w in aggregation_warnings
-        if isinstance(w, dict) and w.get("code") == "GROUP_CHART_FAILED"
-    )
-
-    return {
-        "status": "completed",
-        "group_key": transcript_set.key,
-        "group_uuid": group_uuid,
-        "group_run_id": group_run_id,
-        "group_output_dir": str(group_output_service.base_dir),
-        "transcript_set": transcript_set.to_dict(),
-        "transcripts": [result.to_dict() for result in per_transcript_results],
-        "errors": group_errors,
-        "aggregations": aggregations,
-        "canonical_speaker_map": {
-            "transcript_to_speakers": canonical_speaker_map.transcript_to_speakers,
-            "canonical_to_display": canonical_speaker_map.canonical_to_display,
-        },
-        "meta": {
-            "warnings_count": len(aggregation_warnings),
-        },
-        "aggregation_warnings": aggregation_warnings,
-        "group_phase_metadata": {
-            "group_phase_terminal_failure": False,
-            "aggregation_warning_count": len(aggregation_warnings),
-            "chart_failure_count": chart_failure_count,
-            "terminal_errors": list(group_errors),
-        },
-    }
+    finally:
+        _group_run_lock.release()

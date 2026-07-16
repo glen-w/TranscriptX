@@ -14,8 +14,9 @@ from transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisReques
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.utils.config import get_config
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
@@ -43,8 +44,9 @@ from transcriptx.web.transcript_option_format import (
 from transcriptx.web.navigation import make_session_path_resolver
 from transcriptx.web.services.subject_service import SubjectService
 
-_RUN_ANALYSIS_HELP = (
-    "**Quick** uses a lighter preset; **full** lets you pick a profile. "
+_RUN_ANALYSIS_DESCRIPTION = (
+    "Configure modules and run analysis on one transcript or a group. "
+    "Quick uses a lighter preset; full lets you pick a profile. "
     "Recommended modules adapt to the selected transcript(s)."
 )
 
@@ -230,17 +232,29 @@ def _run_analysis_config_and_launch_fragment(
                         st.caption(
                             f"… and {len(agg_warns) - 50} more (see aggregation_warnings.json in the run directory)."
                         )
-            oc1, oc2, oc3 = st.columns(3)
+            oc1, oc2, oc3 = st.columns(3, gap="small")
             with oc1:
-                if st.button("Open Overview", key="post_run_overview"):
+                if render_action_link(
+                    "Open Overview",
+                    key="post_run_overview",
+                    icon=":material/folder_open:",
+                ):
                     st.session_state["page"] = "Overview"
                     st.rerun()
             with oc2:
-                if st.button("Open Charts", key="post_run_charts"):
+                if render_action_link(
+                    "Open Charts",
+                    key="post_run_charts",
+                    icon=":material/bar_chart:",
+                ):
                     st.session_state["page"] = "Charts"
                     st.rerun()
             with oc3:
-                if st.button("Open Data", key="post_run_data"):
+                if render_action_link(
+                    "Open Data",
+                    key="post_run_data",
+                    icon=":material/inventory_2:",
+                ):
                     st.session_state["page"] = "Artifacts"
                     st.rerun()
             if result.warnings:
@@ -266,7 +280,7 @@ def render_run_analysis_page() -> None:
     """Render the Run Analysis page with form and execution."""
     render_page_shell(
         "Run Analysis",
-        "Configure modules and run analysis on one transcript or a group.",
+        _RUN_ANALYSIS_DESCRIPTION,
         badges=None,
         actions=None,
     )
@@ -410,7 +424,6 @@ def render_run_analysis_page() -> None:
             render_progress_panel(snapshot)
         else:
             st.info("Analysis is running…")
-        render_page_help(_RUN_ANALYSIS_HELP)
         return
 
     # Show panel for the last run (completed or failed) so the result persists
@@ -420,8 +433,10 @@ def render_run_analysis_page() -> None:
         with st.expander("Last run progress", expanded=False):
             render_progress_panel(last_snapshot)
             if last_snapshot.get("status") == "completed":
-                if st.button(
-                    "Open Viewer Overview", key="last_run_progress_open_overview"
+                if render_action_link(
+                    "Open Viewer Overview",
+                    key="last_run_progress_open_overview",
+                    icon=":material/folder_open:",
                 ):
                     st.session_state["page"] = "Overview"
                     st.rerun()
@@ -433,4 +448,3 @@ def render_run_analysis_page() -> None:
         tuple(available),
         tuple(default_modules),
     )
-    render_page_help(_RUN_ANALYSIS_HELP)

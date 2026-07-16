@@ -7,8 +7,6 @@ Standard (default) layout is curated; layout picker is not shown here.
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import streamlit as st
 
 from transcriptx.web.blocks.builtin import register_builtin_blocks
@@ -24,34 +22,30 @@ from transcriptx.web.components.run_scoped_page import (
     RunScopedPageContext,
     render_run_scoped_page,
 )
+from transcriptx.web.context_format import parse_run_timestamp
 from transcriptx.web.services.artifact_index import build_artifact_index
 
-_OVERVIEW_HELP_PREREQ = (
-    "**Overview** is a curated landing page for one run: summary, speakers, "
-    "actions, highlights, and quiet run status."
+_OVERVIEW_DESCRIPTION = (
+    "Curated landing page for one run: summary, speakers, actions, "
+    "highlights, and quiet run status. Select a subject and run in the sidebar."
 )
 
 _OVERVIEW_CONFIG = RunScopedPageConfig(
     title="Overview",
-    description="What this recording is and what to know first.",
-    prereq_help_md=_OVERVIEW_HELP_PREREQ,
+    description=_OVERVIEW_DESCRIPTION,
     empty_headline="Select a subject and run",
     empty_detail="Use the sidebar to choose a transcript or group, then pick a run.",
     primary_action=("Open Library", "Library"),
     secondary_action=("Run Analysis", "Run Analysis"),
-    loaded_help_md=None,
 )
 
 
 def _parse_run_datetime(run_id: str) -> str:
-    try:
-        if "_" in run_id:
-            date_time_str = run_id.split("_")[0] + "_" + run_id.split("_")[1]
-            dt = datetime.strptime(date_time_str, "%Y%m%d_%H%M%S")
-            return dt.strftime("%Y-%m-%d %H:%M:%S")
-    except (ValueError, IndexError):
-        pass
-    return run_id
+    """Overview display: ``YYYY-MM-DD HH:MM:SS`` or raw id (existing behaviour)."""
+    dt = parse_run_timestamp(run_id)
+    if dt is not None:
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    return run_id if run_id else "No run"
 
 
 @st.fragment

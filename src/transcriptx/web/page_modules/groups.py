@@ -24,16 +24,17 @@ from transcriptx.web.cache_helpers import (
     get_cached_list_transcripts,
 )
 from transcriptx.web.services.group_service import GroupService
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_GROUP,
     set_page_flash,
     try_page_toast,
 )
 
-_GROUPS_HELP = (
-    "**Groups** bundle transcripts for batch or aggregate runs. "
+_GROUPS_DESCRIPTION = (
+    "Bundle transcripts for batch or aggregate runs. "
     "Select a group below to rename, edit members, or open it in the subject panel."
 )
 
@@ -276,7 +277,11 @@ def _groups_detail_fragment(
                 st.rerun()
 
     st.divider()
-    if st.button("View group in subject panel", key=f"view_subject_{group.group_id}"):
+    if render_action_link(
+        "View group in subject panel",
+        key=f"view_subject_{group.group_id}",
+        icon=":material/groups:",
+    ):
         st.session_state["subject_type"] = "group"
         st.session_state["subject_id"] = group.group_id
         st.session_state["page"] = "Overview"
@@ -286,7 +291,7 @@ def _groups_detail_fragment(
 def render_groups() -> None:
     render_page_shell(
         "Groups",
-        "Create and manage transcript groups for aggregate analysis.",
+        _GROUPS_DESCRIPTION,
         badges=None,
         actions=None,
     )
@@ -315,7 +320,6 @@ def render_groups() -> None:
             primary_action=("Open Library", "Library"),
             secondary_action=("Run Analysis", "Run Analysis"),
         )
-        render_page_help(_GROUPS_HELP)
         return
 
     table_data = [
@@ -342,4 +346,3 @@ def render_groups() -> None:
         transcript_labels,
         transcript_canonical,
     )
-    render_page_help(_GROUPS_HELP)

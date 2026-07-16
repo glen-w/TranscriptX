@@ -9,8 +9,10 @@ import streamlit as st
 
 from transcriptx.web.sidebar_hydration import SidebarStatus
 from transcriptx.web.state import (
+    RUN_SELECTOR_KEY,
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
+    SUBJECT_ID_SELECTOR_KEY,
 )
 
 
@@ -18,12 +20,8 @@ def render_sidebar_stats(
     *,
     status: SidebarStatus,
     subject_type: str,
-    show_no_selection: bool = False,
 ) -> None:
-    """Render existing workspace status captions verbatim."""
-    if show_no_selection:
-        st.caption("No transcript selected")
-        return
+    """Render workspace status captions for loading/empty lists."""
     if status == "loading":
         st.caption("Workspace list loading...")
         return
@@ -32,6 +30,12 @@ def render_sidebar_stats(
             st.caption("No groups yet")
         else:
             st.caption("No transcripts yet")
+
+
+def render_no_runs_hint(*, subject_type: str) -> None:
+    """Hint when a subject is selected but has no analysis runs."""
+    noun = "group" if subject_type == "group" else "transcript"
+    st.caption(f"No runs for this {noun} yet — open Run Analysis to create one.")
 
 
 def render_transcript_picker(
@@ -51,7 +55,8 @@ def render_transcript_picker(
             SELECTBOX_PLACEHOLDER_TRANSCRIPT if x == "" else format_func(x)
         ),
         index=default_idx,
-        key="subject_id_selector",
+        key=SUBJECT_ID_SELECTOR_KEY,
+        label_visibility="collapsed",
     )
     return selected if selected else None
 
@@ -73,7 +78,8 @@ def render_group_picker(
             SELECTBOX_PLACEHOLDER_GROUP if key == "" else group_labels.get(key, key)
         ),
         index=default_idx,
-        key="subject_id_selector",
+        key=SUBJECT_ID_SELECTOR_KEY,
+        label_visibility="collapsed",
     )
     return selected_group if selected_group else None
 
@@ -89,7 +95,7 @@ def render_run_picker(
         "Run",
         run_options,
         index=index,
-        key="run_selector",
+        key=RUN_SELECTOR_KEY,
     )
 
 

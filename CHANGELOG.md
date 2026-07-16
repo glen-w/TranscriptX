@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-17
+
+### Added
+
+- Safe run-cleanup pipeline for storage management (plan/staging/journal/physical delete with identity and handle guards).
+- Per-run writer locks, path canonicalization, and run-identity helpers to serialize mutating output writes.
+- Web layout/context shell upgrades: context bar formatting, run-id info, action links, and refreshed branding assets.
+- Storage settings UI wired to cleanup discovery, compare, and recoverability flows.
+
+### Changed
+
+- Home/shell navigation and run-scoped pages share a clearer workspace layout; standalone Statistics page removed in favor of integrated surfaces.
+- Pipeline/output services acquire run writer leases for concurrent-safe artifact writes.
+- Corrections Studio input/service paths tightened for batch commit and candidate generation.
+
+### Fixed
+
+- Group wordcloud output `save_data` signature aligned with `OutputService` lease parameter for type-checker compatibility.
+
 ## [0.3.9.1] - 2026-07-16
 
 ### Security

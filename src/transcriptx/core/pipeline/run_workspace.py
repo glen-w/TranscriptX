@@ -13,6 +13,7 @@ from transcriptx.core.utils._path_core import (
     set_transcript_output_dir,
 )
 from transcriptx.core.utils import paths as paths_module
+from transcriptx.core.utils.run_writer_locks import run_tree_mutation_gate
 
 
 class RunWorkspaceService:
@@ -30,7 +31,9 @@ class RunWorkspaceService:
             or os.getenv("TRANSCRIPTX_OUTPUT_DIR")
         )
         output_dir = str(Path(base_output) / slug / run_id)
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        # Mutation gate serializes run-tree mkdir against bulk cleanup.
+        with run_tree_mutation_gate():
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
         return RunWorkspace(output_dir=output_dir)
 
     @contextmanager

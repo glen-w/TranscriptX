@@ -432,19 +432,18 @@ def _render_section_c(audio_paths: List[Path], suggested_steps: List[str]) -> No
         )
         st.code(str(output_dir), language=None)
 
-    # Build config override with advanced settings
-    from transcriptx.core.utils.config import get_config
-    from dataclasses import replace as dc_replace
+    # Build config override with advanced settings.
+    # AudioPreprocessingConfig fields are init=False (delegated); copy then setattr.
+    import copy
 
-    base_config = get_config().audio_preprocessing
-    config_override = dc_replace(
-        base_config,
-        target_lufs=target_lufs,
-        denoise_strength=denoise_strength,
-        highpass_cutoff=highpass_cutoff,
-        # Keep preprocessing_mode at "selected" so apply_preprocessing respects decisions
-        preprocessing_mode="selected",
-    )
+    from transcriptx.core.utils.config import get_config
+
+    config_override = copy.deepcopy(get_config().audio_preprocessing)
+    config_override.target_lufs = target_lufs
+    config_override.denoise_strength = denoise_strength
+    config_override.highpass_cutoff = highpass_cutoff
+    # Keep preprocessing_mode at "selected" so apply_preprocessing respects decisions
+    config_override.preprocessing_mode = "selected"
 
     _render_section_d(
         audio_paths=audio_paths,

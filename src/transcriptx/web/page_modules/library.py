@@ -23,6 +23,7 @@ from transcriptx.web.cache_helpers import (
     cached_get_transcript_summaries_for_paths,
     get_cached_list_transcripts,
 )
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.rename_form import render_transcript_rename_form
@@ -160,13 +161,6 @@ def _library_browser_fragment(transcripts: list) -> None:
         key="library_transcript_select",
     )
     if selected_idx == 0:
-        render_empty_state(
-            "missing_prerequisite",
-            "Select a transcript",
-            "Choose one transcript to load detailed metadata and actions.",
-            primary_action=("Run Analysis", "Run Analysis"),
-            secondary_action=("Speaker ID", "Speaker ID"),
-        )
         return
 
     selected = transcripts[selected_idx - 1]
@@ -208,13 +202,21 @@ def _library_browser_fragment(transcripts: list) -> None:
                 f"Date Recorded: {_format_path_created_at(audio_path) if audio_path else '—'}"
             )
 
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Run Speaker ID", key="lib_speaker_id"):
+    action_cols = st.columns(2, gap="small")
+    with action_cols[0]:
+        if render_action_link(
+            "Run Speaker ID",
+            key="lib_speaker_id",
+            icon=":material/record_voice_over:",
+        ):
             st.session_state["page"] = "Speaker ID"
             st.rerun()
-    with col2:
-        if st.button("Run Analysis", key="lib_run_analysis"):
+    with action_cols[1]:
+        if render_action_link(
+            "Run Analysis",
+            key="lib_run_analysis",
+            icon=":material/analytics:",
+        ):
             st.session_state["page"] = "Run Analysis"
             st.rerun()
 

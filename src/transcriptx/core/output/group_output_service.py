@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from transcriptx.core.utils._path_core import get_group_output_dir  # type: ignore[import]
 from transcriptx.core.utils.artifact_writer import write_text  # type: ignore[import]
+from transcriptx.core.utils.run_writer_locks import per_run_lock, run_tree_mutation_gate
 from transcriptx.io import save_json, save_csv  # type: ignore[import]
 from transcriptx.core.utils.logger import get_logger  # type: ignore[import]
 from importlib import metadata
@@ -67,32 +68,37 @@ class GroupOutputService:
             folders.append(self.base_dir / "by_speaker")
         if scaffold_comparisons:
             folders.append(self.base_dir / "comparisons")
-        for folder in folders:
-            folder.mkdir(parents=True, exist_ok=True)
+        with run_tree_mutation_gate():
+            for folder in folders:
+                folder.mkdir(parents=True, exist_ok=True)
 
     def save_summary(self, text: str) -> str:
-        path = self.base_dir / "summary.txt"
-        write_text(path, text)
-        logger.debug(f"Saved group summary to {path}")
-        return str(path)
+        with per_run_lock(self.base_dir):
+            path = self.base_dir / "summary.txt"
+            write_text(path, text)
+            logger.debug(f"Saved group summary to {path}")
+            return str(path)
 
     def save_session_table(self, rows: List[Dict[str, Any]]) -> str:
-        path = self.base_dir / "session_table.csv"
-        save_csv(rows, str(path))
-        logger.debug(f"Saved session table to {path}")
-        return str(path)
+        with per_run_lock(self.base_dir):
+            path = self.base_dir / "session_table.csv"
+            save_csv(rows, str(path))
+            logger.debug(f"Saved session table to {path}")
+            return str(path)
 
     def save_combined_json(self, data: Dict[str, Any], name: str) -> str:
-        path = self.base_dir / "combined" / f"{name}.json"
-        save_json(data, str(path))
-        logger.debug(f"Saved combined JSON to {path}")
-        return str(path)
+        with per_run_lock(self.base_dir):
+            path = self.base_dir / "combined" / f"{name}.json"
+            save_json(data, str(path))
+            logger.debug(f"Saved combined JSON to {path}")
+            return str(path)
 
     def save_combined_csv(self, rows: List[Dict[str, Any]], name: str) -> str:
-        path = self.base_dir / "combined" / f"{name}.csv"
-        save_csv(rows, str(path))
-        logger.debug(f"Saved combined CSV to {path}")
-        return str(path)
+        with per_run_lock(self.base_dir):
+            path = self.base_dir / "combined" / f"{name}.csv"
+            save_csv(rows, str(path))
+            logger.debug(f"Saved combined CSV to {path}")
+            return str(path)
 
     def write_group_run_metadata(
         self,
@@ -117,10 +123,11 @@ class GroupOutputService:
             "run_id": self.run_id,
             "tx_version": _resolve_version(),
         }
-        path = self.base_dir / "group_run_metadata.json"
-        save_json(payload, str(path))
-        logger.debug(f"Saved group run metadata to {path}")
-        return str(path)
+        with per_run_lock(self.base_dir):
+            path = self.base_dir / "group_run_metadata.json"
+            save_json(payload, str(path))
+            logger.debug(f"Saved group run metadata to {path}")
+            return str(path)
 
     def write_group_manifest(
         self,
@@ -138,7 +145,8 @@ class GroupOutputService:
             "run_id": run_id,
             "generated_at": datetime.utcnow().isoformat() + "Z",
         }
-        path = self.base_dir / "group_manifest.json"
-        save_json(payload, str(path))
-        logger.debug(f"Saved group manifest to {path}")
-        return str(path)
+        with per_run_lock(self.base_dir):
+            path = self.base_dir / "group_manifest.json"
+            save_json(payload, str(path))
+            logger.debug(f"Saved group manifest to {path}")
+            return str(path)

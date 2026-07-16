@@ -51,6 +51,8 @@ class TestSummaryExtractors:
             "semantic_similarity_v2",
             "entity_sentiment",
             "understandability",
+            "lexical_diversity",
+            "llm_action_items",
             "temporal_dynamics",
             "qa_analysis",
             "__generic__",

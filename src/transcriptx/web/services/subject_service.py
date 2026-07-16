@@ -157,9 +157,14 @@ class SubjectService:
             latest_run_hint=latest_run_hint,
             session_resolver=session_resolver,
         )
-        session_state["subject_type"] = "transcript"
-        session_state["subject_id"] = resolution.subject_id
-        session_state["run_id"] = resolution.run_id
+        from transcriptx.web.state import apply_subject_context
+
+        apply_subject_context(
+            session_state,
+            subject_type="transcript",
+            subject_id=resolution.subject_id,
+            run_id=resolution.run_id,
+        )
 
     @staticmethod
     def current_transcript_path(session_state: Dict[str, Any]) -> str | None:

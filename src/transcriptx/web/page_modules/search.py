@@ -12,8 +12,9 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import streamlit as st
 
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_help, render_page_shell
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.models.search import SearchFilters, SearchResult
 from transcriptx.web.services.search_service import (
     SearchService,
@@ -21,9 +22,9 @@ from transcriptx.web.services.search_service import (
 )
 from transcriptx.web.services.subject_service import SubjectService
 
-_SEARCH_HELP = (
-    "**Search** scans diarized transcripts. Type at least three characters. "
-    "Use **Current transcript** when a transcript subject is selected in the sidebar."
+_SEARCH_DESCRIPTION = (
+    "Search diarized transcript text (at least three characters). "
+    "Optionally scope to the current transcript when one is selected in the sidebar."
 )
 
 
@@ -101,10 +102,10 @@ def _render_results_section(
                 _render_highlighted_text(result.segment_text, result.match_spans),
                 unsafe_allow_html=True,
             )
-            if st.button(
+            if render_action_link(
                 "Jump to segment",
                 key=f"jump_{result.session_slug}_{result.run_id}_{result.segment_index}_{title}",
-                width="content",
+                icon=":material/my_location:",
             ):
                 from transcriptx.web.app import navigate_to_segment
 
@@ -333,10 +334,9 @@ def _search_interaction_fragment() -> None:
 def render_search() -> None:
     render_page_shell(
         "Search",
-        "Search across transcript text; optionally scope to the current transcript.",
+        _SEARCH_DESCRIPTION,
         badges=None,
         actions=None,
     )
 
     _search_interaction_fragment()
-    render_page_help(_SEARCH_HELP)

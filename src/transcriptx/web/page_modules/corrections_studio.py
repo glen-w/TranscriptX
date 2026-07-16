@@ -497,6 +497,7 @@ def render_corrections_studio() -> None:
             )
             st.session_state["corrections_studio_active_candidate"] = None
             st.session_state["corrections_studio_pending_generate"] = True
+            st.session_state["corrections_studio_generate_force"] = False
             st.rerun()
         except Exception as e:
             st.error(f"Error starting session: {e}")
@@ -507,11 +508,19 @@ def render_corrections_studio() -> None:
         st.info("Click **Start / Resume Session** to begin.")
         return
 
-    # Run candidate generation in a separate run with a visible spinner (avoids endless-looking loading)
+    # Defer generation to a follow-up run so st.spinner is painted before long work
+    # (button handlers alone only show Streamlit's global fade / running icon).
+    if regen_clicked:
+        st.session_state["corrections_studio_active_candidate"] = None
+        st.session_state["corrections_studio_pending_generate"] = True
+        st.session_state["corrections_studio_generate_force"] = True
+        st.rerun()
+
     if st.session_state.pop("corrections_studio_pending_generate", False):
+        force = bool(st.session_state.pop("corrections_studio_generate_force", False))
         try:
             with st.spinner("Generating candidates…"):
-                gen_result = controller.generate_candidates(session_id)
+                gen_result = controller.generate_candidates(session_id, force=force)
             if getattr(gen_result, "commit_aborted", False):
                 st.session_state["corrections_studio_generation_aborted"] = (
                     getattr(gen_result, "abort_reason", "") or "session_changed"
@@ -544,22 +553,6 @@ def render_corrections_studio() -> None:
             "Candidates were generated with an older detector version. "
             "Click **Regenerate Candidates** to refresh with the current rules and logic."
         )
-
-    if regen_clicked:
-        try:
-            gen_result = controller.generate_candidates(session_id, force=True)
-            if getattr(gen_result, "commit_aborted", False):
-                st.warning(
-                    "Session changed during regeneration; commit aborted and prior "
-                    "candidates kept. Try again."
-                )
-            else:
-                st.session_state["corrections_studio_active_candidate"] = None
-                st.session_state["corrections_studio_candidates_stale"] = False
-                st.session_state.pop("corrections_studio_preview_cache", None)
-                st.rerun()
-        except Exception as e:
-            st.error(f"Error regenerating candidates: {e}")
 
     _corrections_studio_workspace_fragment(controller, session_id)
 

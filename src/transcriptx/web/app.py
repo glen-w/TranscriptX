@@ -29,7 +29,11 @@ except ImportError:
 from transcriptx.core.utils.logger import get_logger
 import transcriptx.web.blocks  # noqa: F401 — register built-in view blocks
 from transcriptx.web.components.context_bar import render_context_bar
-from transcriptx.web.navigation import page_requires_workspace_hydration
+from transcriptx.web.layout import apply_page_layout, page_uses_wide_layout
+from transcriptx.web.navigation import (
+    page_requires_workspace_hydration,
+    should_show_context_bar,
+)
 from transcriptx.web.page_flash import consume_page_flash
 from transcriptx.web.page_modules.transcript import navigate_to_segment
 from transcriptx.web.perf import (
@@ -48,7 +52,6 @@ from transcriptx.web.state import PAGE_KEY
 logger = get_logger()
 
 configure_streamlit_page()
-inject_global_styles()
 
 
 def _init_defaults() -> None:
@@ -92,6 +95,9 @@ def main() -> None:
             load_error = str(exc)
 
     current_page = st.session_state.get(PAGE_KEY, "Home")
+    # Shell CSS first, then one complete width rule for this rerun.
+    inject_global_styles()
+    apply_page_layout(wide=page_uses_wide_layout(current_page))
     try:
         with section(
             "sidebar.render",
@@ -109,7 +115,8 @@ def main() -> None:
             st.error(f"Could not load session list: {load_error}")
 
         consume_page_flash()
-        render_context_bar(st.session_state)
+        if should_show_context_bar(current_page):
+            render_context_bar(st.session_state)
 
         try:
             with section(

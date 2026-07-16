@@ -16,7 +16,6 @@ from tests.web.streamlit_doubles import DummyStreamlit
 _CONFIG = RunScopedPageConfig(
     title="Test Page",
     description="Test description",
-    prereq_help_md="Help prereq",
     empty_headline="Select a subject and run",
     empty_detail="Use the sidebar.",
     primary_action=("Open Library", "Library"),
@@ -42,11 +41,6 @@ def st_double(monkeypatch):
         "render_empty_state",
         lambda *args, **kwargs: captured.setdefault("empty", (args, kwargs)),
     )
-    monkeypatch.setattr(
-        mod,
-        "render_page_help",
-        lambda *args, **kwargs: captured.setdefault("help", args),
-    )
     return mod, dummy, captured
 
 
@@ -63,8 +57,8 @@ def test_missing_subject_renders_prereq_guard_and_skips_body(monkeypatch, st_dou
     assert result is False
     assert body_calls == []
     assert captured["shell"][0][0] == "Test Page"
+    assert captured["shell"][0][1] == "Test description"
     assert captured["empty"][0][0] == "missing_prerequisite"
-    assert captured["help"] == ("Help prereq",)
 
 
 def test_missing_run_id_renders_prereq_guard(monkeypatch, st_double):
@@ -87,6 +81,7 @@ def test_missing_run_id_renders_prereq_guard(monkeypatch, st_double):
     assert result is False
     assert body_calls == []
     assert "empty" in captured
+    assert captured["shell"][0][1] == "Test description"
 
 
 def test_missing_run_dir_shows_guard_when_configured(monkeypatch, st_double, tmp_path):
@@ -119,6 +114,7 @@ def test_missing_run_dir_shows_guard_when_configured(monkeypatch, st_double, tmp
     assert body_calls == []
     assert info_calls == ["Run folder not found."]
     assert "shell" in captured
+    assert captured["shell"][0][1] == "Test description"
 
 
 def test_happy_path_calls_body_with_context(monkeypatch, st_double, tmp_path):

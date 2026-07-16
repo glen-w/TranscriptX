@@ -64,10 +64,10 @@ structlog==25.4.0
 sympy==1.14.0
 tenacity==9.1.2
 thinc==8.2.5
-tokenizers==0.13.3
+tokenizers==0.21.4
 torch==2.2.2
 tqdm==4.67.1
-transformers==4.31.0
+transformers==4.53.2
 typer==0.16.0
 typing-inspection==0.4.1
 typing_extensions==4.14.1

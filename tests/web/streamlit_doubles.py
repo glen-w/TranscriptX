@@ -148,6 +148,10 @@ class DummySidebarStreamlit:
     def markdown(*_args, **_kwargs):
         return None
 
+    @staticmethod
+    def image(*_args, **_kwargs):
+        return None
+
     @classmethod
     def button(cls, _label, key=None, **_kwargs):
         return bool(key and key in cls.button_presses)
@@ -159,6 +163,14 @@ class DummySidebarStreamlit:
     @staticmethod
     def radio(_label, options, index=0, **_kwargs):
         return options[index]
+
+    @classmethod
+    def segmented_control(cls, _label, options, *, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if current in options:
+                return current
+        return options[0] if options else None
 
     @staticmethod
     def selectbox(_label, options, index=0, **_kwargs):
@@ -185,7 +197,7 @@ class DummyHomeStreamlit:
         return None
 
     @staticmethod
-    def columns(n):
+    def columns(n, **_kwargs):
         return tuple(DummyColumn() for _ in range(n))
 
     @staticmethod
@@ -222,6 +234,18 @@ class DummyHomeStreamlit:
 
     @staticmethod
     def error(*_args, **_kwargs):
+        return None
+
+    @staticmethod
+    def info(*_args, **_kwargs):
+        return None
+
+    @staticmethod
+    def metric(*_args, **_kwargs):
+        return None
+
+    @staticmethod
+    def dataframe(*_args, **_kwargs):
         return None
 
 
