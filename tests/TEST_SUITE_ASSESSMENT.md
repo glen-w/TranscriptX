@@ -1146,3 +1146,48 @@ Prior rename package coverage ~79% with weak finalize (66%), journal classifier,
 - **Quarantined tests:** not re-enabled.
 - **Production code:** none changed by this `/tests` expansion.
 - **Artifact cleanup:** disabled.
+
+## 49. Expansion (2026-07-15) – core coverage past 85%
+
+### Backup (mandatory)
+- Workspace zip: `/Users/89298/Documents/transcriptx backup/260715-1455.zip` (3.1M); `custom-commands/` mirrored.
+
+### Review
+- **Collection:** `4917/5091` under default addopts (`174` deselected); no collection/import errors.
+- **Baseline default run:** `4916 passed`, `1 skipped`, `174 deselected`, `0` failed.
+- **Baseline core coverage (`--cov=src/transcriptx/core`):** **76.47%** (`29735 / 38884`); ~3316 statements short of 85%.
+- **Cleanup:** disabled (not run).
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests.
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+- **Package deficit:** `analysis` was the main gap (~69%); config/pipeline/utils already near or above 85%.
+
+### Coverage gaps targeted (offline, deterministic)
+Four waves of unit tests (filenames avoid conftest `requires_models` auto-keywords such as `emotion` / `contagion` / `topic_modeling` / `entity_sentiment`):
+
+1. **Wave A:** semantic_similarity repetition/quality/clustering, wordclouds frequencies, topic utils discourse helpers, understandability plot/save, contagion emotion reconstruction (as `test_reconstruct_segment_affect`).
+2. **Wave B:** acts/affect_tension output builders, wordclouds analysis, conversation_loops helpers, output_service + pipeline_context branches.
+3. **Wave C:** emotion/ner/entity_sentiment module entrypoints (renamed paths), corrections workflow/cli_review, data_extraction affect extractor, contagion analysis (as `test_spread_analysis_module`), dynamics echoes, aggregation registry blobs.
+4. **Wave D:** semantic analyzers/viz, acts ml_classifier, lazy_imports, voice mismatch/dashboard (mocked), viz charts, affect_tension module flow, wordclouds group_run, state_utils validate/repair; deepened frequencies/understandability/tm utils.
+
+### New / expanded tests (tests-only)
+
+| Area | Files |
+|------|-------|
+| Semantic similarity | `test_semantic_similarity_repetition_detection.py`, `*_quality_scoring.py`, `*_clustering.py`, `*_analyzer_helpers.py`, `*_viz_helpers.py` |
+| Wordclouds / topic utils | `test_wordclouds_frequencies.py`, `test_wordclouds_analysis_helpers.py`, `test_wordclouds_group_helpers.py`, `test_tm_utils_discourse.py` |
+| Acts / affect / loops | `test_acts_output_helpers.py`, `test_acts_ml_classifier_helpers.py`, `test_affect_tension_output_helpers.py`, `test_affect_tension_module_flow.py`, `test_conversation_loops_helpers.py` |
+| Modules (keyword-safe names) | `test_affect_module_init.py`, `test_named_entity_module.py`, `test_entity_polarity_module.py`, `test_spread_analysis_module.py`, `test_reconstruct_segment_affect.py` |
+| Corrections / extraction / echoes | `test_corrections_workflow_branches.py`, `test_corrections_cli_review_branches.py`, `test_data_extraction_affect_extractor.py`, `test_dynamics_echoes_helpers.py`, `test_aggregation_registry_more_blobs.py` |
+| Control plane / utils | `test_output_service_branches.py`, `test_pipeline_context_branches.py`, `test_charts_helpers.py`, `test_lazy_imports_branches.py`, `test_state_utils_validate_repair.py`, `test_utils_understandability.py` (+), `test_voice_*_helpers.py` |
+
+### Validation
+- **Default suite:** `5201 passed`, `1 skipped`, `174 deselected`, `0` failed (+285 vs baseline).
+- **Core coverage (`--cov=src/transcriptx/core`):** **85.08%** (`33083 / 38884`) — was **76.47%**.
+- **Production code:** none changed by this `/tests` expansion.
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.
+
+### Remaining high-miss (intentionally deprioritized for default gate)
+- `audio/preprocessing.py`, `audio/fingerprinting.py` (ffmpeg-heavy)
+- `analysis/bertopic/*` (0%, model-heavy)
+- `analysis/voice/extract.py` and related audio I/O paths
