@@ -88,6 +88,10 @@ def test_narrative_summary_success(tmp_path) -> None:
     assert result["status"] == "success"
     assert "Alice and Bob" in result["payload"]["narrative"]
     mock_client.generate.assert_called_once()
+    assert mock_client.generate.call_args.kwargs["response_format"] == "json"
+    system_prompt = mock_client.generate.call_args.kwargs["system_prompt"]
+    assert "Escape any double quotes" in system_prompt
+    assert result["payload"]["provenance"]["prompt_version"] == "2"
 
 
 @pytest.mark.unit
@@ -279,6 +283,7 @@ def test_narrative_summary_provenance_fields(tmp_path) -> None:
     assert prov["generation_options"]["num_predict"] is not None
     assert prov["temperature"] == 0.0
     assert prov["seed"] == 42
+    assert prov["generation_options"]["format"] == "json"
     assert result["payload"]["schema_id"] == "transcriptx.narrative_summary.v1"
 
 

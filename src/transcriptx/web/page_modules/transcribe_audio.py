@@ -41,7 +41,7 @@ done"""
 def render_transcribe_audio_page() -> None:
     """Render external transcription instructions."""
     st.markdown(
-        '<div class="main-header">🎙️ Transcribe Audio</div>',
+        '<div class="main-header">Transcribe Audio</div>',
         unsafe_allow_html=True,
     )
     st.info(

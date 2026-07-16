@@ -8,6 +8,7 @@ import pytest
 
 from transcriptx.core.analysis.llm_support.json_parse import (
     loads_llm_json,
+    loads_llm_json_document,
     strip_json_fence,
 )
 
@@ -68,3 +69,37 @@ def test_loads_llm_json_bare_array_trailing_junk_may_extract_nested_object() -> 
     # After json.loads fails, raw_decode starts at the first '{', so a trailing
     # junk array can accidentally yield the first nested object.
     assert loads_llm_json('[{"a": 1}] trailing prose') == {"a": 1}
+
+
+@pytest.mark.unit
+def test_loads_llm_json_document_rejects_trailing_junk() -> None:
+    with pytest.raises(json.JSONDecodeError):
+        loads_llm_json_document('{"a": 1} trailing prose')
+
+
+@pytest.mark.unit
+def test_loads_llm_json_document_repairs_trailing_comma() -> None:
+    assert loads_llm_json_document('{"narrative": "ok",}') == {"narrative": "ok"}
+
+
+@pytest.mark.unit
+def test_loads_llm_json_document_rejects_prose_wrapped() -> None:
+    raw = 'Here is JSON:\n```json\n{"narrative": "ok"}\n```\nThanks!'
+    with pytest.raises(json.JSONDecodeError):
+        loads_llm_json_document(raw)
+
+
+@pytest.mark.unit
+def test_loads_llm_json_raises_on_unescaped_inner_quotes() -> None:
+    raw = '{"text": "She said "hello" then left."}'
+    with pytest.raises(json.JSONDecodeError) as exc:
+        loads_llm_json(raw)
+    assert "Expecting ',' delimiter" in str(exc.value)
+
+
+@pytest.mark.unit
+def test_loads_llm_json_document_raises_on_unescaped_inner_quotes() -> None:
+    raw = '{"narrative": "She said "hello" then left."}'
+    with pytest.raises(json.JSONDecodeError) as exc:
+        loads_llm_json_document(raw)
+    assert "Expecting ',' delimiter" in str(exc.value)

@@ -29,32 +29,21 @@ def test_render_download_row_fallback_json(monkeypatch) -> None:
 
     class _DummySt:
         @staticmethod
-        def columns(_spec):
-            return (
-                _DummyCol(),
-                _DummyCol(),
-                _DummyCol(),
-                _DummyCol(),
-                _DummyCol(),
-            )
+        def columns(spec, **_kwargs):
+            return tuple(_DummyCol() for _ in range(int(spec)))
 
-        @staticmethod
-        def markdown(*_args, **_kwargs):
-            return None
-
-        @staticmethod
-        def caption(*_args, **_kwargs):
-            return None
-
-        @staticmethod
-        def download_button(**kwargs):
-            captured.append(kwargs)
-            return None
+    def _capture_download_link(label, **kwargs):
+        captured.append({"label": label, **kwargs})
+        return False
 
     monkeypatch.setattr(mod, "st", _DummySt)
+    monkeypatch.setattr(mod, "render_download_link", _capture_download_link)
     mod.render_download_row(_Artifacts(), {"segments": []}, "slug/run1")
     keys = {item.get("key") for item in captured}
-    assert "download_json" in keys
+    assert keys == {"download_json"}
+    assert captured[0]["label"] == "JSON"
+    assert captured[0]["icon"] == ":material/download:"
+    assert captured[0]["file_name"] == "slug/run1_transcript.json"
 
 
 def test_render_download_row_includes_srt_when_present(
@@ -66,35 +55,24 @@ def test_render_download_row_includes_srt_when_present(
 
     class _DummySt:
         @staticmethod
-        def columns(_spec):
-            return (
-                _DummyCol(),
-                _DummyCol(),
-                _DummyCol(),
-                _DummyCol(),
-                _DummyCol(),
-            )
+        def columns(spec, **_kwargs):
+            return tuple(_DummyCol() for _ in range(int(spec)))
 
-        @staticmethod
-        def markdown(*_args, **_kwargs):
-            return None
-
-        @staticmethod
-        def caption(*_args, **_kwargs):
-            return None
-
-        @staticmethod
-        def download_button(**kwargs):
-            captured.append(kwargs)
-            return None
+    def _capture_download_link(label, **kwargs):
+        captured.append({"label": label, **kwargs})
+        return False
 
     monkeypatch.setattr(mod, "st", _DummySt)
+    monkeypatch.setattr(mod, "render_download_link", _capture_download_link)
     mod.render_download_row(
         _Artifacts(srt_file=srt_path),
         {"segments": []},
         "slug/run1",
     )
-    srt_buttons = [item for item in captured if item.get("key") == "download_srt"]
-    assert len(srt_buttons) == 1
-    assert srt_buttons[0]["file_name"] == "demo-transcript.srt"
-    assert srt_buttons[0]["mime"] == "application/x-subrip"
+    srt_links = [item for item in captured if item.get("key") == "download_srt"]
+    assert len(srt_links) == 1
+    assert srt_links[0]["label"] == "SRT"
+    assert srt_links[0]["file_name"] == "demo-transcript.srt"
+    assert srt_links[0]["mime"] == "application/x-subrip"
+    assert srt_links[0]["icon"] == ":material/download:"
+    assert {item.get("key") for item in captured} == {"download_srt", "download_json"}

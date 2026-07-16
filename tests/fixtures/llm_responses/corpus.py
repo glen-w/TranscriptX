@@ -163,6 +163,33 @@ DISCOVERY_FIXTURES: tuple[DiscoveryFixture, ...] = (
         body='[{"source_text":"Foo","replacement_text":"Bar","segment_ref":0}] trailing',
         expect="parse_error",
     ),
+    DiscoveryFixture(
+        id="qwen_unescaped_inner_quotes",
+        model_id="qwen3:8b",
+        family="qwen3",
+        size_class="mid",
+        thinking=False,
+        # Nested multi-field schema: no recovery; fail loudly like narrative
+        # used to before single-field recovery existed.
+        body=(
+            '{"candidates":[{"source_text":"Foo "Bar"","replacement_text":"Baz",'
+            '"segment_ref":0,"rationale":"x"}]}'
+        ),
+        expect="parse_error",
+    ),
+    DiscoveryFixture(
+        id="llama_trailing_comma",
+        model_id="llama3.2:3b",
+        family="llama",
+        size_class="small",
+        thinking=False,
+        body=(
+            '{"candidates":[{"source_text":"Foo","replacement_text":"Bar",'
+            '"segment_ref":0,"rationale":"x",}],}'
+        ),
+        expect="parse_ok",
+        min_candidates=1,
+    ),
 )
 
 TEXT_SUMMARY_FIXTURES: tuple[TextSummaryFixture, ...] = (
@@ -250,6 +277,39 @@ NARRATIVE_FIXTURES: tuple[NarrativeFixture, ...] = (
         size_class="mid",
         thinking=False,
         body='```json\n{"narrative": "Executive update."}\n```',
+        expect="parse_ok",
+    ),
+    NarrativeFixture(
+        id="qwen_unescaped_inner_quotes",
+        model_id="qwen3:8b",
+        family="qwen3",
+        size_class="mid",
+        thinking=False,
+        # Distilled from runtime failure: Expecting ',' delimiter mid-narrative
+        # when the model embeds literal double quotes in the prose string.
+        body=(
+            '{\n  "narrative": "'
+            + ("The supervision meeting covered progress on the thesis draft. " * 6)
+            + 'Ana said "the methods chapter still needs work" and Federico agreed."\n}'
+        ),
+        expect="parse_ok",
+    ),
+    NarrativeFixture(
+        id="mistral_literal_newlines_in_narrative",
+        model_id="mistral:latest",
+        family="mistral",
+        size_class="mid",
+        thinking=False,
+        body='{\n  "narrative": "First paragraph.\n\nSecond paragraph continues."\n}',
+        expect="parse_ok",
+    ),
+    NarrativeFixture(
+        id="llama_trailing_comma",
+        model_id="llama3.2:3b",
+        family="llama",
+        size_class="small",
+        thinking=False,
+        body='{"narrative": "Trailing comma is repaired.",}',
         expect="parse_ok",
     ),
     NarrativeFixture(

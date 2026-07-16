@@ -118,7 +118,7 @@ def _audio_prep_selection_fragment(
 def render_audio_prep_page() -> None:
     """Render the Audio Prep page."""
     st.markdown(
-        '<div class="main-header">🎛️ Audio Prep</div>',
+        '<div class="main-header">Audio Prep</div>',
         unsafe_allow_html=True,
     )
 

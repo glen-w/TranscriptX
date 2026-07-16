@@ -1,4 +1,4 @@
-"""Compact tertiary icon-links for cross-page navigation actions."""
+"""Compact tertiary icon-links for navigation and download actions."""
 
 from __future__ import annotations
 
@@ -42,5 +42,33 @@ def render_action_link(
             kwargs=kwargs or {},
             disabled=disabled,
             help=help,
+        )
+    )
+
+
+def render_download_link(
+    label: str,
+    *,
+    data: Any,
+    file_name: str,
+    key: str,
+    icon: str = ":material/download:",
+    mime: str | None = None,
+    help: str | None = None,
+    disabled: bool = False,
+) -> bool:
+    """Render one Material-icon tertiary download link. Returns click state."""
+    return bool(
+        st.download_button(
+            label,
+            data=data,
+            file_name=file_name,
+            mime=mime,
+            key=action_link_key(key),
+            type="tertiary",
+            width="content",
+            icon=icon,
+            help=help,
+            disabled=disabled,
         )
     )

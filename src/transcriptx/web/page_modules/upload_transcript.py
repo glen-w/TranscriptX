@@ -156,7 +156,7 @@ def _render_import_rename_form(transcript_path: Path) -> None:
 def render_upload_transcript_page() -> None:
     """Render the Import Transcript page."""
     st.markdown(
-        '<div class="main-header">📥 Import Transcript</div>',
+        '<div class="main-header">Import Transcript</div>',
         unsafe_allow_html=True,
     )
     st.caption(

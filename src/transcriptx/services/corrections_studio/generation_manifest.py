@@ -27,7 +27,7 @@ from transcriptx.services.corrections_studio.schema import (
 
 STUDIO_DETECTOR_VERSION = "3"
 CONTEXT_PACK_VERSION = "1"
-LLM_PROMPT_VERSION = "corrections_discovery_v1"
+LLM_PROMPT_VERSION = "corrections_discovery_v2"
 LLM_SCHEMA_VERSION = "corrections_candidates_v1"
 
 

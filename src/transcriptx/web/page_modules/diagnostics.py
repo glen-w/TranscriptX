@@ -67,7 +67,7 @@ def _render_rename_repair_section() -> None:
 def render_diagnostics_page() -> None:
     """Render the diagnostics page."""
     st.markdown(
-        '<div class="main-header">🔧 Diagnostics</div>',
+        '<div class="main-header">Diagnostics</div>',
         unsafe_allow_html=True,
     )
 

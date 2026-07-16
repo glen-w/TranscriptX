@@ -13,7 +13,7 @@ from transcriptx.web.ui.settings import render_configuration_panel, render_stora
 def render_settings_page() -> None:
     """Render the settings page (hub)."""
     st.markdown(
-        '<div class="main-header">⚙️ Settings</div>',
+        '<div class="main-header">Settings</div>',
         unsafe_allow_html=True,
     )
 

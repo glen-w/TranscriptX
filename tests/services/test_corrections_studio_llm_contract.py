@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from transcriptx.core.llm.errors import LLMResponseError
@@ -124,3 +126,47 @@ def test_build_discovery_instruction_documents_candidates_shape() -> None:
     assert "short_rationale" not in text
     assert "at most 7" in text
     assert "Do not return a bare array" in text
+    assert "Escape any double quotes" in text
+
+
+@pytest.mark.unit
+def test_parse_discovery_accepts_escaped_inner_quotes() -> None:
+    raw = (
+        '{"candidates":[{"source_text":"Foo \\"Bar\\"","replacement_text":"Baz",'
+        '"segment_ref":0,"rationale":"said \\"Bar\\""}]}'
+    )
+    got = parse_discovery_json(raw)
+    assert got[0]["source_text"] == 'Foo "Bar"'
+    assert got[0]["rationale"] == 'said "Bar"'
+
+
+@pytest.mark.unit
+def test_parse_discovery_rejects_unescaped_inner_quotes() -> None:
+    raw = (
+        '{"candidates":[{"source_text":"Foo "Bar"","replacement_text":"Baz",'
+        '"segment_ref":0,"rationale":"x"}]}'
+    )
+    with pytest.raises(json.JSONDecodeError) as strict_exc:
+        json.loads(raw)
+    assert "Expecting ',' delimiter" in str(strict_exc.value)
+    with pytest.raises(LLMResponseError, match="not valid JSON"):
+        parse_discovery_json(raw)
+
+
+@pytest.mark.unit
+def test_parse_discovery_repairs_trailing_comma() -> None:
+    raw = (
+        '{"candidates":[{"source_text":"Foo","replacement_text":"Bar",'
+        '"segment_ref":0,"rationale":"x",}],}'
+    )
+    got = parse_discovery_json(raw)
+    assert len(got) == 1
+    assert got[0]["source_text"] == "Foo"
+
+
+@pytest.mark.unit
+def test_parse_discovery_rejects_truncated_json() -> None:
+    with pytest.raises(LLMResponseError, match="not valid JSON"):
+        parse_discovery_json(
+            '{"candidates":[{"source_text":"Foo","replacement_text":"Ba'
+        )

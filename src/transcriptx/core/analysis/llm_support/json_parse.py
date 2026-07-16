@@ -13,6 +13,7 @@ from typing import Any, Optional
 __all__ = [
     "strip_json_fence",
     "loads_llm_json",
+    "loads_llm_json_document",
 ]
 
 
@@ -35,6 +36,25 @@ def _repair_common_llm_json_issues(text: str) -> str:
     repaired = re.sub(r"}\s*{", "},{", repaired)
     repaired = re.sub(r"]\s*\[", "],[", repaired)
     return repaired
+
+
+def loads_llm_json_document(text: str) -> Any:
+    """Parse JSON requiring the full fenced/stripped document to be one value.
+
+    Applies the same light repairs as ``loads_llm_json`` but does **not**
+    ``raw_decode`` past trailing junk, so prose-wrapped payloads still fail.
+    """
+    candidate = strip_json_fence(text)
+    attempts = (candidate, _repair_common_llm_json_issues(candidate))
+    last_error: Optional[json.JSONDecodeError] = None
+    for attempt in attempts:
+        try:
+            return json.loads(attempt)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+    raise json.JSONDecodeError("Expecting value", candidate, 0)
 
 
 def loads_llm_json(text: str) -> Any:

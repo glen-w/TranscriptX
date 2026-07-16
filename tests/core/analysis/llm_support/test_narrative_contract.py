@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from transcriptx.core.analysis.llm_support.narrative_contract import (
@@ -57,6 +59,41 @@ def test_parse_narrative_json_enforces_output_length_gate() -> None:
             f'{{"narrative": "{long_text}"}}',
             max_output_tokens=10,
         )
+
+
+@pytest.mark.unit
+def test_parse_narrative_json_recovers_unescaped_inner_quotes() -> None:
+    """Regression: runtime saw Expecting ',' delimiter mid-narrative prose."""
+    # Match the observed shape: line 2, failure around column ~448.
+    filler = "a" * 420
+    raw = '{\n  "narrative": "' + filler + ' said "hello" then left."\n}'
+    with pytest.raises(json.JSONDecodeError) as strict_exc:
+        json.loads(raw)
+    assert "Expecting ',' delimiter" in str(strict_exc.value)
+
+    parsed = parse_narrative_json(raw)
+    assert filler in parsed["narrative"]
+    assert 'said "hello" then left.' in parsed["narrative"]
+
+
+@pytest.mark.unit
+def test_parse_narrative_json_recovers_literal_newlines() -> None:
+    raw = '{\n  "narrative": "Line one.\nLine two still counts."\n}'
+    parsed = parse_narrative_json(raw)
+    assert "Line one." in parsed["narrative"]
+    assert "Line two still counts." in parsed["narrative"]
+
+
+@pytest.mark.unit
+def test_parse_narrative_json_repairs_trailing_comma() -> None:
+    parsed = parse_narrative_json('{"narrative": "ok",}')
+    assert parsed["narrative"] == "ok"
+
+
+@pytest.mark.unit
+def test_parse_narrative_json_preserves_properly_escaped_quotes() -> None:
+    parsed = parse_narrative_json('{"narrative": "She said \\"hi\\" clearly."}')
+    assert parsed["narrative"] == 'She said "hi" clearly.'
 
 
 @pytest.mark.unit

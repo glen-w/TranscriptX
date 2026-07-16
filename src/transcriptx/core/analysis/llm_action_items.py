@@ -45,7 +45,7 @@ from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.module_result import build_module_result, now_iso
 
 LLM_ACTION_ITEMS_SCHEMA_ID = "transcriptx.llm_action_items.v1"
-LLM_ACTION_ITEMS_PROMPT_VERSION = "3"
+LLM_ACTION_ITEMS_PROMPT_VERSION = "4"
 LLM_ACTION_ITEMS_MODULE_VERSION = "1"
 LLM_ACTION_ITEMS_INSTRUCTION = "Extract action items from this transcript:"
 
@@ -70,7 +70,8 @@ def _build_action_items_system_prompt() -> str:
         "Do not add general advice, inferred tasks, or metadata outside the JSON object. "
         "Use only evidence from the transcript content. "
         "Emit valid JSON: double quotes only, no trailing commas, "
-        "and a comma between every array element."
+        "a comma between every array element, "
+        "and escape any double quotes inside string values with a backslash."
     )
 
 

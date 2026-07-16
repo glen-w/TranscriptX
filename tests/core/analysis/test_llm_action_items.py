@@ -267,6 +267,8 @@ def test_llm_action_items_success(tmp_path) -> None:
     assert payload["provenance"]["prompt_version"] == LLM_ACTION_ITEMS_PROMPT_VERSION
     assert payload["provenance"]["cache_key"]
     assert mock_client.generate.call_args.kwargs["response_format"] == "json"
+    system_prompt = mock_client.generate.call_args.kwargs["system_prompt"]
+    assert "escape any double quotes inside string values" in system_prompt
     context.store_analysis_result.assert_called_once()
 
 

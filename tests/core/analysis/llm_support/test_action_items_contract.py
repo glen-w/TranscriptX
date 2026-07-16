@@ -213,6 +213,38 @@ def test_parse_action_items_strips_fenced_output() -> None:
 
 
 @pytest.mark.unit
+def test_parse_action_items_accepts_escaped_inner_quotes() -> None:
+    payload = json.dumps(
+        {"items": [_item(text='Send the "final" report', quote='said "final"')]}
+    )
+    (parsed,) = parse_action_items_json(payload)
+    assert parsed["text"] == 'Send the "final" report'
+    assert parsed["quote"] == 'said "final"'
+
+
+@pytest.mark.unit
+def test_parse_action_items_rejects_unescaped_inner_quotes() -> None:
+    """Nested schema: do not recover; keep Expecting ',' delimiter failures loud."""
+    raw = (
+        '{"items":[{"text":"Send the "final" report","owner":"Alice",'
+        '"deadline":null,"status":"open","quote":null,"confidence":0.9}]}'
+    )
+    with pytest.raises(json.JSONDecodeError) as strict_exc:
+        json.loads(raw)
+    assert "Expecting ',' delimiter" in str(strict_exc.value)
+    with pytest.raises(LLMResponseError, match="not valid JSON"):
+        parse_action_items_json(raw)
+
+
+@pytest.mark.unit
+def test_parse_action_items_tolerates_trailing_prose_via_raw_decode() -> None:
+    # loads_llm_json (unlike loads_llm_json_document) may extract the first object.
+    raw = json.dumps({"items": [_item()]}) + "\nThanks!"
+    (parsed,) = parse_action_items_json(raw)
+    assert parsed["text"] == "Send the report"
+
+
+@pytest.mark.unit
 def test_ground_action_items_drops_fully_ungrounded_item() -> None:
     items = [
         _item(text="Totally fabricated", quote="Also fabricated."),

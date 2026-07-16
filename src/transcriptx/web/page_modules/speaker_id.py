@@ -170,7 +170,7 @@ def _group_by_diarized_id(
 def render_speaker_id_page() -> None:
     """Render the speaker-by-speaker identification page."""
     st.markdown(
-        '<div class="main-header">🗣️ Speaker Identification</div>',
+        '<div class="main-header">Speaker Identification</div>',
         unsafe_allow_html=True,
     )
     st.caption(

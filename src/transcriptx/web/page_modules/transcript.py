@@ -314,7 +314,6 @@ def render_transcript_viewer() -> None:
             run_id=run_id,
         )
         render_download_row(artifacts, transcript_data, selected)
-        st.divider()
 
         if not segments:
             render_empty_state(

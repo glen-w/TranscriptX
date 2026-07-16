@@ -95,6 +95,8 @@ class BatchAnalysisResult:
     transcript_count: int
     errors: list[str] = field(default_factory=list)
     message: Optional[str] = None
+    #: Successful runs only, in processing order (for post-batch action links).
+    runs: list[RunSummary] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

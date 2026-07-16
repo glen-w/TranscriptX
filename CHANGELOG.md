@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-17
+
+### Added
+
+- Shared recent-run row component reused on Home and Batch Ops, with post-batch run action links.
+- Batch analysis results carry successful `RunSummary` entries for UI follow-up.
+- Tertiary download-link helper aligned with action-link styling for transcript downloads.
+
+### Fixed
+
+- Narrative LLM JSON recovers when local models emit unescaped quotes inside the narrative string.
+- Document-strict LLM JSON parsing (`loads_llm_json_document`) rejects prose-wrapped payloads.
+- Corrections Studio discovery prompts require escaped quotes in string values; avoid double fence-stripping.
+
+### Changed
+
+- Home recent-runs rendering extracted into the shared row component; page headers drop decorative emoji prefixes.
+
 ## [0.4.1] - 2026-07-17
 
 ### Fixed

@@ -186,6 +186,9 @@ def test_run_batch_analysis_aggregates_successes_and_errors(
     assert result.success is False
     assert result.transcript_count == 2
     assert any("b.json: pipeline failed" in e for e in result.errors)
+    assert len(result.runs) == 1
+    assert result.runs[0].run_dir == tmp_path / "run-a"
+    assert result.runs[0].transcript_path == first
 
 
 @pytest.mark.unit

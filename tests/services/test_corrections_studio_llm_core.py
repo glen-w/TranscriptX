@@ -808,9 +808,9 @@ def test_run_llm_discovery_accepts_gemma_bare_array_shape(monkeypatch) -> None:
     assert result.diagnostics.outcome == "success"
     assert len(result.candidates) >= 1
     assert generate_kwargs
-    assert "response_format" not in generate_kwargs[0] or generate_kwargs[0].get(
-        "response_format"
-    ) in (None,)
+    assert generate_kwargs[0].get("response_format") == "json"
+    system_prompt = " ".join(generate_kwargs[0]["system_prompt"].split())
+    assert "escape any double quotes inside string values" in system_prompt.lower()
 
 
 @pytest.mark.unit

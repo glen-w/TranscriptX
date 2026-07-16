@@ -6,13 +6,33 @@ Accepts BatchAnalysisRequest, runs analysis on each transcript, returns BatchAna
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
 from transcriptx.app.models.requests import AnalysisRequest, BatchAnalysisRequest
-from transcriptx.app.models.results import AnalysisResult, BatchAnalysisResult
+from transcriptx.app.models.results import AnalysisResult, BatchAnalysisResult, RunSummary
 from transcriptx.app.progress import NullProgress, ProgressCallback
 from transcriptx.app.workflows.analysis import run_analysis
+
+
+def _run_summary_from_analysis(path: Path, result: AnalysisResult) -> RunSummary:
+    run_dir = Path(result.run_dir)
+    try:
+        created_at = datetime.fromtimestamp(run_dir.stat().st_mtime)
+    except OSError:
+        created_at = datetime.now()
+    return RunSummary(
+        run_dir=run_dir,
+        transcript_path=Path(path),
+        run_id=run_dir.name,
+        created_at=created_at,
+        selected_modules=list(result.modules_executed or []),
+        manifest_path=Path(result.manifest_path) if result.manifest_path else Path(),
+        status=result.status or "completed",
+        duration_seconds=result.duration_seconds,
+        warnings_count=len(result.warnings) if result.warnings else None,
+    )
 
 
 def run_batch_analysis(
@@ -45,6 +65,7 @@ def run_batch_analysis(
         )
 
     errors: list[str] = []
+    runs: list[RunSummary] = []
     success_count = 0
     total = len(transcript_paths)
 
@@ -64,6 +85,7 @@ def run_batch_analysis(
         result: AnalysisResult = run_analysis(analysis_request, progress)
         if result.success:
             success_count += 1
+            runs.append(_run_summary_from_analysis(path, result))
         else:
             errors.extend([f"{path.name}: {e}" for e in result.errors])
 
@@ -74,4 +96,5 @@ def run_batch_analysis(
         transcript_count=total,
         errors=errors if errors else [],
         message=f"Processed {total} transcript(s), {success_count} succeeded",
+        runs=runs,
     )

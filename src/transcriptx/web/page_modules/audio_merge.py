@@ -49,7 +49,7 @@ _STAGE_COUNT = 4
 def render_audio_merge_page() -> None:
     """Render the Audio Merge page."""
     st.markdown(
-        '<div class="main-header">🔗 Audio Merge</div>',
+        '<div class="main-header">Audio Merge</div>',
         unsafe_allow_html=True,
     )
     st.caption(

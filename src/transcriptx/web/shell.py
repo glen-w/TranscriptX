@@ -378,11 +378,13 @@ def inject_global_styles() -> None:
         opacity: 0.7;
         margin: 0 0 0.45rem 0;
     }
-    /* Compact tertiary action links (nav jumps: Recent Runs, Library, …) */
-    [class*="st-key-tx_al_"] [data-testid="stButton"] {
+    /* Compact tertiary action links (nav jumps + downloads) */
+    [class*="st-key-tx_al_"] [data-testid="stButton"],
+    [class*="st-key-tx_al_"] [data-testid="stDownloadButton"] {
         margin: 0 !important;
     }
     [class*="st-key-tx_al_"] [data-testid="stButton"] > button,
+    [class*="st-key-tx_al_"] [data-testid="stDownloadButton"] > button,
     [class*="st-key-tx_al_"] > button {
         min-height: unset !important;
         height: auto !important;
@@ -394,6 +396,8 @@ def inject_global_styles() -> None:
     }
     [class*="st-key-tx_al_"] [data-testid="stButton"] > button span[data-testid="stIconMaterial"],
     [class*="st-key-tx_al_"] [data-testid="stButton"] > button [data-testid="stIconMaterial"],
+    [class*="st-key-tx_al_"] [data-testid="stDownloadButton"] > button span[data-testid="stIconMaterial"],
+    [class*="st-key-tx_al_"] [data-testid="stDownloadButton"] > button [data-testid="stIconMaterial"],
     [class*="st-key-tx_al_"] > button span[data-testid="stIconMaterial"],
     [class*="st-key-tx_al_"] > button [data-testid="stIconMaterial"] {
         font-size: 0.95rem !important;
@@ -401,6 +405,7 @@ def inject_global_styles() -> None:
         opacity: 0.9;
     }
     [class*="st-key-tx_al_"] [data-testid="stButton"] > button:hover,
+    [class*="st-key-tx_al_"] [data-testid="stDownloadButton"] > button:hover,
     [class*="st-key-tx_al_"] > button:hover {
         color: #c5e3f6 !important;
         text-decoration: underline;
@@ -421,7 +426,10 @@ def inject_global_styles() -> None:
     }
     div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
         [data-testid="stColumn"]:not(:last-child)
-        [data-testid="stButton"] > button::after {
+        [data-testid="stButton"] > button::after,
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
+        [data-testid="stColumn"]:not(:last-child)
+        [data-testid="stDownloadButton"] > button::after {
         content: " |";
         color: rgba(250, 250, 250, 0.4);
         text-decoration: none;

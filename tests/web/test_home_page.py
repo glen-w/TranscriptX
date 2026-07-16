@@ -12,12 +12,14 @@ from tests.web.streamlit_doubles import DummyHomeStreamlit
 
 def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
     import transcriptx.web.components.action_links as action_links
+    import transcriptx.web.components.recent_run_row as recent_run_row
 
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(Path, "exists", lambda _self: True)
     monkeypatch.setattr(mod, "_cached_sessions_and_stats", lambda: ([], {}))
     monkeypatch.setattr(mod, "st", st_double)
     monkeypatch.setattr(action_links, "st", st_double)
+    monkeypatch.setattr(recent_run_row, "st", st_double)
 
 
 def test_home_initial_render_loads_recent_runs_without_groups(
@@ -160,9 +162,11 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
             return DummyHomeStreamlit.expander(label, **_kwargs)
 
     import transcriptx.web.components.action_links as action_links
+    import transcriptx.web.components.recent_run_row as recent_run_row
 
     monkeypatch.setattr(mod, "st", _StatsHomeStreamlit)
     monkeypatch.setattr(action_links, "st", _StatsHomeStreamlit)
+    monkeypatch.setattr(recent_run_row, "st", _StatsHomeStreamlit)
     mod.render_home()
 
     assert "Transcript overview" not in subheaders
@@ -183,6 +187,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
 
 
 def test_home_export_zip_prepares_download(monkeypatch) -> None:
+    import transcriptx.web.components.recent_run_row as recent_run_row
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {}
@@ -223,12 +228,12 @@ def test_home_export_zip_prepares_download(monkeypatch) -> None:
 
     def _fake_prepare(run) -> None:
         prepare_calls.append(run.run_id)
-        DummyHomeStreamlit.session_state["home_export_zip_run-1"] = {
+        DummyHomeStreamlit.session_state["recent_run_export_zip_run-1"] = {
             "bytes": b"zip-bytes",
             "filename": "run-1_export.zip",
         }
 
-    monkeypatch.setattr(mod, "_prepare_recent_run_export", _fake_prepare)
+    monkeypatch.setattr(recent_run_row, "prepare_recent_run_export", _fake_prepare)
     mod.render_home()
 
     assert prepare_calls == ["run-1"]
@@ -382,6 +387,7 @@ def test_apply_subject_context_clears_stale_sidebar_widgets() -> None:
 
 
 def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
+    import transcriptx.web.components.recent_run_row as recent_run_row
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {}
@@ -407,9 +413,9 @@ def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
     def _boom(*_a, **_k):
         raise AssertionError("expensive path called during Recent Runs render")
 
-    monkeypatch.setattr(mod.ArtifactService, "list_artifacts", _boom)
-    monkeypatch.setattr(mod.ExportService, "zip_artifacts", _boom)
-    monkeypatch.setattr(mod.FileService, "resolve_transcript_path", _boom)
+    monkeypatch.setattr(recent_run_row.ArtifactService, "list_artifacts", _boom)
+    monkeypatch.setattr(recent_run_row.ExportService, "zip_artifacts", _boom)
+    monkeypatch.setattr(recent_run_row.FileService, "resolve_transcript_path", _boom)
 
     mod.render_home()
 

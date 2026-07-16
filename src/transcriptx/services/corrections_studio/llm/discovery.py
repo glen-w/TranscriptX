@@ -253,6 +253,7 @@ def _run_llm_discovery_inner(
                 system_prompt=SYSTEM_PROMPT,
                 temperature=temperature,
                 max_tokens=runtime.max_output_tokens,
+                response_format="json",
             )
             parsed = parse_discovery_json(raw)
             grounded = ground_discovery_candidates(

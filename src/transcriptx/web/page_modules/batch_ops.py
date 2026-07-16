@@ -18,8 +18,13 @@ from transcriptx.web.cache_helpers import (
     get_cached_list_transcripts,
     cached_get_module_info_list,
     cached_get_transcript_summaries_for_paths,
+    clear_run_listing_caches,
 )
+from transcriptx.web.components.recent_run_row import render_recent_run_row
 from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.sidebar_options import _slug_display_labels_from_index
+
+_BATCH_RESULT_KEY = "batch_ops_last_result"
 
 
 @st.fragment
@@ -59,10 +64,40 @@ def _batch_ops_selection_fragment(
     )
 
 
+def _render_batch_result(result) -> None:
+    """Show batch summary banner plus recent-run-style rows for successful runs."""
+    if result.success:
+        st.success(
+            result.message
+            or f"Processed {result.transcript_count} transcript(s)."
+        )
+    else:
+        st.error("Batch analysis completed with errors.")
+        for e in result.errors:
+            st.error(e)
+        if result.message and result.runs:
+            st.info(result.message)
+
+    runs = getattr(result, "runs", None) or []
+    if not runs:
+        return
+
+    st.markdown("#### Processed runs")
+    slug_labels = _slug_display_labels_from_index()
+    for idx, run in enumerate(runs):
+        render_recent_run_row(
+            run,
+            row_index=idx,
+            slug_labels=slug_labels,
+            key_prefix="batch_run",
+            tip_control_prefix="tx-batch-run-tip",
+        )
+
+
 def render_batch_ops_page() -> None:
     """Render the batch operations page."""
     st.markdown(
-        '<div class="main-header">📦 Batch Operations</div>',
+        '<div class="main-header">Batch Operations</div>',
         unsafe_allow_html=True,
     )
 
@@ -106,12 +141,9 @@ def render_batch_ops_page() -> None:
             )
             with st.spinner("Running batch analysis..."):
                 result = batch_ctrl.run_batch_analysis(request)
-            if result.success:
-                st.success(
-                    result.message
-                    or f"Processed {result.transcript_count} transcript(s)."
-                )
-            else:
-                st.error("Batch analysis completed with errors.")
-                for e in result.errors:
-                    st.error(e)
+            clear_run_listing_caches()
+            st.session_state[_BATCH_RESULT_KEY] = result
+
+    last_result = st.session_state.get(_BATCH_RESULT_KEY)
+    if last_result is not None:
+        _render_batch_result(last_result)

@@ -88,7 +88,7 @@ def _render_guided_fields(
 def render_profiles_page() -> None:
     """Render the profiles page."""
     st.markdown(
-        '<div class="main-header">📋 Profiles</div>',
+        '<div class="main-header">Profiles</div>',
         unsafe_allow_html=True,
     )
 
