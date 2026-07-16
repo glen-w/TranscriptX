@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import streamlit as st
+
 from transcriptx.web.navigation import (
     migrate_legacy_page_key,
     pages_in_section,
 )
+from transcriptx.web.page_modules.artifacts import (
+    _force_preview_section,
+    _open_artifact_preview,
+)
 from transcriptx.web.state import (
     ARTIFACTS_KEY_PREVIEW_ID,
+    ARTIFACTS_KEY_SECTION,
     ARTIFACTS_KEY_SELECTED_IDS,
     ARTIFACTS_KEY_SCOPE,
     ARTIFACTS_KEY_SHOW_MORE,
@@ -64,3 +71,33 @@ def test_consume_artifact_preset_and_same_scope_keeps_selection() -> None:
     assert consume_artifact_preset(ss) == "Preview"
     assert DATA_KEY_ARTIFACT_PRESET not in ss
     assert consume_artifact_preset(ss) is None
+
+
+def test_open_artifact_preview_syncs_widget_keys() -> None:
+    """Browse→Preview must update keyed widgets or section nav stays on Browse."""
+    st.session_state.clear()
+    st.session_state["artifacts_section_control"] = "Browse"
+    st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
+
+    _open_artifact_preview("art_abc")
+
+    assert st.session_state[ARTIFACTS_KEY_SECTION] == "Preview"
+    assert st.session_state[ARTIFACTS_KEY_PREVIEW_ID] == "art_abc"
+    assert st.session_state["artifacts_section_control"] == "Preview"
+    assert st.session_state["artifacts_section_radio"] == "Preview"
+    assert st.session_state["artifacts_preview_selector"] == "art_abc"
+
+
+def test_force_preview_section_overrides_stale_control() -> None:
+    st.session_state.clear()
+    st.session_state["artifacts_section_control"] = "Browse"
+    st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
+    st.session_state[DATA_KEY_ARTIFACT_PRESET] = "art_deep"
+    st.session_state["_artifacts_force_preview"] = True
+
+    _force_preview_section()
+
+    assert st.session_state[ARTIFACTS_KEY_SECTION] == "Preview"
+    assert st.session_state["artifacts_section_control"] == "Preview"
+    assert st.session_state["artifacts_preview_selector"] == "art_deep"
+    assert "_artifacts_force_preview" not in st.session_state

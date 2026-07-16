@@ -26,4 +26,8 @@ def test_navigate_to_data_artifact_preset(mock_rerun) -> None:
     assert st.session_state["artifacts_section"] == "Preview"
     assert st.session_state["data_artifact_preset"] == "art_123"
     assert st.session_state["artifacts_preview_id"] == "art_123"
+    # Widget keys must be synced so segmented_control/selectbox do not clobber.
+    assert st.session_state["artifacts_section_control"] == "Preview"
+    assert st.session_state["artifacts_section_radio"] == "Preview"
+    assert st.session_state["artifacts_preview_selector"] == "art_123"
     mock_rerun.assert_called_once()

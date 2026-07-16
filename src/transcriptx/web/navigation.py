@@ -385,6 +385,10 @@ def navigate_to_data_artifact(*, artifact_id: str) -> None:
     st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = artifact_id
     st.session_state[DATA_KEY_ARTIFACT_PRESET] = artifact_id
     st.session_state["_artifacts_force_preview"] = True
+    # Keyed Artifacts nav/select widgets ignore default=/index= once present.
+    st.session_state["artifacts_section_control"] = "Preview"
+    st.session_state["artifacts_section_radio"] = "Preview"
+    st.session_state["artifacts_preview_selector"] = artifact_id
     st.rerun()
 
 

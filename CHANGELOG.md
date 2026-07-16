@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-17
+
+### Fixed
+
+- Artifacts Browse→Preview and deep links sync Streamlit widget keys so section/selector state is not clobbered.
+- Storage cleanup execute defers result rendering across a rerun to avoid mid-run widget key assignment errors.
+- Directory fsync on Docker Desktop bind mounts tolerates `EBADF`/`EINVAL` instead of aborting cleanup.
+
+### Changed
+
+- Run cleanup logs preview/execute progress and per-target stage/delete outcomes for easier diagnosis.
+
 ## [0.4.0] - 2026-07-17
 
 ### Added

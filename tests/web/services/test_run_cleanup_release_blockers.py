@@ -1011,3 +1011,19 @@ def test_parent_fsync_failure_is_partial(tmp_path, monkeypatch):
     monkeypatch.setattr(pd.os, "fsync", boom)
     with pytest.raises(PhysicalDeletePartialError, match="parent fsync failed"):
         _fsync_parent(path)
+
+
+def test_parent_fsync_ebadf_is_tolerated(tmp_path, monkeypatch):
+    import errno
+
+    from transcriptx.web.services.run_cleanup import physical_delete as pd
+    from transcriptx.web.services.run_cleanup.physical_delete import _fsync_parent
+
+    path = tmp_path / "staged" / "leaf"
+    path.mkdir(parents=True)
+
+    def boom(fd):
+        raise OSError(errno.EBADF, "Bad file descriptor")
+
+    monkeypatch.setattr(pd.os, "fsync", boom)
+    _fsync_parent(path)  # does not raise

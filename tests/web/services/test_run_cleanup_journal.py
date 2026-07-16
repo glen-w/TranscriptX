@@ -223,6 +223,85 @@ def test_list_pending_excludes_terminal_operations(tmp_path, op_status):
     assert journal.list_pending_staging(state) == []
 
 
+def test_fsync_dir_treats_ebadf_as_unsupported(tmp_path, monkeypatch):
+    """Docker Desktop bind mounts often return EBADF for directory fsync."""
+    import errno
+    import os
+
+    real_open = os.open
+
+    def open_then_bad_fsync(path, flags, *a, **k):
+        return real_open(path, flags, *a, **k)
+
+    def boom(fd):
+        raise OSError(errno.EBADF, "Bad file descriptor")
+
+    monkeypatch.setattr(journal.os, "open", open_then_bad_fsync)
+    monkeypatch.setattr(journal.os, "fsync", boom)
+    result = journal.fsync_dir(tmp_path)
+    assert result.outcome is journal.DirFsyncOutcome.UNSUPPORTED
+    assert "Bad file descriptor" in result.message
+
+
+def test_write_operation_tolerates_unsupported_dir_fsync(tmp_path, monkeypatch):
+    from transcriptx.web.services.run_cleanup.models import (
+        CleanupMode,
+        CleanupPlan,
+        CleanupTarget,
+        EntryClassification,
+        RootIdentity,
+        SubjectType,
+    )
+
+    monkeypatch.setattr(
+        journal,
+        "fsync_dir",
+        lambda _d: journal.DirFsyncResult(
+            journal.DirFsyncOutcome.UNSUPPORTED, "[Errno 9] Bad file descriptor"
+        ),
+    )
+    plan = CleanupPlan(
+        plan_id="p",
+        mode=CleanupMode.DELETE_OLD,
+        policy_version=CLEANUP_POLICY_VERSION,
+        created_at_iso="t",
+        roots=(
+            RootIdentity(
+                kind=SubjectType.transcript,
+                configured_path=str(tmp_path / "out"),
+                canonical_path=str(tmp_path / "out"),
+                dev=1,
+                ino=2,
+                is_symlink=False,
+            ),
+        ),
+        candidates=(
+            CleanupTarget(
+                subject_type=SubjectType.transcript,
+                subject_id="s",
+                run_id="r",
+                root_relative_path="s/r",
+                canonical_path=str(tmp_path / "out" / "s" / "r"),
+                mtime_ns=1,
+                filesystem_dev=1,
+                filesystem_ino=3,
+                size_estimate_bytes=1,
+                file_count=1,
+                tree_fingerprint="0" * 64,
+                safety_status=EntryClassification.eligible,
+            ),
+        ),
+        retained=(),
+        exclusions=(),
+        warnings=(),
+        blocking_errors=(),
+        can_execute=True,
+    )
+    oid = "1_abcdefabcdef"
+    path = journal.write_operation(tmp_path / "state", operation_id=oid, plan=plan)
+    assert path.is_file()
+
+
 def test_status_from_journal_targets_vector():
     from transcriptx.web.services.run_cleanup.models import CleanupStatus
     from transcriptx.web.services.run_cleanup.service import RunCleanupService

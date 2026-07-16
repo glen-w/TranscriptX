@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable, Mapping
 
 from transcriptx.core.utils import paths as path_constants
+from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.run_writer_locks import (
     RunWriterLock,
     try_per_run_lock,
@@ -62,6 +63,8 @@ from transcriptx.web.services.run_cleanup.staging import (
 )
 
 CacheInvalidator = Callable[[], None]
+
+logger = get_logger()
 
 
 def default_protected_paths(
@@ -182,10 +185,21 @@ class RunCleanupService:
     def preview_cleanup(
         self, mode: CleanupMode, session_id: str
     ) -> tuple[str, CleanupPreview]:
+        logger.info("cleanup preview start mode=%s", mode.value)
         plan = self._build_plan(mode)
         # May raise HandleStoreFullError when capacity is exhausted by protected entries.
         token = handle_store.create_handle(plan, session_id)
-        return token, plan_to_preview(plan)
+        preview = plan_to_preview(plan)
+        logger.info(
+            "cleanup preview ready mode=%s plan_id=%s candidates=%d retained=%d "
+            "can_execute=%s",
+            mode.value,
+            preview.plan_id,
+            preview.run_count,
+            len(preview.retained),
+            preview.can_execute,
+        )
+        return token, preview
 
     def execute_cleanup(
         self,
@@ -193,16 +207,37 @@ class RunCleanupService:
         authorization: CleanupAuthorization,
         session_id: str,
     ) -> CleanupResult:
+        logger.info(
+            "cleanup execute start mode=%s plan_id=%s",
+            authorization.mode.value,
+            authorization.plan_id,
+        )
         gate = try_run_tree_mutation_gate(state_dir=self.state_dir)
         if gate is None:
+            logger.warning("cleanup execute blocked: mutation gate busy")
             return self._result_on_gate_contention(
                 handle_token, authorization, session_id
             )
         locks: list[RunWriterLock] = []
         try:
-            return self._execute_under_gate(
+            result = self._execute_under_gate(
                 handle_token, authorization, session_id, locks
             )
+            logger.info(
+                "cleanup execute finished status=%s operation_id=%s "
+                "visible_removed=%d physically_deleted=%d errors=%d",
+                result.status.value,
+                result.operation_id or "(none)",
+                result.visible_removed_count,
+                result.physically_deleted_count,
+                len(result.errors),
+            )
+            if result.errors:
+                logger.warning(
+                    "cleanup execute errors: %s",
+                    "; ".join(result.errors[:5]),
+                )
+            return result
         finally:
             self._release_locks(locks)
             gate.release()
@@ -327,6 +362,9 @@ class RunCleanupService:
             expected_mode=plan.mode,
             expected_plan_id=plan.plan_id,
         ):
+            logger.warning(
+                "cleanup blocked: authorization failed plan_id=%s", plan.plan_id
+            )
             result = CleanupResult(
                 operation_id="",
                 plan_id=plan.plan_id,
@@ -387,6 +425,11 @@ class RunCleanupService:
         plan = rediscovered
 
         if not plan.candidates:
+            logger.info(
+                "cleanup noop: no candidates plan_id=%s mode=%s",
+                plan.plan_id,
+                plan.mode.value,
+            )
             result = CleanupResult(
                 operation_id="",
                 plan_id=plan.plan_id,
@@ -486,6 +529,12 @@ class RunCleanupService:
 
         operation_id = self._new_journaled_operation(plan, to_mutate)
         fault_point("after_initial_journal")
+        logger.info(
+            "cleanup journaled operation_id=%s plan_id=%s targets=%d",
+            operation_id,
+            plan.plan_id,
+            len(to_mutate),
+        )
 
         # Create exclusive operation staging dirs once per output root involved
         op_dirs_created: set[str] = set()
@@ -550,7 +599,16 @@ class RunCleanupService:
         journal_durability_failed = False
 
         try:
-            for target in to_mutate:
+            total = len(to_mutate)
+            for index, target in enumerate(to_mutate, start=1):
+                logger.info(
+                    "cleanup stage %d/%d %s/%s/%s",
+                    index,
+                    total,
+                    target.subject_type.value,
+                    target.subject_id,
+                    target.run_id,
+                )
                 if first_rename:
                     fault_point("before_first_rename")
                 outcome = self._stage_one(
@@ -568,8 +626,25 @@ class RunCleanupService:
                 target_results.append(outcome.target_result)
                 warnings.extend(outcome.warnings)
                 errors.extend(outcome.errors)
+                if not outcome.visible_removed:
+                    logger.warning(
+                        "cleanup stage skipped/failed %s/%s/%s status=%s %s",
+                        target.subject_type.value,
+                        target.subject_id,
+                        target.run_id,
+                        outcome.target_result.status.value,
+                        outcome.target_result.message or "",
+                    )
 
                 if outcome.deletion_ready:
+                    logger.info(
+                        "cleanup delete %d/%d %s/%s/%s",
+                        index,
+                        total,
+                        target.subject_type.value,
+                        target.subject_id,
+                        target.run_id,
+                    )
                     fault_point("before_physical_verify")
                     pd = self._physical_delete_one(
                         target,
@@ -582,6 +657,12 @@ class RunCleanupService:
                     target_results[-1] = pd
                     if pd.status is TargetStatus.PHYSICAL_DELETED:
                         physically_deleted += 1
+                        logger.info(
+                            "cleanup deleted %s/%s/%s",
+                            target.subject_type.value,
+                            target.subject_id,
+                            target.run_id,
+                        )
                         if "journal durability failed" in (pd.message or ""):
                             journal_durability_failed = True
                             errors.append(pd.message)
@@ -605,14 +686,36 @@ class RunCleanupService:
                     elif pd.status is TargetStatus.PHYSICAL_DELETE_PARTIAL:
                         has_staged_remnant = True
                         errors.append(pd.message)
+                        logger.error(
+                            "cleanup partial delete %s/%s/%s: %s",
+                            target.subject_type.value,
+                            target.subject_id,
+                            target.run_id,
+                            pd.message,
+                        )
                     elif pd.status in {
                         TargetStatus.PHYSICAL_DELETE_FAILED,
                         TargetStatus.PHYSICAL_DELETE_REFUSED,
                     }:
                         has_staged_remnant = True
                         errors.append(pd.message)
+                        logger.error(
+                            "cleanup delete failed %s/%s/%s status=%s: %s",
+                            target.subject_type.value,
+                            target.subject_id,
+                            target.run_id,
+                            pd.status.value,
+                            pd.message,
+                        )
                 elif outcome.visible_removed:
                     has_staged_remnant = True
+                    logger.warning(
+                        "cleanup staged but not deleted %s/%s/%s status=%s",
+                        target.subject_type.value,
+                        target.subject_id,
+                        target.run_id,
+                        outcome.target_result.status.value,
+                    )
         except StagingPlatformUnsupportedError as exc:
             if mutation_started:
                 errors.append(f"{PLATFORM_UNSUPPORTED}: {exc}")
@@ -1802,6 +1905,7 @@ class RunCleanupService:
         )
 
     def retry_interrupted_staging(self, operation_id: str) -> CleanupResult:
+        logger.info("cleanup retry start operation_id=%s", operation_id)
         try:
             journal.validate_operation_id(operation_id)
         except ValueError:
@@ -2109,7 +2213,7 @@ class RunCleanupService:
                 errors.append(str(exc))
                 if status is CleanupStatus.SUCCESS:
                     status = CleanupStatus.PARTIAL
-            return CleanupResult(
+            result = CleanupResult(
                 operation_id=operation_id,
                 plan_id=plan_id,
                 mode=mode,
@@ -2120,6 +2224,15 @@ class RunCleanupService:
                 visible_removed_count=visible,
                 physically_deleted_count=deleted,
             )
+            logger.info(
+                "cleanup retry finished status=%s operation_id=%s "
+                "visible_removed=%d physically_deleted=%d",
+                result.status.value,
+                result.operation_id,
+                result.visible_removed_count,
+                result.physically_deleted_count,
+            )
+            return result
         finally:
             self._release_locks(locks)
             gate.release()

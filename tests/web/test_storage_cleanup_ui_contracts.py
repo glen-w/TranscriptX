@@ -343,6 +343,210 @@ def test_pending_staging_retry_partial_surfaces_errors(monkeypatch):
     assert "still staged remnant" in warnings[0]
 
 
+def test_execute_defers_result_and_avoids_widget_key_assignment(monkeypatch):
+    """After execute, result is staged + rerun; widget keys are not assigned mid-run."""
+    from transcriptx.web.services.run_cleanup.models import (
+        CleanupMode,
+        CleanupResult,
+        CleanupStatus,
+    )
+    from transcriptx.web.ui.settings import storage_panel as sp
+
+    session: dict = {
+        sp._HANDLE_KEY: "h",
+        sp._PLAN_ID_KEY: "plan",
+        sp._MODE_KEY: CleanupMode.DELETE_OLD.value,
+        sp._PREVIEW_KEY: type(
+            "P",
+            (),
+            {
+                "blocking_errors": (),
+                "warnings": (),
+                "transcript_subjects": 0,
+                "group_subjects": 0,
+                "run_count": 1,
+                "file_count": 1,
+                "size_estimate_bytes": 1,
+                "candidates": (),
+                "retained": (),
+                "exclusions": (),
+                "can_execute": True,
+                "plan_id": "plan",
+            },
+        )(),
+        sp._ACK_KEY: True,
+        sp._PHRASE_KEY: CONFIRM_DELETE_OLD,
+        sp._SESSION_ID_KEY: "sess",
+    }
+    calls: list[str] = []
+
+    class _Svc:
+        def execute_cleanup(self, *a, **k):
+            return CleanupResult(
+                operation_id="1_abcdefabcdef",
+                plan_id="plan",
+                mode=CleanupMode.DELETE_OLD,
+                status=CleanupStatus.FAILED_BEFORE_MUTATION,
+                targets=(),
+                warnings=(),
+                errors=("directory fsync failed",),
+            )
+
+    class _St:
+        session_state = session
+
+        def button(self, label, **k):
+            return label == "Execute cleanup"
+
+        def checkbox(self, *a, **k):
+            return True
+
+        def text_input(self, *a, **k):
+            return CONFIRM_DELETE_OLD
+
+        def rerun(self):
+            calls.append("rerun")
+
+        def radio(self, *a, **k):
+            return "Delete old runs"
+
+        def subheader(self, *a, **k):
+            pass
+
+        def caption(self, *a, **k):
+            pass
+
+        def warning(self, *a, **k):
+            pass
+
+        def info(self, *a, **k):
+            pass
+
+        def error(self, *a, **k):
+            pass
+
+        def success(self, *a, **k):
+            pass
+
+        def markdown(self, *a, **k):
+            pass
+
+        def columns(self, n):
+            class _C:
+                def metric(self, *a, **k):
+                    pass
+
+            return [_C() for _ in range(n)]
+
+        def dataframe(self, *a, **k):
+            pass
+
+        def expander(self, *a, **k):
+            class _E:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *a):
+                    return False
+
+            return _E()
+
+        def text(self, *a, **k):
+            pass
+
+        def metric(self, *a, **k):
+            pass
+
+    monkeypatch.setattr(sp, "RunCleanupService", _Svc)
+    monkeypatch.setattr(sp, "st", _St())
+    monkeypatch.setattr(
+        sp, "clear_session_selections_for_removed_runs", lambda *a, **k: None
+    )
+    # Simulate post-widget execute path by calling the section; ack widgets
+    # already "exist" via session keys — clear must not assign them.
+    sp._render_cleanup_section()
+    assert "rerun" in calls
+    assert sp._RESULT_KEY in session
+    assert session[sp._RESULT_KEY].status is CleanupStatus.FAILED_BEFORE_MUTATION
+    assert sp._PREVIEW_KEY not in session
+    # Widget keys must remain untouched on this run (pop happens next run).
+    assert session.get(sp._ACK_KEY) is True
+
+
+def test_pending_result_clears_ack_before_widgets(monkeypatch):
+    from transcriptx.web.services.run_cleanup.models import (
+        CleanupMode,
+        CleanupResult,
+        CleanupStatus,
+    )
+    from transcriptx.web.ui.settings import storage_panel as sp
+
+    session: dict = {
+        sp._RESULT_KEY: CleanupResult(
+            operation_id="1_abcdefabcdef",
+            plan_id="p",
+            mode=CleanupMode.DELETE_OLD,
+            status=CleanupStatus.SUCCESS,
+            targets=(),
+            warnings=(),
+            errors=(),
+            visible_removed_count=1,
+            physically_deleted_count=1,
+        ),
+        sp._ACK_KEY: True,
+        sp._PHRASE_KEY: "DELETE OLD RUNS",
+    }
+    errors: list[str] = []
+    successes: list[str] = []
+
+    class _St:
+        session_state = session
+
+        def button(self, *a, **k):
+            return False
+
+        def radio(self, *a, **k):
+            return "Delete old runs"
+
+        def subheader(self, *a, **k):
+            pass
+
+        def caption(self, *a, **k):
+            pass
+
+        def warning(self, *a, **k):
+            pass
+
+        def info(self, *a, **k):
+            pass
+
+        def error(self, msg):
+            errors.append(msg)
+
+        def success(self, msg):
+            successes.append(msg)
+
+        def expander(self, *a, **k):
+            class _E:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *a):
+                    return False
+
+            return _E()
+
+        def text(self, *a, **k):
+            pass
+
+    monkeypatch.setattr(sp, "st", _St())
+    sp._render_cleanup_section()
+    assert successes
+    assert sp._ACK_KEY not in session
+    assert sp._PHRASE_KEY not in session
+    assert sp._RESULT_KEY not in session
+
+
 def test_pending_section_empty_caption(monkeypatch):
     from transcriptx.web.ui.settings import storage_panel as sp
 

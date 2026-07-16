@@ -6,6 +6,7 @@ The recursive delete implementation is module-private. Callers mint a proof via
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 from dataclasses import dataclass
@@ -273,6 +274,13 @@ def _fsync_parent(path: Path) -> None:
         except (AttributeError, NotImplementedError):
             return
         except OSError as exc:
+            # Docker Desktop bind mounts often return EBADF/EINVAL here.
+            unsupported = {errno.EINVAL, errno.ENOTSUP, errno.EBADF}
+            eopnotsupp = getattr(errno, "EOPNOTSUPP", -1)
+            if eopnotsupp != -1:
+                unsupported.add(eopnotsupp)
+            if exc.errno in unsupported:
+                return
             raise PhysicalDeletePartialError(
                 f"parent fsync failed after rmdir: {exc}"
             ) from exc

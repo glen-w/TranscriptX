@@ -222,6 +222,21 @@ def _ensure_operations_dir(state_dir: Path) -> Path:
     return ops
 
 
+def _dir_fsync_unsupported_errno(exc: OSError) -> bool:
+    """True when directory fsync is unavailable on this fd/filesystem.
+
+    Docker Desktop bind mounts (and some network FS) often return EBADF/EINVAL
+    for directory fsync even after a successful O_RDONLY|O_DIRECTORY open. The
+    journal file itself is already fsync'd; treat these as unsupported rather
+    than aborting cleanup.
+    """
+    unsupported = {errno.EINVAL, errno.ENOTSUP, errno.EBADF}
+    eopnotsupp = getattr(errno, "EOPNOTSUPP", -1)
+    if eopnotsupp != -1:
+        unsupported.add(eopnotsupp)
+    return exc.errno in unsupported
+
+
 def fsync_dir(directory: Path) -> DirFsyncResult:
     """Fsync directory; distinguish unsupported vs genuine failure."""
     try:
@@ -237,10 +252,7 @@ def fsync_dir(directory: Path) -> DirFsyncResult:
     except (AttributeError, NotImplementedError) as exc:
         return DirFsyncResult(DirFsyncOutcome.UNSUPPORTED, str(exc))
     except OSError as exc:
-        if (
-            exc.errno in {errno.EINVAL, errno.ENOTSUP}
-            or getattr(errno, "EOPNOTSUPP", -1) == exc.errno
-        ):
+        if _dir_fsync_unsupported_errno(exc):
             return DirFsyncResult(DirFsyncOutcome.UNSUPPORTED, str(exc))
         return DirFsyncResult(DirFsyncOutcome.FAILED, str(exc))
 

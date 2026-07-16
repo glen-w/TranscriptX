@@ -44,6 +44,10 @@ ARTIFACTS_SECTIONS = (
 
 BROWSE_PAGE_SIZE = 75
 
+_SECTION_CONTROL_KEY = "artifacts_section_control"
+_SECTION_RADIO_KEY = "artifacts_section_radio"
+_PREVIEW_SELECTOR_KEY = "artifacts_preview_selector"
+
 _ARTIFACTS_CONFIG = RunScopedPageConfig(
     title="Artifacts",
     description=(
@@ -54,6 +58,33 @@ _ARTIFACTS_CONFIG = RunScopedPageConfig(
     primary_action=("Open Library", "Library"),
     secondary_action=("Overview", "Overview"),
 )
+
+
+def _open_artifact_preview(artifact_id: str) -> None:
+    """Switch to Preview and preselect an artifact (logical + widget keys).
+
+    Streamlit keyed widgets ignore default=/index= once the key exists, so
+    programmatic navigation must write the widget keys directly.
+    """
+    st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = artifact_id
+    st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
+    st.session_state[_SECTION_CONTROL_KEY] = "Preview"
+    st.session_state[_SECTION_RADIO_KEY] = "Preview"
+    st.session_state[_PREVIEW_SELECTOR_KEY] = artifact_id
+
+
+def _force_preview_section() -> None:
+    """Honor one-shot deep links / Browse→Preview jumps against keyed nav widgets."""
+    preset = st.session_state.get(DATA_KEY_ARTIFACT_PRESET) or st.session_state.get(
+        ARTIFACTS_KEY_PREVIEW_ID
+    )
+    if preset:
+        _open_artifact_preview(str(preset))
+    else:
+        st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
+        st.session_state[_SECTION_CONTROL_KEY] = "Preview"
+        st.session_state[_SECTION_RADIO_KEY] = "Preview"
+    st.session_state.pop("_artifacts_force_preview", None)
 
 
 def _section_nav() -> str:
@@ -67,7 +98,7 @@ def _section_nav() -> str:
             "Artifacts section",
             options=labels,
             default=current,
-            key="artifacts_section_control",
+            key=_SECTION_CONTROL_KEY,
             label_visibility="collapsed",
         )
     except Exception:
@@ -76,7 +107,7 @@ def _section_nav() -> str:
             labels,
             index=labels.index(current),
             horizontal=True,
-            key="artifacts_section_radio",
+            key=_SECTION_RADIO_KEY,
             label_visibility="collapsed",
         )
     st.session_state[ARTIFACTS_KEY_SECTION] = choice
@@ -164,8 +195,7 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
                 key=f"art_prev_{a.id}",
                 icon=":material/visibility:",
             ):
-                st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = a.id
-                st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
+                _open_artifact_preview(a.id)
                 st.rerun()
 
     st.session_state[ARTIFACTS_KEY_SELECTED_IDS] = selected
@@ -231,7 +261,7 @@ def _render_preview(ctx: RunScopedPageContext) -> None:
             SELECTBOX_PLACEHOLDER_ARTIFACT if k == "" else options.get(k, k)
         ),
         index=index_pos if index_pos <= len(keys) else 0,
-        key="artifacts_preview_selector",
+        key=_PREVIEW_SELECTOR_KEY,
     )
     if selected_id:
         st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = selected_id
@@ -315,8 +345,7 @@ def _render_artifacts_body(ctx: RunScopedPageContext) -> None:
     if st.session_state.get(DATA_KEY_ARTIFACT_PRESET) or st.session_state.get(
         "_artifacts_force_preview"
     ):
-        st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
-        st.session_state.pop("_artifacts_force_preview", None)
+        _force_preview_section()
 
     render_page_shell(
         "Artifacts",

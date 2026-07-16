@@ -28,6 +28,7 @@ _MODE_KEY = "_cleanup_mode"
 _ACK_KEY = "_cleanup_ack"
 _PHRASE_KEY = "_cleanup_phrase"
 _PREVIEW_KEY = "_cleanup_preview"
+_RESULT_KEY = "_cleanup_last_result"
 
 
 def _ui_session_id() -> str:
@@ -37,8 +38,9 @@ def _ui_session_id() -> str:
 
 
 def _reset_confirmation_state() -> None:
-    st.session_state[_ACK_KEY] = False
-    st.session_state[_PHRASE_KEY] = ""
+    # Pop widget keys — never assign after the checkbox/input are instantiated.
+    st.session_state.pop(_ACK_KEY, None)
+    st.session_state.pop(_PHRASE_KEY, None)
 
 
 def _clear_preview_state() -> None:
@@ -152,6 +154,13 @@ def _render_cleanup_section() -> None:
     st.warning(
         "Files manually added inside a selected run directory are deleted with that run."
     )
+
+    # Execute stores the result and reruns so confirmation widget keys can be
+    # cleared before the checkbox/input are instantiated on the next run.
+    pending_result = st.session_state.pop(_RESULT_KEY, None)
+    if pending_result is not None:
+        _reset_confirmation_state()
+        _render_cleanup_result(pending_result)
 
     mode_label = st.radio(
         "Cleanup action",
@@ -290,8 +299,11 @@ def _render_cleanup_section() -> None:
         svc = RunCleanupService()
         result = svc.execute_cleanup(handle, auth, _ui_session_id())
         clear_session_selections_for_removed_runs(st.session_state, result.targets)
-        _render_cleanup_result(result)
-        _clear_preview_state()
+        st.session_state[_RESULT_KEY] = result
+        # Clear non-widget keys only; ack/phrase are popped on the next run.
+        for key in (_HANDLE_KEY, _PLAN_ID_KEY, _MODE_KEY, _PREVIEW_KEY):
+            st.session_state.pop(key, None)
+        st.rerun()
 
 
 def render_storage_panel() -> None:
