@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from transcriptx.web.ui.settings.configuration_panel import (
     _DRAFT_STATE_KEY,
     _RUN_CACHE_KEY,
     _SCOPE_CACHE_KEY,
+    _render_effective_value,
     _sanitize_scope_config,
     _strip_activation_keys,
     _scope_labels,
@@ -118,3 +121,33 @@ def test_sanitize_scope_config_keeps_activation_keys_outside_draft_scope() -> No
     }
     unchanged = _sanitize_scope_config("Project", nested)
     assert unchanged == nested
+
+
+def test_render_effective_value_uses_code_for_scalars_not_st_json() -> None:
+    """Scalars must not go through st.json (strings misparsed; primitives rejected)."""
+    with (
+        patch(
+            "transcriptx.web.ui.settings.configuration_panel.st.json"
+        ) as mock_json,
+        patch(
+            "transcriptx.web.ui.settings.configuration_panel.st.code"
+        ) as mock_code,
+    ):
+        for value in ("/mnt/outputs", "ollama", True, False, None, 12):
+            mock_json.reset_mock()
+            mock_code.reset_mock()
+            _render_effective_value(value)
+            mock_json.assert_not_called()
+            mock_code.assert_called_once()
+
+        mock_json.reset_mock()
+        mock_code.reset_mock()
+        _render_effective_value({"a": 1})
+        mock_json.assert_called_once_with({"a": 1})
+        mock_code.assert_not_called()
+
+        mock_json.reset_mock()
+        mock_code.reset_mock()
+        _render_effective_value([1, 2])
+        mock_json.assert_called_once_with([1, 2])
+        mock_code.assert_not_called()

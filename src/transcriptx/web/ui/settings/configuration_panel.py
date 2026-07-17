@@ -97,6 +97,19 @@ def _sanitize_scope_config(scope: str, config_map: dict[str, Any]) -> dict[str, 
     return config_map
 
 
+def _render_effective_value(value: Any) -> None:
+    """Render a resolved config value without Streamlit JSON-viewer pitfalls.
+
+    ``st.json`` treats Python ``str`` as already-serialized JSON (so paths like
+    ``/mnt/outputs`` fail to parse) and some Streamlit versions reject JSON
+    primitives (bool/number/null) with "src property must be a valid json object".
+    """
+    if isinstance(value, (dict, list)):
+        st.json(value)
+    else:
+        st.code(json.dumps(value), language="json")
+
+
 def _render_active_profile_selectors(
     *,
     draft_dot: dict[str, Any],
@@ -198,13 +211,30 @@ def render_configuration_panel(
         "Source labels currently report Draft override keys under the run-layer source model."
     )
 
-    col_left, col_right = st.columns([3, 1])
-    with col_right:
-        dl_name = (
-            "run_config_effective.json"
-            if run_dir is not None
-            else "workspace_config_effective.json"
-        )
+    registry = build_registry()
+    effective_dot = flatten(effective_config)
+    categories = list(dict.fromkeys(meta.category for meta in registry.values()))
+
+    for category in categories:
+        keys = [k for k in effective_dot.keys() if k.startswith(f"{category}.")]
+        if not keys:
+            continue
+        with st.expander(category.title(), expanded=False):
+            for key in keys:
+                value = effective_dot.get(key)
+                source = sources.get(key, "default")
+                st.write(f"`{key}`")
+                st.caption(f"source: {source}")
+                _render_effective_value(value)
+
+    st.markdown("<div style='height: 1.25rem'></div>", unsafe_allow_html=True)
+
+    dl_name = (
+        "run_config_effective.json"
+        if run_dir is not None
+        else "workspace_config_effective.json"
+    )
+    with st.expander("View full JSON", expanded=False):
         st.download_button(
             "Download JSON",
             data=json.dumps(effective_config, indent=2),
@@ -212,23 +242,6 @@ def render_configuration_panel(
             mime="application/json",
         )
         st.code(json.dumps(effective_config, indent=2), language="json")
-
-    registry = build_registry()
-    effective_dot = flatten(effective_config)
-    categories = list(dict.fromkeys(meta.category for meta in registry.values()))
-
-    with col_left:
-        for category in categories:
-            keys = [k for k in effective_dot.keys() if k.startswith(f"{category}.")]
-            if not keys:
-                continue
-            with st.expander(category.title(), expanded=False):
-                for key in keys:
-                    value = effective_dot.get(key)
-                    source = sources.get(key, "default")
-                    st.write(f"`{key}`")
-                    st.caption(f"source: {source}")
-                    st.json(value)
 
     st.divider()
     st.subheader("Edit configuration")
