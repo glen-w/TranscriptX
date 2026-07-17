@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from transcriptx.web.services.run_cleanup import journal
 from pathlib import Path
 
 from transcriptx.web.services.run_cleanup import fd_ops
+from transcriptx.web.services.run_cleanup import journal
+from transcriptx.web.services.run_cleanup import journal_ops
 from transcriptx.web.services.run_cleanup.faults import fault_point
 from transcriptx.web.services.run_cleanup.models import (
     CleanupPlan,
@@ -13,6 +14,10 @@ from transcriptx.web.services.run_cleanup.models import (
     CleanupTargetResult,
     StageOutcome,
     TargetStatus,
+)
+from transcriptx.web.services.run_cleanup.path_helpers import (
+    output_root_for_target,
+    planned_root_for_target,
 )
 from transcriptx.web.services.run_cleanup.staging import (
     StagingPlatformUnsupportedError,
@@ -44,7 +49,8 @@ def stage_one(
         errors: tuple[str, ...] = (),
         warnings: tuple[str, ...] = (),
     ) -> StageOutcome:
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="staged_identity_unverified",
@@ -80,9 +86,9 @@ def stage_one(
         )
 
     try:
-        root = host._planned_root_for_target(plan, target)
+        root = planned_root_for_target(plan, target)
         layout = ensure_secure_staging_directory(
-            host._output_root_for_target(target),
+            output_root_for_target(host, target),
             operation_id,
             target,
             root,
@@ -91,7 +97,8 @@ def stage_one(
         staging_path = str(layout.staging_dest)
         basename = layout.basename
         # Durable intent before rename — crash after this is recoverable.
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="staging_started",
@@ -146,7 +153,8 @@ def stage_one(
             layout = None
         if visible_removed:
             return _identity_unverified_outcome(str(exc))
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="staging_failed",
@@ -220,7 +228,8 @@ def stage_one(
         if dur.outcome is journal.DirFsyncOutcome.FAILED:
             raise journal.JournalDurabilityError(dur.message)
     except Exception as exc:  # noqa: BLE001
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="staged_journal_incomplete",

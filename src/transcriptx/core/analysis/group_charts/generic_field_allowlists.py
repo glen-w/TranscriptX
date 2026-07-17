@@ -70,6 +70,13 @@ GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
             "token_count",
         }
     ),
+    "simplified_transcript": frozenset(
+        {
+            "total_original",
+            "total_simplified",
+            "removed_count",
+        }
+    ),
     "tics": frozenset({"total_tics"}),
     "llm_action_items": frozenset({"item_count"}),
     "insights": frozenset(

@@ -1,6 +1,7 @@
 """Shared artifact-write helpers for sentiment / emotion (JSON-then-CSV order).
 
-Entity sentiment uses CSV-then-JSON and must not call :func:`save_rows_json_csv`.
+Entity sentiment uses CSV-then-JSON via :func:`save_rows_csv_json` and must not
+call :func:`save_rows_json_csv`.
 """
 
 from __future__ import annotations
@@ -54,3 +55,34 @@ def save_rows_json_csv(
         speaker=speaker,
     )
     return json_path, csv_path
+
+
+def save_rows_csv_json(
+    output_service: OutputService,
+    csv_data: Union[Dict[str, Any], List[Any], str],
+    json_data: Union[Dict[str, Any], List[Any], str],
+    filename: str,
+    *,
+    subdirectory: Optional[str] = None,
+    speaker: Optional[str] = None,
+) -> tuple[str, str]:
+    """Save CSV then JSON via OutputService.save_data (possibly different payloads).
+
+    Forwards subdirectory/speaker and preserves save_data overwrite/skip semantics.
+    Used by entity_sentiment where CSV rows and JSON payloads differ.
+    """
+    csv_path = output_service.save_data(
+        csv_data,
+        filename,
+        format_type="csv",
+        subdirectory=subdirectory,
+        speaker=speaker,
+    )
+    json_path = output_service.save_data(
+        json_data,
+        filename,
+        format_type="json",
+        subdirectory=subdirectory,
+        speaker=speaker,
+    )
+    return csv_path, json_path

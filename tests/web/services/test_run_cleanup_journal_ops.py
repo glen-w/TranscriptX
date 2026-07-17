@@ -26,7 +26,6 @@ def _host(state_dir: Path, outputs_dir: Path | None = None) -> SimpleNamespace:
         state_dir=state_dir,
         outputs_dir=out,
         group_outputs_dir=out / "groups",
-        _output_root_for_target=lambda t: out,
     )
 
 

@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 
 import transcriptx.core.utils.paths as paths_mod
-from transcriptx.export import ExportableItem
-from transcriptx.utils.export_index import (
+from transcriptx.export import (
+    ExportableItem,
     build_export_index_html,
     normalize_transcript_payload,
     render_text_summary_section,
@@ -21,7 +21,7 @@ from transcriptx.utils.export_index import (
     resolve_export_transcript_data,
 )
 from transcriptx.web.models.artifact import Artifact
-from transcriptx.web.services.artifact_service import ArtifactService
+from transcriptx.web.services.export_service import ExportService
 
 
 def _patch_transcript_library_paths(
@@ -596,7 +596,7 @@ def test_build_index_included_files_footer() -> None:
 def _write_index(
     staging_dir: Path, copied: list[tuple[Artifact, Path]], title: str = "run"
 ) -> str | None:
-    ArtifactService._write_export_index(staging_dir, title, copied)
+    ExportService._write_export_index(staging_dir, title, copied)
     index = staging_dir / "index.html"
     return index.read_text(encoding="utf-8") if index.exists() else None
 
@@ -934,7 +934,7 @@ def test_zip_artifacts_includes_index_html(tmp_path: Path) -> None:
     }
     (run_root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
-    zip_path = ArtifactService.zip_artifacts(run_root, ["t1", "c1"])
+    zip_path = ExportService.zip_artifacts(run_root, ["t1", "c1"])
     assert zip_path is not None
     with zipfile.ZipFile(BytesIO(zip_path.read_bytes())) as zf:
         names = set(zf.namelist())

@@ -2,16 +2,18 @@
 
 **Date:** 2026-07-17  
 **Authority:** Cursor plan `cleanup_refactor_full` (Phase 0–B).  
-**Scope of this doc:** Contracts frozen for Phase A extraction. Behaviour-changing items belong in Phase B with an explicit schema / policy / no-bump decision.
+**Status:** Phase A extraction **complete**. Phase B hardening **complete** (policy 7 / journal schema 3 / result schema 2).  
+**Scope of this doc:** Contracts frozen for Phase A extraction; version table below reflects live Phase B constants.
 
-## Version freeze (Phase A)
+## Version freeze (live)
 
-| Constant | Value | Module |
-|----------|------:|--------|
-| `CLEANUP_POLICY_VERSION` | 4 | `run_cleanup.models` |
-| `JOURNAL_SCHEMA_VERSION` | 3 | `run_cleanup.models` |
+| Constant | Value | Module | Notes |
+|----------|------:|--------|-------|
+| `CLEANUP_POLICY_VERSION` | 7 | `run_cleanup.models` | Phase B R2: classifier + newest-run versions bound into plan ID |
+| `JOURNAL_SCHEMA_VERSION` | 3 | `run_cleanup.models` | Current write schema; readers are version-dispatched |
+| `CLEANUP_RESULT_SCHEMA_VERSION` | 2 | `run_cleanup.models` | Phase B1: omit legacy result `root_kind` |
 
-Do not bump these during Phase A. Schema bumps require version-dispatched journal readers and legacy schema-3 recovery first.
+Phase A froze 4/3. Phase B bumps keep schema-3 recovery green via version-dispatched readers.
 
 ## Public façade freeze
 
@@ -77,21 +79,25 @@ Cache invalidation **before** terminal journal is required in Phase A. Reorderin
 
 Exact tuple in [`faults.FAULT_POINTS`](../../src/transcriptx/web/services/run_cleanup/faults.py). Phase A must not add, remove, rename, duplicate, or change mutation-relative positions. Characterisation snapshots the registry and relative order around mutations.
 
-## Acceptance gate command (Phase A)
-
-Suite lives in the characterisation **package** (not a `test_run_cleanup_characterisation_*.py` glob):
+## Acceptance gate command (Phase A + B)
 
 ```bash
 pytest tests/unit/test_run_cleanup_results.py \
        tests/web/services/test_run_cleanup_journal_ops.py \
        tests/web/services/test_run_cleanup_runtime.py \
        tests/web/services/test_run_cleanup_finalization.py \
+       tests/web/services/test_run_cleanup_version_dispatch.py \
+       tests/web/services/test_run_cleanup_capacity.py \
+       tests/web/services/test_run_cleanup_journal_rmw_lock.py \
        tests/web/services/run_cleanup_characterisation/ \
        tests/web/services/test_run_cleanup_acceptance.py \
        tests/web/services/test_run_cleanup_recoverability.py \
        tests/web/services/test_run_cleanup_release_blockers.py \
        tests/web/services/test_run_cleanup_bulk_depth.py \
        tests/web/services/test_run_cleanup_journal.py \
+       tests/web/services/test_run_cleanup_compare_session.py \
+       tests/web/services/test_run_cleanup_path_helpers.py \
+       tests/web/services/run_cleanup_adversarial/ \
        tests/web/test_storage_cleanup_ui_contracts.py \
        tests/web/services/test_run_cleanup_import_graph.py -q
 ```
@@ -115,12 +121,6 @@ Beyond returned outcomes, preserve: journal write count, cache invalidation coun
 | Candidate selection, plan identity, auth, staleness, status, visible results | **Policy** |
 | Internal refactor with identical serialized + public behaviour | **No bump** |
 
-## Temporary façade shims (named; remove after migration)
+## Temporary façade shims
 
-| Shim | Tests |
-|------|-------|
-| `_validate_roots` | `test_run_cleanup_acceptance.py::test_shared_builder_signature_stable` |
-| `_physical_delete_one` | `test_run_cleanup_recoverability.py::TestRefusedFailedJournalWrites` |
-| `_status_from_journal_targets` | `test_run_cleanup_journal.py::test_status_from_journal_targets_vector`; release-blockers multi-target remnant |
-
-One-line delegates only; dedicated removal commit after tests migrate.
+**Removed (Phase B-pre).** Callers use `path_helpers.validate_roots`, `deletion_phase.physical_delete_one`, and `results.status_from_journal_targets` directly.

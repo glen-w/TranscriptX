@@ -11,12 +11,17 @@ from unittest.mock import patch
 
 import pytest
 
+from transcriptx.core.analysis.affect.output_helpers import (
+    save_rows_csv_json,
+    save_rows_json_csv,
+)
 from transcriptx.core.analysis.dynamics.artifact_io import (
     ensure_dynamics_dirs,
     write_events_and_stats,
     write_speaker_stats_files,
 )
 from transcriptx.core.analysis.dynamics.pauses import PausesAnalysis
+from transcriptx.core.analysis.entity_sentiment import EntitySentimentAnalysis
 from transcriptx.core.analysis.group_charts.context import GroupChartContext
 from transcriptx.core.analysis.group_charts.generic_numeric import (
     GenericNumericGroupChartGenerator,
@@ -31,11 +36,17 @@ from transcriptx.core.models.events import Event
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.pipeline.module_registry import get_module_registry
 from transcriptx.core.utils.validation import sanitize_filename
+from transcriptx.web.models.artifact import Artifact
+from transcriptx.web.services.artifact_index import classify_source_kind
 
 # ---------------------------------------------------------------------------
 # Golden write-order inventories (pre-refactor expectations)
 # ---------------------------------------------------------------------------
 
+GOLDENS_DIR = Path(__file__).resolve().parent / "goldens" / "shared_io"
+WRITE_ORDER_INVENTORY = json.loads(
+    (GOLDENS_DIR / "write_order_inventory.json").read_text(encoding="utf-8")
+)
 SUMMARY_PATH_NORMALIZE = (
     ("output_structure", "data_directory"),
     ("output_structure", "charts_directory"),
@@ -127,6 +138,16 @@ def transcript_path(tmp_path: Path) -> Path:
     return p
 
 
+def test_write_order_inventory_golden_loaded() -> None:
+    """Committed golden documents pair orders used by characterization asserts."""
+    inv = WRITE_ORDER_INVENTORY
+    assert inv["sentiment_global_pair_order"] == ["json", "csv"]
+    assert inv["entity_sentiment_global_pair_order"] == ["csv", "json"]
+    assert inv["dynamics_core_order"] == ["events", "stats"]
+    assert inv["emotion_global_nrc_pair_order"] == ["json", "csv"]
+    assert "save_rows_json_csv" in inv["emotion_note"]
+
+
 def test_affect_package_not_in_module_registry() -> None:
     registry = get_module_registry()
     assert registry.get_module_info("affect") is None
@@ -211,8 +232,14 @@ def test_sentiment_save_results_write_order_and_artifacts(
         module._save_results(results, svc)
 
     assert log.calls[0] == "save_transcript"
-    assert log.calls[1] == "save_data:json"
-    assert log.calls[2] == "save_data:csv"
+    assert (
+        log.calls[1]
+        == f"save_data:{WRITE_ORDER_INVENTORY['sentiment_global_pair_order'][0]}"
+    )
+    assert (
+        log.calls[2]
+        == f"save_data:{WRITE_ORDER_INVENTORY['sentiment_global_pair_order'][1]}"
+    )
     assert log.calls[-1] == "save_summary"
 
     base = transcript_path.stem
@@ -355,7 +382,7 @@ def test_pauses_save_results_events_before_stats_and_dirs(
         write_events_and_stats(
             svc.get_output_structure(), "pauses", events, {"total_gaps": 1}
         )
-    assert order[0] == "events"
+    assert order[0] == WRITE_ORDER_INVENTORY["dynamics_core_order"][0]
     assert order[1] == "json:pauses.stats.json"
 
 
@@ -456,6 +483,29 @@ def test_make_group_output_service_mapping_and_tags(
     chart_root = group_root / "sentiment" / "charts"
     assert chart_root.exists()
 
+    # Named companion: relative path + group tags classify as group_aggregate for discovery
+    art = Artifact(
+        id="g-demo",
+        kind="chart_static",
+        module="sentiment",
+        scope="global",
+        speaker=None,
+        subview=None,
+        slice_id=None,
+        rel_path=rel,
+        bytes=1,
+        mtime="2024-01-01T00:00:00Z",
+        mime="image/png",
+        tags=list(meta.get("tags") or []),
+        title="Demo",
+        meta={"viz_id": meta.get("viz_id"), "agg_id": meta.get("agg_id")},
+    )
+    assert classify_source_kind(art) == "group_aggregate"
+    assert "charts" in art.rel_path
+    assert art.meta is not None
+    assert art.meta.get("viz_id") == "group.sentiment.session.demo"
+    assert "group_aggregate" in art.tags
+
 
 def test_dynamics_speaker_sanitize_and_collision(tmp_path: Path) -> None:
     from types import SimpleNamespace
@@ -536,8 +586,6 @@ def test_group_factory_failure_injection(tmp_path: Path) -> None:
 
 
 def test_csv_compared_as_parsed_rows(transcript_path: Path, tmp_path: Path) -> None:
-    from transcriptx.core.analysis.affect.output_helpers import save_rows_json_csv
-
     svc = create_output_service(
         str(transcript_path), "sentiment", output_dir=str(tmp_path)
     )
@@ -549,8 +597,24 @@ def test_csv_compared_as_parsed_rows(transcript_path: Path, tmp_path: Path) -> N
     assert parsed[2] == ["3", "4"]
 
 
-def test_entity_sentiment_write_order_is_csv_then_json_documented() -> None:
-    """Guard: entity_sentiment must not use JSON-first save_rows_json_csv."""
+def test_emotion_does_not_use_save_rows_json_csv() -> None:
+    """Emotion NRC JSON/CSV payloads differ; must stay module-local (golden note)."""
+    src_path = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "transcriptx"
+        / "core"
+        / "analysis"
+        / "emotion"
+        / "__init__.py"
+    )
+    src = src_path.read_text(encoding="utf-8")
+    assert "save_rows_json_csv" not in src
+    assert "write_enriched_transcript" in src
+
+
+def test_entity_sentiment_uses_csv_then_json_helper() -> None:
+    """Guard: entity_sentiment uses save_rows_csv_json, never JSON-first helper."""
     src_path = (
         Path(__file__).resolve().parents[2]
         / "src"
@@ -562,6 +626,286 @@ def test_entity_sentiment_write_order_is_csv_then_json_documented() -> None:
     )
     src = src_path.read_text(encoding="utf-8")
     assert "save_rows_json_csv" not in src
-    idx_csv = src.index('format_type="csv"')
-    idx_json = src.index('format_type="json"')
-    assert idx_csv < idx_json
+    assert "save_rows_csv_json" in src
+    assert WRITE_ORDER_INVENTORY["entity_sentiment_global_pair_order"] == [
+        "csv",
+        "json",
+    ]
+
+
+def test_entity_sentiment_save_results_write_order(
+    transcript_path: Path, tmp_path: Path
+) -> None:
+    module = EntitySentimentAnalysis()
+    results = {
+        "entity_stats": {
+            "Acme": {
+                "entity_type": "ORG",
+                "mention_count": 2,
+                "avg_sentiment": 0.4,
+                "std_sentiment": 0.1,
+                "pos_count": 1,
+                "neu_count": 1,
+                "neg_count": 0,
+                "speaker_breakdown": {"Alice": 2},
+            }
+        },
+        "entities": [],
+    }
+    svc = create_output_service(
+        str(transcript_path), "entity_sentiment", output_dir=str(tmp_path)
+    )
+    log = WriteLog()
+    _wrap_output_service(svc, log)
+    # Avoid chart rendering in characterization; keep I/O path under test
+    with (
+        patch.object(module, "_create_sentiment_heatmap"),
+        patch.object(module, "_create_entity_type_analysis"),
+        patch.object(module, "_create_speaker_entity_analysis"),
+    ):
+        module._save_results(results, svc)
+
+    pair = WRITE_ORDER_INVENTORY["entity_sentiment_global_pair_order"]
+    assert log.calls[0] == f"save_data:{pair[0]}"
+    assert log.calls[1] == f"save_data:{pair[1]}"
+    # Per-speaker pair follows global
+    assert log.calls[2] == f"save_data:{pair[0]}"
+    assert log.calls[3] == f"save_data:{pair[1]}"
+    assert log.calls[-1] == "save_summary"
+
+    module_root = Path(svc.get_output_structure().module_dir)
+    base = transcript_path.stem
+    assert (module_root / "data" / "global" / f"{base}_entity_sentiment.csv").exists()
+    assert (module_root / "data" / "global" / f"{base}_entity_sentiment.json").exists()
+    # No enriched transcript for entity_sentiment (plan inventory)
+    assert not list(module_root.glob("**/data/global/*_with_entity_sentiment.json"))
+
+
+def test_entity_sentiment_empty_stats_skips_charts(
+    transcript_path: Path, tmp_path: Path
+) -> None:
+    """Controlled fixture: empty entity_stats writes rows/summary, no charts."""
+    module = EntitySentimentAnalysis()
+    results = {"entity_stats": {}, "entities": []}
+    svc = create_output_service(
+        str(transcript_path), "entity_sentiment", output_dir=str(tmp_path)
+    )
+    log = WriteLog()
+    _wrap_output_service(svc, log)
+    heatmap = patch.object(module, "_create_sentiment_heatmap")
+    type_a = patch.object(module, "_create_entity_type_analysis")
+    speaker_a = patch.object(module, "_create_speaker_entity_analysis")
+    with heatmap as mh, type_a as mt, speaker_a as ms:
+        module._save_results(results, svc)
+        mh.assert_not_called()
+        mt.assert_not_called()
+        ms.assert_not_called()
+    assert log.calls[0] == "save_data:csv"
+    assert log.calls[1] == "save_data:json"
+    assert not any(c.startswith("save_chart:") for c in log.calls)
+    assert log.calls[-1] == "save_summary"
+    module_root = Path(svc.get_output_structure().module_dir)
+    assert not list(module_root.glob("**/data/global/*_with_entity_sentiment.json"))
+
+
+def test_entity_sentiment_failure_injection_partial_writes(
+    transcript_path: Path, tmp_path: Path
+) -> None:
+    module = EntitySentimentAnalysis()
+    results = {
+        "entity_stats": {
+            "Acme": {
+                "entity_type": "ORG",
+                "mention_count": 1,
+                "avg_sentiment": 0.1,
+                "std_sentiment": 0.0,
+                "pos_count": 1,
+                "neu_count": 0,
+                "neg_count": 0,
+                "speaker_breakdown": {},
+            }
+        },
+        "entities": [],
+    }
+    svc = create_output_service(
+        str(transcript_path), "entity_sentiment", output_dir=str(tmp_path)
+    )
+    n = {"i": 0}
+    orig = svc.save_data
+
+    def failing_save_data(*args: Any, **kwargs: Any) -> Any:
+        n["i"] += 1
+        if n["i"] == 2:  # fail on JSON after CSV
+            raise RuntimeError("injected json failure")
+        return orig(*args, **kwargs)
+
+    svc.save_data = failing_save_data  # type: ignore[method-assign]
+    with pytest.raises(RuntimeError, match="injected json failure"):
+        module._save_results(results, svc)
+
+    module_root = Path(svc.get_output_structure().module_dir)
+    base = transcript_path.stem
+    assert (module_root / "data" / "global" / f"{base}_entity_sentiment.csv").exists()
+    assert not (
+        module_root / "data" / "global" / f"{base}_entity_sentiment.json"
+    ).exists()
+    assert not (
+        module_root / "data" / "global" / f"{base}_entity_sentiment_summary.json"
+    ).exists()
+
+
+def test_save_rows_csv_json_order(transcript_path: Path, tmp_path: Path) -> None:
+    svc = create_output_service(
+        str(transcript_path), "entity_sentiment", output_dir=str(tmp_path)
+    )
+    log = WriteLog()
+    _wrap_output_service(svc, log)
+    csv_rows = [{"entity": "A", "mention_count": 1}]
+    json_payload = {"entity_stats": {}}
+    save_rows_csv_json(svc, csv_rows, json_payload, "entity_sentiment")
+    pair = WRITE_ORDER_INVENTORY["entity_sentiment_global_pair_order"]
+    assert log.calls == [f"save_data:{pair[0]}", f"save_data:{pair[1]}"]
+
+
+def test_save_rows_csv_json_distinct_payloads_and_speaker_subdir(
+    transcript_path: Path, tmp_path: Path
+) -> None:
+    """CSV and JSON payloads may differ; subdirectory/speaker must be forwarded."""
+    svc = create_output_service(
+        str(transcript_path), "entity_sentiment", output_dir=str(tmp_path)
+    )
+    csv_rows = [{"entity": "Acme", "mention_count": "2"}]
+    json_payload = {"entities": [{"entity": "Acme", "mention_count": 2}]}
+    csv_path, json_path = save_rows_csv_json(
+        svc,
+        csv_rows,
+        json_payload,
+        "entity_sentiment",
+        subdirectory="speakers",
+        speaker="Alice",
+    )
+    assert csv_path
+    assert json_path
+    csv_file = Path(csv_path)
+    json_file = Path(json_path)
+    assert "speakers" in csv_file.parts
+    assert "speakers" in json_file.parts
+    parsed = _parse_csv(csv_file)
+    assert parsed[0] == ["entity", "mention_count"]
+    assert parsed[1] == ["Acme", "2"]
+    loaded = json.loads(json_file.read_text(encoding="utf-8"))
+    assert loaded == json_payload
+    assert "entities" in loaded
+    assert isinstance(csv_rows, list) and not isinstance(loaded, list)
+
+
+def test_entity_sentiment_per_speaker_artifacts_and_payload_shapes(
+    transcript_path: Path, tmp_path: Path
+) -> None:
+    module = EntitySentimentAnalysis()
+    results = {
+        "entity_stats": {
+            "Acme": {
+                "entity_type": "ORG",
+                "mention_count": 2,
+                "avg_sentiment": 0.4,
+                "std_sentiment": 0.1,
+                "pos_count": 1,
+                "neu_count": 1,
+                "neg_count": 0,
+                "speaker_breakdown": {"Alice": 2},
+            }
+        },
+        "entities": [{"text": "Acme"}],
+    }
+    svc = create_output_service(
+        str(transcript_path), "entity_sentiment", output_dir=str(tmp_path)
+    )
+    with (
+        patch.object(module, "_create_sentiment_heatmap"),
+        patch.object(module, "_create_entity_type_analysis"),
+        patch.object(module, "_create_speaker_entity_analysis"),
+    ):
+        module._save_results(results, svc)
+
+    module_root = Path(svc.get_output_structure().module_dir)
+    base = transcript_path.stem
+    global_csv = module_root / "data" / "global" / f"{base}_entity_sentiment.csv"
+    global_json = module_root / "data" / "global" / f"{base}_entity_sentiment.json"
+    speaker_csv = module_root / "data" / "speakers" / f"{base}_entity_sentiment.csv"
+    speaker_json = module_root / "data" / "speakers" / f"{base}_entity_sentiment.json"
+    assert global_csv.exists() and global_json.exists()
+    assert speaker_csv.exists() and speaker_json.exists()
+
+    global_rows = _parse_csv(global_csv)
+    assert "entity" in global_rows[0]
+    assert any(row[0] == "Acme" for row in global_rows[1:])
+    global_payload = json.loads(global_json.read_text(encoding="utf-8"))
+    assert "entity_stats" in global_payload
+    assert "Acme" in global_payload["entity_stats"]
+
+    speaker_payload = json.loads(speaker_json.read_text(encoding="utf-8"))
+    assert "entities" in speaker_payload
+    assert speaker_payload["entities"][0]["entity"] == "Acme"
+    speaker_rows = _parse_csv(speaker_csv)
+    assert speaker_rows[0][0] == "entity"
+
+    summary = module_root / "data" / "global" / f"{base}_entity_sentiment_summary.json"
+    assert summary.exists()
+    # Extra module-owned summary artifacts (not via save_summary alone)
+    assert (module_root / "data" / "global" / f"{base}_summary.json").exists()
+    assert (module_root / "data" / "global" / f"{base}_summary.txt").exists()
+
+
+def test_group_chart_output_service_only_constructed_via_factory() -> None:
+    """Done criterion: no production ctor sites outside helpers.make_group_output_service."""
+    root = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "transcriptx"
+        / "core"
+        / "analysis"
+        / "group_charts"
+    )
+    offenders: List[str] = []
+    for path in sorted(root.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = None
+            if isinstance(func, ast.Name):
+                name = func.id
+            elif isinstance(func, ast.Attribute):
+                name = func.attr
+            if name != "GroupChartOutputService":
+                continue
+            if path.name == "helpers.py":
+                continue
+            offenders.append(f"{path.name}:{node.lineno}")
+    assert offenders == [], f"direct GroupChartOutputService( sites: {offenders}"
+
+
+def test_dynamics_modules_use_artifact_io_helpers() -> None:
+    """All four dynamics modules must call shared dirs + events/stats helpers."""
+    dynamics_root = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "transcriptx"
+        / "core"
+        / "analysis"
+        / "dynamics"
+    )
+    for name in ("pauses.py", "echoes.py", "moments.py", "momentum.py"):
+        src = (dynamics_root / name).read_text(encoding="utf-8")
+        assert "ensure_dynamics_dirs" in src, name
+        assert "write_events_and_stats" in src, name
+
+
+def test_affect_package_reexports_csv_json_helper() -> None:
+    from transcriptx.core.analysis import affect
+
+    assert hasattr(affect, "save_rows_csv_json")
+    assert "save_rows_csv_json" in affect.__all__
+    assert affect.save_rows_csv_json is save_rows_csv_json

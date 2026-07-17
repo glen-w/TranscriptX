@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from transcriptx.web.services.run_cleanup import handles as handle_store
 from transcriptx.web.services.run_cleanup import journal
+from transcriptx.web.services.run_cleanup import results as results_mod
 from transcriptx.web.services.run_cleanup.faults import fault_point
 from transcriptx.web.services.run_cleanup.models import CleanupResult, CleanupStatus
 
@@ -25,7 +26,7 @@ def finalise_operation(
     try:
         if mutation_started:
             fault_point("before_cache_invalidation")
-            for w in host._invalidate_caches():
+            for w in invalidate_caches(host):
                 warnings.append(w)
     except Exception as exc:  # noqa: BLE001
         warnings.append(f"cache invalidation failed: {exc}")
@@ -38,7 +39,9 @@ def finalise_operation(
             if status is CleanupStatus.SUCCESS:
                 # Re-check target vector immediately before terminal write.
                 try:
-                    derived = host._status_from_loaded_operation(operation_id)
+                    derived = results_mod.status_from_loaded_operation(
+                        host.state_dir, operation_id
+                    )
                     if derived is not CleanupStatus.SUCCESS:
                         write_status = derived
                         status = derived

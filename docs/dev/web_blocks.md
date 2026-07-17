@@ -27,7 +27,7 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 | `llm_action_items_block` | `llm_action_items` | `default`, `executive` |
 | `lexical_diversity_block` | `lexical_diversity` | `default` |
 
-Overview **module metrics** use summary extractors under `web/summary_extractors/`. Zip export summaries for LLM prose/list modules are resolved in `utils/export_index.py`.
+Overview **module metrics** use summary extractors under `web/summary_extractors/`. Zip export summaries for LLM prose/list modules are resolved in `transcriptx.export.resolve`.
 
 ## Adding a layout
 

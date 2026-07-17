@@ -367,9 +367,11 @@ class TestCleanupRaces:
             execution_set_signature,
         )
 
+        from transcriptx.web.services.run_cleanup.path_helpers import validate_roots
+
         svc = _svc(tmp_path)
         _mk_run(svc.outputs_dir, "slug_sig", "20200101_000000_00000001")
-        roots, blocking = svc._validate_roots()
+        roots, blocking = validate_roots(svc)
         a = build_execution_set(
             CleanupMode.DELETE_ALL,
             roots,

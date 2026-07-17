@@ -232,8 +232,7 @@
       ],
       "requirements": [
         "segments"
-      ],
-      "supports_group": false
+      ]
     },
     "simplified_transcript": {
       "category": "light",
@@ -244,8 +243,7 @@
       "requirements": [
         "segments",
         "speaker_labels"
-      ],
-      "supports_group": false
+      ]
     },
     "understandability": {
       "category": "medium",
@@ -305,8 +303,7 @@
       "requirements": [
         "segments",
         "speaker_labels"
-      ],
-      "supports_group": false
+      ]
     },
     "temporal_dynamics": {
       "category": "medium",
@@ -624,8 +621,7 @@
         "speaker_labels"
       ],
       "requires_audio": true,
-      "supports_audio": true,
-      "supports_group": false
+      "supports_audio": true
     }
   }
 }

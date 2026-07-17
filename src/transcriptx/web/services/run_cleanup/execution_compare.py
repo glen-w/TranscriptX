@@ -15,24 +15,27 @@ from transcriptx.web.services.run_cleanup.plan_builder import ExecutionSet
 
 
 def _target_key(t: CleanupTarget) -> tuple[str, str, str]:
-    return (t.subject_type.value, t.subject_id, t.run_id)
+    ident = t.identity()
+    return (ident.subject_type.value, ident.subject_id, ident.run_id)
 
 
 def _core_identity(t: CleanupTarget) -> tuple:
     """Identity excluding content fingerprint (lock-skip maskable)."""
+    snap = t.snapshot()
+    ident = snap.identity
     return (
-        t.subject_type.value,
-        t.subject_id,
-        t.run_id,
-        t.canonical_path,
-        int(t.filesystem_dev),
-        int(t.filesystem_ino),
-        t.root_relative_path,
+        ident.subject_type.value,
+        ident.subject_id,
+        ident.run_id,
+        ident.canonical_path,
+        int(snap.filesystem_dev),
+        int(snap.filesystem_ino),
+        ident.root_relative_path,
     )
 
 
 def _full_identity(t: CleanupTarget) -> tuple:
-    return (*_core_identity(t), t.tree_fingerprint)
+    return (*_core_identity(t), t.snapshot().tree_fingerprint)
 
 
 def _root_tuple(r) -> tuple:
@@ -48,7 +51,8 @@ def _root_tuple(r) -> tuple:
 
 
 def _exclusion_tuple(e) -> tuple:
-    return (e.path_relative, e.classification.value, e.reason)
+    root_kind = e.root_kind.value if getattr(e, "root_kind", None) is not None else None
+    return (e.path_relative, e.classification.value, e.reason, root_kind)
 
 
 def compare_with_lock_skip_masks(
@@ -69,6 +73,10 @@ def compare_with_lock_skip_masks(
         return False, "mode mismatch under lock"
     if planned.policy_version != rediscovered.policy_version:
         return False, "policy_version mismatch under lock"
+    if planned.classifier_version != rediscovered.classifier_version:
+        return False, "classifier_version mismatch under lock"
+    if planned.newest_run_policy_version != rediscovered.newest_run_policy_version:
+        return False, "newest_run_policy_version mismatch under lock"
     if list(map(_root_tuple, planned.roots)) != list(
         map(_root_tuple, rediscovered.roots)
     ):

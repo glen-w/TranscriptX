@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from transcriptx.utils.export_markdown import summary_markdown_to_html
+from transcriptx.export import summary_markdown_to_html
 
 
 def test_summary_markdown_renders_headings_and_bold() -> None:

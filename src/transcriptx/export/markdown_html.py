@@ -1,7 +1,5 @@
 """Safe Markdown → HTML for self-contained export index summaries.
 
-Moved from transcriptx.utils.export_markdown.
-
 Renders a limited Markdown subset with HTML-escaped text nodes so export pages
 can show headings, lists, and emphasis without injecting raw HTML or depending
 on CDN/JS Markdown libraries (exports must work over ``file://``).

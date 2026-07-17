@@ -36,6 +36,21 @@ def _samefile(a: Path, b: Path) -> bool:
         return False
 
 
+def _exclusion(
+    path_relative: str,
+    classification: EntryClassification,
+    reason: str,
+    *,
+    root_kind: SubjectType,
+) -> CleanupExclusion:
+    return CleanupExclusion(
+        path_relative=path_relative,
+        classification=classification,
+        reason=reason,
+        root_kind=root_kind,
+    )
+
+
 class RunRootClassifier:
     """Discover eligible run roots; fail closed on unsafe / non-canonical shapes."""
 
@@ -105,10 +120,11 @@ class RunRootClassifier:
                 subjects = sorted(subject_entries, key=lambda e: e.name)
         except OSError as exc:
             exclusions.append(
-                CleanupExclusion(
+                _exclusion(
                     path_relative=".",
                     classification=EntryClassification.unreadable,
                     reason=f"cannot scandir transcript outputs: {exc}",
+                    root_kind=SubjectType.transcript,
                 )
             )
             return targets, exclusions
@@ -118,10 +134,11 @@ class RunRootClassifier:
             rel_subject = name
             if name == STAGING_DIR_NAME:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.staging,
                         reason="cleanup staging directory",
+                        root_kind=SubjectType.transcript,
                     )
                 )
                 continue
@@ -130,20 +147,22 @@ class RunRootClassifier:
                 st = subject_entry.stat(follow_symlinks=False)
             except OSError as exc:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.unreadable,
                         reason=str(exc),
+                        root_kind=SubjectType.transcript,
                     )
                 )
                 continue
 
             if subject_entry.is_symlink():
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.symlink,
                         reason="subject path is a symlink",
+                        root_kind=SubjectType.transcript,
                     )
                 )
                 continue
@@ -156,30 +175,33 @@ class RunRootClassifier:
 
             if not subject_entry.is_dir(follow_symlinks=False):
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.unknown,
                         reason="not a subject directory",
+                        root_kind=SubjectType.transcript,
                     )
                 )
                 continue
 
             if not is_valid_transcript_slug(name):
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.invalid,
                         reason="invalid transcript slug",
+                        root_kind=SubjectType.transcript,
                     )
                 )
                 continue
 
             if int(st.st_dev) != root_dev:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.mount,
                         reason="subject on different device than output root",
+                        root_kind=SubjectType.transcript,
                     )
                 )
                 continue
@@ -216,10 +238,11 @@ class RunRootClassifier:
                 subjects = sorted(subject_entries, key=lambda e: e.name)
         except OSError as exc:
             exclusions.append(
-                CleanupExclusion(
+                _exclusion(
                     path_relative=".",
                     classification=EntryClassification.unreadable,
                     reason=f"cannot scandir group outputs: {exc}",
+                    root_kind=SubjectType.group,
                 )
             )
             return targets, exclusions
@@ -229,10 +252,11 @@ class RunRootClassifier:
             rel_subject = name
             if name == STAGING_DIR_NAME:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.staging,
                         reason="cleanup staging directory",
+                        root_kind=SubjectType.group,
                     )
                 )
                 continue
@@ -241,50 +265,55 @@ class RunRootClassifier:
                 st = subject_entry.stat(follow_symlinks=False)
             except OSError as exc:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.unreadable,
                         reason=str(exc),
+                        root_kind=SubjectType.group,
                     )
                 )
                 continue
 
             if subject_entry.is_symlink():
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.symlink,
                         reason="subject path is a symlink",
+                        root_kind=SubjectType.group,
                     )
                 )
                 continue
 
             if not subject_entry.is_dir(follow_symlinks=False):
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.unknown,
                         reason="not a subject directory",
+                        root_kind=SubjectType.group,
                     )
                 )
                 continue
 
             if not is_valid_group_uuid(name):
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.invalid,
                         reason="invalid group uuid",
+                        root_kind=SubjectType.group,
                     )
                 )
                 continue
 
             if int(st.st_dev) != root_dev:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel_subject,
                         classification=EntryClassification.mount,
                         reason="subject on different device than group output root",
+                        root_kind=SubjectType.group,
                     )
                 )
                 continue
@@ -318,10 +347,11 @@ class RunRootClassifier:
                 runs = sorted(run_entries, key=lambda e: e.name)
         except OSError as exc:
             exclusions.append(
-                CleanupExclusion(
+                _exclusion(
                     path_relative=root_relative_prefix,
                     classification=EntryClassification.unreadable,
                     reason=f"cannot scandir subject: {exc}",
+                    root_kind=subject_type,
                 )
             )
             return targets, exclusions
@@ -332,10 +362,11 @@ class RunRootClassifier:
 
             if run_id == STAGING_DIR_NAME:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=EntryClassification.staging,
                         reason="cleanup staging directory",
+                        root_kind=subject_type,
                     )
                 )
                 continue
@@ -344,50 +375,55 @@ class RunRootClassifier:
                 st = run_entry.stat(follow_symlinks=False)
             except OSError as exc:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=EntryClassification.unreadable,
                         reason=str(exc),
+                        root_kind=subject_type,
                     )
                 )
                 continue
 
             if run_entry.is_symlink():
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=EntryClassification.symlink,
                         reason="run path is a symlink",
+                        root_kind=subject_type,
                     )
                 )
                 continue
 
             if not run_entry.is_dir(follow_symlinks=False):
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=EntryClassification.unknown,
                         reason="not a run directory",
+                        root_kind=subject_type,
                     )
                 )
                 continue
 
             if not is_valid_run_id(run_id):
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=EntryClassification.invalid,
                         reason="invalid run_id",
+                        root_kind=subject_type,
                     )
                 )
                 continue
 
             if int(st.st_dev) != root_dev:
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=EntryClassification.mount,
                         reason="run on different device than output root",
+                        root_kind=subject_type,
                     )
                 )
                 continue
@@ -403,18 +439,27 @@ class RunRootClassifier:
                 except ValueError:
                     classification = EntryClassification.unreadable
                 exclusions.append(
-                    CleanupExclusion(
+                    _exclusion(
                         path_relative=rel,
                         classification=classification,
                         reason=exc.reason,
+                        root_kind=subject_type,
                     )
                 )
                 continue
 
             try:
                 canonical = str(run_path.resolve())
-            except OSError:
-                canonical = str(run_path)
+            except OSError as exc:
+                exclusions.append(
+                    _exclusion(
+                        path_relative=rel,
+                        classification=EntryClassification.unreadable,
+                        reason=f"cannot resolve canonical path: {exc}",
+                        root_kind=subject_type,
+                    )
+                )
+                continue
 
             mtime_ns = int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9)))
             targets.append(

@@ -68,6 +68,29 @@ class TestCreateStandardOutputStructure:
             str(Path(OUTPUTS_DIR).resolve())
         )
 
+    def test_keeps_group_outputs_dir_path(self, tmp_path, monkeypatch):
+        import transcriptx.core.utils.output_standards as output_standards_module
+        import transcriptx.core.utils.paths as paths_module
+
+        outputs_root = tmp_path / "outputs"
+        group_root = tmp_path / "group_outputs"
+        outputs_root.mkdir()
+        group_root.mkdir()
+        monkeypatch.setattr(paths_module, "OUTPUTS_DIR", str(outputs_root))
+        monkeypatch.setattr(paths_module, "GROUP_OUTPUTS_DIR", str(group_root))
+        monkeypatch.setattr(output_standards_module, "OUTPUTS_DIR", str(outputs_root))
+        monkeypatch.setattr(
+            output_standards_module, "GROUP_OUTPUTS_DIR", str(group_root)
+        )
+
+        group_run = group_root / "guuid" / "run1"
+        group_run.mkdir(parents=True)
+        structure = create_standard_output_structure(
+            str(group_run), "lexical_diversity"
+        )
+        assert structure.transcript_dir == group_run.resolve()
+        assert structure.module_dir == group_run.resolve() / "lexical_diversity"
+
 
 class TestGetStandardFilePatterns:
     def test_returns_expected_keys(self):

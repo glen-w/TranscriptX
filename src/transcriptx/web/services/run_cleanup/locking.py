@@ -1,8 +1,16 @@
-"""Per-run locks, identity walks, and locked rediscovery (Phase A extract)."""
+"""Per-run locks, identity walks, and locked rediscovery (Phase A extract).
+
+Phase B3 lock hierarchy (acquire only in this order; never reverse):
+1. Mutation gate
+2. Handle claim or retry lease
+3. Per-run locks (this module)
+4. Short-lived per-operation journal RMW lock
+"""
 
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 from transcriptx.core.utils.run_writer_locks import RunWriterLock, try_per_run_lock
@@ -16,6 +24,8 @@ from transcriptx.web.services.run_cleanup.fingerprint import (
     compute_tree_fingerprint,
 )
 from transcriptx.web.services.run_cleanup.models import (
+    FD_BUDGET_SAFETY_RESERVE,
+    MAX_CLEANUP_CANDIDATES,
     CleanupMode,
     CleanupPlan,
     CleanupStatus,
@@ -25,15 +35,55 @@ from transcriptx.web.services.run_cleanup.models import (
     SubjectType,
     TargetStatus,
 )
+from transcriptx.web.services.run_cleanup.path_helpers import (
+    planned_root_for_target,
+    validate_roots,
+)
 from transcriptx.web.services.run_cleanup.staging import (
     StagingPlatformUnsupportedError,
     StagingUnsafeError,
 )
 
 
-def acquire_locks(
-    host, plan: CleanupPlan
-) -> tuple[list[RunWriterLock], list[CleanupTargetResult], str | None]:
+@dataclass(frozen=True)
+class LockAcquisitionOutcome:
+    locks: list[RunWriterLock]
+    skip_results: list[CleanupTargetResult]
+    error: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None
+
+
+def preflight_new_operation_capacity(plan: CleanupPlan) -> str | None:
+    """Fail closed for oversized *new* operations (not recovery)."""
+    n = len(plan.candidates)
+    if n > MAX_CLEANUP_CANDIDATES:
+        return (
+            f"too many cleanup candidates ({n} > {MAX_CLEANUP_CANDIDATES}); "
+            "narrow the selection or clean up in batches"
+        )
+    retained_locks = len(plan.retained) if plan.mode is CleanupMode.DELETE_OLD else 0
+    # Candidate locks + retained locks + root/staging descriptors + journal + reserve.
+    estimated = n + retained_locks + 8 + FD_BUDGET_SAFETY_RESERVE
+    try:
+        import resource
+
+        soft, _hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    except (ValueError, OSError, AttributeError):
+        return "cannot query process FD limit (RLIMIT_NOFILE); refusing cleanup"
+    if soft <= 0:
+        return "invalid process FD limit; refusing cleanup"
+    if estimated >= soft:
+        return (
+            f"estimated FD budget {estimated} exceeds soft RLIMIT_NOFILE {soft}; "
+            "narrow the selection or raise the process limit"
+        )
+    return None
+
+
+def acquire_locks(host, plan: CleanupPlan) -> LockAcquisitionOutcome:
     results: list[CleanupTargetResult] = []
     locks: list[RunWriterLock] = []
     if plan.mode is CleanupMode.DELETE_ALL:
@@ -58,7 +108,7 @@ def acquire_locks(
                 )
                 continue
             locks.append(lock)
-        return locks, results, None
+        return LockAcquisitionOutcome(locks=locks, skip_results=results)
 
     all_targets = list(plan.candidates) + list(plan.retained)
     by_canon: dict[str, CleanupTarget] = {t.canonical_path: t for t in all_targets}
@@ -106,7 +156,7 @@ def acquire_locks(
         if subject_key in subject_failed:
             continue
         locks.extend(held)
-    return locks, results, None
+    return LockAcquisitionOutcome(locks=locks, skip_results=results)
 
 
 def release_locks(locks: list[RunWriterLock]) -> None:
@@ -117,7 +167,7 @@ def release_locks(locks: list[RunWriterLock]) -> None:
             pass
 
 
-def fd_walk_run_identity(host, root: RootIdentity, target: CleanupTarget) -> None:
+def fd_walk_run_identity(root: RootIdentity, target: CleanupTarget) -> None:
     """Descriptor-anchored root → subject → run identity proof via fd_ops."""
     if not fd_ops.platform_supports_secure_cleanup():
         raise StagingPlatformUnsupportedError(
@@ -162,7 +212,7 @@ def revalidate_execution_set_under_lock(
     )
 
     results: list[CleanupTargetResult] = list(lock_results)
-    roots, blocking = host._validate_roots()
+    roots, blocking = validate_roots(host)
     if blocking:
         results.append(
             CleanupTargetResult(
@@ -222,9 +272,9 @@ def revalidate_execution_set_under_lock(
     for target in list(plan.candidates) + (
         list(plan.retained) if plan.mode is CleanupMode.DELETE_OLD else []
     ):
-        root = host._planned_root_for_target(plan, target)
+        root = planned_root_for_target(plan, target)
         try:
-            host._fd_walk_run_identity(root, target)
+            fd_walk_run_identity(root, target)
         except StagingPlatformUnsupportedError as exc:
             results.append(
                 CleanupTargetResult(

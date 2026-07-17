@@ -423,7 +423,8 @@ class TestRetryReconcileMatrix:
         shutil.rmtree(run)
 
         retry = svc.retry_interrupted_staging(oid)
-        assert retry.status in {CleanupStatus.SUCCESS, CleanupStatus.NOOP}
+        # Phase B2: external_disappeared is not a SUCCESS fact.
+        assert retry.status is CleanupStatus.PARTIAL
         assert any(t.status is TargetStatus.EXTERNAL_DISAPPEARED for t in retry.targets)
         data = _load(svc, oid)
         assert data["targets"][0]["state"] == "external_disappeared"
@@ -444,6 +445,116 @@ class TestRetryReconcileMatrix:
         assert data["targets"][0]["state"] == "planned"
         # All planned → FAILED_BEFORE_MUTATION after reconcile
         assert retry.status is CleanupStatus.FAILED_BEFORE_MUTATION
+
+    def test_staged_identity_mismatch_refuses(self, tmp_path):
+        svc = _svc(tmp_path)
+        run = _mk_run(svc.outputs_dir, "slug_idmis", "20200101_000000_00000001")
+        target = _target_from_run(
+            run, subject_id="slug_idmis", run_id="20200101_000000_00000001"
+        )
+        oid = _write_single_target_journal(svc, target, state="staging_started")
+        staging = cleanup_journal.intended_staging_path(svc.outputs_dir, oid, target)
+        staging.parent.mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(run)
+        # Fresh tree at staging path → different inode than journaled identity.
+        staging.mkdir(parents=True)
+        (staging / "artifact.txt").write_text("replacement", encoding="utf-8")
+
+        retry = svc.retry_interrupted_staging(oid)
+        assert retry.status is CleanupStatus.PARTIAL
+        assert any(
+            t.status is TargetStatus.PHYSICAL_DELETE_REFUSED for t in retry.targets
+        )
+        assert any("identity does not match" in t.message for t in retry.targets)
+        assert staging.exists()
+
+    def test_missing_staged_dev_ino_recovers_via_lstat(self, tmp_path):
+        svc = _svc(tmp_path)
+        run = _mk_run(svc.outputs_dir, "slug_lstat", "20200101_000000_00000001")
+        target = _target_from_run(
+            run, subject_id="slug_lstat", run_id="20200101_000000_00000001"
+        )
+        oid = _write_single_target_journal(svc, target, state="staging_started")
+        staging = cleanup_journal.intended_staging_path(svc.outputs_dir, oid, target)
+        staging.parent.mkdir(parents=True, exist_ok=True)
+        run.rename(staging)
+        # Journal has no staged_dev/ino; reconcile must lstat and match identity.
+        retry = svc.retry_interrupted_staging(oid)
+        assert retry.status is CleanupStatus.SUCCESS
+        assert not staging.exists()
+        data = _load(svc, oid)
+        assert data["targets"][0]["state"] == "physical_deleted"
+
+
+class TestTerminalReconstruction:
+    def test_success_terminal_rebuilds_targets(self, tmp_path):
+        from transcriptx.web.services.run_cleanup import recovery as recovery_mod
+
+        svc = _svc(tmp_path)
+        run = _mk_run(svc.outputs_dir, "slug_term", "20200101_000000_00000001")
+        target = _target_from_run(
+            run, subject_id="slug_term", run_id="20200101_000000_00000001"
+        )
+        oid = _write_single_target_journal(svc, target, state="physical_deleted")
+        cleanup_journal.update_operation_status(svc.state_dir, oid, "SUCCESS")
+        data = _load(svc, oid)
+        result = recovery_mod._synthesize_terminal_result(
+            operation_id=oid,
+            plan_id="plan",
+            mode=CleanupMode.DELETE_ALL,
+            data=data,
+        )
+        assert result.status is CleanupStatus.ALREADY_EXECUTED
+        assert len(result.targets) == 1
+        assert result.targets[0].status is TargetStatus.PHYSICAL_DELETED
+        assert result.targets[0].filesystem_dev == target.filesystem_dev
+        assert result.physically_deleted_count == 1
+
+    def test_malformed_target_row_warns_without_fabricating_ids(self, tmp_path):
+        from transcriptx.web.services.run_cleanup import recovery as recovery_mod
+
+        result = recovery_mod._synthesize_terminal_result(
+            operation_id="1_abcdef012345",
+            plan_id="plan",
+            mode=CleanupMode.DELETE_ALL,
+            data={
+                "status": "SUCCESS",
+                "targets": [
+                    {
+                        "subject_type": "transcript",
+                        "subject_id": "s",
+                        "run_id": "r",
+                        "canonical_path": "/x",
+                        "state": "physical_deleted",
+                        "filesystem_dev": 0,
+                        "filesystem_ino": 0,
+                    }
+                ],
+            },
+        )
+        assert result.status is CleanupStatus.ALREADY_EXECUTED
+        assert result.targets == ()
+        assert any("could not be reconstructed" in w for w in result.warnings)
+
+    def test_op_status_vs_target_vector_conflict_warns(self, tmp_path):
+        from transcriptx.web.services.run_cleanup import recovery as recovery_mod
+
+        svc = _svc(tmp_path)
+        run = _mk_run(svc.outputs_dir, "slug_conf", "20200101_000000_00000001")
+        target = _target_from_run(
+            run, subject_id="slug_conf", run_id="20200101_000000_00000001"
+        )
+        oid = _write_single_target_journal(svc, target, state="physical_deleted")
+        cleanup_journal.update_operation_status(svc.state_dir, oid, "PARTIAL")
+        data = _load(svc, oid)
+        result = recovery_mod._synthesize_terminal_result(
+            operation_id=oid,
+            plan_id="plan",
+            mode=CleanupMode.DELETE_ALL,
+            data=data,
+        )
+        assert result.status is CleanupStatus.ALREADY_EXECUTED
+        assert any("differs from" in w for w in result.warnings)
 
 
 class TestMultiTargetRemnant:
@@ -577,7 +688,7 @@ class TestRefusedFailedJournalWrites:
             staged_ino=st.st_ino,
         )
         assert tr.status is TargetStatus.PHYSICAL_DELETE_FAILED
-        # Best-effort may have written physical_delete_failed via _persist_target_state
+        # Best-effort may have written physical_delete_failed via persist_target_state
         # which also goes through the patched function — ensure staging still present
         assert staging.exists()
 
@@ -620,8 +731,8 @@ class TestClaimRetryDurability:
 
 
 class TestTerminalRetry:
-    @pytest.mark.parametrize("status", ["BLOCKED", "STALE_PLAN"])
-    def test_terminal_statuses_retry_as_noop(self, tmp_path, status):
+    @pytest.mark.parametrize("status", ["BLOCKED", "STALE_PLAN", "SUCCESS"])
+    def test_terminal_statuses_retry_as_already_executed(self, tmp_path, status):
         svc = _svc(tmp_path)
         oid = "1_abcdefabcdef"
         ops = svc.state_dir / "cleanup" / "operations"
@@ -635,7 +746,7 @@ class TestTerminalRetry:
             encoding="utf-8",
         )
         result = svc.retry_interrupted_staging(oid)
-        assert result.status is CleanupStatus.NOOP
+        assert result.status is CleanupStatus.ALREADY_EXECUTED
         assert any("already terminal" in w.lower() for w in result.warnings)
 
 

@@ -108,6 +108,8 @@ class SearchResult:
     start_time: float
     end_time: float
     context_indices: Optional[Tuple[int, int]] = None
+    context_before: Optional[str] = None
+    context_after: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.session_slug != self.segment_ref.transcript_ref.session_slug:

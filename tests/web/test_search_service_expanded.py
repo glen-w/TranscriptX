@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import List
 
 import pytest
 
 from transcriptx.web.models.search import (
+    SearchFilters,
     SearchResult,
     SegmentRef,
     TranscriptRef,
@@ -56,10 +58,56 @@ def _result(
     )
 
 
+def _patch_backend_index(monkeypatch, mod, *, sessions, indexes_by_name) -> None:
+    monkeypatch.setattr(
+        mod,
+        "cached_list_available_sessions",
+        lambda: [{"name": n} for n in sessions],
+    )
+    monkeypatch.setattr(mod, "_resolve_session_path_for_search", lambda n: f"/path/{n}")
+    monkeypatch.setattr(mod, "_resolve_transcript_mtime", lambda _n: None)
+    monkeypatch.setattr(
+        mod,
+        "_build_transcript_index",
+        lambda session_name, *_a, **_k: indexes_by_name.get(session_name),
+    )
+    monkeypatch.setattr(
+        mod, "resolve_speaker_names_from_sidecars", lambda segs, _p: segs
+    )
+
+
+@pytest.mark.unit
+def test_resolve_transcript_mtime_prefers_filesystem_stat(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    expected = float(transcript.stat().st_mtime)
+
+    monkeypatch.setattr(
+        mod.FileService,
+        "resolve_transcript_path",
+        lambda _name: transcript,
+    )
+
+    def _boom(_name: str):
+        raise AssertionError("should not load transcript when path exists")
+
+    monkeypatch.setattr(mod.FileService, "load_transcript_by_session", _boom)
+    assert _resolve_transcript_mtime("slug/run") == expected
+
+
 @pytest.mark.unit
 def test_resolve_transcript_mtime_from_source(monkeypatch) -> None:
     import transcriptx.web.services.search_service as mod
 
+    monkeypatch.setattr(
+        mod.FileService,
+        "resolve_transcript_path",
+        lambda _name: None,
+    )
     monkeypatch.setattr(
         mod.FileService,
         "load_transcript_by_session",
@@ -72,6 +120,11 @@ def test_resolve_transcript_mtime_from_source(monkeypatch) -> None:
 def test_resolve_transcript_mtime_missing_or_bad(monkeypatch) -> None:
     import transcriptx.web.services.search_service as mod
 
+    monkeypatch.setattr(
+        mod.FileService,
+        "resolve_transcript_path",
+        lambda _name: None,
+    )
     monkeypatch.setattr(
         mod.FileService, "load_transcript_by_session", lambda _name: None
     )
@@ -136,6 +189,15 @@ def test_rank_results_prefers_word_boundary_and_named_speaker() -> None:
 
 
 @pytest.mark.unit
+def test_rank_results_prefers_phrase_over_token_and() -> None:
+    svc = SearchService()
+    phrase = _result(text="alpha beta together", spans=[(0, 10)], index=0)
+    token_and = _result(text="beta then alpha", spans=[(0, 4), (10, 15)], index=1)
+    ranked = svc._rank_results([token_and, phrase], "alpha beta")
+    assert ranked[0].segment_text == "alpha beta together"
+
+
+@pytest.mark.unit
 def test_search_all_skips_fuzzy_when_query_short(monkeypatch) -> None:
     svc = SearchService()
     monkeypatch.setattr(
@@ -173,7 +235,7 @@ def test_search_all_runs_fuzzy_when_few_hits(monkeypatch) -> None:
         "_select_backend",
         lambda: SimpleNamespace(search_substring=lambda q, f=None: (few, 1)),
     )
-    monkeypatch.setattr(svc, "_select_candidate_transcripts", lambda _q: ["c"])
+    monkeypatch.setattr(svc, "_select_candidate_transcripts", lambda _q, _f=None: ["c"])
     monkeypatch.setattr(svc, "_fuzzy_search", lambda *_a, **_k: fuzzy)
     response = svc.search_all_transcripts("query", enable_fuzzy=True)
     assert response.fuzzy_ran is True
@@ -219,6 +281,43 @@ def test_select_candidate_transcripts_requires_token_overlap(monkeypatch) -> Non
 
 
 @pytest.mark.unit
+def test_select_candidate_transcripts_respects_session_filters(monkeypatch) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    a = _TranscriptIndex(
+        session_name="alpha/run1",
+        transcript_slug="a",
+        segments=[],
+        text_blob="alpha beta",
+        vocab={"alpha", "beta"},
+    )
+    b = _TranscriptIndex(
+        session_name="beta/run1",
+        transcript_slug="b",
+        segments=[],
+        text_blob="alpha beta",
+        vocab={"alpha", "beta"},
+    )
+    monkeypatch.setattr(
+        mod,
+        "cached_list_available_sessions",
+        lambda: [{"name": "alpha/run1"}, {"name": "beta/run1"}],
+    )
+    monkeypatch.setattr(mod, "_resolve_session_path_for_search", lambda n: n)
+    monkeypatch.setattr(mod, "_resolve_transcript_mtime", lambda _n: None)
+    monkeypatch.setattr(
+        mod,
+        "_build_transcript_index",
+        lambda session_name, *_a, **_k: a if session_name.startswith("alpha") else b,
+    )
+    svc = SearchService()
+    filters = SearchFilters(session_slugs=["alpha"])
+    assert [
+        c.session_name for c in svc._select_candidate_transcripts("alpha", filters)
+    ] == ["alpha/run1"]
+
+
+@pytest.mark.unit
 def test_file_search_backend_substring_match(monkeypatch) -> None:
     import transcriptx.web.services.search_service as mod
 
@@ -237,14 +336,8 @@ def test_file_search_backend_substring_match(monkeypatch) -> None:
         text_blob="hello searchable world nope",
         vocab={"hello", "searchable", "world", "nope"},
     )
-    monkeypatch.setattr(
-        mod, "cached_list_available_sessions", lambda: [{"name": "slug/run1"}]
-    )
-    monkeypatch.setattr(mod, "_resolve_session_path_for_search", lambda n: n)
-    monkeypatch.setattr(mod, "_resolve_transcript_mtime", lambda _n: None)
-    monkeypatch.setattr(mod, "_build_transcript_index", lambda *_a, **_k: index)
-    monkeypatch.setattr(
-        mod, "resolve_speaker_names_from_sidecars", lambda segs, _p: segs
+    _patch_backend_index(
+        monkeypatch, mod, sessions=["slug/run1"], indexes_by_name={"slug/run1": index}
     )
 
     results, total = FileSearchBackend().search_substring("searchable")
@@ -252,6 +345,147 @@ def test_file_search_backend_substring_match(monkeypatch) -> None:
     assert results[0].segment_text == "Hello searchable world"
     assert results[0].match_spans == [(6, 16)]
     assert results[0].speaker_name == "A"
+    assert results[0].context_before is None
+    assert results[0].context_after == "nope"
+
+
+@pytest.mark.unit
+def test_file_search_backend_respects_session_and_speaker_filters(monkeypatch) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    keep = _TranscriptIndex(
+        session_name="keep/run1",
+        transcript_slug="keep",
+        segments=[
+            {
+                "text": "hello searchable",
+                "speaker": "Alice",
+                "start": 0.0,
+                "end": 1.0,
+            },
+            {
+                "text": "hello searchable",
+                "speaker": "Bob",
+                "start": 1.0,
+                "end": 2.0,
+            },
+        ],
+        text_blob="hello searchable hello searchable",
+        vocab={"hello", "searchable"},
+    )
+    drop = _TranscriptIndex(
+        session_name="drop/run1",
+        transcript_slug="drop",
+        segments=[
+            {
+                "text": "hello searchable",
+                "speaker": "Alice",
+                "start": 0.0,
+                "end": 1.0,
+            },
+        ],
+        text_blob="hello searchable",
+        vocab={"hello", "searchable"},
+    )
+    _patch_backend_index(
+        monkeypatch,
+        mod,
+        sessions=["keep/run1", "drop/run1"],
+        indexes_by_name={"keep/run1": keep, "drop/run1": drop},
+    )
+
+    filters = SearchFilters(session_slugs=["keep"], speaker_keys=["Alice"])
+    results, total = FileSearchBackend().search_substring("searchable", filters)
+    assert total == 1
+    assert results[0].session_slug == "keep"
+    assert results[0].speaker_name == "Alice"
+
+
+@pytest.mark.unit
+def test_file_search_backend_token_and_match(monkeypatch) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    index = _TranscriptIndex(
+        session_name="slug/run1",
+        transcript_slug="demo",
+        segments=[
+            {
+                "text": "gamma then alpha later",
+                "speaker": "A",
+                "start": 0.0,
+                "end": 1.0,
+            },
+            {
+                "text": "only alpha",
+                "speaker": "A",
+                "start": 1.0,
+                "end": 2.0,
+            },
+        ],
+        text_blob="gamma then alpha later only alpha",
+        vocab={"gamma", "then", "alpha", "later", "only"},
+    )
+    _patch_backend_index(
+        monkeypatch, mod, sessions=["slug/run1"], indexes_by_name={"slug/run1": index}
+    )
+
+    results, total = FileSearchBackend().search_substring("alpha gamma")
+    assert total == 1
+    assert results[0].segment_text == "gamma then alpha later"
+    assert len(results[0].match_spans) >= 2
+
+
+@pytest.mark.unit
+def test_file_search_backend_attaches_neighbor_context(monkeypatch) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    index = _TranscriptIndex(
+        session_name="slug/run1",
+        transcript_slug="demo",
+        segments=[
+            {"text": "before line", "speaker": "A", "start": 0.0, "end": 1.0},
+            {"text": "hit searchable", "speaker": "A", "start": 1.0, "end": 2.0},
+            {"text": "after line", "speaker": "A", "start": 2.0, "end": 3.0},
+        ],
+        text_blob="before line hit searchable after line",
+        vocab={"before", "line", "hit", "searchable", "after"},
+    )
+    _patch_backend_index(
+        monkeypatch, mod, sessions=["slug/run1"], indexes_by_name={"slug/run1": index}
+    )
+
+    results, _total = FileSearchBackend().search_substring("searchable")
+    assert len(results) == 1
+    assert results[0].context_before == "before line"
+    assert results[0].context_after == "after line"
+    assert results[0].context_indices == (0, 2)
+
+
+@pytest.mark.unit
+def test_fuzzy_search_respects_speaker_filter(monkeypatch) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    index = _TranscriptIndex(
+        session_name="slug/run1",
+        transcript_slug="demo",
+        segments=[
+            {"text": "almost query here", "speaker": "Alice", "start": 0.0, "end": 1.0},
+            {"text": "almost query here", "speaker": "Bob", "start": 1.0, "end": 2.0},
+        ],
+        text_blob="almost query here almost query here",
+        vocab={"almost", "query", "here"},
+    )
+    monkeypatch.setattr(mod, "_resolve_session_path_for_search", lambda n: f"/p/{n}")
+    monkeypatch.setattr(
+        mod, "resolve_speaker_names_from_sidecars", lambda segs, _p: segs
+    )
+    svc = SearchService()
+    filters = SearchFilters(speaker_keys=["Alice"])
+    results = svc._fuzzy_search([index], "query", threshold=50.0, filters=filters)
+    assert len(results) == 1
+    assert results[0].speaker_name == "Alice"
+    # Fuzzy path must resolve speakers via filesystem path, not session_name alone.
+    # Covered by monkeypatched resolve_speaker_names receiving /p/slug/run1.
 
 
 @pytest.mark.unit

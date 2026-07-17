@@ -10,8 +10,13 @@ from transcriptx.core.utils.run_writer_locks import (
     try_per_run_lock,
     try_run_tree_mutation_gate,
 )
+from transcriptx.web.services.run_cleanup import deletion_phase
 from transcriptx.web.services.run_cleanup import fd_ops
+from transcriptx.web.services.run_cleanup import finalization
 from transcriptx.web.services.run_cleanup import journal
+from transcriptx.web.services.run_cleanup import journal_ops
+from transcriptx.web.services.run_cleanup import locking
+from transcriptx.web.services.run_cleanup import results as results_mod
 from transcriptx.web.services.run_cleanup.models import (
     CLEANUP_BUSY,
     CLEANUP_POLICY_VERSION,
@@ -25,6 +30,100 @@ from transcriptx.web.services.run_cleanup.models import (
     SubjectType,
     TargetStatus,
 )
+from transcriptx.web.services.run_cleanup.path_helpers import (
+    output_root_for_target,
+    validate_roots,
+)
+
+_JOURNAL_STATE_TO_TARGET_STATUS: dict[str, TargetStatus] = {
+    "physical_deleted": TargetStatus.PHYSICAL_DELETED,
+    "external_disappeared": TargetStatus.EXTERNAL_DISAPPEARED,
+    "physical_delete_refused": TargetStatus.PHYSICAL_DELETE_REFUSED,
+    "physical_delete_partial": TargetStatus.PHYSICAL_DELETE_PARTIAL,
+    "physical_delete_failed": TargetStatus.PHYSICAL_DELETE_FAILED,
+    "locked_skip": TargetStatus.LOCKED_SKIP,
+    "staging_failed": TargetStatus.STAGING_FAILED,
+    "planned": TargetStatus.SKIPPED,
+    "staging_started": TargetStatus.SKIPPED,
+    "staged": TargetStatus.SKIPPED,
+}
+
+
+def _target_result_from_journal_row(row: dict) -> CleanupTargetResult | None:
+    """Rebuild a target result; refuse to fabricate non-positive filesystem ids."""
+    try:
+        subject_type = SubjectType(str(row["subject_type"]))
+        subject_id = str(row["subject_id"])
+        run_id = str(row["run_id"])
+        canonical_path = str(row["canonical_path"])
+        root_relative_path = str(row.get("root_relative_path") or "")
+        filesystem_dev = int(row["filesystem_dev"])
+        filesystem_ino = int(row["filesystem_ino"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if filesystem_dev <= 0 or filesystem_ino <= 0:
+        return None
+    state = str(row.get("state") or "")
+    status = _JOURNAL_STATE_TO_TARGET_STATUS.get(state, TargetStatus.SKIPPED)
+    return CleanupTargetResult(
+        subject_type=subject_type,
+        subject_id=subject_id,
+        run_id=run_id,
+        root_relative_path=root_relative_path,
+        canonical_path=canonical_path,
+        status=status,
+        message=str(row.get("error") or state or "terminal journal row"),
+        staging_path=str(row["staging_path"]) if row.get("staging_path") else None,
+        filesystem_dev=filesystem_dev,
+        filesystem_ino=filesystem_ino,
+        root_kind=subject_type,
+    )
+
+
+def _synthesize_terminal_result(
+    *,
+    operation_id: str,
+    plan_id: str,
+    mode: CleanupMode,
+    data: dict,
+) -> CleanupResult:
+    """Deterministic ALREADY_EXECUTED reconstruction from a terminal journal."""
+    rows = list(data.get("targets") or [])
+    derived = results_mod.status_from_journal_targets(rows)
+    warnings = ["Operation already terminal"]
+    if str(data.get("status") or "") and str(data.get("status")) != derived.value:
+        warnings.append(
+            f"journal operation status {data.get('status')!r} differs from "
+            f"target-vector status {derived.value!r}; using target vector"
+        )
+    rebuilt: list[CleanupTargetResult] = []
+    malformed = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            malformed += 1
+            continue
+        tr = _target_result_from_journal_row(row)
+        if tr is None:
+            malformed += 1
+            continue
+        rebuilt.append(tr)
+    if malformed:
+        warnings.append(
+            f"{malformed} journal target row(s) could not be reconstructed safely"
+        )
+    deleted = sum(1 for t in rows if str(t.get("state") or "") == "physical_deleted")
+    return CleanupResult(
+        operation_id=operation_id,
+        plan_id=plan_id,
+        mode=mode,
+        status=CleanupStatus.ALREADY_EXECUTED,
+        targets=tuple(rebuilt),
+        warnings=tuple(warnings),
+        errors=(),
+        visible_removed_count=deleted,
+        physically_deleted_count=deleted,
+    )
+
 
 logger = get_logger()
 
@@ -48,7 +147,8 @@ def reconcile_planned_or_started_target(
                 int(st.st_dev) == fake.filesystem_dev
                 and int(st.st_ino) == fake.filesystem_ino
             ):
-                host._persist_target_state(
+                journal_ops.persist_target_state(
+                    host,
                     operation_id,
                     canonical_path=fake.canonical_path,
                     state="recovered_from_incomplete_stage",
@@ -58,45 +158,25 @@ def reconcile_planned_or_started_target(
                 )
                 return None  # proceed to physical delete
         except OSError as exc:
-            return CleanupTargetResult(
-                subject_type=fake.subject_type,
-                subject_id=fake.subject_id,
-                run_id=fake.run_id,
-                root_relative_path=fake.root_relative_path,
-                canonical_path=fake.canonical_path,
-                status=TargetStatus.PHYSICAL_DELETE_REFUSED,
-                message=f"cannot reconcile staged remnant: {exc}",
-                staging_path=str(staging_path),
-                filesystem_dev=fake.filesystem_dev,
-                filesystem_ino=fake.filesystem_ino,
+            return deletion_phase.refused_result(
+                fake,
+                f"cannot reconcile staged remnant: {exc}",
+                staging_path=staging_path,
             )
-        return CleanupTargetResult(
-            subject_type=fake.subject_type,
-            subject_id=fake.subject_id,
-            run_id=fake.run_id,
-            root_relative_path=fake.root_relative_path,
-            canonical_path=fake.canonical_path,
-            status=TargetStatus.PHYSICAL_DELETE_REFUSED,
-            message="staging present but identity does not match journal",
-            staging_path=str(staging_path),
-            filesystem_dev=fake.filesystem_dev,
-            filesystem_ino=fake.filesystem_ino,
+        return deletion_phase.refused_result(
+            fake,
+            "staging present but identity does not match journal",
+            staging_path=staging_path,
         )
     if staging_present and source_present:
-        return CleanupTargetResult(
-            subject_type=fake.subject_type,
-            subject_id=fake.subject_id,
-            run_id=fake.run_id,
-            root_relative_path=fake.root_relative_path,
-            canonical_path=fake.canonical_path,
-            status=TargetStatus.PHYSICAL_DELETE_REFUSED,
-            message="source and staging both present; refusing delete",
-            staging_path=str(staging_path),
-            filesystem_dev=fake.filesystem_dev,
-            filesystem_ino=fake.filesystem_ino,
+        return deletion_phase.refused_result(
+            fake,
+            "source and staging both present; refusing delete",
+            staging_path=staging_path,
         )
     if not staging_present and not source_present:
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=fake.canonical_path,
             state="external_disappeared",
@@ -197,14 +277,11 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
         mode = CleanupMode(data.get("mode") or CleanupMode.DELETE_ALL.value)
         plan_id = str(data.get("plan_id") or "")
         if loaded.kind is journal.JournalLoadKind.TERMINAL:
-            return CleanupResult(
+            return _synthesize_terminal_result(
                 operation_id=operation_id,
                 plan_id=plan_id,
                 mode=mode,
-                status=CleanupStatus.NOOP,
-                targets=(),
-                warnings=("Operation already terminal",),
-                errors=(),
+                data=data,
             )
         try:
             claim_dur = journal.claim_retry_ownership(host.state_dir, operation_id)
@@ -230,7 +307,7 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                 warnings=(),
                 errors=(f"could not claim retry ownership: {exc}",),
             )
-        roots, blocking = host._validate_roots()
+        roots, blocking = validate_roots(host)
         if blocking:
             return CleanupResult(
                 operation_id=operation_id,
@@ -269,8 +346,15 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                 tree_fingerprint=str(target.get("tree_fingerprint") or ("0" * 64)),
                 safety_status=EntryClassification.eligible,
             )
-            staging_path = journal.intended_staging_path(
-                host._output_root_for_target(fake), operation_id, fake
+            schema_ver = int(
+                data.get("journal_schema_version") or JOURNAL_SCHEMA_VERSION
+            )
+            # Prefer durable journal staging_path; else schema-dispatched derive.
+            staging_path = journal.derive_staging_path_from_journal_target(
+                output_root_for_target(host, fake),
+                operation_id,
+                target,
+                journal_schema_version=schema_ver,
             )
             # Acquire run lock BEFORE any staged-tree verification
             run_lock = try_per_run_lock(fake.canonical_path, state_dir=host.state_dir)
@@ -301,7 +385,8 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                 and staging_absent
                 and source_absent
             ):
-                host._persist_target_state(
+                journal_ops.persist_target_state(
+                    host,
                     operation_id,
                     canonical_path=fake.canonical_path,
                     state="physical_deleted",
@@ -328,7 +413,8 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                 continue
 
             if state in {"planned", "staging_started"}:
-                reconciled = host._reconcile_planned_or_started_target(
+                reconciled = reconcile_planned_or_started_target(
+                    host,
                     operation_id=operation_id,
                     target_row=target,
                     fake=fake,
@@ -377,7 +463,8 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                     ):
                         staged_dev = int(st.st_dev)
                         staged_ino = int(st.st_ino)
-                        host._persist_target_state(
+                        journal_ops.persist_target_state(
+                            host,
                             operation_id,
                             canonical_path=fake.canonical_path,
                             state="recovered_from_incomplete_stage",
@@ -387,7 +474,8 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                         )
                 except OSError:
                     pass
-            tr = host._physical_delete_one(
+            tr = deletion_phase.physical_delete_one(
+                host,
                 fake,
                 staging_path,
                 operation_id,
@@ -409,11 +497,13 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
                 errors.append(tr.message)
         # Invalidate caches when any visible removal was known
         if visible:
-            for w in host._invalidate_caches():
+            for w in finalization.invalidate_caches(host):
                 warnings.append(w)
         # Authoritative status from complete journal target vector
         try:
-            status = host._status_from_loaded_operation(operation_id)
+            status = results_mod.status_from_loaded_operation(
+                host.state_dir, operation_id
+            )
         except Exception as exc:  # noqa: BLE001
             status = CleanupStatus.PARTIAL
             errors.append(f"could not derive status from journal: {exc}")
@@ -457,5 +547,5 @@ def retry_interrupted_staging(host, operation_id: str) -> CleanupResult:
         )
         return result
     finally:
-        host._release_locks(locks)
+        locking.release_locks(locks)
         gate.release()

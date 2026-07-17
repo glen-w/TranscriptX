@@ -15,11 +15,11 @@ Related docs:
 
 | Order | Candidate | Why |
 |-------|-----------|-----|
-| **1st (start now)** | **#2 Shared analysis I/O** | Lowest risk; no settings surface; high LOC payoff; can ship while config work continues |
+| **Done** | **#2 Shared analysis I/O** | Complete 2026-07-17 (affect/dynamics/group-chart + A3 + char) |
 | **1st parallel track** | **#1 Config ownership collapse** | Already mid-flight (registry complete; 8 subtrees delegated); keep momentum on Batch 5+ |
 | **2nd / after char tests** | **#3 Rename + corrections split** | Medium–high; needs E2E characterization first; do not interleave with config validation PRs |
 
-**Parallelism:** Candidate 2 is independent of 1 and 3. Candidate 1 and 3 both touch “careful state machines / settings”; avoid same-week mega-PRs that change both. Within #1, do one nested subtree per PR.
+**Parallelism:** Candidate 2 is complete and independent of 1 and 3. Candidate 1 and 3 both touch “careful state machines / settings”; avoid same-week mega-PRs that change both. Within #1, do one nested subtree per PR.
 
 ---
 
@@ -52,4 +52,4 @@ Do **not** do these while executing these plans:
 
 ### One-line summary for prioritization
 
-Ship **#2** for quick, safe wins; continue **#1** one subtree per PR using the existing hydrate recipe; only then tackle **#3**, starting with characterization tests so splits stay boring.
+**#2 Shared analysis I/O is Done.** Continue **#1** one subtree per PR using the existing hydrate recipe; only then tackle **#3**, starting with characterization tests so splits stay boring.

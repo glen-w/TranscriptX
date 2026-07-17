@@ -6,31 +6,17 @@ from pathlib import Path
 from typing import Callable, Mapping
 
 from transcriptx.core.utils import paths as path_constants
-from transcriptx.web.services.run_cleanup import deletion_phase
 from transcriptx.web.services.run_cleanup import execution as execution_mod
-from transcriptx.web.services.run_cleanup import finalization
-from transcriptx.web.services.run_cleanup import journal_ops
-from transcriptx.web.services.run_cleanup import locking
+from transcriptx.web.services.run_cleanup import journal as journal_mod
 from transcriptx.web.services.run_cleanup import planning
 from transcriptx.web.services.run_cleanup import recovery
-from transcriptx.web.services.run_cleanup import results as results_mod
-from transcriptx.web.services.run_cleanup import staging_phase
 from transcriptx.web.services.run_cleanup.models import (
     CleanupAuthorization,
     CleanupMode,
-    CleanupPlan,
     CleanupPreview,
     CleanupResult,
-    CleanupStatus,
-    CleanupTarget,
-    RootIdentity,
-    SubjectType,
 )
-from transcriptx.web.services.run_cleanup.root_validator import OutputRootValidator
 from transcriptx.web.services.run_cleanup.runtime import CleanupRuntime
-from transcriptx.web.services.run_cleanup.staging import (
-    StagingUnsafeError,
-)
 
 CacheInvalidator = Callable[[], None]
 
@@ -145,25 +131,6 @@ class RunCleanupService:
             config_dir=self.config_dir,
         )
 
-    # --- temporary named shims (tests still call these privates) ---
-
-    def _validate_roots(self) -> tuple[list[RootIdentity], list[str]]:
-        return OutputRootValidator.validate(
-            self.outputs_dir,
-            self.group_outputs_dir,
-            self._protected_paths(),
-            project_root=self.project_root,
-            data_dir=self.data_dir,
-            state_dir=self.state_dir,
-        )
-
-    def _physical_delete_one(self, *args, **kwargs):
-        return deletion_phase.physical_delete_one(self, *args, **kwargs)
-
-    @staticmethod
-    def _status_from_journal_targets(targets: list[dict]) -> CleanupStatus:
-        return results_mod.status_from_journal_targets(targets)
-
     # --- public façade ---
 
     def preview_cleanup(
@@ -182,76 +149,7 @@ class RunCleanupService:
         )
 
     def list_pending_staging(self) -> list[dict]:
-        return self._runtime.journal.list_pending_staging(self.state_dir)  # type: ignore[attr-defined]
+        return journal_mod.list_pending_staging(self.state_dir)
 
     def retry_interrupted_staging(self, operation_id: str) -> CleanupResult:
         return recovery.retry_interrupted_staging(self, operation_id)
-
-    # --- internal delegates (host API for extracted modules) ---
-
-    def _build_plan(self, mode: CleanupMode) -> CleanupPlan:
-        return planning.build_plan(self, mode)
-
-    def _result_on_gate_contention(self, *args, **kwargs):
-        return execution_mod.result_on_gate_contention(self, *args, **kwargs)
-
-    def _execute_under_gate(self, *args, **kwargs):
-        return execution_mod.execute_under_gate(self, *args, **kwargs)
-
-    def _execute_claimed(self, *args, **kwargs):
-        return execution_mod.execute_claimed(self, *args, **kwargs)
-
-    def _finalise_operation(self, *args, **kwargs):
-        return finalization.finalise_operation(self, *args, **kwargs)
-
-    def _persist_target_state(self, *args, **kwargs):
-        return journal_ops.persist_target_state(self, *args, **kwargs)
-
-    def _new_journaled_operation(self, *args, **kwargs):
-        return journal_ops.new_journaled_operation(self, *args, **kwargs)
-
-    def _output_root_for_target(self, target: CleanupTarget) -> Path:
-        if target.subject_type is SubjectType.group:
-            return self.group_outputs_dir
-        return self.outputs_dir
-
-    def _planned_root_for_target(
-        self, plan: CleanupPlan, target: CleanupTarget
-    ) -> RootIdentity:
-        kind = target.subject_type
-        for r in plan.roots:
-            if r.kind is kind:
-                return r
-        raise StagingUnsafeError(f"no planned root for {kind}")
-
-    def _acquire_locks(self, plan: CleanupPlan):
-        return locking.acquire_locks(self, plan)
-
-    @staticmethod
-    def _release_locks(locks) -> None:
-        locking.release_locks(locks)
-
-    def _fd_walk_run_identity(self, root: RootIdentity, target: CleanupTarget) -> None:
-        locking.fd_walk_run_identity(self, root, target)
-
-    def _revalidate_execution_set_under_lock(self, plan, lock_results):
-        return locking.revalidate_execution_set_under_lock(self, plan, lock_results)
-
-    def _stage_one(self, *args, **kwargs):
-        return staging_phase.stage_one(self, *args, **kwargs)
-
-    def _prune_subject_parent(self, target: CleanupTarget):
-        return deletion_phase.prune_subject_parent(self, target)
-
-    def _invalidate_caches(self):
-        return finalization.invalidate_caches(self)
-
-    @staticmethod
-    def _summarize_status(**kwargs) -> CleanupStatus:
-        return results_mod.summarize_status(**kwargs)
-
-    def _status_from_loaded_operation(self, operation_id: str) -> CleanupStatus:
-        return results_mod.status_from_loaded_operation(self.state_dir, operation_id)
-
-    def _reconcile_planned_or_started_target(self, **kwargs):
-        return recovery.reconcile_planned_or_started_target(self, **kwargs)

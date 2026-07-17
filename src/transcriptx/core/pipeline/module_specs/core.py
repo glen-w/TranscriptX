@@ -34,7 +34,6 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
-            "supports_group": False,
         },
         "temporal_dynamics": {
             "description": "Temporal Dynamics Analysis",

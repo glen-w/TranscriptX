@@ -38,7 +38,7 @@ from transcriptx.web.services.artifact_service import (
     MAX_INLINE_HTML_BYTES,
     MAX_FULLSCREEN_HTML_BYTES,
 )
-from transcriptx.utils.charts_export import ChartsExportResult
+from transcriptx.export import ChartsExportResult
 from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_ui_groups import order_strings_like_modules

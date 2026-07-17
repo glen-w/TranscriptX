@@ -1,7 +1,6 @@
 """TranscriptX export package — ZIP/HTML export for Overview and charts.
 
-Public API for artifact and charts export. Prefer importing from this package;
-``transcriptx.utils.export_*`` modules remain thin re-export shims for one release.
+Public API for artifact and charts export. Import from this package.
 """
 
 from __future__ import annotations

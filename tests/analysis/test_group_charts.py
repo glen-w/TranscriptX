@@ -228,7 +228,12 @@ def test_run_group_aggregate_charts_exception_sets_chart_failed_skip_reason(
 
 
 def test_registry_omits_misleading_generic_agg_ids() -> None:
-    for aid in ("temporal_dynamics",):
+    for aid in (
+        "temporal_dynamics",
+        "insight_eligibility",
+        "voice_contours",
+        "transcript_output",
+    ):
         assert aid not in GROUP_CHART_REGISTRY
     assert isinstance(GROUP_CHART_REGISTRY["ner"], NerPooledGroupChartGenerator)
     assert isinstance(
@@ -277,6 +282,8 @@ def test_group_chart_registry_expected_generator_types() -> None:
 
     generic_agg_ids = (
         "understandability",
+        "lexical_diversity",
+        "simplified_transcript",
         "momentum",
         "affect_tension",
         "qa_analysis",

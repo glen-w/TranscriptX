@@ -102,7 +102,8 @@ def test_create_visualizations_v2_records_chart_artifact_metadata(tmp_path) -> N
 
     create_visualizations_v2(results, output_service, "sample", "SEMANTIC_V2")
 
-    metadata_path = tmp_path / "run" / ".transcriptx" / "artifacts_meta.json"
+    # OutputService may redirect transcript_dir into OUTPUTS_DIR; read from there.
+    metadata_path = output_service._artifact_metadata_path
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     emitted_viz_ids = {item["viz_id"] for item in metadata.values()}
     assert "semantic_similarity_v2.similarity_distribution.global" in emitted_viz_ids

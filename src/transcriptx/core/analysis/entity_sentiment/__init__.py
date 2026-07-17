@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 
+from transcriptx.core.analysis.affect.output_helpers import save_rows_csv_json
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.ner import extract_named_entities
 from transcriptx.core.analysis.sentiment import score_sentiment
@@ -334,9 +335,8 @@ class EntitySentimentAnalysis(AnalysisModule):
             }
             csv_rows.append(row)
 
-        # Save global data
-        output_service.save_data(csv_rows, "entity_sentiment", format_type="csv")
-        output_service.save_data(results, "entity_sentiment", format_type="json")
+        # Save global data (CSV then JSON; payloads differ)
+        save_rows_csv_json(output_service, csv_rows, results, "entity_sentiment")
 
         # Create per-speaker breakdown
         speaker_entity_data = defaultdict(list)
@@ -352,19 +352,13 @@ class EntitySentimentAnalysis(AnalysisModule):
                     }
                 )
 
-        # Save per-speaker data
+        # Save per-speaker data (CSV then JSON; payloads differ)
         for speaker, data in speaker_entity_data.items():
-            output_service.save_data(
+            save_rows_csv_json(
+                output_service,
                 data,
-                "entity_sentiment",
-                format_type="csv",
-                subdirectory="speakers",
-                speaker=speaker,
-            )
-            output_service.save_data(
                 {"entities": data},
                 "entity_sentiment",
-                format_type="json",
                 subdirectory="speakers",
                 speaker=speaker,
             )

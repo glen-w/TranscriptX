@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-07-17
+
+### Added
+
+- Run-cleanup Phase B closeout: `CLEANUP_POLICY_VERSION` **7** binds classifier and newest-run policy into plan IDs; journal target/status updates take a per-operation RMW lock; recovery synthesizes terminal retries with safe target reconstruction; adversarial FS + dir-fsync outcome tests.
+- Export resolve helpers (`resolve_summaries`, `resolve_transcript`) and expanded export-service coverage.
+- Group functional-module finalize integration coverage and shared analysis I/O characterisation updates.
+
+### Changed
+
+- Run-cleanup polish: façade calls journal module directly (no temporary private shims); FD/path/prune unit coverage expanded.
+- Align `OutputService.transcript_dir` with safety redirects from `create_standard_output_structure`.
+- Move charts/export index/markdown helpers under `transcriptx.export` (remove `transcriptx.utils` export shims).
+- Drop explicit `supports_group: False` from core/export/speaker module specs (default remains unsupported).
+
+### Fixed
+
+- Artifact-metadata tests follow redirected run roots under `OUTPUTS_DIR`.
+- Raise transitive `tornado` floor to `>=6.5.7` (Streamlit stack CVE fixes).
+
 ## [0.4.5] - 2026-07-17
 
 ### Added

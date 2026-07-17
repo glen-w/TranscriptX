@@ -77,7 +77,9 @@ def test_partition_delete_old_uses_desc_reverse_true(tmp_path: Path):
     svc = make_service(tmp_path)
     mk_run(svc.outputs_dir, "slug_a", "20200101_000000_00000001", content="1")
     mk_run(svc.outputs_dir, "slug_a", "20200101_000000_00000002", content="2")
-    plan = svc._build_plan(CleanupMode.DELETE_ALL)
+    from transcriptx.web.services.run_cleanup import planning
+
+    plan = planning.build_plan(svc, CleanupMode.DELETE_ALL)
     eligible = list(plan.candidates)
     # Force equal mtimes so run_id lexical order decides newest under reverse=True.
     equal = [replace(t, mtime_ns=1000) for t in eligible]

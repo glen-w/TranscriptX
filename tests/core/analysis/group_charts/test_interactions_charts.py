@@ -112,7 +112,11 @@ def test_interactions_generate_emits_pooled_charts(monkeypatch, tmp_path: Path) 
             )
 
     monkeypatch.setattr(gen, "_session", _SessionNone())
-    monkeypatch.setattr(ic, "GroupChartOutputService", _DummySvc)
+    monkeypatch.setattr(
+        ic,
+        "make_group_output_service",
+        lambda *args, **kwargs: _DummySvc(),
+    )
     monkeypatch.setattr(
         ic,
         "chart_artifact_paths",

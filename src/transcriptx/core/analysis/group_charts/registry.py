@@ -80,6 +80,8 @@ GROUP_AGGREGATE_CHART_FAMILIES: Dict[str, Tuple[str, ...]] = {
     "interactions": ("session_bars", "pooled_single_view"),
     "tics": ("session_bars", "pooled_single_view"),
     "understandability": ("session_bars",),
+    "lexical_diversity": ("session_bars",),
+    "simplified_transcript": ("session_bars",),
     "momentum": ("session_bars",),
     "affect_tension": ("session_bars",),
     "qa_analysis": ("session_bars",),
@@ -103,7 +105,8 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
 
     Omitted: ``wordclouds`` (charts written by run_group_wordclouds), ``summary`` /
     ``llm_summary`` / ``narrative_summary`` (blob output), ``llm_speaker_summary``
-    (speaker text rows; Data/Insights only).
+    (speaker text rows; Data/Insights only), ``insight_eligibility`` /
+    ``voice_contours`` (session data rows only), ``transcript_output`` (blob index).
 
     ``ner``, ``entity_sentiment``, ``topic_modeling``, ``interactions`` (composite),
     and ``contagion`` (pooled-only) use dedicated or composite generators for
@@ -116,6 +119,8 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
     """
     generic_ids = (
         "understandability",
+        "lexical_diversity",
+        "simplified_transcript",
         "momentum",
         "affect_tension",
         "qa_analysis",

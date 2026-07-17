@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from transcriptx.utils.charts_export import ChartsExportResult
+from transcriptx.export import ChartsExportResult
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.services.chart_view_model_service import (
     ChartGalleryFamily,

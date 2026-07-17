@@ -6,6 +6,7 @@ from typing import Mapping
 
 from transcriptx.web.services.run_cleanup import journal
 from transcriptx.web.services.run_cleanup.models import CleanupPlan, CleanupTarget
+from transcriptx.web.services.run_cleanup.path_helpers import output_root_for_target
 
 
 def persist_target_state(
@@ -50,7 +51,7 @@ def new_journaled_operation(
         staging_map = {
             t.canonical_path: str(
                 journal.intended_staging_path(
-                    host._output_root_for_target(t), operation_id, t
+                    output_root_for_target(host, t), operation_id, t
                 )
             )
             for t in to_mutate

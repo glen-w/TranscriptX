@@ -57,6 +57,10 @@ def test_build_registry_expected_dep_edges() -> None:
     }
     assert by_id["summary"].deps == ["highlights"]
     assert by_id["summary"].output_type == "blob"
+    assert by_id["insight_eligibility"].deps == ["tics"]
+    assert by_id["transcript_output"].output_type == "blob"
+    assert "voice_contours" in by_id
+    assert "simplified_transcript" in by_id
     assert "bertopic" not in by_id
 
 

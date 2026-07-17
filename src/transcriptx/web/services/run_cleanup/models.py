@@ -9,15 +9,18 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-CLEANUP_POLICY_VERSION = 4
+CLEANUP_POLICY_VERSION = 7
 JOURNAL_SCHEMA_VERSION = 3
-CLEANUP_RESULT_SCHEMA_VERSION = 1
+CLEANUP_RESULT_SCHEMA_VERSION = 2
 STAGING_DIR_NAME = ".cleanup_staging"
 CONFIRM_DELETE_ALL = "DELETE ALL"
 CONFIRM_DELETE_OLD = "DELETE OLD RUNS"
 CLEANUP_BUSY = "CLEANUP_BUSY"
 PLATFORM_UNSUPPORTED = "PLATFORM_UNSUPPORTED"
 HANDLE_STORE_FULL = "HANDLE_STORE_FULL"
+# New operations only — recovery of larger schema-3 journals stays allowed.
+MAX_CLEANUP_CANDIDATES = 2048
+FD_BUDGET_SAFETY_RESERVE = 64
 
 
 class CleanupMode(str, Enum):
@@ -94,6 +97,31 @@ class RootIdentity:
 
 
 @dataclass(frozen=True)
+class TargetIdentity:
+    """Stable identity used for journal matching and staging basename inputs."""
+
+    subject_type: SubjectType
+    subject_id: str
+    run_id: str
+    root_relative_path: str
+    canonical_path: str
+
+
+@dataclass(frozen=True)
+class TargetSnapshot:
+    """Identity plus staleness-sensitive filesystem fields."""
+
+    identity: TargetIdentity
+    filesystem_dev: int
+    filesystem_ino: int
+    tree_fingerprint: str
+    safety_status: EntryClassification
+    mtime_ns: int = 0
+    size_estimate_bytes: int = 0
+    file_count: int = 0
+
+
+@dataclass(frozen=True)
 class CleanupTarget:
     subject_type: SubjectType
     subject_id: str
@@ -107,6 +135,27 @@ class CleanupTarget:
     file_count: int
     tree_fingerprint: str
     safety_status: EntryClassification
+
+    def identity(self) -> TargetIdentity:
+        return TargetIdentity(
+            subject_type=self.subject_type,
+            subject_id=self.subject_id,
+            run_id=self.run_id,
+            root_relative_path=self.root_relative_path,
+            canonical_path=self.canonical_path,
+        )
+
+    def snapshot(self) -> TargetSnapshot:
+        return TargetSnapshot(
+            identity=self.identity(),
+            filesystem_dev=self.filesystem_dev,
+            filesystem_ino=self.filesystem_ino,
+            tree_fingerprint=self.tree_fingerprint,
+            safety_status=self.safety_status,
+            mtime_ns=self.mtime_ns,
+            size_estimate_bytes=self.size_estimate_bytes,
+            file_count=self.file_count,
+        )
 
 
 @dataclass(frozen=True)
@@ -130,6 +179,9 @@ class CleanupPlan:
     warnings: tuple[str, ...]
     blocking_errors: tuple[str, ...]
     can_execute: bool
+    # Bound into plan_id (policy ≥ 7); defaults keep older test constructors valid.
+    classifier_version: int = 1
+    newest_run_policy_version: int = 1
 
     def __post_init__(self) -> None:
         kinds = [r.kind for r in self.roots]
@@ -262,16 +314,18 @@ def _stable_json(value: Any) -> str:
 
 
 def _target_identity_payload(target: CleanupTarget) -> dict[str, Any]:
+    snap = target.snapshot()
+    ident = snap.identity
     return {
-        "subject_type": target.subject_type.value,
-        "subject_id": target.subject_id,
-        "run_id": target.run_id,
-        "root_relative_path": target.root_relative_path,
-        "canonical_path": target.canonical_path,
-        "filesystem_dev": target.filesystem_dev,
-        "filesystem_ino": target.filesystem_ino,
-        "tree_fingerprint": target.tree_fingerprint,
-        "safety_status": target.safety_status.value,
+        "subject_type": ident.subject_type.value,
+        "subject_id": ident.subject_id,
+        "run_id": ident.run_id,
+        "root_relative_path": ident.root_relative_path,
+        "canonical_path": ident.canonical_path,
+        "filesystem_dev": snap.filesystem_dev,
+        "filesystem_ino": snap.filesystem_ino,
+        "tree_fingerprint": snap.tree_fingerprint,
+        "safety_status": snap.safety_status.value,
     }
 
 
@@ -280,6 +334,9 @@ def _exclusion_payload(exclusion: CleanupExclusion) -> dict[str, Any]:
         "path_relative": exclusion.path_relative,
         "classification": exclusion.classification.value,
         "reason": exclusion.reason,
+        "root_kind": (
+            exclusion.root_kind.value if exclusion.root_kind is not None else None
+        ),
     }
 
 
@@ -303,11 +360,15 @@ def compute_plan_id(
     candidates: Sequence[CleanupTarget],
     retained: Sequence[CleanupTarget],
     exclusions: Sequence[CleanupExclusion],
+    classifier_version: int = 1,
+    newest_run_policy_version: int = 1,
 ) -> str:
-    """Stable sha256 plan id bound to mode, policy, roots, identities, fingerprints."""
+    """Stable sha256 plan id bound to mode, policy, classifier, newest-run, roots."""
     payload = {
         "mode": mode.value,
         "policy_version": policy_version,
+        "classifier_version": classifier_version,
+        "newest_run_policy_version": newest_run_policy_version,
         "roots": [_root_payload(r) for r in roots],
         "candidates": [_target_identity_payload(t) for t in candidates],
         "retained": [_target_identity_payload(t) for t in retained],
@@ -346,6 +407,7 @@ def plan_to_preview(plan: CleanupPlan) -> CleanupPreview:
             "path_relative": e.path_relative,
             "classification": e.classification.value,
             "reason": e.reason,
+            "root_kind": e.root_kind.value if e.root_kind is not None else None,
         }
         for e in plan.exclusions
     )
@@ -391,24 +453,74 @@ def authorization_is_valid(
 
 
 def result_as_dict(result: CleanupResult) -> dict[str, Any]:
-    """Serialize CleanupResult for journal / handle storage."""
-    return asdict(result)
+    """Serialize CleanupResult for journal / handle storage.
+
+    Schema ≥ 2 omits legacy ``root_kind`` (duplicate of ``subject_type``).
+    """
+    payload = asdict(result)
+    payload["cleanup_result_schema_version"] = CLEANUP_RESULT_SCHEMA_VERSION
+    if CLEANUP_RESULT_SCHEMA_VERSION >= 2:
+        for t in payload.get("targets", []):
+            if isinstance(t, dict):
+                t.pop("root_kind", None)
+    return payload
+
+
+def _target_result_from_mapping_v1(t: Mapping[str, Any]) -> CleanupTargetResult:
+    """Schema-1 target reader: restores identity fields when present."""
+    root_kind_raw = t.get("root_kind")
+    root_kind = SubjectType(root_kind_raw) if root_kind_raw is not None else None
+    fs_dev = t.get("filesystem_dev")
+    fs_ino = t.get("filesystem_ino")
+    return CleanupTargetResult(
+        subject_type=SubjectType(t["subject_type"]),
+        subject_id=str(t["subject_id"]),
+        run_id=str(t["run_id"]),
+        root_relative_path=str(t["root_relative_path"]),
+        canonical_path=str(t["canonical_path"]),
+        status=TargetStatus(t["status"]),
+        message=str(t.get("message") or ""),
+        staging_path=t.get("staging_path"),
+        filesystem_dev=int(fs_dev) if fs_dev is not None else None,
+        filesystem_ino=int(fs_ino) if fs_ino is not None else None,
+        root_kind=root_kind,
+    )
+
+
+def _target_result_from_mapping_v2(t: Mapping[str, Any]) -> CleanupTargetResult:
+    """Schema-2: identity fields required when present; root_kind ignored if set."""
+    result = _target_result_from_mapping_v1(t)
+    if result.root_kind is not None:
+        # Accept legacy field but do not treat it as authoritative.
+        return CleanupTargetResult(
+            subject_type=result.subject_type,
+            subject_id=result.subject_id,
+            run_id=result.run_id,
+            root_relative_path=result.root_relative_path,
+            canonical_path=result.canonical_path,
+            status=result.status,
+            message=result.message,
+            staging_path=result.staging_path,
+            filesystem_dev=result.filesystem_dev,
+            filesystem_ino=result.filesystem_ino,
+            root_kind=None,
+        )
+    return result
+
+
+_RESULT_TARGET_READERS: dict[int, Any] = {
+    1: _target_result_from_mapping_v1,
+    2: _target_result_from_mapping_v2,
+}
 
 
 def result_from_mapping(data: Mapping[str, Any]) -> CleanupResult:
-    targets = tuple(
-        CleanupTargetResult(
-            subject_type=SubjectType(t["subject_type"]),
-            subject_id=str(t["subject_id"]),
-            run_id=str(t["run_id"]),
-            root_relative_path=str(t["root_relative_path"]),
-            canonical_path=str(t["canonical_path"]),
-            status=TargetStatus(t["status"]),
-            message=str(t.get("message") or ""),
-            staging_path=t.get("staging_path"),
-        )
-        for t in data.get("targets", ())
-    )
+    """Deserialize CleanupResult; version defaults to 1 for legacy payloads."""
+    version = int(data.get("cleanup_result_schema_version") or 1)
+    reader = _RESULT_TARGET_READERS.get(version)
+    if reader is None:
+        raise ValueError(f"unsupported cleanup_result_schema_version: {version}")
+    targets = tuple(reader(t) for t in data.get("targets", ()))
     return CleanupResult(
         operation_id=str(data["operation_id"]),
         plan_id=str(data["plan_id"]),

@@ -92,3 +92,47 @@ def test_resolve_artifact_source_path_exists_and_missing(tmp_path: Path) -> None
     assert resolve_artifact_source_path(run_root, missing) is None
     bad = _artifact(rel_path="../escape.json")
     assert resolve_artifact_source_path(run_root, bad) is None
+
+
+@pytest.mark.unit
+def test_artifact_service_path_wrappers_delegate_to_export_paths(
+    tmp_path: Path,
+) -> None:
+    """ArtifactService path helpers must stay thin wrappers over export.paths."""
+    from transcriptx.web.services.artifact_service import ArtifactService
+
+    run_root = tmp_path / "run"
+    storage = tmp_path / "external"
+    storage.mkdir()
+    run_root.mkdir()
+    (run_root / "ok.json").write_text("{}", encoding="utf-8")
+    (storage / "ext.json").write_text("{}", encoding="utf-8")
+
+    local = _artifact(rel_path="ok.json")
+    external = _artifact(rel_path="ext.json", storage_root=str(storage))
+    traversal = _artifact(rel_path="../escape.json")
+
+    assert ArtifactService._artifact_base_path(run_root, local) == artifact_base_path(
+        run_root, local
+    )
+    assert ArtifactService._artifact_base_path(
+        run_root, external
+    ) == artifact_base_path(run_root, external)
+
+    assert ArtifactService._resolve_safe_path(run_root, "ok.json") == resolve_safe_path(
+        run_root, "ok.json"
+    )
+    assert ArtifactService._resolve_safe_path(
+        run_root, "../escape.json"
+    ) == resolve_safe_path(run_root, "../escape.json")
+
+    assert ArtifactService.resolve_artifact_source_path(
+        run_root, local
+    ) == resolve_artifact_source_path(run_root, local)
+    assert ArtifactService.resolve_artifact_source_path(
+        run_root, external
+    ) == resolve_artifact_source_path(run_root, external)
+    assert ArtifactService.resolve_artifact_source_path(
+        run_root, traversal
+    ) == resolve_artifact_source_path(run_root, traversal)
+    assert ArtifactService.resolve_artifact_source_path(run_root, traversal) is None

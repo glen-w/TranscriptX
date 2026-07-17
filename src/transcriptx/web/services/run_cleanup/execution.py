@@ -9,8 +9,15 @@ from transcriptx.core.utils.run_writer_locks import (
     RunWriterLock,
     try_run_tree_mutation_gate,
 )
+from transcriptx.web.services.run_cleanup import deletion_phase
 from transcriptx.web.services.run_cleanup import fd_ops
+from transcriptx.web.services.run_cleanup import finalization
 from transcriptx.web.services.run_cleanup import handles as handle_store
+from transcriptx.web.services.run_cleanup import journal_ops
+from transcriptx.web.services.run_cleanup import locking
+from transcriptx.web.services.run_cleanup import planning
+from transcriptx.web.services.run_cleanup import results as results_mod
+from transcriptx.web.services.run_cleanup import staging_phase
 from transcriptx.web.services.run_cleanup.context import ExecutionAccumulator
 from transcriptx.web.services.run_cleanup.faults import fault_point
 from transcriptx.web.services.run_cleanup.models import (
@@ -23,6 +30,10 @@ from transcriptx.web.services.run_cleanup.models import (
     CleanupTargetResult,
     TargetStatus,
     authorization_is_valid,
+)
+from transcriptx.web.services.run_cleanup.path_helpers import (
+    output_root_for_target,
+    planned_root_for_target,
 )
 from transcriptx.web.services.run_cleanup.staging import (
     StagingPlatformUnsupportedError,
@@ -47,11 +58,11 @@ def execute_cleanup(
     gate = try_run_tree_mutation_gate(state_dir=host.state_dir)
     if gate is None:
         logger.warning("cleanup execute blocked: mutation gate busy")
-        return host._result_on_gate_contention(handle_token, authorization, session_id)
+        return result_on_gate_contention(host, handle_token, authorization, session_id)
     locks: list[RunWriterLock] = []
     try:
-        result = host._execute_under_gate(
-            handle_token, authorization, session_id, locks
+        result = execute_under_gate(
+            host, handle_token, authorization, session_id, locks
         )
         logger.info(
             "cleanup execute finished status=%s operation_id=%s "
@@ -69,7 +80,7 @@ def execute_cleanup(
             )
         return result
     finally:
-        host._release_locks(locks)
+        locking.release_locks(locks)
         gate.release()
 
 
@@ -160,8 +171,8 @@ def execute_under_gate(
     # Everything after a successful claim must store a result (never leave
     # the handle in_progress with no outcome).
     try:
-        return host._execute_claimed(
-            handle_token, authorization, session_id, locks, plan
+        return execute_claimed(
+            host, handle_token, authorization, session_id, locks, plan
         )
     except Exception as exc:  # noqa: BLE001
         result = CleanupResult(
@@ -237,7 +248,7 @@ def execute_claimed(
         handle_store.store_result(handle_token, session_id, result)
         return result
 
-    rediscovered = host._build_plan(plan.mode)
+    rediscovered = planning.build_plan(host, plan.mode)
     if rediscovered.plan_id != plan.plan_id or rediscovered.blocking_errors:
         result = CleanupResult(
             operation_id="",
@@ -281,10 +292,25 @@ def execute_claimed(
         handle_store.store_result(handle_token, session_id, result)
         return result
 
-    acquired, lock_results, lock_error = host._acquire_locks(plan)
-    locks.extend(acquired)
+    capacity_error = locking.preflight_new_operation_capacity(plan)
+    if capacity_error is not None:
+        result = CleanupResult(
+            operation_id="",
+            plan_id=plan.plan_id,
+            mode=plan.mode,
+            status=CleanupStatus.BLOCKED,
+            targets=(),
+            warnings=(),
+            errors=(capacity_error,),
+        )
+        handle_store.store_result(handle_token, session_id, result)
+        return result
+
+    lock_outcome = locking.acquire_locks(host, plan)
+    locks.extend(lock_outcome.locks)
+    lock_results = lock_outcome.skip_results
     fault_point("after_all_locks")
-    if lock_error is not None:
+    if lock_outcome.error is not None:
         result = CleanupResult(
             operation_id="",
             plan_id=plan.plan_id,
@@ -292,13 +318,13 @@ def execute_claimed(
             status=CleanupStatus.FAILED_BEFORE_MUTATION,
             targets=tuple(lock_results),
             warnings=(),
-            errors=(lock_error,),
+            errors=(lock_outcome.error,),
         )
         handle_store.store_result(handle_token, session_id, result)
         return result
 
-    stale_results, rediscovery_status = host._revalidate_execution_set_under_lock(
-        plan, lock_results
+    stale_results, rediscovery_status = locking.revalidate_execution_set_under_lock(
+        host, plan, lock_results
     )
     fault_point("after_locked_rediscovery")
     if rediscovery_status is CleanupStatus.BLOCKED:
@@ -356,7 +382,7 @@ def execute_claimed(
         handle_store.store_result(handle_token, session_id, result)
         return result
 
-    operation_id = host._new_journaled_operation(plan, to_mutate)
+    operation_id = journal_ops.new_journaled_operation(host, plan, to_mutate)
     fault_point("after_initial_journal")
     logger.info(
         "cleanup journaled operation_id=%s plan_id=%s targets=%d",
@@ -369,12 +395,12 @@ def execute_claimed(
     op_dirs_created: set[str] = set()
     try:
         for target in to_mutate:
-            root_path = str(host._output_root_for_target(target))
+            root_path = str(output_root_for_target(host, target))
             if root_path in op_dirs_created:
                 continue
-            root = host._planned_root_for_target(plan, target)
+            root = planned_root_for_target(plan, target)
             layout = ensure_secure_staging_directory(
-                host._output_root_for_target(target),
+                output_root_for_target(host, target),
                 operation_id,
                 target,
                 root,
@@ -392,7 +418,8 @@ def execute_claimed(
             warnings=(),
             errors=(PLATFORM_UNSUPPORTED, str(exc)),
         )
-        return host._finalise_operation(
+        return finalization.finalise_operation(
+            host,
             handle_token=handle_token,
             session_id=session_id,
             result=result,
@@ -409,7 +436,8 @@ def execute_claimed(
             warnings=(),
             errors=(str(exc),),
         )
-        return host._finalise_operation(
+        return finalization.finalise_operation(
+            host,
             handle_token=handle_token,
             session_id=session_id,
             result=result,
@@ -436,8 +464,8 @@ def execute_claimed(
             )
             if first_rename:
                 fault_point("before_first_rename")
-            outcome = host._stage_one(
-                target, operation_id, plan, allow_existing_operation_dir=True
+            outcome = staging_phase.stage_one(
+                host, target, operation_id, plan, allow_existing_operation_dir=True
             )
             # Update mutation accounting BEFORE any post-rename hooks.
             if outcome.visible_removed:
@@ -470,7 +498,8 @@ def execute_claimed(
                     target.run_id,
                 )
                 fault_point("before_physical_verify")
-                pd = host._physical_delete_one(
+                pd = deletion_phase.physical_delete_one(
+                    host,
                     target,
                     Path(outcome.staging_path or ""),
                     operation_id,
@@ -490,7 +519,7 @@ def execute_claimed(
                     if "journal durability failed" in (pd.message or ""):
                         acc.journal_durability_failed = True
                         acc.errors.append(pd.message)
-                    prune_msg = host._prune_subject_parent(target)
+                    prune_msg = deletion_phase.prune_subject_parent(host, target)
                     if prune_msg:
                         acc.warnings.append(prune_msg)
                         acc.append_target(
@@ -554,7 +583,8 @@ def execute_claimed(
                 warnings=tuple(acc.warnings),
                 errors=(PLATFORM_UNSUPPORTED, str(exc)),
             )
-            return host._finalise_operation(
+            return finalization.finalise_operation(
+                host,
                 handle_token=handle_token,
                 session_id=session_id,
                 result=result,
@@ -575,7 +605,8 @@ def execute_claimed(
                 warnings=tuple(acc.warnings),
                 errors=(str(exc),),
             )
-            return host._finalise_operation(
+            return finalization.finalise_operation(
+                host,
                 handle_token=handle_token,
                 session_id=session_id,
                 result=result,
@@ -583,7 +614,7 @@ def execute_claimed(
                 mutation_started=False,
             )
 
-    status = host._summarize_status(
+    status = results_mod.summarize_status(
         visible_removed=acc.visible_removed,
         physically_deleted=acc.physically_deleted,
         planned=len(to_mutate),
@@ -597,7 +628,9 @@ def execute_claimed(
     # Journal target vector can only downgrade SUCCESS (lock skips and
     # in-memory errors are not fully represented in journal targets).
     try:
-        journal_status = host._status_from_loaded_operation(operation_id)
+        journal_status = results_mod.status_from_loaded_operation(
+            host.state_dir, operation_id
+        )
         if journal_status is CleanupStatus.PARTIAL and status is CleanupStatus.SUCCESS:
             status = CleanupStatus.PARTIAL
     except Exception:
@@ -613,7 +646,8 @@ def execute_claimed(
         visible_removed_count=acc.visible_removed,
         physically_deleted_count=acc.physically_deleted,
     )
-    return host._finalise_operation(
+    return finalization.finalise_operation(
+        host,
         handle_token=handle_token,
         session_id=session_id,
         result=result,

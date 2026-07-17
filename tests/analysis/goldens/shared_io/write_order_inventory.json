@@ -4,6 +4,7 @@
   "emotion_global_nrc_pair_order": ["json", "csv"],
   "emotion_note": "JSON payload is nrc_scores; CSV payload is combined_rows — different shapes, no save_rows_json_csv",
   "entity_sentiment_global_pair_order": ["csv", "json"],
+  "entity_sentiment_note": "Different CSV vs JSON payloads; uses save_rows_csv_json (never save_rows_json_csv)",
   "dynamics_core_order": ["events", "stats"],
   "dynamics_event_filename": "{module}.events.json",
   "dynamics_stats_filename": "{module}.stats.json",

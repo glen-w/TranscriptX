@@ -624,6 +624,160 @@ def _aggregate_moments(
     }
 
 
+def _member_artifact_relpaths(module_result: Dict[str, Any]) -> List[str]:
+    artifacts = module_result.get("artifacts") or []
+    relpaths: List[str] = []
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            continue
+        rel = artifact.get("relative_path") or artifact.get("path")
+        if isinstance(rel, str) and rel:
+            relpaths.append(rel)
+    return relpaths
+
+
+def _aggregate_insight_eligibility(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    del canonical_speaker_map
+    session_rows: List[Dict[str, Any]] = []
+    for result in per_transcript_results:
+        payload = _extract_payload(result.module_results, "insight_eligibility")
+        if not payload:
+            continue
+        filtered = payload.get("filtered_segments") or []
+        tic_mask = payload.get("tic_mask") or []
+        phrases = payload.get("content_phrases") or []
+        densities = payload.get("content_densities") or {}
+        density_vals = [
+            float(v)
+            for v in (densities.values() if isinstance(densities, dict) else [])
+            if isinstance(v, (int, float))
+        ]
+        mean_density = sum(density_vals) / len(density_vals) if density_vals else 0.0
+        session_row = _session_row_base(result, transcript_set)
+        session_row.update(
+            {
+                "filtered_segment_count": (
+                    len(filtered) if isinstance(filtered, list) else 0
+                ),
+                "tic_mask_count": len(tic_mask) if isinstance(tic_mask, list) else 0,
+                "phrase_count": len(phrases) if isinstance(phrases, list) else 0,
+                "mean_content_density": mean_density,
+            }
+        )
+        session_rows.append(session_row)
+    if not session_rows:
+        return None
+    return {"session_rows": session_rows, "speaker_rows": []}
+
+
+def _aggregate_transcript_output_blob(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    del canonical_speaker_map
+    members: List[Dict[str, Any]] = []
+    for result in per_transcript_results:
+        module_result = result.module_results.get("transcript_output") or {}
+        if not isinstance(module_result, dict):
+            continue
+        payload = _extract_payload(result.module_results, "transcript_output")
+        if not payload and not module_result:
+            continue
+        members.append(
+            {
+                "transcript_id": get_transcript_id(result, transcript_set),
+                "run_id": result.run_id,
+                "order_index": result.order_index,
+                "total_segments": payload.get("total_segments"),
+                "artifact_relpaths": _member_artifact_relpaths(module_result),
+            }
+        )
+    if not members:
+        return None
+    members.sort(key=lambda row: row.get("order_index", 0))
+    return {
+        "blob_name": "transcript_output",
+        "blob_payload": {
+            "schema_version": 1,
+            "aggregation_key": "transcript_output",
+            "members": members,
+        },
+    }
+
+
+def _aggregate_simplified_transcript(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    del canonical_speaker_map
+    session_rows: List[Dict[str, Any]] = []
+    for result in per_transcript_results:
+        payload = _extract_payload(result.module_results, "simplified_transcript")
+        if not payload:
+            continue
+        total_original = int(payload.get("total_original") or 0)
+        total_simplified = int(payload.get("total_simplified") or 0)
+        removed_count = payload.get("removed_count")
+        if not isinstance(removed_count, (int, float)):
+            removed_count = total_original - total_simplified
+        session_row = _session_row_base(result, transcript_set)
+        session_row.update(
+            {
+                "total_original": total_original,
+                "total_simplified": total_simplified,
+                "removed_count": int(removed_count),
+            }
+        )
+        session_rows.append(session_row)
+    if not session_rows:
+        return None
+    return {"session_rows": session_rows, "speaker_rows": []}
+
+
+def _aggregate_voice_contours(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    del canonical_speaker_map
+    session_rows: List[Dict[str, Any]] = []
+    for result in per_transcript_results:
+        payload = _extract_payload(result.module_results, "voice_contours")
+        if not payload:
+            continue
+        slopes = payload.get("f0_slopes") or []
+        slope_vals = [
+            float(item.get("slope"))
+            for item in slopes
+            if isinstance(item, dict) and isinstance(item.get("slope"), (int, float))
+        ]
+        selected_ids = payload.get("selected_segment_ids") or []
+        session_row = _session_row_base(result, transcript_set)
+        session_row.update(
+            {
+                "status": payload.get("status"),
+                "skipped_reason": payload.get("skipped_reason"),
+                "selected_segment_count": (
+                    len(selected_ids) if isinstance(selected_ids, list) else 0
+                ),
+                "f0_slope_count": len(slope_vals),
+                "f0_slope_mean": (
+                    sum(slope_vals) / len(slope_vals) if slope_vals else None
+                ),
+            }
+        )
+        session_rows.append(session_row)
+    if not session_rows:
+        return None
+    return {"session_rows": session_rows, "speaker_rows": []}
+
+
 def _aggregate_summary_blob(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
@@ -827,6 +981,12 @@ def build_registry() -> List[AggregationEntry]:
             aggregate_fn=_aggregate_tics,
         ),
         AggregationEntry(
+            agg_id="insight_eligibility",
+            selector=any_of(["insight_eligibility"]),
+            deps=["tics"],
+            aggregate_fn=_aggregate_insight_eligibility,
+        ),
+        AggregationEntry(
             agg_id="understandability",
             selector=any_of(["understandability"]),
             deps=[],
@@ -837,6 +997,19 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["lexical_diversity"]),
             deps=[],
             aggregate_fn=_aggregate_lexical_diversity,
+        ),
+        AggregationEntry(
+            agg_id="transcript_output",
+            selector=any_of(["transcript_output"]),
+            deps=[],
+            aggregate_fn=_aggregate_transcript_output_blob,
+            output_type="blob",
+        ),
+        AggregationEntry(
+            agg_id="simplified_transcript",
+            selector=any_of(["simplified_transcript"]),
+            deps=[],
+            aggregate_fn=_aggregate_simplified_transcript,
         ),
         AggregationEntry(
             agg_id="pauses",
@@ -974,6 +1147,12 @@ def build_registry() -> List[AggregationEntry]:
             ),
             deps=[],
             aggregate_fn=_aggregate_prosody,
+        ),
+        AggregationEntry(
+            agg_id="voice_contours",
+            selector=any_of(["voice_contours"]),
+            deps=[],
+            aggregate_fn=_aggregate_voice_contours,
         ),
     ]
     return registry

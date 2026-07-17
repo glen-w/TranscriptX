@@ -247,6 +247,25 @@ def test_prepare_charts_export_zip_contents_and_member_prefix(tmp_path: Path) ->
         assert "0123456789abcdef/emotion/charts/global/b.html" in names
 
 
+def test_prepare_charts_export_zip_default_path_resolver(tmp_path: Path) -> None:
+    """Charts zip works without injecting ArtifactService.resolve_artifact_source_path."""
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    ok_file = run_root / "sentiment/charts/global/a.png"
+    ok_file.parent.mkdir(parents=True)
+    ok_file.write_bytes(b"ok")
+
+    ok = _artifact(artifact_id="ok", rel_path="sentiment/charts/global/a.png")
+    missing = _artifact(artifact_id="missing", rel_path="sentiment/charts/global/m.png")
+
+    result = prepare_charts_export_zip(run_root, [ok, missing], "run_default")
+    assert result.exported_count == 1
+    assert result.omitted_count == 1
+    with zipfile.ZipFile(BytesIO(result.bytes)) as zf:
+        assert "sentiment/charts/global/a.png" in zf.namelist()
+        assert "index.html" in zf.namelist()
+
+
 def test_prepare_charts_export_zip_missing_is_omitted(tmp_path: Path) -> None:
     run_root = tmp_path / "run"
     run_root.mkdir()

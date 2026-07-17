@@ -199,6 +199,7 @@ def execution_set_signature(es: ExecutionSet) -> str:
                 "path_relative": e.path_relative,
                 "classification": e.classification.value,
                 "reason": e.reason,
+                "root_kind": e.root_kind.value if e.root_kind is not None else None,
             }
             for e in es.exclusions
         ],
@@ -214,6 +215,8 @@ def execution_set_to_plan(es: ExecutionSet) -> CleanupPlan:
         candidates=es.candidates,
         retained=es.retained,
         exclusions=es.exclusions,
+        classifier_version=es.classifier_version,
+        newest_run_policy_version=es.newest_run_policy_version,
     )
     return CleanupPlan(
         plan_id=plan_id,
@@ -227,4 +230,6 @@ def execution_set_to_plan(es: ExecutionSet) -> CleanupPlan:
         warnings=es.warnings,
         blocking_errors=es.blocking_errors,
         can_execute=es.can_execute,
+        classifier_version=es.classifier_version,
+        newest_run_policy_version=es.newest_run_policy_version,
     )

@@ -13,12 +13,16 @@ from transcriptx.core.analysis.aggregation.registry import (
     _aggregate_conversation_loops,
     _aggregate_echoes,
     _aggregate_highlights,
+    _aggregate_insight_eligibility,
     _aggregate_lexical_diversity,
     _aggregate_momentum,
     _aggregate_pauses,
     _aggregate_qa_analysis,
+    _aggregate_simplified_transcript,
     _aggregate_temporal_dynamics,
+    _aggregate_transcript_output_blob,
     _aggregate_understandability,
+    _aggregate_voice_contours,
 )
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
@@ -354,3 +358,112 @@ def test_aggregate_helpers_return_none_without_payloads(tmp_path: Path) -> None:
     assert _aggregate_pauses([empty], sm, ts) is None
     assert _aggregate_highlights([empty], sm, ts) is None
     assert _aggregate_momentum([empty], sm, ts) is None
+    assert _aggregate_insight_eligibility([empty], sm, ts) is None
+    assert _aggregate_transcript_output_blob([empty], sm, ts) is None
+    assert _aggregate_simplified_transcript([empty], sm, ts) is None
+    assert _aggregate_voice_contours([empty], sm, ts) is None
+
+
+@pytest.mark.unit
+def test_aggregate_insight_eligibility_session_scalars(tmp_path: Path) -> None:
+    result = _result(
+        tmp_path,
+        {
+            "insight_eligibility": {
+                "payload": {
+                    "filtered_segments": [{"segment_index": 0}, {"segment_index": 1}],
+                    "tic_mask": [0],
+                    "content_phrases": ["alpha", "beta", "gamma"],
+                    "content_densities": {"0": 0.5, "1": 1.5},
+                }
+            }
+        },
+    )
+    out = _aggregate_insight_eligibility(
+        [result], _speaker_map(), _transcript_set(tmp_path)
+    )
+    assert out is not None
+    row = out["session_rows"][0]
+    assert row["filtered_segment_count"] == 2
+    assert row["tic_mask_count"] == 1
+    assert row["phrase_count"] == 3
+    assert row["mean_content_density"] == 1.0
+
+
+@pytest.mark.unit
+def test_aggregate_transcript_output_blob_index(tmp_path: Path) -> None:
+    result = _result(
+        tmp_path,
+        {
+            "transcript_output": {
+                "payload": {"total_segments": 12, "segments": []},
+                "artifacts": [
+                    {"relative_path": "transcripts/a.txt"},
+                    {"relative_path": "transcripts/a.csv"},
+                ],
+            }
+        },
+    )
+    out = _aggregate_transcript_output_blob(
+        [result], _speaker_map(), _transcript_set(tmp_path)
+    )
+    assert out is not None
+    assert out["blob_name"] == "transcript_output"
+    members = out["blob_payload"]["members"]
+    assert len(members) == 1
+    assert members[0]["total_segments"] == 12
+    assert members[0]["run_id"] == "r1"
+    assert members[0]["artifact_relpaths"] == [
+        "transcripts/a.txt",
+        "transcripts/a.csv",
+    ]
+
+
+@pytest.mark.unit
+def test_aggregate_simplified_transcript_counts(tmp_path: Path) -> None:
+    result = _result(
+        tmp_path,
+        {
+            "simplified_transcript": {
+                "payload": {
+                    "total_original": 10,
+                    "total_simplified": 7,
+                    "simplified": [],
+                }
+            }
+        },
+    )
+    out = _aggregate_simplified_transcript(
+        [result], _speaker_map(), _transcript_set(tmp_path)
+    )
+    assert out is not None
+    row = out["session_rows"][0]
+    assert row["total_original"] == 10
+    assert row["total_simplified"] == 7
+    assert row["removed_count"] == 3
+
+
+@pytest.mark.unit
+def test_aggregate_voice_contours_summary_rows(tmp_path: Path) -> None:
+    result = _result(
+        tmp_path,
+        {
+            "voice_contours": {
+                "payload": {
+                    "status": "ok",
+                    "selected_segment_ids": ["s1", "s2"],
+                    "f0_slopes": [
+                        {"speaker": "Alice", "slope": 1.0},
+                        {"speaker": "Bob", "slope": 3.0},
+                    ],
+                }
+            }
+        },
+    )
+    out = _aggregate_voice_contours([result], _speaker_map(), _transcript_set(tmp_path))
+    assert out is not None
+    row = out["session_rows"][0]
+    assert row["status"] == "ok"
+    assert row["selected_segment_count"] == 2
+    assert row["f0_slope_count"] == 2
+    assert row["f0_slope_mean"] == 2.0

@@ -14,10 +14,22 @@ import os
 from transcriptx.utils.text_utils import is_eligible_named_speaker
 from transcriptx.core.utils.config import get_config
 from transcriptx.io import save_csv, save_json
-from transcriptx.core.utils.paths import OUTPUTS_DIR, DIARISED_TRANSCRIPTS_DIR
+from transcriptx.core.utils.paths import (
+    DIARISED_TRANSCRIPTS_DIR,
+    GROUP_OUTPUTS_DIR,
+    OUTPUTS_DIR,
+)
 from transcriptx.core.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def _is_under_root(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
 
 
 @dataclass
@@ -70,14 +82,16 @@ def create_standard_output_structure(
     Returns:
         OutputStructure object with all directories created
     """
-    # Validate that transcript_dir is in OUTPUTS_DIR to prevent creating directories
-    # in wrong locations (e.g., data/transcripts/raw)
+    # Validate that transcript_dir is under an allowed outputs root to prevent
+    # creating directories in wrong locations (e.g., data/transcripts/raw).
+    # Group aggregate charts write under GROUP_OUTPUTS_DIR / {group_uuid}/{run_id}.
     transcript_dir_path = Path(transcript_dir).resolve()
     outputs_dir_path = Path(OUTPUTS_DIR).resolve()
+    group_outputs_dir_path = Path(GROUP_OUTPUTS_DIR).resolve()
     transcripts_dir_path = Path(DIARISED_TRANSCRIPTS_DIR).resolve()
 
     # Explicitly prevent creating directories in data/transcripts
-    if str(transcript_dir_path).startswith(str(transcripts_dir_path)):
+    if _is_under_root(transcript_dir_path, transcripts_dir_path):
         logger.warning(
             f"⚠️ transcript_dir is in transcripts directory ({transcript_dir}), "
             f"which is not allowed. Redirecting to outputs directory."
@@ -88,12 +102,15 @@ def create_standard_output_structure(
         transcript_dir = str(outputs_dir_path / base_name)
         transcript_dir_path = Path(transcript_dir).resolve()
 
-    # If transcript_dir is not in OUTPUTS_DIR, extract just the base name
-    # This prevents accidentally creating directories in data/transcripts/raw
-    if not str(transcript_dir_path).startswith(str(outputs_dir_path)):
+    # Allow per-transcript OUTPUTS_DIR and group GROUP_OUTPUTS_DIR trees.
+    if not (
+        _is_under_root(transcript_dir_path, outputs_dir_path)
+        or _is_under_root(transcript_dir_path, group_outputs_dir_path)
+    ):
         logger.warning(
-            f"⚠️ transcript_dir is not in OUTPUTS_DIR ({transcript_dir}). "
-            f"Extracting base name and redirecting to outputs directory."
+            f"⚠️ transcript_dir is not in OUTPUTS_DIR or GROUP_OUTPUTS_DIR "
+            f"({transcript_dir}). Extracting base name and redirecting to "
+            f"outputs directory."
         )
         # Extract base name from the path (last component)
         base_name = transcript_dir_path.name
@@ -101,7 +118,7 @@ def create_standard_output_structure(
         transcript_dir = str(outputs_dir_path / base_name)
         transcript_dir_path = Path(transcript_dir).resolve()
     else:
-        # transcript_dir is already in OUTPUTS_DIR; keep as-is
+        # transcript_dir is already under an allowed outputs root; keep as-is
         transcript_dir = str(transcript_dir_path)
 
     namespace = output_namespace or module_name

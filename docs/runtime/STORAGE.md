@@ -95,8 +95,9 @@ config_dir/                     # configuration
   profiles/                     # analysis presets
 
 data_dir/                       # app-managed working state
+  groups/                       # group definition manifests (*.group.json); local user data — not tracked
   outputs/
-    groups/
+    groups/                     # group analysis run outputs (per group uuid / run id)
   preprocessing/
   cache/
     audio_playback/

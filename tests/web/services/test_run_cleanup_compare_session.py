@@ -153,6 +153,29 @@ class TestExecutionCompare:
         assert ok is True
         assert reason == ""
 
+    def test_classifier_version_mismatch_is_stale(self):
+        t = _target("s", "20200101_000000_00000001")
+        planned = _plan(CleanupMode.DELETE_ALL, (t,))
+        rediscovered = ExecutionSet(
+            mode=CleanupMode.DELETE_ALL,
+            roots=(_root(),),
+            eligible=(t,),
+            candidates=(t,),
+            retained=(),
+            exclusions=(),
+            policy_version=4,
+            classifier_version=99,
+            newest_run_policy_version=1,
+            can_execute=True,
+            blocking_errors=(),
+            warnings=(),
+        )
+        ok, reason = compare_with_lock_skip_masks(
+            planned=planned, rediscovered=rediscovered, lock_results=()
+        )
+        assert ok is False
+        assert "classifier_version" in reason
+
     def test_fingerprint_change_is_stale_without_mask(self):
         t1 = _target("s", "20200101_000000_00000001", fingerprint="a" * 64)
         t2 = _target("s", "20200101_000000_00000001", fingerprint="b" * 64)

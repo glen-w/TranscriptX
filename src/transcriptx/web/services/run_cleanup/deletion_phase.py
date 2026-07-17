@@ -8,6 +8,7 @@ import stat
 from pathlib import Path
 
 from transcriptx.web.services.run_cleanup import journal
+from transcriptx.web.services.run_cleanup import journal_ops
 from transcriptx.web.services.run_cleanup.models import (
     CleanupTarget,
     CleanupTargetResult,
@@ -19,6 +20,28 @@ from transcriptx.web.services.run_cleanup.physical_delete import (
     safe_rmtree_verified,
     verify_staged_tree,
 )
+
+
+def refused_result(
+    target: CleanupTarget,
+    message: str,
+    *,
+    staging_path: str | Path | None = None,
+) -> CleanupTargetResult:
+    """Shared PHYSICAL_DELETE_REFUSED result for reconcile and delete paths."""
+    return CleanupTargetResult(
+        subject_type=target.subject_type,
+        subject_id=target.subject_id,
+        run_id=target.run_id,
+        root_relative_path=target.root_relative_path,
+        canonical_path=target.canonical_path,
+        status=TargetStatus.PHYSICAL_DELETE_REFUSED,
+        message=message,
+        staging_path=str(staging_path) if staging_path is not None else None,
+        filesystem_dev=target.filesystem_dev,
+        filesystem_ino=target.filesystem_ino,
+        root_kind=target.subject_type,
+    )
 
 
 def physical_delete_one(
@@ -42,25 +65,18 @@ def physical_delete_one(
         outputs_dir=host.outputs_dir,
         group_outputs_dir=host.group_outputs_dir,
     ):
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="physical_delete_refused",
             staging_path=str(staging_dest),
             extra={"error": "staging path not recognised by journal"},
         )
-        return CleanupTargetResult(
-            subject_type=target.subject_type,
-            subject_id=target.subject_id,
-            run_id=target.run_id,
-            root_relative_path=target.root_relative_path,
-            canonical_path=target.canonical_path,
-            status=TargetStatus.PHYSICAL_DELETE_REFUSED,
-            message="staging path not recognised by journal",
-            staging_path=str(staging_dest),
-            filesystem_dev=target.filesystem_dev,
-            filesystem_ino=target.filesystem_ino,
-            root_kind=target.subject_type,
+        return refused_result(
+            target,
+            "staging path not recognised by journal",
+            staging_path=staging_dest,
         )
     try:
         proof = verify_staged_tree(
@@ -80,7 +96,8 @@ def physical_delete_one(
             require_fingerprint=require_fingerprint,
         )
         # Bracket deletion: verified → deleted.
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="physical_delete_verified",
@@ -142,7 +159,8 @@ def physical_delete_one(
             root_kind=target.subject_type,
         )
     except journal.JournalDurabilityError as exc:
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="physical_delete_failed",
@@ -165,7 +183,8 @@ def physical_delete_one(
             root_kind=target.subject_type,
         )
     except PhysicalDeletePartialError as exc:
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="physical_delete_partial",
@@ -188,7 +207,8 @@ def physical_delete_one(
             root_kind=target.subject_type,
         )
     except PhysicalDeleteUnsafeError as exc:
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="physical_delete_refused",
@@ -197,21 +217,10 @@ def physical_delete_one(
             staged_ino=staged_ino,
             extra={"error": str(exc)},
         )
-        return CleanupTargetResult(
-            subject_type=target.subject_type,
-            subject_id=target.subject_id,
-            run_id=target.run_id,
-            root_relative_path=target.root_relative_path,
-            canonical_path=target.canonical_path,
-            status=TargetStatus.PHYSICAL_DELETE_REFUSED,
-            message=str(exc),
-            staging_path=str(staging_dest),
-            filesystem_dev=target.filesystem_dev,
-            filesystem_ino=target.filesystem_ino,
-            root_kind=target.subject_type,
-        )
+        return refused_result(target, str(exc), staging_path=staging_dest)
     except OSError as exc:
-        host._persist_target_state(
+        journal_ops.persist_target_state(
+            host,
             operation_id,
             canonical_path=target.canonical_path,
             state="physical_delete_failed",
@@ -251,8 +260,5 @@ def prune_subject_parent(host, target: CleanupTarget) -> str | None:
         return None
     except OSError as exc:
         if exc.errno in {errno.ENOTEMPTY, errno.EEXIST}:
-            return None
-        # macOS ENOTEMPTY
-        if getattr(exc, "errno", None) == 66:
             return None
         return f"could not prune subject parent {subject_parent}: {exc}"

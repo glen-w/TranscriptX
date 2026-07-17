@@ -99,10 +99,14 @@ def _render_results_section(
                 f"{result.speaker_name} · {result.start_time:.1f}–{result.end_time:.1f}"
             )
             st.caption(breadcrumb)
+            if result.context_before:
+                st.caption(result.context_before)
             st.markdown(
                 _render_highlighted_text(result.segment_text, result.match_spans),
                 unsafe_allow_html=True,
             )
+            if result.context_after:
+                st.caption(result.context_after)
             if render_action_link(
                 "Jump to segment",
                 key=f"jump_{result.session_slug}_{result.run_id}_{result.segment_index}_{title}",

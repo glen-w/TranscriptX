@@ -118,28 +118,41 @@ def _render_pending_staging_section() -> None:
         by_op[str(row.get("operation_id") or "")].append(row)
 
     for operation_id, rows in sorted(by_op.items()):
+        recoverable = all(bool(r.get("recoverable", True)) for r in rows)
+        blocked_reason = next(
+            (r.get("blocked_reason") for r in rows if r.get("blocked_reason")),
+            None,
+        )
         with st.expander(
             f"Operation {operation_id} ({len(rows)} target(s))", expanded=False
         ):
             st.text(
                 f"plan_id={rows[0].get('plan_id')} mode={rows[0].get('mode')} "
-                f"status={rows[0].get('operation_status')}"
+                f"status={rows[0].get('operation_status')} "
+                f"schema={rows[0].get('detected_schema_version')}"
             )
+            if not recoverable and blocked_reason:
+                st.warning(f"Retry disabled: {blocked_reason}")
             for row in rows:
+                if row.get("subject_type") is None and not row.get("recoverable", True):
+                    continue
                 st.text(
                     f"{row.get('subject_type')}/{row.get('subject_id')}/{row.get('run_id')}: "
                     f"state={row.get('state')} "
                     f"path={row.get('staging_path') or row.get('canonical_path')}"
                 )
-            if st.button(
-                f"Retry recovery ({operation_id})",
-                key=f"_cleanup_retry_{operation_id}",
-            ):
-                result = svc.retry_interrupted_staging(operation_id)
-                clear_session_selections_for_removed_runs(
-                    st.session_state, result.targets
-                )
-                _render_cleanup_result(result)
+            if recoverable:
+                if st.button(
+                    f"Retry recovery ({operation_id})",
+                    key=f"_cleanup_retry_{operation_id}",
+                ):
+                    result = svc.retry_interrupted_staging(operation_id)
+                    clear_session_selections_for_removed_runs(
+                        st.session_state, result.targets
+                    )
+                    _render_cleanup_result(result)
+            else:
+                st.caption("Retry is disabled for this blocked operation.")
 
 
 def _render_cleanup_section() -> None:

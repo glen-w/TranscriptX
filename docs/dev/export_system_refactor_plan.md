@@ -2,7 +2,7 @@
 
 # TranscriptX Export System — Incremental Refactor Plan
 
-**Last reviewed:** 2026-07-14 (post 0.3.5 / 0.3.6). Core refactor steps 1–9 are **not started**.
+**Last reviewed:** 2026-07-17. Core refactor steps 1–9 are **complete** under `transcriptx.export/`. Residual finish work: retire `utils` shims, dedupe path helpers, move zip orchestration onto `ExportService`, optional `resolve.py` split. Step 10 (Jinja2) remains optional backlog.
 
 ## Status vs plan (changelog)
 
@@ -10,8 +10,9 @@
 |---|---|---|
 | **0.3.5** | Added `utils/export_markdown.py`; expanded `export_index.py` with `_executive_summary_markdown` / `_action_items_markdown`, speaker-summary grouping in nav/body, MD→HTML via safe subset | Step 7 is more urgent (new parallel markdown builders). `export_markdown` is the right home for later `markdown_html.py` move. |
 | **0.3.6** | Extracted `web/components/export_panel.py`; Artifacts page hosts export UI; Overview block delegates to shared panel; layout block id `export_panel`; `charts_export` imports `web.module_ui_groups.order_strings_like_modules` | Update entry-point map. Third `HARD_CAP_BYTES` copy in `export_panel.py`. Extra utils→web edge (module ordering). |
+| **post-0.3.6 → 0.4.x** | Package extract landed: `transcriptx.export/` with types, zipping, html_shell, charts, index, summary_bodies, grouping, paths, resolve; utils modules became thin re-export shims; web injects path/order/description callables | Steps 1–9 **done**. Residual: shim retirement, path dedupe, zip ownership on `ExportService`. |
 
-**Still true / unchanged:** `_ExportableItem` private cross-package use; `charts_export` imports `ArtifactService` + `HARD_CAP_BYTES` + chart view-model; no `transcriptx.export` package; LOC ~985 `export_index.py`, ~254 `charts_export.py`, ~179 `export_markdown.py`.
+**Residual (finish work):** complete — shims retired; path helpers in `export/paths.py`; zip orchestration on `ExportService`; `resolve.py` split into `resolve_transcript` / `resolve_summaries`. Optional backlog: Jinja2 shells (step 10), Artifact Protocol.
 
 ---
 
@@ -21,26 +22,25 @@
 
 | Entry | File | Call |
 |---|---|---|
-| Home “export recent run” | `src/transcriptx/web/page_modules/home.py` | `ExportService.zip_artifacts` → `ArtifactService.zip_artifacts` |
+| Home “export recent run” | `src/transcriptx/web/page_modules/home.py` | `ExportService.zip_artifacts` |
 | Shared export panel (Overview block) | `web/components/export_panel.py` via `blocks/implementations/overview.py` (`render_export_panel`) | `ExportService.zip_artifacts` |
 | Shared export panel (Artifacts page) | `web/page_modules/artifacts.py` → `render_export_panel_ui` | same |
 | Layout presets | `export_panel` block in `layouts/presets/{default,executive,developer_debug}.yaml` | same panel |
 | Charts “Export Visible Charts” | `src/transcriptx/web/page_modules/charts.py` | `ExportService.zip_charts` → `prepare_charts_export_zip` |
 
-`ExportService` (`web/services/export_service.py`) is a thin facade only. Selection UX lives in `export_panel.py` (`resolve_export_selection` is pure/testable).
+`ExportService` (`web/services/export_service.py`) owns zip orchestration and charts injection. Selection UX lives in `export_panel.py` (`resolve_export_selection` is pure/testable).
 
 ### Data flow A — Overview / full-run ZIP
 
 ```
 UI → ExportService.zip_artifacts
-  → ArtifactService.zip_artifacts
-       • _artifacts_for_export + HARD_CAP_BYTES (2GB)
+       • ArtifactService._artifacts_for_export + HARD_CAP_BYTES (2GB)
        • stage copies under artifact.id[:16]/rel_path
-       • ArtifactService._write_export_index
+       • ExportService._write_export_index
             → resolve_export_transcript_data / resolve_export_text_summaries / resolve_export_page_title
-            → constructs private charts_export._ExportableItem
+            → constructs ExportableItem chart list
             → build_export_index_html
-       • shutil.make_archive → Path to temp zip
+       • export.zipping.stage_copy_and_zip → Path to temp zip
   → ArtifactService.read_for_download → Streamlit download
 ```
 
@@ -48,10 +48,10 @@ UI → ExportService.zip_artifacts
 
 ```
 UI → ExportService.zip_charts
-  → charts_export.prepare_charts_export_zip
-       • imports ArtifactService + HARD_CAP_BYTES  ← utils → web inversion
-       • imports resolve_chart_display_description from chart_view_model_service
-       • _resolve_exportable → copy → generate_charts_index_html
+  → charts.prepare_charts_export_zip
+       • default path resolve via export.paths
+       • inject order_modules + description_fn from web
+       • resolve_exportable → copy → build_charts_index_html
        • returns ChartsExportResult(bytes, filename, counts)
 ```
 

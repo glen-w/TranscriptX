@@ -2,6 +2,8 @@
 
 # Shared analysis I/O extraction (refined)
 
+**Status:** **Done** (2026-07-17) — affect / dynamics / group-chart families landed; A3 `save_rows_csv_json` for entity_sentiment; characterization goldens wired. Emotion NRC JSON/CSV pairs remain module-local (different payloads). Keep this document as the locked contract history.
+
 **Source:** 2026-07-16 refactor assessment (Top 3), refined. Behavior-preserving incremental extraction.
 
 Index: [`docs/dev/refactor_top3_index_2026-07-16.md`](refactor_top3_index_2026-07-16.md)

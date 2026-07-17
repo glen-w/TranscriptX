@@ -10,6 +10,7 @@ import pytest
 from transcriptx.web.services.run_cleanup import finalization
 from transcriptx.web.services.run_cleanup import handles as handle_store
 from transcriptx.web.services.run_cleanup import journal
+from transcriptx.web.services.run_cleanup import results as results_mod
 from transcriptx.web.services.run_cleanup.models import (
     CleanupMode,
     CleanupResult,
@@ -42,8 +43,13 @@ def test_finalise_demotes_success_when_loaded_status_diverges(
 
     host = SimpleNamespace(
         state_dir=state,
-        _invalidate_caches=lambda: (order.append("cache"), [])[1],
-        _status_from_loaded_operation=lambda _oid: (
+        _cache_invalidator=lambda: order.append("cache"),
+    )
+
+    monkeypatch.setattr(
+        results_mod,
+        "status_from_loaded_operation",
+        lambda _state_dir, _oid: (
             order.append("derive"),
             CleanupStatus.PARTIAL,
         )[1],
@@ -78,10 +84,11 @@ def test_finalise_demotes_on_terminal_fsync_failure(
 ) -> None:
     state = tmp_path / "state"
     state.mkdir()
-    host = SimpleNamespace(
-        state_dir=state,
-        _invalidate_caches=lambda: [],
-        _status_from_loaded_operation=lambda _oid: CleanupStatus.SUCCESS,
+    host = SimpleNamespace(state_dir=state, _cache_invalidator=None)
+    monkeypatch.setattr(
+        results_mod,
+        "status_from_loaded_operation",
+        lambda *_a, **_k: CleanupStatus.SUCCESS,
     )
     monkeypatch.setattr(
         journal,
@@ -91,6 +98,8 @@ def test_finalise_demotes_on_terminal_fsync_failure(
         ),
     )
     monkeypatch.setattr(handle_store, "store_result", lambda *_a, **_k: None)
+    # Avoid real artifact/listing cache imports when invalidator is None.
+    monkeypatch.setattr(finalization, "invalidate_caches", lambda _host: [])
 
     final = finalization.finalise_operation(
         host,
@@ -112,11 +121,12 @@ def test_finalise_skips_cache_when_no_mutation(
     state.mkdir()
     called = {"cache": 0}
 
-    def _cache() -> list[str]:
+    def _cache(_host) -> list[str]:
         called["cache"] += 1
         return []
 
-    host = SimpleNamespace(state_dir=state, _invalidate_caches=_cache)
+    host = SimpleNamespace(state_dir=state, _cache_invalidator=None)
+    monkeypatch.setattr(finalization, "invalidate_caches", _cache)
     monkeypatch.setattr(
         journal,
         "update_operation_status",

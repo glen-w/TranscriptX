@@ -122,7 +122,6 @@ def build_speakers_module_definitions(
             "requires_audio": True,
             "supports_audio": True,
             "exclude_from_default": True,
-            "supports_group": False,
             "output_namespace": "voice",
             "output_version": "v1",
             "cost_tier": "heavy",

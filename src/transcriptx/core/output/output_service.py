@@ -89,6 +89,8 @@ class OutputService:
             output_namespace=output_namespace,
             output_version=output_version,
         )
+        # Stay aligned if create_standard_output_structure applied a safety redirect.
+        self.transcript_dir = str(self.output_structure.transcript_dir)
         self._artifacts: List[Dict[str, Any]] = []
         self._artifact_metadata: Dict[str, Dict[str, Any]] = {}
         self._artifact_metadata_path = (

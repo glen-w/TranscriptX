@@ -2,8 +2,8 @@
 
 **Plan assessed:** Cursor plan `cleanup_service_refactor` (extract orchestration from [`service.py`](../../src/transcriptx/web/services/run_cleanup/service.py)).  
 **Date:** 2026-07-17  
-**Status:** Recommendations reviewed and **folded into the plan** (all five adopted; Runtime kept as its own PR rather than folded into locks). Phase 0 characterisation suite and Phase A `staging_identity` / `CleanupRuntime` scaffolding are in progress in-tree.  
-**Verdict:** Direction is sound (façade + move-only PRs + strong safety-net suite). Five edits below make implementation smoother and reduce the highest real failure modes: monkeypatch drift, circular `self` coupling, and silent result-shape regressions.
+**Status:** **Historical.** Phase 0 characterisation, Phase A extract, and Phase B hardening are **complete** in-tree (thin façade, no temporary private shims, policy 7 / journal schema 3 / result schema 2). Recommendations below were adopted during the extract; treat this doc as context, not an open backlog.  
+**Verdict:** Direction was sound; the five edits below were the right hardening for the extract series.
 
 ---
 

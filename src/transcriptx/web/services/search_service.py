@@ -1,5 +1,9 @@
 # mypy: ignore-missing-imports
-"""Search service for TranscriptX web UI."""
+"""Search service for TranscriptX web UI.
+
+File-backed, in-process index (`@st.cache_data`) with substring / multi-term AND
+matching, optional fuzzy fallback (rapidfuzz), and a hard result cap of 200.
+"""
 
 from __future__ import annotations
 
@@ -63,6 +67,113 @@ def _is_phrase_match(text: str, query: str) -> bool:
     return _normalize(query) in _normalize(text)
 
 
+def _session_slug_from_name(session_name: str) -> str:
+    return session_name.split("/", 1)[0]
+
+
+def _session_matches_filters(
+    session_name: str, filters: Optional[SearchFilters]
+) -> bool:
+    if not filters or not filters.session_slugs:
+        return True
+    slug = _session_slug_from_name(session_name)
+    return slug in set(filters.session_slugs)
+
+
+def _segment_matches_speaker_filters(
+    segment: Dict[str, object], filters: Optional[SearchFilters]
+) -> bool:
+    if not filters or not filters.speaker_keys:
+        return True
+    speaker = segment.get("speaker_display") or segment.get("speaker") or ""
+    speaker_str = str(speaker).strip()
+    return speaker_str in set(filters.speaker_keys)
+
+
+def _match_segment_text(
+    text: str, query: str
+) -> Optional[Tuple[List[Tuple[int, int]], bool]]:
+    """Return (spans, is_phrase_match) if the segment matches, else None.
+
+    Phrase / contiguous substring is preferred. When that fails and the query
+    has 2+ tokens (len >= 3), accept when every token appears (AND).
+    """
+    if _is_phrase_match(text, query):
+        return _find_spans(text, query), True
+    tokens = _tokenize(query)
+    if len(tokens) < 2:
+        return None
+    lower = _normalize(text)
+    if not all(token in lower for token in tokens):
+        return None
+    spans: List[Tuple[int, int]] = []
+    for token in tokens:
+        spans.extend(_find_spans(text, token))
+    spans.sort(key=lambda item: item[0])
+    return spans, False
+
+
+def _neighbor_context(
+    segments: List[Dict[str, object]], idx: int
+) -> Tuple[Optional[str], Optional[str], Tuple[int, int]]:
+    before: Optional[str] = None
+    after: Optional[str] = None
+    if idx > 0:
+        prev = segments[idx - 1].get("text", "")
+        if isinstance(prev, str) and prev.strip():
+            before = prev
+    if idx + 1 < len(segments):
+        nxt = segments[idx + 1].get("text", "")
+        if isinstance(nxt, str) and nxt.strip():
+            after = nxt
+    context_indices = (max(0, idx - 1), idx + 1)
+    return before, after, context_indices
+
+
+def _build_search_result(
+    *,
+    session_name: str,
+    index: _TranscriptIndex,
+    segments: List[Dict[str, object]],
+    idx: int,
+    segment: Dict[str, object],
+    text: str,
+    match_spans: List[Tuple[int, int]],
+) -> SearchResult:
+    speaker_name = segment.get("speaker_display") or segment.get("speaker") or "Unknown"
+    speaker_name = str(speaker_name)
+    session_slug, run_id = session_name.split("/", 1)
+    before, after, context_indices = _neighbor_context(segments, idx)
+    return SearchResult(
+        segment_ref=SegmentRef(
+            transcript_ref=TranscriptRef(
+                session_slug=session_slug,
+                run_id=run_id,
+                transcript_file_id=None,
+                transcript_slug=index.transcript_slug,
+            ),
+            primary_locator="index",
+            segment_index=idx,
+            segment_id=None,
+            timecode=segment.get("start"),
+        ),
+        transcript_title=index.transcript_slug,
+        session_slug=session_slug,
+        run_id=run_id,
+        segment_id=None,
+        segment_index=idx,
+        segment_text=text,
+        match_spans=match_spans,
+        speaker_name=speaker_name,
+        speaker_is_named=speaker_name not in ("", "Unknown"),
+        start_time=float(segment.get("start", 0.0)),
+        end_time=float(segment.get("end", 0.0)),
+        context_indices=context_indices,
+        context_before=before,
+        context_after=after,
+    )
+
+
 @dataclass(frozen=True)
 class _TranscriptIndex:
     session_name: str
@@ -115,6 +226,14 @@ def _resolve_session_path_for_search(session_name: str) -> str:
 
 
 def _resolve_transcript_mtime(session_name: str) -> Optional[float]:
+    """Prefer filesystem mtime of the resolved transcript path; avoid full JSON load."""
+    resolved = FileService.resolve_transcript_path(session_name)
+    if resolved is not None:
+        try:
+            if resolved.exists():
+                return float(resolved.stat().st_mtime)
+        except OSError:
+            pass
     transcript_data = FileService.load_transcript_by_session(session_name)
     if not transcript_data:
         return None
@@ -133,7 +252,11 @@ def get_speakers_from_transcripts(
     sessions = cached_list_available_sessions()
     if session_slugs is not None:
         slug_set = set(session_slugs)
-        sessions = [s for s in sessions if s.get("name") in slug_set]
+        sessions = [
+            s
+            for s in sessions
+            if _session_slug_from_name(str(s.get("name") or "")) in slug_set
+        ]
     names: set = set()
     for session_info in sessions:
         session_name = session_info.get("name", "")
@@ -168,6 +291,8 @@ class FileSearchBackend:
             session_name = session_info.get("name", "")
             if not session_name:
                 continue
+            if not _session_matches_filters(session_name, filters):
+                continue
             transcript_path = _resolve_session_path_for_search(session_name)
             transcript_mtime = _resolve_transcript_mtime(session_name)
             index = _build_transcript_index(
@@ -179,45 +304,24 @@ class FileSearchBackend:
                 index.segments, transcript_path
             )
             for idx, segment in enumerate(segments):
+                if not _segment_matches_speaker_filters(segment, filters):
+                    continue
                 text = segment.get("text", "")
                 if not isinstance(text, str):
                     continue
-                if _normalize(query) not in _normalize(text):
+                matched = _match_segment_text(text, query)
+                if matched is None:
                     continue
-                match_spans = _find_spans(text, query)
-                speaker_name = (
-                    segment.get("speaker_display")
-                    or segment.get("speaker")
-                    or "Unknown"
-                )
-                session_slug, run_id = session_name.split("/", 1)
-                segment_ref = SegmentRef(
-                    transcript_ref=TranscriptRef(
-                        session_slug=session_slug,
-                        run_id=run_id,
-                        transcript_file_id=None,
-                        transcript_slug=index.transcript_slug,
-                    ),
-                    primary_locator="index",
-                    segment_index=idx,
-                    segment_id=None,
-                    timecode=segment.get("start"),
-                )
+                match_spans, _is_phrase = matched
                 results.append(
-                    SearchResult(
-                        segment_ref=segment_ref,
-                        transcript_title=index.transcript_slug,
-                        session_slug=session_slug,
-                        run_id=run_id,
-                        segment_id=None,
-                        segment_index=idx,
-                        segment_text=text,
+                    _build_search_result(
+                        session_name=session_name,
+                        index=index,
+                        segments=segments,
+                        idx=idx,
+                        segment=segment,
+                        text=text,
                         match_spans=match_spans,
-                        speaker_name=speaker_name,
-                        speaker_is_named=speaker_name not in ("", "Unknown"),
-                        start_time=float(segment.get("start", 0.0)),
-                        end_time=float(segment.get("end", 0.0)),
-                        context_indices=(max(0, idx - 1), idx + 1),
                     )
                 )
         return results, len(results)
@@ -260,8 +364,8 @@ class SearchService:
             else:
                 fuzzy_ran = True
                 fuzzy_reason = "few substring results"
-                candidates = self._select_candidate_transcripts(query)
-                fuzzy_results = self._fuzzy_search(candidates, query)
+                candidates = self._select_candidate_transcripts(query, filters)
+                fuzzy_results = self._fuzzy_search(candidates, query, filters=filters)
         total_found = len(ranked) + len(fuzzy_results)
         remaining = max(0, cap - total_shown)
         fuzzy_results = fuzzy_results[:remaining]
@@ -276,7 +380,9 @@ class SearchService:
             fuzzy_reason=fuzzy_reason,
         )
 
-    def _select_candidate_transcripts(self, query: str) -> List[_TranscriptIndex]:
+    def _select_candidate_transcripts(
+        self, query: str, filters: Optional[SearchFilters] = None
+    ) -> List[_TranscriptIndex]:
         tokens = _tokenize(query)
         if not tokens:
             return []
@@ -284,6 +390,8 @@ class SearchService:
         for session_info in cached_list_available_sessions():
             session_name = session_info.get("name", "")
             if not session_name:
+                continue
+            if not _session_matches_filters(session_name, filters):
                 continue
             transcript_path = _resolve_session_path_for_search(session_name)
             transcript_mtime = _resolve_transcript_mtime(session_name)
@@ -303,6 +411,7 @@ class SearchService:
         candidates: List[_TranscriptIndex],
         query: str,
         threshold: float = 70.0,
+        filters: Optional[SearchFilters] = None,
     ) -> List[SearchResult]:
         try:
             from rapidfuzz import fuzz  # type: ignore[import-not-found]
@@ -310,49 +419,30 @@ class SearchService:
             return []
         results: List[SearchResult] = []
         for index in candidates:
-            session_slug, run_id = index.session_name.split("/", 1)
+            if not _session_matches_filters(index.session_name, filters):
+                continue
+            transcript_path = _resolve_session_path_for_search(index.session_name)
             segments = resolve_speaker_names_from_sidecars(
-                index.segments, index.session_name
+                index.segments, transcript_path
             )
             for idx, segment in enumerate(segments):
+                if not _segment_matches_speaker_filters(segment, filters):
+                    continue
                 text = segment.get("text", "")
                 if not isinstance(text, str):
                     continue
                 score = fuzz.partial_ratio(_normalize(query), _normalize(text))
                 if score < threshold:
                     continue
-                speaker_name = (
-                    segment.get("speaker_display")
-                    or segment.get("speaker")
-                    or "Unknown"
-                )
-                segment_ref = SegmentRef(
-                    transcript_ref=TranscriptRef(
-                        session_slug=session_slug,
-                        run_id=run_id,
-                        transcript_file_id=None,
-                        transcript_slug=index.transcript_slug,
-                    ),
-                    primary_locator="index",
-                    segment_index=idx,
-                    segment_id=None,
-                    timecode=segment.get("start"),
-                )
                 results.append(
-                    SearchResult(
-                        segment_ref=segment_ref,
-                        transcript_title=index.transcript_slug,
-                        session_slug=session_slug,
-                        run_id=run_id,
-                        segment_id=None,
-                        segment_index=idx,
-                        segment_text=text,
+                    _build_search_result(
+                        session_name=index.session_name,
+                        index=index,
+                        segments=segments,
+                        idx=idx,
+                        segment=segment,
+                        text=text,
                         match_spans=_find_spans(text, query),
-                        speaker_name=speaker_name,
-                        speaker_is_named=speaker_name not in ("", "Unknown"),
-                        start_time=float(segment.get("start", 0.0)),
-                        end_time=float(segment.get("end", 0.0)),
-                        context_indices=(max(0, idx - 1), idx + 1),
                     )
                 )
         return results
@@ -361,11 +451,11 @@ class SearchService:
         self, results: List[SearchResult], query: str
     ) -> List[SearchResult]:
         tokens = _tokenize(query)
-        _normalize(query)
 
         def sort_key(result: SearchResult) -> Tuple[int, int, int, int, int, int]:
             text = result.segment_text
             boundary_match = _is_word_boundary_match(text, query)
+            # Phrase/substring ranks above token-AND-only hits.
             substring_match = _is_phrase_match(text, query)
             match_count = len(result.match_spans)
             first_pos = result.match_spans[0][0] if result.match_spans else len(text)

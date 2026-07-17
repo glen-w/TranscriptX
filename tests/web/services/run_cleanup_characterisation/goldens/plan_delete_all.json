@@ -17,11 +17,13 @@
       "subject_type": "transcript"
     }
   ],
+  "classifier_version": 1,
   "created_at_iso": "<ISO>",
   "exclusions": [],
   "mode": "DELETE_ALL",
+  "newest_run_policy_version": 1,
   "plan_id": "<PLAN_ID>",
-  "policy_version": 4,
+  "policy_version": 7,
   "retained": [],
   "roots": [
     {

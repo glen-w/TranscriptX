@@ -14,11 +14,11 @@ Authority: self
 |-----------|---------|------------|
 | **What it is** | Local-first transcript **analysis** toolkit (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
 | **Honest stage** | **Beta** (`0.4.4`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
-| **OSS local-first public release** | **Conditional go** after hygiene + security docs + finish/freeze mid-flight cleanup extract. | High |
+| **OSS local-first public release** | **Conditional go** after hygiene + security docs (cleanup Phase A extract complete). | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
-| **Immediate process blocker** | Mid-flight **run_cleanup Phase A** extract + dirty working tree — do not tag a release mid-split. | High |
+| **Immediate process blocker** | Release hygiene (CI, SECURITY.md, identity/install claims) — not the cleanup extract. | High |
 
-**One-line:** Ship as a single-user, local-first OSS beta after closing release hygiene; keep engineering sequenced (cleanup → Top-3 refactors); do not market as a hosted product.
+**One-line:** Ship as a single-user, local-first OSS beta after closing release hygiene; keep engineering sequenced (Top-3 refactors next); do not market as a hosted product.
 
 ---
 
@@ -67,7 +67,7 @@ flowchart LR
 |-------|--------|
 | Phase 1 vs shipping | CHANGELOG 0.3.x→0.4.4 shows continuous feature delivery (cleanup, LLM corrections, groups charts, export UI) while Phase 1 still says “no new features.” |
 | Version bands | ROADMAP still says near-term “v0.1–v0.41” and M3 “v0.42 — current”; package is **0.4.4**. |
-| Groups story | README: “DB-backed, experimental” **and** “file-first… backed by files and sidecars.” Storage contract is file-first; DB-backed analytics are Phase 3. |
+| Groups story | ~~README “DB-backed”~~ **Fixed** (file-backed). Storage contract is file-first; DB-backed analytics remain Phase 3. |
 | Transcription state label | ROADMAP “Current state (v0.1.x)” while package is 0.4.x — product stance (external) is correct; version label is stale. |
 | Sprint archive | ROADMAP says archive “no longer in-tree”; [`docs/archive/sprint_archive.md`](../archive/sprint_archive.md) **exists**. |
 | Identity | `pyproject` homepage/repo URLs ≠ actual `origin` remote. |
@@ -91,11 +91,11 @@ flowchart LR
 | LLM (Ollama) | **Mature (local-only)** | Remote OpenAI deferred post-beta |
 | Corrections Studio / speaker studio | **Mature / active** | LLM corrections shipped; fragment work deferred |
 | Groups analysis + charts | **Mature / experimental label** | File-backed; many group chart contracts; product label inconsistent |
-| Run cleanup | **WIP** | Safe pipeline shipped 0.4.0+; Phase A façade extract mid-flight |
+| Run cleanup | **Mature (Phase B complete)** | Phase A extract done; Phase B complete: policy **7**, result-schema **2**, journal schema **3** (version-dispatched readers), journal RMW locks, plan-ID classifier binding, recovery matrix + adversarial FS suite |
 | Config ownership collapse (Top-3 #1) | **WIP** | 8 nested subtrees delegated; 1.1–1.8+ still open |
-| Shared analysis I/O (Top-3 #2) | **Planned** | Plan complete; migration PRs A0–G4 not done as a finished program |
+| Shared analysis I/O (Top-3 #2) | **Done** | Affect/dynamics/group-chart helpers landed; A3 entity_sentiment CSV-then-JSON; characterization hardened (2026-07-17). Emotion NRC pairs intentionally local. |
 | Rename + corrections split (Top-3 #3) | **Planned** | Needs characterization first |
-| Export system package refactor | **Not started** | Steps 1–9 explicitly not started (reviewed 2026-07-14) |
+| Export system package refactor | **Complete (residual finish landed)** | Package under `transcriptx.export/`; shims retired; path dedupe; zip on `ExportService` |
 | Transcription GUI orchestration | **Deferred** | Instruction hub + whispermlx provider; WhisperX Docker stub unregistered |
 | Auth / multi-tenant | **N/A** | Cleanup “authorization” = confirm-phrase gate only |
 | Empty `gui/` / `ui/` packages | **Stub** | Real UI under `web/` |
@@ -109,17 +109,17 @@ flowchart LR
 | Package | Role | Maturity |
 |---------|------|----------|
 | `core/` (~94k LOC) | Pipeline, analysis, config, audio, LLM, rename | Mature; some oversized files |
-| `web/` (~28k) | Streamlit app + services | Mature UI; cleanup WIP |
+| `web/` (~28k) | Streamlit app + services | Mature UI; cleanup Phase A extracted |
 | `io/` (~8k) | Managed import / adapters | Mature |
 | `app/` (~3.5k) | Typed workflows / controllers | Mature |
 | `services/` | Transcription providers, studios | Mixed (transcription product-deferred) |
-| `export/` | Export helpers | Mature functionally; package refactor not started |
+| `export/` | Export helpers | Mature; package refactor + residual finish complete |
 | `gui/`, `ui/` | Empty shells | Stub |
 
 ### 5.2 Size / coupling hotspots
 
-Largest risk files (illustrative): `qa_analysis/analysis.py`, `highlights/core.py`, topic modeling visualization, aggregation registry, `core/utils/config/analysis.py`, `run_cleanup/journal.py` (~784), `run_cleanup/execution.py` (~622).  
-`run_cleanup/` package total ~**6.5k LOC** / 28 modules; façade `service.py` ~**257 LOC** (thinned).
+Largest risk files (illustrative): `qa_analysis/analysis.py`, `highlights/core.py`, topic modeling visualization, aggregation registry, `core/utils/config/analysis.py`, `run_cleanup/journal.py`, `run_cleanup/execution.py`.  
+`run_cleanup/` package ~**6.5k LOC** / ~29 modules; façade `service.py` is a thin public API (no temporary private shims).
 
 ### 5.3 Incomplete markers in source
 
@@ -135,11 +135,11 @@ Authoritative sequencing: [`docs/dev/refactor_top3_index_2026-07-16.md`](refacto
 
 | Order | Program | Doc | Status (2026-07-17) |
 |-------|---------|-----|---------------------|
-| **Finish first (release blocker)** | Run cleanup Phase A extract | [`run_cleanup_refactor_contracts.md`](run_cleanup_refactor_contracts.md), [`run_cleanup_refactor_plan_assessment.md`](run_cleanup_refactor_plan_assessment.md) | Phase 0 characterisation + Phase A modules in tree (`execution`, `recovery`, `locking`, `staging_phase`, `deletion_phase`, `finalization`, `planning`, `journal_ops`, `runtime`, …). Façade thinned. **Do not tag mid-split.** |
+| **Done** | Run cleanup Phase B hardening | [`run_cleanup_refactor_contracts.md`](run_cleanup_refactor_contracts.md) | Policy 7; journal RMW; recovery matrix; Identity/Snapshot hot paths; LockAcquisitionOutcome; adversarial + idempotency suite. |
 | **1st parallel** | Config ownership collapse | [`docs/config/config_ownership_collapse_plan.md`](../config/config_ownership_collapse_plan.md) | Registry pilots complete (41/598/10); **8 nested delegated**; batches 1.1–1.8+ open |
-| **1st (start now)** | Shared analysis I/O | [`shared_analysis_io_refactor_plan.md`](shared_analysis_io_refactor_plan.md) | Plan locked; A0–G4 migration sequence; complete only after affect/dynamics/group-chart families |
+| **Done** | Shared analysis I/O | [`shared_analysis_io_refactor_plan.md`](shared_analysis_io_refactor_plan.md) | Affect + dynamics + group-chart families complete; A3 entity_sentiment + char closeout 2026-07-17 |
 | **2nd** | Rename + corrections split | [`rename_corrections_orchestrator_split_plan.md`](rename_corrections_orchestrator_split_plan.md) | After characterization; do not interleave with config validation PRs |
-| **Parked** | Export system refactor | [`export_system_refactor_plan.md`](export_system_refactor_plan.md) | Steps 1–9 **not started** |
+| **Done** | Export system refactor | [`export_system_refactor_plan.md`](export_system_refactor_plan.md) | Steps 1–9 + residual finish (shims / path / zip ownership / resolve split); Jinja2 + Artifact Protocol remain optional backlog |
 
 **Explicit non-goals** (from Top-3 index): no full config framework rewrite; no algorithm rewrites under I/O extract; no rename journal schema/policy changes in a “split” PR; no interleaved Candidate 1 + 3 mega-PRs.
 
@@ -202,10 +202,10 @@ Do **not** use [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2
 | ID | Finding | Paths / notes |
 |----|---------|---------------|
 | **B1** | Compose binds **`0.0.0.0`** with **no app auth** — LAN exposure = full data + destructive cleanup | `docker-compose.yml` `command: ["--host", "0.0.0.0"]`; native default `127.0.0.1` is safer |
-| **B2** | Mid-flight run_cleanup extract + dirty tree | `web/services/run_cleanup/*`; finish or freeze before any tag |
+| **B2** | ~~Mid-flight run_cleanup extract~~ **Closed** | Phase A complete; remaining OSS blockers are hygiene/docs/CI |
 | **B3** | No in-repo CI workflows | ROADMAP Phase 1 incomplete on this claim |
 | **B4** | Public URLs ≠ git remote | `pyproject.toml` vs `glen-w/TranscriptX` |
-| **B5** | Groups README contradiction | “DB-backed” vs file-first |
+| **B5** | ~~Groups README contradiction~~ **Closed** | README now “file-backed”; see [`group_functionality_audit_2026-07-17.md`](group_functionality_audit_2026-07-17.md) |
 
 ### 8.3 High pitfalls (not always blockers)
 
@@ -216,7 +216,7 @@ Do **not** use [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2
 | H3 | Gated HF / pyannote model ToS — no aggregated THIRD_PARTY notice |
 | H4 | Cleanup handle store is **process-local in-memory** — multi-worker/multi-container desync risk |
 | H5 | Secure cleanup needs dir_fd / O_NOFOLLOW; may refuse on some platforms (`PLATFORM_UNSUPPORTED`) |
-| H6 | Tracked `data/` / groups / perf despite ignore intent |
+| H6 | ~~Tracked `data/groups`~~ **Closed** (untracked); `data/perf` / other `data/` may still be tracked despite ignore intent |
 | H7 | Tracked `docker-compose.override.yml` surprises clones |
 | H8 | No SECURITY.md / narrow secrets script |
 
@@ -234,8 +234,8 @@ Do **not** use [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2
 Use these as defaults unless you consciously override them:
 
 1. **Release type (next 1–2 months):** OSS **local-first single-user beta** — not hosted product.
-2. **run_cleanup:** Finish Phase A + characterisation green, then tag; **never** ship mid-split.
-3. **Eng priority after cleanup:** Top-3 order — shared analysis I/O + config ownership in parallel; rename/corrections only after characterization; **export refactor stays parked**.
+2. **run_cleanup:** Phase A + Phase B complete (policy 7 / schema 3 / result schema 2). Further behaviour changes need explicit schema/policy decisions; do not mix with Top-3 refactors.
+3. **Eng priority:** Top-3 order — **shared analysis I/O Done**; config ownership continues; rename/corrections only after characterization. Export package refactor is done (Jinja2 / Artifact Protocol optional backlog).
 4. **Phase 1 honesty:** Update ROADMAP — either close Phase 1 with truthful CI/docs status, or stop “no new features” language. Fix version bands (drop “v0.42 current”).
 5. **Distribution:** Docker + git tags until PyPI/identity decided; align README install claims.
 6. **Network threat model:** Document “localhost unless reverse proxy + auth”; prefer Compose bind `127.0.0.1:8501:8501` or an explicit `exposed` profile.
@@ -247,19 +247,19 @@ Use these as defaults unless you consciously override them:
 
 ### Release hygiene (before next public tag)
 
-1. Finish or freeze run_cleanup Phase A; green characterisation + relevant web cleanup tests.
-2. Fix README Groups line (file-first; experimental if needed — not “DB-backed”).
+1. ~~Finish run_cleanup Phase A + Phase B~~ **Done** (policy 7 / schema 3 / result schema 2; façade shims removed).
+2. ~~Fix README Groups line~~ **Done** — file-backed (not “DB-backed”).
 3. Align `pyproject` URLs with real GitHub remote (or move repo to claimed org).
 4. Add `SECURITY.md` (+ brief threat model: local trust domain).
 5. Decide Compose host bind default / document exposure.
 6. Add minimal CI: smoke → contracts → fast (or document Makefile-only until then).
-7. Untrack non-fixture `data/groups`, `data/perf`; clarify fixtures vs user data.
+7. ~~Untrack non-fixture `data/groups`~~ **Done** (local-only); still: untrack `data/perf` if applicable; clarify fixtures vs user data.
 8. Normalize tag naming; fix or remove stale `src/setup.py`.
 9. Reconcile README `pip install` claim with Docker+tag policy.
 
 ### Engineering (after cleanup green)
 
-10. Shared analysis I/O: A0/G0 characterization then A1+ slices.
+10. ~~Shared analysis I/O: A0/G0 characterization then A1+ slices.~~ **Done** (2026-07-17).
 11. Config ownership: one nested subtree per PR (1.1+).
 12. Rename/corrections characterization only when ready for Candidate 3.
 
@@ -274,7 +274,7 @@ Use these as defaults unless you consciously override them:
 - WhisperX Docker GUI orchestration / host HTTP transcribe.
 - Remote LLM providers.
 - Longitudinal speaker tracking / Speakers UI / DB-backed analytics views.
-- Export system package refactor; ConvoKit re-enable; plugin marketplace.
+- Export Jinja2 shells (step 10) / Artifact Protocol; ConvoKit re-enable; plugin marketplace.
 
 ---
 
@@ -304,4 +304,6 @@ Use these as defaults unless you consciously override them:
 | Cleanup contracts / assessment | `docs/dev/run_cleanup_refactor_*.md` |
 | Config ownership | `docs/config/config_ownership_collapse_plan.md` |
 | Pre-release checklist | `.cursor/commands/pre-release.md` |
+| Analysis module backlog (ranked) | `docs/dev/analysis_module_backlog_2026-07-17.md` |
+| Group functionality audit | `docs/dev/group_functionality_audit_2026-07-17.md` |
 | Historical assessment (superseded) | `docs/archive/assessment-2026-03-10.md` |

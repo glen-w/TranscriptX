@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from transcriptx.web.services.run_cleanup import CleanupMode
+from transcriptx.web.services.run_cleanup import planning
 from transcriptx.web.services.run_cleanup.plan_builder import (
     build_execution_set,
     execution_set_signature,
@@ -40,7 +41,7 @@ def test_cleanup_plan_and_identity_snapshots(tmp_path: Path):
     mk_run(svc.outputs_dir, "slug_a", "20200101_000000_00000001", content="a")
     mk_run(svc.outputs_dir, "slug_a", "20200101_000000_00000002", content="b")
 
-    plan = svc._build_plan(CleanupMode.DELETE_ALL)
+    plan = planning.build_plan(svc, CleanupMode.DELETE_ALL)
     roots = root_tokens(svc)
     plan_norm = normalise_structure(
         plan,
@@ -78,7 +79,9 @@ def test_cleanup_plan_and_identity_snapshots(tmp_path: Path):
         {"staging_basename_structure": structural},
     )
 
-    roots_list, blocking = svc._validate_roots()
+    from transcriptx.web.services.run_cleanup.path_helpers import validate_roots
+
+    roots_list, blocking = validate_roots(svc)
     es = build_execution_set(
         CleanupMode.DELETE_ALL,
         roots_list,
@@ -103,7 +106,7 @@ def test_delete_old_plan_retains_newest(tmp_path: Path):
     older.touch()
     newer.touch()
 
-    plan = svc._build_plan(CleanupMode.DELETE_OLD)
+    plan = planning.build_plan(svc, CleanupMode.DELETE_OLD)
     assert len(plan.retained) == 1
     assert len(plan.candidates) == 1
     assert plan.retained[0].run_id == "20200101_000000_00000002"

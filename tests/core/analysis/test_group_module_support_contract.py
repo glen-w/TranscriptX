@@ -49,16 +49,19 @@ def test_supports_group_modules_have_aggregation_coverage() -> None:
 
 
 @pytest.mark.unit
-def test_supports_group_false_filtered_from_group_defaults() -> None:
+def test_all_registered_modules_support_group() -> None:
     unsupported = [
         module_id
         for module_id in get_available_modules()
         if (info := get_module_info(module_id)) is not None and not info.supports_group
     ]
-    assert unsupported
+    assert not unsupported, f"unexpected supports_group=false: {unsupported}"
+
+
+@pytest.mark.unit
+def test_exclude_from_default_still_omitted_from_group_defaults() -> None:
     defaults = get_default_modules(for_group=True)
-    leaked = [module_id for module_id in unsupported if module_id in defaults]
-    assert not leaked, f"unsupported modules in group defaults: {leaked}"
+    assert "voice_contours" not in defaults
 
 
 @pytest.mark.unit

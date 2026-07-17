@@ -20,7 +20,6 @@ from transcriptx.web.services.run_cleanup import fd_ops
 from transcriptx.web.services.run_cleanup.models import (
     CLEANUP_POLICY_VERSION,
     JOURNAL_SCHEMA_VERSION,
-    STAGING_DIR_NAME,
     CleanupMode,
     CleanupPlan,
     CleanupTarget,
@@ -191,6 +190,32 @@ def journal_claim_lock_path(state_dir: Path, operation_id: str) -> Path:
     """Lock file for journal claim (outside deletable run trees)."""
     operation_id = validate_operation_id(operation_id)
     return Path(state_dir) / "cleanup" / "journal_locks" / f"{operation_id}.claim.lock"
+
+
+def journal_rmw_lock_path(state_dir: Path, operation_id: str) -> Path:
+    """Short-lived lock for journal read-modify-write (distinct from claim)."""
+    operation_id = validate_operation_id(operation_id)
+    return Path(state_dir) / "cleanup" / "journal_locks" / f"{operation_id}.rmw.lock"
+
+
+def _ensure_journal_lock_parent(lock_path: Path) -> None:
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        st = lock_path.parent.lstat()
+        if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
+            raise JournalClaimError(f"journal lock dir unsafe: {lock_path.parent}")
+    except OSError as exc:
+        raise JournalClaimError(f"journal lock dir lstat failed: {exc}") from exc
+
+
+def _acquire_journal_file_lock(lock_path: Path, *, timeout: float = 5.0) -> FileLock:
+    """Acquire a non-reentrant FileLock; caller must release."""
+    _ensure_journal_lock_parent(lock_path)
+    file_lock = FileLock(lock_path.with_suffix(""), timeout=timeout, blocking=False)
+    file_lock.lock_file = lock_path
+    if not file_lock.acquire():
+        raise JournalClaimError(f"could not acquire journal lock: {lock_path.name}")
+    return file_lock
 
 
 def _ensure_operations_dir(state_dir: Path) -> Path:
@@ -376,24 +401,19 @@ def write_operation(
     return path
 
 
-def _validate_journal_payload(
+def decode_journal_schema_3(
     data: dict[str, Any],
     *,
     expected_operation_id: str,
-    expected_policy_version: int | None,
-    expected_schema_version: int | None,
 ) -> dict[str, Any]:
+    """Immutable schema-3 journal decoder (Phase B0; never mutate this contract)."""
     unknown = set(data) - ALLOWED_TOP_LEVEL
     if unknown:
         raise ValueError(f"unknown journal fields: {sorted(unknown)}")
     if data.get("operation_id") != expected_operation_id:
         raise ValueError("journal operation_id mismatch")
-    schema = data.get("journal_schema_version")
-    policy = data.get("cleanup_policy_version", data.get("policy_version"))
-    if expected_schema_version is not None and schema != expected_schema_version:
-        raise ValueError("incompatible journal schema version")
-    if expected_policy_version is not None and policy != expected_policy_version:
-        raise ValueError("incompatible cleanup policy version")
+    if data.get("journal_schema_version") != 3:
+        raise ValueError("decode_journal_schema_3 requires journal_schema_version=3")
     targets = data.get("targets")
     if not isinstance(targets, list):
         raise ValueError("targets must be a list")
@@ -430,6 +450,34 @@ def _validate_journal_payload(
             raise ValueError("duplicate target identity")
         seen.add(ident)
     return data
+
+
+# Version-dispatched readers: register new schemas here; keep schema-3 immutable.
+_JOURNAL_DECODERS: dict[int, Any] = {
+    3: decode_journal_schema_3,
+}
+
+
+def _validate_journal_payload(
+    data: dict[str, Any],
+    *,
+    expected_operation_id: str,
+    expected_policy_version: int | None,
+    expected_schema_version: int | None,
+) -> dict[str, Any]:
+    """Compatibility wrapper: version checks then schema-dispatched decode."""
+    schema = data.get("journal_schema_version")
+    policy = data.get("cleanup_policy_version", data.get("policy_version"))
+    if expected_schema_version is not None and schema != expected_schema_version:
+        raise ValueError("incompatible journal schema version")
+    if expected_policy_version is not None and policy != expected_policy_version:
+        raise ValueError("incompatible cleanup policy version")
+    if not isinstance(schema, int):
+        raise ValueError("missing or invalid journal_schema_version")
+    decoder = _JOURNAL_DECODERS.get(schema)
+    if decoder is None:
+        raise ValueError(f"unsupported journal schema version: {schema}")
+    return decoder(data, expected_operation_id=expected_operation_id)
 
 
 def load_operation_typed(
@@ -507,13 +555,13 @@ def load_operation_typed(
             JournalLoadKind.INCOMPATIBLE,
             message="incompatible cleanup policy version",
         )
-    try:
-        validated = _validate_journal_payload(
-            data,
-            expected_operation_id=operation_id,
-            expected_policy_version=None,  # already checked
-            expected_schema_version=None,
+    if not isinstance(schema, int) or schema not in _JOURNAL_DECODERS:
+        return JournalLoadResult(
+            JournalLoadKind.INCOMPATIBLE,
+            message="incompatible journal schema version",
         )
+    try:
+        validated = _JOURNAL_DECODERS[schema](data, expected_operation_id=operation_id)
     except ValueError as exc:
         return JournalLoadResult(JournalLoadKind.CORRUPT_OR_UNSAFE, message=str(exc))
     status = str(validated.get("status") or "")
@@ -548,7 +596,7 @@ def load_operation(
     return None
 
 
-def update_target_state(
+def _unlocked_update_target_state(
     state_dir: Path,
     operation_id: str,
     *,
@@ -559,6 +607,7 @@ def update_target_state(
     staged_ino: int | None = None,
     extra: Mapping[str, Any] | None = None,
 ) -> DirFsyncResult:
+    """RMW body; caller must hold the journal RMW lock (or claim path equivalent)."""
     operation_id = validate_operation_id(operation_id)
     path = operations_dir(state_dir) / f"{operation_id}.json"
     data = load_operation(
@@ -589,9 +638,41 @@ def update_target_state(
     return _atomic_write_json(path, data, exclusive=False)
 
 
-def update_operation_status(
+def update_target_state(
+    state_dir: Path,
+    operation_id: str,
+    *,
+    canonical_path: str,
+    state: str,
+    staging_path: str | None = None,
+    staged_dev: int | None = None,
+    staged_ino: int | None = None,
+    extra: Mapping[str, Any] | None = None,
+) -> DirFsyncResult:
+    """Public RMW: acquire per-op journal RMW lock, then update."""
+    operation_id = validate_operation_id(operation_id)
+    file_lock = _acquire_journal_file_lock(
+        journal_rmw_lock_path(state_dir, operation_id)
+    )
+    try:
+        return _unlocked_update_target_state(
+            state_dir,
+            operation_id,
+            canonical_path=canonical_path,
+            state=state,
+            staging_path=staging_path,
+            staged_dev=staged_dev,
+            staged_ino=staged_ino,
+            extra=extra,
+        )
+    finally:
+        file_lock.release()
+
+
+def _unlocked_update_operation_status(
     state_dir: Path, operation_id: str, status: str, **extra: Any
 ) -> DirFsyncResult:
+    """Status RMW body; caller must hold claim or RMW lock."""
     operation_id = validate_operation_id(operation_id)
     path = operations_dir(state_dir) / f"{operation_id}.json"
     data = load_operation(
@@ -608,22 +689,32 @@ def update_operation_status(
     return _atomic_write_json(path, data, exclusive=False)
 
 
-def claim_retry_ownership(state_dir: Path, operation_id: str) -> DirFsyncResult:
-    """Claim retry under a dedicated FileLock; reject unknown statuses."""
+def update_operation_status(
+    state_dir: Path, operation_id: str, status: str, **extra: Any
+) -> DirFsyncResult:
+    """Public RMW: acquire per-op journal RMW lock, then update status."""
     operation_id = validate_operation_id(operation_id)
-    lock_path = journal_claim_lock_path(state_dir, operation_id)
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    file_lock = _acquire_journal_file_lock(
+        journal_rmw_lock_path(state_dir, operation_id)
+    )
     try:
-        st = lock_path.parent.lstat()
-        if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
-            raise JournalClaimError(f"journal lock dir unsafe: {lock_path.parent}")
-    except OSError as exc:
-        raise JournalClaimError(f"journal lock dir lstat failed: {exc}") from exc
+        return _unlocked_update_operation_status(
+            state_dir, operation_id, status, **extra
+        )
+    finally:
+        file_lock.release()
 
-    file_lock = FileLock(lock_path.with_suffix(""), timeout=5, blocking=False)
-    file_lock.lock_file = lock_path
-    if not file_lock.acquire():
-        raise JournalClaimError("could not acquire journal claim lock")
+
+def claim_retry_ownership(state_dir: Path, operation_id: str) -> DirFsyncResult:
+    """Claim retry under a dedicated FileLock; reject unknown statuses.
+
+    Uses the claim lock only; writes via unlocked status helper so we never
+    nest claim → RMW (non-reentrant FileLock deadlock).
+    """
+    operation_id = validate_operation_id(operation_id)
+    file_lock = _acquire_journal_file_lock(
+        journal_claim_lock_path(state_dir, operation_id)
+    )
     try:
         loaded = load_operation_typed(
             state_dir,
@@ -645,12 +736,20 @@ def claim_retry_ownership(state_dir: Path, operation_id: str) -> DirFsyncResult:
         status = data.get("status")
         if status not in RETRYABLE_JOURNAL_STATUSES and status is not None:
             raise JournalClaimError(f"status not reclaimable: {status!r}")
-        return update_operation_status(state_dir, operation_id, "retry_in_progress")
+        return _unlocked_update_operation_status(
+            state_dir, operation_id, "retry_in_progress"
+        )
     finally:
         file_lock.release()
 
 
 def list_pending_staging(state_dir: Path) -> list[dict[str, Any]]:
+    """List pending (and blocked) staging rows for recovery UI.
+
+    Phase B4: each row includes ``recoverable``, ``blocked_reason``, and
+    ``detected_schema_version``. Incompatible/corrupt journals appear as a
+    single non-retryable row per operation.
+    """
     pending: list[dict[str, Any]] = []
     root = operations_dir(state_dir)
     if not root.is_dir():
@@ -659,20 +758,68 @@ def list_pending_staging(state_dir: Path) -> list[dict[str, Any]]:
         try:
             stem = path.stem
             validate_operation_id(stem)
-            data = load_operation(
-                state_dir,
-                stem,
-                expected_policy_version=CLEANUP_POLICY_VERSION,
-                expected_schema_version=JOURNAL_SCHEMA_VERSION,
-            )
         except ValueError:
             continue
-        if data is None:
+        # Accept any registered schema so policy/schema mismatches surface as rows.
+        loaded = load_operation_typed(state_dir, stem)
+        if loaded.kind is JournalLoadKind.MISSING:
             continue
+        if loaded.kind is JournalLoadKind.INCOMPATIBLE:
+            # Best-effort schema peek without full decode.
+            detected = None
+            try:
+                raw = path.read_text(encoding="utf-8")
+                peek = json.loads(raw)
+                if isinstance(peek, dict):
+                    detected = peek.get("journal_schema_version")
+            except Exception:
+                detected = None
+            pending.append(
+                {
+                    "operation_id": stem,
+                    "plan_id": None,
+                    "mode": None,
+                    "operation_status": None,
+                    "recoverable": False,
+                    "blocked_reason": loaded.message
+                    or "incompatible journal schema/policy",
+                    "detected_schema_version": detected,
+                }
+            )
+            continue
+        if loaded.kind is JournalLoadKind.CORRUPT_OR_UNSAFE:
+            pending.append(
+                {
+                    "operation_id": stem,
+                    "plan_id": None,
+                    "mode": None,
+                    "operation_status": None,
+                    "recoverable": False,
+                    "blocked_reason": loaded.message or "corrupt or unsafe journal",
+                    "detected_schema_version": None,
+                }
+            )
+            continue
+        data = loaded.data or {}
+        policy = data.get("cleanup_policy_version", data.get("policy_version"))
+        schema = data.get("journal_schema_version")
         op_status = str(data.get("status") or "")
         if op_status in TERMINAL_JOURNAL_STATUSES:
             continue
-        op_id = data.get("operation_id") or path.stem
+        if policy != CLEANUP_POLICY_VERSION:
+            pending.append(
+                {
+                    "operation_id": data.get("operation_id") or stem,
+                    "plan_id": data.get("plan_id"),
+                    "mode": data.get("mode"),
+                    "operation_status": op_status,
+                    "recoverable": False,
+                    "blocked_reason": "incompatible cleanup policy version",
+                    "detected_schema_version": schema,
+                }
+            )
+            continue
+        op_id = data.get("operation_id") or stem
         for target in data.get("targets", []):
             state = target.get("state")
             if state in PENDING_TARGET_STATES:
@@ -682,6 +829,9 @@ def list_pending_staging(state_dir: Path) -> list[dict[str, Any]]:
                         "plan_id": data.get("plan_id"),
                         "mode": data.get("mode"),
                         "operation_status": op_status,
+                        "recoverable": True,
+                        "blocked_reason": None,
+                        "detected_schema_version": schema,
                         **target,
                     }
                 )
@@ -689,11 +839,18 @@ def list_pending_staging(state_dir: Path) -> list[dict[str, Any]]:
 
 
 def derive_staging_path_from_journal_target(
-    output_root: Path, operation_id: str, target: Mapping[str, Any]
+    output_root: Path,
+    operation_id: str,
+    target: Mapping[str, Any],
+    *,
+    journal_schema_version: int = JOURNAL_SCHEMA_VERSION,
 ) -> Path:
     from transcriptx.web.services.run_cleanup.models import (
         CleanupTarget,
         EntryClassification,
+    )
+    from transcriptx.web.services.run_cleanup.staging_identity import (
+        resolve_staging_path_for_recovery,
     )
 
     operation_id = validate_operation_id(operation_id)
@@ -711,9 +868,14 @@ def derive_staging_path_from_journal_target(
         tree_fingerprint=str(target.get("tree_fingerprint") or ("0" * 64)),
         safety_status=EntryClassification.eligible,
     )
-    # Prefer stored basename when it matches collision-proof derivation
-    safe_name = collision_proof_staging_basename(fake)
-    return Path(output_root) / STAGING_DIR_NAME / operation_id / safe_name
+    stored = target.get("staging_path")
+    return resolve_staging_path_for_recovery(
+        output_root=output_root,
+        operation_id=operation_id,
+        target=fake,
+        journal_schema_version=journal_schema_version,
+        stored_staging_path=str(stored) if stored else None,
+    )
 
 
 def is_journal_recognised_staging_path(

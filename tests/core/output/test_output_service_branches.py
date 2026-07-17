@@ -55,9 +55,10 @@ def test_record_artifact_outside_transcript_dir(service: OutputService) -> None:
 def test_load_artifact_metadata_valid_invalid_and_missing(tmp_path: Path) -> None:
     transcript = tmp_path / "t.json"
     transcript.write_text("{}")
-    meta_dir = tmp_path / ".transcriptx"
-    meta_dir.mkdir()
-    meta_path = meta_dir / "artifacts_meta.json"
+    # Probe redirected run root (tmp_path is not under OUTPUTS_DIR).
+    probe = OutputService(str(transcript), "sentiment", output_dir=str(tmp_path))
+    meta_path = probe._artifact_metadata_path
+    meta_path.parent.mkdir(parents=True, exist_ok=True)
     meta_path.write_text(json.dumps({"a.png": {"viz_id": "x"}}))
     svc = OutputService(str(transcript), "sentiment", output_dir=str(tmp_path))
     assert svc._artifact_metadata["a.png"]["viz_id"] == "x"
@@ -72,6 +73,7 @@ def test_record_artifact_metadata_merges_and_tolerates_write_failure(
     service: OutputService, tmp_path: Path
 ) -> None:
     path = Path(service.transcript_dir) / "chart.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("x")
     service._record_artifact_metadata(path, {"a": 1})
     service._record_artifact_metadata(path, {"b": 2})
