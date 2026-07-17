@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from itertools import combinations
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,21 @@ from transcriptx.core.utils.nlp_utils import (
     build_tic_mask,
 )
 from transcriptx.utils.text_utils import is_named_speaker
+
+# Matches CountVectorizer/TfidfVectorizer default token_pattern.
+_VECTORIZER_TOKEN_RE = re.compile(r"(?u)\b\w\w+\b")
+
+
+def _vectorizer_stop_words(extra_stopwords: set[str] | None = None) -> list[str]:
+    """Build a stop-word list compatible with sklearn's default analyzer.
+
+    Passing ENGLISH_STOP_WORDS as a custom list triggers a UserWarning because
+    contractions (e.g. "don't") never survive the default token_pattern.
+    """
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+    combined = set(ENGLISH_STOP_WORDS).union(extra_stopwords or set())
+    return sorted(w for w in combined if _VECTORIZER_TOKEN_RE.fullmatch(w))
 
 
 # --- Robust JSON serialization for numpy types ---

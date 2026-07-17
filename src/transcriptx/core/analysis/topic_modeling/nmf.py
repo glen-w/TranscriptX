@@ -12,6 +12,7 @@ from .utils import (
     find_optimal_k,
     generate_topic_labels,
     _safe_numpy_array,
+    _vectorizer_stop_words,
 )
 
 
@@ -72,12 +73,9 @@ def perform_enhanced_nmf_analysis(
     from sklearn.decomposition import NMF
     from sklearn.feature_extraction.text import TfidfVectorizer
 
-    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-
-    combined_stopwords = set(ENGLISH_STOP_WORDS).union(extra_stopwords or set())
     vectorizer = TfidfVectorizer(
         max_features=topic_config.max_features,
-        stop_words=list(sorted(combined_stopwords)),
+        stop_words=_vectorizer_stop_words(extra_stopwords),
         min_df=topic_config.min_df,
         max_df=topic_config.max_df,
         ngram_range=topic_config.ngram_range,
