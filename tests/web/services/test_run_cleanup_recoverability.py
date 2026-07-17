@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from transcriptx.web.services.run_cleanup import deletion_phase
 from transcriptx.web.services.run_cleanup import (
     CONFIRM_DELETE_ALL,
     CleanupAuthorization,
@@ -181,7 +182,7 @@ class TestStagingStartedCrashWindow:
             raise StagingUnsafeError("injected rename refusal")
 
         monkeypatch.setattr(
-            "transcriptx.web.services.run_cleanup.service.rename_into_staging",
+            "transcriptx.web.services.run_cleanup.staging_phase.rename_into_staging",
             boom,
         )
         result = svc.execute_cleanup(handle, _auth(preview.plan_id), "s1")
@@ -249,7 +250,7 @@ class TestStagingStartedCrashWindow:
         monkeypatch.setattr(cleanup_journal, "update_target_state", flaky_update)
         # service imports journal as module alias — patch where used
         monkeypatch.setattr(
-            "transcriptx.web.services.run_cleanup.service.journal.update_target_state",
+            "transcriptx.web.services.run_cleanup.journal.update_target_state",
             flaky_update,
         )
         result = svc.execute_cleanup(handle, _auth(preview.plan_id), "s1")
@@ -310,7 +311,7 @@ class TestPhysicalDeleteDurability:
             return result
 
         monkeypatch.setattr(
-            "transcriptx.web.services.run_cleanup.service.journal.update_target_state",
+            "transcriptx.web.services.run_cleanup.journal.update_target_state",
             flaky_update,
         )
         result = svc.execute_cleanup(handle, _auth(preview.plan_id), "s1")
@@ -335,7 +336,7 @@ class TestPhysicalDeleteDurability:
             return result
 
         monkeypatch.setattr(
-            "transcriptx.web.services.run_cleanup.service.journal.update_operation_status",
+            "transcriptx.web.services.run_cleanup.journal.update_operation_status",
             flaky_status,
         )
         result = svc.execute_cleanup(handle, _auth(preview.plan_id), "s1")
@@ -520,7 +521,7 @@ class TestRefusedFailedJournalWrites:
         fake_staging.mkdir(parents=True)
         (fake_staging / "x.txt").write_text("x", encoding="utf-8")
 
-        tr = svc._physical_delete_one(target, fake_staging, oid)
+        tr = deletion_phase.physical_delete_one(svc, target, fake_staging, oid)
         assert tr.status is TargetStatus.PHYSICAL_DELETE_REFUSED
         data = _load(svc, oid)
         assert data["targets"][0]["state"] == "physical_delete_refused"
@@ -564,10 +565,11 @@ class TestRefusedFailedJournalWrites:
             )
 
         monkeypatch.setattr(
-            "transcriptx.web.services.run_cleanup.service.journal.update_target_state",
+            "transcriptx.web.services.run_cleanup.journal.update_target_state",
             flaky_update,
         )
-        tr = svc._physical_delete_one(
+        tr = deletion_phase.physical_delete_one(
+            svc,
             target,
             staging,
             oid,
@@ -608,7 +610,7 @@ class TestClaimRetryDurability:
             )
 
         monkeypatch.setattr(
-            "transcriptx.web.services.run_cleanup.service.journal.claim_retry_ownership",
+            "transcriptx.web.services.run_cleanup.journal.claim_retry_ownership",
             failed_claim,
         )
         result = svc.retry_interrupted_staging(oid)

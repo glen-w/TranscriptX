@@ -153,5 +153,6 @@ Next phases:
 - [Architecture](docs/ARCHITECTURE.md) — Engine, GUI, data flow
 - [Developer quickstart](docs/dev/developer_quickstart.md) — Adding modules, pipeline structure
 - [Roadmap](docs/ROADMAP.md) — Full roadmap and phases
+- [Codebase stocktake (2026-07-17)](docs/dev/stocktake_2026-07-17.md) — Status, unfinished work, release readiness, decision framework
 - [Group charts: default overview vs gallery](docs/groups/group_charts_default_overview.md) — Default strip, four chart modes, gallery-only charts, allowlists
 - [Group analysis module outputs](docs/groups/group_analysis_module_outputs.md) — Registry vs special-path vs data-only vs blob-only group modules

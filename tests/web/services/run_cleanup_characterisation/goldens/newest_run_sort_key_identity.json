@@ -1,0 +1,9 @@
+{
+  "ascending_equals_desc": true,
+  "sample_key": [
+    42,
+    "r1",
+    "/p"
+  ],
+  "usage": "sorted(..., key=newest_run_sort_key_desc, reverse=True)"
+}

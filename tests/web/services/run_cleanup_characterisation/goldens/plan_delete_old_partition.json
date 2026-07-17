@@ -1,0 +1,10 @@
+{
+  "candidate_run_ids": [
+    "20200101_000000_00000001"
+  ],
+  "mode": "DELETE_OLD",
+  "plan_id_len": 64,
+  "retained_run_ids": [
+    "20200101_000000_00000002"
+  ]
+}

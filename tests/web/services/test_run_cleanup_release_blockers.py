@@ -412,6 +412,10 @@ def test_crash_before_post_rename_journal_is_recoverable(tmp_path):
     """Rename succeeds but staged journal write never happens → pending + retry."""
     from transcriptx.web.services.run_cleanup import faults
     from transcriptx.web.services.run_cleanup import journal as cleanup_journal
+    from transcriptx.web.services.run_cleanup.models import (
+        CLEANUP_POLICY_VERSION,
+        JOURNAL_SCHEMA_VERSION,
+    )
 
     svc = _svc(tmp_path)
     run = _mk_run(svc.outputs_dir, "slug_crash", "20200101_000000_00000001")
@@ -438,8 +442,8 @@ def test_crash_before_post_rename_journal_is_recoverable(tmp_path):
     data = cleanup_journal.load_operation(
         svc.state_dir,
         partial.operation_id,
-        expected_policy_version=4,
-        expected_schema_version=3,
+        expected_policy_version=CLEANUP_POLICY_VERSION,
+        expected_schema_version=JOURNAL_SCHEMA_VERSION,
     )
     assert data is not None
     states = {t["state"] for t in data["targets"]}
@@ -899,7 +903,9 @@ def test_multi_target_retry_not_success_with_remnant(tmp_path):
                 state="staging_started",
                 staging_path=targets[1].get("staging_path"),
             )
-        status = RunCleanupService._status_from_journal_targets(
+        from transcriptx.web.services.run_cleanup import results as results_mod
+
+        status = results_mod.status_from_journal_targets(
             list(
                 cleanup_journal.load_operation(
                     svc.state_dir,

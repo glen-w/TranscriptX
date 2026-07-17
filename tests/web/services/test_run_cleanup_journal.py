@@ -304,35 +304,36 @@ def test_write_operation_tolerates_unsupported_dir_fsync(tmp_path, monkeypatch):
 
 def test_status_from_journal_targets_vector():
     from transcriptx.web.services.run_cleanup.models import CleanupStatus
+    from transcriptx.web.services.run_cleanup import results as results_mod
     from transcriptx.web.services.run_cleanup.service import RunCleanupService
 
     assert (
-        RunCleanupService._status_from_journal_targets(
+        results_mod.status_from_journal_targets(
             [{"state": "physical_deleted"}, {"state": "physical_deleted"}]
         )
         is CleanupStatus.SUCCESS
     )
     assert (
-        RunCleanupService._status_from_journal_targets(
+        results_mod.status_from_journal_targets(
             [{"state": "physical_deleted"}, {"state": "staging_started"}]
         )
         is CleanupStatus.PARTIAL
     )
     assert (
-        RunCleanupService._status_from_journal_targets(
+        results_mod.status_from_journal_targets(
             [{"state": "planned"}, {"state": "planned"}]
         )
         is CleanupStatus.FAILED_BEFORE_MUTATION
     )
     assert (
-        RunCleanupService._status_from_journal_targets(
+        results_mod.status_from_journal_targets(
             [{"state": "physical_deleted"}, {"state": "locked_skip"}]
         )
         is CleanupStatus.SUCCESS
     )
     assert (
-        RunCleanupService._status_from_journal_targets(
-            [{"state": "physical_delete_verified"}]
-        )
+        results_mod.status_from_journal_targets([{"state": "physical_delete_verified"}])
         is CleanupStatus.PARTIAL
     )
+    # Private shim still used by journal / release-blocker tests.
+    assert RunCleanupService._status_from_journal_targets([]) is CleanupStatus.NOOP

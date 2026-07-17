@@ -1,0 +1,12 @@
+{
+  "staging_basename_structure": [
+    {
+      "digest_len": 12,
+      "prefix": "transcript__transcript__slug_a__20200101_000000_00000001"
+    },
+    {
+      "digest_len": 12,
+      "prefix": "transcript__transcript__slug_a__20200101_000000_00000002"
+    }
+  ]
+}

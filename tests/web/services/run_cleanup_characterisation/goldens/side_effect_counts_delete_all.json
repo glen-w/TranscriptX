@@ -1,0 +1,12 @@
+{
+  "cache_invalidate": 1,
+  "handle_claim": 1,
+  "handle_store_result": 1,
+  "journal_update_status": 1,
+  "journal_write_operation": 1,
+  "lock_acquire": 2,
+  "physically_deleted": 2,
+  "status": "SUCCESS",
+  "target_count": 2,
+  "visible_removed": 2
+}

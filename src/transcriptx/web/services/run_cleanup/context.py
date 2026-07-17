@@ -37,7 +37,24 @@ class ExecutionAccumulator:
     visible_removed: int = 0
     physically_deleted: int = 0
     has_staged_remnant: bool = False
+    journal_durability_failed: bool = False
     target_results: list[CleanupTargetResult] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     lock_skips: int = 0
+
+    def note_visible_removed(self, n: int = 1) -> None:
+        self.visible_removed += n
+        self.mutation_started = True
+
+    def note_physically_deleted(self, n: int = 1) -> None:
+        self.physically_deleted += n
+
+    def append_target(self, result: CleanupTargetResult) -> None:
+        self.target_results.append(result)
+
+    def extend_warnings(self, items: list[str] | tuple[str, ...]) -> None:
+        self.warnings.extend(items)
+
+    def extend_errors(self, items: list[str] | tuple[str, ...]) -> None:
+        self.errors.extend(items)

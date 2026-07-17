@@ -5,6 +5,8 @@ Authority: self
 
 **Current version:** See [pyproject.toml](../pyproject.toml) for the package version.
 
+**Stocktake (decision foundation):** [docs/dev/stocktake_2026-07-17.md](dev/stocktake_2026-07-17.md) — status, finished/unfinished matrix, release readiness, pitfalls, and recommended next decisions.
+
 **North star:** ship a credible **beta** analysis toolkit with stable contracts, great UX, and a safe path to extensibility.
 
 > **Status legend (GitHub-style):**  
@@ -187,7 +189,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 ## Sprint plan (archived backlog)
 
-Historical sprint notes (Sprints 1–12) were previously linked from this file; the archive file is no longer in-tree. Focus remains Phase 1 (beta harden) then Phase 2.
+Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus remains Phase 1 (beta harden) then Phase 2; see the [stocktake](dev/stocktake_2026-07-17.md) for Phase 1 vs shipping reality.
 
 ---
 

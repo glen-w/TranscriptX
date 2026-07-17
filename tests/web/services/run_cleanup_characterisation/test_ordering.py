@@ -46,15 +46,16 @@ def test_execute_phase_order_with_spies(tmp_path: Path, monkeypatch):
     ):
         set_fault_hook(name, lambda n=name: log.record(f"fault:{n}"))
 
-    # Collaborator spies — patch at the modules service currently imports from.
-    import transcriptx.web.services.run_cleanup.service as service_mod
+    # Collaborator spies — patch at the modules the running code imports from.
+    from transcriptx.web.services.run_cleanup import execution as execution_mod
     from transcriptx.web.services.run_cleanup import handles as handle_store
+    from transcriptx.web.services.run_cleanup import staging_phase
     from transcriptx.web.services.run_cleanup import fd_ops
 
     monkeypatch.setattr(
-        service_mod,
+        execution_mod,
         "try_run_tree_mutation_gate",
-        log.wrap("gate_acquire", service_mod.try_run_tree_mutation_gate),
+        log.wrap("gate_acquire", execution_mod.try_run_tree_mutation_gate),
     )
     monkeypatch.setattr(
         handle_store,
@@ -70,17 +71,25 @@ def test_execute_phase_order_with_spies(tmp_path: Path, monkeypatch):
         ),
     )
     monkeypatch.setattr(
-        service_mod,
+        staging_phase,
         "ensure_secure_staging_directory",
         log.wrap(
             "staging_dir_provision",
-            service_mod.ensure_secure_staging_directory,
+            staging_phase.ensure_secure_staging_directory,
         ),
     )
     monkeypatch.setattr(
-        service_mod,
+        execution_mod,
+        "ensure_secure_staging_directory",
+        log.wrap(
+            "staging_dir_provision",
+            execution_mod.ensure_secure_staging_directory,
+        ),
+    )
+    monkeypatch.setattr(
+        staging_phase,
         "rename_into_staging",
-        log.wrap("rename", service_mod.rename_into_staging),
+        log.wrap("rename", staging_phase.rename_into_staging),
     )
     monkeypatch.setattr(
         cleanup_journal,

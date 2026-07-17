@@ -77,6 +77,25 @@ Cache invalidation **before** terminal journal is required in Phase A. Reorderin
 
 Exact tuple in [`faults.FAULT_POINTS`](../../src/transcriptx/web/services/run_cleanup/faults.py). Phase A must not add, remove, rename, duplicate, or change mutation-relative positions. Characterisation snapshots the registry and relative order around mutations.
 
+## Acceptance gate command (Phase A)
+
+Suite lives in the characterisation **package** (not a `test_run_cleanup_characterisation_*.py` glob):
+
+```bash
+pytest tests/unit/test_run_cleanup_results.py \
+       tests/web/services/test_run_cleanup_journal_ops.py \
+       tests/web/services/test_run_cleanup_runtime.py \
+       tests/web/services/test_run_cleanup_finalization.py \
+       tests/web/services/run_cleanup_characterisation/ \
+       tests/web/services/test_run_cleanup_acceptance.py \
+       tests/web/services/test_run_cleanup_recoverability.py \
+       tests/web/services/test_run_cleanup_release_blockers.py \
+       tests/web/services/test_run_cleanup_bulk_depth.py \
+       tests/web/services/test_run_cleanup_journal.py \
+       tests/web/test_storage_cleanup_ui_contracts.py \
+       tests/web/services/test_run_cleanup_import_graph.py -q
+```
+
 ## Phase A side-effect parity
 
 Beyond returned outcomes, preserve: journal write count, cache invalidation count, lock acquire/release order, handle-store calls, logger severity for coded failures, and no extra filesystem probes after authorization.

@@ -6,10 +6,12 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 CLEANUP_POLICY_VERSION = 4
 JOURNAL_SCHEMA_VERSION = 3
+CLEANUP_RESULT_SCHEMA_VERSION = 1
 STAGING_DIR_NAME = ".cleanup_staging"
 CONFIRM_DELETE_ALL = "DELETE ALL"
 CONFIRM_DELETE_OLD = "DELETE OLD RUNS"
@@ -34,6 +36,14 @@ class CleanupStatus(str, Enum):
 
 
 class TargetStatus(str, Enum):
+    """User-facing target outcomes on CleanupTargetResult.
+
+    Mid-flight durable journal states use snake_case strings in the operation
+    journal (``staging_started``, ``physical_delete_verified``, …) and are
+    *not* assigned as ``CleanupTargetResult.status``. The members below marked
+    legacy remain for deserialization / session-clear compatibility only.
+    """
+
     VISIBLE_REMOVED = "VISIBLE_REMOVED"
     PHYSICAL_DELETED = "PHYSICAL_DELETED"
     LOCKED_SKIP = "LOCKED_SKIP"
@@ -41,14 +51,14 @@ class TargetStatus(str, Enum):
     STALE = "STALE"
     EXTERNAL_DISAPPEARED = "EXTERNAL_DISAPPEARED"
     STAGING_FAILED = "STAGING_FAILED"
-    STAGING_STARTED = "STAGING_STARTED"
+    STAGING_STARTED = "STAGING_STARTED"  # legacy / unused on results
     STAGED_JOURNAL_INCOMPLETE = "STAGED_JOURNAL_INCOMPLETE"
     STAGED_IDENTITY_UNVERIFIED = "STAGED_IDENTITY_UNVERIFIED"
-    PHYSICAL_DELETE_VERIFIED = "PHYSICAL_DELETE_VERIFIED"
+    PHYSICAL_DELETE_VERIFIED = "PHYSICAL_DELETE_VERIFIED"  # legacy / unused on results
     PHYSICAL_DELETE_FAILED = "PHYSICAL_DELETE_FAILED"
     PHYSICAL_DELETE_REFUSED = "PHYSICAL_DELETE_REFUSED"
     PHYSICAL_DELETE_PARTIAL = "PHYSICAL_DELETE_PARTIAL"
-    INTERRUPTED_STAGING = "INTERRUPTED_STAGING"
+    INTERRUPTED_STAGING = "INTERRUPTED_STAGING"  # session-clear visibility only
     PARENT_PRUNE_WARNING = "PARENT_PRUNE_WARNING"
     INVALIDATION_WARNING = "INVALIDATION_WARNING"
     SKIPPED = "SKIPPED"
@@ -104,6 +114,7 @@ class CleanupExclusion:
     path_relative: str
     classification: EntryClassification
     reason: str
+    root_kind: SubjectType | None = None
 
 
 @dataclass(frozen=True)
@@ -119,6 +130,32 @@ class CleanupPlan:
     warnings: tuple[str, ...]
     blocking_errors: tuple[str, ...]
     can_execute: bool
+
+    def __post_init__(self) -> None:
+        kinds = [r.kind for r in self.roots]
+        if len(kinds) != len(set(kinds)):
+            raise ValueError("CleanupPlan roots must have unique kinds")
+        ids = [
+            (t.subject_type, t.subject_id, t.run_id, t.canonical_path)
+            for t in (*self.candidates, *self.retained)
+        ]
+        if len(ids) != len(set(ids)):
+            raise ValueError("CleanupPlan target identities must be unique")
+        for t in (*self.candidates, *self.retained):
+            if t.filesystem_dev <= 0 or t.filesystem_ino <= 0:
+                raise ValueError("target filesystem identity must be positive")
+            if not t.canonical_path or not Path(t.canonical_path).is_absolute():
+                # Allow non-absolute only when empty sentinel rows are absent;
+                # production targets always use absolute canonicals.
+                if t.canonical_path:
+                    raise ValueError("target canonical_path must be absolute")
+            parts = Path(t.root_relative_path).parts
+            if t.root_relative_path and len(parts) != 2:
+                raise ValueError(
+                    "target root_relative_path must have exactly two components"
+                )
+            if len(t.tree_fingerprint) != 64:
+                raise ValueError("target tree_fingerprint must be 64 hex chars")
 
 
 @dataclass(frozen=True)
@@ -158,6 +195,8 @@ class CleanupTargetResult:
     staging_path: str | None = None
     filesystem_dev: int | None = None
     filesystem_ino: int | None = None
+    # Legacy duplicate of subject_type; omitted from new serializations
+    # (CLEANUP_RESULT_SCHEMA_VERSION >= 1). Still accepted on read.
     root_kind: SubjectType | None = None
 
 

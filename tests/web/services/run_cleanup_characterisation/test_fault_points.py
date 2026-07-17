@@ -110,3 +110,45 @@ def test_fault_points_mutation_relative_order(tmp_path: Path):
 def test_unknown_fault_point_rejected():
     with pytest.raises(ValueError, match="unknown fault point"):
         set_fault_hook("not_a_real_point", lambda: None)
+
+
+def test_fault_point_registry_rejects_add_remove_rename_duplicate_reposition():
+    """Phase A must fail characterisation if FAULT_POINTS drift in any way."""
+    # Added / removed / renamed
+    assert "not_a_point" not in FAULT_POINTS
+    for name in EXPECTED_FAULT_POINTS:
+        assert name in FAULT_POINTS
+    # Duplicated
+    assert len(FAULT_POINTS) == len(set(FAULT_POINTS))
+    assert len(FAULT_POINTS) == len(EXPECTED_FAULT_POINTS)
+    # Exact registry order frozen (reposition within the tuple fails)
+    assert list(FAULT_POINTS) == list(EXPECTED_FAULT_POINTS)
+    # Mutation-relative firing order is a separate freeze (not registry index order:
+    # after_initial_journal is listed first in FAULT_POINTS but fires after locks).
+    golden_order = [
+        "before_per_run_lock",
+        "after_all_locks",
+        "after_locked_rediscovery",
+        "after_initial_journal",
+        "before_first_rename",
+        "before_staged_lstat",
+        "after_staged_lstat",
+        "before_post_rename_journal",
+        "after_first_rename",
+        "before_physical_verify",
+        "after_physical_verify",
+        "before_cache_invalidation",
+        "before_terminal_journal",
+        "before_terminal_result_store",
+    ]
+    for name in golden_order:
+        assert name in FAULT_POINTS
+    # during_delete is in the registry but may not fire on every happy path
+    assert "during_delete" in FAULT_POINTS
+    assert_golden(
+        "fault_point_mutation_relative_freeze.json",
+        {
+            "registry": list(FAULT_POINTS),
+            "mutation_relative_first_occurrence": golden_order,
+        },
+    )

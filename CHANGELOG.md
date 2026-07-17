@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-07-17
+
+### Added
+
+- Complete Phase A run-cleanup extract: façade delegates to `planning`, `locking`, `staging_phase`, `deletion_phase`, `execution`, `recovery`, `finalization`, and `journal_ops`.
+- Expanded unit/integration coverage for status reduction, journal durability, runtime late-binding, façade shims, and finalization demotion.
+- Characterisation goldens for plans, partitions, side-effect parity, retry/pending, and newest-run sort identity.
+- Codebase stocktake doc and links from README/ROADMAP.
+
+### Fixed
+
+- Keep `CLEANUP_POLICY_VERSION` frozen at 4 for Phase A; release-blocker crash test uses version constants.
+- Document WhisperMLX and Streamlit perf optional env keys in `.env.example`.
+
+### Changed
+
+- Thin `RunCleanupService` to a public façade over extracted orchestration modules.
+
 ## [0.4.4] - 2026-07-17
 
 ### Added
