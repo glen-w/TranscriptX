@@ -74,7 +74,7 @@ def test_consume_artifact_preset_and_same_scope_keeps_selection() -> None:
 
 
 def test_open_artifact_preview_syncs_widget_keys() -> None:
-    """Browse→Preview must update keyed widgets or section nav stays on Browse."""
+    """Direct open (pre-widget) must update keyed widgets or nav stays on Browse."""
     st.session_state.clear()
     st.session_state["artifacts_section_control"] = "Browse"
     st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
@@ -86,6 +86,22 @@ def test_open_artifact_preview_syncs_widget_keys() -> None:
     assert st.session_state["artifacts_section_control"] == "Preview"
     assert st.session_state["artifacts_section_radio"] == "Preview"
     assert st.session_state["artifacts_preview_selector"] == "art_abc"
+    assert "_artifacts_force_preview" not in st.session_state
+
+
+def test_open_artifact_preview_defers_widgets_after_nav_instantiated() -> None:
+    """Browse→Preview cannot write widget keys mid-run; force flag defers sync."""
+    st.session_state.clear()
+    st.session_state["artifacts_section_control"] = "Browse"
+    st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
+
+    _open_artifact_preview("art_abc", defer_widgets=True)
+
+    assert st.session_state[ARTIFACTS_KEY_SECTION] == "Preview"
+    assert st.session_state[ARTIFACTS_KEY_PREVIEW_ID] == "art_abc"
+    assert st.session_state["_artifacts_force_preview"] is True
+    # Stale widget value left alone until _force_preview_section on next run.
+    assert st.session_state["artifacts_section_control"] == "Browse"
 
 
 def test_force_preview_section_overrides_stale_control() -> None:
@@ -100,4 +116,17 @@ def test_force_preview_section_overrides_stale_control() -> None:
     assert st.session_state[ARTIFACTS_KEY_SECTION] == "Preview"
     assert st.session_state["artifacts_section_control"] == "Preview"
     assert st.session_state["artifacts_preview_selector"] == "art_deep"
+    assert "_artifacts_force_preview" not in st.session_state
+
+
+def test_force_preview_section_applies_deferred_browse_jump() -> None:
+    st.session_state.clear()
+    st.session_state["artifacts_section_control"] = "Browse"
+    _open_artifact_preview("art_from_browse", defer_widgets=True)
+
+    _force_preview_section()
+
+    assert st.session_state[ARTIFACTS_KEY_SECTION] == "Preview"
+    assert st.session_state["artifacts_section_control"] == "Preview"
+    assert st.session_state["artifacts_preview_selector"] == "art_from_browse"
     assert "_artifacts_force_preview" not in st.session_state

@@ -60,17 +60,28 @@ _ARTIFACTS_CONFIG = RunScopedPageConfig(
 )
 
 
-def _open_artifact_preview(artifact_id: str) -> None:
+def _sync_preview_nav_widgets(artifact_id: str | None = None) -> None:
+    """Write keyed nav/select values. Must run before those widgets instantiate."""
+    st.session_state[_SECTION_CONTROL_KEY] = "Preview"
+    st.session_state[_SECTION_RADIO_KEY] = "Preview"
+    if artifact_id:
+        st.session_state[_PREVIEW_SELECTOR_KEY] = artifact_id
+
+
+def _open_artifact_preview(artifact_id: str, *, defer_widgets: bool = False) -> None:
     """Switch to Preview and preselect an artifact (logical + widget keys).
 
     Streamlit keyed widgets ignore default=/index= once the key exists, so
-    programmatic navigation must write the widget keys directly.
+    programmatic navigation must write the widget keys directly — but only
+    before they are instantiated. Mid-script jumps (Browse→Preview) must
+    defer widget writes to the next run via ``_artifacts_force_preview``.
     """
     st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = artifact_id
     st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
-    st.session_state[_SECTION_CONTROL_KEY] = "Preview"
-    st.session_state[_SECTION_RADIO_KEY] = "Preview"
-    st.session_state[_PREVIEW_SELECTOR_KEY] = artifact_id
+    if defer_widgets:
+        st.session_state["_artifacts_force_preview"] = True
+        return
+    _sync_preview_nav_widgets(artifact_id)
 
 
 def _force_preview_section() -> None:
@@ -82,8 +93,7 @@ def _force_preview_section() -> None:
         _open_artifact_preview(str(preset))
     else:
         st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
-        st.session_state[_SECTION_CONTROL_KEY] = "Preview"
-        st.session_state[_SECTION_RADIO_KEY] = "Preview"
+        _sync_preview_nav_widgets()
     st.session_state.pop("_artifacts_force_preview", None)
 
 
@@ -195,7 +205,8 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
                 key=f"art_prev_{a.id}",
                 icon=":material/visibility:",
             ):
-                _open_artifact_preview(a.id)
+                # Section nav widgets already exist this run — defer widget sync.
+                _open_artifact_preview(a.id, defer_widgets=True)
                 st.rerun()
 
     st.session_state[ARTIFACTS_KEY_SELECTED_IDS] = selected

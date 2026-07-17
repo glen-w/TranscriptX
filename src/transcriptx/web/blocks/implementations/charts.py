@@ -131,7 +131,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
         build_overview_slots,
         family_from_overview_slot,
     )
-    from transcriptx.web.services.config_resolution_service import (
+    from transcriptx.core.config import (
         resolve_effective_config,
     )
 

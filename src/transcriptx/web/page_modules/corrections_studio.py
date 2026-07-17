@@ -505,7 +505,6 @@ def render_corrections_studio() -> None:
 
     session_id = st.session_state.get("corrections_studio_session_id")
     if not session_id:
-        st.info("Click **Start / Resume Session** to begin.")
         return
 
     # Defer generation to a follow-up run so st.spinner is painted before long work

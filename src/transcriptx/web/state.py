@@ -66,6 +66,27 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
+def _sync_subject_type_selector(
+    session_state: dict[str, Any], label: str
+) -> None:
+    """Align the sidebar type widget with canonical ``subject_type``.
+
+    ``on_click`` / pre-sidebar callers can assign the keyed value directly.
+    Mid-script callers (pages after ``render_sidebar``) hit Streamlit's
+    "cannot be modified after the widget is instantiated" rule — pop instead
+    so the next run's ``_normalise_subject_type_selector`` rehydrates from
+    ``SUBJECT_TYPE_KEY``.
+    """
+    try:
+        session_state[SUBJECT_TYPE_SELECTOR_KEY] = label
+    except Exception as exc:
+        # Avoid importing Streamlit here: tests pass a plain dict; the live
+        # app raises StreamlitAPIException only for already-instantiated keys.
+        if type(exc).__name__ != "StreamlitAPIException":
+            raise
+        session_state.pop(SUBJECT_TYPE_SELECTOR_KEY, None)
+
+
 def apply_subject_context(
     session_state: dict[str, Any],
     *,
@@ -85,7 +106,7 @@ def apply_subject_context(
     session_state[RUN_ID_KEY] = run_id
     label = _SUBJECT_TYPE_SELECTOR_LABELS.get(subject_type or "")
     if label is not None:
-        session_state[SUBJECT_TYPE_SELECTOR_KEY] = label
+        _sync_subject_type_selector(session_state, label)
     session_state.pop(SUBJECT_ID_SELECTOR_KEY, None)
     session_state.pop(RUN_SELECTOR_KEY, None)
 

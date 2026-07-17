@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-07-17
+
+### Fixed
+
+- Artifacts Browse→Preview defers Streamlit widget key writes until the next run to avoid mid-script assignment errors.
+- Subject context updates pop a locked sidebar type selector instead of raising after the widget is instantiated.
+- Charts overview resolves effective config from `transcriptx.core.config`.
+
+### Changed
+
+- Search and Corrections Studio drop redundant empty-state prompts before a session or query is ready.
+
 ## [0.4.2] - 2026-07-17
 
 ### Added

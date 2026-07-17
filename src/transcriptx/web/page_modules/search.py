@@ -23,8 +23,9 @@ from transcriptx.web.services.search_service import (
 from transcriptx.web.services.subject_service import SubjectService
 
 _SEARCH_DESCRIPTION = (
-    "Search diarized transcript text (at least three characters). "
-    "Optionally scope to the current transcript when one is selected in the sidebar."
+    "Enter at least 3 characters — global search waits until you type a short "
+    "query to avoid noisy matches. Optionally scope to the current transcript "
+    "when one is selected in the sidebar."
 )
 
 
@@ -265,13 +266,6 @@ def _search_interaction_fragment() -> None:
         st.rerun()
 
     if len(query) < 3:
-        render_empty_state(
-            "missing_prerequisite",
-            "Enter at least 3 characters",
-            "Global search waits until you type a short query to avoid noisy matches.",
-            primary_action=("Open Library", "Library"),
-            secondary_action=None,
-        )
         return
 
     # Perform search if needed
