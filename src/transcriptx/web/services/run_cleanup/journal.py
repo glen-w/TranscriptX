@@ -26,8 +26,13 @@ from transcriptx.web.services.run_cleanup.models import (
     CleanupTarget,
     SubjectType,
 )
+from transcriptx.web.services.run_cleanup.staging_identity import (
+    OPERATION_ID_RE as OPERATION_ID_RE,
+    collision_proof_staging_basename as collision_proof_staging_basename,
+    intended_staging_path as intended_staging_path,
+    validate_operation_id as validate_operation_id,
+)
 
-OPERATION_ID_RE = re.compile(r"^\d+_[0-9a-f]{12}$")
 FINGERPRINT_RE = re.compile(r"^[0-9a-f]{64}$")
 MAX_JOURNAL_BYTES = 8 * 1024 * 1024
 MAX_TARGETS = 50_000
@@ -180,14 +185,6 @@ class JournalLoadResult:
 
 def operations_dir(state_dir: Path) -> Path:
     return Path(state_dir) / "cleanup" / "operations"
-
-
-def validate_operation_id(operation_id: str) -> str:
-    if not isinstance(operation_id, str) or not OPERATION_ID_RE.fullmatch(operation_id):
-        raise ValueError(f"invalid operation_id: {operation_id!r}")
-    if ".." in operation_id or "/" in operation_id or "\\" in operation_id:
-        raise ValueError(f"invalid operation_id: {operation_id!r}")
-    return operation_id
 
 
 def journal_claim_lock_path(state_dir: Path, operation_id: str) -> Path:
@@ -691,26 +688,9 @@ def list_pending_staging(state_dir: Path) -> list[dict[str, Any]]:
     return pending
 
 
-def intended_staging_path(
-    output_root: Path,
-    operation_id: str,
-    target: CleanupTarget,
-) -> Path:
-    from transcriptx.web.services.run_cleanup.staging import (
-        collision_proof_staging_basename,
-    )
-
-    operation_id = validate_operation_id(operation_id)
-    safe_name = collision_proof_staging_basename(target)
-    return Path(output_root) / STAGING_DIR_NAME / operation_id / safe_name
-
-
 def derive_staging_path_from_journal_target(
     output_root: Path, operation_id: str, target: Mapping[str, Any]
 ) -> Path:
-    from transcriptx.web.services.run_cleanup.staging import (
-        collision_proof_staging_basename,
-    )
     from transcriptx.web.services.run_cleanup.models import (
         CleanupTarget,
         EntryClassification,

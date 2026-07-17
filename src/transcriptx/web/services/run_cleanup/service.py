@@ -55,6 +55,8 @@ from transcriptx.web.services.run_cleanup.physical_delete import (
     verify_staged_tree,
 )
 from transcriptx.web.services.run_cleanup.root_validator import OutputRootValidator
+from transcriptx.web.services.run_cleanup import results as results_mod
+from transcriptx.web.services.run_cleanup.runtime import CleanupRuntime
 from transcriptx.web.services.run_cleanup.staging import (
     StagingPlatformUnsupportedError,
     StagingUnsafeError,
@@ -141,6 +143,24 @@ class RunCleanupService:
         )
         self._protected_path_getter = protected_path_getter
         self._cache_invalidator = cache_invalidator
+        self._runtime = self._build_runtime()
+
+    def _build_runtime(self) -> CleanupRuntime:
+        """Private factory: public constructor signature stays frozen."""
+
+        def _getter() -> Mapping[str, Path]:
+            return self._protected_paths()
+
+        return CleanupRuntime(
+            outputs_dir=self.outputs_dir,
+            group_outputs_dir=self.group_outputs_dir,
+            state_dir=self.state_dir,
+            project_root=self.project_root,
+            data_dir=self.data_dir,
+            config_dir=self.config_dir,
+            protected_path_getter=_getter,
+            cache_invalidator=self._cache_invalidator,
+        )
 
     def _protected_paths(self) -> dict[str, Path]:
         if self._protected_path_getter is not None:
@@ -1752,54 +1772,23 @@ class RunCleanupService:
         has_staged_remnant: bool,
         mutation_started: bool,
     ) -> CleanupStatus:
-        if mutation_started:
-            if (
-                visible_removed == planned
-                and physically_deleted == planned
-                and not errors
-                and not lock_skips
-                and not has_staged_remnant
-            ):
-                return CleanupStatus.SUCCESS
-            return CleanupStatus.PARTIAL
-        if lock_skips:
-            return CleanupStatus.PARTIAL
-        if errors:
-            return CleanupStatus.FAILED_BEFORE_MUTATION
-        return CleanupStatus.NOOP
+        return results_mod.summarize_status(
+            visible_removed=visible_removed,
+            physically_deleted=physically_deleted,
+            planned=planned,
+            lock_skips=lock_skips,
+            errors=errors,
+            has_staged_remnant=has_staged_remnant,
+            mutation_started=mutation_started,
+        )
 
     @staticmethod
     def _status_from_journal_targets(targets: list[dict]) -> CleanupStatus:
         """Derive operation status from the complete journal target-state vector."""
-        if not targets:
-            return CleanupStatus.NOOP
-        states = [str(t.get("state") or "") for t in targets]
-        success = journal.TERMINAL_SUCCESS_TARGET_STATES
-        skip = journal.TERMINAL_SKIP_TARGET_STATES
-        # Mid-flight / remnant states (planned alone means rename never happened).
-        mid_flight = journal.PENDING_TARGET_STATES - {"planned"}
-        if any(s in mid_flight for s in states):
-            return CleanupStatus.PARTIAL
-        if any(s == "planned" for s in states):
-            if any(s in success for s in states):
-                return CleanupStatus.PARTIAL
-            return CleanupStatus.FAILED_BEFORE_MUTATION
-        if any(s not in success | skip for s in states):
-            return CleanupStatus.PARTIAL
-        if any(s in success for s in states):
-            return CleanupStatus.SUCCESS
-        return CleanupStatus.NOOP
+        return results_mod.status_from_journal_targets(targets)
 
     def _status_from_loaded_operation(self, operation_id: str) -> CleanupStatus:
-        data = journal.load_operation(
-            self.state_dir,
-            operation_id,
-            expected_policy_version=CLEANUP_POLICY_VERSION,
-            expected_schema_version=JOURNAL_SCHEMA_VERSION,
-        )
-        if data is None:
-            raise FileNotFoundError(f"cleanup journal missing: {operation_id}")
-        return self._status_from_journal_targets(list(data.get("targets") or []))
+        return results_mod.status_from_loaded_operation(self.state_dir, operation_id)
 
     def list_pending_staging(self) -> list[dict]:
         """Public wrapper over journal pending-staging discovery."""

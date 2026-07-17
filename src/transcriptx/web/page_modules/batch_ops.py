@@ -68,8 +68,7 @@ def _render_batch_result(result) -> None:
     """Show batch summary banner plus recent-run-style rows for successful runs."""
     if result.success:
         st.success(
-            result.message
-            or f"Processed {result.transcript_count} transcript(s)."
+            result.message or f"Processed {result.transcript_count} transcript(s)."
         )
     else:
         st.error("Batch analysis completed with errors.")

@@ -1339,3 +1339,69 @@ Close remaining gaps called out after §49–52: Corrections Studio deferred-gen
 - Related slice (registry branches/topo + rhythm + home + new files + integration with `-m ""`): **59 passed**.
 - **Production code:** none changed.
 - **Quarantined / cleanup:** unchanged / disabled.
+
+## 54. Expansion (2026-07-17) – run identity, path canonicalisation, search matchers
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260717.zip` (4.0M).
+- **Cleanup:** disabled (not run).
+- **Collection (default addopts):** `5785/5960` selected (`175` deselected) before expansion; no collection/import errors.
+- **Baseline default run:** `5784 passed`, `1 skipped`, `175` deselected, `0` failed (green).
+- **Full collection (`-m ""`):** `5960` tests.
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` = 0).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+- **Skipped-at-collection note:** `tests/analysis/test_rules.py` imports `transcriptx.core.analysis.acts.rules` (module present; not a collection skip). Historical assessment note about missing `rules` is stale.
+- **Coverage:** `.coveragerc` omits `transcriptx/web/*`; targeted core coverage used for gap selection instead of full default-gate cov (torch/spacy reload noise under cov).
+
+### Gaps targeted (0.4.x high-leverage)
+| Area | Pre-gap | Action |
+|------|---------|--------|
+| `core/utils/run_identity.py` | Only exercised via RunIndex characterization | Direct unit tests for slug/UUID/run_id validators + sort keys |
+| `core/utils/path_canonical.py` | Only via lock path alias tests | Direct `canonicalise_path` / parent-walk unit tests |
+| `web/services/search_service` matchers | Path-resolution tests only | Pure `_tokenize` / spans / boundary / phrase helpers |
+
+### New tests (tests-only)
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `tests/unit/test_run_identity.py` (**new**) | 14 | Valid/invalid slug, group UUID, run_id; newest sort keys; `last_updated`→ns fallback |
+| `tests/unit/test_path_canonical.py` (**new**) | 8 | Absolute/relative/missing-leaf/dot-collapse; normcase on Darwin; `_resolve_existing_parents` |
+| `tests/web/test_search_matching_helpers.py` (**new**) | 9 | Normalize/tokenize/spans/word-boundary/phrase match |
+
+### Validation
+- New slice: **31 passed**.
+- **Default suite:** `5815 passed`, `1 skipped`, `175` deselected, `0` failed (+31 vs prior green).
+- **Production code:** none changed.
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.
+
+## 55. Expansion (2026-07-17) – search, web.state, page orchestration
+
+### Scope
+Follow-on covering the remaining gaps called out after §54: thin `search_service`, almost-untested `web/state.py`, and Streamlit page orchestration for audio_prep / run_analysis / charts. `run_cleanup` left alone (already ~9 strong suites; size is debt, not missing coverage).
+
+### Gaps targeted
+| Area | Pre-gap | Action |
+|------|---------|--------|
+| `search_service` | Path resolve + matcher helpers only | Index/mtime, ranking, fuzzy gates, FileSearchBackend, candidate select |
+| `web/state.py` | Mostly indirect via nav/home | Direct unit tests for context/flash/artifacts/charts keys |
+| `audio_prep` | No page tests | Path label, output dir, empty-list info |
+| `run_analysis` | No page tests | Empty transcripts empty-state; in-progress skips launch |
+| `charts` UI | Filter-state unit only | Overview candidates, family direct-render, export sig, filter init, render_charts glue |
+
+### New tests (tests-only)
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `tests/web/test_state_unit.py` (**new**) | 12 | Subject context R/W, flash, toast no-op, artifact reconcile/preset, charts keys |
+| `tests/web/test_search_service_expanded.py` (**new**) | 11 | Index build, rank, fuzzy skip/run, FileSearchBackend, rapidfuzz missing |
+| `tests/web/test_audio_prep_page.py` (**new**) | 3 | `_audio_prep_path_label`, `_resolve_output_dir`, empty recordings info |
+| `tests/web/test_run_analysis_page.py` (**new**) | 2 | Empty transcripts → empty_state; in-progress → progress only |
+| `tests/web/test_charts_page_helpers.py` (**new**) | 5 | Overview filters, family cardinality, export current, filter reset, render glue |
+
+### Validation
+- New slice: **33 passed**.
+- **Default suite:** `5849 passed`, `1 skipped`, `175` deselected, `0` failed (+34 vs §54 green; includes prior matching-helper net).
+- **Production code:** none changed.
+- **run_cleanup:** not expanded (intentionally).
+- **Quarantined / cleanup:** unchanged / disabled.

@@ -11,7 +11,11 @@ from pathlib import Path
 
 from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
 from transcriptx.app.models.requests import AnalysisRequest, BatchAnalysisRequest
-from transcriptx.app.models.results import AnalysisResult, BatchAnalysisResult, RunSummary
+from transcriptx.app.models.results import (
+    AnalysisResult,
+    BatchAnalysisResult,
+    RunSummary,
+)
 from transcriptx.app.progress import NullProgress, ProgressCallback
 from transcriptx.app.workflows.analysis import run_analysis
 

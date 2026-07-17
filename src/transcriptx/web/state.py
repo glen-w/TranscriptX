@@ -66,9 +66,7 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
-def _sync_subject_type_selector(
-    session_state: dict[str, Any], label: str
-) -> None:
+def _sync_subject_type_selector(session_state: dict[str, Any], label: str) -> None:
     """Align the sidebar type widget with canonical ``subject_type``.
 
     ``on_click`` / pre-sidebar callers can assign the keyed value directly.

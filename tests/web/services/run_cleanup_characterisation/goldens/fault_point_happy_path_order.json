@@ -1,0 +1,18 @@
+{
+  "first_occurrence_order": [
+    "before_per_run_lock",
+    "after_all_locks",
+    "after_locked_rediscovery",
+    "after_initial_journal",
+    "before_first_rename",
+    "before_staged_lstat",
+    "after_staged_lstat",
+    "before_post_rename_journal",
+    "after_first_rename",
+    "before_physical_verify",
+    "after_physical_verify",
+    "before_cache_invalidation",
+    "before_terminal_journal",
+    "before_terminal_result_store"
+  ]
+}

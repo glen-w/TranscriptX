@@ -1,0 +1,15 @@
+{
+  "firsts": [
+    "gate_acquire",
+    "handle_claim",
+    "platform_check",
+    "journal_write_operation",
+    "fault:after_initial_journal",
+    "staging_dir_provision",
+    "rename",
+    "fault:before_physical_verify",
+    "cache_invalidate",
+    "journal_terminal_status",
+    "handle_store_result"
+  ]
+}

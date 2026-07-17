@@ -2,3 +2,8 @@
 # If an environment must build very old llvmlite from source, prefer wheels or
 # isolate that workflow with a dedicated constraints file.
 setuptools>=78.1.1
+# Transitive / tooling floors (pip-audit fixes; keep compatible with streamlit stack).
+urllib3>=2.6.3
+werkzeug>=3.1.6
+ujson>=5.13.0
+wheel>=0.46.2

@@ -1,0 +1,131 @@
+{
+  "__init__": {
+    "parameters": [
+      {
+        "annotation": "Path | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "outputs_dir"
+      },
+      {
+        "annotation": "Path | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "group_outputs_dir"
+      },
+      {
+        "annotation": "Path | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "state_dir"
+      },
+      {
+        "annotation": "Path | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "project_root"
+      },
+      {
+        "annotation": "Path | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "data_dir"
+      },
+      {
+        "annotation": "Path | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "config_dir"
+      },
+      {
+        "annotation": "Mapping[str, Path] | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "protected_paths"
+      },
+      {
+        "annotation": "Callable[[], Mapping[str, Path]] | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "protected_path_getter"
+      },
+      {
+        "annotation": "CacheInvalidator | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "cache_invalidator"
+      }
+    ],
+    "return_annotation": "None"
+  },
+  "execute_cleanup": {
+    "parameters": [
+      {
+        "annotation": "str",
+        "default": null,
+        "keyword_only": false,
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "name": "handle_token"
+      },
+      {
+        "annotation": "CleanupAuthorization",
+        "default": null,
+        "keyword_only": false,
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "name": "authorization"
+      },
+      {
+        "annotation": "str",
+        "default": null,
+        "keyword_only": false,
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "name": "session_id"
+      }
+    ],
+    "return_annotation": "CleanupResult"
+  },
+  "list_pending_staging": {
+    "parameters": [],
+    "return_annotation": "list[dict]"
+  },
+  "preview_cleanup": {
+    "parameters": [
+      {
+        "annotation": "CleanupMode",
+        "default": null,
+        "keyword_only": false,
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "name": "mode"
+      },
+      {
+        "annotation": "str",
+        "default": null,
+        "keyword_only": false,
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "name": "session_id"
+      }
+    ],
+    "return_annotation": "tuple[str, CleanupPreview]"
+  },
+  "retry_interrupted_staging": {
+    "parameters": [
+      {
+        "annotation": "str",
+        "default": null,
+        "keyword_only": false,
+        "kind": "POSITIONAL_OR_KEYWORD",
+        "name": "operation_id"
+      }
+    ],
+    "return_annotation": "CleanupResult"
+  }
+}

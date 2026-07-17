@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-07-17
+
+### Added
+
+- Run-cleanup characterisation suite (API signatures, fault-point order, golden snapshots) and AST import-cycle check.
+- `staging_identity` helper module; `CleanupRuntime` / `ExecutionContext` scaffolding; status helpers in `results.py`.
+- Contracts/assessment docs for the run-cleanup refactor.
+
+### Fixed
+
+- Restore `journal.intended_staging_path` / staging re-exports after the identity extract.
+- Black/ruff clean-up across recent web and characterisation tests.
+
+### Security
+
+- Raise floors for `urllib3`, `werkzeug`, `ujson`, and `wheel` (constraints + requirements).
+- Document `TOKENIZERS_PARALLELISM` in `.env.example`.
+
 ## [0.4.3] - 2026-07-17
 
 ### Fixed

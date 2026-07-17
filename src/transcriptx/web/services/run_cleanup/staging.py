@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,8 +11,24 @@ from transcriptx.web.services.run_cleanup.models import (
     STAGING_DIR_NAME,
     CleanupTarget,
     RootIdentity,
-    SubjectType,
 )
+from transcriptx.web.services.run_cleanup.staging_identity import (
+    collision_proof_staging_basename as collision_proof_staging_basename,
+    intended_staging_path as intended_staging_path,
+    validate_operation_id as validate_operation_id,
+)
+
+__all__ = [
+    "StagingUnsafeError",
+    "StagingPlatformUnsupportedError",
+    "SecureStagingLayout",
+    "collision_proof_staging_basename",
+    "ensure_secure_staging_directory",
+    "intended_staging_path",
+    "platform_supports_descriptor_staging",
+    "rename_into_staging",
+    "validate_operation_id",
+]
 
 
 class StagingUnsafeError(RuntimeError):
@@ -28,34 +43,8 @@ def platform_supports_descriptor_staging() -> bool:
     return fd_ops.platform_supports_secure_cleanup()
 
 
-def collision_proof_staging_basename(
-    target: CleanupTarget, *, root_kind: SubjectType | None = None
-) -> str:
-    """Basename including root kind, subject, run, and TargetIdentity digest."""
-    kind = root_kind or target.subject_type
-    identity = (
-        f"{kind.value}|{target.subject_type.value}|{target.subject_id}|{target.run_id}|"
-        f"{target.canonical_path}|{target.filesystem_dev}|{target.filesystem_ino}|"
-        f"{target.tree_fingerprint}"
-    )
-    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:12]
-    sid = target.subject_id.replace("/", "_").replace("\\", "_")
-    return (
-        f"{kind.value}__{target.subject_type.value}__"
-        f"{sid}__{target.run_id}__{digest}"
-    )
-
-
-def intended_staging_path(
-    output_root: Path,
-    operation_id: str,
-    target: CleanupTarget,
-) -> Path:
-    from transcriptx.web.services.run_cleanup.journal import validate_operation_id
-
-    operation_id = validate_operation_id(operation_id)
-    name = collision_proof_staging_basename(target)
-    return Path(output_root) / STAGING_DIR_NAME / operation_id / name
+# collision_proof_staging_basename / intended_staging_path re-exported from
+# staging_identity for callers that historically imported them from staging.
 
 
 @dataclass(frozen=True)
@@ -99,8 +88,6 @@ def ensure_secure_staging_directory(
     Initial execution must pass ``allow_existing_operation_dir=False`` (exclusive).
     Retry may pass True after journal/identity validation.
     """
-    from transcriptx.web.services.run_cleanup.journal import validate_operation_id
-
     if not platform_supports_descriptor_staging():
         raise StagingPlatformUnsupportedError(
             "platform lacks descriptor-relative staging primitives"

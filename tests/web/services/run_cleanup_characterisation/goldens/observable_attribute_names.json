@@ -1,0 +1,10 @@
+{
+  "attributes": [
+    "config_dir",
+    "data_dir",
+    "group_outputs_dir",
+    "outputs_dir",
+    "project_root",
+    "state_dir"
+  ]
+}

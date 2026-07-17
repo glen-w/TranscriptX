@@ -1,0 +1,13 @@
+{
+  "errors": [
+    "Plan stale after rediscovery (plan_id mismatch)"
+  ],
+  "mode": "DELETE_ALL",
+  "operation_id": "",
+  "physically_deleted_count": 0,
+  "plan_id": "<PLAN_ID>",
+  "status": "STALE_PLAN",
+  "targets": [],
+  "visible_removed_count": 0,
+  "warnings": []
+}

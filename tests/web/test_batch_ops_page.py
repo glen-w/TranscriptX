@@ -46,7 +46,9 @@ def test_batch_ops_renders_processed_runs_with_action_links(monkeypatch) -> None
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
     monkeypatch.setattr(action_links, "st", _BatchStreamlit)
     monkeypatch.setattr(recent_run_row, "st", _BatchStreamlit)
-    monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {"slug-a": "Alice"})
+    monkeypatch.setattr(
+        mod, "_slug_display_labels_from_index", lambda: {"slug-a": "Alice"}
+    )
 
     run = SimpleNamespace(
         created_at=datetime(2026, 7, 13, 3, 29),
