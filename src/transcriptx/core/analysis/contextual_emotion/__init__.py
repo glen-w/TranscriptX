@@ -748,6 +748,7 @@ class ContextualEmotionAnalysis(AnalysisModule):
                 try:
                     from transcriptx.core.utils.viz_ids import (
                         VIZ_CONTEXTUAL_EMOTION_LABELS_GLOBAL,
+                        VIZ_CONTEXTUAL_EMOTION_LABELS_SPEAKER,
                     )
                     from transcriptx.core.viz.specs import BarCategoricalSpec
 
@@ -765,6 +766,25 @@ class ContextualEmotionAnalysis(AnalysisModule):
                         values=[float(label_counts[c]) for c in cats],
                     )
                     output_service.save_chart(spec, chart_type="bar")
+                    for speaker, st in (results.get("speaker_stats") or {}).items():
+                        sp_counts = (st or {}).get("label_counts") or {}
+                        if not sp_counts:
+                            continue
+                        sp_cats = sorted(sp_counts.keys())
+                        sp_spec = BarCategoricalSpec(
+                            viz_id=VIZ_CONTEXTUAL_EMOTION_LABELS_SPEAKER,
+                            module=self.module_name,
+                            name="contextual_emotion_label_counts",
+                            scope="speaker",
+                            speaker=speaker,
+                            chart_intent="bar_categorical",
+                            title=f"Contextual emotion label counts: {speaker}",
+                            x_label="Label",
+                            y_label="Count",
+                            categories=sp_cats,
+                            values=[float(sp_counts[c]) for c in sp_cats],
+                        )
+                        output_service.save_chart(sp_spec, chart_type="bar")
                 except Exception as exc:
                     log_warning("CONTEXTUAL_EMOTION", f"chart save failed: {exc}")
             if results.get("timeline"):

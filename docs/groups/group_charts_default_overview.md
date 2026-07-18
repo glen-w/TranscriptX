@@ -59,6 +59,6 @@ This split is **by design**, not an accident of numbering. When adding a new `gr
 `scope` describes **how artifacts are produced and matched**, not how the chart visually breaks down speakers:
 
 - `scope: "global"` + `cardinality: "single"` can be **one comparison chart that contains every speaker** (e.g. `interactions.dominance.global`, and the `understandability.*` bar charts). These render all speakers inside a single global artifact.
-- `scope: "speaker"` (`cardinality: "speaker_set"`) means **one artifact per speaker** (e.g. `emotion.radar.speaker`).
+- `scope: "speaker"` (`cardinality: "speaker_set"`) means **one artifact per speaker** (e.g. `emotion.radar.speaker`, `contextual_emotion.label_counts.speaker`, `fine_grained_emotion.label_counts.speaker`).
 
 Do **not** change a definition from `global` to `speaker` scope solely because its label reads "Per Speaker" / "All Speakers". The label describes the visual; the scope describes the artifact set. The `understandability.*` charts are global single artifacts that compare all speakers as bars, so they are labelled "(All Speakers)" and keep `scope: "global"`.

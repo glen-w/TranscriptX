@@ -59,8 +59,12 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 148
+    assert len(CHART_DEFINITIONS) == 152
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
+    assert get_chart_definition("contextual_emotion.label_counts.global") is not None
+    assert get_chart_definition("contextual_emotion.label_counts.speaker") is not None
+    assert get_chart_definition("fine_grained_emotion.label_counts.global") is not None
+    assert get_chart_definition("fine_grained_emotion.label_counts.speaker") is not None
     assert get_chart_definition("group.pauses.temporal_overlay.global") is not None
     assert get_chart_definition("group.acts.temporal_overlay.global") is not None
     assert get_chart_definition("group.sentiment.temporal_overlay.global") is not None
@@ -407,6 +411,20 @@ def test_affect_tension_viz_ids_have_registry_definitions():
     }
     missing = sorted(v for v in affect_ids if get_chart_definition(v) is None)
     assert not missing, f"affect_tension viz_ids without a definition: {missing}"
+
+
+def test_emotion_family_label_count_viz_ids_have_registry_definitions():
+    """Contextual and fine-grained label-count viz IDs must resolve in the registry."""
+    import transcriptx.core.utils.viz_ids as viz_ids
+
+    family_ids = {
+        getattr(viz_ids, name)
+        for name in dir(viz_ids)
+        if name.startswith("VIZ_CONTEXTUAL_EMOTION_")
+        or name.startswith("VIZ_FINE_GRAINED_EMOTION_")
+    }
+    missing = sorted(v for v in family_ids if get_chart_definition(v) is None)
+    assert not missing, f"emotion-family viz_ids without a definition: {missing}"
 
 
 def test_bertopic_viz_ids_have_registry_definitions():

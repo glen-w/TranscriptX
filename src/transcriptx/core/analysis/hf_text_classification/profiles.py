@@ -28,6 +28,8 @@ CONTEXTUAL_HARTMANN_V1 = ModelProfile(
     ),
     threshold_profile_version=THRESHOLD_PROFILE_PROVISIONAL_V0,
     release_channel="experimental",
+    # Pinned revision ships pytorch_model.bin only (no model.safetensors).
+    prefer_safetensors=False,
     max_length=256,
     licence="Apache-2.0",
 )

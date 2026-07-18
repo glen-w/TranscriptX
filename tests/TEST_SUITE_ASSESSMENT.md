@@ -1472,3 +1472,38 @@ Follow-on covering the remaining gaps called out after §54: thin `search_servic
 - **Production code:** none changed by this `/tests` expansion (pre-existing WIP production edits remain uncommitted separately).
 - **Quarantined tests:** not re-enabled.
 - **Artifact cleanup:** disabled.
+
+## 58. Expansion (2026-07-19) – fine-grained emotion projections + HF profiles
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260719.zip` (4.6M); `custom-commands/` mirrored.
+- **Cleanup:** disabled (not run).
+- **Collection (default addopts):** `6381/6560` selected (`179` deselected); no collection/import errors on default gate.
+- **Baseline default run:** `6380 passed`, `1 skipped`, `179` deselected, `0` failed (green).
+- **Full collection (`-m ""`):** `6560` tests.
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` historical).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+- **Skipped:** `tests/regression/test_pipeline_determinism.py` (one test: requires full pipeline setup). No skipped-at-collection import failures on the default gate.
+- **Note:** overriding `addopts` to select `-m quarantined` alone still hits unrelated collection errors in some config/registry snapshot modules; those modules are deselected by the default gate.
+
+### Coverage gaps targeted
+| Area | Pre-gap | Action |
+|------|---------|--------|
+| `fine_grained_emotion/projections.py` | Clear/apply exercised via release matrix; no dedicated project/family ontology tests | Direct projection + family-map + clear/apply roundtrip |
+| `order_display_labels` | Neutral-last / tiebreak only | Cap, empty, neutral-only, max=0 |
+| `hf_text_classification/profiles.py` | Builtins pinned via release matrix; `get_builtin_profile` untested | Lookup + unknown KeyError + activation contracts |
+| Runtime helpers | `resolve_usable_max_length` partially covered | `device_class_for`, positional cap, `label_map_hash` stability |
+
+### New tests (tests-only)
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `tests/unit/test_fine_grained_emotion_projections.py` (**new**) | 6 | Family ontology map; project shape + display-only families; empty defaults; apply/clear owned fields; display-order caps |
+| `tests/unit/test_hf_text_classification_profiles.py` (**new**) | 11 | Builtin profile lookup; unknown id; pinned SHAs; label_map_hash; device_class_for; max_length positional cap |
+
+### Validation
+- New slice: **17 passed**.
+- **Default suite:** `6397 passed`, `1 skipped`, `179` deselected, `0` failed (+17 vs baseline green).
+- **Production code:** none changed by this `/tests` expansion.
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.

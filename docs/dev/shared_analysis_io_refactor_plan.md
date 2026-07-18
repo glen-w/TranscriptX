@@ -127,6 +127,17 @@ All paths relative to `{transcript_dir}/{module}/`. Summary id = `{base}_{module
 | Radar / polar | under `charts/.../radar/` and `radar_polar/` | PNG/HTML | `emotion.radar.*`, `emotion.radar_polar.*` | conditional on scores / multi-speaker |
 | Summary | `data/global/{base}_emotion_summary.json` | JSON | module=`emotion` | always |
 
+### Contextual emotion / fine-grained emotion
+
+| Artifact | Rel path | Format | viz_id / summary | Condition |
+|----------|----------|--------|------------------|-----------|
+| Label counts (global) | `charts/global/.../contextual_emotion_label_counts.*` | PNG/HTML | `contextual_emotion.label_counts.global` | non-empty `label_counts` |
+| Label counts (speaker) | `charts/speakers/{Speaker}/.../contextual_emotion_label_counts.*` | PNG/HTML | `contextual_emotion.label_counts.speaker` | per named speaker with non-empty `label_counts` |
+| Native prevalence (global) | `charts/global/.../fine_grained_native_label_prevalence.*` | PNG/HTML | `fine_grained_emotion.label_counts.global` | non-empty prevalence |
+| Native prevalence (speaker) | `charts/speakers/{Speaker}/.../fine_grained_native_label_prevalence.*` | PNG/HTML | `fine_grained_emotion.label_counts.speaker` | per named speaker with non-empty `label_counts` (top 15) |
+
+Gallery captions: [`chart_definitions.json`](../../src/transcriptx/core/utils/chart_definitions.json); contract summary: [`emotion_family_contracts_2026-07-18.md`](emotion_family_contracts_2026-07-18.md#charts-gallery).
+
 ### Entity sentiment
 
 | Artifact | Rel path | Format | viz_id / summary | Condition |

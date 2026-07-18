@@ -77,6 +77,19 @@ Named branches only: lexical-only from `emotion`, contextual from `contextual_em
 - affect_tension loads scores only via validated generation integrity — never unvalidated disk rows or in-memory write buffers
 - Stale projections (canonical ref generation ≠ active producer generation) are cleared even when text hash still matches
 
+## Charts gallery
+
+Gallery captions and ranks live in [`chart_definitions.json`](../../src/transcriptx/core/utils/chart_definitions.json) (resolved on the Charts page and in exports via artifact `viz_id`). Single-transcript surfaces:
+
+| Module | viz_id | Scope | Notes |
+|--------|--------|-------|-------|
+| `emotion` | `emotion.radar.global` / `emotion.radar.speaker` | global / speaker_set | Lexical vocabulary-association counts (stable) |
+| `emotion` | `emotion.radar_polar.global` / `emotion.radar_polar.speaker` | global / speaker_set | Polar variant of the same profile |
+| `contextual_emotion` | `contextual_emotion.label_counts.global` / `.speaker` | global / speaker_set | Softmax label counts; experimental; not blended with lexical |
+| `fine_grained_emotion` | `fine_grained_emotion.label_counts.global` / `.speaker` | global / speaker_set | Top-15 native multilabel prevalence; experimental |
+
+Speaker charts emit only for named speakers with non-empty `label_counts` / assignment counts. These single-transcript viz IDs are **not** on the default overview strip. Group temporal/pooled emotion charts remain lexical-session contracts (`group.emotion.*`); see [`group_charts_emotion_temporal_contract.md`](../groups/group_charts_emotion_temporal_contract.md) and [`group_charts_emotion_pooled_contract.md`](../groups/group_charts_emotion_pooled_contract.md).
+
 ## Calibration
 
 `threshold_profile_v1` requires separate calibration and held-out fixtures with predefined promotion metrics. Provisional profiles must not be advertised as stable. Channel remains `experimental` until Phase 5 even with pinned SHAs.

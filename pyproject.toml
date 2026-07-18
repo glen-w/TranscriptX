@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.4.9.1"
+version = "0.4.9.2"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}

@@ -738,6 +738,7 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 try:
                     from transcriptx.core.utils.viz_ids import (
                         VIZ_FINE_GRAINED_EMOTION_LABELS_GLOBAL,
+                        VIZ_FINE_GRAINED_EMOTION_LABELS_SPEAKER,
                     )
                     from transcriptx.core.viz.specs import BarCategoricalSpec
 
@@ -758,6 +759,28 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                         values=[float(v) for _, v in top],
                     )
                     output_service.save_chart(spec, chart_type="bar")
+                    for speaker, st in (results.get("speaker_stats") or {}).items():
+                        sp_counts = (st or {}).get("label_counts") or {}
+                        if not sp_counts:
+                            continue
+                        sp_top = sorted(
+                            sp_counts.items(), key=lambda kv: (-kv[1], kv[0])
+                        )[:15]
+                        sp_cats = [k for k, _ in sp_top]
+                        sp_spec = BarCategoricalSpec(
+                            viz_id=VIZ_FINE_GRAINED_EMOTION_LABELS_SPEAKER,
+                            module=self.module_name,
+                            name="fine_grained_native_label_prevalence",
+                            scope="speaker",
+                            speaker=speaker,
+                            chart_intent="bar_categorical",
+                            title=f"Fine-grained native label prevalence: {speaker}",
+                            x_label="Label",
+                            y_label="Count",
+                            categories=sp_cats,
+                            values=[float(v) for _, v in sp_top],
+                        )
+                        output_service.save_chart(sp_spec, chart_type="bar")
                 except Exception as exc:
                     log_warning("FINE_GRAINED_EMOTION", f"chart save failed: {exc}")
             if results.get("timeline"):

@@ -47,6 +47,24 @@ def test_resolve_chart_description_valid_viz_id():
     assert resolved and len(resolved) >= 20
 
 
+def test_resolve_chart_description_emotion_family_charts():
+    """Contextual / fine-grained emotion charts must resolve gallery descriptions."""
+    for viz_id, module, scope in (
+        ("contextual_emotion.label_counts.global", "contextual_emotion", "global"),
+        ("contextual_emotion.label_counts.speaker", "contextual_emotion", "speaker"),
+        ("fine_grained_emotion.label_counts.global", "fine_grained_emotion", "global"),
+        ("fine_grained_emotion.label_counts.speaker", "fine_grained_emotion", "speaker"),
+    ):
+        expected = get_chart_definition(viz_id).description
+        assert expected and len(expected.strip()) >= 20
+        art = _artifact(viz_id=viz_id, module=module, scope=scope)
+        resolved = resolve_chart_description(art)
+        assert resolved == expected.strip()
+        # Distinguish from lexical emotion; name experimental channel in captions.
+        assert "experimental" in resolved.lower()
+        assert "lexical" in resolved.lower() or "multilabel" in resolved.lower()
+
+
 def test_resolve_chart_description_missing_viz_id():
     art = _artifact(viz_id=None, meta={})
     assert resolve_chart_description(art) is None

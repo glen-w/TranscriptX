@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9.2] - 2026-07-19
+
+### Added
+
+- Per-speaker label-count charts for experimental `contextual_emotion` and `fine_grained_emotion` (`*.label_counts.speaker`), with gallery registry captions and emotion-family contract docs for all four single-transcript viz IDs.
+- Unit coverage for fine-grained emotion projections and HF text-classification profile helpers.
+
+### Fixed
+
+- Contextual Hartmann profile loads via `pytorch_model.bin` (`prefer_safetensors=False`) for the pinned Hub revision that does not ship safetensors.
+
 ## [0.4.9.1] - 2026-07-19
 
 ### Fixed

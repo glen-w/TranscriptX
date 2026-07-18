@@ -374,6 +374,94 @@
     "variant": null
   },
   {
+    "viz_id": "contextual_emotion.label_counts.global",
+    "label": "Contextual Emotion Label Counts",
+    "rank_default": 44,
+    "kind": "chart",
+    "module": "contextual_emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contextual_emotion.label_counts.global",
+      "by_artifact_key_prefix": "contextual_emotion/charts/",
+      "by_chart_slug_regex": "contextual_emotion_label_counts",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of segment-level contextual emotion labels across the whole transcript (experimental classifier, distinct from lexical emotion). Each bar is one softmax label (anger, disgust, fear, joy, neutral, sadness, surprise); taller bars mean that label was assigned more often.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "contextual_emotion.label_counts.speaker",
+    "label": "Contextual Emotion Label Counts (Per Speaker)",
+    "rank_default": 45,
+    "kind": "chart",
+    "module": "contextual_emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contextual_emotion.label_counts.speaker",
+      "by_artifact_key_prefix": "contextual_emotion/charts/",
+      "by_chart_slug_regex": "contextual_emotion_label_counts",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of contextual emotion labels for a single speaker (experimental classifier, distinct from lexical emotion). Each bar is one softmax label; compare heights across speakers to see who was labeled with which emotions most. One chart per named speaker.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "fine_grained_emotion.label_counts.global",
+    "label": "Fine-grained Native Label Prevalence",
+    "rank_default": 46,
+    "kind": "chart",
+    "module": "fine_grained_emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "fine_grained_emotion.label_counts.global",
+      "by_artifact_key_prefix": "fine_grained_emotion/charts/",
+      "by_chart_slug_regex": "fine_grained_native_label_prevalence",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of the most frequent fine-grained emotion labels across the transcript (experimental multilabel classifier, distinct from lexical and contextual emotion). Each bar is a native label (for example approval, disapproval, or gratitude); taller bars mean that label fired more often. Shows up to the top 15 labels by prevalence.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "fine_grained_emotion.label_counts.speaker",
+    "label": "Fine-grained Native Label Prevalence (Per Speaker)",
+    "rank_default": 47,
+    "kind": "chart",
+    "module": "fine_grained_emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "fine_grained_emotion.label_counts.speaker",
+      "by_artifact_key_prefix": "fine_grained_emotion/charts/",
+      "by_chart_slug_regex": "fine_grained_native_label_prevalence",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of the most frequent fine-grained emotion labels for a single speaker (experimental multilabel classifier). Each bar is a native label; taller bars mean that label fired more often for that speaker. Shows up to the top 15 labels by prevalence. One chart per named speaker.",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "ner.entity_types.global",
     "label": "Entity Types \u2013 Global",
     "rank_default": 52,
