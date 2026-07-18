@@ -4,6 +4,7 @@ Run Analysis page - configure and execute single-transcript or group analysis.
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
@@ -11,17 +12,19 @@ import streamlit as st
 from transcriptx.app.controllers.analysis_controller import AnalysisController
 from transcriptx.core.domain.group import Group
 from transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisRequest
+from transcriptx.app.models.results import RunSummary
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.utils.config import get_config
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.state import (
+    PAGE_KEY,
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
     set_page_flash,
-    try_page_toast,
 )
 from transcriptx.web.components.progress_panel import (
     SNAPSHOT_KEY,
@@ -49,6 +52,96 @@ _RUN_ANALYSIS_DESCRIPTION = (
     "Quick uses a lighter preset; full lets you pick a profile. "
     "Recommended modules adapt to the selected transcript(s)."
 )
+_KEY_LAST_SUCCESS = "run_analysis_last_success"
+
+
+def _store_last_success(
+    *,
+    run_dir: Path,
+    transcript_path: Path | None,
+    subject_type: str,
+    modules: list[str],
+) -> None:
+    st.session_state[_KEY_LAST_SUCCESS] = {
+        "run_dir": str(run_dir),
+        "run_id": run_dir.name,
+        "transcript_path": str(transcript_path) if transcript_path else "",
+        "subject_type": subject_type,
+        "modules": list(modules),
+    }
+
+
+def _run_summary_from_last_success(payload: dict) -> RunSummary | None:
+    run_dir_raw = payload.get("run_dir")
+    run_id = payload.get("run_id")
+    if not run_dir_raw or not run_id:
+        return None
+    run_dir = Path(str(run_dir_raw))
+    if not run_dir.is_dir():
+        return None
+    tp_raw = payload.get("transcript_path") or ""
+    transcript_path = Path(str(tp_raw)) if tp_raw else Path()
+    try:
+        created_at = datetime.fromtimestamp(run_dir.stat().st_mtime)
+    except OSError:
+        created_at = datetime.now()
+    modules = payload.get("modules") or []
+    return RunSummary(
+        run_dir=run_dir,
+        transcript_path=transcript_path,
+        run_id=str(run_id),
+        created_at=created_at,
+        selected_modules=list(modules) if isinstance(modules, list) else [],
+    )
+
+
+def _render_post_analysis_actions() -> None:
+    """Icon/text strip under the success flash (homepage-style for transcript runs)."""
+    payload = st.session_state.get(_KEY_LAST_SUCCESS)
+    if not isinstance(payload, dict):
+        return
+    run = _run_summary_from_last_success(payload)
+    if run is None:
+        return
+
+    subject_type = payload.get("subject_type") or "transcript"
+    if subject_type == "transcript":
+        render_recent_run_actions(
+            run,
+            row_index=0,
+            key_prefix="post_run",
+        )
+        return
+
+    # Group context is already set on success; only change page.
+    def _go(page: str) -> None:
+        st.session_state[PAGE_KEY] = page
+
+    action_cols = st.columns(3, gap="small")
+    with action_cols[0]:
+        render_action_link(
+            "Open",
+            key="post_run_group_overview",
+            icon=":material/folder_open:",
+            on_click=_go,
+            args=("Overview",),
+        )
+    with action_cols[1]:
+        render_action_link(
+            "Charts",
+            key="post_run_group_charts",
+            icon=":material/bar_chart:",
+            on_click=_go,
+            args=("Charts",),
+        )
+    with action_cols[2]:
+        render_action_link(
+            "Artifacts",
+            key="post_run_group_artifacts",
+            icon=":material/inventory_2:",
+            on_click=_go,
+            args=("Artifacts",),
+        )
 
 
 @st.fragment
@@ -187,16 +280,22 @@ def _run_analysis_config_and_launch_fragment(
             if target_type == "Transcript":
                 st.session_state["subject_type"] = "transcript"
                 st.session_state["subject_id"] = rd.parent.name
+                subject_type = "transcript"
             else:
                 st.session_state["subject_type"] = "group"
                 st.session_state["subject_id"] = selected_group.group_id
+                subject_type = "group"
             st.session_state["run_id"] = rd.name
+            _store_last_success(
+                run_dir=rd,
+                transcript_path=transcript_path if target_type == "Transcript" else None,
+                subject_type=subject_type,
+                modules=list(result.modules_executed or []),
+            )
             set_page_flash(
                 "success",
                 f"Analysis completed. Output: `{rd}`",
             )
-            try_page_toast("Analysis completed.")
-            st.success(f"Analysis completed successfully. Output: `{rd}`")
             if result.modules_executed:
                 st.caption(f"Modules run: {', '.join(result.modules_executed)}")
             agg_warns = getattr(result, "aggregation_warnings", None) or []
@@ -232,31 +331,6 @@ def _run_analysis_config_and_launch_fragment(
                         st.caption(
                             f"… and {len(agg_warns) - 50} more (see aggregation_warnings.json in the run directory)."
                         )
-            oc1, oc2, oc3 = st.columns(3, gap="small")
-            with oc1:
-                if render_action_link(
-                    "Open Overview",
-                    key="post_run_overview",
-                    icon=":material/folder_open:",
-                ):
-                    st.session_state["page"] = "Overview"
-                    st.rerun()
-            with oc2:
-                if render_action_link(
-                    "Open Charts",
-                    key="post_run_charts",
-                    icon=":material/bar_chart:",
-                ):
-                    st.session_state["page"] = "Charts"
-                    st.rerun()
-            with oc3:
-                if render_action_link(
-                    "Open Data",
-                    key="post_run_data",
-                    icon=":material/inventory_2:",
-                ):
-                    st.session_state["page"] = "Artifacts"
-                    st.rerun()
             if result.warnings:
                 for w in result.warnings[:5]:
                     st.warning(w)
@@ -284,6 +358,7 @@ def render_run_analysis_page() -> None:
         badges=None,
         actions=None,
     )
+    _render_post_analysis_actions()
 
     config = get_config()
     group_analysis_enabled = getattr(config.group_analysis, "enabled", False)

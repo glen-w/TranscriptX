@@ -141,6 +141,17 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
     assert "Rename imported transcript + linked audio" in source
 
 
+def test_import_page_renders_post_import_action_links() -> None:
+    import transcriptx.web.page_modules.upload_transcript as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_render_post_import_actions" in source
+    assert 'icon=":material/folder_open:"' in source
+    assert 'icon=":material/analytics:"' in source
+    assert 'icon=":material/record_voice_over:"' in source
+    assert "Select it from **Library**" not in source
+
+
 def test_app_workflow_menu_order_under_workflow() -> None:
     from transcriptx.web.navigation import pages_in_section
 

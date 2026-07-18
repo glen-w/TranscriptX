@@ -100,7 +100,10 @@ def test_plot_understandability_charts_skips_without_named_speakers(
     out = _output_structure(tmp_path, monkeypatch)
     with patch.object(ua, "notify_user") as notify:
         ua.plot_understandability_charts(
-            {"SPEAKER_00": {"flesch_reading_ease": 60.0}}, out, "mini"
+            {"SPEAKER_00": {"flesch_reading_ease": 60.0}},
+            out,
+            "mini",
+            output_service=MagicMock(),
         )
     notify.assert_called()
 
@@ -115,9 +118,20 @@ def test_plot_understandability_charts_skips_missing_columns(
             {"Alice": {"flesch_reading_ease": 70.0, "word_count": 10}},
             out,
             "mini",
+            output_service=MagicMock(),
         )
     notify.assert_called()
 
+
+@pytest.mark.unit
+def test_plot_understandability_charts_requires_output_service(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    out = _output_structure(tmp_path, monkeypatch)
+    with pytest.raises(ValueError, match="output_service is required"):
+        ua.plot_understandability_charts(
+            {"Alice": {"flesch_reading_ease": 70.0}}, out, "mini", output_service=None
+        )
 
 @pytest.mark.unit
 def test_plot_understandability_charts_success_path(

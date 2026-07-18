@@ -95,3 +95,43 @@ def test_empty_segments_yield_empty_result(_stub_metrics) -> None:
     assert result["scores"] == {}
     assert result["global_stats"] == {}
     assert result["skipped"] == 0
+
+
+@pytest.mark.unit
+def test_save_results_passes_output_service_to_charts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: charts are only persisted when output_service is passed."""
+    from unittest.mock import MagicMock
+
+    captured: dict = {}
+
+    def _fake_plot(scores, output_structure, base_name, output_service=None):
+        captured["output_service"] = output_service
+
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.understandability.plot_understandability_charts",
+        _fake_plot,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.understandability.save_understandability_csv",
+        lambda *a, **k: None,
+    )
+
+    output_service = MagicMock()
+    output_service.base_name = "mini"
+    output_service.get_output_structure.return_value = MagicMock()
+
+    UnderstandabilityAnalysis()._save_results(
+        {
+            "scores": {"Alice": {"flesch_reading_ease": 70.0}},
+            "speaker_stats": {"Alice": {"flesch_reading_ease": 70.0}},
+            "global_stats": {"flesch_reading_ease": 70.0},
+            "skipped": 0,
+        },
+        output_service,
+    )
+
+    assert captured["output_service"] is output_service
+    output_service.save_data.assert_called_once()
+    output_service.save_summary.assert_called_once()

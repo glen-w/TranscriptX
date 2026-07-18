@@ -126,8 +126,10 @@ class UnderstandabilityAnalysis(AnalysisModule):
         output_structure = output_service.get_output_structure()
         save_understandability_csv(scores, output_structure, base_name)
 
-        # Generate and save charts
-        plot_understandability_charts(scores, output_structure, base_name)
+        # Generate and save charts (output_service required so figures are persisted)
+        plot_understandability_charts(
+            scores, output_structure, base_name, output_service
+        )
 
         # Save summary
         output_service.save_summary(

@@ -139,3 +139,82 @@ def test_run_analysis_in_progress_skips_launch_fragment(monkeypatch) -> None:
 
     assert progress_calls
     assert fragment_calls == []
+
+
+@pytest.mark.unit
+def test_run_analysis_page_renders_post_success_action_links() -> None:
+    """After a successful run, show homepage-style next-step links under the flash."""
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_render_post_analysis_actions" in source
+    assert "render_recent_run_actions" in source
+    assert "_KEY_LAST_SUCCESS" in source
+    assert 'key_prefix="post_run"' in source
+
+
+@pytest.mark.unit
+def test_run_summary_from_last_success_builds_run(
+    tmp_path: Path,
+) -> None:
+    from datetime import datetime
+
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    run_dir = tmp_path / "slug-a" / "20260718_093828_67580744"
+    run_dir.mkdir(parents=True)
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text("{}")
+
+    summary = mod._run_summary_from_last_success(
+        {
+            "run_dir": str(run_dir),
+            "run_id": "20260718_093828_67580744",
+            "transcript_path": str(transcript),
+            "subject_type": "transcript",
+            "modules": ["stats"],
+        }
+    )
+    assert summary is not None
+    assert summary.run_id == "20260718_093828_67580744"
+    assert summary.run_dir == run_dir
+    assert summary.selected_modules == ["stats"]
+    assert isinstance(summary.created_at, datetime)
+
+
+@pytest.mark.unit
+def test_render_post_analysis_actions_uses_recent_run_strip(monkeypatch) -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+    from tests.web.streamlit_doubles import DummyHomeStreamlit
+
+    DummyHomeStreamlit.session_state = {
+        mod._KEY_LAST_SUCCESS: {
+            "run_dir": "/tmp/out/slug/run1",
+            "run_id": "run1",
+            "transcript_path": "/tmp/t.json",
+            "subject_type": "transcript",
+            "modules": ["stats"],
+        }
+    }
+    calls: list = []
+
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
+    monkeypatch.setattr(
+        mod,
+        "_run_summary_from_last_success",
+        lambda _payload: SimpleNamespace(
+            run_dir=Path("/tmp/out/slug/run1"),
+            run_id="run1",
+            transcript_path=Path("/tmp/t.json"),
+        ),
+    )
+    monkeypatch.setattr(
+        mod,
+        "render_recent_run_actions",
+        lambda run, **kwargs: calls.append((run, kwargs)),
+    )
+
+    mod._render_post_analysis_actions()
+
+    assert calls
+    assert calls[0][1]["key_prefix"] == "post_run"

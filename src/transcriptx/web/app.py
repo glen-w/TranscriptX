@@ -34,7 +34,6 @@ from transcriptx.web.navigation import (
     page_requires_workspace_hydration,
     should_show_context_bar,
 )
-from transcriptx.web.page_flash import consume_page_flash
 from transcriptx.web.page_modules.transcript import navigate_to_segment
 from transcriptx.web.perf import (
     finish_run,
@@ -114,7 +113,6 @@ def main() -> None:
         if load_error:
             st.error(f"Could not load session list: {load_error}")
 
-        consume_page_flash()
         if should_show_context_bar(current_page):
             render_context_bar(st.session_state)
 

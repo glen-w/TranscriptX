@@ -8,11 +8,14 @@ from typing import Any, Dict, List
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.interactions.analyzer import SpeakerInteractionAnalyzer
 from transcriptx.core.analysis.interactions.output import create_analysis_summary
+from transcriptx.core.analysis.interactions.events import InteractionEvent
 from transcriptx.core.analysis.interactions.visualization import (
+    create_combined_timeline,
     create_dominance_analysis,
     create_interaction_heatmap,
     create_interaction_network,
     create_interaction_network_graph,
+    create_speaker_timeline_charts,
 )
 
 
@@ -144,9 +147,14 @@ class InteractionsAnalysis(AnalysisModule):
         base_name: str,
     ) -> None:
         """Create interaction charts."""
-        # Create additional interaction visualizations
+        events = [
+            InteractionEvent(**event) if isinstance(event, dict) else event
+            for event in analysis_results.get("interactions", [])
+        ]
+        create_combined_timeline(events, None, output_service, base_name)
         create_interaction_heatmap(analysis_results, output_service, base_name)
         create_dominance_analysis(analysis_results, output_service, base_name)
+        create_speaker_timeline_charts(events, None, output_service, base_name)
 
     def _create_analysis_summary(
         self,

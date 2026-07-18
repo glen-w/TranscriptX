@@ -36,6 +36,80 @@ def test_speaker_id_page_exposes_render_function() -> None:
     assert callable(render_speaker_id_page)
 
 
+def test_speaker_id_page_renders_post_completion_action_links() -> None:
+    """When all speakers are identified, show homepage-style next-step links."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_render_post_speaker_id_actions" in source
+    assert "All speakers identified!" in source
+    assert "render_recent_run_actions" in source
+    assert 'icon=":material/folder_open:"' in source
+    assert 'icon=":material/bar_chart:"' in source or 'icon=":material/analytics:"' in source
+
+
+def test_latest_run_summary_for_transcript_builds_run_when_outputs_exist(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from datetime import datetime
+
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    outputs = tmp_path / "outputs"
+    run_dir = outputs / "slug-a" / "20260713_032900_abcdef12"
+    run_dir.mkdir(parents=True)
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text("{}")
+
+    monkeypatch.setattr(mod, "OUTPUTS_DIR", outputs)
+    monkeypatch.setattr(
+        mod,
+        "resolve_transcript_context",
+        lambda *_a, **_k: type(
+            "R", (), {"subject_id": "slug-a", "run_id": "20260713_032900_abcdef12"}
+        )(),
+    )
+
+    summary = mod._latest_run_summary_for_transcript(transcript)
+    assert summary is not None
+    assert summary.run_id == "20260713_032900_abcdef12"
+    assert summary.run_dir == run_dir
+    assert isinstance(summary.created_at, datetime)
+
+
+def test_render_post_speaker_id_actions_uses_recent_run_strip(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.app.models.results import RunSummary
+    from datetime import datetime
+
+    called: dict[str, object] = {}
+
+    def _fake_actions(run, *, row_index=0, key_prefix="home_run"):
+        called["run"] = run
+        called["key_prefix"] = key_prefix
+        called["row_index"] = row_index
+
+    monkeypatch.setattr(mod, "render_recent_run_actions", _fake_actions)
+    monkeypatch.setattr(
+        mod,
+        "_latest_run_summary_for_transcript",
+        lambda _p: RunSummary(
+            run_dir=tmp_path / "slug" / "run1",
+            transcript_path=tmp_path / "t.json",
+            run_id="run1",
+            created_at=datetime(2026, 7, 13),
+            selected_modules=[],
+        ),
+    )
+
+    mod._render_post_speaker_id_actions(tmp_path / "t.json")
+    assert called["key_prefix"] == "speaker_id_run"
+    assert called["row_index"] == 0
+    assert getattr(called["run"], "run_id") == "run1"
+
+
 def test_speaker_id_transcript_label_partial_shows_counts() -> None:
     from transcriptx.web.page_modules.speaker_id import _speaker_id_transcript_label
     from transcriptx.services.speaker_studio.segment_index import TranscriptSummary

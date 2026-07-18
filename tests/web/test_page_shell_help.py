@@ -41,12 +41,35 @@ class _FakeSt:
 def test_render_page_shell_description_below_title_once(monkeypatch):
     fake = _FakeSt()
     monkeypatch.setattr(page_shell, "st", fake)
+    monkeypatch.setattr(page_shell, "consume_page_flash", lambda: None)
     page_shell.render_page_shell("Home", "Launchpad description.")
     assert any("tx-page-shell-title" in m and "Home" in m for m in fake.markdown_calls)
     desc_calls = [m for m in fake.markdown_calls if "tx-page-shell-desc" in m]
     assert len(desc_calls) == 1
     assert "Launchpad description." in desc_calls[0]
     assert fake.expander_calls == []
+
+
+def test_render_page_shell_consumes_flash_after_description(monkeypatch):
+    fake = _FakeSt()
+    order: list[str] = []
+
+    def _markdown(body, **_kwargs):
+        fake.markdown_calls.append(body)
+        if "tx-page-shell-title" in body:
+            order.append("title")
+        elif "tx-page-shell-desc" in body:
+            order.append("description")
+
+    fake.markdown = _markdown  # type: ignore[method-assign]
+    monkeypatch.setattr(page_shell, "st", fake)
+    monkeypatch.setattr(
+        page_shell,
+        "consume_page_flash",
+        lambda: order.append("flash"),
+    )
+    page_shell.render_page_shell("Groups", "Manage groups.")
+    assert order == ["title", "description", "flash"]
 
 
 def test_render_page_help_removed():
@@ -69,6 +92,7 @@ def test_run_scoped_prereq_keeps_description(monkeypatch):
 
     monkeypatch.setattr(run_scoped, "render_empty_state", _empty)
     monkeypatch.setattr(run_scoped, "render_page_shell", page_shell.render_page_shell)
+    monkeypatch.setattr(page_shell, "consume_page_flash", lambda: None)
 
     cfg = run_scoped.RunScopedPageConfig(
         title="Overview",

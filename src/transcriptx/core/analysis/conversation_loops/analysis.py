@@ -12,12 +12,14 @@ It provides comprehensive analysis of conversation patterns and speaker interact
 import numpy as np
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List
 
 import networkx as nx
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.acts import classify_utterance
+from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.output_standards import (
     create_standard_output_structure,
     save_global_data,
@@ -518,6 +520,12 @@ def analyze_conversation_loops(
     output_structure = create_standard_output_structure(
         transcript_dir, "conversation_loops"
     )
+    output_service = create_output_service(
+        str(Path(transcript_dir) / f"{base_name}.json"),
+        "conversation_loops",
+        output_dir=transcript_dir,
+        run_id=Path(transcript_dir).name,
+    )
 
     # Initialize detector
     max_intermediate_turns = kwargs.get("max_intermediate_turns", 2)
@@ -537,11 +545,17 @@ def analyze_conversation_loops(
     # Save loop data (speaker_map not used, loops already have speaker names)
     save_loop_data(loops, None, output_structure, base_name)
 
-    # Generate visualizations
+    # Generate visualizations (output_service required so charts are persisted)
     if loops:
-        create_loop_network(analysis_results, output_structure, base_name)
-        create_loop_timeline(loops, None, output_structure, base_name)
-        create_loop_act_analysis(loops, output_structure, base_name)
+        create_loop_network(
+            analysis_results, output_structure, base_name, output_service=output_service
+        )
+        create_loop_timeline(
+            loops, None, output_structure, base_name, output_service=output_service
+        )
+        create_loop_act_analysis(
+            loops, output_structure, base_name, output_service=output_service
+        )
 
     # Create comprehensive summary
     create_analysis_summary(analysis_results, output_structure, base_name)

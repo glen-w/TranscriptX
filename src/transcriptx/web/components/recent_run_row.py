@@ -130,6 +130,71 @@ def _meta_parts(run) -> list[str]:
     return parts
 
 
+def render_recent_run_actions(
+    run,
+    *,
+    row_index: int = 0,
+    key_prefix: str = "home_run",
+) -> None:
+    """Render the standard Open | Charts | Artifacts | Export | Rename strip."""
+    key_suffix = _row_key_suffix(run.run_id, row_index)
+
+    def _rename_cb(r=run) -> None:
+        transcript_path = _transcript_path_for_run(r)
+        if transcript_path is not None:
+            navigate_to_library_rename_workflow(st.session_state, transcript_path)
+        else:
+            st.session_state[PAGE_KEY] = "Library"
+
+    action_cols = st.columns(5, gap="small")
+    with action_cols[0]:
+        render_action_link(
+            "Open",
+            key=f"{key_prefix}_ov_{key_suffix}",
+            icon=":material/folder_open:",
+            on_click=_navigate_run,
+            args=(run,),
+            kwargs={"page": "Overview"},
+        )
+    with action_cols[1]:
+        render_action_link(
+            "Charts",
+            key=f"{key_prefix}_ch_{key_suffix}",
+            icon=":material/bar_chart:",
+            on_click=_navigate_run,
+            args=(run,),
+            kwargs={"page": "Charts"},
+        )
+    with action_cols[2]:
+        render_action_link(
+            "Artifacts",
+            key=f"{key_prefix}_dt_{key_suffix}",
+            icon=":material/inventory_2:",
+            on_click=_navigate_run,
+            args=(run,),
+            kwargs={"page": "Artifacts"},
+        )
+    with action_cols[3]:
+        if render_action_link(
+            "Export ZIP",
+            key=f"{key_prefix}_ex_{key_suffix}",
+            icon=":material/folder_zip:",
+        ):
+            prepare_recent_run_export(run)
+    with action_cols[4]:
+        render_action_link(
+            "Rename",
+            key=f"{key_prefix}_rn_{key_suffix}",
+            icon=":material/drive_file_rename_outline:",
+            on_click=_rename_cb,
+        )
+
+    error_msg = st.session_state.get(_export_error_key(run.run_id))
+    if error_msg:
+        st.warning(str(error_msg))
+    _render_export_download(run.run_id, key_prefix=key_prefix, key_suffix=key_suffix)
+
+
 def render_recent_run_row(
     run,
     *,
@@ -189,57 +254,4 @@ def render_recent_run_row(
         unsafe_allow_html=True,
     )
 
-    def _rename_cb(r=run) -> None:
-        transcript_path = _transcript_path_for_run(r)
-        if transcript_path is not None:
-            navigate_to_library_rename_workflow(st.session_state, transcript_path)
-        else:
-            st.session_state[PAGE_KEY] = "Library"
-
-    action_cols = st.columns(5, gap="small")
-    with action_cols[0]:
-        render_action_link(
-            "Open",
-            key=f"{key_prefix}_ov_{key_suffix}",
-            icon=":material/folder_open:",
-            on_click=_navigate_run,
-            args=(run,),
-            kwargs={"page": "Overview"},
-        )
-    with action_cols[1]:
-        render_action_link(
-            "Charts",
-            key=f"{key_prefix}_ch_{key_suffix}",
-            icon=":material/bar_chart:",
-            on_click=_navigate_run,
-            args=(run,),
-            kwargs={"page": "Charts"},
-        )
-    with action_cols[2]:
-        render_action_link(
-            "Artifacts",
-            key=f"{key_prefix}_dt_{key_suffix}",
-            icon=":material/inventory_2:",
-            on_click=_navigate_run,
-            args=(run,),
-            kwargs={"page": "Artifacts"},
-        )
-    with action_cols[3]:
-        if render_action_link(
-            "Export ZIP",
-            key=f"{key_prefix}_ex_{key_suffix}",
-            icon=":material/folder_zip:",
-        ):
-            prepare_recent_run_export(run)
-    with action_cols[4]:
-        render_action_link(
-            "Rename",
-            key=f"{key_prefix}_rn_{key_suffix}",
-            icon=":material/drive_file_rename_outline:",
-            on_click=_rename_cb,
-        )
-
-    error_msg = st.session_state.get(_export_error_key(run.run_id))
-    if error_msg:
-        st.warning(str(error_msg))
-    _render_export_download(run.run_id, key_prefix=key_prefix, key_suffix=key_suffix)
+    render_recent_run_actions(run, row_index=row_index, key_prefix=key_prefix)

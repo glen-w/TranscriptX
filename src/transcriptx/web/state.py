@@ -127,7 +127,7 @@ def set_current_subject_context(
 
 
 def set_page_flash(kind: FlashKind, message: str) -> None:
-    """Queue a one-shot banner for the next main render (consumed in app.main)."""
+    """Queue a one-shot banner for the next page shell render (under title/description)."""
     import streamlit as st
 
     st.session_state[PAGE_FLASH_KIND] = kind

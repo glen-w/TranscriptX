@@ -67,7 +67,7 @@ def _render_sessions_table() -> None:
     if not sessions:
         return
 
-    with st.expander("sessions", expanded=False):
+    with st.expander("Sessions", expanded=False):
         rows = []
         for s in sorted(
             sessions,

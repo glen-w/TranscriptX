@@ -13,27 +13,38 @@ the page (header, metrics, name assignment, navigation) does not dim.
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
 import streamlit as st
 
+from transcriptx.app.models.results import RunSummary
 from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
+from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.io.speaker_map_resolver import (
     is_effective_speaker_name,
     normalize_diarized_id,
 )
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
+from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
-from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
+from transcriptx.web.state import PAGE_KEY, SELECTBOX_PLACEHOLDER_TRANSCRIPT
 from transcriptx.web.transcript_option_format import (
     format_transcript_option_with_speaker_status,
 )
-from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.navigation import (
+    make_session_path_resolver,
+    navigate_to_library_rename_workflow,
+)
 from transcriptx.web.services.subject_service import SubjectService
+from transcriptx.web.services.transcript_context_resolver import (
+    resolve_transcript_context,
+)
 
 # How many sample lines to show per speaker by default
 _LINES_PER_PAGE = 8
@@ -164,6 +175,84 @@ def _group_by_diarized_id(
     return {k: groups[k] for k in seen_order}
 
 
+def _latest_run_summary_for_transcript(transcript_path: Path) -> RunSummary | None:
+    """Build a RunSummary for the newest run linked to this transcript, if any."""
+    resolution = resolve_transcript_context(
+        transcript_path,
+        session_resolver=make_session_path_resolver(),
+    )
+    subject_id = resolution.subject_id
+    run_id = resolution.run_id
+    if not subject_id or not run_id:
+        return None
+    # Raw filesystem paths are not output slugs.
+    if "/" in subject_id or "\\" in subject_id or Path(subject_id).suffix:
+        return None
+    run_dir = Path(OUTPUTS_DIR) / subject_id / run_id
+    if not run_dir.is_dir():
+        return None
+    try:
+        created_at = datetime.fromtimestamp(run_dir.stat().st_mtime)
+    except OSError:
+        created_at = datetime.now()
+    return RunSummary(
+        run_dir=run_dir,
+        transcript_path=Path(transcript_path),
+        run_id=run_id,
+        created_at=created_at,
+        selected_modules=[],
+    )
+
+
+def _render_post_speaker_id_actions(transcript_path: Path) -> None:
+    """Homepage-style Open | Charts | Artifacts | Export | Rename under completion."""
+    run = _latest_run_summary_for_transcript(transcript_path)
+    if run is not None:
+        render_recent_run_actions(
+            run,
+            row_index=0,
+            key_prefix="speaker_id_run",
+        )
+        return
+
+    # No analysis run yet — still offer useful next steps with the same link style.
+    def _go(page: str) -> None:
+        SubjectService.set_transcript_context_from_path(
+            st.session_state,
+            transcript_path,
+            session_resolver=make_session_path_resolver(),
+        )
+        st.session_state[PAGE_KEY] = page
+
+    def _rename() -> None:
+        navigate_to_library_rename_workflow(st.session_state, transcript_path)
+
+    action_cols = st.columns(3, gap="small")
+    with action_cols[0]:
+        render_action_link(
+            "Open",
+            key="speaker_id_open_overview",
+            icon=":material/folder_open:",
+            on_click=_go,
+            args=("Overview",),
+        )
+    with action_cols[1]:
+        render_action_link(
+            "Run Analysis",
+            key="speaker_id_run_analysis",
+            icon=":material/analytics:",
+            on_click=_go,
+            args=("Run Analysis",),
+        )
+    with action_cols[2]:
+        render_action_link(
+            "Rename",
+            key="speaker_id_rename",
+            icon=":material/drive_file_rename_outline:",
+            on_click=_rename,
+        )
+
+
 # ── main render ──────────────────────────────────────────────────────────────
 
 
@@ -273,6 +362,7 @@ def render_speaker_id_page() -> None:
 
     if remaining == 0 and total_speakers > 0:
         st.success("All speakers identified!")
+        _render_post_speaker_id_actions(Path(transcript_path))
 
     st.divider()
 
@@ -281,6 +371,12 @@ def render_speaker_id_page() -> None:
     if speaker_idx >= total_speakers:
         speaker_idx = 0
         st.session_state["speaker_id_speaker_idx"] = 0
+        st.session_state["sid_jump"] = 0
+    # Jump selectbox is session-state keyed; initialize once (do not pass index=).
+    if "sid_jump" not in st.session_state:
+        st.session_state["sid_jump"] = speaker_idx
+    elif st.session_state["sid_jump"] >= total_speakers:
+        st.session_state["sid_jump"] = speaker_idx
 
     active_id = speaker_ids[speaker_idx]
     active_segs = groups[active_id]
@@ -415,7 +511,6 @@ def render_speaker_id_page() -> None:
             "Jump to speaker",
             range(total_speakers),
             format_func=lambda i: jump_labels[i],
-            index=speaker_idx,
             key="sid_jump",
             label_visibility="collapsed",
         )

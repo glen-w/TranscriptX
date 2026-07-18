@@ -24,8 +24,15 @@ from transcriptx.io.import_core.errors import UnsupportedImportError
 from transcriptx.io.import_metadata_sidecar import validate_managed_transcript
 from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 from transcriptx.web.cache_helpers import clear_transcript_listing_caches
-from transcriptx.web.services.recordings_service import RecordingsService
+from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.rename_form import render_transcript_rename_form
+from transcriptx.web.navigation import (
+    apply_library_rename_navigation,
+    make_session_path_resolver,
+)
+from transcriptx.web.services.recordings_service import RecordingsService
+from transcriptx.web.services.subject_service import SubjectService
+from transcriptx.web.state import PAGE_KEY
 
 logger = get_logger()
 
@@ -139,6 +146,52 @@ def _save_uploaded_recording(uploaded: Any) -> Path:
     return RecordingsService.save_uploaded_file(uploaded)
 
 
+def _set_imported_subject_context(transcript_path: Path) -> None:
+    """Select the imported transcript as the current subject."""
+    SubjectService.set_transcript_context_from_path(
+        st.session_state,
+        transcript_path,
+        session_resolver=make_session_path_resolver(),
+    )
+
+
+def _render_post_import_actions(transcript_path: Path) -> None:
+    """Icon-link strip for next steps after a successful import (Library-style)."""
+
+    def _open_library() -> None:
+        apply_library_rename_navigation(st.session_state, transcript_path)
+        st.session_state[PAGE_KEY] = "Library"
+
+    def _go(page: str) -> None:
+        _set_imported_subject_context(transcript_path)
+        st.session_state[PAGE_KEY] = page
+
+    action_cols = st.columns(3, gap="small")
+    with action_cols[0]:
+        render_action_link(
+            "Open Library",
+            key="import_open_library",
+            icon=":material/folder_open:",
+            on_click=_open_library,
+        )
+    with action_cols[1]:
+        render_action_link(
+            "Run Analysis",
+            key="import_run_analysis",
+            icon=":material/analytics:",
+            on_click=_go,
+            args=("Run Analysis",),
+        )
+    with action_cols[2]:
+        render_action_link(
+            "Run Speaker ID",
+            key="import_speaker_id",
+            icon=":material/record_voice_over:",
+            on_click=_go,
+            args=("Speaker ID",),
+        )
+
+
 def _render_import_rename_form(transcript_path: Path) -> None:
     render_transcript_rename_form(
         transcript_path,
@@ -215,9 +268,6 @@ def render_upload_transcript_page() -> None:
                     st.caption(
                         f"Registered transcript **{slug}** from `{transcript_path}`."
                     )
-                st.info(
-                    "Select it from **Library** or the **Subject** dropdown to view and run analysis."
-                )
             if failures:
                 st.error(f"{len(failures)} import(s) failed.")
                 for filename, message in failures:
@@ -225,6 +275,7 @@ def render_upload_transcript_page() -> None:
 
     imported_path = st.session_state.get(_KEY_LAST_IMPORTED_TRANSCRIPT_PATH)
     if imported_path:
+        _render_post_import_actions(Path(imported_path))
         _render_import_rename_form(Path(imported_path))
 
     st.subheader("2. Optional recording upload")

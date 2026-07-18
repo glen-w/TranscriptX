@@ -195,8 +195,19 @@ def save_understandability_json(all_scores: dict, output_structure, base_name: s
 
 
 def plot_understandability_charts(
-    all_scores: dict, output_structure, base_name: str, output_service=None
+    all_scores: dict, output_structure, base_name: str, output_service
 ):
+    """Plot and persist understandability charts.
+
+    ``output_service`` is required. Charts are only written via
+    ``output_service.save_chart``; calling without a service previously
+    plotted figures and discarded them silently.
+    """
+    if output_service is None:
+        raise ValueError(
+            "output_service is required to persist understandability charts"
+        )
+
     # Only include named speakers (consistent with save_understandability_csv)
     filtered_scores = {s: v for s, v in all_scores.items() if is_named_speaker(s)}
 
@@ -349,15 +360,14 @@ def plot_understandability_charts(
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
 
-        if output_service:
-            output_service.save_chart(
-                chart_id=filename_suffix,
-                scope="global",
-                static_fig=plt.gcf(),
-                chart_type=chart_type,
-                viz_id=f"understandability.{filename_suffix}.global",
-                title=title,
-            )
+        output_service.save_chart(
+            chart_id=filename_suffix,
+            scope="global",
+            static_fig=plt.gcf(),
+            chart_type=chart_type,
+            viz_id=f"understandability.{filename_suffix}.global",
+            title=title,
+        )
         plt.close()
         notify_user(
             f"📊 Chart saved for {filename_suffix}", technical=True, section="analyze"

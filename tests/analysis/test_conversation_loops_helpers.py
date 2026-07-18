@@ -324,11 +324,16 @@ def test_analysis_viz_wrappers_delegate() -> None:
 @pytest.mark.unit
 def test_analyze_conversation_loops_entry_orchestrates(tmp_path) -> None:
     structure = SimpleNamespace(global_data_dir=tmp_path)
+    fake_service = MagicMock()
     with (
         patch(
             "transcriptx.core.analysis.conversation_loops.analysis.create_standard_output_structure",
             return_value=structure,
         ),
+        patch(
+            "transcriptx.core.analysis.conversation_loops.analysis.create_output_service",
+            return_value=fake_service,
+        ) as create_svc,
         patch.object(ConversationLoopDetector, "detect_loops", return_value=[_loop()]),
         patch(
             "transcriptx.core.analysis.conversation_loops.analysis.save_loop_data"
@@ -352,8 +357,12 @@ def test_analyze_conversation_loops_entry_orchestrates(tmp_path) -> None:
             str(tmp_path),
         )
     assert result["total_loops"] == 1
+    create_svc.assert_called_once()
     save.assert_called_once()
     net.assert_called_once()
     timeline.assert_called_once()
     acts.assert_called_once()
     summary.assert_called_once()
+    assert net.call_args.kwargs.get("output_service") is fake_service
+    assert timeline.call_args.kwargs.get("output_service") is fake_service
+    assert acts.call_args.kwargs.get("output_service") is fake_service

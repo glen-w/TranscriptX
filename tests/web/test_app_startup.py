@@ -28,7 +28,6 @@ def test_home_cold_render_skips_session_discovery(monkeypatch) -> None:
     monkeypatch.setattr(mod, "start_run", lambda **_kwargs: "run-1")
     monkeypatch.setattr(mod, "record_elapsed_section", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "finish_run", lambda **_kwargs: None)
-    monkeypatch.setattr(mod, "consume_page_flash", lambda: None)
     context_calls = {"n": 0}
     monkeypatch.setattr(
         mod,
@@ -62,7 +61,6 @@ def test_charts_page_triggers_session_discovery(monkeypatch) -> None:
     monkeypatch.setattr(mod, "start_run", lambda **_kwargs: "run-1")
     monkeypatch.setattr(mod, "record_elapsed_section", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "finish_run", lambda **_kwargs: None)
-    monkeypatch.setattr(mod, "consume_page_flash", lambda: None)
     context_calls = {"n": 0}
     monkeypatch.setattr(
         mod,

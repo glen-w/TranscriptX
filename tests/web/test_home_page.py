@@ -172,7 +172,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
     assert "Transcript overview" not in subheaders
     assert "Per-session statistics" not in subheaders
     assert "Recent Runs" not in subheaders
-    assert expanders == ["sessions", "Recent runs"]
+    assert expanders == ["Sessions", "Recent runs"]
     metric_labels = [args[0] for args, _ in metrics if args]
     assert metric_labels == [
         "Transcripts",

@@ -496,24 +496,7 @@ class EntitySentimentAnalysis(AnalysisModule):
                 continue
 
             entity_names, counts = zip(*top_entities, strict=False)
-            sentiments = [
-                (
-                    entity_stats[entity_name]["avg_sentiment"]
-                    if entity_name in entity_stats
-                    else 0
-                )
-                for entity_name in entity_names
-            ]
 
-            plt.figure(figsize=(10, 6))
-            plt.bar(
-                range(len(entity_names)),
-                counts,
-                color=[
-                    "red" if s < -0.1 else "blue" if s > 0.1 else "gray"
-                    for s in sentiments
-                ],
-            )
             spec = BarCategoricalSpec(
                 viz_id=VIZ_ENTITY_SENTIMENT_MENTIONS_SPEAKER,
                 module=self.module_name,

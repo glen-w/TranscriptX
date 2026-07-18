@@ -192,3 +192,84 @@ def test_analyze_interactions_generates_visualizations_when_events_exist(
     assert "timeline" in calls
     assert "network" in calls
     assert calls.count("speaker_timeline") == 2
+
+
+def test_interactions_analysis_module_save_results_includes_timelines(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Regression: AnalysisModule path must persist timeline charts too."""
+    from unittest.mock import MagicMock
+
+    from transcriptx.core.analysis.interactions.analysis import InteractionsAnalysis
+
+    calls: list[str] = []
+
+    def _mark(name: str):
+        def _fn(*_args, **_kwargs):
+            calls.append(name)
+
+        return _fn
+
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_combined_timeline",
+        _mark("timeline"),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_interaction_network",
+        _mark("network"),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_interaction_network_graph",
+        _mark("network_graph"),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_interaction_heatmap",
+        _mark("heatmap"),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_dominance_analysis",
+        _mark("dominance"),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_speaker_timeline_charts",
+        _mark("speaker_timeline"),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.interactions.analysis.create_analysis_summary",
+        lambda *_a, **_k: None,
+    )
+
+    output_service = MagicMock()
+    output_service.base_name = "sample"
+    structure = MagicMock()
+    structure.global_charts_dir = tmp_path / "charts" / "global"
+    structure.global_charts_dir.mkdir(parents=True)
+    output_service.get_output_structure.return_value = structure
+
+    results = {
+        "interactions": [
+            {
+                "timestamp": 1.0,
+                "speaker_a": "Alice",
+                "speaker_b": "Bob",
+                "interaction_type": "response",
+                "speaker_a_text": "hello",
+                "speaker_b_text": "hi",
+                "gap_before": 0.2,
+                "overlap": 0.0,
+                "speaker_a_start": 0.0,
+                "speaker_a_end": 1.0,
+                "speaker_b_start": 1.2,
+                "speaker_b_end": 2.0,
+            }
+        ],
+        "total_interactions_count": 1,
+        "unique_speakers": 2,
+    }
+    InteractionsAnalysis()._save_results(results, output_service)
+
+    assert "timeline" in calls
+    assert "speaker_timeline" in calls
+    assert "heatmap" in calls
+    assert "dominance" in calls
+    assert "network" in calls

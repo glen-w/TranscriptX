@@ -1,6 +1,7 @@
 """Reusable page header: title, description, badges, nav-only actions.
 
 Page descriptions are rendered once immediately beneath the title.
+One-shot page flash (success/info/warning/error) renders under the description.
 """
 
 from __future__ import annotations
@@ -9,6 +10,8 @@ import html
 from collections.abc import Callable
 
 import streamlit as st
+
+from transcriptx.web.page_flash import consume_page_flash
 
 
 def render_page_shell(
@@ -38,6 +41,8 @@ def render_page_shell(
             f'<p class="tx-page-shell-desc">{html.escape(description)}</p>',
             unsafe_allow_html=True,
         )
+
+    consume_page_flash()
 
     if extra:
         extra()
