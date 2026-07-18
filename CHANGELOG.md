@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9.1] - 2026-07-19
+
+### Fixed
+
+- Offline `@pytest.mark.unit` emotion/contagion analysis tests are no longer auto-tagged `requires_models` (and thus skipped) by path heuristics; contagion analysis tests marked unit.
+
 ## [0.4.9] - 2026-07-18
 
 ### Added

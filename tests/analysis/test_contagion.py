@@ -12,6 +12,8 @@ import pytest
 from transcriptx.core.analysis.contagion import ContagionAnalysis
 from transcriptx.core.analysis.emotion_family.fingerprints import segment_text_hash
 
+pytestmark = pytest.mark.unit
+
 
 def _contextual_artifact(segments):
     return {

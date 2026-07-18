@@ -1166,7 +1166,7 @@ Prior rename package coverage ~79% with weak finalize (66%), journal classifier,
 ### Coverage gaps targeted (offline, deterministic)
 Four waves of unit tests (filenames avoid conftest `requires_models` auto-keywords such as `emotion` / `contagion` / `topic_modeling` / `entity_sentiment`):
 
-1. **Wave A:** semantic_similarity repetition/quality/clustering, wordclouds frequencies, topic utils discourse helpers, understandability plot/save, contagion emotion reconstruction (as `test_reconstruct_segment_affect`).
+1. **Wave A:** semantic_similarity repetition/quality/clustering, wordclouds frequencies, topic utils discourse helpers, understandability plot/save. (Contagion reconstruction helper removed in 0.4.9; coverage moved to emotion-family / contagion contract tests.)
 2. **Wave B:** acts/affect_tension output builders, wordclouds analysis, conversation_loops helpers, output_service + pipeline_context branches.
 3. **Wave C:** emotion/ner/entity_sentiment module entrypoints (renamed paths), corrections workflow/cli_review, data_extraction affect extractor, contagion analysis (as `test_spread_analysis_module`), dynamics echoes, aggregation registry blobs.
 4. **Wave D:** semantic analyzers/viz, acts ml_classifier, lazy_imports, voice mismatch/dashboard (mocked), viz charts, affect_tension module flow, wordclouds group_run, state_utils validate/repair; deepened frequencies/understandability/tm utils.
@@ -1178,7 +1178,7 @@ Four waves of unit tests (filenames avoid conftest `requires_models` auto-keywor
 | Semantic similarity | `test_semantic_similarity_repetition_detection.py`, `*_quality_scoring.py`, `*_clustering.py`, `*_analyzer_helpers.py`, `*_viz_helpers.py` |
 | Wordclouds / topic utils | `test_wordclouds_frequencies.py`, `test_wordclouds_analysis_helpers.py`, `test_wordclouds_group_helpers.py`, `test_tm_utils_discourse.py` |
 | Acts / affect / loops | `test_acts_output_helpers.py`, `test_acts_ml_classifier_helpers.py`, `test_affect_tension_output_helpers.py`, `test_affect_tension_module_flow.py`, `test_conversation_loops_helpers.py` |
-| Modules (keyword-safe names) | `test_affect_module_init.py`, `test_named_entity_module.py`, `test_entity_polarity_module.py`, `test_spread_analysis_module.py`, `test_reconstruct_segment_affect.py` |
+| Modules (keyword-safe names) | `test_affect_module_init.py`, `test_named_entity_module.py`, `test_entity_polarity_module.py`, `test_spread_analysis_module.py`; emotion-family suite: `test_affect_family_*.py`, `test_affect_generational_store.py`, `test_affect_split_cache.py`, `test_hf_text_classification_offline.py` |
 | Corrections / extraction / echoes | `test_corrections_workflow_branches.py`, `test_corrections_cli_review_branches.py`, `test_data_extraction_affect_extractor.py`, `test_dynamics_echoes_helpers.py`, `test_aggregation_registry_more_blobs.py` |
 | Control plane / utils | `test_output_service_branches.py`, `test_pipeline_context_branches.py`, `test_charts_helpers.py`, `test_lazy_imports_branches.py`, `test_state_utils_validate_repair.py`, `test_utils_understandability.py` (+), `test_voice_*_helpers.py` |
 
