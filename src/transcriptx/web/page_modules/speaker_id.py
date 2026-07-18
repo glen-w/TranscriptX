@@ -28,7 +28,9 @@ from transcriptx.io.speaker_map_resolver import (
 )
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
-from transcriptx.web.components.action_links import render_action_link
+from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
+from transcriptx.web.action_menus.ids import NavStyle, SectionId
+from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
 from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.cache_helpers import cached_list_available_sessions
@@ -39,7 +41,6 @@ from transcriptx.web.transcript_option_format import (
 )
 from transcriptx.web.navigation import (
     make_session_path_resolver,
-    navigate_to_library_rename_workflow,
 )
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.services.transcript_context_resolver import (
@@ -205,52 +206,31 @@ def _latest_run_summary_for_transcript(transcript_path: Path) -> RunSummary | No
 
 
 def _render_post_speaker_id_actions(transcript_path: Path) -> None:
-    """Homepage-style Open | Charts | Artifacts | Export | Rename under completion."""
+    """Configured action strip under Speaker ID completion."""
     run = _latest_run_summary_for_transcript(transcript_path)
     if run is not None:
         render_recent_run_actions(
             run,
             row_index=0,
             key_prefix="speaker_id_run",
+            section=SectionId.SPEAKER_ID_COMPLETE,
         )
         return
 
-    # No analysis run yet — still offer useful next steps with the same link style.
-    def _go(page: str) -> None:
-        SubjectService.set_transcript_context_from_path(
-            st.session_state,
-            transcript_path,
-            session_resolver=make_session_path_resolver(),
-        )
-        st.session_state[PAGE_KEY] = page
-
-    def _rename() -> None:
-        navigate_to_library_rename_workflow(st.session_state, transcript_path)
-
-    action_cols = st.columns(3, gap="small")
-    with action_cols[0]:
-        render_action_link(
-            "Open",
-            key="speaker_id_open_overview",
-            icon=":material/folder_open:",
-            on_click=_go,
-            args=("Overview",),
-        )
-    with action_cols[1]:
-        render_action_link(
-            "Run Analysis",
-            key="speaker_id_run_analysis",
-            icon=":material/analytics:",
-            on_click=_go,
-            args=("Run Analysis",),
-        )
-    with action_cols[2]:
-        render_action_link(
-            "Rename",
-            key="speaker_id_rename",
-            icon=":material/drive_file_rename_outline:",
-            on_click=_rename,
-        )
+    identity = build_canonical_identity(
+        subject_type="transcript",
+        subject_id=transcript_path.stem,
+        transcript_path=transcript_path,
+    )
+    ctx = ActionContext(
+        identity=identity,
+        widget_identity=f"speaker_id_{transcript_path.stem}",
+        nav_style=NavStyle.ON_CLICK,
+        instance_prefix="speaker_id",
+        rename_supported=True,
+        run_completed=False,
+    )
+    render_configured_actions(SectionId.SPEAKER_ID_COMPLETE, ctx)
 
 
 # ── main render ──────────────────────────────────────────────────────────────

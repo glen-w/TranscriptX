@@ -44,8 +44,8 @@ def test_speaker_id_page_renders_post_completion_action_links() -> None:
     assert "_render_post_speaker_id_actions" in source
     assert "All speakers identified!" in source
     assert "render_recent_run_actions" in source
-    assert 'icon=":material/folder_open:"' in source
-    assert 'icon=":material/bar_chart:"' in source or 'icon=":material/analytics:"' in source
+    assert "SectionId.SPEAKER_ID_COMPLETE" in source
+    assert "render_configured_actions" in source
 
 
 def test_latest_run_summary_for_transcript_builds_run_when_outputs_exist(
@@ -86,10 +86,11 @@ def test_render_post_speaker_id_actions_uses_recent_run_strip(
 
     called: dict[str, object] = {}
 
-    def _fake_actions(run, *, row_index=0, key_prefix="home_run"):
+    def _fake_actions(run, *, row_index=0, key_prefix="home_run", section=None):
         called["run"] = run
         called["key_prefix"] = key_prefix
         called["row_index"] = row_index
+        called["section"] = section
 
     monkeypatch.setattr(mod, "render_recent_run_actions", _fake_actions)
     monkeypatch.setattr(

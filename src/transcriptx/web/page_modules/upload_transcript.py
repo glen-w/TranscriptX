@@ -24,10 +24,11 @@ from transcriptx.io.import_core.errors import UnsupportedImportError
 from transcriptx.io.import_metadata_sidecar import validate_managed_transcript
 from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 from transcriptx.web.cache_helpers import clear_transcript_listing_caches
-from transcriptx.web.components.action_links import render_action_link
+from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
+from transcriptx.web.action_menus.ids import NavStyle, SectionId
+from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.rename_form import render_transcript_rename_form
 from transcriptx.web.navigation import (
-    apply_library_rename_navigation,
     make_session_path_resolver,
 )
 from transcriptx.web.services.recordings_service import RecordingsService
@@ -156,40 +157,20 @@ def _set_imported_subject_context(transcript_path: Path) -> None:
 
 
 def _render_post_import_actions(transcript_path: Path) -> None:
-    """Icon-link strip for next steps after a successful import (Library-style)."""
-
-    def _open_library() -> None:
-        apply_library_rename_navigation(st.session_state, transcript_path)
-        st.session_state[PAGE_KEY] = "Library"
-
-    def _go(page: str) -> None:
-        _set_imported_subject_context(transcript_path)
-        st.session_state[PAGE_KEY] = page
-
-    action_cols = st.columns(3, gap="small")
-    with action_cols[0]:
-        render_action_link(
-            "Open Library",
-            key="import_open_library",
-            icon=":material/folder_open:",
-            on_click=_open_library,
-        )
-    with action_cols[1]:
-        render_action_link(
-            "Run Analysis",
-            key="import_run_analysis",
-            icon=":material/analytics:",
-            on_click=_go,
-            args=("Run Analysis",),
-        )
-    with action_cols[2]:
-        render_action_link(
-            "Run Speaker ID",
-            key="import_speaker_id",
-            icon=":material/record_voice_over:",
-            on_click=_go,
-            args=("Speaker ID",),
-        )
+    """Icon-link strip for next steps after a successful import."""
+    identity = build_canonical_identity(
+        subject_type="transcript",
+        subject_id=transcript_path.stem,
+        transcript_path=transcript_path,
+    )
+    ctx = ActionContext(
+        identity=identity,
+        widget_identity=f"import_{transcript_path.stem}",
+        nav_style=NavStyle.ON_CLICK,
+        instance_prefix="import",
+        rename_supported=True,
+    )
+    render_configured_actions(SectionId.IMPORT_SUCCESS, ctx)
 
 
 def _render_import_rename_form(transcript_path: Path) -> None:

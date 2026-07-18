@@ -23,7 +23,9 @@ from transcriptx.web.cache_helpers import (
     cached_get_transcript_summaries_for_paths,
     get_cached_list_transcripts,
 )
-from transcriptx.web.components.action_links import render_action_link
+from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
+from transcriptx.web.action_menus.ids import NavStyle, SectionId
+from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.rename_form import render_transcript_rename_form
@@ -202,23 +204,20 @@ def _library_browser_fragment(transcripts: list) -> None:
                 f"Date Recorded: {_format_path_created_at(audio_path) if audio_path else '—'}"
             )
 
-    action_cols = st.columns(2, gap="small")
-    with action_cols[0]:
-        if render_action_link(
-            "Run Speaker ID",
-            key="lib_speaker_id",
-            icon=":material/record_voice_over:",
-        ):
-            st.session_state["page"] = "Speaker ID"
-            st.rerun()
-    with action_cols[1]:
-        if render_action_link(
-            "Run Analysis",
-            key="lib_run_analysis",
-            icon=":material/analytics:",
-        ):
-            st.session_state["page"] = "Run Analysis"
-            st.rerun()
+    subject_id = selected.path.stem
+    identity = build_canonical_identity(
+        subject_type="transcript",
+        subject_id=subject_id,
+        transcript_path=selected.path,
+    )
+    ctx = ActionContext(
+        identity=identity,
+        widget_identity=f"lib_{subject_id}",
+        nav_style=NavStyle.CLICK_RERUN,
+        instance_prefix="lib",
+        rename_supported=True,
+    )
+    render_configured_actions(SectionId.LIBRARY_SELECTED, ctx)
 
     render_transcript_rename_form(
         selected.path,

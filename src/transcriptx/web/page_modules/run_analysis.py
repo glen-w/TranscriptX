@@ -16,6 +16,9 @@ from transcriptx.app.models.results import RunSummary
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.utils.config import get_config
+from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
+from transcriptx.web.action_menus.ids import NavStyle, SectionId
+from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
@@ -96,7 +99,7 @@ def _run_summary_from_last_success(payload: dict) -> RunSummary | None:
 
 
 def _render_post_analysis_actions() -> None:
-    """Icon/text strip under the success flash (homepage-style for transcript runs)."""
+    """Configured action strip under the success flash."""
     payload = st.session_state.get(_KEY_LAST_SUCCESS)
     if not isinstance(payload, dict):
         return
@@ -110,38 +113,26 @@ def _render_post_analysis_actions() -> None:
             run,
             row_index=0,
             key_prefix="post_run",
+            section=SectionId.RUN_ANALYSIS_COMPLETE,
         )
         return
 
-    # Group context is already set on success; only change page.
-    def _go(page: str) -> None:
-        st.session_state[PAGE_KEY] = page
-
-    action_cols = st.columns(3, gap="small")
-    with action_cols[0]:
-        render_action_link(
-            "Open",
-            key="post_run_group_overview",
-            icon=":material/folder_open:",
-            on_click=_go,
-            args=("Overview",),
-        )
-    with action_cols[1]:
-        render_action_link(
-            "Charts",
-            key="post_run_group_charts",
-            icon=":material/bar_chart:",
-            on_click=_go,
-            args=("Charts",),
-        )
-    with action_cols[2]:
-        render_action_link(
-            "Artifacts",
-            key="post_run_group_artifacts",
-            icon=":material/inventory_2:",
-            on_click=_go,
-            args=("Artifacts",),
-        )
+    identity = build_canonical_identity(
+        subject_type="group",
+        subject_id=run.run_dir.parent.name,
+        run_id=run.run_dir.name,
+        run_dir=run.run_dir,
+    )
+    ctx = ActionContext(
+        identity=identity,
+        widget_identity=f"post_run_group_{run.run_id}",
+        nav_style=NavStyle.ON_CLICK,
+        instance_prefix="post_run_group",
+        run_completed=True,
+        export_supported=False,
+        rename_supported=False,
+    )
+    render_configured_actions(SectionId.RUN_ANALYSIS_COMPLETE, ctx)
 
 
 @st.fragment

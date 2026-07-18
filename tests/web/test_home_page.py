@@ -11,6 +11,9 @@ from tests.web.streamlit_doubles import DummyHomeStreamlit
 
 
 def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
+    import transcriptx.web.action_menus.handlers as am_handlers
+    import transcriptx.web.action_menus.render as am_render
+    import transcriptx.web.action_menus.services as am_services
     import transcriptx.web.components.action_links as action_links
     import transcriptx.web.components.recent_run_row as recent_run_row
 
@@ -20,6 +23,9 @@ def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
     monkeypatch.setattr(mod, "st", st_double)
     monkeypatch.setattr(action_links, "st", st_double)
     monkeypatch.setattr(recent_run_row, "st", st_double)
+    monkeypatch.setattr(am_render, "st", st_double)
+    monkeypatch.setattr(am_handlers, "st", st_double)
+    monkeypatch.setattr(am_services, "st", st_double)
 
 
 def test_home_initial_render_loads_recent_runs_without_groups(
@@ -197,7 +203,7 @@ def test_home_export_zip_prepares_download(monkeypatch) -> None:
 
         @staticmethod
         def button(*_args, key=None, **_kwargs):
-            return isinstance(key, str) and "home_run_ex_" in key
+            return isinstance(key, str) and "__export_zip__" in key
 
         @classmethod
         def download_button(cls, *args, **kwargs):
@@ -226,14 +232,18 @@ def test_home_export_zip_prepares_download(monkeypatch) -> None:
 
     prepare_calls: list[object] = []
 
-    def _fake_prepare(run) -> None:
-        prepare_calls.append(run.run_id)
-        DummyHomeStreamlit.session_state["recent_run_export_zip_run-1"] = {
+    def _fake_prepare(identity) -> None:
+        prepare_calls.append(identity.run_id)
+        DummyHomeStreamlit.session_state[
+            "action_menu_export_zip_transcript_slug-1_run-1"
+        ] = {
             "bytes": b"zip-bytes",
             "filename": "run-1_export.zip",
         }
 
-    monkeypatch.setattr(recent_run_row, "prepare_recent_run_export", _fake_prepare)
+    import transcriptx.web.action_menus.handlers as am_handlers
+
+    monkeypatch.setattr(am_handlers, "prepare_run_export", _fake_prepare)
     mod.render_home()
 
     assert prepare_calls == ["run-1"]
@@ -262,7 +272,7 @@ def test_home_recent_run_open_updates_session_state(monkeypatch) -> None:
 
         @staticmethod
         def button(*_args, key=None, on_click=None, args=(), kwargs=None, **_kw):
-            if isinstance(key, str) and "home_run_ov_" in key and on_click:
+            if isinstance(key, str) and "__open__" in key and on_click:
                 on_click(*(args or ()), **(kwargs or {}))
             return False
 
@@ -312,8 +322,8 @@ def test_home_recent_run_open_updates_session_state(monkeypatch) -> None:
 @pytest.mark.parametrize(
     ("button_key_fragment", "expected_page"),
     [
-        ("home_run_ch_", "Charts"),
-        ("home_run_dt_", "Artifacts"),
+        ("__charts__", "Charts"),
+        ("__artifacts__", "Artifacts"),
     ],
 )
 def test_home_recent_run_action_links_navigate_to_target_page(
@@ -444,12 +454,14 @@ def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
         lambda name, fn, *a, **k: [_Run()] if name == "cached_list_recent_runs" else [],
     )
 
+    import transcriptx.web.action_menus.services as am_services
+
     def _boom(*_a, **_k):
         raise AssertionError("expensive path called during Recent Runs render")
 
-    monkeypatch.setattr(recent_run_row.ArtifactService, "list_artifacts", _boom)
-    monkeypatch.setattr(recent_run_row.ExportService, "zip_artifacts", _boom)
-    monkeypatch.setattr(recent_run_row.FileService, "resolve_transcript_path", _boom)
+    monkeypatch.setattr(am_services.ArtifactService, "list_artifacts", _boom)
+    monkeypatch.setattr(am_services.ExportService, "zip_artifacts", _boom)
+    monkeypatch.setattr(am_services.FileService, "resolve_transcript_path", _boom)
 
     mod.render_home()
 

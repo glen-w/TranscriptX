@@ -7,7 +7,11 @@ from __future__ import annotations
 import streamlit as st
 
 from transcriptx.web.services import RunIndex, SubjectService
-from transcriptx.web.ui.settings import render_configuration_panel, render_storage_panel
+from transcriptx.web.ui.settings import (
+    render_configuration_panel,
+    render_interface_panel,
+    render_storage_panel,
+)
 
 
 def render_settings_page() -> None:
@@ -29,15 +33,23 @@ def render_settings_page() -> None:
         subject_display = subject.display.name
         run_display = run_id
 
-    tab_cfg, tab_stor = st.tabs(["Configuration", "Storage"])
-    try:
-        with tab_cfg:
+    tab_cfg, tab_stor, tab_iface = st.tabs(["Configuration", "Storage", "Interface"])
+    with tab_cfg:
+        try:
             render_configuration_panel(
                 run_dir=run_dir,
                 subject_display=subject_display,
                 run_display=run_display,
             )
-        with tab_stor:
+        except Exception as e:
+            st.error(f"Could not load Configuration: {e}")
+    with tab_stor:
+        try:
             render_storage_panel()
-    except Exception as e:
-        st.error(f"Could not load settings: {e}")
+        except Exception as e:
+            st.error(f"Could not load Storage: {e}")
+    with tab_iface:
+        try:
+            render_interface_panel()
+        except Exception as e:
+            st.error(f"Could not load Interface: {e}")

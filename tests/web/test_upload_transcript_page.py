@@ -146,9 +146,8 @@ def test_import_page_renders_post_import_action_links() -> None:
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "_render_post_import_actions" in source
-    assert 'icon=":material/folder_open:"' in source
-    assert 'icon=":material/analytics:"' in source
-    assert 'icon=":material/record_voice_over:"' in source
+    assert "SectionId.IMPORT_SUCCESS" in source
+    assert "render_configured_actions" in source
     assert "Select it from **Library**" not in source
 
 
