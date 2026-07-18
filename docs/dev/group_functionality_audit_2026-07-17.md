@@ -133,7 +133,7 @@ Severity: **Blocker / High / Medium / Low / By-design**.
 | **E1** | Subject lifecycle: Groups CRUD → sidebar → Overview/Charts/Artifacts with aggregate/member filters | By-design | page modules + `ArtifactService._merge_group_member_artifacts` |
 | **E2** | Search has **no** group scope | By-design (product gap) | `search.py` radios transcript-only |
 | **E3** | Group subject on Transcript page → member browser only | By-design | `_render_group_browser` |
-| **E4** | Service-layer tests strong; **no page-level tests** for Groups CRUD / Run Analysis gate / search-under-group | **Medium** | present web tests listed §5 |
+| **E4** | Service-layer tests strong; page-level Groups CRUD / Run Analysis gate / search-under-group | **Closed 2026-07-18** | `test_groups_page.py`, `test_run_analysis_page.py` group gate, `test_search_page.py` group-subject contract |
 | **E5** | `web/` omitted from coverage measurement | Medium | stocktake §7.2 |
 
 ### 4.6 Cleanup
@@ -157,7 +157,7 @@ Severity: **Blocker / High / Medium / Low / By-design**.
 | Web services | `test_group_service.py`, member charts, subject, run_index, artifact edges, group browser | 19 passed |
 | Cleanup × groups | discovery, bulk depth, characterisation goldens `"kind": "group"` | not re-run this pass (mature Phase B) |
 
-**Gaps:** page-level Groups/Run Analysis UI; search-under-group-subject; live emission of `GROUP_FINALIZATION_FAILED`.
+**Gaps:** live emission of `GROUP_FINALIZATION_FAILED`. Page-level Groups / Run Analysis gate / search-under-group closed 2026-07-18 (`test_groups_page.py`, run_analysis group gate, `test_search_page.py`).
 
 ---
 
@@ -195,7 +195,7 @@ Ordered for risk vs effort. None of these are required to keep shipping local be
 ### Product / UX (beta polish, not blockers)
 
 8. Reconcile feature-flag story: document that CRUD/sidebar work when aggregation disabled, or gate consistently (A4–A6).
-9. Optional: page-level tests for Groups CRUD + Run Analysis Group gate (E4).
+9. ~~Optional: page-level tests for Groups CRUD + Run Analysis Group gate (E4).~~ **Done 2026-07-18.**
 10. Optional: group-scoped search — product decision (E2).
 
 ### Explicit non-goals (do not start from this audit)

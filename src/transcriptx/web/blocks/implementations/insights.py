@@ -22,6 +22,7 @@ from transcriptx.web.blocks.llm_presentation import (
     strip_commitments_section,
 )
 from transcriptx.web.blocks.placement import BlockPlacement
+from transcriptx.web.components.module_run_prompt import render_module_required_hint
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_data_artifact,
@@ -109,6 +110,8 @@ def _render_quiet_module_empty(
     run_root: Path | None,
     module: str,
     empty_hint: str,
+    ctx: BlockContext,
+    key: str,
 ) -> None:
     """User-facing empty/failed message with optional Technical details."""
     from transcriptx.web.run_health_presentation import module_outcome_state
@@ -122,18 +125,26 @@ def _render_quiet_module_empty(
             with st.expander("Technical details"):
                 st.caption(hint)
         return
-    st.info(empty_hint)
+    render_module_required_hint(empty_hint, key=key, ctx=ctx)
 
 
 def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Content vs Style")
     loader = _loader(ctx)
     if loader is None:
-        st.info("Run the `insights` module to populate this view.")
+        render_module_required_hint(
+            "Run the `insights` module to populate this view.",
+            key="insights_no_loader",
+            ctx=ctx,
+        )
         return
     insights = loader.load_json("insights", "_insights.json")
     if not insights:
-        st.info("Run the `insights` module to populate this view.")
+        render_module_required_hint(
+            "Run the `insights` module to populate this view.",
+            key="insights_empty",
+            ctx=ctx,
+        )
         return
     key_themes = insights.get("key_themes") or []
     recurring_ideas = insights.get("recurring_ideas") or []
@@ -365,11 +376,19 @@ def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Highlights")
     loader = _loader(ctx)
     if loader is None:
-        st.info("Run the `highlights` module to populate this view.")
+        render_module_required_hint(
+            "Run the `highlights` module to populate this view.",
+            key="highlights_no_loader",
+            ctx=ctx,
+        )
         return
     highlights = loader.load_json("highlights", "_highlights.json")
     if not highlights:
-        st.info("Run the `highlights` module to populate this view.")
+        render_module_required_hint(
+            "Run the `highlights` module to populate this view.",
+            key="highlights_empty",
+            ctx=ctx,
+        )
         return
     _highlights_browser_fragment(
         highlights,
@@ -382,7 +401,11 @@ def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> N
     st.subheader("Executive Summary")
     loader = _loader(ctx)
     if loader is None:
-        st.info("Run the `summary` module to populate this view.")
+        render_module_required_hint(
+            "Run the `summary` module to populate this view.",
+            key="summary_no_loader",
+            ctx=ctx,
+        )
         return
     summary = loader.load_json("summary", "_summary.json")
     md = loader.load_text("summary", "_summary.md")
@@ -396,7 +419,11 @@ def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> N
         )
         st.json(display)
     else:
-        st.info("Run the `summary` module to populate this view.")
+        render_module_required_hint(
+            "Run the `summary` module to populate this view.",
+            key="summary_empty",
+            ctx=ctx,
+        )
         return
     _render_view_raw_file_link(
         ctx, "summary", "_summary.json", link_key="exec_view_raw"
@@ -446,7 +473,7 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None or run_root is None:
-        st.info(empty_hint)
+        render_module_required_hint(empty_hint, key=f"llm_{module}_no_loader", ctx=ctx)
         return
     failure_hint = _module_failure_hint(run_root, module)
     payload = loader.load_json(module, f"{artifact_stem}.json", instance_id=inst)
@@ -463,6 +490,8 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
             run_root=run_root,
             module=module,
             empty_hint=empty_hint if not failure_hint else empty_hint,
+            ctx=ctx,
+            key=f"llm_{module}_{inst or 'default'}",
         )
         return
     suffix = f"{artifact_stem}.json"
@@ -506,7 +535,9 @@ def render_llm_speaker_summary_block(
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None or run_root is None:
-        st.info(empty_hint)
+        render_module_required_hint(
+            empty_hint, key="llm_speaker_summary_no_loader", ctx=ctx
+        )
         return
 
     index_payload = loader.load_json(module, "_llm_speaker_summary_index.json")
@@ -516,6 +547,8 @@ def render_llm_speaker_summary_block(
             run_root=run_root,
             module=module,
             empty_hint=empty_hint,
+            ctx=ctx,
+            key="llm_speaker_summary_index",
         )
         return
 
@@ -526,6 +559,8 @@ def render_llm_speaker_summary_block(
             run_root=run_root,
             module=module,
             empty_hint=empty_hint,
+            ctx=ctx,
+            key="llm_speaker_summary_speakers",
         )
         return
 
@@ -605,7 +640,9 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None or run_root is None:
-        st.info(empty_hint)
+        render_module_required_hint(
+            empty_hint, key="llm_action_items_no_loader", ctx=ctx
+        )
         return
 
     payload = loader.load_json(module, f"{artifact_stem}.json")
@@ -641,6 +678,8 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
             run_root=run_root,
             module=module,
             empty_hint=empty_hint,
+            ctx=ctx,
+            key="llm_action_items_empty",
         )
         return
 
@@ -671,7 +710,9 @@ def render_lexical_diversity_block(
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None or run_root is None:
-        st.info(empty_hint)
+        render_module_required_hint(
+            empty_hint, key="lexical_diversity_no_loader", ctx=ctx
+        )
         return
 
     failure_hint = _module_failure_hint(run_root, module)
@@ -680,7 +721,9 @@ def render_lexical_diversity_block(
         if failure_hint:
             st.warning(failure_hint)
         else:
-            st.info(empty_hint)
+            render_module_required_hint(
+                empty_hint, key="lexical_diversity_empty", ctx=ctx
+            )
         return
 
     global_stats = payload.get("global_stats") or {}

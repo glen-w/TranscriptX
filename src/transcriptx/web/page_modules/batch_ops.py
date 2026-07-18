@@ -1,5 +1,5 @@
 """
-Batch Operations page.
+Batch analysis panel (embedded on Run Analysis).
 
 Selection widgets run in ``@st.fragment`` so multiselect chip toggles do not rerun
 the full app (sidebar + page chrome).
@@ -13,6 +13,7 @@ from typing import Mapping
 import streamlit as st
 
 from transcriptx.app.controllers.batch_controller import BatchController
+from transcriptx.app.models.errors import ValidationError, WorkflowExecutionError
 from transcriptx.app.models.requests import BatchAnalysisRequest
 from transcriptx.web.cache_helpers import (
     get_cached_list_transcripts,
@@ -25,6 +26,35 @@ from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.sidebar_options import _slug_display_labels_from_index
 
 _BATCH_RESULT_KEY = "batch_ops_last_result"
+_ALLOWED_BATCH_MODES = frozenset({"quick", "full"})
+
+
+def _sanitize_batch_widget_state(
+    option_keys: list[str],
+    module_names: list[str],
+) -> None:
+    """Drop stale multiselect/selectbox values before keyed widgets bind."""
+    allowed_paths = set(option_keys)
+    raw_transcripts = st.session_state.get("batch_transcripts")
+    if isinstance(raw_transcripts, list):
+        cleaned = [p for p in raw_transcripts if p in allowed_paths]
+        if cleaned != raw_transcripts:
+            st.session_state["batch_transcripts"] = cleaned
+    elif raw_transcripts is not None:
+        st.session_state["batch_transcripts"] = []
+
+    allowed_modules = set(module_names)
+    raw_modules = st.session_state.get("batch_modules")
+    if isinstance(raw_modules, list):
+        cleaned_mods = [m for m in raw_modules if m in allowed_modules]
+        if cleaned_mods != raw_modules:
+            st.session_state["batch_modules"] = cleaned_mods
+    elif raw_modules is not None:
+        st.session_state["batch_modules"] = []
+
+    mode = st.session_state.get("batch_mode")
+    if mode not in _ALLOWED_BATCH_MODES:
+        st.session_state["batch_mode"] = "quick"
 
 
 @st.fragment
@@ -93,21 +123,14 @@ def _render_batch_result(result) -> None:
         )
 
 
-def render_batch_ops_page() -> None:
-    """Render the batch operations page."""
-    st.markdown(
-        '<div class="main-header">Batch Operations</div>',
-        unsafe_allow_html=True,
-    )
-
-    batch_ctrl = BatchController()
+def render_batch_analysis_panel() -> None:
+    """Render batch selection, launch, and results (no page chrome)."""
     transcripts = get_cached_list_transcripts()
 
     if not transcripts:
         st.info("No transcripts found. Add transcript JSON files first.")
         return
 
-    # Build options: display label = base_name (speaker status, segment count), value = path string
     transcript_options = {str(t.path): t.base_name for t in transcripts}
     option_keys = list(transcript_options.keys())
     paths_key = tuple(option_keys)
@@ -116,6 +139,8 @@ def render_batch_ops_page() -> None:
 
     modules_info = cached_get_module_info_list()
     module_names = [m["name"] for m in modules_info]
+
+    _sanitize_batch_widget_state(option_keys, module_names)
 
     _batch_ops_selection_fragment(
         option_keys,
@@ -127,21 +152,31 @@ def render_batch_ops_page() -> None:
     selected_keys = list(st.session_state.get("batch_transcripts") or [])
     selected_paths = [Path(p) for p in selected_keys] if selected_keys else []
     mode = st.session_state.get("batch_mode", "quick")
+    if mode not in _ALLOWED_BATCH_MODES:
+        mode = "quick"
     selected = list(st.session_state.get("batch_modules") or [])
 
     if st.button("Run Batch Analysis", type="primary", key="batch_run"):
         if not selected_paths:
             st.warning("Select at least one transcript to process.")
         else:
+            # Clear prior result so a new launch cannot leave a stale success banner.
+            st.session_state.pop(_BATCH_RESULT_KEY, None)
             request = BatchAnalysisRequest(
                 transcript_paths=selected_paths,
                 analysis_mode=mode,
                 selected_modules=selected if selected else None,
             )
-            with st.spinner("Running batch analysis..."):
-                result = batch_ctrl.run_batch_analysis(request)
-            clear_run_listing_caches()
-            st.session_state[_BATCH_RESULT_KEY] = result
+            try:
+                with st.spinner("Running batch analysis..."):
+                    result = BatchController().run_batch_analysis(request)
+                st.session_state[_BATCH_RESULT_KEY] = result
+            except (ValidationError, WorkflowExecutionError) as exc:
+                st.error(str(exc) or "Batch analysis failed.")
+            except Exception as exc:  # noqa: BLE001 — keep merged page responsive
+                st.error(f"Batch analysis failed: {exc}")
+            finally:
+                clear_run_listing_caches()
 
     last_result = st.session_state.get(_BATCH_RESULT_KEY)
     if last_result is not None:

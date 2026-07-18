@@ -49,12 +49,15 @@ def render_configured_actions(
             render_action(action, ctx, section=section, key=key)
 
     if ActionId.EXPORT_ZIP in actions:
-        dl_key = action_widget_key(
-            instance_prefix=ctx.instance_prefix,
-            section=section,
-            widget_identity=ctx.widget_identity,
-            action=ActionId.EXPORT_ZIP,
-        ) + "_dl"
+        dl_key = (
+            action_widget_key(
+                instance_prefix=ctx.instance_prefix,
+                section=section,
+                widget_identity=ctx.widget_identity,
+                action=ActionId.EXPORT_ZIP,
+            )
+            + "_dl"
+        )
         post_render_action(ActionId.EXPORT_ZIP, ctx, download_key=dl_key)
 
     return actions

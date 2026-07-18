@@ -133,6 +133,7 @@ def test_plot_understandability_charts_requires_output_service(
             {"Alice": {"flesch_reading_ease": 70.0}}, out, "mini", output_service=None
         )
 
+
 @pytest.mark.unit
 def test_plot_understandability_charts_success_path(
     tmp_path, monkeypatch: pytest.MonkeyPatch

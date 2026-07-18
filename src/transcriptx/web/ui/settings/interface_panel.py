@@ -1,4 +1,13 @@
-"""Settings Interface tab: draft-backed action menu customisation."""
+"""Settings Interface tab: draft-backed action menu customisation.
+
+Widget interactions run in ``@st.fragment`` so checkbox / mode toggles do not
+trigger a full-app rerun (avoids the dimming overlay on each click). Save,
+Restore, and Reload still call ``st.rerun()`` for a full commit refresh.
+
+Draft→widget hydrate runs only before keyed widgets instantiate (first load or
+a deferred pending-sync flag). Mid-script writes after Save/Restore/Reload
+would raise Streamlit's "cannot be modified after the widget is instantiated".
+"""
 
 from __future__ import annotations
 
@@ -31,6 +40,9 @@ _MODE_LABELS = {
     "manual": "Choose actions manually",
 }
 _MODE_OPTIONS = list(_MODE_LABELS.keys())
+# Mid-script Save/Restore/Reload must not write keyed widget values after those
+# widgets instantiate — defer hydrate to the start of the next run.
+_PENDING_WIDGET_SYNC_KEY = "iface_pending_widget_sync"
 
 
 def _sync_widgets_from_draft() -> None:
@@ -53,6 +65,11 @@ def _sync_widgets_from_draft() -> None:
             st.session_state[f"iface_sel_{sid.value}_{action_id.value}"] = (
                 action_id in sec.selected
             )
+
+
+def _request_widget_sync() -> None:
+    """Schedule draft→widget hydrate before widgets exist on the next run."""
+    st.session_state[_PENDING_WIDGET_SYNC_KEY] = True
 
 
 def _pull_widgets_into_draft() -> None:
@@ -80,11 +97,13 @@ def _pull_widgets_into_draft() -> None:
         sec.selected = selected
 
 
+@st.fragment
 def render_interface_panel() -> None:
     """Render Interface menus settings (ordinary widgets + draft session state)."""
     first = DRAFT_SESSION_KEY not in st.session_state
     draft = get_or_hydrate_draft(st.session_state)
-    if first:
+    pending_sync = bool(st.session_state.pop(_PENDING_WIDGET_SYNC_KEY, False))
+    if first or pending_sync:
         _sync_widgets_from_draft()
 
     st.subheader("Action menus")
@@ -105,8 +124,11 @@ def render_interface_panel() -> None:
         ):
             result = replace_with_built_in_defaults(draft)
             if result.ok:
-                _sync_widgets_from_draft()
-                st.success("Replaced interface menus with built-in defaults (backup kept).")
+                # Radio/checkboxes are instantiated below this branch — defer.
+                _request_widget_sync()
+                st.success(
+                    "Replaced interface menus with built-in defaults (backup kept)."
+                )
                 st.rerun()
             else:
                 st.error(result.error or "Replace failed.")
@@ -144,7 +166,9 @@ def render_interface_panel() -> None:
                     sid, subject_type="transcript", has_run=True
                 )
             )
-            st.caption(f"Built-in section default (transcript + run): {default_preview}")
+            st.caption(
+                f"Built-in section default (transcript + run): {default_preview}"
+            )
             if sid == SectionId.SPEAKER_ID_COMPLETE:
                 no_run = " · ".join(
                     a.value
@@ -209,7 +233,8 @@ def render_interface_panel() -> None:
         else:
             result = save_interface_prefs(draft)
             if result.ok:
-                _sync_widgets_from_draft()
+                # Widgets already exist this run — hydrate on the next pass.
+                _request_widget_sync()
                 st.success("Interface menus saved.")
                 st.rerun()
             elif result.conflict:
@@ -219,12 +244,12 @@ def render_interface_panel() -> None:
 
     if restore_clicked:
         reset_draft_to_built_ins(st.session_state)
-        _sync_widgets_from_draft()
+        _request_widget_sync()
         st.info("Draft reset to built-in defaults (not saved yet).")
         st.rerun()
 
     if reload_clicked:
         reload_draft_from_disk(st.session_state)
-        _sync_widgets_from_draft()
+        _request_widget_sync()
         st.info("Reloaded saved interface menus.")
         st.rerun()

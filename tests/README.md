@@ -1,5 +1,7 @@
 # TranscriptX tests: how to run locally
 
+**Streamlit GUI test assessment:** see [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, risk-ranked journeys, doubles-first strategy (no AppTest in the fast lane), and the optional `web/` coverage gap-finder (§11).
+
 ## Quick commands (single source of truth)
 
 - `pytest` (or `make test-fast`) — **default**: fast lane only (excludes smoke, release_only, integration, integration_core, integration_extended, slow, and requires_* capability markers)

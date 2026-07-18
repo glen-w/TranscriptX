@@ -161,7 +161,6 @@ def test_app_workflow_menu_order_under_workflow() -> None:
         "Speaker ID",
         "Corrections Studio",
         "Run Analysis",
-        "Batch Ops",
         "Groups",
     ]
 

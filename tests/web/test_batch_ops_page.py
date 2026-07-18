@@ -1,4 +1,4 @@
-"""Tests for Batch Operations page post-run list."""
+"""Tests for batch analysis panel embedded on Run Analysis."""
 
 from __future__ import annotations
 
@@ -6,13 +6,19 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from tests.web.streamlit_doubles import DummyHomeStreamlit
+from transcriptx.app.models.errors import ValidationError, WorkflowExecutionError
 
 
-def test_batch_ops_renders_processed_runs_with_action_links(monkeypatch) -> None:
+@pytest.mark.unit
+def test_batch_panel_renders_processed_runs_with_action_links(monkeypatch) -> None:
+    import transcriptx.web.action_menus.render as action_render
     import transcriptx.web.components.action_links as action_links
     import transcriptx.web.components.recent_run_row as recent_run_row
     import transcriptx.web.page_modules.batch_ops as mod
+    from tests.web.streamlit_doubles import DummyColumn
 
     DummyHomeStreamlit.session_state = {}
     markdown_blobs: list[str] = []
@@ -34,18 +40,24 @@ def test_batch_ops_renders_processed_runs_with_action_links(monkeypatch) -> None
             return None
 
         @staticmethod
-        def fragment(fn=None, **_kwargs):
-            if fn is None:
+        def columns(n, **_kwargs):
+            return tuple(
+                DummyColumn() for _ in range(n if isinstance(n, int) else len(n))
+            )
 
-                def _decorator(f):
-                    return f
+        @staticmethod
+        def multiselect(*_args, **_kwargs):
+            return []
 
-                return _decorator
-            return fn
+        @staticmethod
+        def selectbox(*_args, **_kwargs):
+            return "quick"
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
     monkeypatch.setattr(action_links, "st", _BatchStreamlit)
     monkeypatch.setattr(recent_run_row, "st", _BatchStreamlit)
+    monkeypatch.setattr(action_render, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
     monkeypatch.setattr(
         mod, "_slug_display_labels_from_index", lambda: {"slug-a": "Alice"}
     )
@@ -76,11 +88,254 @@ def test_batch_ops_renders_processed_runs_with_action_links(monkeypatch) -> None
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", lambda: SimpleNamespace())
 
-    mod.render_batch_ops_page()
+    mod.render_batch_analysis_panel()
 
     joined = "\n".join(markdown_blobs)
     assert "Processed runs" in joined
     assert "Alice" in joined
-    assert any("batch_run_ov_" in k for k in action_keys)
-    assert any("batch_run_ch_" in k for k in action_keys)
-    assert any("batch_run_dt_" in k for k in action_keys)
+    # Keys: tx_al_batch_run__home_recent_runs__<action>__<digest>
+    assert any("batch_run__" in k and "__open__" in k for k in action_keys)
+    assert any("batch_run__" in k and "__charts__" in k for k in action_keys)
+    assert any("batch_run__" in k and "__artifacts__" in k for k in action_keys)
+
+
+@pytest.mark.unit
+def test_sanitize_batch_widget_state_drops_stale_values(monkeypatch) -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": ["/keep.json", "/gone.json"],
+        "batch_modules": ["stats", "removed_mod"],
+        "batch_mode": "bogus",
+    }
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
+
+    mod._sanitize_batch_widget_state(["/keep.json"], ["stats"])
+
+    assert DummyHomeStreamlit.session_state["batch_transcripts"] == ["/keep.json"]
+    assert DummyHomeStreamlit.session_state["batch_modules"] == ["stats"]
+    assert DummyHomeStreamlit.session_state["batch_mode"] == "quick"
+
+
+@pytest.mark.unit
+def test_sanitize_batch_widget_state_clears_non_list_values(monkeypatch) -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": "/not-a-list.json",
+        "batch_modules": "stats",
+        "batch_mode": "full",
+    }
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
+
+    mod._sanitize_batch_widget_state(["/keep.json"], ["stats"])
+
+    assert DummyHomeStreamlit.session_state["batch_transcripts"] == []
+    assert DummyHomeStreamlit.session_state["batch_modules"] == []
+    assert DummyHomeStreamlit.session_state["batch_mode"] == "full"
+
+
+@pytest.mark.unit
+def test_batch_panel_controller_exception_shows_error_and_clears_cache(
+    monkeypatch,
+) -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": ["/tmp/alice.json"],
+        "batch_mode": "quick",
+        "batch_modules": [],
+        mod._BATCH_RESULT_KEY: SimpleNamespace(success=True, runs=[], errors=[]),
+    }
+    errors: list[str] = []
+    cache_cleared: list[bool] = []
+
+    class _BatchStreamlit(DummyHomeStreamlit):
+        @staticmethod
+        def button(*_args, **_kwargs):
+            return True
+
+        @staticmethod
+        def warning(*_args, **_kwargs):
+            return None
+
+        @staticmethod
+        def error(msg, **_kwargs):
+            errors.append(str(msg))
+
+        @staticmethod
+        def spinner(*_args, **_kwargs):
+            return DummyHomeStreamlit.expander()
+
+        @staticmethod
+        def multiselect(*_args, **_kwargs):
+            return ["/tmp/alice.json"]
+
+        @staticmethod
+        def selectbox(*_args, **_kwargs):
+            return "quick"
+
+        @staticmethod
+        def fragment(fn=None, **_kwargs):
+            if fn is None:
+
+                def _decorator(f):
+                    return f
+
+                return _decorator
+            return fn
+
+    class _Ctrl:
+        def run_batch_analysis(self, _request):
+            raise ValidationError("transcript_paths must not be empty")
+
+    monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "get_cached_list_transcripts",
+        lambda: [SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")],
+    )
+    monkeypatch.setattr(
+        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
+    )
+    monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
+    monkeypatch.setattr(mod, "BatchController", _Ctrl)
+    monkeypatch.setattr(
+        mod, "clear_run_listing_caches", lambda: cache_cleared.append(True)
+    )
+
+    mod.render_batch_analysis_panel()
+
+    assert any("transcript_paths must not be empty" in e for e in errors)
+    assert mod._BATCH_RESULT_KEY not in DummyHomeStreamlit.session_state
+    assert cache_cleared == [True]
+
+
+@pytest.mark.unit
+def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": ["/tmp/alice.json"],
+        "batch_mode": "quick",
+        "batch_modules": [],
+        mod._BATCH_RESULT_KEY: SimpleNamespace(
+            success=True, message="old", runs=[], errors=[]
+        ),
+    }
+    errors: list[str] = []
+
+    class _BatchStreamlit(DummyHomeStreamlit):
+        @staticmethod
+        def button(*_args, **_kwargs):
+            return True
+
+        @staticmethod
+        def error(msg, **_kwargs):
+            errors.append(str(msg))
+
+        @staticmethod
+        def spinner(*_args, **_kwargs):
+            return DummyHomeStreamlit.expander()
+
+        @staticmethod
+        def multiselect(*_args, **_kwargs):
+            return ["/tmp/alice.json"]
+
+        @staticmethod
+        def selectbox(*_args, **_kwargs):
+            return "quick"
+
+    class _Ctrl:
+        def run_batch_analysis(self, _request):
+            raise WorkflowExecutionError("pipeline blew up")
+
+    monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "get_cached_list_transcripts",
+        lambda: [SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")],
+    )
+    monkeypatch.setattr(
+        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
+    )
+    monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
+    monkeypatch.setattr(mod, "BatchController", _Ctrl)
+    monkeypatch.setattr(mod, "clear_run_listing_caches", lambda: None)
+
+    mod.render_batch_analysis_panel()
+
+    assert any("pipeline blew up" in e for e in errors)
+    assert mod._BATCH_RESULT_KEY not in DummyHomeStreamlit.session_state
+
+
+@pytest.mark.unit
+def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    old = SimpleNamespace(success=True, message="old", runs=[], errors=[])
+    new = SimpleNamespace(
+        success=True, message="new", runs=[], errors=[], transcript_count=1
+    )
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": ["/tmp/alice.json"],
+        "batch_mode": "quick",
+        "batch_modules": [],
+        mod._BATCH_RESULT_KEY: old,
+    }
+
+    class _BatchStreamlit(DummyHomeStreamlit):
+        @staticmethod
+        def button(*_args, **_kwargs):
+            return True
+
+        @staticmethod
+        def success(*_args, **_kwargs):
+            return None
+
+        @staticmethod
+        def spinner(*_args, **_kwargs):
+            return DummyHomeStreamlit.expander()
+
+        @staticmethod
+        def multiselect(*_args, **_kwargs):
+            return ["/tmp/alice.json"]
+
+        @staticmethod
+        def selectbox(*_args, **_kwargs):
+            return "quick"
+
+    class _Ctrl:
+        def run_batch_analysis(self, _request):
+            return new
+
+    monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "get_cached_list_transcripts",
+        lambda: [SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")],
+    )
+    monkeypatch.setattr(
+        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
+    )
+    monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
+    monkeypatch.setattr(mod, "BatchController", _Ctrl)
+    monkeypatch.setattr(mod, "clear_run_listing_caches", lambda: None)
+    monkeypatch.setattr(mod, "_render_batch_result", lambda _r: None)
+
+    mod.render_batch_analysis_panel()
+
+    assert DummyHomeStreamlit.session_state[mod._BATCH_RESULT_KEY] is new
+
+
+@pytest.mark.unit
+def test_batch_ops_module_has_no_run_analysis_import() -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "run_analysis" not in source
+    assert "render_batch_ops_page" not in source
+    assert hasattr(mod, "render_batch_analysis_panel")

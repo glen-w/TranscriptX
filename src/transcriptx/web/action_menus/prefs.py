@@ -16,7 +16,6 @@ from transcriptx.core.utils.paths import CONFIG_DIR
 from transcriptx.io.atomic_json import locked_path, write_bytes_atomic
 from transcriptx.web.action_menus.catalog import (
     ACTIONS_BY_ID,
-    BUILT_IN_STANDARD_MENU,
     SECTION_ALLOWLISTS,
 )
 from transcriptx.web.action_menus.ids import (
@@ -141,9 +140,7 @@ def merge_prefs(partial: dict[str, Any] | None) -> InterfaceMenuPrefs:
         show = raw.get("show_menu", True)
         if not isinstance(show, bool):
             show = True
-        sections[sid] = SectionMenuPrefs(
-            show_menu=show, mode=smode, selected=selected
-        )
+        sections[sid] = SectionMenuPrefs(show_menu=show, mode=smode, selected=selected)
 
     return InterfaceMenuPrefs(
         standard_menu_mode=mode,  # type: ignore[arg-type]

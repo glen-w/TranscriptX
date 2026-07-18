@@ -59,7 +59,9 @@ def write_bytes_atomic(path: Path, data: bytes) -> None:
                 pass
 
 
-def write_bytes_atomic_locked(path: Path, data: bytes, *, timeout: float = 30.0) -> None:
+def write_bytes_atomic_locked(
+    path: Path, data: bytes, *, timeout: float = 30.0
+) -> None:
     """Same as write_bytes_atomic but under process lock then FileLock."""
     with locked_path(path, timeout=timeout):
         write_bytes_atomic(path, data)

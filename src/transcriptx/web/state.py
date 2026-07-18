@@ -66,23 +66,28 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
-def _sync_subject_type_selector(session_state: dict[str, Any], label: str) -> None:
-    """Align the sidebar type widget with canonical ``subject_type``.
+def _sync_sidebar_widget(
+    session_state: dict[str, Any], key: str, value: Any | None
+) -> None:
+    """Align a keyed sidebar widget with canonical context, or clear it.
 
-    ``on_click`` / pre-sidebar callers can assign the keyed value directly.
+    ``on_click`` / pre-sidebar callers can assign the keyed value directly so
+    the next render shows the navigated subject/run (action menus, deep links).
     Mid-script callers (pages after ``render_sidebar``) hit Streamlit's
     "cannot be modified after the widget is instantiated" rule — pop instead
-    so the next run's ``_normalise_subject_type_selector`` rehydrates from
-    ``SUBJECT_TYPE_KEY``.
+    so the next run rehydrates from canonical ``subject_*`` / ``run_id`` keys.
     """
     try:
-        session_state[SUBJECT_TYPE_SELECTOR_KEY] = label
+        if value is None or value == "":
+            session_state.pop(key, None)
+        else:
+            session_state[key] = value
     except Exception as exc:
         # Avoid importing Streamlit here: tests pass a plain dict; the live
         # app raises StreamlitAPIException only for already-instantiated keys.
         if type(exc).__name__ != "StreamlitAPIException":
             raise
-        session_state.pop(SUBJECT_TYPE_SELECTOR_KEY, None)
+        session_state.pop(key, None)
 
 
 def apply_subject_context(
@@ -92,21 +97,25 @@ def apply_subject_context(
     subject_id: str | None,
     run_id: str | None,
 ) -> None:
-    """Write canonical subject context and reset sidebar picker widgets.
+    """Write canonical subject context and sync sidebar picker widgets.
 
     Streamlit keeps prior selectbox values under widget keys. External
     navigators that only update ``subject_id`` / ``run_id`` would otherwise
     be overwritten by stale picker state on the next rerun (Charts/Artifacts
-    then fail run-scoped access and fall back to Overview).
+    then fail run-scoped access and fall back to Overview). Assigning the
+    picker keys to the new identity keeps the nav-bar dropdowns in sync so
+    subsequent sidebar nav stays enabled for that run.
     """
     session_state[SUBJECT_TYPE_KEY] = subject_type
     session_state[SUBJECT_ID_KEY] = subject_id
     session_state[RUN_ID_KEY] = run_id
     label = _SUBJECT_TYPE_SELECTOR_LABELS.get(subject_type or "")
     if label is not None:
-        _sync_subject_type_selector(session_state, label)
-    session_state.pop(SUBJECT_ID_SELECTOR_KEY, None)
-    session_state.pop(RUN_SELECTOR_KEY, None)
+        _sync_sidebar_widget(session_state, SUBJECT_TYPE_SELECTOR_KEY, label)
+    # Transcript/group selectbox options use "" as the placeholder; store the
+    # canonical id (or clear) so the widget does not keep a stale selection.
+    _sync_sidebar_widget(session_state, SUBJECT_ID_SELECTOR_KEY, subject_id)
+    _sync_sidebar_widget(session_state, RUN_SELECTOR_KEY, run_id)
 
 
 def set_current_subject_context(

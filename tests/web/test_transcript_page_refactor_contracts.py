@@ -46,8 +46,8 @@ def test_navigate_to_segment_sets_canonical_state_and_reruns(monkeypatch) -> Non
     assert state[RUN_ID_KEY] == "run1"
     assert state[PAGE_KEY] == "Transcript"
     assert state[NAV_REQUEST_KEY].highlight_query == "hello"
-    assert SUBJECT_ID_SELECTOR_KEY not in state
-    assert RUN_SELECTOR_KEY not in state
+    assert state[SUBJECT_ID_SELECTOR_KEY] == "slug"
+    assert state[RUN_SELECTOR_KEY] == "run1"
     assert called["rerun"] == 1
 
 

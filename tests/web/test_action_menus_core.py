@@ -151,9 +151,7 @@ def test_section_default_regression(
 ) -> None:
     assert (
         list(
-            section_default_actions(
-                section, subject_type=subject_type, has_run=has_run
-            )
+            section_default_actions(section, subject_type=subject_type, has_run=has_run)
         )
         == expected
     )
@@ -241,9 +239,7 @@ def test_insights_requires_completed_run(tmp_path: Path) -> None:
         instance_prefix="t",
         run_completed=True,
     )
-    assert is_action_available(
-        ActionId.INSIGHTS, ctx2, capabilities_from_context(ctx2)
-    )
+    assert is_action_available(ActionId.INSIGHTS, ctx2, capabilities_from_context(ctx2))
 
 
 def test_corrections_excluded_for_group(tmp_path: Path) -> None:
@@ -392,9 +388,7 @@ def test_resolve_filters_unavailable(tmp_path: Path) -> None:
         nav_style=NavStyle.ON_CLICK,
         instance_prefix="t",
     )
-    resolved = resolve_section_actions(
-        SectionId.SPEAKER_ID_COMPLETE, ctx, prefs=prefs
-    )
+    resolved = resolve_section_actions(SectionId.SPEAKER_ID_COMPLETE, ctx, prefs=prefs)
     assert resolved == [ActionId.OPEN]
 
 

@@ -7,9 +7,15 @@ from transcriptx.web.action_menus.catalog import (
     SECTION_ALLOWLISTS,
     section_default_actions,
 )
-from transcriptx.web.action_menus.context import ActionContext, capabilities_from_context
+from transcriptx.web.action_menus.context import (
+    ActionContext,
+    capabilities_from_context,
+)
 from transcriptx.web.action_menus.ids import ActionId, SectionId
-from transcriptx.web.action_menus.prefs import InterfaceMenuPrefs, get_cached_runtime_prefs
+from transcriptx.web.action_menus.prefs import (
+    InterfaceMenuPrefs,
+    get_cached_runtime_prefs,
+)
 
 
 def _standard_menu_ids(prefs: InterfaceMenuPrefs) -> list[ActionId]:
@@ -38,9 +44,7 @@ def configured_actions_for_section(
         candidates = _standard_menu_ids(prefs)
     else:
         candidates = list(
-            section_default_actions(
-                section, subject_type=subject_type, has_run=has_run
-            )
+            section_default_actions(section, subject_type=subject_type, has_run=has_run)
         )
 
     allow = set(SECTION_ALLOWLISTS[section])

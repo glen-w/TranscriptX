@@ -75,6 +75,19 @@ def _redirect_legacy_explorer() -> None:
     _render_artifacts()
 
 
+def _redirect_legacy_batch_ops() -> None:
+    """Thin alias for bookmarked Batch Ops sessions → Run Analysis (Batch target).
+
+    Sole owner of this redirect: do not also map Batch Ops in LEGACY_PAGE_REDIRECTS,
+    or migration would rewrite the page before the Batch preset is applied.
+    """
+    st.session_state[PAGE_KEY] = "Run Analysis"
+    st.session_state["run_analysis_target"] = "Batch"
+    from transcriptx.web.page_modules.run_analysis import render_run_analysis_page
+
+    render_run_analysis_page()
+
+
 def build_page_renderers(
     *,
     corrections_studio_available: bool,
@@ -103,7 +116,7 @@ def build_page_renderers(
         "Speaker ID": _lazy_renderer("speaker_id", "render_speaker_id_page"),
         "Audio Prep": _lazy_renderer("audio_prep", "render_audio_prep_page"),
         "Audio Merge": _lazy_renderer("audio_merge", "render_audio_merge_page"),
-        "Batch Ops": _lazy_renderer("batch_ops", "render_batch_ops_page"),
+        "Batch Ops": _redirect_legacy_batch_ops,
         "Dashboard Builder": _lazy_renderer(
             "dashboard_builder", "render_dashboard_builder"
         ),

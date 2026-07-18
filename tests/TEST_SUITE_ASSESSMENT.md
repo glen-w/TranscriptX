@@ -3,6 +3,8 @@
 **Date:** 2026-02-02  
 **Scope:** Assess suite, quarantine obsolete tests, add high-leverage unit and integration tests.
 
+**Related (Streamlit GUI testing posture, 2026-07-18):** [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md) — surface × layer matrix, journey risk scores, doubles-first strategy, P0–P2 backlog. This living doc remains the expansion history; that assessment is the dedicated Streamlit UI test gap report.
+
 ---
 
 ## 1. Suite overview
@@ -1405,3 +1407,68 @@ Follow-on covering the remaining gaps called out after §54: thin `search_servic
 - **Production code:** none changed.
 - **run_cleanup:** not expanded (intentionally).
 - **Quarantined / cleanup:** unchanged / disabled.
+
+## 56. Expansion (2026-07-18) – Streamlit UI doubles build-out (assessment backlog)
+
+### Review
+- Follows [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md) P0–P2 (items 1–12).
+- **AppTest:** still not used; doubles-first retained.
+- **Coverage:** `.coveragerc` still omits `web/`; gap-finder command documented in assessment §11.
+
+### New / extended tests (tests-only)
+
+| File | Focus |
+|------|-------|
+| `tests/web/test_groups_page.py` (**new**) | Empty list, create/rename/delete, subject panel, detail fragment |
+| `tests/web/test_run_analysis_page.py` (**extended**) | Group target hidden when disabled; empty groups; group select |
+| `tests/web/test_search_page.py` (**new**) | Short query, empty/results, transcript scope, group-subject no session_slugs |
+| `tests/web/test_insights_page.py` (**new**) | Run-scoped guard + sections fragment entry |
+| `tests/web/test_overview_page.py` (**new**) | Guard, empty artifacts, blocks fragment |
+| `tests/web/test_interface_panel.py` (**new**) | Hydrate / save / restore / reload |
+| `tests/web/test_corrections_studio_review.py` (**new**) | Accept / reject / skip decisions |
+| `tests/web/test_audio_merge_page.py` (**new**) | Empty vs recordings section |
+| `tests/web/test_diagnostics_page.py` (**new**) | Doctor + group warnings + rename section |
+| `tests/web/test_artifacts_page.py` (**new**) | Browse vs Preview body routing |
+
+### Validation
+- New/extended slice: **40 passed**.
+- **Production code:** none changed.
+
+## 57. Suite review (2026-07-18) – `/tests` + artifact writer / WIP edge coverage
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260718.zip` (4.3M); `custom-commands/` mirrored.
+- **Cleanup:** disabled (not run).
+- **Collection (default addopts):** `6143/6328` selected (`185` deselected); no collection/import errors on default gate.
+- **Baseline default run:** `6142 passed`, `1 skipped`, `185` deselected, `0` failed (green).
+- **Full collection (`-m ""`):** collection errors remain in unrelated snapshot/registry modules when addopts are overridden (not selected by default gate).
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` = 0).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+- **Skipped-at-collection note:** historical `test_rules.py` missing-module note remains stale; module present under `acts.rules`.
+- **Streamlit backlog:** P0–P2 items 1–12 already closed in §56 (untracked companions on disk); AppTest still deferred.
+
+### Coverage gaps targeted
+| Area | Pre-gap | Action |
+|------|---------|--------|
+| `core/utils/artifact_writer` | Only used as fixture helper; no dedicated unit suite | Direct atomic write/json/jsonl/csv tests |
+| Batch widget sanitize | Stale-list path only | Non-list transcript/module values → `[]` |
+| Interface pending sync | Save/restore mocked `_request_widget_sync` | Flag set + pending hydrate on next render |
+| Charts empty body | Delegate-to-run-scoped only | `_render_charts_body` empty-state contract |
+| Shell action-link CSS | No source contract after column-`::after` move | Pin separators on columns, not buttons |
+
+### New / expanded tests (tests-only)
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `tests/unit/test_artifact_writer.py` (**new**) | 6 | `write_bytes`/`text`/`json`/`jsonl`/`csv` + overwrite |
+| `tests/web/test_batch_ops_page.py` (+) | 1 | Non-list sanitize clears to `[]` |
+| `tests/web/test_interface_panel.py` (+) | 2 | `_request_widget_sync` flag; pending hydrate |
+| `tests/web/test_charts_page_helpers.py` (+) | 1 | Empty charts → `no_results_yet` empty state |
+| `tests/web/test_shell_action_link_css.py` (**new**) | 1 | Column `::after` separator CSS contract |
+
+### Validation
+- New slice: **11 passed**.
+- **Default suite:** `6153 passed`, `1 skipped`, `185` deselected, `0` failed (+11 vs baseline green).
+- **Production code:** none changed by this `/tests` expansion (pre-existing WIP production edits remain uncommitted separately).
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.

@@ -35,7 +35,7 @@ from transcriptx.web.components.playback_panel import _fmt_time, render_playback
 from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
-from transcriptx.web.state import PAGE_KEY, SELECTBOX_PLACEHOLDER_TRANSCRIPT
+from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
 from transcriptx.web.transcript_option_format import (
     format_transcript_option_with_speaker_status,
 )

@@ -193,7 +193,6 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
 
 
 def test_home_export_zip_prepares_download(monkeypatch) -> None:
-    import transcriptx.web.components.recent_run_row as recent_run_row
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {}
@@ -305,8 +304,8 @@ def test_home_recent_run_open_updates_session_state(monkeypatch) -> None:
     assert ss["run_id"] == "20260713_032900_abcdef12"
     assert ss["page"] == "Overview"
     assert ss["subject_type_selector"] == "Transcript"
-    assert "subject_id_selector" not in ss
-    assert "run_selector" not in ss
+    assert ss["subject_id_selector"] == "slug-1"
+    assert ss["run_selector"] == "20260713_032900_abcdef12"
 
     joined = "\n".join(markdown_blobs)
     assert "Suzanne interview" in joined
@@ -370,11 +369,11 @@ def test_home_recent_run_action_links_navigate_to_target_page(
     assert ss["subject_type"] == "transcript"
     assert ss["subject_id"] == "slug-1"
     assert ss["run_id"] == "20260713_032900_abcdef12"
-    assert "subject_id_selector" not in ss
-    assert "run_selector" not in ss
+    assert ss["subject_id_selector"] == "slug-1"
+    assert ss["run_selector"] == "20260713_032900_abcdef12"
 
 
-def test_apply_subject_context_clears_stale_sidebar_widgets() -> None:
+def test_apply_subject_context_syncs_sidebar_widgets() -> None:
     from transcriptx.web.state import apply_subject_context
 
     state = {
@@ -392,17 +391,21 @@ def test_apply_subject_context_clears_stale_sidebar_widgets() -> None:
     assert state["subject_id"] == "slug-a"
     assert state["run_id"] == "run-a"
     assert state["subject_type_selector"] == "Transcript"
-    assert "subject_id_selector" not in state
-    assert "run_selector" not in state
+    assert state["subject_id_selector"] == "slug-a"
+    assert state["run_selector"] == "run-a"
 
 
-def test_apply_subject_context_pops_type_selector_when_widget_locked() -> None:
-    """Mid-script updates must not crash after sidebar instantiated the widget."""
+def test_apply_subject_context_pops_widgets_when_locked() -> None:
+    """Mid-script updates must not crash after sidebar instantiated the widgets."""
     from transcriptx.web.state import apply_subject_context
 
     class _LockedState(dict):
         def __setitem__(self, key, value):  # noqa: ANN001
-            if key == "subject_type_selector":
+            if key in (
+                "subject_type_selector",
+                "subject_id_selector",
+                "run_selector",
+            ):
                 err = type("StreamlitAPIException", (Exception,), {})(
                     "cannot be modified after the widget is instantiated"
                 )
@@ -431,7 +434,6 @@ def test_apply_subject_context_pops_type_selector_when_widget_locked() -> None:
 
 
 def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
-    import transcriptx.web.components.recent_run_row as recent_run_row
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {}

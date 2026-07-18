@@ -16,7 +16,7 @@ from transcriptx.web.services.artifact_service import ArtifactService
 from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
-from transcriptx.web.state import PAGE_KEY, apply_subject_context
+from transcriptx.web.state import PAGE_KEY, SUBJECT_ID_KEY, apply_subject_context
 
 # Page destinations from navigation registry keys (single source of truth).
 PAGE_OVERVIEW = "Overview"
@@ -28,6 +28,41 @@ PAGE_LIBRARY = "Library"
 PAGE_SPEAKER_ID = "Speaker ID"
 PAGE_RUN_ANALYSIS = "Run Analysis"
 PAGE_CORRECTIONS = "Corrections Studio"
+
+# Streamlit keyed selectboxes ignore index= once the key exists. Clear these on
+# identity navigation so destination pages re-bind from canonical subject.
+PAGE_TRANSCRIPT_PICKER_KEYS: tuple[str, ...] = (
+    "speaker_id_transcript",
+    "run_analysis_transcript",
+    "corrections_studio_transcript",
+    "library_transcript_select",
+)
+
+# Action → page label for handlers that call navigate_with_identity.
+ACTION_NAV_PAGES: dict[str, str] = {
+    "open": PAGE_OVERVIEW,
+    "open_transcript": PAGE_TRANSCRIPT,
+    "charts": PAGE_CHARTS,
+    "artifacts": PAGE_ARTIFACTS,
+    "insights": PAGE_INSIGHTS,
+    "run_speaker_id": PAGE_SPEAKER_ID,
+    "run_analysis": PAGE_RUN_ANALYSIS,
+    "corrections": PAGE_CORRECTIONS,
+}
+
+
+def _sync_destination_pickers(
+    session_state: dict[str, Any], identity: CanonicalIdentity
+) -> None:
+    """Clear stale page pickers and align Run Analysis target mode with identity."""
+    for key in PAGE_TRANSCRIPT_PICKER_KEYS:
+        session_state.pop(key, None)
+    if identity.subject_type == "group":
+        session_state["run_analysis_target"] = "Group"
+        session_state["run_analysis_group"] = identity.subject_id
+    else:
+        session_state["run_analysis_target"] = "Transcript"
+        session_state.pop("run_analysis_group", None)
 
 
 def apply_identity_to_session(
@@ -50,14 +85,16 @@ def apply_identity_to_session(
             identity.transcript_path,
             session_resolver=make_session_path_resolver(),
         )
-        # Preserve explicit run absence after path hydration when no run.
-        if identity.run_id is None:
-            apply_subject_context(
-                session_state,
-                subject_type="transcript",
-                subject_id=identity.subject_id,
-                run_id=None,
-            )
+        # Keep hydrated subject_id (slug/path); only clear auto-picked run_id.
+        # identity.subject_id is often a path stem and must not overwrite the slug.
+        hydrated_subject_id = session_state.get(SUBJECT_ID_KEY) or identity.subject_id
+        apply_subject_context(
+            session_state,
+            subject_type="transcript",
+            subject_id=hydrated_subject_id,
+            run_id=None,
+        )
+    _sync_destination_pickers(session_state, identity)
 
 
 def navigate_with_identity(
@@ -124,9 +161,7 @@ def prepare_run_export(identity: CanonicalIdentity) -> None:
         st.session_state[error_key] = f"Export failed: {exc}"
 
 
-def render_export_residuals(
-    identity: CanonicalIdentity, *, download_key: str
-) -> None:
+def render_export_residuals(identity: CanonicalIdentity, *, download_key: str) -> None:
     error_msg = st.session_state.get(export_error_key(identity))
     if error_msg:
         st.warning(str(error_msg))

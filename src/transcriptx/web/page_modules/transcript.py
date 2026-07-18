@@ -216,21 +216,21 @@ def _render_transcript_tabs(
     highlight_query: str | None,
     jump_index: int | None,
 ) -> None:
-    """Render plain/segmented tabs for already-filtered display segments."""
-    tab_plain, tab_segmented = st.tabs(["Plain", "Segmented"])
-    with tab_plain:
+    """Render turns/segments tabs for already-filtered display segments."""
+    tab_turns, tab_segments = st.tabs(["Turns", "Segments"])
+    with tab_turns:
+        render_segmented_tab(
+            display_segments,
+            show_timestamps=controls.show_timestamps,
+            format_key=controls.format_key,
+        )
+    with tab_segments:
         render_plain_segments(
             display_segments,
             show_timestamps=controls.show_timestamps,
             format_key=controls.format_key,
             highlight_query=highlight_query,
             jump_index=jump_index,
-        )
-    with tab_segmented:
-        render_segmented_tab(
-            display_segments,
-            show_timestamps=controls.show_timestamps,
-            format_key=controls.format_key,
         )
 
 
@@ -266,7 +266,7 @@ def render_transcript_viewer() -> None:
         "Transcript",
         (
             "Read diarized segments for the current run. Search filters the list; "
-            "use Plain for line-by-line reading or Segmented for speaker blocks."
+            "use Turns for speaker blocks or Segments for line-by-line reading."
         ),
         badges=None,
         actions=None,

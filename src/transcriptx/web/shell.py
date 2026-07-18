@@ -423,19 +423,22 @@ def inject_global_styles() -> None:
         flex: 0 0 auto !important;
         width: auto !important;
         min-width: fit-content !important;
+        display: flex !important;
+        align-items: center;
     }
+    /* Pipe separators between action-link columns (not inside buttons —
+       Streamlit tertiary buttons often clip or override ::after). */
     div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
-        [data-testid="stColumn"]:not(:last-child)
-        [data-testid="stButton"] > button::after,
-    div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
-        [data-testid="stColumn"]:not(:last-child)
-        [data-testid="stDownloadButton"] > button::after {
-        content: " |";
-        color: rgba(250, 250, 250, 0.4);
-        text-decoration: none;
-        margin-left: 0.45rem;
+        [data-testid="stColumn"]:not(:last-child)::after {
+        content: "|";
+        color: rgba(250, 250, 250, 0.38);
+        margin: 0 0.55rem;
+        font-size: 0.88rem;
         font-weight: 400;
+        line-height: 1;
         pointer-events: none;
+        user-select: none;
+        flex-shrink: 0;
     }
     /* Empty states */
     .tx-empty {

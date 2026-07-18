@@ -29,6 +29,16 @@ def test_legacy_data_and_explorer_redirect_map() -> None:
     assert migrate_legacy_page_key("Explorer") == ("Artifacts", "Browse")
     assert migrate_legacy_page_key("Statistics") == ("Home", None)
     assert migrate_legacy_page_key("Overview") == ("Overview", None)
+    # Batch Ops must NOT migrate here — router applies Batch target first.
+    assert migrate_legacy_page_key("Batch Ops") == ("Batch Ops", None)
+
+
+def test_workflow_section_excludes_legacy_batch_ops() -> None:
+    keys = [s.key for s in pages_in_section("workflow")]
+    assert "Run Analysis" in keys
+    assert "Batch Ops" not in keys
+    assert "Groups" in keys
+    assert keys.index("Run Analysis") < keys.index("Groups")
 
 
 def test_view_section_excludes_legacy_and_includes_artifacts() -> None:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
 import streamlit as st
 
@@ -98,9 +97,7 @@ def _button(
         def _cb() -> None:
             on_activate()
 
-        render_action_link(
-            label, key=key, icon=icon, help=help_text, on_click=_cb
-        )
+        render_action_link(label, key=key, icon=icon, help=help_text, on_click=_cb)
     else:
         if render_action_link(label, key=key, icon=icon, help=help_text):
             on_activate()
@@ -108,11 +105,23 @@ def _button(
 
 
 def _render_open(ctx: ActionContext, *, section: SectionId, key: str) -> None:
-    _button(ctx, action=ActionId.OPEN, section=section, key=key, on_activate=lambda: _nav(ctx, PAGE_OVERVIEW))
+    _button(
+        ctx,
+        action=ActionId.OPEN,
+        section=section,
+        key=key,
+        on_activate=lambda: _nav(ctx, PAGE_OVERVIEW),
+    )
 
 
 def _render_charts(ctx: ActionContext, *, section: SectionId, key: str) -> None:
-    _button(ctx, action=ActionId.CHARTS, section=section, key=key, on_activate=lambda: _nav(ctx, PAGE_CHARTS))
+    _button(
+        ctx,
+        action=ActionId.CHARTS,
+        section=section,
+        key=key,
+        on_activate=lambda: _nav(ctx, PAGE_CHARTS),
+    )
 
 
 def _render_artifacts(ctx: ActionContext, *, section: SectionId, key: str) -> None:
@@ -228,9 +237,7 @@ HANDLERS: dict[ActionId, ActionHandler] = {
     ActionId.CHARTS: ActionHandler(_available_run_scoped, _render_charts),
     ActionId.ARTIFACTS: ActionHandler(_available_run_scoped, _render_artifacts),
     ActionId.INSIGHTS: ActionHandler(_available_insights, _render_insights),
-    ActionId.EXPORT_ZIP: ActionHandler(
-        _available_export, _render_export, _post_export
-    ),
+    ActionId.EXPORT_ZIP: ActionHandler(_available_export, _render_export, _post_export),
     ActionId.RENAME: ActionHandler(_available_rename, _render_rename),
     ActionId.RUN_SPEAKER_ID: ActionHandler(_available_workflow, _render_speaker_id),
     ActionId.RUN_ANALYSIS: ActionHandler(_available_workflow, _render_run_analysis),

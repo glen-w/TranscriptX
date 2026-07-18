@@ -58,7 +58,7 @@ def test_get_current_subject_context_rejects_unknown_subject_type(
 
 
 @pytest.mark.unit
-def test_apply_subject_context_sets_type_label_and_clears_pickers() -> None:
+def test_apply_subject_context_sets_type_label_and_syncs_pickers() -> None:
     ss = {
         SUBJECT_ID_SELECTOR_KEY: "stale",
         RUN_SELECTOR_KEY: "stale-run",
@@ -74,33 +74,53 @@ def test_apply_subject_context_sets_type_label_and_clears_pickers() -> None:
     assert ss[SUBJECT_ID_KEY] == "slug"
     assert ss[RUN_ID_KEY] == "run-9"
     assert ss[SUBJECT_TYPE_SELECTOR_KEY] == "Transcript"
+    assert ss[SUBJECT_ID_SELECTOR_KEY] == "slug"
+    assert ss[RUN_SELECTOR_KEY] == "run-9"
+
+
+@pytest.mark.unit
+def test_apply_subject_context_skips_type_label_when_subject_none() -> None:
+    ss = {
+        SUBJECT_TYPE_SELECTOR_KEY: "Transcript",
+        SUBJECT_ID_SELECTOR_KEY: "stale",
+        RUN_SELECTOR_KEY: "stale-run",
+    }
+    apply_subject_context(ss, subject_type=None, subject_id=None, run_id=None)
+    assert ss[SUBJECT_TYPE_KEY] is None
+    assert ss[SUBJECT_TYPE_SELECTOR_KEY] == "Transcript"
     assert SUBJECT_ID_SELECTOR_KEY not in ss
     assert RUN_SELECTOR_KEY not in ss
 
 
 @pytest.mark.unit
-def test_apply_subject_context_skips_type_label_when_subject_none() -> None:
-    ss = {SUBJECT_TYPE_SELECTOR_KEY: "Transcript"}
-    apply_subject_context(ss, subject_type=None, subject_id=None, run_id=None)
-    assert ss[SUBJECT_TYPE_KEY] is None
-    assert ss[SUBJECT_TYPE_SELECTOR_KEY] == "Transcript"
-
-
-@pytest.mark.unit
-def test_apply_subject_context_pops_locked_type_selector() -> None:
+def test_apply_subject_context_pops_locked_sidebar_widgets() -> None:
     class _Locked(dict):
         def __setitem__(self, key, value):  # noqa: ANN001
-            if key == SUBJECT_TYPE_SELECTOR_KEY:
+            if key in (
+                SUBJECT_TYPE_SELECTOR_KEY,
+                SUBJECT_ID_SELECTOR_KEY,
+                RUN_SELECTOR_KEY,
+            ):
                 err = type("StreamlitAPIException", (Exception,), {})(
                     "cannot be modified after the widget is instantiated"
                 )
                 raise err
             return super().__setitem__(key, value)
 
-    ss = _Locked({SUBJECT_TYPE_SELECTOR_KEY: "Group"})
+    ss = _Locked(
+        {
+            SUBJECT_TYPE_SELECTOR_KEY: "Group",
+            SUBJECT_ID_SELECTOR_KEY: "stale",
+            RUN_SELECTOR_KEY: "old",
+        }
+    )
     apply_subject_context(ss, subject_type="transcript", subject_id="s", run_id="r")
     assert SUBJECT_TYPE_SELECTOR_KEY not in ss
+    assert SUBJECT_ID_SELECTOR_KEY not in ss
+    assert RUN_SELECTOR_KEY not in ss
     assert ss[SUBJECT_TYPE_KEY] == "transcript"
+    assert ss[SUBJECT_ID_KEY] == "s"
+    assert ss[RUN_ID_KEY] == "r"
 
 
 @pytest.mark.unit
@@ -122,6 +142,8 @@ def test_set_current_subject_context_delegates_to_session(clear_st_session) -> N
     assert st.session_state[SUBJECT_ID_KEY] == "uuid"
     assert st.session_state[RUN_ID_KEY] == "run"
     assert st.session_state[SUBJECT_TYPE_SELECTOR_KEY] == "Group"
+    assert st.session_state[SUBJECT_ID_SELECTOR_KEY] == "uuid"
+    assert st.session_state[RUN_SELECTOR_KEY] == "run"
 
 
 @pytest.mark.unit

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-07-18
+
+### Added
+
+- Module-run prompt CTA (`module_run_prompt`) for Insights empty states that need a fresh analysis run.
+- Broad Streamlit page coverage tests (artifacts, audio merge, diagnostics, groups, insights, overview, search, settings, action-menu navigation).
+
+### Changed
+
+- Action-menu identity navigation clears stale transcript pickers and syncs Run Analysis target mode with the destination subject.
+- Sidebar subject/run widgets stay aligned after external navigation; Batch Ops is a legacy redirect that sets batch mode before rewrite.
+- Action-link column separators use column `::after` pipes (avoids Streamlit button clipping).
+
+### Fixed
+
+- Preserve hydrated transcript `subject_id` when clearing auto-picked `run_id` during identity apply.
+
 ## [0.4.6] - 2026-07-17
 
 ### Added

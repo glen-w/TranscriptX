@@ -81,7 +81,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
     ),
     _spec("Corrections Studio", "Corrections Studio", "workflow"),
     _spec("Run Analysis", "Run Analysis", "workflow", may_mutate_context=True),
-    _spec("Batch Ops", "Batch Analysis", "workflow", may_mutate_context=False),
     _spec("Groups", "Groups", "workflow", may_mutate_context=True),
     _spec(
         "Overview",
@@ -120,6 +119,15 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         allowed_fallback="overview",
     ),
     # Legacy keys retained for redirect aliases (not shown in sidebar — filtered out).
+    # Batch Ops is intentionally NOT in LEGACY_PAGE_REDIRECTS: the router must apply
+    # run_analysis_target=Batch before rewriting the page key.
+    _spec(
+        "Batch Ops",
+        "Batch Analysis",
+        "workflow",
+        subsection="legacy",
+        may_mutate_context=False,
+    ),
     _spec(
         "Data",
         "Data",

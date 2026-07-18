@@ -111,7 +111,11 @@ def capabilities_from_context(ctx: ActionContext) -> ContextCapabilities:
             has_tp = False
 
     has_run = False
-    if ident.run_id and ident.run_dir is not None and ident.run_dir.name == ident.run_id:
+    if (
+        ident.run_id
+        and ident.run_dir is not None
+        and ident.run_dir.name == ident.run_id
+    ):
         has_run = True
         try:
             # A path that exists as a file (not a directory) is stale/invalid.

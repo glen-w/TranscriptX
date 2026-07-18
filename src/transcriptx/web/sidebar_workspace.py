@@ -16,6 +16,33 @@ from transcriptx.web.state import (
 )
 
 
+def _selectbox_index_kwargs(
+    *,
+    key: str,
+    options: list[str],
+    preferred: str | None,
+    fallback_index: int = 0,
+) -> dict[str, int]:
+    """Return ``index=`` only when the widget key is not already in session state.
+
+    ``apply_subject_context`` (and similar navigators) write keyed picker values
+    before the sidebar renders. Passing both that value and ``index`` triggers
+    Streamlit's widget-state duplication warning; session state wins, so omit
+    ``index`` when the key is already set. If the stored value is stale relative
+    to current options, rewrite it before the widget instantiates.
+    """
+    if key in st.session_state:
+        current = st.session_state.get(key)
+        if current not in options:
+            st.session_state[key] = (
+                preferred if preferred in options else options[fallback_index]
+            )
+        return {}
+    if preferred and preferred in options:
+        return {"index": options.index(preferred)}
+    return {"index": fallback_index}
+
+
 def render_sidebar_stats(
     *,
     status: SidebarStatus,
@@ -45,18 +72,20 @@ def render_transcript_picker(
     default_subject_id: str | None,
 ) -> str | None:
     """Render transcript selectbox; return selected slug or None for placeholder."""
-    default_idx = 0
-    if default_subject_id and default_subject_id in options:
-        default_idx = options.index(default_subject_id) + 1
+    choices = [""] + options
     selected = st.selectbox(
         "Transcript",
-        [""] + options,
+        choices,
         format_func=lambda x: (
             SELECTBOX_PLACEHOLDER_TRANSCRIPT if x == "" else format_func(x)
         ),
-        index=default_idx,
         key=SUBJECT_ID_SELECTOR_KEY,
         label_visibility="collapsed",
+        **_selectbox_index_kwargs(
+            key=SUBJECT_ID_SELECTOR_KEY,
+            options=choices,
+            preferred=default_subject_id,
+        ),
     )
     return selected if selected else None
 
@@ -68,18 +97,20 @@ def render_group_picker(
     default_subject_id: str | None,
 ) -> str | None:
     """Render group selectbox; return selected group uuid or None for placeholder."""
-    default_idx = 0
-    if default_subject_id and default_subject_id in group_keys:
-        default_idx = group_keys.index(default_subject_id) + 1
+    choices = [""] + group_keys
     selected_group = st.selectbox(
         "Group",
-        [""] + group_keys,
+        choices,
         format_func=lambda key: (
             SELECTBOX_PLACEHOLDER_GROUP if key == "" else group_labels.get(key, key)
         ),
-        index=default_idx,
         key=SUBJECT_ID_SELECTOR_KEY,
         label_visibility="collapsed",
+        **_selectbox_index_kwargs(
+            key=SUBJECT_ID_SELECTOR_KEY,
+            options=choices,
+            preferred=default_subject_id,
+        ),
     )
     return selected_group if selected_group else None
 
@@ -90,12 +121,15 @@ def render_run_picker(
     default_run_id: str | None,
 ) -> str:
     """Render run selectbox; return selected run id."""
-    index = run_options.index(default_run_id) if default_run_id in run_options else 0
     return st.selectbox(
         "Run",
         run_options,
-        index=index,
         key=RUN_SELECTOR_KEY,
+        **_selectbox_index_kwargs(
+            key=RUN_SELECTOR_KEY,
+            options=run_options,
+            preferred=default_run_id,
+        ),
     )
 
 

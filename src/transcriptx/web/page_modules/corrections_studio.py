@@ -22,6 +22,8 @@ from transcriptx.services.corrections_studio.schema import (
     StudioReviewStats,
     StudioSessionDocument,
 )
+from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
 
 
@@ -464,19 +466,25 @@ def render_corrections_studio() -> None:
 
     options = [f"{t.base_name} ({t.segment_count} segments)" for t in transcripts]
     paths = [t.path for t in transcripts]
+    default_idx = SubjectService.index_in_path_options(st.session_state, paths)
     idx = st.selectbox(
         "Transcript",
         range(len(options) + 1),
         format_func=lambda i: (
             SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else options[i - 1]
         ),
-        index=0,
+        index=default_idx,
         key="corrections_studio_transcript",
     )
     if idx == 0:
         st.info("Select a transcript to continue.")
         return
     transcript_path = paths[idx - 1]
+    SubjectService.set_transcript_context_from_path(
+        st.session_state,
+        transcript_path,
+        session_resolver=make_session_path_resolver(),
+    )
 
     # -- Start / Resume --
     col_start, col_regen = st.columns([1, 1])

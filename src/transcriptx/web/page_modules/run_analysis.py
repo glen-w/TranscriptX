@@ -24,7 +24,6 @@ from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.state import (
-    PAGE_KEY,
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
     set_page_flash,
@@ -48,14 +47,28 @@ from transcriptx.web.transcript_option_format import (
     format_transcript_option_with_speaker_status,
 )
 from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.page_modules.batch_ops import render_batch_analysis_panel
 from transcriptx.web.services.subject_service import SubjectService
 
 _RUN_ANALYSIS_DESCRIPTION = (
-    "Configure modules and run analysis on one transcript or a group. "
+    "Configure modules and run analysis on one transcript, a group, or a batch. "
     "Quick uses a lighter preset; full lets you pick a profile. "
     "Recommended modules adapt to the selected transcript(s)."
 )
 _KEY_LAST_SUCCESS = "run_analysis_last_success"
+_RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
+
+
+def _normalize_run_analysis_target(*, group_target_available: bool) -> str:
+    """Coerce persisted target before the radio binds; preserve explicit Batch."""
+    allowed = {"Transcript", "Batch"}
+    if group_target_available:
+        allowed.add("Group")
+    current = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY)
+    if current in allowed:
+        return str(current)
+    st.session_state[_RUN_ANALYSIS_TARGET_KEY] = "Transcript"
+    return "Transcript"
 
 
 def _store_last_success(
@@ -279,7 +292,9 @@ def _run_analysis_config_and_launch_fragment(
             st.session_state["run_id"] = rd.name
             _store_last_success(
                 run_dir=rd,
-                transcript_path=transcript_path if target_type == "Transcript" else None,
+                transcript_path=(
+                    transcript_path if target_type == "Transcript" else None
+                ),
                 subject_type=subject_type,
                 modules=list(result.modules_executed or []),
             )
@@ -349,22 +364,24 @@ def render_run_analysis_page() -> None:
         badges=None,
         actions=None,
     )
-    _render_post_analysis_actions()
 
     config = get_config()
     group_analysis_enabled = getattr(config.group_analysis, "enabled", False)
     group_target_available = group_analysis_enabled
 
+    _normalize_run_analysis_target(group_target_available=group_target_available)
+
     target_options = ["Transcript"]
     if group_target_available:
         target_options.append("Group")
+    target_options.append("Batch")
     target_type = st.radio(
         "Target",
         target_options,
         horizontal=True,
-        key="run_analysis_target",
+        key=_RUN_ANALYSIS_TARGET_KEY,
     )
-    if not group_target_available and "Group" not in target_options:
+    if not group_target_available:
         st.caption("Enable group analysis in config to run analysis on groups.")
     if group_target_available:
         st.caption(
@@ -372,6 +389,13 @@ def render_run_analysis_page() -> None:
             "data-only (e.g. temporal dynamics), or blob-only (summary). "
             "See docs/groups/group_analysis_module_outputs.md in the project."
         )
+
+    if target_type == "Batch":
+        render_batch_analysis_panel()
+        return
+
+    # Single/group completion actions only — never show under Batch.
+    _render_post_analysis_actions()
 
     transcript_path: Path | None = None
     selected_group = None  # set when target is Group
@@ -441,6 +465,13 @@ def render_run_analysis_page() -> None:
                 for g in groups
             }
             group_keys = list(group_options.keys())
+            default_group_idx = 0
+            current_subject = st.session_state.get("subject_id")
+            if (
+                st.session_state.get("subject_type") == "group"
+                and current_subject in group_options
+            ):
+                default_group_idx = group_keys.index(current_subject) + 1
             selected_uuid = st.selectbox(
                 "Group",
                 [""] + group_keys,
@@ -449,7 +480,7 @@ def render_run_analysis_page() -> None:
                     if key == ""
                     else group_labels.get(key, key)
                 ),
-                index=0,
+                index=default_group_idx,
                 key="run_analysis_group",
             )
             selected_group = group_options.get(selected_uuid) if selected_uuid else None

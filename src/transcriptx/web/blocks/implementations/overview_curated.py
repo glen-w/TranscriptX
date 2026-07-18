@@ -18,6 +18,7 @@ from transcriptx.web.blocks.llm_presentation import (
     strip_provenance_footer,
 )
 from transcriptx.web.blocks.placement import BlockPlacement
+from transcriptx.web.components.module_run_prompt import render_module_required_hint
 from transcriptx.web.run_health_presentation import build_run_status_summary
 from transcriptx.web.services.artifact_service import USER_REPORT_JSON
 from transcriptx.web.summary_precedence import (
@@ -76,8 +77,15 @@ def render_transcript_summary_hero(
         run_results=ctx.run_results,
     )
     if result.primary is None:
-        st.info(result.unavailable_message)
         failed = [c for c in result.others if c.outcome == "failed"]
+        if not failed and not result.others:
+            render_module_required_hint(
+                "Run the `summary` module to populate this view.",
+                key="overview_summary_hero",
+                ctx=ctx,
+            )
+            return
+        st.info(result.unavailable_message)
         if failed:
             with st.expander("Technical details"):
                 for c in failed:

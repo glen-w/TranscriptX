@@ -180,3 +180,40 @@ def test_render_charts_delegates_to_run_scoped_page(monkeypatch) -> None:
     assert calls
     assert calls[0][0].title == "Charts Gallery"
     assert calls[0][1] is mod._render_charts_body
+
+
+@pytest.mark.unit
+def test_render_charts_body_empty_shows_empty_state(monkeypatch, tmp_path) -> None:
+    import transcriptx.web.page_modules.charts as mod
+
+    empty_calls: list = []
+    shell_calls: list = []
+    ctx = SimpleNamespace(
+        subject=SimpleNamespace(subject_id="slug-a"),
+        run_id="run-1",
+        run_root=tmp_path,
+    )
+
+    monkeypatch.setattr(mod, "_ensure_charts_filters_for_run", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod.ArtifactService, "list_artifacts", staticmethod(lambda _root: [])
+    )
+    monkeypatch.setattr(mod, "compute_chart_badges", lambda _charts: ["0 charts"])
+    monkeypatch.setattr(
+        mod,
+        "render_page_shell",
+        lambda *a, **k: shell_calls.append((a, k)),
+    )
+    monkeypatch.setattr(
+        mod,
+        "render_empty_state",
+        lambda *a, **k: empty_calls.append((a, k)),
+    )
+
+    mod._render_charts_body(ctx)
+
+    assert shell_calls
+    assert shell_calls[0][0][0] == "Charts Gallery"
+    assert empty_calls
+    assert empty_calls[0][0][0] == "no_results_yet"
+    assert "No chart artifacts" in empty_calls[0][0][1]

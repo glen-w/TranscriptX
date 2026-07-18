@@ -82,7 +82,9 @@ def _scan_file(path: Path) -> list[str]:
         rule = _HELPER_BY_NAME[name]
         if not _passes_output_service(node, rule):
             rel = path.relative_to(REPO_ROOT).as_posix()
-            violations.append(f"{rel}:{node.lineno}: {name}(...) missing output_service")
+            violations.append(
+                f"{rel}:{node.lineno}: {name}(...) missing output_service"
+            )
     return violations
 
 

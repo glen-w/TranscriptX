@@ -33,7 +33,6 @@ from transcriptx.web.navigation import (
 )
 from transcriptx.web.services.recordings_service import RecordingsService
 from transcriptx.web.services.subject_service import SubjectService
-from transcriptx.web.state import PAGE_KEY
 
 logger = get_logger()
 
