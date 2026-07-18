@@ -147,6 +147,7 @@ def test_interactions_group_contract() -> None:
             module_results={
                 "interactions": {
                     "payload": {
+                        "semantics_version": 2,
                         "interruption_initiated": {"Alice": 2},
                         "interruption_received": {"Alice": 1},
                         "responses_initiated": {"Alice": 3},

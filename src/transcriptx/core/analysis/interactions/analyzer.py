@@ -6,6 +6,10 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from transcriptx.core.analysis.interactions.events import InteractionEvent
+from transcriptx.core.analysis.interactions.roles import (
+    INTERACTIONS_SEMANTICS_VERSION,
+    resolve_interaction_roles,
+)
 from transcriptx.core.utils.notifications import notify_user
 
 
@@ -133,8 +137,8 @@ class SpeakerInteractionAnalyzer:
                 interactions.append(
                     InteractionEvent(
                         timestamp=next_start,
-                        speaker_a=current_speaker,  # Current speaker is interrupted
-                        speaker_b=next_speaker,  # Next speaker is the interrupter
+                        speaker_a=current_speaker,  # interrupted
+                        speaker_b=next_speaker,  # interrupter
                         interaction_type="interruption_overlap",
                         speaker_a_text=current_seg.get("text", ""),
                         speaker_b_text=next_seg.get("text", ""),
@@ -151,8 +155,8 @@ class SpeakerInteractionAnalyzer:
                 interactions.append(
                     InteractionEvent(
                         timestamp=next_start,
-                        speaker_a=current_speaker,  # Current speaker is interrupted
-                        speaker_b=next_speaker,  # Next speaker is the interrupter
+                        speaker_a=current_speaker,  # interrupted
+                        speaker_b=next_speaker,  # interrupter
                         interaction_type="interruption_gap",
                         speaker_a_text=current_seg.get("text", ""),
                         speaker_b_text=next_seg.get("text", ""),
@@ -170,8 +174,8 @@ class SpeakerInteractionAnalyzer:
                 interactions.append(
                     InteractionEvent(
                         timestamp=next_start,
-                        speaker_a=current_speaker,
-                        speaker_b=next_speaker,
+                        speaker_a=current_speaker,  # addressee
+                        speaker_b=next_speaker,  # responder
                         interaction_type="response",
                         speaker_a_text=current_seg.get("text", ""),
                         speaker_b_text=next_seg.get("text", ""),
@@ -193,8 +197,14 @@ class SpeakerInteractionAnalyzer:
         """
         Analyze interaction patterns and generate comprehensive statistics.
 
-        This method processes detected interactions to calculate various metrics
-        including interruption counts, response patterns, and speaker dominance scores.
+        Role direction (semantics_version 2): actor→target via resolve_interaction_roles.
+        Interruptions: interrupter initiates, interrupted receives.
+        Responses: responder initiates, addressee receives.
+        Matrix edges are actor→target.
+
+        Dominance (frozen):
+        (I_init + R_init - I_recv - R_recv) / (I_init + R_init + I_recv + R_recv)
+        when denominator > 0, else 0. Both interruption and response roles contribute.
 
         Args:
             interactions: List of InteractionEvent objects
@@ -219,10 +229,10 @@ class SpeakerInteractionAnalyzer:
         responses_initiated = defaultdict(int)
         responses_received = defaultdict(int)
         interaction_matrix = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        ignored_unknown_types = Counter()
 
         # Process each interaction to build statistics
         for event in interactions:
-            # Event already contains display names from detect_interactions
             speaker_a = event.speaker_a
             speaker_b = event.speaker_b
 
@@ -235,15 +245,20 @@ class SpeakerInteractionAnalyzer:
             ):
                 continue
 
-            # Categorize and count interactions
-            if event.interaction_type.startswith("interruption"):
-                interruption_initiated[speaker_a] += 1
-                interruption_received[speaker_b] += 1
-                interaction_matrix[speaker_a][speaker_b]["interruptions"] += 1
-            elif event.interaction_type == "response":
-                responses_initiated[speaker_a] += 1
-                responses_received[speaker_b] += 1
-                interaction_matrix[speaker_a][speaker_b]["responses"] += 1
+            roles = resolve_interaction_roles(event)
+            if roles is None:
+                ignored_unknown_types[event.interaction_type] += 1
+                continue
+
+            actor = roles.actor
+            target = roles.target
+            if roles.family == "interruption":
+                interruption_initiated[actor] += 1
+                interruption_received[target] += 1
+            else:
+                responses_initiated[actor] += 1
+                responses_received[target] += 1
+            interaction_matrix[actor][target][roles.matrix_key] += 1
 
         # Calculate net balances for each speaker
         all_speakers = (
@@ -259,27 +274,29 @@ class SpeakerInteractionAnalyzer:
 
         for speaker in all_speakers:
             net_interruption_balance[speaker] = (
-                interruption_initiated[speaker] - interruption_received[speaker]
+                interruption_initiated.get(speaker, 0)
+                - interruption_received.get(speaker, 0)
             )
             net_response_balance[speaker] = (
-                responses_initiated[speaker] - responses_received[speaker]
+                responses_initiated.get(speaker, 0)
+                - responses_received.get(speaker, 0)
             )
             total_interactions[speaker] = (
-                interruption_initiated[speaker]
-                + interruption_received[speaker]
-                + responses_initiated[speaker]
-                + responses_received[speaker]
+                interruption_initiated.get(speaker, 0)
+                + interruption_received.get(speaker, 0)
+                + responses_initiated.get(speaker, 0)
+                + responses_received.get(speaker, 0)
             )
 
-        # Calculate dominance scores (positive = dominant, negative = submissive)
+        # Dominance: positive = more initiated than received (interruptions + responses)
         dominance_scores = {}
         for speaker in all_speakers:
-            total_initiated = (
-                interruption_initiated[speaker] + responses_initiated[speaker]
-            )
-            total_received = (
-                interruption_received[speaker] + responses_received[speaker]
-            )
+            total_initiated = interruption_initiated.get(
+                speaker, 0
+            ) + responses_initiated.get(speaker, 0)
+            total_received = interruption_received.get(
+                speaker, 0
+            ) + responses_received.get(speaker, 0)
             total = total_initiated + total_received
             if total > 0:
                 dominance_scores[speaker] = (total_initiated - total_received) / total
@@ -287,6 +304,7 @@ class SpeakerInteractionAnalyzer:
                 dominance_scores[speaker] = 0
 
         return {
+            "semantics_version": INTERACTIONS_SEMANTICS_VERSION,
             "interruption_initiated": dict(interruption_initiated),
             "interruption_received": dict(interruption_received),
             "responses_initiated": dict(responses_initiated),
@@ -304,4 +322,5 @@ class SpeakerInteractionAnalyzer:
             "interaction_types": Counter(
                 event.interaction_type for event in interactions
             ),
+            "ignored_unknown_interaction_types": dict(ignored_unknown_types),
         }

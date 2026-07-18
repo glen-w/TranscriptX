@@ -7,16 +7,25 @@ from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.interactions.analyzer import SpeakerInteractionAnalyzer
-from transcriptx.core.analysis.interactions.output import create_analysis_summary
+from transcriptx.core.analysis.interactions.equity import compute_equity
 from transcriptx.core.analysis.interactions.events import InteractionEvent
+from transcriptx.core.analysis.interactions.output import create_analysis_summary
+from transcriptx.core.analysis.interactions.roles import INTERACTIONS_SEMANTICS_VERSION
+from transcriptx.core.analysis.interactions.serialize import (
+    serialize_equity,
+    serialize_interactions_summary,
+)
 from transcriptx.core.analysis.interactions.visualization import (
     create_combined_timeline,
     create_dominance_analysis,
+    create_equity_floor_chart,
+    create_equity_summary_chart,
     create_interaction_heatmap,
     create_interaction_network,
     create_interaction_network_graph,
     create_speaker_timeline_charts,
 )
+from transcriptx.core.utils.segment_duration import compute_eligible_speaker_durations
 
 
 class InteractionsAnalysis(AnalysisModule):
@@ -24,7 +33,7 @@ class InteractionsAnalysis(AnalysisModule):
     Speaker interactions analysis module.
 
     This module analyzes speaker interactions including interruptions,
-    responses, and interaction patterns.
+    responses, interaction patterns, and turn-taking equity.
     """
 
     def __init__(self, config: Dict[str, Any] = None):
@@ -55,20 +64,25 @@ class InteractionsAnalysis(AnalysisModule):
         Returns:
             Dictionary containing interactions analysis results
         """
-        # Detect interactions
         interactions = self.analyzer.detect_interactions(segments)
-
-        # Analyze interaction patterns
         analysis_results = self.analyzer.analyze_interactions(
             interactions, speaker_map or {}
         )
 
-        # Convert InteractionEvent objects to dictionaries for JSON serialization
-        interactions_dict = [asdict(event) for event in interactions]
+        duration_result = compute_eligible_speaker_durations(segments)
+        equity = compute_equity(
+            duration_result=duration_result,
+            interruption_initiated=analysis_results.get("interruption_initiated", {}),
+            interruption_received=analysis_results.get("interruption_received", {}),
+            interactions=interactions,
+        )
+        analysis_results["equity"] = serialize_equity(equity)
+        analysis_results["semantics_version"] = analysis_results.get(
+            "semantics_version", INTERACTIONS_SEMANTICS_VERSION
+        )
 
-        # Add interactions to results
+        interactions_dict = [asdict(event) for event in interactions]
         analysis_results["interactions"] = interactions_dict
-        # Backward-compatible keys for tests/legacy consumers
         analysis_results["turns"] = interactions_dict
         analysis_results["turn_taking"] = {
             "responses_initiated": analysis_results.get("responses_initiated", {}),
@@ -82,6 +96,7 @@ class InteractionsAnalysis(AnalysisModule):
         analysis_results["summary"] = {
             "total_interactions": analysis_results.get("total_interactions_count", 0),
             "unique_speakers": analysis_results.get("unique_speakers", 0),
+            "semantics_version": analysis_results["semantics_version"],
         }
 
         return analysis_results
@@ -100,8 +115,6 @@ class InteractionsAnalysis(AnalysisModule):
         base_name = output_service.base_name
         output_structure = output_service.get_output_structure()
 
-        # Save interaction data
-        # Interactions are now dictionaries (converted from InteractionEvent objects in analyze())
         interaction_data = [
             {
                 "timestamp": event["timestamp"],
@@ -117,15 +130,16 @@ class InteractionsAnalysis(AnalysisModule):
         output_service.save_data(interaction_data, "interactions", format_type="json")
         output_service.save_data(interaction_data, "interactions", format_type="csv")
 
-        # Ensure charts/global directory exists (required for validation)
         output_structure.global_charts_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate visualizations using existing functions
         if interactions:
             self._create_interaction_network(results, output_service, base_name)
             self._create_interaction_charts(results, output_service, base_name)
 
-        # Create comprehensive summary
+        # Equity charts may render even when event list is empty (floor shares)
+        create_equity_floor_chart(results, output_service, base_name)
+        create_equity_summary_chart(results, output_service, base_name)
+
         self._create_analysis_summary(
             results, output_structure, base_name, output_service
         )
@@ -166,29 +180,11 @@ class InteractionsAnalysis(AnalysisModule):
         """Create analysis summary."""
         create_analysis_summary(analysis_results, output_structure, base_name)
 
-        # Also save summary using OutputService
-        global_stats = {
-            "total_interactions": analysis_results.get("total_interactions_count", 0),
-            "unique_speakers": analysis_results.get("unique_speakers", 0),
-        }
-        speaker_stats = {
-            speaker: {
-                "interruptions_initiated": analysis_results.get(
-                    "interruption_initiated", {}
-                ).get(speaker, 0),
-                "interruptions_received": analysis_results.get(
-                    "interruption_received", {}
-                ).get(speaker, 0),
-                "responses_initiated": analysis_results.get(
-                    "responses_initiated", {}
-                ).get(speaker, 0),
-                "responses_received": analysis_results.get(
-                    "responses_received", {}
-                ).get(speaker, 0),
-                "dominance_score": analysis_results.get("dominance_scores", {}).get(
-                    speaker, 0
-                ),
-            }
-            for speaker in analysis_results.get("total_interactions", {}).keys()
-        }
-        output_service.save_summary(global_stats, speaker_stats, analysis_metadata={})
+        serialized = serialize_interactions_summary(analysis_results)
+        output_service.save_summary(
+            serialized["global"],
+            serialized["speakers"],
+            analysis_metadata={
+                "semantics_version": serialized["semantics_version"],
+            },
+        )

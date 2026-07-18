@@ -13,8 +13,8 @@ class InteractionEvent:
     """
 
     timestamp: float  # When the interaction occurred
-    speaker_a: str  # First speaker in the interaction
-    speaker_b: str  # Second speaker in the interaction
+    speaker_a: str  # Interrupted / prior addressee
+    speaker_b: str  # Interrupter / responder
     interaction_type: (
         str  # Type: 'interruption_overlap', 'interruption_gap', 'response'
     )

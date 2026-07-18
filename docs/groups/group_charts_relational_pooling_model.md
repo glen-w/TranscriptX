@@ -49,6 +49,8 @@ A **structurally valid** pooled object with **no chartable content** (e.g. `edge
 
 **v1:** `interactions_pooled` includes **additive role counts only** (`interruptions_*`, `responses_*`). **`dominance_score` is not included** in `interactions_pooled` until a denominator-backed group definition is specified and implemented.
 
+Directional pooling of those additive counts (and dominance-derived `speaker_rows`) requires every included run to use current interactions `semantics_version` (see [`group_charts_interactions_equity_contract.md`](group_charts_interactions_equity_contract.md)). Mixed or legacy versions skip directional pool with one structured warning; session rows remain.
+
 ## `speaker_rows` vs `interactions_pooled`
 
 - **`speaker_rows`** remain for **CSV / row writers** and existing consumers.

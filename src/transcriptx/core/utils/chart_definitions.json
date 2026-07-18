@@ -1,7 +1,7 @@
 [
   {
     "viz_id": "group.acts.global_acts_pie.global",
-    "label": "Group aggregate \u2014 Dialogue Acts (filtered, all speakers)",
+    "label": "Group aggregate \u2014 Dialogue Acts filtered bar (all speakers)",
     "rank_default": 2,
     "kind": "chart",
     "module": "acts",
@@ -17,7 +17,7 @@
       "by_chart_slug_regex": null,
       "by_filename_glob": null
     },
-    "description": "Pie of the dialogue-act mix pooled across every session in the group, as if the whole group were one conversation. Each slice is an act category's share of all classified utterances. Larger slices show which act types dominate; this is the audited pooled act mix, not a per-session average.",
+    "description": "Bar chart of the dialogue-act mix pooled across every session in the group, limited to act types above 5% of the pooled corpus. Each bar is an act category's count; taller bars show which act types dominate. This is the audited pooled act mix, not a per-session average.",
     "family_id": null,
     "variant": null
   },
@@ -287,7 +287,7 @@
   },
   {
     "viz_id": "emotion.radar.global",
-    "label": "Emotion Radar \u2013 All Speakers",
+    "label": "Emotion Profile \u2013 All Speakers",
     "rank_default": 30,
     "kind": "chart",
     "module": "emotion",
@@ -303,13 +303,13 @@
       "by_chart_slug_regex": "emotion_all_radar",
       "by_filename_glob": null
     },
-    "description": "Radar chart of emotion-category intensities aggregated over all speakers. Each axis is an emotion; a larger reach on an axis means that emotion is more present overall.",
+    "description": "Bar chart of emotion-category intensities aggregated over all speakers. Each bar is an emotion; taller bars mean that emotion is more present overall.",
     "family_id": null,
     "variant": null
   },
   {
     "viz_id": "emotion.radar.speaker",
-    "label": "Emotion Radar (Per Speaker)",
+    "label": "Emotion Profile (Per Speaker)",
     "rank_default": 40,
     "kind": "chart",
     "module": "emotion",
@@ -325,7 +325,7 @@
       "by_chart_slug_regex": "/radar\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Radar chart of emotion-category intensities for a single speaker. Each axis is an emotion; compare the shape across speakers to see who expresses which emotions most. One chart per speaker.",
+    "description": "Bar chart of emotion-category intensities for a single speaker. Each bar is an emotion; compare heights across speakers to see who expresses which emotions most. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -347,7 +347,7 @@
       "by_chart_slug_regex": "radar_polar",
       "by_filename_glob": null
     },
-    "description": "Polar variant of the all-speaker emotion radar. Each wedge is an emotion category and its radius is overall intensity; a quick visual fingerprint of the conversation's emotional balance.",
+    "description": "Polar radar of all-speaker emotion intensities. Each axis is an emotion category and distance from the center is overall intensity; a quick visual fingerprint of the conversation's emotional balance.",
     "family_id": null,
     "variant": null
   },
@@ -369,7 +369,7 @@
       "by_chart_slug_regex": "radar_polar",
       "by_filename_glob": null
     },
-    "description": "Polar emotion radar for a single speaker. Each wedge is an emotion and its radius is that speaker's intensity for it. One chart per speaker.",
+    "description": "Polar emotion radar for a single speaker. Each axis is an emotion and distance from the center is that speaker's intensity for it. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -507,7 +507,7 @@
   },
   {
     "viz_id": "interactions.network.global",
-    "label": "Speaker Interaction Network",
+    "label": "Speaker Interaction Heatmap",
     "rank_default": 110,
     "kind": "chart",
     "module": "interactions",
@@ -523,7 +523,7 @@
       "by_chart_slug_regex": "/network\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Network graph of who responds to whom. Nodes are speakers and edges show directed interaction flow; thicker or denser links mean more frequent exchanges between those speakers.",
+    "description": "Heatmap of who interacts with whom. Rows and columns are speakers; cell intensity is the combined count of responses and interruptions from row speaker to column speaker. Darker cells mean more frequent exchanges.",
     "family_id": null,
     "variant": null
   },
@@ -567,7 +567,51 @@
       "by_chart_slug_regex": "/dominance\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses. The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
+    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses (actor→target roles). The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.equity.floor.global",
+    "label": "Speaking Floor Share",
+    "rank_default": 128,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.equity.floor.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "equity_floor",
+      "by_filename_glob": null
+    },
+    "description": "Per-speaker speaking-time floor share from valid segment durations (claimed speaking time; overlaps not collapsed). Rendered when total valid duration is positive, even if the floor equity index abstains.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "interactions.equity.summary.global",
+    "label": "Turn-taking Equity Summary",
+    "rank_default": 129,
+    "kind": "chart",
+    "module": "interactions",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "interactions.equity.summary.global",
+      "by_artifact_key_prefix": "interactions/charts/",
+      "by_chart_slug_regex": "equity_summary",
+      "by_filename_glob": null
+    },
+    "description": "Session turn-taking equity indices on a 0–1 axis. Floor equity and response-latency fairness: higher is fairer. Interruption inequity: higher is more asymmetric; interruption balance (1 − inequity) is presentation-only.",
     "family_id": null,
     "variant": null
   },
@@ -727,7 +771,7 @@
   },
   {
     "viz_id": "temporal_dynamics.phase_detection.global",
-    "label": "Phase Detection Timeline",
+    "label": "Conversation Phase Durations",
     "rank_default": 180,
     "kind": "chart",
     "module": "temporal_dynamics",
@@ -743,7 +787,7 @@
       "by_chart_slug_regex": "phase_detection",
       "by_filename_glob": null
     },
-    "description": "Timeline marking detected conversation phases (for example opening, discussion, closing). Colored spans show where the conversation shifts between phases along the time axis.",
+    "description": "Bar chart of how long each detected conversation phase lasted (opening, main, closing). Bar height is duration in seconds; compare heights to see which phase dominated the conversation.",
     "family_id": null,
     "variant": null
   },
@@ -1563,7 +1607,7 @@
   },
   {
     "viz_id": "acts.acts_pie.speaker",
-    "label": "Dialogue Acts \u2013 Pie (Per Speaker)",
+    "label": "Dialogue Acts \u2013 Filtered Bar (Per Speaker)",
     "rank_default": 470,
     "kind": "chart",
     "module": "acts",
@@ -1579,7 +1623,7 @@
       "by_chart_slug_regex": "acts_pie",
       "by_filename_glob": null
     },
-    "description": "Pie of dialogue-act categories for a single speaker. Each slice is an act type's share of that speaker's utterances. One chart per speaker.",
+    "description": "Bar chart of dialogue-act counts for a single speaker, limited to act types above 5% of that speaker's utterances. Each bar is an act type; taller bars mean that act is used more. One chart per speaker.",
     "family_id": null,
     "variant": null
   },
@@ -1607,7 +1651,7 @@
   },
   {
     "viz_id": "acts.global_acts_pie.global",
-    "label": "Dialogue Acts \u2013 Global Pie",
+    "label": "Dialogue Acts \u2013 Global Filtered Bar",
     "rank_default": 490,
     "kind": "chart",
     "module": "acts",
@@ -1623,7 +1667,7 @@
       "by_chart_slug_regex": "global_acts_pie",
       "by_filename_glob": null
     },
-    "description": "Pie of the dialogue-act mix across all speakers in the transcript. Each slice is an act type's share of all utterances; shows the conversation's overall act balance.",
+    "description": "Bar chart of dialogue-act counts across all speakers, limited to act types above 5% of all utterances. Each bar is an act type; taller bars mean that act occurs more overall.",
     "family_id": null,
     "variant": null
   },
@@ -2041,7 +2085,7 @@
       "by_chart_slug_regex": "compare_speakers",
       "by_filename_glob": null
     },
-    "description": "Comparison of prosodic features across speakers. Bars contrast each speaker's acoustic profile; use it to see who is louder, higher-pitched, and so on. Requires prosody features.",
+    "description": "Box plots comparing prosodic features across speakers. Each box shows the spread of a feature for a speaker; use it to see who is louder, higher-pitched, and so on. Requires prosody features.",
     "family_id": null,
     "variant": null
   },

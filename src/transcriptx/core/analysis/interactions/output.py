@@ -5,15 +5,24 @@ from __future__ import annotations
 from typing import Any
 
 from transcriptx.core.analysis.interactions.analyzer import SpeakerInteractionAnalyzer
+from transcriptx.core.analysis.interactions.equity import compute_equity
 from transcriptx.core.analysis.interactions.events import InteractionEvent
+from transcriptx.core.analysis.interactions.roles import INTERACTIONS_SEMANTICS_VERSION
+from transcriptx.core.analysis.interactions.serialize import (
+    serialize_equity,
+    serialize_interactions_summary,
+)
 from transcriptx.core.analysis.interactions.visualization import (
     create_combined_timeline,
     create_dominance_analysis,
+    create_equity_floor_chart,
+    create_equity_summary_chart,
     create_interaction_heatmap,
     create_interaction_network,
     create_interaction_network_graph,
     create_speaker_timeline_charts,
 )
+from transcriptx.core.utils.segment_duration import compute_eligible_speaker_durations
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.output_standards import (
     create_standard_output_structure,
@@ -103,6 +112,22 @@ def analyze_interactions(
 
     # Analyze interaction patterns and generate statistics (speaker_map not used)
     analysis_results = analyzer.analyze_interactions(interactions, None)
+    duration_result = compute_eligible_speaker_durations(segments)
+    analysis_results["equity"] = serialize_equity(
+        compute_equity(
+            duration_result=duration_result,
+            interruption_initiated=analysis_results.get("interruption_initiated", {}),
+            interruption_received=analysis_results.get("interruption_received", {}),
+            interactions=interactions,
+        )
+    )
+    analysis_results["semantics_version"] = analysis_results.get(
+        "semantics_version", INTERACTIONS_SEMANTICS_VERSION
+    )
+    analysis_results["interactions"] = [
+        event.__dict__ if hasattr(event, "__dict__") else event
+        for event in interactions
+    ]
 
     # Save interaction events data (speaker_map not used, events have display names)
     save_interaction_events(interactions, None, output_structure, base_name)
@@ -124,6 +149,9 @@ def analyze_interactions(
 
         # Create individual speaker charts
         create_speaker_timeline_charts(interactions, None, output_service, base_name)
+
+    create_equity_floor_chart(analysis_results, output_service, base_name)
+    create_equity_summary_chart(analysis_results, output_service, base_name)
 
     # Create comprehensive summary
     create_analysis_summary(analysis_results, output_structure, base_name)
@@ -360,10 +388,13 @@ def create_analysis_summary(
     """
     # Create metadata for the analysis
     config = get_config()
+    serialized = serialize_interactions_summary(analysis_results)
     analysis_metadata = {
+        "semantics_version": serialized["semantics_version"],
         "total_interactions": analysis_results["total_interactions_count"],
         "unique_speakers": analysis_results["unique_speakers"],
         "interaction_types": dict(analysis_results["interaction_types"]),
+        "equity": serialized["equity"],
         "analysis_parameters": {
             "overlap_threshold": config.analysis.interaction_overlap_threshold,
             "min_gap": config.analysis.interaction_min_gap,

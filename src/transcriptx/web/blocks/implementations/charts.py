@@ -9,7 +9,6 @@ import streamlit as st
 from transcriptx.web.blocks.context import BlockContext
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.models.artifact import Artifact
-from transcriptx.web.module_ui_groups import order_strings_like_modules
 from transcriptx.web.state import (
     CHARTS_KEY_EXPAND_ALL,
     CHARTS_KEY_FILTER_MODULE,
@@ -53,7 +52,7 @@ def render_chart_gallery_modules(
         module = chart.module or "Other"
         module_groups.setdefault(module, []).append(chart)
 
-    for module_name in order_strings_like_modules(list(module_groups.keys())):
+    for module_name in sorted(module_groups.keys(), key=str.casefold):
         module_charts = module_groups[module_name]
         with st.expander(
             f"📊 {module_name} ({len(module_charts)} chart"

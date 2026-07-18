@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-07-18
+
+### Added
+
+- Interactions turn-taking equity pack (B12): floor share/entropy, interruption asymmetry, response-latency fairness; shared segment-duration helper; equity charts and session-row indices.
+
+### Changed
+
+- Interactions `semantics_version` **2**: initiated/received and matrices use actor→target roles (interrupter→interrupted, responder→addressee). Group directional pooling skips mixed/legacy versions with one structured warning.
+- `speaker_stats` duration summation adopts the shared segment-duration helper (eligible-speaker and invalid-timestamp rules aligned with interactions).
+
+### Fixed
+
+- Interactions initiated/received polarity was historically inverted relative to event comments and chart labels. **Existing runs require re-analysis** for correct directional counts, dominance, and equity.
+
 ## [0.4.7] - 2026-07-18
 
 ### Added

@@ -41,7 +41,6 @@ from transcriptx.web.services.artifact_service import (
 from transcriptx.export import ChartsExportResult
 from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.module_option_format import format_module_option
-from transcriptx.web.module_ui_groups import order_strings_like_modules
 from transcriptx.web.state import (
     CHARTS_KEY_EXPORT_RESULT,
     CHARTS_KEY_EXPORT_SIG,
@@ -493,7 +492,7 @@ def _charts_filters_and_gallery_fragment(
         module = chart.module or "Other"
         module_groups.setdefault(module, []).append(chart)
 
-    for module_name in order_strings_like_modules(list(module_groups.keys())):
+    for module_name in sorted(module_groups.keys(), key=str.casefold):
         module_charts = module_groups[module_name]
         with st.expander(
             f"📊 {module_name} ({len(module_charts)} chart{'s' if len(module_charts) != 1 else ''})",

@@ -59,7 +59,7 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 146
+    assert len(CHART_DEFINITIONS) == 148
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("group.pauses.temporal_overlay.global") is not None
     assert get_chart_definition("group.acts.temporal_overlay.global") is not None

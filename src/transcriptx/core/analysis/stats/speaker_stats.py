@@ -3,6 +3,7 @@
 from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.segment_duration import compute_eligible_speaker_durations
 from transcriptx.core.analysis.sentiment import score_sentiment
 
 logger = get_logger()
@@ -27,39 +28,14 @@ def compute_speaker_stats(
     Returns:
         Tuple of (stats_list, sentiment_summary_dict)
     """
-    from transcriptx.core.utils.speaker_extraction import (
-        group_segments_by_speaker,
-        get_speaker_display_name,
+    duration_result = compute_eligible_speaker_durations(
+        segments,
+        ignored_ids=ignored_ids,
+        grouped_hint=grouped or None,
     )
-
-    # Group segments by speaker using segment-based identification
-    grouped_segments = group_segments_by_speaker(segments)
-
-    # Create mapping from display name to grouped segments
-    speaker_segments_map = {}
-    speaker_key_map: dict[str, str] = {}
-    for grouping_key, segs in grouped_segments.items():
-        display_name = get_speaker_display_name(grouping_key, segs, segments)
-        if display_name and is_eligible_named_speaker(
-            display_name, str(grouping_key), ignored_ids or set()
-        ):
-            speaker_segments_map[display_name] = segs
-            speaker_key_map[display_name] = str(grouping_key)
-
-    allow_fallback_speakers = False
-    if not speaker_segments_map and grouped:
-        # Fallback for transcripts that only have anonymized labels (e.g., SPEAKER_00).
-        allow_fallback_speakers = True
-        for seg in segments:
-            name = str(seg.get("speaker") or "").strip()
-            if not name:
-                continue
-            if ignored_ids and (
-                name in ignored_ids or str(seg.get("speaker_db_id")) in ignored_ids
-            ):
-                continue
-            speaker_segments_map.setdefault(name, []).append(seg)
-            speaker_key_map.setdefault(name, name)
+    speaker_segments_map = duration_result.speaker_segments
+    speaker_key_map = duration_result.speaker_key_map
+    allow_fallback_speakers = duration_result.allow_fallback_speakers
 
     stats = []
     sentiment_summary = {}
@@ -76,10 +52,9 @@ def compute_speaker_stats(
 
         word_count = sum(len(t.split()) for t in texts)
 
-        # Get segments for this speaker from grouped segments
         speaker_segs = speaker_segments_map.get(name, [])
         segment_count = len(speaker_segs)
-        duration = sum(seg.get("end", 0) - seg.get("start", 0) for seg in speaker_segs)
+        duration = float(duration_result.durations.get(name, 0.0))
 
         tic_count = sum(1 for t in " ".join(texts).lower().split() if t in tic_list)
         avg_segment_len = word_count / segment_count if segment_count else 0

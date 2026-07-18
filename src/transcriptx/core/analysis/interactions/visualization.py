@@ -315,6 +315,94 @@ def create_dominance_analysis(
     output_service.save_chart(spec, chart_type="dominance")
 
 
+def create_equity_floor_chart(
+    analysis_results: dict[str, Any], output_service: Any, base_name: str
+) -> None:
+    """Floor-share bars when total valid duration > 0 (even if equity index abstains)."""
+    if not output_service:
+        return
+    equity = analysis_results.get("equity") or {}
+    floor_share = equity.get("floor_share") or {}
+    if not floor_share:
+        return
+    # Defined shares imply total valid duration > 0
+    speakers = sorted(floor_share.keys())
+    values = [float(floor_share[s]) for s in speakers]
+    spec = BarCategoricalSpec(
+        viz_id="interactions.equity.floor.global",
+        module="interactions",
+        name="equity_floor",
+        scope="global",
+        chart_intent="bar_categorical",
+        title=f"Speaking Floor Share - {base_name}",
+        x_label="Speaker",
+        y_label="Floor share",
+        categories=speakers,
+        values=values,
+        notes="Claimed speaking-time shares (raw segment lengths; overlaps not collapsed).",
+    )
+    output_service.save_chart(spec, chart_type="equity_floor")
+
+
+def create_equity_summary_chart(
+    analysis_results: dict[str, Any], output_service: Any, base_name: str
+) -> None:
+    """
+    Session equity indices: render available metrics independently.
+
+    interruption_balance_index is presentation-derived (1 - asymmetry), not persisted.
+    """
+    if not output_service:
+        return
+    from transcriptx.core.analysis.interactions.roles import interruption_balance_index
+
+    equity = analysis_results.get("equity") or {}
+    categories: list[str] = []
+    values: list[float] = []
+
+    # Deterministic metric order
+    floor_idx = equity.get("floor_equity_index")
+    if floor_idx is not None:
+        categories.append("Floor equity")
+        values.append(float(floor_idx))
+
+    asym = equity.get("interruption_asymmetry_index")
+    if asym is not None:
+        categories.append("Interruption inequity")
+        values.append(float(asym))
+        balance = interruption_balance_index(float(asym))
+        if balance is not None:
+            categories.append("Interruption balance")
+            values.append(float(balance))
+
+    latency_fair = equity.get("response_latency_fairness_index")
+    if latency_fair is not None:
+        categories.append("Response latency fairness")
+        values.append(float(latency_fair))
+
+    if not categories:
+        return
+
+    spec = BarCategoricalSpec(
+        viz_id="interactions.equity.summary.global",
+        module="interactions",
+        name="equity_summary",
+        scope="global",
+        chart_intent="bar_categorical",
+        title=f"Turn-taking Equity Summary - {base_name}",
+        x_label="Metric",
+        y_label="Index (0–1)",
+        categories=categories,
+        values=values,
+        notes=(
+            "Floor equity and latency fairness: higher is fairer. "
+            "Interruption inequity: higher is more asymmetric. "
+            "Interruption balance = 1 − inequity (presentation only)."
+        ),
+    )
+    output_service.save_chart(spec, chart_type="equity_summary")
+
+
 def create_speaker_timeline_charts(
     interactions: list[InteractionEvent],
     speaker_map: dict[str, str] | None = None,

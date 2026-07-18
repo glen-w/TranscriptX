@@ -15,7 +15,15 @@ from typing import Dict, FrozenSet, Optional
 # agg_id -> allowed session row metric keys (after one-level dict flattening, e.g. counts_by_kind.echo)
 GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
     "conversation_loops": frozenset({"total_loops", "unique_speaker_pairs"}),
-    "interactions": frozenset({"total_interactions", "unique_speakers"}),
+    "interactions": frozenset(
+        {
+            "total_interactions",
+            "unique_speakers",
+            "floor_equity_index",
+            "interruption_asymmetry_index",
+            "response_latency_fairness_index",
+        }
+    ),
     "qa_analysis": frozenset(
         {
             "total_questions",

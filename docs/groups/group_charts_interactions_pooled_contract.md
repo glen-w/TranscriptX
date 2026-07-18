@@ -18,7 +18,7 @@ See [`group_charts_relational_pooling_model.md`](group_charts_relational_pooling
 
 ## Session bars
 
-`InteractionsGroupChartGenerator` delegates session summary bars to a curated `GenericNumericGroupChartGenerator` (`total_interactions`, `unique_speakers` per [`generic_field_allowlists.py`](../src/transcriptx/core/analysis/group_charts/generic_field_allowlists.py)).
+`InteractionsGroupChartGenerator` delegates session summary bars to a curated `GenericNumericGroupChartGenerator` (`total_interactions`, `unique_speakers`, and nullable equity indices `floor_equity_index`, `interruption_asymmetry_index`, `response_latency_fairness_index` per [`generic_field_allowlists.py`](../src/transcriptx/core/analysis/group_charts/generic_field_allowlists.py)). See [`group_charts_interactions_equity_contract.md`](group_charts_interactions_equity_contract.md) for formulas and the semantics-version directional pool gate.
 
 ## Empty / invalid
 
