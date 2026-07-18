@@ -58,6 +58,8 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
         (
             "sentiment",
             "emotion",
+            "contextual_emotion",
+            "fine_grained_emotion",
             "ner",
             "entity_sentiment",
             "topic_modeling",

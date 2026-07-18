@@ -22,6 +22,8 @@ MODULE_REGISTRY_ORDER: tuple[str, ...] = (
     "conversation_loops",
     "contagion",
     "emotion",
+    "contextual_emotion",
+    "fine_grained_emotion",
     "entity_sentiment",
     "affect_tension",
     "interactions",

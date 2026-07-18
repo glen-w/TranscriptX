@@ -300,6 +300,13 @@ class TranscriptXConfig:
                 "vectorization": self._config_to_dict(self.analysis.vectorization),
                 "voice": self._config_to_dict(self.analysis.voice),
                 "affect_tension": self._config_to_dict(self.analysis.affect_tension),
+                "emotion": self._config_to_dict(self.analysis.emotion),
+                "contextual_emotion": self._config_to_dict(
+                    self.analysis.contextual_emotion
+                ),
+                "fine_grained_emotion": self._config_to_dict(
+                    self.analysis.fine_grained_emotion
+                ),
                 "speaker_exemplars": self._config_to_dict(
                     self.analysis.speaker_exemplars
                 ),

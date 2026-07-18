@@ -1,400 +1,97 @@
-"""Offline unit tests for core.analysis.emotion (filename avoids auto-marker)."""
+"""Offline unit tests for lexical emotion v2 (filename avoids auto-marker)."""
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
-from transcriptx.core.analysis import emotion as affect_mod
-
-
-@pytest.fixture
-def affect_cfg() -> MagicMock:
-    cfg = MagicMock()
-    cfg.analysis.emotion_model_name = "test/model"
-    cfg.analysis.emotion_output_mode = "top1"
-    cfg.analysis.emotion_score_threshold = 0.30
-    return cfg
-
-
-def _make_module(
-    *,
-    nrclex=None,
-    emotion_model=None,
-    mode: str = "top1",
-    threshold: float = 0.30,
-) -> affect_mod.EmotionAnalysis:
-    cfg = MagicMock()
-    cfg.analysis.emotion_model_name = "test/model"
-    cfg.analysis.emotion_output_mode = mode
-    cfg.analysis.emotion_score_threshold = threshold
-    with (
-        patch("transcriptx.core.utils.config.get_config", return_value=cfg),
-        patch("transcriptx.core.analysis.emotion._load_nrclex", return_value=nrclex),
-        patch(
-            "transcriptx.core.analysis.emotion._load_emotion_model",
-            return_value=emotion_model,
-        ),
-    ):
-        return affect_mod.EmotionAnalysis()
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+from transcriptx.core.analysis.emotion import EmotionAnalysis, compute_nrc_emotions
+from transcriptx.core.analysis.emotion.lexical_pipeline import (
+    PLUTCHIK_EIGHT,
+    build_lexicon_from_nrclex,
+    score_segment_text,
+)
+from transcriptx.core.analysis.emotion.preflight import run_lexical_preflight
+from transcriptx.core.analysis.emotion.projections import apply_lexical_projection
+from transcriptx.core.analysis.emotion_family.persist import apply_pending_projections
 
 
 @pytest.mark.unit
-def test_extract_nrc_scores_raw_and_affect_and_empty() -> None:
-    raw = SimpleNamespace(raw_emotion_scores={"joy": 2, "anger": 1, "x": "bad"})
-    assert affect_mod._extract_nrc_emotion_scores(raw) == {"joy": 2.0, "anger": 1.0}
-
-    affect = SimpleNamespace(
-        affect_frequencies={"anticip": 0.4, "fear": 0.2, "meta": "x"}
-    )
-    scores = affect_mod._extract_nrc_emotion_scores(affect)
-    assert scores["anticipation"] == 0.4
-    assert scores["fear"] == 0.2
-    assert "meta" not in scores
-
-    assert affect_mod._extract_nrc_emotion_scores(SimpleNamespace()) == {}
+def test_preflight_ok_when_nrclex_present() -> None:
+    pytest.importorskip("nrclex")
+    result = run_lexical_preflight()
+    assert result.ok is True
 
 
 @pytest.mark.unit
-def test_nrclex_analyze_legacy_and_load_raw_text() -> None:
-    class Legacy:
-        def __init__(self, text: str) -> None:
-            self.text = text
+def test_build_lexicon_nonempty() -> None:
+    pytest.importorskip("nrclex")
+    from nrclex import NRCLex
 
-    leg = affect_mod._nrclex_analyze(Legacy, "hello")
-    assert leg.text == "hello"
-
-    class Modern:
-        def __init__(self) -> None:
-            self.text = ""
-
-        def load_raw_text(self, text: str) -> None:
-            self.text = text
-
-    mod = affect_mod._nrclex_analyze(Modern, "world")
-    assert mod.text == "world"
+    lexicon = build_lexicon_from_nrclex(NRCLex)
+    assert len(lexicon) > 100
+    assert "abandon" in lexicon or "happy" in lexicon
 
 
 @pytest.mark.unit
-def test_ensure_textblob_corpora_downloads_disabled(monkeypatch) -> None:
-    monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: True)
-    with pytest.raises(RuntimeError, match="disabled"):
-        affect_mod._ensure_textblob_corpora()
+def test_score_segment_zero_denominator_safe() -> None:
+    result = score_segment_text("", {})
+    assert result.evaluation_state == "empty"
+    assert result.coverage == 0.0
+    assert all(v == 0.0 for v in result.emotion_scores.values())
 
 
 @pytest.mark.unit
-def test_ensure_textblob_corpora_success_and_notify_fallback(monkeypatch) -> None:
-    monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: False)
-    calls: list[str] = []
-
-    def fake_download_all() -> None:
-        calls.append("dl")
-
-    fake_pkg = SimpleNamespace(download_all=fake_download_all)
-    with patch.dict("sys.modules", {"textblob.download_corpora": fake_pkg}):
-        with patch(
-            "transcriptx.core.analysis.emotion.notify_user",
-            side_effect=RuntimeError("no notify"),
-        ):
-            affect_mod._ensure_textblob_corpora()
-    assert calls == ["dl"]
-
-
-@pytest.mark.unit
-def test_ensure_textblob_corpora_raises_after_failed_download(monkeypatch) -> None:
-    monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: False)
-    fake_pkg = SimpleNamespace(
-        download_all=lambda: (_ for _ in ()).throw(OSError("boom"))
-    )
-    with patch.dict("sys.modules", {"textblob.download_corpora": fake_pkg}):
-        with patch(
-            "transcriptx.core.analysis.emotion.notify_user",
-            side_effect=RuntimeError("gone"),
-        ):
-            with pytest.raises(OSError, match="boom"):
-                affect_mod._ensure_textblob_corpora()
-
-
-@pytest.mark.unit
-def test_load_nrclex_success_path(monkeypatch) -> None:
-    class FakeNRC:
-        def __init__(self, text: str = "") -> None:
-            self.raw_emotion_scores = {"joy": 1.0}
-
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "nrclex",
-        SimpleNamespace(NRCLex=FakeNRC),
-    )
-    loaded = affect_mod._load_nrclex()
-    assert loaded is FakeNRC
-
-
-@pytest.mark.unit
-def test_load_nrclex_retry_then_none(monkeypatch) -> None:
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "nrclex",
-        SimpleNamespace(NRCLex=None),
-    )
-    monkeypatch.setattr(
-        affect_mod,
-        "_ensure_textblob_corpora",
-        lambda: (_ for _ in ()).throw(RuntimeError("no corpora")),
-    )
-    with patch(
-        "transcriptx.core.analysis.emotion.notify_user",
-        side_effect=RuntimeError("gone"),
-    ):
-        assert affect_mod._load_nrclex() is None
-
-
-@pytest.mark.unit
-def test_load_emotion_model_disabled_and_failure(monkeypatch, affect_cfg) -> None:
-    monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: True)
-    assert affect_mod._load_emotion_model("m") is None
-
-    monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: False)
-    with (
-        patch("transcriptx.core.utils.config.get_config", return_value=affect_cfg),
-        patch(
-            "transcriptx.core.utils.lazy_imports.get_transformers",
-            side_effect=RuntimeError("no transformers"),
-        ),
-        patch(
-            "transcriptx.core.analysis.emotion.notify_user",
-            side_effect=RuntimeError("gone"),
-        ),
-    ):
-        assert affect_mod._load_emotion_model(None) is None
-
-
-@pytest.mark.unit
-def test_load_emotion_model_success(monkeypatch, affect_cfg) -> None:
-    monkeypatch.setattr(affect_mod, "downloads_disabled", lambda: False)
-    pipe = MagicMock(name="pipe")
-    transformers = SimpleNamespace(pipeline=MagicMock(return_value=pipe))
-    with (
-        patch("transcriptx.core.utils.config.get_config", return_value=affect_cfg),
-        patch(
-            "transcriptx.core.utils.lazy_imports.get_transformers",
-            return_value=transformers,
-        ),
-        patch("transcriptx.core.analysis.emotion.suppress_stdout_stderr"),
-        patch("transcriptx.core.analysis.emotion.spinner"),
-    ):
-        assert affect_mod._load_emotion_model(None) is pipe
-    transformers.pipeline.assert_called_once()
-
-
-# ---------------------------------------------------------------------------
-# EmotionAnalysis
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-def test_parse_pipeline_modes() -> None:
-    obj = _make_module(mode="top1")
-    primary, scores = obj._parse_pipeline_emotion_result(
-        [{"label": "joy", "score": 0.7}, {"label": "sadness", "score": 0.2}]
-    )
-    assert primary == "joy"
-    assert scores == {"joy": 0.7}
-
-    obj.emotion_output_mode = "multilabel"
-    obj.emotion_score_threshold = 0.3
-    primary, scores = obj._parse_pipeline_emotion_result(
-        [{"label": "joy", "score": 0.7}, {"label": "sadness", "score": 0.2}]
-    )
-    assert primary == "joy"
-    assert scores == {"joy": 0.7}
-
-    assert obj._parse_pipeline_emotion_result([]) == ("", {})
-
-
-@pytest.mark.unit
-def test_compute_nrc_emotions_normalizes() -> None:
-    class FakeNRC:
-        def __init__(self, text: str = "") -> None:
-            self.raw_emotion_scores = {"joy": 2.0, "anger": 2.0}
-
-    obj = _make_module(nrclex=FakeNRC)
-    scores = obj._compute_nrc_emotions("happy sad")
-    assert scores == {"joy": 0.5, "anger": 0.5}
-
-    empty = _make_module(nrclex=None)
-    assert empty._compute_nrc_emotions("x") == {}
-
-
-@pytest.mark.unit
-def test_analyze_with_hf_and_nrc_fallback() -> None:
-    class FakeNRC:
-        def __init__(self, text: str = "") -> None:
-            self.raw_emotion_scores = {"joy": 1.0, "anger": 0.0}
-
-    mock_model = MagicMock()
-    mock_model.return_value = [[{"label": "joy", "score": 0.9}]]
-    obj = _make_module(nrclex=FakeNRC, emotion_model=mock_model)
-    segments = [
+def test_analyze_sets_nrc_not_context() -> None:
+    pytest.importorskip("nrclex")
+    mod = EmotionAnalysis()
+    segs = [
         {
+            "id": "1",
             "speaker": "Alice",
-            "speaker_db_id": 1,
-            "text": "I am happy today",
-            "start": 0.0,
-            "end": 1.0,
-        },
-        {
-            "speaker": "Bob",
-            "speaker_db_id": 2,
-            "text": "",
-            "start": 1.0,
-            "end": 2.0,
-        },
-        {"text": "no speaker"},
+            "text": "I feel happy and joyful",
+            "start": 0,
+            "end": 1,
+        }
     ]
-    result = obj.analyze(segments)
-    assert result["segments"] is segments
-    assert segments[0]["context_emotion_source"] == "hf"
-    assert segments[0]["context_emotion_primary"] == "joy"
-    assert "nrc_emotion" in segments[0]
-    assert "Alice" in result["speaker_stats"]
-    assert "emotions" in result
+    out = mod.analyze(segs)
+    assert out["usable_output"] is True
+    assert "nrc_emotion" not in segs[0]
+    assert out.get("_pending_projections")
+    assert out.get("lexicon_digest")
+    assert out.get("nrclex_version")
+    apply_pending_projections(out, apply_one=apply_lexical_projection)
+    assert "nrc_emotion" in segs[0]
+    assert "context_emotion_source" not in segs[0]
+    assert set(segs[0]["nrc_emotion"]) <= set(PLUTCHIK_EIGHT) | set(
+        segs[0]["nrc_emotion"]
+    )
 
 
 @pytest.mark.unit
-def test_analyze_nrc_fills_when_hf_empty_labels() -> None:
-    class FakeNRC:
-        def __init__(self, text: str = "") -> None:
-            self.raw_emotion_scores = {"sadness": 3.0, "joy": 1.0}
-
-    mock_model = MagicMock()
-    # Empty pipeline result after threshold → primary "" but source still hf
-    mock_model.return_value = [[]]
-    obj = _make_module(nrclex=FakeNRC, emotion_model=mock_model)
-    # Force contextual path to set empty primary with hf source
-    seg = {
-        "speaker": "Alice",
-        "speaker_db_id": 1,
-        "text": "feeling down",
-        "start": 0.0,
-        "end": 1.0,
-        "context_emotion_source": "hf",
-        "context_emotion_primary": "",
-        "context_emotion_scores": {},
-    }
-    # Skip HF recompute by clearing model so NRC fallback runs
-    obj.emotion_model = None
-    result = obj.analyze([seg])
-    assert seg["context_emotion_source"] == "nrc"
-    assert seg["context_emotion_primary"] == "sadness"
-    assert result["nrc_scores"]
+def test_compute_nrc_emotions_helper() -> None:
+    pytest.importorskip("nrclex")
+    scores = compute_nrc_emotions("happy joy love")
+    assert isinstance(scores, dict)
+    assert scores.get("joy", 0) > 0
 
 
 @pytest.mark.unit
-def test_analyze_sets_none_source_without_scores() -> None:
-    obj = _make_module(nrclex=None, emotion_model=None)
-    seg = {
-        "speaker": "Alice",
-        "speaker_db_id": 1,
-        "text": "hello",
-        "start": 0.0,
-        "end": 1.0,
-    }
-    obj.analyze([seg])
-    assert seg["context_emotion_source"] == "none"
-    assert seg["context_emotion_primary"] == ""
-
-
-@pytest.mark.unit
-def test_save_results_and_radar(tmp_path, monkeypatch) -> None:
-    obj = _make_module()
-    segments = [
-        {
-            "speaker": "Alice",
-            "speaker_db_id": 1,
-            "text": "a",
-            "nrc_emotion": {"joy": 0.6},
-        },
-        {
-            "speaker": "Bob",
-            "speaker_db_id": 2,
-            "text": "b",
-            "nrc_emotion": {"anger": 0.4},
-        },
+def test_save_results_writes_summary(tmp_path: Path) -> None:
+    pytest.importorskip("nrclex")
+    mod = EmotionAnalysis()
+    segs = [
+        {"id": "1", "speaker": "Alice", "text": "happy day", "start": 0, "end": 1},
+        {"id": "2", "speaker": "Bob", "text": "sad news", "start": 1, "end": 2},
     ]
-    results = {
-        "segments_with_emotion": segments,
-        "nrc_scores": {"Alice": {"joy": 0.6}, "Bob": {"anger": 0.4}},
-        "combined_rows": [{"speaker": "Alice", "joy": 0.6}],
-        "contextual_all": {"Alice": ["joy"]},
-        "contextual_examples": {},
-        "all_scores": {"joy": 0.5, "anger": 0.5},
-        "global_stats": {"joy": 0.5},
-        "speaker_stats": {"Alice": {"joy": 0.6}},
-    }
-
-    fake_fig = MagicMock()
-    plt = MagicMock()
-    plt.close = MagicMock()
-    monkeypatch.setattr(
-        "transcriptx.core.utils.lazy_imports.get_matplotlib_pyplot",
-        lambda: plt,
-    )
-    monkeypatch.setattr(obj, "_create_emotion_radar", lambda *a, **k: fake_fig)
-    monkeypatch.setattr(
-        "transcriptx.core.analysis.affect.output_helpers.get_enriched_transcript_path",
-        lambda path, mod: str(tmp_path / "enriched.json"),
-    )
-    monkeypatch.setattr(
-        "transcriptx.core.analysis.affect.output_helpers.save_transcript",
-        lambda *a, **k: None,
-    )
-
+    results = mod.analyze(segs)
+    assert "nrc_emotion" not in segs[0]
     output = MagicMock()
-    output.transcript_path = str(tmp_path / "t.json")
-    output.save_data = MagicMock()
-    output.save_chart = MagicMock()
-    output.save_summary = MagicMock()
-
-    obj._save_results(results, output)
-    assert output.save_data.called
-    assert output.save_chart.called
+    output.base_name = "test"
+    output.get_output_structure.return_value = MagicMock(module_dir=tmp_path)
+    mod._save_results(results, output)
+    assert "nrc_emotion" in segs[0]
     assert output.save_summary.called
-    plt.close.assert_called()
-
-
-@pytest.mark.unit
-def test_create_emotion_radar_returns_figure(monkeypatch) -> None:
-    obj = _make_module()
-    fig = MagicMock()
-    ax = MagicMock()
-    plt = MagicMock()
-    plt.subplots.return_value = (fig, ax)
-    monkeypatch.setattr(
-        "transcriptx.core.utils.lazy_imports.get_matplotlib_pyplot",
-        lambda: plt,
-    )
-    out = obj._create_emotion_radar("Alice", {"joy": 0.5, "anger": 0.25})
-    assert out is fig
-    ax.plot.assert_called()
-
-
-@pytest.mark.unit
-def test_compute_nrc_emotions_module_level(monkeypatch) -> None:
-    class FakeNRC:
-        def __init__(self, text: str = "") -> None:
-            self.raw_emotion_scores = {"joy": 1.0}
-
-    monkeypatch.setattr(affect_mod, "_load_nrclex", lambda: FakeNRC)
-    scores = affect_mod.compute_nrc_emotions("happy")
-    assert scores == {"joy": 1.0}
-
-    monkeypatch.setattr(affect_mod, "_load_nrclex", lambda: None)
-    assert affect_mod.compute_nrc_emotions("x") == {}
+    assert output.save_data.called

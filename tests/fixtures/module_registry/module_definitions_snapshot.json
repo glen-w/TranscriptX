@@ -4,6 +4,8 @@
     "conversation_loops",
     "contagion",
     "emotion",
+    "contextual_emotion",
+    "fine_grained_emotion",
     "entity_sentiment",
     "affect_tension",
     "interactions",
@@ -74,8 +76,11 @@
       "description": "Emotional Contagion Detection",
       "determinism_tier": "T1",
       "enhancements": [],
+      "optional_dependencies": [
+        "contextual_emotion"
+      ],
       "required_extras": [
-        "emotion"
+        "emotion_lexical"
       ],
       "requirements": [
         "segments",
@@ -86,9 +91,40 @@
     "emotion": {
       "category": "medium",
       "dependencies": [],
-      "description": "Emotion Analysis",
+      "description": "Emotion-associated vocabulary (NRC lexicon)",
       "determinism_tier": "T1",
       "enhancements": [],
+      "required_extras": [
+        "emotion_lexical"
+      ],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "contextual_emotion": {
+      "category": "heavy",
+      "dependencies": [],
+      "description": "Contextual emotion (broad classifier, experimental)",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "required_extras": [
+        "emotion_transformers"
+      ],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "fine_grained_emotion": {
+      "category": "heavy",
+      "dependencies": [],
+      "description": "Fine-grained multi-label emotion (experimental)",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "required_extras": [
+        "emotion_transformers"
+      ],
       "requirements": [
         "segments",
         "speaker_labels"
@@ -120,8 +156,11 @@
       "description": "Emotion + Sentiment mismatch and tension indices",
       "determinism_tier": "T1",
       "enhancements": [],
+      "optional_dependencies": [
+        "contextual_emotion"
+      ],
       "required_extras": [
-        "emotion"
+        "emotion_lexical"
       ],
       "requirements": [
         "segments",

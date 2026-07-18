@@ -1,0 +1,26 @@
+{
+  "description": "Predefined Phase 5 promotion gates — set before viewing held-out results.",
+  "threshold_profile_candidate": "threshold_profile_v1",
+  "status": "gates_defined_promotion_deferred",
+  "note": "Do not publish threshold_profile_v1 or flip release_channel to stable until a held-out run meets every gate below. Current profiles remain threshold_profile_provisional_v0 / experimental.",
+  "gates": {
+    "contextual_macro_f1_min": 0.55,
+    "contextual_neutral_rate_band": [0.15, 0.55],
+    "fine_grained_no_label_rate_band": [0.05, 0.40],
+    "fine_grained_no_label_distinct_from_neutral": true,
+    "abstention_rate_delta_max_vs_provisional": 0.15,
+    "positivity_bias_max_positive_share_on_neutral_professional": 0.35
+  },
+  "minimum_fixture_counts": {
+    "neutral_professional": 2,
+    "praise": 1,
+    "criticism_anger": 1,
+    "negation_mixed": 1,
+    "short_ack": 1,
+    "fear": 1,
+    "disgust": 1,
+    "surprise": 1,
+    "sadness": 1,
+    "mixed_multi_label": 1
+  }
+}

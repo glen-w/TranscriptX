@@ -1,0 +1,30 @@
+{
+  "analysis.emotion.low_coverage_threshold": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.05,
+    "description": "",
+    "key": "analysis.emotion.low_coverage_threshold",
+    "max": null,
+    "min": 0.0,
+    "path": "analysis.emotion.low_coverage_threshold",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.emotion.no_hit_rate_warn": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.8,
+    "description": "",
+    "key": "analysis.emotion.no_hit_rate_warn",
+    "max": null,
+    "min": 0.0,
+    "path": "analysis.emotion.no_hit_rate_warn",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  }
+}

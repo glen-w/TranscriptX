@@ -1,21 +1,104 @@
 """
 Emotional contagion detection analysis module.
+
+Branch contract (frozen): lexical branch reads only nrc_emotion produced by
+the `emotion` module; contextual branch reads context_emotion_* only when the
+contextual_emotion optional-producer contract is satisfied AND segments carry
+context_emotion_source == 'contextual_emotion'. Branches are never blended;
+both may be emitted as separately named subresults when each is usable.
 """
 
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from transcriptx.core.analysis.base import AnalysisModule
+from transcriptx.core.analysis.emotion_family.consumer_contracts import (
+    CONTEXTUAL_EMOTION_FOR_CONTAGION,
+    LEXICAL_EMOTION_FOR_CONTAGION,
+    OptionalProducerEvaluation,
+    evaluate_optional_producer,
+    merge_contextual_projection,
+)
 from transcriptx.core.utils.logger import get_logger
 
 from .detection import build_emotion_timeline, detect_contagion
-from .emotion_merger import merge_emotion_data
-from .emotion_reconstruction import reconstruct_emotion_data
+from .emotion_merger import merge_lexical_emotion
 from .visualization import create_contagion_matrix
 
 logger = get_logger()
+
+
+def _segments_have_contextual_branch(segments: List[Dict[str, Any]]) -> bool:
+    """Usable contextual signals only — abstained/empty labels are not evidence."""
+    for seg in segments:
+        if seg.get("context_emotion_source") != "contextual_emotion":
+            continue
+        outcome = seg.get("contextual_emotion_analytical_outcome")
+        if outcome == "abstained":
+            continue
+        label = (
+            seg.get("contextual_emotion_label")
+            or seg.get("context_emotion_primary")
+            or seg.get("context_emotion")
+        )
+        if label:
+            return True
+        if outcome in {"neutral", "labeled"}:
+            return True
+    return False
+
+
+def _producer_selected(
+    *,
+    module_id: str,
+    selected_modules: Optional[List[str]],
+    explicit: Optional[bool],
+    artifact: Optional[Dict[str, Any]],
+) -> bool:
+    """Resolve selection from planner metadata; never from artifact presence alone."""
+    if explicit is not None:
+        return bool(explicit)
+    if isinstance(selected_modules, (list, tuple, set)):
+        return module_id in selected_modules
+    # Standalone/analyze without planner metadata: selected only when artifact given.
+    return artifact is not None
+
+
+def _segments_have_lexical_branch(segments: List[Dict[str, Any]]) -> bool:
+    for seg in segments:
+        nrc = seg.get("nrc_emotion")
+        if isinstance(nrc, dict) and any(
+            isinstance(v, (int, float)) and v > 0 for v in nrc.values()
+        ):
+            return True
+    return False
+
+
+def _lexical_artifact_usable(emotion_data: Optional[Dict[str, Any]]) -> bool:
+    """Gate lexical artifact via the frozen producer contract."""
+    if not isinstance(emotion_data, dict):
+        return False
+    evaluation = evaluate_optional_producer(
+        LEXICAL_EMOTION_FOR_CONTAGION,
+        selected=True,
+        artifact=emotion_data,
+    )
+    return bool(evaluation.satisfied)
+
+
+def _run_branch(segments: List[Dict[str, Any]], emotion_type: str) -> Dict[str, Any]:
+    speaker_emotions, timeline = build_emotion_timeline(segments, emotion_type)
+    contagion_events, contagion_counts, contagion_summary = detect_contagion(timeline)
+    return {
+        "contagion_events": contagion_events,
+        "contagion_counts": contagion_counts,
+        "contagion_summary": contagion_summary,
+        "emotion_type": emotion_type,
+        "timeline": timeline,
+        "speaker_emotions": speaker_emotions,
+    }
 
 
 class ContagionAnalysis(AnalysisModule):
@@ -25,183 +108,150 @@ class ContagionAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "contagion"
 
+    def _resolve_branches(
+        self,
+        segments: List[Dict[str, Any]],
+        emotion_data: Optional[Dict[str, Any]],
+        contextual_emotion_data: Optional[Dict[str, Any]],
+        *,
+        contextual_selected: Optional[bool] = None,
+        selected_modules: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Resolve lexical and contextual branches independently.
+
+        Never contextual-first overwrite: each branch is evaluated on its own
+        contract and may both be present in the result.
+        """
+        selected = _producer_selected(
+            module_id="contextual_emotion",
+            selected_modules=selected_modules,
+            explicit=contextual_selected,
+            artifact=contextual_emotion_data,
+        )
+        contextual_eval: OptionalProducerEvaluation = evaluate_optional_producer(
+            CONTEXTUAL_EMOTION_FOR_CONTAGION,
+            selected=selected,
+            artifact=contextual_emotion_data,
+        )
+
+        decision: Dict[str, Any] = {
+            "contextual": {
+                "satisfied": contextual_eval.satisfied,
+                "reason": contextual_eval.reason,
+                "details": contextual_eval.details,
+            },
+            "lexical": {},
+        }
+
+        branches: Dict[str, Any] = {}
+
+        if contextual_eval.satisfied:
+            merged = merge_contextual_projection(segments, contextual_emotion_data)
+            if _segments_have_contextual_branch(segments):
+                decision["contextual"]["segments_with_projection"] = merged
+                branches["contextual_emotion"] = _run_branch(
+                    segments, "context_emotion"
+                )
+            else:
+                decision["contextual"]["satisfied"] = False
+                decision["contextual"]["reason"] = "dependency_not_applicable"
+                decision["contextual"]["details"] = {
+                    "projection_segments": merged,
+                    "usable_signals": False,
+                }
+
+        if not _segments_have_lexical_branch(segments) and emotion_data:
+            if _lexical_artifact_usable(emotion_data):
+                source_segments = emotion_data.get("segments_with_emotion") or []
+                merged = merge_lexical_emotion(segments, source_segments, logger)
+                decision["lexical"]["merged_segments"] = merged
+            else:
+                decision["lexical"]["reason"] = "dependency_not_applicable"
+                decision["lexical"]["details"] = {
+                    "run_status": emotion_data.get("run_status"),
+                    "usable_output": emotion_data.get("usable_output"),
+                }
+
+        if _segments_have_lexical_branch(segments):
+            decision["lexical"]["satisfied"] = True
+            branches["lexical_emotion"] = _run_branch(segments, "nrc_emotion")
+        else:
+            decision["lexical"].setdefault("satisfied", False)
+            decision["lexical"].setdefault("reason", "dependency_failed")
+
+        return {"branches": branches, "branch_decision": decision}
+
     def analyze(
         self,
         segments: List[Dict[str, Any]],
         emotion_data: Dict[str, Any] = None,
+        contextual_emotion_data: Dict[str, Any] = None,
+        *,
+        contextual_selected: Optional[bool] = None,
+        selected_modules: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        emotion_type = None
-        emotion_found = False
-
-        def check_emotion_data(segments_to_check, log_prefix=""):
-            context_emotion_count = 0
-            nrc_emotion_count = 0
-            nrc_emotion_with_values = 0
-
-            for seg in segments_to_check:
-                if "context_emotion" in seg:
-                    context_emotion_count += 1
-                    if seg["context_emotion"]:
-                        logger.debug(
-                            f"{log_prefix}Found context_emotion in segment: {seg.get('start', 'unknown')}"
-                        )
-                        return "context_emotion", True
-
-                if seg.get("context_emotion_primary"):
-                    logger.debug(
-                        f"{log_prefix}Found context_emotion_primary in segment: {seg.get('start', 'unknown')}"
-                    )
-                    return "context_emotion", True
-
-                ctx_scores = seg.get("context_emotion_scores")
-                if (
-                    isinstance(ctx_scores, dict)
-                    and ctx_scores
-                    and any(
-                        isinstance(v, (int, float)) and v > 0
-                        for v in ctx_scores.values()
-                    )
-                ):
-                    logger.debug(
-                        f"{log_prefix}Found context_emotion_scores in segment: {seg.get('start', 'unknown')}"
-                    )
-                    return "context_emotion", True
-
-                if "nrc_emotion" in seg:
-                    nrc_emotion_count += 1
-                    nrc_data = seg.get("nrc_emotion", {})
-                    if isinstance(nrc_data, dict) and nrc_data:
-                        if any(v > 0 for v in nrc_data.values()):
-                            nrc_emotion_with_values += 1
-                            logger.debug(
-                                f"{log_prefix}Found nrc_emotion with values > 0 in segment: {seg.get('start', 'unknown')}"
-                            )
-                            return "nrc_emotion", True
-                        logger.debug(
-                            f"{log_prefix}nrc_emotion dict exists but all values are 0 in segment: {seg.get('start', 'unknown')}"
-                        )
-                    elif nrc_data:
-                        logger.debug(
-                            f"{log_prefix}nrc_emotion exists but is not a dict in segment: {seg.get('start', 'unknown')}, type: {type(nrc_data)}"
-                        )
-
-            if log_prefix:
-                logger.debug(
-                    f"{log_prefix}No emotion data found. "
-                    f"Segments checked: {len(segments_to_check)}, "
-                    f"context_emotion fields: {context_emotion_count}, "
-                    f"nrc_emotion fields: {nrc_emotion_count}, "
-                    f"nrc_emotion with values>0: {nrc_emotion_with_values}"
-                )
-
-            return None, False
-
-        emotion_type, emotion_found = check_emotion_data(
-            segments, "[CONTAGION] Initial check: "
+        resolved = self._resolve_branches(
+            segments,
+            emotion_data,
+            contextual_emotion_data,
+            contextual_selected=contextual_selected,
+            selected_modules=selected_modules,
         )
+        branches = resolved["branches"]
+        branch_decision = resolved["branch_decision"]
 
-        if not emotion_found:
-            if emotion_data and isinstance(emotion_data, dict):
-                segments_with_emotion = emotion_data.get("segments_with_emotion", [])
-                logger.debug(
-                    f"[CONTAGION] emotion_data provided. segments_with_emotion count: {len(segments_with_emotion) if segments_with_emotion else 0}"
-                )
+        if not branches:
+            reason = "no_usable_emotion_signals"
+            logger.info(
+                "[CONTAGION] Skipping: no usable lexical or contextual emotion signals. "
+                f"Branch decision: {branch_decision}"
+            )
+            return {
+                "run_status": "not_applicable",
+                "usable_output": False,
+                "skip_reason": reason,
+                "contagion_events": [],
+                "contagion_counts": [],
+                "contagion_summary": {
+                    "total_events": 0,
+                    "skip_reason": reason,
+                },
+                "emotion_type": None,
+                "branch_decision": branch_decision,
+                "timeline": [],
+                "speaker_emotions": {},
+                "branches": {},
+                "primary_branch": None,
+                "warnings": [
+                    "No usable emotion signals for contagion; "
+                    "run emotion and/or contextual_emotion with labeled outcomes."
+                ],
+            }
 
-                if segments_with_emotion:
-                    emotion_type_check, emotion_found_check = check_emotion_data(
-                        segments_with_emotion,
-                        "[CONTAGION] Checking segments_with_emotion: ",
-                    )
-                    if emotion_found_check:
-                        logger.debug(
-                            f"[CONTAGION] Using segments_with_emotion directly, emotion_type: {emotion_type_check}"
-                        )
-                        segments = segments_with_emotion
-                        emotion_type = emotion_type_check
-                        emotion_found = True
-                    else:
-                        logger.debug(
-                            "[CONTAGION] segments_with_emotion don't have emotion data embedded, attempting to merge..."
-                        )
-                        segments, emotion_type, emotion_found = merge_emotion_data(
-                            segments, segments_with_emotion, logger
-                        )
-
-                        if emotion_found:
-                            emotion_type, emotion_found = check_emotion_data(
-                                segments, "[CONTAGION] After merge: "
-                            )
-
-                if not emotion_found and isinstance(emotion_data, dict):
-                    logger.debug(
-                        "[CONTAGION] Attempting to reconstruct emotion data from contextual_examples..."
-                    )
-                    segments, emotion_type, emotion_found = reconstruct_emotion_data(
-                        segments, emotion_data, logger
-                    )
-                    if emotion_found:
-                        emotion_type, emotion_found = check_emotion_data(
-                            segments, "[CONTAGION] After reconstruction: "
-                        )
-                else:
-                    logger.debug(
-                        "[CONTAGION] emotion_data provided but segments_with_emotion is empty or missing"
-                    )
-            else:
-                logger.debug(
-                    f"[CONTAGION] No emotion_data provided or not a dict. emotion_data type: {type(emotion_data)}"
-                )
-
-            if not emotion_found:
-                error_details = []
-                error_details.append("No emotion data found in segments.")
-
-                if emotion_data:
-                    error_details.append(f"emotion_data type: {type(emotion_data)}")
-                    if isinstance(emotion_data, dict):
-                        error_details.append(
-                            f"emotion_data keys: {list(emotion_data.keys())}"
-                        )
-                        segments_with_emotion = emotion_data.get(
-                            "segments_with_emotion", []
-                        )
-                        error_details.append(
-                            f"segments_with_emotion count: {len(segments_with_emotion)}"
-                        )
-                        if segments_with_emotion:
-                            sample_seg = segments_with_emotion[0]
-                            error_details.append(
-                                f"Sample segment keys: {list(sample_seg.keys())}"
-                            )
-                            if "context_emotion" in sample_seg:
-                                error_details.append(
-                                    f"context_emotion value: {sample_seg.get('context_emotion')}"
-                                )
-                            if "nrc_emotion" in sample_seg:
-                                nrc_val = sample_seg.get("nrc_emotion")
-                                error_details.append(
-                                    f"nrc_emotion type: {type(nrc_val)}, value: {nrc_val}"
-                                )
-                else:
-                    error_details.append("emotion_data is None or not provided")
-
-                error_details.append("Please run emotion analysis first.")
-                error_msg = " ".join(error_details)
-                logger.error(f"[CONTAGION] {error_msg}")
-                raise ValueError(error_msg)
-
-        speaker_emotions, timeline = build_emotion_timeline(segments, emotion_type)
-        contagion_events, contagion_counts, contagion_summary = detect_contagion(
-            timeline
+        # Prefer lexical as the primary top-level view for backward compat when
+        # both exist; both full subresults are always under `branches`.
+        primary_key = (
+            "lexical_emotion" if "lexical_emotion" in branches else next(iter(branches))
+        )
+        primary = branches[primary_key]
+        logger.debug(
+            f"[CONTAGION] Branches active: {list(branches.keys())}; "
+            f"primary={primary_key}"
         )
 
         return {
-            "contagion_events": contagion_events,
-            "contagion_counts": contagion_counts,
-            "contagion_summary": contagion_summary,
-            "emotion_type": emotion_type,
-            "timeline": timeline,
-            "speaker_emotions": speaker_emotions,
+            "run_status": "complete",
+            "usable_output": True,
+            "contagion_events": primary["contagion_events"],
+            "contagion_counts": primary["contagion_counts"],
+            "contagion_summary": primary["contagion_summary"],
+            "emotion_type": primary["emotion_type"],
+            "branch_decision": branch_decision,
+            "timeline": primary["timeline"],
+            "speaker_emotions": primary["speaker_emotions"],
+            "branches": branches,
+            "primary_branch": primary_key,
         }
 
     def run_from_context(self, context: "PipelineContext") -> Dict[str, Any]:
@@ -217,100 +267,62 @@ class ContagionAnalysis(AnalysisModule):
             logger.debug(f"[CONTAGION] Loaded {len(segments)} segments from context")
 
             emotion_result = context.get_analysis_result("emotion")
+            contextual_result = context.get_analysis_result("contextual_emotion")
+            selected_modules = None
+            getter = getattr(context, "get_computed_value", None)
+            if callable(getter):
+                selected_modules = getter("selected_modules")
+            if not isinstance(selected_modules, list):
+                selected_modules = None
 
             if emotion_result and isinstance(emotion_result, dict):
                 segments_with_emotion = emotion_result.get("segments_with_emotion", [])
-                if segments_with_emotion:
-                    sample_seg = (
-                        segments_with_emotion[0] if segments_with_emotion else {}
+                sample_seg = segments_with_emotion[0] if segments_with_emotion else {}
+                if segments_with_emotion and "nrc_emotion" not in sample_seg:
+                    from transcriptx.core.utils._path_core import (
+                        find_enriched_transcript,
                     )
-                    if (
-                        "context_emotion" not in sample_seg
-                        and "nrc_emotion" not in sample_seg
-                    ):
-                        from transcriptx.core.utils._path_core import (
-                            find_enriched_transcript,
-                        )
-                        from transcriptx.io.transcript_loader import load_transcript
+                    from transcriptx.io.transcript_loader import load_transcript
 
-                        enriched_path = find_enriched_transcript(
-                            context.transcript_path, "emotion"
-                        )
-                        if enriched_path:
-                            logger.debug(
-                                f"[CONTAGION] Loading enriched transcript from: {enriched_path}"
-                            )
-                            try:
-                                enriched_data = load_transcript(enriched_path)
-                                enriched_segments = None
-                                if (
-                                    isinstance(enriched_data, dict)
-                                    and "segments" in enriched_data
-                                ):
-                                    enriched_segments = enriched_data["segments"]
-                                elif isinstance(enriched_data, list):
-                                    enriched_segments = enriched_data
-                                if enriched_segments:
-                                    logger.debug(
-                                        "[CONTAGION] Loaded "
-                                        f"{len(enriched_segments)} segments from enriched transcript"
-                                    )
-                                    emotion_result["segments_with_emotion"] = (
-                                        enriched_segments
-                                    )
-                            except Exception as exc:
-                                logger.warning(
-                                    f"[CONTAGION] Failed to load enriched transcript: {exc}"
+                    enriched_path = find_enriched_transcript(
+                        context.transcript_path, "emotion"
+                    )
+                    if enriched_path:
+                        try:
+                            enriched_data = load_transcript(enriched_path)
+                            enriched_segments = None
+                            if (
+                                isinstance(enriched_data, dict)
+                                and "segments" in enriched_data
+                            ):
+                                enriched_segments = enriched_data["segments"]
+                            elif isinstance(enriched_data, list):
+                                enriched_segments = enriched_data
+                            if enriched_segments:
+                                emotion_result["segments_with_emotion"] = (
+                                    enriched_segments
                                 )
-
-            if emotion_result:
-                logger.debug(
-                    f"[CONTAGION] Found emotion_result in context. Type: {type(emotion_result)}"
-                )
-                if isinstance(emotion_result, dict):
-                    logger.debug(
-                        f"[CONTAGION] emotion_result keys: {list(emotion_result.keys())}"
-                    )
-                    segments_with_emotion = emotion_result.get(
-                        "segments_with_emotion", []
-                    )
-                    logger.debug(
-                        f"[CONTAGION] segments_with_emotion count: {len(segments_with_emotion)}"
-                    )
-
-                    if segments_with_emotion:
-                        sample_seg = (
-                            segments_with_emotion[0] if segments_with_emotion else {}
-                        )
-                        logger.debug(
-                            "[CONTAGION] Sample segment_with_emotion keys: "
-                            f"{list(sample_seg.keys())}"
-                        )
-                        if "context_emotion" in sample_seg:
-                            logger.debug(
-                                "[CONTAGION] Sample has context_emotion: "
-                                f"{sample_seg.get('context_emotion')}"
-                            )
-                        if "nrc_emotion" in sample_seg:
-                            nrc_val = sample_seg.get("nrc_emotion")
-                            logger.debug(
-                                "[CONTAGION] Sample has nrc_emotion: "
-                                f"type={type(nrc_val)}, value={nrc_val}"
+                        except Exception as exc:
+                            logger.warning(
+                                f"[CONTAGION] Failed to load enriched transcript: {exc}"
                             )
 
-                        logger.debug(
-                            "[CONTAGION] Will attempt to use segments_with_emotion in analyze()"
-                        )
-                else:
-                    logger.warning(
-                        f"[CONTAGION] emotion_result is not a dict: {type(emotion_result)}"
-                    )
-            else:
+            if not emotion_result:
                 logger.warning(
-                    "[CONTAGION] No emotion_result found in context. Emotion analysis may not have run or completed."
+                    "[CONTAGION] No emotion_result found in context. "
+                    "Emotion analysis may not have run or completed."
                 )
 
-            results = self.analyze(segments, emotion_data=emotion_result)
+            results = self.analyze(
+                segments,
+                emotion_data=(
+                    emotion_result if isinstance(emotion_result, dict) else None
+                ),
+                contextual_emotion_data=(
+                    contextual_result if isinstance(contextual_result, dict) else None
+                ),
+                selected_modules=selected_modules,
+            )
 
             from transcriptx.core.output.output_service import create_output_service
 
@@ -350,8 +362,30 @@ class ContagionAnalysis(AnalysisModule):
     def _save_results(
         self, results: Dict[str, Any], output_service: "OutputService"
     ) -> None:
-        contagion_events = results["contagion_events"]
-        contagion_summary = results["contagion_summary"]
+        if str(results.get("run_status") or "") in {"not_applicable", "skipped"}:
+            output_service.save_data(
+                {
+                    "run_status": results.get("run_status"),
+                    "skip_reason": results.get("skip_reason"),
+                    "branch_decision": results.get("branch_decision"),
+                    "warnings": results.get("warnings"),
+                },
+                "contagion_summary",
+                format_type="json",
+            )
+            output_service.save_summary(
+                {
+                    "total_contagion_events": 0,
+                    "run_status": results.get("run_status"),
+                    "skip_reason": results.get("skip_reason"),
+                },
+                {},
+                analysis_metadata={},
+            )
+            return
+
+        contagion_events = results.get("contagion_events") or []
+        contagion_summary = results.get("contagion_summary") or {}
         output_service.get_output_structure()
 
         output_service.save_data(
@@ -361,18 +395,43 @@ class ContagionAnalysis(AnalysisModule):
             contagion_summary, "contagion_summary", format_type="json"
         )
 
+        branches = results.get("branches") or {}
+        if branches:
+            output_service.save_data(branches, "contagion_branches", format_type="json")
+
+        branch_name = (
+            "contextual (contextual_emotion classifier)"
+            if results.get("emotion_type") == "context_emotion"
+            else "lexical (NRC vocabulary association)"
+        )
         summary_text = "Emotional Contagion Analysis Results:\n\n"
         summary_text += f"Total contagion events detected: {len(contagion_events)}\n"
-        summary_text += (
-            f"Emotion type analyzed: {results.get('emotion_type', 'unknown')}\n\n"
-        )
+        summary_text += f"Primary emotion branch analyzed: {branch_name}\n"
+        summary_text += f"Active branches: {', '.join(branches.keys()) or 'none'}\n\n"
 
-        contagion_counts = results.get("contagion_counts", {})
+        contagion_counts = results.get("contagion_counts", [])
         if contagion_events:
             summary_text += "Top contagion patterns:\n"
-            top_patterns = Counter(contagion_counts).most_common(5)
-            for (from_spk, to_spk, emo), count in top_patterns:
-                summary_text += f"• {from_spk} → {to_spk} ({emo}): {count} times\n"
+            if isinstance(contagion_counts, list):
+                ranked = sorted(
+                    (item for item in contagion_counts if isinstance(item, dict)),
+                    key=lambda item: (
+                        -int(item.get("count") or 0),
+                        item.get("actor") or "",
+                        item.get("target") or "",
+                        item.get("emotion") or "",
+                    ),
+                )[:5]
+                for item in ranked:
+                    summary_text += (
+                        f"• {item.get('actor')} → {item.get('target')} "
+                        f"({item.get('emotion')}): {item.get('count')} times\n"
+                    )
+            else:
+                # Legacy tuple-keyed map (tests / older in-memory shapes).
+                top_patterns = Counter(contagion_counts).most_common(5)
+                for (from_spk, to_spk, emo), count in top_patterns:
+                    summary_text += f"• {from_spk} → {to_spk} ({emo}): {count} times\n"
         else:
             summary_text += "No significant emotional contagion patterns detected.\n"
 
@@ -382,5 +441,8 @@ class ContagionAnalysis(AnalysisModule):
         global_stats = {
             "total_contagion_events": len(contagion_events),
             "emotion_type": results.get("emotion_type", "unknown"),
+            "primary_branch": results.get("primary_branch"),
+            "active_branches": list(branches.keys()),
+            "branch_decision": results.get("branch_decision", {}),
         }
         output_service.save_summary(global_stats, {}, analysis_metadata={})

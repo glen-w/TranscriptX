@@ -202,9 +202,9 @@ def test_asymmetry_one_way_and_balance_presentation() -> None:
     assert eq["interruption_asymmetry"]["Alice"] == pytest.approx(-1.0)
     assert eq["interruption_asymmetry_index"] == pytest.approx(1.0)
     assert "interruption_balance_index" not in eq
-    assert interruption_balance_index(eq["interruption_asymmetry_index"]) == pytest.approx(
-        0.0
-    )
+    assert interruption_balance_index(
+        eq["interruption_asymmetry_index"]
+    ) == pytest.approx(0.0)
 
 
 def test_asymmetry_abstains_without_interruptions() -> None:
@@ -238,7 +238,9 @@ def test_response_latency_attribution_invalid_gaps_and_cv() -> None:
         _event(itype="response", speaker_a="Alice", speaker_b="Bob", gap=3.0),
         _event(itype="response", speaker_a="Alice", speaker_b="Carol", gap=2.0),
         _event(itype="response", speaker_a="Alice", speaker_b="Carol", gap=-1.0),
-        _event(itype="response", speaker_a="Alice", speaker_b="Carol", gap=float("nan")),
+        _event(
+            itype="response", speaker_a="Alice", speaker_b="Carol", gap=float("nan")
+        ),
     ]
     eq = compute_equity(
         duration_result=dur,

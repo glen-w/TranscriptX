@@ -87,22 +87,28 @@ class TestSummaryExtractors:
         assert len(summary["highlights"]) > 0
 
     def test_emotion_extractor(self):
-        """Test emotion extractor functionality."""
+        """Test lexical emotion v2 summary extractor."""
         extractor = get_extractor("emotion")
         assert extractor is not None
 
         data = {
-            "emotions": {
-                "joy": [{"text": "happy"}],
-                "sadness": [{"text": "sad"}],
-            }
+            "run_status": "complete",
+            "usable_output": True,
+            "segments_scored": 2,
+            "global_stats": {
+                "emotion_scores": {"joy": 0.6, "sadness": 0.3, "anger": 0.1},
+            },
+            "ui_copy": "Lexical emotion vocabulary summary",
         }
 
         summary = {"key_metrics": {}, "highlights": []}
         extractor(data, summary)
 
-        assert "Emotions Detected" in summary["key_metrics"]
-        assert "Dominant Emotion" in summary["key_metrics"]
+        assert summary["key_metrics"]["Run status"] == "complete"
+        assert summary["key_metrics"]["Usable output"] is True
+        assert summary["key_metrics"]["Segments scored"] == 2
+        assert "Top vocabulary categories" in summary["key_metrics"]
+        assert any("Lexical emotion" in h for h in summary["highlights"])
 
     def test_semantic_similarity_v2_extractor(self):
         """Test semantic_similarity_v2 extractor against v2 output shape."""

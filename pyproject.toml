@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.4.8"
+version = "0.4.9"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -78,11 +78,19 @@ ner = [
     "spacy==3.7.5",
     "thinc==8.2.5",
 ]
-emotion = [
+emotion_lexical = [
+    "nrclex>=3.0.0",
+]
+emotion_transformers = [
     "torch>=2.6.0",
     # Cap <4.53.3 keeps spacy-transformers 1.4.x (en_core_web_trf) installable.
     "transformers>=4.53.0,<4.53.3",
+]
+# Meta-extra: one-release compatibility for existing transcriptx[emotion] installs
+emotion = [
     "nrclex>=3.0.0",
+    "torch>=2.6.0",
+    "transformers>=4.53.0,<4.53.3",
 ]
 voice = [
     "pyannote.audio==3.3.2",

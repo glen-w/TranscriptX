@@ -30,6 +30,9 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "llm_action_items",
         # Non-adapter nested dataclasses (adapter-owned targets are skipped above).
         "affect_tension",
+        "emotion",
+        "contextual_emotion",
+        "fine_grained_emotion",
         "speaker_exemplars",
     }
 )

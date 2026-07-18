@@ -8,6 +8,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from transcriptx.core.analysis.affect_tension import AffectTensionAnalysis
+from transcriptx.core.analysis.emotion_family.fingerprints import segment_text_hash
+from transcriptx.core.analysis.emotion_family.generational_store import (
+    persist_generation,
+)
 
 
 def _seg(speaker: str, **extra):
@@ -24,6 +28,28 @@ def _seg(speaker: str, **extra):
     return base
 
 
+def _usable_contextual_artifact(segments, *, generation_id: str) -> dict:
+    return {
+        "schema_version": "contextual_emotion_result_schema_v2",
+        "semantics_version": "contextual_emotion_v1",
+        "module_id": "contextual_emotion",
+        "run_status": "complete",
+        "usable_output": True,
+        "segments_scored": len(segments),
+        "artifact_generation_id": generation_id,
+        "projection_fields": [
+            "segment_id",
+            "evaluation_state",
+            "analytical_outcome",
+            "contextual_emotion_label",
+            "contextual_emotion_confidence",
+            "truncated",
+            "canonical_ref",
+        ],
+        "segments_with_contextual_emotion": segments,
+    }
+
+
 @pytest.mark.unit
 def test_get_dependencies() -> None:
     mod = AffectTensionAnalysis()
@@ -32,22 +58,78 @@ def test_get_dependencies() -> None:
 
 
 @pytest.mark.unit
-def test_analyze_with_default_thresholds_and_named_speakers() -> None:
+def test_analyze_with_default_thresholds_and_named_speakers(tmp_path) -> None:
     mod = AffectTensionAnalysis()
+    text = "hello there"
+    text_hash = segment_text_hash(text)
+    gid = "d" * 32
+    persist_generation(
+        tmp_path,
+        module_id="contextual_emotion",
+        generation_id=gid,
+        run_status="complete",
+        usable_output=True,
+        schema_version="contextual_emotion_result_schema_v2",
+        semantics_version="contextual_emotion_v1",
+        segments_scored=2,
+        canonical_rows=[
+            {
+                "segment_id": "s1",
+                "evaluation_state": "scored",
+                "analytical_outcome": "labeled",
+                "scored_text_hash": text_hash,
+                "scores": {"joy": 0.8, "anger": 0.1, "neutral": 0.1},
+            },
+            {
+                "segment_id": "s2",
+                "evaluation_state": "scored",
+                "analytical_outcome": "labeled",
+                "scored_text_hash": text_hash,
+                "scores": {"joy": 0.7, "anger": 0.2, "neutral": 0.1},
+            },
+        ],
+    )
     segments = [
-        _seg("Alice"),
-        _seg("Bob", sentiment_compound_norm=None, sentiment={"compound": 0.2}),
+        _seg(
+            "Alice",
+            id="s1",
+            text=text,
+            context_emotion_source="contextual_emotion",
+            contextual_emotion_analytical_outcome="labeled",
+            contextual_emotion_label="joy",
+            contextual_emotion_scored_text_hash=text_hash,
+        ),
+        _seg(
+            "Bob",
+            id="s2",
+            text=text,
+            sentiment_compound_norm=None,
+            sentiment={"compound": 0.2},
+            context_emotion_source="contextual_emotion",
+            contextual_emotion_analytical_outcome="labeled",
+            contextual_emotion_label="joy",
+            contextual_emotion_scored_text_hash=text_hash,
+        ),
         _seg("SPEAKER_00"),
         {"text": "no speaker"},  # excluded
     ]
+    artifact = _usable_contextual_artifact(
+        [s for s in segments if s.get("id") in {"s1", "s2"}],
+        generation_id=gid,
+    )
     cfg = SimpleNamespace(analysis=SimpleNamespace(affect_tension=None))
     with patch("transcriptx.core.analysis.affect_tension.get_config", return_value=cfg):
-        out = mod.analyze(segments)
+        out = mod.analyze(
+            segments,
+            contextual_emotion_data=artifact,
+            contextual_module_dir=tmp_path,
+        )
     assert "derived_indices" in out
     assert out["metadata"]["version"]
     assert "Alice" in out["metadata"]["named_speakers"]
     assert segments[0]["affect_mismatch_posneg"] is not None
     assert "emotion_entropy" in segments[0]
+    assert segments[0]["affect_contextual_metrics_status"] == "computed"
 
 
 @pytest.mark.unit

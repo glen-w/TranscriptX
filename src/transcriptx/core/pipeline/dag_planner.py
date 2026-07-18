@@ -99,7 +99,11 @@ class DAGPlanner:
         for name in module_names:
             if name not in modules:
                 continue
-            for dep in modules[name].dependencies:
+            deps = list(modules[name].dependencies)
+            for opt in getattr(modules[name], "optional_dependencies", None) or []:
+                if opt in module_set:
+                    deps.append(opt)
+            for dep in deps:
                 if dep in module_set:
                     adjacency[dep].append(name)
                     in_degree[name] += 1
@@ -126,7 +130,19 @@ class DAGPlanner:
         module_set = set(module_names)
         dep_graph = {
             module_name: {
-                dep for dep in modules[module_name].dependencies if dep in module_set
+                dep
+                for dep in (
+                    list(modules[module_name].dependencies)
+                    + [
+                        opt
+                        for opt in (
+                            getattr(modules[module_name], "optional_dependencies", None)
+                            or []
+                        )
+                        if opt in module_set
+                    ]
+                )
+                if dep in module_set
             }
             for module_name in module_names
             if module_name in modules

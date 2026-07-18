@@ -1,5 +1,5 @@
 """
-Tests for contagion detection and emotion merger (build_emotion_timeline, detect_contagion, merge_emotion_data).
+Tests for contagion detection and emotion merger (build_emotion_timeline, detect_contagion, merge_lexical_emotion).
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from transcriptx.core.analysis.contagion.detection import (
     build_emotion_timeline,
     detect_contagion,
 )
-from transcriptx.core.analysis.contagion.emotion_merger import merge_emotion_data
+from transcriptx.core.analysis.contagion.emotion_merger import merge_lexical_emotion
 
 
 class TestDetectContagion:
@@ -20,14 +20,14 @@ class TestDetectContagion:
     def test_empty_timeline_returns_empty_events(self):
         events, pair_counts, summary = detect_contagion([])
         assert events == []
-        assert pair_counts == {}
+        assert pair_counts == []
         assert summary == {}
 
     def test_single_entry_timeline_returns_no_events(self):
         timeline = [("Alice", "joy")]
         events, pair_counts, summary = detect_contagion(timeline)
         assert events == []
-        assert pair_counts == {}
+        assert pair_counts == []
         assert summary == {}
 
     def test_contagion_same_emotion_different_speaker(self):
@@ -49,8 +49,11 @@ class TestDetectContagion:
             and events[1]["to"] == "Bob"
             and events[1]["emotion"] == "sadness"
         )
-        assert pair_counts[("Alice", "Bob", "joy")] == 1
-        assert pair_counts[("Alice", "Bob", "sadness")] == 1
+        by_key = {
+            (r["actor"], r["target"], r["emotion"]): r["count"] for r in pair_counts
+        }
+        assert by_key[("Alice", "Bob", "joy")] == 1
+        assert by_key[("Alice", "Bob", "sadness")] == 1
         assert "Alice->Bob" in summary
         assert summary["Alice->Bob"]["joy"] == 1
         assert summary["Alice->Bob"]["sadness"] == 1
@@ -135,43 +138,87 @@ class TestBuildEmotionTimeline:
         assert "SPEAKER_00" in speaker_emotions
 
 
-class TestMergeEmotionData:
-    """Tests for merge_emotion_data."""
+class TestMergeLexicalEmotion:
+    """Tests for merge_lexical_emotion (lexical branch only)."""
 
-    def test_empty_segments_with_emotion_returns_unchanged(self):
+    def test_empty_source_segments_merges_nothing(self):
         logger = MagicMock()
         segments = [{"speaker": "S1", "text": "Hi", "start": 0.0}]
-        merged, emotion_type, any_merged = merge_emotion_data(segments, [], logger)
-        assert merged == segments
-        assert emotion_type is None
-        assert any_merged is False
+        merged_count = merge_lexical_emotion(segments, [], logger)
+        assert merged_count == 0
+        assert "nrc_emotion" not in segments[0]
 
-    def test_merges_context_emotion_by_start_time(self):
+    def test_merges_nrc_emotion_by_segment_id(self):
+        from transcriptx.core.analysis.emotion_family.fingerprints import (
+            segment_text_hash,
+        )
+
         logger = MagicMock()
         segments = [
-            {"speaker": "S1", "text": "Hi", "start": 0.0},
-            {"speaker": "S2", "text": "Bye", "start": 1.0},
+            {"id": "s1", "speaker": "S1", "text": "Hi", "start": 0.0},
+            {"id": "s2", "speaker": "S2", "text": "Bye", "start": 1.0},
         ]
-        segments_with_emotion = [
-            {"start": 0.0, "context_emotion": {"joy": 0.9}},
-            {"start": 1.0, "context_emotion": {"sadness": 0.8}},
+        source = [
+            {
+                "id": "s1",
+                "start": 0.0,
+                "text": "Hi",
+                "nrc_emotion": {"joy": 0.9, "fear": 0.1},
+                "emotion_scored_text_hash": segment_text_hash("Hi"),
+            },
+            {
+                "id": "s2",
+                "start": 1.0,
+                "text": "Bye",
+                "nrc_emotion": {"sadness": 0.8},
+                "emotion_scored_text_hash": segment_text_hash("Bye"),
+            },
         ]
-        merged, emotion_type, any_merged = merge_emotion_data(
-            segments, segments_with_emotion, logger
-        )
-        assert any_merged is True
-        assert emotion_type == "context_emotion"
-        assert merged[0].get("context_emotion") == {"joy": 0.9}
-        assert merged[1].get("context_emotion") == {"sadness": 0.8}
+        merged_count = merge_lexical_emotion(segments, source, logger)
+        assert merged_count == 2
+        assert segments[0]["nrc_emotion"] == {"joy": 0.9, "fear": 0.1}
+        assert segments[1]["nrc_emotion"] == {"sadness": 0.8}
 
-    def test_merges_nrc_emotion_when_present(self):
+    def test_merges_nrc_emotion_by_start_time_fallback(self):
+        from transcriptx.core.analysis.emotion_family.fingerprints import (
+            segment_text_hash,
+        )
+
         logger = MagicMock()
         segments = [{"speaker": "S1", "text": "Hi", "start": 0.0}]
-        segments_with_emotion = [
-            {"start": 0.0, "nrc_emotion": {"joy": 0.9, "fear": 0.1}},
+        source = [
+            {
+                "start": 0.0,
+                "text": "Hi",
+                "nrc_emotion": {"joy": 0.9, "fear": 0.1},
+                "emotion_scored_text_hash": segment_text_hash("Hi"),
+            }
         ]
-        merged, emotion_type, any_merged = merge_emotion_data(
-            segments, segments_with_emotion, logger
-        )
-        assert any_merged is True
-        assert merged[0].get("nrc_emotion") == {"joy": 0.9, "fear": 0.1}
+        merged_count = merge_lexical_emotion(segments, source, logger)
+        assert merged_count == 1
+        assert segments[0]["nrc_emotion"] == {"joy": 0.9, "fear": 0.1}
+
+    def test_rejects_merge_without_scored_text_hash(self):
+        logger = MagicMock()
+        segments = [{"id": "s1", "speaker": "S1", "text": "Hi", "start": 0.0}]
+        source = [
+            {"id": "s1", "start": 0.0, "nrc_emotion": {"joy": 0.9, "fear": 0.1}},
+        ]
+        merged_count = merge_lexical_emotion(segments, source, logger)
+        assert merged_count == 0
+        assert "nrc_emotion" not in segments[0]
+
+    def test_never_merges_context_emotion_fields(self):
+        """Contextual fields are out of scope for the lexical merger."""
+        logger = MagicMock()
+        segments = [{"speaker": "S1", "text": "Hi", "start": 0.0}]
+        source = [
+            {
+                "start": 0.0,
+                "context_emotion": {"joy": 0.9},
+                "context_emotion_source": "contextual_emotion",
+            }
+        ]
+        merged_count = merge_lexical_emotion(segments, source, logger)
+        assert merged_count == 0
+        assert "context_emotion" not in segments[0]

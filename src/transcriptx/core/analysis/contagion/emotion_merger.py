@@ -1,178 +1,104 @@
 """
-Emotion data merging utilities for contagion analysis.
+Lexical emotion data merging for contagion analysis.
+
+Only the lexical branch (nrc_emotion from the `emotion` module) is merged
+here. The contextual branch is merged via
+transcriptx.core.analysis.emotion_family.consumer_contracts.merge_contextual_projection,
+which enforces provenance (context_emotion_source == 'contextual_emotion').
+Legacy provenance-less context_emotion_* fields are UI/report-only and must
+never be propagated into contagion inputs.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Mapping, Optional
+
+from transcriptx.core.analysis.emotion_family.fingerprints import segment_text_hash
 
 
-def merge_emotion_data(
+def _has_positive_scores(data: Any) -> bool:
+    return isinstance(data, dict) and any(
+        isinstance(v, (int, float)) and v > 0 for v in data.values()
+    )
+
+
+def merge_lexical_emotion(
     segments: List[Dict[str, Any]],
-    segments_with_emotion: List[Dict[str, Any]],
+    source_segments: List[Dict[str, Any]],
     logger: Any,
     tolerance: float = 0.5,
-) -> Tuple[List[Dict[str, Any]], str, bool]:
+) -> int:
     """
-    Merge emotion data from segments_with_emotion into segments by matching start times.
-    """
-    if not segments_with_emotion:
-        logger.debug("merge_emotion_data: segments_with_emotion is empty")
-        return segments, None, False
+    Copy nrc_emotion from producer segments into consumer segments.
 
-    emotion_map: Dict[float, List[Dict[str, Any]]] = {}
-    for emotion_seg in segments_with_emotion:
-        start = emotion_seg.get("start", 0)
-        if start not in emotion_map:
-            emotion_map[start] = []
-        emotion_map[start].append(emotion_seg)
+    Matches by unique segment id and requires emotion_scored_text_hash.
+    Timestamp fallback is retained only when both sides carry a matching hash.
+    Returns the number of segments that received nrc_emotion.
+    """
+    if not source_segments:
+        logger.debug("merge_lexical_emotion: source_segments is empty")
+        return 0
+
+    by_id: Dict[str, Mapping[str, Any]] = {}
+    by_start: List[tuple[float, Mapping[str, Any]]] = []
+    for src in source_segments:
+        if not _has_positive_scores(src.get("nrc_emotion")):
+            continue
+        expected = src.get("emotion_scored_text_hash")
+        if not expected:
+            continue
+        sid = src.get("id") or src.get("segment_id")
+        if sid is not None and str(sid).strip():
+            by_id[str(sid)] = src
+        start = src.get("start")
+        if isinstance(start, (int, float)):
+            by_start.append((float(start), src))
 
     merged_count = 0
-    emotion_type = None
-
     for seg in segments:
-        seg_start = seg.get("start", 0)
-        matched = False
-
-        if seg_start in emotion_map:
-            for emotion_seg in emotion_map[seg_start]:
-                if "context_emotion" in emotion_seg and emotion_seg["context_emotion"]:
-                    seg["context_emotion"] = emotion_seg["context_emotion"]
-                    emotion_type = "context_emotion"
-                    matched = True
-                    merged_count += 1
-                    break
-                if emotion_seg.get("context_emotion_primary"):
-                    seg["context_emotion"] = emotion_seg["context_emotion_primary"]
-                    if "context_emotion_primary" in emotion_seg:
-                        seg["context_emotion_primary"] = emotion_seg[
-                            "context_emotion_primary"
-                        ]
-                    if "context_emotion_scores" in emotion_seg:
-                        seg["context_emotion_scores"] = emotion_seg[
-                            "context_emotion_scores"
-                        ]
-                    emotion_type = "context_emotion"
-                    matched = True
-                    merged_count += 1
-                    break
-                ctx_scores = emotion_seg.get("context_emotion_scores")
-                if (
-                    isinstance(ctx_scores, dict)
-                    and ctx_scores
-                    and any(
-                        isinstance(v, (int, float)) and v > 0
-                        for v in ctx_scores.values()
-                    )
+        if _has_positive_scores(seg.get("nrc_emotion")):
+            expected = seg.get("emotion_scored_text_hash")
+            if not expected or expected != segment_text_hash(seg.get("text")):
+                for key in (
+                    "nrc_emotion",
+                    "nrc_valence_scores",
+                    "nrc_emotion_coverage",
+                    "emotion_evaluation_state",
+                    "emotion_scored_text_hash",
+                    "emotion_canonical_ref",
                 ):
-                    top = max(
-                        (
-                            (k, v)
-                            for k, v in ctx_scores.items()
-                            if isinstance(v, (int, float))
-                        ),
-                        key=lambda x: x[1],
-                    )[0]
-                    seg["context_emotion"] = top
-                    seg["context_emotion_scores"] = dict(ctx_scores)
-                    emotion_type = "context_emotion"
-                    matched = True
-                    merged_count += 1
-                    break
-                if "nrc_emotion" in emotion_seg:
-                    nrc_data = emotion_seg.get("nrc_emotion", {})
-                    if (
-                        isinstance(nrc_data, dict)
-                        and nrc_data
-                        and any(v > 0 for v in nrc_data.values())
-                    ):
-                        seg["nrc_emotion"] = nrc_data
-                        if not emotion_type:
-                            emotion_type = "nrc_emotion"
-                        matched = True
-                        merged_count += 1
-                        break
-            if matched:
+                    seg.pop(key, None)
                 continue
+            merged_count += 1
+            continue
 
-        if not matched:
-            for emotion_start, emotion_segs in emotion_map.items():
-                if abs(seg_start - emotion_start) < tolerance:
-                    for emotion_seg in emotion_segs:
-                        if (
-                            "context_emotion" in emotion_seg
-                            and emotion_seg["context_emotion"]
-                        ):
-                            seg["context_emotion"] = emotion_seg["context_emotion"]
-                            emotion_type = "context_emotion"
-                            matched = True
-                            merged_count += 1
-                            break
-                        if emotion_seg.get("context_emotion_primary"):
-                            seg["context_emotion"] = emotion_seg[
-                                "context_emotion_primary"
-                            ]
-                            if "context_emotion_primary" in emotion_seg:
-                                seg["context_emotion_primary"] = emotion_seg[
-                                    "context_emotion_primary"
-                                ]
-                            if "context_emotion_scores" in emotion_seg:
-                                seg["context_emotion_scores"] = emotion_seg[
-                                    "context_emotion_scores"
-                                ]
-                            emotion_type = "context_emotion"
-                            matched = True
-                            merged_count += 1
-                            break
-                        ctx_scores_tol = emotion_seg.get("context_emotion_scores")
-                        if (
-                            isinstance(ctx_scores_tol, dict)
-                            and ctx_scores_tol
-                            and any(
-                                isinstance(v, (int, float)) and v > 0
-                                for v in ctx_scores_tol.values()
-                            )
-                        ):
-                            top = max(
-                                (
-                                    (k, v)
-                                    for k, v in ctx_scores_tol.items()
-                                    if isinstance(v, (int, float))
-                                ),
-                                key=lambda x: x[1],
-                            )[0]
-                            seg["context_emotion"] = top
-                            seg["context_emotion_scores"] = dict(ctx_scores_tol)
-                            emotion_type = "context_emotion"
-                            matched = True
-                            merged_count += 1
-                            break
-                        if "nrc_emotion" in emotion_seg:
-                            nrc_data = emotion_seg.get("nrc_emotion", {})
-                            if (
-                                isinstance(nrc_data, dict)
-                                and nrc_data
-                                and any(v > 0 for v in nrc_data.values())
-                            ):
-                                seg["nrc_emotion"] = nrc_data
-                                if not emotion_type:
-                                    emotion_type = "nrc_emotion"
-                                matched = True
-                                merged_count += 1
-                                break
-                    if matched:
+        src: Optional[Mapping[str, Any]] = None
+        sid = seg.get("id") or seg.get("segment_id")
+        if sid is not None:
+            src = by_id.get(str(sid))
+        if src is None:
+            seg_start = seg.get("start")
+            if isinstance(seg_start, (int, float)):
+                for cand_start, cand in by_start:
+                    if abs(float(seg_start) - cand_start) < tolerance:
+                        src = cand
                         break
+        if src is None:
+            continue
+        expected = src.get("emotion_scored_text_hash")
+        if not expected or expected != segment_text_hash(seg.get("text")):
+            continue
 
-    found = merged_count > 0
-    if found:
-        logger.debug(
-            "merge_emotion_data: Successfully merged emotion data into "
-            f"{merged_count}/{len(segments)} segments, type: {emotion_type}"
-        )
-    else:
-        logger.debug(
-            "merge_emotion_data: Failed to merge emotion data. Checked "
-            f"{len(segments)} segments against {len(segments_with_emotion)} emotion segments"
-        )
+        seg["nrc_emotion"] = dict(src["nrc_emotion"])
+        if "emotion_scored_text_hash" in src:
+            seg["emotion_scored_text_hash"] = src["emotion_scored_text_hash"]
+        if "emotion_canonical_ref" in src:
+            seg["emotion_canonical_ref"] = src["emotion_canonical_ref"]
+        if "emotion_evaluation_state" in src:
+            seg["emotion_evaluation_state"] = src["emotion_evaluation_state"]
+        merged_count += 1
 
-    return segments, emotion_type, found
+    logger.debug(
+        f"merge_lexical_emotion: {merged_count}/{len(segments)} segments carry nrc_emotion"
+    )
+    return merged_count

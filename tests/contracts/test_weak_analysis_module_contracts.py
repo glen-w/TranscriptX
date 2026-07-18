@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 
 from transcriptx.core.analysis.contagion import ContagionAnalysis
@@ -22,7 +22,9 @@ def test_contagion_success_shape_and_invariants_contract() -> None:
             "text": "Great news.",
             "start": 0.0,
             "end": 1.0,
-            "context_emotion": {"joy": 0.9, "sadness": 0.1},
+            "id": "1",
+            "nrc_emotion": {"joy": 0.9, "sadness": 0.1},
+            "emotion_evaluation_state": "scored",
         },
         {
             "speaker": "Bob",
@@ -30,7 +32,9 @@ def test_contagion_success_shape_and_invariants_contract() -> None:
             "text": "I am happy too.",
             "start": 1.0,
             "end": 2.0,
-            "context_emotion": {"joy": 0.8, "sadness": 0.2},
+            "id": "2",
+            "nrc_emotion": {"joy": 0.8, "sadness": 0.2},
+            "emotion_evaluation_state": "scored",
         },
     ]
     result = module.analyze(segments)
@@ -45,28 +49,42 @@ def test_contagion_success_shape_and_invariants_contract() -> None:
     }
     assert required.issubset(result.keys())
     assert isinstance(result["contagion_events"], list)
-    assert isinstance(result["contagion_counts"], dict)
+    assert isinstance(result["contagion_counts"], list)
+    assert all(
+        set(item) >= {"actor", "target", "emotion", "count"}
+        for item in result["contagion_counts"]
+    )
     assert isinstance(result["timeline"], list)
     assert len(result["timeline"]) == len(segments)
 
 
-def test_contagion_error_envelope_contract() -> None:
+def test_contagion_not_applicable_envelope_contract() -> None:
     module = ContagionAnalysis()
     context = SimpleNamespace(
         transcript_path="/tmp/input.json",
         get_segments=lambda: [{"speaker": "A", "text": "x"}],
         get_speaker_map=lambda: {},
         get_analysis_result=lambda _name: None,
+        get_computed_value=lambda _key: None,
         get_transcript_dir=lambda: "/tmp/out",
         get_run_id=lambda: "run-1",
         get_runtime_flags=lambda: {},
         store_analysis_result=lambda _name, _results: None,
     )
-    result = module.run_from_context(context)
+    fake_out = MagicMock()
+    fake_out.get_output_structure.return_value = SimpleNamespace(module_dir="/tmp/c")
+    with (
+        patch(
+            "transcriptx.core.output.output_service.create_output_service",
+            return_value=fake_out,
+        ),
+        patch.object(module, "save_results"),
+    ):
+        result = module.run_from_context(context)
     assert result["module"] == "contagion"
-    assert result["status"] == "error"
-    assert isinstance(result.get("error"), str)
-    assert result.get("results") == {}
+    assert result["status"] == "success"
+    assert result["results"]["run_status"] == "not_applicable"
+    assert result["results"]["usable_output"] is False
 
 
 def test_entity_sentiment_success_schema_and_summary_invariants() -> None:

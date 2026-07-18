@@ -1,580 +1,781 @@
 """
-Emotion Detection Module for TranscriptX.
+Lexical emotion analysis (NRCLex) — emotion-associated vocabulary, not inferred speaker emotion.
 
-This module provides comprehensive emotion detection and analysis capabilities
-for transcript segments, including emotion classification, intensity analysis,
-and temporal emotion tracking.
+Semantics: emotion_lexical_v2. Does not load HF classifiers or fill context_emotion_*.
 """
 
 from __future__ import annotations
 
+import uuid
 from collections import defaultdict
 from typing import Any, Dict, List
 
-import numpy as np
-
-from transcriptx.core.analysis.base import AnalysisModule
-from transcriptx.core.utils.config import EMOTION_CATEGORIES
-from transcriptx.core.utils.logger import get_logger, log_info, log_warning
-from transcriptx.core.utils.downloads import (
-    downloads_disabled,
-    downloads_disabled_failfast_message,
-)
-from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
-from transcriptx.utils.text_utils import is_named_speaker
-from transcriptx.core.utils.notifications import notify_user
 from transcriptx.core.analysis.affect.output_helpers import write_enriched_transcript
+from transcriptx.core.analysis.base import AnalysisModule
+from transcriptx.core.analysis.emotion.lexical_pipeline import (
+    NRC_LEXICAL_PIPELINE_V1,
+    PLUTCHIK_EIGHT,
+    SCHEMA_VERSION,
+    SEMANTICS_VERSION,
+    VALENCE_KEYS,
+    build_lexicon_from_nrclex,
+    score_segment_text,
+    sum_assignment_maps,
+    normalize_profile,
+)
+from transcriptx.core.analysis.emotion.preflight import run_lexical_preflight
+from transcriptx.core.analysis.emotion.projections import (
+    apply_lexical_projection,
+    clear_lexical_projection,
+    project_lexical_segment,
+)
+from transcriptx.core.analysis.emotion_family.canonical_hash import canonical_json_hash
+from transcriptx.core.analysis.emotion_family.fingerprints import (
+    build_compatibility_payload,
+    build_runtime_metadata,
+    compatibility_fingerprint,
+    segment_text_hash,
+    speaker_identity_digest,
+    text_source_digest,
+    timeline_identity_digest,
+)
+from transcriptx.core.analysis.emotion_family.cache_validation import (
+    validate_lexical_cache_row,
+)
+from transcriptx.core.analysis.emotion_family.language import (
+    LANGUAGE_POLICY_V1,
+    extract_transcript_metadata,
+    is_english,
+    resolve_segment_language,
+)
+from transcriptx.core.analysis.emotion_family.persist import (
+    persist_canonical_then_enrich,
+)
+from transcriptx.core.analysis.emotion_family.run_status import (
+    RunStatus,
+    derive_run_status_from_rows,
+    derive_usable_output,
+)
+from transcriptx.core.analysis.emotion_family.source_identity import ensure_segment_ids
+from transcriptx.core.analysis.emotion_family.split_cache import (
+    AggregationCacheStore,
+    InferenceCacheStore,
+    aggregation_cache_key,
+    default_aggregation_cache_root,
+    default_inference_cache_root,
+    inference_cache_key,
+    module_cache_fingerprint,
+)
+from transcriptx.core.utils.logger import get_logger, log_info, log_warning
 from transcriptx.core.utils.viz_ids import (
-    VIZ_EMOTION_RADAR_SPEAKER,
     VIZ_EMOTION_RADAR_GLOBAL,
+    VIZ_EMOTION_RADAR_SPEAKER,
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec
+from transcriptx.utils.text_utils import is_named_speaker
 
 logger = get_logger()
 
-
-def _extract_nrc_emotion_scores(emo: Any) -> Dict[str, float]:
-    """Return emotion scores from NRCLex/TextBlob variants."""
-    raw_scores = getattr(emo, "raw_emotion_scores", None)
-    if isinstance(raw_scores, dict):
-        return {
-            str(k): float(v)
-            for k, v in raw_scores.items()
-            if isinstance(v, (int, float))
-        }
-
-    # Newer NRCLex variants expose only affect_frequencies.
-    # It can include metadata keys like "anticip", so normalize where possible.
-    affect_scores = getattr(emo, "affect_frequencies", None)
-    if isinstance(affect_scores, dict):
-        normalized: Dict[str, float] = {}
-        key_aliases = {"anticip": "anticipation"}
-        valid_keys = set(EMOTION_CATEGORIES)
-        for key, value in affect_scores.items():
-            if not isinstance(value, (int, float)):
-                continue
-            mapped = key_aliases.get(str(key), str(key))
-            if mapped in valid_keys:
-                normalized[mapped] = float(value)
-        return normalized
-
-    return {}
-
-
-def _nrclex_analyze(nrclex_cls: Any, text: str) -> Any:
-    """Run NRCLex on ``text`` (nrclex 4.x: default ctor + load_raw_text; legacy: text in ctor)."""
-    if hasattr(nrclex_cls, "load_raw_text"):
-        emo = nrclex_cls()
-        emo.load_raw_text(text or "")
-        return emo
-    return nrclex_cls(text or "")
-
-
-# Initialize NRCLex with automatic resource download
-def _ensure_textblob_corpora():
-    """Ensure TextBlob corpora are downloaded before initializing NRCLex."""
-    try:
-        if downloads_disabled():
-            raise RuntimeError(
-                downloads_disabled_failfast_message(
-                    "TextBlob corpora (required for emotion analysis)",
-                    "Alternatively run: python -m textblob.download_corpora",
-                )
-            )
-        from textblob.download_corpora import download_all
-
-        try:
-            notify_user(
-                "📥 Downloading TextBlob corpora (required for emotion analysis)...",
-                technical=True,
-                section="emotion",
-            )
-        except Exception:
-            # Fallback to print if notify_user isn't available yet
-            print("📥 Downloading TextBlob corpora (required for emotion analysis)...")
-        download_all()
-    except Exception as e:
-        error_msg = (
-            f"⚠️ Could not download TextBlob corpora: {e}. "
-            "Please run: python -m textblob.download_corpora"
-        )
-        try:
-            notify_user(error_msg, technical=True, section="emotion")
-        except Exception:
-            print(error_msg)
-        raise
-
-
-def _load_nrclex():
-    try:
-        from nrclex import NRCLex
-
-        test_scores = _extract_nrc_emotion_scores(_nrclex_analyze(NRCLex, "test"))
-        if not isinstance(test_scores, dict):
-            raise RuntimeError("Unable to parse NRCLex emotion scores")
-        log_info("EMOTION", "NRCLex loaded successfully")
-        return NRCLex
-    except Exception as e:
-        try:
-            log_warning("EMOTION", f"NRCLex not available or missing corpus: {e}")
-            _ensure_textblob_corpora()
-            from nrclex import NRCLex
-
-            test_scores = _extract_nrc_emotion_scores(_nrclex_analyze(NRCLex, "test"))
-            if not isinstance(test_scores, dict):
-                raise RuntimeError("Unable to parse NRCLex emotion scores")
-            log_info("EMOTION", "NRCLex loaded successfully after downloading corpora")
-            return NRCLex
-        except Exception as retry_error:
-            log_warning(
-                "EMOTION", f"NRCLex not available after corpus download: {retry_error}"
-            )
-            try:
-                notify_user(
-                    "⚠️ NRCLex not available. Emotion analysis may be limited.",
-                    technical=True,
-                    section="emotion",
-                )
-            except Exception:
-                print("⚠️ NRCLex not available. Emotion analysis may be limited.")
-            return None
-
-
-def _load_emotion_model(model_name: str | None = None):
-    try:
-        if downloads_disabled():
-            log_warning(
-                "EMOTION", "Downloads disabled; skipping contextual emotion model load"
-            )
-            return None
-        from transcriptx.core.utils.lazy_imports import get_transformers
-
-        if model_name is None:
-            from transcriptx.core.utils.config import get_config
-
-            config = get_config()
-            model_name = getattr(
-                config.analysis,
-                "emotion_model_name",
-                "bhadresh-savani/distilbert-base-uncased-emotion",
-            )
-
-        with (
-            suppress_stdout_stderr(),
-            spinner("🔮 Loading contextual emotion model..."),
-        ):
-            transformers = get_transformers()
-            emotion_model = transformers.pipeline(
-                "text-classification",
-                model=model_name,
-                top_k=None,
-            )
-        log_info("EMOTION", "Contextual emotion model loaded successfully")
-        return emotion_model
-    except Exception as e:
-        log_warning("EMOTION", f"Could not load contextual emotion model: {e}")
-        try:
-            notify_user(
-                "⚠️ Could not load contextual emotion model.",
-                technical=True,
-                section="emotion",
-            )
-        except Exception:
-            print("⚠️ Could not load contextual emotion model.")
-        return None
+AGGREGATION_SEMANTICS_V1 = "emotion_aggregation_v1"
 
 
 class EmotionAnalysis(AnalysisModule):
-    """
-    Emotion detection and analysis module.
-
-    This module analyzes emotions in transcript segments using both NRC lexicon
-    and transformer-based contextual emotion models.
-    """
+    """NRC lexical emotion-associated vocabulary analysis."""
 
     def __init__(self, config: Dict[str, Any] = None):
-        """Initialize the emotion analysis module."""
         super().__init__(config)
         self.module_name = "emotion"
-        self.nrclex = _load_nrclex()
-        from transcriptx.core.utils.config import get_config
-
-        cfg = get_config().analysis
-        model_name = getattr(
-            cfg,
-            "emotion_model_name",
-            "bhadresh-savani/distilbert-base-uncased-emotion",
-        )
-        self.emotion_model = _load_emotion_model(model_name)
-        self.emotion_output_mode = getattr(cfg, "emotion_output_mode", "top1")
-        self.emotion_score_threshold = float(
-            getattr(cfg, "emotion_score_threshold", 0.30)
-        )
+        self._lexicon: dict[str, list[str]] | None = None
+        self._nrclex_cls = None
 
     def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Perform emotion analysis on transcript segments (pure logic, no I/O).
-
-        Uses segment-based speaker identification.
-
-        Args:
-            segments: List of transcript segments (should have speaker_db_id for proper identification)
-
-        Returns:
-            Dictionary containing emotion analysis results
-        """
         from transcriptx.core.utils.speaker_extraction import (
             extract_speaker_info,
             get_speaker_display_name,
         )
 
-        nrc_scores = defaultdict(lambda: defaultdict(float))
-        contextual_all, contextual_examples = self._compute_contextual_emotions(
-            segments
+        artifact_generation_id = uuid.uuid4().hex
+        preflight = run_lexical_preflight()
+        if not preflight.ok:
+            log_warning("EMOTION", f"Lexical preflight failed: {preflight.details}")
+            return self._empty_failed_result(
+                segments,
+                artifact_generation_id,
+                run_status=RunStatus.SKIPPED,
+                reason=preflight.reason,
+                details=preflight.details or {},
+                nrclex_version=preflight.nrclex_version,
+            )
+
+        from nrclex import NRCLex
+
+        self._nrclex_cls = NRCLex
+        self._lexicon = build_lexicon_from_nrclex(NRCLex)
+        if not self._lexicon:
+            return self._empty_failed_result(
+                segments,
+                artifact_generation_id,
+                run_status=RunStatus.SKIPPED,
+                reason="lexical_preflight_failed",
+                details={"error": "empty_lexicon"},
+                nrclex_version=preflight.nrclex_version,
+            )
+
+        lexicon_digest = canonical_json_hash(
+            {k: sorted(v) for k, v in sorted(self._lexicon.items())}
+        )
+        nrclex_version = preflight.nrclex_version
+
+        try:
+            ensure_segment_ids(segments)
+        except ValueError as exc:
+            return self._empty_failed_result(
+                segments,
+                artifact_generation_id,
+                run_status=RunStatus.FAILED,
+                reason="invalid_segment_ids",
+                details={"message": str(exc)},
+                nrclex_version=nrclex_version,
+                lexicon_digest=lexicon_digest,
+            )
+
+        try:
+            text_digest = text_source_digest(segments)
+        except ValueError as exc:
+            return self._empty_failed_result(
+                segments,
+                artifact_generation_id,
+                run_status=RunStatus.FAILED,
+                reason="invalid_segment_ids",
+                details={"message": str(exc)},
+                nrclex_version=nrclex_version,
+                lexicon_digest=lexicon_digest,
+            )
+
+        speaker_digest = speaker_identity_digest(segments)
+        timeline_digest = timeline_identity_digest(segments)
+
+        compat_payload = build_compatibility_payload(
+            schema_version=SCHEMA_VERSION,
+            semantics_version=SEMANTICS_VERSION,
+            lexical_pipeline_version=NRC_LEXICAL_PIPELINE_V1,
+            language_policy_version=LANGUAGE_POLICY_V1,
+            numerical_dtype="n/a",
+            lexicon_digest=lexicon_digest,
+            nrclex_version=nrclex_version,
+            extra={"aggregation_semantics": AGGREGATION_SEMANTICS_V1},
+        )
+        compat_fp = compatibility_fingerprint(compat_payload)
+        runtime_metadata = build_runtime_metadata(
+            activation="lexical",
+            language_policy_version=LANGUAGE_POLICY_V1,
+            lexicon_digest=lexicon_digest,
+            nrclex_version=nrclex_version,
+        )
+        inference_key = inference_cache_key(
+            compatibility_fingerprint=compat_fp, text_source_digest=text_digest
         )
 
-        # Compute NRC emotions for each segment; set context_emotion_* from NRC if no HF
+        cache_store: InferenceCacheStore | None = None
+        try:
+            cache_store = InferenceCacheStore(
+                default_inference_cache_root(self.module_name)
+            )
+        except Exception as exc:
+            log_warning("EMOTION", f"inference cache unavailable: {exc}")
+
+        cached_rows: dict[str, dict[str, Any]] | None = None
+        inference_cache_hit = False
+        inference_generation_id = artifact_generation_id
+        needed_sids = [
+            str(seg.get("id") or seg.get("segment_id"))
+            for seg in segments
+            if (seg.get("text") or "").strip()
+        ]
+        if cache_store is not None:
+            cached = cache_store.load(inference_key)
+            if cached:
+                rows = cached.get("rows_by_segment") or {}
+                if needed_sids and all(
+                    sid in rows and validate_lexical_cache_row(rows[sid])
+                    for sid in needed_sids
+                ):
+                    cached_rows = rows
+                    inference_cache_hit = True
+                    cached_inference_id = str(
+                        cached.get("inference_generation_id") or ""
+                    ).strip()
+                    if cached_inference_id:
+                        inference_generation_id = cached_inference_id
+
+        from transcriptx.core.utils.config import get_config
+
+        lex_cfg = getattr(get_config().analysis, "emotion", None)
+        raw_no_hit = getattr(lex_cfg, "no_hit_rate_warn", None)
+        no_hit_warn = 0.8 if raw_no_hit is None else float(raw_no_hit)
+        raw_low_cov = getattr(lex_cfg, "low_coverage_threshold", None)
+        low_cov_th = 0.05 if raw_low_cov is None else float(raw_low_cov)
+        aggregation_settings = {
+            "no_hit_rate_warn": no_hit_warn,
+            "low_coverage_threshold": low_cov_th,
+        }
+
+        agg_key = aggregation_cache_key(
+            inference_generation_id=inference_generation_id,
+            speaker_identity_digest=speaker_digest,
+            timeline_identity_digest=timeline_digest,
+            aggregation_semantics_version=AGGREGATION_SEMANTICS_V1,
+            aggregation_settings=aggregation_settings,
+        )
+
+        meta = extract_transcript_metadata(segments)
+
+        canonical_rows: list[dict[str, Any]] = []
+        pending_projections: list[tuple[dict[str, Any], dict[str, Any]]] = []
+        speaker_assignments: dict[str, list[dict[str, int]]] = defaultdict(list)
+        speaker_valence: dict[str, list[dict[str, int]]] = defaultdict(list)
+        segments_scored = 0
+        segments_skipped = 0
+        segments_empty = 0
+        assumed_en_warnings = 0
+        scored_for_cache: dict[str, dict[str, Any]] = {}
+
         for seg in segments:
             speaker_info = extract_speaker_info(seg)
-            if speaker_info is None:
-                continue
-            speaker = get_speaker_display_name(
-                speaker_info.grouping_key, [seg], segments
-            )
-            if not speaker:
-                continue
-            text = seg.get("text", "")
-            scores = self._compute_nrc_emotions(text)
-            seg["nrc_emotion"] = scores
-            if is_named_speaker(speaker):
-                for emo, val in scores.items():
-                    nrc_scores[speaker][emo] += val
-            # Fill context_* from NRC when there is no usable HF (or other) label yet.
-            # HF sets source to "hf" even when the pipeline returns empty labels after
-            # thresholding; without this fallback, contagion/downstream see no emotion.
-            src = seg.get("context_emotion_source")
-            has_usable_hf = src == "hf" and (
-                bool(seg.get("context_emotion_primary"))
-                or (
-                    isinstance(seg.get("context_emotion_scores"), dict)
-                    and seg["context_emotion_scores"]
-                    and any(
-                        isinstance(v, (int, float)) and v > 0
-                        for v in seg["context_emotion_scores"].values()
-                    )
+            speaker = ""
+            if speaker_info is not None:
+                speaker = get_speaker_display_name(
+                    speaker_info.grouping_key, [seg], segments
                 )
-            )
-            if scores and not has_usable_hf and src in (None, "none", "hf"):
-                primary_nrc = max(scores, key=scores.get)
-                seg["context_emotion_primary"] = primary_nrc
-                seg["context_emotion_scores"] = dict(scores)
-                seg["context_emotion_source"] = "nrc"
-                seg["context_emotion"] = primary_nrc  # backward compat
-            elif src is None:
-                seg["context_emotion_primary"] = ""
-                seg["context_emotion_scores"] = {}
-                seg["context_emotion_source"] = "none"
-                seg["context_emotion"] = ""  # backward compat
+            sid = str(seg.get("id") or seg.get("segment_id"))
+            lang, lang_res = resolve_segment_language(seg, meta)
+            if lang_res == "assumed_en_missing_metadata":
+                assumed_en_warnings += 1
 
-        # Normalize scores
-        for speaker in nrc_scores:
-            total = sum(nrc_scores[speaker].values())
-            if total > 0:
-                for emo in nrc_scores[speaker]:
-                    nrc_scores[speaker][emo] /= total
-
-        # Prepare combined rows for export
-        combined_rows = []
-        for speaker, scores in nrc_scores.items():
-            if not is_named_speaker(speaker):
+            if not is_english(lang):
+                segments_skipped += 1
+                row = {
+                    "segment_id": sid,
+                    "speaker": speaker,
+                    "evaluation_state": "skipped",
+                    "skip_reason": "unsupported_language",
+                    "language": lang,
+                    "language_resolution": lang_res,
+                    "scored_text_hash": segment_text_hash(seg.get("text")),
+                    "coverage": 0.0,
+                    "tokens_considered": 0,
+                    "matched_occurrences": 0,
+                    "assignment_counts": {k: 0 for k in PLUTCHIK_EIGHT},
+                    "valence_assignment_counts": {k: 0 for k in VALENCE_KEYS},
+                    "emotion_scores": {k: 0.0 for k in PLUTCHIK_EIGHT},
+                    "valence_scores": {k: 0.0 for k in VALENCE_KEYS},
+                    "contributing": [],
+                }
+                canonical_rows.append(row)
+                proj = project_lexical_segment(
+                    row,
+                    artifact_generation_id=artifact_generation_id,
+                    schema_version=SCHEMA_VERSION,
+                )
+                pending_projections.append((seg, proj))
                 continue
-            row = {"speaker": speaker}
-            row.update(scores)
-            combined_rows.append(row)
 
-        # Aggregate global stats
-        all_scores = defaultdict(float)
-        for speaker_scores in nrc_scores.values():
-            for emo, val in speaker_scores.items():
-                all_scores[emo] += val
-        total = sum(all_scores.values())
-        if total:
-            for emo in all_scores:
-                all_scores[emo] /= total
+            reused = (
+                cached_rows.get(sid)
+                if inference_cache_hit and cached_rows is not None
+                else None
+            )
+            if reused is not None:
+                result_state = reused.get("evaluation_state") or "scored"
+                coverage = float(reused.get("coverage") or 0.0)
+                tokens_considered = int(reused.get("tokens_considered") or 0)
+                matched_occurrences = int(reused.get("matched_occurrences") or 0)
+                assignment_counts = dict(
+                    reused.get("assignment_counts") or {k: 0 for k in PLUTCHIK_EIGHT}
+                )
+                valence_assignment_counts = dict(
+                    reused.get("valence_assignment_counts")
+                    or {k: 0 for k in VALENCE_KEYS}
+                )
+                emotion_scores = dict(
+                    reused.get("emotion_scores") or {k: 0.0 for k in PLUTCHIK_EIGHT}
+                )
+                valence_scores = dict(
+                    reused.get("valence_scores") or {k: 0.0 for k in VALENCE_KEYS}
+                )
+                contributing = list(reused.get("contributing") or [])
+            else:
+                result = score_segment_text(
+                    seg.get("text") or "",
+                    self._lexicon,
+                    language_resolution=lang_res,
+                )
+                result_state = result.evaluation_state
+                coverage = result.coverage
+                tokens_considered = result.tokens_considered
+                matched_occurrences = result.matched_occurrences
+                assignment_counts = result.assignment_counts
+                valence_assignment_counts = result.valence_assignment_counts
+                emotion_scores = result.emotion_scores
+                valence_scores = result.valence_scores
+                contributing = result.contributing
 
-        speaker_stats = {
-            speaker: dict(scores)
-            for speaker, scores in nrc_scores.items()
-            if is_named_speaker(speaker)
+            if result_state == "empty":
+                segments_empty += 1
+            elif result_state == "scored":
+                segments_scored += 1
+
+            text_hash = segment_text_hash(seg.get("text"))
+            row = {
+                "segment_id": sid,
+                "speaker": speaker,
+                "evaluation_state": result_state,
+                "language": lang,
+                "language_resolution": lang_res,
+                "scored_text_hash": text_hash,
+                "coverage": coverage,
+                "tokens_considered": tokens_considered,
+                "matched_occurrences": matched_occurrences,
+                "assignment_counts": assignment_counts,
+                "valence_assignment_counts": valence_assignment_counts,
+                "emotion_scores": emotion_scores,
+                "valence_scores": valence_scores,
+                "contributing": contributing,
+            }
+            canonical_rows.append(row)
+            # Inference cache stores speaker-free score rows only.
+            scored_for_cache[sid] = {
+                "evaluation_state": result_state,
+                "scored_text_hash": text_hash,
+                "coverage": coverage,
+                "tokens_considered": tokens_considered,
+                "matched_occurrences": matched_occurrences,
+                "assignment_counts": assignment_counts,
+                "valence_assignment_counts": valence_assignment_counts,
+                "emotion_scores": emotion_scores,
+                "valence_scores": valence_scores,
+                "contributing": contributing,
+            }
+
+            # Enriched lightweight projection (no full vectors required beyond nrc_emotion)
+            proj = project_lexical_segment(
+                row,
+                artifact_generation_id=artifact_generation_id,
+                schema_version=SCHEMA_VERSION,
+            )
+            pending_projections.append((seg, proj))
+
+            if is_named_speaker(speaker) and result_state == "scored":
+                speaker_assignments[speaker].append(assignment_counts)
+                speaker_valence[speaker].append(valence_assignment_counts)
+
+        if cache_store is not None and not inference_cache_hit and scored_for_cache:
+            try:
+                cache_store.store(
+                    inference_key,
+                    inference_generation_id=inference_generation_id,
+                    rows_by_segment=scored_for_cache,
+                )
+            except Exception as exc:
+                log_warning("EMOTION", f"inference cache write failed: {exc}")
+
+        speaker_stats: dict[str, Any] = {}
+        speaker_coverage_acc: dict[str, list[float]] = defaultdict(list)
+        speaker_tokens: dict[str, int] = defaultdict(int)
+        speaker_matches: dict[str, int] = defaultdict(int)
+        speaker_zero_hit: dict[str, int] = defaultdict(int)
+        speaker_scored_n: dict[str, int] = defaultdict(int)
+
+        for speaker, maps in speaker_assignments.items():
+            summed = sum_assignment_maps(maps, PLUTCHIK_EIGHT)
+            vsummed = sum_assignment_maps(speaker_valence[speaker], VALENCE_KEYS)
+            speaker_stats[speaker] = {
+                "assignment_counts": summed,
+                "emotion_scores": normalize_profile(summed, PLUTCHIK_EIGHT),
+                "valence_assignment_counts": vsummed,
+                "valence_scores": normalize_profile(vsummed, VALENCE_KEYS),
+                **normalize_profile(summed, PLUTCHIK_EIGHT),
+            }
+
+        for r in canonical_rows:
+            if r["evaluation_state"] != "scored":
+                continue
+            sp = r.get("speaker") or ""
+            if not is_named_speaker(sp):
+                continue
+            speaker_scored_n[sp] += 1
+            speaker_tokens[sp] += int(r.get("tokens_considered") or 0)
+            speaker_matches[sp] += int(r.get("matched_occurrences") or 0)
+            speaker_coverage_acc[sp].append(float(r.get("coverage") or 0.0))
+            if int(r.get("matched_occurrences") or 0) == 0:
+                speaker_zero_hit[sp] += 1
+
+        for sp, st in speaker_stats.items():
+            n = max(speaker_scored_n.get(sp, 0), 1)
+            covs = speaker_coverage_acc.get(sp) or []
+            st["tokens_considered"] = speaker_tokens.get(sp, 0)
+            st["matched_occurrences"] = speaker_matches.get(sp, 0)
+            st["mean_coverage"] = sum(covs) / len(covs) if covs else 0.0
+            st["zero_hit_segments"] = speaker_zero_hit.get(sp, 0)
+            st["no_hit_rate"] = speaker_zero_hit.get(sp, 0) / n
+
+        global_assignments = sum_assignment_maps(
+            [
+                r["assignment_counts"]
+                for r in canonical_rows
+                if r["evaluation_state"] == "scored"
+            ],
+            PLUTCHIK_EIGHT,
+        )
+        global_valence = sum_assignment_maps(
+            [
+                r["valence_assignment_counts"]
+                for r in canonical_rows
+                if r["evaluation_state"] == "scored"
+            ],
+            VALENCE_KEYS,
+        )
+        scored_rows = [r for r in canonical_rows if r["evaluation_state"] == "scored"]
+        zero_hit = sum(
+            1 for r in scored_rows if int(r.get("matched_occurrences") or 0) == 0
+        )
+        total_tokens = sum(int(r.get("tokens_considered") or 0) for r in scored_rows)
+        total_matches = sum(int(r.get("matched_occurrences") or 0) for r in scored_rows)
+        mean_coverage = (
+            sum(float(r.get("coverage") or 0.0) for r in scored_rows) / len(scored_rows)
+            if scored_rows
+            else 0.0
+        )
+        global_stats = {
+            "assignment_counts": global_assignments,
+            "emotion_scores": normalize_profile(global_assignments, PLUTCHIK_EIGHT),
+            "valence_assignment_counts": global_valence,
+            "valence_scores": normalize_profile(global_valence, VALENCE_KEYS),
+            "tokens_considered": total_tokens,
+            "matched_occurrences": total_matches,
+            "mean_coverage": mean_coverage,
+            "zero_hit_segments": zero_hit,
+            "no_hit_rate": zero_hit / max(len(scored_rows), 1),
+            **normalize_profile(global_assignments, PLUTCHIK_EIGHT),
         }
 
-        # Ensure every segment has context_emotion_primary/scores/source
-        for seg in segments:
-            if "context_emotion_source" not in seg:
-                seg["context_emotion_primary"] = ""
-                seg["context_emotion_scores"] = {}
-                seg["context_emotion_source"] = "none"
-                seg["context_emotion"] = ""  # backward compat
+        run_status, segments_scored, segments_failed = derive_run_status_from_rows(
+            canonical_rows
+        )
+        # Preserve empty/skip counts already tracked; override scored from rows
+        usable = derive_usable_output(
+            run_status=run_status, segments_scored=segments_scored
+        )
+        warnings = []
+        if assumed_en_warnings:
+            warnings.append(
+                f"{assumed_en_warnings} segment(s) assumed English (missing language metadata)"
+            )
+        no_hit = zero_hit
+        if segments_scored and no_hit / max(segments_scored, 1) > no_hit_warn:
+            warnings.append(
+                "low_lexical_coverage: high no-hit rate among scored segments"
+            )
+        if segments_scored and mean_coverage < low_cov_th:
+            warnings.append(
+                f"low_lexical_coverage: mean coverage {mean_coverage:.3f} "
+                f"below threshold {low_cov_th}"
+            )
 
-        # Count segments with emotion data for logging
-        segments_with_emotion_count = 0
-        segments_with_nrc_count = 0
-        segments_with_context_count = 0
-        for seg in segments:
-            if "nrc_emotion" in seg:
-                segments_with_nrc_count += 1
-                nrc_data = seg.get("nrc_emotion", {})
-                if (
-                    isinstance(nrc_data, dict)
-                    and nrc_data
-                    and any(v > 0 for v in nrc_data.values())
-                ):
-                    segments_with_emotion_count += 1
-            if seg.get("context_emotion_source") == "hf" or (
-                seg.get("context_emotion_primary")
-            ):
-                segments_with_context_count += 1
-                segments_with_emotion_count += 1
+        aggregation_cache_hit = False
+        try:
+            agg_store = AggregationCacheStore(
+                default_aggregation_cache_root(self.module_name)
+            )
+            cached_agg = agg_store.load(agg_key)
+            if cached_agg and isinstance(cached_agg.get("aggregates"), dict):
+                aggregates = cached_agg["aggregates"]
+                speaker_stats = aggregates.get("speaker_stats") or speaker_stats
+                global_stats = aggregates.get("global_stats") or global_stats
+                aggregation_cache_hit = True
+            else:
+                agg_store.store(
+                    agg_key,
+                    inference_generation_id=inference_generation_id,
+                    aggregates={
+                        "speaker_stats": speaker_stats,
+                        "global_stats": global_stats,
+                    },
+                )
+        except Exception as exc:
+            log_warning("EMOTION", f"aggregation cache unavailable: {exc}")
 
-        logger.debug(
-            f"[EMOTION] Analysis complete: {len(segments)} total segments, "
-            f"{segments_with_nrc_count} with nrc_emotion, "
-            f"{segments_with_context_count} with context_emotion, "
-            f"{segments_with_emotion_count} with any emotion data"
+        log_info(
+            "EMOTION",
+            f"lexical v2 complete: scored={segments_scored} skipped={segments_skipped} "
+            f"empty={segments_empty} failed={segments_failed} usable={usable} "
+            f"cache_hit={inference_cache_hit}",
         )
 
+        # Projections stay pending until canonical persist succeeds (_save_results).
         result = {
+            "schema_version": SCHEMA_VERSION,
+            "semantics_version": SEMANTICS_VERSION,
+            "module_id": self.module_name,
+            "run_status": run_status.value,
+            "usable_output": usable,
+            "segments_scored": segments_scored,
+            "segments_failed": segments_failed,
+            "segments_skipped": segments_skipped,
+            "segments_empty": segments_empty,
+            "artifact_generation_id": artifact_generation_id,
+            "inference_generation_id": inference_generation_id,
+            "ordered_segment_ids": [
+                str(s.get("id") or s.get("segment_id")) for s in segments
+            ],
+            "compatibility_fingerprint": compat_fp,
+            "text_source_digest": text_digest,
+            "speaker_identity_digest": speaker_digest,
+            "timeline_identity_digest": timeline_digest,
+            "inference_cache_key": inference_key,
+            "aggregation_cache_key": agg_key,
+            "cache_fingerprint": module_cache_fingerprint(
+                inference_key=inference_key, aggregation_key=agg_key
+            ),
+            "inference_cache_hit": inference_cache_hit,
+            "aggregation_cache_hit": aggregation_cache_hit,
+            "aggregation_semantics_version": AGGREGATION_SEMANTICS_V1,
+            "_canonical_rows": canonical_rows,
+            "_pending_projections": pending_projections,
             "segments_with_emotion": segments,
-            "nrc_scores": dict(nrc_scores),
-            "combined_rows": combined_rows,
-            "contextual_all": contextual_all,
-            "contextual_examples": contextual_examples,
-            "all_scores": dict(all_scores),
+            "nrc_scores": {
+                sp: st.get("emotion_scores", st) for sp, st in speaker_stats.items()
+            },
             "speaker_stats": speaker_stats,
-            "global_stats": dict(all_scores),
+            "global_stats": global_stats,
+            "all_scores": global_stats.get("emotion_scores", global_stats),
+            "emotions": global_stats.get("emotion_scores", global_stats),
+            "combined_rows": [
+                {"speaker": sp, **st.get("emotion_scores", {})}
+                for sp, st in speaker_stats.items()
+            ],
+            "warnings": warnings,
+            "ui_copy": (
+                "Emotion-associated vocabulary (NRC lexicon), "
+                "not a definitive inference of speaker emotion."
+            ),
+            "method": "nrc_lexical",
+            "release_channel": "stable",
+            "lexicon_digest": lexicon_digest,
+            "nrclex_version": nrclex_version,
+            "runtime_metadata": runtime_metadata,
+            "projection_fields": [
+                "segment_id",
+                "evaluation_state",
+                "nrc_emotion",
+                "nrc_emotion_coverage",
+                "emotion_scored_text_hash",
+                "canonical_ref",
+            ],
+            "sample_projection": {
+                "segment_id": None,
+                "evaluation_state": None,
+                "nrc_emotion": {},
+                "nrc_emotion_coverage": 0.0,
+                "emotion_scored_text_hash": "",
+                "canonical_ref": {},
+            },
+            "contextual_all": {},
+            "contextual_examples": {},
         }
-        # Backward-compatible keys for tests/legacy consumers
+        if pending_projections:
+            sample = pending_projections[0][1]
+            result["sample_projection"] = {
+                field: sample.get(field)
+                for field in result["projection_fields"]
+                if field in sample or field == "evaluation_state"
+            }
+            if "evaluation_state" in sample:
+                result["sample_projection"]["evaluation_state"] = sample.get(
+                    "evaluation_state"
+                )
         result["segments"] = segments
-        result["emotions"] = dict(all_scores)
         return result
+
+    def _empty_failed_result(
+        self,
+        segments: List[Dict[str, Any]],
+        generation_id: str,
+        *,
+        run_status: RunStatus,
+        reason: str,
+        details: dict[str, Any],
+        nrclex_version: str | None = None,
+        lexicon_digest: str | None = None,
+    ) -> Dict[str, Any]:
+        for seg in segments:
+            clear_lexical_projection(seg)
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "semantics_version": SEMANTICS_VERSION,
+            "module_id": self.module_name,
+            "run_status": run_status.value,
+            "usable_output": False,
+            "segments_scored": 0,
+            "segments_skipped": 0,
+            "segments_empty": 0,
+            "segments_failed": 0,
+            "artifact_generation_id": generation_id,
+            "inference_generation_id": generation_id,
+            "ordered_segment_ids": [],
+            "preflight_reason": reason,
+            "preflight_details": details,
+            "segments_with_emotion": segments,
+            "nrc_scores": {},
+            "speaker_stats": {},
+            "global_stats": {},
+            "all_scores": {},
+            "emotions": {},
+            "combined_rows": [],
+            "_canonical_rows": [],
+            "_pending_projections": [],
+            "lexicon_digest": lexicon_digest,
+            "nrclex_version": nrclex_version,
+            "runtime_metadata": build_runtime_metadata(
+                activation="lexical",
+                language_policy_version=LANGUAGE_POLICY_V1,
+                lexicon_digest=lexicon_digest,
+                nrclex_version=nrclex_version,
+            ),
+            "projection_fields": [
+                "segment_id",
+                "evaluation_state",
+                "nrc_emotion",
+                "nrc_emotion_coverage",
+                "emotion_scored_text_hash",
+                "canonical_ref",
+            ],
+            "contextual_all": {},
+            "contextual_examples": {},
+            "warnings": [reason],
+            "ui_copy": (
+                "Emotion-associated vocabulary (NRC lexicon), "
+                "not a definitive inference of speaker emotion."
+            ),
+        }
 
     def _save_results(
         self, results: Dict[str, Any], output_service: "OutputService"
     ) -> None:
-        """
-        Save results using OutputService (new interface).
+        def write_enriched():
+            segments = results["segments_with_emotion"]
+            pending = results.pop("_pending_projections", None)
+            if pending:
+                for seg, proj in pending:
+                    apply_lexical_projection(seg, proj)
+            write_enriched_transcript(output_service, segments, "emotion")
 
-        Args:
-            results: Analysis results dictionary
-            output_service: OutputService instance
-        """
-        from transcriptx.core.utils.lazy_imports import get_matplotlib_pyplot
-
-        segments = results["segments_with_emotion"]
-        nrc_scores = results["nrc_scores"]
-        combined_rows = results["combined_rows"]
-        contextual_all = results["contextual_all"]
-        contextual_examples = results["contextual_examples"]
-        all_scores = results["all_scores"]
-        plt = get_matplotlib_pyplot()
-
-        write_enriched_transcript(output_service, segments, "emotion")
-
-        # Global NRC: JSON and CSV use different payloads — keep module-local paired calls
-        output_service.save_data(nrc_scores, "nrc_emotion_scores", format_type="json")
-        output_service.save_data(combined_rows, "nrc_emotion_scores", format_type="csv")
-        output_service.save_data(
-            contextual_all, "contextual_emotion_labels", format_type="json"
-        )
-        output_service.save_data(
-            contextual_examples, "contextual_emotion_examples", format_type="json"
-        )
-
-        # Save per-speaker data and charts
-        for speaker, scores in nrc_scores.items():
-            speaker_safe = speaker.replace(" ", "_")
-
+        def after_enrich():
             output_service.save_data(
-                scores,
-                f"{speaker_safe}_nrc_emotion",
+                {
+                    "schema_version": results.get("schema_version"),
+                    "semantics_version": results.get("semantics_version"),
+                    "module_id": results.get("module_id"),
+                    "run_status": results.get("run_status"),
+                    "usable_output": results.get("usable_output"),
+                    "segments_scored": results.get("segments_scored"),
+                    "compatibility_fingerprint": results.get(
+                        "compatibility_fingerprint"
+                    ),
+                    "artifact_generation_id": results.get("artifact_generation_id"),
+                    "inference_generation_id": results.get("inference_generation_id"),
+                    "warnings": results.get("warnings"),
+                    "ui_copy": results.get("ui_copy"),
+                },
+                "lexical_emotion_canonical",
                 format_type="json",
-                subdirectory="speakers",
-                speaker=speaker,
             )
 
-            csv_data = [[k, v] for k, v in scores.items()]
+            nrc_scores = results.get("nrc_scores") or {}
+            combined_rows = results.get("combined_rows") or []
             output_service.save_data(
-                csv_data,
-                f"{speaker_safe}_nrc_emotion",
-                format_type="csv",
-                subdirectory="speakers",
-                speaker=speaker,
+                nrc_scores, "nrc_emotion_scores", format_type="json"
+            )
+            output_service.save_data(
+                combined_rows, "nrc_emotion_scores", format_type="csv"
             )
 
-            if scores:
+            # Absolute count bars (assignment counts) preferred over relative-only radar
+            global_counts = (results.get("global_stats") or {}).get(
+                "assignment_counts"
+            ) or {}
+            if global_counts:
                 spec = BarCategoricalSpec(
-                    viz_id=VIZ_EMOTION_RADAR_SPEAKER,
+                    viz_id=VIZ_EMOTION_RADAR_GLOBAL,
                     module=self.module_name,
-                    name="radar",
-                    scope="speaker",
-                    speaker=speaker,
+                    name="emotion_assignment_counts",
+                    scope="global",
                     chart_intent="bar_categorical",
-                    title=f"Emotion Profile: {speaker}",
-                    x_label="Emotion",
-                    y_label="Score",
-                    categories=list(scores.keys()),
-                    values=list(scores.values()),
+                    title="Emotion-associated vocabulary counts (all speakers)",
+                    x_label="Category",
+                    y_label="Assignment count",
+                    categories=list(PLUTCHIK_EIGHT),
+                    values=[float(global_counts.get(k, 0)) for k in PLUTCHIK_EIGHT],
                 )
-                output_service.save_chart(spec, chart_type="radar")
+                output_service.save_chart(spec, chart_type="bar")
 
-                radar_fig = self._create_emotion_radar(speaker, scores)
-                if radar_fig:
-                    output_service.save_chart(
-                        chart_id="emotion_radar_polar",
+            for speaker, scores in nrc_scores.items():
+                speaker_safe = speaker.replace(" ", "_")
+                output_service.save_data(
+                    scores,
+                    f"{speaker_safe}_nrc_emotion",
+                    format_type="json",
+                    subdirectory="speakers",
+                    speaker=speaker,
+                )
+                st = (results.get("speaker_stats") or {}).get(speaker) or {}
+                counts = st.get("assignment_counts") or {}
+                if counts:
+                    spec = BarCategoricalSpec(
+                        viz_id=VIZ_EMOTION_RADAR_SPEAKER,
+                        module=self.module_name,
+                        name="emotion_assignment_counts",
                         scope="speaker",
                         speaker=speaker,
-                        static_fig=radar_fig,
-                        chart_type="radar_polar",
-                        viz_id=f"emotion.radar_polar.speaker.{speaker_safe}",
-                        title=f"Emotion Profile: {speaker}",
+                        chart_intent="bar_categorical",
+                        title=f"Emotion-associated vocabulary counts: {speaker}",
+                        x_label="Category",
+                        y_label="Assignment count",
+                        categories=list(PLUTCHIK_EIGHT),
+                        values=[float(counts.get(k, 0)) for k in PLUTCHIK_EIGHT],
                     )
-                    plt.close(radar_fig)
+                    output_service.save_chart(spec, chart_type="bar")
 
-        # Create and save global radar chart only when more than one identified speaker
-        named_speakers = [s for s in nrc_scores if is_named_speaker(s)]
-        if all_scores and len(named_speakers) > 1:
-            spec = BarCategoricalSpec(
-                viz_id=VIZ_EMOTION_RADAR_GLOBAL,
-                module=self.module_name,
-                name="emotion_all_radar",
-                scope="global",
-                chart_intent="bar_categorical",
-                title="Emotion Profile: All Speakers",
-                x_label="Emotion",
-                y_label="Score",
-                categories=list(all_scores.keys()),
-                values=list(all_scores.values()),
+            output_service.save_summary(
+                results.get("global_stats") or {},
+                results.get("speaker_stats") or {},
+                analysis_metadata={
+                    "schema_version": results.get("schema_version"),
+                    "semantics_version": results.get("semantics_version"),
+                    "run_status": results.get("run_status"),
+                    "usable_output": results.get("usable_output"),
+                    "ui_copy": results.get("ui_copy"),
+                },
             )
-            output_service.save_chart(spec, chart_type="radar")
-            radar_fig = self._create_emotion_radar("All Speakers", all_scores, True)
-            if radar_fig:
-                output_service.save_chart(
-                    chart_id="emotion_radar_polar",
-                    scope="global",
-                    static_fig=radar_fig,
-                    chart_type="radar_polar",
-                    viz_id="emotion.radar_polar.global",
-                    title="Emotion Profile: All Speakers",
-                )
-                plt.close(radar_fig)
 
-        # Save summary
-        output_service.save_summary(
-            results["global_stats"], results["speaker_stats"], analysis_metadata={}
+        persist_canonical_then_enrich(
+            results=results,
+            output_service=output_service,
+            module_id=self.module_name,
+            log_prefix="EMOTION",
+            write_enriched=write_enriched,
+            after_enrich=after_enrich,
+            clear_owned_fields=clear_lexical_projection,
         )
-
-    def _compute_nrc_emotions(self, text: str) -> dict:
-        """Compute NRC emotions for text."""
-        if not self.nrclex:
-            return {}
-        emo = _nrclex_analyze(self.nrclex, text)
-        scores = _extract_nrc_emotion_scores(emo)
-        total = sum(scores.values())
-        return {k: v / total for k, v in scores.items()} if total > 0 else {}
-
-    def _parse_pipeline_emotion_result(
-        self, result: List[Dict[str, Any]]
-    ) -> tuple[str, Dict[str, float]]:
-        """
-        Parse pipeline output (single-label or multi-label) into primary label and
-        scores dict. Does not depend on model ID; behavior is driven by
-        emotion_output_mode and emotion_score_threshold.
-        """
-        if not result:
-            return "", {}
-        scores_dict: Dict[str, float] = {
-            item["label"]: float(item["score"]) for item in result
-        }
-        if not scores_dict:
-            return "", {}
-        primary = max(scores_dict, key=scores_dict.get)
-        if self.emotion_output_mode == "multilabel":
-            threshold = self.emotion_score_threshold
-            scores_dict = {k: v for k, v in scores_dict.items() if v >= threshold}
-        else:
-            # top1: keep only primary score (or all for optional storage)
-            scores_dict = {primary: scores_dict[primary]}
-        return primary, scores_dict
-
-    def _compute_contextual_emotions(self, segments: List[Dict]):
-        """Compute contextual emotions using transformer model."""
-        from transcriptx.core.utils.speaker_extraction import (
-            extract_speaker_info,
-            get_speaker_display_name,
-        )
-
-        if not self.emotion_model:
-            return {}, {}
-        contextual_emotions = defaultdict(list)
-        emotion_examples = defaultdict(lambda: defaultdict(list))
-
-        for segment in segments:
-            speaker_info = extract_speaker_info(segment)
-            if speaker_info is None:
-                continue
-            speaker = get_speaker_display_name(
-                speaker_info.grouping_key, [segment], segments
-            )
-            if not is_named_speaker(speaker):
-                continue
-            text = segment.get("text", "").strip()
-            if not text:
-                continue
-            raw = self.emotion_model(text)[0]
-            primary, scores_dict = self._parse_pipeline_emotion_result(raw)
-            segment["context_emotion_primary"] = primary
-            segment["context_emotion_scores"] = scores_dict
-            segment["context_emotion_source"] = "hf"
-            segment["context_emotion"] = primary  # backward compat
-            if primary:
-                contextual_emotions[speaker].append(primary)
-                emotion_examples[speaker][primary].append(
-                    (scores_dict.get(primary, 0.0), text)
-                )
-
-        return contextual_emotions, emotion_examples
-
-    def _create_emotion_radar(
-        self, speaker: str, scores: dict, is_global: bool = False
-    ):
-        """Create emotion radar chart."""
-        from transcriptx.core.utils.lazy_imports import get_matplotlib_pyplot
-
-        categories = EMOTION_CATEGORIES
-        values = [scores.get(cat, 0) * 100 for cat in categories]
-        values += values[:1]
-        angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
-        angles += angles[:1]
-
-        plt = get_matplotlib_pyplot()
-        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-        ax.plot(angles, values, linewidth=2)
-        ax.fill(angles, values, alpha=0.25)
-        ax.set_yticklabels([])
-        ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(categories, fontsize=10)
-        ax.set_title(f"Emotion Profile: {speaker}", size=14, pad=20)
-        plt.tight_layout()
-
-        return fig
 
 
 def compute_nrc_emotions(text: str) -> dict:
-    """Compute NRC emotions for text."""
-    nrclex = _load_nrclex()
-    if not nrclex:
+    """Standalone helper: Plutchik eight-category shares for text."""
+    pre = run_lexical_preflight()
+    if not pre.ok:
         return {}
-    emo = _nrclex_analyze(nrclex, text)
-    scores = _extract_nrc_emotion_scores(emo)
-    total = sum(scores.values())
-    return {k: v / total for k, v in scores.items()} if total > 0 else {}
+    from nrclex import NRCLex
+
+    lexicon = build_lexicon_from_nrclex(NRCLex)
+    result = score_segment_text(text or "", lexicon)
+    return dict(result.emotion_scores)

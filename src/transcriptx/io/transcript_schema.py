@@ -119,6 +119,10 @@ def refresh_document_metadata(doc: Dict[str, Any]) -> Dict[str, Any]:
     metadata["segment_count"] = derived.segment_count
     metadata["speaker_count"] = derived.speaker_count
     metadata["word_count"] = derived.word_count
+    # Persist language when absent so emotion-family eligibility is deterministic.
+    if not metadata.get("language"):
+        metadata["language"] = "en"
+        metadata.setdefault("language_resolution", "assumed_en_missing_metadata")
     return doc
 
 

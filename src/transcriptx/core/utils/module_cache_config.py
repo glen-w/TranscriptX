@@ -12,8 +12,23 @@ MODULE_CONFIG_ALLOWLIST = {
         "analysis.sentiment_min_confidence",
     ],
     "emotion": [
+        "analysis.emotion.low_coverage_threshold",
+        "analysis.emotion.no_hit_rate_warn",
         "analysis.emotion_min_confidence",
         "analysis.emotion_model_name",
+    ],
+    "contextual_emotion": [
+        "analysis.contextual_emotion.profile_id",
+        "analysis.contextual_emotion.confidence_threshold",
+        "analysis.contextual_emotion.batch_size",
+        "analysis.contextual_emotion.release_channel",
+    ],
+    "fine_grained_emotion": [
+        "analysis.fine_grained_emotion.profile_id",
+        "analysis.fine_grained_emotion.label_threshold",
+        "analysis.fine_grained_emotion.max_labels_per_segment",
+        "analysis.fine_grained_emotion.batch_size",
+        "analysis.fine_grained_emotion.release_channel",
     ],
     "ner": [
         "analysis.ner_labels",

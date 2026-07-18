@@ -1,0 +1,18 @@
+{
+  "description": "Calibration set — tune provisional thresholds only; never use for promotion.",
+  "promotion_forbidden": true,
+  "segments": [
+    {"id": "c1", "speaker": "A", "text": "Thank you for joining today's planning review.", "start": 0, "end": 2, "expected": {"tone": "neutral_professional"}},
+    {"id": "c2", "speaker": "B", "text": "I am really happy with the proposal progress.", "start": 2, "end": 4, "expected": {"tone": "praise"}},
+    {"id": "c3", "speaker": "A", "text": "The timeline is unrealistic and I am angry about the slip.", "start": 4, "end": 6, "expected": {"tone": "criticism_anger"}},
+    {"id": "c4", "speaker": "B", "text": "I am not unhappy with the design, just cautious.", "start": 6, "end": 8, "expected": {"tone": "negation_mixed"}},
+    {"id": "c5", "speaker": "A", "text": "Okay.", "start": 8, "end": 9, "expected": {"tone": "short_ack"}},
+    {"id": "c6", "speaker": "B", "text": "The budget looks fine and the risks are documented.", "start": 9, "end": 11, "expected": {"tone": "neutral_professional"}},
+    {"id": "c7", "speaker": "A", "text": "I am terrified we will miss the regulatory deadline.", "start": 11, "end": 13, "expected": {"tone": "fear"}},
+    {"id": "c8", "speaker": "B", "text": "That is disgusting; we cannot ship that quality.", "start": 13, "end": 15, "expected": {"tone": "disgust"}},
+    {"id": "c9", "speaker": "A", "text": "I am surprised they approved the change overnight.", "start": 15, "end": 17, "expected": {"tone": "surprise"}},
+    {"id": "c10", "speaker": "B", "text": "I feel sad about losing that partner relationship.", "start": 17, "end": 19, "expected": {"tone": "sadness"}},
+    {"id": "c11", "speaker": "A", "text": "Grateful for the clear notes and the follow-up.", "start": 19, "end": 21, "expected": {"tone": "gratitude_praise"}},
+    {"id": "c12", "speaker": "B", "text": "I am both excited and nervous about the launch.", "start": 21, "end": 23, "expected": {"tone": "mixed_multi_label"}}
+  ]
+}

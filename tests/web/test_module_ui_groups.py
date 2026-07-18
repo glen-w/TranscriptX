@@ -30,6 +30,8 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "insight_eligibility",
     "sentiment",
     "emotion",
+    "contextual_emotion",
+    "fine_grained_emotion",
     "ner",
     "entity_sentiment",
     "topic_modeling",

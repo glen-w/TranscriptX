@@ -105,8 +105,9 @@ def segment_emotion_contract_y(seg: Dict[str, Any]) -> Optional[float]:
     """
     Single scalar for ``group.emotion.temporal_overlay.global`` (see emotion temporal contract).
 
-    y = S[p] when p = context_emotion_primary (non-empty str), S = context_emotion_scores (dict),
-    and S[p] is numeric. Otherwise None (segment skipped).
+    Prefer S[p] when p = context_emotion_primary and S = context_emotion_scores.
+    Fall back to contextual_emotion_confidence when full vectors are absent
+    (canonical-store authority / lightweight enriched projection).
     """
     if not isinstance(seg, dict):
         return None
@@ -114,11 +115,13 @@ def segment_emotion_contract_y(seg: Dict[str, Any]) -> Optional[float]:
     if not isinstance(primary, str) or not primary.strip():
         return None
     scores = seg.get("context_emotion_scores")
-    if not isinstance(scores, dict):
-        return None
-    v = scores.get(primary)
-    if isinstance(v, (int, float)) and not isinstance(v, bool):
-        return float(v)
+    if isinstance(scores, dict):
+        v = scores.get(primary)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return float(v)
+    conf = seg.get("contextual_emotion_confidence")
+    if isinstance(conf, (int, float)) and not isinstance(conf, bool):
+        return float(conf)
     return None
 
 

@@ -52,9 +52,9 @@ def serialize_interactions_summary(
             "interruptions_received": analysis_results.get(
                 "interruption_received", {}
             ).get(speaker, 0),
-            "responses_initiated": analysis_results.get(
-                "responses_initiated", {}
-            ).get(speaker, 0),
+            "responses_initiated": analysis_results.get("responses_initiated", {}).get(
+                speaker, 0
+            ),
             "responses_received": analysis_results.get("responses_received", {}).get(
                 speaker, 0
             ),

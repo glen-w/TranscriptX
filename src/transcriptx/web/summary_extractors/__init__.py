@@ -65,6 +65,8 @@ def _register_all_extractors():
     module_names = (
         "sentiment",
         "emotion",
+        "contextual_emotion",
+        "fine_grained_emotion",
         "topic_modeling",
         "ner",
         "acts",

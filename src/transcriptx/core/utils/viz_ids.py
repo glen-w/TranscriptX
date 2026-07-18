@@ -7,6 +7,8 @@ VIZ_SENTIMENT_MULTI_SPEAKER_GLOBAL = "sentiment.multi_speaker_sentiment.global"
 # Emotion
 VIZ_EMOTION_RADAR_SPEAKER = "emotion.radar.speaker"
 VIZ_EMOTION_RADAR_GLOBAL = "emotion.radar.global"
+VIZ_CONTEXTUAL_EMOTION_LABELS_GLOBAL = "contextual_emotion.label_counts.global"
+VIZ_FINE_GRAINED_EMOTION_LABELS_GLOBAL = "fine_grained_emotion.label_counts.global"
 
 # NER
 VIZ_NER_ENTITY_TYPES_SPEAKER = "ner.entity_types.speaker"

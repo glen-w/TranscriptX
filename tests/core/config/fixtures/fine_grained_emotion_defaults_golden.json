@@ -1,0 +1,7 @@
+{
+  "batch_size": 8,
+  "label_threshold": 0.28,
+  "max_labels_per_segment": 3,
+  "profile_id": "fine_grained_samlowe_go_emotions_v1",
+  "release_channel": "experimental"
+}

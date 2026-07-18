@@ -18,6 +18,7 @@ class DAGNode:
     timeout_seconds: int = 600
     requirements: List[Any] = None
     enhancements: List[Any] = None
+    optional_dependencies: List[str] = None
 
 
 @dataclass
@@ -35,6 +36,7 @@ class DAGRegistry:
         timeout_seconds: int = 600,
         requirements: Optional[List[Any]] = None,
         enhancements: Optional[List[Any]] = None,
+        optional_dependencies: Optional[List[str]] = None,
     ) -> None:
         self.nodes[name] = DAGNode(
             name=name,
@@ -45,6 +47,7 @@ class DAGRegistry:
             timeout_seconds=timeout_seconds,
             requirements=requirements or [],
             enhancements=enhancements or [],
+            optional_dependencies=list(optional_dependencies or []),
         )
 
 
@@ -70,5 +73,8 @@ def build_dag_registry_from_module_registry() -> DAGRegistry:
                 timeout_seconds=module_info.timeout_seconds,
                 requirements=module_info.requirements,
                 enhancements=module_info.enhancements,
+                optional_dependencies=list(
+                    getattr(module_info, "optional_dependencies", None) or []
+                ),
             )
     return registry

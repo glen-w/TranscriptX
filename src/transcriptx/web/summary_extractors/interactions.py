@@ -58,9 +58,7 @@ def extract_interactions_summary(data: Dict[str, Any], summary: Dict[str, Any]) 
         reason = abstention_by_metric.get(
             "response_latency_fairness_index", "abstained"
         )
-        summary["key_metrics"]["Response Latency Fairness"] = (
-            f"unavailable ({reason})"
-        )
+        summary["key_metrics"]["Response Latency Fairness"] = f"unavailable ({reason})"
     else:
         summary["key_metrics"]["Response Latency Fairness"] = _fmt(latency)
 

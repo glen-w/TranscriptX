@@ -78,6 +78,7 @@ class ModuleInfo:
     required_extras: Set[str] = field(
         default_factory=set
     )  # e.g. {"voice"}, {"emotion"}, {"nlp"}
+    optional_dependencies: List[str] = field(default_factory=list)
     legacy: bool = False  # excluded from default plans when include_legacy=False
 
 
@@ -134,6 +135,7 @@ class ModuleRegistry:
                 cost_tier=info.get("cost_tier", "normal"),
                 timeout_seconds=600,
                 required_extras=set(req_extras),
+                optional_dependencies=list(info.get("optional_dependencies") or []),
                 legacy=bool(info.get("legacy", False)),
             )
 

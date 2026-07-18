@@ -1,0 +1,72 @@
+{
+  "analysis.fine_grained_emotion.batch_size": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 8,
+    "description": "",
+    "key": "analysis.fine_grained_emotion.batch_size",
+    "max": null,
+    "min": 1.0,
+    "path": "analysis.fine_grained_emotion.batch_size",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.fine_grained_emotion.label_threshold": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.28,
+    "description": "",
+    "key": "analysis.fine_grained_emotion.label_threshold",
+    "max": 1.0,
+    "min": 0.0,
+    "path": "analysis.fine_grained_emotion.label_threshold",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.fine_grained_emotion.max_labels_per_segment": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 3,
+    "description": "",
+    "key": "analysis.fine_grained_emotion.max_labels_per_segment",
+    "max": null,
+    "min": 0.0,
+    "path": "analysis.fine_grained_emotion.max_labels_per_segment",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.fine_grained_emotion.profile_id": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": "fine_grained_samlowe_go_emotions_v1",
+    "description": "",
+    "key": "analysis.fine_grained_emotion.profile_id",
+    "max": null,
+    "min": null,
+    "path": "analysis.fine_grained_emotion.profile_id",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "analysis.fine_grained_emotion.release_channel": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": "experimental",
+    "description": "",
+    "key": "analysis.fine_grained_emotion.release_channel",
+    "max": null,
+    "min": null,
+    "path": "analysis.fine_grained_emotion.release_channel",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  }
+}

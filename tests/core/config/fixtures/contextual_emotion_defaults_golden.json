@@ -1,0 +1,6 @@
+{
+  "batch_size": 8,
+  "confidence_threshold": 0.45,
+  "profile_id": "contextual_hartmann_distilroberta_v1",
+  "release_channel": "experimental"
+}

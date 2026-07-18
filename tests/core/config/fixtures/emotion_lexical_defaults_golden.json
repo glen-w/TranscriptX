@@ -1,0 +1,4 @@
+{
+  "low_coverage_threshold": 0.05,
+  "no_hit_rate_warn": 0.8
+}

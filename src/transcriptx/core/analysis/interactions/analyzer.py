@@ -273,14 +273,12 @@ class SpeakerInteractionAnalyzer:
         total_interactions = {}
 
         for speaker in all_speakers:
-            net_interruption_balance[speaker] = (
-                interruption_initiated.get(speaker, 0)
-                - interruption_received.get(speaker, 0)
-            )
-            net_response_balance[speaker] = (
-                responses_initiated.get(speaker, 0)
-                - responses_received.get(speaker, 0)
-            )
+            net_interruption_balance[speaker] = interruption_initiated.get(
+                speaker, 0
+            ) - interruption_received.get(speaker, 0)
+            net_response_balance[speaker] = responses_initiated.get(
+                speaker, 0
+            ) - responses_received.get(speaker, 0)
             total_interactions[speaker] = (
                 interruption_initiated.get(speaker, 0)
                 + interruption_received.get(speaker, 0)

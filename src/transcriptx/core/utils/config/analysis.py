@@ -508,6 +508,15 @@ class AnalysisConfig:
     affect_tension: AffectTensionConfig = field(
         default_factory=lambda: AffectTensionConfig()
     )
+    emotion: EmotionLexicalConfig = field(
+        default_factory=lambda: EmotionLexicalConfig()
+    )
+    contextual_emotion: ContextualEmotionConfig = field(
+        default_factory=lambda: ContextualEmotionConfig()
+    )
+    fine_grained_emotion: FineGrainedEmotionConfig = field(
+        default_factory=lambda: FineGrainedEmotionConfig()
+    )
 
     # Profile management - active profiles for each module
     active_topic_modeling_profile: str = "default"
@@ -757,6 +766,56 @@ class AffectTensionConfig:
         )
 
         _hydrate_dataclass_from_pydantic(self, AffectTensionSettingsModel())
+
+
+@dataclass
+class EmotionLexicalConfig:
+    """analysis.emotion.* lexical settings."""
+
+    low_coverage_threshold: float = field(init=False, repr=True)
+    no_hit_rate_warn: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.analysis_emotion_family import (
+            EmotionLexicalSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, EmotionLexicalSettingsModel())
+
+
+@dataclass
+class ContextualEmotionConfig:
+    """analysis.contextual_emotion.* experimental classifier settings."""
+
+    profile_id: str = field(init=False, repr=True)
+    confidence_threshold: float = field(init=False, repr=True)
+    batch_size: int = field(init=False, repr=True)
+    release_channel: str = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.analysis_emotion_family import (
+            ContextualEmotionSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, ContextualEmotionSettingsModel())
+
+
+@dataclass
+class FineGrainedEmotionConfig:
+    """analysis.fine_grained_emotion.* experimental multilabel settings."""
+
+    profile_id: str = field(init=False, repr=True)
+    label_threshold: float = field(init=False, repr=True)
+    max_labels_per_segment: int = field(init=False, repr=True)
+    batch_size: int = field(init=False, repr=True)
+    release_channel: str = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.analysis_emotion_family import (
+            FineGrainedEmotionSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, FineGrainedEmotionSettingsModel())
 
 
 @dataclass

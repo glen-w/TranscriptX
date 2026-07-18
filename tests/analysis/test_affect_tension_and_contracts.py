@@ -4,8 +4,6 @@ Unit tests for affect_tension metrics, sentiment normalization, and emotion pars
 No live Hugging Face calls; uses fixtures and mocks.
 """
 
-import pytest
-
 from transcriptx.core.analysis.affect_tension.metrics import (
     emotion_entropy,
     trust_like_score,
@@ -157,97 +155,10 @@ class TestTransformersSentimentNormalization:
         assert abs(out["pos"] + out["neg"] + out["neu"] - 1.0) < 1e-6
 
 
-class TestEmotionParsingSingleLabel:
-    """Tests for parsing single-label pipeline output into context_emotion_scores."""
-
-    @pytest.fixture
-    def emotion_module(self):
-        from unittest.mock import MagicMock, patch
-        from transcriptx.core.analysis.emotion import EmotionAnalysis
-
-        cfg = MagicMock()
-        cfg.analysis.emotion_model_name = "test/model"
-        cfg.analysis.emotion_output_mode = "top1"
-        cfg.analysis.emotion_score_threshold = 0.30
-        with patch("transcriptx.core.utils.config.get_config", return_value=cfg):
-            with patch(
-                "transcriptx.core.analysis.emotion._load_nrclex", return_value=None
-            ):
-                with patch(
-                    "transcriptx.core.analysis.emotion._load_emotion_model",
-                    return_value=None,
-                ):
-                    module = EmotionAnalysis()
-        return module
-
-    def test_single_label_primary_and_scores(self, emotion_module):
-        emotion_module.emotion_output_mode = "top1"
-        emotion_module.emotion_score_threshold = 0.30
-        result = [{"label": "joy", "score": 0.95}]
-        primary, scores = emotion_module._parse_pipeline_emotion_result(result)
-        assert primary == "joy"
-        assert scores == {"joy": 0.95}
-
-    def test_single_label_top1_keeps_only_primary(self, emotion_module):
-        emotion_module.emotion_output_mode = "top1"
-        emotion_module.emotion_score_threshold = 0.30
-        result = [
-            {"label": "joy", "score": 0.6},
-            {"label": "sadness", "score": 0.3},
-            {"label": "anger", "score": 0.1},
-        ]
-        primary, scores = emotion_module._parse_pipeline_emotion_result(result)
-        assert primary == "joy"
-        assert scores == {"joy": 0.6}
-
-
-class TestEmotionParsingMultilabel:
-    """Tests for parsing multilabel pipeline output into context_emotion_scores."""
-
-    @pytest.fixture
-    def emotion_module(self):
-        from unittest.mock import MagicMock, patch
-        from transcriptx.core.analysis.emotion import EmotionAnalysis
-
-        cfg = MagicMock()
-        cfg.analysis.emotion_model_name = "test/model"
-        cfg.analysis.emotion_output_mode = "multilabel"
-        cfg.analysis.emotion_score_threshold = 0.30
-        with patch("transcriptx.core.utils.config.get_config", return_value=cfg):
-            with patch(
-                "transcriptx.core.analysis.emotion._load_nrclex", return_value=None
-            ):
-                with patch(
-                    "transcriptx.core.analysis.emotion._load_emotion_model",
-                    return_value=None,
-                ):
-                    module = EmotionAnalysis()
-        return module
-
-    def test_multilabel_above_threshold(self, emotion_module):
-        emotion_module.emotion_output_mode = "multilabel"
-        emotion_module.emotion_score_threshold = 0.30
-        result = [
-            {"label": "joy", "score": 0.7},
-            {"label": "gratitude", "score": 0.5},
-            {"label": "sadness", "score": 0.2},
-        ]
-        primary, scores = emotion_module._parse_pipeline_emotion_result(result)
-        assert primary == "joy"
-        assert "joy" in scores and scores["joy"] == 0.7
-        assert "gratitude" in scores and scores["gratitude"] == 0.5
-        assert "sadness" not in scores  # below 0.30
-
-    def test_multilabel_primary_still_max(self, emotion_module):
-        emotion_module.emotion_output_mode = "multilabel"
-        emotion_module.emotion_score_threshold = 0.25
-        result = [
-            {"label": "approval", "score": 0.4},
-            {"label": "joy", "score": 0.6},
-        ]
-        primary, scores = emotion_module._parse_pipeline_emotion_result(result)
-        assert primary == "joy"
-        assert set(scores.keys()) == {"approval", "joy"}
+# NOTE: Legacy HF pipeline parsing tests for the emotion module were removed:
+# emotion is lexical-only (emotion_lexical_v2); classifier parsing/thresholding
+# lives in contextual_emotion / fine_grained_emotion and is tested offline in
+# tests/unit/test_hf_text_classification_offline.py.
 
 
 class TestEmotionVolatilityProxy:

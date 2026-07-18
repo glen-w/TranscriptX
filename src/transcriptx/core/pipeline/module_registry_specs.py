@@ -14,6 +14,8 @@ from transcriptx.core.domain.module_requirements import Requirement
 EXTRA_REPRESENTATIVE: Dict[str, str] = {
     "voice": "opensmile",
     "emotion": "transformers",
+    "emotion_lexical": "nrclex",
+    "emotion_transformers": "transformers",
     "nlp": "spacy",
     "ner": "spacy",
     "bertopic": "bertopic",
@@ -24,6 +26,14 @@ EXTRA_REPRESENTATIVE: Dict[str, str] = {
 
 MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
     "emotion": ("transcriptx.core.analysis.emotion", "EmotionAnalysis"),
+    "contextual_emotion": (
+        "transcriptx.core.analysis.contextual_emotion",
+        "ContextualEmotionAnalysis",
+    ),
+    "fine_grained_emotion": (
+        "transcriptx.core.analysis.fine_grained_emotion",
+        "FineGrainedEmotionAnalysis",
+    ),
     "contagion": ("transcriptx.core.analysis.contagion", "ContagionAnalysis"),
     "sentiment": ("transcriptx.core.analysis.sentiment", "SentimentAnalysis"),
     "acts": ("transcriptx.core.analysis.acts.analysis", "ActsAnalysis"),

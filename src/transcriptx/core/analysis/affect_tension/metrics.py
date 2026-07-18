@@ -150,10 +150,14 @@ def compute_derived_indices(
     speaker_segment_indexes: Dict[str, List[int]],
     thresholds: Dict[str, float],
     weights: Dict[str, float],
+    *,
+    scores_key: str = "context_emotion_scores",
 ) -> Dict[str, Any]:
     """
     Compute polite_tension_index, suppressed_conflict_score, institutional_tone_affect_delta
     per speaker and global. Uses thresholds and weights from config.
+
+    Segments whose ``scores_key`` value is None or missing are skipped (no fake zeros).
     """
     mismatch_compound = thresholds.get("mismatch_compound_threshold", -0.1)
     trust_like_th = thresholds.get("trust_like_threshold", 0.3)
@@ -174,10 +178,14 @@ def compute_derived_indices(
             if i >= len(segments):
                 continue
             seg = segments[i]
+            scores = seg.get(scores_key)
+            if scores is None:
+                continue
+            if not isinstance(scores, dict):
+                scores = {}
             compound = seg.get("sentiment_compound_norm")
             if compound is None:
                 compound = seg.get("sentiment", {}).get("compound", 0.0)
-            scores = seg.get("context_emotion_scores") or {}
             trust = trust_like_score(scores)
             mismatch = affect_mismatch_posneg(
                 compound, scores, pos_emotion_th, mismatch_compound
@@ -185,28 +193,31 @@ def compute_derived_indices(
             trust_neutral = affect_trust_neutral(compound, trust, trust_like_th)
             ent = emotion_entropy(scores)
             vol = emotion_volatility_proxy(i, primary_labels, 5)
-            # Polite tension: mismatch or trust_neutral
             if mismatch:
                 polite += w_posneg
             if trust_neutral:
                 polite += w_trust
             if ent is not None:
-                polite += w_entropy * min(ent / 4.0, 1.0)  # cap entropy contribution
+                polite += w_entropy * min(ent / 4.0, 1.0)
             polite += w_vol * vol
             suppressed += 1.0 if mismatch else 0.0
             suppressed += 0.5 if trust_neutral else 0.0
-            # Tone–affect delta: |compound| vs dominant emotion polarity
             pos_emo = is_positive_emotion(scores, pos_emotion_th)
             if pos_emo and compound < 0:
                 delta_sum += abs(compound)
             elif not pos_emo and compound > 0:
                 delta_sum += compound
             n += 1
-        count = max(n, 1)
+        if n == 0:
+            return {
+                "polite_tension_index": None,
+                "suppressed_conflict_score": None,
+                "institutional_tone_affect_delta": None,
+            }
         return {
-            "polite_tension_index": polite / count,
-            "suppressed_conflict_score": suppressed / count,
-            "institutional_tone_affect_delta": delta_sum / count,
+            "polite_tension_index": polite / n,
+            "suppressed_conflict_score": suppressed / n,
+            "institutional_tone_affect_delta": delta_sum / n,
         }
 
     all_inds = list(range(len(segments)))

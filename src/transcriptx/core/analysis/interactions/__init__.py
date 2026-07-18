@@ -2,7 +2,10 @@
 
 from transcriptx.core.analysis.interactions.analysis import InteractionsAnalysis
 from transcriptx.core.analysis.interactions.analyzer import SpeakerInteractionAnalyzer
-from transcriptx.core.analysis.interactions.equity import compute_equity, nearest_rank_p90
+from transcriptx.core.analysis.interactions.equity import (
+    compute_equity,
+    nearest_rank_p90,
+)
 from transcriptx.core.analysis.interactions.events import InteractionEvent
 from transcriptx.core.analysis.interactions.output import (
     analyze_interactions,

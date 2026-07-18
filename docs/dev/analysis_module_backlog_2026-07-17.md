@@ -205,7 +205,8 @@ P1 may begin in Wave 1 as infrastructure; do not call “multilingual routing”
 
 | Temptation | Why skip |
 |------------|----------|
-| Another sentiment/emotion module | Already covered; converge via config/models instead |
+| Another *sentiment* module / third valence backend as a product feature | Keep as config/backends on `sentiment` only |
+| ~~Another sentiment/emotion module~~ | **Product override (2026-07-18):** `contextual_emotion` and `fine_grained_emotion` are intentional new module IDs alongside lexical `emotion`. See [`emotion_family_contracts_2026-07-18.md`](emotion_family_contracts_2026-07-18.md). Do not reintroduce “converge emotion via config only.” |
 | Chat-over-transcript product | Analysis-first north star; not beta scope |
 | Remote OpenAI-backed modules | Deferred post-beta (Ollama only) |
 | Plugin marketplace | 6-month out of scope |

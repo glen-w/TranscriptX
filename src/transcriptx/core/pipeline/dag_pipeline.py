@@ -254,6 +254,9 @@ class DAGPipeline:
                     name=name,
                     dependencies=list(node.dependencies),
                     category=node.category,
+                    optional_dependencies=list(
+                        getattr(node, "optional_dependencies", None) or []
+                    ),
                 )
                 for name, node in sorted(self.nodes.items())
             }
@@ -375,6 +378,10 @@ class DAGPipeline:
             owned_context = True
 
         try:
+            if runtime_context is not None:
+                runtime_context.store_computed_value(
+                    "selected_modules", list(selected_modules)
+                )
             return self._engine(
                 self,
                 transcript_path=transcript_path,
@@ -528,6 +535,9 @@ def create_dag_pipeline() -> DAGPipeline:
                 timeout_seconds=module_info.timeout_seconds,
                 requirements=module_info.requirements,
                 enhancements=module_info.enhancements,
+                optional_dependencies=list(
+                    getattr(module_info, "optional_dependencies", None) or []
+                ),
             )
     return DAGPipeline(registry=registry)
 

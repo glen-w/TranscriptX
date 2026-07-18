@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-07-18
+
+### Added
+
+- Emotion family hardening: shared generational store, split cache, consumer contracts, and HF text-classification runtime for experimental `contextual_emotion` / `fine_grained_emotion`.
+- Lexical `emotion` v2 projections with deferred enrichment until after canonical persist, plus repair helpers for enriched projections.
+- Emotion-family calibration fixtures/protocol docs and release-matrix unit coverage.
+
+### Changed
+
+- Contagion and affect-tension consumers read emotion via family contracts (lexical projection gate tightened; reconstruction path removed).
+- Config pilots for `emotion_lexical`, `contextual_emotion`, and `fine_grained_emotion` (ownership/registry goldens updated).
+
+### Fixed
+
+- Sidebar Streamlit test double honors keyed selectbox session state (no-runs hint coverage).
+
 ## [0.4.8] - 2026-07-18
 
 ### Added

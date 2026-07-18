@@ -102,7 +102,9 @@ def aggregate_interactions_group(
     speaker_aggregates: Dict[int, Dict[str, Any]] = {}
     aggregation_warnings: List[Dict[str, Any]] = []
 
-    versioned_payloads: List[tuple[PerTranscriptResult, Dict[str, Any], int | None]] = []
+    versioned_payloads: List[tuple[PerTranscriptResult, Dict[str, Any], int | None]] = (
+        []
+    )
 
     for result in per_transcript_results:
         if "interactions" not in result.module_results:

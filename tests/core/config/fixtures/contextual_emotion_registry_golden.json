@@ -1,0 +1,58 @@
+{
+  "analysis.contextual_emotion.batch_size": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 8,
+    "description": "",
+    "key": "analysis.contextual_emotion.batch_size",
+    "max": null,
+    "min": 1.0,
+    "path": "analysis.contextual_emotion.batch_size",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.contextual_emotion.confidence_threshold": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.45,
+    "description": "",
+    "key": "analysis.contextual_emotion.confidence_threshold",
+    "max": 1.0,
+    "min": 0.0,
+    "path": "analysis.contextual_emotion.confidence_threshold",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.contextual_emotion.profile_id": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": "contextual_hartmann_distilroberta_v1",
+    "description": "",
+    "key": "analysis.contextual_emotion.profile_id",
+    "max": null,
+    "min": null,
+    "path": "analysis.contextual_emotion.profile_id",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "analysis.contextual_emotion.release_channel": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": "experimental",
+    "description": "",
+    "key": "analysis.contextual_emotion.release_channel",
+    "max": null,
+    "min": null,
+    "path": "analysis.contextual_emotion.release_channel",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  }
+}

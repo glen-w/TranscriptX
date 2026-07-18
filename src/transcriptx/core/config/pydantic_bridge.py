@@ -11,8 +11,11 @@ from transcriptx.core.utils.config.analysis import (
     ActsConfig,
     AffectTensionConfig,
     BERTopicConfig,
+    ContextualEmotionConfig,
     CorrectionsConfig,
     EchoesConfig,
+    EmotionLexicalConfig,
+    FineGrainedEmotionConfig,
     HighlightsConfig,
     MomentsConfig,
     MomentumConfig,
@@ -45,6 +48,11 @@ from transcriptx.core.utils.config.workflow import (
 
 from .models.acts import ActsSettingsModel
 from .models.affect_tension import AffectTensionSettingsModel
+from .models.analysis_emotion_family import (
+    ContextualEmotionSettingsModel,
+    EmotionLexicalSettingsModel,
+    FineGrainedEmotionSettingsModel,
+)
 from .models.analysis_entity import AnalysisEntitySettingsModel
 from .models.analysis_interaction import AnalysisInteractionSettingsModel
 from .models.analysis_legacy_semantic import AnalysisLegacySemanticSettingsModel
@@ -306,6 +314,27 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="analysis.affect_tension",
         category="analysis",
         dataclass_type=AffectTensionConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="emotion_lexical",
+        model=EmotionLexicalSettingsModel,
+        dotpath_prefix="analysis.emotion",
+        category="analysis",
+        dataclass_type=EmotionLexicalConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="contextual_emotion",
+        model=ContextualEmotionSettingsModel,
+        dotpath_prefix="analysis.contextual_emotion",
+        category="analysis",
+        dataclass_type=ContextualEmotionConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="fine_grained_emotion",
+        model=FineGrainedEmotionSettingsModel,
+        dotpath_prefix="analysis.fine_grained_emotion",
+        category="analysis",
+        dataclass_type=FineGrainedEmotionConfig,
     ),
     PydanticPilotSpec(
         pilot_id="echoes",

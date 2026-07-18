@@ -20,7 +20,9 @@ Shipped defaults target CPU-friendly English analysis:
 | Semantic similarity v2 | `sentence-transformers/all-MiniLM-L6-v2` |
 | BERTopic embeddings | `all-MiniLM-L6-v2` |
 | Sentiment | `vader` (lexicon) |
-| Emotion (transformer leg) | `bhadresh-savani/distilbert-base-uncased-emotion` |
+| Emotion (lexical `emotion`) | NRCLex vocabulary association (`emotion_lexical` extra) |
+| Contextual emotion (experimental) | Built-in profile `contextual_hartmann_distilroberta_v1` (`j-hartmann/emotion-english-distilroberta-base`, pinned Hub SHA `0e1cd914e3d46199ed785853e12b57304e04178b`, Apache-2.0) |
+| Fine-grained emotion (experimental) | Built-in profile `fine_grained_samlowe_go_emotions_v1` (`SamLowe/roberta-base-go_emotions`, pinned Hub SHA `d75048347613a25d77de8cf6412eaae9fa7b26be`, MIT) |
 | Dialogue acts | rule/heuristic classification (transformer disabled; TF-IDF/RF untrained scaffolding only) |
 | Topic modeling (LDA/NMF) | sklearn bag-of-words (no neural embedding) |
 
@@ -61,7 +63,7 @@ Compose does **not** inject every `TRANSCRIPTX_*` variable automatically—only 
 | `TRANSCRIPTX_SPACY_MODEL` | spaCy runtime (`get_nlp_model`) | NER, highlights, insight eligibility, shared tokenization |
 | `TRANSCRIPTX_SEMANTIC_MODEL` | `analysis.semantic_model_name` | Legacy semantic similarity, echoes paraphrase embeddings |
 | `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `analysis.semantic_similarity_v2.model_name` | `semantic_similarity_v2` module |
-| `TRANSCRIPTX_EMOTION_MODEL` | `analysis.emotion_model_name` | Transformer emotion classifier (alongside NRCLex) |
+| `TRANSCRIPTX_EMOTION_MODEL` | legacy alias toward contextual profile (prefer `analysis.contextual_emotion.profile_id`) | Deprecated flat key; conflicting new+old values fail validation when both set |
 | `TRANSCRIPTX_SENTIMENT_BACKEND` | `analysis.sentiment_backend` | `vader`, `transformers`, or `textblob` |
 | `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | `analysis.bertopic.embedding_model` | BERTopic only |
 | `TRANSCRIPTX_ACTS_MODEL` | `analysis.acts.ml_model_name` | **No effect today** — acts use heuristics; transformer classifier is disabled |

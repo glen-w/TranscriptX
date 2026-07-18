@@ -12,12 +12,31 @@ def build_nlp_module_definitions(
 ) -> Dict[str, Dict]:
     return {
         "emotion": {
-            "description": "Emotion Analysis",
+            "description": "Emotion-associated vocabulary (NRC lexicon)",
             "dependencies": [],
             "category": "medium",
             "determinism_tier": "T1",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "required_extras": ["emotion_lexical"],
+        },
+        "contextual_emotion": {
+            "description": "Contextual emotion (broad classifier, experimental)",
+            "dependencies": [],
+            "category": "heavy",
+            "determinism_tier": "T2",
+            "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
+            "enhancements": [],
+            "required_extras": ["emotion_transformers"],
+        },
+        "fine_grained_emotion": {
+            "description": "Fine-grained multi-label emotion (experimental)",
+            "dependencies": [],
+            "category": "heavy",
+            "determinism_tier": "T2",
+            "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
+            "enhancements": [],
+            "required_extras": ["emotion_transformers"],
         },
         "entity_sentiment": {
             "description": "Entity-based Sentiment Analysis",

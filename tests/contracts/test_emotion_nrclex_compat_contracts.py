@@ -1,52 +1,46 @@
-"""Contract regressions for NRCLex compatibility behavior."""
+"""Contract regressions for NRCLex lexicon loading compatibility."""
 
 from __future__ import annotations
 
-import sys
-import types
-
-from transcriptx.core.analysis import emotion as emotion_module
+from transcriptx.core.analysis.emotion.lexical_pipeline import (
+    build_lexicon_from_nrclex,
+)
 
 
 class TestEmotionNrclexCompatibilityContracts:
-    """Ensure emotion module supports multiple NRCLex score shapes."""
+    """Ensure lexical pipeline supports modern and legacy NRCLex shapes."""
 
-    def test_extract_scores_accepts_affect_frequencies_alias(self) -> None:
-        class _FakeEmotion:
-            affect_frequencies = {"joy": 0.6, "anticip": 0.4, "unknown": 0.9}
+    def test_build_lexicon_normalizes_anticip_alias(self) -> None:
+        class _FakeNRCLex:
+            AffectDict = {"happy": ["joy", "anticip"], "fearful": ["fear"]}
 
-        scores = emotion_module._extract_nrc_emotion_scores(_FakeEmotion())
-        assert scores == {"joy": 0.6, "anticipation": 0.4}
-
-    def test_load_nrclex_works_without_raw_emotion_scores(self, monkeypatch) -> None:
-        class _FakeNRCLexResult:
-            def __init__(self, text: str):
+            def __init__(self, text: str = "") -> None:
                 self.text = text
-                self.affect_frequencies = {"joy": 1.0}
+                self.lexicon = self.AffectDict
 
-        fake_nrclex_module = types.SimpleNamespace(NRCLex=_FakeNRCLexResult)
-        monkeypatch.setitem(sys.modules, "nrclex", fake_nrclex_module)
+        lexicon = build_lexicon_from_nrclex(_FakeNRCLex)
+        assert lexicon["happy"] == ["joy", "anticipation"]
+        assert lexicon["fearful"] == ["fear"]
 
-        def _fail_if_called() -> None:
-            raise AssertionError("should not attempt TextBlob corpora download")
-
-        monkeypatch.setattr(emotion_module, "_ensure_textblob_corpora", _fail_if_called)
-
-        loaded = emotion_module._load_nrclex()
-        assert loaded is _FakeNRCLexResult
-
-    def test_nrclex_analyze_modern_load_raw_text_path(self) -> None:
-        """nrclex 3+/4+ passes text via load_raw_text, not the constructor."""
+    def test_build_lexicon_modern_load_raw_text_path(self) -> None:
+        """nrclex 3+/4+ constructs empty then load_raw_text."""
 
         class _ModernFake:
+            AffectDict = {"joy": ["joy", "positive"]}
+
             def __init__(self) -> None:
                 self.loaded: str | None = None
-                self.affect_frequencies = {"joy": 1.0}
+                self.lexicon = dict(self.AffectDict)
 
             def load_raw_text(self, text: str) -> None:
                 self.loaded = text
 
-        inst = emotion_module._nrclex_analyze(_ModernFake, "hello world")
-        scores = emotion_module._extract_nrc_emotion_scores(inst)
-        assert scores == {"joy": 1.0}
-        assert inst.loaded == "hello world"
+        lexicon = build_lexicon_from_nrclex(_ModernFake)
+        assert lexicon["joy"] == ["joy", "positive"]
+
+    def test_build_lexicon_empty_source_returns_empty(self) -> None:
+        class _Empty:
+            def __init__(self, text: str = "") -> None:
+                self.lexicon = {}
+
+        assert build_lexicon_from_nrclex(_Empty) == {}

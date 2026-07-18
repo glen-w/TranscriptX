@@ -172,9 +172,15 @@ class DummySidebarStreamlit:
                 return current
         return options[0] if options else None
 
-    @staticmethod
-    def selectbox(_label, options, index=0, **_kwargs):
-        return options[index]
+    @classmethod
+    def selectbox(cls, _label, options, index=0, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if current in options:
+                return current
+        if options:
+            return options[index]
+        return None
 
     @classmethod
     def caption(cls, text, **_kwargs):
