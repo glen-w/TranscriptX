@@ -54,6 +54,17 @@ class _FakePipeline:
         self.reduce_calls.append((module_name, outcome))
         if outcome.status == "success":
             results["modules_run"].append(module_name)
+            return
+        if outcome.status in {"skipped", "blocked"}:
+            results.setdefault("skipped_modules", []).append(
+                {
+                    "module": module_name,
+                    "reason": getattr(outcome, "skip_reason", "") or "",
+                    "execution_status": (
+                        "blocked" if outcome.status == "blocked" else "skipped"
+                    ),
+                }
+            )
 
     def _apply_module_side_effects(
         self,
@@ -109,6 +120,8 @@ def test_sequential_phase_unknown_module_logs_warning_and_continues() -> None:
     assert any("Unknown module: missing" in msg for msg in pipeline.logger.warnings)
     assert [e["event"] for e in emitted] == ["run_started"]
     assert results["modules_run"] == []
+    assert results["skipped_modules"][0]["execution_status"] == "blocked"
+    assert results["skipped_modules"][0]["reason"] == "unknown_module"
     assert outcome == (False, 1, 0, 0, 0, None)
 
 

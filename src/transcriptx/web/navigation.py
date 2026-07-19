@@ -112,6 +112,13 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         allowed_fallback="overview",
     ),
     _spec(
+        "Performance",
+        "Performance",
+        "view",
+        required_context="run_scoped",
+        allowed_fallback="overview",
+    ),
+    _spec(
         "Artifacts",
         "Artifacts",
         "view",

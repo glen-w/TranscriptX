@@ -519,7 +519,9 @@ def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
         if rows:
             _render_highlight_rows_rollup(rows)
         else:
-            st.info(group_rollup_empty_hint("highlights", content_name="highlight_rows"))
+            st.info(
+                group_rollup_empty_hint("highlights", content_name="highlight_rows")
+            )
         members = list_group_members(run_root)
         st.divider()
         st.caption("Per session")
@@ -628,17 +630,13 @@ def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> N
                 if not isinstance(entry, dict):
                     continue
                 order = entry.get("order_index")
-                label = (
-                    f"Session {int(order) + 1}" if order is not None else "Session"
-                )
+                label = f"Session {int(order) + 1}" if order is not None else "Session"
                 with st.expander(label, expanded=len(summaries) == 1):
                     text = entry.get("summary") or entry.get("executive_summary")
                     if text:
                         st.markdown(str(text))
                     else:
-                        display = {
-                            k: v for k, v in entry.items() if k != "commitments"
-                        }
+                        display = {k: v for k, v in entry.items() if k != "commitments"}
                         st.json(display)
         else:
             st.info(group_rollup_empty_hint("summary", content_name="summary.json"))
@@ -786,9 +784,7 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
                         continue
                     order = entry.get("order_index")
                     label = (
-                        f"Session {int(order) + 1}"
-                        if order is not None
-                        else "Session"
+                        f"Session {int(order) + 1}" if order is not None else "Session"
                     )
                     with st.expander(label, expanded=False):
                         text = entry.get(text_field) or entry.get("summary")
@@ -801,9 +797,7 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
         members = list_group_members(run_root)
         st.divider()
         st.caption("Per session")
-        member = select_group_member(
-            members, key=f"llm_{module}_session_select"
-        )
+        member = select_group_member(members, key=f"llm_{module}_session_select")
         if member is None:
             return
         payload = load_member_module_json(
@@ -907,9 +901,7 @@ def render_llm_speaker_summary_block(
                 if not isinstance(entry, dict):
                     continue
                 speaker = str(
-                    entry.get("display_name")
-                    or entry.get("canonical_speaker_id")
-                    or ""
+                    entry.get("display_name") or entry.get("canonical_speaker_id") or ""
                 )
                 status = str(entry.get("status") or "")
                 if not speaker:
@@ -951,9 +943,7 @@ def render_llm_speaker_summary_block(
         members = list_group_members(run_root)
         st.divider()
         st.caption("Per session")
-        member = select_group_member(
-            members, key="llm_speaker_summary_session_select"
-        )
+        member = select_group_member(members, key="llm_speaker_summary_session_select")
         if member is None:
             return
         index_payload = load_member_module_json(
@@ -979,9 +969,7 @@ def render_llm_speaker_summary_block(
                     st.warning(detail)
                     continue
                 md = load_member_module_text(loader, member, module, suffix_md)
-                payload = load_member_module_json(
-                    loader, member, module, suffix_json
-                )
+                payload = load_member_module_json(loader, member, module, suffix_json)
                 if md:
                     st.markdown(md)
                 elif payload and payload.get("summary"):

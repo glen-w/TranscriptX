@@ -100,7 +100,8 @@ class ModuleOutcome:
     error_kind: Optional[ErrorKind] = None
     reason: Optional[str] = None
     blocking_modules: List[str] = field(default_factory=list)
-    duration_ms: float = 0.0
+    duration_ms: Optional[float] = None
+    used_cache: bool = False
 
 
 @dataclass(frozen=True)

@@ -66,9 +66,7 @@ def test_chart_definitions_json_load_count():
     assert get_chart_definition("fine_grained_emotion.label_counts.global") is not None
     assert get_chart_definition("fine_grained_emotion.label_counts.speaker") is not None
     assert (
-        get_chart_definition(
-            "contextual_emotion.label_counts_excluding_neutral.global"
-        )
+        get_chart_definition("contextual_emotion.label_counts_excluding_neutral.global")
         is not None
     )
     assert (

@@ -428,8 +428,11 @@ class RunOrchestrator:
         request: RunRequest,
         speaker_options: Any,
         on_event: Optional[Any],
+        recorder: Any = None,
     ) -> None:
         state.prepared_transcript = self._prepare_transcript(transcript_path, request)
+        if recorder is not None:
+            recorder.set_run_id(state.prepared_transcript.run_id)
         state.prepared_workspace = self._prepare_workspace(
             state.prepared_transcript, request
         )
@@ -469,6 +472,14 @@ class RunOrchestrator:
                     )
                 )
                 state.persisted_main = True
+                # Wall stops after required persistence; sidecar written in run() finally
+                # still while... actually finally is outside this lock. Move sidecar here.
+                if recorder is not None:
+                    self._write_performance_sidecar_under_lease(
+                        state=state,
+                        request=request,
+                        recorder=recorder,
+                    )
 
     def _handle_keyboard_interrupt(
         self, state: _RunComposerState, *, on_event: Optional[Any]
@@ -544,6 +555,94 @@ class RunOrchestrator:
                     f"PipelineContext.close failed: {error}"
                 )
 
+    def _write_performance_sidecar_under_lease(
+        self,
+        *,
+        state: _RunComposerState,
+        request: RunRequest,
+        recorder: Any,
+    ) -> None:
+        """Stop wall (outside interval for sidecar), reload run_results, write sidecar.
+
+        Caller must already hold the per-run lease.
+        """
+        from transcriptx.core.observability.run_performance.io import (
+            write_run_performance,
+        )
+        from transcriptx.core.observability.run_performance.schema import (
+            AnalysisContextSnapshot,
+            CacheProvenance,
+            ExecutionStatus,
+            FinalStatus,
+        )
+        from transcriptx.core.pipeline.manifest_loader import load_run_results
+        from transcriptx.core.utils.run_manifest import get_transcriptx_version
+
+        if state.prepared_workspace is None or state.prepared_transcript is None:
+            return
+        run_dir = Path(state.prepared_workspace.output_dir)
+        rr_path = run_dir / "run_results.json"
+        if not rr_path.exists():
+            return
+
+        if recorder.state.value == "running":
+            recorder.stop_wall_clock()
+
+        try:
+            rr = load_run_results(rr_path)
+            if recorder.run_id == "pending":
+                recorder.set_run_id(
+                    str(rr.get("run_id") or state.prepared_transcript.run_id)
+                )
+            exec_values = {s.value for s in ExecutionStatus}
+            final_values = {s.value for s in FinalStatus}
+            exec_status = (
+                ExecutionStatus(state.execution_status)
+                if state.execution_status in exec_values
+                else ExecutionStatus.failed
+            )
+            final_status = (
+                FinalStatus(state.execution_status)
+                if state.execution_status in final_values
+                else FinalStatus.failed
+            )
+            snap = recorder.freeze(
+                execution_status=exec_status,
+                final_status=final_status,
+                termination_reason_code=state.termination_reason,
+                cache_provenance=CacheProvenance.unwired,
+                analysis=AnalysisContextSnapshot(
+                    app_version=get_transcriptx_version(),
+                    requested_module_count=len(request.selected_modules),
+                ),
+            )
+            write_run_performance(run_dir, snap)
+            recorder.mark_persisted(success=True)
+            state.persistence_outcomes.append(
+                PersistenceOutcome(
+                    name="run_performance", success=True, severity="optional"
+                )
+            )
+        except Exception as exc:
+            logger.warning(
+                "run_performance telemetry write failed code=write_failed err_type=%s",
+                type(exc).__name__,
+            )
+            try:
+                if recorder.state.value == "frozen":
+                    recorder.mark_persisted(success=False)
+            except Exception:
+                pass
+            state.persistence_outcomes.append(
+                PersistenceOutcome(
+                    name="run_performance",
+                    success=False,
+                    severity="optional",
+                    error_kind=ErrorKind.PERSISTENCE,
+                    error_message="write_failed",
+                )
+            )
+
     def run(
         self,
         *,
@@ -552,8 +651,16 @@ class RunOrchestrator:
         speaker_options: Any = None,
         on_event: Optional[Any] = None,
     ) -> RunResult:
-        start_time = time.time()
+        from transcriptx.core.observability.run_performance.recorder import (
+            RunPerformanceRecorder,
+        )
+        from transcriptx.core.utils.run_writer_locks import per_run_lock
+
+        pre_pipeline_start = time.perf_counter()
         state = _RunComposerState()
+        recorder = RunPerformanceRecorder(run_id="pending", target_type="transcript")
+        recorder.start_wall_clock()
+        recorder.bind()
 
         def on_event_wrapped(event: Dict[str, Any]) -> None:
             if event.get("event") in {"run_completed", "run_failed"}:
@@ -568,6 +675,7 @@ class RunOrchestrator:
                 request=request,
                 speaker_options=speaker_options,
                 on_event=on_event_wrapped,
+                recorder=recorder,
             )
         except KeyboardInterrupt:
             self._handle_keyboard_interrupt(state, on_event=on_event)
@@ -576,7 +684,38 @@ class RunOrchestrator:
         except Exception as error:
             self._handle_unexpected_error(state, error, on_event=on_event)
         finally:
-            self._finalize_state(state, request)
+            # Failure-path required persistence still under a lease when workspace exists.
+            if (
+                state.prepared_workspace is not None
+                and not state.persisted_main
+                and state.execution_status in {"failed", "aborted"}
+            ):
+                try:
+                    with per_run_lock(state.prepared_workspace.output_dir):
+                        self._finalize_state(state, request)
+                        if recorder.state.value == "running":
+                            recorder.stop_wall_clock()
+                        self._write_performance_sidecar_under_lease(
+                            state=state, request=request, recorder=recorder
+                        )
+                except Exception:
+                    logger.exception("failure-path performance finalize failed")
+                    try:
+                        self._finalize_state(state, request)
+                    except Exception:
+                        pass
+            else:
+                self._finalize_state(state, request)
+                try:
+                    if recorder.state.value == "running":
+                        recorder.stop_wall_clock()
+                except Exception:
+                    logger.exception("run performance wall stop failed")
+            recorder.unbind()
+
+        duration = recorder.wall_clock_duration_seconds
+        if duration is None:
+            duration = time.perf_counter() - pre_pipeline_start
         return self._build_result(
             transcript_path=transcript_path,
             request=request,
@@ -588,5 +727,5 @@ class RunOrchestrator:
             persistence_outcomes=state.persistence_outcomes,
             execution_status=state.execution_status,
             termination_reason=state.termination_reason,
-            duration=time.time() - start_time,
+            duration=duration,
         )

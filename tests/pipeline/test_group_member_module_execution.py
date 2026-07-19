@@ -19,8 +19,7 @@ def test_group_pipeline_runs_identical_modules_on_each_member() -> None:
     modules = ["highlights", "insights", "llm_summary", "stats"]
 
     members = [
-        SimpleNamespace(file_path=p, id=i, uuid=f"u{i}")
-        for i, p in enumerate(paths)
+        SimpleNamespace(file_path=p, id=i, uuid=f"u{i}") for i, p in enumerate(paths)
     ]
     scope = AnalysisScope(
         scope_type="group",

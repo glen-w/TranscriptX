@@ -414,7 +414,9 @@ def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
         if shown:
             return
         st.info(quiet_unavailable_message("Highlights"))
-        st.caption("Browse per-session highlights on Insights → Highlights when available.")
+        st.caption(
+            "Browse per-session highlights on Insights → Highlights when available."
+        )
         return
 
     if loader is None:

@@ -28,12 +28,41 @@ from transcriptx.core.llm.ollama_client import (
     _is_model_not_found_body,
     build_ollama_client,
     normalize_base_url,
+    resolve_ollama_base_url,
 )
 
 
 @pytest.mark.unit
 def test_normalize_base_url_strips_trailing_slash() -> None:
     assert normalize_base_url("http://localhost:11434/") == "http://localhost:11434"
+
+
+@pytest.mark.unit
+def test_resolve_ollama_base_url_rewrites_docker_bridge_on_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "transcriptx.core.llm.ollama_client._running_in_docker",
+        lambda: False,
+    )
+    assert (
+        resolve_ollama_base_url("http://host.docker.internal:11434/")
+        == "http://127.0.0.1:11434"
+    )
+
+
+@pytest.mark.unit
+def test_resolve_ollama_base_url_keeps_docker_bridge_in_container(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "transcriptx.core.llm.ollama_client._running_in_docker",
+        lambda: True,
+    )
+    assert (
+        resolve_ollama_base_url("http://host.docker.internal:11434")
+        == "http://host.docker.internal:11434"
+    )
 
 
 @pytest.mark.unit

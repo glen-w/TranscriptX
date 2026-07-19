@@ -24,6 +24,29 @@ def _extract_emotion_payload(module_results: Dict[str, Any]) -> Dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _emotion_score_map(stats: Any) -> Dict[str, float]:
+    """Normalize flat or lexical-v2 nested speaker/global emotion stats to floats.
+
+    Lexical v2 stores profiles as::
+
+        {"emotion_scores": {"joy": 0.1, ...}, "assignment_counts": {...}, ...}
+
+    Legacy payloads were flat ``{"joy": 0.1, ...}``. Only numeric emotion
+    scores are aggregated; nested dict metadata is ignored.
+    """
+    if not isinstance(stats, dict):
+        return {}
+    nested = stats.get("emotion_scores")
+    src = nested if isinstance(nested, dict) else stats
+    out: Dict[str, float] = {}
+    for key, value in src.items():
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, (int, float)):
+            out[str(key)] = float(value)
+    return out
+
+
 def aggregate_emotion_group(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
@@ -46,13 +69,16 @@ def aggregate_emotion_group(
             continue
 
         speaker_stats = payload.get("speaker_stats", {})
-        global_stats = payload.get("global_stats", {})
+        global_stats = _emotion_score_map(payload.get("global_stats", {}))
+        if not isinstance(speaker_stats, dict):
+            speaker_stats = {}
         display_to_canonical = _build_display_to_canonical(
             result.transcript_path, canonical_speaker_map
         )
 
-        for speaker, scores in speaker_stats.items():
-            if not isinstance(scores, dict):
+        for speaker, raw_scores in speaker_stats.items():
+            scores = _emotion_score_map(raw_scores)
+            if not scores:
                 continue
             canonical_id = display_to_canonical.get(
                 speaker, _fallback_canonical_id(speaker)
@@ -71,7 +97,7 @@ def aggregate_emotion_group(
             aggregate["appearance_count"] += 1
             for emotion, value in scores.items():
                 aggregate["emotion_totals"][emotion] = (
-                    aggregate["emotion_totals"].get(emotion, 0.0) + value
+                    float(aggregate["emotion_totals"].get(emotion, 0.0)) + value
                 )
 
         session_rows.append(
@@ -119,6 +145,7 @@ def aggregate_emotion_group(
             if isinstance(row.get("global_emotions"), dict)
             and key in row["global_emotions"]
             and isinstance(row["global_emotions"][key], (int, float))
+            and not isinstance(row["global_emotions"][key], bool)
         ]
         if vals:
             scores[key] = sum(vals) / len(vals)

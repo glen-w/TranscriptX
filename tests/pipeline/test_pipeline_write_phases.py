@@ -73,6 +73,7 @@ def test_persist_canonical_results_and_artifacts_orders_writes(
 
     def _results(**_kwargs):
         order.append("results")
+        return tmp_path / "run_results.json"
 
     def _manifest(**_kwargs):
         order.append("manifest")

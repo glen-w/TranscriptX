@@ -1,21 +1,21 @@
 {
   "analysis.llm_summary.effort": {
-    "key": "analysis.llm_summary.effort",
-    "path": "analysis.llm_summary.effort",
-    "type": "str",
-    "default": "high",
-    "min": null,
-    "max": null,
+    "advanced": false,
+    "category": "analysis",
     "choices": [
       "low",
       "medium",
       "high",
       "max"
     ],
+    "default": "high",
     "description": "Summary effort tier for llm_summary when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that module only. Medium and above are completeness-oriented.",
+    "key": "analysis.llm_summary.effort",
+    "max": null,
+    "min": null,
+    "path": "analysis.llm_summary.effort",
     "scope": "project",
     "sensitivity": "normal",
-    "category": "analysis",
-    "advanced": false
+    "type": "str"
   }
 }

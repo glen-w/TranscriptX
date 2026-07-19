@@ -1,10 +1,10 @@
 {
   "audio_deduplication_threshold": 0.9,
-  "base_output_dir": "/Users/89298/Documents/transcriptx/.test_outputs",
+  "base_output_dir": "/Users/89298/Documents/transcriptx/data/outputs/_perf_group_run4",
   "create_subdirectories": true,
   "default_audio_folder": "/Users/89298/Documents/transcriptx/data/recordings",
-  "default_readable_transcript_folder": "/Users/89298/Documents/transcriptx/data/transcripts/readable",
-  "default_transcript_folder": "/Users/89298/Documents/transcriptx/data/transcripts",
+  "default_readable_transcript_folder": "/Users/89298/Documents/transcripts/readable",
+  "default_transcript_folder": "/Users/89298/Documents/transcripts",
   "dynamic_charts": "auto",
   "dynamic_views": "auto",
   "overwrite_existing": false

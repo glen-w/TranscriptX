@@ -14,7 +14,11 @@ from transcriptx.core.llm.errors import (
     LLMConfigurationError,
 )
 from transcriptx.core.llm.llm_client import LLMClient, NullLLMClient
-from transcriptx.core.llm.ollama_client import OllamaClient, normalize_base_url
+from transcriptx.core.llm.ollama_client import (
+    OllamaClient,
+    normalize_base_url,
+    resolve_ollama_base_url,
+)
 
 if TYPE_CHECKING:
     from transcriptx.core.utils.config.main import TranscriptXConfig
@@ -44,7 +48,7 @@ def get_llm_client(config: "TranscriptXConfig | None" = None) -> LLMClient:
         return NullLLMClient()
 
     if provider == "ollama":
-        base_url = normalize_base_url(llm.base_url or _DEFAULT_OLLAMA_BASE_URL)
+        base_url = resolve_ollama_base_url(llm.base_url or _DEFAULT_OLLAMA_BASE_URL)
         return OllamaClient(
             base_url=base_url,
             model=llm.model or _DEFAULT_OLLAMA_MODEL,
@@ -66,4 +70,5 @@ __all__ = [
     "DEFAULT_OLLAMA_MODEL",
     "get_llm_client",
     "normalize_base_url",
+    "resolve_ollama_base_url",
 ]

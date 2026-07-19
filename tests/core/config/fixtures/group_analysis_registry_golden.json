@@ -31,7 +31,7 @@
     "advanced": false,
     "category": "group_analysis",
     "choices": null,
-    "default": "/Users/89298/Documents/transcriptx/.test_outputs/groups",
+    "default": "/Users/89298/Documents/transcriptx/data/outputs/_perf_group_run4/groups",
     "description": "",
     "key": "group_analysis.output_dir",
     "max": null,

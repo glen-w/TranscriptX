@@ -2,6 +2,8 @@
 
 from typing import Any
 
+import pytest
+
 from transcriptx.core.analysis.aggregation.emotion import aggregate_emotion_group
 from transcriptx.core.analysis.aggregation.interactions import (
     aggregate_interactions_group,
@@ -130,6 +132,58 @@ def test_emotion_group_contract() -> None:
         results, _build_canonical_map(), _build_transcript_set()
     )
     assert outcome is not None
+    ok_sessions, _ = validate_session_rows(outcome["session_rows"])
+    ok_speakers, _ = validate_speaker_rows(outcome["speaker_rows"])
+    assert ok_sessions
+    assert ok_speakers
+
+
+def test_emotion_group_contract_lexical_v2_nested_stats() -> None:
+    """Lexical v2 speaker_stats nest scores under emotion_scores (+ dict metadata)."""
+    results = [
+        PerTranscriptResult(
+            transcript_path="a.json",
+            transcript_key="a",
+            run_id="r1",
+            order_index=0,
+            output_dir="out/a",
+            module_results={
+                "emotion": {
+                    "payload": {
+                        "speaker_stats": {
+                            "Alice": {
+                                "assignment_counts": {"joy": 2, "sad": 1},
+                                "emotion_scores": {"joy": 0.7, "sad": 0.3},
+                                "valence_scores": {"positive": 0.7, "negative": 0.3},
+                                "tokens_considered": 10,
+                                "joy": 0.7,
+                                "sad": 0.3,
+                            }
+                        },
+                        "global_stats": {
+                            "assignment_counts": {"joy": 2, "sad": 1},
+                            "emotion_scores": {"joy": 0.6, "sad": 0.4},
+                            "tokens_considered": 10,
+                            "joy": 0.6,
+                            "sad": 0.4,
+                        },
+                    }
+                }
+            },
+        )
+    ]
+    outcome = aggregate_emotion_group(
+        results, _build_canonical_map(), _build_transcript_set()
+    )
+    assert outcome is not None
+    speaker_scores = outcome["speaker_rows"][0]["emotion_scores"]
+    pooled = outcome["emotion_pooled"]["emotion_scores"]
+    assert speaker_scores["joy"] == pytest.approx(0.7)
+    assert pooled["joy"] == pytest.approx(0.6)
+    assert "assignment_counts" not in speaker_scores
+    assert "assignment_counts" not in pooled
+    assert all(isinstance(v, float) for v in speaker_scores.values())
+    assert all(isinstance(v, float) for v in pooled.values())
     ok_sessions, _ = validate_session_rows(outcome["session_rows"])
     ok_speakers, _ = validate_speaker_rows(outcome["speaker_rows"])
     assert ok_sessions

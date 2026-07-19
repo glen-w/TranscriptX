@@ -42,9 +42,11 @@ def persist_canonical_run_outcomes(
     skipped_modules: List[Any],
     errors: List[str],
     module_results: Optional[Dict[str, Any]] = None,
-) -> None:
+    terminal_outcomes: Optional[Dict[str, Any]] = None,
+    pipeline_status: Optional[str] = None,
+) -> Path:
     """Persist canonical normalized run outcomes to run_results.json."""
-    write_run_results_summary(
+    return write_run_results_summary(
         run_dir=run_dir,
         run_id=run_id,
         transcript_key=transcript_key,
@@ -54,6 +56,8 @@ def persist_canonical_run_outcomes(
         errors=errors,
         preset_explanation=build_preset_explanation(modules_run, skipped_modules),
         module_results=module_results,
+        terminal_outcomes=terminal_outcomes,
+        pipeline_status=pipeline_status,
     )
 
 
@@ -73,7 +77,7 @@ def persist_canonical_results_and_artifacts(
     modules_run = list(results.get("modules_run", []))
     errors = list(results.get("errors", []))
 
-    persist_canonical_run_outcomes(
+    run_results_path = persist_canonical_run_outcomes(
         run_dir=run_dir,
         run_id=run_id,
         transcript_key=transcript_key,
@@ -82,6 +86,10 @@ def persist_canonical_results_and_artifacts(
         skipped_modules=skipped,
         errors=errors,
         module_results=dict(results.get("module_results", {})),
+        terminal_outcomes=dict(results.get("terminal_outcomes", {})),
+        pipeline_status=(
+            str(results["status"]) if results.get("status") is not None else None
+        ),
     )
     manifest_path = write_output_manifest(
         run_dir=run_dir,
@@ -90,6 +98,6 @@ def persist_canonical_results_and_artifacts(
         modules_enabled=modules_enabled,
     )
     return {
-        "run_results_path": run_dir / "run_results.json",
+        "run_results_path": run_results_path,
         "manifest_path": manifest_path,
     }

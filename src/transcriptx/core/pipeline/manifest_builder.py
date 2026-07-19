@@ -420,12 +420,20 @@ def build_run_results_summary(
     errors: List[str],
     preset_explanation: Optional[str] = None,
     module_results: Optional[Dict[str, Any]] = None,
+    terminal_outcomes: Optional[Dict[str, Any]] = None,
+    pipeline_status: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build run-level results summary for machine and human consumption."""
     skipped = normalize_skipped_entries(skipped_modules)
     failed = project_failed_modules(modules_enabled, modules_run, skipped)
     canonical_rows = build_canonical_rows_from_run_lists(
-        modules_enabled, modules_run, skipped, errors, module_results
+        modules_enabled,
+        modules_run,
+        skipped,
+        errors,
+        module_results,
+        terminal_outcomes=terminal_outcomes,
+        pipeline_status=pipeline_status,
     )
     payload: Dict[str, Any] = {
         "schema_version": RUN_RESULTS_SCHEMA_VERSION,
@@ -453,23 +461,23 @@ def write_run_results_summary(
     errors: List[str],
     preset_explanation: Optional[str] = None,
     module_results: Optional[Dict[str, Any]] = None,
-) -> Optional[Path]:
-    """Write run_results.json so Web UI and API consumers can show run/skip/fail and why."""
-    try:
-        payload = build_run_results_summary(
-            run_id=run_id,
-            transcript_key=transcript_key,
-            modules_enabled=modules_enabled,
-            modules_run=modules_run,
-            skipped_modules=skipped_modules,
-            errors=errors,
-            preset_explanation=preset_explanation,
-            module_results=module_results,
-        )
-        output_path = Path(run_dir).resolve() / "run_results.json"
-        write_json(output_path, payload, indent=2, ensure_ascii=False)
-        logger.info(f"Saved run results summary to {output_path}")
-        return output_path
-    except Exception as exc:
-        logger.warning(f"Failed to write run results summary: {exc}")
-        return None
+    terminal_outcomes: Optional[Dict[str, Any]] = None,
+    pipeline_status: Optional[str] = None,
+) -> Path:
+    """Write run_results.json. Raises on failure (no silent None)."""
+    payload = build_run_results_summary(
+        run_id=run_id,
+        transcript_key=transcript_key,
+        modules_enabled=modules_enabled,
+        modules_run=modules_run,
+        skipped_modules=skipped_modules,
+        errors=errors,
+        preset_explanation=preset_explanation,
+        module_results=module_results,
+        terminal_outcomes=terminal_outcomes,
+        pipeline_status=pipeline_status,
+    )
+    output_path = Path(run_dir).resolve() / "run_results.json"
+    write_json(output_path, payload, indent=2, ensure_ascii=False)
+    logger.info(f"Saved run results summary to {output_path}")
+    return output_path

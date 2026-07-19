@@ -231,13 +231,38 @@ def build_canonical_rows_from_run_lists(
     skipped_modules: Optional[List[Any]],
     errors: Optional[List[str]],
     module_results: Optional[Dict[str, Any]] = None,
+    terminal_outcomes: Optional[Dict[str, Any]] = None,
+    pipeline_status: Optional[str] = None,
 ) -> List[CanonicalModuleOutcome]:
     """
     Build canonical rows from pipeline result lists (post-execution projection).
+
+    When ``terminal_outcomes`` is provided (canonical id -> ModuleOutcome or dict
+    with duration_ms/used_cache), those values are attached to the matching row.
+    Unreached enabled modules are ``blocked`` with reason
+    ``pipeline_aborted_before_start`` when ``pipeline_status == "aborted"``;
+    otherwise they remain ``failed`` for backward compatibility with incomplete
+    terminal maps.
     """
     ran = _canonical_set(modules_run)
     skipped_norm = normalize_skipped_entries(skipped_modules)
     skipped_by_id = {canonical_module_id(s["module"]): s for s in skipped_norm}
+    term_by_id: Dict[str, Any] = {}
+    for key, value in (terminal_outcomes or {}).items():
+        term_by_id[canonical_module_id(str(key))] = value
+
+    def _timing_for(mid: str) -> Tuple[Optional[float], bool]:
+        raw = term_by_id.get(mid)
+        if raw is None:
+            return None, False
+        if hasattr(raw, "duration_ms"):
+            return getattr(raw, "duration_ms", None), bool(
+                getattr(raw, "used_cache", False)
+            )
+        if isinstance(raw, dict):
+            return raw.get("duration_ms"), bool(raw.get("used_cache", False))
+        return None, False
+
     rows: List[CanonicalModuleOutcome] = []
     err_text_by_module: Dict[str, str] = {}
     for err in errors or []:
@@ -251,9 +276,24 @@ def build_canonical_rows_from_run_lists(
                 err_text_by_module.setdefault(canonical_module_id(mod), rest.strip())
 
     enabled_ids = {canonical_module_id(m) for m in modules_enabled}
+    if len(enabled_ids) != len({canonical_module_id(m) for m in modules_enabled}):
+        # Deduped set is authoritative; aliases in the request list are collapsed.
+        pass
+    seen_row_ids: Set[str] = set()
     for mid in sorted(enabled_ids):
+        if mid in seen_row_ids:
+            raise ValueError(f"Duplicate canonical module outcome id {mid!r}")
+        seen_row_ids.add(mid)
+        duration_ms, used_cache = _timing_for(mid)
         if mid in ran:
-            rows.append(CanonicalModuleOutcome(module_id=mid, execution_status="run"))
+            rows.append(
+                CanonicalModuleOutcome(
+                    module_id=mid,
+                    execution_status="run",
+                    duration_ms=duration_ms,
+                    used_cache=used_cache,
+                )
+            )
             continue
         sk = skipped_by_id.get(mid)
         if sk:
@@ -265,6 +305,8 @@ def build_canonical_rows_from_run_lists(
                     module_id=mid,
                     execution_status=st,
                     reason_code=str(sk.get("reason", "")) or None,
+                    duration_ms=duration_ms,
+                    used_cache=used_cache,
                 )
             )
             continue
@@ -277,6 +319,27 @@ def build_canonical_rows_from_run_lists(
                 error_code = err_payload.get("error_code")
                 if not err:
                     err = str(err_payload.get("error_message") or "")
+        if mid in term_by_id or err is not None or module_result is not None:
+            rows.append(
+                CanonicalModuleOutcome(
+                    module_id=mid,
+                    execution_status="failed",
+                    error_message=err,
+                    error_code=error_code,
+                    duration_ms=duration_ms,
+                    used_cache=used_cache,
+                )
+            )
+            continue
+        if pipeline_status == "aborted":
+            rows.append(
+                CanonicalModuleOutcome(
+                    module_id=mid,
+                    execution_status="blocked",
+                    reason_code="pipeline_aborted_before_start",
+                )
+            )
+            continue
         rows.append(
             CanonicalModuleOutcome(
                 module_id=mid,

@@ -804,7 +804,8 @@ class TestExecutePipelineFakeDAG:
                     context=mc,
                     named_speaker_count=2,
                 )
-        assert r.get("status") == "failed"
+        # Critical abort maps to pipeline status "aborted" (not "failed").
+        assert r.get("status") == "aborted"
         assert "m2" not in r["modules_run"]
 
     def test_event_collector_records_module_started_completed(

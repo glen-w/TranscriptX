@@ -27,7 +27,6 @@ from transcriptx.core.utils.config_provider import get_config
 from transcriptx.core.pipeline.contracts import RegistryModuleSnapshot, RegistrySnapshot
 from transcriptx.core.pipeline.dag_planner import DAGPlanner
 from transcriptx.core.pipeline.dag_executor import DAGExecutor, ExecutorState
-from transcriptx.core.pipeline.contracts import ModuleOutcome
 from transcriptx.core.pipeline.ports import CallbackEventSink
 from transcriptx.core.pipeline.run_options import SpeakerRunOptions
 from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
@@ -272,10 +271,11 @@ class DAGPipeline:
             "modules_run": [],
             "skipped_modules": [],
             "errors": [],
-            "start_time": time.time(),
+            "start_time": time.perf_counter(),
             "execution_order": [],
             "cache_hits": [],
             "module_results": {},
+            "terminal_outcomes": {},
         }
 
     def _new_executor_state(self, results: Dict[str, Any]) -> ExecutorState:
@@ -285,6 +285,7 @@ class DAGPipeline:
             skipped_modules=results["skipped_modules"],
             errors=results["errors"],
             cache_hits=results["cache_hits"],
+            terminal_outcomes=results.setdefault("terminal_outcomes", {}),
         )
 
     def _validate_pipeline_io(
@@ -298,7 +299,7 @@ class DAGPipeline:
             self.logger.error(f"Validation failed: {e}")
             results["errors"].append(str(e))
             results["status"] = "failed"
-            results["end_time"] = time.time()
+            results["end_time"] = time.perf_counter()
             results["duration"] = results["end_time"] - results["start_time"]
             return False
 
@@ -433,23 +434,22 @@ class DAGPipeline:
         outcome: ModuleExecOutcome,
         results: Dict[str, Any],
     ) -> None:
-        state = ExecutorState(
-            module_results=results["module_results"],
-            modules_run=results["modules_run"],
-            skipped_modules=results["skipped_modules"],
-            errors=results["errors"],
-            cache_hits=results["cache_hits"],
-        )
-        status = "failed"
+        state = self._new_executor_state(results)
         if outcome.status == "success":
-            status = "succeeded"
+            legacy_status = "success"
         elif outcome.status == "skipped":
-            status = "skipped"
-        module_outcome = ModuleOutcome(
-            module=module_name,
-            status=status,  # type: ignore[arg-type]
-            reason=outcome.skip_reason or outcome.error,
+            legacy_status = "skipped"
+        elif outcome.status == "blocked":
+            legacy_status = "blocked"
+        else:
+            legacy_status = "failed"
+        module_outcome = self._executor.outcome_from_legacy(
+            module_name,
+            legacy_status=legacy_status,
+            error=outcome.error,
+            skip_reason=outcome.skip_reason,
             duration_ms=outcome.duration_ms,
+            used_cache=outcome.used_cache,
         )
         self._executor.reduce_outcome(
             state,
@@ -500,7 +500,7 @@ class DAGPipeline:
     ) -> None:
         interval = max(float(self.module_progress_log_interval_seconds), 1.0)
         while not stop_event.wait(interval):
-            elapsed_seconds = time.time() - module_start
+            elapsed_seconds = time.perf_counter() - module_start
             self.logger.info(
                 f"{module_name} still running... {elapsed_seconds:.1f}s elapsed"
             )

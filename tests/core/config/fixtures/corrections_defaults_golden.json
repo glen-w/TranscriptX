@@ -1,8 +1,11 @@
 {
-  "enabled": true,
-  "interactive_review": true,
   "consistency_similarity_threshold": 0.88,
+  "create_backup": true,
+  "default_rule_scope": "project",
+  "enable_fuzzy": false,
+  "enabled": true,
   "fuzzy_similarity_threshold": 0.92,
+  "interactive_review": true,
   "known_acronyms": [
     "CSE",
     "REN21"
@@ -13,23 +16,20 @@
       "wren twenty one"
     ]
   },
-  "write_csv_summary": true,
-  "store_corrected_transcript": true,
-  "default_rule_scope": "project",
-  "enable_fuzzy": false,
-  "update_original_file": false,
-  "create_backup": true,
   "llm": {
-    "enabled": false,
-    "effort": "low",
-    "request_timeout_seconds": 120.0,
-    "total_wall_clock_seconds": 180.0,
-    "max_chunks": 25,
+    "assess_deterministic": false,
     "chunk_max_segments": 40,
     "chunk_overlap_segments": 4,
+    "continue_on_failure": true,
+    "effort": "low",
+    "enabled": false,
     "max_candidates_per_chunk": 10,
     "max_candidates_per_transcript": 80,
-    "continue_on_failure": true,
-    "assess_deterministic": false
-  }
+    "max_chunks": 25,
+    "request_timeout_seconds": 120.0,
+    "total_wall_clock_seconds": 180.0
+  },
+  "store_corrected_transcript": true,
+  "update_original_file": false,
+  "write_csv_summary": true
 }

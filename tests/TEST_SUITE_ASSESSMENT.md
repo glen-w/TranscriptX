@@ -1602,3 +1602,46 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Focused group-module slice: **30 passed**.
 - **Production code:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+## 62. Expansion (2026-07-19) – analysis-run performance analytics
+
+### Trigger
+`/tests` focused on performance analytics (`run_performance` sidecar, formulas, LLM metrics sink, Performance page view model).
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260719-2118.zip` (4.8M).
+- **Collection:** default `6488` selected / `6667` with `-m ""` (`179` deselected by addopts).
+- **Default baseline before expansion:** `6483 passed`, `4 failed`, `1 skipped`, `179` deselected.
+- **Baseline failures (classified; only abort-status test updated here):**
+  1. `test_pydantic_pilot_registry_matches_golden_fixtures` — `dashboard.overview_charts` choices golden drift (new emotion chart IDs). Unrelated; not fixed.
+  2. `test_registry_completeness_from_env_example` — missing `TRANSCRIPTX_TRANSCRIPTION_PROVIDER` in env key registry. Unrelated; not fixed.
+  3. `test_abort_logic_stops_loop_on_critical_error` — expected `"failed"`, production returns `"aborted"` after critical abort vocabulary. **Updated** to assert `"aborted"`.
+  4. `test_ensure_dynamics_dirs_is_mandatory_precondition` — flaky on full run; passed on focused re-run. Unrelated.
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0).
+- **Cleanup:** disabled (per command).
+- **Markers / addopts:** unchanged.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Sidecar load statuses | Only missing/malformed | run_id mismatch, unsupported schema, oversized |
+| Schema privacy/strictness | Implicit | Reject NaN/negative wall, forbid duplicated `modules[]`, LLM count invariant |
+| Derive formulas | Percent only | Exclude blocked/skipped; inconsistent wall; overlapping; used_llm |
+| Recorder lifecycle | ContextVar only | Idempotent freeze; cannot double-start |
+| LLM metrics sink | Untested | Forward when bound; no-op when unbound |
+| Write path timing | Round-trip via dump only | `write_run_results_summary` → `load_run_results` keeps `duration_ms`/`used_cache` |
+| Performance UI service | Untested | View model joins sidecar + run_results; mismatch/missing notes |
+
+### Tests added or updated
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/core/observability/test_run_performance.py` | expanded (~6 → 17) | Sidecar/schema/formulas/recorder/LLM sink |
+| `tests/web/services/test_run_performance_service.py` (**new**) | +4 | `build_run_performance_view` assembly |
+| `tests/pipeline/test_dag_pipeline.py` | 1 assert | Critical abort → status `aborted` |
+
+### Validation
+- Focused performance slice: **22 passed**.
+- Final default run after expansion: **6500 passed**, **2 failed** (unrelated golden/env registry), **1 skipped**, **179** deselected; collection **6503/6682**.
+- **Production code:** none in this pass (tests-only). Prior performance-analytics production work remains uncommitted separately.
+- **Quarantined tests:** not re-enabled.

@@ -15,6 +15,10 @@ from transcriptx.core.utils.notifications import notify_user
 from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
 
 
+def _elapsed_ms(start: float) -> float:
+    return (time.perf_counter() - start) * 1000.0
+
+
 def apply_module_side_effects(
     pipeline: Any,
     *,
@@ -28,14 +32,19 @@ def apply_module_side_effects(
 
     if outcome.used_cache:
         if run_report:
+            duration_s = (
+                None
+                if outcome.duration_ms is None
+                else float(outcome.duration_ms) / 1000.0
+            )
             run_report.record_module(
                 module_name=module_name,
                 status=ModuleResult.RUN,
-                duration_seconds=0.0,
+                duration_seconds=duration_s if duration_s is not None else 0.0,
                 reason="cache_hit",
             )
         return
-    if outcome.status == "skipped":
+    if outcome.status == "skipped" or outcome.status == "blocked":
         if run_report and outcome.skip_reason:
             run_report.record_module(
                 module_name=module_name,
@@ -50,14 +59,14 @@ def apply_module_side_effects(
             section=module_name,
         )
         log_analysis_complete(module_name, transcript_path)
-        pipeline.logger.info(
-            f"{module_name} completed in {outcome.duration_ms / 1000.0:.2f}s"
-        )
+        dur = outcome.duration_ms
+        if dur is not None:
+            pipeline.logger.info(f"{module_name} completed in {dur / 1000.0:.2f}s")
         if run_report:
             run_report.record_module(
                 module_name=module_name,
                 status=ModuleResult.RUN,
-                duration_seconds=outcome.duration_ms / 1000.0,
+                duration_seconds=(dur / 1000.0) if dur is not None else None,
             )
         return
     notify_user(
@@ -71,6 +80,11 @@ def apply_module_side_effects(
             module_name=module_name,
             status=ModuleResult.FAIL,
             error=outcome.error,
+            duration_seconds=(
+                (outcome.duration_ms / 1000.0)
+                if outcome.duration_ms is not None
+                else None
+            ),
         )
 
 
@@ -154,8 +168,16 @@ def execute_single_module(
         f"🔍 Running {node.description}...", technical=False, section=module_name
     )
     log_analysis_start(module_name, transcript_path)
-    module_start = time.time()
+    module_start = time.perf_counter()
     module_started_at = now_iso()
+    from transcriptx.core.observability.run_performance.recorder import (
+        get_active_recorder,
+    )
+
+    recorder = get_active_recorder()
+    module_ctx = recorder.module_scope(module_name) if recorder is not None else None
+    if module_ctx is not None:
+        module_ctx.__enter__()
     heartbeat_stop_event = threading.Event()
     heartbeat_thread = threading.Thread(
         target=pipeline._module_progress_heartbeat,
@@ -176,12 +198,11 @@ def execute_single_module(
             if module_result.get("status") == "error":
                 err = module_result.get("error", {})
                 if isinstance(err, dict) and err.get("error_code"):
-                    duration_ms = (time.time() - module_start) * 1000
                     return ModuleExecOutcome(
                         status="failed",
                         module_result=module_result,
                         error=str(err.get("error_message", "Unknown error")),
-                        duration_ms=duration_ms,
+                        duration_ms=_elapsed_ms(module_start),
                         module_run=module_run,
                         module_started_at=module_started_at,
                     )
@@ -193,19 +214,18 @@ def execute_single_module(
             if module_result.get("status") == "error":
                 err = module_result.get("error", {})
                 if isinstance(err, dict) and err.get("error_code"):
-                    duration_ms = (time.time() - module_start) * 1000
                     return ModuleExecOutcome(
                         status="failed",
                         module_result=module_result,
                         error=str(err.get("error_message", "Unknown error")),
-                        duration_ms=duration_ms,
+                        duration_ms=_elapsed_ms(module_start),
                         module_run=module_run,
                         module_started_at=module_started_at,
                     )
                 raise RuntimeError(err if err else "Unknown error")
         else:
             node.function(transcript_path)
-        duration_ms = (time.time() - module_start) * 1000
+        duration_ms = _elapsed_ms(module_start)
         if module_result is None:
             module_result = build_module_result(
                 module_name=module_name,
@@ -226,7 +246,7 @@ def execute_single_module(
         )
     except CodedError as e:
         pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
-        duration_ms = (time.time() - module_start) * 1000
+        duration_ms = _elapsed_ms(module_start)
         err_module_result = build_module_result(
             module_name=module_name,
             status="error",
@@ -248,7 +268,7 @@ def execute_single_module(
         )
     except Exception as e:
         pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
-        duration_ms = (time.time() - module_start) * 1000
+        duration_ms = _elapsed_ms(module_start)
         err_module_result = build_module_result(
             module_name=module_name,
             status="error",
@@ -271,3 +291,5 @@ def execute_single_module(
     finally:
         heartbeat_stop_event.set()
         heartbeat_thread.join(timeout=0.2)
+        if module_ctx is not None:
+            module_ctx.__exit__(None, None, None)

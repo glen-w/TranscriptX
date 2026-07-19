@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-07-19
+
+### Added
+
+- Analysis-run performance telemetry: `.transcriptx/run_performance.json` sidecar, module `duration_ms` round-trip in `run_results.json`, LLM call metrics wiring, and a Streamlit Performance page.
+- Host-side Ollama URL rewrite: `host.docker.internal` → `127.0.0.1` outside Docker so CLI/host runs can reach local Ollama.
+
+### Fixed
+
+- Group emotion aggregation crash on lexical-v2 nested `speaker_stats` (`float + dict`); prefer flat `emotion_scores` maps.
+- Register `TRANSCRIPTX_TRANSCRIPTION_PROVIDER` on the infra env allowlist to match `.env.example`.
+- Refresh dashboard overview pydantic golden fixtures for new chart registry IDs.
+
 ## [0.5.2] - 2026-07-19
 
 ### Fixed

@@ -101,6 +101,7 @@ def build_page_renderers(
         "Search": _lazy_renderer("search", "render_search"),
         "Insights": _lazy_renderer("insights", "render_insights"),
         "Charts": _lazy_renderer("charts", "render_charts"),
+        "Performance": _lazy_renderer("performance", "render_performance"),
         "Artifacts": _render_artifacts,
         "Data": _redirect_legacy_data,
         "Explorer": _redirect_legacy_explorer,

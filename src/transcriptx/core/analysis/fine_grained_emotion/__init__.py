@@ -797,9 +797,9 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 for speaker, sp_counts in iter_named_speaker_label_counts(
                     results.get("speaker_stats") or {}
                 ):
-                    sp_top = sorted(
-                        sp_counts.items(), key=lambda kv: (-kv[1], kv[0])
-                    )[:15]
+                    sp_top = sorted(sp_counts.items(), key=lambda kv: (-kv[1], kv[0]))[
+                        :15
+                    ]
                     sp_cats = [k for k, _ in sp_top]
                     save_chart_isolated(
                         _save,
@@ -810,9 +810,7 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                             scope="speaker",
                             speaker=speaker,
                             chart_intent="bar_categorical",
-                            title=(
-                                f"Fine-grained native label prevalence: {speaker}"
-                            ),
+                            title=(f"Fine-grained native label prevalence: {speaker}"),
                             x_label="Label",
                             y_label="Count",
                             categories=sp_cats,
@@ -841,9 +839,7 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                             "Fine-grained native label prevalence "
                             f"(excluding neutral): {speaker}"
                         ),
-                        share_title=(
-                            f"Fine-grained share of non-neutral: {speaker}"
-                        ),
+                        share_title=(f"Fine-grained share of non-neutral: {speaker}"),
                         scope="speaker",
                         speaker=speaker,
                     )

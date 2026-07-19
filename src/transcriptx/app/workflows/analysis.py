@@ -344,7 +344,12 @@ def run_analysis(
             status="failed",
         )
 
-    duration = time.perf_counter() - start
+    # Prefer orchestrator wall-clock (same timer as run_performance.json).
+    pipeline_duration = results.get("duration")
+    if isinstance(pipeline_duration, (int, float)):
+        duration = float(pipeline_duration)
+    else:
+        duration = time.perf_counter() - start
     progress.on_stage_complete("running_pipeline")
 
     # -----------------------------------------------------------------------

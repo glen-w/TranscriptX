@@ -11,6 +11,7 @@ from transcriptx.core.pipeline.dag_pipeline_progress import (
     module_started_event,
     run_started_event,
 )
+from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
 from transcriptx.core.utils.speaker_extraction import named_speaker_count_for_path
 
 if TYPE_CHECKING:
@@ -44,6 +45,14 @@ def run_sequential_execution_phase(
 
         if module_name not in pipeline.nodes:
             pipeline.logger.warning(f"Unknown module: {module_name}")
+            pipeline._reduce_module_outcome(
+                module_name=module_name,
+                outcome=ModuleExecOutcome(
+                    status="blocked",
+                    skip_reason="unknown_module",
+                ),
+                results=results,
+            )
             continue
 
         node = pipeline.nodes[module_name]
@@ -85,12 +94,13 @@ def run_sequential_execution_phase(
             pipeline.logger.warning(
                 f"Module '{module_name}' missing dependencies: {missing_deps}"
             )
-            results.setdefault("skipped_modules", []).append(
-                {
-                    "module": module_name,
-                    "reason": error_msg,
-                    "execution_status": "blocked",
-                }
+            pipeline._reduce_module_outcome(
+                module_name=module_name,
+                outcome=ModuleExecOutcome(
+                    status="blocked",
+                    skip_reason=error_msg,
+                ),
+                results=results,
             )
             continue
 

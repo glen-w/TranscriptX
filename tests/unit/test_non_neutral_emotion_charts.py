@@ -48,7 +48,9 @@ def test_build_non_neutral_empty_all_neutral_and_zero_only() -> None:
     assert build_non_neutral_bar_series({"neutral": 12}, order="alpha") is None
     assert build_non_neutral_bar_series({"NEUTRAL": 3}, order="top_n") is None
     assert (
-        build_non_neutral_bar_series({"joy": 0, "anger": 0, "neutral": 5}, order="alpha")
+        build_non_neutral_bar_series(
+            {"joy": 0, "anger": 0, "neutral": 5}, order="alpha"
+        )
         is None
     )
 
@@ -114,7 +116,6 @@ def test_build_non_neutral_top_n_full_denominator_and_tie_break() -> None:
     assert sum(series.shares) < 1.0 - 1e-9
     assert series.shares[-1] == pytest.approx(5.0 / non_neutral_total)
     assert series.counts == tuple(counts[c] for c in series.categories)
-
 
 
 @pytest.mark.unit

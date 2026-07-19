@@ -131,6 +131,8 @@ def build_ollama_analysis_client(
     runtime: LLMRuntime,
 ) -> OllamaClient:
     """Instantiate Ollama for a transcript-direct module using resolved limits."""
+    from transcriptx.core.llm.metrics import RecorderBackedLlmMetricsSink
+
     return build_ollama_client(
         base_url=llm_cfg.base_url,
         model=runtime.model,
@@ -138,6 +140,8 @@ def build_ollama_analysis_client(
         request_timeout=float(runtime.request_timeout),
         availability_timeout=float(llm_cfg.availability_timeout),
         max_output_tokens=runtime.max_output_tokens,
+        metrics_sink=RecorderBackedLlmMetricsSink(),
+        effort=str(runtime.effort),
     )
 
 
