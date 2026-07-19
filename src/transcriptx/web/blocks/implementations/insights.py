@@ -15,6 +15,19 @@ from transcriptx.core.pipeline.manifest_loader import load_run_results
 from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
 from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.group_content import (
+    group_rollup_empty_hint,
+    is_group_run,
+    list_group_members,
+    load_group_blob,
+    load_group_content_rows,
+    load_group_session_rows,
+    load_group_speaker_rows,
+    load_member_module_json,
+    load_member_module_text,
+    member_empty_hint,
+    select_group_member,
+)
 from transcriptx.web.blocks.llm_presentation import (
     provenance_badges,
     render_badge_row,
@@ -88,15 +101,31 @@ def _render_open_in_transcript_button(
 
 
 def _render_view_raw_file_link(
-    ctx: BlockContext, module: str, suffix: str, *, link_key: str
+    ctx: BlockContext,
+    module: str,
+    suffix: str,
+    *,
+    link_key: str,
+    storage_root: str | None = None,
+    prefer_group_root: bool = False,
 ) -> None:
     loader = _loader(ctx)
     if loader is None:
         return
-    artifact = loader.find_artifact(module, kind="data_json", suffix=suffix)
+    artifact = loader.find_artifact(
+        module,
+        kind="data_json",
+        suffix=suffix,
+        storage_root=storage_root,
+        prefer_group_root=prefer_group_root,
+    )
     if artifact is None:
         artifact = loader.find_artifact(
-            module, kind="data_txt", suffix=suffix.replace(".json", ".md")
+            module,
+            kind="data_txt",
+            suffix=suffix.replace(".json", ".md"),
+            storage_root=storage_root,
+            prefer_group_root=prefer_group_root,
         )
     if artifact is None:
         return
@@ -128,24 +157,7 @@ def _render_quiet_module_empty(
     render_module_required_hint(empty_hint, key=key, ctx=ctx)
 
 
-def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> None:
-    st.subheader("Content vs Style")
-    loader = _loader(ctx)
-    if loader is None:
-        render_module_required_hint(
-            "Run the `insights` module to populate this view.",
-            key="insights_no_loader",
-            ctx=ctx,
-        )
-        return
-    insights = loader.load_json("insights", "_insights.json")
-    if not insights:
-        render_module_required_hint(
-            "Run the `insights` module to populate this view.",
-            key="insights_empty",
-            ctx=ctx,
-        )
-        return
+def _render_insights_payload(insights: Dict[str, Any]) -> None:
     key_themes = insights.get("key_themes") or []
     recurring_ideas = insights.get("recurring_ideas") or []
     style_markers = insights.get("style_markers") or {}
@@ -166,6 +178,99 @@ def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> N
                 st.write(f"- {phrase} (recurrence {recurrence:.3f})")
     st.caption("How people spoke (style markers)")
     st.json(style_markers)
+
+
+def _render_insight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
+    themes = [r for r in rows if r.get("kind") == "key_theme"]
+    ideas = [r for r in rows if r.get("kind") == "recurring_idea"]
+    moments = [r for r in rows if r.get("kind") == "notable_moment"]
+    st.caption("Group rollup — key themes")
+    if not themes:
+        st.write("No key themes across sessions.")
+    for row in themes[:12]:
+        text = str(row.get("text") or "").strip()
+        score = row.get("score")
+        suffix = f" ({float(score):.3f})" if isinstance(score, (int, float)) else ""
+        session = row.get("order_index")
+        prefix = f"[s{int(session) + 1}] " if session is not None else ""
+        if text:
+            st.write(f"- {prefix}{text}{suffix}")
+    st.caption("Group rollup — recurring ideas")
+    if ideas:
+        for row in ideas[:12]:
+            text = str(row.get("text") or "").strip()
+            if text:
+                st.write(f"- {text}")
+    if moments:
+        st.caption("Group rollup — notable moments")
+        for row in moments[:8]:
+            text = str(row.get("text") or "").strip()
+            if text:
+                st.write(f"- {text[:200]}")
+
+
+def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> None:
+    st.subheader("Content vs Style")
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None and run_root is None:
+        render_module_required_hint(
+            "Run the `insights` module to populate this view.",
+            key="insights_no_loader",
+            ctx=ctx,
+        )
+        return
+
+    if run_root is not None and is_group_run(run_root):
+        from transcriptx.web.blocks.group_content import load_group_row_bundle
+
+        bundle = load_group_row_bundle(run_root, "insights", "insight_rows")
+        rows = bundle["content_rows"]
+        session_rows = bundle["session_rows"]
+        if session_rows:
+            st.caption("Group rollup — per-session insight counts")
+            st.dataframe(session_rows, width="stretch", hide_index=True)
+        if rows:
+            _render_insight_rows_rollup(rows)
+        elif not session_rows:
+            st.info(group_rollup_empty_hint("insights", content_name="insight_rows"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(members, key="insights_session_select")
+        if member is None:
+            st.caption(member_empty_hint("insights"))
+            return
+        insights = load_member_module_json(loader, member, "insights", "_insights.json")
+        if not insights:
+            st.info(member_empty_hint("insights"))
+            return
+        _render_insights_payload(insights)
+        _render_view_raw_file_link(
+            ctx,
+            "insights",
+            "_insights.json",
+            link_key="insights_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
+    if loader is None:
+        render_module_required_hint(
+            "Run the `insights` module to populate this view.",
+            key="insights_no_loader",
+            ctx=ctx,
+        )
+        return
+    insights = loader.load_json("insights", "_insights.json")
+    if not insights:
+        render_module_required_hint(
+            "Run the `insights` module to populate this view.",
+            key="insights_empty",
+            ctx=ctx,
+        )
+        return
+    _render_insights_payload(insights)
 
 
 def _highlights_theme_visible(theme: Dict[str, Any]) -> bool:
@@ -372,9 +477,76 @@ def _highlights_browser_fragment(
             st.json(item["breakdown"])
 
 
+def _render_highlight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
+    st.caption("Group rollup — highlights across sessions")
+    shown = 0
+    for row in rows[:12]:
+        text = str(row.get("text") or "").strip()
+        if not text:
+            continue
+        speaker = str(row.get("speaker") or "").strip()
+        score = row.get("score")
+        session = row.get("order_index")
+        parts = []
+        if session is not None:
+            parts.append(f"s{int(session) + 1}")
+        if speaker:
+            parts.append(speaker)
+        if isinstance(score, (int, float)):
+            parts.append(f"{float(score):.3f}")
+        meta = " · ".join(parts)
+        st.markdown(f"**{meta}**" if meta else "**Highlight**")
+        st.write(text[:240])
+        shown += 1
+    if shown == 0:
+        st.write("No highlight rows.")
+
+
 def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Highlights")
     loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None and run_root is None:
+        render_module_required_hint(
+            "Run the `highlights` module to populate this view.",
+            key="highlights_no_loader",
+            ctx=ctx,
+        )
+        return
+
+    if run_root is not None and is_group_run(run_root):
+        rows = load_group_content_rows(run_root, "highlights", "highlight_rows")
+        if rows:
+            _render_highlight_rows_rollup(rows)
+        else:
+            st.info(group_rollup_empty_hint("highlights", content_name="highlight_rows"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(members, key="highlights_session_select")
+        if member is None:
+            st.caption(member_empty_hint("highlights"))
+            return
+        highlights = load_member_module_json(
+            loader, member, "highlights", "_highlights.json"
+        )
+        if not highlights:
+            st.info(member_empty_hint("highlights"))
+            return
+        _highlights_browser_fragment(
+            highlights,
+            session_slug=Path(member.transcript_path).stem or ctx.subject_id,
+            run_id=member.run_id or ctx.run_id,
+        )
+        _render_view_raw_file_link(
+            ctx,
+            "highlights",
+            "_highlights.json",
+            link_key="highlights_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
     if loader is None:
         render_module_required_hint(
             "Run the `highlights` module to populate this view.",
@@ -397,9 +569,99 @@ def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
     )
 
 
+def _render_executive_summary_body(
+    summary: Dict[str, Any] | None, md: str | None
+) -> bool:
+    if md:
+        st.markdown(strip_commitments_section(md))
+        return True
+    if summary:
+        display = (
+            {k: v for k, v in summary.items() if k != "commitments"}
+            if isinstance(summary, dict)
+            else summary
+        )
+        st.json(display)
+        return True
+    return False
+
+
+def _render_commitments_from_summary(summary: Dict[str, Any]) -> bool:
+    commitments = (summary.get("commitments") or {}).get("items", [])
+    if not commitments:
+        return False
+    st.subheader("Commitments / Next steps")
+    rows = [
+        {
+            "owner": item.get("owner_display", ""),
+            "action": item.get("action", ""),
+            "start": item.get("timestamp", {}).get("start", 0.0),
+            "end": item.get("timestamp", {}).get("end", 0.0),
+        }
+        for item in commitments
+        if isinstance(item, dict)
+    ]
+    if not rows:
+        return False
+    st.dataframe(rows, width="stretch")
+    return True
+
+
 def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Executive Summary")
     loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None and run_root is None:
+        render_module_required_hint(
+            "Run the `summary` module to populate this view.",
+            key="summary_no_loader",
+            ctx=ctx,
+        )
+        return
+
+    if run_root is not None and is_group_run(run_root):
+        blob = load_group_blob(run_root, "summary", "summary")
+        summaries = (blob or {}).get("summaries") if isinstance(blob, dict) else None
+        if isinstance(summaries, list) and summaries:
+            st.caption("Group rollup — collected session summaries")
+            for entry in summaries:
+                if not isinstance(entry, dict):
+                    continue
+                order = entry.get("order_index")
+                label = (
+                    f"Session {int(order) + 1}" if order is not None else "Session"
+                )
+                with st.expander(label, expanded=len(summaries) == 1):
+                    text = entry.get("summary") or entry.get("executive_summary")
+                    if text:
+                        st.markdown(str(text))
+                    else:
+                        display = {
+                            k: v for k, v in entry.items() if k != "commitments"
+                        }
+                        st.json(display)
+        else:
+            st.info(group_rollup_empty_hint("summary", content_name="summary.json"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(members, key="exec_summary_session_select")
+        if member is None:
+            return
+        summary = load_member_module_json(loader, member, "summary", "_summary.json")
+        md = load_member_module_text(loader, member, "summary", "_summary.md")
+        if not _render_executive_summary_body(summary, md):
+            st.info(member_empty_hint("summary"))
+            return
+        _render_view_raw_file_link(
+            ctx,
+            "summary",
+            "_summary.json",
+            link_key="exec_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
     if loader is None:
         render_module_required_hint(
             "Run the `summary` module to populate this view.",
@@ -409,16 +671,7 @@ def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> N
         return
     summary = loader.load_json("summary", "_summary.json")
     md = loader.load_text("summary", "_summary.md")
-    if md:
-        st.markdown(strip_commitments_section(md))
-    elif summary:
-        display = (
-            {k: v for k, v in summary.items() if k != "commitments"}
-            if isinstance(summary, dict)
-            else summary
-        )
-        st.json(display)
-    else:
+    if not _render_executive_summary_body(summary, md):
         render_module_required_hint(
             "Run the `summary` module to populate this view.",
             key="summary_empty",
@@ -432,25 +685,54 @@ def render_executive_summary(ctx: BlockContext, _placement: BlockPlacement) -> N
 
 def render_commitments_table(ctx: BlockContext, _placement: BlockPlacement) -> None:
     loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None and run_root is None:
+        return
+
+    if run_root is not None and is_group_run(run_root):
+        blob = load_group_blob(run_root, "summary", "summary")
+        summaries = (blob or {}).get("summaries") if isinstance(blob, dict) else None
+        collected: list[Dict[str, Any]] = []
+        if isinstance(summaries, list):
+            for entry in summaries:
+                if not isinstance(entry, dict):
+                    continue
+                items = (entry.get("commitments") or {}).get("items") or []
+                order = entry.get("order_index")
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    collected.append(
+                        {
+                            "session": (
+                                f"s{int(order) + 1}" if order is not None else ""
+                            ),
+                            "owner": item.get("owner_display", ""),
+                            "action": item.get("action", ""),
+                            "start": item.get("timestamp", {}).get("start", 0.0),
+                            "end": item.get("timestamp", {}).get("end", 0.0),
+                        }
+                    )
+        if collected:
+            st.subheader("Commitments / Next steps")
+            st.caption("Group rollup")
+            st.dataframe(collected, width="stretch")
+        members = list_group_members(run_root)
+        member = select_group_member(members, key="commitments_session_select")
+        if member is None:
+            return
+        summary = load_member_module_json(loader, member, "summary", "_summary.json")
+        if summary:
+            st.caption(f"Per session — {member.label}")
+            _render_commitments_from_summary(summary)
+        return
+
     if loader is None:
         return
     summary = loader.load_json("summary", "_summary.json")
     if not summary:
         return
-    commitments = summary.get("commitments", {}).get("items", [])
-    if not commitments:
-        return
-    st.subheader("Commitments / Next steps")
-    rows = [
-        {
-            "owner": item.get("owner_display", ""),
-            "action": item.get("action", ""),
-            "start": item.get("timestamp", {}).get("start", 0.0),
-            "end": item.get("timestamp", {}).get("end", 0.0),
-        }
-        for item in commitments
-    ]
-    st.dataframe(rows, width="stretch")
+    _render_commitments_from_summary(summary)
 
 
 def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> None:
@@ -472,9 +754,76 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
     st.subheader(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
-    if loader is None or run_root is None:
+    if run_root is None:
         render_module_required_hint(empty_hint, key=f"llm_{module}_no_loader", ctx=ctx)
         return
+
+    if is_group_run(run_root) and module in {"llm_summary", "narrative_summary"}:
+        from transcriptx.web.summary_precedence import resolve_primary_summary
+
+        result = resolve_primary_summary(
+            loader, run_root=run_root, run_results=ctx.run_results
+        )
+        if result.primary and result.primary.available:
+            st.caption("Group rollup — cross-session synthesis")
+            if result.primary.markdown:
+                st.markdown(result.primary.markdown)
+            elif result.primary.payload and result.primary.payload.get(
+                result.primary.text_field
+            ):
+                st.markdown(str(result.primary.payload[result.primary.text_field]))
+            elif result.primary.payload:
+                st.json(result.primary.payload)
+        else:
+            blob = load_group_blob(run_root, module, module)
+            summaries = (
+                (blob or {}).get("summaries") if isinstance(blob, dict) else None
+            )
+            if isinstance(summaries, list) and summaries:
+                st.caption("Group rollup — collected member summaries")
+                for entry in summaries:
+                    if not isinstance(entry, dict):
+                        continue
+                    order = entry.get("order_index")
+                    label = (
+                        f"Session {int(order) + 1}"
+                        if order is not None
+                        else "Session"
+                    )
+                    with st.expander(label, expanded=False):
+                        text = entry.get(text_field) or entry.get("summary")
+                        if text:
+                            st.markdown(str(text))
+                        else:
+                            st.json(entry)
+            else:
+                st.info(result.unavailable_message)
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(
+            members, key=f"llm_{module}_session_select"
+        )
+        if member is None:
+            return
+        payload = load_member_module_json(
+            loader, member, module, f"{artifact_stem}.json"
+        )
+        md = load_member_module_text(loader, member, module, f"{artifact_stem}.md")
+        if md:
+            st.markdown(md)
+        elif payload and payload.get(text_field):
+            st.markdown(str(payload[text_field]))
+        elif payload:
+            st.json(payload)
+        else:
+            st.info(member_empty_hint(module))
+        return
+
+    if loader is None:
+        render_module_required_hint(empty_hint, key=f"llm_{module}_no_loader", ctx=ctx)
+        return
+
     failure_hint = _module_failure_hint(run_root, module)
     payload = loader.load_json(module, f"{artifact_stem}.json", instance_id=inst)
     md = loader.load_text(module, f"{artifact_stem}.md", instance_id=inst)
@@ -534,7 +883,7 @@ def render_llm_speaker_summary_block(
     st.subheader(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
-    if loader is None or run_root is None:
+    if run_root is None:
         render_module_required_hint(
             empty_hint, key="llm_speaker_summary_no_loader", ctx=ctx
         )
@@ -543,7 +892,6 @@ def render_llm_speaker_summary_block(
     # Group runs: committed cross-session speaker index via central resolver.
     from transcriptx.core.analysis.group_llm_synthesis.resolve import (
         ResolverCache,
-        is_group_run,
         load_group_speaker_index,
         load_group_speaker_summary,
         load_text_under_generation,
@@ -552,48 +900,87 @@ def render_llm_speaker_summary_block(
     if is_group_run(run_root):
         cache = ResolverCache()
         index_payload = load_group_speaker_index(run_root, cache=cache)
-        if not index_payload:
-            _render_quiet_module_empty(
-                label="Cross-session per-speaker summaries",
-                run_root=run_root,
-                module=module,
-                empty_hint=(
-                    "Run group analysis with `llm_speaker_summary` (LLM enabled) "
-                    "to populate this view."
-                ),
-                ctx=ctx,
-                key="group_llm_speaker_summary_index",
+        if index_payload:
+            speakers = index_payload.get("speakers") or []
+            st.caption("Cross-session Per-Speaker Summaries")
+            for entry in speakers:
+                if not isinstance(entry, dict):
+                    continue
+                speaker = str(
+                    entry.get("display_name")
+                    or entry.get("canonical_speaker_id")
+                    or ""
+                )
+                status = str(entry.get("status") or "")
+                if not speaker:
+                    continue
+                with st.expander(speaker, expanded=len(speakers) == 1):
+                    if status != "success":
+                        code = entry.get("error_code")
+                        message = (
+                            entry.get("error_message_safe") or "Summary unavailable"
+                        )
+                        detail = f"[{code}] {message}" if code else message
+                        st.warning(detail)
+                        continue
+                    rel_json = str(entry.get("rel_json") or "")
+                    rel_md = str(entry.get("rel_md") or "")
+                    md = (
+                        load_text_under_generation(run_root, rel_md, cache=cache)
+                        if rel_md
+                        else None
+                    )
+                    payload = (
+                        load_group_speaker_summary(run_root, rel_json, cache=cache)
+                        if rel_json
+                        else None
+                    )
+                    if md:
+                        st.markdown(md)
+                    elif payload and payload.get("summary"):
+                        st.markdown(str(payload["summary"]))
+                    elif payload:
+                        st.json(payload)
+                    else:
+                        st.caption("Artifact missing for this speaker.")
+        else:
+            st.info(
+                "Cross-session per-speaker summaries unavailable. "
+                "Browse a member session below if member artifacts exist."
             )
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(
+            members, key="llm_speaker_summary_session_select"
+        )
+        if member is None:
+            return
+        index_payload = load_member_module_json(
+            loader, member, module, "_llm_speaker_summary_index.json"
+        )
+        if not index_payload:
+            st.info(member_empty_hint(module))
             return
         speakers = index_payload.get("speakers") or []
-        st.caption("Cross-session Per-Speaker Summaries")
         for entry in speakers:
-            if not isinstance(entry, dict):
-                continue
-            speaker = str(
-                entry.get("display_name") or entry.get("canonical_speaker_id") or ""
-            )
-            status = str(entry.get("status") or "")
+            speaker = str(entry.get("speaker", "") or "")
+            status = str(entry.get("status", "") or "")
             if not speaker:
                 continue
+            safe = _safe_speaker_artifact_token(speaker)
+            suffix_json = f"_{safe}_llm_speaker_summary.json"
+            suffix_md = f"_{safe}_llm_speaker_summary.md"
             with st.expander(speaker, expanded=len(speakers) == 1):
                 if status != "success":
                     code = entry.get("error_code")
-                    message = entry.get("error_message_safe") or "Summary unavailable"
+                    message = entry.get("error_message") or "Summary generation failed"
                     detail = f"[{code}] {message}" if code else message
                     st.warning(detail)
                     continue
-                rel_json = str(entry.get("rel_json") or "")
-                rel_md = str(entry.get("rel_md") or "")
-                md = (
-                    load_text_under_generation(run_root, rel_md, cache=cache)
-                    if rel_md
-                    else None
-                )
-                payload = (
-                    load_group_speaker_summary(run_root, rel_json, cache=cache)
-                    if rel_json
-                    else None
+                md = load_member_module_text(loader, member, module, suffix_md)
+                payload = load_member_module_json(
+                    loader, member, module, suffix_json
                 )
                 if md:
                     st.markdown(md)
@@ -603,6 +990,12 @@ def render_llm_speaker_summary_block(
                     st.json(payload)
                 else:
                     st.caption("Artifact missing for this speaker.")
+        return
+
+    if loader is None:
+        render_module_required_hint(
+            empty_hint, key="llm_speaker_summary_no_loader", ctx=ctx
+        )
         return
 
     index_payload = loader.load_json(module, "_llm_speaker_summary_index.json")
@@ -688,6 +1081,63 @@ def render_llm_speaker_summary_block(
     )
 
 
+def _render_action_items_payload(
+    payload: Dict[str, Any] | None, md: str | None
+) -> bool:
+    if md:
+        render_markdown_without_heading_or_provenance(md)
+        return True
+    if payload and isinstance(payload.get("items"), list):
+        items = payload["items"]
+        if not items:
+            st.caption("No action items found.")
+            return True
+        rows = [
+            {
+                "text": item.get("text", ""),
+                "status": item.get("status", ""),
+                "owner": item.get("owner") or "—",
+                "deadline": item.get("deadline") or "—",
+                "quote": item.get("quote") or "",
+                "confidence": item.get("confidence"),
+            }
+            for item in items
+            if isinstance(item, dict)
+        ]
+        st.dataframe(rows, width="stretch", hide_index=True)
+        return True
+    if payload:
+        st.json(payload)
+        return True
+    return False
+
+
+def _render_action_item_rows_rollup(rows: list[Dict[str, Any]]) -> None:
+    st.caption("Group rollup — action items across sessions")
+    display = [
+        {
+            "session": (
+                f"s{int(row['order_index']) + 1}"
+                if row.get("order_index") is not None
+                else ""
+            ),
+            "text": row.get("text") or "",
+            "owner": row.get("owner") or "—",
+            "deadline": row.get("deadline") or "—",
+            "status": row.get("status") or "",
+            "confidence": row.get("confidence"),
+        }
+        for row in rows
+        if str(row.get("text") or "").strip()
+    ]
+    if not display:
+        st.write("No action items.")
+        return
+    st.dataframe(display[:40], width="stretch", hide_index=True)
+    if len(display) > 40:
+        st.caption(f"+{len(display) - 40} more in Data")
+
+
 def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) -> None:
     module = "llm_action_items"
     title = placement.title_override or str(
@@ -704,7 +1154,44 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
     st.subheader(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
-    if loader is None or run_root is None:
+    if run_root is None:
+        render_module_required_hint(
+            empty_hint, key="llm_action_items_no_loader", ctx=ctx
+        )
+        return
+
+    if is_group_run(run_root):
+        rows = load_group_content_rows(run_root, module, "action_item_rows")
+        if rows:
+            _render_action_item_rows_rollup(rows)
+        else:
+            st.info(group_rollup_empty_hint(module, content_name="action_item_rows"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(members, key="llm_action_items_session_select")
+        if member is None:
+            return
+        payload = load_member_module_json(
+            loader, member, module, f"{artifact_stem}.json"
+        )
+        md = load_member_module_text(loader, member, module, f"{artifact_stem}.md")
+        render_badge_row(
+            provenance_badges((payload or {}).get("provenance") if payload else None)
+        )
+        if not _render_action_items_payload(payload, md):
+            st.info(member_empty_hint(module))
+            return
+        _render_view_raw_file_link(
+            ctx,
+            module,
+            f"{artifact_stem}.json",
+            link_key="llm_action_items_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
+    if loader is None:
         render_module_required_hint(
             empty_hint, key="llm_action_items_no_loader", ctx=ctx
         )
@@ -715,29 +1202,7 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
     render_badge_row(
         provenance_badges((payload or {}).get("provenance") if payload else None)
     )
-    if md:
-        render_markdown_without_heading_or_provenance(md)
-    elif payload and isinstance(payload.get("items"), list):
-        items = payload["items"]
-        if not items:
-            st.caption("No action items found.")
-        else:
-            rows = [
-                {
-                    "text": item.get("text", ""),
-                    "status": item.get("status", ""),
-                    "owner": item.get("owner") or "—",
-                    "deadline": item.get("deadline") or "—",
-                    "quote": item.get("quote") or "",
-                    "confidence": item.get("confidence"),
-                }
-                for item in items
-                if isinstance(item, dict)
-            ]
-            st.dataframe(rows, width="stretch", hide_index=True)
-    elif payload:
-        st.json(payload)
-    else:
+    if not _render_action_items_payload(payload, md):
         _render_quiet_module_empty(
             label="Action items",
             run_root=run_root,
@@ -757,40 +1222,7 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
             st.json(diagnostics)
 
 
-def render_lexical_diversity_block(
-    ctx: BlockContext, placement: BlockPlacement
-) -> None:
-    module = "lexical_diversity"
-    title = placement.title_override or str(
-        placement.params.get("title", "Lexical Diversity")
-    )
-    empty_hint = str(
-        placement.params.get(
-            "empty_hint",
-            "Run the `lexical_diversity` module to populate this view.",
-        )
-    )
-
-    st.subheader(title)
-    loader = _loader(ctx)
-    run_root = ctx.run_root
-    if loader is None or run_root is None:
-        render_module_required_hint(
-            empty_hint, key="lexical_diversity_no_loader", ctx=ctx
-        )
-        return
-
-    failure_hint = _module_failure_hint(run_root, module)
-    payload = loader.load_json(module, "_lexical_diversity.json")
-    if not payload:
-        if failure_hint:
-            st.warning(failure_hint)
-        else:
-            render_module_required_hint(
-                empty_hint, key="lexical_diversity_empty", ctx=ctx
-            )
-        return
-
+def _render_lexical_diversity_payload(payload: Dict[str, Any]) -> None:
     global_stats = payload.get("global_stats") or {}
     if isinstance(global_stats, dict) and global_stats:
         cols = st.columns(3)
@@ -845,6 +1277,81 @@ def render_lexical_diversity_block(
             with st.expander("Time buckets"):
                 st.dataframe(bucket_rows, width="stretch", hide_index=True)
 
+
+def render_lexical_diversity_block(
+    ctx: BlockContext, placement: BlockPlacement
+) -> None:
+    module = "lexical_diversity"
+    title = placement.title_override or str(
+        placement.params.get("title", "Lexical Diversity")
+    )
+    empty_hint = str(
+        placement.params.get(
+            "empty_hint",
+            "Run the `lexical_diversity` module to populate this view.",
+        )
+    )
+
+    st.subheader(title)
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    if run_root is None:
+        render_module_required_hint(
+            empty_hint, key="lexical_diversity_no_loader", ctx=ctx
+        )
+        return
+
+    if is_group_run(run_root):
+        session_rows = load_group_session_rows(run_root, module)
+        speaker_rows = load_group_speaker_rows(run_root, module)
+        if session_rows:
+            st.caption("Group rollup — per-session metrics")
+            st.dataframe(session_rows, width="stretch", hide_index=True)
+        if speaker_rows:
+            st.caption("Group rollup — per-speaker metrics")
+            st.dataframe(speaker_rows[:40], width="stretch", hide_index=True)
+        if not session_rows and not speaker_rows:
+            st.info(group_rollup_empty_hint(module, content_name="session_rows"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(members, key="lexical_diversity_session_select")
+        if member is None:
+            return
+        payload = load_member_module_json(
+            loader, member, module, "_lexical_diversity.json"
+        )
+        if not payload:
+            st.info(member_empty_hint(module))
+            return
+        _render_lexical_diversity_payload(payload)
+        _render_view_raw_file_link(
+            ctx,
+            module,
+            "_lexical_diversity.json",
+            link_key="lexical_diversity_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
+    if loader is None:
+        render_module_required_hint(
+            empty_hint, key="lexical_diversity_no_loader", ctx=ctx
+        )
+        return
+
+    failure_hint = _module_failure_hint(run_root, module)
+    payload = loader.load_json(module, "_lexical_diversity.json")
+    if not payload:
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            render_module_required_hint(
+                empty_hint, key="lexical_diversity_empty", ctx=ctx
+            )
+        return
+
+    _render_lexical_diversity_payload(payload)
     _render_view_raw_file_link(
         ctx, module, "_lexical_diversity.json", link_key="lexical_diversity_raw"
     )

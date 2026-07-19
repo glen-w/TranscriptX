@@ -214,6 +214,89 @@ def test_aggregate_insights_group_builds_content_rows() -> None:
 
 
 @pytest.mark.unit
+def test_aggregate_highlights_partial_member_payloads() -> None:
+    from transcriptx.core.analysis.aggregation.registry import _aggregate_highlights
+
+    results = [
+        _result("/x/a.json", "a", 0, {}),
+        _result(
+            "/x/b.json",
+            "b",
+            1,
+            {
+                "highlights": {
+                    "payload": {
+                        "sections": {
+                            "cold_open": {
+                                "items": [
+                                    {
+                                        "speaker": "Alice",
+                                        "start": 0.0,
+                                        "end": 1.0,
+                                        "quote": "Hello from B",
+                                        "score": {"total": 0.9},
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            output_dir="o2",
+        ),
+    ]
+    out = _aggregate_highlights(results, _cmap(), _ts())
+    assert out is not None
+    assert len(out["content_rows"]) == 1
+    assert out["content_rows"][0]["text"] == "Hello from B"
+    assert out["content_rows"][0]["order_index"] == 1
+
+    """Partial member success: only members with insights contribute rows."""
+    results = [
+        _result("/x/a.json", "a", 0, {}),  # skipped / missing insights
+        _result(
+            "/x/b.json",
+            "b",
+            1,
+            {
+                "insights": {
+                    "payload": {
+                        "key_themes": [{"phrase": "only-b", "score": {"total": 1.0}}],
+                        "recurring_ideas": [],
+                        "notable_moments": [],
+                    }
+                }
+            },
+            output_dir="o2",
+        ),
+    ]
+    out = aggregate_insights_group(results, _cmap(), _ts())
+    assert out is not None
+    assert len(out["session_rows"]) == 1
+    assert out["session_rows"][0]["order_index"] == 1
+    assert out["content_rows"][0]["text"] == "only-b"
+
+
+@pytest.mark.unit
+def test_aggregate_llm_summary_blob_skips_empty_members() -> None:
+    results = [
+        _result("/x/a.json", "a", 0, {"llm_summary": {"payload": {}}}),
+        _result(
+            "/x/b.json",
+            "b",
+            1,
+            {"llm_summary": {"payload": {"summary": "Only B"}}},
+            output_dir="o2",
+        ),
+    ]
+    out = aggregate_llm_summary_blob(results, _cmap(), _ts())
+    assert out is not None
+    summaries = out["blob_payload"]["summaries"]
+    assert len(summaries) == 1
+    assert summaries[0]["summary"] == "Only B"
+
+
+@pytest.mark.unit
 def test_aggregate_semantic_similarity_prefers_v2() -> None:
     results = [
         _result(

@@ -42,7 +42,7 @@ def _is_html_artifact(selected: Artifact, path: Path) -> bool:
 
 def render_artifact_file_preview(run_root: Path, selected: Artifact) -> None:
     """Preview a single data artifact on disk."""
-    path = ArtifactService._resolve_safe_path(run_root, selected.rel_path)
+    path = ArtifactService.resolve_artifact_source_path(run_root, selected)
     if path is None or not path.exists():
         render_empty_state(
             "error_degraded",

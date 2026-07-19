@@ -7,7 +7,7 @@ Authority: self
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md).  
 > **Non-goals:** serial audio groups, `module_ui_groups` / block taxonomy, `export/grouping.py` speaker segments.
 
-**Verdict:** Core pipeline (identity → finalize → aggregation → charts) is **mature and well-tested**. Release-hygiene items G1/G2/G3/F3 closed 2026-07-17 (README file-backed; manifests documented in STORAGE; `data/groups` untracked). Remaining open issues are soft-failure / doc-drift gaps (R1–R2, D1, A3–A4). No blocker that prevents local beta use of groups.
+**Verdict:** Core pipeline (identity → finalize → aggregation → charts) is **mature and well-tested**. Release-hygiene items G1/G2/G3/F3 closed 2026-07-17 (README file-backed; manifests documented in STORAGE; `data/groups` untracked). Soft-failure / doc-drift gaps (R1–R2, D1, A3–A4) remain. **2026-07-19:** Insights/Overview group UX gap closed — blocks are dual-aware (group rollup + per-session member browse); `ArtifactContentLoader` honors member `storage_root`. No blocker that prevents local beta use of groups.
 
 ---
 
@@ -18,15 +18,18 @@ Authority: self
 | Identity / manifests | Mature (file-first) | High |
 | Finalize + aggregation | Mature; soft-fail semantics | High |
 | Group charts / contracts | Mature; minor phase-4 doc drift | High |
-| Web subject surfaces | Mature at service layer; thin page tests | Medium–High |
+| Web subject surfaces | Mature at service layer; Insights dual-aware (2026-07-19) | High |
 | Run cleanup dual-root | Mature; defs protected | High |
-| Public labeling | **Inconsistent** (README vs reality) | High |
+| Public labeling | File-backed (G1–G3 closed) | High |
 
 **Test gates run 2026-07-17 (all green):**
 - Contract/outcome: 23 passed (`test_group_module_support_contract`, wiring, outcome truth, member runs, chart_outcome)
 - Finalize/smoke (with `-m ""`): 15 passed
 - Charts: 64 passed (1 deselected)
 - Web group services: 19 passed
+
+**Follow-up gates 2026-07-19:**
+- Web blocks (incl. group-aware Insights): 52 passed (`tests/web/blocks/`)
 
 ---
 
@@ -40,7 +43,9 @@ flowchart TD
   Finalize --> AggReg[build_registry topo-sort]
   Finalize --> ChartReg[run_group_aggregate_charts]
   Finalize --> Artifacts[GROUP_OUTPUTS_DIR/uuid/run_id]
-  Artifacts --> Web[Sidebar Overview Charts Artifacts]
+  Artifacts --> Web[Sidebar Overview Charts Artifacts Insights]
+  MemberRuns --> MemberArts[Member run dirs]
+  MemberArts --> Web
   Artifacts --> Cleanup[run_cleanup dual-root]
   Manifest -.->|protected groups_defs| Cleanup
 ```
@@ -50,6 +55,7 @@ flowchart TD
 - Finalize: `core/pipeline/group_analysis_runner.py`
 - Aggregation: `core/analysis/aggregation/registry.py`
 - Charts: `core/analysis/group_charts/registry.py`, `runner.py`
+- Insights/Overview dual load: `web/blocks/group_content.py`, `web/blocks/loader.py` (`storage_root`)
 - Docs taxonomy: `docs/groups/group_analysis_module_outputs.md` (authoritative four classes)
 
 ---
@@ -135,6 +141,11 @@ Severity: **Blocker / High / Medium / Low / By-design**.
 | **E3** | Group subject on Transcript page → member browser only | By-design | `_render_group_browser` |
 | **E4** | Service-layer tests strong; page-level Groups CRUD / Run Analysis gate / search-under-group | **Closed 2026-07-18** | `test_groups_page.py`, `test_run_analysis_page.py` group gate, `test_search_page.py` group-subject contract |
 | **E5** | `web/` omitted from coverage measurement | Medium | stocktake §7.2 |
+| **E6** | Insights/Overview blocks expected single-transcript stems (`_insights.json`, etc.) under group root → empty tabs despite successful member runs | **Closed 2026-07-19** | Dual rollup + session picker; `group_content.py`; loader `storage_root`; `test_group_aware_insights.py`, `test_group_content.py`, `test_loader.py` |
+| **E7** | `ArtifactContentLoader` ignored member `storage_root` (Artifacts page worked; Insights did not) | **Closed 2026-07-19** | `loader.py` → `resolve_artifact_source_path`; data preview same |
+| **E8** | Overview compact blocks spawned session pickers; availability said “Run the modules” when only group aggregates existed; dual `is_group_run` defs | **Closed 2026-07-19 (review)** | Compact = rollup-or-quiet; widened patterns + group availability copy; unified `is_group_run` via synthesis resolve; view-raw scoped to `storage_root` |
+
+**Clarification (E6 root cause):** Group pipeline **already** runs selected modules on each member (`pipeline.py` member loop). Empty Insights was a **surfacing** bug, not a missing member execution path.
 
 ### 4.6 Cleanup
 
@@ -155,9 +166,10 @@ Severity: **Blocker / High / Medium / Low / By-design**.
 | Finalize | `test_group_finalize_*_integration.py`, `test_group_analysis_smoke.py` | 15 passed (`-m ""`) |
 | Charts | `test_group_charts.py`, allowlists, `group_charts/*` | 64 passed |
 | Web services | `test_group_service.py`, member charts, subject, run_index, artifact edges, group browser | 19 passed |
+| Insights dual UX | `test_group_aware_insights.py`, `test_group_content.py`, `test_loader.py` (storage_root) | 9 passed (2026-07-19; part of 52 `tests/web/blocks/`) |
 | Cleanup × groups | discovery, bulk depth, characterisation goldens `"kind": "group"` | not re-run this pass (mature Phase B) |
 
-**Gaps:** live emission of `GROUP_FINALIZATION_FAILED`. Page-level Groups / Run Analysis gate / search-under-group closed 2026-07-18 (`test_groups_page.py`, run_analysis group gate, `test_search_page.py`).
+**Gaps:** live emission of `GROUP_FINALIZATION_FAILED`. Page-level Groups / Run Analysis gate / search-under-group closed 2026-07-18. Insights empty-on-group closed 2026-07-19.
 
 ---
 
@@ -197,6 +209,7 @@ Ordered for risk vs effort. None of these are required to keep shipping local be
 8. Reconcile feature-flag story: document that CRUD/sidebar work when aggregation disabled, or gate consistently (A4–A6).
 9. ~~Optional: page-level tests for Groups CRUD + Run Analysis Group gate (E4).~~ **Done 2026-07-18.**
 10. Optional: group-scoped search — product decision (E2).
+11. ~~Insights/Overview empty on group subjects (E6/E7).~~ **Done 2026-07-19** — dual rollup + per-session; loader `storage_root`; see [`web_blocks.md`](web_blocks.md).
 
 ### Explicit non-goals (do not start from this audit)
 
@@ -217,4 +230,4 @@ Ordered for risk vs effort. None of these are required to keep shipping local be
 | What tests pin contracts? | §5 |
 | What to fix next? | §7 |
 
-**Refresh policy:** Re-run the four pytest gates in §1 when changing aggregation registry, chart registry, finalize, or group cleanup roots. Update the inventory table when adding `agg_id`s.
+**Refresh policy:** Re-run the four pytest gates in §1 when changing aggregation registry, chart registry, finalize, or group cleanup roots. When changing Insights/Overview group loading, also run `pytest tests/web/blocks/`. Update the inventory table when adding `agg_id`s.

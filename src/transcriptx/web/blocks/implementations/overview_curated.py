@@ -9,6 +9,11 @@ import streamlit as st
 
 from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.group_content import (
+    is_group_run,
+    load_group_content_rows,
+    load_group_speaker_rows,
+)
 from transcriptx.web.blocks.llm_presentation import (
     provenance_badges,
     render_badge_row,
@@ -183,12 +188,29 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
 
     overview_payload = _load_run_overview_payload(ctx)
     duration_sec = _duration_seconds_from_overview(overview_payload)
+    speaker_count = _speaker_count_from_overview(overview_payload)
+
+    # Group runs: fall back to stats speaker_rows when report.json is absent.
+    if (
+        ctx.run_root is not None
+        and is_group_run(ctx.run_root)
+        and speaker_count is None
+    ):
+        speaker_rows = load_group_speaker_rows(Path(ctx.run_root), "stats")
+        if speaker_rows:
+            names = {
+                str(r.get("canonical_speaker_id") or r.get("speaker") or "").strip()
+                for r in speaker_rows
+            }
+            names.discard("")
+            if names:
+                speaker_count = len(names)
+
     duration_label = (
         format_duration_display_from_config(duration_sec)
         if duration_sec is not None
         else "—"
     )
-    speaker_count = _speaker_count_from_overview(overview_payload)
     speakers_label = str(speaker_count) if speaker_count is not None else "—"
 
     status = build_run_status_summary(
@@ -257,6 +279,35 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
     st.subheader("Speakers")
     overview = _load_run_overview_payload(ctx)
     speakers = (overview or {}).get("speakers") if isinstance(overview, dict) else None
+
+    # Group runs without report.json: synthesize cards from stats speaker_rows.
+    if (
+        (not isinstance(speakers, list) or not speakers)
+        and ctx.run_root is not None
+        and is_group_run(ctx.run_root)
+    ):
+        speaker_rows = load_group_speaker_rows(Path(ctx.run_root), "stats")
+        speakers = []
+        for row in speaker_rows:
+            name = str(
+                row.get("display_name")
+                or row.get("canonical_speaker_id")
+                or row.get("speaker")
+                or ""
+            ).strip()
+            if not name:
+                continue
+            speakers.append(
+                {
+                    "name": name,
+                    "pct_total_duration": row.get("pct_total_duration"),
+                    "words_per_min": row.get("words_per_min"),
+                    "segments": row.get("segment_count") or row.get("segments"),
+                    "pct_total_words": row.get("pct_total_words"),
+                    "duration_hhmmss": row.get("duration_hhmmss"),
+                }
+            )
+
     if not isinstance(speakers, list) or not speakers:
         st.info(quiet_unavailable_message("Per-speaker stats"))
         return
@@ -293,6 +344,30 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
 def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Action items")
     loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None and run_root is None:
+        st.info(quiet_unavailable_message("Action items"))
+        return
+
+    if run_root is not None and is_group_run(run_root):
+        rows = load_group_content_rows(run_root, "llm_action_items", "action_item_rows")
+        shown = 0
+        for row in rows[:5]:
+            text = str(row.get("text") or "").strip()
+            if not text:
+                continue
+            owner = row.get("owner")
+            suffix = f" — {owner}" if owner else ""
+            st.write(f"- {text}{suffix}")
+            shown += 1
+        if shown:
+            if len(rows) > 5:
+                st.caption(f"+{len(rows) - 5} more on Insights → Actions")
+            return
+        st.info(quiet_unavailable_message("Action items"))
+        st.caption("Browse per-session items on Insights → Actions when available.")
+        return
+
     if loader is None:
         st.info(quiet_unavailable_message("Action items"))
         return
@@ -323,6 +398,25 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
 def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:
     st.subheader("Highlights")
     loader = _loader(ctx)
+    run_root = ctx.run_root
+    if loader is None and run_root is None:
+        st.info(quiet_unavailable_message("Highlights"))
+        return
+
+    if run_root is not None and is_group_run(run_root):
+        rows = load_group_content_rows(run_root, "highlights", "highlight_rows")
+        shown = 0
+        for row in rows[:5]:
+            text = str(row.get("text") or "").strip()
+            if text:
+                st.write(f"- {text[:160]}")
+                shown += 1
+        if shown:
+            return
+        st.info(quiet_unavailable_message("Highlights"))
+        st.caption("Browse per-session highlights on Insights → Highlights when available.")
+        return
+
     if loader is None:
         st.info(quiet_unavailable_message("Highlights"))
         return

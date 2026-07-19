@@ -70,3 +70,23 @@ def test_alias_modules_map_to_expected_agg_ids() -> None:
     for module_id, agg_id in _COVERED_BY_SELECTOR_ALIAS.items():
         entry = registry[agg_id]
         assert entry.selector([module_id]), f"{module_id} should select {agg_id}"
+
+
+@pytest.mark.unit
+def test_insights_family_selectors_fire_for_group_selected_modules() -> None:
+    """Individual Insights/LLM modules must select their group aggregation entries."""
+    registry = {entry.agg_id: entry for entry in build_registry()}
+    expected = {
+        "highlights": "highlights",
+        "insights": "insights",
+        "summary": "summary",
+        "llm_summary": "llm_summary",
+        "llm_action_items": "llm_action_items",
+        "llm_speaker_summary": "llm_speaker_summary",
+        "narrative_summary": "narrative_summary",
+    }
+    for module_id, agg_id in expected.items():
+        entry = registry[agg_id]
+        assert entry.selector([module_id]), f"{module_id} should select agg {agg_id}"
+        # Full selected list still selects when other modules are present.
+        assert entry.selector(["stats", module_id, "sentiment"])

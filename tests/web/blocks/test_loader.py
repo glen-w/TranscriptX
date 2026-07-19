@@ -1,4 +1,4 @@
-"""Tests for ArtifactContentLoader."""
+"""Tests for ArtifactContentLoader storage_root resolution."""
 
 from __future__ import annotations
 
@@ -9,9 +9,15 @@ from transcriptx.web.blocks.loader import ArtifactContentLoader
 from transcriptx.web.models.artifact import Artifact
 
 
-def _artifact(module: str, kind: str, rel_path: str) -> Artifact:
+def _artifact(
+    module: str,
+    kind: str,
+    rel_path: str,
+    *,
+    storage_root: str | None = None,
+) -> Artifact:
     return Artifact(
-        id=rel_path,
+        id=f"{storage_root or 'root'}:{rel_path}",
         kind=kind,
         module=module,
         scope=None,
@@ -22,7 +28,8 @@ def _artifact(module: str, kind: str, rel_path: str) -> Artifact:
         bytes=10,
         mtime="2026-01-01T00:00:00",
         mime="application/json",
-        tags=[],
+        tags=["member_session"] if storage_root else [],
+        storage_root=storage_root,
     )
 
 
@@ -45,3 +52,32 @@ def test_load_text_markdown(tmp_path: Path) -> None:
     artifacts = (_artifact("summary", "data_txt", "summary/foo_summary.md"),)
     loader = ArtifactContentLoader(tmp_path, artifacts)
     assert loader.load_text("summary", "foo_summary.md") == "# Hi"
+
+
+def test_load_json_honors_member_storage_root(tmp_path: Path) -> None:
+    group_run = tmp_path / "group_run"
+    member_run = tmp_path / "member_run"
+    group_run.mkdir()
+    payload = {"key_themes": [{"phrase": "demo", "score": {"total": 0.9}}]}
+    dest = member_run / "insights" / "data" / "global"
+    dest.mkdir(parents=True)
+    (dest / "session_insights.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    artifacts = (
+        _artifact(
+            "insights",
+            "data_json",
+            "insights/data/global/session_insights.json",
+            storage_root=str(member_run.resolve()),
+        ),
+    )
+    loader = ArtifactContentLoader(group_run, artifacts)
+    # Without storage_root filter, still resolves via artifact.storage_root.
+    loaded = loader.load_json("insights", "_insights.json")
+    assert loaded == payload
+    scoped = loader.load_json(
+        "insights",
+        "_insights.json",
+        storage_root=str(member_run.resolve()),
+    )
+    assert scoped == payload

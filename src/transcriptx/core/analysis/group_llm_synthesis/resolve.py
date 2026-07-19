@@ -43,7 +43,10 @@ class ResolverCache:
 
 
 def is_group_run(run_root: Path) -> bool:
-    return (Path(run_root) / "group_run_metadata.json").is_file()
+    root = Path(run_root)
+    if (root / "group_run_metadata.json").is_file():
+        return True
+    return (root / "group_member_runs.json").is_file()
 
 
 def _containment_ok(base: Path, target: Path) -> bool:

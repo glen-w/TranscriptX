@@ -1565,3 +1565,40 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 ### Validation
 - Focused slice: **17 passed** (adversarial + summary precedence group).
 - **Production code:** none.
+
+## 61. Expansion (2026-07-19) – group per-member module management
+
+### Trigger
+`/tests` focused on group management of individual analysis modules (pipeline member loop → aggregation → Insights dual UI). Follows group-aware Insights UX land.
+
+### Review
+- **Collection:** default `6476` selected / `6655` with `-m ""` (`179` deselected by addopts).
+- **Default run:** `6473 passed`, `2 failed`, `1 skipped`, `179` deselected.
+- **Baseline failures (unrelated to group Insights; classified, not fixed in this pass):**
+  1. `test_pydantic_pilot_registry_matches_golden_fixtures` — `dashboard.overview_charts` choices golden drift (new emotion chart IDs).
+  2. `test_registry_completeness_from_env_example` — missing `TRANSCRIPTX_TRANSCRIPTION_PROVIDER` in env key registry.
+- **Quarantined:** `0` active `@pytest.mark.quarantined`.
+- **Cleanup:** disabled (per command).
+- **Markers / addopts:** unchanged.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Group pipeline member loop | No direct unit proof same `selected_modules` on every member | Mocked pipeline contract |
+| Partial member module success | Insights/highlights/LLM empty-member paths thin | Aggregator skip-member tests |
+| Insights-family agg selectors | Implicit only | Explicit selector contract |
+| Member disk artifact ranking | Prefer `data/global` | `group_content` disk fallback test |
+
+### Tests added or updated
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/pipeline/test_group_member_module_execution.py` (**new**) | +2 | Identical modules per member; per-member skips preserved in envelope |
+| `tests/core/analysis/test_group_module_aggregations.py` | +3 | Insights/highlights/LLM partial-member aggregation |
+| `tests/core/analysis/test_group_module_support_contract.py` | +1 | Insights-family selectors for group selected lists |
+| `tests/web/blocks/test_group_content.py` | updated | Prefer `data/global` on disk fallback |
+
+### Validation
+- Focused group-module slice: **30 passed**.
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

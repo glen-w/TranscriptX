@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-19
+
+### Fixed
+
+- Group Insights/Overview blocks are dual-aware: show group rollups (`*_rows.json` / blobs / synthesis) and per-session member artifacts via a session picker. `ArtifactContentLoader` honors member `storage_root`; Overview compact blocks stay rollup-or-quiet (no session pickers).
+
+### Added
+
+- Shared `web/blocks/group_content` helpers; tests for group per-member module execution, partial-member aggregation, and Insights dual UI.
+
 ## [0.5.1] - 2026-07-19
 
 ### Added

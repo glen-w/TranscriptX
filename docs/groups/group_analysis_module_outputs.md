@@ -29,6 +29,15 @@ All registered pipeline modules support group runs (`supports_group=true`) and h
 
 \* `semantic_similarity`, `semantic_similarity_advanced`, and `semantic_similarity_v2` share one aggregation entry.
 
+## Insights / Overview UI (group subjects)
+
+Pipeline already runs selected modules on each member. The web Insights and Overview blocks load **both**:
+
+1. Group rollups (`*_rows.json`, summary blobs, optional [group LLM synthesis](group_llm_synthesis_contract.md))
+2. Per-session member contracts via a session picker (`storage_root`-aware loader)
+
+See [`docs/dev/web_blocks.md`](../dev/web_blocks.md) and [`docs/dev/group_functionality_audit_2026-07-17.md`](../dev/group_functionality_audit_2026-07-17.md) (E6/E7).
+
 ## Related docs
 
 - [Group charts: default overview vs gallery](group_charts_default_overview.md) — session, temporal overlay, cross-session speaker, pooled single view

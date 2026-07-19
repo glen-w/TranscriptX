@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Mapping
 
 from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.group_content import is_group_run
 from transcriptx.web.blocks.specs import BlockPrereq, BlockSpec
 
 
@@ -37,6 +39,24 @@ def _effective_artifact_patterns(
         if isinstance(stem, str) and stem:
             return (f"{stem}.json", f"{stem}.md")
     return spec.artifact_patterns
+
+
+def _missing_artifact_reason(
+    *,
+    deps: str,
+    detail: str,
+    run_root: Path | None,
+) -> str:
+    if run_root is not None and is_group_run(run_root):
+        return (
+            f"No matching artifacts for {deps}{detail}. "
+            "Group rollups or member session outputs may still appear under "
+            "Artifacts, or re-run group analysis with those modules selected."
+        )
+    return (
+        f"No matching artifacts for {deps}{detail}. "
+        "Run the required analysis modules."
+    )
 
 
 def check_block_availability(
@@ -82,7 +102,9 @@ def check_block_availability(
         detail = f" ({patterns})" if patterns else ""
         return BlockAvailability(
             available=False,
-            reason=f"No matching artifacts for {deps}{detail}. Run the required analysis modules.",
+            reason=_missing_artifact_reason(
+                deps=deps, detail=detail, run_root=ctx.run_root
+            ),
             matched_artifacts=(),
         )
 
