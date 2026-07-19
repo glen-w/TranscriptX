@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-19
+
+### Added
+
+- Exclude-neutral count and non-neutral share bar charts for experimental `contextual_emotion` and `fine_grained_emotion` (global + per-speaker). Fine-grained share charts use the full non-neutral denominator before top-15 truncation, so displayed bars may sum to less than 1. Derived presentation artifacts only (no schema / semantics / fingerprint / aggregation-cache bump).
+
 ## [0.5.0] - 2026-07-19
 
 ### Added

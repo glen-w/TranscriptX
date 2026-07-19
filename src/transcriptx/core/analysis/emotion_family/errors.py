@@ -29,3 +29,7 @@ class EmotionFamilyUnsafeIdentifierError(EmotionFamilyPersistError):
 
 class EmotionFamilySchemaError(EmotionFamilyPersistError):
     """Unknown or mismatched schema version."""
+
+
+class NonNeutralChartInputError(ValueError):
+    """Label-count mapping is invalid for derived non-neutral chart emission."""

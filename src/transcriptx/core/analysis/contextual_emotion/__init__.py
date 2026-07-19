@@ -745,15 +745,28 @@ class ContextualEmotionAnalysis(AnalysisModule):
             )
             label_counts = results.get("label_counts") or {}
             if label_counts:
-                try:
-                    from transcriptx.core.utils.viz_ids import (
-                        VIZ_CONTEXTUAL_EMOTION_LABELS_GLOBAL,
-                        VIZ_CONTEXTUAL_EMOTION_LABELS_SPEAKER,
-                    )
-                    from transcriptx.core.viz.specs import BarCategoricalSpec
+                from transcriptx.core.analysis.emotion_family.non_neutral_charts import (
+                    emit_non_neutral_bar_charts,
+                    iter_named_speaker_label_counts,
+                    save_chart_isolated,
+                )
+                from transcriptx.core.utils.viz_ids import (
+                    VIZ_CONTEXTUAL_EMOTION_LABELS_EXCLUDING_NEUTRAL_GLOBAL,
+                    VIZ_CONTEXTUAL_EMOTION_LABELS_EXCLUDING_NEUTRAL_SPEAKER,
+                    VIZ_CONTEXTUAL_EMOTION_LABELS_GLOBAL,
+                    VIZ_CONTEXTUAL_EMOTION_LABELS_SPEAKER,
+                    VIZ_CONTEXTUAL_EMOTION_LABEL_SHARE_NON_NEUTRAL_GLOBAL,
+                    VIZ_CONTEXTUAL_EMOTION_LABEL_SHARE_NON_NEUTRAL_SPEAKER,
+                )
+                from transcriptx.core.viz.specs import BarCategoricalSpec
 
-                    cats = sorted(label_counts.keys())
-                    spec = BarCategoricalSpec(
+                def _save(spec: BarCategoricalSpec) -> None:
+                    output_service.save_chart(spec, chart_type="bar")
+
+                cats = sorted(label_counts.keys())
+                save_chart_isolated(
+                    _save,
+                    BarCategoricalSpec(
                         viz_id=VIZ_CONTEXTUAL_EMOTION_LABELS_GLOBAL,
                         module=self.module_name,
                         name="contextual_emotion_label_counts",
@@ -764,14 +777,30 @@ class ContextualEmotionAnalysis(AnalysisModule):
                         y_label="Count",
                         categories=cats,
                         values=[float(label_counts[c]) for c in cats],
-                    )
-                    output_service.save_chart(spec, chart_type="bar")
-                    for speaker, st in (results.get("speaker_stats") or {}).items():
-                        sp_counts = (st or {}).get("label_counts") or {}
-                        if not sp_counts:
-                            continue
-                        sp_cats = sorted(sp_counts.keys())
-                        sp_spec = BarCategoricalSpec(
+                    ),
+                    log_prefix="CONTEXTUAL_EMOTION",
+                )
+                emit_non_neutral_bar_charts(
+                    counts=label_counts,
+                    order="alpha",
+                    module=self.module_name,
+                    log_prefix="CONTEXTUAL_EMOTION",
+                    save_chart=_save,
+                    count_viz_id=VIZ_CONTEXTUAL_EMOTION_LABELS_EXCLUDING_NEUTRAL_GLOBAL,
+                    share_viz_id=VIZ_CONTEXTUAL_EMOTION_LABEL_SHARE_NON_NEUTRAL_GLOBAL,
+                    count_name="contextual_emotion_label_counts_excluding_neutral",
+                    share_name="contextual_emotion_label_share_non_neutral",
+                    count_title="Contextual emotion label counts (excluding neutral)",
+                    share_title="Contextual emotion share of non-neutral",
+                    scope="global",
+                )
+                for speaker, sp_counts in iter_named_speaker_label_counts(
+                    results.get("speaker_stats") or {}
+                ):
+                    sp_cats = sorted(sp_counts.keys())
+                    save_chart_isolated(
+                        _save,
+                        BarCategoricalSpec(
                             viz_id=VIZ_CONTEXTUAL_EMOTION_LABELS_SPEAKER,
                             module=self.module_name,
                             name="contextual_emotion_label_counts",
@@ -783,10 +812,35 @@ class ContextualEmotionAnalysis(AnalysisModule):
                             y_label="Count",
                             categories=sp_cats,
                             values=[float(sp_counts[c]) for c in sp_cats],
-                        )
-                        output_service.save_chart(sp_spec, chart_type="bar")
-                except Exception as exc:
-                    log_warning("CONTEXTUAL_EMOTION", f"chart save failed: {exc}")
+                        ),
+                        log_prefix="CONTEXTUAL_EMOTION",
+                    )
+                    emit_non_neutral_bar_charts(
+                        counts=sp_counts,
+                        order="alpha",
+                        module=self.module_name,
+                        log_prefix="CONTEXTUAL_EMOTION",
+                        save_chart=_save,
+                        count_viz_id=(
+                            VIZ_CONTEXTUAL_EMOTION_LABELS_EXCLUDING_NEUTRAL_SPEAKER
+                        ),
+                        share_viz_id=(
+                            VIZ_CONTEXTUAL_EMOTION_LABEL_SHARE_NON_NEUTRAL_SPEAKER
+                        ),
+                        count_name=(
+                            "contextual_emotion_label_counts_excluding_neutral"
+                        ),
+                        share_name="contextual_emotion_label_share_non_neutral",
+                        count_title=(
+                            f"Contextual emotion label counts "
+                            f"(excluding neutral): {speaker}"
+                        ),
+                        share_title=(
+                            f"Contextual emotion share of non-neutral: {speaker}"
+                        ),
+                        scope="speaker",
+                        speaker=speaker,
+                    )
             if results.get("timeline"):
                 output_service.save_data(
                     results["timeline"],

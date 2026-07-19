@@ -462,6 +462,182 @@
     "variant": null
   },
   {
+    "viz_id": "contextual_emotion.label_counts_excluding_neutral.global",
+    "label": "Contextual Emotion Label Counts (Excluding Neutral)",
+    "rank_default": 51,
+    "kind": "chart",
+    "module": "contextual_emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contextual_emotion.label_counts_excluding_neutral.global",
+      "by_artifact_key_prefix": "contextual_emotion/charts/",
+      "by_chart_slug_regex": "contextual_emotion_label_counts_excluding_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of segment-level contextual emotion labels across the transcript with the neutral label omitted. Each bar is an absolute assignment count for a non-neutral softmax label; use this when the inclusive label-count chart is dominated by neutral.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "contextual_emotion.label_counts_excluding_neutral.speaker",
+    "label": "Contextual Emotion Label Counts Excluding Neutral (Per Speaker)",
+    "rank_default": 53,
+    "kind": "chart",
+    "module": "contextual_emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contextual_emotion.label_counts_excluding_neutral.speaker",
+      "by_artifact_key_prefix": "contextual_emotion/charts/",
+      "by_chart_slug_regex": "contextual_emotion_label_counts_excluding_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Per-speaker bar chart of contextual emotion labels with neutral omitted. Each bar is an absolute assignment count for a non-neutral softmax label. One chart per named speaker with at least one non-neutral label.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "contextual_emotion.label_share_non_neutral.global",
+    "label": "Contextual Emotion Share of Non-Neutral",
+    "rank_default": 54,
+    "kind": "chart",
+    "module": "contextual_emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contextual_emotion.label_share_non_neutral.global",
+      "by_artifact_key_prefix": "contextual_emotion/charts/",
+      "by_chart_slug_regex": "contextual_emotion_label_share_non_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of each non-neutral contextual emotion label as a share of all non-neutral assignments across the transcript (neutral omitted). Shares use the full non-neutral total as denominator and sum to 1 when non-empty.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "contextual_emotion.label_share_non_neutral.speaker",
+    "label": "Contextual Emotion Share of Non-Neutral (Per Speaker)",
+    "rank_default": 55,
+    "kind": "chart",
+    "module": "contextual_emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "contextual_emotion.label_share_non_neutral.speaker",
+      "by_artifact_key_prefix": "contextual_emotion/charts/",
+      "by_chart_slug_regex": "contextual_emotion_label_share_non_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Per-speaker bar chart of each non-neutral contextual emotion label as a share of that speaker's non-neutral assignments (neutral omitted). Shares use the speaker's full non-neutral total and sum to 1 when non-empty. One chart per named speaker with at least one non-neutral label.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "fine_grained_emotion.label_counts_excluding_neutral.global",
+    "label": "Fine-grained Prevalence Excluding Neutral",
+    "rank_default": 56,
+    "kind": "chart",
+    "module": "fine_grained_emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "fine_grained_emotion.label_counts_excluding_neutral.global",
+      "by_artifact_key_prefix": "fine_grained_emotion/charts/",
+      "by_chart_slug_regex": "fine_grained_native_label_prevalence_excluding_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of the most frequent fine-grained emotion labels across the transcript with neutral omitted before ranking. Each bar is an absolute prevalence count; shows up to the top 15 non-neutral labels. Use this when the inclusive prevalence chart is dominated by neutral.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "fine_grained_emotion.label_counts_excluding_neutral.speaker",
+    "label": "Fine-grained Prevalence Excluding Neutral (Per Speaker)",
+    "rank_default": 57,
+    "kind": "chart",
+    "module": "fine_grained_emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "fine_grained_emotion.label_counts_excluding_neutral.speaker",
+      "by_artifact_key_prefix": "fine_grained_emotion/charts/",
+      "by_chart_slug_regex": "fine_grained_native_label_prevalence_excluding_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Per-speaker bar chart of the most frequent fine-grained emotion labels with neutral omitted before ranking. Each bar is an absolute prevalence count; shows up to the top 15 non-neutral labels. One chart per named speaker with at least one non-neutral label.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "fine_grained_emotion.label_share_non_neutral.global",
+    "label": "Fine-grained Share of Non-Neutral",
+    "rank_default": 58,
+    "kind": "chart",
+    "module": "fine_grained_emotion",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "fine_grained_emotion.label_share_non_neutral.global",
+      "by_artifact_key_prefix": "fine_grained_emotion/charts/",
+      "by_chart_slug_regex": "fine_grained_native_label_share_non_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Bar chart of each displayed non-neutral fine-grained label as a share of all non-neutral prevalence across the transcript (neutral omitted). The denominator is the full non-neutral total before top-15 truncation, so when more than 15 non-neutral labels are present the displayed bars may sum to less than 1. Categories match the excluding-neutral count chart.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "fine_grained_emotion.label_share_non_neutral.speaker",
+    "label": "Fine-grained Share of Non-Neutral (Per Speaker)",
+    "rank_default": 59,
+    "kind": "chart",
+    "module": "fine_grained_emotion",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "fine_grained_emotion.label_share_non_neutral.speaker",
+      "by_artifact_key_prefix": "fine_grained_emotion/charts/",
+      "by_chart_slug_regex": "fine_grained_native_label_share_non_neutral",
+      "by_filename_glob": null
+    },
+    "description": "Per-speaker bar chart of each displayed non-neutral fine-grained label as a share of that speaker's full non-neutral prevalence (neutral omitted). The denominator includes non-displayed non-neutral labels, so when more than 15 non-neutral labels are present the displayed bars may sum to less than 1. Categories match the excluding-neutral count chart. One chart per named speaker with at least one non-neutral label.",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "ner.entity_types.global",
     "label": "Entity Types \u2013 Global",
     "rank_default": 52,

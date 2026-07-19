@@ -735,18 +735,29 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
             )
             prevalence = results.get("native_label_prevalence") or {}
             if prevalence:
-                try:
-                    from transcriptx.core.utils.viz_ids import (
-                        VIZ_FINE_GRAINED_EMOTION_LABELS_GLOBAL,
-                        VIZ_FINE_GRAINED_EMOTION_LABELS_SPEAKER,
-                    )
-                    from transcriptx.core.viz.specs import BarCategoricalSpec
+                from transcriptx.core.analysis.emotion_family.non_neutral_charts import (
+                    emit_non_neutral_bar_charts,
+                    iter_named_speaker_label_counts,
+                    save_chart_isolated,
+                )
+                from transcriptx.core.utils.viz_ids import (
+                    VIZ_FINE_GRAINED_EMOTION_LABELS_EXCLUDING_NEUTRAL_GLOBAL,
+                    VIZ_FINE_GRAINED_EMOTION_LABELS_EXCLUDING_NEUTRAL_SPEAKER,
+                    VIZ_FINE_GRAINED_EMOTION_LABELS_GLOBAL,
+                    VIZ_FINE_GRAINED_EMOTION_LABELS_SPEAKER,
+                    VIZ_FINE_GRAINED_EMOTION_LABEL_SHARE_NON_NEUTRAL_GLOBAL,
+                    VIZ_FINE_GRAINED_EMOTION_LABEL_SHARE_NON_NEUTRAL_SPEAKER,
+                )
+                from transcriptx.core.viz.specs import BarCategoricalSpec
 
-                    top = sorted(prevalence.items(), key=lambda kv: (-kv[1], kv[0]))[
-                        :15
-                    ]
-                    cats = [k for k, _ in top]
-                    spec = BarCategoricalSpec(
+                def _save(spec: BarCategoricalSpec) -> None:
+                    output_service.save_chart(spec, chart_type="bar")
+
+                top = sorted(prevalence.items(), key=lambda kv: (-kv[1], kv[0]))[:15]
+                cats = [k for k, _ in top]
+                save_chart_isolated(
+                    _save,
+                    BarCategoricalSpec(
                         viz_id=VIZ_FINE_GRAINED_EMOTION_LABELS_GLOBAL,
                         module=self.module_name,
                         name="fine_grained_native_label_prevalence",
@@ -757,32 +768,85 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                         y_label="Count",
                         categories=cats,
                         values=[float(v) for _, v in top],
-                    )
-                    output_service.save_chart(spec, chart_type="bar")
-                    for speaker, st in (results.get("speaker_stats") or {}).items():
-                        sp_counts = (st or {}).get("label_counts") or {}
-                        if not sp_counts:
-                            continue
-                        sp_top = sorted(
-                            sp_counts.items(), key=lambda kv: (-kv[1], kv[0])
-                        )[:15]
-                        sp_cats = [k for k, _ in sp_top]
-                        sp_spec = BarCategoricalSpec(
+                    ),
+                    log_prefix="FINE_GRAINED_EMOTION",
+                )
+                emit_non_neutral_bar_charts(
+                    counts=prevalence,
+                    order="top_n",
+                    top_n=15,
+                    module=self.module_name,
+                    log_prefix="FINE_GRAINED_EMOTION",
+                    save_chart=_save,
+                    count_viz_id=(
+                        VIZ_FINE_GRAINED_EMOTION_LABELS_EXCLUDING_NEUTRAL_GLOBAL
+                    ),
+                    share_viz_id=(
+                        VIZ_FINE_GRAINED_EMOTION_LABEL_SHARE_NON_NEUTRAL_GLOBAL
+                    ),
+                    count_name=(
+                        "fine_grained_native_label_prevalence_excluding_neutral"
+                    ),
+                    share_name="fine_grained_native_label_share_non_neutral",
+                    count_title=(
+                        "Fine-grained native label prevalence (excluding neutral)"
+                    ),
+                    share_title="Fine-grained share of non-neutral",
+                    scope="global",
+                )
+                for speaker, sp_counts in iter_named_speaker_label_counts(
+                    results.get("speaker_stats") or {}
+                ):
+                    sp_top = sorted(
+                        sp_counts.items(), key=lambda kv: (-kv[1], kv[0])
+                    )[:15]
+                    sp_cats = [k for k, _ in sp_top]
+                    save_chart_isolated(
+                        _save,
+                        BarCategoricalSpec(
                             viz_id=VIZ_FINE_GRAINED_EMOTION_LABELS_SPEAKER,
                             module=self.module_name,
                             name="fine_grained_native_label_prevalence",
                             scope="speaker",
                             speaker=speaker,
                             chart_intent="bar_categorical",
-                            title=f"Fine-grained native label prevalence: {speaker}",
+                            title=(
+                                f"Fine-grained native label prevalence: {speaker}"
+                            ),
                             x_label="Label",
                             y_label="Count",
                             categories=sp_cats,
                             values=[float(v) for _, v in sp_top],
-                        )
-                        output_service.save_chart(sp_spec, chart_type="bar")
-                except Exception as exc:
-                    log_warning("FINE_GRAINED_EMOTION", f"chart save failed: {exc}")
+                        ),
+                        log_prefix="FINE_GRAINED_EMOTION",
+                    )
+                    emit_non_neutral_bar_charts(
+                        counts=sp_counts,
+                        order="top_n",
+                        top_n=15,
+                        module=self.module_name,
+                        log_prefix="FINE_GRAINED_EMOTION",
+                        save_chart=_save,
+                        count_viz_id=(
+                            VIZ_FINE_GRAINED_EMOTION_LABELS_EXCLUDING_NEUTRAL_SPEAKER
+                        ),
+                        share_viz_id=(
+                            VIZ_FINE_GRAINED_EMOTION_LABEL_SHARE_NON_NEUTRAL_SPEAKER
+                        ),
+                        count_name=(
+                            "fine_grained_native_label_prevalence_excluding_neutral"
+                        ),
+                        share_name="fine_grained_native_label_share_non_neutral",
+                        count_title=(
+                            "Fine-grained native label prevalence "
+                            f"(excluding neutral): {speaker}"
+                        ),
+                        share_title=(
+                            f"Fine-grained share of non-neutral: {speaker}"
+                        ),
+                        scope="speaker",
+                        speaker=speaker,
+                    )
             if results.get("timeline"):
                 output_service.save_data(
                     results["timeline"],

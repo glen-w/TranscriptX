@@ -85,10 +85,16 @@ Gallery captions and ranks live in [`chart_definitions.json`](../../src/transcri
 |--------|--------|-------|-------|
 | `emotion` | `emotion.radar.global` / `emotion.radar.speaker` | global / speaker_set | Lexical vocabulary-association counts (stable) |
 | `emotion` | `emotion.radar_polar.global` / `emotion.radar_polar.speaker` | global / speaker_set | Polar variant of the same profile |
-| `contextual_emotion` | `contextual_emotion.label_counts.global` / `.speaker` | global / speaker_set | Softmax label counts; experimental; not blended with lexical |
-| `fine_grained_emotion` | `fine_grained_emotion.label_counts.global` / `.speaker` | global / speaker_set | Top-15 native multilabel prevalence; experimental |
+| `contextual_emotion` | `contextual_emotion.label_counts.global` / `.speaker` | global / speaker_set | Softmax label counts (includes neutral); experimental; not blended with lexical |
+| `contextual_emotion` | `contextual_emotion.label_counts_excluding_neutral.global` / `.speaker` | global / speaker_set | Absolute counts with neutral omitted |
+| `contextual_emotion` | `contextual_emotion.label_share_non_neutral.global` / `.speaker` | global / speaker_set | Each non-neutral label as a share of all non-neutral assignments (sums to 1 when non-empty) |
+| `fine_grained_emotion` | `fine_grained_emotion.label_counts.global` / `.speaker` | global / speaker_set | Top-15 native multilabel prevalence (may include neutral); experimental |
+| `fine_grained_emotion` | `fine_grained_emotion.label_counts_excluding_neutral.global` / `.speaker` | global / speaker_set | Top-15 after dropping neutral |
+| `fine_grained_emotion` | `fine_grained_emotion.label_share_non_neutral.global` / `.speaker` | global / speaker_set | Shares use the **full** non-neutral total as denominator before top-15 truncation; displayed bars may sum to less than 1 |
 
-Speaker charts emit only for named speakers with non-empty `label_counts` / assignment counts. These single-transcript viz IDs are **not** on the default overview strip. Group temporal/pooled emotion charts remain lexical-session contracts (`group.emotion.*`); see [`group_charts_emotion_temporal_contract.md`](../groups/group_charts_emotion_temporal_contract.md) and [`group_charts_emotion_pooled_contract.md`](../groups/group_charts_emotion_pooled_contract.md).
+Exclude-neutral and share charts reuse the same selected category list per scope. They are derived presentation artifacts only: **no bump** to result `schema_version`, `semantics_version`, compatibility fingerprints, or aggregation-cache keys.
+
+Speaker charts emit only for named speakers with non-empty `label_counts` / assignment counts (non-neutral variants additionally require a positive non-neutral total). These single-transcript viz IDs are **not** on the default overview strip. Group temporal/pooled emotion charts remain lexical-session contracts (`group.emotion.*`); see [`group_charts_emotion_temporal_contract.md`](../groups/group_charts_emotion_temporal_contract.md) and [`group_charts_emotion_pooled_contract.md`](../groups/group_charts_emotion_pooled_contract.md).
 
 ## Calibration
 

@@ -59,12 +59,22 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 152
+    assert len(CHART_DEFINITIONS) == 160
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.speaker") is not None
     assert get_chart_definition("fine_grained_emotion.label_counts.global") is not None
     assert get_chart_definition("fine_grained_emotion.label_counts.speaker") is not None
+    assert (
+        get_chart_definition(
+            "contextual_emotion.label_counts_excluding_neutral.global"
+        )
+        is not None
+    )
+    assert (
+        get_chart_definition("fine_grained_emotion.label_share_non_neutral.global")
+        is not None
+    )
     assert get_chart_definition("group.pauses.temporal_overlay.global") is not None
     assert get_chart_definition("group.acts.temporal_overlay.global") is not None
     assert get_chart_definition("group.sentiment.temporal_overlay.global") is not None
@@ -425,6 +435,52 @@ def test_emotion_family_label_count_viz_ids_have_registry_definitions():
     }
     missing = sorted(v for v in family_ids if get_chart_definition(v) is None)
     assert not missing, f"emotion-family viz_ids without a definition: {missing}"
+
+    expected_new = {
+        "contextual_emotion.label_counts_excluding_neutral.global": (
+            "contextual_emotion",
+            "global",
+        ),
+        "contextual_emotion.label_counts_excluding_neutral.speaker": (
+            "contextual_emotion",
+            "speaker",
+        ),
+        "contextual_emotion.label_share_non_neutral.global": (
+            "contextual_emotion",
+            "global",
+        ),
+        "contextual_emotion.label_share_non_neutral.speaker": (
+            "contextual_emotion",
+            "speaker",
+        ),
+        "fine_grained_emotion.label_counts_excluding_neutral.global": (
+            "fine_grained_emotion",
+            "global",
+        ),
+        "fine_grained_emotion.label_counts_excluding_neutral.speaker": (
+            "fine_grained_emotion",
+            "speaker",
+        ),
+        "fine_grained_emotion.label_share_non_neutral.global": (
+            "fine_grained_emotion",
+            "global",
+        ),
+        "fine_grained_emotion.label_share_non_neutral.speaker": (
+            "fine_grained_emotion",
+            "speaker",
+        ),
+    }
+    for viz_id, (module, scope) in expected_new.items():
+        chart_def = get_chart_definition(viz_id)
+        assert chart_def is not None
+        assert chart_def.module == module
+        assert chart_def.scope == scope
+        assert viz_id in family_ids
+    slugs = {
+        get_chart_definition(vid).match.by_chart_slug_regex for vid in expected_new
+    }
+    assert None not in slugs
+    assert len(slugs) == 4
 
 
 def test_bertopic_viz_ids_have_registry_definitions():

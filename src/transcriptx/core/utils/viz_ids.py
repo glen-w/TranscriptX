@@ -9,8 +9,32 @@ VIZ_EMOTION_RADAR_SPEAKER = "emotion.radar.speaker"
 VIZ_EMOTION_RADAR_GLOBAL = "emotion.radar.global"
 VIZ_CONTEXTUAL_EMOTION_LABELS_GLOBAL = "contextual_emotion.label_counts.global"
 VIZ_CONTEXTUAL_EMOTION_LABELS_SPEAKER = "contextual_emotion.label_counts.speaker"
+VIZ_CONTEXTUAL_EMOTION_LABELS_EXCLUDING_NEUTRAL_GLOBAL = (
+    "contextual_emotion.label_counts_excluding_neutral.global"
+)
+VIZ_CONTEXTUAL_EMOTION_LABELS_EXCLUDING_NEUTRAL_SPEAKER = (
+    "contextual_emotion.label_counts_excluding_neutral.speaker"
+)
+VIZ_CONTEXTUAL_EMOTION_LABEL_SHARE_NON_NEUTRAL_GLOBAL = (
+    "contextual_emotion.label_share_non_neutral.global"
+)
+VIZ_CONTEXTUAL_EMOTION_LABEL_SHARE_NON_NEUTRAL_SPEAKER = (
+    "contextual_emotion.label_share_non_neutral.speaker"
+)
 VIZ_FINE_GRAINED_EMOTION_LABELS_GLOBAL = "fine_grained_emotion.label_counts.global"
 VIZ_FINE_GRAINED_EMOTION_LABELS_SPEAKER = "fine_grained_emotion.label_counts.speaker"
+VIZ_FINE_GRAINED_EMOTION_LABELS_EXCLUDING_NEUTRAL_GLOBAL = (
+    "fine_grained_emotion.label_counts_excluding_neutral.global"
+)
+VIZ_FINE_GRAINED_EMOTION_LABELS_EXCLUDING_NEUTRAL_SPEAKER = (
+    "fine_grained_emotion.label_counts_excluding_neutral.speaker"
+)
+VIZ_FINE_GRAINED_EMOTION_LABEL_SHARE_NON_NEUTRAL_GLOBAL = (
+    "fine_grained_emotion.label_share_non_neutral.global"
+)
+VIZ_FINE_GRAINED_EMOTION_LABEL_SHARE_NON_NEUTRAL_SPEAKER = (
+    "fine_grained_emotion.label_share_non_neutral.speaker"
+)
 
 # NER
 VIZ_NER_ENTITY_TYPES_SPEAKER = "ner.entity_types.speaker"
