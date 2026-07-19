@@ -97,6 +97,50 @@ def resolve_primary_summary(
     if loader is None:
         return PrimarySummaryResult(primary=None, others=())
 
+    # Group runs: prefer committed cross-session synthesis via central resolver.
+    if run_root is not None:
+        from transcriptx.core.analysis.group_llm_synthesis.resolve import (
+            ResolverCache,
+            is_group_run,
+            load_group_llm_summary,
+            load_text_under_generation,
+        )
+        from transcriptx.core.analysis.group_llm_synthesis.paths import (
+            global_summary_md_rel,
+        )
+
+        if is_group_run(run_root):
+            cache = ResolverCache()
+            payload = load_group_llm_summary(run_root, cache=cache)
+            if payload and str(payload.get("summary") or "").strip():
+                md = load_text_under_generation(
+                    run_root, global_summary_md_rel(), cache=cache
+                )
+                primary = SummaryCandidate(
+                    kind="llm_summary",
+                    module="llm_summary",
+                    title="Cross-session LLM Summary",
+                    markdown=md,
+                    payload=payload,
+                    available=True,
+                    outcome="succeeded",
+                    empty_hint=(
+                        "Run group analysis with `llm_summary` (LLM enabled) "
+                        "to populate this view."
+                    ),
+                    artifact_stem="group_llm_summary",
+                    text_field="summary",
+                )
+                return PrimarySummaryResult(primary=primary, others=())
+            # No member-summary primary fallback on group runs.
+            return PrimarySummaryResult(
+                primary=None,
+                others=(),
+                unavailable_message=(
+                    "Cross-session summary was unavailable for this group run."
+                ),
+            )
+
     specs: list[tuple[SummaryKind, str, str, str, str, str]] = [
         (
             "llm_summary",

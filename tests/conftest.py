@@ -647,9 +647,7 @@ def pytest_collection_modifyitems(config, items):
         # Exempt explicit @pytest.mark.unit (offline emotion-family / contagion
         # contracts use "emotion"/"contagion" in the path but do not load models).
         _mentions_ner_area = bool(re.search(r"(^|[/_-])ner([/_\-.]|$)", path_str))
-        _has_unit_marker = any(
-            marker.name == "unit" for marker in item.iter_markers()
-        )
+        _has_unit_marker = any(marker.name == "unit" for marker in item.iter_markers())
         if (
             (
                 _mentions_ner_area

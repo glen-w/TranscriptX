@@ -231,7 +231,10 @@ def _register_insights_blocks() -> None:
             group="Insights",
             description="LLM-generated summary for each named speaker.",
             module_deps=("llm_speaker_summary",),
-            artifact_patterns=("_llm_speaker_summary_index.json",),
+            artifact_patterns=(
+                "_llm_speaker_summary_index.json",
+                "group_llm_speaker_summary_index.json",
+            ),
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=insights_blocks.render_llm_speaker_summary_block,
         ),

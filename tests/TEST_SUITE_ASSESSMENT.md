@@ -1507,3 +1507,61 @@ Follow-on covering the remaining gaps called out after §54: thin `search_servic
 - **Production code:** none changed by this `/tests` expansion.
 - **Quarantined tests:** not re-enabled.
 - **Artifact cleanup:** disabled.
+
+## 59. Expansion (2026-07-19) – group LLM synthesis + UI/export precedence
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260719-1018.zip` (4.6M); `custom-commands/` mirrored.
+- **Cleanup:** disabled (not run).
+- **Collection (default addopts):** `6430/6609` selected (`179` deselected); no collection/import errors on default gate.
+- **Baseline default run:** `6426 passed`, `3 failed`, `1 skipped`, `179` deselected (not green).
+- **Baseline failure classification:**
+  1. `test_pre_delegation_analysis_shape_matches_fixture` — fixture missing new `analysis.group_llm_synthesis` subtree (tests-only).
+  2. `test_finalize_group_analysis_enabled_runs_registry_rows_blobs_and_warnings` — finalize now writes manifest via `finalize_hook.write_output_manifest`; monkeypatch on runner alone missed it (tests-only).
+  3. `test_root_and_web_package_versions_match` — root `0.4.9.2` vs web `0.4.9.1` (trivial version sync).
+- **Full collection note:** assessment expected ~1558 historically; current default-selected count is ~6430.
+- **Quarantined:** `0` active `@pytest.mark.quarantined` tests (`tests/quarantine/COUNT` historical).
+- **Markers / addopts:** unchanged; default excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow.
+- **Skipped:** `tests/regression/test_pipeline_determinism.py` (one test: requires full pipeline setup).
+
+### Coverage gaps targeted (LLM + group)
+| Area | Pre-gap | Action |
+|------|---------|--------|
+| Group summary UI precedence | No tests for `is_group_run` branch | Prefer committed synthesis; no member-summary fallback |
+| Export LLM summary | Transcript-only | Group staging prefers cross-session synthesis |
+| Synthesis contracts | Partial | JSON parse / oversized codes; prompt budget middle-drop; disabled skip; finalize hook without LLM modules |
+| Config shape / finalize glue | Stale after synthesis land | Refresh fixture; patch hook in group finalize helpers |
+
+### Tests added or updated
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_summary_precedence_group.py` (**new**) | +3 | Group run prefers synthesis; no member fallback; non-group loader path |
+| `tests/core/analysis/test_group_llm_synthesis.py` | +4 | Parse contract; pack budget; disabled skip; finalize hook manifest-only |
+| `tests/utils/test_export_index.py` | +1 | `resolve_export_llm_summary` group synthesis |
+| `tests/core/config/fixtures/delegation_shape_analysis_pre.json` | updated | `group_llm_synthesis: {enabled, effort}` |
+| `tests/unit/test_group_analysis_helpers.py` | patched | Monkeypatch finalize_hook manifest writer |
+| `src/transcriptx/web/__init__.py` | trivial | Align `__version__` to `0.4.9.2` |
+
+### Validation
+- Focused LLM/group slice: **27 passed**.
+- **Default suite:** `6437 passed`, `1 skipped`, `179` deselected, `0` failed (+8 net new vs repaired baseline).
+- **Production code in this `/tests` pass:** only web version string sync; other production edits are pre-existing group LLM synthesis WIP (not introduced by expansion).
+- **Quarantined tests:** not re-enabled.
+- **Artifact cleanup:** disabled.
+
+## 60. Expansion (2026-07-19) – interrupt / recovery for group LLM synthesis
+
+### Trigger
+Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left partial generation (no ACTIVE/COMMIT), stale empty lock files, missing `manifest.json` / `run_results.json`. Recovery: `gc_uncommitted` + re-publish.
+
+### Tests added (regression for that failure mode)
+
+| File | Tests | Focus |
+|------|-------|-------|
+| `tests/core/analysis/test_group_llm_synthesis_adversarial.py` | +3 | Partial gen invisible to resolver; GC + republish restores ACTIVE/manifest; stale 0-byte locks re-acquirable |
+| `tests/web/test_summary_precedence_group.py` | +1 | Interrupted group synthesis does not become UI primary |
+
+### Validation
+- Focused slice: **17 passed** (adversarial + summary precedence group).
+- **Production code:** none.

@@ -81,7 +81,9 @@ def test_contextual_emotion_save_results_emits_global_and_speaker_charts(
 def test_fine_grained_emotion_save_results_emits_global_and_speaker_charts(
     tmp_path,
 ) -> None:
-    from transcriptx.core.analysis.fine_grained_emotion import FineGrainedEmotionAnalysis
+    from transcriptx.core.analysis.fine_grained_emotion import (
+        FineGrainedEmotionAnalysis,
+    )
 
     module = FineGrainedEmotionAnalysis.__new__(FineGrainedEmotionAnalysis)
     module.module_name = "fine_grained_emotion"

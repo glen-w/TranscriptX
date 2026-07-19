@@ -237,6 +237,9 @@ def _iter_files(run_dir: Path) -> Iterable[Path]:
                 ".transcriptx/run_config_override.json",
             }:
                 continue
+        # Synthesis artifacts are merged explicitly (correct module/kind).
+        if rel_path.startswith(".group_llm_synthesis/"):
+            continue
         if rel_path == "manifest.json":
             continue
         if "/.thumbnails/" in rel_path:
@@ -383,10 +386,21 @@ def write_output_manifest(
     run_id: str,
     transcript_key: str,
     modules_enabled: List[str],
+    *,
+    synthesis_inventory_entries: Optional[List[Dict[str, str]]] = None,
 ) -> Optional[Path]:
     try:
         manifest = build_output_manifest(
             run_dir, run_id, transcript_key, modules_enabled
+        )
+        from transcriptx.core.analysis.group_llm_synthesis.manifest_entries import (
+            merge_synthesis_into_manifest,
+        )
+
+        manifest = merge_synthesis_into_manifest(
+            manifest,
+            run_dir,
+            inventory_entries=synthesis_inventory_entries,
         )
         output_path = run_dir / "manifest.json"
         write_json(output_path, manifest, indent=2, ensure_ascii=False)

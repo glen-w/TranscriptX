@@ -53,7 +53,11 @@ def test_resolve_chart_description_emotion_family_charts():
         ("contextual_emotion.label_counts.global", "contextual_emotion", "global"),
         ("contextual_emotion.label_counts.speaker", "contextual_emotion", "speaker"),
         ("fine_grained_emotion.label_counts.global", "fine_grained_emotion", "global"),
-        ("fine_grained_emotion.label_counts.speaker", "fine_grained_emotion", "speaker"),
+        (
+            "fine_grained_emotion.label_counts.speaker",
+            "fine_grained_emotion",
+            "speaker",
+        ),
     ):
         expected = get_chart_definition(viz_id).description
         assert expected and len(expected.strip()) >= 20

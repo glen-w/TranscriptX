@@ -493,6 +493,9 @@ class AnalysisConfig:
     llm_action_items: LLMActionItemsConfig = field(
         default_factory=lambda: LLMActionItemsConfig()
     )
+    group_llm_synthesis: "GroupLLMSynthesisConfig" = field(
+        default_factory=lambda: GroupLLMSynthesisConfig()
+    )
     qa_analysis: QAAnalysisConfig = field(default_factory=lambda: QAAnalysisConfig())
     temporal_dynamics: TemporalDynamicsConfig = field(
         default_factory=lambda: TemporalDynamicsConfig()
@@ -694,6 +697,21 @@ class LLMActionItemsConfig:
         )
 
         _hydrate_dataclass_from_pydantic(self, LLMActionItemsSettingsModel())
+
+
+@dataclass
+class GroupLLMSynthesisConfig:
+    """Defaults owned by GroupLLMSynthesisSettingsModel."""
+
+    enabled: bool = field(init=False, repr=True)
+    effort: str = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.group_llm_synthesis import (
+            GroupLLMSynthesisSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, GroupLLMSynthesisSettingsModel())
 
 
 @dataclass

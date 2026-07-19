@@ -36,6 +36,8 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - Supporting voice note workflows
 - Conversational analytics
 - Integration with local AI models (Ollama, etc.)
+- **GPU-accelerated inference** where the host can expose it (CUDA on Linux; Apple MPS on native Mac)
+- **First-class native installation** alongside Docker (venv / `./transcriptx.sh`), especially where Docker cannot use the host GPU
 
 **Near-term (v0.1 – v0.41)**
 
@@ -51,6 +53,7 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - Enhanced GUI capabilities: run comparison, artifact filtering, richer visualizations
 - Deeper cross-session and longitudinal views in the GUI
 - Personal audio analysis workflows
+- GPU and native install paths — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term)
 
 ---
 
@@ -65,6 +68,22 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - **Optional remote compute** (e.g. Colab) — for users who prefer cloud-based inference
 
 These would enable summarization, conversational insights, and semantic analysis while keeping TranscriptX local-first and modular.
+
+---
+
+## Runtime acceleration & native install (long-term)
+
+**Today:** Docker Compose is the recommended install. On Mac, Compose builds a **CPU-only** torch image (`TRANSCRIPTX_TORCH_VARIANT=cpu`) because Docker Desktop does not expose the host GPU (CUDA or Apple MPS) to Linux containers. HF classifiers and related inference therefore log `Device set to use cpu`. Device selection already prefers CUDA → MPS → CPU when available (see `hf_text_classification` runtime). Native Mac/Linux install exists (`./transcriptx.sh`, venv) but is secondary to Docker in docs and support.
+
+**Long-term (post-beta):** treat acceleration and native install as first-class product paths, not undocumented side doors.
+
+- [ ] **Documented native install** — one canonical Mac/Linux sequence (venv → deps → `pip install -e .` / launcher) with parity to Docker for paths, env, and verify-install; clear when to choose native vs Compose
+- [ ] **Apple Silicon MPS (native Mac)** — run analysis on Metal via native install; keep Docker-on-Mac as the CPU path
+- [ ] **Linux CUDA (Docker)** — documented Compose + `nvidia-container-toolkit` recipe with CUDA torch wheels (`TRANSCRIPTX_TORCH_VARIANT=default`); device class remains part of inference cache identity
+- [ ] **Linux CUDA (native)** — optional host venv path for users who prefer bare-metal GPU without containers
+- [ ] **Honest defaults & docs** — Mac Docker stays CPU-by-design; GPU expectations live in [docker.md](runtime/docker.md) / install docs so users do not chase acceleration inside Mac containers
+
+**Non-goals for this track:** forcing GPU into Mac Docker; requiring NVIDIA hardware for beta; changing the analysis-first / external-transcription split.
 
 ---
 
@@ -157,6 +176,7 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 - Interaction and network analysis (graphs, network outputs)
 - Adapters and plugins (design only; no marketplace)
 - Architecture cleanup and module contract docs
+- **GPU + native install** — first-class docs and recipes for MPS (native Mac) and CUDA (Linux Docker/native); see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term)
 
 ---
 
@@ -167,6 +187,7 @@ The following are explicitly **not** part of the beta-ready scope; they are plan
 - **WhisperX Docker GUI orchestration** (+ host HTTP transcribe service and orchestrated Transcribe → Import → Analyze UI) — see Phase 2 transcription architecture above.
 - **OpenAI and other remote LLM providers** — Ollama only until then.
 - **Longitudinal speaker tracking / Speakers UI** — speaker-over-time charts, cross-session views, restored Speakers / Speaker Detail pages, and related extended speaker features.
+- **GPU acceleration & first-class native install** — MPS on native Mac; CUDA on Linux Docker/native; documented install parity — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term).
 - **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit/BERTopic rewire, large export-system and config-knobs refactors.
 
 ### ConvoKit analysis (archived)

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-19
+
+### Added
+
+- Cross-session **group LLM synthesis**: after group finalize collects member `llm_summary` / `llm_speaker_summary` artifacts, an Ollama second pass publishes generation-scoped global and per-speaker rollups (ACTIVE/COMMIT under `.group_llm_synthesis/`). Config: `analysis.group_llm_synthesis.enabled` / `effort`. Overview/Insights use the validating resolver. Contract: `docs/groups/group_llm_synthesis_contract.md`.
+
 ## [0.4.9.2] - 2026-07-19
 
 ### Added

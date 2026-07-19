@@ -193,6 +193,32 @@ def resolve_export_llm_summary(
     copied: Sequence[tuple[Any, Path]],
 ) -> Optional[ExportTextSummary]:
     """Backward-compatible helper returning the first LLM transcript summary."""
+    from transcriptx.core.analysis.group_llm_synthesis.resolve import (
+        ResolverCache,
+        is_group_run,
+        load_group_llm_summary,
+        load_text_under_generation,
+    )
+    from transcriptx.core.analysis.group_llm_synthesis.paths import (
+        global_summary_md_rel,
+    )
+
+    if is_group_run(staging_dir):
+        cache = ResolverCache()
+        payload = load_group_llm_summary(staging_dir, cache=cache)
+        if payload and str(payload.get("summary") or "").strip():
+            md = load_text_under_generation(
+                staging_dir, global_summary_md_rel(), cache=cache
+            )
+            body = strip_summary_markdown(md) if md else str(payload["summary"])
+            prov = payload.get("provenance")
+            return ExportTextSummary(
+                section_id="group-llm-summary",
+                title="Cross-session LLM Summary",
+                body=body,
+                provenance=prov if isinstance(prov, dict) else {},
+            )
+
     for summary in resolve_export_text_summaries(
         staging_dir=staging_dir, copied=copied
     ):

@@ -382,6 +382,87 @@ def test_resolve_export_llm_summary_prefers_json(tmp_path: Path) -> None:
     assert resolved["provenance"]["model"] == "qwen3:8b"
 
 
+def test_resolve_export_llm_summary_group_synthesis(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock, patch
+
+    from transcriptx.core.analysis.group_llm_synthesis.lock import synthesis_lock
+    from transcriptx.core.analysis.group_llm_synthesis.synthesize import (
+        run_group_llm_synthesis,
+    )
+
+    staging = tmp_path / "group_staging"
+    staging.mkdir()
+    (staging / "group_run_metadata.json").write_text("{}", encoding="utf-8")
+    collect = staging / "llm_summary"
+    collect.mkdir()
+    (collect / "llm_summary.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "aggregation_key": "llm_summary",
+                "summaries": [
+                    {
+                        "summary": "Session A",
+                        "source_transcript_id": "t1",
+                        "order_index": 0,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    mock_client = MagicMock()
+    mock_client.generate.return_value = json.dumps({"summary": "Group export body"})
+    cfg = SimpleNamespace(
+        analysis=SimpleNamespace(
+            group_llm_synthesis=SimpleNamespace(enabled=True, effort="low")
+        ),
+        llm=SimpleNamespace(
+            enabled=True,
+            provider="ollama",
+            model="test",
+            base_url="http://localhost:11434",
+            seed=0,
+            availability_timeout=1.0,
+        ),
+    )
+    with synthesis_lock(staging):
+        with (
+            patch(
+                "transcriptx.core.analysis.group_llm_synthesis.synthesize.build_ollama_analysis_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "transcriptx.core.analysis.group_llm_synthesis.synthesize.require_ollama_analysis",
+            ),
+            patch(
+                "transcriptx.core.analysis.group_llm_synthesis.synthesize.resolve_llm_runtime",
+                return_value=SimpleNamespace(
+                    effort="low",
+                    model="test",
+                    max_input_chars=50_000,
+                    request_timeout=30.0,
+                    max_output_tokens=512,
+                ),
+            ),
+        ):
+            published = run_group_llm_synthesis(
+                run_root=staging,
+                run_id="g1",
+                config=cfg,
+                want_global=True,
+                want_speakers=False,
+            )
+    assert published.published
+
+    resolved = resolve_export_llm_summary(staging_dir=staging, copied=[])
+    assert resolved is not None
+    assert resolved["section_id"] == "group-llm-summary"
+    assert resolved["title"] == "Cross-session LLM Summary"
+    assert "Group export body" in resolved["body"]
+
+
 def test_write_export_index_includes_llm_summary(tmp_path: Path) -> None:
     staging = tmp_path / "staging"
     (staging / "llm_summary/data/global").mkdir(parents=True)

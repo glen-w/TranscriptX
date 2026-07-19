@@ -49,11 +49,31 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 
 All four LLM modules are included in the **recommended** default module list when enabled. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out of any of them. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`.
 
-**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`).
+**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same Ollama path.
 
 `llm_speaker_summary` is skipped when the transcript has no eligible named speakers (for example, before Speaker ID mapping). Ignored speakers are excluded.
 
 Selecting `narrative_summary` automatically runs the `summary` dependency chain first.
+
+## Group LLM synthesis
+
+After group finalize collects per-member `llm_summary` / `llm_speaker_summary` artifacts, an optional **cross-session synthesizer** writes generation-scoped rollups under `.group_llm_synthesis/` (ACTIVE/COMMIT). See [group_llm_synthesis_contract.md](../groups/group_llm_synthesis_contract.md).
+
+```json
+{
+  "analysis": {
+    "group_llm_synthesis": {
+      "enabled": true,
+      "effort": "high"
+    }
+  }
+}
+```
+
+- **`enabled`** (default `true`): when false, finalize commits a skipped generation and flips ACTIVE so prior success is no longer shown.
+- **`effort`**: same tiers as `llm_summary`. Resolves **effective** `max_input_chars` / `request_timeout` / `max_output_tokens` for synthesis calls only; it does **not** mutate process-global `llm.*` values used by other modules.
+- **Ollama-only:** non-Ollama or disabled LLM → skipped generation (not a hard group failure).
+- **UI:** group Overview/Insights use the central resolver; no member-summary primary fallback on group runs.
 
 ## `llm_summary` effort (not `llm.effort`)
 

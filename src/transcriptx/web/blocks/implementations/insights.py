@@ -540,6 +540,71 @@ def render_llm_speaker_summary_block(
         )
         return
 
+    # Group runs: committed cross-session speaker index via central resolver.
+    from transcriptx.core.analysis.group_llm_synthesis.resolve import (
+        ResolverCache,
+        is_group_run,
+        load_group_speaker_index,
+        load_group_speaker_summary,
+        load_text_under_generation,
+    )
+
+    if is_group_run(run_root):
+        cache = ResolverCache()
+        index_payload = load_group_speaker_index(run_root, cache=cache)
+        if not index_payload:
+            _render_quiet_module_empty(
+                label="Cross-session per-speaker summaries",
+                run_root=run_root,
+                module=module,
+                empty_hint=(
+                    "Run group analysis with `llm_speaker_summary` (LLM enabled) "
+                    "to populate this view."
+                ),
+                ctx=ctx,
+                key="group_llm_speaker_summary_index",
+            )
+            return
+        speakers = index_payload.get("speakers") or []
+        st.caption("Cross-session Per-Speaker Summaries")
+        for entry in speakers:
+            if not isinstance(entry, dict):
+                continue
+            speaker = str(
+                entry.get("display_name") or entry.get("canonical_speaker_id") or ""
+            )
+            status = str(entry.get("status") or "")
+            if not speaker:
+                continue
+            with st.expander(speaker, expanded=len(speakers) == 1):
+                if status != "success":
+                    code = entry.get("error_code")
+                    message = entry.get("error_message_safe") or "Summary unavailable"
+                    detail = f"[{code}] {message}" if code else message
+                    st.warning(detail)
+                    continue
+                rel_json = str(entry.get("rel_json") or "")
+                rel_md = str(entry.get("rel_md") or "")
+                md = (
+                    load_text_under_generation(run_root, rel_md, cache=cache)
+                    if rel_md
+                    else None
+                )
+                payload = (
+                    load_group_speaker_summary(run_root, rel_json, cache=cache)
+                    if rel_json
+                    else None
+                )
+                if md:
+                    st.markdown(md)
+                elif payload and payload.get("summary"):
+                    st.markdown(str(payload["summary"]))
+                elif payload:
+                    st.json(payload)
+                else:
+                    st.caption("Artifact missing for this speaker.")
+        return
+
     index_payload = loader.load_json(module, "_llm_speaker_summary_index.json")
     if not index_payload:
         _render_quiet_module_empty(

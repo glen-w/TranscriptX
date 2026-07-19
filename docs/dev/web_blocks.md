@@ -23,9 +23,11 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 | Block id | Module | Layouts |
 |----------|--------|---------|
 | `llm_summary_block` | `llm_summary` / `narrative_summary` (parametric) | `default` |
-| `llm_speaker_summary_block` | `llm_speaker_summary` | `default` |
+| `llm_speaker_summary_block` | `llm_speaker_summary` (group runs: synthesised index via resolver) | `default` |
 | `llm_action_items_block` | `llm_action_items` | `default`, `executive` |
 | `lexical_diversity_block` | `lexical_diversity` | `default` |
+
+On **group** runs, `transcript_summary_hero` / `resolve_primary_summary` prefer committed [group LLM synthesis](../groups/group_llm_synthesis_contract.md) via the central resolver (no member `_llm_summary` primary fallback). `llm_speaker_summary_block` likewise loads `group_llm_speaker_summary_index` when ACTIVE/COMMIT validate.
 
 Overview **module metrics** use summary extractors under `web/summary_extractors/`. Zip export summaries for LLM prose/list modules are resolved in `transcriptx.export.resolve`.
 

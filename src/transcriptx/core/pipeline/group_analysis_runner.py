@@ -314,119 +314,226 @@ def finalize_group_analysis(
         completed: set[str] = set()
         registry = build_registry()
         ordered = _topo_sort_entries(registry)
-        for entry in ordered:
-            if not entry.selector(selected_modules):
-                continue
-            missing_deps = [dep for dep in entry.deps if dep not in completed]
-            if missing_deps:
+        run_dir = Path(group_output_service.base_dir)
+        need_synth_lock = any(
+            m in selected_modules for m in ("llm_summary", "llm_speaker_summary")
+        )
+        synthesis_meta: Dict[str, Any] = {}
+
+        from transcriptx.core.analysis.group_llm_synthesis.lock import (
+            SynthesisLockTimeout,
+            synthesis_lock,
+        )
+        from transcriptx.core.analysis.group_llm_synthesis import errors as synth_err
+        from transcriptx.core.analysis.group_llm_synthesis.finalize_hook import (
+            run_synthesis_publish_and_manifest,
+        )
+
+        _SYNTH_AGG_IDS = frozenset({"llm_summary", "llm_speaker_summary"})
+
+        def _run_aggregation_loop(*, skip_synth_aggs: bool = False) -> None:
+            for entry in ordered:
+                if skip_synth_aggs and entry.agg_id in _SYNTH_AGG_IDS:
+                    continue
+                if not entry.selector(selected_modules):
+                    continue
+
+                missing_deps = [dep for dep in entry.deps if dep not in completed]
+
+                if missing_deps:
+                    aggregation_warnings.append(
+                        build_warning(
+                            code="MISSING_DEP",
+                            message=f"Missing dependencies: {', '.join(missing_deps)}",
+                            aggregation_key=entry.agg_id,
+                            missing_deps=missing_deps,
+                            details={"missing_keys": missing_deps},
+                        )
+                    )
+
+                    continue
+
+                outcome = _call_aggregate_fn(
+                    entry.aggregate_fn,
+                    per_transcript_results,
+                    canonical_speaker_map,
+                    transcript_set,
+                    aggregations,
+                )
+
+                if outcome is None:
+                    continue
+
+                if isinstance(outcome, dict) and outcome.get("warning"):
+                    aggregation_warnings.append(outcome["warning"])
+
+                    continue
+
+                if isinstance(outcome, dict):
+                    for w in outcome.get("aggregation_warnings") or []:
+                        if isinstance(w, dict) and w.get("code"):
+                            aggregation_warnings.append(w)
+
+                if entry.output_type == "blob":
+                    blob_name = outcome.get("blob_name", "summary")
+
+                    blob_payload = outcome.get("blob_payload", {})
+
+                    blob_dir = Path(group_output_service.base_dir) / entry.agg_id
+
+                    blob_dir.mkdir(parents=True, exist_ok=True)
+
+                    save_json(blob_payload, str(blob_dir / f"{blob_name}.json"))
+
+                    stored = dict(outcome)
+
+                    stored["output_type"] = "blob"
+
+                    stored["artifact"] = str(blob_dir / f"{blob_name}.json")
+
+                    aggregations[entry.agg_id] = stored
+
+                    completed.add(entry.agg_id)
+
+                    continue
+
+                row_payload = _row_payload(outcome)
+
+                session_rows = row_payload.get("session_rows", [])
+
+                speaker_rows = row_payload.get("speaker_rows", [])
+
+                metrics_spec = row_payload.get("metrics_spec")
+
+                content_rows = row_payload.get("content_rows")
+
+                content_rows_name = row_payload.get("content_rows_name")
+
+                drop_csv_keys = row_payload.get("drop_csv_keys")
+
+                session_rows = _attach_session_identity(
+                    session_rows,
+                    per_transcript_results,
+                    transcript_set,
+                    get_transcript_id,
+                )
+
+                _written, warning = write_row_outputs(
+                    base_dir=Path(group_output_service.base_dir),
+                    agg_id=entry.agg_id,
+                    session_rows=session_rows,
+                    speaker_rows=speaker_rows,
+                    metrics_spec=metrics_spec,
+                    content_rows=content_rows,
+                    content_rows_name=content_rows_name,
+                    bundle=True,
+                    drop_csv_keys=drop_csv_keys,
+                )
+
+                if warning:
+                    aggregation_warnings.append(warning)
+
+                    continue
+
+                chart_outcome = {
+                    "session_rows": session_rows,
+                    "speaker_rows": speaker_rows,
+                    "metrics_spec": metrics_spec,
+                    "content_rows": content_rows,
+                    "content_rows_name": content_rows_name,
+                }
+
+                merge_optional_chart_outcome_keys(chart_outcome, outcome)
+
+                try:
+                    chart_result = run_group_aggregate_charts(
+                        agg_id=entry.agg_id,
+                        group_run_root=Path(group_output_service.base_dir),
+                        group_run_id=group_run_id,
+                        outcome=chart_outcome,
+                        transcript_set=transcript_set,
+                        group_uuid=group_uuid,
+                        per_transcript_results=per_transcript_results,
+                        canonical_speaker_map=canonical_speaker_map,
+                    )
+
+                    aggregation_warnings.extend(chart_result.warnings)
+
+                except Exception as exc:
+                    logger.warning(
+                        "Group chart runner dispatch failed for %s: %s",
+                        entry.agg_id,
+                        exc,
+                        exc_info=True,
+                    )
+
+                stored = dict(outcome)
+
+                stored["output_type"] = "rows"
+
+                aggregations[entry.agg_id] = stored
+
+                completed.add(entry.agg_id)
+
+        def _publish_manifest_only() -> None:
+            write_output_manifest(
+                run_dir=run_dir,
+                run_id=group_run_id,
+                transcript_key=group_uuid,
+                modules_enabled=selected_modules,
+            )
+
+        # Lock covers authoritative collect writes, synthesis publish, and manifest.
+        if need_synth_lock:
+            try:
+                with synthesis_lock(run_dir):
+                    _run_aggregation_loop()
+                    synthesis_meta = run_synthesis_publish_and_manifest(
+                        run_dir=run_dir,
+                        run_id=group_run_id,
+                        transcript_key=group_uuid,
+                        selected_modules=list(selected_modules),
+                        completed_agg_ids=completed,
+                        config=group_config,
+                        aggregation_warnings=aggregation_warnings,
+                        already_holding_lock=True,
+                    )
+            except SynthesisLockTimeout as exc:
+                logger.warning(
+                    "group LLM synthesis lock timeout during finalize: %s", exc
+                )
                 aggregation_warnings.append(
                     build_warning(
-                        code="MISSING_DEP",
-                        message=f"Missing dependencies: {', '.join(missing_deps)}",
-                        aggregation_key=entry.agg_id,
-                        missing_deps=missing_deps,
-                        details={"missing_keys": missing_deps},
+                        code=synth_err.SYNTHESIS_LOCK_TIMEOUT,
+                        message=str(exc),
+                        aggregation_key="group_llm_synthesis",
                     )
                 )
-                continue
-
-            outcome = _call_aggregate_fn(
-                entry.aggregate_fn,
-                per_transcript_results,
-                canonical_speaker_map,
-                transcript_set,
-                aggregations,
+                synthesis_meta = {
+                    "attempt_status": "lock_timeout",
+                    "published": False,
+                    "error_code": synth_err.SYNTHESIS_LOCK_TIMEOUT,
+                }
+                # Fail closed on synth collect writes; still aggregate other modules.
+                _run_aggregation_loop(skip_synth_aggs=True)
+                _publish_manifest_only()
+        else:
+            _run_aggregation_loop()
+            synthesis_meta = run_synthesis_publish_and_manifest(
+                run_dir=run_dir,
+                run_id=group_run_id,
+                transcript_key=group_uuid,
+                selected_modules=list(selected_modules),
+                completed_agg_ids=completed,
+                config=group_config,
+                aggregation_warnings=aggregation_warnings,
+                already_holding_lock=False,
             )
-            if outcome is None:
-                continue
-            if isinstance(outcome, dict) and outcome.get("warning"):
-                aggregation_warnings.append(outcome["warning"])
-                continue
-
-            if isinstance(outcome, dict):
-                for w in outcome.get("aggregation_warnings") or []:
-                    if isinstance(w, dict) and w.get("code"):
-                        aggregation_warnings.append(w)
-
-            if entry.output_type == "blob":
-                blob_name = outcome.get("blob_name", "summary")
-                blob_payload = outcome.get("blob_payload", {})
-                blob_dir = Path(group_output_service.base_dir) / entry.agg_id
-                blob_dir.mkdir(parents=True, exist_ok=True)
-                save_json(blob_payload, str(blob_dir / f"{blob_name}.json"))
-                stored = dict(outcome)
-                stored["output_type"] = "blob"
-                stored["artifact"] = str(blob_dir / f"{blob_name}.json")
-                aggregations[entry.agg_id] = stored
-                completed.add(entry.agg_id)
-                continue
-
-            row_payload = _row_payload(outcome)
-            session_rows = row_payload.get("session_rows", [])
-            speaker_rows = row_payload.get("speaker_rows", [])
-            metrics_spec = row_payload.get("metrics_spec")
-            content_rows = row_payload.get("content_rows")
-            content_rows_name = row_payload.get("content_rows_name")
-            drop_csv_keys = row_payload.get("drop_csv_keys")
-
-            session_rows = _attach_session_identity(
-                session_rows,
-                per_transcript_results,
-                transcript_set,
-                get_transcript_id,
-            )
-            _written, warning = write_row_outputs(
-                base_dir=Path(group_output_service.base_dir),
-                agg_id=entry.agg_id,
-                session_rows=session_rows,
-                speaker_rows=speaker_rows,
-                metrics_spec=metrics_spec,
-                content_rows=content_rows,
-                content_rows_name=content_rows_name,
-                bundle=True,
-                drop_csv_keys=drop_csv_keys,
-            )
-            if warning:
-                aggregation_warnings.append(warning)
-                continue
-            chart_outcome = {
-                "session_rows": session_rows,
-                "speaker_rows": speaker_rows,
-                "metrics_spec": metrics_spec,
-                "content_rows": content_rows,
-                "content_rows_name": content_rows_name,
-            }
-            merge_optional_chart_outcome_keys(chart_outcome, outcome)
-            try:
-                chart_result = run_group_aggregate_charts(
-                    agg_id=entry.agg_id,
-                    group_run_root=Path(group_output_service.base_dir),
-                    group_run_id=group_run_id,
-                    outcome=chart_outcome,
-                    transcript_set=transcript_set,
-                    group_uuid=group_uuid,
-                    per_transcript_results=per_transcript_results,
-                    canonical_speaker_map=canonical_speaker_map,
-                )
-                aggregation_warnings.extend(chart_result.warnings)
-            except Exception as exc:
-                logger.warning(
-                    "Group chart runner dispatch failed for %s: %s",
-                    entry.agg_id,
-                    exc,
-                    exc_info=True,
-                )
-            stored = dict(outcome)
-            stored["output_type"] = "rows"
-            aggregations[entry.agg_id] = stored
-            completed.add(entry.agg_id)
 
         aggregation_warnings.sort(
             key=lambda w: (w.get("aggregation_key", ""), w.get("code", ""))
         )
-        warnings_path = (
-            Path(group_output_service.base_dir) / "aggregation_warnings.json"
-        )
+        warnings_path = run_dir / "aggregation_warnings.json"
         save_json(aggregation_warnings, str(warnings_path))
 
         summary_text = (
@@ -446,7 +553,7 @@ def finalize_group_analysis(
             selected_modules, per_transcript_results
         )
         write_run_results_summary(
-            run_dir=Path(group_output_service.base_dir),
+            run_dir=run_dir,
             run_id=group_run_id,
             transcript_key=group_uuid,
             modules_enabled=selected_modules,
@@ -454,13 +561,9 @@ def finalize_group_analysis(
             skipped_modules=agg_skipped,
             errors=group_errors,
             preset_explanation=None,
-        )
-
-        write_output_manifest(
-            run_dir=Path(group_output_service.base_dir),
-            run_id=group_run_id,
-            transcript_key=group_uuid,
-            modules_enabled=selected_modules,
+            module_results=(
+                {"group_llm_synthesis": synthesis_meta} if synthesis_meta else None
+            ),
         )
 
         chart_failure_count = sum(
@@ -487,6 +590,7 @@ def finalize_group_analysis(
                 "warnings_count": len(aggregation_warnings),
             },
             "aggregation_warnings": aggregation_warnings,
+            "group_llm_synthesis": synthesis_meta,
             "group_phase_metadata": {
                 "group_phase_terminal_failure": False,
                 "aggregation_warning_count": len(aggregation_warnings),

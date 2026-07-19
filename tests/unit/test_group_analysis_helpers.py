@@ -245,6 +245,12 @@ def test_finalize_group_analysis_disabled_writes_group_artifacts(
         "transcriptx.core.pipeline.group_analysis_runner.write_output_manifest",
         fake_write_output_manifest,
     )
+    # Finalize now publishes the manifest via the synthesis hook, which imports
+    # write_output_manifest from manifest_builder directly.
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.group_llm_synthesis.finalize_hook.write_output_manifest",
+        fake_write_output_manifest,
+    )
 
     config = TranscriptXConfig()
     config.group_analysis.enabled = False
@@ -395,6 +401,12 @@ def test_finalize_group_analysis_enabled_runs_registry_rows_blobs_and_warnings(
     )
     monkeypatch.setattr(
         "transcriptx.core.pipeline.group_analysis_runner.write_output_manifest",
+        fake_write_output_manifest,
+    )
+    # Finalize now publishes the manifest via the synthesis hook, which imports
+    # write_output_manifest from manifest_builder directly.
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.group_llm_synthesis.finalize_hook.write_output_manifest",
         fake_write_output_manifest,
     )
     monkeypatch.setattr(
@@ -694,6 +706,10 @@ def test_finalize_skips_none_aggregate_outcome(
     )
     monkeypatch.setattr(
         "transcriptx.core.pipeline.group_analysis_runner.write_output_manifest",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.group_llm_synthesis.finalize_hook.write_output_manifest",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(

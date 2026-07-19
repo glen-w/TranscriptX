@@ -84,3 +84,6 @@ htmlcov/
 # Archived docs/reports
 docs/archive/
 reports/archive/
+
+# Accidental test output when mocks leak Path(".") as output roots
+MagicMock/

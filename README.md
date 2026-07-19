@@ -117,7 +117,7 @@ See `docs/public_surfaces.md` for the full public-surface contract, including Do
 - Structured, traceable outputs
 - Voice prosody dashboards (per-speaker profiles, timelines, comparisons)
 - Voice charts core: pause/turn-delivery + rhythm indices (audio-gated)
-- Groups: analyze multiple transcripts as a single unit (file-backed)
+- Groups: analyze multiple transcripts as a single unit (file-backed); optional [cross-session LLM synthesis](docs/groups/group_llm_synthesis_contract.md) of member summaries (see [docs/runtime/llm.md](docs/runtime/llm.md))
 
 > **Topic modeling note:** `Speaker-Topic Engagement Heatmap` uses shared attribution, not speaker-owned turn counts. Each window contributes one unit of topic engagement total (or the row's existing weight, when present), split evenly across the speakers named in that window.
 

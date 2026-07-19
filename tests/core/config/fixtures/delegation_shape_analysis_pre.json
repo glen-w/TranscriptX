@@ -150,6 +150,10 @@
     "skip_geocoding": false,
     "use_lightweight_models": false
   },
+  "group_llm_synthesis": {
+    "effort": "high",
+    "enabled": true
+  },
   "highlights": {
     "cold_open": {
       "window_policy": "seconds",
