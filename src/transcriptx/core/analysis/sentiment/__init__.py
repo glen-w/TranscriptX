@@ -150,22 +150,23 @@ def _load_sentiment_transformers(model_name: str):
         from transcriptx.core.utils.lazy_imports import get_transformers
 
         # Cardiff (and similar) revisions may ship only pytorch_model.bin; convert
-        # once so transformers can load on torch<2.6 without the torch.load gate.
-        ensure_local_safetensors(model_name)
+        # once and load from the local snapshot so torch<2.6 skips the torch.load gate.
+        local_root = ensure_local_safetensors(model_name)
+        model_ref = str(local_root) if local_root is not None else model_name
 
         with suppress_stdout_stderr(), spinner("Loading sentiment model…"):
             transformers = get_transformers()
             try:
                 pipe = transformers.pipeline(
                     "text-classification",
-                    model=model_name,
+                    model=model_ref,
                     top_k=None,
                     model_kwargs={"use_safetensors": True},
                 )
             except (TypeError, OSError, ValueError):
                 pipe = transformers.pipeline(
                     "text-classification",
-                    model=model_name,
+                    model=model_ref,
                     top_k=None,
                 )
         log_info("SENTIMENT", "Transformers sentiment model loaded successfully")
@@ -181,6 +182,7 @@ def _load_sentiment_transformers(model_name: str):
         except Exception:
             pass
         return None
+
 
 def score_sentiment(text: str, preprocess: bool = False) -> dict:
     """

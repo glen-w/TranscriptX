@@ -44,6 +44,9 @@ from transcriptx.core.analysis.group_charts.tics_group_charts import (
 from transcriptx.core.analysis.group_charts.topic_modeling_group_charts import (
     TopicModelingGroupChartGenerator,
 )
+from transcriptx.core.analysis.group_charts.bertopic_group_charts import (
+    BertopicGroupChartGenerator,
+)
 from transcriptx.core.analysis.group_charts.sentiment_charts import (
     SentimentGroupChartGenerator,
 )
@@ -243,6 +246,7 @@ def test_registry_omits_misleading_generic_agg_ids() -> None:
     assert isinstance(
         GROUP_CHART_REGISTRY["topic_modeling"], TopicModelingGroupChartGenerator
     )
+    assert isinstance(GROUP_CHART_REGISTRY["bertopic"], BertopicGroupChartGenerator)
     assert "highlights" in GROUP_CHART_REGISTRY
     assert "moments" in GROUP_CHART_REGISTRY
 
@@ -279,6 +283,7 @@ def test_group_chart_registry_expected_generator_types() -> None:
     assert isinstance(
         GROUP_CHART_REGISTRY["contagion"], ContagionPooledGroupChartGenerator
     )
+    assert isinstance(GROUP_CHART_REGISTRY["bertopic"], BertopicGroupChartGenerator)
 
     generic_agg_ids = (
         "understandability",

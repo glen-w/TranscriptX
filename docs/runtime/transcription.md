@@ -195,6 +195,19 @@ Import alternate-language versions of an existing transcript using a flat filena
 
 **Fallback:** if inheritance does not apply, segment `original_cue.original_speaker` names are used as on a normal import.
 
+## Folder import (Import Transcript)
+
+On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder into the container) and imports only eligible files:
+
+- Supported extensions: `.json`, `.srt`, `.vtt`, `.txt`, `.html`, `.htm` (case-insensitive).
+- Skips stems that are already managed (canonical JSON + import sidecar). Incomplete JSON without a safe `originals/` provenance is **not** treated as a new import.
+- Duplicate stems in the folder (including case variants) are all marked conflict — none are imported.
+- Source files in the scanned folder are **never** deleted or modified; the app copies into `transcripts/imports/` then runs managed admission.
+- Defaults: **100 MiB** per file (`TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES`) and **500** candidates (`TRANSCRIPTX_FOLDER_IMPORT_MAX_CANDIDATES`). Exceeding the candidate limit fails the scan closed (Import eligible stays disabled).
+- Preview is invalidated if the path, transcripts root, limits, or admission policy change.
+
+Programmatic admission with registration under one lock: `transcriptx.io.admit_and_register.admit_and_register`.
+
 ## Other tools
 
 You can produce compatible JSON from other engines (e.g. AssemblyAI, Deepgram, Google, manual edits). Ensure each segment has `start`, `end`, `speaker`, and `text`. Use **validate** (above) to check structure and the **managed import workflow** to add canonical metadata + sidecar + archive.

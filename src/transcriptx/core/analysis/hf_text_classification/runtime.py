@@ -275,26 +275,29 @@ def load_classifier(profile: ModelProfile) -> LoadedClassifier:
         )
         # Prefer safetensors when available (convert bin locally if needed) so
         # load works on torch<2.6 where transformers blocks torch.load.
+        # Load from the local snapshot path: Hub metadata ignores converted files.
         from transcriptx.core.analysis.hf_safetensors import ensure_local_safetensors
 
-        have_safetensors = ensure_local_safetensors(
+        local_root = ensure_local_safetensors(
             profile.model_id, revision=profile.model_revision
         )
-        use_safetensors = True if have_safetensors else profile.prefer_safetensors
+        model_ref = str(local_root) if local_root is not None else profile.model_id
+        use_safetensors = True if local_root is not None else profile.prefer_safetensors
+        model_kw = dict(common_kw)
+        if local_root is None:
+            model_kw["revision"] = profile.model_revision
         try:
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                profile.model_id,
-                revision=profile.model_revision,
+                model_ref,
                 use_safetensors=use_safetensors,
                 torch_dtype=dtype,
-                **common_kw,
+                **model_kw,
             )
         except TypeError:
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                profile.model_id,
-                revision=profile.model_revision,
+                model_ref,
                 torch_dtype=dtype,
-                **common_kw,
+                **model_kw,
             )
 
         id2label = _resolved_id2label(model)

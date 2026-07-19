@@ -1,9 +1,18 @@
 """
 Group aggregation for BERTopic.
+
+True data source (locked): refits from pooled **source segments**, not from
+transcript-level BERTopic topic artifacts. Per-transcript ``topic_id`` values
+are not joined across fits. Member artifacts are used only for activation /
+session metadata when needed.
+
+``deps=[]`` is correct: the group model is independently refitted and does not
+depend on other aggregation outputs.
 """
 
 from __future__ import annotations
 
+import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List
@@ -17,6 +26,22 @@ from transcriptx.core.analysis.aggregation.speaker_utils import (  # type: ignor
     resolve_canonical_speaker,
 )
 from transcriptx.core.analysis.aggregation.warnings import build_warning
+from transcriptx.core.analysis.bertopic.deps import (
+    EXTRA_NAME,
+    embedding_model_policy_check,
+    verify_bertopic_import,
+)
+from transcriptx.core.analysis.bertopic.eligibility import (
+    evaluate_bertopic_eligibility,
+)
+from transcriptx.core.analysis.bertopic.runtime import (
+    build_model_kwargs,
+    build_provenance,
+)
+from transcriptx.core.analysis.bertopic.schema import (
+    SCHEMA_VERSION,
+    validate_bertopic_artifact_payload,
+)
 from transcriptx.core.analysis.bertopic.utils import (
     build_doc_topic_data,
     build_topic_objects,
@@ -28,7 +53,6 @@ from transcriptx.core.pipeline.result_envelope import (  # type: ignore[import]
 from transcriptx.core.pipeline.speaker_normalizer import (  # type: ignore[import]
     CanonicalSpeakerMap,
 )
-from transcriptx.core.utils.lazy_imports import optional_import
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.nlp_utils import (  # type: ignore[import]
     has_meaningful_content,
@@ -99,6 +123,23 @@ def _validate_group_payload(
     return warnings
 
 
+def inspect_member_bertopic_activation(
+    member_payload: Any,
+) -> tuple[bool, list[str]]:
+    """
+    Inspect a member transcript BERTopic artifact for activation/status only.
+
+    Does not feed topic IDs into the group fit. Unsupported schema versions are
+    skipped with a warning; corrupt payloads are rejected with a warning.
+    """
+    _payload, warnings = validate_bertopic_artifact_payload(
+        member_payload, require_topics=False
+    )
+    if warnings and _payload is None:
+        return False, warnings
+    return True, warnings
+
+
 def aggregate_bertopic_group(
     per_transcript_results: List[PerTranscriptResult],
     canonical_speaker_map: CanonicalSpeakerMap,
@@ -106,15 +147,18 @@ def aggregate_bertopic_group(
     aggregations: Dict[str, Any] | None = None,
 ) -> Dict[str, Any] | None:
     """
-    Fit a group-level BERTopic model and aggregate by session and speaker.
+    Fit a group-level BERTopic model from pooled source segments and aggregate.
+
+    Ordering: ``(transcript_id ascending, segment_index ascending)``.
+    Duplicate texts are retained as separate documents.
     """
     transcript_service = TranscriptService(enable_cache=True)
 
     texts: List[str] = []
-    session_ids: List[str] = []
     speakers: List[str | None] = []
     time_labels: List[float] = []
     doc_extra_fields: List[Dict[str, Any]] = []
+    pending_docs: List[Dict[str, Any]] = []
 
     session_meta: Dict[str, Dict[str, Any]] = {}
     path_meta: Dict[str, Dict[str, Any]] = {}
@@ -123,8 +167,20 @@ def aggregate_bertopic_group(
         for canonical_id, display in canonical_speaker_map.canonical_to_display.items()
     }
     resolver = SpeakerMapResolver()
+    member_activation_warnings: List[str] = []
 
     for result in per_transcript_results:
+        # Member bertopic artifacts are activation/status only — not fit inputs.
+        member_payload = None
+        if isinstance(result.module_results, dict):
+            member_payload = result.module_results.get("bertopic")
+        if member_payload is not None:
+            _ok, warns = inspect_member_bertopic_activation(member_payload)
+            for w in warns:
+                member_activation_warnings.append(
+                    f"{result.transcript_key or result.transcript_path}: {w}"
+                )
+
         transcript_path = result.transcript_path
         segments = transcript_service.load_segments(transcript_path, use_cache=True)
         if not segments:
@@ -163,69 +219,91 @@ def aggregate_bertopic_group(
             )
             speaker_display = speaker_info[1] if speaker_info else None
 
-            texts.append(processed)
-            session_ids.append(session_id)
-            speakers.append(speaker_display)
-            time_labels.append(float(segment.get("start", idx)))
-            doc_extra_fields.append(
+            pending_docs.append(
                 {
+                    "text": processed,
+                    "speaker": speaker_display,
+                    "time": float(segment.get("start", idx)),
                     "segment_index": idx,
-                    "transcript_id": transcript_id,
+                    "transcript_id": str(transcript_id),
                     "session_name": session_id,
                 }
             )
 
-    if len(texts) < 3:
+    # Group ordering: (transcript_id ascending, segment_index ascending).
+    pending_docs.sort(key=lambda d: (str(d["transcript_id"]), int(d["segment_index"])))
+    for doc in pending_docs:
+        texts.append(doc["text"])
+        speakers.append(doc["speaker"])
+        time_labels.append(doc["time"])
+        doc_extra_fields.append(
+            {
+                "segment_index": doc["segment_index"],
+                "transcript_id": doc["transcript_id"],
+                "session_name": doc["session_name"],
+            }
+        )
+
+    eligibility = evaluate_bertopic_eligibility(texts)
+    if not eligibility.eligible:
         return {
             "warning": build_warning(
                 code="INSUFFICIENT_DATA",
                 message="Not enough segments for group BERTopic aggregation.",
                 aggregation_key="bertopic",
-                details={"texts_count": len(texts)},
+                details={
+                    "texts_count": eligibility.documents_count,
+                    "reason": eligibility.reason,
+                    "member_activation_warnings": member_activation_warnings,
+                },
             )
         }
 
-    try:
-        bertopic_module = optional_import(
-            "bertopic", "BERTopic topic modeling", "bertopic", auto_install=True
-        )
-    except ImportError as exc:
+    bertopic_module, dep_reason = verify_bertopic_import(auto_install=False)
+    if bertopic_module is None:
         return {
             "warning": build_warning(
                 code="MISSING_DEP",
                 message=(
-                    f"{exc} If install fails on your platform, try upgrading pip and "
-                    "installing build tools."
+                    f"{dep_reason}. Install with: pip install 'transcriptx[{EXTRA_NAME}]'"
                 ),
                 aggregation_key="bertopic",
-                missing_deps=["bertopic"],
+                missing_deps=[EXTRA_NAME],
             )
         }
 
     config = get_config()
     bertopic_cfg = getattr(config.analysis, "bertopic", None)
-    model_kwargs: Dict[str, Any] = {}
-    if bertopic_cfg:
-        if getattr(bertopic_cfg, "embedding_model", None):
-            model_kwargs["embedding_model"] = bertopic_cfg.embedding_model
-        if getattr(bertopic_cfg, "min_topic_size", None):
-            model_kwargs["min_topic_size"] = bertopic_cfg.min_topic_size
-        nr_topics = getattr(bertopic_cfg, "nr_topics", None)
-        if isinstance(nr_topics, str):
-            if nr_topics.isdigit():
-                model_kwargs["nr_topics"] = int(nr_topics)
-            elif nr_topics:
-                model_kwargs["nr_topics"] = nr_topics
-        elif isinstance(nr_topics, int):
-            model_kwargs["nr_topics"] = nr_topics
-        if getattr(bertopic_cfg, "top_n_words", None):
-            model_kwargs["top_n_words"] = bertopic_cfg.top_n_words
-        if getattr(bertopic_cfg, "calculate_probabilities", None):
-            model_kwargs["calculate_probabilities"] = True
+    embedding_model = (
+        getattr(bertopic_cfg, "embedding_model", None) if bertopic_cfg else None
+    )
+    policy_reason = embedding_model_policy_check(str(embedding_model or ""))
+    if policy_reason:
+        return {
+            "warning": build_warning(
+                code="CONFIG",
+                message=policy_reason,
+                aggregation_key="bertopic",
+                details={"reason": policy_reason},
+            )
+        }
 
-    BERTopic = bertopic_module.BERTopic
-    model = BERTopic(**model_kwargs)
-    topic_assignments, topic_probs = model.fit_transform(texts)
+    model_kwargs = build_model_kwargs(bertopic_cfg)
+    started = time.perf_counter()
+    try:
+        BERTopic = bertopic_module.BERTopic
+        model = BERTopic(**model_kwargs)
+        topic_assignments, topic_probs = model.fit_transform(texts)
+    except ImportError as exc:
+        return {
+            "warning": build_warning(
+                code="MISSING_DEP",
+                message=f"broken_extra:{EXTRA_NAME}: {exc}",
+                aggregation_key="bertopic",
+                missing_deps=[EXTRA_NAME],
+            )
+        }
+    duration = time.perf_counter() - started
 
     topics = build_topic_objects(
         model,
@@ -245,6 +323,24 @@ def aggregate_bertopic_group(
     meta["group_uuid"] = transcript_set.metadata.get("group_uuid")
     meta["transcript_set_key"] = transcript_set.key
     meta["transcript_set_name"] = transcript_set.name
+    meta["fit_scope"] = "group"
+    meta["schema_version"] = SCHEMA_VERSION
+    meta["data_source"] = "source_segments_refit"
+    if member_activation_warnings:
+        meta["member_activation_warnings"] = member_activation_warnings
+    package_version = None
+    try:
+        import importlib.metadata as im
+
+        package_version = im.version("bertopic")
+    except Exception:
+        package_version = None
+    meta["provenance"] = build_provenance(
+        embedding_model=embedding_model,
+        fit_scope="group",
+        duration_seconds=duration,
+        package_version=package_version,
+    )
 
     payload_warnings = _validate_group_payload(topics, doc_topic_data)
     if payload_warnings:
@@ -284,6 +380,7 @@ def aggregate_bertopic_group(
     speaker_topic_counts: dict[str, dict[int, int]] = defaultdict(
         lambda: defaultdict(int)
     )
+    overall_topic_counts: dict[int, int] = defaultdict(int)
 
     for row in doc_topic_data:
         session_id = str(row.get("session_name", ""))
@@ -293,6 +390,18 @@ def aggregate_bertopic_group(
         speaker_counts[speaker] += 1
         session_topic_counts[session_id][topic_id] += 1
         speaker_topic_counts[speaker][topic_id] += 1
+        overall_topic_counts[topic_id] += 1
+
+    total_docs = len(doc_topic_data) or 1
+    overall_topics = [
+        {
+            "topic_id": tid,
+            "topic_share": count / total_docs,
+            "top_terms": topic_terms.get(tid, ""),
+        }
+        for tid, count in overall_topic_counts.items()
+        if tid != -1
+    ]
 
     session_rows: List[Dict[str, Any]] = []
     for session_id, topic_counts in session_topic_counts.items():
@@ -352,7 +461,23 @@ def aggregate_bertopic_group(
         key=lambda row: (row.get("display_name", ""), -row.get("topic_share", 0.0))
     )
 
+    # Pooled view for group charts; empty / all-outlier → no chart specs.
+    bertopic_pooled = {
+        "schema_version": SCHEMA_VERSION,
+        "all_outlier": bool(meta.get("all_outlier")),
+        "topics": [
+            {
+                "topic_id": row["topic_id"],
+                "topic_share": float(row["topic_share"]),
+                "top_terms": row.get("top_terms", ""),
+            }
+            for row in sorted(overall_topics, key=lambda r: -r["topic_share"])
+        ],
+    }
+
     return {
         "session_rows": canonical_session_rows,
         "speaker_rows": canonical_speaker_rows,
+        "bertopic_pooled": bertopic_pooled,
+        "meta": meta,
     }

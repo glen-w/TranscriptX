@@ -896,6 +896,7 @@ def build_registry() -> List[AggregationEntry]:
         aggregate_entity_sentiment_group,
     )
     from transcriptx.core.analysis.aggregation.topics import aggregate_topics_group
+    from transcriptx.core.analysis.aggregation.bertopic import aggregate_bertopic_group
     from transcriptx.core.analysis.aggregation.emotion import aggregate_emotion_group
     from transcriptx.core.analysis.aggregation.contextual_emotion import (
         aggregate_contextual_emotion_group,
@@ -953,6 +954,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["topic_modeling"]),
             deps=[],
             aggregate_fn=aggregate_topics_group,
+        ),
+        AggregationEntry(
+            agg_id="bertopic",
+            selector=any_of(["bertopic"]),
+            deps=[],
+            aggregate_fn=aggregate_bertopic_group,
         ),
         AggregationEntry(
             agg_id="emotion",

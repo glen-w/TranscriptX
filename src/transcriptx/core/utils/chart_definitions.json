@@ -831,7 +831,7 @@
       "by_chart_slug_regex": "/dominance\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses (actor→target roles). The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
+    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses (actor\u2192target roles). The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
     "family_id": null,
     "variant": null
   },
@@ -875,7 +875,7 @@
       "by_chart_slug_regex": "equity_summary",
       "by_filename_glob": null
     },
-    "description": "Session turn-taking equity indices on a 0–1 axis. Floor equity and response-latency fairness: higher is fairer. Interruption inequity: higher is more asymmetric; interruption balance (1 − inequity) is presentation-only.",
+    "description": "Session turn-taking equity indices on a 0\u20131 axis. Floor equity and response-latency fairness: higher is fairer. Interruption inequity: higher is more asymmetric; interruption balance (1 \u2212 inequity) is presentation-only.",
     "family_id": null,
     "variant": null
   },
@@ -2597,8 +2597,8 @@
   },
   {
     "viz_id": "lexical_diversity.ttr.speaker",
-    "label": "Lexical Diversity — TTR (All Speakers)",
-    "rank_default": 761,
+    "label": "Lexical Diversity \u2014 TTR (All Speakers)",
+    "rank_default": 762,
     "kind": "chart",
     "module": "lexical_diversity",
     "scope": "global",
@@ -2619,8 +2619,8 @@
   },
   {
     "viz_id": "lexical_diversity.mtld.speaker",
-    "label": "Lexical Diversity — MTLD (All Speakers)",
-    "rank_default": 762,
+    "label": "Lexical Diversity \u2014 MTLD (All Speakers)",
+    "rank_default": 763,
     "kind": "chart",
     "module": "lexical_diversity",
     "scope": "global",
@@ -2641,8 +2641,8 @@
   },
   {
     "viz_id": "lexical_diversity.hapax_rate.speaker",
-    "label": "Lexical Diversity — Hapax Rate (All Speakers)",
-    "rank_default": 763,
+    "label": "Lexical Diversity \u2014 Hapax Rate (All Speakers)",
+    "rank_default": 764,
     "kind": "chart",
     "module": "lexical_diversity",
     "scope": "global",
@@ -3065,9 +3065,31 @@
     "variant": null
   },
   {
+    "viz_id": "group.bertopic.pooled.topic_share.global",
+    "label": "Group pooled \u2014 topic prevalence (group BERTopic)",
+    "rank_default": 755,
+    "kind": "chart",
+    "module": "bertopic",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.bertopic.pooled.topic_share.global",
+      "by_artifact_key_prefix": "bertopic/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": "Prevalence of each topic from a group-level BERTopic refit over pooled source segments (not joined transcript topic IDs). Empty or all-outlier fits emit no chart.",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "group.emotion.pooled.profile.global",
     "label": "Group pooled \u2014 mean emotion profile",
-    "rank_default": 755,
+    "rank_default": 756,
     "kind": "chart",
     "module": "emotion",
     "scope": "global",
@@ -3089,7 +3111,7 @@
   {
     "viz_id": "group.tics.pooled.by_tic.global",
     "label": "Group pooled \u2014 tic counts (full corpus)",
-    "rank_default": 756,
+    "rank_default": 757,
     "kind": "chart",
     "module": "tics",
     "scope": "global",
@@ -3111,7 +3133,7 @@
   {
     "viz_id": "group.stats.pooled.totals.global",
     "label": "Group pooled \u2014 corpus totals",
-    "rank_default": 757,
+    "rank_default": 758,
     "kind": "chart",
     "module": "stats",
     "scope": "global",
@@ -3133,7 +3155,7 @@
   {
     "viz_id": "group.interactions.pooled.interruptions_initiated.global",
     "label": "Group pooled \u2014 interactions interruptions initiated",
-    "rank_default": 758,
+    "rank_default": 759,
     "kind": "chart",
     "module": "interactions",
     "scope": "global",
@@ -3155,7 +3177,7 @@
   {
     "viz_id": "group.interactions.pooled.interruptions_received.global",
     "label": "Group pooled \u2014 interactions interruptions received",
-    "rank_default": 759,
+    "rank_default": 760,
     "kind": "chart",
     "module": "interactions",
     "scope": "global",
@@ -3177,7 +3199,7 @@
   {
     "viz_id": "group.contagion.pooled.top_directed_edges.global",
     "label": "Group pooled \u2014 contagion top directed edges",
-    "rank_default": 760,
+    "rank_default": 761,
     "kind": "chart",
     "module": "contagion",
     "scope": "global",

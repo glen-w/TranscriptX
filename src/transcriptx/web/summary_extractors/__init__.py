@@ -68,6 +68,7 @@ def _register_all_extractors():
         "contextual_emotion",
         "fine_grained_emotion",
         "topic_modeling",
+        "bertopic",
         "ner",
         "acts",
         "stats",

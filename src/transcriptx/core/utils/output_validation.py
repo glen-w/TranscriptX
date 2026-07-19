@@ -119,6 +119,12 @@ MODULE_VALIDATION_RULES = {
         min_files=1,  # At least 1 main data file
         file_extensions={".json", ".csv", ".png", ".html"},
     ),
+    "bertopic": ModuleValidationRule(
+        required_files=["*_bertopic_topics.json"],
+        required_dirs=["data"],
+        min_files=1,
+        file_extensions={".json", ".csv", ".png", ".html"},
+    ),
     "semantic_similarity": ModuleValidationRule(
         required_files=[
             "*_semantic_similarity_summary.json"

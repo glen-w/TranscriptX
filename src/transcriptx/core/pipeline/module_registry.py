@@ -24,7 +24,13 @@ _LEGACY_MODULES_DEPRECATION = (
 
 
 def is_extra_available(extra_name: str) -> bool:
-    """Return True if the given extra is available (one representative import per extra). Deterministic."""
+    """
+    Return True if the given extra can be imported (execution-time probe).
+
+    **Do not use for catalogue / UI listing** — importing may load heavy natives.
+    Prefer ``is_extra_distribution_present`` from
+    ``transcriptx.core.pipeline.optional_extras`` for non-importing detection.
+    """
     module_name = EXTRA_REPRESENTATIVE.get(extra_name)
     if not module_name:
         return False
@@ -33,6 +39,15 @@ def is_extra_available(extra_name: str) -> bool:
         return True
     except ImportError:
         return False
+
+
+def is_extra_distribution_present(extra_name: str) -> bool:
+    """Non-importing catalogue probe (distribution metadata only)."""
+    from transcriptx.core.pipeline.optional_extras import (
+        is_extra_distribution_present as _present,
+    )
+
+    return _present(extra_name)
 
 
 def analyze_sentiment_from_file(transcript_path: str):

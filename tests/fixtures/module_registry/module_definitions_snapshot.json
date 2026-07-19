@@ -16,6 +16,7 @@
     "sentiment",
     "stats",
     "topic_modeling",
+    "bertopic",
     "transcript_output",
     "simplified_transcript",
     "understandability",
@@ -257,6 +258,22 @@
       "description": "Topic Modeling",
       "determinism_tier": "T2",
       "enhancements": [],
+      "requirements": [
+        "segments"
+      ]
+    },
+    "bertopic": {
+      "category": "heavy",
+      "dependencies": [
+        "insight_eligibility"
+      ],
+      "description": "BERTopic topic modeling (optional path; stack currently in default install \u2014 see docs/dev/bertopic_optional_module.md)",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "exclude_from_default": true,
+      "required_extras": [
+        "bertopic"
+      ],
       "requirements": [
         "segments"
       ]

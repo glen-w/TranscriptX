@@ -1,0 +1,15 @@
+{
+  "topics": [
+    {
+      "topic_id": 0,
+      "words": ["alpha"],
+      "weights": [1.0],
+      "label": "alpha",
+      "label_source": "ctfidf_top_words"
+    }
+  ],
+  "meta": {
+    "texts_count": 1,
+    "warning": "legacy pre-rewire shape without schema_version"
+  }
+}

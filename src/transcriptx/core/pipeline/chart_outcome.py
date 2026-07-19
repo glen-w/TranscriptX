@@ -17,6 +17,7 @@ GROUP_CHART_OUTCOME_OPTIONAL_KEYS: FrozenSet[str] = frozenset(
         "ner_pooled",
         "entity_sentiment_pooled",
         "topic_modeling_pooled",
+        "bertopic_pooled",
         "emotion_pooled",
         "tics_pooled",
         "stats_pooled",

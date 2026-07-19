@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from transcriptx.io.admit_and_register import AdmitOutcome, AdmitOutcomeKind
+
 
 def test_import_transcript_page_exposes_renderer() -> None:
     from transcriptx.web.page_modules.upload_transcript import (
@@ -15,7 +17,7 @@ def test_import_transcript_page_exposes_renderer() -> None:
     assert callable(render_upload_transcript_page)
 
 
-def test_import_uploaded_transcript_builds_session_id(
+def test_import_uploaded_transcript_uses_admit_and_register(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
@@ -29,34 +31,30 @@ def test_import_uploaded_transcript_builds_session_id(
         mod, "_save_uploaded_transcript", lambda f: (saved_source, "incoming.vtt")
     )
 
-    class _ManagedResult:
-        json_path = json_artifact
-
     called = {}
 
-    def _fake_managed(path, *, logical_upload_basename=None, **kwargs):
+    def _fake_admit(path, *, logical_basename=None, **kwargs):
         called["path"] = path
-        called["logical_upload_basename"] = logical_upload_basename
+        called["logical_basename"] = logical_basename
         called.update(kwargs)
-        return _ManagedResult()
+        return AdmitOutcome(
+            kind=AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
+            transcript_path=json_artifact,
+            slug="meeting_slug",
+            artifact_committed=True,
+            registration_progressed=True,
+            user_safe_detail="ok",
+        )
 
-    monkeypatch.setattr(
-        "transcriptx.web.page_modules.upload_transcript.run_managed_import_workflow",
-        _fake_managed,
-    )
-    monkeypatch.setattr(
-        mod,
-        "_register_uploaded_transcript",
-        lambda p: "meeting_slug",
-    )
+    monkeypatch.setattr(mod, "admit_and_register", _fake_admit)
+    monkeypatch.setattr(mod, "_clear_import_caches", lambda: None)
+    monkeypatch.setattr(mod.st, "session_state", {}, raising=False)
 
-    slug, transcript_path = mod._import_uploaded_transcript(uploaded)
-    assert slug == "meeting_slug"
-    assert transcript_path == json_artifact
+    kind = mod._import_uploaded_transcript(uploaded)
+    assert kind is AdmitOutcomeKind.IMPORTED_AND_REGISTERED
     assert called["path"] == saved_source
-    assert called["logical_upload_basename"] == "incoming.vtt"
-    assert called["overwrite"] is False
-    assert called["delete_staging_on_success"] is True
+    assert called["logical_basename"] == "incoming.vtt"
+    assert called["allow_provenance_backfill"] is True
 
 
 def test_import_uploaded_transcript_does_not_apply_speaker_map_directly(
@@ -72,35 +70,25 @@ def test_import_uploaded_transcript_does_not_apply_speaker_map_directly(
         mod, "_save_uploaded_transcript", lambda f: (tmp_path / "x.vtt", "x.vtt")
     )
     monkeypatch.setattr(
-        "transcriptx.web.page_modules.upload_transcript.run_managed_import_workflow",
-        lambda path, **kwargs: type("R", (), {"json_path": json_artifact})(),
+        mod,
+        "admit_and_register",
+        lambda *a, **k: AdmitOutcome(
+            kind=AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
+            transcript_path=json_artifact,
+            slug="slug",
+            artifact_committed=True,
+            registration_progressed=True,
+            user_safe_detail="ok",
+        ),
     )
-    monkeypatch.setattr(mod, "_register_uploaded_transcript", lambda p: "slug")
+    monkeypatch.setattr(mod, "_clear_import_caches", lambda: None)
+    monkeypatch.setattr(mod.st, "session_state", {}, raising=False)
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "_persist_imported_speaker_names" not in source
     assert "apply_speaker_map_on_import" not in source
 
     mod._import_uploaded_transcript(uploaded)
-
-
-def test_save_uploaded_recording_uses_recordings_service(monkeypatch) -> None:
-    import transcriptx.web.page_modules.upload_transcript as mod
-
-    uploaded = object()
-    expected = Path("/tmp/recordings/imports/audio.wav")
-    called = {"value": False}
-
-    def _fake_save(file_obj):
-        called["value"] = True
-        assert file_obj is uploaded
-        return expected
-
-    monkeypatch.setattr(mod.RecordingsService, "save_uploaded_file", _fake_save)
-
-    actual = mod._save_uploaded_recording(uploaded)
-    assert called["value"] is True
-    assert actual == expected
 
 
 def test_clear_import_caches_clears_transcript_recording_and_streamlit(
@@ -139,6 +127,8 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
     assert "does not transcribe audio" in source
     assert "A transcript file is still required for transcript text content." in source
     assert "Rename imported transcript + linked audio" in source
+    assert "Import all from folder" in source
+    assert "ThreadPoolExecutor" not in source
 
 
 def test_import_page_renders_post_import_action_links() -> None:

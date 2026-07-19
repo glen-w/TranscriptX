@@ -104,6 +104,14 @@ MODULE_CONFIG_ALLOWLIST = {
         "analysis.topic_modeling_min_df",
         "analysis.topic_modeling_max_df",
     ],
+    "bertopic": [
+        "analysis.bertopic.embedding_model",
+        "analysis.bertopic.min_topic_size",
+        "analysis.bertopic.nr_topics",
+        "analysis.bertopic.top_n_words",
+        "analysis.bertopic.label_words",
+        "analysis.bertopic.calculate_probabilities",
+    ],
     "acts": [
         "analysis.act_confidence_threshold",
     ],
@@ -155,9 +163,22 @@ def _get_attr(obj: Any, path: str) -> Any:
     return current
 
 
-def get_cache_affecting_config(module_name: str, config: Any) -> Dict[str, Any]:
+def get_cache_affecting_config(
+    module_name: str,
+    config: Any,
+    *,
+    fit_scope: str | None = None,
+) -> Dict[str, Any]:
+    """
+    Return cache-fingerprint config for a module.
+
+    For ``bertopic``, callers should pass ``fit_scope`` (``transcript`` | ``group``)
+    so transcript and group fits do not collide.
+    """
     allowlist = MODULE_CONFIG_ALLOWLIST.get(module_name, [])
     payload: Dict[str, Any] = {}
     for path in allowlist:
         payload[path] = _get_attr(config, path)
+    if module_name == "bertopic":
+        payload["fit_scope"] = fit_scope or "transcript"
     return payload

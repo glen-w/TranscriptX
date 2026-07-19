@@ -188,7 +188,7 @@ The following are explicitly **not** part of the beta-ready scope; they are plan
 - **OpenAI and other remote LLM providers** — Ollama only until then.
 - **Longitudinal speaker tracking / Speakers UI** — speaker-over-time charts, cross-session views, restored Speakers / Speaker Detail pages, and related extended speaker features.
 - **GPU acceleration & first-class native install** — MPS on native Mac; CUDA on Linux Docker/native; documented install parity — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term).
-- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit/BERTopic rewire, large export-system and config-knobs refactors.
+- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export-system and config-knobs refactors. **BERTopic** is re-enabled and temporarily in the **default** install (registry + aggregation + charts); public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
 
 ### ConvoKit analysis (archived)
 

@@ -50,6 +50,10 @@ INFRA_ENV_ALLOWLIST = frozenset(
         "TRANSCRIPTX_TORCH_VARIANT",
         "TRANSCRIPTX_STREAMLIT_PERF",
         "TRANSCRIPTX_STREAMLIT_PERF_PATH",
+        "TRANSCRIPTX_RUN_PERF_EXPORT_PATH",
+        "TRANSCRIPTX_RUN_PERF_EXPORT_MAX_RUNS",
+        "TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES",
+        "TRANSCRIPTX_FOLDER_IMPORT_MAX_CANDIDATES",
     }
 )
 
@@ -186,6 +190,31 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         "TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL",
         ("analysis", "bertopic", "embedding_model"),
         coerce_str,
+    ),
+    _env_key(
+        "TRANSCRIPTX_BERTOPIC_MIN_TOPIC_SIZE",
+        ("analysis", "bertopic", "min_topic_size"),
+        coerce_int,
+    ),
+    _env_key(
+        "TRANSCRIPTX_BERTOPIC_NR_TOPICS",
+        ("analysis", "bertopic", "nr_topics"),
+        coerce_str,
+    ),
+    _env_key(
+        "TRANSCRIPTX_BERTOPIC_TOP_N_WORDS",
+        ("analysis", "bertopic", "top_n_words"),
+        coerce_int,
+    ),
+    _env_key(
+        "TRANSCRIPTX_BERTOPIC_LABEL_WORDS",
+        ("analysis", "bertopic", "label_words"),
+        coerce_int,
+    ),
+    _env_key(
+        "TRANSCRIPTX_BERTOPIC_CALCULATE_PROBABILITIES",
+        ("analysis", "bertopic", "calculate_probabilities"),
+        coerce_bool_on_off,
     ),
     _env_key(
         "TRANSCRIPTX_SEMANTIC_PROGRESS_LOG_INTERVAL_SECONDS",

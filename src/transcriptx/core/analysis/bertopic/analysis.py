@@ -4,28 +4,51 @@ BERTopic analysis module.
 
 from __future__ import annotations
 
+import time
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from transcriptx.core.analysis.base import AnalysisModule
+from transcriptx.core.analysis.bertopic.deps import (
+    EXTRA_NAME,
+    embedding_model_policy_check,
+    verify_bertopic_import,
+)
+from transcriptx.core.analysis.bertopic.eligibility import (
+    evaluate_bertopic_eligibility,
+)
+from transcriptx.core.analysis.bertopic.runtime import (
+    build_model_kwargs,
+    build_provenance,
+)
+from transcriptx.core.analysis.bertopic.schema import (
+    SCHEMA_VERSION,
+    attach_schema_version,
+)
+from transcriptx.core.analysis.topic_modeling.utils import prepare_text_data
+from transcriptx.core.pipeline.contracts import ErrorKind
+from transcriptx.core.pipeline.optional_dep_outcomes import (
+    build_optional_dep_blocked_result,
+    install_hint_for_extra,
+)
 from transcriptx.core.utils.config import get_config
-from transcriptx.core.utils.lazy_imports import optional_import
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.module_result import (
+    build_module_result,
+    capture_exception,
+    now_iso,
+)
 from transcriptx.core.utils.nlp_utils import (
     has_meaningful_content,
     preprocess_for_topic_modeling,
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec, HeatmapMatrixSpec
 
-from transcriptx.core.analysis.topic_modeling.utils import prepare_text_data
-
 from .utils import build_doc_topic_data, build_topic_objects
 
 
 class BERTopicAnalysis(AnalysisModule):
-    """
-    Topic modeling analysis module using BERTopic.
-    """
+    """Topic modeling analysis module using BERTopic."""
 
     def __init__(self, config: Dict[str, Any] | None = None):
         super().__init__(config)
@@ -37,6 +60,9 @@ class BERTopicAnalysis(AnalysisModule):
     ) -> Dict[str, Any]:
         """
         Perform BERTopic analysis on transcript segments (pure logic, no I/O).
+
+        Documents are ordered by segment_index ascending (from prepare_text_data).
+        Duplicate texts are retained as separate documents (no pre-fit dedup).
         """
         texts, speaker_labels, time_labels, segment_indices = prepare_text_data(
             segments, return_indices=True
@@ -61,64 +87,101 @@ class BERTopicAnalysis(AnalysisModule):
                 ),
                 "topics": [],
                 "doc_topic_data": [],
-                "meta": {
-                    "total_segments": total_segments,
-                    "meaningful_segments_after_preprocessing": meaningful_count,
-                    "reason": (
-                        "All segments were filtered out during preprocessing "
-                        "(likely too short or contain only stopwords/tics after "
-                        "content word filtering)"
-                    ),
-                },
+                "meta": attach_schema_version(
+                    {
+                        "total_segments": total_segments,
+                        "meaningful_segments_after_preprocessing": meaningful_count,
+                        "reason": (
+                            "All segments were filtered out during preprocessing "
+                            "(likely too short or contain only stopwords/tics after "
+                            "content word filtering)"
+                        ),
+                        "fit_scope": "transcript",
+                    }
+                ),
             }
 
-        if len(texts) < 3:
+        eligibility = evaluate_bertopic_eligibility(texts)
+        if not eligibility.eligible:
             return {
                 "error": (
                     "Need at least 3 text segments for BERTopic analysis, "
-                    f"but only {len(texts)} segment(s) found after preprocessing"
+                    f"but only {eligibility.documents_count} segment(s) found "
+                    "after preprocessing"
+                    if eligibility.reason == "insufficient_documents"
+                    else f"BERTopic eligibility failed: {eligibility.reason}"
                 ),
                 "topics": [],
                 "doc_topic_data": [],
-                "meta": {"texts_count": len(texts)},
+                "meta": attach_schema_version(
+                    {
+                        "texts_count": eligibility.documents_count,
+                        "total_chars": eligibility.total_chars,
+                        "reason": eligibility.reason,
+                        "fit_scope": "transcript",
+                    }
+                ),
             }
 
-        try:
-            bertopic_module = optional_import(
-                "bertopic", "BERTopic topic modeling", "bertopic", auto_install=True
-            )
-        except ImportError as exc:
-            raise ImportError(
-                f"{exc} If install fails on your platform, try upgrading pip and "
-                "installing build tools."
-            ) from exc
+        bertopic_module, dep_reason = verify_bertopic_import(auto_install=False)
+        if bertopic_module is None:
+            return {
+                "error": dep_reason or f"missing_extra:{EXTRA_NAME}",
+                "topics": [],
+                "doc_topic_data": [],
+                "meta": attach_schema_version(
+                    {
+                        "reason": dep_reason,
+                        "fit_scope": "transcript",
+                        "blocked": True,
+                    }
+                ),
+            }
 
         config = get_config()
         bertopic_cfg = getattr(config.analysis, "bertopic", None)
+        embedding_model = (
+            getattr(bertopic_cfg, "embedding_model", None) if bertopic_cfg else None
+        )
+        policy_reason = embedding_model_policy_check(str(embedding_model or ""))
+        if policy_reason:
+            return {
+                "error": policy_reason,
+                "topics": [],
+                "doc_topic_data": [],
+                "meta": attach_schema_version(
+                    {
+                        "reason": policy_reason,
+                        "fit_scope": "transcript",
+                        "blocked": True,
+                    }
+                ),
+            }
 
-        model_kwargs: Dict[str, Any] = {}
-        if bertopic_cfg:
-            if getattr(bertopic_cfg, "embedding_model", None):
-                model_kwargs["embedding_model"] = bertopic_cfg.embedding_model
-            if getattr(bertopic_cfg, "min_topic_size", None):
-                model_kwargs["min_topic_size"] = bertopic_cfg.min_topic_size
-            nr_topics = getattr(bertopic_cfg, "nr_topics", None)
-            if isinstance(nr_topics, str):
-                if nr_topics.isdigit():
-                    model_kwargs["nr_topics"] = int(nr_topics)
-                elif nr_topics:
-                    model_kwargs["nr_topics"] = nr_topics
-            elif isinstance(nr_topics, int):
-                model_kwargs["nr_topics"] = nr_topics
-            if getattr(bertopic_cfg, "top_n_words", None):
-                model_kwargs["top_n_words"] = bertopic_cfg.top_n_words
-            if getattr(bertopic_cfg, "calculate_probabilities", None):
-                model_kwargs["calculate_probabilities"] = True
+        model_kwargs = build_model_kwargs(bertopic_cfg)
+        started = time.perf_counter()
+        try:
+            BERTopic = bertopic_module.BERTopic
+            model = BERTopic(**model_kwargs)
+            topic_assignments, topic_probs = model.fit_transform(texts)
+        except ImportError as exc:
+            return {
+                "error": f"broken_extra:{EXTRA_NAME}",
+                "message": str(exc),
+                "topics": [],
+                "doc_topic_data": [],
+                "meta": attach_schema_version(
+                    {
+                        "reason": f"broken_extra:{EXTRA_NAME}",
+                        "fit_scope": "transcript",
+                        "blocked": True,
+                    }
+                ),
+            }
+        except Exception:
+            raise
 
-        BERTopic = bertopic_module.BERTopic
-        model = BERTopic(**model_kwargs)
-        topic_assignments, topic_probs = model.fit_transform(texts)
-
+        duration = time.perf_counter() - started
         doc_extra_fields = [
             {"segment_index": int(segment_index)} for segment_index in segment_indices
         ]
@@ -140,6 +203,21 @@ class BERTopicAnalysis(AnalysisModule):
         )
 
         meta.setdefault("texts_count", len(texts))
+        meta["fit_scope"] = "transcript"
+        meta["schema_version"] = SCHEMA_VERSION
+        package_version: Optional[str] = None
+        try:
+            import importlib.metadata as im
+
+            package_version = im.version("bertopic")
+        except Exception:
+            package_version = None
+        meta["provenance"] = build_provenance(
+            embedding_model=embedding_model,
+            fit_scope="transcript",
+            duration_seconds=duration,
+            package_version=package_version,
+        )
         return {
             "topics": topics,
             "doc_topic_data": doc_topic_data,
@@ -147,10 +225,101 @@ class BERTopicAnalysis(AnalysisModule):
             "error": None,
         }
 
+    def run_from_context(self, context: Any) -> Dict[str, Any]:
+        """Run with optional-extra blocked outcomes (no auto-install)."""
+        from transcriptx.core.output.output_service import create_output_service
+        from transcriptx.core.utils.logger import (
+            log_analysis_complete,
+            log_analysis_error,
+            log_analysis_start,
+        )
+
+        started_at = now_iso()
+        start_time = time.time()
+        try:
+            log_analysis_start(self.module_name, context.transcript_path)
+            segments = context.get_segments()
+            if not self.validate_input(segments):
+                raise ValueError(f"Invalid input segments for {self.module_name}")
+
+            results = self.analyze(segments)
+            meta = results.get("meta") or {}
+            reason = meta.get("reason") or results.get("error")
+            if meta.get("blocked") and isinstance(reason, str):
+                error_kind = (
+                    ErrorKind.CONFIG
+                    if reason.startswith("config:")
+                    or reason.startswith("model_unavailable:")
+                    else ErrorKind.DEPENDENCY
+                )
+                log_analysis_complete(self.module_name, context.transcript_path)
+                return build_optional_dep_blocked_result(
+                    module_name=self.module_name,
+                    reason=reason,
+                    error_kind=error_kind,
+                    started_at=started_at,
+                    finished_at=now_iso(),
+                    install_hint=install_hint_for_extra(EXTRA_NAME),
+                    extra_metrics={"fit_scope": "transcript"},
+                )
+
+            output_service = create_output_service(
+                context.transcript_path,
+                self.module_name,
+                output_dir=context.get_transcript_dir(),
+                run_id=context.get_run_id(),
+                runtime_flags=context.get_runtime_flags(),
+            )
+            self.save_results(results, output_service=output_service)
+            context.store_analysis_result(self.module_name, results)
+            log_analysis_complete(self.module_name, context.transcript_path)
+            finished_at = now_iso()
+            duration_seconds = time.time() - start_time
+            output_structure = output_service.get_output_structure()
+            if hasattr(output_structure, "module_dir"):
+                output_directory = str(output_structure.module_dir)
+            elif isinstance(output_structure, dict):
+                output_directory = str(output_structure.get("module_dir", ""))
+            else:
+                output_directory = ""
+            module_result = build_module_result(
+                module_name=self.module_name,
+                status="success",
+                started_at=started_at,
+                finished_at=finished_at,
+                artifacts=output_service.get_artifacts(),
+                metrics={
+                    "duration_seconds": duration_seconds,
+                    "output_directory": output_directory,
+                    "all_outlier": bool(meta.get("all_outlier")),
+                    "schema_version": SCHEMA_VERSION,
+                },
+                payload_type="analysis_results",
+                payload=results,
+            )
+            module_result["output_directory"] = output_directory
+            return module_result
+        except Exception as e:
+            log_analysis_error(self.module_name, context.transcript_path, str(e))
+            if isinstance(e, ValueError):
+                raise
+            finished_at = now_iso()
+            return build_module_result(
+                module_name=self.module_name,
+                status="error",
+                started_at=started_at,
+                finished_at=finished_at,
+                artifacts=[],
+                metrics={
+                    "duration_seconds": time.time() - start_time,
+                    "error_kind": ErrorKind.INTERNAL.value,
+                },
+                payload_type="analysis_results",
+                payload={},
+                error=capture_exception(e),
+            )
+
     def _save_results(self, results: Dict[str, Any], output_service) -> None:
-        """
-        Save results using OutputService.
-        """
         if results.get("error"):
             error_payload = {
                 "error": results.get("error"),
@@ -184,6 +353,7 @@ class BERTopicAnalysis(AnalysisModule):
         doc_topic_data: List[Dict[str, Any]],
         output_service,
     ) -> None:
+        # Fail-closed: emit no chart specification when only outliers / empty.
         topics_filtered = [
             topic for topic in topics if int(topic.get("topic_id", -1)) != -1
         ]

@@ -71,6 +71,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "transcriptx.core.analysis.semantic_similarity_v2",
         "SemanticSimilarityV2Analysis",
     ),
+    "bertopic": (
+        "transcriptx.core.analysis.bertopic",
+        "BERTopicAnalysis",
+    ),
     "transcript_output": (
         "transcriptx.core.analysis.transcript_output",
         "TranscriptOutputAnalysis",

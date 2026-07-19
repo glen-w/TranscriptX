@@ -147,6 +147,10 @@ def build_doc_topic_data(
     if include_segment_map and doc_index_to_segment_index:
         meta["doc_index_to_segment_index"] = doc_index_to_segment_index
     if doc_topic_data and all_outliers:
+        # Succeeded outlier-only fit: not skipped; charts emit no spec.
+        meta["all_outlier"] = True
         meta["warning"] = "All documents classified as outliers"
+    else:
+        meta["all_outlier"] = False
 
     return doc_topic_data, meta

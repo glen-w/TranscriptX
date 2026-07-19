@@ -61,7 +61,10 @@ def test_build_registry_expected_dep_edges() -> None:
     assert by_id["transcript_output"].output_type == "blob"
     assert "voice_contours" in by_id
     assert "simplified_transcript" in by_id
-    assert "bertopic" not in by_id
+    assert "bertopic" in by_id
+    assert by_id["bertopic"].deps == []
+    assert by_id["bertopic"].selector(["bertopic"]) is True
+    assert by_id["bertopic"].selector(["topic_modeling"]) is False
 
 
 @pytest.mark.unit

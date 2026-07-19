@@ -18,7 +18,7 @@ Shipped defaults target CPU-friendly English analysis:
 | spaCy (NER, highlights, …) | `en_core_web_md` |
 | Semantic similarity + echoes | `sentence-transformers/all-MiniLM-L6-v2` |
 | Semantic similarity v2 | `sentence-transformers/all-MiniLM-L6-v2` |
-| BERTopic embeddings | `all-MiniLM-L6-v2` |
+| BERTopic embeddings | `all-MiniLM-L6-v2` (included in default install; `[bertopic]` is a compat alias) |
 | Sentiment | `vader` (lexicon) |
 | Emotion (lexical `emotion`) | NRCLex vocabulary association (`emotion_lexical` extra) |
 | Contextual emotion (experimental) | Built-in profile `contextual_hartmann_distilroberta_v1` (`j-hartmann/emotion-english-distilroberta-base`, pinned Hub SHA `0e1cd914e3d46199ed785853e12b57304e04178b`, Apache-2.0) |
@@ -65,7 +65,12 @@ Compose does **not** inject every `TRANSCRIPTX_*` variable automatically—only 
 | `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `analysis.semantic_similarity_v2.model_name` | `semantic_similarity_v2` module |
 | `TRANSCRIPTX_EMOTION_MODEL` | legacy alias toward contextual profile (prefer `analysis.contextual_emotion.profile_id`) | Deprecated flat key; conflicting new+old values fail validation when both set |
 | `TRANSCRIPTX_SENTIMENT_BACKEND` | `analysis.sentiment_backend` | `vader`, `transformers`, or `textblob` |
-| `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | `analysis.bertopic.embedding_model` | BERTopic only |
+| `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | `analysis.bertopic.embedding_model` | BERTopic embeddings only |
+| `TRANSCRIPTX_BERTOPIC_MIN_TOPIC_SIZE` | `analysis.bertopic.min_topic_size` | Min docs per topic (default 5) |
+| `TRANSCRIPTX_BERTOPIC_NR_TOPICS` | `analysis.bertopic.nr_topics` | `auto` or integer string |
+| `TRANSCRIPTX_BERTOPIC_TOP_N_WORDS` | `analysis.bertopic.top_n_words` | Words per topic (default 10) |
+| `TRANSCRIPTX_BERTOPIC_LABEL_WORDS` | `analysis.bertopic.label_words` | Words in display labels (default 3) |
+| `TRANSCRIPTX_BERTOPIC_CALCULATE_PROBABILITIES` | `analysis.bertopic.calculate_probabilities` | Soft probs (default off) |
 | `TRANSCRIPTX_ACTS_MODEL` | `analysis.acts.ml_model_name` | **No effect today** — acts use heuristics; transformer classifier is disabled |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | — | `1` blocks HF emotion/sentiment downloads (spaCy uses `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD`) |
 | `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD` | — | `1` blocks spaCy auto-download (install models manually) |
@@ -86,7 +91,12 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
     "sentiment_backend": "transformers",
     "sentiment_model_name": "cardiffnlp/twitter-roberta-base-sentiment-latest",
     "bertopic": {
-      "embedding_model": "sentence-transformers/all-mpnet-base-v2"
+      "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+      "min_topic_size": 5,
+      "nr_topics": "auto",
+      "top_n_words": 10,
+      "label_words": 3,
+      "calculate_probabilities": false
     },
     "semantic_similarity_v2": {
       "model_name": "sentence-transformers/all-mpnet-base-v2"
@@ -104,7 +114,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 | **NER** | `TRANSCRIPTX_SPACY_MODEL` | `en_core_web_lg`, `en_core_web_trf` |
 | **Semantic similarity** (legacy + v2) | `TRANSCRIPTX_SEMANTIC_MODEL`, `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `all-mpnet-base-v2`, other sentence-transformers checkpoints |
 | **Echoes** (semantic paraphrase) | `TRANSCRIPTX_SEMANTIC_MODEL` | Same as semantic model |
-| **BERTopic** | `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | Same embedding family as semantic |
+| **BERTopic** | `TRANSCRIPTX_BERTOPIC_*` (embedding + clustering knobs) | Same embedding family as semantic; packages in default install |
 | **Emotion** | `TRANSCRIPTX_EMOTION_MODEL` | Larger HF `text-classification` emotion models (English-tuned) |
 | **Sentiment** | `TRANSCRIPTX_SENTIMENT_BACKEND=transformers` + `sentiment_model_name` | RoBERTa default; larger HF sentiment models |
 | **LLM summary / narrative** | `TRANSCRIPTX_LLM_MODEL` | Larger Ollama model (8B+, etc.) |

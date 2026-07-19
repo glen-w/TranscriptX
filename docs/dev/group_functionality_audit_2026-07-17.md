@@ -66,7 +66,7 @@ Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (2026-07-17
 
 | Class | agg_ids |
 |-------|---------|
-| **Registry-backed charts** | acts, stats, sentiment, ner, entity_sentiment, topic_modeling, emotion, interactions, tics, understandability, lexical_diversity, simplified_transcript, pauses, momentum, affect_tension, contagion, conversation_loops, qa_analysis, echoes, highlights, moments, llm_action_items, insights, semantic_similarity, voice_mismatch, voice_tension, voice_fingerprint, prosody |
+| **Registry-backed charts** | acts, stats, sentiment, ner, entity_sentiment, topic_modeling, bertopic, emotion, interactions, tics, understandability, lexical_diversity, simplified_transcript, pauses, momentum, affect_tension, contagion, conversation_loops, qa_analysis, echoes, highlights, moments, llm_action_items, insights, semantic_similarity, voice_mismatch, voice_tension, voice_fingerprint, prosody |
 | **Special-path visuals** | wordclouds (`run_group_wordclouds`; not in chart registry) |
 | **Data-only (no chart)** | temporal_dynamics, insight_eligibility, voice_contours, llm_speaker_summary |
 | **Blob-only** | transcript_output, summary, llm_summary, narrative_summary |

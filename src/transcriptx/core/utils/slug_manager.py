@@ -268,6 +268,55 @@ def get_transcript_key_for_slug(slug: str) -> Optional[str]:
     return slug_to_key.get(slug)
 
 
+def _paths_equivalent(left: str | Path, right: str | Path) -> bool:
+    """Tolerant path equality for registration validity checks."""
+    try:
+        left_path = Path(left).expanduser().resolve(strict=False)
+        right_path = Path(right).expanduser().resolve(strict=False)
+    except (OSError, RuntimeError, ValueError):
+        return str(left) == str(right)
+    if left_path == right_path:
+        return True
+    try:
+        if left_path.is_file() and right_path.is_file():
+            return left_path.samefile(right_path)
+    except (OSError, ValueError):
+        pass
+    return False
+
+
+def registration_is_valid(transcript_path: str | Path, identity_hash: str) -> bool:
+    """True when index entry for ``identity_hash`` points at ``transcript_path``.
+
+    Validity requires both the transcript identity key and a matching canonical
+    ``source_path``. Slug existence or basename alone is not sufficient.
+    """
+    key = str(identity_hash or "").strip()
+    if not key:
+        return False
+    index = load_index()
+    entry = index.get("transcripts", {}).get(key)
+    if not isinstance(entry, dict):
+        return False
+    source_path = entry.get("source_path")
+    if not source_path:
+        return False
+    return _paths_equivalent(source_path, transcript_path)
+
+
+def get_registered_slug_for_path_and_identity(
+    transcript_path: str | Path, identity_hash: str
+) -> Optional[str]:
+    """Return slug when registration is valid for path + identity; else None."""
+    if not registration_is_valid(transcript_path, identity_hash):
+        return None
+    entry = load_index().get("transcripts", {}).get(str(identity_hash).strip())
+    if not isinstance(entry, dict):
+        return None
+    slug = entry.get("slug")
+    return str(slug) if slug else None
+
+
 def unregister_slug(slug: str) -> bool:
     """
     Remove a slug and its transcript entry from the index.

@@ -60,6 +60,14 @@ def _patch_managed_dirs(monkeypatch, transcript_root: Path) -> None:
         originals_dir,
     )
     monkeypatch.setattr(
+        "transcriptx.io.import_admission.DIARISED_TRANSCRIPTS_DIR",
+        transcript_root,
+    )
+    monkeypatch.setattr(
+        "transcriptx.io.import_admission.TRANSCRIPTS_IMPORTS_DIR",
+        transcript_root / "imports",
+    )
+    monkeypatch.setattr(
         "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR",
         transcript_root,
     )
@@ -79,7 +87,7 @@ def test_retry_recovers_missing_sidecar_without_reimport(
     archive.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
     target_json = transcript_root / "meeting.json"
     _write_valid_transcript(target_json, "originals/meeting.srt")
-    staging = tmp_path / "imports" / "meeting.srt"
+    staging = transcript_root / "imports" / "meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("staging", encoding="utf-8")
 
@@ -110,7 +118,7 @@ def test_retry_rejects_non_originals_source_path(monkeypatch, tmp_path: Path) ->
     _patch_managed_dirs(monkeypatch, transcript_root)
     target_json = transcript_root / "meeting.json"
     _write_valid_transcript(target_json, "uploads/meeting.srt")
-    staging = tmp_path / "imports" / "meeting.srt"
+    staging = transcript_root / "imports" / "meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("staging", encoding="utf-8")
 
@@ -137,7 +145,7 @@ def test_existing_json_and_sidecar_without_overwrite_raises(
         source_upload_basename="meeting.srt",
         archived_original_relpath="originals/meeting.srt",
     )
-    staging = tmp_path / "imports" / "meeting.srt"
+    staging = transcript_root / "imports" / "meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("staging", encoding="utf-8")
 
@@ -173,7 +181,7 @@ def test_retry_backfills_missing_source_original_path(
         ),
         encoding="utf-8",
     )
-    staging = tmp_path / "imports" / "meeting.srt"
+    staging = transcript_root / "imports" / "meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
 
@@ -209,7 +217,7 @@ def test_retry_backfills_when_source_key_missing(monkeypatch, tmp_path: Path) ->
         ),
         encoding="utf-8",
     )
-    staging = tmp_path / "imports" / "meeting.srt"
+    staging = transcript_root / "imports" / "meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
 
@@ -241,7 +249,7 @@ def test_retry_reimports_raw_json_missing_schema_version(
         ],
     }
     target_json.write_text(json.dumps(raw_whisper), encoding="utf-8")
-    staging = tmp_path / "imports" / "meeting.json"
+    staging = transcript_root / "imports" / "meeting.json"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text(json.dumps(raw_whisper), encoding="utf-8")
 
@@ -279,7 +287,7 @@ def test_retry_backfills_when_source_is_legacy_string(
         ),
         encoding="utf-8",
     )
-    staging = tmp_path / "imports" / "meeting.srt"
+    staging = transcript_root / "imports" / "meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
 
@@ -334,7 +342,7 @@ def test_import_language_variant_inherits_base_speaker_map(
         method="batch",
     )
 
-    staging = tmp_path / "imports" / "meeting_fr.srt"
+    staging = transcript_root / "imports" / "meeting_fr.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nBonjour\n", encoding="utf-8")
 
@@ -363,7 +371,7 @@ def test_logical_upload_basename_for_imports_staging(
 
     transcript_root = tmp_path / "transcripts"
     _patch_managed_dirs(monkeypatch, transcript_root)
-    staging = tmp_path / "imports" / "a1b2c3d4_meeting.srt"
+    staging = transcript_root / "imports" / "a1b2c3d4_meeting.srt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
 
@@ -447,7 +455,7 @@ def test_workflow_lock_not_acquired_raises(monkeypatch, tmp_path: Path) -> None:
 def test_import_failure_does_not_write_json_or_sidecar(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """Orchestration failure after archiving: originals slot written, no json/sidecar."""
+    """Orchestration failure after archive create: roll back this-attempt originals."""
     from transcriptx.io import managed_import_workflow as mod
     from transcriptx.io.import_metadata_sidecar import sidecar_path_for_transcript
 
@@ -471,4 +479,5 @@ def test_import_failure_does_not_write_json_or_sidecar(
     assert not target_json.exists()
     assert not sidecar_path_for_transcript(target_json).exists()
     archived = list((transcript_root / "originals").glob("meeting*"))
-    assert len(archived) == 1
+    assert archived == []
+    assert staging.exists()

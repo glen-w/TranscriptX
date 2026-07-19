@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-07-19
+
+### Added
+
+- BERTopic as an opt-in analysis module again: registry/UI surfaces, transcript + group pooled charts, zip/summary export, packaging extras, and configurable knobs (`TRANSCRIPTX_BERTOPIC_*`) with sensible defaults.
+- Retained-run performance snapshot exporter (Prometheus textfile gauges) plus `scripts/export_run_performance_snapshot.py` and `TRANSCRIPTX_RUN_PERF_EXPORT_*` env knobs.
+- Folder/admit import helpers and related upload-transcript workflow hardening.
+
+### Fixed
+
+- BERTopic module packaging metadata (`required_extras` / `exclude_from_default`) so the optional path stays opt-in while packages remain available.
+- HF safetensors / sentiment local-load edge cases covered by new unit tests.
+
 ## [0.5.3] - 2026-07-19
 
 ### Added

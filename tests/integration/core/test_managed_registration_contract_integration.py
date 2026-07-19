@@ -29,6 +29,13 @@ def _patch_managed_roots(monkeypatch: pytest.MonkeyPatch, root: Path) -> Path:
         "transcriptx.io.managed_import_workflow.TRANSCRIPTS_ORIGINALS_DIR", originals
     )
     monkeypatch.setattr(
+        "transcriptx.io.import_admission.DIARISED_TRANSCRIPTS_DIR", transcripts
+    )
+    monkeypatch.setattr(
+        "transcriptx.io.import_admission.TRANSCRIPTS_IMPORTS_DIR",
+        transcripts / "imports",
+    )
+    monkeypatch.setattr(
         "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
     )
     monkeypatch.setattr(

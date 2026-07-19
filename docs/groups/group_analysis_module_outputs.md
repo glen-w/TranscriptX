@@ -5,7 +5,7 @@ Authority: self
 
 When you run analysis on a **group**, outputs fall into four **product-facing** classes. The same module id can mean different things depending on whether you run on one transcript or a group.
 
-All registered pipeline modules support group runs (`supports_group=true`) and have an aggregation entry. Bertopic is not a registered pipeline module.
+All registered pipeline modules support group runs (`supports_group=true`) and have an aggregation entry. BERTopic (`bertopic`) is a default-installed module (packages in base deps for now; see [installation.md](../runtime/installation.md) install-profile note) with group aggregation that **refits from pooled source segments** (member topic IDs are not joined across fits).
 
 ## Four output classes
 

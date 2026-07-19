@@ -50,7 +50,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
-| 1 | B1 | **BERTopic rewire** as optional topic path | revive | Language & Meaning | M | optional `bertopic` extra; registry + agg + charts |
+| 1 | B1 | **BERTopic rewire** as topic path | revive (**shipped**; default install for now) | Language & Meaning | M | base deps + registry + agg + charts; public release → install profiles |
 | 2 | B3 | **ASR / transcript quality** diagnostics (confidence spans, filler density, likely-error clusters) — limited to available evidence | new | Foundations | M | import adapters expose scores when present |
 | 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new | Dynamics & Flow or Language & Meaning | M | reuse semantic embeddings |
 | 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
@@ -134,7 +134,7 @@ Avoid: another free-form summarizer that overlaps `llm_summary` / `narrative_sum
 | **Add** | B3 ASR/transcript quality (evidence-limited); B19 speaker-map consistency |
 
 ### Language & Meaning
-*Existing:* `sentiment`, `emotion`, `ner`, `entity_sentiment`, `topic_modeling`, semantic similarity family, `understandability`, `lexical_diversity`
+*Existing:* `sentiment`, `emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (optional path), semantic similarity family, `understandability`, `lexical_diversity`
 
 | Prefer | Items |
 |--------|-------|

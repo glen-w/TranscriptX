@@ -41,9 +41,11 @@ With no arguments, starts the web interface at http://localhost:8501. Core-only:
 
 **Manual install:**
 
-- **Core:** `pip install transcriptx` (core only; core_mode on)
-- **Full:** `pip install transcriptx[full]` (all modules; core_mode off)
+- **Core:** `pip install transcriptx` (core path; includes BERTopic for now — see install profiles note below)
+- **Full:** `pip install transcriptx[full]` (all optional modules; core_mode off)
 - **Specific extras:** `pip install transcriptx[voice]`, `pip install 'transcriptx[nlp]'`, etc.
+
+> **Install profiles (public release):** Today's layout is transitional. BERTopic (`bertopic` / `hdbscan` / `umap-learn`) ships in the **default** install so Docker and plain `pip install transcriptx` get topic clustering without an extra. For public release we will define clearer install profiles (e.g. **basic** / **full** / **llm**) so heavy ML stacks are opt-in again. The `[bertopic]` extra remains a no-op compatibility alias.
 
 **Dedicated environment (recommended):** TranscriptX does not use Prefect, Dagster, or other workflow engines. For a clean environment with only project dependencies, use a fresh virtualenv and install from the repo:
 

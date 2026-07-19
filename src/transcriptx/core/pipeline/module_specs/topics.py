@@ -48,6 +48,19 @@ def build_topics_module_definitions(
             "requirements": default_requirements,
             "enhancements": [],
         },
+        "bertopic": {
+            "description": (
+                "BERTopic topic modeling (optional path; stack currently in "
+                "default install — see docs/dev/bertopic_optional_module.md)"
+            ),
+            "dependencies": ["insight_eligibility"],
+            "category": "heavy",
+            "determinism_tier": "T2",
+            "requirements": default_requirements,
+            "enhancements": [],
+            "required_extras": ["bertopic"],
+            "exclude_from_default": True,
+        },
         "wordclouds": {
             "description": "Word Cloud Generation",
             "dependencies": ["insight_eligibility"],

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "topics": [
+    {
+      "topic_id": 0,
+      "words": ["budget", "plan"],
+      "weights": [0.5, 0.4],
+      "label": "budget, plan",
+      "label_source": "ctfidf_top_words",
+      "size": 3
+    }
+  ],
+  "doc_topic_data": [
+    {
+      "doc_index": 0,
+      "dominant_topic": 0,
+      "segment_index": 0,
+      "confidence": 1.0
+    }
+  ],
+  "meta": {
+    "texts_count": 1,
+    "all_outlier": false,
+    "fit_scope": "transcript"
+  }
+}

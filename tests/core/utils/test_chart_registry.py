@@ -59,7 +59,7 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 160
+    assert len(CHART_DEFINITIONS) == 161
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.speaker") is not None
@@ -120,6 +120,7 @@ def test_group_pooled_single_view_family_sync() -> None:
         "ner": "group_charts_ner_pooled_contract.md",
         "entity_sentiment": "group_charts_entity_sentiment_pooled_contract.md",
         "topic_modeling": "group_charts_topic_modeling_pooled_contract.md",
+        "bertopic": "group_charts_bertopic_pooled_contract.md",
         "emotion": "group_charts_emotion_pooled_contract.md",
         "tics": "group_charts_tics_pooled_contract.md",
         "stats": "group_charts_stats_pooled_contract.md",
@@ -134,6 +135,7 @@ def test_group_pooled_single_view_family_sync() -> None:
         ],
         "entity_sentiment": ["group.entity_sentiment.pooled.top_entities.global"],
         "topic_modeling": ["group.topic_modeling.pooled.topic_share.global"],
+        "bertopic": ["group.bertopic.pooled.topic_share.global"],
         "emotion": ["group.emotion.pooled.profile.global"],
         "tics": ["group.tics.pooled.by_tic.global"],
         "stats": ["group.stats.pooled.totals.global"],
@@ -486,8 +488,27 @@ def test_bertopic_viz_ids_have_registry_definitions():
     for viz_id in (
         "bertopic.topic_word_heatmap.global",
         "bertopic.topic_prevalence.global",
+        "group.bertopic.pooled.topic_share.global",
     ):
-        assert get_chart_definition(viz_id) is not None
+        chart = get_chart_definition(viz_id)
+        assert chart is not None, viz_id
+        assert chart.module == "bertopic"
+        assert chart.label, viz_id
+        assert chart.description and len(chart.description) > 40, viz_id
+        assert chart.match.by_artifact_key_prefix.startswith("bertopic/")
+
+
+def test_bertopic_registry_opt_in_metadata() -> None:
+    """BERTopic stays opt-in in default plans and declares the bertopic extra."""
+    from transcriptx.core.pipeline.module_registry import get_module_info
+
+    info = get_module_info("bertopic")
+    assert info is not None
+    assert info.exclude_from_default is True
+    assert "bertopic" in info.required_extras
+    assert "insight_eligibility" in info.dependencies
+    assert info.description
+    assert "BERTopic" in info.description
 
 
 def test_select_preferred_artifacts_single():

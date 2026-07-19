@@ -89,7 +89,7 @@ TranscriptX uses env-first configuration. Unknown speakers are excluded from mos
 
 Modules are loosely grouped into light, medium, and heavy. Heavy modules should be gated and degrade gracefully if optional dependencies are missing.
 
-**BERTopic status:** BERTopic is currently unwired due to dependency conflicts (scikit-learn/transformers/sentence-transformers/huggingface_hub). The code is retained under `core/analysis/bertopic/` and `core/analysis/aggregation/bertopic.py`. Re-enabling requires re-registering the module and aggregation, restoring a `bertopic` extra, and verifying the dependency stack in a dedicated environment.
+**BERTopic status:** BERTopic ships in the **default** install (`bertopic` / `hdbscan` / `umap-learn` in base deps; Sentence Transformers already base). The `[bertopic]` extra is a compatibility alias. Catalogue / UI detection still uses non-importing distribution metadata; execution distinguishes `missing_extra:bertopic` vs `broken_extra:bertopic` for degraded installs. Group aggregation refits from pooled source segments. For public release, install profiles (basic / full / llm) will re-split heavy stacks — see [installation.md](../runtime/installation.md).
 
 ## 8. Development workflow
 

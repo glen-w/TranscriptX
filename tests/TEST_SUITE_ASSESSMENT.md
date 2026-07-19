@@ -1304,21 +1304,17 @@ Follow-on covering early 0.3.x releases (config/nav/LLM modules/export/group agg
 ### Scope
 Close remaining gaps called out after §49–52: Corrections Studio deferred-generate UI contracts, aggregation registry dep/row branches, voice schema/cache helpers, and a mocked `run_group_analysis` integration_core glue path. Investigate BERTopic package/wiring status before adding model-heavy tests.
 
-### BERTopic findings (2026-07-16)
+### BERTopic findings (2026-07-16) — updated 2026-07-19
 
 | Check | Result |
 |-------|--------|
-| Installable extra | `pyproject.toml` still declares `[project.optional-dependencies] bertopic = ["bertopic>=0.17.0"]` (also in `full`) |
-| Runtime install | `bertopic` **not** installed in the default env (`ModuleNotFoundError` / no dist metadata) |
-| Module wiring | **Unwired:** absent from `MODULE_CLASS_MAP` and `get_available_modules()`; not in aggregation `build_registry()` |
-| Code retained | `core/analysis/bertopic/` + `aggregation/bertopic.py` + config/chart registry entries remain |
-| Docs | `docs/dev/developer_quickstart.md` and `docs/archive/scikit-learn-upgrade-assessment.md` still describe conflicts; ROADMAP lists ConvoKit/BERTopic rewire as eng backlog |
+| Installable stack | Base owns `bertopic`/`hdbscan`/`umap-learn` (temporary default); `[bertopic]` compat alias; ST owned by base; `full`⊇`bertopic` tested |
+| Runtime install | Optional; default env may omit the extra |
+| Module wiring | **Registered** (+1 module → 44); aggregation + group charts wired; excluded from default plans |
+| Detection | Non-importing `is_extra_distribution_present`; `missing_extra` vs `broken_extra` |
+| Docs | `docs/dev/bertopic_optional_module.md`; platform matrix evidence pending release env |
 
-**Conflict stack (still real):**
-
-1. **scikit-learn:** base `requirements.txt` pins `scikit-learn==1.5.0`; BERTopic/hdbscan/umap historically need APIs from **≥1.6** (`validate_data`). The optional extra does **not** currently pin `scikit-learn>=1.6`.
-2. **transformers / sentence-transformers / huggingface_hub:** base pins `transformers>=4.6.0,<4.50.0` and `sentence-transformers==2.2.2`. Current env has `transformers==4.31.0`, `huggingface_hub==0.34.2`; **sentence-transformers 2.2.2 fails to import** (`cached_download` removed from huggingface_hub). Modern BERTopic wants sentence-transformers ≥3 / transformers ≥4.41, which fights the emotion/`spacy-transformers` pin band.
-3. **Recommendation:** keep BERTopic **out of the default gate**. Do **not** re-register the module until a dedicated env (or refreshed extra with compatible sklearn/transformers/ST pins) is verified. Offline unit coverage of retained shaping helpers is appropriate; full fit/transform tests stay skipped/excluded.
+**Default CI:** packaging asserts stack in base deps; catalogue isolation tests remain. Real-model smoke: `tests/optional/test_bertopic_real_model_smoke.py` when bertopic is importable.
 
 ### New / expanded tests (tests-only)
 
@@ -1679,4 +1675,42 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Focused group-performance slice: **39 passed**.
 - Final default run after expansion: **6529 passed**, **1 skipped**, **179** deselected (collection ~6526→6530 selected).
 - **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.
+
+---
+
+## Transcript import / folder admit (2026-07-19)
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260719-2346.zip` (4.9M).
+- **Collection:** default `6592` selected / `6774` with full markers (`182` deselected by addopts).
+- **Default baseline before expansion:** `6591 passed`, `1 skipped`, `182` deselected — **green**.
+- **Focused import slice before expansion:** `46 passed` (folder/admit/managed/upload/surface/sidecar/orchestrator).
+- **Quarantined:** `0` active `@pytest.mark.quarantined` in tree.
+- **Cleanup:** disabled (per command).
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow).
+
+### Coverage gaps targeted (transcript import)
+| Area | Gap | Action |
+|------|-----|--------|
+| Stem conflict + size | Secondary detail lost | Assert `too_large` retained under `stem_conflict` |
+| Incomplete without provenance | Could be mislabeled new | Scan → `incomplete_unrepairable`; admit fails without backfill |
+| Stale scan handle | mtime/size change | `STALE_CANDIDATE` before admit |
+| Folder source preservation | Risk of mutating inbox | Import then assert source bytes unchanged |
+| Registration recovery | Failed register after commit | `REGISTRATION_FAILED_AFTER_ARTIFACT_COMMIT` → `REGISTRATION_RECOVERED` |
+| Staging ownership | `delete_staging_on_success=True` outside imports | Source outside imports preserved |
+| Exclusive originals | Clobber risk | `exclusive_create` keeps existing, writes `name (N)` |
+| Policy version | Stale preview | Handle invalid when `admission_policy_version` mismatches |
+
+### Tests added or updated
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/io/test_folder_import.py` | +5 | Conflict secondary, unrepairable, stale, preserve source, policy version |
+| `tests/io/test_admit_and_register.py` | +4 | Unrepairable no-backfill, register fail/recover, staging refuse, exclusive create |
+
+### Validation
+- Focused import expansion slice: **22 passed** (`test_folder_import` + `test_admit_and_register`).
+- Final default run after expansion: **6600 passed**, **1 skipped**, **182** deselected.
+- **Production code in this #tests pass:** none (tests-only expansion). Import feature production modules remain untracked/new from prior build.
 - **Quarantined tests:** not re-enabled.

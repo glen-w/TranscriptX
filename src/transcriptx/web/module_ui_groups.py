@@ -63,6 +63,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "ner",
             "entity_sentiment",
             "topic_modeling",
+            "bertopic",
             "semantic_similarity",
             "semantic_similarity_advanced",
             "semantic_similarity_v2",

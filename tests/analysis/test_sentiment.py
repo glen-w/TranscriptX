@@ -192,3 +192,113 @@ class TestSentimentAnalysisModule:
 
         assert output_service.save_data.called
         assert output_service.save_chart.called or output_service.save_summary.called
+
+
+class TestSentimentTransformersLoad:
+    """Regression: torch<2.6 cannot torch.load Hub bins; load local safetensors."""
+
+    def test_load_uses_local_snapshot_path_with_safetensors(self, tmp_path) -> None:
+        """Hub metadata ignores converted files — must pass local path, not repo id."""
+        from contextlib import nullcontext
+        from pathlib import Path
+
+        from transcriptx.core.analysis.sentiment import _load_sentiment_transformers
+
+        local_root = tmp_path / "snap"
+        local_root.mkdir()
+        pipe = MagicMock(name="pipe")
+        transformers = MagicMock()
+        transformers.pipeline.return_value = pipe
+
+        with (
+            patch(
+                "transcriptx.core.analysis.hf_safetensors.ensure_local_safetensors",
+                return_value=Path(local_root),
+            ),
+            patch(
+                "transcriptx.core.utils.lazy_imports.get_transformers",
+                return_value=transformers,
+            ),
+            patch(
+                "transcriptx.core.analysis.sentiment.suppress_stdout_stderr",
+                return_value=nullcontext(),
+            ),
+            patch(
+                "transcriptx.core.analysis.sentiment.spinner",
+                return_value=nullcontext(),
+            ),
+        ):
+            got = _load_sentiment_transformers(
+                "cardiffnlp/twitter-roberta-base-sentiment-latest"
+            )
+
+        assert got is pipe
+        transformers.pipeline.assert_called()
+        kwargs = transformers.pipeline.call_args.kwargs
+        assert kwargs["model"] == str(local_root)
+        assert kwargs.get("model_kwargs", {}).get("use_safetensors") is True
+        # Must not fall back to Hub repo id (cache won't see converted weights).
+        assert kwargs["model"] != "cardiffnlp/twitter-roberta-base-sentiment-latest"
+
+    def test_load_falls_back_to_repo_id_when_no_local_safetensors(self) -> None:
+        from contextlib import nullcontext
+
+        from transcriptx.core.analysis.sentiment import _load_sentiment_transformers
+
+        pipe = MagicMock(name="pipe")
+        transformers = MagicMock()
+        transformers.pipeline.return_value = pipe
+
+        with (
+            patch(
+                "transcriptx.core.analysis.hf_safetensors.ensure_local_safetensors",
+                return_value=None,
+            ),
+            patch(
+                "transcriptx.core.utils.lazy_imports.get_transformers",
+                return_value=transformers,
+            ),
+            patch(
+                "transcriptx.core.analysis.sentiment.suppress_stdout_stderr",
+                return_value=nullcontext(),
+            ),
+            patch(
+                "transcriptx.core.analysis.sentiment.spinner",
+                return_value=nullcontext(),
+            ),
+        ):
+            got = _load_sentiment_transformers("org/sentiment-model")
+
+        assert got is pipe
+        assert transformers.pipeline.call_args.kwargs["model"] == "org/sentiment-model"
+
+    def test_load_returns_none_when_pipeline_raises(self) -> None:
+        from contextlib import nullcontext
+
+        from transcriptx.core.analysis.sentiment import _load_sentiment_transformers
+
+        transformers = MagicMock()
+        transformers.pipeline.side_effect = ValueError(
+            "Due to a serious vulnerability issue in torch.load"
+        )
+
+        with (
+            patch(
+                "transcriptx.core.analysis.hf_safetensors.ensure_local_safetensors",
+                return_value=None,
+            ),
+            patch(
+                "transcriptx.core.utils.lazy_imports.get_transformers",
+                return_value=transformers,
+            ),
+            patch(
+                "transcriptx.core.analysis.sentiment.suppress_stdout_stderr",
+                return_value=nullcontext(),
+            ),
+            patch(
+                "transcriptx.core.analysis.sentiment.spinner",
+                return_value=nullcontext(),
+            ),
+            patch("transcriptx.core.analysis.sentiment.notify_user"),
+        ):
+            assert _load_sentiment_transformers("org/broken") is None

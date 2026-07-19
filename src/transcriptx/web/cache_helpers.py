@@ -218,6 +218,7 @@ _MODULE_INFO_CACHE_ATTRS = (
     "output_version",
     "cost_tier",
     "required_extras",
+    "extras_detected",
 )
 
 
@@ -225,6 +226,7 @@ _MODULE_INFO_CACHE_ATTRS = (
 def cached_get_module_info_list() -> list[dict]:
     mark_cache_miss("cached_get_module_info_list")
     from transcriptx.app.module_resolution import get_module_info_list
+    from transcriptx.core.pipeline.optional_extras import is_extra_distribution_present
     from transcriptx.web.module_ui_groups import order_module_ids
 
     raw = get_module_info_list()
@@ -232,6 +234,8 @@ def cached_get_module_info_list() -> list[dict]:
     for m in raw:
         d = {}
         for k in _MODULE_INFO_CACHE_ATTRS:
+            if k == "extras_detected":
+                continue
             v = getattr(m, k, None)
             if (
                 k == "required_extras"
@@ -240,6 +244,14 @@ def cached_get_module_info_list() -> list[dict]:
             ):
                 v = sorted(v) if v else []
             d[k] = v
+        # Non-importing package detection for catalogue / install guidance.
+        extras = d.get("required_extras") or []
+        if isinstance(extras, (list, tuple, set)):
+            d["extras_detected"] = {
+                extra: is_extra_distribution_present(str(extra)) for extra in extras
+            }
+        else:
+            d["extras_detected"] = {}
         result.append(d)
     names = [row["name"] for row in result if row.get("name")]
     order = order_module_ids(names)

@@ -46,6 +46,9 @@ from transcriptx.core.analysis.group_charts.tics_group_charts import (
 from transcriptx.core.analysis.group_charts.topic_modeling_group_charts import (
     TopicModelingGroupChartGenerator,
 )
+from transcriptx.core.analysis.group_charts.bertopic_group_charts import (
+    BertopicGroupChartGenerator,
+)
 
 
 class GroupChartGenerator(Protocol):
@@ -89,6 +92,7 @@ GROUP_AGGREGATE_CHART_FAMILIES: Dict[str, Tuple[str, ...]] = {
     "ner": ("pooled_single_view",),
     "entity_sentiment": ("pooled_single_view",),
     "topic_modeling": ("pooled_single_view",),
+    "bertopic": ("pooled_single_view",),
     "contagion": ("pooled_single_view",),
     "llm_action_items": ("session_bars",),
     "insights": ("session_bars",),
@@ -154,6 +158,7 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
         "ner": NerPooledGroupChartGenerator(),
         "entity_sentiment": EntitySentimentPooledGroupChartGenerator(),
         "topic_modeling": TopicModelingGroupChartGenerator(),
+        "bertopic": BertopicGroupChartGenerator(),
         "tics": TicsGroupChartGenerator(),
     }
     for aid in generic_ids:

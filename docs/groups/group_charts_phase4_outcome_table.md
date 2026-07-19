@@ -21,6 +21,7 @@ subsets are in
 | ner | **pooled only** | n/a | `NerPooledGroupChartGenerator`; `ner_pooled` payload ([contract](group_charts_ner_pooled_contract.md)). |
 | entity_sentiment | **pooled only** | n/a | `EntitySentimentPooledGroupChartGenerator` ([contract](group_charts_entity_sentiment_pooled_contract.md)). |
 | topic_modeling | **pooled only** | n/a | `TopicModelingGroupChartGenerator`; `topic_modeling_pooled` ([contract](group_charts_topic_modeling_pooled_contract.md)). |
+| bertopic | **pooled only** | n/a | `BertopicGroupChartGenerator`; `bertopic_pooled` ([contract](group_charts_bertopic_pooled_contract.md)). Optional `transcriptx[bertopic]` extra; group refit from pooled source segments. |
 | understandability | keep generic | readability metric keys (8) | Matches `compute_understandability_metrics` output. |
 | lexical_diversity | keep generic | `ttr`, `mtld`, `hapax_rate`, `token_count` | Descriptive per-session metrics; **do not** sum `type_count`. Ratio means are approximations, not pooled exact diversity. See [lexical_diversity.md](../runtime/lexical_diversity.md). |
 | pauses | replace | n/a | `PausesGroupChartGenerator`: **session_summary_bars** from `session_rows` + **temporal_overlay** from `pauses.events.json`. |

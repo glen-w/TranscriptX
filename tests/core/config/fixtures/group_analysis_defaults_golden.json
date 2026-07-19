@@ -1,7 +1,7 @@
 {
   "enable_stats_aggregation": true,
   "enabled": true,
-  "output_dir": "/Users/89298/Documents/transcriptx/data/outputs/_perf_group_run4/groups",
+  "output_dir": "/Users/89298/Documents/transcriptx/.test_outputs/groups",
   "persist_groups": false,
   "scaffold_by_session": true,
   "scaffold_by_speaker": true,

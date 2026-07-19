@@ -95,6 +95,10 @@ thinc==8.2.5
 wordcloud==1.9.2
 sentence-transformers==5.6.0
 spacy-transformers>=1.4.0
+# BERTopic stack (temporarily default; see docs/runtime/installation.md install profiles)
+bertopic>=0.17.0,<0.18
+hdbscan>=0.8.33,<0.9
+umap-learn>=0.5.6,<0.6
 
 # ============================================================================
 # Visualization

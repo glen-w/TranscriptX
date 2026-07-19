@@ -34,6 +34,7 @@ MODULE_REGISTRY_ORDER: tuple[str, ...] = (
     "sentiment",
     "stats",
     "topic_modeling",
+    "bertopic",
     "transcript_output",
     "simplified_transcript",
     "understandability",

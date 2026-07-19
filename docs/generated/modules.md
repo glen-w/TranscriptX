@@ -14,6 +14,8 @@ Authority: ../ARCHITECTURE.md
 | conversation_loops | Conversation Loop Detection | light | None | T0 |
 | contagion | Emotional Contagion Detection | heavy | emotion | T1 |
 | emotion | Emotion Analysis | medium | None | T1 |
+| contextual_emotion | Contextual emotion (broad classifier, experimental) | heavy | None | T2 |
+| fine_grained_emotion | Fine-grained multi-label emotion (experimental) | heavy | None | T2 |
 | entity_sentiment | Entity-based Sentiment Analysis | heavy | ner, sentiment | T1 |
 | affect_tension | Emotion + Sentiment mismatch and tension indices | medium | emotion, sentiment | T1 |
 | interactions | Speaker Interaction Analysis | medium | None | T0 |
@@ -24,6 +26,7 @@ Authority: ../ARCHITECTURE.md
 | sentiment | Sentiment Analysis | medium | None | T1 |
 | stats | Statistical Analysis | light | None | T0 |
 | topic_modeling | Topic Modeling | heavy | insight_eligibility | T2 |
+| bertopic | BERTopic topic modeling (optional path; stack currently in default install) | heavy | insight_eligibility | T2 |
 | transcript_output | Generate human readable transcripts | light | None | T0 |
 | simplified_transcript | Simplified transcript (tics, agreements, repetitions removed) | light | None | T0 |
 | understandability | Understandability Analysis | medium | None | T0 |
@@ -68,3 +71,5 @@ Authority: ../ARCHITECTURE.md
 
 - Local LLM modules: [runtime/llm.md](../runtime/llm.md)
 - Lexical diversity: [runtime/lexical_diversity.md](../runtime/lexical_diversity.md)
+- BERTopic optional module: [dev/bertopic_optional_module.md](../dev/bertopic_optional_module.md)
+- Models / embedding env: [runtime/models.md](../runtime/models.md)

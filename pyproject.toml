@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.5.3"
+version = "0.5.4"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -56,6 +56,14 @@ dependencies = [
     "nltk==3.9.4",
     "scikit-learn==1.6.1",
     "networkx==3.4.2",
+    # Owned by base: semantic/echoes/BERTopic embeddings share Sentence Transformers.
+    "sentence-transformers==5.6.0",
+    # BERTopic stack is temporarily in base (default install). For public release,
+    # install profiles will split more clearly (e.g. basic / full / llm) — see
+    # docs/runtime/installation.md.
+    "bertopic>=0.17.0,<0.18",
+    "hdbscan>=0.8.33,<0.9",
+    "umap-learn>=0.5.6,<0.6",
 ]
 
 [project.optional-dependencies]
@@ -102,8 +110,12 @@ nlp = [
     "spacy==3.7.5",
     "thinc==8.2.5",
 ]
+# Compat alias: packages are already in base dependencies (temporary default install).
+# Prefer plain `pip install transcriptx`. Kept so `transcriptx[bertopic]` still works.
 bertopic = [
-    "bertopic>=0.17.0",
+    "bertopic>=0.17.0,<0.18",
+    "hdbscan>=0.8.33,<0.9",
+    "umap-learn>=0.5.6,<0.6",
 ]
 maps = [
     "folium==0.14.0",
@@ -129,7 +141,9 @@ full = [
     "nrclex>=3.0.0",
     "spacy==3.7.5",
     "thinc==8.2.5",
-    "bertopic>=0.17.0",
+    "bertopic>=0.17.0,<0.18",
+    "hdbscan>=0.8.33,<0.9",
+    "umap-learn>=0.5.6,<0.6",
     "folium==0.14.0",
     "geopy==2.3.0",
     "playwright==1.40.0",

@@ -50,6 +50,7 @@
       "fine_grained_emotion.label_share_non_neutral.speaker",
       "group.acts.global_acts_pie.global",
       "group.acts.temporal_overlay.global",
+      "group.bertopic.pooled.topic_share.global",
       "group.contagion.pooled.top_directed_edges.global",
       "group.emotion.pooled.profile.global",
       "group.emotion.temporal_overlay.global",
