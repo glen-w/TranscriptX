@@ -132,3 +132,44 @@ def test_build_view_invalid_run_results_notes_unavailable(tmp_path: Path) -> Non
     assert view.run_results is None
     assert any("run_results unavailable" in n for n in view.provenance_notes)
     assert view.derived.module_duration_sum_ms is None
+
+
+@pytest.mark.unit
+def test_build_view_group_sidecar_omits_llm_and_keeps_wall(tmp_path: Path) -> None:
+    """Group Performance page loads group sidecar; LLM field stays absent (v1)."""
+    from transcriptx.core.observability.run_performance.schema import (
+        GroupPerformanceMeta,
+    )
+
+    write_run_results_summary(
+        run_dir=tmp_path,
+        run_id="group-run-1",
+        transcript_key="group-uuid",
+        modules_enabled=["stats", "sentiment"],
+        modules_run=["stats"],
+        skipped_modules=[],
+        errors=[],
+    )
+    write_run_performance(
+        tmp_path,
+        RunPerformanceV1(
+            run_id="group-run-1",
+            target_type="group",
+            wall_clock_duration_ms=2500.0,
+            execution_status=ExecutionStatus.partial,
+            final_status=FinalStatus.partial,
+            termination_reason_code="aggregation_disabled_partial",
+            group=GroupPerformanceMeta(
+                member_count=2,
+                members_completed=1,
+                members_failed=1,
+                partial=True,
+            ),
+        ),
+    )
+    view = build_run_performance_view(tmp_path)
+    assert view.performance_status == RunPerformanceLoadStatus.ok
+    assert view.wall_clock_duration_ms == 2500.0
+    assert view.llm is None
+    # Group rollup outcomes typically lack duration_ms → no cumulative module sum.
+    assert view.derived.module_duration_sum_ms is None

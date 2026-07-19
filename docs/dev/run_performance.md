@@ -12,17 +12,29 @@ Streamlit UI load profiling (`core/observability/perf.py`, `TRANSCRIPTX_STREAMLI
 
 ## Wall-clock scope (`timing_scope_version: 1`)
 
+### Transcript
+
 1. Start at `RunOrchestrator.run` entry (`perf_counter`).
 2. Include preparation, execution, and **all required persistence**.
 3. Stop after required persistence; write optional `run_performance.json` **outside** the measured interval, still under the same per-run lease.
 
-Group runs use a **separate** recorder; members keep their own.
+### group
+
+1. Start at entry to the **group branch** of `run_analysis_pipeline` (`perf_counter`).
+2. Include sequential member execution and required group finalisation persistence (aggregation/synthesis, required group artifacts, final group `run_results.json` commit and validation).
+3. Stop immediately before the optional performance-sidecar write; write `.transcriptx/run_performance.json` **while the group writer lease remains held**.
+
+Group runs use a **separate** recorder; members keep their own. The group recorder is **not** bound as the active ContextVar during member execution (each member `RunOrchestrator` binds and restores its own recorder).
+
+Group wall time is an **independent** end-to-end measurement. Do **not** calculate it by summing member wall times. Group wall may **exceed** the sum of member walls because it includes preparation, aggregation, and persistence overhead.
 
 ## Authority
 
-- Module status + `duration_ms`: `run_results.json` only.
-- Sidecar: non-authoritative run-level telemetry + stable interpretative context (mode/profile/runtime/workload snapshots allowed).
+- Module status + `duration_ms`: `run_results.json` only (for members: each member’s file; group rollup does not invent group module timings). Member module timings remain authoritative in member `run_results.json` files.
+- Sidecar: non-authoritative run-level telemetry + stable interpretative context (mode/profile/runtime/workload snapshots allowed). Group sidecars include wall time, status, analysis context, workload when available, and `GroupPerformanceMeta` — not member durations or LLM aggregates.
+- Group LLM metrics are **not** collected in schema v1 (omit `llm`; do not report zeros). This is an intentional instrumentation gap, not “zero calls”.
 - `run_report.json`: labelled legacy display fallback only.
+- Optional group sidecar write failure must not invalidate an otherwise committed group run; coded warnings may appear under `group_phase_metadata.performance_sidecar_warning`.
 
 ## Loader statuses
 

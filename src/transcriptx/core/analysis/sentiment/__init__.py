@@ -146,15 +146,28 @@ def _score_sentiment_textblob(text: str) -> Dict[str, float]:
 def _load_sentiment_transformers(model_name: str):
     """Load transformers sentiment pipeline. Returns None on failure."""
     try:
+        from transcriptx.core.analysis.hf_safetensors import ensure_local_safetensors
         from transcriptx.core.utils.lazy_imports import get_transformers
+
+        # Cardiff (and similar) revisions may ship only pytorch_model.bin; convert
+        # once so transformers can load on torch<2.6 without the torch.load gate.
+        ensure_local_safetensors(model_name)
 
         with suppress_stdout_stderr(), spinner("Loading sentiment model…"):
             transformers = get_transformers()
-            pipe = transformers.pipeline(
-                "text-classification",
-                model=model_name,
-                top_k=None,
-            )
+            try:
+                pipe = transformers.pipeline(
+                    "text-classification",
+                    model=model_name,
+                    top_k=None,
+                    model_kwargs={"use_safetensors": True},
+                )
+            except (TypeError, OSError, ValueError):
+                pipe = transformers.pipeline(
+                    "text-classification",
+                    model=model_name,
+                    top_k=None,
+                )
         log_info("SENTIMENT", "Transformers sentiment model loaded successfully")
         return pipe
     except Exception as e:
@@ -168,7 +181,6 @@ def _load_sentiment_transformers(model_name: str):
         except Exception:
             pass
         return None
-
 
 def score_sentiment(text: str, preprocess: bool = False) -> dict:
     """

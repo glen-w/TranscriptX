@@ -273,11 +273,19 @@ def load_classifier(profile: ModelProfile) -> LoadedClassifier:
             revision=profile.tokenizer_revision,
             **common_kw,
         )
+        # Prefer safetensors when available (convert bin locally if needed) so
+        # load works on torch<2.6 where transformers blocks torch.load.
+        from transcriptx.core.analysis.hf_safetensors import ensure_local_safetensors
+
+        have_safetensors = ensure_local_safetensors(
+            profile.model_id, revision=profile.model_revision
+        )
+        use_safetensors = True if have_safetensors else profile.prefer_safetensors
         try:
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 profile.model_id,
                 revision=profile.model_revision,
-                use_safetensors=profile.prefer_safetensors,
+                use_safetensors=use_safetensors,
                 torch_dtype=dtype,
                 **common_kw,
             )

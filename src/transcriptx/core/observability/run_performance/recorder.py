@@ -33,6 +33,9 @@ _current_module_id: ContextVar[Optional[str]] = ContextVar(
     "tx_run_performance_module_id", default=None
 )
 
+# Non-user-visible placeholder until set_run_id assigns the authoritative ID.
+PENDING_RUN_ID = "pending"
+
 
 class RecorderState(str, Enum):
     created = "created"
@@ -92,6 +95,7 @@ class RunPerformanceRecorder:
         self._bind_token: Optional[Token] = None
 
     def set_run_id(self, run_id: str) -> None:
+        """Assign the authoritative run ID exactly once (from PENDING_RUN_ID)."""
         with self._lock:
             if self._state in {
                 RecorderState.frozen,
@@ -99,7 +103,14 @@ class RunPerformanceRecorder:
                 RecorderState.persist_failed,
             }:
                 raise RuntimeError("cannot change run_id after freeze")
-            self.run_id = run_id
+            authoritative = str(run_id or "").strip()
+            if not authoritative or authoritative == PENDING_RUN_ID:
+                raise ValueError("authoritative run_id required")
+            if self.run_id != PENDING_RUN_ID:
+                if self.run_id == authoritative:
+                    return
+                raise RuntimeError("run_id already assigned")
+            self.run_id = authoritative[:MAX_STRING_LEN]
 
     @property
     def state(self) -> RecorderState:
@@ -131,9 +142,14 @@ class RunPerformanceRecorder:
             self._state = RecorderState.running
 
     def stop_wall_clock(self) -> float:
-        """Stop after required persistence; returns wall ms. Exactly once."""
+        """Stop after required persistence; returns wall ms. Idempotent once stopped."""
         with self._lock:
-            if self._state == RecorderState.stopped and self._wall_ms is not None:
+            if self._wall_ms is not None and self._state in {
+                RecorderState.stopped,
+                RecorderState.frozen,
+                RecorderState.persisted,
+                RecorderState.persist_failed,
+            }:
                 return self._wall_ms
             if self._state != RecorderState.running or self._wall_start is None:
                 raise RuntimeError(f"cannot stop wall clock in state {self._state}")
@@ -274,6 +290,8 @@ class RunPerformanceRecorder:
                 raise RuntimeError(f"cannot freeze in state {self._state}")
             if self._wall_ms is None:
                 raise RuntimeError("wall clock not stopped")
+            if not self.run_id or self.run_id == PENDING_RUN_ID:
+                raise RuntimeError("cannot freeze without authoritative run_id")
             llm = self._build_llm_aggregate()
             snap = RunPerformanceV1(
                 schema_version=1,

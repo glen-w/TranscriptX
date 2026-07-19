@@ -20,6 +20,7 @@ from transcriptx.core.observability.run_performance.io import (
     write_run_performance,
 )
 from transcriptx.core.observability.run_performance.recorder import (
+    PENDING_RUN_ID,
     RecorderState,
     RunPerformanceRecorder,
     get_active_recorder,
@@ -29,6 +30,7 @@ from transcriptx.core.observability.run_performance.schema import (
     MAX_SIDECAR_BYTES,
     ExecutionStatus,
     FinalStatus,
+    GroupPerformanceMeta,
     LlmAggregate,
     RunPerformanceV1,
 )
@@ -390,3 +392,88 @@ def test_llm_metrics_sink_forwards_only_when_recorder_bound() -> None:
     assert snap.llm.retry_count == 2
     assert snap.llm.by_module[0].module_id == "insights"
     assert snap.llm.tokens_per_second == pytest.approx(10.0)
+
+
+@pytest.mark.unit
+def test_set_run_id_one_time_and_freeze_requires_authoritative_id() -> None:
+    rec = RunPerformanceRecorder(run_id=PENDING_RUN_ID, target_type="transcript")
+    rec.start_wall_clock()
+    rec.stop_wall_clock()
+    with pytest.raises(RuntimeError, match="authoritative run_id"):
+        rec.freeze(
+            execution_status=ExecutionStatus.succeeded,
+            final_status=FinalStatus.succeeded,
+        )
+    rec.set_run_id("run_auth")
+    with pytest.raises(RuntimeError, match="already assigned"):
+        rec.set_run_id("run_other")
+    rec.set_run_id("run_auth")  # idempotent same id
+    snap = rec.freeze(
+        execution_status=ExecutionStatus.succeeded,
+        final_status=FinalStatus.succeeded,
+    )
+    assert snap.run_id == "run_auth"
+
+
+@pytest.mark.unit
+def test_stop_wall_clock_idempotent_after_stop() -> None:
+    rec = RunPerformanceRecorder(run_id=PENDING_RUN_ID, target_type="transcript")
+    rec.set_run_id("run_x")
+    rec.start_wall_clock()
+    first = rec.stop_wall_clock()
+    second = rec.stop_wall_clock()
+    assert first == second
+    assert rec.state == RecorderState.stopped
+
+
+@pytest.mark.unit
+def test_group_sidecar_round_trip_and_expected_target_type(tmp_path: Path) -> None:
+    rec = RunPerformanceRecorder(run_id=PENDING_RUN_ID, target_type="group")
+    rec.set_run_id("group_run_1")
+    rec.start_wall_clock()
+    rec.stop_wall_clock()
+    snap = rec.freeze(
+        execution_status=ExecutionStatus.partial,
+        final_status=FinalStatus.partial,
+        group=GroupPerformanceMeta(
+            member_count=2,
+            members_completed=1,
+            members_failed=1,
+            partial=True,
+        ),
+    )
+    assert snap.llm is None
+    write_run_performance(tmp_path, snap)
+    loaded = load_run_performance(
+        tmp_path, expected_run_id="group_run_1", expected_target_type="group"
+    )
+    assert loaded.status == RunPerformanceLoadStatus.ok
+    assert loaded.payload is not None
+    assert loaded.payload.target_type == "group"
+    assert loaded.payload.group is not None
+    assert loaded.payload.group.member_count == 2
+
+    mismatch = load_run_performance(tmp_path, expected_target_type="transcript")
+    assert mismatch.status == RunPerformanceLoadStatus.malformed
+    assert mismatch.detail_code == "target_type_mismatch"
+
+
+@pytest.mark.unit
+def test_schema_group_meta_required_and_forbidden_on_transcript() -> None:
+    with pytest.raises(ValidationError, match="group metadata required"):
+        RunPerformanceV1(
+            run_id="r",
+            target_type="group",
+            wall_clock_duration_ms=1.0,
+            execution_status=ExecutionStatus.succeeded,
+            final_status=FinalStatus.succeeded,
+        )
+    with pytest.raises(ValidationError, match="group metadata forbidden"):
+        RunPerformanceV1(
+            run_id="r",
+            target_type="transcript",
+            wall_clock_duration_ms=1.0,
+            execution_status=ExecutionStatus.succeeded,
+            final_status=FinalStatus.succeeded,
+            group=GroupPerformanceMeta(member_count=1),
+        )

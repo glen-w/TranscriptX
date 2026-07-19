@@ -113,44 +113,63 @@ def run_analysis_pipeline(
         f"{', '.join(selected_modules)}"
     )
 
+    from transcriptx.core.observability.run_performance.recorder import (
+        PENDING_RUN_ID,
+        RecorderState,
+        RunPerformanceRecorder,
+    )
+
+    group_recorder = RunPerformanceRecorder(run_id=PENDING_RUN_ID, target_type="group")
+    group_recorder.start_wall_clock()
+    # Do not bind: member RunOrchestrator instances own the active ContextVar.
+
     per_transcript_results: List[PerTranscriptResult] = []
     group_errors: List[str] = []
-    for index, transcript_path in enumerate(resolved_paths):
-        single_result = _run_single_analysis_pipeline(
-            transcript_path=transcript_path,
-            selected_modules=selected_modules,
-            speaker_options=speaker_options,
-            parallel=parallel,
-            max_workers=max_workers,
-            config=config,
-            persist=persist,
-            rerun_mode=rerun_mode,
-            run_id_override=None,
-            output_dir_override=None,
-        )
-        per_transcript_results.append(
-            PerTranscriptResult(
+    try:
+        for index, transcript_path in enumerate(resolved_paths):
+            single_result = _run_single_analysis_pipeline(
                 transcript_path=transcript_path,
-                transcript_key=single_result.get("transcript_key", ""),
-                run_id=single_result.get("run_id", ""),
-                order_index=index,
-                output_dir=single_result.get("output_dir", ""),
-                module_results=single_result.get("module_results", {}),
-                modules_run=list(single_result.get("modules_run", [])),
-                skipped_modules=list(single_result.get("skipped_modules", [])),
+                selected_modules=selected_modules,
+                speaker_options=speaker_options,
+                parallel=parallel,
+                max_workers=max_workers,
+                config=config,
+                persist=persist,
+                rerun_mode=rerun_mode,
+                run_id_override=None,
+                output_dir_override=None,
             )
-        )
-        group_errors.extend(single_result.get("errors", []))
+            per_transcript_results.append(
+                PerTranscriptResult(
+                    transcript_path=transcript_path,
+                    transcript_key=single_result.get("transcript_key", ""),
+                    run_id=single_result.get("run_id", ""),
+                    order_index=index,
+                    output_dir=single_result.get("output_dir", ""),
+                    module_results=single_result.get("module_results", {}),
+                    modules_run=list(single_result.get("modules_run", [])),
+                    skipped_modules=list(single_result.get("skipped_modules", [])),
+                )
+            )
+            group_errors.extend(single_result.get("errors", []))
 
-    return finalize_group_analysis(
-        scope=scope,
-        members=members,
-        resolved_paths=resolved_paths,
-        per_transcript_results=per_transcript_results,
-        group_errors=group_errors,
-        selected_modules=selected_modules,
-        config=config,
-    )
+        return finalize_group_analysis(
+            scope=scope,
+            members=members,
+            resolved_paths=resolved_paths,
+            per_transcript_results=per_transcript_results,
+            group_errors=group_errors,
+            selected_modules=selected_modules,
+            config=config,
+            performance_recorder=group_recorder,
+        )
+    finally:
+        # Emergency cleanup only: if finalize never stopped the wall, stop without write.
+        if group_recorder.state == RecorderState.running:
+            try:
+                group_recorder.stop_wall_clock()
+            except Exception:
+                logger.exception("group run performance emergency wall stop failed")
 
 
 def _run_single_analysis_pipeline(

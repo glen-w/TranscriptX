@@ -184,5 +184,13 @@ class RunPerformanceV1(BaseModel):
     def _wall_ok(cls, v: float) -> float:
         return _finite_nonneg("wall_clock_duration_ms", v)
 
+    @model_validator(mode="after")
+    def _group_meta_matches_target_type(self) -> "RunPerformanceV1":
+        if self.target_type == "group" and self.group is None:
+            raise ValueError("group metadata required when target_type is group")
+        if self.target_type == "transcript" and self.group is not None:
+            raise ValueError("group metadata forbidden when target_type is transcript")
+        return self
+
     def to_json_dict(self) -> Dict[str, Any]:
         return self.model_dump(mode="json", exclude_none=True)

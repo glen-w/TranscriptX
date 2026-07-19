@@ -569,6 +569,9 @@ class RunOrchestrator:
         from transcriptx.core.observability.run_performance.io import (
             write_run_performance,
         )
+        from transcriptx.core.observability.run_performance.recorder import (
+            PENDING_RUN_ID,
+        )
         from transcriptx.core.observability.run_performance.schema import (
             AnalysisContextSnapshot,
             CacheProvenance,
@@ -590,7 +593,7 @@ class RunOrchestrator:
 
         try:
             rr = load_run_results(rr_path)
-            if recorder.run_id == "pending":
+            if recorder.run_id == PENDING_RUN_ID:
                 recorder.set_run_id(
                     str(rr.get("run_id") or state.prepared_transcript.run_id)
                 )
@@ -652,13 +655,16 @@ class RunOrchestrator:
         on_event: Optional[Any] = None,
     ) -> RunResult:
         from transcriptx.core.observability.run_performance.recorder import (
+            PENDING_RUN_ID,
             RunPerformanceRecorder,
         )
         from transcriptx.core.utils.run_writer_locks import per_run_lock
 
         pre_pipeline_start = time.perf_counter()
         state = _RunComposerState()
-        recorder = RunPerformanceRecorder(run_id="pending", target_type="transcript")
+        recorder = RunPerformanceRecorder(
+            run_id=PENDING_RUN_ID, target_type="transcript"
+        )
         recorder.start_wall_clock()
         recorder.bind()
 

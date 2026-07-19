@@ -1645,3 +1645,38 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Final default run after expansion: **6500 passed**, **2 failed** (unrelated golden/env registry), **1 skipped**, **179** deselected; collection **6503/6682**.
 - **Production code:** none in this pass (tests-only). Prior performance-analytics production work remains uncommitted separately.
 - **Quarantined tests:** not re-enabled.
+
+## 63. Expansion (2026-07-19) – group performance analytics
+
+### Trigger
+`/tests group performance analytics` after group `run_performance.json` sidecar landing.
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260719-2221.zip` (4.8M).
+- **Collection:** default `6526` selected / `6705` with `-m ""` (`179` deselected by addopts).
+- **Default baseline before expansion:** `6525 passed`, `1 skipped`, `179` deselected — **green**.
+- **Focused slice before expansion:** `35 passed` (`test_group_run_performance` + observability + web service).
+- **Quarantined:** `0` active.
+- **Cleanup:** disabled (per command).
+- **Markers / addopts:** unchanged.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Group status/meta helpers | Untested matrix | `_build_group_performance_meta` / `_derive_group_performance_statuses` |
+| Sidecar refuse paths | Missing run_id mismatch | Refuse + stop wall when loaded `run_id` ≠ recorder |
+| Aggregation-disabled semantics | Implicit | Assert `termination_reason_code=aggregation_disabled` |
+| Performance UI + group | Transcript-only fixtures | View loads group sidecar wall; `llm` remains `None` |
+
+### Tests added or updated
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/pipeline/test_group_run_performance.py` | +3 | Status matrix, run_id mismatch, aggregation_disabled termination |
+| `tests/web/services/test_run_performance_service.py` | +1 | Group sidecar view model (no LLM) |
+
+### Validation
+- Focused group-performance slice: **39 passed**.
+- Final default run after expansion: **6529 passed**, **1 skipped**, **179** deselected (collection ~6526→6530 selected).
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

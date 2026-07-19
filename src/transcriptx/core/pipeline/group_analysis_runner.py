@@ -14,6 +14,11 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.output.group_output_service import GroupOutputService
+from transcriptx.core.observability.run_performance.recorder import (
+    PENDING_RUN_ID,
+    RecorderState,
+    RunPerformanceRecorder,
+)
 from transcriptx.core.pipeline.manifest_builder import (
     write_output_manifest,
     write_run_results_summary,
@@ -27,6 +32,229 @@ from transcriptx.core.utils.logger import get_logger
 from transcriptx.io import save_json
 
 logger = get_logger()
+
+PERFORMANCE_SIDECAR_WRITE_FAILED = "run_performance_write_failed"
+PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE = "run_performance_results_unavailable"
+
+
+def _member_completed(result: PerTranscriptResult) -> bool:
+    return bool(
+        str(result.run_id or "").strip() and str(result.output_dir or "").strip()
+    )
+
+
+def _build_group_performance_meta(
+    per_transcript_results: Sequence[PerTranscriptResult],
+) -> Any:
+    from transcriptx.core.observability.run_performance.schema import (
+        GroupPerformanceMeta,
+    )
+
+    member_count = len(per_transcript_results)
+    members_completed = sum(1 for r in per_transcript_results if _member_completed(r))
+    members_failed = member_count - members_completed
+    partial = members_completed < member_count
+    return GroupPerformanceMeta(
+        member_count=member_count,
+        members_completed=members_completed,
+        members_failed=members_failed,
+        partial=partial,
+    )
+
+
+def _derive_group_performance_statuses(
+    *,
+    per_transcript_results: Sequence[PerTranscriptResult],
+    group_errors: Sequence[str],
+    aggregation_disabled: bool,
+    group_phase_terminal_failure: bool,
+) -> tuple[Any, Any, Optional[str]]:
+    from transcriptx.core.observability.run_performance.schema import (
+        ExecutionStatus,
+        FinalStatus,
+    )
+
+    meta = _build_group_performance_meta(per_transcript_results)
+    member_count = meta.member_count
+    members_completed = int(meta.members_completed or 0)
+
+    if group_phase_terminal_failure:
+        return (
+            ExecutionStatus.failed,
+            FinalStatus.failed,
+            "group_phase_terminal_failure",
+        )
+    if member_count == 0:
+        return ExecutionStatus.failed, FinalStatus.failed, "no_members"
+    if members_completed == 0:
+        return ExecutionStatus.failed, FinalStatus.failed, "all_members_failed"
+    if meta.partial or group_errors:
+        term = "partial_member_outcomes" if meta.partial else "group_errors_present"
+        if aggregation_disabled:
+            term = "aggregation_disabled_partial"
+        return ExecutionStatus.partial, FinalStatus.partial, term
+    if aggregation_disabled:
+        return (
+            ExecutionStatus.succeeded,
+            FinalStatus.succeeded,
+            "aggregation_disabled",
+        )
+    return ExecutionStatus.succeeded, FinalStatus.succeeded, None
+
+
+def _write_group_performance_sidecar_under_lease(
+    *,
+    run_dir: Path,
+    performance_recorder: Optional[RunPerformanceRecorder],
+    per_transcript_results: Sequence[PerTranscriptResult],
+    group_errors: Sequence[str],
+    selected_modules: Sequence[str],
+    aggregation_disabled: bool,
+    group_phase_terminal_failure: bool = False,
+) -> Optional[str]:
+    """Stop/freeze/write group sidecar. Caller must already hold the group lease.
+
+    Returns a coded warning string on optional telemetry loss, else None.
+    Does not acquire any lock.
+    """
+    if performance_recorder is None:
+        return None
+
+    from transcriptx.core.observability.run_performance.io import write_run_performance
+    from transcriptx.core.observability.run_performance.schema import (
+        AnalysisContextSnapshot,
+        CacheProvenance,
+    )
+    from transcriptx.core.pipeline.manifest_loader import load_run_results
+    from transcriptx.core.utils.run_manifest import get_transcriptx_version
+
+    def _stop_wall_best_effort() -> None:
+        if performance_recorder.state == RecorderState.running:
+            performance_recorder.stop_wall_clock()
+
+    rr_path = Path(run_dir) / "run_results.json"
+    if not rr_path.exists():
+        # Required persistence boundary reached for the caller; stop even if we refuse write.
+        _stop_wall_best_effort()
+        logger.warning(
+            "group run_performance skipped code=%s",
+            PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE,
+        )
+        return PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE
+
+    try:
+        rr = load_run_results(rr_path)
+    except Exception as exc:
+        _stop_wall_best_effort()
+        logger.warning(
+            "group run_performance skipped code=%s err_type=%s",
+            PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE,
+            type(exc).__name__,
+        )
+        return PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE
+
+    loaded_run_id = str(rr.get("run_id") or "").strip()
+    if not loaded_run_id:
+        _stop_wall_best_effort()
+        logger.warning(
+            "group run_performance skipped code=%s detail=missing_run_id",
+            PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE,
+        )
+        return PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE
+
+    # Stop outside the measured interval only after canonical results validate.
+    _stop_wall_best_effort()
+
+    try:
+        if performance_recorder.run_id == PENDING_RUN_ID:
+            performance_recorder.set_run_id(loaded_run_id)
+        elif performance_recorder.run_id != loaded_run_id:
+            logger.warning(
+                "group run_performance skipped code=%s detail=run_id_mismatch",
+                PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE,
+            )
+            return PERFORMANCE_SIDECAR_RESULTS_UNAVAILABLE
+        group_meta = _build_group_performance_meta(per_transcript_results)
+        exec_status, final_status, term = _derive_group_performance_statuses(
+            per_transcript_results=per_transcript_results,
+            group_errors=group_errors,
+            aggregation_disabled=aggregation_disabled,
+            group_phase_terminal_failure=group_phase_terminal_failure,
+        )
+        snap = performance_recorder.freeze(
+            execution_status=exec_status,
+            final_status=final_status,
+            termination_reason_code=term,
+            cache_provenance=CacheProvenance.unwired,
+            analysis=AnalysisContextSnapshot(
+                app_version=get_transcriptx_version(),
+                requested_module_count=len(selected_modules),
+            ),
+            group=group_meta,
+        )
+        # Intentionally omit llm= (group LLM metrics not instrumented in v1).
+        write_run_performance(Path(run_dir), snap)
+        performance_recorder.mark_persisted(success=True)
+        return None
+    except Exception as exc:
+        logger.warning(
+            "group run_performance telemetry write failed code=%s err_type=%s",
+            PERFORMANCE_SIDECAR_WRITE_FAILED,
+            type(exc).__name__,
+        )
+        try:
+            if performance_recorder.state == RecorderState.frozen:
+                performance_recorder.mark_persisted(success=False)
+        except Exception:
+            pass
+        return PERFORMANCE_SIDECAR_WRITE_FAILED
+
+
+def _commit_group_run_results_and_performance(
+    *,
+    run_dir: Path,
+    group_run_id: str,
+    group_uuid: str,
+    selected_modules: List[str],
+    per_transcript_results: List[PerTranscriptResult],
+    group_errors: List[str],
+    aggregation_disabled: bool,
+    performance_recorder: Optional[RunPerformanceRecorder],
+    module_results: Optional[Dict[str, Any]] = None,
+    write_manifest: bool = True,
+    group_phase_terminal_failure: bool = False,
+) -> Optional[str]:
+    """Write canonical group run_results (+ optional manifest), then performance sidecar."""
+    agg_run, agg_skipped = aggregate_group_module_lists(
+        selected_modules, per_transcript_results
+    )
+    write_run_results_summary(
+        run_dir=run_dir,
+        run_id=group_run_id,
+        transcript_key=group_uuid,
+        modules_enabled=selected_modules,
+        modules_run=agg_run,
+        skipped_modules=agg_skipped,
+        errors=group_errors,
+        preset_explanation=None,
+        module_results=module_results,
+    )
+    if write_manifest:
+        write_output_manifest(
+            run_dir=run_dir,
+            run_id=group_run_id,
+            transcript_key=group_uuid,
+            modules_enabled=selected_modules,
+        )
+    return _write_group_performance_sidecar_under_lease(
+        run_dir=run_dir,
+        performance_recorder=performance_recorder,
+        per_transcript_results=per_transcript_results,
+        group_errors=group_errors,
+        selected_modules=selected_modules,
+        aggregation_disabled=aggregation_disabled,
+        group_phase_terminal_failure=group_phase_terminal_failure,
+    )
 
 
 def _write_group_member_runs_json(
@@ -156,6 +384,7 @@ def finalize_group_analysis(
     group_errors: List[str],
     selected_modules: List[str],
     config: Optional[TranscriptXConfig] = None,
+    performance_recorder: Optional[RunPerformanceRecorder] = None,
 ) -> Dict[str, Any]:
     """Build TranscriptSet, optionally aggregate, write group artifacts; return result dict."""
     metadata: Dict[str, Any] = {}
@@ -194,6 +423,8 @@ def finalize_group_analysis(
     group_run_id = (
         f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     )
+    if performance_recorder is not None:
+        performance_recorder.set_run_id(group_run_id)
     member_uuids = [member.uuid for member in members]
     from transcriptx.core.utils.run_writer_locks import (
         RunWriterLock,
@@ -253,25 +484,25 @@ def finalize_group_analysis(
                 transcript_paths=resolved_paths,
                 run_id=group_run_id,
             )
-            agg_run, agg_skipped = aggregate_group_module_lists(
-                selected_modules, per_transcript_results
-            )
-            write_run_results_summary(
+            perf_warning = _commit_group_run_results_and_performance(
                 run_dir=Path(group_output_service.base_dir),
-                run_id=group_run_id,
-                transcript_key=group_uuid,
-                modules_enabled=selected_modules,
-                modules_run=agg_run,
-                skipped_modules=agg_skipped,
-                errors=group_errors,
-                preset_explanation=None,
+                group_run_id=group_run_id,
+                group_uuid=group_uuid,
+                selected_modules=selected_modules,
+                per_transcript_results=per_transcript_results,
+                group_errors=group_errors,
+                aggregation_disabled=True,
+                performance_recorder=performance_recorder,
+                write_manifest=True,
             )
-            write_output_manifest(
-                run_dir=Path(group_output_service.base_dir),
-                run_id=group_run_id,
-                transcript_key=group_uuid,
-                modules_enabled=selected_modules,
-            )
+            phase_meta: Dict[str, Any] = {
+                "group_phase_terminal_failure": False,
+                "aggregation_warning_count": 0,
+                "chart_failure_count": 0,
+                "terminal_errors": [],
+            }
+            if perf_warning:
+                phase_meta["performance_sidecar_warning"] = perf_warning
             return {
                 "status": "completed",
                 "group_key": transcript_set.key,
@@ -283,12 +514,7 @@ def finalize_group_analysis(
                 "errors": group_errors,
                 "warning": "Group analysis is disabled in config; aggregation skipped.",
                 "aggregation_warnings": [],
-                "group_phase_metadata": {
-                    "group_phase_terminal_failure": False,
-                    "aggregation_warning_count": 0,
-                    "chart_failure_count": 0,
-                    "terminal_errors": [],
-                },
+                "group_phase_metadata": phase_meta,
             }
 
         from transcriptx.core.analysis.aggregation.registry import build_registry
@@ -549,21 +775,19 @@ def finalize_group_analysis(
             transcript_paths=resolved_paths,
             run_id=group_run_id,
         )
-        agg_run, agg_skipped = aggregate_group_module_lists(
-            selected_modules, per_transcript_results
-        )
-        write_run_results_summary(
+        perf_warning = _commit_group_run_results_and_performance(
             run_dir=run_dir,
-            run_id=group_run_id,
-            transcript_key=group_uuid,
-            modules_enabled=selected_modules,
-            modules_run=agg_run,
-            skipped_modules=agg_skipped,
-            errors=group_errors,
-            preset_explanation=None,
+            group_run_id=group_run_id,
+            group_uuid=group_uuid,
+            selected_modules=selected_modules,
+            per_transcript_results=per_transcript_results,
+            group_errors=group_errors,
+            aggregation_disabled=False,
+            performance_recorder=performance_recorder,
             module_results=(
                 {"group_llm_synthesis": synthesis_meta} if synthesis_meta else None
             ),
+            write_manifest=False,
         )
 
         chart_failure_count = sum(
@@ -571,6 +795,15 @@ def finalize_group_analysis(
             for w in aggregation_warnings
             if isinstance(w, dict) and w.get("code") == "GROUP_CHART_FAILED"
         )
+
+        phase_meta = {
+            "group_phase_terminal_failure": False,
+            "aggregation_warning_count": len(aggregation_warnings),
+            "chart_failure_count": chart_failure_count,
+            "terminal_errors": list(group_errors),
+        }
+        if perf_warning:
+            phase_meta["performance_sidecar_warning"] = perf_warning
 
         return {
             "status": "completed",
@@ -591,12 +824,7 @@ def finalize_group_analysis(
             },
             "aggregation_warnings": aggregation_warnings,
             "group_llm_synthesis": synthesis_meta,
-            "group_phase_metadata": {
-                "group_phase_terminal_failure": False,
-                "aggregation_warning_count": len(aggregation_warnings),
-                "chart_failure_count": chart_failure_count,
-                "terminal_errors": list(group_errors),
-            },
+            "group_phase_metadata": phase_meta,
         }
 
     finally:

@@ -74,15 +74,14 @@ Before doing anything else, run the **backup** custom command (`# backup`) and p
 
 ## 2. Code Quality
 
-- **Default mode is non-mutating (required):**
+- **Always auto-fix format/lint (required):** apply black + ruff fixes every pre-release run (do not wait for user opt-in).
   - `black` is the canonical formatter for this command unless explicitly changed by project policy.
-  - `black --check src/ tests/ scripts/*.py`
-  - `ruff check src/ tests/`
-  - Use `ruff format --check` only when the repository is actively migrating formatter policy from Black.
-- **Repair mode (explicit opt-in only):** only if user explicitly requests auto-fix for blockers, run:
-  - `black src/ tests/ scripts/*.py`
-  - `ruff check src/ tests/ --fix`
-  Then re-run check-only commands and report exactly what changed.
+  - Run in order:
+    1. `black src/ tests/ scripts/*.py`
+    2. `ruff check src/ tests/ --fix`
+    3. Re-verify with `black --check src/ tests/ scripts/*.py` and `ruff check src/ tests/`
+  - Use `ruff format` only when the repository is actively migrating formatter policy from Black.
+  - Report exactly which files black/ruff changed. Remaining check failures after auto-fix are blockers.
 - **Run type checker:** `mypy src/` (with `--ignore-missing-imports` if the project does so).
 - **Any mypy type errors are blockers.**
 - **Confirm no critical warnings remain.** Summarize any non-zero output from the above tools.
@@ -221,10 +220,10 @@ This repo ships via Docker Compose. Prefer project smoke over ad-hoc `docker bui
 - Do **not** introduce new features.
 - Do **not** refactor during pre-release unless fixing a blocking issue.
 - Prioritize **stability** over improvements.
-- Pre-release is **non-mutating by default**: do not modify tracked files unless explicitly fixing blockers (or user requests repair mode).
+- Pre-release is **non-mutating by default**, with one required exception: always apply **black** and **ruff --fix** in §2. Otherwise do not modify tracked files unless explicitly fixing blockers.
 - All commands must be run from the workspace root. If a step is run elsewhere, flag it and re-run from root.
 - Do **not** modify packaging artifacts (`dist/`, `build/`) except via the explicit build/install steps in this command.
-- If any tracked files were modified during checks, list them and justify each change.
+- If any tracked files were modified during checks, list them and justify each change (including black/ruff auto-fixes).
 - If a step fails and is fixable with a minimal, safe change (e.g. a missing import, a typo in metadata), fix it and re-run that step. Otherwise, report it as a blocker.
 - Public surfaces for docs/readiness decisions are: supported entrypoints, documented import paths, documented outputs/artifacts, and stable user-facing workflows claimed in README/docs.
 - After completion, provide a **release readiness summary**:
