@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "source": {
     "type": "manual",
-    "original_path": "originals/mini_transcript (5).json",
+    "original_path": "originals/mini_transcript.json",
     "imported_at": "2026-01-01T00:00:00Z"
   },
   "metadata": {
@@ -17,7 +17,7 @@
     {
       "speaker": "Alice",
       "speaker_db_id": 1,
-      "text": "Okay—so, um, the demo is next week in San Francisco.",
+      "text": "Okay\u2014so, um, the demo is next week in San Francisco.",
       "start": 0.0,
       "end": 2.5
     },
@@ -31,7 +31,7 @@
     {
       "speaker": "Alice",
       "speaker_db_id": 1,
-      "text": "Great—can you send the calendar invite? You know, with the address and agenda.",
+      "text": "Great\u2014can you send the calendar invite? You know, with the address and agenda.",
       "start": 6.1,
       "end": 9.2
     },
@@ -59,7 +59,7 @@
     {
       "speaker": "Alice",
       "speaker_db_id": 1,
-      "text": "If we miss Friday, leadership will be unhappy—let's avoid that.",
+      "text": "If we miss Friday, leadership will be unhappy\u2014let's avoid that.",
       "start": 17.6,
       "end": 20.8
     },

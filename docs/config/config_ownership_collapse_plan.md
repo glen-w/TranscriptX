@@ -161,8 +161,8 @@ flowchart TD
 2. Flat `AnalysisConfig` slices (1.4)
 3. Mapping stores (1.5) — after flat slices; fixed hydrate order below
 4. System/workflow (1.6)
-5. Generic file overrides (1.7) — acceptance gate
-6. Curated `to_dict()` (1.8) — only after 1.7 green
+5. Generic file overrides (1.7) — **Done** (atomic deep-candidate apply)
+6. Curated `to_dict()` (1.8) — **Done** in code
 
 **1.9** structural split is a separately tracked follow-up; not part of Candidate 1 done criteria.
 
@@ -242,12 +242,13 @@ Do **not** force all four stores through “default → file → selected profil
 - **Distinct from adapter-backed saved profiles:** module adapters + `load_module_profiles` / `apply_profile_to_config` target `analysis.semantic_similarity_v2` (the dataclass), not this presets dict. Tests must cover both paths separately and must not conflate them.
 - **Test:** preset dict default/file → active name → resolve runtime config; separately, adapter/file target payload applied via `apply_profile_to_config` (which may call `validate()` when present).
 
-## Step 1.7 — generic nested overrides
+## Step 1.7 — generic nested overrides + atomic apply
 
-Only after 1.1–1.6 parity green. Expand nested apply **without** semantic change (precedence, unknown keys ignored, list→tuple coercion, partial nested updates, list replace, dict shallow merge, existing errors/atomicity). **Acceptance:** full config regression suite green on the 1.7 PR before any 1.8 work. No parallel 1.7/1.8.
+**Status: Done (2026-07-20).** Expand nested apply **without** semantic change (precedence, unknown keys ignored, list→tuple coercion, partial nested updates, list replace, dict shallow merge). Apply goes to a deep independent candidate; validate complete candidate (object + registry/Pydantic leaves); commit onto the live config only on success. **Acceptance:** config regression suite + `tests/core/config/test_file_overrides_atomicity.py`. Behaviour matrix: `docs/dev/file_override_behaviour_matrix.md`.
 
 ## Step 1.8 — curated `to_dict()` (no raw `asdict(self.analysis)`)
 
+**Status: Done in code** (curated projection in `main.py`; kept after 1.7).
 ### Prohibitions and projection rules
 
 **Prohibit** `asdict(self.analysis)` / dumping the whole analysis object. That would expose runtime-only fields deliberately absent today.
@@ -356,8 +357,8 @@ Companion docs ([`pydantic_migration.md`](pydantic_migration.md), [`config_knobs
 | 1.4-pre / 1.4a–f | Map + flat slices + constructor rejection trio |
 | 1.5-pre / 1.5a–c | Mapping-store helper + store-specific consumer tests |
 | 1.6a–i | System/workflow same rejection contract; Dashboard last |
-| 1.7 | Generic nested file overrides — full suite green |
-| 1.8 | Curated `to_dict` projection — only after 1.7 |
+| 1.7 | Generic nested file overrides + deep-candidate atomic apply — **Done** (2026-07-20) |
+| 1.8 | Curated `to_dict` projection — **Done** in code (landed ahead of formal 1.7; kept) |
 | Follow-up | 1.9 structural split — outside done criteria |
 
 ## Done criteria (Candidate 1)

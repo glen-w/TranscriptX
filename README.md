@@ -81,7 +81,7 @@ docker compose up transcriptx-web
 
 Then open http://localhost:8501 in your browser.
 
-**Local install:** Python 3.10+. Core: `pip install transcriptx`. Full optional stack: `pip install transcriptx[full]`. Launcher helper: `./transcriptx.sh`.
+**Local install (from git, not PyPI):** Python 3.10–3.12. Editable core: `pip install -e .`. Optional stack: `pip install -e ".[full]"`. Launcher helper: `./transcriptx.sh`. The package is **not on PyPI** — see [install verification matrix](docs/runtime/install_verification_matrix.md).
 
 For detailed installation, environment variables, NLP setup, and troubleshooting, see [docs/runtime/installation.md](docs/runtime/installation.md).
 

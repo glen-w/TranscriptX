@@ -1,0 +1,36 @@
+# Unified path + secrets denylist for CI, pre-release, fixture validation, and secrets_check.
+# Patterns are matched against repo-relative paths (posix) unless noted.
+
+[tracked_forbidden]
+# Must never be tracked in git.
+globs = [
+  "whisperx.env",
+  ".env",
+  ".env.local",
+  ".env.*.local",
+  "data/perf/**",
+  "data/corrections/**",
+  "data/groups/**",
+  "data/preprocessing/**",
+  "docker-compose.override.yml",
+  "src/setup.py",
+]
+
+[untracked_forbidden]
+# Non-ignored paths that must not appear as untracked (??) in git status.
+# Local gitignored secrets (e.g. whisperx.env) are allowed on disk.
+globs = [
+  "src/setup.py",
+]
+
+[ignored_forbidden]
+# Paths that are gitignored but must not appear in a release worktree scan.
+globs = [
+  "data/perf/**",
+]
+
+[secret_patterns]
+# Applied via git grep on tracked files (Python re).
+patterns = [
+  "hf_[A-Za-z0-9]{20,}",
+]

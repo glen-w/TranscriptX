@@ -331,9 +331,9 @@ Same pattern for a **new** knob (freeze-compliant):
 | **A** | Docs + freeze policy; ownership numbers | 0.5 d | **Done** |
 | **B1…Bn** | Delegation PRs: `summary`, `highlights`, `llm_*`, then remaining nested, then top-level | 1–2 d each; ~8–15 PRs total | **Partial** (`summary` / `highlights` / `llm_*` done; more remain) |
 | **C** | Delete `system.TranscriptXConfig` duplicate | 1 d | **Done** |
-| **D** | Genericize `file_overrides` | 2–3 d | Not started |
+| **D** | Genericize `file_overrides` | 2–3 d | **Done** (2026-07-20 atomic deep-candidate apply) |
 | **E** | Collapse `config_validator` into `core/config/validation` | 1–2 d | Not started |
-| **F** | Generate `to_dict()` analysis section | 2–3 d | Not started (after more delegations) |
+| **F** | Generate `to_dict()` analysis section | 2–3 d | **Done** (curated projection in `main.py`) |
 | **G** | Drop unused deps | 0.5 d | **Done** |
 | **H** (optional) | Resolver in-memory apply | 2–4 d | Deferred |
 

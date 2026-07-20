@@ -7,6 +7,9 @@
 whisperx.env
 *.key
 
+# Local Compose overrides (ship docker-compose.override.example instead)
+docker-compose.override.yml
+
 # State and data
 processing_state/
 transcriptx_data/

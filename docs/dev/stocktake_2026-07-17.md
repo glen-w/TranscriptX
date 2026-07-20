@@ -4,7 +4,7 @@ Authority: self
 # TranscriptX Codebase Stocktake — 2026-07-17
 
 > Living decision foundation for near-term work. Supersedes the historical assessment in [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2026-03-10.md).  
-> Metrics refreshed 2026-07-17 against package **0.4.4** (beta).
+> Metrics refreshed 2026-07-20 against package **0.6.1** (beta). Historical findings below that still say 0.4.4 describe the 2026-07-17 snapshot; treat the header/snapshot tables as authoritative for current packaging.
 
 ---
 
@@ -13,10 +13,10 @@ Authority: self
 | Dimension | Verdict | Confidence |
 |-----------|---------|------------|
 | **What it is** | Local-first transcript **analysis** toolkit (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
-| **Honest stage** | **Beta** (`0.4.4`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
-| **OSS local-first public release** | **Conditional go** after hygiene + security docs (cleanup Phase A extract complete). | High |
+| **Honest stage** | **Beta** (`0.6.1`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
+| **OSS local-first public release** | **Conditional go** after Wave 0 hygiene (see `docs/dev/release_governance.md`). | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
-| **Immediate process blocker** | Release hygiene (CI, SECURITY.md, identity/install claims) — not the cleanup extract. | High |
+| **Immediate process blocker** | Manual next-tag checklist — CI exists; finish Wave 0 evidence before tagging. | High |
 
 **One-line:** Ship as a single-user, local-first OSS beta after closing release hygiene; keep engineering sequenced (Top-3 refactors next); do not market as a hosted product.
 
@@ -26,16 +26,16 @@ Authority: self
 
 | Fact | Value / evidence |
 |------|------------------|
-| Version | `0.4.4` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
+| Version | `0.6.1` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
 | License | MIT |
-| Scale | ~144k LOC under `src/transcriptx/`; ~722 `test_*.py` files; ~5910/6085 tests collected (default deselection) |
-| Smoke gate (2026-07-17) | **37/37 passed** (`make test-smoke`, ~62s) |
-| Coverage (checked-in `coverage.json`) | **~85.3%** of measured code; **entire `web/` omitted** (`.coveragerc`) |
+| Scale | Large `src/transcriptx/` + extensive `tests/` (see Makefile lanes) |
+| Smoke gate | `make test-smoke` (CI matrix 3.10–3.12) |
+| Coverage (checked-in `coverage.json`) | See latest coverage lane; **entire `web/` omitted** (`.coveragerc`) |
 | Git remote | `glen-w/TranscriptX` |
-| Package URLs | Claim `github.com/transcriptx/transcriptx` + ReadTheDocs — **mismatch with remote** |
-| CI workflows | **None** in-repo (no `.github/workflows`) |
-| SECURITY.md / CoC | **Absent** |
-| Distribution reality | Docker + git tags (pre-release command); README also claims `pip install transcriptx` |
+| Package URLs | `https://github.com/glen-w/TranscriptX` |
+| CI workflows | `.github/workflows/ci.yml` (tests matrix + compose-config + release-checks) |
+| SECURITY.md / CoC | `SECURITY.md` present (private vuln reporting) |
+| Distribution reality | Docker + git tags; **not on PyPI** — see install verification matrix |
 
 ```mermaid
 flowchart LR

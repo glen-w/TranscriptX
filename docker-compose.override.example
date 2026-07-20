@@ -1,4 +1,8 @@
-# Local override (optional; often gitignored for machine-specific paths).
+# Local Compose override EXAMPLE — copy to docker-compose.override.yml
+#
+# Upgrade note: if you already have a local docker-compose.override.yml, Compose
+# still auto-loads it (merge with docker-compose.yml). That preserves mounts and
+# LLM settings. The real override file is gitignored; this .example is tracked.
 #
 # Docker Compose merges this file with docker-compose.yml. Listing `volumes` here
 # replaces the entire `volumes` array for transcriptx-web, so we repeat the same

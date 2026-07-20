@@ -39,16 +39,17 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - **GPU-accelerated inference** where the host can expose it (CUDA on Linux; Apple MPS on native Mac)
 - **First-class native installation** alongside Docker (venv / `./transcriptx.sh`), especially where Docker cannot use the host GPU
 
-**Near-term (v0.1 – v0.41)**
+**Near-term (0.6.x)**
 
 - Harden GUI and Python API ergonomics
 - Improve run summaries and explainability
 - Improve speaker identification workflow
 - Improve installation reliability
 - Stabilize output contracts
+- **CI matrix (Python 3.10–3.12) + release-checks** — see `.github/workflows/ci.yml`
 - **Transcript-first by default** (especially Docker); optional orchestrated transcribe→import workflow later — see [Transcription architecture](#phase-2--transcription-architecture-analysis-first-integration-deferred)
 
-**Later (v0.3+)**
+**Later (0.7+)**
 
 - Enhanced GUI capabilities: run comparison, artifact filtering, richer visualizations
 - Deeper cross-session and longitudinal views in the GUI
@@ -89,17 +90,17 @@ These would enable summarization, conversational insights, and semantic analysis
 
 ## Phases (priority order)
 
-### Phase 1 — Beta-ready (now)
+### Phase 1 — Beta-ready (0.6.x honesty)
 
-**Goal:** Install, core flows, and docs work for a beta user with no bugs.
+**Goal:** Install, core flows, docs, and **in-repo CI** work for a beta user.
 
-- Install path: one canonical sequence (venv → requirements.txt → pip install -e .); script and README aligned
+- Install path: Docker Compose (recommended) or editable git install per [install_verification_matrix.md](runtime/install_verification_matrix.md) — **not PyPI**
 - Core flows: GUI, single-transcript analysis (API), batch analysis (API), groups — all run and produce outputs
-- Docs: README Quickstart, manual install, verify-install step, env vars, troubleshooting
-- Dependencies: version consistency (requirements.txt, lock, launcher, CI)
-- CI: smoke, contracts, fast gates pass; build_sanity validates "install then run"
+- Docs: README Quickstart, manual install, env vars, troubleshooting, SECURITY.md
+- Dependencies: clean-env audit + image `pip check` (see `docs/dev/dependency_audit.md`)
+- CI: `.github/workflows/ci.yml` — smoke, contracts, fast on Python 3.10–3.12; release-checks job
 
-**No new features;** stability and "it works" for a first-time clone/install.
+Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng gate must be green before the next public tag (`docs/dev/release_governance.md`).
 
 ---
 
@@ -120,7 +121,7 @@ These would enable summarization, conversational insights, and semantic analysis
 - An earlier **Transcribe Audio** experiment invoked whispermlx via `subprocess` on the same native macOS host as Streamlit. That broke down for Docker users and duplicated what a shell loop or `whispermlx-missing` already does well—so the page is now an **instruction hub** only.
 - Merging stacks would couple analysis releases to transcription toolchains (ffmpeg, HF tokens, model weights, platform quirks).
 
-**Current state (v0.1.x)**
+**Current state (0.6.x)**
 
 - [x] **Transcribe Audio** GUI — instruction hub (shell examples, `whispermlx-missing`); no in-app transcription forms.
 - [x] **Import Transcript** GUI + `run_managed_import_workflow()` — all platforms; primary handoff after external transcribe.
@@ -204,7 +205,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** v0.42 — current release; calmer architecture (Phase 2 + selected Phase 3 items)
+- **M3:** 0.6.x — current packaging line; Wave 0 eng gate (CI, SECURITY.md, Config 1.7) before Wave 1 product capacity
 
 ---
 

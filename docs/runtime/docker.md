@@ -83,6 +83,23 @@ docker compose up transcriptx-web
 
 Then open http://localhost:8501 in your browser.
 
+### Host bind address (security)
+
+Compose publishes the web port as:
+
+```yaml
+ports:
+  - "${TRANSCRIPTX_BIND_HOST:-127.0.0.1}:8501:8501"
+```
+
+- **Default:** `127.0.0.1` (loopback only). Prefer this for local single-user use.
+- **LAN opt-in:** `TRANSCRIPTX_BIND_HOST=0.0.0.0 docker compose up` (recreate the single service; do not start a second stack).
+- Inside the container the app still uses `--host 0.0.0.0` so the published host port can reach it.
+
+**Threat:** binding to `0.0.0.0` grants **unauthenticated** LAN access to transcripts, generated artefacts, configuration-visible operations, and destructive cleanup actions in the UI. See [SECURITY.md](../../SECURITY.md).
+
+Canonical CI/release Compose proofs use only `docker-compose.yml` (or `COMPOSE_FILE=docker-compose.yml`) so a local `docker-compose.override.yml` cannot contaminate evidence.
+
 You can also run `docker compose up` (without a service name) to start the web interface.
 
 **Scripting / automation (one-off Python API):**

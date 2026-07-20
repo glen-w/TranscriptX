@@ -78,6 +78,29 @@ def _safe_err(msg: str) -> str:
     return text[:SAFE_ERROR_MESSAGE_MAX]
 
 
+def _client_with_request_timeout(client: Any, request_timeout: float) -> Any:
+    """Cap OllamaClient HTTP timeout to the chart_descriptions knob when longer."""
+    try:
+        from transcriptx.core.llm import OllamaClient
+    except Exception:
+        return client
+    if not isinstance(client, OllamaClient):
+        return client
+    current = float(getattr(client, "_request_timeout", request_timeout) or request_timeout)
+    if current <= request_timeout:
+        return client
+    return OllamaClient(
+        base_url=client.base_url,
+        model=client.model,
+        seed=int(getattr(client, "_seed", 42)),
+        request_timeout=request_timeout,
+        availability_timeout=float(getattr(client, "_availability_timeout", 7.5)),
+        max_output_tokens=getattr(client, "_max_output_tokens", 2048),
+        metrics_sink=getattr(client, "_metrics_sink", None),
+        effort=getattr(client, "_effort", None),
+    )
+
+
 def _parse_description_json(raw: str, *, max_chars: int) -> str:
     text = (raw or "").strip()
     if text.startswith("```"):
@@ -249,6 +272,8 @@ def run_chart_descriptions(
     )
     max_retries = int(getattr(cd_cfg, "max_retries", 1) or 0)
     breaker_limit = int(getattr(cd_cfg, "circuit_breaker_failures", 3) or 3)
+    # Cap per-chart HTTP wait; must not inherit the global llm.request_timeout (~1350s).
+    request_timeout = float(getattr(cd_cfg, "request_timeout", 120.0) or 120.0)
     temperature = 0.0
 
     selected_charts = select_charts_for_set(
@@ -277,8 +302,8 @@ def run_chart_descriptions(
     if client_factory is None:
         from transcriptx.core.llm import get_llm_client
 
-        client_factory = get_llm_client
-    client = client_factory()
+        client_factory = lambda: get_llm_client(config)
+    client = _client_with_request_timeout(client_factory(), request_timeout)
     model = str(
         getattr(client, "model", None)
         or getattr(getattr(config, "llm", None), "model", "")
@@ -299,7 +324,15 @@ def run_chart_descriptions(
 
     allowed_roots = [run_root]
 
-    for chart in selected_charts:
+    for chart_idx, chart in enumerate(selected_charts, start=1):
+        logger.info(
+            "[CHART_DESCRIPTIONS] %s/%s viz_id=%s chart_key=%s timeout=%.0fs",
+            chart_idx,
+            counts.selected,
+            chart.viz_id,
+            chart.chart_key,
+            request_timeout,
+        )
         if circuit_open:
             counts.skipped += 1
             index_entries.append(

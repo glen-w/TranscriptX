@@ -233,9 +233,10 @@ def test_file_overrides_apply_order_base_then_adapter_then_bucket(
             return config_obj.analysis.custom_target
 
     def _spy_apply_profile_to_config(config_obj, payload):
-        if config_obj is cfg.workflow:
+        # Apply runs on a deep candidate (Config 1.7); detect by payload shape, not live id.
+        if "timeout_quick_seconds" in payload:
             calls.append("base_workflow")
-        elif config_obj is cfg.analysis.custom_target:
+        elif "param" in payload:
             calls.append("adapter_target")
         for key, value in payload.items():
             setattr(config_obj, key, value)

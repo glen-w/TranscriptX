@@ -10,10 +10,12 @@ BERTopic is a first-class topic-modeling path alongside LDA/NMF `topic_modeling`
 BERTopic packages (`bertopic`, `hdbscan`, `umap-learn`) are in the **default** install for now:
 
 ```bash
-pip install transcriptx
-# Compat alias (packages already satisfied from base):
-# pip install 'transcriptx[bertopic]'
+pip install -e .
+# Compat alias (packages already satisfied from base when present):
+# pip install -e '.[bertopic]'
 ```
+
+The package is **not on PyPI**; install from this repository (see [install_verification_matrix.md](../runtime/install_verification_matrix.md)).
 
 Sentence Transformers remains a base dependency (shared with semantic/echoes).
 

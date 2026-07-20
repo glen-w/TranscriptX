@@ -78,6 +78,24 @@ def persist_canonical_results_and_artifacts(
     modules_run = list(results.get("modules_run", []))
     errors = list(results.get("errors", []))
 
+    # Finalize-phase modules (e.g. chart_descriptions) run after this first write.
+    # Mark them pending so observers do not see a false modules_failed projection.
+    try:
+        from transcriptx.core.pipeline.module_registry import get_module_info
+
+        pending_finalize = []
+        for mid in modules_enabled:
+            info = get_module_info(mid)
+            if info is None or not bool(getattr(info, "finalize_phase", False)):
+                continue
+            if mid in modules_run:
+                continue
+            pending_finalize.append({"module": mid, "reason": "pending_finalize"})
+        if pending_finalize:
+            skipped = list(skipped) + pending_finalize
+    except Exception:
+        pass
+
     run_results_path = persist_canonical_run_outcomes(
         run_dir=run_dir,
         run_id=run_id,
@@ -112,6 +130,14 @@ def persist_canonical_results_and_artifacts(
         )
         if fin.module_results:
             results.setdefault("module_results", {}).update(fin.module_results)
+            # Drop provisional pending_finalize placeholders once finalize has spoken.
+            skipped = [
+                s
+                for s in skipped
+                if not (
+                    isinstance(s, dict) and s.get("reason") == "pending_finalize"
+                )
+            ]
             for mid, mres in fin.module_results.items():
                 mid_s = str(mid)
                 status = str((mres or {}).get("status") or "")

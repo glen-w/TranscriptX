@@ -118,31 +118,56 @@ def test_persist_canonical_results_and_artifacts_orders_writes(
 
 
 @pytest.mark.unit
-def test_persist_canonical_results_and_artifacts_integration(
+def test_persist_marks_finalize_modules_pending_before_coordinator(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """End-to-end write of run_results.json + manifest.json without network."""
-    monkeypatch.setattr(
-        "transcriptx.core.pipeline.manifest_builder.compute_module_source_hash",
-        lambda _module: "hash",
-    )
-    (tmp_path / "stats").mkdir()
-    (tmp_path / "stats" / "note.txt").write_text("x", encoding="utf-8")
+    """chart_descriptions must not appear as modules_failed mid-finalize."""
+    captured: list[dict] = []
 
-    paths = persist_canonical_results_and_artifacts(
+    def _results(**kwargs):
+        captured.append(kwargs)
+        return tmp_path / f"run_results_{len(captured)}.json"
+
+    class _Fin:
+        module_results = {
+            "chart_descriptions": {"status": "success", "duration_ms": 1.0}
+        }
+        manifest_path = tmp_path / "manifest.json"
+
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.pipeline_write_phases.persist_canonical_run_outcomes",
+        _results,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.chart_descriptions.coordinator.run_finalization_coordinator",
+        lambda **_k: _Fin(),
+    )
+
+    persist_canonical_results_and_artifacts(
         run_dir=tmp_path,
-        run_id="run-int",
+        run_id="r-fin",
         transcript_key="tk",
-        modules_enabled=["stats"],
+        modules_enabled=["stats", "chart_descriptions"],
         results={
             "modules_run": ["stats"],
-            "skipped_modules": [{"module": "acts", "reason": "gate"}],
+            "skipped_modules": [],
             "errors": [],
-            "module_results": {"stats": {"n": 1}},
+            "module_results": {},
         },
     )
-    run_results = json.loads(paths["run_results_path"].read_text(encoding="utf-8"))
-    assert run_results["run_id"] == "run-int"
-    assert run_results["modules_run"] == ["stats"]
-    assert paths["manifest_path"] is not None
-    assert paths["manifest_path"].exists()
+
+    assert len(captured) >= 2
+    first_skipped = captured[0]["skipped_modules"]
+    assert any(
+        isinstance(s, dict)
+        and s.get("module") == "chart_descriptions"
+        and s.get("reason") == "pending_finalize"
+        for s in first_skipped
+    )
+    # After finalize, pending placeholder is gone and module is in modules_run
+    final = captured[-1]
+    assert "chart_descriptions" in final["modules_run"]
+    assert not any(
+        isinstance(s, dict) and s.get("reason") == "pending_finalize"
+        for s in final["skipped_modules"]
+    )

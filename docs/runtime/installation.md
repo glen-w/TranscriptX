@@ -29,7 +29,7 @@ Then open http://localhost:8501. Full details: [docker.md](docker.md).
 
 ### Local install
 
-**Python 3.10 or later** required.
+**Python 3.10–3.12** required (`requires-python = ">=3.10,<3.13"`).
 
 **Launcher (fast path):** Creates a virtual environment, installs full dependencies, and starts the web interface:
 
@@ -39,13 +39,15 @@ Then open http://localhost:8501. Full details: [docker.md](docker.md).
 
 With no arguments, starts the web interface at http://localhost:8501. Core-only: `TRANSCRIPTX_CORE=1 ./transcriptx.sh`.
 
-**Manual install:**
+**Manual install (from this repository — not PyPI):**
 
-- **Core:** `pip install transcriptx` (core path; includes BERTopic for now — see install profiles note below)
-- **Full:** `pip install transcriptx[full]` (all optional modules; core_mode off)
-- **Specific extras:** `pip install transcriptx[voice]`, `pip install 'transcriptx[nlp]'`, etc.
+The package is **not published on PyPI**. Do not use bare `pip install transcriptx` from PyPI. Authoritative cells: [install_verification_matrix.md](install_verification_matrix.md).
 
-> **Install profiles (public release):** Today's layout is transitional. BERTopic (`bertopic` / `hdbscan` / `umap-learn`) ships in the **default** install so Docker and plain `pip install transcriptx` get topic clustering without an extra. For public release we will define clearer install profiles (e.g. **basic** / **full** / **llm**) so heavy ML stacks are opt-in again. The `[bertopic]` extra remains a no-op compatibility alias.
+- **Core (editable):** `pip install -e .`
+- **Full:** `pip install -e ".[full]"` (all optional modules; core_mode off; may fail on some hosts)
+- **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, etc.
+
+> **Install profiles:** BERTopic (`bertopic` / `hdbscan` / `umap-learn`) may ship in the default install so Docker and editable core installs get topic clustering without an extra. The `[bertopic]` extra remains a compatibility alias.
 
 **Dedicated environment (recommended):** TranscriptX does not use Prefect, Dagster, or other workflow engines. For a clean environment with only project dependencies, use a fresh virtualenv and install from the repo:
 
@@ -79,7 +81,7 @@ print("errors:", result.errors)
 
 Some features (topic modeling, named-entity recognition, etc.) use NLP — software that understands language. In TranscriptX that comes in **two separate steps**:
 
-1. **The NLP extra** — The program that does language processing. Install via `pip install 'transcriptx[nlp]'`. The launcher's fast path includes this.
+1. **The NLP extra** — The program that does language processing. Install via `pip install -e '.[nlp]'`. The launcher's fast path includes this.
 2. **The language model** — A separate download: a data file for English (words, grammar, etc.). Run **once** after the NLP extra is installed:
 
    ```bash
@@ -148,6 +150,6 @@ The Streamlit app reads options from `.streamlit/config.toml` when present.
 
 ## Troubleshooting
 
-- **"No module named …" after install** — For an editable install from source, install dependencies first: `pip install -r requirements.txt` then `pip install -e .`. If you installed via `pip install transcriptx` or `pip install transcriptx[full]`, dependencies are pulled from pyproject.toml; reinstall with the desired extra if a module fails.
+- **"No module named …" after install** — For an editable install from source, install dependencies first: `pip install -r requirements.txt` then `pip install -e .`. If you installed via `pip install -e .` or `pip install -e ".[full]"`, dependencies are pulled from pyproject.toml; reinstall with the desired extra if a module fails.
 - **spaCy model errors** — The language model is a separate download from the NLP extra. Install the NLP extra first, then run `python -m spacy download en_core_web_md`. If offline and auto-download fails, install manually.
 - **Download-related failures** — If your environment blocks network access, set `TRANSCRIPTX_DISABLE_DOWNLOADS=1` and pre-populate/mount required caches (and provide required Hugging Face token/policy where applicable).

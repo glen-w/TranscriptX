@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TRANSCRIPTX_DISABLE_DOWNLOADS: "1"
+  TRANSCRIPTX_LLM_ENABLED: "0"
+  TRANSCRIPTX_CORRECTIONS_LLM_ENABLED: "0"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  compose-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert canonical Compose bind
+        run: bash scripts/release/assert_compose_bind.sh
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package + test deps
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+      - name: Isolate temp roots
+        run: |
+          mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"
+          echo "TRANSCRIPTX_DATA_DIR=$RUNNER_TEMP/tx-data" >> "$GITHUB_ENV"
+          echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
+      - name: Smoke
+        run: make test-smoke
+      - name: Contracts
+        run: make test-contracts
+      - name: Fast
+        run: make test-fast
+
+  release-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: [compose-config, tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package + build tools
+        run: |
+          python -m pip install -U pip build
+          pip install -e ".[dev]"
+      - name: Tracked data allowlist
+        run: python3 scripts/release/check_tracked_data.py
+      - name: Denylist / secrets
+        run: bash scripts/secrets_check.sh
+      - name: Stale refs + TODO gate
+        run: bash scripts/release/stale_refs.sh
+      - name: Canonical Compose asserts
+        run: bash scripts/release/assert_compose_bind.sh
+      - name: Package build + wheel import smoke
+        run: |
+          python -m build --wheel
+          WHEEL=$(ls -1 dist/transcriptx-*.whl | tail -n 1)
+          python - <<PY
+          import subprocess, sys
+          wheel = """$WHEEL"""
+          subprocess.check_call([sys.executable, "-m", "pip", "install", "--no-deps", wheel])
+          import transcriptx
+          print("import ok", transcriptx.__version__)
+          PY
+      - name: Clean-env audit
+        run: bash scripts/release/clean_env_audit.sh
+      - name: Fresh Docker build
+        run: docker compose -f docker-compose.yml build --pull --no-cache
+      - name: Docker smoke
+        run: make docker-smoke
+      - name: Image pip check
+        run: bash scripts/release/image_pip_check.sh
+      - name: Worktree cleanliness
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Upload release artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-checks
+          path: |
+            artifacts/pre-release/
+            dist/
+          if-no-files-found: warn
