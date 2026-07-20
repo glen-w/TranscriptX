@@ -174,6 +174,28 @@ def test_evidence_from_bar_spec():
     assert ev.content_sha256()
 
 
+def test_evidence_from_pre_rendered_spec():
+    from transcriptx.core.viz.specs import PreRenderedFigureSpec
+
+    spec = PreRenderedFigureSpec(
+        viz_id="wordclouds.basic.global",
+        module="wordclouds",
+        name="basic",
+        scope="global",
+        chart_intent="pre_rendered",
+        title="Wordcloud",
+        figure=object(),
+        labels=["alpha", "beta"],
+        values=[3.0, 1.0],
+        transformations=["source:wordcloud_frequencies"],
+    )
+    ev = evidence_from_chart_spec(spec)
+    assert ev.labels == ["alpha", "beta"]
+    assert ev.values == [3.0, 1.0]
+    assert "render:pre_rendered" in ev.transformations
+    assert ev.content_sha256()
+
+
 class _FakeClient:
     def __init__(self) -> None:
         self.calls = 0

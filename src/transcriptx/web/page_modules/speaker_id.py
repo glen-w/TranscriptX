@@ -294,7 +294,6 @@ def render_speaker_id_page() -> None:
         key="speaker_id_transcript",
     )
     if idx == 0:
-        st.info("Select a transcript to continue.")
         return
     transcript_path = options[idx - 1]
     SubjectService.set_transcript_context_from_path(

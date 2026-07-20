@@ -477,7 +477,6 @@ def render_corrections_studio() -> None:
         key="corrections_studio_transcript",
     )
     if idx == 0:
-        st.info("Select a transcript to continue.")
         return
     transcript_path = paths[idx - 1]
     SubjectService.set_transcript_context_from_path(

@@ -304,6 +304,112 @@ class TestOutputService:
         mock_warn.assert_called_once()
         mock_dynamic.assert_not_called()
 
+    def test_save_chart_writes_evidence_sidecar(self, output_service):
+        """Spec saves write sibling evidence.json and evidence_rel meta."""
+        import json
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        config = TranscriptXConfig()
+        config.output.dynamic_charts = "off"
+        set_config(config)
+
+        spec = BarCategoricalSpec(
+            viz_id="sentiment.evidence_bar.global",
+            module="sentiment",
+            name="evidence_bar",
+            scope="global",
+            chart_intent="bar_categorical",
+            title="Evidence Bar",
+            categories=["a", "b"],
+            values=[1.0, 2.0],
+        )
+        result = output_service.save_chart(spec, chart_type="bar")
+        assert result["static"] is not None
+        static_path = Path(result["static"])
+        evidence_path = static_path.with_suffix(".evidence.json")
+        assert evidence_path.is_file()
+        payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+        assert payload["schema_id"] == "transcriptx.chart_evidence.v1"
+        assert payload["labels"] == ["a", "b"]
+        assert payload["values"] == [1.0, 2.0]
+
+        meta = output_service._artifact_metadata
+        static_rel = static_path.relative_to(
+            Path(output_service.transcript_dir)
+        ).as_posix()
+        ev_rel = evidence_path.relative_to(
+            Path(output_service.transcript_dir)
+        ).as_posix()
+        chart_meta = meta[static_rel]
+        assert chart_meta["evidence_rel"] == ev_rel
+        assert "chart_evidence_rel" not in chart_meta
+        assert chart_meta["evidence_sha256"]
+        assert meta[ev_rel]["artifact_kind"] == "chart_evidence"
+        plt.close("all")
+
+    def test_save_chart_pre_rendered_writes_evidence_skips_plotly(self, output_service):
+        """PreRenderedFigureSpec writes evidence; dynamic Plotly is skipped."""
+        import json
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from transcriptx.core.viz.specs import PreRenderedFigureSpec
+
+        config = TranscriptXConfig()
+        config.output.dynamic_charts = "auto"
+        set_config(config)
+
+        fig, ax = plt.subplots(figsize=(2, 2))
+        ax.bar(["x"], [1])
+        spec = PreRenderedFigureSpec(
+            viz_id="wordclouds.basic.global",
+            module="wordclouds",
+            name="basic_pre",
+            scope="global",
+            chart_intent="pre_rendered",
+            title="Wordcloud",
+            figure=fig,
+            labels=["alpha", "beta"],
+            values=[3.0, 1.0],
+            transformations=["source:wordcloud_frequencies"],
+        )
+        with (
+            patch(
+                "transcriptx.core.output.output_service.is_plotly_available",
+                return_value=True,
+            ),
+            patch(
+                "transcriptx.core.output.output_service.save_dynamic_chart"
+            ) as mock_dynamic,
+        ):
+            result = output_service.save_chart(spec, chart_type="basic")
+
+        assert result["static"] is not None
+        assert result["dynamic"] is None
+        mock_dynamic.assert_not_called()
+
+        evidence_path = Path(result["static"]).with_suffix(".evidence.json")
+        assert evidence_path.is_file()
+        payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+        assert payload["labels"] == ["alpha", "beta"]
+        assert payload["values"] == [3.0, 1.0]
+        assert "render:pre_rendered" in payload["transformations"]
+
+        static_rel = (
+            Path(result["static"])
+            .relative_to(Path(output_service.transcript_dir))
+            .as_posix()
+        )
+        assert "chart_evidence_rel" not in output_service._artifact_metadata[static_rel]
+        assert output_service._artifact_metadata[static_rel]["evidence_rel"]
+
     def test_output_structure_creation(self, temp_transcript_file):
         """Test that output structure is created correctly."""
         service = OutputService(str(temp_transcript_file), "sentiment")

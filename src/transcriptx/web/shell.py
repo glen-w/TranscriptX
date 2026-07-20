@@ -108,6 +108,26 @@ def inject_global_styles() -> None:
         font-weight: 500;
         margin-right: 0.5rem;
     }
+    .tx-speaker-card-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin: 0.1rem 0 0.35rem 0;
+        padding-left: 0.65rem;
+        border-left: 4px solid var(--speaker-accent, #5b8def);
+    }
+    .tx-speaker-card-title strong {
+        color: var(--speaker-accent, #5b8def);
+        font-size: 1.05rem;
+        letter-spacing: 0.01em;
+    }
+    .tx-speaker-swatch {
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 999px;
+        background: var(--speaker-accent, #5b8def);
+        flex-shrink: 0;
+    }
     /* Navigation section headers */
     .nav-section-header,
     .subject-section-header {

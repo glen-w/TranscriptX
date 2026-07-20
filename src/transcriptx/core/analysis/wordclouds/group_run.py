@@ -143,6 +143,7 @@ def _emit_pooled_global_tfidf_wordcloud(
             chart_type="tfidf",
             title=title,
             viz_id=viz_id,
+            frequencies=freq,
         )
     finally:
         plt.close(fig)

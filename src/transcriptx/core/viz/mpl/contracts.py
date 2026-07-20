@@ -28,6 +28,7 @@ from transcriptx.core.viz.specs import (
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
     NetworkGraphSpec,
+    PreRenderedFigureSpec,
     ScatterSpec,
 )
 
@@ -50,6 +51,7 @@ TYPE_TO_INTENTS: dict[type, frozenset[str]] = {
     BarCategoricalSpec: frozenset({"bar_categorical"}),
     BoxSpec: frozenset({"box_plot"}),
     NetworkGraphSpec: frozenset({"network_graph"}),
+    PreRenderedFigureSpec: frozenset({"pre_rendered"}),
 }
 
 

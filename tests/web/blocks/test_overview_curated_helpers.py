@@ -17,6 +17,15 @@ def test_summary_source_badge_llm_vs_standard() -> None:
 
 
 @pytest.mark.unit
+def test_speaker_accent_color_cycles_distinct_palette() -> None:
+    first = oc._speaker_accent_color(0)
+    second = oc._speaker_accent_color(1)
+    assert first != second
+    assert first.startswith("#")
+    assert oc._speaker_accent_color(len(oc._SPEAKER_ACCENTS)) == first
+
+
+@pytest.mark.unit
 def test_summary_hero_badges_include_provenance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

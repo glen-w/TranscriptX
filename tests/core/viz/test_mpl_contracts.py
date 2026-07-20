@@ -27,6 +27,7 @@ from transcriptx.core.viz.specs import (
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
     NetworkGraphSpec,
+    PreRenderedFigureSpec,
     ScatterSeries,
     ScatterSpec,
 )
@@ -130,6 +131,25 @@ def _network_spec(
     )
 
 
+def _pre_rendered_spec(
+    *, notes: str | None = None, chart_intent: str = "pre_rendered"
+) -> PreRenderedFigureSpec:
+    plt = get_matplotlib_pyplot()
+    fig, _ax = plt.subplots()
+    return PreRenderedFigureSpec(
+        viz_id="pre.test",
+        module="tests",
+        name="pre",
+        scope="global",
+        chart_intent=chart_intent,  # type: ignore[arg-type]
+        title="Pre",
+        notes=notes,
+        figure=fig,
+        labels=["a"],
+        values=[1.0],
+    )
+
+
 def test_bare_chart_spec_is_not_renderable() -> None:
     spec = ChartSpec(
         viz_id="base",
@@ -173,6 +193,7 @@ def test_subclass_of_registered_spec_is_not_renderable() -> None:
         (_bar_spec, "network_graph"),
         (_box_spec, "heatmap_matrix"),
         (_network_spec, "bar_categorical"),
+        (_pre_rendered_spec, "bar_categorical"),
     ],
 )
 def test_mismatched_type_and_intent_raises(factory, wrong_intent: str) -> None:
@@ -194,6 +215,7 @@ def test_scatter_accepts_both_intents() -> None:
         _bar_spec(notes="meta-note"),
         _box_spec(notes="meta-note"),
         _network_spec(notes="meta-note"),
+        _pre_rendered_spec(notes="meta-note"),
     ],
 )
 def test_notes_are_not_drawn_on_axes(spec: ChartSpec) -> None:

@@ -133,6 +133,7 @@ def generate_wordcloud(
                 chart_type=chart_type,
                 title=title,
                 viz_id=viz_id,
+                frequencies=freq,
                 output_service=output_service,
             )
         else:
@@ -146,6 +147,7 @@ def generate_wordcloud(
                 chart_type=chart_type,
                 title=title,
                 viz_id=viz_id,
+                frequencies=freq,
                 output_service=output_service,
             )
     finally:

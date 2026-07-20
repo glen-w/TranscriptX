@@ -14,6 +14,7 @@ from transcriptx.core.viz.specs import (
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
     NetworkGraphSpec,
+    PreRenderedFigureSpec,
     ScatterSeries,
     ScatterSpec,
 )
@@ -128,85 +129,104 @@ def test_render_plotly_all_intents() -> None:
 
     plotly_mod = MagicMock()
     plotly_mod.graph_objects = fake_go
+    previous_plotly = sys.modules.get("plotly")
+    previous_go = sys.modules.get("plotly.graph_objects")
     sys.modules["plotly"] = plotly_mod
     sys.modules["plotly.graph_objects"] = fake_go
+    try:
+        with patch.object(ch, "is_plotly_available", return_value=True):
+            line = LineTimeSeriesSpec(
+                **_base(chart_intent="line_timeseries"),
+                series=[{"x": [1, 2], "y": [3, 4], "name": "a", "text": ["t1", "t2"]}],
+                markers=True,
+                x_label="x",
+                y_label="y",
+            )
+            assert ch.render_plotly(line) is fig
 
-    with patch.object(ch, "is_plotly_available", return_value=True):
-        line = LineTimeSeriesSpec(
-            **_base(chart_intent="line_timeseries"),
-            series=[{"x": [1, 2], "y": [3, 4], "name": "a", "text": ["t1", "t2"]}],
-            markers=True,
-            x_label="x",
-            y_label="y",
-        )
-        assert ch.render_plotly(line) is fig
+            scatter = ScatterSpec(
+                **_base(chart_intent="scatter"),
+                series=[
+                    ScatterSeries(
+                        name="s",
+                        x=[1, 2],
+                        y=["a", "b"],
+                        text=["t1", "t2"],
+                        marker={"size": 5},
+                    )
+                ],
+                mode="markers",
+                y_is_categorical=None,
+            )
+            assert ch.render_plotly(scatter) is fig
+            fig.update_yaxes.assert_called()
 
-        scatter = ScatterSpec(
-            **_base(chart_intent="scatter"),
-            series=[
-                ScatterSeries(
-                    name="s",
-                    x=[1, 2],
-                    y=["a", "b"],
-                    text=["t1", "t2"],
-                    marker={"size": 5},
-                )
-            ],
-            mode="markers",
-            y_is_categorical=None,
-        )
-        assert ch.render_plotly(scatter) is fig
-        fig.update_yaxes.assert_called()
+            heat = HeatmapMatrixSpec(
+                **_base(chart_intent="heatmap_matrix"),
+                z=[[1, 2], [3, 4]],
+                x_labels=["a", "b"],
+                y_labels=["c", "d"],
+                zmin=0,
+                zmax=4,
+            )
+            assert ch.render_plotly(heat) is fig
 
-        heat = HeatmapMatrixSpec(
-            **_base(chart_intent="heatmap_matrix"),
-            z=[[1, 2], [3, 4]],
-            x_labels=["a", "b"],
-            y_labels=["c", "d"],
-            zmin=0,
-            zmax=4,
-        )
-        assert ch.render_plotly(heat) is fig
+            bar = BarCategoricalSpec(
+                **_base(chart_intent="bar_categorical"),
+                categories=["a", "b"],
+                values=[1.0, 2.0],
+                orientation="vertical",
+            )
+            assert ch.render_plotly(bar) is fig
 
-        bar = BarCategoricalSpec(
-            **_base(chart_intent="bar_categorical"),
-            categories=["a", "b"],
-            values=[1.0, 2.0],
-            orientation="vertical",
-        )
-        assert ch.render_plotly(bar) is fig
+            bar_h = BarCategoricalSpec(
+                **_base(chart_intent="bar_categorical"),
+                categories=["a"],
+                values=[1.0],
+                orientation="horizontal",
+                series=[{"name": "n", "categories": ["a"], "values": [3.0]}],
+            )
+            assert ch.render_plotly(bar_h) is fig
 
-        bar_h = BarCategoricalSpec(
-            **_base(chart_intent="bar_categorical"),
-            categories=["a"],
-            values=[1.0],
-            orientation="horizontal",
-            series=[{"name": "n", "categories": ["a"], "values": [3.0]}],
-        )
-        assert ch.render_plotly(bar_h) is fig
+            box = BoxSpec(
+                **_base(chart_intent="box_plot"),
+                series=[{"x": ["g"], "y": [1, 2, 3], "name": "b"}],
+                show_points=True,
+            )
+            assert ch.render_plotly(box) is fig
 
-        box = BoxSpec(
-            **_base(chart_intent="box_plot"),
-            series=[{"x": ["g"], "y": [1, 2, 3], "name": "b"}],
-            show_points=True,
-        )
-        assert ch.render_plotly(box) is fig
+            net = NetworkGraphSpec(
+                **_base(chart_intent="network_graph"),
+                nodes=[
+                    {"id": "a", "label": "A", "size": 30, "color": "red"},
+                    {"id": "b", "label": "B"},
+                ],
+                edges=[{"source": "a", "target": "b", "weight": 2, "label": "e"}],
+                node_positions={"a": (0.0, 0.0), "b": (1.0, 1.0)},
+            )
+            assert ch.render_plotly(net) is fig
 
-        net = NetworkGraphSpec(
-            **_base(chart_intent="network_graph"),
-            nodes=[
-                {"id": "a", "label": "A", "size": 30, "color": "red"},
-                {"id": "b", "label": "B"},
-            ],
-            edges=[{"source": "a", "target": "b", "weight": 2, "label": "e"}],
-            node_positions={"a": (0.0, 0.0), "b": (1.0, 1.0)},
-        )
-        assert ch.render_plotly(net) is fig
+            net2 = NetworkGraphSpec(
+                **_base(chart_intent="network_graph"),
+                nodes=[{"id": "a", "label": "A"}],
+                edges=[{"source": "a", "target": "a"}],
+            )
+            with patch("networkx.spring_layout", return_value={"a": (0.1, 0.2)}):
+                assert ch.render_plotly(net2) is fig
 
-        net2 = NetworkGraphSpec(
-            **_base(chart_intent="network_graph"),
-            nodes=[{"id": "a", "label": "A"}],
-            edges=[{"source": "a", "target": "a"}],
-        )
-        with patch("networkx.spring_layout", return_value={"a": (0.1, 0.2)}):
-            assert ch.render_plotly(net2) is fig
+            pre = PreRenderedFigureSpec(
+                **_base(chart_intent="pre_rendered"),
+                figure=object(),
+                labels=["a"],
+                values=[1.0],
+            )
+            assert ch.render_plotly(pre) is None
+    finally:
+        if previous_plotly is None:
+            sys.modules.pop("plotly", None)
+        else:
+            sys.modules["plotly"] = previous_plotly
+        if previous_go is None:
+            sys.modules.pop("plotly.graph_objects", None)
+        else:
+            sys.modules["plotly.graph_objects"] = previous_go

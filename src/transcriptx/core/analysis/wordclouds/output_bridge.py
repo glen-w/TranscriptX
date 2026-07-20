@@ -17,9 +17,11 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
+from transcriptx.core.analysis.chart_descriptions.schemas import MAX_EVIDENCE_LABELS
 from transcriptx.core.utils.config import get_config
+from transcriptx.core.viz.specs import PreRenderedFigureSpec
 
 _ACTIVE_OUTPUT_SERVICE = None
 
@@ -57,6 +59,49 @@ def use_output_service(service):
         _ACTIVE_OUTPUT_SERVICE = previous
 
 
+def _top_terms_evidence(
+    frequencies: Mapping[str, Any] | None,
+    *,
+    limit: int = MAX_EVIDENCE_LABELS,
+) -> tuple[list[str], list[float]]:
+    if not frequencies:
+        return [], []
+    ranked = sorted(
+        ((str(term), float(weight)) for term, weight in frequencies.items()),
+        key=lambda item: (-item[1], item[0]),
+    )[:limit]
+    return [term for term, _ in ranked], [weight for _, weight in ranked]
+
+
+def _wordcloud_chart_spec(
+    fig,
+    *,
+    filename: str,
+    scope: str,
+    speaker: str | None,
+    title: str | None,
+    viz_id: str | None,
+    frequencies: Mapping[str, Any] | None,
+    module: str,
+) -> PreRenderedFigureSpec:
+    labels, values = _top_terms_evidence(frequencies)
+    final_viz_id = viz_id or f"{module}.{filename}.{scope}"
+    return PreRenderedFigureSpec(
+        viz_id=final_viz_id,
+        module=module,
+        name=filename,
+        scope=scope,  # type: ignore[arg-type]
+        chart_intent="pre_rendered",
+        title=title or filename,
+        speaker=speaker,
+        figure=fig,
+        labels=labels,
+        values=values,
+        transformations=["source:wordcloud_frequencies"] if labels else (),
+        notes="Wordcloud raster; top terms listed in evidence labels/values.",
+    )
+
+
 def _save_chart_global(
     fig,
     filename,
@@ -65,20 +110,24 @@ def _save_chart_global(
     title=None,
     viz_id=None,
     *,
+    frequencies: Mapping[str, Any] | None = None,
     output_service: Any | None = None,
 ):
     svc = _active_output_service(output_service)
     if not svc:
         return None
-    result = svc.save_chart(
-        chart_id=filename,
+    module = getattr(svc, "module_name", None) or "wordclouds"
+    spec = _wordcloud_chart_spec(
+        fig,
+        filename=filename,
         scope="global",
-        static_fig=fig,
-        dpi=dpi,
-        chart_type=chart_type,
+        speaker=None,
         title=title,
         viz_id=viz_id,
+        frequencies=frequencies,
+        module=module,
     )
+    result = svc.save_chart(spec, dpi=dpi, chart_type=chart_type)
     return result.get("static")
 
 
@@ -91,21 +140,24 @@ def _save_chart_speaker(
     title=None,
     viz_id=None,
     *,
+    frequencies: Mapping[str, Any] | None = None,
     output_service: Any | None = None,
 ):
     svc = _active_output_service(output_service)
     if not svc:
         return None
-    result = svc.save_chart(
-        chart_id=filename,
+    module = getattr(svc, "module_name", None) or "wordclouds"
+    spec = _wordcloud_chart_spec(
+        fig,
+        filename=filename,
         scope="speaker",
         speaker=speaker,
-        static_fig=fig,
-        dpi=dpi,
-        chart_type=chart_type,
         title=title,
         viz_id=viz_id,
+        frequencies=frequencies,
+        module=module,
     )
+    result = svc.save_chart(spec, dpi=dpi, chart_type=chart_type)
     return result.get("static")
 
 
@@ -119,6 +171,7 @@ def save_global_chart(
     title=None,
     viz_id=None,
     *,
+    frequencies: Mapping[str, Any] | None = None,
     output_service: Any | None = None,
 ):
     return _save_chart_global(
@@ -128,6 +181,7 @@ def save_global_chart(
         chart_type=chart_type,
         title=title,
         viz_id=viz_id,
+        frequencies=frequencies,
         output_service=output_service,
     )
 
@@ -143,6 +197,7 @@ def save_speaker_chart(
     title=None,
     viz_id=None,
     *,
+    frequencies: Mapping[str, Any] | None = None,
     output_service: Any | None = None,
 ):
     return _save_chart_speaker(
@@ -153,6 +208,7 @@ def save_speaker_chart(
         chart_type=chart_type,
         title=title,
         viz_id=viz_id,
+        frequencies=frequencies,
         output_service=output_service,
     )
 

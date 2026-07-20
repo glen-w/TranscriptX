@@ -609,6 +609,12 @@ class OutputService:
                     },
                 )
         except Exception:
+            logger.exception(
+                "Failed to write chart evidence sidecar for viz_id=%s module=%s name=%s",
+                final_viz_id,
+                getattr(spec, "module", None),
+                getattr(spec, "name", None),
+            )
             evidence_rel = None
             evidence_sha = None
 
@@ -634,7 +640,6 @@ class OutputService:
         }
         if evidence_rel:
             base_metadata["evidence_rel"] = evidence_rel
-            base_metadata["chart_evidence_rel"] = evidence_rel
         if evidence_sha:
             base_metadata["evidence_sha256"] = evidence_sha
 
@@ -700,6 +705,15 @@ class OutputService:
         viz_id: Optional[str],
         title: Optional[str],
     ) -> Dict[str, Optional[Path]]:
+        import warnings
+
+        warnings.warn(
+            "OutputService.save_chart(..., static_fig=...) is deprecated; "
+            "pass a ChartSpec (including PreRenderedFigureSpec) so evidence "
+            "sidecars are written. Legacy path remains for tests and escape hatches.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
         if not chart_id:
             raise ValueError("chart_id is required for legacy save_chart() usage")
         if not scope:

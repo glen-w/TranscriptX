@@ -15,6 +15,7 @@ from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
+    PreRenderedFigureSpec,
 )
 
 from transcriptx.core.analysis.topic_modeling.utils import _safe_numpy_array
@@ -22,7 +23,6 @@ from transcriptx.core.utils.artifact_writer import write_text
 from transcriptx.core.utils.lazy_imports import (
     lazy_pyplot,
     lazy_module,
-    optional_import,
 )
 
 plt = lazy_pyplot()
@@ -89,15 +89,6 @@ def _apply_plot_style() -> None:
     mpl.rcdefaults()
     sns.reset_defaults()
     sns.set_theme(style="whitegrid")
-
-
-def _get_plotly():
-    try:
-        return optional_import(
-            "plotly.graph_objects", "interactive charts", "visualization"
-        )
-    except ImportError:
-        return None
 
 
 # --- Robust JSON serialization for numpy types ---
@@ -189,14 +180,36 @@ def create_diagnostic_plots(
 
         # Save diagnostic plots
         if output_service:
-            result = output_service.save_chart(
-                chart_id=f"{algorithm}_diagnostic_plots",
-                scope="global",
-                static_fig=fig,
-                chart_type="diagnostic",
+            evidence_series: list[dict[str, Any]] = []
+            for key, name in (
+                ("held_out_likelihood", "held_out_likelihood"),
+                ("coherence_scores", "coherence"),
+                ("silhouette_scores", "silhouette"),
+                ("residuals", "residuals"),
+            ):
+                ys = diagnostics.get(key)
+                if ys:
+                    evidence_series.append(
+                        {
+                            "name": name,
+                            "x": list(k_values)[:64],
+                            "y": list(ys)[:64],
+                        }
+                    )
+            spec = PreRenderedFigureSpec(
                 viz_id=f"topic_modeling.{algorithm}_diagnostic_plots.global",
+                module="topic_modeling",
+                name=f"{algorithm}_diagnostic_plots",
+                scope="global",
+                chart_intent="pre_rendered",
                 title=f"{algorithm.upper()} Diagnostic Plots",
+                x_label="Number of Topics (k)",
+                figure=fig,
+                series=evidence_series,
+                transformations=["layout:2x2_diagnostic_panels"],
+                notes="Multi-panel LDA/NMF k-selection diagnostics.",
             )
+            result = output_service.save_chart(spec, chart_type="diagnostic")
             if result.get("static"):
                 chart_paths.append(str(result["static"]))
         plt.close(fig)
@@ -322,14 +335,53 @@ def create_discourse_analysis_charts(
 
         # Save discourse analysis charts
         if output_service:
-            result = output_service.save_chart(
-                chart_id="discourse_analysis",
-                scope="global",
-                static_fig=fig,
-                chart_type="discourse",
+            evidence_series: list[dict[str, Any]] = []
+            if topic_prevalence:
+                evidence_series.append(
+                    {
+                        "name": "topic_prevalence",
+                        "y_labels": list(discourses)[:32],
+                        "x_labels": [f"T{t}" for t in list(topics)[:32]],
+                        "z_sample": [
+                            list(row[:16]) for row in prevalence_matrix.tolist()[:8]
+                        ],
+                    }
+                )
+            if discourse_summary:
+                evidence_series.append(
+                    {
+                        "name": "total_segments",
+                        "categories": list(discourse_names),
+                        "values": list(total_segments),
+                    }
+                )
+                evidence_series.append(
+                    {
+                        "name": "topic_diversity",
+                        "categories": list(discourse_names),
+                        "values": list(topic_diversity),
+                    }
+                )
+                evidence_series.append(
+                    {
+                        "name": "avg_confidence",
+                        "categories": list(discourse_names),
+                        "values": list(avg_confidence),
+                    }
+                )
+            spec = PreRenderedFigureSpec(
                 viz_id="topic_modeling.discourse_analysis.global",
+                module="topic_modeling",
+                name="discourse_analysis",
+                scope="global",
+                chart_intent="pre_rendered",
                 title="Discourse Analysis",
+                figure=fig,
+                series=evidence_series,
+                transformations=["layout:2x2_discourse_panels"],
+                notes="Multi-panel discourse-aware topic prevalence and confidence.",
             )
+            result = output_service.save_chart(spec, chart_type="discourse")
             if result.get("static"):
                 chart_paths.append(str(result["static"]))
         plt.close(fig)
@@ -577,118 +629,6 @@ def create_html_report(html_path, chart_paths):
             )
     lines.append("</body></html>")
     write_text(html_path, "".join(lines))
-
-
-def create_plotly_heatmap(topic_word_matrix, word_labels, y_labels, title, output_path):
-    """
-    Create a plotly heatmap as an alternative to matplotlib.
-
-    Args:
-        topic_word_matrix: 2D numpy array of topic-word weights
-        word_labels: List of word labels for x-axis
-        y_labels: List of topic labels for y-axis
-        title: Chart title
-        output_path: Path to save the HTML file
-    """
-    go = _get_plotly()
-    if go is None:
-        print("[WARNING] Plotly not available, cannot create plotly heatmap")
-        return False
-
-    try:
-        # Create heatmap using plotly
-        fig = go.Figure(
-            data=go.Heatmap(
-                z=topic_word_matrix,
-                x=word_labels,
-                y=y_labels,
-                colorscale="Blues",
-                showscale=True,
-                text=np.round(topic_word_matrix, 3),
-                texttemplate="%{text}",
-                textfont={"size": 10},
-                hoverongaps=False,
-            )
-        )
-
-        fig.update_layout(
-            title=title,
-            xaxis_title="Words",
-            yaxis_title="Topics",
-            xaxis={"tickangle": 45},
-            width=800,
-            height=600,
-        )
-
-        # Save as HTML file
-        fig.write_html(str(output_path))
-        print(f"[PLOTLY] Successfully created heatmap: {output_path}")
-        return True
-
-    except Exception as e:
-        print(f"[PLOTLY] Error creating heatmap: {e}")
-        return False
-
-
-def create_plotly_speaker_chart(speaker_data, speaker_name, output_path):
-    """
-    Create a plotly bar chart for speaker topic distribution.
-
-    Args:
-        speaker_data: Dictionary with 'lda' and 'nmf' topic counts
-        speaker_name: Name of the speaker
-        output_path: Path to save the HTML file
-    """
-    go = _get_plotly()
-    if go is None:
-        print("[WARNING] Plotly not available, cannot create plotly speaker chart")
-        return False
-
-    try:
-        # Create subplots for LDA and NMF
-        fig = go.Figure()
-
-        # Add LDA data
-        lda_counts = Counter(speaker_data["lda"])
-        if lda_counts:
-            fig.add_trace(
-                go.Bar(
-                    x=list(lda_counts.keys()),
-                    y=list(lda_counts.values()),
-                    name="LDA",
-                    marker_color="skyblue",
-                )
-            )
-
-        # Add NMF data
-        nmf_counts = Counter(speaker_data["nmf"])
-        if nmf_counts:
-            fig.add_trace(
-                go.Bar(
-                    x=list(nmf_counts.keys()),
-                    y=list(nmf_counts.values()),
-                    name="NMF",
-                    marker_color="lightcoral",
-                )
-            )
-
-        fig.update_layout(
-            title=f"{speaker_name} - Topic Distribution",
-            xaxis_title="Topic Number",
-            yaxis_title="Count",
-            barmode="group",
-            width=600,
-            height=400,
-        )
-
-        # Save as HTML file
-        fig.write_html(str(output_path))
-        print(f"[PLOTLY] Successfully created speaker chart: {output_path}")
-        return True
-
-    except Exception as e:
-        print(f"[PLOTLY] Error creating speaker chart: {e}")
-        return False
 
 
 def create_topic_evolution_timeline(

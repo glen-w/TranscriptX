@@ -87,3 +87,25 @@ reports/archive/
 
 # Accidental test output when mocks leak Path(".") as output roots
 MagicMock/
+data/transcript-inbox/_deep_test_250520-team-meeting.json
+data/transcript-inbox/260615_Ana_phd_presentation_QA.json
+data/transcript-inbox/260615_Ana_phd_supervision_meeting.json
+data/transcripts/_deep_test_250520-team-meeting.json
+data/transcripts/260615_Ana_phd_presentation_QA.json
+data/transcripts/260615_Ana_phd_supervision_meeting.json
+data/transcripts/a_group_test.json
+data/transcripts/mini_transcript_deep_test.json
+data/transcripts/clients/a/call1.json
+data/transcripts/metadata/foo.json
+data/transcripts/metadata/imports/_deep_test_250520-team-meeting.import_meta.json
+data/transcripts/metadata/imports/260615_Ana_phd_presentation_QA.import_meta.json
+data/transcripts/metadata/imports/260615_Ana_phd_supervision_meeting.import_meta.json
+data/transcripts/metadata/speaker_maps/_deep_test_250520-team-meeting.speaker_map.json
+data/transcripts/metadata/speaker_maps/260615_Ana_phd_presentation_QA.speaker_map.json
+data/transcripts/metadata/speaker_maps/260615_Ana_phd_supervision_meeting.speaker_map.json
+data/transcripts/nested/b_group_test.json
+data/transcripts/originals/_deep_test_250520-team-meeting.json
+data/transcripts/originals/260615_Ana_phd_presentation_QA.json
+data/transcripts/originals/260615_Ana_phd_supervision_meeting.json
+data/transcripts/originals/foo.json
+data/transcripts/projects/foo/call1.json

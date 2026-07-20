@@ -18,6 +18,7 @@ from transcriptx.core.viz.specs import (
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
     NetworkGraphSpec,
+    PreRenderedFigureSpec,
     ScatterSpec,
 )
 
@@ -103,6 +104,9 @@ def render_plotly(spec: ChartSpec) -> Any | None:
     if not is_plotly_available():
         return None
     spec.validate()
+    if isinstance(spec, PreRenderedFigureSpec) or spec.chart_intent == "pre_rendered":
+        # Static-only charts (wordclouds, multi-panel composites).
+        return None
     from plotly import graph_objects as go
 
     def _infer_y_is_categorical(series_list: list[Any], explicit: bool | None) -> bool:

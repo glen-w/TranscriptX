@@ -162,23 +162,14 @@ def test_plot_understandability_charts_success_path(
         },
     }
     output_service = MagicMock()
-    with (
-        patch.object(ua, "notify_user"),
-        patch.object(ua.plt, "figure"),
-        patch.object(ua.plt, "title"),
-        patch.object(ua.plt, "xticks"),
-        patch.object(ua.plt, "tight_layout"),
-        patch.object(ua.plt, "close"),
-        patch.object(ua.plt, "gcf", return_value=MagicMock()),
-        patch.object(
-            ua.sns, "barplot", return_value=MagicMock(get_xticklabels=lambda: [])
-        ),
-        patch.object(ua.sns, "color_palette", return_value=MagicMock()),
-    ):
+    with patch.object(ua, "notify_user"):
         ua.plot_understandability_charts(
             scores, out, "mini", output_service=output_service
         )
     assert output_service.save_chart.call_count >= 1
+    first_spec = output_service.save_chart.call_args_list[0].args[0]
+    assert first_spec.chart_intent == "bar_categorical"
+    assert first_spec.series
 
 
 @pytest.mark.unit

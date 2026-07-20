@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-20
+
+### Added
+
+- `PreRenderedFigureSpec` for already-drawn matplotlib figures (wordclouds, topic composites) with plotted evidence sidecars.
+- Overview speaker summary cards use bordered containers and per-speaker accent colors.
+
+### Changed
+
+- Chart evidence migration marked complete for primary writers (understandability bars, topic heatmaps/bars/timelines, wordclouds, group ChartSpec path).
+- Evidence sidecar write failures are logged without failing chart PNG saves.
+
+### Fixed
+
+- Topic and wordcloud chart paths emit ChartSpec evidence instead of legacy fig-only saves.
+
 ## [0.6.0] - 2026-07-20
 
 ### Added

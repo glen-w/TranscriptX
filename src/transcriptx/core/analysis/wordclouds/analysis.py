@@ -410,6 +410,7 @@ def run_all_wordclouds(
                         "wordcloud-bigrams-ALL",
                         dpi=300,
                         chart_type="bigrams",
+                        frequencies=global_freq,
                     )
                 finally:
                     plt.close(fig)
@@ -508,6 +509,7 @@ def run_all_wordclouds(
                         f"wordcloud-{pos_filter}-ALL",
                         dpi=300,
                         chart_type=f"pos_{pos_filter}",
+                        frequencies=global_freq,
                     )
                 finally:
                     plt.close(fig)

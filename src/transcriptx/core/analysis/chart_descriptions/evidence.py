@@ -20,6 +20,7 @@ from transcriptx.core.viz.specs import (
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
     NetworkGraphSpec,
+    PreRenderedFigureSpec,
     ScatterSpec,
 )
 
@@ -122,6 +123,14 @@ def evidence_from_chart_spec(spec: ChartSpec) -> ChartEvidence:
                     "y": _truncate_seq(s.y, 64),
                 }
             )
+    elif isinstance(spec, PreRenderedFigureSpec):
+        labels = [str(x) for x in _truncate_seq(spec.labels, MAX_EVIDENCE_LABELS)]
+        values = list(_truncate_seq(spec.values, MAX_EVIDENCE_VALUES))
+        for item in list(spec.series)[:16]:
+            if isinstance(item, Mapping):
+                series.append(dict(item))
+        transformations.extend(str(t) for t in list(spec.transformations)[:16])
+        transformations.append("render:pre_rendered")
 
     return ChartEvidence(
         viz_id=spec.viz_id,

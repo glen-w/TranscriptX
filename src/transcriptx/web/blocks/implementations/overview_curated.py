@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 
@@ -247,6 +248,21 @@ def _format_wpm(value: object) -> str:
         return "—"
 
 
+# Distinct accents for speaker cards (readable on dark and light themes).
+_SPEAKER_ACCENTS = (
+    "#5B8DEF",  # blue
+    "#E07A5F",  # coral
+    "#81B29A",  # sage
+    "#F2CC8F",  # gold
+    "#9B8BB8",  # lavender
+    "#7EB8DA",  # sky
+)
+
+
+def _speaker_accent_color(index: int) -> str:
+    return _SPEAKER_ACCENTS[index % len(_SPEAKER_ACCENTS)]
+
+
 def _speaker_fourth_stat(entry: dict) -> tuple[str, str]:
     """Pick one extra interesting metric for a speaker card."""
     tic = entry.get("tic_rate")
@@ -324,19 +340,30 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
     cols = st.columns(min(3, len(ranked)))
     for i, entry in enumerate(ranked[:6]):
         name = str(entry.get("name") or "Speaker")
+        accent = _speaker_accent_color(i)
         fourth_label, fourth_value = _speaker_fourth_stat(entry)
         with cols[i % len(cols)]:
-            st.markdown(f"**{name}**")
-            m1, m2 = st.columns(2)
-            m1.metric("Time", _format_pct(entry.get("pct_total_duration")))
-            m2.metric("WPM", _format_wpm(entry.get("words_per_min")))
-            m3, m4 = st.columns(2)
-            try:
-                segments = int(entry.get("segments") or 0)
-            except (TypeError, ValueError):
-                segments = 0
-            m3.metric("Segments", str(segments) if segments else "—")
-            m4.metric(fourth_label, fourth_value)
+            with st.container(border=True):
+                st.markdown(
+                    (
+                        f'<div class="tx-speaker-card-title" '
+                        f'style="--speaker-accent: {accent}">'
+                        f'<span class="tx-speaker-swatch" aria-hidden="true"></span>'
+                        f"<strong>{html.escape(name)}</strong>"
+                        f"</div>"
+                    ),
+                    unsafe_allow_html=True,
+                )
+                m1, m2 = st.columns(2)
+                m1.metric("Time", _format_pct(entry.get("pct_total_duration")))
+                m2.metric("WPM", _format_wpm(entry.get("words_per_min")))
+                m3, m4 = st.columns(2)
+                try:
+                    segments = int(entry.get("segments") or 0)
+                except (TypeError, ValueError):
+                    segments = 0
+                m3.metric("Segments", str(segments) if segments else "—")
+                m4.metric(fourth_label, fourth_value)
     if len(ranked) > 6:
         st.caption(f"+{len(ranked) - 6} more speakers in the report")
 

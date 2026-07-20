@@ -2,16 +2,10 @@
 Understandability Analysis Module for TranscriptX.
 """
 
-# Configure matplotlib to use non-interactive backend to prevent threading issues
-import matplotlib
-
-matplotlib.use("Agg")  # Use non-interactive backend
 import json
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 from nltk.tokenize import sent_tokenize, word_tokenize
 from textstat import (
     automated_readability_index,
@@ -25,6 +19,7 @@ from transcriptx.core.utils.output_standards import (
     create_summary_json,
 )
 from transcriptx.core.output.output_service import create_output_service
+from transcriptx.core.viz.specs import BarCategoricalSpec
 from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.core.utils.notifications import notify_user
 
@@ -312,63 +307,46 @@ def plot_understandability_charts(
             )
             return
 
-        plt.figure(figsize=(12, 6))
-        try:
-            ax = sns.barplot(
-                data=melted,
-                x="speaker",
-                y="score",
-                hue="metric",
-                palette="muted",
-                edgecolor="black",
+        speakers = [str(s) for s in df["speaker"].tolist()]
+        series = []
+        for metric in metrics:
+            metric_rows = melted[melted["metric"] == metric]
+            if metric_rows.empty or metric_rows["score"].isna().all():
+                continue
+            by_speaker = {
+                str(row["speaker"]): float(row["score"])
+                for _, row in metric_rows.iterrows()
+                if pd.notna(row["score"])
+            }
+            series.append(
+                {
+                    "name": str(metric),
+                    "categories": speakers,
+                    "values": [by_speaker.get(speaker, 0.0) for speaker in speakers],
+                }
             )
-        except ValueError as e:
-            if "empty sequence" in str(e) or "empty" in str(e).lower():
-                notify_user(
-                    f"⚠️ Cannot create chart for {filename_suffix}: no valid data points. Skipping.",
-                    technical=True,
-                    section="analyze",
-                )
-                plt.close()
-                return
-            raise
-
-        # Only apply color normalization if we have valid data
-        try:
-            color_min = df[color_by].min()
-            color_max = df[color_by].max()
-            if pd.notna(color_min) and pd.notna(color_max) and color_min != color_max:
-                norm = plt.Normalize(color_min, color_max)
-                palette = sns.color_palette("coolwarm", as_cmap=True)
-                for tick_label, speaker in zip(
-                    ax.get_xticklabels(), df["speaker"], strict=False
-                ):
-                    speaker_data = df[df["speaker"] == speaker]
-                    if not speaker_data.empty:
-                        avg = speaker_data[color_by].values[0]
-                        if pd.notna(avg):
-                            tick_label.set_color(palette(norm(avg)))
-        except (ValueError, IndexError, KeyError) as e:
-            # If color normalization fails, continue without it
+        if not series:
             notify_user(
-                f"⚠️ Could not apply color normalization for {filename_suffix}: {e}",
+                f"⚠️ Cannot create chart for {filename_suffix}: no valid data points. Skipping.",
                 technical=True,
                 section="analyze",
             )
+            return
 
-        plt.title(title)
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-
-        output_service.save_chart(
-            chart_id=filename_suffix,
-            scope="global",
-            static_fig=plt.gcf(),
-            chart_type=chart_type,
+        spec = BarCategoricalSpec(
             viz_id=f"understandability.{filename_suffix}.global",
+            module="understandability",
+            name=filename_suffix,
+            scope="global",
+            chart_intent="bar_categorical",
             title=title,
+            x_label="Speaker",
+            y_label="Score",
+            categories=speakers,
+            series=series,
+            notes=f"Grouped bars by metric (color_by={color_by}).",
         )
-        plt.close()
+        output_service.save_chart(spec, chart_type=chart_type)
         notify_user(
             f"📊 Chart saved for {filename_suffix}", technical=True, section="analyze"
         )

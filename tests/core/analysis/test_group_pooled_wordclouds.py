@@ -171,16 +171,23 @@ def test_group_wordcloud_output_service_records_semantic_metadata() -> None:
         )
         fig, ax = plt.subplots(figsize=(2, 2))
         ax.plot([0, 1], [0, 1])
+        from transcriptx.core.viz.specs import PreRenderedFigureSpec
+
         svc.save_chart(
-            chart_id="wc-test",
-            scope="global",
-            static_fig=fig,
+            PreRenderedFigureSpec(
+                viz_id="wordcloud.test.global",
+                module="wordclouds",
+                name="wc-test",
+                scope="global",
+                chart_intent="pre_rendered",
+                title="T",
+                figure=fig,
+                labels=["term"],
+                values=[1.0],
+            ),
             dpi=72,
             chart_type="basic",
-            title="T",
-            viz_id="wordcloud.test.global",
         )
-        plt.close(fig)
 
         meta_path = out / ".transcriptx" / "artifacts_meta.json"
         assert meta_path.is_file()
@@ -225,17 +232,24 @@ def test_manifest_union_includes_group_aggregate_for_pooled_wordcloud() -> None:
         )
         fig, ax = plt.subplots(figsize=(2, 2))
         ax.plot([0, 1], [0, 1])
+        from transcriptx.core.viz.specs import PreRenderedFigureSpec
+
         svc.save_chart(
-            chart_id="wc-spk",
-            scope="speaker",
-            speaker="Alice",
-            static_fig=fig,
+            PreRenderedFigureSpec(
+                viz_id="wordcloud.pooled.speaker",
+                module="wordclouds",
+                name="wc-spk",
+                scope="speaker",
+                speaker="Alice",
+                chart_intent="pre_rendered",
+                title="Alice pooled",
+                figure=fig,
+                labels=["term"],
+                values=[1.0],
+            ),
             dpi=72,
             chart_type="basic",
-            title="Alice pooled",
-            viz_id="wordcloud.pooled.speaker",
         )
-        plt.close(fig)
 
         man = build_output_manifest(out, "r1", "gu", ["wordclouds"])
         arts = man.get("artifacts") or []

@@ -18,7 +18,11 @@ from transcriptx.core.analysis.topic_modeling.visualization import (
     create_topic_evolution_timeline,
     format_topic_display,
 )
-from transcriptx.core.viz.specs import BarCategoricalSpec, HeatmapMatrixSpec
+from transcriptx.core.viz.specs import (
+    BarCategoricalSpec,
+    HeatmapMatrixSpec,
+    PreRenderedFigureSpec,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -105,8 +109,18 @@ def test_diagnostic_and_discourse_charts_save_with_output_service() -> None:
 
     assert diagnostic_paths == ["/tmp/fake.png"]
     assert discourse_paths == ["/tmp/fake.png"]
-    assert output_service.specs[0]["chart_id"] == "lda_diagnostic_plots"
-    assert output_service.specs[1]["chart_id"] == "discourse_analysis"
+    assert isinstance(output_service.specs[0], PreRenderedFigureSpec)
+    assert output_service.specs[0].name == "lda_diagnostic_plots"
+    assert output_service.specs[0].series
+    series_names = {s.get("name") for s in output_service.specs[0].series}
+    assert "held_out_likelihood" in series_names
+    assert "coherence" in series_names
+    assert isinstance(output_service.specs[1], PreRenderedFigureSpec)
+    assert output_service.specs[1].name == "discourse_analysis"
+    assert output_service.specs[1].series
+    discourse_names = {s.get("name") for s in output_service.specs[1].series}
+    assert "topic_prevalence" in discourse_names
+    assert "total_segments" in discourse_names
 
 
 def test_enhanced_heatmaps_and_speaker_charts_emit_specs(monkeypatch) -> None:
@@ -245,18 +259,3 @@ def test_html_report_builders_write_only_existing_charts(tmp_path) -> None:
     assert "Enhanced Topic Modeling Report" in enhanced_html
     assert "Planning" in enhanced_html
     assert "missing.png" not in enhanced_html
-
-
-def test_plotly_helpers_return_false_when_plotly_missing(monkeypatch, tmp_path) -> None:
-    monkeypatch.setattr(viz, "_get_plotly", lambda: None)
-
-    assert (
-        viz.create_plotly_heatmap([[1]], ["word"], ["T0"], "Title", tmp_path / "h.html")
-        is False
-    )
-    assert (
-        viz.create_plotly_speaker_chart(
-            {"lda": [0], "nmf": [1]}, "Alice", tmp_path / "s.html"
-        )
-        is False
-    )

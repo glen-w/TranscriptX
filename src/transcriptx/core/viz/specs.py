@@ -22,6 +22,7 @@ class ChartSpec:
         "network_graph",
         "scatter",
         "scatter_events",
+        "pre_rendered",
     ]
     title: str
     speaker: str | None = None
@@ -165,3 +166,24 @@ class ScatterSpec(ChartSpec):
         super().validate()
         if not self.get_series():
             raise ValueError("series or x/y is required for scatter charts")
+
+
+@dataclass
+class PreRenderedFigureSpec(ChartSpec):
+    """Spec that wraps an already-drawn matplotlib figure.
+
+    Use for raster/special charts (wordclouds) and multi-panel composites that
+    are not a single registry chart intent. Evidence fields carry plotted
+    grounding for LLM descriptions; the figure is saved as-is.
+    """
+
+    figure: Any = None
+    labels: Sequence[str] = ()
+    values: Sequence[Any] = ()
+    series: Sequence[dict[str, Any]] = ()
+    transformations: Sequence[str] = ()
+
+    def validate(self) -> None:
+        super().validate()
+        if self.figure is None:
+            raise ValueError("figure is required for pre_rendered charts")

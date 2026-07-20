@@ -105,6 +105,7 @@ def generate_bigram_wordclouds(
                 chart_type="bigrams",
                 title=f"{speaker} – Bigrams Only",
                 viz_id="wordcloud.wordcloud.speaker.bigrams",
+                frequencies=freq,
             )
         finally:
             plt.close(fig)
@@ -214,6 +215,7 @@ def generate_tfidf_wordclouds(
                 chart_type="tfidf",
                 title=f"{speaker} – TF-IDF Keywords",
                 viz_id="wordcloud.wordcloud.speaker.tfidf",
+                frequencies=freq,
             )
         finally:
             plt.close(fig)
@@ -270,6 +272,7 @@ def generate_tfidf_wordclouds(
             chart_type="tfidf",
             title="All Speakers – TF-IDF",
             viz_id="wordcloud.wordcloud.global.tfidf",
+            frequencies=global_freq,
         )
     finally:
         plt.close(fig)
@@ -361,6 +364,7 @@ def generate_bigram_tfidf_wordclouds(
                 chart_type="tfidf_bigrams",
                 title=f"{speaker} – TF-IDF Bigrams",
                 viz_id="wordcloud.wordcloud.speaker.tfidf_bigrams",
+                frequencies=freq,
             )
         finally:
             plt.close(fig)
@@ -421,6 +425,7 @@ def generate_bigram_tfidf_wordclouds(
             chart_type="tfidf_bigrams",
             title="All Speakers – TF-IDF Bigrams",
             viz_id="wordcloud.wordcloud.global.tfidf_bigrams",
+            frequencies=global_freq,
         )
     finally:
         plt.close(fig)
@@ -483,6 +488,7 @@ def generate_tic_wordclouds(
                 chart_type="tics",
                 title=f"{speaker} – Verbal Tics",
                 viz_id="wordcloud.wordcloud.speaker.tics",
+                frequencies=freq,
             )
         finally:
             plt.close(fig)
@@ -547,6 +553,7 @@ def generate_pos_wordclouds(
                 chart_type=f"pos_{pos_filter}",
                 title=f"{speaker} – {pos_filter.title()}s",
                 viz_id=f"wordcloud.wordcloud.speaker.{pos_filter}",
+                frequencies=freq,
             )
         finally:
             plt.close(fig)
