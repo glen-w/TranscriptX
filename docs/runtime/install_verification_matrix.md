@@ -27,8 +27,8 @@
 
 | Cell | Command / proof | Expected result |
 |------|-----------------|-----------------|
-| **Core (from git)** | `python -m venv .venv && source .venv/bin/activate && pip install -e .` | Import + `make test-smoke` |
-| **Core + dev** | `pip install -e ".[dev]"` | Dev tools + core |
+| **Core (from git)** | `python -m venv .venv && source .venv/bin/activate && pip install -e .` | Import succeeds |
+| **Core + dev** | `pip install -e ".[dev]"` | Dev tools + pytest stack; `make test-smoke` |
 | **docs** | `pip install -e ".[docs]"` | Docs build extras |
 | **ner** | `pip install -e ".[ner]"` | NER optional deps |
 | **emotion_lexical** | `pip install -e ".[emotion_lexical]"` | Lexical emotion deps |

@@ -30,6 +30,9 @@ def test_activation_keys_exist_in_default_config() -> None:
     for support in list_runtime_profile_targets():
         if support.activation_key == "active_workflow_profile":
             assert "active_workflow_profile" in defaults
+        elif support.activation_key.startswith("llm."):
+            _, attr = support.activation_key.split(".", 1)
+            assert attr in defaults["llm"]
         else:
             _, attr = support.activation_key.split(".", 1)
             assert attr in defaults["analysis"]

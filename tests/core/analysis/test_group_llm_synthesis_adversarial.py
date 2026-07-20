@@ -92,6 +92,7 @@ def _mock_runtime():
         max_input_chars=50_000,
         request_timeout=30.0,
         max_output_tokens=512,
+        model_source="global",
     )
 
 

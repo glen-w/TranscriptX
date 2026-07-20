@@ -1,34 +1,58 @@
 {
-  "description": "Canonical field definitions for LLM provider configuration.",
-  "properties": {
-    "enabled": {
-      "default": false,
-      "description": "Enable LLM-backed analysis modules when provider is available.",
-      "title": "Enabled",
-      "type": "boolean"
-    },
-    "provider": {
-      "default": "null",
-      "description": "LLM provider id (`null` disables remote calls; `ollama` uses a local server).",
-      "enum": [
-        "null",
-        "ollama"
-      ],
-      "title": "Provider",
-      "type": "string"
-    },
-    "model": {
-      "anyOf": [
-        {
+  "$defs": {
+    "LLMModelSelectionSettingsModel": {
+      "description": "Named / run-scoped model pack applied via ``llm_models`` profiles.",
+      "properties": {
+        "mode": {
+          "default": "shared",
+          "description": "Use one shared model for all LLM consumers, or pick per consumer.",
+          "enum": [
+            "shared",
+            "per_module"
+          ],
+          "title": "Mode",
           "type": "string"
         },
-        {
-          "type": "null"
+        "module_models": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional per-consumer Ollama model tags when mode is per_module.",
+          "title": "Module Models",
+          "type": "object"
+        },
+        "shared_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Model tag used in shared mode (and as per-module fallback).",
+          "title": "Shared Model"
         }
-      ],
-      "default": null,
-      "description": "Provider model name (e.g. Ollama tag).",
-      "title": "Model"
+      },
+      "title": "LLMModelSelectionSettingsModel",
+      "type": "object"
+    }
+  },
+  "description": "Canonical field definitions for LLM provider configuration.",
+  "properties": {
+    "active_model_profile": {
+      "default": "default",
+      "description": "Active llm_models profile name (virtual default when unset).",
+      "title": "Active Model Profile",
+      "type": "string"
+    },
+    "availability_timeout": {
+      "default": 7.5,
+      "description": "Timeout in seconds when probing provider availability.",
+      "exclusiveMinimum": 0.0,
+      "title": "Availability Timeout",
+      "type": "number"
     },
     "base_url": {
       "anyOf": [
@@ -43,25 +67,18 @@
       "description": "Provider base URL (e.g. http://localhost:11434/).",
       "title": "Base Url"
     },
-    "request_timeout": {
-      "default": 1350.0,
-      "description": "Per-request timeout in seconds for LLM calls.",
-      "exclusiveMinimum": 0.0,
-      "title": "Request Timeout",
+    "default_temperature": {
+      "default": 0.3,
+      "description": "Default sampling temperature for modules that do not override per call.",
+      "minimum": 0.0,
+      "title": "Default Temperature",
       "type": "number"
     },
-    "availability_timeout": {
-      "default": 7.5,
-      "description": "Timeout in seconds when probing provider availability.",
-      "exclusiveMinimum": 0.0,
-      "title": "Availability Timeout",
-      "type": "number"
-    },
-    "seed": {
-      "default": 42,
-      "description": "Default seed for reproducible generation where supported.",
-      "title": "Seed",
-      "type": "integer"
+    "enabled": {
+      "default": false,
+      "description": "Enable LLM-backed analysis modules when provider is available.",
+      "title": "Enabled",
+      "type": "boolean"
     },
     "max_input_chars": {
       "default": 48000,
@@ -82,12 +99,45 @@
       "description": "Optional cap on generated tokens.",
       "title": "Max Output Tokens"
     },
-    "default_temperature": {
-      "default": 0.3,
-      "description": "Default sampling temperature for modules that do not override per call.",
-      "minimum": 0.0,
-      "title": "Default Temperature",
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Provider model name (e.g. Ollama tag).",
+      "title": "Model"
+    },
+    "model_selection": {
+      "$ref": "#/$defs/LLMModelSelectionSettingsModel",
+      "description": "Resolved model pack from the active llm_models profile."
+    },
+    "provider": {
+      "default": "null",
+      "description": "LLM provider id (`null` disables remote calls; `ollama` uses a local server).",
+      "enum": [
+        "null",
+        "ollama"
+      ],
+      "title": "Provider",
+      "type": "string"
+    },
+    "request_timeout": {
+      "default": 1350.0,
+      "description": "Per-request timeout in seconds for LLM calls.",
+      "exclusiveMinimum": 0.0,
+      "title": "Request Timeout",
       "type": "number"
+    },
+    "seed": {
+      "default": 42,
+      "description": "Default seed for reproducible generation where supported.",
+      "title": "Seed",
+      "type": "integer"
     }
   },
   "title": "LLMSettingsModel",

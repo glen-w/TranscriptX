@@ -139,8 +139,9 @@ def _provenance(
     omitted_sample: list[str],
     request_hash: str,
     collect_schema_id: str = "transcriptx.llm_summary_collect.v1",
+    model_selection_source: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    prov: dict[str, Any] = {
         "module": "group_llm_synthesis",
         "source_module": source_module,
         "prompt_version": prompt_version,
@@ -158,6 +159,9 @@ def _provenance(
         "request_hash": request_hash,
         "cache_key": f"group_llm_synthesis:{generation_id}:{request_hash[:16]}",
     }
+    if model_selection_source:
+        prov["model_selection_source"] = model_selection_source
+    return prov
 
 
 def _call_summary(
@@ -313,7 +317,9 @@ def run_group_llm_synthesis(
         if llm_cfg is None:
             raise LLMConfigurationError("LLM configuration absent")
         require_ollama_analysis(llm_cfg)
-        runtime = resolve_llm_runtime(llm_cfg=llm_cfg, effort=effort)
+        runtime = resolve_llm_runtime(
+            llm_cfg=llm_cfg, effort=effort, consumer_id="group_llm_synthesis"
+        )
     except LLMConfigurationError as exc:
         code = (
             err.LLM_DISABLED
@@ -479,6 +485,9 @@ def run_group_llm_synthesis(
                         omitted_count=len(omitted),
                         omitted_sample=omitted,
                         request_hash=sha256_text(user),
+                        model_selection_source=getattr(
+                            runtime, "model_source", None
+                        ),
                     )
                     art = {
                         "schema_id": SCHEMA_GLOBAL,
@@ -611,6 +620,7 @@ def run_group_llm_synthesis(
                     omitted_sample=omitted_s,
                     request_hash=sha256_text(user_s),
                     collect_schema_id="transcriptx.llm_speaker_summary_collect.v1",
+                    model_selection_source=getattr(runtime, "model_source", None),
                 )
                 rel_json = speaker_artifact_rel(token, "json")
                 rel_md = speaker_artifact_rel(token, "md")

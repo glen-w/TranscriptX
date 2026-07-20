@@ -68,6 +68,7 @@ def test_resolve_effort_profile_limits(
         max_input_chars=max_input_chars,
         request_timeout=request_timeout,
         max_output_tokens=max_output_tokens,
+        model_source="global",
     )
     assert isinstance(runtime.request_timeout, float)
 
@@ -158,6 +159,27 @@ def test_explicit_profile_model_override_wins() -> None:
         profiles=override_profiles,
     )
     assert runtime.model == "override-model:13b"
+
+
+@pytest.mark.unit
+def test_consumer_id_ignores_effort_profile_model() -> None:
+    """With consumer_id, effort-profile model is not part of precedence."""
+    override_profiles = dict(BUILTIN_LLM_EFFORT_PROFILES)
+    override_profiles["medium"] = LLMEffortProfile(
+        effort="medium",
+        max_input_chars=128_000,
+        request_timeout=1350.0,
+        max_output_tokens=4096,
+        model="effort-only:13b",
+    )
+    runtime = resolve_llm_runtime(
+        llm_cfg=_llm_cfg(model="global-tag:1"),
+        effort="medium",
+        profiles=override_profiles,
+        consumer_id="llm_summary",
+    )
+    assert runtime.model == "global-tag:1"
+    assert runtime.model_source == "global"
 
 
 @pytest.mark.unit

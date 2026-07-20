@@ -53,6 +53,7 @@ class LLMRuntime:
     max_input_chars: int
     request_timeout: float
     max_output_tokens: int
+    model_source: str | None = None
 
 
 BUILTIN_LLM_EFFORT_PROFILES: dict[LLMSummaryEffort, LLMEffortProfile] = {
@@ -102,19 +103,43 @@ def resolve_llm_runtime(
     llm_cfg: Any,
     effort: str,
     profiles: Mapping[LLMSummaryEffort, LLMEffortProfile] | None = None,
+    consumer_id: str | None = None,
+    model_override: str | None = None,
 ) -> LLMRuntime:
     """Return resolved effort limits without mutating ``llm_cfg``.
 
     Effort-profile limits replace (never merge with) the global ``llm.*``
     values for the calling module.
+
+    Model precedence when ``consumer_id`` is set:
+    request bind / ``model_override`` → ``llm.model_selection`` →
+    ``llm.model`` / default.
+
+    Without ``consumer_id`` (e.g. Corrections Studio), effort-profile
+    ``model`` may still override global ``llm.model``.
     """
+    from transcriptx.core.analysis.llm_support.model_selection import (
+        resolve_module_llm_model,
+    )
+
     profile_map = profiles or BUILTIN_LLM_EFFORT_PROFILES
     normalized = str(effort).strip().lower()
     profile = profile_map.get(normalized)  # type: ignore[arg-type]
     if profile is None:
         raise ValueError(f"Unknown llm effort: {effort!r}")
 
-    model = profile.model or llm_cfg.model or DEFAULT_OLLAMA_MODEL
+    model_source: str | None = None
+    if model_override and str(model_override).strip():
+        model = str(model_override).strip()
+        model_source = "request"
+    elif consumer_id:
+        resolved = resolve_module_llm_model(llm_cfg, consumer_id)
+        model = resolved.model
+        model_source = resolved.source
+    else:
+        model = profile.model or llm_cfg.model or DEFAULT_OLLAMA_MODEL
+        model_source = "global"
+
     return LLMRuntime(
         effort=profile.effort,
         profile_name=profile.effort,
@@ -122,6 +147,7 @@ def resolve_llm_runtime(
         max_input_chars=int(profile.max_input_chars),
         request_timeout=float(profile.request_timeout),
         max_output_tokens=int(profile.max_output_tokens),
+        model_source=model_source,
     )
 
 

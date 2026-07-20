@@ -196,7 +196,15 @@ def _run_analysis_config_and_launch_fragment(
         )
         st.caption(f"**{len(selected_modules)} modules** selected.")
 
-    can_launch = bool(selected_modules)
+    from transcriptx.web.components.llm_model_selector import render_llm_model_selector
+
+    llm_selection, llm_gates = render_llm_model_selector(
+        key_prefix="run_analysis_llm",
+        selected_modules=selected_modules,
+        include_group=(target_type == "Group"),
+    )
+
+    can_launch = bool(selected_modules) and not llm_gates
     if target_type == "Transcript":
         can_launch = (
             can_launch and transcript_path is not None and transcript_path.exists()
@@ -224,6 +232,7 @@ def _run_analysis_config_and_launch_fragment(
                 mode=mode,
                 modules=selected_modules,
                 profile=profile,
+                llm_model_selection=llm_selection,
             )
 
             errors = analysis_ctrl.validate_readiness(request)
@@ -248,6 +257,7 @@ def _run_analysis_config_and_launch_fragment(
                 modules=selected_modules,
                 profile=profile,
                 include_unidentified_speakers=False,
+                llm_model_selection=llm_selection,
             )
 
             errors = analysis_ctrl.validate_group_readiness(group_request)

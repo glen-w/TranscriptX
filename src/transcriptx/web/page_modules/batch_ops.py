@@ -156,7 +156,20 @@ def render_batch_analysis_panel() -> None:
         mode = "quick"
     selected = list(st.session_state.get("batch_modules") or [])
 
-    if st.button("Run Batch Analysis", type="primary", key="batch_run"):
+    from transcriptx.web.components.llm_model_selector import render_llm_model_selector
+
+    llm_selection, llm_gates = render_llm_model_selector(
+        key_prefix="batch_llm",
+        selected_modules=selected,
+        include_group=False,
+    )
+
+    if st.button(
+        "Run Batch Analysis",
+        type="primary",
+        key="batch_run",
+        disabled=bool(llm_gates),
+    ):
         if not selected_paths:
             st.warning("Select at least one transcript to process.")
         else:
@@ -166,6 +179,7 @@ def render_batch_analysis_panel() -> None:
                 transcript_paths=selected_paths,
                 analysis_mode=mode,
                 selected_modules=selected if selected else None,
+                llm_model_selection=llm_selection,
             )
             try:
                 with st.spinner("Running batch analysis..."):

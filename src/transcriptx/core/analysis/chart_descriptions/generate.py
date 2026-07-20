@@ -300,9 +300,20 @@ def run_chart_descriptions(
     )
 
     if client_factory is None:
+        from transcriptx.core.analysis.llm_support.model_selection import (
+            require_resolved_model,
+        )
         from transcriptx.core.llm import get_llm_client
 
-        client_factory = lambda: get_llm_client(config)
+        resolved = require_resolved_model(config.llm, "chart_descriptions")
+        model_selection_source = resolved.source
+
+        def client_factory() -> Any:
+            return get_llm_client(config, model=resolved.model)
+
+    else:
+        model_selection_source = None
+
     client = _client_with_request_timeout(client_factory(), request_timeout)
     model = str(
         getattr(client, "model", None)
@@ -494,6 +505,7 @@ def run_chart_descriptions(
             request_hash=request_hash,
             prompt_version=CHART_DESCRIPTIONS_PROMPT_VERSION,
             model=model,
+            model_selection_source=model_selection_source,
             reused=reused,
         )
         write_json_under_generation(

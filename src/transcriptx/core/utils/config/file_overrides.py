@@ -82,9 +82,16 @@ def _apply_nested_dict_config(config_obj: Any, data: dict[str, Any]) -> None:
 
 
 def _apply_flat_section(section_obj: Any, data: dict[str, Any]) -> None:
+    from dataclasses import is_dataclass
+
     for key, value in data.items():
-        if hasattr(section_obj, key):
-            setattr(section_obj, key, value)
+        if not hasattr(section_obj, key):
+            continue
+        current = getattr(section_obj, key)
+        if isinstance(value, dict) and is_dataclass(current):
+            _apply_nested_dict_config(current, value)
+            continue
+        setattr(section_obj, key, value)
 
 
 def _apply_overrides_to_candidate(config: Any, config_data: dict[str, Any]) -> None:

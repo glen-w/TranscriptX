@@ -257,6 +257,14 @@ PROFILE_TARGET_SUPPORT: dict[str, ProfileTargetSupport] = {
         config_path=("analysis", "vectorization"),
         scopes=("project", "run"),
     ),
+    "llm_models": ProfileTargetSupport(
+        target_id="llm_models",
+        profile_type="module",
+        activation_key="llm.active_model_profile",
+        activation_path=("llm", "active_model_profile"),
+        config_path=("llm", "model_selection"),
+        scopes=("project", "run"),
+    ),
     "workflow": ProfileTargetSupport(
         target_id="workflow",
         profile_type="workflow",
@@ -324,6 +332,11 @@ PROFILE_EDIT_SUPPORT: dict[str, ProfileEditSupport] = {
         target_id="vectorization",
         guided_fields=("max_features", "min_df", "max_df", "ngram_range"),
     ),
+    "llm_models": ProfileEditSupport(
+        target_id="llm_models",
+        guided_fields=("mode", "shared_model"),
+        allow_raw_json_fallback=True,
+    ),
     "workflow": ProfileEditSupport(
         target_id="workflow",
         guided_fields=(
@@ -343,6 +356,7 @@ PROFILE_TARGET_ORDER: tuple[str, ...] = (
     "qa_analysis",
     "temporal_dynamics",
     "vectorization",
+    "llm_models",
 )
 
 
@@ -358,17 +372,24 @@ def build_profile_target_contracts() -> dict[str, ProfileTargetContract]:
             ),
         )
         type_badge = "Workflow" if support.profile_type == "workflow" else "Module"
+        if target_id == "llm_models":
+            type_badge = "LLM"
+            target_label = "LLM models"
+            activation_label = "Active LLM model profile"
+        else:
+            target_label = target_id
+            activation_label = (
+                "Active workflow profile"
+                if support.profile_type == "workflow"
+                else f"Active profile for `{target_id}`"
+            )
         contracts[target_id] = ProfileTargetContract(
             support=support,
             edit_support=edit_support,
             presentation=ProfileTargetPresentation(
-                target_label=target_id,
+                target_label=target_label,
                 type_badge=type_badge,
-                activation_label=(
-                    "Active workflow profile"
-                    if support.profile_type == "workflow"
-                    else f"Active profile for `{target_id}`"
-                ),
+                activation_label=activation_label,
                 scope_labels={"project": "Project", "run": "Run override"},
                 order_index=order_lookup.get(target_id, len(PROFILE_TARGET_ORDER)),
             ),

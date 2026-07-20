@@ -20,10 +20,7 @@ def test_save_freq_json_csv_writes_all_and_speaker(tmp_path) -> None:
     out.global_data_dir.mkdir()
     out.speaker_data_dir.mkdir()
 
-    config = SimpleNamespace(
-        analysis=SimpleNamespace(exclude_unidentified_from_speaker_charts=False)
-    )
-    with patch.object(freq_mod, "get_config", return_value=config):
+    with patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True):
         freq_mod.save_freq_json_csv({"hello": 3, "world": 1}, out, "base", "ALL")
         freq_mod.save_freq_json_csv({"hello": 2}, out, "base", "Alice")
 
@@ -41,17 +38,36 @@ def test_save_freq_json_csv_skips_excluded_speaker(tmp_path) -> None:
     )
     out.global_data_dir.mkdir()
     out.speaker_data_dir.mkdir()
-    config = SimpleNamespace(
-        analysis=SimpleNamespace(exclude_unidentified_from_speaker_charts=True)
-    )
-    with (
-        patch.object(freq_mod, "get_config", return_value=config),
-        patch.object(freq_mod, "is_eligible_named_speaker", return_value=False),
-        patch.object(freq_mod, "_resolve_speaker_key", return_value="x"),
-        patch.object(freq_mod, "_get_ignored_ids", return_value=set()),
-    ):
+    with patch.object(freq_mod, "_include_speaker_wordcloud", return_value=False):
         freq_mod.save_freq_json_csv({"hello": 1}, out, "base", "SPEAKER_00")
     assert list(out.speaker_data_dir.iterdir()) == []
+
+
+@pytest.mark.unit
+def test_generate_bigram_wordclouds_skips_unnamed_speakers(tmp_path) -> None:
+    out = SimpleNamespace(
+        global_data_dir=tmp_path / "g",
+        speaker_data_dir=tmp_path / "s",
+    )
+    with (
+        patch.object(
+            freq_mod,
+            "_include_speaker_wordcloud",
+            side_effect=lambda s, *a, **k: s == "Glen",
+        ),
+        patch.object(freq_mod, "tokenize_and_filter") as tokenize,
+        patch.object(freq_mod, "notify_user"),
+    ):
+        freq_mod.generate_bigram_wordclouds(
+            {
+                "SPEAKER_12": ["alpha beta gamma"],
+                "Speaker 6": ["delta epsilon zeta"],
+                "Glen": ["one"],
+            },
+            out,
+            "base",
+        )
+    tokenize.assert_called_once_with("one")
 
 
 @pytest.mark.unit
@@ -61,6 +77,7 @@ def test_generate_bigram_wordclouds_empty_skips(tmp_path) -> None:
         speaker_data_dir=tmp_path / "s",
     )
     with (
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(freq_mod, "tokenize_and_filter", return_value=["one"]),
         patch.object(freq_mod, "notify_user") as notify,
     ):
@@ -81,6 +98,7 @@ def test_generate_bigram_wordclouds_writes_with_stubs(tmp_path) -> None:
     fake_wc_cls.return_value.generate_from_frequencies.return_value = MagicMock()
 
     with (
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(
             freq_mod, "tokenize_and_filter", return_value=["alpha", "beta", "gamma"]
         ),
@@ -139,7 +157,6 @@ def test_generate_tfidf_wordclouds_empty_docs(tmp_path) -> None:
     )
     config = SimpleNamespace(
         analysis=SimpleNamespace(
-            exclude_unidentified_from_speaker_charts=False,
             vectorization=SimpleNamespace(
                 wordcloud_ngram_range=(1, 1), wordcloud_max_features=50
             ),
@@ -147,6 +164,7 @@ def test_generate_tfidf_wordclouds_empty_docs(tmp_path) -> None:
     )
     with (
         patch.object(freq_mod, "get_config", return_value=config),
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(freq_mod, "tokenize_and_filter", return_value=[]),
         patch.object(freq_mod, "notify_user") as notify,
     ):
@@ -164,7 +182,6 @@ def test_generate_tfidf_wordclouds_success_and_empty_vocab(tmp_path) -> None:
     out.speaker_data_dir.mkdir(parents=True)
     config = SimpleNamespace(
         analysis=SimpleNamespace(
-            exclude_unidentified_from_speaker_charts=True,
             vectorization=SimpleNamespace(
                 wordcloud_ngram_range=(1, 1), wordcloud_max_features=50
             ),
@@ -178,9 +195,7 @@ def test_generate_tfidf_wordclouds_success_and_empty_vocab(tmp_path) -> None:
     with (
         patch.object(freq_mod, "get_config", return_value=config),
         patch.object(freq_mod, "tokenize_and_filter", return_value=["alpha", "beta"]),
-        patch.object(freq_mod, "is_eligible_named_speaker", return_value=True),
-        patch.object(freq_mod, "_resolve_speaker_key", return_value="a"),
-        patch.object(freq_mod, "_get_ignored_ids", return_value=set()),
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch("sklearn.feature_extraction.text.TfidfVectorizer") as vec_cls,
         patch.object(freq_mod, "notify_user") as notify,
     ):
@@ -210,13 +225,11 @@ def test_generate_tfidf_wordclouds_success_and_empty_vocab(tmp_path) -> None:
             )
         )
         stack.enter_context(
-            patch.object(freq_mod, "is_eligible_named_speaker", return_value=True)
-        )
-        stack.enter_context(
-            patch.object(freq_mod, "_resolve_speaker_key", return_value="a")
-        )
-        stack.enter_context(
-            patch.object(freq_mod, "_get_ignored_ids", return_value=set())
+            patch.object(
+                freq_mod,
+                "_include_speaker_wordcloud",
+                side_effect=lambda s, *a, **k: s == "Alice",
+            )
         )
         stack.enter_context(
             patch("sklearn.feature_extraction.text.TfidfVectorizer", return_value=vec2)
@@ -242,6 +255,7 @@ def test_generate_bigram_tfidf_wordclouds_paths(tmp_path) -> None:
     )
     with (
         patch.object(freq_mod, "get_config", return_value=config),
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(freq_mod, "tokenize_and_filter", return_value=[]),
         patch.object(freq_mod, "notify_user") as notify,
     ):
@@ -265,6 +279,9 @@ def test_generate_bigram_tfidf_wordclouds_paths(tmp_path) -> None:
     with ExitStack() as stack:
         stack.enter_context(patch.object(freq_mod, "get_config", return_value=config))
         stack.enter_context(
+            patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True)
+        )
+        stack.enter_context(
             patch.object(
                 freq_mod, "tokenize_and_filter", return_value=["alpha", "beta", "gamma"]
             )
@@ -280,6 +297,7 @@ def test_generate_bigram_tfidf_wordclouds_paths(tmp_path) -> None:
     # empty vocabulary
     with (
         patch.object(freq_mod, "get_config", return_value=config),
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(freq_mod, "tokenize_and_filter", return_value=["alpha", "beta"]),
         patch("sklearn.feature_extraction.text.TfidfVectorizer") as vec_cls,
         patch.object(freq_mod, "notify_user") as notify2,
@@ -297,26 +315,16 @@ def test_generate_tic_and_pos_wordclouds(tmp_path) -> None:
         global_data_dir=tmp_path / "g",
         speaker_data_dir=tmp_path / "s",
     )
-    config = SimpleNamespace(
-        analysis=SimpleNamespace(exclude_unidentified_from_speaker_charts=True)
-    )
     fake_fig, fake_ax = MagicMock(), MagicMock()
     fake_wc_cls = MagicMock()
     fake_wc_cls.return_value.generate_from_frequencies.return_value = MagicMock()
     with ExitStack() as stack:
-        stack.enter_context(patch.object(freq_mod, "get_config", return_value=config))
         stack.enter_context(
             patch.object(
                 freq_mod,
-                "is_eligible_named_speaker",
-                side_effect=lambda s, *a: s == "Alice",
+                "_include_speaker_wordcloud",
+                side_effect=lambda s, *a, **k: s == "Alice",
             )
-        )
-        stack.enter_context(
-            patch.object(freq_mod, "_resolve_speaker_key", return_value="a")
-        )
-        stack.enter_context(
-            patch.object(freq_mod, "_get_ignored_ids", return_value=set())
         )
         stack.enter_context(
             patch.object(
@@ -330,10 +338,7 @@ def test_generate_tic_and_pos_wordclouds(tmp_path) -> None:
 
     # empty tics skip
     with (
-        patch.object(freq_mod, "get_config", return_value=config),
-        patch.object(freq_mod, "is_eligible_named_speaker", return_value=True),
-        patch.object(freq_mod, "_resolve_speaker_key", return_value="a"),
-        patch.object(freq_mod, "_get_ignored_ids", return_value=set()),
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(freq_mod, "extract_tics_from_text", return_value=[]),
         patch.object(freq_mod, "_get_wordcloud_class") as wc,
     ):
@@ -347,6 +352,9 @@ def test_generate_tic_and_pos_wordclouds(tmp_path) -> None:
     doc = MagicMock()
     doc.__iter__ = lambda self: iter([tok])
     with ExitStack() as stack:
+        stack.enter_context(
+            patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True)
+        )
         stack.enter_context(patch.object(freq_mod, "nlp", return_value=doc))
         stack.enter_context(patch.object(freq_mod, "ALL_STOPWORDS", set()))
         _enter_wc_stubs(stack, fake_wc_cls, fake_fig, fake_ax)
@@ -356,6 +364,7 @@ def test_generate_tic_and_pos_wordclouds(tmp_path) -> None:
 
     # unknown pos filter → empty tags → skip
     with (
+        patch.object(freq_mod, "_include_speaker_wordcloud", return_value=True),
         patch.object(freq_mod, "nlp", return_value=doc),
         patch.object(freq_mod, "ALL_STOPWORDS", set()),
         patch.object(freq_mod, "_get_wordcloud_class") as wc2,

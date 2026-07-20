@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlparse
+from dataclasses import dataclass
 
 from tenacity import (
     Retrying,
@@ -62,6 +63,55 @@ def resolve_ollama_base_url(base_url: str) -> str:
     if _running_in_docker():
         return url
     return url.replace("host.docker.internal", "127.0.0.1", 1)
+
+
+def parse_ollama_tags_payload(payload: Any) -> list[str]:
+    """Extract model ``name`` tags from an Ollama ``/api/tags`` JSON payload."""
+    models = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(models, list):
+        return []
+    names: list[str] = []
+    seen: set[str] = set()
+    for row in models:
+        if isinstance(row, dict) and isinstance(row.get("name"), str):
+            name = row["name"].strip()
+            if name and name not in seen:
+                seen.add(name)
+                names.append(name)
+    return names
+
+
+@dataclass(frozen=True)
+class OllamaModelListResult:
+    """UI-safe result of listing installed Ollama models."""
+
+    models: tuple[str, ...]
+    error: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None
+
+
+def list_installed_ollama_models(
+    base_url: str | None = None,
+    *,
+    timeout: float = 5.0,
+) -> OllamaModelListResult:
+    """List installed Ollama model tags. Never raises — returns empty + error."""
+    url = resolve_ollama_base_url(base_url or DEFAULT_OLLAMA_BASE_URL)
+    tags_url = f"{url}/api/tags"
+    try:
+        req = urllib.request.Request(tags_url, method="GET")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+        data = json.loads(raw)
+        return OllamaModelListResult(models=tuple(parse_ollama_tags_payload(data)))
+    except Exception as exc:  # noqa: BLE001 — UI must not crash on probe failure
+        return OllamaModelListResult(
+            models=(),
+            error=f"Ollama tags probe failed for {tags_url}: {exc}",
+        )
 
 
 def build_ollama_client(

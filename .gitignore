@@ -39,6 +39,7 @@ data/preprocessing/
 # Local test / tooling artifacts (large; do not commit)
 .test_outputs/
 .release-test-env/
+.release-audit-env/
 .docs-verify-venv/
 
 # Pre-release local run artifacts (logs, sanity runs, flaky history)

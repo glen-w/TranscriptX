@@ -73,20 +73,12 @@ def live_base_url() -> str:
 
 
 def installed_ollama_models(base_url: str) -> list[str]:
-    url = base_url.rstrip("/") + "/api/tags"
-    try:
-        with urllib.request.urlopen(url, timeout=5) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
-        raise AssertionError(f"Ollama tags probe failed for {url}: {exc!r}") from exc
-    models = payload.get("models") if isinstance(payload, dict) else None
-    if not isinstance(models, list):
-        return []
-    names: list[str] = []
-    for row in models:
-        if isinstance(row, dict) and isinstance(row.get("name"), str):
-            names.append(row["name"])
-    return names
+    from transcriptx.core.llm.ollama_client import list_installed_ollama_models
+
+    result = list_installed_ollama_models(base_url)
+    if result.error:
+        raise AssertionError(result.error)
+    return list(result.models)
 
 
 def is_thinking_model(name: str) -> bool:

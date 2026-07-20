@@ -108,6 +108,7 @@ class LLMSpeakerSummaryAnalysis(AnalysisModule):
             effort_runtime = resolve_llm_runtime(
                 llm_cfg=llm_cfg,
                 effort=config.analysis.llm_speaker_summary.effort,
+                consumer_id="llm_speaker_summary",
             )
             require_prompt_budget(
                 max_input_chars=int(effort_runtime.max_input_chars),
@@ -205,6 +206,7 @@ class LLMSpeakerSummaryAnalysis(AnalysisModule):
                     llm_request_sha256=llm_request_sha256,
                     truncation=trunc_meta,
                     generation_options=generation_options,
+                    model_selection_source=effort_runtime.model_source,
                 )
                 provenance.update(
                     {

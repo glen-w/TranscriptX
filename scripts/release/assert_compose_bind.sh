@@ -12,6 +12,13 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
+# docker-compose.yml requires HOST_RECORDINGS_DIR for volume interpolation.
+# Port assertions do not depend on a real host library; provide a placeholder when unset.
+if [[ -z "${HOST_RECORDINGS_DIR:-}" ]]; then
+  export HOST_RECORDINGS_DIR="${TMPDIR:-/tmp}/transcriptx-compose-assert-recordings"
+  mkdir -p "$HOST_RECORDINGS_DIR/imports"
+fi
+
 _extract_published_ports() {
   # Prints host:container port mappings for transcriptx-web from `compose config` JSON.
   local json="$1"

@@ -24,6 +24,7 @@ def build_llm_provenance(
     source_result_sha256: Optional[str] = None,
     truncation: Optional[Dict[str, Any]] = None,
     model_digest: Optional[str] = None,
+    model_selection_source: Optional[str] = None,
 ) -> Dict[str, Any]:
     try:
         from transcriptx import __version__ as transcriptx_version
@@ -50,4 +51,6 @@ def build_llm_provenance(
         prov.update(truncation)
     if model_digest:
         prov["model_digest"] = model_digest
+    if model_selection_source:
+        prov["model_selection_source"] = model_selection_source
     return prov

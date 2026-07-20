@@ -18,6 +18,9 @@ from transcriptx.core.llm.ollama_client import (
     OllamaClient,
     normalize_base_url,
     resolve_ollama_base_url,
+    list_installed_ollama_models,
+    OllamaModelListResult,
+    parse_ollama_tags_payload,
 )
 
 if TYPE_CHECKING:
@@ -28,13 +31,20 @@ DEFAULT_OLLAMA_MODEL = _DEFAULT_OLLAMA_MODEL
 _DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 
 
-def get_llm_client(config: "TranscriptXConfig | None" = None) -> LLMClient:
+def get_llm_client(
+    config: "TranscriptXConfig | None" = None,
+    *,
+    model: str | None = None,
+) -> LLMClient:
     """
     Return the configured LLM client.
 
     - disabled or provider ``null`` -> ``NullLLMClient``
     - provider ``ollama`` -> ``OllamaClient``
     - enabled unsupported provider -> ``LLMConfigurationError``
+
+    Pass ``model`` to override ``llm.model`` for this client only (run-scoped
+    selection should resolve the tag before calling this factory).
     """
     if config is None:
         from transcriptx.core.utils.config import get_config
@@ -48,10 +58,14 @@ def get_llm_client(config: "TranscriptXConfig | None" = None) -> LLMClient:
         return NullLLMClient()
 
     if provider == "ollama":
+        if model and str(model).strip():
+            resolved_model = str(model).strip()
+        else:
+            resolved_model = llm.model or _DEFAULT_OLLAMA_MODEL
         base_url = resolve_ollama_base_url(llm.base_url or _DEFAULT_OLLAMA_BASE_URL)
         return OllamaClient(
             base_url=base_url,
-            model=llm.model or _DEFAULT_OLLAMA_MODEL,
+            model=resolved_model,
             seed=int(llm.seed),
             request_timeout=float(llm.request_timeout),
             availability_timeout=float(llm.availability_timeout),
@@ -71,4 +85,7 @@ __all__ = [
     "get_llm_client",
     "normalize_base_url",
     "resolve_ollama_base_url",
+    "list_installed_ollama_models",
+    "OllamaModelListResult",
+    "parse_ollama_tags_payload",
 ]

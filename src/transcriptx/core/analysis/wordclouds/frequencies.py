@@ -8,9 +8,8 @@ import numpy as np
 from scipy.sparse import spmatrix
 
 from transcriptx.core.analysis.wordclouds.output_bridge import (
-    _get_ignored_ids,
+    _include_speaker_wordcloud,
     _relative_to_transcript,
-    _resolve_speaker_key,
     save_global_chart,
     save_speaker_chart,
 )
@@ -33,7 +32,6 @@ from transcriptx.core.utils.nlp_utils import (
     tokenize_and_filter,
 )
 from transcriptx.core.utils.notifications import notify_user
-from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 plt = lazy_pyplot()
 
@@ -41,17 +39,8 @@ plt = lazy_pyplot()
 def save_freq_json_csv(
     freq: dict[str, int], output_structure, prefix: str, speaker: str
 ) -> None:
-    if speaker != "ALL":
-        config = get_config()
-        exclude = getattr(
-            getattr(config, "analysis", None),
-            "exclude_unidentified_from_speaker_charts",
-            False,
-        )
-        if exclude and not is_eligible_named_speaker(
-            speaker, _resolve_speaker_key(speaker), _get_ignored_ids()
-        ):
-            return
+    if speaker != "ALL" and not _include_speaker_wordcloud(speaker):
+        return
     safe = speaker.replace(" ", "_").replace("/", "_")
 
     if speaker == "ALL":
@@ -74,6 +63,8 @@ def generate_bigram_wordclouds(
     grouped: dict[str, list[str]], output_structure, base_name: str
 ) -> None:
     for speaker, texts in grouped.items():
+        if not _include_speaker_wordcloud(speaker):
+            continue
         words = tokenize_and_filter(" ".join(texts))
         # Use readable phrase labels in outputs and UI.
         bigrams = [f"{words[i]} {words[i + 1]}" for i in range(len(words) - 1)]
@@ -137,21 +128,7 @@ def generate_bigram_wordclouds(
 def generate_tfidf_wordclouds(
     grouped: dict[str, list[str]], output_structure, base_name: str
 ) -> None:
-    config = get_config()
-    exclude = getattr(
-        getattr(config, "analysis", None),
-        "exclude_unidentified_from_speaker_charts",
-        False,
-    )
-    speakers = (
-        [
-            s
-            for s in grouped
-            if is_eligible_named_speaker(s, _resolve_speaker_key(s), _get_ignored_ids())
-        ]
-        if exclude
-        else list(grouped.keys())
-    )
+    speakers = [s for s in grouped if _include_speaker_wordcloud(s)]
     documents = [" ".join(grouped[s]) for s in speakers]
     filtered_docs = [" ".join(tokenize_and_filter(doc)) for doc in documents]
 
@@ -300,7 +277,7 @@ def generate_tfidf_wordclouds(
 def generate_bigram_tfidf_wordclouds(
     grouped: dict[str, list[str]], output_structure, base_name: str
 ) -> None:
-    speakers = list(grouped.keys())
+    speakers = [s for s in grouped if _include_speaker_wordcloud(s)]
     documents = [" ".join(grouped[s]) for s in speakers]
     filtered_docs = [" ".join(tokenize_and_filter(doc)) for doc in documents]
 
@@ -455,16 +432,8 @@ def generate_bigram_tfidf_wordclouds(
 def generate_tic_wordclouds(
     grouped: dict[str, list[str]], output_structure, base_name: str
 ) -> None:
-    config = get_config()
-    exclude = getattr(
-        getattr(config, "analysis", None),
-        "exclude_unidentified_from_speaker_charts",
-        False,
-    )
     for speaker, texts in grouped.items():
-        if exclude and not is_eligible_named_speaker(
-            speaker, _resolve_speaker_key(speaker), _get_ignored_ids()
-        ):
+        if not _include_speaker_wordcloud(speaker):
             continue
         tics = extract_tics_from_text(" ".join(texts))
         freq = Counter(tics)
@@ -527,6 +496,8 @@ def generate_pos_wordclouds(
     }.get(pos_filter.lower(), set())
 
     for speaker, texts in grouped.items():
+        if not _include_speaker_wordcloud(speaker):
+            continue
         text = " ".join(texts)
         doc = nlp(text.lower())
         tokens = [

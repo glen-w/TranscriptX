@@ -444,6 +444,7 @@ def test_resolve_export_llm_summary_group_synthesis(tmp_path: Path) -> None:
                     max_input_chars=50_000,
                     request_timeout=30.0,
                     max_output_tokens=512,
+                    model_source="global",
                 ),
             ),
         ):

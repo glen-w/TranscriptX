@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, Literal, Mapping, Optional
+
+if TYPE_CHECKING:
+    from transcriptx.core.analysis.llm_support.model_selection import LlmModelSelection
 
 
 @dataclass
@@ -19,6 +22,7 @@ class AnalysisRequest:
     run_label: Optional[str] = None
     persist: bool = False
     include_unidentified_speakers: bool = False
+    llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
 
 
 @dataclass
@@ -99,6 +103,7 @@ class GroupAnalysisRequest:
     include_unidentified_speakers: bool = False
     output_dir: Optional[Path] = None
     persist: bool = False
+    llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
 
 
 @dataclass
@@ -110,6 +115,7 @@ class BatchAnalysisRequest:
     analysis_mode: str = "quick"
     selected_modules: Optional[list[str]] = None
     persist: bool = False
+    llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
 
 
 @dataclass(frozen=True)

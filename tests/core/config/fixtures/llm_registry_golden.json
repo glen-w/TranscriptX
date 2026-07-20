@@ -1,4 +1,18 @@
 {
+  "llm.active_model_profile": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": "default",
+    "description": "Active llm_models profile name (virtual default when unset).",
+    "key": "llm.active_model_profile",
+    "max": null,
+    "min": null,
+    "path": "llm.active_model_profile",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
   "llm.availability_timeout": {
     "advanced": false,
     "category": "llm",
@@ -93,6 +107,51 @@
     "max": null,
     "min": null,
     "path": "llm.model",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "llm.model_selection.mode": {
+    "advanced": false,
+    "category": "llm",
+    "choices": [
+      "shared",
+      "per_module"
+    ],
+    "default": "shared",
+    "description": "Use one shared model for all LLM consumers, or pick per consumer.",
+    "key": "llm.model_selection.mode",
+    "max": null,
+    "min": null,
+    "path": "llm.model_selection.mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "llm.model_selection.module_models": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": {},
+    "description": "Optional per-consumer Ollama model tags when mode is per_module.",
+    "key": "llm.model_selection.module_models",
+    "max": null,
+    "min": null,
+    "path": "llm.model_selection.module_models",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "dict"
+  },
+  "llm.model_selection.shared_model": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": null,
+    "description": "Model tag used in shared mode (and as per-module fallback).",
+    "key": "llm.model_selection.shared_model",
+    "max": null,
+    "min": null,
+    "path": "llm.model_selection.shared_model",
     "scope": "project",
     "sensitivity": "normal",
     "type": "str"

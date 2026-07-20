@@ -17,7 +17,10 @@ from transcriptx.app.models.results import (
     RunSummary,
 )
 from transcriptx.app.progress import NullProgress, ProgressCallback
-from transcriptx.app.workflows.analysis import run_analysis
+from transcriptx.app.workflows.analysis import (
+    _coerce_llm_model_selection,
+    run_analysis,
+)
 
 
 def _run_summary_from_analysis(path: Path, result: AnalysisResult) -> RunSummary:
@@ -48,6 +51,15 @@ def run_batch_analysis(
     """
     if progress is None:
         progress = NullProgress()
+
+    try:
+        _coerce_llm_model_selection(request.llm_model_selection)
+    except ValueError as exc:
+        return BatchAnalysisResult(
+            success=False,
+            transcript_count=0,
+            errors=[f"Invalid llm_model_selection: {exc}"],
+        )
 
     if request.transcript_paths:
         transcript_paths = [Path(p) for p in request.transcript_paths]
@@ -85,6 +97,7 @@ def run_batch_analysis(
             mode=request.analysis_mode,
             modules=request.selected_modules,
             persist=request.persist,
+            llm_model_selection=request.llm_model_selection,
         )
         result: AnalysisResult = run_analysis(analysis_request, progress)
         if result.success:

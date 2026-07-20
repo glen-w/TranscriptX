@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-07-21
+
+### Added
+
+- Run Analysis / Batch LLM model selector with shared or per-module Ollama tags, savable `llm_models` profiles, and module guidance table.
+- Request-scoped `llm_model_selection` on transcript, group, and batch analysis with ContextVar binding and fail-loud missing-model errors.
+- Provenance `model_selection_source` (`request` | `profile` | `global`) on LLM consumers including chart descriptions and group synthesis.
+
+### Changed
+
+- Consumer model precedence is request bind → active `llm.model_selection` → global `llm.model` (effort-profile model no longer sits in the consumer chain).
+- GUI launch gates when selected LLM modules need Ollama but LLM is disabled, tags are empty, or picks are unset; no silent substitution of unavailable tags.
+- Strict validation of explicit `llm_model_selection` at readiness (invalid payloads fail; omitted/`None` keeps prior global-only behaviour).
+
+### Fixed
+
+- Group synthesis provenance access when runtime mocks omit `model_source`.
+- Wordcloud speaker eligibility test isolation against leftover active output-service state.
+
 ## [0.6.1] - 2026-07-20
 
 ### Added

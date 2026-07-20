@@ -57,12 +57,20 @@ def get_default_config_dict() -> Dict[str, Any]:
 
 
 def flatten(nested: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
-    """Flatten nested dict to dotpath map."""
+    """Flatten nested dict to dotpath map.
+
+    Empty dict values are preserved as leaf entries so mapping-typed config
+    fields (e.g. ``llm.model_selection.module_models``) remain visible.
+    """
     items: Dict[str, Any] = {}
     for key, value in nested.items():
         full_key = f"{prefix}.{key}" if prefix else key
         if isinstance(value, dict):
-            items.update(flatten(value, full_key))
+            nested_items = flatten(value, full_key)
+            if nested_items:
+                items.update(nested_items)
+            else:
+                items[full_key] = {}
         else:
             items[full_key] = value
     return items

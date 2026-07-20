@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from transcriptx.core.analysis.chart_descriptions.schemas import (
     DEFAULT_MAX_DESCRIPTION_CHARS,
@@ -29,6 +29,8 @@ class RepresentationModel(BaseModel):
 
 
 class ChartDescriptionArtifact(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     schema_id: Literal["transcriptx.chart_description.v1"] = SCHEMA_DESCRIPTION
     chart_key: str
     logical_chart_id: str
@@ -45,6 +47,7 @@ class ChartDescriptionArtifact(BaseModel):
     request_hash: str | None = None
     prompt_version: str | None = None
     model: str | None = None
+    model_selection_source: str | None = None
     reused: bool = False
     error_code: str | None = None
     error_message_safe: str | None = None

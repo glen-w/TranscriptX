@@ -37,6 +37,8 @@ _LLM_ALLOWED_KEYS = frozenset(
         "max_input_chars",
         "max_output_tokens",
         "default_temperature",
+        "active_model_profile",
+        "model_selection",
     }
 )
 

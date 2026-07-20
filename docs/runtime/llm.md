@@ -38,6 +38,30 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 
 **Remote endpoints:** the default `base_url` is local. A non-local URL sends transcript content to that endpoint. TranscriptX does not block remote URLs but you are responsible for where your data is sent.
 
+## Run Analysis model selection
+
+On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `provider=ollama`, you can:
+
+- Use **one shared model** for all LLM consumers, or **select per module**
+- Load / save **LLM model profiles** (ProfileManager target `llm_models`, stored under `.transcriptx/profiles/llm_models/`)
+- Inspect a collapsible table of LLM modules and what transcript tasks they are best for
+
+Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a profile and optionally set it as the project active profile (Settings → Configuration → Active Profiles, or the save checkbox on the run form).
+
+**Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `chart_descriptions`, `group_llm_synthesis`):
+
+1. Request override from Run Analysis / Batch
+2. Active `llm_models` profile applied onto `llm.model_selection`
+3. Global `llm.model` / default (`qwen3:8b`)
+
+Effort-profile `model` fields are **not** part of this chain when a consumer id is set. Corrections Studio (no consumer id) may still use an effort-profile model over global `llm.model`.
+
+On the run form, **Project default (active)** loads the already-applied project `llm.model_selection` pack. **Custom (this run)** keeps free-edited widgets for this launch only. Unavailable saved tags are cleared with an explanation (no silent substitute); launch stays gated until an installed model is chosen.
+
+If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled.
+
+If a selected model is missing at generate time, the LLM consumer fails with a clear model-missing error (no silent substitute). Corrections Studio continues to use global `llm.model` only.
+
 ## Modules
 
 | Module | Description | Depends on |

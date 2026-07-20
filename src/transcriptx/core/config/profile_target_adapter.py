@@ -135,6 +135,9 @@ class ProfileTargetAdapter:
         if len(self.activation_path) >= 2 and self.activation_path[0] == "analysis":
             analysis_map[self.activation_path[-1]] = value
             return
+        if len(self.activation_path) >= 2 and self.activation_path[0] == "llm":
+            # Emitted via ``llm`` asdict (``active_model_profile``); avoid root dotted key.
+            return
         root_map[self.activation_key] = value
 
     def supports_scope(self, scope: ScopeName) -> bool:

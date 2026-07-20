@@ -7,6 +7,7 @@ from typing import Any
 
 from transcriptx.core.analysis.wordclouds.output_bridge import (
     _active_output_service,
+    _include_speaker_wordcloud,
     _relative_to_transcript,
     _should_generate_views,
     save_global_chart,
@@ -99,6 +100,12 @@ def generate_wordcloud(
     *,
     output_service: Any | None = None,
 ) -> dict[str, int]:
+    view_speaker = None if speaker == "wordcloud-ALL" else speaker
+    if view_speaker is not None and not _include_speaker_wordcloud(
+        view_speaker, output_service
+    ):
+        return {}
+
     words = tokenize_and_filter(text)
     bigrams = [(words[i], words[i + 1]) for i in range(len(words) - 1)]
     bigram_phrases = [" ".join(pair) for pair in bigrams]
@@ -118,7 +125,6 @@ def generate_wordcloud(
     ).generate_from_frequencies(freq)
     fig, ax = _wordcloud_figure(wc)
     chart_path = None
-    view_speaker = None if speaker == "wordcloud-ALL" else speaker
     try:
         ax.set_title(title)
         fig.tight_layout()
@@ -178,8 +184,9 @@ def generate_wordcloud(
         ),
         output_service=output_service,
     )
-    notify_user(
-        f"✅ Word cloud saved for {speaker}", technical=False, section="wordclouds"
-    )
+    if chart_path or terms_path:
+        notify_user(
+            f"✅ Word cloud saved for {speaker}", technical=False, section="wordclouds"
+        )
 
     return freq

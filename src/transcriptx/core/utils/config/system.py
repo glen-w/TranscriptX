@@ -9,6 +9,20 @@ from .analysis import _hydrate_dataclass_from_pydantic
 
 
 @dataclass
+class LLMModelSelectionConfig:
+    """Defaults owned by LLMModelSelectionSettingsModel."""
+
+    mode: str = field(init=False, repr=True)
+    shared_model: str | None = field(init=False, repr=True)
+    module_models: dict[str, str] = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.llm import LLMModelSelectionSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, LLMModelSelectionSettingsModel())
+
+
+@dataclass
 class LLMConfig:
     """Defaults owned by LLMSettingsModel."""
 
@@ -22,6 +36,8 @@ class LLMConfig:
     max_input_chars: int = field(init=False, repr=True)
     max_output_tokens: int | None = field(init=False, repr=True)
     default_temperature: float = field(init=False, repr=True)
+    active_model_profile: str = field(init=False, repr=True)
+    model_selection: LLMModelSelectionConfig = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
         from transcriptx.core.config.models.llm import (

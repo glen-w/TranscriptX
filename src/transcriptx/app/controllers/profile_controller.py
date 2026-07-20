@@ -32,8 +32,15 @@ class ProfileController:
         return get_profile_target_adapter(target_id) is not None
 
     @staticmethod
+    def is_virtual_default_profile_name(profile_name: str) -> bool:
+        """Return True for the non-persistable virtual ``default`` profile."""
+        from transcriptx.core.utils.profile_manager import ProfileManager
+
+        return ProfileManager.is_virtual_default_profile_name(profile_name)
+
+    @staticmethod
     def _is_virtual_default(profile_name: str) -> bool:
-        return profile_name == "default"
+        return ProfileController.is_virtual_default_profile_name(profile_name)
 
     def list_supported_targets(self) -> list[str]:
         """List canonical profile target ids supported by runtime/GUI contracts."""

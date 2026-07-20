@@ -54,7 +54,7 @@ The package is **not published on PyPI**. Do not use bare `pip install transcrip
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # or .venv\Scripts\activate on Windows
-pip install -e ".[dev]"     # core + dev tools; add [voice], [nlp], etc. as needed
+pip install -e ".[dev]"     # core + lint/test tools (pytest); add [voice], [nlp], etc. as needed
 ```
 
 **Verify (Python API):**

@@ -23,8 +23,13 @@ class ProfileManager:
         self.profiles_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def _is_virtual_default(profile_name: str) -> bool:
+    def is_virtual_default_profile_name(profile_name: str) -> bool:
+        """Return True for the non-persistable virtual ``default`` profile."""
         return profile_name == "default"
+
+    @staticmethod
+    def _is_virtual_default(profile_name: str) -> bool:
+        return ProfileManager.is_virtual_default_profile_name(profile_name)
 
     @staticmethod
     def _normalize_profile_payload(

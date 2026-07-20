@@ -41,6 +41,40 @@ from transcriptx.core.pipeline.target_resolver import GroupRef, resolve_analysis
 from transcriptx.core.utils.config import get_config
 
 
+def _coerce_llm_model_selection(value: Any) -> Any:
+    """Normalize request payload to ``LlmModelSelection`` or ``None``.
+
+    ``None`` preserves global-only behaviour. Explicit but invalid payloads
+    raise ``ValueError`` (do not silently restore omit semantics).
+    """
+    if value is None:
+        return None
+    from transcriptx.core.analysis.llm_support.model_selection import (
+        LlmModelSelection,
+        validate_llm_model_selection,
+    )
+
+    if isinstance(value, LlmModelSelection):
+        return validate_llm_model_selection(value)
+    if isinstance(value, dict):
+        return validate_llm_model_selection(value)
+    raise ValueError(
+        "llm_model_selection must be a mapping or LlmModelSelection, "
+        f"got {type(value).__name__}"
+    )
+
+
+def _append_llm_model_selection_errors(request: Any, errors: list[str]) -> None:
+    """Validate explicit request.llm_model_selection into ``errors`` in-place."""
+    selection = getattr(request, "llm_model_selection", None)
+    if selection is None:
+        return
+    try:
+        _coerce_llm_model_selection(selection)
+    except ValueError as exc:
+        errors.append(f"Invalid llm_model_selection: {exc}")
+
+
 @dataclass(frozen=True)
 class ValidationOutcome:
     valid: bool
@@ -159,6 +193,7 @@ def validate_analysis_readiness(request: AnalysisRequest) -> list[str]:
         invalid = [m for m in request.modules if m not in available]
         if invalid:
             errors.append(f"Invalid modules: {', '.join(invalid)}")
+    _append_llm_model_selection_errors(request, errors)
     return errors
 
 
@@ -302,6 +337,14 @@ def run_analysis(
     start = time.perf_counter()
     _pipeline_exception: Optional[Exception] = None
     results: dict = {}
+    from transcriptx.core.analysis.llm_support.model_selection import (
+        bind_llm_model_selection,
+        reset_llm_model_selection,
+    )
+
+    _selection_token = bind_llm_model_selection(
+        _coerce_llm_model_selection(request.llm_model_selection)
+    )
     try:
         manifest = RunManifestInput.from_cli_kwargs(
             transcript_file=path,
@@ -317,6 +360,7 @@ def run_analysis(
     except Exception as e:
         _pipeline_exception = e
     finally:
+        reset_llm_model_selection(_selection_token)
         if _log_handler is not None:
             _tx_logger.removeHandler(_log_handler)
             _log_handler.close()
@@ -462,6 +506,7 @@ def validate_group_analysis_readiness(request: GroupAnalysisRequest) -> list[str
             errors.append(
                 "Modules not supported for group analysis: " + ", ".join(unsupported)
             )
+    _append_llm_model_selection_errors(request, errors)
     return errors
 
 
@@ -576,6 +621,14 @@ def run_group_analysis(
     start = time.perf_counter()
     _pipeline_exception: Optional[Exception] = None
     results: dict = {}
+    from transcriptx.core.analysis.llm_support.model_selection import (
+        bind_llm_model_selection,
+        reset_llm_model_selection,
+    )
+
+    _selection_token = bind_llm_model_selection(
+        _coerce_llm_model_selection(request.llm_model_selection)
+    )
     try:
         results = run_analysis_pipeline(
             target=target,
@@ -589,6 +642,7 @@ def run_group_analysis(
     except Exception as e:
         _pipeline_exception = e
     finally:
+        reset_llm_model_selection(_selection_token)
         if _log_handler is not None:
             _tx_logger.removeHandler(_log_handler)
             _log_handler.close()

@@ -110,7 +110,12 @@ class NarrativeSummaryAnalysis(AnalysisModule):
             log_analysis_start(self.module_name, context.transcript_path)
             config = get_config()
             llm_cfg = config.llm
-            client = get_llm_client(config)
+            from transcriptx.core.analysis.llm_support.model_selection import (
+                require_resolved_model,
+            )
+
+            resolved_model = require_resolved_model(llm_cfg, "narrative_summary")
+            client = get_llm_client(config, model=resolved_model.model)
 
             summary_payload = resolve_summary_payload(context)
             if not summary_has_content(summary_payload):
@@ -164,6 +169,7 @@ class NarrativeSummaryAnalysis(AnalysisModule):
                 source_module="summary",
                 source_result_sha256=source_result_sha256,
                 generation_options=generation_options,
+                model_selection_source=resolved_model.source,
             )
 
             payload: Dict[str, Any] = {

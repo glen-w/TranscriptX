@@ -374,3 +374,94 @@ def test_export_signature_and_staleness_guard() -> None:
     assert _has_current_export_local(result, sig_a, sig_a) is True
     assert _has_current_export_local(result, sig_a, sig_b) is False
     assert _has_current_export_local(None, sig_a, sig_a) is False
+
+
+def test_charts_zip_index_includes_linked_llm_narratives(tmp_path: Path) -> None:
+    """ZIP index.html must embed LLM summaries via the same resolver as the GUI."""
+    from transcriptx.core.analysis.chart_descriptions.resolve import (
+        invalidate_resolver_cache,
+    )
+    from transcriptx.web.services.artifact_service import clear_artifact_caches
+    from transcriptx.web.services.chart_llm_description import (
+        resolve_chart_llm_description,
+    )
+    from transcriptx.web.services.export_service import ExportService
+    from tests.web.chart_llm_linking_support import seed_linking_fixture_run
+
+    invalidate_resolver_cache()
+    clear_artifact_caches()
+    run = tmp_path / "20260720_export_link"
+    run.mkdir()
+    transcript_key = "sha256:exportlink01"
+    expected = seed_linking_fixture_run(run, transcript_key=transcript_key)
+    assert expected
+
+    charts = [
+        a
+        for a in ArtifactService.list_artifacts(run)
+        if a.kind in {"chart_static", "chart_dynamic"}
+    ]
+    # Same production wiring as Charts page "Export Visible Charts".
+    result = ExportService.zip_charts(run, charts, run.name)
+    with zipfile.ZipFile(BytesIO(result.bytes)) as zf:
+        index = zf.read("index.html").decode("utf-8")
+
+    missing = [text for text in expected.values() if text not in index]
+    assert not missing, (
+        "ZIP index.html missing LLM narratives (key mismatch?):\n"
+        + "\n".join(missing)
+    )
+    assert 'class="chart-narrative"' in index
+
+    # Voice folder/module mismatch must still resolve into the export index.
+    assert "LLM summary for voice.burstiness.speaker / Ana" in index
+    assert "LLM summary for stats.foo.global / global" in index
+
+    # Unlinkable NER map must not invent a narrative.
+    ner = next(a for a in charts if "ner/maps" in a.rel_path)
+    assert resolve_chart_llm_description(run, ner) is None
+
+
+def test_resolve_exportable_attaches_llm_via_production_resolver(
+    tmp_path: Path,
+) -> None:
+    """resolve_exportable must populate llm_description for inventory-linked charts."""
+    from transcriptx.core.analysis.chart_descriptions.resolve import (
+        invalidate_resolver_cache,
+    )
+    from transcriptx.web.services.artifact_service import clear_artifact_caches
+    from transcriptx.web.services.chart_llm_description import (
+        resolve_chart_llm_description,
+    )
+    from tests.web.chart_llm_linking_support import seed_linking_fixture_run
+
+    invalidate_resolver_cache()
+    clear_artifact_caches()
+    run = tmp_path / "20260720_exportable_link"
+    run.mkdir()
+    transcript_key = "sha256:exportable01"
+    expected = seed_linking_fixture_run(run, transcript_key=transcript_key)
+
+    charts = [
+        a
+        for a in ArtifactService.list_artifacts(run)
+        if a.kind in {"chart_static", "chart_dynamic"}
+        and isinstance((a.meta or {}).get("viz_id"), str)
+    ]
+    items = resolve_exportable(
+        run,
+        charts,
+        llm_description_fn=lambda a: resolve_chart_llm_description(run, a),
+    )
+    by_text = {item.llm_description for item in items if item.llm_description}
+    assert by_text == set(expected.values())
+
+    # Broken resolver identity (run folder id) must not silently succeed.
+    broken = resolve_exportable(
+        run,
+        charts,
+        llm_description_fn=lambda a: resolve_chart_llm_description(
+            run, a, run_target_id=run.name, run_kind="transcript"
+        ),
+    )
+    assert all(item.llm_description is None for item in broken)

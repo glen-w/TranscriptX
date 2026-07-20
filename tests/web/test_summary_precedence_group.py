@@ -74,6 +74,7 @@ def _publish(run: Path, *, summary: str = "Committed group summary") -> None:
                     max_input_chars=50_000,
                     request_timeout=30.0,
                     max_output_tokens=512,
+                    model_source="global",
                 ),
             ),
         ):

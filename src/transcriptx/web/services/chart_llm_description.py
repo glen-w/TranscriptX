@@ -11,6 +11,7 @@ from transcriptx.core.analysis.chart_descriptions.chart_key import (
 )
 from transcriptx.core.analysis.chart_descriptions.resolve import (
     resolve_chart_llm_description_by_key,
+    resolve_gallery_run_identity,
 )
 from transcriptx.web.models.artifact import Artifact
 
@@ -23,25 +24,52 @@ def _member_session_id(artifact: Artifact) -> str | None:
     return None
 
 
+def _source_run_id(
+    artifact: Artifact,
+    *,
+    run_target_id: str,
+    run_kind: str | None,
+) -> str | None:
+    """Match inventory_builder provenance for chart_key digests.
+
+    Transcript root charts stamp ``source_run_id=run_target_id``. Group aggregate
+    charts leave it empty. Member charts use the member run folder name.
+    """
+    if artifact.storage_root:
+        return Path(artifact.storage_root).name
+    if run_kind == "transcript":
+        return run_target_id
+    if run_kind == "group":
+        return None
+    # Unknown kind (e.g. snapshot missing): infer from transcript-hash targets.
+    if str(run_target_id).startswith("sha256:"):
+        return run_target_id
+    return None
+
+
 def chart_key_for_gallery_artifact(
     artifact: Artifact,
     *,
     run_target_id: str,
+    run_kind: str | None = None,
 ) -> str | None:
     meta = artifact.meta or {}
     viz_id = meta.get("viz_id")
     if not isinstance(viz_id, str) or not viz_id.strip():
         return None
-    module = artifact.module or str(meta.get("module") or "")
-    scope = artifact.scope or str(meta.get("scope") or "global")
-    speaker = artifact.speaker or (
-        str(meta["speaker"]) if meta.get("speaker") else None
-    )
+    # Prefer meta.* to match inventory_builder (manifest module id can differ from
+    # gallery folder label, e.g. voice_charts_core vs voice).
+    module = str(meta.get("module") or artifact.module or "")
+    scope = str(meta.get("scope") or artifact.scope or "global")
+    if meta.get("speaker") is not None:
+        speaker = str(meta.get("speaker"))
+    else:
+        speaker = artifact.speaker
     name = str(meta.get("name") or "") or None
     member_id = _member_session_id(artifact)
-    source_run = None
-    if artifact.storage_root:
-        source_run = Path(artifact.storage_root).name
+    source_run = _source_run_id(
+        artifact, run_target_id=run_target_id, run_kind=run_kind
+    )
     logical_id = build_logical_chart_id(
         module=module,
         viz_id=viz_id,
@@ -67,10 +95,18 @@ def resolve_chart_llm_description(
     artifact: Artifact,
     *,
     run_target_id: str | None = None,
+    run_kind: str | None = None,
 ) -> str | None:
     """Resolve LLM narrative for a gallery artifact via exact chart_key."""
-    target = run_target_id or Path(run_root).name
-    key = chart_key_for_gallery_artifact(artifact, run_target_id=target)
+    if run_target_id is None or run_kind is None:
+        target, kind = resolve_gallery_run_identity(run_root)
+        if run_target_id is None:
+            run_target_id = target
+        if run_kind is None:
+            run_kind = kind
+    key = chart_key_for_gallery_artifact(
+        artifact, run_target_id=run_target_id, run_kind=run_kind
+    )
     if not key:
         return None
     return resolve_chart_llm_description_by_key(run_root, key)

@@ -10,7 +10,10 @@ from typing import Any, Dict, List, Optional, Sequence
 import streamlit as st
 from PIL import Image
 
-from transcriptx.web.charts_filter_state import reset_charts_filters_to_defaults
+from transcriptx.web.charts_filter_state import (
+    ensure_charts_display_toggles_default_on,
+    reset_charts_filters_to_defaults,
+)
 from transcriptx.core.config import (
     resolve_effective_config,
 )
@@ -264,6 +267,7 @@ def _ensure_charts_filters_for_run(subject_id: str, run_id: str) -> None:
         st.session_state[CHARTS_KEY_FILTERS_INIT] = identity
         st.session_state.pop(CHARTS_KEY_EXPORT_RESULT, None)
         st.session_state.pop(CHARTS_KEY_EXPORT_SIG, None)
+    ensure_charts_display_toggles_default_on(st.session_state)
 
 
 def _charts_export_signature(charts: list[Artifact]) -> frozenset[str]:

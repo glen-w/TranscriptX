@@ -1,4 +1,5 @@
 {
+  "active_model_profile": "default",
   "availability_timeout": 7.5,
   "base_url": null,
   "default_temperature": 0.3,
@@ -6,6 +7,11 @@
   "max_input_chars": 48000,
   "max_output_tokens": 2048,
   "model": null,
+  "model_selection": {
+    "mode": "shared",
+    "module_models": {},
+    "shared_model": null
+  },
   "provider": "null",
   "request_timeout": 1350.0,
   "seed": 42

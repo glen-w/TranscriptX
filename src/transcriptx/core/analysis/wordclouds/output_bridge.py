@@ -22,6 +22,7 @@ from typing import Any, Mapping
 from transcriptx.core.analysis.chart_descriptions.schemas import MAX_EVIDENCE_LABELS
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.viz.specs import PreRenderedFigureSpec
+from transcriptx.utils.text_utils import is_eligible_named_speaker
 
 _ACTIVE_OUTPUT_SERVICE = None
 
@@ -46,6 +47,30 @@ def _resolve_speaker_key(speaker: str, output_service: Any | None = None) -> str
     if isinstance(aliases, dict):
         return aliases.get(str(speaker), str(speaker))
     return str(speaker)
+
+
+def _include_speaker_wordcloud(
+    speaker: str | None, output_service: Any | None = None
+) -> bool:
+    """Return False when per-speaker wordclouds should skip unidentified labels."""
+    if not speaker or speaker in {"ALL", "wordcloud-ALL"}:
+        return True
+    svc = _active_output_service(output_service)
+    if svc and svc._runtime_flags.get("include_unidentified_speakers"):
+        return True
+    config = get_config()
+    exclude = getattr(
+        getattr(config, "analysis", None),
+        "exclude_unidentified_from_speaker_charts",
+        True,
+    )
+    if not exclude:
+        return True
+    return is_eligible_named_speaker(
+        speaker,
+        _resolve_speaker_key(speaker, output_service),
+        _get_ignored_ids(output_service),
+    )
 
 
 @contextmanager
