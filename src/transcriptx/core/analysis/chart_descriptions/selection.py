@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from typing import Literal, Sequence
 
-from transcriptx.core.analysis.chart_descriptions.inventory import LogicalChartDescriptor
-from transcriptx.core.analysis.chart_descriptions.overview import select_overview_descriptors
+from transcriptx.core.analysis.chart_descriptions.inventory import (
+    LogicalChartDescriptor,
+)
+from transcriptx.core.analysis.chart_descriptions.overview import (
+    select_overview_descriptors,
+)
 
 ChartSet = Literal["all", "transcript_group", "overview_only"]
 
@@ -23,13 +27,9 @@ def select_charts_for_set(
         selected = list(charts)
     elif chart_set == "transcript_group":
         if run_kind == "group":
-            selected = [
-                c for c in charts if c.provenance_kind == "group_aggregate"
-            ]
+            selected = [c for c in charts if c.provenance_kind == "group_aggregate"]
         else:
-            selected = [
-                c for c in charts if c.provenance_kind == "transcript"
-            ]
+            selected = [c for c in charts if c.provenance_kind == "transcript"]
     elif chart_set == "overview_only":
         selected = select_overview_descriptors(
             charts,

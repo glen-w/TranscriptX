@@ -11,14 +11,18 @@ from transcriptx.core.analysis.chart_descriptions.inventory import (
     LogicalChartInventory,
     make_descriptor_from_fields,
 )
-from transcriptx.core.analysis.chart_descriptions.overview import resolve_overview_viz_ids
+from transcriptx.core.analysis.chart_descriptions.overview import (
+    resolve_overview_viz_ids,
+)
 from transcriptx.core.analysis.chart_descriptions.paths import generation_dir
 from transcriptx.core.analysis.chart_descriptions.selection import select_charts_for_set
 
 
 def test_overview_only_uses_core_utility_not_session_filters():
     # Core utility returns registry defaults independent of any Streamlit state
-    ids = resolve_overview_viz_ids(run_kind="transcript", user_overview=None, max_items=3)
+    ids = resolve_overview_viz_ids(
+        run_kind="transcript", user_overview=None, max_items=3
+    )
     assert isinstance(ids, list)
     assert len(ids) <= 3
     charts = [
@@ -154,7 +158,9 @@ def test_reuse_copies_into_new_generation(tmp_path: Path):
     assert client.calls == 1  # reused, no new LLM call
     assert r2.generation_id != gen1
     # New generation must contain its own copy, not a path into gen1
-    desc_files = list((generation_dir(run_root, r2.generation_id) / "descriptions").glob("*.json"))
+    desc_files = list(
+        (generation_dir(run_root, r2.generation_id) / "descriptions").glob("*.json")
+    )
     assert desc_files
     payload = json.loads(desc_files[0].read_text(encoding="utf-8"))
     assert payload.get("reused") is True

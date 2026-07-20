@@ -138,7 +138,11 @@ def test_on_scan_folder_stores_handle_before_import_button_can_read_it(
 ) -> None:
     """Scan must land in session state via on_click (prefix of the click rerun)."""
     import transcriptx.web.page_modules.upload_transcript as mod
-    from transcriptx.io.folder_import import CandidateStatus, FolderImportCandidate, ScanHandle
+    from transcriptx.io.folder_import import (
+        CandidateStatus,
+        FolderImportCandidate,
+        ScanHandle,
+    )
 
     inbox = tmp_path / "inbox"
     inbox.mkdir()

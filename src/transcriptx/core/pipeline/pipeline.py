@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
 
-
 # Suppress tokenizer warnings about parallelism to prevent console spam.
 # Also pin BLAS/OpenMP to 1 when unset — oversubscription (esp. BERTopic/
 # UMAP/HDBSCAN) has been observed to hang native fits indefinitely.

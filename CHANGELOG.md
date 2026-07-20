@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-20
+
+### Added
+
+- Per-chart LLM descriptions as a finalize-phase module: atomic ACTIVE generations, evidence sidecars, Charts gallery toggles, and ZIP/HTML export materialisation.
+- Run-finalization coordinator and lock owning chart descriptions → group synthesis → single manifest write.
+
+### Fixed
+
+- Finalize-phase modules are excluded from the DAG planner (no peer execution with chart writers).
+- Post-run console summary runs after finalize persistence so `chart_descriptions` is not reported as a false failure.
+- Chart inventory ignores `*.evidence.json` / `chart_evidence` artifacts so plotted evidence sidecars are used instead of legacy metadata fallback.
+- LLM client calls use keyword-only `prompt=` for Ollama compatibility.
+- Coordinator returns only newly appended finalization warnings (no duplication into group aggregation warnings).
+- Chart dispatch exceptions record `GROUP_CHART_FAILED` aggregation warnings.
+
 ## [0.5.4.1] - 2026-07-20
 
 ### Added

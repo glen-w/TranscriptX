@@ -12,7 +12,9 @@ from transcriptx.core.analysis.chart_descriptions.chart_key import (
     build_logical_chart_id,
     chart_key_digest,
 )
-from transcriptx.core.analysis.chart_descriptions.schemas import SCHEMA_LOGICAL_INVENTORY
+from transcriptx.core.analysis.chart_descriptions.schemas import (
+    SCHEMA_LOGICAL_INVENTORY,
+)
 
 RunKind = Literal["transcript", "group"]
 ProvenanceKind = Literal["transcript", "group_aggregate", "member_session"]
@@ -74,7 +76,9 @@ class LogicalChartInventory:
             "run_root": self.run_root,
             "run_kind": self.run_kind,
             "run_target_id": self.run_target_id,
-            "charts": [c.to_dict() for c in sorted(self.charts, key=lambda x: x.chart_key)],
+            "charts": [
+                c.to_dict() for c in sorted(self.charts, key=lambda x: x.chart_key)
+            ],
         }
         blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()

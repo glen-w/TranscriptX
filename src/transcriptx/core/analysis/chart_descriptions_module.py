@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.module_result import build_module_result, now_iso
@@ -15,7 +15,7 @@ class ChartDescriptionsAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "chart_descriptions"
 
-    def analyze(self, transcript_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
         # Should never run in the DAG when finalize_phase is honored.
         started = now_iso()
         return build_module_result(

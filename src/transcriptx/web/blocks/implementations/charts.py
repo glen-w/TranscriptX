@@ -178,9 +178,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
         return
 
     sections_expanded = bool(st.session_state.get(CHARTS_KEY_EXPAND_ALL, False))
-    show_registry = bool(
-        st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True)
-    )
+    show_registry = bool(st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True))
     show_llm = bool(st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True))
     for slot in overview_slots:
         st.markdown(f"**{slot['label']}**")

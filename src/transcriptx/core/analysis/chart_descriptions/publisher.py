@@ -199,11 +199,9 @@ def active_matches_attempt(run_root: Path) -> bool:
     attempt = read_attempt_epoch(run_root)
     if not active or not attempt:
         return False
-    return (
-        str(active.get("attempt_epoch") or "")
-        == str(attempt.get("attempt_epoch") or "")
-        and bool(active.get("generation_id"))
-    )
+    return str(active.get("attempt_epoch") or "") == str(
+        attempt.get("attempt_epoch") or ""
+    ) and bool(active.get("generation_id"))
 
 
 def read_commit(run_root: Path, generation_id: str) -> dict[str, Any] | None:

@@ -10,7 +10,9 @@ chart artifacts (`*.evidence.json`, schema `transcriptx.chart_evidence.v1`).
 [`OutputService._save_chart_spec`](../../src/transcriptx/core/output/output_service.py)
 writes an evidence sidecar from `ChartSpec` (labels, values, series sample,
 filters/transformations when present) and records `evidence_rel` /
-`evidence_sha256` on chart `artifacts_meta`.
+`evidence_sha256` on chart `artifacts_meta`. Evidence sidecars themselves are
+**not** inventory chart units (`artifact_kind=chart_evidence` / `*.evidence.json`
+are skipped when building the logical chart inventory).
 
 ## Legacy fallback
 

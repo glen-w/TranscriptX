@@ -178,9 +178,6 @@ def run_finalization_coordinator(
         # --- Group LLM synthesis (optional) ---
         if run_group_synthesis:
             try:
-                from transcriptx.core.analysis.group_llm_synthesis.finalize_hook import (
-                    run_synthesis_publish_and_manifest,
-                )
 
                 # Use synthesis body without nested lock / without its own manifest
                 synthesis_meta = _run_synthesis_only(

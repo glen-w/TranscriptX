@@ -133,7 +133,9 @@ def sanitize_upload_basename(raw_name: str | None) -> str:
         raise AdmissionError("Upload filename is empty.")
     parts = [p for p in name.split("/") if p not in {"", "."}]
     if any(p == ".." for p in parts):
-        raise AdmissionError("Upload filename must not contain parent-directory segments.")
+        raise AdmissionError(
+            "Upload filename must not contain parent-directory segments."
+        )
     name = parts[-1] if parts else ""
     name = unicodedata.normalize("NFC", name)
     if _CONTROL_CHARS.search(name):
@@ -168,8 +170,10 @@ def derive_canonical_target(
     if not conflict_key:
         raise AdmissionError("Upload filename stem is empty after normalisation.")
 
-    root = Path(transcripts_dir) if transcripts_dir is not None else Path(
-        DIARISED_TRANSCRIPTS_DIR
+    root = (
+        Path(transcripts_dir)
+        if transcripts_dir is not None
+        else Path(DIARISED_TRANSCRIPTS_DIR)
     )
     # On-disk JSON uses the sanitised display stem (preserves original casing).
     target_json = root / f"{display_stem}.json"
@@ -187,9 +191,7 @@ def _source_object_from_document(doc: dict[str, Any]) -> dict[str, Any]:
     return raw if isinstance(raw, dict) else {}
 
 
-def validate_safe_originals_relpath(
-    rel: str, *, output_dir: Path
-) -> tuple[str, Path]:
+def validate_safe_originals_relpath(rel: str, *, output_dir: Path) -> tuple[str, Path]:
     """Return normalised originals/ relpath and absolute archive path, or raise."""
     if not rel or not str(rel).strip():
         raise AdmissionError("source.original_path is missing.")
@@ -226,8 +228,10 @@ def inspect_managed_artifact_state(
 ) -> ManagedStateInspection:
     """Inspect JSON/sidecar pair without registration side effects."""
     target = Path(target_json)
-    sidecar = Path(sidecar_path) if sidecar_path is not None else sidecar_path_for_transcript(
-        target
+    sidecar = (
+        Path(sidecar_path)
+        if sidecar_path is not None
+        else sidecar_path_for_transcript(target)
     )
     output_dir = (
         Path(transcripts_dir)
@@ -287,7 +291,9 @@ def inspect_managed_artifact_state(
     source = _source_object_from_document(doc)
     rel = str(source.get("original_path") or "")
     try:
-        normalized, _archive = validate_safe_originals_relpath(rel, output_dir=output_dir)
+        normalized, _archive = validate_safe_originals_relpath(
+            rel, output_dir=output_dir
+        )
     except AdmissionError as exc:
         return ManagedStateInspection(
             state=ManagedArtifactState.INCOMPLETE_UNREPAIRABLE,
@@ -321,8 +327,10 @@ def is_under_directory(path: Path, root: Path) -> bool:
 def resolve_transcripts_root(
     transcripts_dir: str | Path | None = None,
 ) -> Path:
-    root = Path(transcripts_dir) if transcripts_dir is not None else Path(
-        DIARISED_TRANSCRIPTS_DIR
+    root = (
+        Path(transcripts_dir)
+        if transcripts_dir is not None
+        else Path(DIARISED_TRANSCRIPTS_DIR)
     )
     return root.expanduser().resolve(strict=False)
 
@@ -330,8 +338,8 @@ def resolve_transcripts_root(
 def is_verified_app_imports_file(path: Path) -> bool:
     """True when path is a regular file under the managed transcripts/imports/ tree."""
     try:
-        transcripts_root = Path(DIARISED_TRANSCRIPTS_DIR).expanduser().resolve(
-            strict=False
+        transcripts_root = (
+            Path(DIARISED_TRANSCRIPTS_DIR).expanduser().resolve(strict=False)
         )
         imports_root = (transcripts_root / "imports").resolve(strict=False)
         # Also accept the configured imports alias when it differs.

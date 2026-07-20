@@ -22,10 +22,8 @@ from transcriptx.core.analysis.group_charts.bertopic_group_charts import (
     BertopicGroupChartGenerator,
 )
 from transcriptx.core.pipeline.module_registry import (
-    get_available_modules,
     is_extra_distribution_present,
 )
-from transcriptx.core.pipeline.module_registry_specs import MODULE_CLASS_MAP
 from transcriptx.core.pipeline.optional_dep_outcomes import (
     build_optional_dep_blocked_result,
     missing_extra_reason,

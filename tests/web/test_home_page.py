@@ -190,9 +190,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
         "Speakers (max)",
         "Analysis completion",
     ]
-    metric_values = {
-        args[0]: args[1] for args, _ in metrics if len(args) >= 2
-    }
+    metric_values = {args[0]: args[1] for args, _ in metrics if len(args) >= 2}
     assert metric_values["Transcripts"] == 12
     assert metric_values["Analysed transcripts"] == 1
     assert frames

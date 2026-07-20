@@ -39,7 +39,9 @@ def _load_artifacts_meta(run_root: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _artifact_id(kind: str, module: str, scope: str, speaker: str | None, rel: str) -> str:
+def _artifact_id(
+    kind: str, module: str, scope: str, speaker: str | None, rel: str
+) -> str:
     return hashlib.sha256(
         f"{kind}|{module}|{scope}|{speaker}|{rel}".encode("utf-8")
     ).hexdigest()[:16]
@@ -85,8 +87,8 @@ def build_logical_chart_inventory(
     meta_map = _load_artifacts_meta(run_root)
 
     # Group representations by logical grouping key before chart_key.
-    buckets: dict[tuple[Any, ...], list[tuple[str, dict[str, Any], Path | None]]] = defaultdict(
-        list
+    buckets: dict[tuple[Any, ...], list[tuple[str, dict[str, Any], Path | None]]] = (
+        defaultdict(list)
     )
 
     def _consider(
@@ -101,9 +103,18 @@ def build_logical_chart_inventory(
         if not isinstance(meta, dict):
             skips.append({"rel_path": rel_path, "reason": "malformed_meta"})
             return
-        if meta.get("artifact_kind") not in {None, "chart"} and "charts/" not in rel_path:
+        rel_norm = rel_path.replace("\\", "/")
+        if rel_norm.endswith(".evidence.json") or meta.get("artifact_kind") == (
+            "chart_evidence"
+        ):
+            # Evidence sidecars hang off chart units; never invent chart units from them.
             return
-        if "charts/" not in rel_path.replace("\\", "/"):
+        if (
+            meta.get("artifact_kind") not in {None, "chart"}
+            and "charts/" not in rel_norm
+        ):
+            return
+        if "charts/" not in rel_norm:
             # Only chart paths
             if meta.get("artifact_kind") != "chart":
                 return
@@ -139,7 +150,9 @@ def build_logical_chart_inventory(
             member_session_id or "",
             str(name or ""),
         )
-        buckets[bucket_key].append((rel_path, meta, abs_path if abs_path.is_file() else None))
+        buckets[bucket_key].append(
+            (rel_path, meta, abs_path if abs_path.is_file() else None)
+        )
 
     for rel, meta in meta_map.items():
         if not isinstance(meta, dict):
@@ -168,9 +181,16 @@ def build_logical_chart_inventory(
 
     charts: list[LogicalChartDescriptor] = []
     for bucket_key, items in buckets.items():
-        viz_id, module, scope, speaker_s, storage_root, source_run_id, member_id, name = (
-            bucket_key
-        )
+        (
+            viz_id,
+            module,
+            scope,
+            speaker_s,
+            storage_root,
+            source_run_id,
+            member_id,
+            name,
+        ) = bucket_key
         representations: list[ChartRepresentation] = []
         title = None
         evidence_rel = None
@@ -208,7 +228,7 @@ def build_logical_chart_inventory(
 
         # Prefer evidence sidecar next to first representation if meta missing
         if not evidence_rel and representations:
-            candidate = (
+            first_stem = (
                 Path(representations[0].rel_path).with_suffix("").as_posix()
                 + ".evidence.json"
             )
@@ -218,6 +238,7 @@ def build_logical_chart_inventory(
                 stem = Path(rep.rel_path).name
                 parent = str(Path(rep.rel_path).parent)
                 for guess in (
+                    first_stem,
                     f"{parent}/{Path(stem).stem}.evidence.json",
                     f"{module}/data/global/{viz_id}.evidence.json",
                 ):
@@ -244,8 +265,12 @@ def build_logical_chart_inventory(
                 def __init__(self) -> None:
                     self.meta = {"viz_id": viz_id}
                     self.module = module
-                    self.rel_path = representations[0].rel_path if representations else ""
-                    self.kind = representations[0].kind if representations else "chart_static"
+                    self.rel_path = (
+                        representations[0].rel_path if representations else ""
+                    )
+                    self.kind = (
+                        representations[0].kind if representations else "chart_static"
+                    )
                     self.tags = list(tags_acc)
 
             cd = find_chart_definition_for_artifact(_A())

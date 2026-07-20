@@ -70,6 +70,7 @@ class IndexEntry(BaseModel):
     request_hash: str | None = None
     reused: bool = False
     error_code: str | None = None
+    error_message_safe: str | None = None
 
 
 class ChartDescriptionsIndex(BaseModel):

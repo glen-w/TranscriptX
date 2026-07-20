@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 from transcriptx.core.analysis.chart_descriptions.chart_key import (
     build_chart_key_payload,
@@ -18,10 +17,11 @@ from transcriptx.core.analysis.chart_descriptions.inventory import (
     LogicalChartInventory,
     make_descriptor_from_fields,
 )
-from transcriptx.core.analysis.chart_descriptions.path_safety import is_path_within_roots
+from transcriptx.core.analysis.chart_descriptions.path_safety import (
+    is_path_within_roots,
+)
 from transcriptx.core.analysis.chart_descriptions.publisher import (
     active_matches_attempt,
-    read_active,
     write_attempt_epoch,
 )
 from transcriptx.core.analysis.chart_descriptions.resolve import (
@@ -29,7 +29,9 @@ from transcriptx.core.analysis.chart_descriptions.resolve import (
 )
 from transcriptx.core.analysis.chart_descriptions.selection import select_charts_for_set
 from transcriptx.core.viz.specs import BarCategoricalSpec
-from transcriptx.core.analysis.chart_descriptions.evidence import evidence_from_chart_spec
+from transcriptx.core.analysis.chart_descriptions.evidence import (
+    evidence_from_chart_spec,
+)
 
 
 def test_chart_key_independent_of_format_presence():
@@ -75,7 +77,10 @@ def test_static_only_and_dynamic_only_share_logical_id():
         name="n",
         representations=[
             ChartRepresentation(
-                artifact_id="a1", rel_path="m/charts/x.png", kind="chart_static", format="png"
+                artifact_id="a1",
+                rel_path="m/charts/x.png",
+                kind="chart_static",
+                format="png",
             )
         ],
     )
@@ -94,7 +99,10 @@ def test_static_only_and_dynamic_only_share_logical_id():
         name="n",
         representations=[
             ChartRepresentation(
-                artifact_id="a2", rel_path="m/charts/x.html", kind="chart_dynamic", format="html"
+                artifact_id="a2",
+                rel_path="m/charts/x.html",
+                kind="chart_dynamic",
+                format="html",
             )
         ],
     )
@@ -131,7 +139,9 @@ def test_transcript_group_excludes_member_embeds():
             member_session_id="m1",
         ),
     ]
-    selected = select_charts_for_set(charts, chart_set="transcript_group", run_kind="group")
+    selected = select_charts_for_set(
+        charts, chart_set="transcript_group", run_kind="group"
+    )
     assert len(selected) == 1
     assert selected[0].provenance_kind == "group_aggregate"
 
@@ -169,7 +179,9 @@ class _FakeClient:
         self.calls = 0
         self.model = "fake"
 
-    def generate(self, prompt, system_prompt=None, temperature=0.0, response_format=None):
+    def generate(
+        self, prompt, system_prompt=None, temperature=0.0, response_format=None
+    ):
         self.calls += 1
         return json.dumps({"description": "The chart shows categories a and b."})
 

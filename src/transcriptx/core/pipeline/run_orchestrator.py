@@ -259,9 +259,9 @@ class RunOrchestrator:
             errors=dag_results.get("errors", []),
             skipped_modules=dag_results.get("skipped_modules", []),
         )
-        self.presenter.show_post_run_summary(
-            summary, prepared_workspace.output_dir, dag_results
-        )
+        # Defer console post-run summary until after finalize-phase persistence
+        # so chart_descriptions (and other finalize modules) are not shown as
+        # false "Module not executed" failures.
         return ExecutedRun(
             dag_results=dag_results,
             context=context,
@@ -415,7 +415,7 @@ class RunOrchestrator:
             execution_order=list(dag_results.get("execution_order", [])),
             cache_hits=list(dag_results.get("cache_hits", [])),
             duration=duration,
-            summary=executed.summary if executed is not None else summary,
+            summary=summary,
             persistence_outcomes=persistence_outcomes,
             termination_reason=termination_reason,
         )
@@ -480,6 +480,28 @@ class RunOrchestrator:
                         )
                     )
                     state.persisted_main = True
+                    # Rebuild + show summary after finalize-phase writers update
+                    # modules_run / module_results on dag_results.
+                    state.summary = self.presenter.build_summary(
+                        transcript_path=state.prepared_transcript.transcript_path,
+                        selected_modules=request.selected_modules,
+                        modules_run=state.dag_results.get("modules_run", []),
+                        errors=state.dag_results.get("errors", []),
+                        skipped_modules=state.dag_results.get("skipped_modules", []),
+                    )
+                    if isinstance(state.executed, ExecutedRun):
+                        state.executed = ExecutedRun(
+                            dag_results=state.executed.dag_results,
+                            context=state.executed.context,
+                            named_speaker_count=state.executed.named_speaker_count,
+                            execution_status=state.executed.execution_status,
+                            summary=state.summary,
+                        )
+                    self.presenter.show_post_run_summary(
+                        state.summary,
+                        state.prepared_workspace.output_dir,
+                        state.dag_results,
+                    )
                     # Wall stops after required persistence; sidecar written in run() finally
                     # still while... actually finally is outside this lock. Move sidecar here.
                     if recorder is not None:

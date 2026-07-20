@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 from transcriptx.io.admit_and_register import AdmitOutcomeKind, admit_and_register
 from transcriptx.io.import_metadata_sidecar import write_initial_sidecar
@@ -164,7 +163,9 @@ def test_unrecognized_json_is_unsupported_not_unexpected(
     assert "unknown_input" in outcome.user_safe_detail.lower()
 
 
-def test_registration_is_valid_requires_path_and_identity(monkeypatch, tmp_path: Path) -> None:
+def test_registration_is_valid_requires_path_and_identity(
+    monkeypatch, tmp_path: Path
+) -> None:
     from transcriptx.core.utils import slug_manager as sm
 
     outputs = tmp_path / "outputs"

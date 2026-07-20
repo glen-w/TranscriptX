@@ -9,7 +9,6 @@ from transcriptx.core.analysis.chart_descriptions.generate import run_chart_desc
 from transcriptx.core.analysis.chart_descriptions.inventory import LogicalChartInventory
 from transcriptx.core.analysis.chart_descriptions.paths import (
     generation_dir,
-    generations_dir,
 )
 from transcriptx.core.analysis.chart_descriptions.publisher import (
     active_matches_attempt,

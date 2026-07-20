@@ -302,11 +302,18 @@ def scan_folder_for_import(
             )
 
         if stat.S_ISLNK(st.st_mode):
-            entries.append((path, st, CandidateStatus.SYMLINK, "Symlinks are not imported."))
+            entries.append(
+                (path, st, CandidateStatus.SYMLINK, "Symlinks are not imported.")
+            )
             continue
         if not stat.S_ISREG(st.st_mode):
             entries.append(
-                (path, st, CandidateStatus.SPECIAL_FILE, "Special files are not imported.")
+                (
+                    path,
+                    st,
+                    CandidateStatus.SPECIAL_FILE,
+                    "Special files are not imported.",
+                )
             )
             continue
         try:
@@ -368,7 +375,9 @@ def scan_folder_for_import(
                     from transcriptx.core.utils.canonicalization import (
                         compute_transcript_identity_hash,
                     )
-                    from transcriptx.core.utils.slug_manager import registration_is_valid
+                    from transcriptx.core.utils.slug_manager import (
+                        registration_is_valid,
+                    )
                     import json as _json
 
                     with open(target.target_json, "r", encoding="utf-8") as handle:
@@ -378,7 +387,9 @@ def scan_folder_for_import(
                         identity = compute_transcript_identity_hash(segments)
                         if not registration_is_valid(target.target_json, identity):
                             status = CandidateStatus.NEEDS_REGISTRATION
-                            secondary = "Managed artifacts exist but registration is missing."
+                            secondary = (
+                                "Managed artifacts exist but registration is missing."
+                            )
                 except Exception:
                     # Keep already_managed; admit will re-inspect.
                     pass
@@ -553,7 +564,9 @@ def import_folder_candidates(
                 expected_size=cand.size,
                 expected_mtime_ns=cand.mtime_ns,
             )
-            assert_within_import_size_limit(len(content), max_bytes=handle.max_file_bytes)
+            assert_within_import_size_limit(
+                len(content), max_bytes=handle.max_file_bytes
+            )
             snapshot = _write_app_snapshot(cand.basename, content)
             outcome = admit_and_register(
                 snapshot,

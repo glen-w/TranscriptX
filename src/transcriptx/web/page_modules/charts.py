@@ -390,9 +390,7 @@ def _charts_filters_and_gallery_fragment(
     show_registry_description = bool(
         st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True)
     )
-    show_llm_summary = bool(
-        st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True)
-    )
+    show_llm_summary = bool(st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True))
 
     show_static = st.session_state.get(CHARTS_KEY_STATIC_TOGGLE, True)
     show_dynamic = st.session_state.get(CHARTS_KEY_DYNAMIC_TOGGLE, True)

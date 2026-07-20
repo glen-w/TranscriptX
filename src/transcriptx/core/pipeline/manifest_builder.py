@@ -430,11 +430,7 @@ def write_output_manifest(
             for e in merged
             if str(e.get("rel_path") or "").startswith(".chart_descriptions/")
         ]
-        other = [
-            e
-            for e in merged
-            if e not in synth_entries and e not in chart_entries
-        ]
+        other = [e for e in merged if e not in synth_entries and e not in chart_entries]
 
         manifest = merge_synthesis_into_manifest(
             manifest,

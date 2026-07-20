@@ -40,7 +40,9 @@ class AdmitOutcomeKind(str, Enum):
     IMPORTED_AND_REGISTERED = "imported_and_registered"
     PARTIAL_STATE_REPAIRED = "partial_state_repaired"
     REGISTRATION_RECOVERED = "registration_recovered"
-    REGISTRATION_FAILED_AFTER_ARTIFACT_COMMIT = "registration_failed_after_artifact_commit"
+    REGISTRATION_FAILED_AFTER_ARTIFACT_COMMIT = (
+        "registration_failed_after_artifact_commit"
+    )
     ALREADY_MANAGED = "already_managed"
     CONCURRENT_SKIP = "concurrent_skip"
     STALE_CANDIDATE = "stale_candidate"

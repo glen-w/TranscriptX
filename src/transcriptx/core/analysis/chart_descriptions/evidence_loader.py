@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from transcriptx.core.analysis.chart_descriptions.evidence import (
     ChartEvidence,
     evidence_within_caps,
     parse_evidence_payload,
 )
-from transcriptx.core.analysis.chart_descriptions.inventory import LogicalChartDescriptor
-from transcriptx.core.analysis.chart_descriptions.path_safety import is_path_within_roots
+from transcriptx.core.analysis.chart_descriptions.inventory import (
+    LogicalChartDescriptor,
+)
+from transcriptx.core.analysis.chart_descriptions.path_safety import (
+    is_path_within_roots,
+)
 from transcriptx.core.analysis.chart_descriptions.schemas import SCHEMA_EVIDENCE
 
 
@@ -68,4 +71,3 @@ def load_evidence_for_chart(
     if not evidence_within_caps(evidence):
         return None, "evidence_too_large", True
     return evidence, None, True
-

@@ -85,7 +85,9 @@ def _import_uploaded_transcript(uploaded: Any) -> AdmitOutcomeKind:
         AdmitOutcomeKind.PARTIAL_STATE_REPAIRED,
         AdmitOutcomeKind.REGISTRATION_RECOVERED,
     }:
-        st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = str(outcome.transcript_path)
+        st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = str(
+            outcome.transcript_path
+        )
     if outcome.kind in {
         AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
         AdmitOutcomeKind.PARTIAL_STATE_REPAIRED,
@@ -208,8 +210,7 @@ def _render_folder_import_section() -> None:
         for cand in handle.candidates:
             counts[cand.status.value] = counts.get(cand.status.value, 0) + 1
         st.write(
-            "Preview — "
-            + ", ".join(f"{k}: {v}" for k, v in sorted(counts.items()))
+            "Preview — " + ", ".join(f"{k}: {v}" for k, v in sorted(counts.items()))
         )
         rows = [
             {
@@ -226,7 +227,9 @@ def _render_folder_import_section() -> None:
 
     if import_clicked:
         handle = ScanHandle.from_session_dict(st.session_state.get(_KEY_SCAN_HANDLE))
-        if not handle or not scan_handle_still_valid(handle, path_input=path_value or ""):
+        if not handle or not scan_handle_still_valid(
+            handle, path_input=path_value or ""
+        ):
             st.error("Scan preview is no longer valid. Scan the folder again.")
             st.session_state.pop(_KEY_SCAN_HANDLE, None)
             return
@@ -362,7 +365,9 @@ def render_upload_transcript_page() -> None:
             st.info("No recording selected. Transcript import works without audio.")
         else:
             try:
-                saved_recording = RecordingsService.save_uploaded_file(uploaded_recording)
+                saved_recording = RecordingsService.save_uploaded_file(
+                    uploaded_recording
+                )
             except Exception as e:
                 logger.exception("Recording upload failed")
                 st.error(f"Recording upload failed: {e}")

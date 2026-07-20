@@ -264,9 +264,7 @@ def run_managed_import_workflow(
     originals_dir = Path(TRANSCRIPTS_ORIGINALS_DIR)
 
     raw_basename = (
-        logical_upload_basename
-        if logical_upload_basename is not None
-        else staging.name
+        logical_upload_basename if logical_upload_basename is not None else staging.name
     )
     # Prefer shared admission sanitisation; fall back to Path.name for rare
     # adapter extensions outside the GUI frozenset (legacy API callers).

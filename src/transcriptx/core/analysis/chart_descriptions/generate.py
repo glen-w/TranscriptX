@@ -279,7 +279,11 @@ def run_chart_descriptions(
 
         client_factory = get_llm_client
     client = client_factory()
-    model = str(getattr(client, "model", None) or getattr(getattr(config, "llm", None), "model", "") or "")
+    model = str(
+        getattr(client, "model", None)
+        or getattr(getattr(config, "llm", None), "model", "")
+        or ""
+    )
 
     system_prompt = build_system_prompt()
     consecutive_failures = 0

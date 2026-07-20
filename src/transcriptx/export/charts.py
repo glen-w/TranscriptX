@@ -148,9 +148,7 @@ def render_chart_sections(
             llm_text = item.llm_description
             llm_html = ""
             if llm_text:
-                llm_html = (
-                    f'<p class="chart-narrative">{html.escape(llm_text)}</p>'
-                )
+                llm_html = f'<p class="chart-narrative">{html.escape(llm_text)}</p>'
             cards.append(
                 '<article class="card">'
                 f"<h3>{html.escape(title)}</h3>"

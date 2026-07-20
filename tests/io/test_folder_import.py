@@ -246,7 +246,9 @@ def test_eligible_excludes_conflicts(monkeypatch, tmp_path: Path) -> None:
     assert eligible_candidates(handle) == []
 
 
-def test_stem_conflict_preserves_too_large_secondary(monkeypatch, tmp_path: Path) -> None:
+def test_stem_conflict_preserves_too_large_secondary(
+    monkeypatch, tmp_path: Path
+) -> None:
     root = tmp_path / "transcripts"
     _patch_roots(monkeypatch, root)
     monkeypatch.setenv("TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES", "20")
@@ -313,9 +315,7 @@ def test_stale_candidate_when_file_changes(monkeypatch, tmp_path: Path) -> None:
     path.write_text("1\n00:00:00,000 --> 00:00:01,000\nHi\n", encoding="utf-8")
     handle = scan_folder_for_import(str(inbox), transcripts_dir=root)
     assert eligible_candidates(handle)
-    path.write_text(
-        "1\n00:00:00,000 --> 00:00:02,000\nChanged\n", encoding="utf-8"
-    )
+    path.write_text("1\n00:00:00,000 --> 00:00:02,000\nChanged\n", encoding="utf-8")
     outcomes = import_folder_candidates(handle, path_input=str(inbox))
     assert outcomes
     assert outcomes[0].kind is AdmitOutcomeKind.STALE_CANDIDATE

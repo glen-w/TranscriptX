@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Protocol, Sequence
 
-from transcriptx.core.analysis.chart_descriptions.inventory import LogicalChartDescriptor
+from transcriptx.core.analysis.chart_descriptions.inventory import (
+    LogicalChartDescriptor,
+)
 from transcriptx.core.utils.chart_registry import (
     get_default_group_overview_charts,
     get_default_overview_charts,

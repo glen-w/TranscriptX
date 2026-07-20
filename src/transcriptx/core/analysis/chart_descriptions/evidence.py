@@ -91,11 +91,11 @@ def evidence_from_chart_spec(spec: ChartSpec) -> ChartEvidence:
         labels = [str(x) for x in _truncate_seq(spec.x_labels, MAX_EVIDENCE_LABELS)]
         series.append(
             {
-                "y_labels": [str(y) for y in _truncate_seq(spec.y_labels, MAX_EVIDENCE_LABELS)],
-                "z_rows": len(spec.z),
-                "z_sample": [
-                    list(_truncate_seq(row, 16)) for row in list(spec.z)[:8]
+                "y_labels": [
+                    str(y) for y in _truncate_seq(spec.y_labels, MAX_EVIDENCE_LABELS)
                 ],
+                "z_rows": len(spec.z),
+                "z_sample": [list(_truncate_seq(row, 16)) for row in list(spec.z)[:8]],
             }
         )
     elif isinstance(spec, BoxSpec):
@@ -163,13 +163,21 @@ def parse_evidence_payload(payload: Mapping[str, Any]) -> ChartEvidence | None:
             title=payload.get("title"),
             x_label=payload.get("x_label"),
             y_label=payload.get("y_label"),
-            labels=[str(x) for x in list(payload.get("labels") or [])[:MAX_EVIDENCE_LABELS]],
+            labels=[
+                str(x) for x in list(payload.get("labels") or [])[:MAX_EVIDENCE_LABELS]
+            ],
             values=list(payload.get("values") or [])[:MAX_EVIDENCE_VALUES],
             units=dict(payload.get("units") or {}),
             filters=dict(payload.get("filters") or {}),
             denominator=payload.get("denominator"),
-            transformations=[str(t) for t in list(payload.get("transformations") or [])],
-            series=[dict(s) for s in list(payload.get("series") or []) if isinstance(s, Mapping)],
+            transformations=[
+                str(t) for t in list(payload.get("transformations") or [])
+            ],
+            series=[
+                dict(s)
+                for s in list(payload.get("series") or [])
+                if isinstance(s, Mapping)
+            ],
             notes=payload.get("notes"),
         )
     except Exception:

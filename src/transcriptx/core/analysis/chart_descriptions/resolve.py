@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
-from transcriptx.core.analysis.chart_descriptions.inventory import LogicalChartDescriptor
+from transcriptx.core.analysis.chart_descriptions.inventory import (
+    LogicalChartDescriptor,
+)
 from transcriptx.core.analysis.chart_descriptions.models import ChartDescriptionArtifact
 from transcriptx.core.analysis.chart_descriptions.paths import generation_dir
 from transcriptx.core.analysis.chart_descriptions.publisher import (
