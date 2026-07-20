@@ -34,6 +34,15 @@ class DAGPlanner:
                 stack=[],
             )
 
+        # Finalize-phase modules are selectable for reporting/coordinator but
+        # must never be scheduled as DAG peers of chart writers.
+        finalize_phase = {
+            name
+            for name in runnable_set
+            if bool(getattr(modules.get(name), "finalize_phase", False))
+        }
+        runnable_set -= finalize_phase
+
         skipped_preflight = sorted(unknown)
         deterministic_order = self.topological_sort(
             sorted(runnable_set), registry_snapshot

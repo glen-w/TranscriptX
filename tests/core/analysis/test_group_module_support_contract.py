@@ -37,6 +37,9 @@ def test_supports_group_modules_have_aggregation_coverage() -> None:
         assert info is not None
         if not info.supports_group:
             continue
+        # Finalize-phase modules publish via run finalization, not aggregation.
+        if getattr(info, "finalize_phase", False):
+            continue
         if module_id in covered:
             continue
         missing.append(module_id)

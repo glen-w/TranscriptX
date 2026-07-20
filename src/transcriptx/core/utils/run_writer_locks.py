@@ -6,6 +6,7 @@ Uses FileLock; see tests/core/utils/test_run_writer_locks.py for characterizatio
 
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import os
 import stat
@@ -28,7 +29,16 @@ __all__ = [
     "run_lock_path_for_canonical_root",
     "mutation_gate_lock_path",
     "assert_lease_for_run",
+    "bind_run_writer_lease",
+    "get_bound_run_writer_lease",
 ]
+
+# Bound while the orchestrator (or another owner) holds ``per_run_lock``.
+# Copied into module worker threads via ``contextvars.copy_context().run`` so
+# OutputService can write without re-acquiring (FileLock re-entry is per-thread).
+_bound_run_writer_lease: contextvars.ContextVar[RunWriterLease | None] = (
+    contextvars.ContextVar("transcriptx_run_writer_lease", default=None)
+)
 
 
 class LockDirectoryUnsafeError(OSError):
@@ -136,6 +146,23 @@ def assert_lease_for_run(
         raise LockAcquisitionError(
             f"RunWriterLease root mismatch: {lease.canonical_run_root!r} != {expected!r}"
         )
+
+
+@contextmanager
+def bind_run_writer_lease(
+    lease: RunWriterLease | None,
+) -> Iterator[RunWriterLease | None]:
+    """Publish an active lease for the current context (and copied worker contexts)."""
+    token = _bound_run_writer_lease.set(lease)
+    try:
+        yield lease
+    finally:
+        _bound_run_writer_lease.reset(token)
+
+
+def get_bound_run_writer_lease() -> RunWriterLease | None:
+    """Return the lease bound for this context, if any."""
+    return _bound_run_writer_lease.get()
 
 
 class RunWriterLock:

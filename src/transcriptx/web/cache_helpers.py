@@ -231,6 +231,7 @@ _MODULE_INFO_CACHE_ATTRS = (
     "post_processing_only",
     "requires_audio",
     "requires_llm",
+    "finalize_phase",
     "requires_multiple_speakers",
     "min_named_speakers",
     "gate_on_turn_taking_speakers",

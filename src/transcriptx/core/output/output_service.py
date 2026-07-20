@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union, Literal
 
 from transcriptx.core.utils.run_writer_locks import (
+    LockAcquisitionError,
     RunWriterLease,
     assert_lease_for_run,
     per_run_lock,
@@ -147,10 +148,19 @@ class OutputService:
 
     def _run_write(self, fn, *, lease: RunWriterLease | None = None):
         """Run ``fn`` under per-run lock or a validated lease."""
+        from transcriptx.core.utils.run_writer_locks import get_bound_run_writer_lease
+
         root = Path(self.transcript_dir)
-        if lease is not None:
-            assert_lease_for_run(lease, root)
-            return fn()
+        effective = lease if lease is not None else get_bound_run_writer_lease()
+        if effective is not None:
+            # Bound lease is only valid for this run root; mismatch falls through.
+            try:
+                assert_lease_for_run(effective, root)
+            except LockAcquisitionError:
+                if lease is not None:
+                    raise
+            else:
+                return fn()
         with per_run_lock(root):
             return fn()
 
@@ -564,6 +574,44 @@ class OutputService:
         final_viz_id = spec.viz_id
 
         created_at = datetime.now(timezone.utc).isoformat()
+        evidence_rel = None
+        evidence_sha = None
+        try:
+            from transcriptx.core.analysis.chart_descriptions.evidence import (
+                evidence_from_chart_spec,
+            )
+            from transcriptx.core.analysis.chart_descriptions.digests import (
+                sha256_file,
+            )
+            from transcriptx.core.utils.artifact_writer import write_json
+
+            evidence = evidence_from_chart_spec(spec)
+            # Sibling evidence next to static chart path (or dynamic parent)
+            evidence_base = static_path or dynamic_path
+            if evidence_base is not None:
+                ev_path = Path(evidence_base).with_suffix(".evidence.json")
+                write_json(str(ev_path), evidence.to_dict())
+                evidence_rel = str(ev_path.relative_to(Path(self.transcript_dir)))
+                evidence_sha = sha256_file(ev_path)
+                self._record_artifact(ev_path, "json")
+                self._record_artifact_metadata(
+                    ev_path,
+                    {
+                        "viz_id": final_viz_id,
+                        "module": spec.module,
+                        "artifact_kind": "chart_evidence",
+                        "scope": spec.scope,
+                        "name": spec.name,
+                        "format": "json",
+                        "run_id": self.run_id,
+                        "created_at": created_at,
+                        "evidence_sha256": evidence_sha,
+                    },
+                )
+        except Exception:
+            evidence_rel = None
+            evidence_sha = None
+
         base_metadata = {
             "viz_id": final_viz_id,
             "derived": derived_viz_id,
@@ -584,6 +632,11 @@ class OutputService:
             "run_id": self.run_id,
             "created_at": created_at,
         }
+        if evidence_rel:
+            base_metadata["evidence_rel"] = evidence_rel
+            base_metadata["chart_evidence_rel"] = evidence_rel
+        if evidence_sha:
+            base_metadata["evidence_sha256"] = evidence_sha
 
         static_result = None
         if static_path:

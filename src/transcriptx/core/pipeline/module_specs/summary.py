@@ -82,6 +82,18 @@ def build_summary_module_definitions(
             "enhancements": [],
             "requires_llm": True,
         },
+        "chart_descriptions": {
+            "description": (
+                "Per-chart LLM narratives (finalize-phase; after all charts)"
+            ),
+            "dependencies": [],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [Requirement.SEGMENTS],
+            "enhancements": [],
+            "requires_llm": True,
+            "finalize_phase": True,
+        },
         "insights": {
             "description": "Content-first insights layer separated from style markers",
             "dependencies": ["insight_eligibility", "highlights", "topic_modeling"],

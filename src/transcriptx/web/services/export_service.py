@@ -99,6 +99,10 @@ class ExportService:
             )
 
             chart_items: List[ExportableItem] = []
+            from transcriptx.web.services.chart_llm_description import (
+                resolve_chart_llm_description,
+            )
+
             for artifact, rel in copied:
                 if artifact.kind in {"chart_static", "chart_dynamic"}:
                     description = None
@@ -106,6 +110,13 @@ class ExportService:
                         description = resolve_chart_display_description(artifact)
                     except Exception:
                         description = None
+                    llm_description = None
+                    try:
+                        llm_description = resolve_chart_llm_description(
+                            run_root, artifact
+                        )
+                    except Exception:
+                        llm_description = None
                     chart_items.append(
                         ExportableItem(
                             artifact=artifact,
@@ -113,6 +124,7 @@ class ExportService:
                             export_rel_path=rel,
                             size_bytes=0,
                             description=description,
+                            llm_description=llm_description,
                         )
                     )
 
@@ -139,6 +151,9 @@ class ExportService:
         from transcriptx.web.services.chart_view_model_service import (
             resolve_chart_display_description,
         )
+        from transcriptx.web.services.chart_llm_description import (
+            resolve_chart_llm_description,
+        )
 
         return prepare_charts_export_zip(
             run_root,
@@ -146,4 +161,5 @@ class ExportService:
             run_id,
             order_modules=order_strings_like_modules,
             description_fn=resolve_chart_display_description,
+            llm_description_fn=lambda a: resolve_chart_llm_description(run_root, a),
         )

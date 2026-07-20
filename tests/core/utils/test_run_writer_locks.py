@@ -256,3 +256,45 @@ class TestRunWriterLock:
         t.join(timeout=5)
         assert len(err) == 1
         assert isinstance(err[0], LockAcquisitionError)
+
+
+class TestBoundRunWriterLease:
+    def test_worker_thread_write_uses_bound_lease(self, tmp_path, monkeypatch):
+        """Orchestrator holds lock on main; timeout worker must not re-acquire."""
+        import concurrent.futures
+        import contextvars
+
+        from transcriptx.core.output.output_service import OutputService
+        from transcriptx.core.utils.run_writer_locks import (
+            bind_run_writer_lease,
+            per_run_lock,
+        )
+
+        # Keep writes under tmp_path (avoid redirect into real OUTPUTS_DIR).
+        monkeypatch.setenv("TRANSCRIPTX_OUTPUT_DIR", str(tmp_path / "outputs"))
+        monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(tmp_path / "data"))
+
+        run = tmp_path / "outputs" / "slug" / "run1"
+        run.mkdir(parents=True)
+        (run / ".transcriptx").mkdir()
+        (tmp_path / "data" / "state" / "run_locks").mkdir(parents=True)
+
+        written: list[str] = []
+
+        def worker() -> None:
+            svc = OutputService(
+                transcript_path=str(tmp_path / "t.json"),
+                module_name="tics",
+                output_dir=str(run),
+            )
+            written.append(
+                svc.save_data({"ok": True}, "tics_summary", format_type="json")
+            )
+
+        with per_run_lock(run, state_dir=tmp_path / "data" / "state") as lock:
+            with bind_run_writer_lease(lock.lease()):
+                ctx = contextvars.copy_context()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    ex.submit(ctx.run, worker).result(timeout=5)
+
+        assert written and Path(written[0]).exists()

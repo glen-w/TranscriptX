@@ -509,6 +509,7 @@ def test_bertopic_registry_default_plan_metadata() -> None:
     assert "insight_eligibility" in info.dependencies
     assert info.description
     assert "BERTopic" in info.description
+    assert info.timeout_seconds >= 3600
 
 
 def test_select_preferred_artifacts_single():

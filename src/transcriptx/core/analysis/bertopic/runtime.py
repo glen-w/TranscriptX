@@ -5,6 +5,13 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from transcriptx.core.analysis.bertopic.deps import redact_path_for_diagnostics
+from transcriptx.core.utils.native_threads import limited_native_threads
+
+__all__ = [
+    "build_model_kwargs",
+    "build_provenance",
+    "limited_native_threads",
+]
 
 
 def build_model_kwargs(bertopic_cfg: Any) -> Dict[str, Any]:

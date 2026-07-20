@@ -59,6 +59,9 @@ def build_topics_module_definitions(
             "requirements": default_requirements,
             "enhancements": [],
             "required_extras": ["bertopic"],
+            # Embedding + UMAP/HDBSCAN can be slow on large transcripts; hang
+            # protection is enforced by the DAG adapter (continues on timeout).
+            "timeout_seconds": 3600,
         },
         "wordclouds": {
             "description": "Word Cloud Generation",

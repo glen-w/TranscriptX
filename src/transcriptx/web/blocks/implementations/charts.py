@@ -17,6 +17,8 @@ from transcriptx.web.state import (
     CHARTS_KEY_FILTER_SUBVIEW,
     CHARTS_KEY_FILTER_TAGS,
     CHARTS_KEY_SHOW_SUMMARY_TOGGLE,
+    CHARTS_KEY_SHOW_CHART_DESCRIPTIONS,
+    CHARTS_KEY_SHOW_LLM_SUMMARIES,
     CHARTS_KEY_SOURCE_PRESET,
     CHARTS_KEY_DYNAMIC_TOGGLE,
     CHARTS_KEY_STATIC_TOGGLE,
@@ -71,6 +73,12 @@ def render_chart_gallery_modules(
                     f"chart_{module_name}_{family.key}",
                     sections_expanded=sections_expanded,
                     show_family_expander=True,
+                    show_registry_description=bool(
+                        st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True)
+                    ),
+                    show_llm_summary=bool(
+                        st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True)
+                    ),
                 )
                 if fi < len(families) - 1:
                     st.divider()
@@ -170,10 +178,14 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
         return
 
     sections_expanded = bool(st.session_state.get(CHARTS_KEY_EXPAND_ALL, False))
+    show_registry = bool(
+        st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True)
+    )
+    show_llm = bool(st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True))
     for slot in overview_slots:
         st.markdown(f"**{slot['label']}**")
         slot_description = slot.get("description")
-        if slot_description:
+        if slot_description and show_registry:
             st.caption(slot_description)
         if slot.get("missing"):
             st.caption("Chart not available for this run.")
@@ -187,5 +199,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
                 f"block_overview_chart_{slot['viz_id']}",
                 sections_expanded=sections_expanded,
                 show_family_expander=False,
+                show_registry_description=show_registry,
+                show_llm_summary=show_llm,
             )
         st.divider()

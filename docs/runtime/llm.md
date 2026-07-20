@@ -46,8 +46,29 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 | `llm_summary` | Abstractive transcript summary from readable transcript text (plain text, `default_temperature`) | segments only |
 | `llm_speaker_summary` | Abstractive summary per **named** speaker from that speaker's utterances only (plain text, `default_temperature`) | segments + speaker labels |
 | `llm_action_items` | Structured action items (owner, deadline, status, quote) from transcript text (strict JSON, `default_temperature`) | segments + speaker labels |
+| `chart_descriptions` | Finalize-phase per-chart LLM narratives (temperature 0.0, JSON). Excluded from DAG execution; run by the run-finalization coordinator after all charts exist | selected + `analysis.chart_descriptions.enabled` + LLM enabled |
 
-All four LLM modules are included in the **recommended** default module list when enabled. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out of any of them. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`.
+All LLM modules except finalize-phase `chart_descriptions` are included in the **recommended** default module list when enabled. `chart_descriptions` is selectable and recommended with other LLM modules but executes only in finalization. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`. For `chart_descriptions`, a skipped generation is still **committed** (ACTIVE + epoch) with **zero client calls**.
+
+### `analysis.chart_descriptions`
+
+```json
+{
+  "analysis": {
+    "chart_descriptions": {
+      "enabled": true,
+      "chart_set": "all"
+    }
+  }
+}
+```
+
+- **`enabled`** (default `true`): gate with module selection and LLM enabled.
+- **`chart_set`**: `all` (default) | `transcript_group` | `overview_only`.
+- Layout: `.chart_descriptions/LATEST_ATTEMPT.json`, `ACTIVE.json`, `generations/<id>/` with COMMIT/index/outcome/descriptions.
+- Resolvers require ACTIVE.attempt_epoch to match LATEST_ATTEMPT (suppresses stale text after crash).
+- Ordering: chart-description publish → group LLM synthesis → single manifest write under one run-finalization lock.
+
 
 **Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same Ollama path.
 

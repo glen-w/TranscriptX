@@ -247,19 +247,23 @@ class DAGPipeline:
         sink.emit(event_dict)
 
     def _registry_snapshot(self) -> RegistrySnapshot:
-        return RegistrySnapshot(
-            modules={
-                name: RegistryModuleSnapshot(
-                    name=name,
-                    dependencies=list(node.dependencies),
-                    category=node.category,
-                    optional_dependencies=list(
-                        getattr(node, "optional_dependencies", None) or []
-                    ),
-                )
-                for name, node in sorted(self.nodes.items())
-            }
-        )
+        from transcriptx.core.pipeline.module_registry import get_module_info
+
+        modules: dict[str, RegistryModuleSnapshot] = {}
+        for name, node in sorted(self.nodes.items()):
+            info = get_module_info(name)
+            modules[name] = RegistryModuleSnapshot(
+                name=name,
+                dependencies=list(node.dependencies),
+                category=node.category,
+                optional_dependencies=list(
+                    getattr(node, "optional_dependencies", None) or []
+                ),
+                finalize_phase=bool(
+                    getattr(info, "finalize_phase", False) if info else False
+                ),
+            )
+        return RegistrySnapshot(modules=modules)
 
     def _new_pipeline_results(
         self, transcript_path: str, selected_modules: List[str]

@@ -14,8 +14,10 @@ from transcriptx.web.state import (
 
 
 def test_charts_resettable_keys_cover_defaults() -> None:
-    for k in CHARTS_FILTER_DEFAULTS:
-        assert k in charts_resettable_keys()
+    # Gallery description/summary toggles live in CHARTS_FILTER_DEFAULTS for
+    # initial values but are intentionally not reset with filters.
+    for k in charts_resettable_keys():
+        assert k in CHARTS_FILTER_DEFAULTS
 
 
 def test_reset_charts_filters_to_defaults_applies_values() -> None:

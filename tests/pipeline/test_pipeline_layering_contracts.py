@@ -14,19 +14,26 @@ from transcriptx.core.pipeline.dag_planner import DAGPlanner
 from transcriptx.core.pipeline.run_orchestrator import _combine_status
 
 
-def test_dag_planner_is_deterministic_for_same_registry_and_request():
+def test_dag_planner_excludes_finalize_phase_modules() -> None:
     planner = DAGPlanner()
     snapshot = RegistrySnapshot(
         modules={
-            "a": RegistryModuleSnapshot(name="a", dependencies=[], category="light"),
-            "b": RegistryModuleSnapshot(name="b", dependencies=["a"], category="light"),
-            "c": RegistryModuleSnapshot(name="c", dependencies=["a"], category="light"),
+            "stats": RegistryModuleSnapshot(
+                name="stats", dependencies=[], category="light"
+            ),
+            "chart_descriptions": RegistryModuleSnapshot(
+                name="chart_descriptions",
+                dependencies=[],
+                category="medium",
+                finalize_phase=True,
+            ),
         }
     )
-    p1 = planner.plan(["c", "b"], snapshot)
-    p2 = planner.plan(["c", "b"], snapshot)
-    assert p1.deterministic_order == p2.deterministic_order
-    assert p1.plan_hash == p2.plan_hash
+    plan = planner.plan(["stats", "chart_descriptions"], snapshot)
+    assert "stats" in plan.deterministic_order
+    assert "chart_descriptions" not in plan.deterministic_order
+    assert "chart_descriptions" not in plan.runnable
+    assert "chart_descriptions" in plan.requested
 
 
 def test_optional_persistence_failure_only_downgrades_success():

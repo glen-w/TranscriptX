@@ -66,6 +66,23 @@ def test_build_model_kwargs_applies_defaults_and_falsey_flags() -> None:
 
 
 @pytest.mark.unit
+def test_limited_native_threads_sets_and_restores_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import os
+
+    from transcriptx.core.utils.native_threads import limited_native_threads
+
+    monkeypatch.setenv("OMP_NUM_THREADS", "8")
+    monkeypatch.delenv("MKL_NUM_THREADS", raising=False)
+    with limited_native_threads(1):
+        assert os.environ["OMP_NUM_THREADS"] == "1"
+        assert os.environ["MKL_NUM_THREADS"] == "1"
+    assert os.environ["OMP_NUM_THREADS"] == "8"
+    assert "MKL_NUM_THREADS" not in os.environ
+
+
+@pytest.mark.unit
 def test_bertopic_settings_defaults_and_validation() -> None:
     from pydantic import ValidationError
 
@@ -78,6 +95,7 @@ def test_bertopic_settings_defaults_and_validation() -> None:
     assert defaults.top_n_words == 10
     assert defaults.label_words == 3
     assert defaults.calculate_probabilities is False
+    assert defaults.timeout_seconds == 3600.0
 
     assert BERTopicSettingsModel(nr_topics="Auto").nr_topics == "auto"
     with pytest.raises(ValidationError):

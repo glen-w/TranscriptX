@@ -47,7 +47,16 @@
     "label_words": 3,
     "min_topic_size": 5,
     "nr_topics": "auto",
+    "timeout_seconds": 3600.0,
     "top_n_words": 10
+  },
+  "chart_descriptions": {
+    "chart_set": "all",
+    "circuit_breaker_failures": 3,
+    "enabled": true,
+    "max_description_chars": 1200,
+    "max_retries": 1,
+    "request_timeout": 120.0
   },
   "clustering_eps": 0.3,
   "clustering_min_samples": 2,

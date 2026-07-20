@@ -52,6 +52,7 @@ class RegistryModuleSnapshot:
     dependencies: List[str]
     category: str
     optional_dependencies: List[str] = field(default_factory=list)
+    finalize_phase: bool = False
 
 
 @dataclass(frozen=True)

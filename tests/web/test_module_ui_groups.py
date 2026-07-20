@@ -18,6 +18,7 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "narrative_summary",
     "llm_speaker_summary",
     "llm_action_items",
+    "chart_descriptions",
     "summary",
     "highlights",
     "insights",

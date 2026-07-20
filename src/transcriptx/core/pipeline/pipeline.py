@@ -10,9 +10,22 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
 
 
-# Suppress tokenizer warnings about parallelism to prevent console spam
+# Suppress tokenizer warnings about parallelism to prevent console spam.
+# Also pin BLAS/OpenMP to 1 when unset — oversubscription (esp. BERTopic/
+# UMAP/HDBSCAN) has been observed to hang native fits indefinitely.
+_NATIVE_THREAD_ENV_DEFAULTS = (
+    ("TOKENIZERS_PARALLELISM", "false"),
+    ("OMP_NUM_THREADS", "1"),
+    ("MKL_NUM_THREADS", "1"),
+    ("OPENBLAS_NUM_THREADS", "1"),
+    ("NUMBA_NUM_THREADS", "1"),
+    ("VECLIB_MAXIMUM_THREADS", "1"),
+)
+
+
 def _ensure_tokenizers_parallelism() -> None:
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    for key, value in _NATIVE_THREAD_ENV_DEFAULTS:
+        os.environ.setdefault(key, value)
 
 
 from transcriptx.core.utils.logger import get_logger, log_pipeline_complete

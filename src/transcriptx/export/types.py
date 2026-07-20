@@ -27,6 +27,7 @@ class ExportableItem:
     export_rel_path: Path
     size_bytes: int
     description: Optional[str] = None
+    llm_description: Optional[str] = None
 
 
 class ExportTextSummary(TypedDict, total=False):

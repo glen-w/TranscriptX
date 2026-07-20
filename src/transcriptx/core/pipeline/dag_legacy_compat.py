@@ -51,7 +51,20 @@ class DAGLegacyCompatHelpers:
 
         execution_order = pipeline.topological_sort(list(modules_to_run))
         execution_order = self._make_deterministic(execution_order)
-        return pipeline.sort_by_category(execution_order)
+        ordered = pipeline.sort_by_category(execution_order)
+        # Finalize-phase modules are selected for reporting but never DAG-executed.
+        try:
+            from transcriptx.core.pipeline.module_registry import get_module_registry
+
+            registry = get_module_registry()
+            ordered = [
+                m
+                for m in ordered
+                if not getattr(registry.get_module_info(m), "finalize_phase", False)
+            ]
+        except Exception:
+            pass
+        return ordered
 
     def validate_dependencies(
         self, pipeline: Any, modules: Optional[List[str]] = None

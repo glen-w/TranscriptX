@@ -21,6 +21,7 @@ from transcriptx.core.analysis.bertopic.runtime import (
     build_model_kwargs,
     build_provenance,
 )
+from transcriptx.core.utils.native_threads import limited_native_threads
 from transcriptx.core.analysis.bertopic.schema import (
     SCHEMA_VERSION,
     attach_schema_version,
@@ -162,8 +163,9 @@ class BERTopicAnalysis(AnalysisModule):
         started = time.perf_counter()
         try:
             BERTopic = bertopic_module.BERTopic
-            model = BERTopic(**model_kwargs)
-            topic_assignments, topic_probs = model.fit_transform(texts)
+            with limited_native_threads(1):
+                model = BERTopic(**model_kwargs)
+                topic_assignments, topic_probs = model.fit_transform(texts)
         except ImportError as exc:
             return {
                 "error": f"broken_extra:{EXTRA_NAME}",
@@ -178,7 +180,30 @@ class BERTopicAnalysis(AnalysisModule):
                     }
                 ),
             }
-        except Exception:
+        except Exception as exc:
+            # Tiny corpora can collapse to zero non-outlier samples during
+            # BERTopic auto-reduce (HDBSCAN/sklearn). Soft-fail like eligibility.
+            msg = str(exc)
+            soft = (
+                "0 sample" in msg
+                or "minimum of 1 is required" in msg
+                or "n_samples=0" in msg
+            )
+            if soft:
+                return {
+                    "error": "insufficient_data_after_fit",
+                    "message": msg,
+                    "topics": [],
+                    "doc_topic_data": [],
+                    "meta": attach_schema_version(
+                        {
+                            "texts_count": len(texts),
+                            "reason": "insufficient_data_after_fit",
+                            "fit_scope": "transcript",
+                            "fit_error": msg,
+                        }
+                    ),
+                }
             raise
 
         duration = time.perf_counter() - started

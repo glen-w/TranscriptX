@@ -217,6 +217,11 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         coerce_bool_on_off,
     ),
     _env_key(
+        "TRANSCRIPTX_BERTOPIC_TIMEOUT_SECONDS",
+        ("analysis", "bertopic", "timeout_seconds"),
+        coerce_float,
+    ),
+    _env_key(
         "TRANSCRIPTX_SEMANTIC_PROGRESS_LOG_INTERVAL_SECONDS",
         ("analysis", "semantic_progress_log_interval_seconds"),
         coerce_float,

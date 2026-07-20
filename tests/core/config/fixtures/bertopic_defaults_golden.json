@@ -4,5 +4,6 @@
   "label_words": 3,
   "min_topic_size": 5,
   "nr_topics": "auto",
+  "timeout_seconds": 3600.0,
   "top_n_words": 10
 }

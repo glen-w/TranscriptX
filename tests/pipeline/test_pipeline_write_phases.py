@@ -79,6 +79,14 @@ def test_persist_canonical_results_and_artifacts_orders_writes(
         order.append("manifest")
         return tmp_path / "manifest.json"
 
+    class _Fin:
+        module_results: dict = {}
+        manifest_path = tmp_path / "manifest.json"
+
+    def _finalize(**_kwargs):
+        order.append("manifest")
+        return _Fin()
+
     monkeypatch.setattr(
         "transcriptx.core.pipeline.pipeline_write_phases.persist_canonical_run_outcomes",
         _results,
@@ -86,6 +94,10 @@ def test_persist_canonical_results_and_artifacts_orders_writes(
     monkeypatch.setattr(
         "transcriptx.core.pipeline.pipeline_write_phases.write_output_manifest",
         _manifest,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.chart_descriptions.coordinator.run_finalization_coordinator",
+        _finalize,
     )
     paths = persist_canonical_results_and_artifacts(
         run_dir=tmp_path,
@@ -99,7 +111,8 @@ def test_persist_canonical_results_and_artifacts_orders_writes(
             "module_results": {},
         },
     )
-    assert order == ["results", "manifest"]
+    assert order[0] == "results"
+    assert "manifest" in order
     assert paths["run_results_path"] == tmp_path / "run_results.json"
     assert paths["manifest_path"] == tmp_path / "manifest.json"
 

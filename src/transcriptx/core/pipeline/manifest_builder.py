@@ -237,10 +237,14 @@ def _iter_files(run_dir: Path) -> Iterable[Path]:
                 ".transcriptx/run_config_override.json",
             }:
                 continue
-        # Synthesis artifacts are merged explicitly (correct module/kind).
+        # Synthesis / chart-description artifacts are merged explicitly.
         if rel_path.startswith(".group_llm_synthesis/"):
             continue
+        if rel_path.startswith(".chart_descriptions/"):
+            continue
         if rel_path == "manifest.json":
+            continue
+        if rel_path == ".run_finalization.lock":
             continue
         if "/.thumbnails/" in rel_path:
             continue
@@ -387,21 +391,81 @@ def write_output_manifest(
     transcript_key: str,
     modules_enabled: List[str],
     *,
+    supplemental_inventory_entries: Optional[List[Dict[str, str]]] = None,
+    finalizer_outcomes: Optional[Dict[str, Any]] = None,
     synthesis_inventory_entries: Optional[List[Dict[str, str]]] = None,
 ) -> Optional[Path]:
+    """Write manifest.json.
+
+    ``supplemental_inventory_entries`` is the merged channel for finalize-phase
+    publishers (chart descriptions, group LLM synthesis, …). The legacy
+    ``synthesis_inventory_entries`` kwarg is accepted and merged into that list
+    for backward compatibility.
+    """
     try:
         manifest = build_output_manifest(
             run_dir, run_id, transcript_key, modules_enabled
         )
+        merged: List[Dict[str, str]] = []
+        if supplemental_inventory_entries:
+            merged.extend(supplemental_inventory_entries)
+        if synthesis_inventory_entries:
+            merged.extend(synthesis_inventory_entries)
+
         from transcriptx.core.analysis.group_llm_synthesis.manifest_entries import (
             merge_synthesis_into_manifest,
         )
+        from transcriptx.core.analysis.chart_descriptions.manifest_entries import (
+            merge_chart_descriptions_into_manifest,
+        )
+
+        # Split by path prefix so each merger can stamp its metadata.
+        synth_entries = [
+            e
+            for e in merged
+            if str(e.get("rel_path") or "").startswith(".group_llm_synthesis/")
+        ]
+        chart_entries = [
+            e
+            for e in merged
+            if str(e.get("rel_path") or "").startswith(".chart_descriptions/")
+        ]
+        other = [
+            e
+            for e in merged
+            if e not in synth_entries and e not in chart_entries
+        ]
 
         manifest = merge_synthesis_into_manifest(
             manifest,
             run_dir,
-            inventory_entries=synthesis_inventory_entries,
+            inventory_entries=synth_entries or None,
         )
+        manifest = merge_chart_descriptions_into_manifest(
+            manifest,
+            run_dir,
+            inventory_entries=chart_entries or None,
+        )
+        if other:
+            arts = list(manifest.get("artifacts") or [])
+            # Best-effort append of unknown supplemental entries
+            for entry in other:
+                arts.append(
+                    {
+                        "id": entry.get("rel_path", "")[:16],
+                        "kind": entry.get("kind") or "data_json",
+                        "module": entry.get("module"),
+                        "rel_path": entry.get("rel_path"),
+                        "tags": ["finalizer_supplemental"],
+                    }
+                )
+            manifest["artifacts"] = arts
+
+        if finalizer_outcomes:
+            meta = dict(manifest.get("run_metadata") or {})
+            meta["finalizer_outcomes"] = finalizer_outcomes
+            manifest["run_metadata"] = meta
+
         output_path = run_dir / "manifest.json"
         write_json(output_path, manifest, indent=2, ensure_ascii=False)
         logger.info(f"Saved output manifest to {output_path}")

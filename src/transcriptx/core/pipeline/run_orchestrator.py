@@ -436,50 +436,58 @@ class RunOrchestrator:
         state.prepared_workspace = self._prepare_workspace(
             state.prepared_transcript, request
         )
-        from transcriptx.core.utils.run_writer_locks import per_run_lock
+        from transcriptx.core.utils.run_writer_locks import (
+            bind_run_writer_lease,
+            per_run_lock,
+        )
 
         # Hold per-run lock for the full write lifetime (artifacts + manifests).
-        with per_run_lock(state.prepared_workspace.output_dir):
-            with self.workspace.scoped_transcript_output_dir(
-                transcript_path, state.prepared_workspace.output_dir
-            ):
-                state.planned = self._build_execution_plan(
-                    state.prepared_transcript,
-                    state.prepared_workspace,
-                    request,
-                    speaker_options,
-                )
-                state.persistence_outcomes.append(state.planned.execution_plan_outcome)
-                state.executed = self._execute_plan(
-                    state.planned,
-                    state.prepared_transcript,
-                    state.prepared_workspace,
-                    request,
-                    speaker_options,
-                    on_event,
-                )
-                state.context = state.executed.context
-                state.dag_results = state.executed.dag_results
-                state.summary = state.executed.summary
-                state.execution_status = state.executed.execution_status
-                state.persistence_outcomes.extend(
-                    self._persist_success_outcome(
-                        state.executed,
+        # Bind the lease into contextvars so module worker threads (timeout
+        # isolation) can write without re-acquiring the per-thread FileLock.
+        with per_run_lock(state.prepared_workspace.output_dir) as run_lock:
+            with bind_run_writer_lease(run_lock.lease()):
+                with self.workspace.scoped_transcript_output_dir(
+                    transcript_path, state.prepared_workspace.output_dir
+                ):
+                    state.planned = self._build_execution_plan(
+                        state.prepared_transcript,
+                        state.prepared_workspace,
+                        request,
+                        speaker_options,
+                    )
+                    state.persistence_outcomes.append(
+                        state.planned.execution_plan_outcome
+                    )
+                    state.executed = self._execute_plan(
                         state.planned,
                         state.prepared_transcript,
                         state.prepared_workspace,
                         request,
+                        speaker_options,
+                        on_event,
                     )
-                )
-                state.persisted_main = True
-                # Wall stops after required persistence; sidecar written in run() finally
-                # still while... actually finally is outside this lock. Move sidecar here.
-                if recorder is not None:
-                    self._write_performance_sidecar_under_lease(
-                        state=state,
-                        request=request,
-                        recorder=recorder,
+                    state.context = state.executed.context
+                    state.dag_results = state.executed.dag_results
+                    state.summary = state.executed.summary
+                    state.execution_status = state.executed.execution_status
+                    state.persistence_outcomes.extend(
+                        self._persist_success_outcome(
+                            state.executed,
+                            state.planned,
+                            state.prepared_transcript,
+                            state.prepared_workspace,
+                            request,
+                        )
                     )
+                    state.persisted_main = True
+                    # Wall stops after required persistence; sidecar written in run() finally
+                    # still while... actually finally is outside this lock. Move sidecar here.
+                    if recorder is not None:
+                        self._write_performance_sidecar_under_lease(
+                            state=state,
+                            request=request,
+                            recorder=recorder,
+                        )
 
     def _handle_keyboard_interrupt(
         self, state: _RunComposerState, *, on_event: Optional[Any]

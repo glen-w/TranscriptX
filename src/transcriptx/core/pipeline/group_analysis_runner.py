@@ -541,25 +541,12 @@ def finalize_group_analysis(
         registry = build_registry()
         ordered = _topo_sort_entries(registry)
         run_dir = Path(group_output_service.base_dir)
-        need_synth_lock = any(
-            m in selected_modules for m in ("llm_summary", "llm_speaker_summary")
-        )
         synthesis_meta: Dict[str, Any] = {}
 
-        from transcriptx.core.analysis.group_llm_synthesis.lock import (
-            SynthesisLockTimeout,
-            synthesis_lock,
-        )
-        from transcriptx.core.analysis.group_llm_synthesis import errors as synth_err
-        from transcriptx.core.analysis.group_llm_synthesis.finalize_hook import (
-            run_synthesis_publish_and_manifest,
-        )
-
-        _SYNTH_AGG_IDS = frozenset({"llm_summary", "llm_speaker_summary"})
-
         def _run_aggregation_loop(*, skip_synth_aggs: bool = False) -> None:
+            _synth_agg_ids = frozenset({"llm_summary", "llm_speaker_summary"})
             for entry in ordered:
-                if skip_synth_aggs and entry.agg_id in _SYNTH_AGG_IDS:
+                if skip_synth_aggs and entry.agg_id in _synth_agg_ids:
                     continue
                 if not entry.selector(selected_modules):
                     continue
@@ -692,6 +679,13 @@ def finalize_group_analysis(
                         exc,
                         exc_info=True,
                     )
+                    aggregation_warnings.append(
+                        build_warning(
+                            code="GROUP_CHART_FAILED",
+                            message=f"Group chart runner dispatch failed: {exc}",
+                            aggregation_key=entry.agg_id,
+                        )
+                    )
 
                 stored = dict(outcome)
 
@@ -709,52 +703,51 @@ def finalize_group_analysis(
                 modules_enabled=selected_modules,
             )
 
-        # Lock covers authoritative collect writes, synthesis publish, and manifest.
-        if need_synth_lock:
-            try:
-                with synthesis_lock(run_dir):
-                    _run_aggregation_loop()
-                    synthesis_meta = run_synthesis_publish_and_manifest(
-                        run_dir=run_dir,
-                        run_id=group_run_id,
-                        transcript_key=group_uuid,
-                        selected_modules=list(selected_modules),
-                        completed_agg_ids=completed,
-                        config=group_config,
-                        aggregation_warnings=aggregation_warnings,
-                        already_holding_lock=True,
-                    )
-            except SynthesisLockTimeout as exc:
-                logger.warning(
-                    "group LLM synthesis lock timeout during finalize: %s", exc
+        # Aggregation/charts first; then one run-finalization lock owns
+        # chart-descriptions → group synthesis → single manifest write.
+        from transcriptx.core.analysis.chart_descriptions.coordinator import (
+            run_finalization_coordinator,
+        )
+        from transcriptx.core.analysis.chart_descriptions.lock import (
+            RunFinalizationLockTimeout,
+            run_finalization_lock,
+        )
+
+        _run_aggregation_loop()
+        try:
+            with run_finalization_lock(run_dir):
+                fin = run_finalization_coordinator(
+                    run_dir=run_dir,
+                    run_id=group_run_id,
+                    transcript_key=group_uuid,
+                    selected_modules=list(selected_modules),
+                    modules_enabled=list(selected_modules),
+                    config=group_config,
+                    run_kind="group",
+                    run_group_synthesis=True,
+                    completed_agg_ids=completed,
+                    aggregation_warnings=aggregation_warnings,
+                    already_holding_lock=True,
                 )
-                aggregation_warnings.append(
-                    build_warning(
-                        code=synth_err.SYNTHESIS_LOCK_TIMEOUT,
-                        message=str(exc),
-                        aggregation_key="group_llm_synthesis",
-                    )
-                )
-                synthesis_meta = {
-                    "attempt_status": "lock_timeout",
-                    "published": False,
-                    "error_code": synth_err.SYNTHESIS_LOCK_TIMEOUT,
-                }
-                # Fail closed on synth collect writes; still aggregate other modules.
-                _run_aggregation_loop(skip_synth_aggs=True)
-                _publish_manifest_only()
-        else:
-            _run_aggregation_loop()
-            synthesis_meta = run_synthesis_publish_and_manifest(
-                run_dir=run_dir,
-                run_id=group_run_id,
-                transcript_key=group_uuid,
-                selected_modules=list(selected_modules),
-                completed_agg_ids=completed,
-                config=group_config,
-                aggregation_warnings=aggregation_warnings,
-                already_holding_lock=False,
+                synthesis_meta = dict(fin.synthesis_meta or {})
+                aggregation_warnings.extend(fin.warnings or [])
+        except RunFinalizationLockTimeout as exc:
+            logger.warning(
+                "run-finalization lock timeout during group finalize: %s", exc
             )
+            aggregation_warnings.append(
+                build_warning(
+                    code="RUN_FINALIZATION_LOCK_TIMEOUT",
+                    message=str(exc),
+                    aggregation_key="run_finalization",
+                )
+            )
+            synthesis_meta = {
+                "attempt_status": "lock_timeout",
+                "published": False,
+                "error_code": "RUN_FINALIZATION_LOCK_TIMEOUT",
+            }
+            _publish_manifest_only()
 
         aggregation_warnings.sort(
             key=lambda w: (w.get("aggregation_key", ""), w.get("code", ""))

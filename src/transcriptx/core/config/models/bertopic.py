@@ -60,6 +60,16 @@ class BERTopicSettingsModel(BaseModel):
         ),
         json_schema_extra=_ADVANCED,
     )
+    timeout_seconds: float = Field(
+        default=3600.0,
+        ge=0.0,
+        description=(
+            "Wall-clock budget for a single BERTopic fit (seconds). "
+            "The DAG abandons the module after this budget and continues with "
+            "later modules. Use 0 for no limit. Default 3600 (1 hour)."
+        ),
+        json_schema_extra=_ADVANCED,
+    )
 
     @field_validator("nr_topics")
     @classmethod

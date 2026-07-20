@@ -72,8 +72,9 @@ All knobs live under `analysis.bertopic` (config.json / Settings UI) and have ma
 | `top_n_words` | `10` | `TRANSCRIPTX_BERTOPIC_TOP_N_WORDS` | Words kept per topic |
 | `label_words` | `3` | `TRANSCRIPTX_BERTOPIC_LABEL_WORDS` | Words joined into display labels |
 | `calculate_probabilities` | `false` | `TRANSCRIPTX_BERTOPIC_CALCULATE_PROBABILITIES` | Soft probs; slower |
+| `timeout_seconds` | `3600` | `TRANSCRIPTX_BERTOPIC_TIMEOUT_SECONDS` | Wall-clock fit budget; timeout continues pipeline |
 
-Cache fingerprints include all six paths. `label_words` is label-shaping only (not a BERTopic ctor arg).
+Cache fingerprints include the shaping knobs plus `timeout_seconds`. `label_words` is label-shaping only (not a BERTopic ctor arg).
 
 ## Offline / models
 

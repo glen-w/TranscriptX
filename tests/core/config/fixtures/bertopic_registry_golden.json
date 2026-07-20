@@ -69,6 +69,20 @@
     "sensitivity": "normal",
     "type": "str"
   },
+  "analysis.bertopic.timeout_seconds": {
+    "advanced": true,
+    "category": "analysis",
+    "choices": null,
+    "default": 3600.0,
+    "description": "Wall-clock budget for a single BERTopic fit (seconds). The DAG abandons the module after this budget and continues with later modules. Use 0 for no limit. Default 3600 (1 hour).",
+    "key": "analysis.bertopic.timeout_seconds",
+    "max": null,
+    "min": 0.0,
+    "path": "analysis.bertopic.timeout_seconds",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
   "analysis.bertopic.top_n_words": {
     "advanced": true,
     "category": "analysis",

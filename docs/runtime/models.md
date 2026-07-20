@@ -71,6 +71,7 @@ Compose does **not** inject every `TRANSCRIPTX_*` variable automatically—only 
 | `TRANSCRIPTX_BERTOPIC_TOP_N_WORDS` | `analysis.bertopic.top_n_words` | Words per topic (default 10) |
 | `TRANSCRIPTX_BERTOPIC_LABEL_WORDS` | `analysis.bertopic.label_words` | Words in display labels (default 3) |
 | `TRANSCRIPTX_BERTOPIC_CALCULATE_PROBABILITIES` | `analysis.bertopic.calculate_probabilities` | Soft probs (default off) |
+| `TRANSCRIPTX_BERTOPIC_TIMEOUT_SECONDS` | `analysis.bertopic.timeout_seconds` | Fit wall-clock budget (default 3600; continues pipeline on timeout) |
 | `TRANSCRIPTX_ACTS_MODEL` | `analysis.acts.ml_model_name` | **No effect today** — acts use heuristics; transformer classifier is disabled |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | — | `1` blocks HF emotion/sentiment downloads (spaCy uses `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD`) |
 | `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD` | — | `1` blocks spaCy auto-download (install models manually) |

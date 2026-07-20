@@ -20,6 +20,8 @@ EXPORT_INDEX_CSS = (
     "border:1px solid #dde2e8;border-radius:10px;padding:12px;display:flex;flex-direction:column;"
     "gap:8px;}.card h3{margin:0;font-size:16px;}.meta{margin:0;color:#5a6473;font-size:13px;}"
     ".chart-desc{margin:0;color:#5a6473;font-size:13px;line-height:1.45;}"
+    ".chart-narrative{margin:0;color:#1f2933;font-size:13px;line-height:1.5;"
+    "padding-top:4px;border-top:1px solid #eef1f5;}"
     ".card img{width:100%;height:auto;max-width:100%;border-radius:8px;border:1px solid #e6eaf0;display:block;}"
     ".chart-thumb{display:block;cursor:zoom-in;}.chart-thumb:hover img{border-color:#0f3d91;"
     "box-shadow:0 0 0 2px rgba(15,61,145,0.15);}"

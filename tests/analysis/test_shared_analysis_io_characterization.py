@@ -474,7 +474,10 @@ def test_make_group_output_service_mapping_and_tags(
     )
     arts = svc.get_artifacts()
     assert arts
-    rel = arts[0]["relative_path"]
+    chart_art = next(
+        a for a in arts if str(a.get("relative_path", "")).endswith(".png")
+    )
+    rel = chart_art["relative_path"]
     meta = svc._artifact_metadata.get(rel) or {}
     assert "group_aggregate" in (meta.get("tags") or [])
     assert meta.get("agg_id") == "sentiment"

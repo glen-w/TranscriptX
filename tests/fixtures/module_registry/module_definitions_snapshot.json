@@ -36,6 +36,7 @@
     "llm_summary",
     "llm_speaker_summary",
     "llm_action_items",
+    "chart_descriptions",
     "insights",
     "voice_features",
     "voice_mismatch",
@@ -267,16 +268,16 @@
       "dependencies": [
         "insight_eligibility"
       ],
-      "description": "BERTopic topic modeling (optional path; stack currently in default install \u2014 see docs/dev/bertopic_optional_module.md)",
+      "description": "BERTopic topic modeling (included in recommended defaults; stack in base install \u2014 see docs/dev/bertopic_optional_module.md)",
       "determinism_tier": "T2",
       "enhancements": [],
-      "exclude_from_default": true,
       "required_extras": [
         "bertopic"
       ],
       "requirements": [
         "segments"
-      ]
+      ],
+      "timeout_seconds": 3600
     },
     "transcript_output": {
       "category": "light",
@@ -515,6 +516,18 @@
       "requirements": [
         "segments",
         "speaker_labels"
+      ],
+      "requires_llm": true
+    },
+    "chart_descriptions": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Per-chart LLM narratives (finalize-phase; after all charts)",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "finalize_phase": true,
+      "requirements": [
+        "segments"
       ],
       "requires_llm": true
     },

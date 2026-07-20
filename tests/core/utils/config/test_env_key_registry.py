@@ -69,6 +69,7 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_BERTOPIC_TOP_N_WORDS": ("15", 15),
         "TRANSCRIPTX_BERTOPIC_LABEL_WORDS": ("4", 4),
         "TRANSCRIPTX_BERTOPIC_CALCULATE_PROBABILITIES": ("on", True),
+        "TRANSCRIPTX_BERTOPIC_TIMEOUT_SECONDS": ("7200", 7200.0),
         "TRANSCRIPTX_SEMANTIC_PROGRESS_LOG_INTERVAL_SECONDS": ("15.5", 15.5),
         "TRANSCRIPTX_MODULE_PROGRESS_LOG_INTERVAL_SECONDS": ("9", 9.0),
         "TRANSCRIPTX_ACTS_MODEL": ("acts/model", "acts/model"),

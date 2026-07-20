@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4.1] - 2026-07-20
+
+### Added
+
+- Module wall-clock timeout enforcement in the DAG (BERTopic default 3600s, configurable via `TRANSCRIPTX_BERTOPIC_TIMEOUT_SECONDS`) so a hung fit no longer blocks later modules.
+- Native thread pinning helpers and bound run-writer leases so timeout worker threads can write under the orchestrator lock.
+- Chart descriptions finalize-phase module and related Charts UI / export wiring.
+
+### Fixed
+
+- BERTopic hang/timeout isolation: abandon timed-out modules with `module_timeout` and continue the pipeline.
+- Soft-fail BERTopic fits that collapse to zero samples on tiny corpora (smoke/mini fixtures).
+- Cross-thread run-writer lock deadlocks when modules execute in a timeout ThreadPoolExecutor.
+
 ## [0.5.4] - 2026-07-19
 
 ### Added

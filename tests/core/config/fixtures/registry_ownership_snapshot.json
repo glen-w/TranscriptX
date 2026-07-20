@@ -24,6 +24,24 @@
     "analysis.active_vectorization_profile": {
       "reason": "profile activation selector"
     },
+    "analysis.chart_descriptions.chart_set": {
+      "reason": "intentional non-Pydantic baseline"
+    },
+    "analysis.chart_descriptions.circuit_breaker_failures": {
+      "reason": "intentional non-Pydantic baseline"
+    },
+    "analysis.chart_descriptions.enabled": {
+      "reason": "intentional non-Pydantic baseline"
+    },
+    "analysis.chart_descriptions.max_description_chars": {
+      "reason": "intentional non-Pydantic baseline"
+    },
+    "analysis.chart_descriptions.max_retries": {
+      "reason": "intentional non-Pydantic baseline"
+    },
+    "analysis.chart_descriptions.request_timeout": {
+      "reason": "intentional non-Pydantic baseline"
+    },
     "core_mode": {
       "reason": "install/runtime flag \u2014 permanent legacy"
     },
@@ -32,7 +50,7 @@
     }
   },
   "deferred_keys": {},
-  "non_pydantic_baseline_keys": 10,
+  "non_pydantic_baseline_keys": 16,
   "per_pilot_key_counts": {
     "acts": 21,
     "affect_tension": 9,
@@ -43,7 +61,7 @@
     "analysis_sentiment": 8,
     "analysis_wordcloud": 5,
     "audio_preprocessing": 18,
-    "bertopic": 6,
+    "bertopic": 7,
     "contextual_emotion": 4,
     "corrections": 23,
     "dashboard_display": 2,
@@ -80,6 +98,6 @@
     "workflow": 13
   },
   "pilot_count": 44,
-  "pydantic_owned_keys": 609,
-  "total_registry_keys": 619
+  "pydantic_owned_keys": 610,
+  "total_registry_keys": 626
 }

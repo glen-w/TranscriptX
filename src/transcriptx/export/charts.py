@@ -20,6 +20,7 @@ from transcriptx.web.models.artifact import Artifact
 PathResolver = Callable[[Path, Artifact], Optional[Path]]
 ModuleOrderFn = Callable[[Sequence[str]], list[str]]
 DescriptionFn = Callable[[Artifact], Optional[str]]
+LlmDescriptionFn = Callable[[Artifact], Optional[str]]
 
 
 def export_rel_path_for_chart(artifact: Artifact) -> Path:
@@ -34,6 +35,7 @@ def resolve_exportable(
     *,
     resolve_path: Optional[PathResolver] = None,
     description_fn: Optional[DescriptionFn] = None,
+    llm_description_fn: Optional[LlmDescriptionFn] = None,
 ) -> list[ExportableItem]:
     resolver = resolve_path or resolve_artifact_source_path
     items: list[ExportableItem] = []
@@ -51,6 +53,12 @@ def resolve_exportable(
                 description = description_fn(artifact)
             except Exception:
                 description = None
+        llm_description = None
+        if llm_description_fn is not None:
+            try:
+                llm_description = llm_description_fn(artifact)
+            except Exception:
+                llm_description = None
         items.append(
             ExportableItem(
                 artifact=artifact,
@@ -58,6 +66,7 @@ def resolve_exportable(
                 export_rel_path=export_rel_path_for_chart(artifact),
                 size_bytes=size_bytes,
                 description=description,
+                llm_description=llm_description,
             )
         )
     return items
@@ -136,12 +145,19 @@ def render_chart_sections(
                 description_html = (
                     f'<p class="chart-desc">{html.escape(description)}</p>'
                 )
+            llm_text = item.llm_description
+            llm_html = ""
+            if llm_text:
+                llm_html = (
+                    f'<p class="chart-narrative">{html.escape(llm_text)}</p>'
+                )
             cards.append(
                 '<article class="card">'
                 f"<h3>{html.escape(title)}</h3>"
                 f'<p class="meta">{html.escape(meta)}</p>'
                 f"{description_html}"
                 f"{body}"
+                f"{llm_html}"
                 "</article>"
             )
         section_html.append(
@@ -187,6 +203,7 @@ def prepare_charts_export_zip(
     resolve_path: Optional[PathResolver] = None,
     order_modules: Optional[ModuleOrderFn] = None,
     description_fn: Optional[DescriptionFn] = None,
+    llm_description_fn: Optional[LlmDescriptionFn] = None,
     hard_cap_bytes: Optional[int] = None,
 ) -> ChartsExportResult:
     items = resolve_exportable(
@@ -194,6 +211,7 @@ def prepare_charts_export_zip(
         charts,
         resolve_path=resolve_path,
         description_fn=description_fn,
+        llm_description_fn=llm_description_fn,
     )
     omitted_count = max(0, len(charts) - len(items))
     total_bytes = sum(item.size_bytes for item in items)

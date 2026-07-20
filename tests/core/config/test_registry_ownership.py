@@ -102,8 +102,8 @@ def test_baseline_matches_committed_fixture() -> None:
     )
     actual = serialize_non_pydantic_registry_baseline(reg)
     assert (
-        len(actual) == 10
-    ), f"expected 10 baseline keys, got {len(actual)}: {sorted(actual)}"
+        len(actual) == 16
+    ), f"expected 16 baseline keys, got {len(actual)}: {sorted(actual)}"
     assert set(actual) == set(expected)
     unexpected = set(actual) - set(expected)
     assert not unexpected, f"undocumented non-Pydantic keys: {sorted(unexpected)}"
@@ -166,6 +166,6 @@ def test_ownership_invariant_counts() -> None:
     """Delegation PRs must preserve pilot / owned / baseline totals."""
     snap = _build_ownership_snapshot()
     assert snap["pilot_count"] == 44
-    assert snap["pydantic_owned_keys"] == 609
-    assert snap["non_pydantic_baseline_keys"] == 10
-    assert snap["total_registry_keys"] == 619
+    assert snap["pydantic_owned_keys"] == 610
+    assert snap["non_pydantic_baseline_keys"] == 16
+    assert snap["total_registry_keys"] == 626

@@ -11,8 +11,6 @@ from transcriptx.core.utils.chart_registry import (
     find_chart_definition_for_artifact,
     get_chart_definition,
     get_chart_registry,
-    get_default_group_overview_charts,
-    get_default_overview_charts,
     select_preferred_artifacts,
 )
 from transcriptx.web.module_ui_groups import order_module_ids
@@ -478,15 +476,21 @@ def build_overview_slots(
     missing_behavior: str,
     max_items: int | None,
 ) -> List[Dict[str, Any]]:
+    from transcriptx.core.analysis.chart_descriptions.overview import (
+        resolve_overview_viz_ids,
+    )
+
     registry = get_chart_registry()
-    if user_overview:
-        enabled_viz_ids = user_overview
-    elif any("group_aggregate" in a.tags for a in overview_candidates):
-        enabled_viz_ids = get_default_group_overview_charts()
-    else:
-        enabled_viz_ids = get_default_overview_charts()
-    if isinstance(max_items, int) and max_items > 0:
-        enabled_viz_ids = enabled_viz_ids[:max_items]
+    run_kind = (
+        "group"
+        if any("group_aggregate" in a.tags for a in overview_candidates)
+        else "transcript"
+    )
+    enabled_viz_ids = resolve_overview_viz_ids(
+        run_kind=run_kind,
+        user_overview=user_overview or None,
+        max_items=max_items,
+    )
 
     slots: List[Dict[str, Any]] = []
     for viz_id in enabled_viz_ids:

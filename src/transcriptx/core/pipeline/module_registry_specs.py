@@ -127,6 +127,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "transcriptx.core.analysis.llm_action_items",
         "LLMActionItemsAnalysis",
     ),
+    "chart_descriptions": (
+        "transcriptx.core.analysis.chart_descriptions_module",
+        "ChartDescriptionsAnalysis",
+    ),
     "insights": ("transcriptx.core.analysis.insights", "InsightsAnalysis"),
     "voice_features": (
         "transcriptx.core.analysis.voice_features",

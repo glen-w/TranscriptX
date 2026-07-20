@@ -227,8 +227,14 @@ def test_finalize_group_analysis_disabled_writes_group_artifacts(
     def fake_write_run_results_summary(**kwargs):
         calls["run_results"] = kwargs
 
-    def fake_write_output_manifest(**kwargs):
-        calls["output_manifest"] = kwargs
+    def fake_write_output_manifest(*args, **kwargs):
+        payload = dict(kwargs)
+        if len(args) >= 4:
+            payload.setdefault("run_dir", args[0])
+            payload.setdefault("run_id", args[1])
+            payload.setdefault("transcript_key", args[2])
+            payload.setdefault("modules_enabled", args[3])
+        calls["output_manifest"] = payload
 
     monkeypatch.setattr(
         "transcriptx.core.pipeline.group_analysis_runner.GroupOutputService",
@@ -249,6 +255,10 @@ def test_finalize_group_analysis_disabled_writes_group_artifacts(
     # write_output_manifest from manifest_builder directly.
     monkeypatch.setattr(
         "transcriptx.core.analysis.group_llm_synthesis.finalize_hook.write_output_manifest",
+        fake_write_output_manifest,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.chart_descriptions.coordinator.write_output_manifest",
         fake_write_output_manifest,
     )
 
@@ -354,8 +364,14 @@ def test_finalize_group_analysis_enabled_runs_registry_rows_blobs_and_warnings(
     def fake_write_run_results_summary(**kwargs):
         calls["run_results"] = kwargs
 
-    def fake_write_output_manifest(**kwargs):
-        calls["output_manifest"] = kwargs
+    def fake_write_output_manifest(*args, **kwargs):
+        payload = dict(kwargs)
+        if len(args) >= 4:
+            payload.setdefault("run_dir", args[0])
+            payload.setdefault("run_id", args[1])
+            payload.setdefault("transcript_key", args[2])
+            payload.setdefault("modules_enabled", args[3])
+        calls["output_manifest"] = payload
 
     def fake_build_warning(**kwargs):
         return kwargs
@@ -403,10 +419,13 @@ def test_finalize_group_analysis_enabled_runs_registry_rows_blobs_and_warnings(
         "transcriptx.core.pipeline.group_analysis_runner.write_output_manifest",
         fake_write_output_manifest,
     )
-    # Finalize now publishes the manifest via the synthesis hook, which imports
-    # write_output_manifest from manifest_builder directly.
+    # Finalize publishes via coordinator (and legacy synthesis hook).
     monkeypatch.setattr(
         "transcriptx.core.analysis.group_llm_synthesis.finalize_hook.write_output_manifest",
+        fake_write_output_manifest,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.chart_descriptions.coordinator.write_output_manifest",
         fake_write_output_manifest,
     )
     monkeypatch.setattr(
@@ -560,8 +579,8 @@ def test_finalize_group_analysis_enabled_runs_registry_rows_blobs_and_warnings(
     assert result["status"] == "completed"
     assert set(result["aggregations"]) == {"blob", "row_chart_error", "row_chart_ok"}
     assert result["canonical_speaker_map"]["canonical_to_display"] == {1: "A"}
-    assert result["meta"]["warnings_count"] == 5
-    assert result["group_phase_metadata"]["chart_failure_count"] == 1
+    assert result["meta"]["warnings_count"] == 6
+    assert result["group_phase_metadata"]["chart_failure_count"] == 2
     assert result["group_phase_metadata"]["terminal_errors"] == ["terminal group note"]
     assert calls["run_results"]["modules_run"] == ["stats"]
     assert calls["output_manifest"]["transcript_key"] == "group-uuid"

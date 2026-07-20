@@ -293,6 +293,7 @@ class BERTopicConfig:
     top_n_words: int = field(init=False, repr=True)
     label_words: int = field(init=False, repr=True)
     calculate_probabilities: bool = field(init=False, repr=True)
+    timeout_seconds: float = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
         from transcriptx.core.config.models.bertopic import (
@@ -495,6 +496,9 @@ class AnalysisConfig:
     )
     group_llm_synthesis: "GroupLLMSynthesisConfig" = field(
         default_factory=lambda: GroupLLMSynthesisConfig()
+    )
+    chart_descriptions: "ChartDescriptionsConfig" = field(
+        default_factory=lambda: ChartDescriptionsConfig()
     )
     qa_analysis: QAAnalysisConfig = field(default_factory=lambda: QAAnalysisConfig())
     temporal_dynamics: TemporalDynamicsConfig = field(
@@ -712,6 +716,25 @@ class GroupLLMSynthesisConfig:
         )
 
         _hydrate_dataclass_from_pydantic(self, GroupLLMSynthesisSettingsModel())
+
+
+@dataclass
+class ChartDescriptionsConfig:
+    """Defaults owned by ChartDescriptionsSettingsModel."""
+
+    enabled: bool = field(init=False, repr=True)
+    chart_set: str = field(init=False, repr=True)
+    max_description_chars: int = field(init=False, repr=True)
+    request_timeout: float = field(init=False, repr=True)
+    max_retries: int = field(init=False, repr=True)
+    circuit_breaker_failures: int = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.chart_descriptions import (
+            ChartDescriptionsSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, ChartDescriptionsSettingsModel())
 
 
 @dataclass

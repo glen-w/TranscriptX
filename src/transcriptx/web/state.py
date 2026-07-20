@@ -170,6 +170,8 @@ CHARTS_KEY_STATIC_TOGGLE = "filter_static_toggle"
 CHARTS_KEY_DYNAMIC_TOGGLE = "filter_dynamic_toggle"
 CHARTS_KEY_EXPAND_ALL = "charts_expand_all"
 CHARTS_KEY_SHOW_SUMMARY_TOGGLE = "show_summary_toggle"
+CHARTS_KEY_SHOW_CHART_DESCRIPTIONS = "show_chart_descriptions_toggle"
+CHARTS_KEY_SHOW_LLM_SUMMARIES = "show_llm_summaries_toggle"
 CHARTS_KEY_FULL_SCREEN = "full_screen_artifact"
 CHARTS_KEY_FILTERS_INIT = "tx_charts_filters_initialized_for"
 CHARTS_KEY_EXPORT_RESULT = "charts_export_result"
@@ -227,6 +229,8 @@ CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_STATIC_TOGGLE: True,
     CHARTS_KEY_DYNAMIC_TOGGLE: True,
     CHARTS_KEY_SHOW_SUMMARY_TOGGLE: True,
+    CHARTS_KEY_SHOW_CHART_DESCRIPTIONS: True,
+    CHARTS_KEY_SHOW_LLM_SUMMARIES: True,
     CHARTS_KEY_FULL_SCREEN: None,
     CHARTS_KEY_TAGS_MULTI: [],
     CHARTS_KEY_EXPORT_RESULT: None,

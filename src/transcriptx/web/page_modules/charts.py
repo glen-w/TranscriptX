@@ -34,6 +34,7 @@ from transcriptx.web.services.chart_view_model_service import (
     group_charts_into_families,
     resolve_chart_display_description,
 )
+from transcriptx.web.services.chart_llm_description import resolve_chart_llm_description
 from transcriptx.web.services.artifact_service import (
     MAX_INLINE_HTML_BYTES,
     MAX_FULLSCREEN_HTML_BYTES,
@@ -53,6 +54,8 @@ from transcriptx.web.state import (
     CHARTS_KEY_FILTER_TAGS,
     CHARTS_KEY_FULL_SCREEN,
     CHARTS_KEY_SHOW_SUMMARY_TOGGLE,
+    CHARTS_KEY_SHOW_CHART_DESCRIPTIONS,
+    CHARTS_KEY_SHOW_LLM_SUMMARIES,
     CHARTS_KEY_SLICE_SELECTOR,
     CHARTS_KEY_SOURCE_PRESET,
     CHARTS_KEY_STATIC_TOGGLE,
@@ -92,6 +95,9 @@ def _render_chart_gallery_card(
     run_root: Path,
     chart: Artifact,
     button_key: str,
+    *,
+    show_registry_description: bool = True,
+    show_llm_summary: bool = True,
 ) -> None:
     """Single chart thumbnail / preview with full-screen action."""
     tags_s = ", ".join(sorted(chart.tags)) if chart.tags else "—"
@@ -102,9 +108,10 @@ def _render_chart_gallery_card(
             unsafe_allow_html=True,
         )
         st.caption(chart.title or chart.rel_path)
-        description = resolve_chart_display_description(chart)
-        if description:
-            st.caption(description)
+        if show_registry_description:
+            description = resolve_chart_display_description(chart)
+            if description:
+                st.caption(description)
         if chart.kind == "chart_static":
             thumb_path = ArtifactService.generate_thumbnail(run_root, chart)
             if thumb_path and Path(thumb_path).exists():
@@ -132,18 +139,29 @@ def _render_chart_gallery_card(
             ):
                 st.session_state[CHARTS_KEY_FULL_SCREEN] = chart.id
                 st.rerun()
+        if show_llm_summary:
+            llm_text = resolve_chart_llm_description(run_root, chart)
+            if llm_text:
+                st.markdown(llm_text)
 
 
 def _render_chart_card_grid(
     run_root: Path,
     artifacts: list[Artifact],
     key_prefix: str,
+    *,
+    show_registry_description: bool = True,
+    show_llm_summary: bool = True,
 ) -> None:
     cols = st.columns(3)
     for idx, chart in enumerate(artifacts):
         with cols[idx % 3]:
             _render_chart_gallery_card(
-                run_root, chart, f"{key_prefix}_{chart.id}_{idx}"
+                run_root,
+                chart,
+                f"{key_prefix}_{chart.id}_{idx}",
+                show_registry_description=show_registry_description,
+                show_llm_summary=show_llm_summary,
             )
 
 
@@ -159,22 +177,42 @@ def _render_chart_family_slices(
     key_prefix: str,
     *,
     sections_expanded: bool,
+    show_registry_description: bool = True,
+    show_llm_summary: bool = True,
 ) -> None:
     if _family_renders_directly(family):
         artifacts = family.slices[0].artifacts if family.slices else []
-        _render_chart_card_grid(run_root, artifacts, key_prefix)
+        _render_chart_card_grid(
+            run_root,
+            artifacts,
+            key_prefix,
+            show_registry_description=show_registry_description,
+            show_llm_summary=show_llm_summary,
+        )
         return
 
     for sl in family.slices:
         if not sl.label:
-            _render_chart_card_grid(run_root, sl.artifacts, f"{key_prefix}_{sl.key}")
+            _render_chart_card_grid(
+                run_root,
+                sl.artifacts,
+                f"{key_prefix}_{sl.key}",
+                show_registry_description=show_registry_description,
+                show_llm_summary=show_llm_summary,
+            )
             continue
         with st.expander(
             f"{sl.label} ({len(sl.artifacts)})",
             expanded=sections_expanded,
         ):
             st.markdown('<div class="tx-chart-slice-shell">', unsafe_allow_html=True)
-            _render_chart_card_grid(run_root, sl.artifacts, f"{key_prefix}_{sl.key}")
+            _render_chart_card_grid(
+                run_root,
+                sl.artifacts,
+                f"{key_prefix}_{sl.key}",
+                show_registry_description=show_registry_description,
+                show_llm_summary=show_llm_summary,
+            )
             st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -185,13 +223,15 @@ def _render_chart_family_section(
     *,
     sections_expanded: bool,
     show_family_expander: bool = True,
+    show_registry_description: bool = True,
+    show_llm_summary: bool = True,
 ) -> None:
     if show_family_expander:
         with st.expander(
             f"{family.label} ({family.artifact_count})",
             expanded=sections_expanded,
         ):
-            if family.description:
+            if family.description and show_registry_description:
                 st.caption(family.description)
             st.markdown('<div class="tx-chart-family-shell">', unsafe_allow_html=True)
             _render_chart_family_slices(
@@ -199,6 +239,8 @@ def _render_chart_family_section(
                 family,
                 key_prefix,
                 sections_expanded=sections_expanded,
+                show_registry_description=show_registry_description,
+                show_llm_summary=show_llm_summary,
             )
             st.markdown("</div>", unsafe_allow_html=True)
     else:
@@ -208,6 +250,8 @@ def _render_chart_family_section(
             family,
             key_prefix,
             sections_expanded=sections_expanded,
+            show_registry_description=show_registry_description,
+            show_llm_summary=show_llm_summary,
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -324,7 +368,7 @@ def _charts_filters_and_gallery_fragment(
         st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = slice_state.subview
         st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = slice_state.slice_id
 
-    toggle_col1, toggle_col2 = st.columns(2)
+    toggle_col1, toggle_col2, toggle_col3, toggle_col4 = st.columns(4)
     with toggle_col1:
         st.toggle("Expand all sections", key=CHARTS_KEY_EXPAND_ALL)
         sections_expanded = st.session_state.get(CHARTS_KEY_EXPAND_ALL, False)
@@ -333,6 +377,22 @@ def _charts_filters_and_gallery_fragment(
             "Show Overview",
             key=CHARTS_KEY_SHOW_SUMMARY_TOGGLE,
         )
+    with toggle_col3:
+        st.toggle(
+            "Show chart descriptions",
+            key=CHARTS_KEY_SHOW_CHART_DESCRIPTIONS,
+        )
+    with toggle_col4:
+        st.toggle(
+            "Show LLM summaries",
+            key=CHARTS_KEY_SHOW_LLM_SUMMARIES,
+        )
+    show_registry_description = bool(
+        st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True)
+    )
+    show_llm_summary = bool(
+        st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True)
+    )
 
     show_static = st.session_state.get(CHARTS_KEY_STATIC_TOGGLE, True)
     show_dynamic = st.session_state.get(CHARTS_KEY_DYNAMIC_TOGGLE, True)
@@ -413,9 +473,10 @@ def _charts_filters_and_gallery_fragment(
         selected = next((a for a in all_charts if a.id == full_screen_id), None)
         if selected:
             st.subheader(selected.title or selected.rel_path)
-            selected_description = resolve_chart_display_description(selected)
-            if selected_description:
-                st.caption(selected_description)
+            if show_registry_description:
+                selected_description = resolve_chart_display_description(selected)
+                if selected_description:
+                    st.caption(selected_description)
             if st.button("Close Full Screen"):
                 st.session_state[CHARTS_KEY_FULL_SCREEN] = None
                 st.rerun()
@@ -435,6 +496,10 @@ def _charts_filters_and_gallery_fragment(
                         )
                     else:
                         st.iframe(html_payload["content"], height=700)
+            if show_llm_summary:
+                llm_text = resolve_chart_llm_description(run_root, selected)
+                if llm_text:
+                    st.markdown(llm_text)
         st.divider()
 
     overview_candidates = _overview_candidate_charts(
@@ -464,7 +529,7 @@ def _charts_filters_and_gallery_fragment(
             for slot in overview_slots:
                 st.markdown(f"**{slot['label']}**")
                 slot_description = slot.get("description")
-                if slot_description:
+                if slot_description and show_registry_description:
                     st.caption(slot_description)
                 if slot.get("missing"):
                     render_empty_state(
@@ -484,6 +549,8 @@ def _charts_filters_and_gallery_fragment(
                         f"overview_chart_{slot['viz_id']}",
                         sections_expanded=sections_expanded,
                         show_family_expander=False,
+                        show_registry_description=show_registry_description,
+                        show_llm_summary=show_llm_summary,
                     )
                 st.divider()
 
@@ -506,6 +573,8 @@ def _charts_filters_and_gallery_fragment(
                     f"chart_{module_name}_{family.key}",
                     sections_expanded=sections_expanded,
                     show_family_expander=True,
+                    show_registry_description=show_registry_description,
+                    show_llm_summary=show_llm_summary,
                 )
                 if fi < len(families) - 1:
                     st.divider()

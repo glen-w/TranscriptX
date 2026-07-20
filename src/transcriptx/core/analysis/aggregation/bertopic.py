@@ -38,6 +38,7 @@ from transcriptx.core.analysis.bertopic.runtime import (
     build_model_kwargs,
     build_provenance,
 )
+from transcriptx.core.utils.native_threads import limited_native_threads
 from transcriptx.core.analysis.bertopic.schema import (
     SCHEMA_VERSION,
     validate_bertopic_artifact_payload,
@@ -292,8 +293,9 @@ def aggregate_bertopic_group(
     started = time.perf_counter()
     try:
         BERTopic = bertopic_module.BERTopic
-        model = BERTopic(**model_kwargs)
-        topic_assignments, topic_probs = model.fit_transform(texts)
+        with limited_native_threads(1):
+            model = BERTopic(**model_kwargs)
+            topic_assignments, topic_probs = model.fit_transform(texts)
     except ImportError as exc:
         return {
             "warning": build_warning(
@@ -303,6 +305,23 @@ def aggregate_bertopic_group(
                 missing_deps=[EXTRA_NAME],
             )
         }
+    except Exception as exc:
+        msg = str(exc)
+        soft = (
+            "0 sample" in msg
+            or "minimum of 1 is required" in msg
+            or "n_samples=0" in msg
+        )
+        if soft:
+            return {
+                "warning": build_warning(
+                    code="INSUFFICIENT_DATA",
+                    message=f"Group BERTopic fit collapsed: {msg}",
+                    aggregation_key="bertopic",
+                    details={"reason": "insufficient_data_after_fit", "fit_error": msg},
+                )
+            }
+        raise
     duration = time.perf_counter() - started
 
     topics = build_topic_objects(

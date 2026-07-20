@@ -12,6 +12,8 @@ from transcriptx.web.state import (
     ARTIFACTS_KEY_SHOW_MORE,
     CHARTS_FILTER_DEFAULTS,
     CHARTS_KEY_FILTERS_INIT,
+    CHARTS_KEY_SHOW_CHART_DESCRIPTIONS,
+    CHARTS_KEY_SHOW_LLM_SUMMARIES,
     DATA_KEY_ARTIFACT_PRESET,
     PAGE_FLASH_KIND,
     PAGE_FLASH_MESSAGE,
@@ -193,4 +195,9 @@ def test_consume_artifact_preset_one_shot() -> None:
 def test_charts_resettable_keys_match_filter_defaults() -> None:
     keys = charts_resettable_keys()
     assert CHARTS_KEY_FILTERS_INIT not in keys
-    assert set(CHARTS_FILTER_DEFAULTS) == set(keys)
+    assert set(keys).issubset(set(CHARTS_FILTER_DEFAULTS))
+    # Display-only gallery toggles are independent of filter reset.
+    assert CHARTS_KEY_SHOW_CHART_DESCRIPTIONS in CHARTS_FILTER_DEFAULTS
+    assert CHARTS_KEY_SHOW_LLM_SUMMARIES in CHARTS_FILTER_DEFAULTS
+    assert CHARTS_KEY_SHOW_CHART_DESCRIPTIONS not in keys
+    assert CHARTS_KEY_SHOW_LLM_SUMMARIES not in keys

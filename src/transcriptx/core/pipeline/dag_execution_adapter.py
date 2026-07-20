@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import concurrent.futures
+import contextvars
 import threading
 import time
 from typing import Any, Optional
@@ -17,6 +19,28 @@ from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
 
 def _elapsed_ms(start: float) -> float:
     return (time.perf_counter() - start) * 1000.0
+
+
+def _resolve_module_timeout_seconds(module_name: str, node: Any) -> int:
+    """Wall-clock budget for a module. ``<= 0`` means no limit."""
+    raw = getattr(node, "timeout_seconds", 600)
+    try:
+        timeout = int(raw)
+    except (TypeError, ValueError):
+        timeout = 600
+
+    # Config / env can stretch or shrink the registry budget for BERTopic.
+    if module_name == "bertopic":
+        try:
+            from transcriptx.core.utils.config import get_config
+
+            cfg = getattr(get_config().analysis, "bertopic", None)
+            cfg_timeout = getattr(cfg, "timeout_seconds", None)
+            if cfg_timeout is not None:
+                timeout = int(float(cfg_timeout))
+        except Exception:
+            pass
+    return timeout
 
 
 def apply_module_side_effects(
@@ -185,109 +209,161 @@ def execute_single_module(
         daemon=True,
     )
     heartbeat_thread.start()
-    module_result = None
-    try:
-        if context is None:
-            raise RuntimeError("PipelineContext is required for module execution")
-        execution_context = context
-        if isinstance(node.function, type) and hasattr(
-            node.function, "run_from_context"
-        ):
-            module_instance = node.function()
-            module_result = module_instance.run_from_context(execution_context)
-            if module_result.get("status") == "error":
-                err = module_result.get("error", {})
-                if isinstance(err, dict) and err.get("error_code"):
-                    return ModuleExecOutcome(
-                        status="failed",
-                        module_result=module_result,
-                        error=str(err.get("error_message", "Unknown error")),
-                        duration_ms=_elapsed_ms(module_start),
-                        module_run=module_run,
-                        module_started_at=module_started_at,
-                    )
-                raise RuntimeError(err if err else "Unknown error")
-        elif hasattr(type(node.function), "run_from_context") and not isinstance(
-            node.function, type
-        ):
-            module_result = node.function.run_from_context(execution_context)
-            if module_result.get("status") == "error":
-                err = module_result.get("error", {})
-                if isinstance(err, dict) and err.get("error_code"):
-                    return ModuleExecOutcome(
-                        status="failed",
-                        module_result=module_result,
-                        error=str(err.get("error_message", "Unknown error")),
-                        duration_ms=_elapsed_ms(module_start),
-                        module_run=module_run,
-                        module_started_at=module_started_at,
-                    )
-                raise RuntimeError(err if err else "Unknown error")
-        else:
-            node.function(transcript_path)
-        duration_ms = _elapsed_ms(module_start)
-        if module_result is None:
-            module_result = build_module_result(
-                module_name=module_name,
+
+    def _run_module_body() -> ModuleExecOutcome:
+        module_result = None
+        try:
+            if context is None:
+                raise RuntimeError("PipelineContext is required for module execution")
+            execution_context = context
+            if isinstance(node.function, type) and hasattr(
+                node.function, "run_from_context"
+            ):
+                module_instance = node.function()
+                module_result = module_instance.run_from_context(execution_context)
+                if module_result.get("status") == "error":
+                    err = module_result.get("error", {})
+                    if isinstance(err, dict) and err.get("error_code"):
+                        return ModuleExecOutcome(
+                            status="failed",
+                            module_result=module_result,
+                            error=str(err.get("error_message", "Unknown error")),
+                            duration_ms=_elapsed_ms(module_start),
+                            module_run=module_run,
+                            module_started_at=module_started_at,
+                        )
+                    raise RuntimeError(err if err else "Unknown error")
+            elif hasattr(type(node.function), "run_from_context") and not isinstance(
+                node.function, type
+            ):
+                module_result = node.function.run_from_context(execution_context)
+                if module_result.get("status") == "error":
+                    err = module_result.get("error", {})
+                    if isinstance(err, dict) and err.get("error_code"):
+                        return ModuleExecOutcome(
+                            status="failed",
+                            module_result=module_result,
+                            error=str(err.get("error_message", "Unknown error")),
+                            duration_ms=_elapsed_ms(module_start),
+                            module_run=module_run,
+                            module_started_at=module_started_at,
+                        )
+                    raise RuntimeError(err if err else "Unknown error")
+            else:
+                node.function(transcript_path)
+            duration_ms = _elapsed_ms(module_start)
+            if module_result is None:
+                module_result = build_module_result(
+                    module_name=module_name,
+                    status="success",
+                    started_at=module_started_at,
+                    finished_at=now_iso(),
+                    artifacts=[],
+                    metrics={"duration_seconds": duration_ms / 1000.0},
+                    payload_type="analysis_results",
+                    payload={},
+                )
+            return ModuleExecOutcome(
                 status="success",
+                module_result=module_result,
+                duration_ms=duration_ms,
+                module_run=module_run,
+                module_started_at=module_started_at,
+            )
+        except CodedError as e:
+            pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
+            duration_ms = _elapsed_ms(module_start)
+            err_module_result = build_module_result(
+                module_name=module_name,
+                status="error",
                 started_at=module_started_at,
                 finished_at=now_iso(),
                 artifacts=[],
                 metrics={"duration_seconds": duration_ms / 1000.0},
                 payload_type="analysis_results",
                 payload={},
+                error=capture_exception(e),
             )
-        return ModuleExecOutcome(
-            status="success",
-            module_result=module_result,
-            duration_ms=duration_ms,
-            module_run=module_run,
-            module_started_at=module_started_at,
-        )
-    except CodedError as e:
-        pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
-        duration_ms = _elapsed_ms(module_start)
-        err_module_result = build_module_result(
-            module_name=module_name,
-            status="error",
-            started_at=module_started_at,
-            finished_at=now_iso(),
-            artifacts=[],
-            metrics={"duration_seconds": duration_ms / 1000.0},
-            payload_type="analysis_results",
-            payload={},
-            error=capture_exception(e),
-        )
-        return ModuleExecOutcome(
-            status="failed",
-            module_result=err_module_result,
-            error=str(e),
-            duration_ms=duration_ms,
-            module_run=module_run,
-            module_started_at=module_started_at,
-        )
-    except Exception as e:
-        pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
-        duration_ms = _elapsed_ms(module_start)
-        err_module_result = build_module_result(
-            module_name=module_name,
-            status="error",
-            started_at=module_started_at,
-            finished_at=now_iso(),
-            artifacts=[],
-            metrics={"duration_seconds": duration_ms / 1000.0},
-            payload_type="analysis_results",
-            payload={},
-            error=capture_exception(e),
-        )
-        return ModuleExecOutcome(
-            status="failed",
-            module_result=err_module_result,
-            error=str(e),
-            duration_ms=duration_ms,
-            module_run=module_run,
-            module_started_at=module_started_at,
-        )
+            return ModuleExecOutcome(
+                status="failed",
+                module_result=err_module_result,
+                error=str(e),
+                duration_ms=duration_ms,
+                module_run=module_run,
+                module_started_at=module_started_at,
+            )
+        except Exception as e:
+            pipeline.logger.error(f"Error in {module_name} analysis: {str(e)}")
+            duration_ms = _elapsed_ms(module_start)
+            err_module_result = build_module_result(
+                module_name=module_name,
+                status="error",
+                started_at=module_started_at,
+                finished_at=now_iso(),
+                artifacts=[],
+                metrics={"duration_seconds": duration_ms / 1000.0},
+                payload_type="analysis_results",
+                payload={},
+                error=capture_exception(e),
+            )
+            return ModuleExecOutcome(
+                status="failed",
+                module_result=err_module_result,
+                error=str(e),
+                duration_ms=duration_ms,
+                module_run=module_run,
+                module_started_at=module_started_at,
+            )
+
+    try:
+        timeout_seconds = _resolve_module_timeout_seconds(module_name, node)
+        if timeout_seconds <= 0:
+            return _run_module_body()
+
+        # wait=False on shutdown so a hung native fit does not block later modules.
+        # Copy contextvars so a bound RunWriterLease reaches the worker thread.
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            ctx = contextvars.copy_context()
+            future = executor.submit(ctx.run, _run_module_body)
+            try:
+                return future.result(timeout=float(timeout_seconds))
+            except concurrent.futures.TimeoutError:
+                duration_ms = _elapsed_ms(module_start)
+                message = (
+                    f"Module '{module_name}' timed out after {timeout_seconds}s; "
+                    "abandoning this module and continuing the pipeline"
+                )
+                pipeline.logger.error(message)
+                err_module_result = build_module_result(
+                    module_name=module_name,
+                    status="error",
+                    started_at=module_started_at,
+                    finished_at=now_iso(),
+                    artifacts=[],
+                    metrics={
+                        "duration_seconds": duration_ms / 1000.0,
+                        "timeout_seconds": float(timeout_seconds),
+                    },
+                    payload_type="analysis_results",
+                    payload={},
+                    error={
+                        "error_type": "TimeoutError",
+                        "error_message": message,
+                        "error_code": "module_timeout",
+                        "traceback_text": "",
+                    },
+                )
+                return ModuleExecOutcome(
+                    status="failed",
+                    module_result=err_module_result,
+                    error=message,
+                    duration_ms=duration_ms,
+                    module_run=module_run,
+                    module_started_at=module_started_at,
+                )
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
     finally:
         heartbeat_stop_event.set()
         heartbeat_thread.join(timeout=0.2)

@@ -73,6 +73,9 @@ class ModuleInfo:
     post_processing_only: bool = (
         False  # Not offered in analysis module list; run via post-processing
     )
+    finalize_phase: bool = (
+        False  # Selectable but excluded from DAG; run by finalization coordinator
+    )
     requires_audio: bool = False
     requires_llm: bool = False
     requires_multiple_speakers: bool = (
@@ -134,6 +137,7 @@ class ModuleRegistry:
                 enhancements=info.get("enhancements", []),
                 exclude_from_default=info.get("exclude_from_default", False),
                 post_processing_only=info.get("post_processing_only", False),
+                finalize_phase=bool(info.get("finalize_phase", False)),
                 requires_audio=info.get("requires_audio", False),
                 requires_llm=bool(info.get("requires_llm", False)),
                 requires_multiple_speakers=bool(
@@ -148,7 +152,7 @@ class ModuleRegistry:
                 output_namespace=info.get("output_namespace"),
                 output_version=info.get("output_version"),
                 cost_tier=info.get("cost_tier", "normal"),
-                timeout_seconds=600,
+                timeout_seconds=int(info.get("timeout_seconds", 600) or 600),
                 required_extras=set(req_extras),
                 optional_dependencies=list(info.get("optional_dependencies") or []),
                 legacy=bool(info.get("legacy", False)),
