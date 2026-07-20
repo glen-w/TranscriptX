@@ -28,6 +28,8 @@ services:
       # TRANSCRIPTX_*_DIR vars in environment: set the container-side paths.
       # Separate names avoid Docker Compose .env-vs-environment precedence issues.
       - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
+      # External inbox for Import Transcript → Import all from folder (must not be under /mnt/transcripts).
+      - ${HOST_TRANSCRIPT_INBOX_DIR:-./data/transcript-inbox}:/mnt/transcript-inbox:ro
       - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
       # Source audio lives only on the host outside the repo; set HOST_RECORDINGS_DIR in .env (see .env.example).
       - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings

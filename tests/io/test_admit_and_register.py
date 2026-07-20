@@ -146,6 +146,24 @@ def test_size_limit_in_admit(monkeypatch, tmp_path: Path) -> None:
     assert "too large" in outcome.user_safe_detail.lower()
 
 
+def test_unrecognized_json_is_unsupported_not_unexpected(
+    monkeypatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "transcripts"
+    _patch(monkeypatch, root, tmp_path / "outputs")
+    staging = root / "imports" / "foo.json"
+    staging.write_text("{}", encoding="utf-8")
+    outcome = admit_and_register(
+        staging,
+        logical_basename="foo.json",
+        allow_provenance_backfill=False,
+    )
+    assert outcome.kind is AdmitOutcomeKind.UNSUPPORTED_OR_INVALID_INPUT
+    assert outcome.artifact_committed is False
+    assert "unsupported import" in outcome.user_safe_detail.lower()
+    assert "unknown_input" in outcome.user_safe_detail.lower()
+
+
 def test_registration_is_valid_requires_path_and_identity(monkeypatch, tmp_path: Path) -> None:
     from transcriptx.core.utils import slug_manager as sm
 

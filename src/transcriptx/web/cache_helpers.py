@@ -90,6 +90,27 @@ def get_cached_list_transcripts() -> list:
 
 
 @st.cache_data(ttl=120, show_spinner=False)
+def cached_count_managed_transcripts(_transcripts_dir: str = "") -> int:
+    """Library inventory size without loading per-file metadata."""
+    mark_cache_miss("cached_count_managed_transcripts")
+    from transcriptx.app.models.errors import PathConfigError
+    from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
+
+    try:
+        return len(discover_managed_transcript_paths(None))
+    except PathConfigError:
+        raise
+    except Exception as e:
+        raise PathConfigError(str(e)) from e
+
+
+def get_cached_count_managed_transcripts() -> int:
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+
+    return cached_count_managed_transcripts(str(DIARISED_TRANSCRIPTS_DIR))
+
+
+@st.cache_data(ttl=120, show_spinner=False)
 def cached_get_transcript_summaries_for_paths(paths_key: tuple[str, ...]) -> list:
     """Return transcript summaries (segment_count, speaker_map_status) for given paths."""
     mark_cache_miss("cached_get_transcript_summaries_for_paths")
@@ -156,6 +177,7 @@ def clear_transcript_listing_caches() -> None:
     """
     cached_list_available_sessions.clear()  # type: ignore[attr-defined]
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
+    cached_count_managed_transcripts.clear()  # type: ignore[attr-defined]
     cached_get_transcript_summaries_for_paths.clear()  # type: ignore[attr-defined]
     _cached_resolve_transcript_path.clear()  # type: ignore[attr-defined]
     _cached_transcript_metadata.clear()  # type: ignore[attr-defined]

@@ -8,7 +8,10 @@ import pandas as pd
 import streamlit as st
 
 from transcriptx.utils.text_utils import format_duration_display_from_config
-from transcriptx.web.cache_helpers import cached_list_recent_runs
+from transcriptx.web.cache_helpers import (
+    cached_list_recent_runs,
+    get_cached_count_managed_transcripts,
+)
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.recent_run_row import render_recent_run_row
@@ -23,42 +26,54 @@ from transcriptx.web.utils import (
 @st.cache_data(ttl=60, show_spinner=False)
 def _cached_sessions_and_stats() -> tuple[list, dict]:
     sessions = list_available_sessions()
-    stats = get_all_sessions_statistics()
+    stats = dict(get_all_sessions_statistics())
+    stats["library_transcript_count"] = get_cached_count_managed_transcripts()
     return sessions, stats
 
 
 def _render_transcript_overview() -> bool:
-    """Render unique-transcript metrics. Returns True when sessions exist."""
+    """Render library + analysed-transcript metrics. Returns True when sessions exist."""
     sessions, stats = _cached_sessions_and_stats()
-    if not sessions:
-        st.info("No transcripts found. Process transcripts to see statistics here.")
+    library_count = int(stats.get("library_transcript_count", 0))
+    analysed_count = int(
+        stats.get("total_transcripts", stats.get("total_sessions", 0) or 0)
+    )
+    if not sessions and library_count == 0:
+        st.info("No transcripts found. Add transcripts in Library to get started.")
         return False
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     with col1:
         st.metric(
             "Transcripts",
-            stats.get("total_transcripts", stats.get("total_sessions", 0)),
+            library_count,
+            help="Managed transcripts in Library",
         )
     with col2:
-        st.metric("Sessions", stats.get("total_sessions", len(sessions)))
+        st.metric(
+            "Analysed transcripts",
+            analysed_count,
+            help="Unique transcripts with at least one viewable analysis run",
+        )
     with col3:
+        st.metric("Sessions", stats.get("total_sessions", len(sessions)))
+    with col4:
         st.metric(
             "Total duration",
             format_duration_display_from_config(stats.get("total_duration_seconds", 0)),
-            help="Sum of unique transcript durations",
+            help="Sum of unique analysed transcript durations",
         )
-    with col4:
-        st.metric("Total words", f"{stats.get('total_word_count', 0):,}")
     with col5:
-        st.metric("Speakers (max)", stats.get("total_speakers", 0))
+        st.metric("Total words", f"{stats.get('total_word_count', 0):,}")
     with col6:
+        st.metric("Speakers (max)", stats.get("total_speakers", 0))
+    with col7:
         st.metric(
             "Analysis completion",
             f"{stats.get('average_completion', 0):.0f}%",
-            help="Average analysis completion across unique transcripts",
+            help="Average analysis completion across analysed transcripts",
         )
-    return True
+    return bool(sessions)
 
 
 def _render_sessions_table() -> None:

@@ -103,7 +103,11 @@ class ScanHandle:
             "scanned_at": self.scanned_at,
             "closed_ok": self.closed_ok,
             "error": self.error,
-            "candidates": [asdict(c) for c in self.candidates],
+            # Persist status as the enum value string so session round-trips work.
+            # asdict() leaves an Enum; str(CandidateStatus.NEW) is not a valid value.
+            "candidates": [
+                {**asdict(c), "status": c.status.value} for c in self.candidates
+            ],
         }
 
     @staticmethod
@@ -118,7 +122,7 @@ class ScanHandle:
                     basename=str(c["basename"]),
                     display_stem=str(c["display_stem"]),
                     conflict_key=str(c["conflict_key"]),
-                    status=CandidateStatus(str(c["status"])),
+                    status=_coerce_candidate_status(c["status"]),
                     secondary_detail=str(c.get("secondary_detail") or ""),
                     st_dev=c.get("st_dev"),
                     st_ino=c.get("st_ino"),
@@ -142,6 +146,12 @@ class ScanHandle:
             )
         except (KeyError, TypeError, ValueError):
             return None
+
+
+def _coerce_candidate_status(raw: Any) -> CandidateStatus:
+    if isinstance(raw, CandidateStatus):
+        return raw
+    return CandidateStatus(raw)
 
 
 def resolve_absolute_directory(path_text: str) -> Path:

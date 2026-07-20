@@ -129,6 +129,53 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
     assert "Rename imported transcript + linked audio" in source
     assert "Import all from folder" in source
     assert "ThreadPoolExecutor" not in source
+    assert "on_click=_on_scan_folder" in source
+
+
+def test_on_scan_folder_stores_handle_before_import_button_can_read_it(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """Scan must land in session state via on_click (prefix of the click rerun)."""
+    import transcriptx.web.page_modules.upload_transcript as mod
+    from transcriptx.io.folder_import import CandidateStatus, FolderImportCandidate, ScanHandle
+
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    handle = ScanHandle(
+        schema_version=1,
+        admission_policy_version=1,
+        resolved_folder=str(inbox),
+        resolved_transcripts_root=str(tmp_path / "transcripts"),
+        max_file_bytes=10_000_000,
+        max_candidates=500,
+        scan_id="abc",
+        scanned_at="2026-01-01T00:00:00+00:00",
+        closed_ok=True,
+        error=None,
+        candidates=(
+            FolderImportCandidate(
+                path=str(inbox / "a.json"),
+                basename="a.json",
+                display_stem="a",
+                conflict_key="a",
+                status=CandidateStatus.NEW,
+            ),
+        ),
+    )
+
+    session: dict = {mod._KEY_FOLDER_PATH: str(inbox)}
+    monkeypatch.setattr(mod.st, "session_state", session, raising=False)
+    monkeypatch.setattr(mod, "scan_folder_for_import", lambda path: handle)
+
+    mod._on_scan_folder()
+
+    stored = ScanHandle.from_session_dict(session.get(mod._KEY_SCAN_HANDLE))
+    assert stored is not None
+    assert stored.closed_ok
+    assert len(mod.eligible_candidates(stored)) == 1
+    assert session[mod._KEY_SCAN_BANNER][0] == "success"
+    assert "1 eligible" in session[mod._KEY_SCAN_BANNER][1]
 
 
 def test_import_page_renders_post_import_action_links() -> None:

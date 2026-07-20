@@ -19,6 +19,7 @@ from transcriptx.io.import_admission import (
 )
 from transcriptx.io.folder_import import (
     CandidateStatus,
+    ScanHandle,
     eligible_candidates,
     scan_folder_for_import,
     scan_handle_still_valid,
@@ -136,6 +137,31 @@ def test_scan_rejects_managed_root_and_relative(monkeypatch, tmp_path: Path) -> 
 
     ok = scan_folder_for_import(str(inbox), transcripts_dir=root)
     assert ok.closed_ok is True
+
+
+def test_scan_handle_session_dict_roundtrip(monkeypatch, tmp_path: Path) -> None:
+    root = tmp_path / "transcripts"
+    _patch_roots(monkeypatch, root)
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    (inbox / "a.json").write_text(
+        json.dumps({"segments": [{"start": 0, "end": 1, "text": "hi"}]}),
+        encoding="utf-8",
+    )
+
+    handle = scan_folder_for_import(str(inbox), transcripts_dir=root)
+    assert handle.closed_ok
+    restored = ScanHandle.from_session_dict(handle.to_session_dict())
+    assert restored is not None
+    assert restored.scan_id == handle.scan_id
+    assert len(eligible_candidates(restored)) == len(eligible_candidates(handle))
+    assert all(isinstance(c.status, CandidateStatus) for c in restored.candidates)
+    # Legacy in-memory asdict Enum members must also reload.
+    legacy = handle.to_session_dict()
+    legacy["candidates"] = [
+        {**c, "status": CandidateStatus(c["status"])} for c in legacy["candidates"]
+    ]
+    assert ScanHandle.from_session_dict(legacy) is not None
 
 
 def test_scan_stem_conflict_and_case(monkeypatch, tmp_path: Path) -> None:

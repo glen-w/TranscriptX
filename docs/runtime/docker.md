@@ -121,6 +121,7 @@ volumes:
   - ./data:/data
   - transcriptx_cache:/home/transcriptx/.cache
   - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
+  - ${HOST_TRANSCRIPT_INBOX_DIR:-./data/transcript-inbox}:/mnt/transcript-inbox:ro
   - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
   - ${HOST_RECORDINGS_DIR}:/mnt/recordings
   - ${HOST_RECORDINGS_DIR}/imports:/mnt/recordings/imports
@@ -133,6 +134,7 @@ volumes:
 |---------------|----------------|---------------------------|-------|
 | (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, config copies, HF/Numba caches |
 | `HOST_TRANSCRIPTS_DIR` (default `./data/transcripts`) | `/mnt/transcripts` | `TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts` | **Read-only** in base compose |
+| `HOST_TRANSCRIPT_INBOX_DIR` (default `./data/transcript-inbox`) | `/mnt/transcript-inbox` | (scan path only) | External inbox for **Import all from folder**; not under managed transcripts |
 | `HOST_OUTPUT_DIR` (default `./data/outputs`) | `/mnt/outputs` | `TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs` | Analysis run outputs |
 | `HOST_RECORDINGS_DIR` | `/mnt/recordings` | `TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings` | Source audio (read-only root) |
 | `HOST_RECORDINGS_DIR/imports` | `/mnt/recordings/imports` | `TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports` | Writable uploads staging |
@@ -148,6 +150,7 @@ Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/
 |----------|---------|-------------|
 | `HOST_RECORDINGS_DIR` | (required in `.env`) | Host path to source audio library (outside repo) |
 | `HOST_TRANSCRIPTS_DIR` | `./data/transcripts` | Host path mounted at `/mnt/transcripts` |
+| `HOST_TRANSCRIPT_INBOX_DIR` | `./data/transcript-inbox` | Host path mounted at `/mnt/transcript-inbox` (folder-import inbox) |
 | `HOST_OUTPUT_DIR` | `./data/outputs` | Host path mounted at `/mnt/outputs` |
 | `HOST_WAV_BACKUP_DIR` | `./data/backups/wav` | Host path mounted at `/mnt/wav` |
 | `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |

@@ -45,6 +45,7 @@ _AUDIO_UPLOAD_TYPES = ["mp3", "wav", "m4a", "flac", "ogg", "aac"]
 _KEY_LAST_IMPORTED_TRANSCRIPT_PATH = "import_last_transcript_path"
 _KEY_FOLDER_PATH = "import_folder_path_input"
 _KEY_SCAN_HANDLE = "import_folder_scan_handle"
+_KEY_SCAN_BANNER = "import_folder_scan_banner"
 
 
 def _save_uploaded_transcript(uploaded_file: Any) -> tuple[Path, str]:
@@ -134,6 +135,25 @@ def _invalidate_scan_if_path_changed(path_value: str) -> None:
         st.session_state.pop(_KEY_SCAN_HANDLE, None)
 
 
+def _on_scan_folder() -> None:
+    """Run scan in on_click so Import eligible sees the handle on the same rerun."""
+    path_value = str(st.session_state.get(_KEY_FOLDER_PATH) or "")
+    handle = scan_folder_for_import(path_value)
+    if not handle.closed_ok:
+        st.session_state.pop(_KEY_SCAN_HANDLE, None)
+        st.session_state[_KEY_SCAN_BANNER] = (
+            "error",
+            handle.error or "Scan failed.",
+        )
+        return
+    st.session_state[_KEY_SCAN_HANDLE] = handle.to_session_dict()
+    st.session_state[_KEY_SCAN_BANNER] = (
+        "success",
+        f"Scan complete: {len(handle.candidates)} supported file(s) "
+        f"({len(eligible_candidates(handle))} eligible).",
+    )
+
+
 def _render_folder_import_section() -> None:
     st.subheader("2. Import all from folder")
     st.caption(
@@ -154,7 +174,11 @@ def _render_folder_import_section() -> None:
 
     col_scan, col_import = st.columns(2)
     with col_scan:
-        scan_clicked = st.button("Scan folder", key="import_folder_scan_btn")
+        st.button(
+            "Scan folder",
+            key="import_folder_scan_btn",
+            on_click=_on_scan_folder,
+        )
     with col_import:
         handle = ScanHandle.from_session_dict(st.session_state.get(_KEY_SCAN_HANDLE))
         can_import = bool(
@@ -170,17 +194,13 @@ def _render_folder_import_section() -> None:
             disabled=not can_import,
         )
 
-    if scan_clicked:
-        handle = scan_folder_for_import(path_value or "")
-        if not handle.closed_ok:
-            st.session_state.pop(_KEY_SCAN_HANDLE, None)
-            st.error(handle.error or "Scan failed.")
+    banner = st.session_state.pop(_KEY_SCAN_BANNER, None)
+    if isinstance(banner, tuple) and len(banner) == 2:
+        kind, message = banner
+        if kind == "error":
+            st.error(message)
         else:
-            st.session_state[_KEY_SCAN_HANDLE] = handle.to_session_dict()
-            st.success(
-                f"Scan complete: {len(handle.candidates)} supported file(s) "
-                f"({len(eligible_candidates(handle))} eligible)."
-            )
+            st.success(message)
 
     handle = ScanHandle.from_session_dict(st.session_state.get(_KEY_SCAN_HANDLE))
     if handle and handle.closed_ok:

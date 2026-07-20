@@ -50,6 +50,11 @@ def _summary_status_from_outcomes(run_results: dict | None) -> tuple[str, list[s
     Build run summary status/modules from canonical truth projection.
 
     Returns (status, selected_modules).
+
+    Requirement/policy skips are intentional non-runs (e.g. multi-speaker
+    modules on a single-speaker transcript). Those do not make the run
+    ``partial`` when every attempted module succeeded. ``partial`` is reserved
+    for mixed failure/block outcomes (or unresolved enabled modules).
     """
     if not run_results:
         return "completed", []
@@ -58,7 +63,7 @@ def _summary_status_from_outcomes(run_results: dict | None) -> tuple[str, list[s
     modules = [row.module_id for row in rows if row.status != "requested"]
     if "failed" in statuses and "succeeded" not in statuses:
         return "failed", modules
-    if {"failed", "blocked", "skipped"} & statuses:
+    if "failed" in statuses or "blocked" in statuses or "enabled" in statuses:
         return "partial", modules
     return "completed", modules
 

@@ -51,6 +51,64 @@ def test_load_manifest_returns_none_when_invalid(tmp_path: Path) -> None:
     assert manifest is None
 
 
+def test_summary_status_succeeded_plus_requirement_skips_is_completed() -> None:
+    """Single-speaker N/A skips must not mark the run partial."""
+    status, modules = rc._summary_status_from_outcomes(
+        {
+            "modules_enabled": ["stats", "contagion", "echoes"],
+            "modules_run": ["stats"],
+            "modules_skipped": [
+                {
+                    "module": "contagion",
+                    "reason": "requires at least 2 named speakers",
+                    "execution_status": "skipped",
+                },
+                {
+                    "module": "echoes",
+                    "reason": "requires at least 2 speakers",
+                    "execution_status": "skipped",
+                },
+            ],
+            "modules_failed": [],
+            "module_outcomes": [],
+        }
+    )
+    assert status == "completed"
+    assert set(modules) == {"stats", "contagion", "echoes"}
+
+
+def test_summary_status_mixed_failure_is_partial() -> None:
+    status, _modules = rc._summary_status_from_outcomes(
+        {
+            "modules_enabled": ["stats", "emotion"],
+            "modules_run": ["stats"],
+            "modules_skipped": [],
+            "modules_failed": ["emotion"],
+            "module_outcomes": [],
+        }
+    )
+    assert status == "partial"
+
+
+def test_summary_status_blocked_with_success_is_partial() -> None:
+    status, _modules = rc._summary_status_from_outcomes(
+        {
+            "modules_enabled": ["stats", "contagion"],
+            "modules_run": ["stats"],
+            "modules_skipped": [
+                {
+                    "module": "contagion",
+                    "reason": "missing dependency",
+                    "execution_status": "blocked",
+                }
+            ],
+            "modules_failed": [],
+            "module_outcomes": [],
+        }
+    )
+    assert status == "partial"
+
+
 def test_list_recent_runs_prefers_run_results_status_over_manifest(
     tmp_path: Path, monkeypatch
 ) -> None:

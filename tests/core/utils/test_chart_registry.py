@@ -498,13 +498,13 @@ def test_bertopic_viz_ids_have_registry_definitions():
         assert chart.match.by_artifact_key_prefix.startswith("bertopic/")
 
 
-def test_bertopic_registry_opt_in_metadata() -> None:
-    """BERTopic stays opt-in in default plans and declares the bertopic extra."""
+def test_bertopic_registry_default_plan_metadata() -> None:
+    """BERTopic is included in recommended defaults and declares the bertopic extra."""
     from transcriptx.core.pipeline.module_registry import get_module_info
 
     info = get_module_info("bertopic")
     assert info is not None
-    assert info.exclude_from_default is True
+    assert info.exclude_from_default is False
     assert "bertopic" in info.required_extras
     assert "insight_eligibility" in info.dependencies
     assert info.description

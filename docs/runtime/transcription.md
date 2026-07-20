@@ -197,7 +197,7 @@ Import alternate-language versions of an existing transcript using a flat filena
 
 ## Folder import (Import Transcript)
 
-On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder into the container) and imports only eligible files:
+On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder into the container — typically `HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`; do not scan `/mnt/transcripts` or its subdirs) and imports only eligible files:
 
 - Supported extensions: `.json`, `.srt`, `.vtt`, `.txt`, `.html`, `.htm` (case-insensitive).
 - Skips stems that are already managed (canonical JSON + import sidecar). Incomplete JSON without a safe `originals/` provenance is **not** treated as a new import.

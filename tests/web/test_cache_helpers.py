@@ -28,10 +28,15 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
     )
     monkeypatch.setattr(
         mod,
+        "cached_count_managed_transcripts",
+        MagicMock(clear=_track_clear("transcript_count")),
+    )
+    monkeypatch.setattr(
+        mod,
         "cached_get_transcript_summaries_for_paths",
         MagicMock(clear=_track_clear("summaries")),
     )
 
     mod.clear_transcript_listing_caches()
 
-    assert cleared == ["sessions", "transcripts", "summaries"]
+    assert cleared == ["sessions", "transcripts", "transcript_count", "summaries"]

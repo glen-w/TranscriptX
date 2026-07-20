@@ -18,6 +18,16 @@ from transcriptx.io.speaker_map_resolver import sidecar_path_for
 # ── contract ──────────────────────────────────────────────────────────────────
 
 
+def test_speaker_id_page_clears_listing_caches_after_mutations() -> None:
+    """Save/ignore/unignore must invalidate stale partial/complete dropdown labels."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_clear_speaker_id_listing_caches" in source
+    assert "clear_transcript_listing_caches" in source
+    assert source.count("_clear_speaker_id_listing_caches()") >= 2
+
+
 def test_speaker_id_page_imports_only_controller() -> None:
     """Contract: speaker_id page must not import SegmentIndexService, ClipService, or SpeakerMappingService."""
     import transcriptx.web.page_modules.speaker_id as mod
@@ -322,6 +332,74 @@ def test_speaker_id_unignore_speaker(
     assert "SPEAKER_01" not in state.ignored_speakers
 
 
+def test_speaker_id_ignore_last_remaining_marks_complete(
+    monkeypatch: pytest.MonkeyPatch,
+    transcript_dir: Path,
+) -> None:
+    """Ignoring the final unnamed speaker yields complete + remaining 0."""
+    from transcriptx.web.page_modules.speaker_id import (
+        _group_by_diarized_id,
+        _is_speaker_ignored,
+        _next_unnamed_idx,
+        _speaker_map_display_name,
+    )
+
+    path = transcript_dir / "transcripts" / "last_ignore_transcriptx.json"
+    _make_transcript(
+        path,
+        [
+            {"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "A"},
+            {"start": 1.0, "end": 2.0, "speaker": "SPEAKER_01", "text": "B"},
+            {"start": 2.0, "end": 3.0, "speaker": "SPEAKER_02", "text": "C"},
+            {"start": 3.0, "end": 4.0, "speaker": "SPEAKER_03", "text": "D"},
+            {"start": 4.0, "end": 5.0, "speaker": "SPEAKER_03", "text": "E"},
+        ],
+    )
+    _configure_paths_for_transcripts_root(monkeypatch, transcript_dir / "transcripts")
+
+    controller = SpeakerStudioController(data_dir=transcript_dir)
+    controller.apply_mapping_mutation(str(path), "SPEAKER_00", "Glen", method="web")
+    controller.apply_mapping_mutation(str(path), "SPEAKER_01", "Ana", method="web")
+    controller.apply_mapping_mutation(str(path), "SPEAKER_02", "Ana", method="web")
+
+    summaries = controller.list_transcripts(data_dir=transcript_dir)
+    assert summaries[0].speaker_map_status == "partial"
+    assert summaries[0].unidentified_speaker_count == 1
+
+    # UI ignore path: persist then navigate from returned state.
+    new_state = controller.ignore_speaker(str(path), "SPEAKER_03", method="web")
+    segments = controller.list_segments(str(path))
+    speaker_ids = list(_group_by_diarized_id(segments).keys())
+    current_idx = speaker_ids.index("SPEAKER_03")
+    next_idx = _next_unnamed_idx(
+        speaker_ids,
+        dict(new_state.speaker_map or {}),
+        list(new_state.ignored_speakers or []),
+        current_idx,
+    )
+    assert next_idx == current_idx
+    assert "SPEAKER_03" in (new_state.ignored_speakers or [])
+
+    speaker_map = new_state.speaker_map or {}
+    ignored = list(new_state.ignored_speakers or [])
+    named = sum(
+        1
+        for sid in speaker_ids
+        if _speaker_map_display_name(speaker_map, sid)
+        and not _is_speaker_ignored(ignored, sid)
+    )
+    n_ignored = sum(1 for sid in speaker_ids if _is_speaker_ignored(ignored, sid))
+    remaining = len(speaker_ids) - named - n_ignored
+    assert named == 3
+    assert n_ignored == 1
+    assert remaining == 0
+
+    summaries = controller.list_transcripts(data_dir=transcript_dir)
+    assert summaries[0].speaker_map_status == "complete"
+    assert summaries[0].unidentified_speaker_count == 0
+    assert summaries[0].ignored_speaker_count == 1
+
+
 def test_speaker_id_full_flow_both_speakers_named(
     monkeypatch: pytest.MonkeyPatch,
     transcript_dir: Path,
@@ -388,6 +466,48 @@ def test_speaker_id_next_unnamed_idx_stays_when_all_named() -> None:
 
     result = _next_unnamed_idx(speaker_ids, speaker_map, ignored, current=0)
     assert result == 0
+
+
+def test_speaker_id_next_unnamed_idx_after_ignore_last_stays() -> None:
+    """Ignoring the last remaining speaker keeps the current index (completion)."""
+    from transcriptx.web.page_modules.speaker_id import _next_unnamed_idx
+
+    speaker_ids = ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02", "SPEAKER_03"]
+    speaker_map = {
+        "SPEAKER_00": "Glen",
+        "SPEAKER_01": "Ana",
+        "SPEAKER_02": "Ana",
+    }
+    # Mirror ignore-button persistence: active SPEAKER_03 is now ignored.
+    ignored_after = ["SPEAKER_03"]
+    current_idx = 3
+
+    result = _next_unnamed_idx(
+        speaker_ids, speaker_map, ignored_after, current=current_idx
+    )
+    assert result == current_idx
+
+
+def test_speaker_id_next_unnamed_idx_after_unignore_finds_that_speaker() -> None:
+    """After unignore, navigation must not keep treating the id as ignored."""
+    from transcriptx.web.page_modules.speaker_id import _next_unnamed_idx
+
+    speaker_ids = ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02"]
+    speaker_map = {"SPEAKER_00": "Alice", "SPEAKER_01": "Bob"}
+    # Bug regression: old UI passed ignored+[active] even on unignore.
+    ignored_after_unignore: list[str] = []
+    result = _next_unnamed_idx(
+        speaker_ids, speaker_map, ignored_after_unignore, current=1
+    )
+    assert result == 2
+
+
+def test_is_speaker_ignored_accepts_variant_diarized_ids() -> None:
+    from transcriptx.web.page_modules.speaker_id import _is_speaker_ignored
+
+    assert _is_speaker_ignored(["SPEAKER_03"], "SPEAKER_3") is True
+    assert _is_speaker_ignored(["SPEAKER_3"], "SPEAKER_03") is True
+    assert _is_speaker_ignored(["SPEAKER_01"], "SPEAKER_03") is False
 
 
 def test_speaker_id_next_unnamed_idx_after_save_moves_to_next_unnamed() -> None:

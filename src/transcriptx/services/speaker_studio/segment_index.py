@@ -85,23 +85,18 @@ def _compute_speaker_map_status(
         unique_in_segments.add(str(sp).strip())
 
     diarized_ids_in_segments = {sp for sp in unique_in_segments if _is_diarized_id(sp)}
-    ignored_set = set(ignored_speakers or [])
-    covered = set(speaker_map.keys()) | ignored_set
-    mapped_with_name = {
-        k for k, v in (speaker_map or {}).items() if is_effective_speaker_name(k, v)
-    }
+    ignored_list = list(ignored_speakers or [])
 
     # Compare using normalized IDs so SPEAKER_1 in segments matches SPEAKER_01 in sidecar.
     for did in diarized_ids_in_segments:
         nid = normalize_diarized_id(did)
         if not nid:
             continue
-        if nid not in covered:
-            return "partial"
-        if nid in ignored_set:
+        if _nid_is_ignored(nid, ignored_list):
             continue
-        if nid not in mapped_with_name:
-            return "partial"
+        if _nid_has_assigned_name(nid, speaker_map or {}):
+            continue
+        return "partial"
     return "complete"
 
 

@@ -26,7 +26,7 @@ Authority: ../ARCHITECTURE.md
 | sentiment | Sentiment Analysis | medium | None | T1 |
 | stats | Statistical Analysis | light | None | T0 |
 | topic_modeling | Topic Modeling | heavy | insight_eligibility | T2 |
-| bertopic | BERTopic topic modeling (optional path; stack currently in default install) | heavy | insight_eligibility | T2 |
+| bertopic | BERTopic topic modeling (included in recommended defaults; stack in base install) | heavy | insight_eligibility | T2 |
 | transcript_output | Generate human readable transcripts | light | None | T0 |
 | simplified_transcript | Simplified transcript (tics, agreements, repetitions removed) | light | None | T0 |
 | understandability | Understandability Analysis | medium | None | T0 |

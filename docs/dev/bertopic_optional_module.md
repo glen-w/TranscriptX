@@ -52,7 +52,7 @@ Duplicates are retained as separate documents. All-outlier fits are **succeeded*
 
 | Surface | Wiring |
 |---------|--------|
-| Module picker | `module_ui_groups` → Language & Meaning; `exclude_from_default=True` (opt-in) |
+| Module picker | `module_ui_groups` → Language & Meaning; included in recommended defaults |
 | Chart registry | `bertopic.topic_word_heatmap.global`, `bertopic.topic_prevalence.global`, `group.bertopic.pooled.topic_share.global` in `chart_definitions.json` |
 | Charts page | Manifest artifacts with `meta.viz_id` resolve descriptions via `resolve_chart_display_description` |
 | Artifacts / zip export | Standard manifest discovery under `bertopic/`; charts zip includes any selected chart artifacts (no module denylist) |

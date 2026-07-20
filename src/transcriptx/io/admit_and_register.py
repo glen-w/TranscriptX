@@ -26,6 +26,7 @@ from transcriptx.io.import_admission import (
     inspect_managed_artifact_state,
     sanitize_upload_basename,
 )
+from transcriptx.io.import_core.errors import ImportErrorBase
 from transcriptx.io.import_metadata_sidecar import validate_managed_transcript
 from transcriptx.io.managed_import_workflow import (
     StagingCleanupPolicy,
@@ -288,7 +289,7 @@ def admit_and_register(
                     registration_progressed=False,
                     user_safe_detail="Transcript already exists.",
                 )
-            except AdmissionError as exc:
+            except (AdmissionError, ImportErrorBase) as exc:
                 return AdmitOutcome(
                     kind=AdmitOutcomeKind.UNSUPPORTED_OR_INVALID_INPUT,
                     transcript_path=None,

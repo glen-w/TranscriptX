@@ -33,7 +33,10 @@ from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
 from transcriptx.web.components.recent_run_row import render_recent_run_actions
-from transcriptx.web.cache_helpers import cached_list_available_sessions
+from transcriptx.web.cache_helpers import (
+    cached_list_available_sessions,
+    clear_transcript_listing_caches,
+)
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
 from transcriptx.web.transcript_option_format import (
@@ -154,11 +157,26 @@ def _speaker_map_display_name(speaker_map: Dict[str, str], sid: str) -> str:
 
 
 def _is_speaker_ignored(ignored: List[str], sid: str) -> bool:
+    """True if sid is ignored, accepting raw or normalized diarized-id forms."""
     nid = normalize_diarized_id(sid)
-    ignored_set = set(ignored)
-    if nid and nid in ignored_set:
-        return True
-    return sid in ignored_set
+    if not nid and not sid:
+        return False
+    for ig in ignored or []:
+        if ig is None or not str(ig).strip():
+            continue
+        raw = str(ig).strip()
+        if sid == raw or (nid and nid == raw):
+            return True
+        if nid and normalize_diarized_id(raw) == nid:
+            return True
+    return False
+
+
+def _clear_speaker_id_listing_caches() -> None:
+    """Drop stale speaker-map status labels after save/ignore/unignore."""
+    clear_transcript_listing_caches()
+    _cached_transcripts_for_paths.clear()  # type: ignore[attr-defined]
+    _cached_fallback_transcripts.clear()  # type: ignore[attr-defined]
 
 
 def _group_by_diarized_id(
@@ -412,16 +430,17 @@ def render_speaker_id_page() -> None:
             name = (name_input or "").strip()
             if name:
                 try:
-                    controller.apply_mapping_mutation(
+                    new_state = controller.apply_mapping_mutation(
                         transcript_path, active_id, name, method="web"
                     )
+                    _clear_speaker_id_listing_caches()
                     st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
                     st.session_state["speaker_id_play_seg"] = None
-                    # Advance to next unnamed speaker automatically
+                    # Advance from persisted state (including when this was the last one).
                     next_idx = _next_unnamed_idx(
                         speaker_ids,
-                        speaker_map | {active_id: name},
-                        ignored,
+                        dict(new_state.speaker_map or {}),
+                        list(new_state.ignored_speakers or []),
                         speaker_idx,
                     )
                     st.session_state["speaker_id_speaker_idx"] = next_idx
@@ -436,15 +455,23 @@ def render_speaker_id_page() -> None:
         if st.button(ignore_label, key="sid_ignore", width="stretch"):
             try:
                 if is_ignored:
-                    controller.unignore_speaker(
+                    new_state = controller.unignore_speaker(
                         transcript_path, active_id, method="web"
                     )
                 else:
-                    controller.ignore_speaker(transcript_path, active_id, method="web")
+                    new_state = controller.ignore_speaker(
+                        transcript_path, active_id, method="web"
+                    )
+                _clear_speaker_id_listing_caches()
                 st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
                 st.session_state["speaker_id_play_seg"] = None
+                # Use persisted ignored list so unignore does not keep treating
+                # this id as ignored, and ignore-last still settles on complete.
                 next_idx = _next_unnamed_idx(
-                    speaker_ids, speaker_map, ignored + [active_id], speaker_idx
+                    speaker_ids,
+                    dict(new_state.speaker_map or {}),
+                    list(new_state.ignored_speakers or []),
+                    speaker_idx,
                 )
                 st.session_state["speaker_id_speaker_idx"] = next_idx
                 st.session_state["sid_jump"] = next_idx

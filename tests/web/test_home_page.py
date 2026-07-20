@@ -134,6 +134,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
                 }
             ],
             {
+                "library_transcript_count": 12,
                 "total_transcripts": 1,
                 "total_sessions": 1,
                 "total_duration_seconds": 90,
@@ -182,12 +183,18 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
     metric_labels = [args[0] for args, _ in metrics if args]
     assert metric_labels == [
         "Transcripts",
+        "Analysed transcripts",
         "Sessions",
         "Total duration",
         "Total words",
         "Speakers (max)",
         "Analysis completion",
     ]
+    metric_values = {
+        args[0]: args[1] for args, _ in metrics if len(args) >= 2
+    }
+    assert metric_values["Transcripts"] == 12
+    assert metric_values["Analysed transcripts"] == 1
     assert frames
     assert list(frames[0]["Session"]) == ["session-a"]
 
