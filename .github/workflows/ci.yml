@@ -67,10 +67,44 @@ jobs:
       - name: Fast
         run: make test-fast
 
+  # Thin NLP lane: un-skips spaCy-gated smoke (insight stack, NER, group topics).
+  # Single Python version keeps PR cost low while still gating [nlp] regressions.
+  tests-nlp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package + test deps + nlp
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev,nlp]"
+          command -v pytest
+          python -m pytest --version
+      - name: Bootstrap NLTK + spaCy model
+        run: |
+          TRANSCRIPTX_DISABLE_DOWNLOADS=0 python - <<'PY'
+          import nltk
+          nltk.download("vader_lexicon", quiet=True)
+          print("nltk vader_lexicon ready")
+          PY
+          python -m spacy download en_core_web_md
+      - name: Isolate temp roots
+        run: |
+          mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"
+          echo "TRANSCRIPTX_DATA_DIR=$RUNNER_TEMP/tx-data" >> "$GITHUB_ENV"
+          echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
+          echo "TRANSCRIPTX_SPACY_MODEL=en_core_web_md" >> "$GITHUB_ENV"
+      - name: Smoke (nlp)
+        run: make test-smoke-nlp
+
   release-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    needs: [compose-config, tests]
+    needs: [compose-config, tests, tests-nlp]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only docker-smoke run clean-test-artifacts
+.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only docker-smoke run clean-test-artifacts
 
 help:
 	@echo "TranscriptX Makefile"
@@ -15,7 +15,8 @@ help:
 	@echo "  run            Streamlit web app in Docker (full TTY)"
 	@echo ""
 	@echo "Testing targets:"
-	@echo "  test-smoke       Run CI smoke gate"
+	@echo "  test-smoke       Run CI smoke gate (Core+dev; spaCy-gated modules skip without [nlp])"
+	@echo "  test-smoke-nlp   Run smoke with [nlp] + en_core_web_md available"
 	@echo "  test-fast        Run fast core (Gate B)"
 	@echo "  test-heavy       Run explicit heavy profile (excludes quarantined)"
 	@echo "  test-heavy-all   Run explicit heavy profile (includes quarantined)"
@@ -55,6 +56,11 @@ clean-test-artifacts:
 test-smoke:
 	@echo "Running CI smoke gate..."
 	@pytest -q tests/smoke -m "smoke and not quarantined and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not release_only"
+
+test-smoke-nlp:
+	@echo "Running NLP-enabled CI smoke gate..."
+	@python -c "import spacy; spacy.load('en_core_web_md'); print('spaCy en_core_web_md ready')"
+	@$(MAKE) test-smoke
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
