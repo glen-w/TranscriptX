@@ -11,6 +11,8 @@ import pytest
 
 from transcriptx.core.analysis.ner import NERAnalysis
 
+pytest.importorskip("spacy")
+
 
 class TestNERContracts:
     """Contract tests for NERAnalysis output shape."""

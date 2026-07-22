@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
 
 from transcriptx.core.analysis.contagion import ContagionAnalysis
 from transcriptx.core.analysis.entity_sentiment import EntitySentimentAnalysis
@@ -88,6 +89,8 @@ def test_contagion_not_applicable_envelope_contract() -> None:
 
 
 def test_entity_sentiment_success_schema_and_summary_invariants() -> None:
+    pytest.importorskip("spacy")
+
     module = EntitySentimentAnalysis()
     segments = [
         {

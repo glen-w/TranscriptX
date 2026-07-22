@@ -100,6 +100,8 @@ jobs:
           echo "TRANSCRIPTX_SPACY_MODEL=en_core_web_md" >> "$GITHUB_ENV"
       - name: Smoke (nlp)
         run: make test-smoke-nlp
+      - name: Contracts (nlp)
+        run: make test-contracts
 
   release-checks:
     runs-on: ubuntu-latest

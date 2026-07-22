@@ -12,6 +12,8 @@ import pytest
 
 from transcriptx.core.analysis.topic_modeling import TopicModelingAnalysis
 
+pytest.importorskip("spacy")
+
 
 class TestTopicModelingContracts:
     """Contract tests for TopicModelingAnalysis output shape."""
