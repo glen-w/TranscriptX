@@ -33,4 +33,5 @@ def test_optional_keys_constant_is_frozen_subset() -> None:
     assert "entity_sentiment_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "interactions_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "contagion_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
+    assert "transcript_quality_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "mentions_index" not in GROUP_CHART_OUTCOME_OPTIONAL_KEYS

@@ -15,16 +15,38 @@ from transcriptx.core.utils.viz_ids import VIZ_GROUP_TRANSCRIPT_QUALITY_COVERAGE
 from transcriptx.core.viz.specs import BarCategoricalSpec
 
 
+def _primary_comparable_key(
+    session_rows: List[Dict[str, Any]], pooled: Dict[str, Any]
+) -> str:
+    key = str(pooled.get("comparable_key") or "")
+    if key:
+        return key
+    by_key: Dict[str, List[Dict[str, Any]]] = {}
+    for row in session_rows:
+        by_key.setdefault(str(row.get("comparable_key") or ""), []).append(row)
+    if not by_key:
+        return ""
+
+    def _rank(k: str) -> tuple[int, int, str]:
+        rows = by_key[k]
+        scored = sum(int(r.get("scored_word_count") or 0) for r in rows)
+        return (len(rows), scored, k)
+
+    return max(by_key.keys(), key=_rank)
+
+
 class TranscriptQualityGroupChartGenerator:
     """Compare ASR confidence metrics only within one provenance cohort."""
 
     agg_id = "transcript_quality"
 
     def can_generate(self, outcome: Dict[str, Any]) -> bool:
+        session_rows = list(outcome.get("session_rows") or [])
+        if not session_rows:
+            return False
         pooled = outcome.get("transcript_quality_pooled") or {}
-        session_rows = outcome.get("session_rows") or []
-        primary_key = str(pooled.get("comparable_key") or "")
-        if not primary_key or not session_rows:
+        primary_key = _primary_comparable_key(session_rows, pooled)
+        if not primary_key:
             return False
         return any(
             str(r.get("comparable_key") or "") == primary_key for r in session_rows
@@ -35,7 +57,7 @@ class TranscriptQualityGroupChartGenerator:
     ) -> Optional[List[Path]]:
         session_rows = list(outcome.get("session_rows") or [])
         pooled = outcome.get("transcript_quality_pooled") or {}
-        primary_key = str(pooled.get("comparable_key") or "")
+        primary_key = _primary_comparable_key(session_rows, pooled)
         if not primary_key:
             return None
 
@@ -51,7 +73,11 @@ class TranscriptQualityGroupChartGenerator:
             ctx, module_name=self.agg_id, agg_id=self.agg_id
         )
 
-        incompatible = int(pooled.get("incompatible_member_count") or 0)
+        incompatible = int(
+            pooled.get("incompatible_member_count")
+            if pooled.get("incompatible_member_count") is not None
+            else max(0, len(session_rows) - len(cohort_rows))
+        )
         cohort_note = (
             f"provenance={primary_key}"
             + (f"; excluded incompatible={incompatible}" if incompatible else "")

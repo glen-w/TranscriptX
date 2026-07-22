@@ -256,3 +256,57 @@ class TestAggregation:
         assert abs(pooled["mean_score"] - (100 / 150)) < 1e-9
         # low ratio = 30/150
         assert abs(pooled["low_score_ratio"] - 0.2) < 1e-9
+
+    def test_equal_size_cohorts_prefer_scored_evidence(self):
+        from types import SimpleNamespace
+
+        def _result(order, payload):
+            return SimpleNamespace(
+                order_index=order,
+                transcript_path=f"/t{order}.json",
+                transcript_key=f"tk{order}",
+                output_dir=f"/out{order}",
+                module_results={"transcript_quality": payload},
+                session_id=f"s{order}",
+                run_id=f"r{order}",
+            )
+
+        absent_key = build_provenance(import_adapter="manual", asr_engine="manual")
+        present_key = build_provenance(
+            import_adapter="transcriptx", asr_engine="transcriptx"
+        )
+        absent = {
+            "provenance": absent_key,
+            "asr_confidence": {
+                "status": "absent",
+                "eligible_word_count": 5,
+                "scored_word_count": 0,
+                "coverage_ratio": None,
+                "mean_score": None,
+                "low_score_word_count": 0,
+                "low_score_ratio": None,
+            },
+        }
+        present = {
+            "provenance": present_key,
+            "asr_confidence": {
+                "status": "present",
+                "eligible_word_count": 100,
+                "scored_word_count": 100,
+                "coverage_ratio": 1.0,
+                "mean_score": 0.6,
+                "low_score_word_count": 10,
+                "low_score_ratio": 0.1,
+            },
+        }
+        # Absent inserted first so size-tie would otherwise pick it.
+        results = [_result(0, absent), _result(1, present)]
+        out = aggregate_transcript_quality(
+            results, None, SimpleNamespace(members=[], metadata={})
+        )
+        assert out is not None
+        pooled = out["transcript_quality_pooled"]
+        assert pooled["comparable_key"] == present_key["comparable_key"]
+        assert pooled["pooled_member_count"] == 1
+        assert pooled["incompatible_member_count"] == 1
+        assert pooled["mean_score"] == 0.6

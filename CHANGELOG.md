@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-07-22
+
+### Fixed
+
+- ASR confidence group aggregation prefers evidence-rich provenance cohorts when sizes tie, so mixed absent/present groups still emit cohort-safe charts.
+- Align `transcriptx.web` package version with the root package (`0.6.4`).
+
 ## [0.6.3] - 2026-07-22
 
 ### Added

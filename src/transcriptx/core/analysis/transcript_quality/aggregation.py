@@ -81,8 +81,15 @@ def aggregate_transcript_quality(
         return None
 
     member_count = len(session_rows)
+
+    def _cohort_rank(key: str) -> tuple[int, int, str]:
+        rows = cohorts[key]
+        scored = sum(int(r.get("scored_word_count") or 0) for r in rows)
+        # Largest cohort first; on ties prefer evidence-rich (scored words), then key.
+        return (len(rows), scored, key)
+
     # Primary cohort = largest compatible set; others marked incompatible for that pool.
-    primary_key = max(cohorts.keys(), key=lambda k: len(cohorts[k]))
+    primary_key = max(cohorts.keys(), key=_cohort_rank)
     pooled_rows = cohorts[primary_key]
     incompatible_member_count = member_count - len(pooled_rows)
 
