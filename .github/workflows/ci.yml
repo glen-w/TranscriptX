@@ -47,6 +47,14 @@ jobs:
           # Confirm pytest entrypoint is on PATH for Makefile targets
           command -v pytest
           python -m pytest --version
+      - name: Bootstrap NLTK data for offline smoke
+        run: |
+          # CI sets TRANSCRIPTX_DISABLE_DOWNLOADS=1; seed required NLTK resources once.
+          TRANSCRIPTX_DISABLE_DOWNLOADS=0 python - <<'PY'
+          import nltk
+          nltk.download("vader_lexicon", quiet=True)
+          print("nltk vader_lexicon ready")
+          PY
       - name: Isolate temp roots
         run: |
           mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"

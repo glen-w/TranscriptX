@@ -78,6 +78,10 @@ dev = [
     "pytest-mock>=3.11.0",
     "pytest-asyncio>=0.21.0",
     "pytest-timeout>=2.1.0",
+    # Required for `make test-smoke` under Core+dev (see install_verification_matrix.md).
+    # Chart writes hard-fail without matplotlib; group aggregation imports geopy via NER.
+    "matplotlib==3.7.2",
+    "geopy==2.3.0",
 ]
 docs = [
     "sphinx>=7.0.0",

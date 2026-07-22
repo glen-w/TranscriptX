@@ -40,15 +40,35 @@ SMOKE_SKIP_MODULES: frozenset[str] = frozenset(
     }
 )
 
+# Modules that call spaCy NLP runtime even without required_extras={"nlp"}.
+# Core+dev CI does not install [nlp]; cover these under nlp-enabled lanes instead.
+_SPACY_RUNTIME_MODULES: frozenset[str] = frozenset(
+    {
+        "insight_eligibility",
+        "highlights",
+        "bertopic",
+        "insights",
+        "topic_modeling",
+    }
+)
+
+
+def _nlp_extra_available() -> bool:
+    from transcriptx.core.pipeline.module_registry import is_extra_available
+
+    return is_extra_available("nlp")
+
 
 def _core_modules_no_audio() -> list[str]:
-    """Module names that run in core mode and do not require audio (for transcript-only smoke)."""
+    """True-core transcript modules for Core+dev smoke (no optional extras)."""
     from transcriptx.core.pipeline.module_registry import (
         get_available_modules,
         get_module_info,
+        is_extra_available,
     )
 
     core = set(get_available_modules(core_mode=True))
+    nlp_ok = _nlp_extra_available()
 
     def _ready(module_name: str, seen: set[str] | None = None) -> bool:
         if module_name not in core:
@@ -65,7 +85,27 @@ def _core_modules_no_audio() -> list[str]:
                 return False
         return True
 
-    return [m for m in sorted(core) if m not in SMOKE_SKIP_MODULES and _ready(m)]
+    selected: list[str] = []
+    for module_name in sorted(core):
+        if module_name in SMOKE_SKIP_MODULES or not _ready(module_name):
+            continue
+        info = get_module_info(module_name)
+        assert info is not None
+        # Optional-extra modules are covered by test_optional_module_smoke_*.
+        if info.required_extras:
+            continue
+        if module_name in _SPACY_RUNTIME_MODULES and not nlp_ok:
+            continue
+        # Skip when a declared dependency's extras are missing (defensive).
+        if any(
+            (dep_info := get_module_info(dep))
+            and dep_info.required_extras
+            and not all(is_extra_available(e) for e in dep_info.required_extras)
+            for dep in (info.dependencies or [])
+        ):
+            continue
+        selected.append(module_name)
+    return selected
 
 
 def _optional_module_ids() -> list[str]:
@@ -160,4 +200,6 @@ def test_optional_module_smoke_when_extra_available(
         pytest.skip("not an optional-extra module")
     if not all(is_extra_available(e) for e in info.required_extras):
         pytest.skip(f"optional extras not installed: {sorted(info.required_extras)}")
+    if module_name in _SPACY_RUNTIME_MODULES and not _nlp_extra_available():
+        pytest.skip("requires transcriptx[nlp] (spaCy runtime)")
     _run_pipeline_smoke(tmp_path, monkeypatch, _fixture_path, module_name)

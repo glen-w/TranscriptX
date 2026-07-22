@@ -23,6 +23,11 @@ from transcriptx.core.utils.config import TranscriptXConfig
 
 @pytest.mark.smoke
 def test_group_topic_aggregation_smoke_fail_closed(monkeypatch, tmp_path: Path) -> None:
+    from transcriptx.core.pipeline.module_registry import is_extra_available
+
+    if not is_extra_available("nlp"):
+        pytest.skip("requires transcriptx[nlp] (spaCy runtime for topic preprocess)")
+
     fixture = Path(__file__).resolve().parents[1] / "fixtures" / "mini_transcript.json"
     if not fixture.exists():
         pytest.skip("fixtures/mini_transcript.json not found")
