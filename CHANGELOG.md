@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-07-23
+
+### Added
+
+- Analysis module `topic_shift` (B9): embedding change-point chapter spans, deterministic generational store, optional LLM enrichment sidecar, Transcript Chapters tab, Moments point-event soft-read, and group cohort aggregation with session bars plus temporal overlay.
+- Shared `llm_generational_store` helpers with empty-digest rejection and parity coverage for enrichment-style stores.
+
+### Changed
+
+- Config ownership pilots include `topic_shift` (**46** pilots / **642** Pydantic leaves / **658** registry keys).
+- Pin native BLAS/OpenMP/Numba thread env defaults before optional-extra imports so BERTopic/UMAP smoke does not conflict with a sticky Numba pool size.
+
+### Fixed
+
+- Optional-module smoke uses non-importing distribution probes for extras; Numba thread env is re-applied in pytest setup after env teardown.
+
 ## [0.6.4] - 2026-07-22
 
 ### Fixed

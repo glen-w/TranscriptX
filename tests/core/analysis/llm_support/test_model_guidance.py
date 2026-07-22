@@ -54,3 +54,15 @@ def test_unknown_family_uses_size_generic():
     row = guidance_for_model("mystery-model:7b")
     assert row.size_class == "mid"
     assert "balanced" in row.strengths.lower()
+
+
+def test_gemma3_4b_small_caption_guidance():
+    row = guidance_for_model("gemma3:4b")
+    assert row.size_class == "small"
+    assert "chart_descriptions" in row.best_for.lower()
+
+
+def test_mistral_nemo_long_context_guidance():
+    row = guidance_for_model("mistral-nemo:latest")
+    assert "long" in row.strengths.lower() or "context" in row.strengths.lower()
+    assert "llm_summary" in row.best_for.lower()

@@ -30,6 +30,7 @@
     "pauses",
     "echoes",
     "momentum",
+    "topic_shift",
     "moments",
     "highlights",
     "summary",
@@ -438,6 +439,17 @@
         "segments",
         "segment_timestamps",
         "speaker_labels"
+      ]
+    },
+    "topic_shift": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Topic-shift chapter segmentation",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps"
       ]
     },
     "moments": {

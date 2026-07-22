@@ -60,7 +60,25 @@ On the run form, **Project default (active)** loads the already-applied project 
 
 If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled.
 
-**Thinking models (JSON-unsafe):** tags matching `qwen3*`, `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, and `group_llm_synthesis`. The Run Analysis model selector **hides** those tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers. Launch stays gated if a saved profile still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, or `mistral:*` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
+**Thinking models (JSON-unsafe):** tags matching `qwen3*`, `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, and `group_llm_synthesis`. The Run Analysis model selector **hides** those tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers. Launch stays gated if a saved profile still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, `mistral:*`, or `mistral-nemo` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
+
+### Complementary Ollama picks for transcript analysis
+
+Useful additions when the local library is already Qwen-heavy (or JSON modules need non-thinking tags):
+
+| Tag | Size class | Why pull it | Best TranscriptX fit |
+|-----|------------|-------------|----------------------|
+| `gemma3:4b` (~3.3 GB) | small | Fast non-thinking captions with 128K context; better than toy 1B tags | `chart_descriptions`; short drafts |
+| `mistral-nemo` (~7.1 GB) | mid | 12B instruct with extreme context headroom; stable JSON | Long-session `llm_summary` / `llm_speaker_summary`; solid shared mid |
+| `gemma3:27b` (~17 GB) | large | Multilingual / high-quality non-thinking alternative to large Qwen/GPT-OSS | Shared high-quality JSON + prose (`narrative_summary`, action items, digests) |
+
+```bash
+ollama pull gemma3:4b
+ollama pull mistral-nemo
+ollama pull gemma3:27b
+```
+
+The Run Analysis expander **Installed models — what they're good at** describes installed tags (including these) for per-module assignment.
 
 If a selected model is missing at generate time, the LLM consumer fails with a clear model-missing error (no silent substitute). Corrections Studio continues to use global `llm.model` only.
 

@@ -46,6 +46,9 @@ from transcriptx.core.analysis.group_charts.tics_group_charts import (
 from transcriptx.core.analysis.group_charts.transcript_quality_charts import (
     TranscriptQualityGroupChartGenerator,
 )
+from transcriptx.core.analysis.group_charts.topic_shift_charts import (
+    TopicShiftGroupChartGenerator,
+)
 from transcriptx.core.analysis.group_charts.topic_modeling_group_charts import (
     TopicModelingGroupChartGenerator,
 )
@@ -86,6 +89,7 @@ GROUP_AGGREGATE_CHART_FAMILIES: Dict[str, Tuple[str, ...]] = {
     "interactions": ("session_bars", "pooled_single_view"),
     "tics": ("session_bars", "pooled_single_view"),
     "transcript_quality": ("session_bars",),
+    "topic_shift": ("session_bars", "temporal_overlay"),
     "understandability": ("session_bars",),
     "lexical_diversity": ("session_bars",),
     "simplified_transcript": ("session_bars",),
@@ -165,6 +169,7 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
         "bertopic": BertopicGroupChartGenerator(),
         "tics": TicsGroupChartGenerator(),
         "transcript_quality": TranscriptQualityGroupChartGenerator(),
+        "topic_shift": TopicShiftGroupChartGenerator(),
     }
     for aid in generic_ids:
         reg[aid] = GenericNumericGroupChartGenerator(

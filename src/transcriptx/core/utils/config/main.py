@@ -321,6 +321,7 @@ class TranscriptXConfig:
                 "transcript_quality": self._config_to_dict(
                     self.analysis.transcript_quality
                 ),
+                "topic_shift": self._config_to_dict(self.analysis.topic_shift),
                 "echoes": self._config_to_dict(self.analysis.echoes),
                 "momentum": self._config_to_dict(self.analysis.momentum),
                 "moments": self._config_to_dict(self.analysis.moments),

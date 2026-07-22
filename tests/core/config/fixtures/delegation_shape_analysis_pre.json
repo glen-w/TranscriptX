@@ -1,280 +1,12 @@
 {
-  "active_acts_profile": "default",
-  "active_qa_analysis_profile": "default",
-  "active_semantic_similarity_v2_profile": "balanced_v2",
-  "active_tag_extraction_profile": "default",
-  "active_temporal_dynamics_profile": "default",
-  "active_topic_modeling_profile": "default",
-  "active_vectorization_profile": "default",
-  "acts": {
-    "cache_size": 1000,
-    "context_window_size": 3,
-    "context_window_type": "sliding",
-    "enable_caching": true,
-    "ensemble_weight_ml": 0.3,
-    "ensemble_weight_rules": 0.2,
-    "ensemble_weight_transformer": 0.5,
-    "high_confidence_threshold": 0.9,
-    "include_speaker_info": true,
-    "include_timing_info": false,
-    "method": "both",
-    "min_confidence": 0.7,
-    "ml_batch_size": 32,
-    "ml_max_length": 512,
-    "ml_model_name": "bert-base-uncased",
-    "ml_use_gpu": false,
-    "rules_confidence_boost_exact_match": 0.1,
-    "rules_context_boost_factor": 0.15,
-    "rules_use_enhanced_patterns": true,
-    "rules_use_fallback_logic": true,
-    "use_context": true
-  },
-  "affect_tension": {
-    "mismatch_compound_threshold": -0.1,
-    "pos_emotion_threshold": 0.3,
-    "trust_like_threshold": 0.3,
-    "weight_entropy": 0.15,
-    "weight_posneg_mismatch": 0.4,
-    "weight_trust_neutral": 0.3,
-    "weight_volatility": 0.15,
-    "window_seconds": null,
-    "window_segments": 5
-  },
-  "analysis_mode": "quick",
-  "bertopic": {
-    "calculate_probabilities": false,
-    "embedding_model": "all-MiniLM-L6-v2",
-    "label_words": 3,
-    "min_topic_size": 5,
-    "nr_topics": "auto",
-    "timeout_seconds": 3600.0,
-    "top_n_words": 10
-  },
-  "chart_descriptions": {
-    "chart_set": "all",
-    "circuit_breaker_failures": 3,
-    "enabled": true,
-    "max_description_chars": 1200,
-    "max_retries": 1,
-    "request_timeout": 120.0
-  },
-  "clustering_eps": 0.3,
-  "clustering_min_samples": 2,
-  "contextual_emotion": {
-    "batch_size": 8,
-    "confidence_threshold": 0.45,
-    "profile_id": "contextual_hartmann_distilroberta_v1",
-    "release_channel": "experimental"
-  },
-  "corrections": {
-    "consistency_similarity_threshold": 0.88,
-    "create_backup": true,
-    "default_rule_scope": "project",
-    "enable_fuzzy": false,
-    "enabled": true,
-    "fuzzy_similarity_threshold": 0.92,
-    "interactive_review": true,
-    "known_acronyms": [
-      "CSE",
-      "REN21"
-    ],
-    "known_org_phrases": {
-      "REN21": [
-        "ren twenty one",
-        "wren twenty one"
-      ]
-    },
-    "llm": {
-      "assess_deterministic": false,
-      "chunk_max_segments": 40,
-      "chunk_overlap_segments": 4,
-      "continue_on_failure": true,
-      "effort": "low",
-      "enabled": false,
-      "max_candidates_per_chunk": 10,
-      "max_candidates_per_transcript": 80,
-      "max_chunks": 25,
-      "request_timeout_seconds": 120.0,
-      "total_wall_clock_seconds": 180.0
-    },
-    "store_corrected_transcript": true,
-    "update_original_file": false,
-    "write_csv_summary": true
-  },
-  "cross_speaker_similarity_threshold": 0.6,
-  "cross_speaker_time_window": 600.0,
-  "echoes": {
-    "echo_burst_min_events": 3,
-    "echo_burst_percentile_threshold": 0.95,
-    "echo_burst_window_seconds": 25.0,
-    "enable_semantic_paraphrase": false,
-    "exclude_phrases": [
-      "yeah",
-      "exactly",
-      "right"
-    ],
-    "explicit_quote_weight": 1.0,
-    "lexical_echo_threshold": 0.6,
-    "lookback_seconds": 240.0,
-    "max_candidates": 50,
-    "min_tokens": 5,
-    "paraphrase_threshold": 0.75,
-    "semantic_model_name": null
-  },
-  "emotion": {
-    "low_coverage_threshold": 0.05,
-    "no_hit_rate_warn": 0.8
-  },
+  "sentiment_window_size": 10,
+  "sentiment_min_confidence": 0.1,
   "emotion_min_confidence": 0.3,
   "emotion_model_name": "bhadresh-savani/distilbert-base-uncased-emotion",
   "emotion_output_mode": "top1",
   "emotion_score_threshold": 0.3,
-  "entity_min_mentions": 2,
-  "entity_sentiment_threshold": 0.05,
-  "entity_types": [
-    "PERSON",
-    "ORG",
-    "GPE",
-    "LOC"
-  ],
-  "exclude_unidentified_from_speaker_charts": true,
-  "fine_grained_emotion": {
-    "batch_size": 8,
-    "label_threshold": 0.28,
-    "max_labels_per_segment": 3,
-    "profile_id": "fine_grained_samlowe_go_emotions_v1",
-    "release_channel": "experimental"
-  },
-  "full_analysis_settings": {
-    "max_segments_for_cross_speaker": 1000,
-    "max_segments_for_semantic": 1000,
-    "max_segments_per_speaker": 400,
-    "max_semantic_comparisons": 30000,
-    "ner_max_segments": 5000,
-    "ner_use_light_model": false,
-    "reduced_chart_generation": false,
-    "semantic_method": "advanced",
-    "semantic_profile": "balanced",
-    "skip_advanced_semantic": false,
-    "skip_geocoding": false,
-    "use_lightweight_models": false
-  },
-  "group_llm_synthesis": {
-    "effort": "high",
-    "enabled": true
-  },
-  "highlights": {
-    "cold_open": {
-      "window_policy": "seconds",
-      "window_seconds": 90.0
-    },
-    "conflict": {
-      "merge_gap_seconds": 10.0,
-      "step_seconds": 10.0,
-      "window_seconds": 30.0
-    },
-    "counts": {
-      "cold_open_quotes": 5,
-      "conflict_windows": 6,
-      "emblematic_phrases": 12,
-      "total_highlights": 15
-    },
-    "enabled": true,
-    "merge_adjacent": {
-      "enabled": true,
-      "max_gap_seconds": 1.0,
-      "max_segments": 3
-    },
-    "output": {
-      "write_conflict_csv": false
-    },
-    "sections": {
-      "cold_open_enabled": true,
-      "conflict_points_enabled": true,
-      "emblematic_phrases_enabled": true
-    },
-    "thresholds": {
-      "conflict_spike_percentile": 95.0,
-      "max_consecutive_per_speaker": 2,
-      "max_phrase_len": 5,
-      "max_quote_words": 60,
-      "min_gap_seconds": 30.0,
-      "min_phrase_frequency": 3,
-      "min_phrase_len": 2,
-      "min_quote_words": 4
-    },
-    "weights": {
-      "conflict": 0.3,
-      "content_density": 0.15,
-      "intensity": 0.4,
-      "keyword_richness": 0.1,
-      "uniqueness": 0.2
-    }
-  },
-  "include_legacy_modules": false,
-  "interaction_include_overlaps": true,
-  "interaction_include_responses": true,
-  "interaction_min_gap": 0.1,
-  "interaction_min_interactions": 2,
-  "interaction_min_segment_length": 0.5,
-  "interaction_overlap_threshold": 0.5,
-  "interaction_response_threshold": 2.0,
-  "interaction_time_window": 30.0,
-  "llm_action_items": {
-    "effort": "high"
-  },
-  "llm_speaker_summary": {
-    "effort": "high"
-  },
-  "llm_summary": {
-    "effort": "high"
-  },
-  "loop_exclude_monologues": true,
-  "loop_max_gap": 10.0,
-  "loop_max_intermediate_turns": 2,
-  "loop_min_gap": 0.1,
-  "max_segments_for_cross_speaker": 500,
-  "max_segments_for_semantic": 1000,
-  "max_segments_per_speaker": 200,
-  "max_semantic_comparisons": 50000,
-  "min_segment_quality_score": 0.0,
-  "module_progress_log_interval_seconds": 60.0,
-  "moments": {
-    "diversity_bonus": 0.2,
-    "excerpt_max_chars": 200,
-    "excerpt_max_segments": 2,
-    "max_span_seconds": 120.0,
-    "merge_seconds": 20.0,
-    "multi_speaker_bonus": 0.15,
-    "top_n": 20,
-    "weight_map": {
-      "echo_burst": 0.3,
-      "emotion_switch": 0.4,
-      "long_pause": 0.3,
-      "momentum_cliff": 0.4,
-      "post_question_silence": 0.5,
-      "stall_zone": 0.35,
-      "unanswered_question": 0.5
-    },
-    "write_markdown": false
-  },
-  "momentum": {
-    "min_stall_duration_seconds": 30.0,
-    "momentum_cliff_threshold": -0.2,
-    "novelty_lookback_windows": 3,
-    "stall_threshold_percentile": 0.15,
-    "weights": {
-      "loop_rate": -0.2,
-      "novelty": 0.4,
-      "pause_rate": -0.3,
-      "repetition_rate": -0.3,
-      "turn_energy": 0.3
-    },
-    "window_length_seconds": 60.0,
-    "window_step_seconds": 30.0
-  },
-  "ner_batch_size": 100,
-  "ner_include_geocoding": true,
+  "sentiment_backend": "vader",
+  "sentiment_model_name": "cardiffnlp/twitter-roberta-base-sentiment-latest",
   "ner_labels": [
     "PERSON",
     "ORG",
@@ -284,737 +16,11 @@
     "TIME",
     "MONEY"
   ],
-  "ner_max_segments": 5000,
   "ner_min_confidence": 0.5,
+  "ner_include_geocoding": true,
   "ner_use_light_model": false,
-  "output_formats": [
-    "json",
-    "csv",
-    "png"
-  ],
-  "pauses": {
-    "min_long_pause_seconds": 2.0,
-    "percentile_long_pause": 0.95,
-    "post_question_multiplier": 1.5
-  },
-  "qa_analysis": {
-    "good_match_threshold": 0.5,
-    "high_match_threshold": 0.7,
-    "max_answer_length": 50,
-    "min_answer_length": 2,
-    "min_match_threshold": 0.3,
-    "optimal_answer_length": 5,
-    "response_time_threshold": 10.0,
-    "weight_completeness": 0.3,
-    "weight_directness": 0.3,
-    "weight_length": 0.15,
-    "weight_relevance": 0.25
-  },
-  "quality_filtering_profile": "balanced",
-  "quality_filtering_profiles": {
-    "academic": {
-      "description": "Optimized for academic discussions, research presentations, and debates",
-      "indicators": {
-        "agreement_disagreement": [
-          "agree",
-          "disagree",
-          "yes",
-          "no",
-          "correct",
-          "wrong",
-          "exactly",
-          "absolutely",
-          "precisely",
-          "inaccurate",
-          "valid",
-          "invalid"
-        ],
-        "complex_reasoning": [
-          "because",
-          "however",
-          "therefore",
-          "although",
-          "meanwhile",
-          "consequently",
-          "furthermore",
-          "moreover",
-          "nevertheless",
-          "nonetheless",
-          "thus",
-          "hence"
-        ],
-        "filler_words": [
-          "um",
-          "uh",
-          "like",
-          "you know",
-          "i mean",
-          "sort of",
-          "kind of",
-          "basically",
-          "actually"
-        ],
-        "opinions_ideas": [
-          "think",
-          "believe",
-          "suggest",
-          "propose",
-          "recommend",
-          "consider",
-          "hypothesize",
-          "conclude",
-          "argue",
-          "demonstrate",
-          "theorize",
-          "postulate"
-        ]
-      },
-      "thresholds": {
-        "good_word_range": [
-          5,
-          150
-        ],
-        "min_words": 5,
-        "optimal_word_range": [
-          8,
-          80
-        ],
-        "overlap_threshold": 0.8
-      },
-      "weights": {
-        "agreement_disagreement": 2.0,
-        "complex_reasoning": 4.0,
-        "dialogue_acts": {
-          "acknowledgement": 0.5,
-          "agreement": 2.5,
-          "disagreement": 3.0,
-          "hesitation": -1.5,
-          "question": 4.0,
-          "statement": 2.0,
-          "suggestion": 3.0
-        },
-        "entity_engagement": 2.0,
-        "exact_repetition_penalty": -3.0,
-        "filler_penalty": -1.0,
-        "high_overlap_penalty": -2.0,
-        "length_good": 1.5,
-        "length_optimal": 4.0,
-        "opinions_ideas": 3.0,
-        "optimal_readability": 3.0,
-        "sentiment_strength": 1.0,
-        "topic_relevance": 2.5,
-        "verbal_tic_penalty": -2.5
-      }
-    },
-    "balanced": {
-      "description": "Balanced approach for general conversations",
-      "indicators": {
-        "agreement_disagreement": [
-          "agree",
-          "disagree",
-          "yes",
-          "no",
-          "correct",
-          "wrong"
-        ],
-        "complex_reasoning": [
-          "because",
-          "however",
-          "therefore",
-          "although",
-          "meanwhile"
-        ],
-        "filler_words": [
-          "um",
-          "uh",
-          "like",
-          "you know",
-          "i mean",
-          "sort of",
-          "kind of"
-        ],
-        "opinions_ideas": [
-          "think",
-          "believe",
-          "suggest",
-          "propose",
-          "recommend"
-        ]
-      },
-      "thresholds": {
-        "good_word_range": [
-          3,
-          100
-        ],
-        "min_words": 3,
-        "optimal_word_range": [
-          5,
-          50
-        ],
-        "overlap_threshold": 0.7
-      },
-      "weights": {
-        "agreement_disagreement": 1.0,
-        "complex_reasoning": 2.0,
-        "exact_repetition_penalty": -5.0,
-        "filler_penalty": -0.5,
-        "high_overlap_penalty": -3.0,
-        "length_good": 1.0,
-        "length_optimal": 3.0,
-        "opinions_ideas": 2.0
-      }
-    },
-    "business": {
-      "description": "Optimized for business meetings, negotiations, and professional discussions",
-      "indicators": {
-        "agreement_disagreement": [
-          "agree",
-          "disagree",
-          "yes",
-          "no",
-          "correct",
-          "wrong",
-          "exactly",
-          "absolutely",
-          "sounds good",
-          "i'm on board",
-          "approved",
-          "rejected"
-        ],
-        "complex_reasoning": [
-          "because",
-          "however",
-          "therefore",
-          "although",
-          "meanwhile",
-          "consequently"
-        ],
-        "filler_words": [
-          "um",
-          "uh",
-          "like",
-          "you know",
-          "i mean",
-          "sort of",
-          "kind of"
-        ],
-        "opinions_ideas": [
-          "think",
-          "believe",
-          "suggest",
-          "propose",
-          "recommend",
-          "consider",
-          "feel",
-          "assume",
-          "recommend",
-          "advise",
-          "propose",
-          "plan"
-        ]
-      },
-      "thresholds": {
-        "good_word_range": [
-          3,
-          120
-        ],
-        "min_words": 3,
-        "optimal_word_range": [
-          5,
-          60
-        ],
-        "overlap_threshold": 0.75
-      },
-      "weights": {
-        "agreement_disagreement": 2.5,
-        "complex_reasoning": 2.5,
-        "dialogue_acts": {
-          "acknowledgement": 1.0,
-          "agreement": 3.0,
-          "disagreement": 2.5,
-          "hesitation": -0.5,
-          "question": 3.5,
-          "statement": 2.5,
-          "suggestion": 4.0
-        },
-        "entity_engagement": 2.5,
-        "exact_repetition_penalty": -4.0,
-        "filler_penalty": -0.3,
-        "high_overlap_penalty": -2.5,
-        "length_good": 1.0,
-        "length_optimal": 3.5,
-        "opinions_ideas": 4.0,
-        "optimal_readability": 2.5,
-        "sentiment_strength": 1.5,
-        "topic_relevance": 3.0,
-        "verbal_tic_penalty": -1.5
-      }
-    },
-    "casual": {
-      "description": "Optimized for casual conversations, social discussions, and informal chats",
-      "indicators": {
-        "agreement_disagreement": [
-          "yeah",
-          "no",
-          "right",
-          "wrong",
-          "sure",
-          "okay",
-          "cool"
-        ],
-        "complex_reasoning": [
-          "because",
-          "but",
-          "so",
-          "though",
-          "anyway"
-        ],
-        "filler_words": [
-          "um",
-          "uh",
-          "like",
-          "you know",
-          "i mean",
-          "sort of",
-          "kind of",
-          "basically",
-          "actually",
-          "literally"
-        ],
-        "opinions_ideas": [
-          "think",
-          "feel",
-          "like",
-          "guess",
-          "suppose",
-          "maybe"
-        ]
-      },
-      "thresholds": {
-        "good_word_range": [
-          2,
-          80
-        ],
-        "min_words": 2,
-        "optimal_word_range": [
-          3,
-          40
-        ],
-        "overlap_threshold": 0.6
-      },
-      "weights": {
-        "agreement_disagreement": 2.0,
-        "complex_reasoning": 1.5,
-        "dialogue_acts": {
-          "acknowledgement": 1.5,
-          "agreement": 2.5,
-          "disagreement": 2.0,
-          "hesitation": -0.3,
-          "question": 2.5,
-          "statement": 2.0,
-          "suggestion": 2.0
-        },
-        "entity_engagement": 1.5,
-        "exact_repetition_penalty": -3.0,
-        "filler_penalty": -0.2,
-        "high_overlap_penalty": -2.0,
-        "length_good": 1.5,
-        "length_optimal": 2.5,
-        "opinions_ideas": 2.5,
-        "optimal_readability": 1.5,
-        "sentiment_strength": 2.0,
-        "topic_relevance": 1.0,
-        "verbal_tic_penalty": -0.5
-      }
-    },
-    "interview": {
-      "description": "Optimized for job interviews, Q&A sessions, and structured conversations",
-      "indicators": {
-        "agreement_disagreement": [
-          "agree",
-          "disagree",
-          "yes",
-          "no",
-          "correct",
-          "wrong",
-          "exactly",
-          "absolutely"
-        ],
-        "complex_reasoning": [
-          "because",
-          "however",
-          "therefore",
-          "although",
-          "meanwhile"
-        ],
-        "filler_words": [
-          "um",
-          "uh",
-          "like",
-          "you know",
-          "i mean",
-          "sort of",
-          "kind of"
-        ],
-        "opinions_ideas": [
-          "think",
-          "believe",
-          "suggest",
-          "propose",
-          "recommend",
-          "consider",
-          "feel",
-          "experience",
-          "worked",
-          "developed"
-        ]
-      },
-      "thresholds": {
-        "good_word_range": [
-          4,
-          100
-        ],
-        "min_words": 4,
-        "optimal_word_range": [
-          6,
-          60
-        ],
-        "overlap_threshold": 0.75
-      },
-      "weights": {
-        "agreement_disagreement": 1.5,
-        "complex_reasoning": 2.0,
-        "dialogue_acts": {
-          "acknowledgement": 1.0,
-          "agreement": 1.5,
-          "disagreement": 2.0,
-          "hesitation": -1.0,
-          "question": 4.5,
-          "statement": 3.0,
-          "suggestion": 2.0
-        },
-        "entity_engagement": 2.0,
-        "exact_repetition_penalty": -3.5,
-        "filler_penalty": -0.5,
-        "high_overlap_penalty": -2.5,
-        "length_good": 1.0,
-        "length_optimal": 3.5,
-        "opinions_ideas": 3.5,
-        "optimal_readability": 2.5,
-        "sentiment_strength": 1.5,
-        "topic_relevance": 3.5,
-        "verbal_tic_penalty": -1.5
-      }
-    },
-    "technical": {
-      "description": "Optimized for technical discussions, code reviews, and troubleshooting sessions",
-      "indicators": {
-        "agreement_disagreement": [
-          "agree",
-          "disagree",
-          "yes",
-          "no",
-          "correct",
-          "wrong",
-          "exactly",
-          "absolutely",
-          "precisely",
-          "inaccurate",
-          "false"
-        ],
-        "complex_reasoning": [
-          "because",
-          "however",
-          "therefore",
-          "although",
-          "meanwhile",
-          "consequently",
-          "furthermore",
-          "moreover",
-          "nevertheless"
-        ],
-        "filler_words": [
-          "um",
-          "uh",
-          "like",
-          "you know",
-          "i mean",
-          "sort of",
-          "kind of"
-        ],
-        "opinions_ideas": [
-          "think",
-          "believe",
-          "suggest",
-          "propose",
-          "recommend",
-          "consider",
-          "argue",
-          "demonstrate",
-          "prove"
-        ]
-      },
-      "thresholds": {
-        "good_word_range": [
-          4,
-          130
-        ],
-        "min_words": 4,
-        "optimal_word_range": [
-          6,
-          70
-        ],
-        "overlap_threshold": 0.85
-      },
-      "weights": {
-        "agreement_disagreement": 3.0,
-        "complex_reasoning": 3.5,
-        "dialogue_acts": {
-          "acknowledgement": 1.0,
-          "agreement": 2.5,
-          "disagreement": 3.5,
-          "hesitation": -1.0,
-          "question": 4.0,
-          "statement": 2.5,
-          "suggestion": 3.5
-        },
-        "entity_engagement": 3.0,
-        "exact_repetition_penalty": -2.0,
-        "filler_penalty": -0.8,
-        "high_overlap_penalty": -1.5,
-        "length_good": 1.0,
-        "length_optimal": 3.0,
-        "opinions_ideas": 2.0,
-        "optimal_readability": 2.0,
-        "sentiment_strength": 1.0,
-        "topic_relevance": 4.0,
-        "verbal_tic_penalty": -2.0
-      }
-    }
-  },
-  "quality_indicators_override": null,
-  "quality_thresholds_override": null,
-  "quality_weights_override": null,
-  "quick_analysis_settings": {
-    "max_segments_for_semantic": 800,
-    "max_semantic_comparisons": 15000,
-    "ner_max_segments": 2000,
-    "ner_use_light_model": false,
-    "reduced_chart_generation": true,
-    "semantic_method": "simple",
-    "semantic_profile": "balanced",
-    "skip_advanced_semantic": true,
-    "skip_geocoding": false,
-    "use_lightweight_models": true
-  },
-  "readability_metrics": [
-    "flesch_reading_ease",
-    "flesch_kincaid_grade",
-    "gunning_fog"
-  ],
-  "repetition_time_window": 300.0,
-  "semantic_batch_size": 64,
-  "semantic_model_name": "sentence-transformers/all-MiniLM-L6-v2",
-  "semantic_progress_log_interval_seconds": 60.0,
-  "semantic_similarity_method": "simple",
-  "semantic_similarity_threshold": 0.7,
-  "semantic_similarity_v2": {
-    "batch_size": 64,
-    "cross_speaker_similarity_threshold": 0.6,
-    "cross_speaker_time_window_seconds": 600.0,
-    "enabled": true,
-    "lexical_prefilter_min_jaccard": 0.05,
-    "lru_size": 50000,
-    "max_candidate_pairs": 50000,
-    "min_text_length_words": 3,
-    "mode": "basic",
-    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
-    "persist_embeddings": false,
-    "self_similarity_threshold": 0.7,
-    "self_time_window_seconds": 300.0,
-    "strict_advanced_inputs": false,
-    "timeout_seconds": 300.0,
-    "top_k_per_segment": 50,
-    "use_lexical_prefilter": false
-  },
-  "semantic_similarity_v2_profiles": {
-    "balanced_v2": {
-      "cross_speaker_similarity_threshold": 0.62,
-      "lexical_prefilter_min_jaccard": 0.05,
-      "max_candidate_pairs": 50000,
-      "self_similarity_threshold": 0.72,
-      "timeout_seconds": 300.0,
-      "top_k_per_segment": 50,
-      "use_lexical_prefilter": true
-    },
-    "deep_v2": {
-      "cross_speaker_similarity_threshold": 0.55,
-      "max_candidate_pairs": 150000,
-      "mode": "advanced",
-      "self_similarity_threshold": 0.65,
-      "timeout_seconds": 900.0,
-      "top_k_per_segment": 120,
-      "use_lexical_prefilter": false
-    },
-    "fast_v2": {
-      "cross_speaker_similarity_threshold": 0.68,
-      "lexical_prefilter_min_jaccard": 0.1,
-      "max_candidate_pairs": 15000,
-      "mode": "basic",
-      "self_similarity_threshold": 0.78,
-      "timeout_seconds": 120.0,
-      "top_k_per_segment": 20,
-      "use_lexical_prefilter": true
-    }
-  },
-  "semantic_timeout_seconds": 300,
-  "sentiment_backend": "vader",
-  "sentiment_min_confidence": 0.1,
-  "sentiment_model_name": "cardiffnlp/twitter-roberta-base-sentiment-latest",
-  "sentiment_window_size": 10,
-  "speaker_exemplars": {
-    "count": 10,
-    "dedupe": true,
-    "distinctive_max_other_segments_per_speaker": 400,
-    "distinctive_max_other_segments_total": 2000,
-    "distinctive_max_other_speakers": 6,
-    "distinctive_min_other_segments": 50,
-    "distinctive_scope": "transcript",
-    "enabled": true,
-    "length_prior_center": 18.0,
-    "length_prior_enabled": true,
-    "length_prior_sigma": 12.0,
-    "max_segments_considered": 2000,
-    "max_words": 80,
-    "merge_adjacent": true,
-    "methods_enabled": {
-      "distinctive_vs_others": true,
-      "tfidf_within_speaker": true,
-      "unique": true
-    },
-    "min_words": 3,
-    "near_dedupe": false,
-    "near_dedupe_max_checks": 200,
-    "near_dedupe_threshold": 0.85,
-    "tfidf_max_features": 1000,
-    "tfidf_ngram_range": [
-      1,
-      2
-    ],
-    "weights": {
-      "distinctive_vs_others": 0.33,
-      "tfidf_within_speaker": 0.33,
-      "unique": 0.34
-    }
-  },
-  "summary": {
-    "allow_degraded": false,
-    "commitments": {
-      "max_per_owner": 3,
-      "rules": [
-        "\\b(I|we)\\s+(will|can|shall|need to|have to)\\s+.+",
-        "\\b(let's|lets)\\s+.+",
-        "\\b(action item|to-do|next step)\\b.+"
-      ]
-    },
-    "compute_highlights_if_missing": true,
-    "counts": {
-      "commitments": 8,
-      "tension_bullets": 5,
-      "theme_bullets": 6
-    },
-    "enabled": true,
-    "require_highlights": false,
-    "sections": {
-      "commitments_enabled": true,
-      "key_themes_enabled": true,
-      "overview_enabled": true,
-      "tension_points_enabled": true
-    }
-  },
-  "tag_extraction": {
-    "early_segments": 10,
-    "early_window_seconds": 60,
-    "min_confidence": 0.6
-  },
-  "temporal_dynamics": {
-    "closing_phase_max_seconds": 120.0,
-    "closing_phase_percentage": 0.1,
-    "engagement_change_threshold": 0.05,
-    "max_questions_normalization": 5.0,
-    "max_segments_normalization": 10.0,
-    "opening_phase_max_seconds": 120.0,
-    "opening_phase_percentage": 0.1,
-    "sentiment_change_threshold": 0.1,
-    "speaking_rate_change_threshold": 10.0,
-    "weight_length_factor": 0.3,
-    "weight_question_factor": 0.3,
-    "weight_segment_factor": 0.4,
-    "window_size": 30.0
-  },
-  "topic_modeling": {
-    "alpha_H": 0.1,
-    "k_range": [
-      3,
-      15
-    ],
-    "learning_method": "batch",
-    "max_df": 0.95,
-    "max_features": 1000,
-    "max_iter_lda": 50,
-    "max_iter_nmf": 10000,
-    "min_df": 2,
-    "ngram_range": [
-      1,
-      2
-    ],
-    "random_state": 42,
-    "test_size": 0.2,
-    "tol": 0.01
-  },
-  "transcript_quality": {
-    "cluster_merge_seconds": 2.0,
-    "low_score_threshold": 0.5,
-    "max_clusters": 25,
-    "max_gap_seconds": 0.75,
-    "max_spans": 50
-  },
-  "use_dag_pipeline": true,
-  "use_quality_filtering": true,
-  "vectorization": {
-    "max_df": 0.95,
-    "max_features": 1000,
-    "min_df": 1,
-    "ngram_range": [
-      1,
-      2
-    ],
-    "wordcloud_max_features": 300,
-    "wordcloud_ngram_range": [
-      1,
-      2
-    ]
-  },
-  "voice": {
-    "bin_seconds": 30.0,
-    "deep_max_seconds": 12.0,
-    "deep_mode": true,
-    "deep_model_name": "superb/wav2vec2-base-superb-er",
-    "drift_threshold": 2.5,
-    "egemaps_enabled": true,
-    "enabled": true,
-    "include_unnamed_in_global_curves": true,
-    "max_seconds_for_pitch": 20.0,
-    "max_segments_considered": null,
-    "mismatch_threshold": 0.6,
-    "pad_s": 0.15,
-    "sample_rate": 16000,
-    "smoothing_alpha": 0.25,
-    "store_parquet": "auto",
-    "strict_audio_hash": false,
-    "top_k_moments": 30,
-    "vad_mode": 2
-  },
+  "ner_max_segments": 5000,
+  "ner_batch_size": 100,
   "wordcloud_max_words": 100,
   "wordcloud_min_font_size": 8,
   "wordcloud_stopwords": [
@@ -1057,5 +63,1024 @@
     "that",
     "these",
     "those"
-  ]
+  ],
+  "exclude_unidentified_from_speaker_charts": true,
+  "corrections": {
+    "enabled": true,
+    "interactive_review": true,
+    "consistency_similarity_threshold": 0.88,
+    "fuzzy_similarity_threshold": 0.92,
+    "known_acronyms": [
+      "CSE",
+      "REN21"
+    ],
+    "known_org_phrases": {
+      "REN21": [
+        "ren twenty one",
+        "wren twenty one"
+      ]
+    },
+    "write_csv_summary": true,
+    "store_corrected_transcript": true,
+    "default_rule_scope": "project",
+    "enable_fuzzy": false,
+    "update_original_file": false,
+    "create_backup": true,
+    "llm": {
+      "enabled": false,
+      "effort": "low",
+      "request_timeout_seconds": 120.0,
+      "total_wall_clock_seconds": 180.0,
+      "max_chunks": 25,
+      "chunk_max_segments": 40,
+      "chunk_overlap_segments": 4,
+      "max_candidates_per_chunk": 10,
+      "max_candidates_per_transcript": 80,
+      "continue_on_failure": true,
+      "assess_deterministic": false
+    }
+  },
+  "speaker_exemplars": {
+    "enabled": true,
+    "count": 10,
+    "min_words": 3,
+    "max_words": 80,
+    "max_segments_considered": 2000,
+    "merge_adjacent": true,
+    "dedupe": true,
+    "near_dedupe": false,
+    "near_dedupe_threshold": 0.85,
+    "near_dedupe_max_checks": 200,
+    "methods_enabled": {
+      "unique": true,
+      "tfidf_within_speaker": true,
+      "distinctive_vs_others": true
+    },
+    "weights": {
+      "unique": 0.34,
+      "tfidf_within_speaker": 0.33,
+      "distinctive_vs_others": 0.33
+    },
+    "distinctive_scope": "transcript",
+    "distinctive_min_other_segments": 50,
+    "distinctive_max_other_speakers": 6,
+    "distinctive_max_other_segments_total": 2000,
+    "distinctive_max_other_segments_per_speaker": 400,
+    "tfidf_max_features": 1000,
+    "tfidf_ngram_range": [
+      1,
+      2
+    ],
+    "length_prior_enabled": true,
+    "length_prior_center": 18.0,
+    "length_prior_sigma": 12.0
+  },
+  "highlights": {
+    "enabled": true,
+    "counts": {
+      "cold_open_quotes": 5,
+      "total_highlights": 15,
+      "conflict_windows": 6,
+      "emblematic_phrases": 12
+    },
+    "thresholds": {
+      "conflict_spike_percentile": 95.0,
+      "min_gap_seconds": 30.0,
+      "min_quote_words": 4,
+      "max_quote_words": 60,
+      "max_consecutive_per_speaker": 2,
+      "min_phrase_len": 2,
+      "max_phrase_len": 5,
+      "min_phrase_frequency": 3
+    },
+    "weights": {
+      "intensity": 0.4,
+      "conflict": 0.3,
+      "uniqueness": 0.2,
+      "keyword_richness": 0.1,
+      "content_density": 0.15
+    },
+    "sections": {
+      "cold_open_enabled": true,
+      "conflict_points_enabled": true,
+      "emblematic_phrases_enabled": true
+    },
+    "output": {
+      "write_conflict_csv": false
+    },
+    "merge_adjacent": {
+      "enabled": true,
+      "max_gap_seconds": 1.0,
+      "max_segments": 3
+    },
+    "conflict": {
+      "window_seconds": 30.0,
+      "step_seconds": 10.0,
+      "merge_gap_seconds": 10.0
+    },
+    "cold_open": {
+      "window_seconds": 90.0,
+      "window_policy": "seconds"
+    }
+  },
+  "summary": {
+    "enabled": true,
+    "require_highlights": false,
+    "compute_highlights_if_missing": true,
+    "allow_degraded": false,
+    "counts": {
+      "theme_bullets": 6,
+      "tension_bullets": 5,
+      "commitments": 8
+    },
+    "sections": {
+      "overview_enabled": true,
+      "key_themes_enabled": true,
+      "tension_points_enabled": true,
+      "commitments_enabled": true
+    },
+    "commitments": {
+      "rules": [
+        "\\b(I|we)\\s+(will|can|shall|need to|have to)\\s+.+",
+        "\\b(let's|lets)\\s+.+",
+        "\\b(action item|to-do|next step)\\b.+"
+      ],
+      "max_per_owner": 3
+    }
+  },
+  "readability_metrics": [
+    "flesch_reading_ease",
+    "flesch_kincaid_grade",
+    "gunning_fog"
+  ],
+  "interaction_overlap_threshold": 0.5,
+  "interaction_min_gap": 0.1,
+  "interaction_min_segment_length": 0.5,
+  "interaction_response_threshold": 2.0,
+  "interaction_include_responses": true,
+  "interaction_include_overlaps": true,
+  "interaction_min_interactions": 2,
+  "interaction_time_window": 30.0,
+  "entity_min_mentions": 2,
+  "entity_types": [
+    "PERSON",
+    "ORG",
+    "GPE",
+    "LOC"
+  ],
+  "entity_sentiment_threshold": 0.05,
+  "loop_max_intermediate_turns": 2,
+  "loop_exclude_monologues": true,
+  "loop_min_gap": 0.1,
+  "loop_max_gap": 10.0,
+  "semantic_similarity_threshold": 0.7,
+  "cross_speaker_similarity_threshold": 0.6,
+  "repetition_time_window": 300.0,
+  "cross_speaker_time_window": 600.0,
+  "semantic_model_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "clustering_eps": 0.3,
+  "clustering_min_samples": 2,
+  "max_segments_for_semantic": 1000,
+  "max_segments_per_speaker": 200,
+  "max_segments_for_cross_speaker": 500,
+  "use_quality_filtering": true,
+  "min_segment_quality_score": 0.0,
+  "quality_filtering_profile": "balanced",
+  "semantic_similarity_method": "simple",
+  "quality_filtering_profiles": {
+    "balanced": {
+      "description": "Balanced approach for general conversations",
+      "weights": {
+        "length_optimal": 3.0,
+        "length_good": 1.0,
+        "complex_reasoning": 2.0,
+        "opinions_ideas": 2.0,
+        "agreement_disagreement": 1.0,
+        "filler_penalty": -0.5,
+        "exact_repetition_penalty": -5.0,
+        "high_overlap_penalty": -3.0
+      },
+      "thresholds": {
+        "min_words": 3,
+        "optimal_word_range": [
+          5,
+          50
+        ],
+        "good_word_range": [
+          3,
+          100
+        ],
+        "overlap_threshold": 0.7
+      },
+      "indicators": {
+        "complex_reasoning": [
+          "because",
+          "however",
+          "therefore",
+          "although",
+          "meanwhile"
+        ],
+        "opinions_ideas": [
+          "think",
+          "believe",
+          "suggest",
+          "propose",
+          "recommend"
+        ],
+        "agreement_disagreement": [
+          "agree",
+          "disagree",
+          "yes",
+          "no",
+          "correct",
+          "wrong"
+        ],
+        "filler_words": [
+          "um",
+          "uh",
+          "like",
+          "you know",
+          "i mean",
+          "sort of",
+          "kind of"
+        ]
+      }
+    },
+    "academic": {
+      "description": "Optimized for academic discussions, research presentations, and debates",
+      "weights": {
+        "length_optimal": 4.0,
+        "length_good": 1.5,
+        "complex_reasoning": 4.0,
+        "opinions_ideas": 3.0,
+        "agreement_disagreement": 2.0,
+        "filler_penalty": -1.0,
+        "exact_repetition_penalty": -3.0,
+        "high_overlap_penalty": -2.0,
+        "dialogue_acts": {
+          "question": 4.0,
+          "suggestion": 3.0,
+          "agreement": 2.5,
+          "disagreement": 3.0,
+          "statement": 2.0,
+          "acknowledgement": 0.5,
+          "hesitation": -1.5
+        },
+        "sentiment_strength": 1.0,
+        "verbal_tic_penalty": -2.5,
+        "optimal_readability": 3.0,
+        "topic_relevance": 2.5,
+        "entity_engagement": 2.0
+      },
+      "thresholds": {
+        "min_words": 5,
+        "optimal_word_range": [
+          8,
+          80
+        ],
+        "good_word_range": [
+          5,
+          150
+        ],
+        "overlap_threshold": 0.8
+      },
+      "indicators": {
+        "complex_reasoning": [
+          "because",
+          "however",
+          "therefore",
+          "although",
+          "meanwhile",
+          "consequently",
+          "furthermore",
+          "moreover",
+          "nevertheless",
+          "nonetheless",
+          "thus",
+          "hence"
+        ],
+        "opinions_ideas": [
+          "think",
+          "believe",
+          "suggest",
+          "propose",
+          "recommend",
+          "consider",
+          "hypothesize",
+          "conclude",
+          "argue",
+          "demonstrate",
+          "theorize",
+          "postulate"
+        ],
+        "agreement_disagreement": [
+          "agree",
+          "disagree",
+          "yes",
+          "no",
+          "correct",
+          "wrong",
+          "exactly",
+          "absolutely",
+          "precisely",
+          "inaccurate",
+          "valid",
+          "invalid"
+        ],
+        "filler_words": [
+          "um",
+          "uh",
+          "like",
+          "you know",
+          "i mean",
+          "sort of",
+          "kind of",
+          "basically",
+          "actually"
+        ]
+      }
+    },
+    "business": {
+      "description": "Optimized for business meetings, negotiations, and professional discussions",
+      "weights": {
+        "length_optimal": 3.5,
+        "length_good": 1.0,
+        "complex_reasoning": 2.5,
+        "opinions_ideas": 4.0,
+        "agreement_disagreement": 2.5,
+        "filler_penalty": -0.3,
+        "exact_repetition_penalty": -4.0,
+        "high_overlap_penalty": -2.5,
+        "dialogue_acts": {
+          "question": 3.5,
+          "suggestion": 4.0,
+          "agreement": 3.0,
+          "disagreement": 2.5,
+          "statement": 2.5,
+          "acknowledgement": 1.0,
+          "hesitation": -0.5
+        },
+        "sentiment_strength": 1.5,
+        "verbal_tic_penalty": -1.5,
+        "optimal_readability": 2.5,
+        "topic_relevance": 3.0,
+        "entity_engagement": 2.5
+      },
+      "thresholds": {
+        "min_words": 3,
+        "optimal_word_range": [
+          5,
+          60
+        ],
+        "good_word_range": [
+          3,
+          120
+        ],
+        "overlap_threshold": 0.75
+      },
+      "indicators": {
+        "complex_reasoning": [
+          "because",
+          "however",
+          "therefore",
+          "although",
+          "meanwhile",
+          "consequently"
+        ],
+        "opinions_ideas": [
+          "think",
+          "believe",
+          "suggest",
+          "propose",
+          "recommend",
+          "consider",
+          "feel",
+          "assume",
+          "recommend",
+          "advise",
+          "propose",
+          "plan"
+        ],
+        "agreement_disagreement": [
+          "agree",
+          "disagree",
+          "yes",
+          "no",
+          "correct",
+          "wrong",
+          "exactly",
+          "absolutely",
+          "sounds good",
+          "i'm on board",
+          "approved",
+          "rejected"
+        ],
+        "filler_words": [
+          "um",
+          "uh",
+          "like",
+          "you know",
+          "i mean",
+          "sort of",
+          "kind of"
+        ]
+      }
+    },
+    "casual": {
+      "description": "Optimized for casual conversations, social discussions, and informal chats",
+      "weights": {
+        "length_optimal": 2.5,
+        "length_good": 1.5,
+        "complex_reasoning": 1.5,
+        "opinions_ideas": 2.5,
+        "agreement_disagreement": 2.0,
+        "filler_penalty": -0.2,
+        "exact_repetition_penalty": -3.0,
+        "high_overlap_penalty": -2.0,
+        "dialogue_acts": {
+          "question": 2.5,
+          "suggestion": 2.0,
+          "agreement": 2.5,
+          "disagreement": 2.0,
+          "statement": 2.0,
+          "acknowledgement": 1.5,
+          "hesitation": -0.3
+        },
+        "sentiment_strength": 2.0,
+        "verbal_tic_penalty": -0.5,
+        "optimal_readability": 1.5,
+        "topic_relevance": 1.0,
+        "entity_engagement": 1.5
+      },
+      "thresholds": {
+        "min_words": 2,
+        "optimal_word_range": [
+          3,
+          40
+        ],
+        "good_word_range": [
+          2,
+          80
+        ],
+        "overlap_threshold": 0.6
+      },
+      "indicators": {
+        "complex_reasoning": [
+          "because",
+          "but",
+          "so",
+          "though",
+          "anyway"
+        ],
+        "opinions_ideas": [
+          "think",
+          "feel",
+          "like",
+          "guess",
+          "suppose",
+          "maybe"
+        ],
+        "agreement_disagreement": [
+          "yeah",
+          "no",
+          "right",
+          "wrong",
+          "sure",
+          "okay",
+          "cool"
+        ],
+        "filler_words": [
+          "um",
+          "uh",
+          "like",
+          "you know",
+          "i mean",
+          "sort of",
+          "kind of",
+          "basically",
+          "actually",
+          "literally"
+        ]
+      }
+    },
+    "technical": {
+      "description": "Optimized for technical discussions, code reviews, and troubleshooting sessions",
+      "weights": {
+        "length_optimal": 3.0,
+        "length_good": 1.0,
+        "complex_reasoning": 3.5,
+        "opinions_ideas": 2.0,
+        "agreement_disagreement": 3.0,
+        "filler_penalty": -0.8,
+        "exact_repetition_penalty": -2.0,
+        "high_overlap_penalty": -1.5,
+        "dialogue_acts": {
+          "question": 4.0,
+          "suggestion": 3.5,
+          "agreement": 2.5,
+          "disagreement": 3.5,
+          "statement": 2.5,
+          "acknowledgement": 1.0,
+          "hesitation": -1.0
+        },
+        "sentiment_strength": 1.0,
+        "verbal_tic_penalty": -2.0,
+        "optimal_readability": 2.0,
+        "topic_relevance": 4.0,
+        "entity_engagement": 3.0
+      },
+      "thresholds": {
+        "min_words": 4,
+        "optimal_word_range": [
+          6,
+          70
+        ],
+        "good_word_range": [
+          4,
+          130
+        ],
+        "overlap_threshold": 0.85
+      },
+      "indicators": {
+        "complex_reasoning": [
+          "because",
+          "however",
+          "therefore",
+          "although",
+          "meanwhile",
+          "consequently",
+          "furthermore",
+          "moreover",
+          "nevertheless"
+        ],
+        "opinions_ideas": [
+          "think",
+          "believe",
+          "suggest",
+          "propose",
+          "recommend",
+          "consider",
+          "argue",
+          "demonstrate",
+          "prove"
+        ],
+        "agreement_disagreement": [
+          "agree",
+          "disagree",
+          "yes",
+          "no",
+          "correct",
+          "wrong",
+          "exactly",
+          "absolutely",
+          "precisely",
+          "inaccurate",
+          "false"
+        ],
+        "filler_words": [
+          "um",
+          "uh",
+          "like",
+          "you know",
+          "i mean",
+          "sort of",
+          "kind of"
+        ]
+      }
+    },
+    "interview": {
+      "description": "Optimized for job interviews, Q&A sessions, and structured conversations",
+      "weights": {
+        "length_optimal": 3.5,
+        "length_good": 1.0,
+        "complex_reasoning": 2.0,
+        "opinions_ideas": 3.5,
+        "agreement_disagreement": 1.5,
+        "filler_penalty": -0.5,
+        "exact_repetition_penalty": -3.5,
+        "high_overlap_penalty": -2.5,
+        "dialogue_acts": {
+          "question": 4.5,
+          "suggestion": 2.0,
+          "agreement": 1.5,
+          "disagreement": 2.0,
+          "statement": 3.0,
+          "acknowledgement": 1.0,
+          "hesitation": -1.0
+        },
+        "sentiment_strength": 1.5,
+        "verbal_tic_penalty": -1.5,
+        "optimal_readability": 2.5,
+        "topic_relevance": 3.5,
+        "entity_engagement": 2.0
+      },
+      "thresholds": {
+        "min_words": 4,
+        "optimal_word_range": [
+          6,
+          60
+        ],
+        "good_word_range": [
+          4,
+          100
+        ],
+        "overlap_threshold": 0.75
+      },
+      "indicators": {
+        "complex_reasoning": [
+          "because",
+          "however",
+          "therefore",
+          "although",
+          "meanwhile"
+        ],
+        "opinions_ideas": [
+          "think",
+          "believe",
+          "suggest",
+          "propose",
+          "recommend",
+          "consider",
+          "feel",
+          "experience",
+          "worked",
+          "developed"
+        ],
+        "agreement_disagreement": [
+          "agree",
+          "disagree",
+          "yes",
+          "no",
+          "correct",
+          "wrong",
+          "exactly",
+          "absolutely"
+        ],
+        "filler_words": [
+          "um",
+          "uh",
+          "like",
+          "you know",
+          "i mean",
+          "sort of",
+          "kind of"
+        ]
+      }
+    }
+  },
+  "quality_weights_override": null,
+  "quality_thresholds_override": null,
+  "quality_indicators_override": null,
+  "max_semantic_comparisons": 50000,
+  "semantic_timeout_seconds": 300,
+  "semantic_batch_size": 64,
+  "semantic_progress_log_interval_seconds": 60.0,
+  "module_progress_log_interval_seconds": 60.0,
+  "output_formats": [
+    "json",
+    "csv",
+    "png"
+  ],
+  "use_dag_pipeline": true,
+  "include_legacy_modules": false,
+  "analysis_mode": "quick",
+  "quick_analysis_settings": {
+    "use_lightweight_models": true,
+    "semantic_method": "simple",
+    "max_segments_for_semantic": 800,
+    "max_semantic_comparisons": 15000,
+    "ner_use_light_model": false,
+    "ner_max_segments": 2000,
+    "skip_advanced_semantic": true,
+    "skip_geocoding": false,
+    "reduced_chart_generation": true,
+    "semantic_profile": "balanced"
+  },
+  "full_analysis_settings": {
+    "use_lightweight_models": false,
+    "semantic_method": "advanced",
+    "max_segments_for_semantic": 1000,
+    "max_semantic_comparisons": 30000,
+    "max_segments_per_speaker": 400,
+    "max_segments_for_cross_speaker": 1000,
+    "ner_use_light_model": false,
+    "ner_max_segments": 5000,
+    "skip_advanced_semantic": false,
+    "skip_geocoding": false,
+    "reduced_chart_generation": false,
+    "semantic_profile": "balanced"
+  },
+  "semantic_similarity_v2": {
+    "enabled": true,
+    "mode": "basic",
+    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+    "batch_size": 64,
+    "min_text_length_words": 3,
+    "self_similarity_threshold": 0.7,
+    "cross_speaker_similarity_threshold": 0.6,
+    "self_time_window_seconds": 300.0,
+    "cross_speaker_time_window_seconds": 600.0,
+    "max_candidate_pairs": 50000,
+    "top_k_per_segment": 50,
+    "timeout_seconds": 300.0,
+    "persist_embeddings": false,
+    "lru_size": 50000,
+    "use_lexical_prefilter": false,
+    "lexical_prefilter_min_jaccard": 0.05,
+    "strict_advanced_inputs": false
+  },
+  "active_semantic_similarity_v2_profile": "balanced_v2",
+  "semantic_similarity_v2_profiles": {
+    "fast_v2": {
+      "self_similarity_threshold": 0.78,
+      "cross_speaker_similarity_threshold": 0.68,
+      "top_k_per_segment": 20,
+      "max_candidate_pairs": 15000,
+      "timeout_seconds": 120.0,
+      "use_lexical_prefilter": true,
+      "lexical_prefilter_min_jaccard": 0.1,
+      "mode": "basic"
+    },
+    "balanced_v2": {
+      "self_similarity_threshold": 0.72,
+      "cross_speaker_similarity_threshold": 0.62,
+      "top_k_per_segment": 50,
+      "max_candidate_pairs": 50000,
+      "timeout_seconds": 300.0,
+      "use_lexical_prefilter": true,
+      "lexical_prefilter_min_jaccard": 0.05
+    },
+    "deep_v2": {
+      "mode": "advanced",
+      "self_similarity_threshold": 0.65,
+      "cross_speaker_similarity_threshold": 0.55,
+      "top_k_per_segment": 120,
+      "max_candidate_pairs": 150000,
+      "timeout_seconds": 900.0,
+      "use_lexical_prefilter": false
+    }
+  },
+  "topic_modeling": {
+    "max_features": 1000,
+    "min_df": 2,
+    "max_df": 0.95,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "random_state": 42,
+    "max_iter_lda": 50,
+    "max_iter_nmf": 10000,
+    "alpha_H": 0.1,
+    "tol": 0.01,
+    "learning_method": "batch",
+    "k_range": [
+      3,
+      15
+    ],
+    "test_size": 0.2
+  },
+  "bertopic": {
+    "embedding_model": "all-MiniLM-L6-v2",
+    "min_topic_size": 5,
+    "nr_topics": "auto",
+    "top_n_words": 10,
+    "label_words": 3,
+    "calculate_probabilities": false,
+    "timeout_seconds": 3600.0
+  },
+  "acts": {
+    "method": "both",
+    "use_context": true,
+    "context_window_size": 3,
+    "context_window_type": "sliding",
+    "include_speaker_info": true,
+    "include_timing_info": false,
+    "min_confidence": 0.7,
+    "high_confidence_threshold": 0.9,
+    "ensemble_weight_transformer": 0.5,
+    "ensemble_weight_ml": 0.3,
+    "ensemble_weight_rules": 0.2,
+    "ml_model_name": "bert-base-uncased",
+    "ml_use_gpu": false,
+    "ml_batch_size": 32,
+    "ml_max_length": 512,
+    "rules_use_enhanced_patterns": true,
+    "rules_use_fallback_logic": true,
+    "rules_confidence_boost_exact_match": 0.1,
+    "rules_context_boost_factor": 0.15,
+    "enable_caching": true,
+    "cache_size": 1000
+  },
+  "tag_extraction": {
+    "early_window_seconds": 60,
+    "early_segments": 10,
+    "min_confidence": 0.6
+  },
+  "llm_summary": {
+    "effort": "high"
+  },
+  "llm_speaker_summary": {
+    "effort": "high"
+  },
+  "llm_action_items": {
+    "effort": "high"
+  },
+  "group_llm_synthesis": {
+    "enabled": true,
+    "effort": "high"
+  },
+  "chart_descriptions": {
+    "enabled": true,
+    "chart_set": "all",
+    "max_description_chars": 1200,
+    "request_timeout": 120.0,
+    "max_retries": 1,
+    "circuit_breaker_failures": 3
+  },
+  "qa_analysis": {
+    "response_time_threshold": 10.0,
+    "weight_directness": 0.3,
+    "weight_completeness": 0.3,
+    "weight_relevance": 0.25,
+    "weight_length": 0.15,
+    "min_match_threshold": 0.3,
+    "good_match_threshold": 0.5,
+    "high_match_threshold": 0.7,
+    "min_answer_length": 2,
+    "optimal_answer_length": 5,
+    "max_answer_length": 50
+  },
+  "temporal_dynamics": {
+    "window_size": 30.0,
+    "weight_segment_factor": 0.4,
+    "weight_length_factor": 0.3,
+    "weight_question_factor": 0.3,
+    "max_segments_normalization": 10.0,
+    "max_questions_normalization": 5.0,
+    "opening_phase_percentage": 0.1,
+    "opening_phase_max_seconds": 120.0,
+    "closing_phase_percentage": 0.1,
+    "closing_phase_max_seconds": 120.0,
+    "sentiment_change_threshold": 0.1,
+    "engagement_change_threshold": 0.05,
+    "speaking_rate_change_threshold": 10.0
+  },
+  "pauses": {
+    "min_long_pause_seconds": 2.0,
+    "post_question_multiplier": 1.5,
+    "percentile_long_pause": 0.95
+  },
+  "transcript_quality": {
+    "low_score_threshold": 0.5,
+    "max_gap_seconds": 0.75,
+    "cluster_merge_seconds": 2.0,
+    "max_spans": 50,
+    "max_clusters": 25
+  },
+  "topic_shift": {
+    "window_size": 5,
+    "stride": 2,
+    "smooth_width": 3,
+    "edge_exclude": 1,
+    "min_windows_for_detection": 4,
+    "min_gap_windows": 2,
+    "min_gap_seconds": 30.0,
+    "max_shifts": 20,
+    "centroid_radius": 2,
+    "centroid_threshold": 0.08,
+    "min_text_chars": 8,
+    "max_windows_per_chunk": 200,
+    "chunk_overlap_windows": 20,
+    "min_duration_for_rate_seconds": 120.0,
+    "en_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "multi_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "batch_size": 32,
+    "lru_size": 4096,
+    "k_mad": 3.0,
+    "absolute_floor": 0.15,
+    "min_prominence": 0.05,
+    "llm_effort": "balanced"
+  },
+  "echoes": {
+    "lookback_seconds": 240.0,
+    "max_candidates": 50,
+    "explicit_quote_weight": 1.0,
+    "lexical_echo_threshold": 0.6,
+    "paraphrase_threshold": 0.75,
+    "min_tokens": 5,
+    "exclude_phrases": [
+      "yeah",
+      "exactly",
+      "right"
+    ],
+    "enable_semantic_paraphrase": false,
+    "semantic_model_name": null,
+    "echo_burst_window_seconds": 25.0,
+    "echo_burst_min_events": 3,
+    "echo_burst_percentile_threshold": 0.95
+  },
+  "momentum": {
+    "window_length_seconds": 60.0,
+    "window_step_seconds": 30.0,
+    "stall_threshold_percentile": 0.15,
+    "min_stall_duration_seconds": 30.0,
+    "momentum_cliff_threshold": -0.2,
+    "novelty_lookback_windows": 3,
+    "weights": {
+      "pause_rate": -0.3,
+      "repetition_rate": -0.3,
+      "loop_rate": -0.2,
+      "novelty": 0.4,
+      "turn_energy": 0.3
+    }
+  },
+  "moments": {
+    "top_n": 20,
+    "merge_seconds": 20.0,
+    "weight_map": {
+      "long_pause": 0.3,
+      "post_question_silence": 0.5,
+      "momentum_cliff": 0.4,
+      "echo_burst": 0.3,
+      "stall_zone": 0.35,
+      "emotion_switch": 0.4,
+      "unanswered_question": 0.5,
+      "topic_shift": 0.25
+    },
+    "diversity_bonus": 0.2,
+    "multi_speaker_bonus": 0.15,
+    "write_markdown": false,
+    "excerpt_max_chars": 200,
+    "excerpt_max_segments": 2,
+    "max_span_seconds": 120.0
+  },
+  "vectorization": {
+    "max_features": 1000,
+    "min_df": 1,
+    "max_df": 0.95,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "wordcloud_max_features": 300,
+    "wordcloud_ngram_range": [
+      1,
+      2
+    ]
+  },
+  "voice": {
+    "enabled": true,
+    "sample_rate": 16000,
+    "vad_mode": 2,
+    "pad_s": 0.15,
+    "max_seconds_for_pitch": 20.0,
+    "max_segments_considered": null,
+    "egemaps_enabled": true,
+    "deep_mode": true,
+    "deep_model_name": "superb/wav2vec2-base-superb-er",
+    "deep_max_seconds": 12.0,
+    "store_parquet": "auto",
+    "strict_audio_hash": false,
+    "mismatch_threshold": 0.6,
+    "top_k_moments": 30,
+    "drift_threshold": 2.5,
+    "bin_seconds": 30.0,
+    "smoothing_alpha": 0.25,
+    "include_unnamed_in_global_curves": true
+  },
+  "affect_tension": {
+    "mismatch_compound_threshold": -0.1,
+    "trust_like_threshold": 0.3,
+    "pos_emotion_threshold": 0.3,
+    "weight_posneg_mismatch": 0.4,
+    "weight_trust_neutral": 0.3,
+    "weight_entropy": 0.15,
+    "weight_volatility": 0.15,
+    "window_segments": 5,
+    "window_seconds": null
+  },
+  "emotion": {
+    "low_coverage_threshold": 0.05,
+    "no_hit_rate_warn": 0.8
+  },
+  "contextual_emotion": {
+    "profile_id": "contextual_hartmann_distilroberta_v1",
+    "confidence_threshold": 0.45,
+    "batch_size": 8,
+    "release_channel": "experimental"
+  },
+  "fine_grained_emotion": {
+    "profile_id": "fine_grained_samlowe_go_emotions_v1",
+    "label_threshold": 0.28,
+    "max_labels_per_segment": 3,
+    "batch_size": 8,
+    "release_channel": "experimental"
+  },
+  "active_topic_modeling_profile": "default",
+  "active_acts_profile": "default",
+  "active_tag_extraction_profile": "default",
+  "active_qa_analysis_profile": "default",
+  "active_temporal_dynamics_profile": "default",
+  "active_vectorization_profile": "default"
 }

@@ -479,6 +479,16 @@ def clean_environment():
     os.environ.setdefault("TRANSCRIPTX_DISABLE_DOWNLOADS", "1")
     # Most tests use fixture JSON transcripts outside managed library paths.
     os.environ.setdefault("TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS", "1")
+    # Re-apply after any prior test teardown cleared env (Numba pool is sticky).
+    for key, value in (
+        ("TOKENIZERS_PARALLELISM", "false"),
+        ("OMP_NUM_THREADS", "1"),
+        ("MKL_NUM_THREADS", "1"),
+        ("OPENBLAS_NUM_THREADS", "1"),
+        ("NUMBA_NUM_THREADS", "1"),
+        ("VECLIB_MAXIMUM_THREADS", "1"),
+    ):
+        os.environ.setdefault(key, value)
 
     yield
 
@@ -558,6 +568,17 @@ def _session_spacy_model():
 
 def pytest_configure(config):
     """Configure pytest with custom markers."""
+    # Pin before collection/imports can load Numba (pool size is process-sticky).
+    for key, value in (
+        ("TOKENIZERS_PARALLELISM", "false"),
+        ("OMP_NUM_THREADS", "1"),
+        ("MKL_NUM_THREADS", "1"),
+        ("OPENBLAS_NUM_THREADS", "1"),
+        ("NUMBA_NUM_THREADS", "1"),
+        ("VECLIB_MAXIMUM_THREADS", "1"),
+    ):
+        os.environ.setdefault(key, value)
+
     chosen = _pick_installed_spacy_model()
     if chosen:
         os.environ["TRANSCRIPTX_SPACY_MODEL"] = chosen

@@ -112,6 +112,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
     "pauses": ("transcriptx.core.analysis.dynamics.pauses", "PausesAnalysis"),
     "echoes": ("transcriptx.core.analysis.dynamics.echoes", "EchoesAnalysis"),
     "momentum": ("transcriptx.core.analysis.dynamics.momentum", "MomentumAnalysis"),
+    "topic_shift": (
+        "transcriptx.core.analysis.topic_shift",
+        "TopicShiftAnalysis",
+    ),
     "moments": ("transcriptx.core.analysis.dynamics.moments", "MomentsAnalysis"),
     "highlights": ("transcriptx.core.analysis.highlights", "HighlightsAnalysis"),
     "summary": ("transcriptx.core.analysis.summary", "SummaryAnalysis"),

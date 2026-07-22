@@ -31,6 +31,7 @@ from transcriptx.core.utils.config.analysis import (
     TemporalDynamicsConfig,
     TopicModelingConfig,
     TranscriptQualityConfig,
+    TopicShiftConfig,
     VectorizationConfig,
     VoiceConfig,
 )
@@ -89,6 +90,7 @@ from .models.semantic_similarity_v2_profiles import (
 )
 from .models.speaker_exemplars import SpeakerExemplarsSettingsModel
 from .models.transcript_quality import TranscriptQualitySettingsModel
+from .models.topic_shift import TopicShiftSettingsModel
 from .models.summary import SummarySettingsModel
 from .models.tag_extraction import TagExtractionSettingsModel
 from .models.temporal_dynamics import TemporalDynamicsSettingsModel
@@ -372,6 +374,13 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="analysis.transcript_quality",
         category="analysis",
         dataclass_type=TranscriptQualityConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="topic_shift",
+        model=TopicShiftSettingsModel,
+        dotpath_prefix="analysis.topic_shift",
+        category="analysis",
+        dataclass_type=TopicShiftConfig,
     ),
     PydanticPilotSpec(
         pilot_id="bertopic",

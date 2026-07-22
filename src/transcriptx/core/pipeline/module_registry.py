@@ -31,6 +31,10 @@ def is_extra_available(extra_name: str) -> bool:
     Prefer ``is_extra_distribution_present`` from
     ``transcriptx.core.pipeline.optional_extras`` for non-importing detection.
     """
+    # BERTopic/UMAP import Numba; pin pool size before first import.
+    from transcriptx.core.utils.native_threads import ensure_native_thread_env_defaults
+
+    ensure_native_thread_env_defaults()
     module_name = EXTRA_REPRESENTATIVE.get(extra_name)
     if not module_name:
         return False

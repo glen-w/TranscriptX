@@ -306,8 +306,9 @@ def test_pipeline_native_thread_defaults_use_setdefault(
 ) -> None:
     """Unset OMP/MKL pins to 1; explicit user values are preserved."""
     from transcriptx.core.pipeline import pipeline as pipeline_mod
+    from transcriptx.core.utils.native_threads import _NATIVE_THREAD_ENV_DEFAULTS
 
-    for key, _ in pipeline_mod._NATIVE_THREAD_ENV_DEFAULTS:
+    for key, _ in _NATIVE_THREAD_ENV_DEFAULTS:
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("OMP_NUM_THREADS", "8")
 

@@ -327,9 +327,21 @@ def _render_transcript_tabs(
     highlight_query: str | None,
     jump_index: int | None,
     playback: TranscriptPlaybackBinding | None,
+    chapter_rows: list[Any] | None = None,
 ) -> None:
-    """Render turns/segments tabs for already-filtered display segments."""
-    tab_turns, tab_segments = st.tabs(["Turns", "Segments"])
+    """Render turns/segments/chapters tabs for already-filtered display segments."""
+    from transcriptx.web.transcript_viewer.chapters import (
+        format_chapter_time_range,
+        queue_chapter_jump,
+    )
+
+    if chapter_rows:
+        tab_turns, tab_segments, tab_chapters = st.tabs(
+            ["Turns", "Segments", "Chapters"]
+        )
+    else:
+        tab_turns, tab_segments = st.tabs(["Turns", "Segments"])
+        tab_chapters = None
     with tab_turns:
         render_segmented_tab(
             display_segments,
@@ -346,6 +358,49 @@ def _render_transcript_tabs(
             jump_index=jump_index,
             playback=playback,
         )
+    if tab_chapters is not None and chapter_rows is not None:
+        with tab_chapters:
+            if not chapter_rows:
+                st.caption("No topic-shift chapters for this run.")
+            else:
+                st.caption(
+                    "Chapters from topic_shift. Jump selects the nearest transcript "
+                    "segment; optional play starts after navigation."
+                )
+                for row in chapter_rows:
+                    cols = st.columns([4, 2, 1, 1])
+                    with cols[0]:
+                        label = row.title
+                        if row.summary:
+                            st.markdown(f"**{label}**")
+                            st.caption(row.summary[:240])
+                        else:
+                            st.markdown(f"**{label}**")
+                        meta = format_chapter_time_range(row.time_start, row.time_end)
+                        if row.strength is not None and row.leading_boundary_id:
+                            meta += f" · strength {row.strength:.2f}"
+                        st.caption(meta)
+                    target = row.viewer_target_source_index
+                    with cols[2]:
+                        if target is not None and st.button(
+                            "Jump",
+                            key=f"tx_chapter_jump_{row.span_id}",
+                            use_container_width=True,
+                        ):
+                            queue_chapter_jump(
+                                st.session_state, source_index=int(target), play=False
+                            )
+                            st.rerun()
+                    with cols[3]:
+                        if target is not None and st.button(
+                            "Play",
+                            key=f"tx_chapter_play_{row.span_id}",
+                            use_container_width=True,
+                        ):
+                            queue_chapter_jump(
+                                st.session_state, source_index=int(target), play=True
+                            )
+                            st.rerun()
 
 
 @st.fragment
@@ -360,14 +415,24 @@ def _transcript_interaction_fragment(
     transcript_size: int,
     transcript_mtime_ns: int,
     playback_availability: PlaybackAvailability,
+    run_root: Path | None = None,
 ) -> None:
     """Transcript search and segment tabs without full-app rerun."""
+    from transcriptx.web.transcript_viewer.chapters import (
+        consume_chapter_pending,
+        load_chapter_rows,
+    )
+
     controls = _render_transcript_controls()
+    pending = consume_chapter_pending(st.session_state)
+    effective_jump = jump_index
+    if pending and isinstance(pending.get("jump_index"), int):
+        effective_jump = int(pending["jump_index"])
 
     display_segments, filter_caption = filtered_display_segments(
         segments=segments,
         search_text=controls.search_text,
-        jump_index=jump_index,
+        jump_index=effective_jump,
     )
     if filter_caption:
         st.caption(filter_caption)
@@ -384,7 +449,7 @@ def _transcript_interaction_fragment(
         owner_identity=owner,
         display_segments=display_segments,
         search_text=controls.search_text,
-        jump_index=jump_index,
+        jump_index=effective_jump,
     )
     reset_transcript_playback_state_if_needed(
         st.session_state,
@@ -392,6 +457,11 @@ def _transcript_interaction_fragment(
         view_signature=view_sig,
         targets=targets,
     )
+    # Re-apply chapter play after view-signature reset clears _PLAY_KEY.
+    if pending and pending.get("play"):
+        target = pending.get("jump_index")
+        if type(target) is int and target in targets:
+            st.session_state[_PLAY_KEY] = target
 
     playback_enabled = bool(
         playback_availability.enabled
@@ -459,12 +529,14 @@ def _transcript_interaction_fragment(
             owner_prefix=_owner_prefix(owner),
         )
 
+    chapter_rows = load_chapter_rows(run_root) if run_root is not None else []
     _render_transcript_tabs(
         display_segments,
         controls=controls,
         highlight_query=highlight_query,
-        jump_index=jump_index,
+        jump_index=effective_jump,
         playback=binding,
+        chapter_rows=chapter_rows,
     )
 
 
@@ -522,7 +594,7 @@ def render_transcript_viewer() -> None:
             selected_session=session_slug,
             run_id=run_id,
         )
-        render_download_row(artifacts, transcript_data, selected)
+        render_download_row(artifacts, transcript_data, selected, run_root=run_root)
 
         if not segments:
             render_empty_state(
@@ -573,6 +645,7 @@ def render_transcript_viewer() -> None:
             transcript_size=size,
             transcript_mtime_ns=mtime_ns,
             playback_availability=playback_availability,
+            run_root=run_root,
         )
     except Exception as exc:
         logger.error(f"Error loading transcript: {exc}", exc_info=True)

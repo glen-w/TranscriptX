@@ -27,6 +27,7 @@ _NEW_NESTED = (
     "echoes",
     "momentum",
     "moments",
+    "topic_shift",
     "affect_tension",
     "acts",
     "topic_modeling",

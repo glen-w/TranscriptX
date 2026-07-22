@@ -76,6 +76,24 @@ def check_block_availability(
     module_deps = _effective_module_deps(spec, placement_params)
     artifact_patterns = _effective_artifact_patterns(spec, placement_params)
 
+    if "topic_shift" in module_deps and ctx.run_root is not None:
+        from transcriptx.core.analysis.topic_shift.visibility import (
+            resolve_topic_shift_visibility,
+        )
+
+        visibility = resolve_topic_shift_visibility(
+            ctx.run_root, run_results=ctx.run_results
+        )
+        if visibility == "suppress_failed":
+            return BlockAvailability(
+                available=False,
+                reason=(
+                    "topic_shift failed for this run; prior chapter artifacts "
+                    "are suppressed."
+                ),
+                matched_artifacts=(),
+            )
+
     if not module_deps and not artifact_patterns and not spec.artifact_kinds:
         return BlockAvailability(available=True, reason=None, matched_artifacts=())
 

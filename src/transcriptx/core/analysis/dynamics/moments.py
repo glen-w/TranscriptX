@@ -120,6 +120,7 @@ class MomentsAnalysis(AnalysisModule):
         echoes_data: Optional[Dict[str, Any]] = None,
         momentum_data: Optional[Dict[str, Any]] = None,
         qa_data: Optional[Dict[str, Any]] = None,
+        topic_shift_data: Optional[Dict[str, Any]] = None,
         transcript_hash: Optional[str] = None,
     ) -> Dict[str, Any]:
         from transcriptx.core.utils.canonicalization import (
@@ -179,6 +180,33 @@ class MomentsAnalysis(AnalysisModule):
         for event in self._normalize_events((momentum_data or {}).get("events", [])):
             if event.kind in {"stall_zone", "momentum_cliff"}:
                 add_candidate(event, event.kind.replace("_", " "), "momentum")
+
+        # Topic-shift point boundaries (soft optional; seed refs from indices/links)
+        topic_events = (topic_shift_data or {}).get("events")
+        if topic_events is None and isinstance(topic_shift_data, dict):
+            env = topic_shift_data.get("events_envelope") or {}
+            topic_events = env.get("events")
+        for event in self._normalize_events(topic_events or []):
+            if event.kind != "topic_shift":
+                continue
+            # Point events: expand to a short revisit interval using segment indices
+            refs = [
+                idx
+                for idx in [event.segment_start_idx, event.segment_end_idx]
+                if idx is not None
+            ]
+            if not refs:
+                for link in event.links or []:
+                    if isinstance(link, dict) and link.get("source_index") is not None:
+                        refs.append(int(link["source_index"]))
+            add_candidate(event, "topic shift", "topic_shift")
+            if candidates:
+                # Ensure segment_refs populated for point events
+                candidates[-1]["segment_refs"] = list(
+                    dict.fromkeys(candidates[-1]["segment_refs"] + refs)
+                )
+                if candidates[-1]["time_end"] <= candidates[-1]["time_start"]:
+                    candidates[-1]["time_end"] = candidates[-1]["time_start"] + 1.0
 
         # QA unanswered questions (optional)
         if qa_data:
@@ -432,6 +460,7 @@ class MomentsAnalysis(AnalysisModule):
             echoes_result = context.get_analysis_result("echoes")
             momentum_result = context.get_analysis_result("momentum")
             qa_result = context.get_analysis_result("qa_analysis")
+            topic_shift_result = context.get_analysis_result("topic_shift")
 
             results = self.analyze(
                 context.get_segments(),
@@ -439,6 +468,7 @@ class MomentsAnalysis(AnalysisModule):
                 echoes_data=echoes_result,
                 momentum_data=momentum_result,
                 qa_data=qa_result,
+                topic_shift_data=topic_shift_result,
                 transcript_hash=context.transcript_key,
             )
 

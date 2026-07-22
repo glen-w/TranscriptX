@@ -4,6 +4,8 @@
 
 **Source:** 2026-07-16 refactor assessment (Top 3). Behavior-preserving incremental plans.
 
+**Status: Done** (structural extract landed; see [`rename_corrections_compat_table.md`](rename_corrections_compat_table.md)). Steps below are retained as the historical plan of record.
+
 Index: [`docs/dev/refactor_top3_index_2026-07-16.md`](refactor_top3_index_2026-07-16.md)
 
 ## Candidate 3 — Split rename + corrections orchestrators
@@ -12,28 +14,33 @@ Index: [`docs/dev/refactor_top3_index_2026-07-16.md`](refactor_top3_index_2026-0
 
 Finish structural extraction of already-phased rename and corrections-generation orchestrators into focused modules so `pipeline.py` (~933 L) and `candidate_service.py` (~852 L) become thin coordinators—**behavior-preserving**, after characterization.
 
-### 2. Current state
+### 2. Current state (as of plan; now landed)
 
-**Rename (partially phased):**
+**Rename (extracted):**
 
 | Module | Responsibility |
 |--------|----------------|
 | `rename/plan.py` | `build_rename_plan`, `RenamePlan`, rollback policy |
 | `rename/journal.py` | journal I/O, lock path, `discover_incomplete_renames` |
 | `rename/finalize.py` | output-dir move + artifact remap |
+| `rename/transaction_phase.py` | txn execute + mark committed |
+| `rename/finalize_phase.py` | finalize-phase coordination |
+| `rename/reconcile.py` | reconcile phase + slug updates |
+| `rename/repair.py` | `repair_managed_rename` |
+| `rename/post_commit.py` | post-commit pipeline + journal close / outcome |
 | `rename/names.py`, `outcome.py`, `io_atomic.py`, `sidecars.py`, `processing_state.py`, `audio_association.py` | supporting |
-| **`rename/pipeline.py` (~933 L)** | Still owns: lock → journal → txn → finalize → reconcile → repair orchestration |
+| **`rename/pipeline.py` (~350 L)** | Thin orchestrator: lock → phase delegates |
 | `file_rename.py` | Compatibility shim + monkeypatch surface over `rename.*` |
 
-**Key pipeline symbols to keep stable as public API:**  
-`rename_managed_transcript`, `repair_managed_rename`, `rename_transcript_files`, `rename_transcript_files_with_outcome`, plus phase helpers `_run_under_lock`, `_execute_rename_transaction`, `_run_finalize_phase`, `_run_reconcile_phase`, `_post_commit_pipeline`, `_close_journal_and_build_outcome`.
+**Key pipeline symbols kept stable as public API:**  
+`rename_managed_transcript`, `repair_managed_rename`, `rename_transcript_files`, `rename_transcript_files_with_outcome`, plus phase helpers re-exported from extracted modules where needed for monkeypatches.
 
-**Corrections Studio:**
+**Corrections Studio (extracted):**
 
 | Piece | Notes |
 |-------|-------|
-| `candidate_service.py` | `CorrectionsStudioCandidateService`; `generate_candidates` ~225 L |
-| Already private steps | `_load_generation_inputs`, `_run_detectors`, `_pre_dedupe_aggregate`, `_build_diagnostics`, `_build_manifest_and_log`, `_studio_candidates_from_annotated`, `_commit_generation_batch` |
+| `candidate_service.py` | Thin `CorrectionsStudioCandidateService` facade; `generate_candidates` orchestrates |
+| Extracted modules | `candidate_generation_inputs`, `candidate_mapping`, `candidate_detection`, `candidate_materialize`, `candidate_commit`, `candidate_diagnostics`, `candidate_llm` |
 | Adjacent | `generation_manifest.py`, `llm/discovery.py`, `llm/merge.py`, session store optimistic commit |
 
 ### 3. Preconditions / characterization tests
@@ -86,10 +93,10 @@ Add golden for `generate_candidates` with LLM disabled: candidate count by kind,
 
 ### 5. Done criteria
 
-- `pipeline.py` primarily orchestrates phases; repair/reconcile/txn live in named modules.
-- `candidate_service.generate_candidates` reads as a short pipeline; helpers unit-testable without full Studio UI.
-- Public imports (`transcriptx.core.utils.rename`, `file_rename`, `CorrectionsStudioCandidateService.generate_candidates`) unchanged.
-- Phase matrix + corrections goldens green; E2E rename + studio roundtrip green.
+- [x] `pipeline.py` primarily orchestrates phases; repair/reconcile/txn live in named modules.
+- [x] `candidate_service.generate_candidates` reads as a short pipeline; helpers unit-testable without full Studio UI.
+- [x] Public imports (`transcriptx.core.utils.rename`, `file_rename`, `CorrectionsStudioCandidateService.generate_candidates`) unchanged.
+- [x] Phase matrix + corrections goldens green; E2E rename + studio roundtrip green.
 
 ### 6. Risk notes & rollback
 

@@ -85,11 +85,11 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "contagion",
         ),
     ),
-    ModuleUIGroup(
-        "dynamics_flow",
-        "Dynamics & Flow",
-        ("momentum", "moments", "affect_tension"),
-    ),
+        ModuleUIGroup(
+            "dynamics_flow",
+            "Dynamics & Flow",
+            ("momentum", "topic_shift", "moments", "affect_tension"),
+        ),
     ModuleUIGroup(
         "voice_audio",
         "Voice & Audio",

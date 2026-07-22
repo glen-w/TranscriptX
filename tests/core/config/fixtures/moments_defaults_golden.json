@@ -13,6 +13,7 @@
     "momentum_cliff": 0.4,
     "post_question_silence": 0.5,
     "stall_zone": 0.35,
+    "topic_shift": 0.25,
     "unanswered_question": 0.5
   },
   "write_markdown": false

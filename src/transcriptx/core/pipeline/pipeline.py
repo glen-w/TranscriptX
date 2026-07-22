@@ -9,23 +9,15 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
 
+from transcriptx.core.utils.native_threads import ensure_native_thread_env_defaults
+
 # Suppress tokenizer warnings about parallelism to prevent console spam.
 # Also pin BLAS/OpenMP to 1 when unset — oversubscription (esp. BERTopic/
 # UMAP/HDBSCAN) has been observed to hang native fits indefinitely.
-_NATIVE_THREAD_ENV_DEFAULTS = (
-    ("TOKENIZERS_PARALLELISM", "false"),
-    ("OMP_NUM_THREADS", "1"),
-    ("MKL_NUM_THREADS", "1"),
-    ("OPENBLAS_NUM_THREADS", "1"),
-    ("NUMBA_NUM_THREADS", "1"),
-    ("VECLIB_MAXIMUM_THREADS", "1"),
-)
+_ensure_tokenizers_parallelism = ensure_native_thread_env_defaults
 
-
-def _ensure_tokenizers_parallelism() -> None:
-    for key, value in _NATIVE_THREAD_ENV_DEFAULTS:
-        os.environ.setdefault(key, value)
-
+# Pin before any analysis/extra import can load Numba/UMAP (pool size is sticky).
+_ensure_tokenizers_parallelism()
 
 from transcriptx.core.utils.logger import get_logger, log_pipeline_complete
 from transcriptx.core.pipeline.group_analysis_runner import finalize_group_analysis

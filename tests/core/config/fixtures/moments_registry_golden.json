@@ -181,6 +181,20 @@
     "sensitivity": "normal",
     "type": "float"
   },
+  "analysis.moments.weight_map.topic_shift": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.25,
+    "description": "",
+    "key": "analysis.moments.weight_map.topic_shift",
+    "max": null,
+    "min": null,
+    "path": "analysis.moments.weight_map.topic_shift",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
   "analysis.moments.weight_map.unanswered_question": {
     "advanced": false,
     "category": "analysis",

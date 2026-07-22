@@ -79,6 +79,17 @@ def build_core_module_definitions(
             ],
             "enhancements": [],
         },
+        "topic_shift": {
+            "description": "Topic-shift chapter segmentation",
+            "dependencies": [],
+            "category": "medium",
+            "determinism_tier": "T0",
+            "requirements": [
+                Requirement.SEGMENTS,
+                Requirement.SEGMENT_TIMESTAMPS,
+            ],
+            "enhancements": [],
+        },
         "moments": {
             "description": "Ranked Moments Worth Revisiting",
             "dependencies": ["momentum"],

@@ -59,7 +59,7 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 166
+    assert len(CHART_DEFINITIONS) == 169
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.speaker") is not None
@@ -220,6 +220,7 @@ def test_group_temporal_overlay_family_matches_definitions_contracts_and_overvie
         "pauses": "group_charts_pauses_temporal_contract.md",
         "prosody": "group_charts_prosody_temporal_contract.md",
         "sentiment": "group_charts_sentiment_temporal_contract.md",
+        "topic_shift": "group_charts_topic_shift_temporal_contract.md",
     }
     assert set(contract_docs.keys()) == set(temporal_aggs), (
         temporal_aggs,

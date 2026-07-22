@@ -11,6 +11,7 @@ class MomentsWeightMapModel(BaseModel):
     stall_zone: float = Field(default=0.35)
     emotion_switch: float = Field(default=0.4)
     unanswered_question: float = Field(default=0.5)
+    topic_shift: float = Field(default=0.25)
 
 
 class MomentsSettingsModel(BaseModel):

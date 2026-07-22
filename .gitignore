@@ -88,6 +88,7 @@ htmlcov/
 # Archived docs/reports
 docs/archive/
 reports/archive/
+docs/dev/competitive_inspiration_2026-07-22.md
 
 # Accidental test output when mocks leak Path(".") as output roots
 MagicMock/

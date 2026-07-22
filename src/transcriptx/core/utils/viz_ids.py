@@ -86,6 +86,8 @@ VIZ_GROUP_TRANSCRIPT_QUALITY_COVERAGE = (
     "group.transcript_quality.session.coverage_ratio"
 )
 VIZ_MOMENTS_TIMELINE = "moments.moments_timeline.global"
+VIZ_TOPIC_SHIFT_TIMELINE = "topic_shift.timeline.global"
+VIZ_GROUP_TOPIC_SHIFT_RATE = "group.topic_shift.session.shifts_per_hour"
 VIZ_MOMENTUM_TIMESERIES = "momentum.momentum.global"
 
 # Voice

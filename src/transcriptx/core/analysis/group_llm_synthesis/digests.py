@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
 from transcriptx.core.analysis.group_llm_synthesis.schemas import EMPTY_FILE_SENTINEL
+from transcriptx.core.analysis.llm_generational_store import sha256_bytes
 
 
 @dataclass(frozen=True)
@@ -21,10 +21,6 @@ class InputDigests:
             "speaker_rows_sha256": self.speaker_rows_sha256,
             "combined_input_digest": self.combined_input_digest,
         }
-
-
-def sha256_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
 
 
 def sha256_file(path: Path | None) -> str:

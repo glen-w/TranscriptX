@@ -62,11 +62,11 @@ flowchart TD
 
 ## 3. Aggregation inventory (`agg_id` matrix)
 
-Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (2026-07-17).
+Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (refreshed 2026-07-22).
 
 | Class | agg_ids |
 |-------|---------|
-| **Registry-backed charts** | acts, stats, sentiment, ner, entity_sentiment, topic_modeling, bertopic, emotion, interactions, tics, understandability, lexical_diversity, simplified_transcript, pauses, momentum, affect_tension, contagion, conversation_loops, qa_analysis, echoes, highlights, moments, llm_action_items, insights, semantic_similarity, voice_mismatch, voice_tension, voice_fingerprint, prosody |
+| **Registry-backed charts** | acts, stats, sentiment, ner, entity_sentiment, topic_modeling, bertopic, emotion, contextual_emotion, fine_grained_emotion, interactions, tics, understandability, lexical_diversity, simplified_transcript, transcript_quality, pauses, momentum, affect_tension, contagion, conversation_loops, qa_analysis, echoes, highlights, moments, llm_action_items, insights, semantic_similarity, voice_mismatch, voice_tension, voice_fingerprint, prosody |
 | **Special-path visuals** | wordclouds (`run_group_wordclouds`; not in chart registry) |
 | **Data-only (no chart)** | temporal_dynamics, insight_eligibility, voice_contours, llm_speaker_summary |
 | **Blob-only** | transcript_output, summary, llm_summary, narrative_summary |
@@ -74,6 +74,8 @@ Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (2026-07-17
 **Deps (non-empty):** entity_sentiment→ner; insight_eligibility→tics; pauses→acts; momentum→pauses; affect_tension→emotion+sentiment; contagion→emotion; qa_analysis→acts; moments→pauses+echoes+momentum+qa_analysis; summary→highlights.
 
 **Aliases (one agg, multiple modules):** voice_features / voice_charts_core / prosody_dashboard → `prosody`; semantic_similarity_advanced / semantic_similarity_v2 → `semantic_similarity`.
+
+**Notes (post-audit ships):** `transcript_quality` pools only within matching ASR provenance cohorts; emotion-family classifier aggs are independent of lexical `emotion`; group LLM synthesis is a finalize-path composite (see [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md)), not a chart registry entry.
 
 **Allowlists (live):**
 - `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` — 7 viz ids (acts pie, sentiment/stats session, 4 temporal overlays)

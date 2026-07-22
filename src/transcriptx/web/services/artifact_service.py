@@ -167,6 +167,13 @@ class ArtifactService:
                     str(run_root), member_runs_path.stat().st_mtime
                 )
             )
+        from transcriptx.core.analysis.topic_shift.visibility import (
+            suppress_topic_shift_surface_artifacts,
+        )
+
+        artifacts = suppress_topic_shift_surface_artifacts(
+            artifacts, run_root=run_root
+        )
         return filter_artifacts(artifacts, filters)
 
     @staticmethod

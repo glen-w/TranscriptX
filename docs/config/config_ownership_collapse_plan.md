@@ -7,7 +7,7 @@
 
 **Status: Candidate 1 Done through 1.8** (Wave 0 Track B). Optional **1.9** structural split of `analysis.py` remains out of done criteria.
 
-Post-landing registry ownership invariant (enforced by `tests/core/config/test_registry_ownership.py`): **44 pilots / 614 Pydantic-owned flattened registry leaves / 16 permanent legacy** (**630** total). Historical planning text below may still mention the earlier **41 / 598 / 10** (608) target; treat the test invariant as authoritative. Inventory key counts are **flattened registry-leaf counts**, not direct dataclass field counts (e.g. `MomentumConfig` has fewer direct fields than **11** leaves because nested `weights` flattens).
+Post-landing registry ownership invariant (enforced by `tests/core/config/test_registry_ownership.py`): **46 pilots / 642 Pydantic-owned flattened registry leaves / 16 permanent legacy** (**658** total; includes `topic_shift`). Historical planning text below may still mention earlier **44 / 614 / 16** (630) or **41 / 598 / 10** (608) targets; treat the test invariant as authoritative. Inventory key counts are **flattened registry-leaf counts**, not direct dataclass field counts (e.g. `MomentumConfig` has fewer direct fields than **11** leaves because nested `weights` flattens).
 
 ## Locked scope
 
@@ -203,11 +203,12 @@ Committed map + test **before** any 1.4 PR. Test-only / bridge-derived — not i
 
 ## Expected ownership counts after each PR
 
-Historical planning targets during 1.1–1.8 used **41 / 598 / 10** (608). Post-landing invariant (authoritative; enforced by `tests/core/config/test_registry_ownership.py`):
+Historical planning targets during 1.1–1.8 used **41 / 598 / 10** (608), then post-1.8 **44 / 614 / 16** (630). Live invariant after `transcript_quality` pilot (authoritative; enforced by `tests/core/config/test_registry_ownership.py`):
 
 | After PR | Pilots | Pydantic leaves | Legacy | Total |
 |----------|--------|-----------------|--------|-------|
 | Candidate 1 complete (through 1.8) | **44** | **614** | **16** | **630** |
+| + `transcript_quality` pilot (0.6.3+) | **45** | **619** | **16** | **635** |
 
 Runtime delegated nested subtree count: start **8**; after 1.1 → **11**; 1.2 → **14**; 1.3a → **16**; 1.3b → **18**; 1.3c → **21**. Flat slices 0→6; mapping stores 0→4; system/workflow dataclasses 0→9.
 
@@ -374,7 +375,7 @@ Companion docs ([`pydantic_migration.md`](pydantic_migration.md), [`config_knobs
 - Every delegated config covered by expanded parity + store-specific consumers where applicable.
 - Constructor narrowing only as approved; call-site audits done for 1.1–1.6.
 - File profile/store replacements not revalidated through Pydantic.
-- Ownership invariant **44 / 614 / 16** (630 total) — see `test_ownership_invariant_counts`.
+- Ownership invariant **46 / 642 / 16** (658 total) — see `test_ownership_invariant_counts`.
 - Full config regression suite green after 1.6, 1.7, and 1.8.
 - Import ban green (frozen allowlist).
 - `to_dict()` curated projection preserves exclusions, key order, Python types (incl. tuples), and characterized aliasing.

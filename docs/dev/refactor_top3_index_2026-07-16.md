@@ -4,22 +4,25 @@
 
 **Source:** 2026-07-16 refactor assessment (Top 3). Behavior-preserving incremental plans.
 
+**Status (2026-07-22):** All three Candidates are **Done**. Residual eng (optional config **1.9**, export Jinja2/Artifact Protocol) is outside this Top-3 program.
+
 Related docs:
 
 - Config migration: [`docs/config/pydantic_migration.md`](../config/pydantic_migration.md), [`docs/config/config_knobs_refactor_plan.md`](../config/config_knobs_refactor_plan.md)
 - Candidate 1 detail: [`docs/config/config_ownership_collapse_plan.md`](../config/config_ownership_collapse_plan.md)
 - Candidate 2 detail: [`docs/dev/shared_analysis_io_refactor_plan.md`](shared_analysis_io_refactor_plan.md)
 - Candidate 3 detail: [`docs/dev/rename_corrections_orchestrator_split_plan.md`](rename_corrections_orchestrator_split_plan.md)
+- Compat aliases: [`docs/dev/rename_corrections_compat_table.md`](rename_corrections_compat_table.md)
 
 ## Recommended sequencing
 
 | Order | Candidate | Why |
 |-------|-----------|-----|
 | **Done** | **#2 Shared analysis I/O** | Complete 2026-07-17 (affect/dynamics/group-chart + A3 + char) |
-| **Done** | **#1 Config ownership collapse** | Complete through 1.8 (2026-07-20+): nested + flat + mapping + system/workflow + atomic file overrides + curated `to_dict`. Inventory invariant **44 / 614 / 16** (630). Optional follow-up **1.9** structural split of `analysis.py` is outside Candidate 1 done criteria. |
-| **Next / after char tests** | **#3 Rename + corrections split** | Medium–high; needs E2E characterization first; do not interleave with leftover config 1.9 work |
+| **Done** | **#1 Config ownership collapse** | Complete through 1.8 (2026-07-20+): nested + flat + mapping + system/workflow + atomic file overrides + curated `to_dict`. Live inventory invariant **46 / 642 / 16** (658; includes `topic_shift`). Optional follow-up **1.9** structural split of `analysis.py` is outside Candidate 1 done criteria. |
+| **Done** | **#3 Rename + corrections split** | Structural extract complete: `rename/{transaction_phase,finalize_phase,reconcile,repair,post_commit}`; corrections `candidate_*` modules; thin `pipeline.py` / `candidate_service.py` coordinators; public imports unchanged |
 
-**Parallelism:** Candidates 1 and 2 are complete. Candidate 3 touches “careful state machines / settings”; do not mix it with optional config 1.9 structural-split PRs.
+**Parallelism:** Candidates 1–3 are complete. Do not reopen them for optional config 1.9 or unrelated product work.
 
 ---
 
@@ -52,4 +55,4 @@ Do **not** do these while executing these plans:
 
 ### One-line summary for prioritization
 
-**#1 Config ownership and #2 Shared analysis I/O are Done.** Tackle **#3** next, starting with characterization tests so splits stay boring. Optional config **1.9** is unrelated follow-up, not a Wave 0 or Candidate 1 blocker.
+**#1 Config ownership, #2 Shared analysis I/O, and #3 rename/corrections are Done.** Optional config **1.9** is unrelated follow-up. Product capacity → [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md) (**B9** next).

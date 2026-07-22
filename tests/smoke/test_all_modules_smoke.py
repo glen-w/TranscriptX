@@ -190,15 +190,15 @@ def test_optional_module_smoke_when_extra_available(
     tmp_path, monkeypatch, _fixture_path, module_name: str
 ) -> None:
     """Modules with required_extras run when those extras are installed; otherwise skipped."""
-    from transcriptx.core.pipeline.module_registry import (
-        get_module_info,
-        is_extra_available,
-    )
+    from transcriptx.core.pipeline.module_registry import get_module_info
+    from transcriptx.core.pipeline.optional_extras import is_extra_distribution_present
 
     info = get_module_info(module_name)
     if not info or not info.required_extras:
         pytest.skip("not an optional-extra module")
-    if not all(is_extra_available(e) for e in info.required_extras):
+    # Non-importing probe: importing bertopic/UMAP here would init Numba before
+    # pipeline thread pins and break fit_transform (NUMBA_NUM_THREADS sticky).
+    if not all(is_extra_distribution_present(e) for e in info.required_extras):
         pytest.skip(f"optional extras not installed: {sorted(info.required_extras)}")
     if module_name in _SPACY_RUNTIME_MODULES and not _nlp_extra_available():
         pytest.skip("requires transcriptx[nlp] (spaCy runtime)")

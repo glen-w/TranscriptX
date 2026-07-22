@@ -54,6 +54,7 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - Enhanced GUI capabilities: run comparison, artifact filtering, richer visualizations
 - Deeper cross-session and longitudinal views in the GUI
 - Personal audio analysis workflows
+- Optional **ask-this-transcript** chat in the viewer GUI — see [Deferred to post-beta](#deferred-to-post-beta)
 - GPU and native install paths — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term)
 
 ---
@@ -100,7 +101,7 @@ These would enable summarization, conversational insights, and semantic analysis
 - Dependencies: clean-env audit + image `pip check` (see `docs/dev/dependency_audit.md`)
 - CI: `.github/workflows/ci.yml` — smoke, contracts, fast on Python 3.10–3.12; release-checks job
 
-Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng criteria (A1–A10 + Config 1.7/1.8 + docs/inventory parity) are **closed**; the next public tag still requires the evidence checklist in [`docs/dev/release_governance.md`](dev/release_governance.md).
+Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng criteria (A1–A10 + Config 1.7/1.8 + docs/inventory parity) are **closed**; Top-3 eng programs are **Done**. Wave 1/2 product items are **partial** (BERTopic, `transcript_quality`, interactions equity, **`topic_shift`/B9** shipped; see [analysis module backlog](dev/analysis_module_backlog_2026-07-17.md)). The next public tag still requires the evidence checklist in [`docs/dev/release_governance.md`](dev/release_governance.md).
 
 ---
 
@@ -172,9 +173,10 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 **Goal:** Richer analysis and tooling without blocking beta or stability.
 
 - **Longitudinal speaker tracking v1 and v2** — including **web visualization** (speaker-over-time charts, cross-session views). Richer speaker-over-time and DB-backed analytics views are planned.
-- Emotion/sentiment convergence (multi-label, tension metrics, divergence summaries)
+- Emotion family deepen (Phase 5 calibration for `contextual_emotion` / `fine_grained_emotion`; tension metrics; divergence summaries) — not “converge into one emotion module”
 - NER-driven insight (entity–sentiment, concordance, timelines)
-- Interaction and network analysis (graphs, network outputs)
+- Interaction and network analysis (graphs, network outputs); turn-taking **equity pack already shipped** on `interactions`
+- **Ask-this-transcript (viewer chat)** — optional Streamlit panel; prefer stuffed-context / lexical-retrieve-then-LLM + jump-to-segment citations over a full RAG + streaming ReAct workspace (see competitive note W1)
 - Adapters and plugins (design only; no marketplace)
 - Architecture cleanup and module contract docs
 - **GPU + native install** — first-class docs and recipes for MPS (native Mac) and CUDA (Linux Docker/native); see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term)
@@ -188,8 +190,9 @@ The following are explicitly **not** part of the beta-ready scope; they are plan
 - **WhisperX Docker GUI orchestration** (+ host HTTP transcribe service and orchestrated Transcribe → Import → Analyze UI) — see Phase 2 transcription architecture above.
 - **OpenAI and other remote LLM providers** — Ollama only until then.
 - **Longitudinal speaker tracking / Speakers UI** — speaker-over-time charts, cross-session views, restored Speakers / Speaker Detail pages, and related extended speaker features.
+- **Ask-this-transcript (viewer GUI)** — optional chat panel over the loaded run (Ollama + existing prompt budgeting / Search jump). **Not** a Retrievia-style RAG + streaming ReAct product; that remains competitive awareness only ([competitive inspiration W1](dev/competitive_inspiration_2026-07-22.md)). Prefer local stuffed-context or lexical-retrieve-then-LLM with segment citations.
 - **GPU acceleration & first-class native install** — MPS on native Mac; CUDA on Linux Docker/native; documented install parity — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term).
-- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export-system and config-knobs refactors. **BERTopic** is re-enabled and temporarily in the **default** install (registry + aggregation + charts); public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
+- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export Jinja2/Artifact Protocol follow-ups, optional config **1.9** structural split. **Shipped recently (not eng blockers):** BERTopic re-enabled (default install for now); interactions **equity pack**; `transcript_quality` (ASR confidence); emotion-family classifier modules; group LLM synthesis. Public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
 
 ### ConvoKit analysis (archived)
 
@@ -205,13 +208,13 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.6.x — current packaging line; Wave 0 eng criteria closed (CI, SECURITY.md, Config 1.7/1.8); Wave 1 product capacity unlocked; public tags still via release governance evidence
+- **M3:** 0.6.x — current packaging line (**0.6.4**); Wave 0 eng criteria closed; Top-3 eng programs Done; Wave 1/2 product items partial (B1/B3/B12/**B9** shipped; **B6** next); public tags still via release governance evidence
 
 ---
 
 ## Sprint plan (archived backlog)
 
-Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus: Phase 1 beta machinery is in place; Wave 1 product capacity and Phase 2 transcription stance follow. See the [stocktake](dev/stocktake_2026-07-17.md) for current packaging truth.
+Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus: Phase 1 beta machinery is in place; remaining Wave 1/2 analysis capacity and Phase 2 transcription stance follow. See the [stocktake](dev/stocktake_2026-07-17.md) and [analysis module backlog](dev/analysis_module_backlog_2026-07-17.md) for current packaging and product truth.
 
 ---
 

@@ -50,6 +50,7 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "echoes",
     "contagion",
     "momentum",
+    "topic_shift",
     "moments",
     "affect_tension",
     "voice_features",

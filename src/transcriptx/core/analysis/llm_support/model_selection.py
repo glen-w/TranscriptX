@@ -24,6 +24,7 @@ LLM_MODEL_CONSUMER_IDS: tuple[str, ...] = (
     "llm_action_items",
     "chart_descriptions",
     "group_llm_synthesis",
+    "topic_shift",
 )
 
 LLM_MODEL_CONSUMER_ID_SET: frozenset[str] = frozenset(LLM_MODEL_CONSUMER_IDS)

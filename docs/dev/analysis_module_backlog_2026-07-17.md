@@ -5,6 +5,7 @@ Authority: self
 
 > Ranked product backlog for **new or deepened** analysis modules, libraries, and approaches.  
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md) and the prior coverage discussion.  
+> Related research: [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) (five OSS tools vs TranscriptX — features, S/W, learnings for B10/P2/B18).  
 > Organized against web UI groups in `src/transcriptx/web/module_ui_groups.py`.
 
 **Non-goals:** release hygiene, Top-3 eng refactors, transcription engine integration, plugin marketplace, realtime analysis.
@@ -51,9 +52,9 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
 | 1 | B1 | **BERTopic rewire** as topic path | revive (**shipped**; default install for now) | Language & Meaning | M | base deps + registry + agg + charts; public release → install profiles |
-| 2 | B3 | **ASR / transcript quality** diagnostics — shipped as Foundations module `transcript_quality` (**ASR confidence** evidence/review; no quality scorecard; filler deferred) | new (**shipped** Phase 1+2) | Foundations | M | WhisperX word scores + provenance-aware group agg |
-| 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new | Dynamics & Flow or Language & Meaning | M | reuse semantic embeddings |
-| 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
+| 2 | B3 | **ASR / transcript quality** diagnostics — shipped as Foundations module `transcript_quality` (**ASR confidence** evidence/review; no quality scorecard; filler deferred) | new (**shipped** Phase 1+2; 0.6.3+) | Foundations | M | WhisperX word scores + provenance-aware group agg |
+| 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new (**shipped** — module `topic_shift`; dual stores; Chapters tab; group cohort agg + overlays; Stage 5 acceptance) | Dynamics & Flow | M | reuse semantic embeddings |
+| 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen (**shipped** 0.4.8; semantics v2 + group charts) | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
 | 5 | B6 | **Hedging / certainty / epistemic markers** | new | Language & Meaning | S–M | lexicon + optional classifier; group charts |
 | 6 | — | *(P1 routing infrastructure continues; not a ranked module)* | platform | — | M | see §2 |
 | 7 | B10 | **Structured decisions / commitments** — prefer extraction-family deepening over a wholly new module ID | deepen (prefer) / new only with overlap write-up | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
@@ -109,14 +110,14 @@ Keep below decision tracking and evidence-grounded insights until there are: tar
 
 **B9 (topic-shift segmentation):** Improves navigation, summaries, moments, chapter-like exports, topic modelling, action-item/decision context, and group comparisons; highly visible; reuses embeddings.
 
-**B12 (interaction equity):** Strong low-cost deepen-in-place; first release from existing turn/interaction outputs; establishes reusable interaction primitives and charts ahead of heavier social-linguistic work (B4, B7).
+**B12 (interaction equity):** Strong low-cost deepen-in-place; **shipped in 0.4.8** (floor entropy, interruption asymmetry, response latency fairness + semantics v2 + group charts). Reusable interaction primitives ahead of heavier social-linguistic work (B4, B7).
 
 ---
 
 ## 4. By UI group (add vs deepen)
 
 ### Summary & Synthesis
-*Existing:* `llm_summary`, `narrative_summary`, `llm_speaker_summary`, `llm_action_items`, `summary`, `highlights`, `insights`
+*Existing:* `llm_summary`, `narrative_summary`, `llm_speaker_summary`, `llm_action_items`, `chart_descriptions`, `summary`, `highlights`, `insights` (+ group LLM synthesis finalize path)
 
 | Prefer | Items |
 |--------|-------|
@@ -126,29 +127,29 @@ Keep below decision tracking and evidence-grounded insights until there are: tar
 Avoid: another free-form summarizer that overlaps `llm_summary` / `narrative_summary`.
 
 ### Foundations
-*Existing:* `stats`, `transcript_output`, `simplified_transcript`, `tics`, `pauses`, `temporal_dynamics`, `insight_eligibility`
+*Existing:* `stats`, `transcript_output`, `simplified_transcript`, `tics`, `transcript_quality`, `pauses`, `temporal_dynamics`, `insight_eligibility`
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | `tics` ← filler/disfluency metrics if needed later |
+| **Deepen** | `tics` ← filler/disfluency metrics if needed later; further `transcript_quality` review surfaces |
 | **Add** | ~~B3 ASR/transcript quality~~ **shipped** as `transcript_quality` (ASR confidence); B19 speaker-map consistency |
 
 ### Language & Meaning
-*Existing:* `sentiment`, `emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (optional path), semantic similarity family, `understandability`, `lexical_diversity`
+*Existing:* `sentiment`, `emotion`, `contextual_emotion`, `fine_grained_emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (default install for now), semantic similarity family, `understandability`, `lexical_diversity`
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | B1 BERTopic; B14 concept drift; P1 multilingual routing adoption; model upgrades per `docs/runtime/models.md` |
+| **Deepen** | ~~B1 BERTopic~~ shipped; B14 concept drift; P1 multilingual routing adoption; emotion-family Phase 5 calibration; model upgrades per `docs/runtime/models.md` |
 | **Add** | B6 hedging/certainty; B16 keyphrases; B17 toxicity (optional) |
 
-Avoid: third sentiment backend as a product feature (keep as config only).
+Avoid: third sentiment backend as a product feature (keep as config only). Emotion family is intentional separate module IDs (see §6 override).
 
 ### Speakers & Interaction
-*Existing:* `acts`, `interactions`, `conversation_loops`, `qa_analysis`, `echoes`, `contagion`
+*Existing:* `acts`, `interactions` (incl. **equity pack**), `conversation_loops`, `qa_analysis`, `echoes`, `contagion`
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | B12 equity metrics on interaction outputs; B8 acts ML path; B5 longitudinal speakers; B13 graphs |
+| **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers; B13 graphs |
 | **Add** | B7 politeness/formality (lexicon-first) |
 | **Optional revive** | B4 ConvoKit only after desired outputs are specified (§3.2) |
 
@@ -158,7 +159,7 @@ Avoid: third sentiment backend as a product feature (keep as config only).
 | Prefer | Items |
 |--------|-------|
 | **Deepen** | `moments` / `affect_tension` consumers of B15 fusion scores |
-| **Add** | B9 agenda / topic-shift segmentation |
+| **Add** | ~~B9 agenda / topic-shift segmentation~~ **shipped** as `topic_shift` |
 
 ### Voice & Audio
 *Existing:* `voice_features`, `voice_mismatch`, `voice_tension`, `voice_fingerprint`, charts/contours/prosody
@@ -191,14 +192,16 @@ flowchart LR
 | Wave | When | Items | Intent |
 |------|------|-------|--------|
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
-| **1** | Next product capacity | B1, B3, B9; **initial P1** routing infrastructure | Topic structure and trust; visible navigation/quality |
-| **2** | After Wave 1 | B12, B6, B7 (lexicon-first), B13 | Interaction depth from existing data + light linguistics |
+| **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
+| **2** | **Partial** (B12 early) | ~~B12~~ shipped (0.4.8); **B6**, **B7** (lexicon-first), **B13** remaining | Interaction depth from existing data + light linguistics |
 | **3** | Phase 3 product | B5, B10 (extraction deepen), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
 | **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |
 
-**Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, B12, B3).
+**Next product capacity (ranked open):** B6 → B7 → B13 (with P1 infrastructure in parallel when eng capacity allows).
 
-P1 may begin in Wave 1 as infrastructure; do not call “multilingual routing” shipped until named consumers adopt it.
+**Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
+
+P1 may begin alongside remaining Wave 1/2 work as infrastructure; do not call “multilingual routing” shipped until named consumers adopt it.
 
 ---
 
@@ -258,3 +261,4 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Model upgrade matrix | `docs/runtime/models.md` |
 | Group output classes | `docs/groups/group_analysis_module_outputs.md` |
 | Stocktake sequencing | `docs/dev/stocktake_2026-07-17.md` |
+| Competitive inspiration (5 OSS tools vs TX) | [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) |

@@ -1430,6 +1430,72 @@
     "variant": null
   },
   {
+    "viz_id": "topic_shift.timeline.global",
+    "label": "Topic-Shift Chapters Timeline",
+    "rank_default": 331,
+    "kind": "chart",
+    "module": "topic_shift",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "topic_shift.timeline.global",
+      "by_artifact_key_prefix": "topic_shift/charts/",
+      "by_chart_slug_regex": "topic_shift_timeline",
+      "by_filename_glob": null
+    },
+    "description": "Chapter span durations and topic-shift boundary markers (shift strength is backend-local, not cross-model comparable).",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.topic_shift.session.shifts_per_hour",
+    "label": "Group Topic Shifts per Hour",
+    "rank_default": 332,
+    "kind": "chart",
+    "module": "topic_shift",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.topic_shift.session.shifts_per_hour",
+      "by_artifact_key_prefix": "topic_shift/charts/",
+      "by_chart_slug_regex": "shifts_per_hour",
+      "by_filename_glob": null
+    },
+    "description": "Session comparison of topic-shift rate within one provenance cohort (compatible backend/semantics only).",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.topic_shift.temporal_overlay.global",
+    "label": "Group Topic-Shift Temporal Overlay",
+    "rank_default": 333,
+    "kind": "chart",
+    "module": "topic_shift",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.topic_shift.temporal_overlay.global",
+      "by_artifact_key_prefix": "topic_shift/charts/",
+      "by_chart_slug_regex": "temporal_overlay",
+      "by_filename_glob": null
+    },
+    "description": "Cross-session topic-shift boundary markers (backend-local strength; session-relative minutes).",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "moments.moments_timeline.global",
     "label": "Moments Timeline",
     "rank_default": 330,

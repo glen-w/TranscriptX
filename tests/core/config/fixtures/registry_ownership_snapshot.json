@@ -79,7 +79,7 @@
     "llm_summary_settings": 1,
     "logging": 6,
     "metadata": 4,
-    "moments": 15,
+    "moments": 16,
     "momentum": 11,
     "output": 9,
     "pauses": 3,
@@ -93,12 +93,13 @@
     "tag_extraction": 3,
     "temporal_dynamics": 13,
     "topic_modeling": 12,
+    "topic_shift": 22,
     "transcript_quality": 5,
     "vectorization": 6,
     "voice": 18,
     "workflow": 13
   },
-  "pilot_count": 45,
-  "pydantic_owned_keys": 619,
-  "total_registry_keys": 635
+  "pilot_count": 46,
+  "pydantic_owned_keys": 642,
+  "total_registry_keys": 658
 }
