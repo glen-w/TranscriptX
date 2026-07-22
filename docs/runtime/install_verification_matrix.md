@@ -29,6 +29,7 @@
 |------|-----------------|-----------------|
 | **Core (from git)** | `python -m venv .venv && source .venv/bin/activate && pip install -e .` | Import succeeds |
 | **Core + dev** | `pip install -e ".[dev]"` | Dev tools + pytest stack; `make test-smoke` (charting needs matplotlib/geopy from the `dev` extra; spaCy-gated modules skip unless `.[nlp]` is also installed) |
+| **Core + dev + nlp** | `pip install -e ".[dev,nlp]"` then `python -m spacy download en_core_web_md` | Same as Core+dev plus spaCy-gated smoke (`make test-smoke-nlp`; CI `tests-nlp` job) |
 | **docs** | `pip install -e ".[docs]"` | Docs build extras |
 | **ner** | `pip install -e ".[ner]"` | NER optional deps |
 | **emotion_lexical** | `pip install -e ".[emotion_lexical]"` | Lexical emotion deps |
