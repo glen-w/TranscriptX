@@ -1386,6 +1386,50 @@
     "variant": null
   },
   {
+    "viz_id": "transcript_quality.asr_score_hist.global",
+    "label": "ASR Confidence Score Distribution",
+    "rank_default": 325,
+    "kind": "chart",
+    "module": "transcript_quality",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "transcript_quality.asr_score_hist.global",
+      "by_artifact_key_prefix": "transcript_quality/charts/",
+      "by_chart_slug_regex": "asr_score_hist",
+      "by_filename_glob": null
+    },
+    "description": "Histogram of accepted word-level ASR confidence scores in [0, 1]. Model uncertainty evidence \u2014 not word error rate.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "transcript_quality.asr_low_score_timeline.global",
+    "label": "Low ASR Confidence Spans Timeline",
+    "rank_default": 326,
+    "kind": "chart",
+    "module": "transcript_quality",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "transcript_quality.asr_low_score_timeline.global",
+      "by_artifact_key_prefix": "transcript_quality/charts/",
+      "by_chart_slug_regex": "asr_low_score_timeline",
+      "by_filename_glob": null
+    },
+    "description": "Timeline of low-confidence spans by mean score. Use with the ASR Confidence review block to jump to timestamps.",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "moments.moments_timeline.global",
     "label": "Moments Timeline",
     "rank_default": 330,
@@ -3523,6 +3567,72 @@
       "by_filename_glob": null
     },
     "description": "Share of segments assigned to each BERTopic topic, as a bar per topic. Taller bars mean that topic dominates more of the conversation. Segments with no dominant topic are excluded from the shares.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.transcript_quality.session.coverage_ratio",
+    "label": "Group ASR Confidence Coverage by Session",
+    "rank_default": 327,
+    "kind": "chart",
+    "module": "transcript_quality",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.transcript_quality.session.coverage_ratio",
+      "by_artifact_key_prefix": "transcript_quality/charts/",
+      "by_chart_slug_regex": "group_session_coverage_ratio",
+      "by_filename_glob": null
+    },
+    "description": "Per-session ASR score coverage within one provenance-compatible cohort. Sessions with different ASR provenance are not compared on one chart.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.transcript_quality.session.mean_score",
+    "label": "Group ASR Mean Score by Session",
+    "rank_default": 328,
+    "kind": "chart",
+    "module": "transcript_quality",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.transcript_quality.session.mean_score",
+      "by_artifact_key_prefix": "transcript_quality/charts/",
+      "by_chart_slug_regex": "group_session_mean_score",
+      "by_filename_glob": null
+    },
+    "description": "Per-session mean ASR confidence (scored-word weighted) within one provenance cohort.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.transcript_quality.session.low_score_ratio",
+    "label": "Group ASR Low-Score Ratio by Session",
+    "rank_default": 329,
+    "kind": "chart",
+    "module": "transcript_quality",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.transcript_quality.session.low_score_ratio",
+      "by_artifact_key_prefix": "transcript_quality/charts/",
+      "by_chart_slug_regex": "group_session_low_score_ratio",
+      "by_filename_glob": null
+    },
+    "description": "Per-session low-score word ratio within one provenance-compatible cohort.",
     "family_id": null,
     "variant": null
   }

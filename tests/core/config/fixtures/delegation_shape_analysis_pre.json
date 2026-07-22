@@ -972,6 +972,13 @@
     "test_size": 0.2,
     "tol": 0.01
   },
+  "transcript_quality": {
+    "cluster_merge_seconds": 2.0,
+    "low_score_threshold": 0.5,
+    "max_clusters": 25,
+    "max_gap_seconds": 0.75,
+    "max_spans": 50
+  },
   "use_dag_pipeline": true,
   "use_quality_filtering": true,
   "vectorization": {

@@ -277,9 +277,75 @@ def test_warm_clips_noop_when_ffmpeg_absent(tmp_path: Path) -> None:
         with patch.object(
             svc._executor, "submit", side_effect=lambda *a, **k: submit_calls.append(1)
         ):
-            svc.warm_clips(audio, [(0.0, 2.0)])
+            result = svc.warm_clips(audio, [(0.0, 2.0)])
         assert submit_calls == []
+        assert result.stopped_reason == "ffmpeg_missing"
+        assert result.accepted == 0
         svc.close()
+
+
+def test_warm_clips_reports_cached_and_inflight(tmp_path: Path) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    _, _, _, _, key, out_path = svc._compute_extract_params(audio, 1.0, 3.0, "mp3", 50)
+    out_path.write_bytes(b"fake clip")
+
+    mock_future = MagicMock()
+    mock_future.done.return_value = False
+    with svc._lock:
+        # Second segment pretends to be in-flight.
+        _, _, _, _, key2, _ = svc._compute_extract_params(audio, 3.0, 5.0, "mp3", 50)
+        svc._inflight[key2] = mock_future
+
+    with patch.object(svc._executor, "submit", side_effect=AssertionError("no submit")):
+        result = svc.warm_clips(audio, [(1.0, 3.0), (3.0, 5.0)])
+    assert result.fully_accepted
+    assert result.already_cached == 1
+    assert result.already_inflight == 1
+    assert result.enqueued == 0
+    assert result.requested == 2
+    svc.close()
+
+
+def test_warm_clips_accepts_inflight_when_pool_saturated(tmp_path: Path) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    _, _, _, _, key, _ = svc._compute_extract_params(audio, 0.0, 1.0, "mp3", 50)
+    dummy_future = MagicMock()
+    dummy_future.done.return_value = False
+    with svc._lock:
+        for i in range(svc._MAX_INFLIGHT):
+            svc._inflight[f"fake_key_{i}"] = dummy_future
+        svc._inflight[key] = dummy_future
+    result = svc.warm_clips(audio, [(0.0, 1.0)])
+    assert result.fully_accepted
+    assert result.already_inflight == 1
+    assert result.stopped_reason is None
+    svc.close()
+
+
+def test_warm_clips_backpressure_unsets_full_accept(tmp_path: Path) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    dummy_future = MagicMock()
+    dummy_future.done.return_value = False
+    with svc._lock:
+        for i in range(svc._MAX_INFLIGHT):
+            svc._inflight[f"fake_key_{i}"] = dummy_future
+    result = svc.warm_clips(audio, [(0.0, 1.0), (1.0, 2.0)])
+    assert result.stopped_reason == "backpressure"
+    assert result.fully_accepted is False
+    assert result.requested == 2
+    svc.close()
+
+
+def test_warm_clips_closed_guard(tmp_path: Path) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    svc.close()
+    result = svc.warm_clips(audio, [(0.0, 1.0)])
+    assert result.stopped_reason == "closed"
+    svc.close()
 
 
 def test_get_clip_path_raises_when_audio_missing(tmp_path: Path) -> None:
@@ -340,9 +406,10 @@ def test_controller_warm_clips_noop_when_no_audio(tmp_path: Path) -> None:
         MockCS.return_value = mock_cs
 
         ctrl = SpeakerStudioController(data_dir=tmp_path)
-        ctrl.warm_clips("/path/t.json", [(0.0, 2.0)])
+        result = ctrl.warm_clips("/path/t.json", [(0.0, 2.0)])
 
         mock_cs.warm_clips.assert_not_called()
+        assert result.stopped_reason == "audio_missing"
 
 
 # ── backpressure ──────────────────────────────────────────────────────────────
@@ -381,6 +448,7 @@ def test_close_shuts_down_executor(tmp_path: Path) -> None:
     svc = ClipService(data_dir=tmp_path)
     # Should not raise; executor.shutdown is called.
     svc.close()
+    svc.close()  # idempotent
     # Submitting after close should raise (executor is shut down).
     with pytest.raises(RuntimeError):
         svc._executor.submit(lambda: None)
@@ -394,7 +462,8 @@ def test_speaker_id_page_imports_only_controller() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text()
-    assert "SpeakerStudioController" in source
+    assert "get_shared_speaker_studio_controller" in source
+    assert "SpeakerStudioController()" not in source
     assert "SegmentIndexService" not in source
     assert "ClipService" not in source
     assert "SpeakerMappingService" not in source

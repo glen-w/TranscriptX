@@ -16,18 +16,31 @@ from transcriptx.core.analysis.llm_support.model_selection import (
     selection_to_profile_config,
     validate_llm_model_selection,
 )
-from transcriptx.core.analysis.llm_support.module_guidance import (
-    list_llm_module_guidance,
+from transcriptx.core.analysis.llm_support.model_guidance import (
+    list_llm_model_guidance,
 )
 from transcriptx.core.config import get_profile_target_adapter
 from transcriptx.core.config.persistence import save_project_config
 from transcriptx.core.llm import list_installed_ollama_models
+from transcriptx.core.llm.thinking_models import (
+    LLM_JSON_FORMAT_CONSUMER_IDS,
+    filter_models_for_json_consumers,
+    is_thinking_model,
+    selection_uses_thinking_for_json,
+)
 from transcriptx.core.utils.config import get_config
 
 _CUSTOM_PROFILE = "Custom (this run)"
 _PROJECT_DEFAULT_LABEL = "Project default (active)"
 _UNSET_MODEL = "(choose a model)"
 _LLM_MODELS_TARGET = "llm_models"
+_THINKING_MODEL_HELP = (
+    "Thinking-family Ollama tags (qwen3*, deepseek-r1*, gpt-oss*, …) often leave "
+    "the `response` field empty when TranscriptX requests JSON. They are excluded "
+    "from picks that feed JSON modules (narrative_summary, llm_action_items, "
+    "chart_descriptions, group_llm_synthesis). Prefer gemma3, qwen2.5, llama3.2, "
+    "or mistral for those modules."
+)
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +92,82 @@ def _seed_from_configured(
 
 def _model_select_options(installed: Sequence[str]) -> list[str]:
     return [_UNSET_MODEL, *installed]
+
+
+def _selected_json_consumers(
+    selected_modules: Sequence[str],
+    *,
+    include_group: bool,
+) -> list[str]:
+    """JSON-format LLM consumers that will run for this launch."""
+    selected = {str(mid) for mid in selected_modules}
+    consumers: list[str] = []
+    for consumer_id in sorted(LLM_JSON_FORMAT_CONSUMER_IDS):
+        if consumer_id == "group_llm_synthesis":
+            if _include_group_consumer(include_group):
+                consumers.append(consumer_id)
+            continue
+        if consumer_id in selected:
+            consumers.append(consumer_id)
+    return consumers
+
+
+def _options_for_consumer(
+    installed: Sequence[str],
+    *,
+    consumer_id: str | None,
+    json_consumers_selected: Sequence[str],
+) -> list[str]:
+    """Build selectbox options; hide thinking tags when the pick feeds JSON."""
+    if consumer_id is None:
+        needs_json_safe = bool(json_consumers_selected)
+    else:
+        # Always JSON-safe for JSON consumer rows (module may be toggled later).
+        needs_json_safe = consumer_id in LLM_JSON_FORMAT_CONSUMER_IDS
+
+    if needs_json_safe:
+        return _model_select_options(
+            filter_models_for_json_consumers(installed, include_thinking=False)
+        )
+    return _model_select_options(installed)
+
+
+def _ensure_session_model_in_options(
+    key: str,
+    options: Sequence[str],
+    *,
+    label: str,
+) -> None:
+    """Clear session value when it is no longer selectable (e.g. thinking tag)."""
+    current = st.session_state.get(key)
+    if not isinstance(current, str) or current in options:
+        return
+    if current not in (_UNSET_MODEL, "") and is_thinking_model(current):
+        st.caption(
+            f"{label}: `{current}` is a thinking model and cannot be used for "
+            "JSON LLM modules — choose a non-thinking installed model."
+        )
+    elif current not in (_UNSET_MODEL, ""):
+        st.caption(f"{label}: `{current}` is not available — choose another model.")
+    st.session_state[key] = _UNSET_MODEL
+
+
+def _thinking_excluded_note(
+    installed: Sequence[str],
+    *,
+    json_consumers_selected: Sequence[str],
+) -> str | None:
+    if not json_consumers_selected:
+        return None
+    hidden = [name for name in installed if is_thinking_model(name)]
+    if not hidden:
+        return None
+    sample = ", ".join(f"`{n}`" for n in hidden[:4])
+    extra = f" (+{len(hidden) - 4} more)" if len(hidden) > 4 else ""
+    return (
+        f"Hidden thinking models for JSON modules: {sample}{extra}. "
+        f"{_THINKING_MODEL_HELP}"
+    )
 
 
 def _session_model_value(value: Any) -> str | None:
@@ -241,6 +330,23 @@ def launch_gate_reasons(
         return reasons
 
     sel = selection.normalized()
+    json_consumers = _selected_json_consumers(
+        selected_modules, include_group=include_group
+    )
+    thinking_hits = selection_uses_thinking_for_json(
+        mode=sel.mode,
+        shared_model=sel.shared_model,
+        module_models=dict(sel.module_models),
+        json_consumer_ids=json_consumers,
+    )
+    if thinking_hits:
+        joined = ", ".join(f"`{c}`" for c in thinking_hits)
+        reasons.append(
+            "Thinking-family models often return an empty Ollama `response` for "
+            f"JSON modules ({joined}). Choose a non-thinking model such as "
+            "gemma3, qwen2.5, llama3.2, or mistral."
+        )
+
     if sel.mode == "shared":
         if not sel.shared_model or sel.shared_model not in installed:
             reasons.append("Choose an installed shared model for LLM modules.")
@@ -369,8 +475,24 @@ def render_llm_model_selector(
     )
 
     shared_key = _key(key_prefix, "shared_model")
+    json_consumers = _selected_json_consumers(
+        selected_modules, include_group=include_group
+    )
+    thinking_note = _thinking_excluded_note(
+        installed, json_consumers_selected=json_consumers
+    )
+    if thinking_note:
+        st.info(thinking_note)
+
     if shared_key not in st.session_state:
         seeded = _seed_from_configured(installed, llm.model)
+        # Do not seed a thinking global default into a JSON-safe shared pick.
+        if (
+            seeded
+            and json_consumers
+            and is_thinking_model(seeded)
+        ):
+            seeded = None
         st.session_state[shared_key] = seeded or _UNSET_MODEL
     else:
         kept = _installed_choice(st.session_state.get(shared_key), installed)
@@ -384,12 +506,22 @@ def render_llm_model_selector(
             st.caption(f"Model `{prev}` is not installed — choose an installed model.")
         st.session_state[shared_key] = kept or _UNSET_MODEL
 
-    model_options = _model_select_options(installed) if installed else [_UNSET_MODEL]
-
     if mode == "Same model for all":
+        shared_options = (
+            _options_for_consumer(
+                installed,
+                consumer_id=None,
+                json_consumers_selected=json_consumers,
+            )
+            if installed
+            else [_UNSET_MODEL]
+        )
+        _ensure_session_model_in_options(
+            shared_key, shared_options, label="Shared model"
+        )
         st.selectbox(
             "Model for all LLM modules",
-            options=model_options,
+            options=shared_options,
             key=shared_key,
             disabled=not bool(installed),
         )
@@ -413,24 +545,47 @@ def render_llm_model_selector(
                         "choose an installed model."
                     )
                 st.session_state[mk] = kept or _UNSET_MODEL
+            module_options = (
+                _options_for_consumer(
+                    installed,
+                    consumer_id=consumer_id,
+                    json_consumers_selected=json_consumers,
+                )
+                if installed
+                else [_UNSET_MODEL]
+            )
+            _ensure_session_model_in_options(
+                mk, module_options, label=f"Model · {consumer_id}"
+            )
             st.selectbox(
                 f"Model · {consumer_id}",
-                options=model_options,
+                options=module_options,
                 key=mk,
                 disabled=not bool(installed),
             )
 
-    with st.expander("LLM modules", expanded=False):
-        rows = list_llm_module_guidance(
-            include_group=_include_group_consumer(include_group)
+    with st.expander("Installed models — what they're good at", expanded=False):
+        st.caption(
+            "Use this when assigning models per module. Avoid thinking-family "
+            "tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON modules — they often "
+            "return an empty `response`. Prefer gemma3 / qwen2.5 / llama3.2 / "
+            "mistral for narrative_summary, llm_action_items, and chart_descriptions."
         )
-        table = {
-            "Module": [r.consumer_id for r in rows],
-            "Phase": [r.phase for r in rows],
-            "Description": [r.description for r in rows],
-            "Best for": [r.best_for for r in rows],
-        }
-        st.dataframe(table, hide_index=True, use_container_width=True)
+        rows = list_llm_model_guidance(installed)
+        if not rows:
+            st.info(
+                "No installed models to describe. Pull one with "
+                "`ollama pull gemma3:12b`, then Refresh models."
+            )
+        else:
+            table = {
+                "Model": [r.model for r in rows],
+                "Class": [r.size_class for r in rows],
+                "Strengths": [r.strengths for r in rows],
+                "Best for": [r.best_for for r in rows],
+                "Notes": [r.notes for r in rows],
+            }
+            st.dataframe(table, hide_index=True, width="stretch")
 
     with st.expander("Save as LLM model profile", expanded=False):
         name = st.text_input(

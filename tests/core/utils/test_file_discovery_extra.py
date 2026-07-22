@@ -132,6 +132,47 @@ class TestDiscoverManagedTranscriptPaths:
         )
         assert fd.discover_managed_transcript_paths(tmp_path) == []
 
+    def test_exclusions_logged_as_debug_plus_info_summary(
+        self, tmp_path: Path, monkeypatch
+    ):
+        transcripts = tmp_path / "transcripts"
+        transcripts.mkdir()
+        (transcripts / "legacy.json").write_text("{}", encoding="utf-8")
+        (transcripts / "also_legacy.json").write_text("{}", encoding="utf-8")
+
+        monkeypatch.setattr(
+            "transcriptx.io.canonical_transcript_validation.validate_canonical_transcript",
+            lambda p: SimpleNamespace(
+                ok=False,
+                category=SimpleNamespace(value="schema_error"),
+                message="missing schema_version",
+            ),
+        )
+        debug_calls: list[tuple] = []
+        info_calls: list[tuple] = []
+        monkeypatch.setattr(
+            fd,
+            "log_debug",
+            lambda module, message, context="": debug_calls.append(
+                (module, message, context)
+            ),
+        )
+        monkeypatch.setattr(
+            fd,
+            "log_info",
+            lambda module, message, context="": info_calls.append(
+                (module, message, context)
+            ),
+        )
+
+        assert fd.discover_managed_transcript_paths(tmp_path) == []
+        assert len(debug_calls) == 2
+        assert all(call[0] == "file_discovery" for call in debug_calls)
+        assert len(info_calls) == 1
+        summary = info_calls[0][1]
+        assert "Excluded 2 transcript candidate(s)" in summary
+        assert "canonical=schema_error=2" in summary
+
 
 @pytest.mark.unit
 class TestRecordingsFolderStartPath:

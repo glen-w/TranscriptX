@@ -6,6 +6,7 @@ Pure path/discovery logic shared by app, io, and web layers.
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +14,7 @@ from transcriptx.core.utils.paths import (
     RECORDINGS_DIR,
     DIARISED_TRANSCRIPTS_DIR,
 )
-from transcriptx.core.utils.logger import log_warning
+from transcriptx.core.utils.logger import log_debug, log_info
 from transcriptx.core.utils._path_core import get_transcript_dir  # noqa: F401
 from transcriptx.core.observability.perf import (
     increment_count,
@@ -114,6 +115,10 @@ def discover_managed_transcript_paths(root: Optional[Path] = None) -> list[Path]
 
     This function is fail-closed per candidate file: parse/schema errors do not
     abort global discovery and simply exclude invalid entries.
+
+    Per-candidate exclusions are logged at DEBUG (legacy / non-canonical JSON in
+    the transcripts tree is expected). A single INFO summary reports totals by
+    category when anything was skipped.
     """
     from transcriptx.io.canonical_transcript_validation import (
         validate_canonical_transcript,
@@ -130,6 +135,7 @@ def discover_managed_transcript_paths(root: Optional[Path] = None) -> list[Path]
             candidates = discover_all_transcript_paths(root)
             set_count("transcript_json_files", len(candidates))
         valid_paths: list[Path] = []
+        exclusion_counts: Counter[str] = Counter()
         for candidate in candidates:
             observe_transcript_path(candidate)
             # First check canonical JSON semantics; skip early if it fails.
@@ -141,9 +147,11 @@ def discover_managed_transcript_paths(root: Optional[Path] = None) -> list[Path]
                 canonical = validate_canonical_transcript(candidate)
             if not canonical.ok:
                 increment_count("invalid_or_legacy_files")
-                log_warning(
+                category_key = f"canonical={canonical.category.value}"
+                exclusion_counts[category_key] += 1
+                log_debug(
                     "file_discovery",
-                    f"Excluding transcript from managed listing (canonical={canonical.category.value}): {canonical.message}",
+                    f"Excluding transcript from managed listing ({category_key}): {canonical.message}",
                     context=str(candidate),
                 )
                 continue
@@ -162,13 +170,27 @@ def discover_managed_transcript_paths(root: Optional[Path] = None) -> list[Path]
                 increment_count("invalid_or_legacy_files")
                 # Be defensive about result shape to accommodate older test stubs.
                 category = getattr(getattr(result, "category", None), "value", None)
+                category_key = (
+                    f"managed={category}" if category is not None else "managed=unknown"
+                )
+                exclusion_counts[category_key] += 1
                 message = getattr(result, "message", "")
-                details = "Excluding transcript from managed listing"
-                if category is not None:
-                    details += f" (category={category})"
+                details = f"Excluding transcript from managed listing ({category_key})"
                 if message:
                     details += f": {message}"
-                log_warning("file_discovery", details, context=str(candidate))
+                log_debug("file_discovery", details, context=str(candidate))
+
+        if exclusion_counts:
+            by_category = ", ".join(
+                f"{key}={count}" for key, count in sorted(exclusion_counts.items())
+            )
+            log_info(
+                "file_discovery",
+                (
+                    f"Excluded {sum(exclusion_counts.values())} transcript candidate(s) "
+                    f"from managed listing ({by_category}). Per-file detail at DEBUG."
+                ),
+            )
         return sorted(valid_paths, key=lambda p: str(p.resolve()))
 
 

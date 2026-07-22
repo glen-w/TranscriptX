@@ -20,7 +20,7 @@ All registered pipeline modules support group runs (`supports_group=true`) and h
 
 | Module | Class |
 | --- | --- |
-| stats, sentiment, acts, ner, lexical_diversity, simplified_transcript, … | Registry-backed group charts (+ row CSV/JSON) |
+| stats, sentiment, acts, ner, lexical_diversity, simplified_transcript, transcript_quality, … | Registry-backed group charts (+ row CSV/JSON); **transcript_quality** pools only within matching ASR provenance cohorts (see below) |
 | wordclouds | Module-specific group visuals (special path) |
 | temporal_dynamics, insight_eligibility, voice_contours, llm_speaker_summary | Data outputs only (no group chart registry entry); **llm_speaker_summary** may also feed [group LLM synthesis](group_llm_synthesis_contract.md) |
 | summary, llm_summary, narrative_summary, transcript_output | Blob-only composite; **llm_summary** may also feed [group LLM synthesis](group_llm_synthesis_contract.md) |
@@ -28,6 +28,20 @@ All registered pipeline modules support group runs (`supports_group=true`) and h
 | prosody (from voice_features / voice_charts_core / prosody_dashboard) | Registry-backed via existing `prosody` agg |
 
 \* `semantic_similarity`, `semantic_similarity_advanced`, and `semantic_similarity_v2` share one aggregation entry.
+
+## transcript_quality group aggregation
+
+ASR confidence is **not** comparable across ASR engines/models/normalisation policies.
+
+- Members are grouped by `provenance.comparable_key`.
+- The primary cohort is the largest compatible set; other members are counted as `incompatible_member_count` and excluded from pooled confidence metrics.
+- Within a cohort (word-weighted, never unweighted mean of session summaries):
+  - `coverage = sum(scored) / sum(eligible)`
+  - `mean_score = sum(mean_i * scored_i) / sum(scored_i)`
+  - `low_score_ratio = sum(low_score_words) / sum(scored)`
+- Group charts emit session bars **only for the primary cohort**; they never blend incompatible provenance.
+
+See also [runtime/transcript_quality.md](../runtime/transcript_quality.md).
 
 ## Insights / Overview UI (group subjects)
 

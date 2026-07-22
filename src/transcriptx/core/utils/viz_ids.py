@@ -80,6 +80,11 @@ VIZ_ECHOES_HEATMAP = "echoes.echo_heatmap.global"
 VIZ_ECHOES_TIMELINE = "echoes.echo_timeline.global"
 VIZ_PAUSES_HIST = "pauses.pauses_hist.global"
 VIZ_PAUSES_TIMELINE = "pauses.pauses_timeline.global"
+VIZ_TRANSCRIPT_QUALITY_HIST = "transcript_quality.asr_score_hist.global"
+VIZ_TRANSCRIPT_QUALITY_TIMELINE = "transcript_quality.asr_low_score_timeline.global"
+VIZ_GROUP_TRANSCRIPT_QUALITY_COVERAGE = (
+    "group.transcript_quality.session.coverage_ratio"
+)
 VIZ_MOMENTS_TIMELINE = "moments.moments_timeline.global"
 VIZ_MOMENTUM_TIMESERIES = "momentum.momentum.global"
 

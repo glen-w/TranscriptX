@@ -93,11 +93,12 @@
     "tag_extraction": 3,
     "temporal_dynamics": 13,
     "topic_modeling": 12,
+    "transcript_quality": 5,
     "vectorization": 6,
     "voice": 18,
     "workflow": 13
   },
-  "pilot_count": 44,
-  "pydantic_owned_keys": 614,
-  "total_registry_keys": 630
+  "pilot_count": 45,
+  "pydantic_owned_keys": 619,
+  "total_registry_keys": 635
 }

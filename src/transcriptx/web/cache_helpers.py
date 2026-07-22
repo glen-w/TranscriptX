@@ -110,16 +110,43 @@ def get_cached_count_managed_transcripts() -> int:
     return cached_count_managed_transcripts(str(DIARISED_TRANSCRIPTS_DIR))
 
 
+def _list_transcript_summaries_for_paths(paths: list[str]) -> list:
+    """Read-only listing via SegmentIndexService (no ClipService / executors)."""
+    from pathlib import Path
+
+    from transcriptx.services.speaker_studio.segment_index import SegmentIndexService
+
+    index = SegmentIndexService()
+    summaries = []
+    seen: set[str] = set()
+    for path in paths:
+        summary = index.summary_for_path(path)
+        if summary is None:
+            continue
+        key = str(Path(summary.path).resolve())
+        if key in seen:
+            continue
+        seen.add(key)
+        summaries.append(summary)
+    return sorted(summaries, key=lambda s: s.path)
+
+
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_get_transcript_summaries_for_paths(paths_key: tuple[str, ...]) -> list:
     """Return transcript summaries (segment_count, speaker_map_status) for given paths."""
     mark_cache_miss("cached_get_transcript_summaries_for_paths")
     if not paths_key:
         return []
-    from transcriptx.services.speaker_studio.controller import SpeakerStudioController
+    return _list_transcript_summaries_for_paths(list(paths_key))
 
-    controller = SpeakerStudioController()
-    return controller.list_transcripts_from_paths(list(paths_key))
+
+@st.cache_data(ttl=120, show_spinner=False)
+def cached_list_all_transcript_summaries() -> list:
+    """Fallback listing of all loadable transcripts (non-canonical included)."""
+    mark_cache_miss("cached_list_all_transcript_summaries")
+    from transcriptx.services.speaker_studio.segment_index import SegmentIndexService
+
+    return SegmentIndexService().list_transcripts(canonical_only=False)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -179,6 +206,7 @@ def clear_transcript_listing_caches() -> None:
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
     cached_count_managed_transcripts.clear()  # type: ignore[attr-defined]
     cached_get_transcript_summaries_for_paths.clear()  # type: ignore[attr-defined]
+    cached_list_all_transcript_summaries.clear()  # type: ignore[attr-defined]
     _cached_resolve_transcript_path.clear()  # type: ignore[attr-defined]
     _cached_transcript_metadata.clear()  # type: ignore[attr-defined]
 

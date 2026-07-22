@@ -25,7 +25,7 @@ Authority: self
 | **Effort** | S / M / L (rough; contracts + tests assumed) |
 | **Depends** | Eng or product prerequisites |
 
-**Gate before any item:** Phase 1 hygiene + Top-3 config ownership progress remain ahead of greenfield analysis features (stocktake §9–§10). Items marked **Revive** may still land earlier if they are mostly rewire + deps, not new algorithms.
+**Gate before any item:** Wave 0 eng gate (release hygiene A1–A10 + Config ownership through 1.8) is **closed** in-tree (stocktake §1 / §4). Wave 1 product capacity is unlocked for eng work. A **public version tag** still requires [`release_governance.md`](release_governance.md) evidence (clean tree, green CI on exact commit, evidence bundle) — that process gate does not block starting Wave 1 implementation. Items marked **Revive** may still land earlier if they are mostly rewire + deps, not new algorithms.
 
 **Do not treat platform work as a single “shipped analysis.”** Multilingual routing (P1) and shared evidence/provenance (P2) are infrastructure with downstream adoption milestones; “done” must name which consumers adopted them.
 
@@ -51,7 +51,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
 | 1 | B1 | **BERTopic rewire** as topic path | revive (**shipped**; default install for now) | Language & Meaning | M | base deps + registry + agg + charts; public release → install profiles |
-| 2 | B3 | **ASR / transcript quality** diagnostics (confidence spans, filler density, likely-error clusters) — limited to available evidence | new | Foundations | M | import adapters expose scores when present |
+| 2 | B3 | **ASR / transcript quality** diagnostics — shipped as Foundations module `transcript_quality` (**ASR confidence** evidence/review; no quality scorecard; filler deferred) | new (**shipped** Phase 1+2) | Foundations | M | WhisperX word scores + provenance-aware group agg |
 | 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new | Dynamics & Flow or Language & Meaning | M | reuse semantic embeddings |
 | 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
 | 5 | B6 | **Hedging / certainty / epistemic markers** | new | Language & Meaning | S–M | lexicon + optional classifier; group charts |
@@ -130,8 +130,8 @@ Avoid: another free-form summarizer that overlaps `llm_summary` / `narrative_sum
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | `tics` ← filler/disfluency metrics if B3 stays thin |
-| **Add** | B3 ASR/transcript quality (evidence-limited); B19 speaker-map consistency |
+| **Deepen** | `tics` ← filler/disfluency metrics if needed later |
+| **Add** | ~~B3 ASR/transcript quality~~ **shipped** as `transcript_quality` (ASR confidence); B19 speaker-map consistency |
 
 ### Language & Meaning
 *Existing:* `sentiment`, `emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (optional path), semantic similarity family, `understandability`, `lexical_diversity`
@@ -190,8 +190,8 @@ flowchart LR
 
 | Wave | When | Items | Intent |
 |------|------|-------|--------|
-| **0** | Now | Top-3 config; release hygiene | Capacity, not features |
-| **1** | Post-gate | B1, B3, B9; **initial P1** routing infrastructure | Topic structure and trust; visible navigation/quality |
+| **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
+| **1** | Next product capacity | B1, B3, B9; **initial P1** routing infrastructure | Topic structure and trust; visible navigation/quality |
 | **2** | After Wave 1 | B12, B6, B7 (lexicon-first), B13 | Interaction depth from existing data + light linguistics |
 | **3** | Phase 3 product | B5, B10 (extraction deepen), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
 | **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |

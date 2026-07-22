@@ -26,17 +26,25 @@ from transcriptx.io.speaker_map_resolver import (
     is_effective_speaker_name,
     normalize_diarized_id,
 )
-from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
-from transcriptx.web.components.playback_panel import _fmt_time, render_playback_panel
+from transcriptx.web.components.playback_panel import (
+    clear_playback_session_keys,
+    fmt_time as _fmt_time,
+    render_playback_panel,
+    sanitize_lines_shown,
+    sanitize_play_index,
+)
 from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.cache_helpers import (
+    cached_get_transcript_summaries_for_paths,
+    cached_list_all_transcript_summaries,
     cached_list_available_sessions,
     clear_transcript_listing_caches,
 )
+from transcriptx.web.speaker_studio_runtime import get_shared_speaker_studio_controller
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
 from transcriptx.web.transcript_option_format import (
@@ -110,24 +118,15 @@ def _transcript_paths_for_speaker_views_impl() -> list[Path]:
     return sorted(paths, key=lambda p: str(p.resolve()))
 
 
-@st.cache_data(ttl=120, show_spinner=False)
 def _cached_transcripts_for_paths(paths_key: tuple[str, ...]) -> list:
     """Return transcript list for given paths so selectbox/UI doesn't recompute on every rerun."""
-    if not paths_key:
-        return []
-    controller = SpeakerStudioController()
-    paths = list(paths_key)  # str paths for controller list_transcripts_from_paths
-    return controller.list_transcripts_from_paths(paths)
+    # Delegate to cache_helpers (read-only index); never construct a controller.
+    return cached_get_transcript_summaries_for_paths(paths_key)
 
 
-@st.cache_data(ttl=120, show_spinner=False)
 def _cached_fallback_transcripts() -> list:
     """Fallback when no paths from discovery; avoids full list_transcripts on every rerun."""
-    controller = SpeakerStudioController()
-    try:
-        return controller.list_transcripts(canonical_only=False)
-    except TypeError:
-        return controller.list_transcripts()
+    return cached_list_all_transcript_summaries()
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -175,8 +174,6 @@ def _is_speaker_ignored(ignored: List[str], sid: str) -> bool:
 def _clear_speaker_id_listing_caches() -> None:
     """Drop stale speaker-map status labels after save/ignore/unignore."""
     clear_transcript_listing_caches()
-    _cached_transcripts_for_paths.clear()  # type: ignore[attr-defined]
-    _cached_fallback_transcripts.clear()  # type: ignore[attr-defined]
 
 
 def _group_by_diarized_id(
@@ -265,7 +262,7 @@ def render_speaker_id_page() -> None:
         "play a clip, then assign a name or mark as ignored."
     )
 
-    controller = SpeakerStudioController()
+    controller = get_shared_speaker_studio_controller()
     paths = _transcript_paths_for_speaker_views()
     if paths:
         paths_key = tuple(str(p) for p in paths)
@@ -308,7 +305,7 @@ def render_speaker_id_page() -> None:
         st.session_state[prev_key] = transcript_path
         st.session_state["speaker_id_speaker_idx"] = 0
         st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-        st.session_state["speaker_id_play_seg"] = None
+        clear_playback_session_keys("speaker_id_play_seg")
         # Keep jump selectbox (key sid_jump) aligned — its widget state otherwise
         # overrides Prev/Next on the next rerun.
         st.session_state["sid_jump"] = 0
@@ -364,16 +361,24 @@ def render_speaker_id_page() -> None:
     st.divider()
 
     # ── speaker navigation state ──────────────────────────────────────────────
-    speaker_idx = st.session_state.get("speaker_id_speaker_idx", 0)
-    if speaker_idx >= total_speakers:
+    raw_speaker_idx = st.session_state.get("speaker_id_speaker_idx", 0)
+    speaker_idx = sanitize_play_index(raw_speaker_idx, total_speakers)
+    if speaker_idx is None:
         speaker_idx = 0
         st.session_state["speaker_id_speaker_idx"] = 0
         st.session_state["sid_jump"] = 0
+    else:
+        st.session_state["speaker_id_speaker_idx"] = speaker_idx
+
     # Jump selectbox is session-state keyed; initialize once (do not pass index=).
     if "sid_jump" not in st.session_state:
         st.session_state["sid_jump"] = speaker_idx
-    elif st.session_state["sid_jump"] >= total_speakers:
-        st.session_state["sid_jump"] = speaker_idx
+    else:
+        jump = sanitize_play_index(st.session_state["sid_jump"], total_speakers)
+        if jump is None:
+            st.session_state["sid_jump"] = speaker_idx
+        else:
+            st.session_state["sid_jump"] = jump
 
     active_id = speaker_ids[speaker_idx]
     active_segs = groups[active_id]
@@ -389,7 +394,12 @@ def render_speaker_id_page() -> None:
     st.subheader(
         f"Speaker {speaker_idx + 1} / {total_speakers} — `{active_id}` {status_badge}"
     )
-    lines_shown = st.session_state.get("speaker_id_lines_shown", _LINES_PER_PAGE)
+    lines_shown = sanitize_lines_shown(
+        st.session_state.get("speaker_id_lines_shown", _LINES_PER_PAGE),
+        length=len(active_segs),
+        default=_LINES_PER_PAGE,
+    )
+    st.session_state["speaker_id_lines_shown"] = lines_shown
     total_dur = sum(max(0.0, s.end - s.start) for s in active_segs)
     st.caption(
         f"{len(active_segs)} segments · {_fmt_time(total_dur)} total · "
@@ -434,7 +444,7 @@ def render_speaker_id_page() -> None:
                     )
                     _clear_speaker_id_listing_caches()
                     st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-                    st.session_state["speaker_id_play_seg"] = None
+                    clear_playback_session_keys("speaker_id_play_seg")
                     # Advance from persisted state (including when this was the last one).
                     next_idx = _next_unnamed_idx(
                         speaker_ids,
@@ -463,7 +473,7 @@ def render_speaker_id_page() -> None:
                     )
                 _clear_speaker_id_listing_caches()
                 st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-                st.session_state["speaker_id_play_seg"] = None
+                clear_playback_session_keys("speaker_id_play_seg")
                 # Use persisted ignored list so unignore does not keep treating
                 # this id as ignored, and ignore-last still settles on complete.
                 next_idx = _next_unnamed_idx(
@@ -493,7 +503,7 @@ def render_speaker_id_page() -> None:
             st.session_state["speaker_id_speaker_idx"] = speaker_idx - 1
             st.session_state["sid_jump"] = speaker_idx - 1
             st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-            st.session_state["speaker_id_play_seg"] = None
+            clear_playback_session_keys("speaker_id_play_seg")
             st.rerun()
     with col_next:
         if st.button(
@@ -505,7 +515,7 @@ def render_speaker_id_page() -> None:
             st.session_state["speaker_id_speaker_idx"] = speaker_idx + 1
             st.session_state["sid_jump"] = speaker_idx + 1
             st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-            st.session_state["speaker_id_play_seg"] = None
+            clear_playback_session_keys("speaker_id_play_seg")
             st.rerun()
     with col_jump:
         # Jump-to picker: show all speakers with their current status
@@ -525,7 +535,7 @@ def render_speaker_id_page() -> None:
             # sid_jump is already the user's selection; do not assign it after
             # this widget is instantiated.
             st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
-            st.session_state["speaker_id_play_seg"] = None
+            clear_playback_session_keys("speaker_id_play_seg")
             st.rerun()
 
 

@@ -16,7 +16,7 @@ from transcriptx.services.speaker_studio.segment_index import (
     TranscriptSummary,
     SegmentInfo,
 )
-from transcriptx.services.speaker_studio.clip_service import ClipService
+from transcriptx.services.speaker_studio.clip_service import ClipService, WarmClipsResult
 from transcriptx.services.speaker_studio.mapping_service import (
     SpeakerMappingService,
     SpeakerMapState,
@@ -35,6 +35,7 @@ class SpeakerStudioController:
         self._segment_index = SegmentIndexService(data_dir=data_dir)
         self._clip_service = ClipService(data_dir=data_dir)
         self._mapping_service = SpeakerMappingService()
+        self._closed = False
 
     def list_transcripts(
         self,
@@ -85,6 +86,8 @@ class SpeakerStudioController:
         format: str = "mp3",
     ) -> bytes:
         """Return bytes of the segment clip for playback (e.g. st.audio). Raises if no audio or extract fails."""
+        if self._closed:
+            raise RuntimeError("SpeakerStudioController is closed")
         audio_path = self._segment_index.get_transcript_audio_path(transcript_path)
         if not audio_path:
             raise FileNotFoundError(
@@ -106,6 +109,8 @@ class SpeakerStudioController:
         format: str = "mp3",
     ) -> Path:
         """Return path to cached clip; useful when caller needs a path. Raises if no audio or extract fails."""
+        if self._closed:
+            raise RuntimeError("SpeakerStudioController is closed")
         audio_path = self._segment_index.get_transcript_audio_path(transcript_path)
         if not audio_path:
             raise FileNotFoundError(
@@ -167,17 +172,39 @@ class SpeakerStudioController:
         segments: List[Tuple[float, float]],
         *,
         format: str = "mp3",
-    ) -> None:
+    ) -> WarmClipsResult:
         """
         Best-effort fire-and-forget: enqueue background clip generation for the
-        given (start_s, end_s) pairs. Returns immediately. No-op if audio is
-        unavailable or ffmpeg is not installed.
+        given (start_s, end_s) pairs. Returns a structured result immediately.
         """
+        if self._closed:
+            return WarmClipsResult(
+                accepted=0,
+                enqueued=0,
+                already_cached=0,
+                already_inflight=0,
+                requested=len(segments),
+                stopped_reason="closed",
+            )
         audio_path = self._segment_index.get_transcript_audio_path(transcript_path)
         if not audio_path:
-            return
-        self._clip_service.warm_clips(audio_path, segments, format=format)
+            return WarmClipsResult(
+                accepted=0,
+                enqueued=0,
+                already_cached=0,
+                already_inflight=0,
+                requested=len(segments),
+                stopped_reason="audio_missing",
+            )
+        return self._clip_service.warm_clips(audio_path, segments, format=format)
 
     def ffmpeg_available(self) -> bool:
         """Return True if ffmpeg is installed and usable."""
         return self._clip_service.ffmpeg_available()
+
+    def close(self) -> None:
+        """Shutdown ClipService background executor. Idempotent."""
+        if self._closed:
+            return
+        self._closed = True
+        self._clip_service.close()

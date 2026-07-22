@@ -25,6 +25,9 @@ from transcriptx.core.analysis.aggregation.rows import (
 )
 from transcriptx.core.analysis.aggregation.schema import get_transcript_id
 from transcriptx.core.analysis.aggregation.warnings import build_warning
+from transcriptx.core.analysis.transcript_quality.aggregation import (
+    aggregate_transcript_quality,
+)
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
@@ -1002,6 +1005,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["tics"]),
             deps=[],
             aggregate_fn=_aggregate_tics,
+        ),
+        AggregationEntry(
+            agg_id="transcript_quality",
+            selector=any_of(["transcript_quality"]),
+            deps=[],
+            aggregate_fn=aggregate_transcript_quality,
         ),
         AggregationEntry(
             agg_id="insight_eligibility",

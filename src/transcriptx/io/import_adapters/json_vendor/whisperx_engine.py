@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
+from transcriptx.core.analysis.transcript_quality.scores import normalize_words_list
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.io.intermediate_transcript import (
     IntermediateTurn,
@@ -120,7 +121,19 @@ class WhisperXAdapter:
 
             # Determine speaker
             speaker: Optional[str] = seg.get("speaker")
-            words: Optional[List[Dict[str, Any]]] = seg.get("words")
+            raw_words = seg.get("words")
+            words: Optional[List[Dict[str, Any]]]
+            if isinstance(raw_words, list):
+                words, score_diag = normalize_words_list(raw_words)
+                if score_diag["invalid_score_count"] or score_diag["out_of_range_score_count"]:
+                    warnings.append(
+                        f"Segment {idx}: omitted "
+                        f"{score_diag['invalid_score_count']} invalid and "
+                        f"{score_diag['out_of_range_score_count']} out-of-range "
+                        "word scores (unit-interval policy)"
+                    )
+            else:
+                words = None
 
             if speaker is None and words:
                 promoted = _most_common_speaker(words)

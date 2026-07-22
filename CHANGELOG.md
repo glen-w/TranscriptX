@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-07-22
+
+### Added
+
+- Per-segment audio playback in Transcript viewer and Speaker ID, reusing the Speaker Studio clip stack with shared controller lifecycle, warm-clip gating, and safe timestamp display.
+- Foundations module `transcript_quality` (ASR Confidence): word-level score coverage, low-confidence spans/clusters with playback refs, provenance-aware group aggregation and charts.
+- Expanded LLM model guidance (`model_guidance`) and thinking-model selection helpers for the Run Analysis selector.
+
+### Changed
+
+- Shared `SpeakerStudioController` factory returns a live controller (no Streamlit `cache_resource` generator); process registry + atexit close all instances; `clear_shared_speaker_studio_controller` closes then clears cache.
+- Warm clips require `WarmClipsResult` with `requested` / `fully_accepted`; warm signatures include audio path size and mtime; unavailable audio/ffmpeg clears stale play + warm state.
+- Config ownership pilots include `transcript_quality` (45 pilots / 619 Pydantic leaves / 635 registry keys).
+
+### Fixed
+
+- Playback degraded to `controller_error` when the shared factory yielded a generator instead of a controller.
+- Canonical transcript path resolution falls back independently when `loaded_path` is unresolvable but artifacts JSON remains; disappeared files disable playback without crashing the page.
+- Nested `analysis.transcript_quality` file overrides hydrate as dataclasses (avoids `asdict()` failures on plain dict subtrees).
+
 ## [0.6.2] - 2026-07-21
 
 ### Added

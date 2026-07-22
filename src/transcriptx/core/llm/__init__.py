@@ -22,6 +22,13 @@ from transcriptx.core.llm.ollama_client import (
     OllamaModelListResult,
     parse_ollama_tags_payload,
 )
+from transcriptx.core.llm.thinking_models import (
+    LLM_JSON_FORMAT_CONSUMER_IDS,
+    THINKING_MODEL_NAME_MARKERS,
+    filter_models_for_json_consumers,
+    is_thinking_model,
+    selection_uses_thinking_for_json,
+)
 
 if TYPE_CHECKING:
     from transcriptx.core.utils.config.main import TranscriptXConfig
@@ -88,4 +95,9 @@ __all__ = [
     "list_installed_ollama_models",
     "OllamaModelListResult",
     "parse_ollama_tags_payload",
+    "LLM_JSON_FORMAT_CONSUMER_IDS",
+    "THINKING_MODEL_NAME_MARKERS",
+    "filter_models_for_json_consumers",
+    "is_thinking_model",
+    "selection_uses_thinking_for_json",
 ]

@@ -88,6 +88,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "WordcloudsAnalysis",
     ),
     "tics": ("transcriptx.core.analysis.tics", "TicsAnalysis"),
+    "transcript_quality": (
+        "transcriptx.core.analysis.transcript_quality",
+        "TranscriptQualityAnalysis",
+    ),
     "insight_eligibility": (
         "transcriptx.core.analysis.insight_eligibility",
         "InsightEligibilityAnalysis",

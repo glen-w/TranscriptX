@@ -141,7 +141,11 @@ def test_render_transcript_viewer_does_not_consume_nav_request_on_empty_segments
             ),
         ),
     )
-    monkeypatch.setattr(mod, "load_transcript_by_session", lambda _s: {"segments": []})
+    monkeypatch.setattr(
+        mod,
+        "load_transcript_with_path_by_session",
+        lambda _s: ({"segments": []}, __import__("pathlib").Path("/tmp/t.json")),
+    )
     monkeypatch.setattr(
         mod,
         "resolve_transcript_artifacts",

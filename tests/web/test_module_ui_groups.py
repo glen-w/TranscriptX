@@ -26,6 +26,7 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "transcript_output",
     "simplified_transcript",
     "tics",
+    "transcript_quality",
     "pauses",
     "temporal_dynamics",
     "insight_eligibility",

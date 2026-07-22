@@ -104,11 +104,18 @@ def test_viewer_resolves_speakers_before_metadata_metrics(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         mod,
-        "load_transcript_by_session",
-        lambda _s: {
-            "metadata": {"duration_seconds": 1, "speaker_count": 1, "language": "en"},
-            "segments": [{"speaker": "SPEAKER_00", "text": "x"}],
-        },
+        "load_transcript_with_path_by_session",
+        lambda _s: (
+            {
+                "metadata": {
+                    "duration_seconds": 1,
+                    "speaker_count": 1,
+                    "language": "en",
+                },
+                "segments": [{"speaker": "SPEAKER_00", "text": "x"}],
+            },
+            __import__("pathlib").Path("/tmp/t.json"),
+        ),
     )
     monkeypatch.setattr(mod, "resolve_transcript_artifacts", lambda **k: MagicMock())
 

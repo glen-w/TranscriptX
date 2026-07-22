@@ -100,7 +100,7 @@ These would enable summarization, conversational insights, and semantic analysis
 - Dependencies: clean-env audit + image `pip check` (see `docs/dev/dependency_audit.md`)
 - CI: `.github/workflows/ci.yml` — smoke, contracts, fast on Python 3.10–3.12; release-checks job
 
-Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng gate must be green before the next public tag (`docs/dev/release_governance.md`).
+Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng criteria (A1–A10 + Config 1.7/1.8 + docs/inventory parity) are **closed**; the next public tag still requires the evidence checklist in [`docs/dev/release_governance.md`](dev/release_governance.md).
 
 ---
 
@@ -205,13 +205,13 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.6.x — current packaging line; Wave 0 eng gate (CI, SECURITY.md, Config 1.7) before Wave 1 product capacity
+- **M3:** 0.6.x — current packaging line; Wave 0 eng criteria closed (CI, SECURITY.md, Config 1.7/1.8); Wave 1 product capacity unlocked; public tags still via release governance evidence
 
 ---
 
 ## Sprint plan (archived backlog)
 
-Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus remains Phase 1 (beta harden) then Phase 2; see the [stocktake](dev/stocktake_2026-07-17.md) for Phase 1 vs shipping reality.
+Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus: Phase 1 beta machinery is in place; Wave 1 product capacity and Phase 2 transcription stance follow. See the [stocktake](dev/stocktake_2026-07-17.md) for current packaging truth.
 
 ---
 

@@ -20,23 +20,57 @@ the UI stays interactive.
 
 Cache is disk-backed and cross-session/process-agnostic.  Session state
 controls only UI behaviour and warm triggers, not clip ownership.
+
+Architecture invariant: ``render_playback_panel`` is the only ``@st.fragment``
+in this module. Shared helpers below must remain undecorated so callers that
+already run inside a fragment (e.g. Transcript) never nest fragments.
+
+``audio_path`` is resolved once for UI gating and warm signatures only.
+``get_clip_bytes`` re-resolves audio through the controller, so extraction must
+tolerate the recording disappearing or changing after preflight.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 import streamlit as st
 
+from transcriptx.core.utils.logger import get_logger
+from transcriptx.services.speaker_studio.clip_service import WarmClipsResult
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+
+logger = get_logger()
 
 # Number of clips to pre-warm on initial panel load / after a click.
 _WARM_WINDOW = 3
 
 
-def _fmt_time(seconds: float) -> str:
+class PlaybackUnavailableReason(str, Enum):
+    """Stable reason codes when segment playback cannot be offered."""
+
+    transcript_unresolved = "transcript_unresolved"
+    audio_missing = "audio_missing"
+    ffmpeg_missing = "ffmpeg_missing"
+    controller_error = "controller_error"
+    timing_unavailable = "timing_unavailable"
+
+
+@dataclass(frozen=True)
+class PlaybackAvailability:
+    """Result of playback preflight checks."""
+
+    enabled: bool
+    audio_path: Optional[Path]
+    reason: Optional[PlaybackUnavailableReason] = None
+
+
+def fmt_time(seconds: float) -> str:
+    """Format seconds as M:SS or H:MM:SS."""
     m, s = divmod(int(seconds), 60)
     h, m = divmod(m, 60)
     if h:
@@ -44,9 +78,17 @@ def _fmt_time(seconds: float) -> str:
     return f"{m}:{s:02d}"
 
 
-def _set_play_idx(play_key: str, idx: int) -> None:
+# Backward-compatible alias for callers that still import the private name.
+_fmt_time = fmt_time
+
+
+def set_active_clip(play_key: str, idx: int) -> None:
     """on_click callback: set play state before the natural fragment rerun."""
     st.session_state[play_key] = idx
+
+
+# Backward-compatible alias.
+_set_play_idx = set_active_clip
 
 
 def _increment_lines_shown(lines_key: str, increment: int) -> None:
@@ -55,11 +97,116 @@ def _increment_lines_shown(lines_key: str, increment: int) -> None:
     st.session_state[lines_key] = current + increment
 
 
-def _trigger_warm(
+def sanitize_play_index(value: object, length: int) -> Optional[int]:
+    """Accept only non-negative in-range integers (reject bool / negative / OOB)."""
+    if type(value) is not int:
+        return None
+    if value < 0 or value >= length:
+        return None
+    return value
+
+
+def sanitize_lines_shown(value: object, *, length: int, default: int) -> int:
+    """Clamp lines_shown to 0..length; restore default for malformed values."""
+    if type(value) is not int:
+        return max(0, min(default, length))
+    if value < 0:
+        return max(0, min(default, length))
+    return min(value, length)
+
+
+def clear_playback_session_keys(play_key: str) -> None:
+    """Clear active clip and warm signature for a play key."""
+    st.session_state[play_key] = None
+    st.session_state[f"{play_key}_warm_sig"] = None
+
+
+def resolve_playback_availability(
+    transcript_path: Optional[str | Path],
+    controller: SpeakerStudioController,
+) -> PlaybackAvailability:
+    """
+    Check playback prerequisites in order: path → audio → ffmpeg.
+
+    Stops after the first failure so audio/ffmpeg are not probed unnecessarily.
+    Unexpected controller errors degrade to ``controller_error`` rather than
+    raising into page-wide handlers.
+    """
+    if transcript_path is None or not str(transcript_path).strip():
+        return PlaybackAvailability(
+            enabled=False,
+            audio_path=None,
+            reason=PlaybackUnavailableReason.transcript_unresolved,
+        )
+    path_str = str(transcript_path)
+    try:
+        if not Path(path_str).is_file():
+            return PlaybackAvailability(
+                enabled=False,
+                audio_path=None,
+                reason=PlaybackUnavailableReason.transcript_unresolved,
+            )
+        audio_path = controller.get_audio_path(path_str)
+        if not audio_path or not Path(audio_path).is_file():
+            return PlaybackAvailability(
+                enabled=False,
+                audio_path=None,
+                reason=PlaybackUnavailableReason.audio_missing,
+            )
+        if not controller.ffmpeg_available():
+            return PlaybackAvailability(
+                enabled=False,
+                audio_path=Path(audio_path),
+                reason=PlaybackUnavailableReason.ffmpeg_missing,
+            )
+        return PlaybackAvailability(
+            enabled=True, audio_path=Path(audio_path), reason=None
+        )
+    except Exception:
+        logger.warning(
+            "Playback availability check failed for transcript=%s",
+            path_str,
+            exc_info=True,
+        )
+        return PlaybackAvailability(
+            enabled=False,
+            audio_path=None,
+            reason=PlaybackUnavailableReason.controller_error,
+        )
+
+
+def render_playback_unavailable(
+    reason: PlaybackUnavailableReason,
+) -> None:
+    """Render one caption block per unavailable reason (tips included)."""
+    if reason == PlaybackUnavailableReason.audio_missing:
+        st.caption(
+            "_Playback unavailable — audio file not found. "
+            "Tip: verify the transcript's source recording exists under mounted recordings._"
+        )
+        return
+    if reason == PlaybackUnavailableReason.ffmpeg_missing:
+        st.caption(
+            "_Playback unavailable — ffmpeg not found. "
+            "Tip: install ffmpeg or ensure it is on PATH inside runtime._"
+        )
+        return
+    if reason == PlaybackUnavailableReason.transcript_unresolved:
+        st.caption("_Playback unavailable — transcript path could not be resolved._")
+        return
+    if reason == PlaybackUnavailableReason.timing_unavailable:
+        st.caption(
+            "_Playback unavailable — visible segments lack valid timing data._"
+        )
+        return
+    st.caption("_Playback unavailable — audio playback could not be initialised._")
+
+
+def trigger_clip_warm(
     controller: SpeakerStudioController,
     transcript_path: str,
     audio_path: Path,
-    all_segs: List[SegmentInfo],
+    ordered_segs: Sequence[SegmentInfo],
     play_seg_idx: Optional[int],
     active_id: str,
     play_key: str,
@@ -69,30 +216,121 @@ def _trigger_warm(
 
     Warm window:
       - If nothing is playing: first _WARM_WINDOW segments.
-      - If a segment is playing: that segment + next (_WARM_WINDOW - 1) segments.
+      - If a segment is playing: that list position + next (_WARM_WINDOW - 1).
 
-    Uses a session-state signature scoped to play_key (not a global key) to
-    prevent cross-talk between pages in a multipage app.  Only enqueues when the
-    visible window changes.
+    ``play_seg_idx`` is a position into ``ordered_segs`` (not a source index).
+    Callers that key state by source index must resolve the list position first.
+
+    The warm signature is stored only when every target in the window was
+    accepted (enqueued, already cached, or already in flight). Transient
+    unavailability, backpressure, and closed executors leave the signature
+    unset so the next render can retry. The signature includes audio path
+    revision (size + mtime_ns) so replaced recordings invalidate warming.
     """
-    warm_start = play_seg_idx if play_seg_idx is not None else 0
-    warm_targets = all_segs[warm_start : warm_start + _WARM_WINDOW]
+    if not ordered_segs:
+        return
+
+    warm_start = 0
+    play_idx = sanitize_play_index(play_seg_idx, len(ordered_segs))
+    if play_idx is not None:
+        warm_start = play_idx
+    warm_targets = list(ordered_segs[warm_start : warm_start + _WARM_WINDOW])
     if not warm_targets:
+        return
+
+    try:
+        audio = Path(audio_path)
+        if not audio.is_file():
+            return
+        audio_stat = audio.stat()
+        audio_revision = (
+            str(audio.resolve()),
+            int(audio_stat.st_size),
+            int(audio_stat.st_mtime_ns),
+        )
+    except OSError:
         return
 
     warm_sig_key = f"{play_key}_warm_sig"
     window_sig = (
         active_id,
         tuple((round(s.start, 3), round(s.end, 3)) for s in warm_targets),
-        str(audio_path),
+        audio_revision,
     )
     if st.session_state.get(warm_sig_key) == window_sig:
         return
-    st.session_state[warm_sig_key] = window_sig
     try:
-        controller.warm_clips(transcript_path, [(s.start, s.end) for s in warm_targets])
+        result = controller.warm_clips(
+            transcript_path, [(s.start, s.end) for s in warm_targets]
+        )
     except Exception:
-        pass  # warming is best-effort; never propagate failures to UI
+        logger.warning(
+            "Clip warm enqueue failed for transcript=%s play_key=%s",
+            transcript_path,
+            play_key,
+            exc_info=True,
+        )
+        return
+    if isinstance(result, WarmClipsResult) and result.fully_accepted:
+        st.session_state[warm_sig_key] = window_sig
+
+
+# Backward-compatible alias.
+_trigger_warm = trigger_clip_warm
+
+
+def _sanitised_clip_warning() -> str:
+    return (
+        "Could not load clip. The recording may be unavailable "
+        "or the segment could not be extracted."
+    )
+
+
+def render_active_clip(
+    controller: SpeakerStudioController,
+    transcript_path: str,
+    segment: Optional[SegmentInfo],
+    *,
+    autoplay: bool = False,
+) -> None:
+    """
+    Render ``st.audio`` for one segment, or a sanitised warning on failure.
+
+    Failures are caught locally so surrounding transcript UI stays usable and
+    another segment can be selected without clearing the fragment.
+    """
+    if segment is None:
+        return
+    try:
+        clip_bytes = controller.get_clip_bytes(
+            transcript_path,
+            segment.start,
+            segment.end,
+            format="mp3",
+        )
+        st.audio(clip_bytes, format="audio/mpeg", autoplay=autoplay)
+    except Exception:
+        logger.warning(
+            "Clip generation failed transcript=%s segment_index=%s start=%s end=%s",
+            transcript_path,
+            segment.index,
+            segment.start,
+            segment.end,
+            exc_info=True,
+        )
+        st.warning(_sanitised_clip_warning())
+
+
+def _render_fallback_segment_rows(
+    all_segs: List[SegmentInfo],
+    lines_shown: int,
+) -> None:
+    for seg in all_segs[:lines_shown]:
+        col_time, col_text = st.columns([1, 5])
+        with col_time:
+            st.caption(f"{fmt_time(seg.start)} – {fmt_time(seg.end)}")
+        with col_text:
+            st.write(seg.text or "_(empty)_")
 
 
 @st.fragment
@@ -119,13 +357,14 @@ def render_playback_panel(
         Path string for the active transcript.
     audio_path:
         Resolved audio file path, or None if not found.
+        Used for UI gating and warm signatures only; clip extraction re-resolves.
     all_segs:
         Pre-computed segment list for the current view.  Do not do heavy
         computation inside this fragment — pass results in from the parent.
     active_id:
         Current speaker/group identifier used to namespace widget keys.
     play_key:
-        Session state key holding the currently-playing segment index (int|None).
+        Session state key holding the currently-playing segment list index (int|None).
     lines_key:
         Session state key holding the lines_shown count (int).
     max_lines:
@@ -139,41 +378,44 @@ def render_playback_panel(
         player and warm trigger.
     """
     # ── ffmpeg / audio guard ───────────────────────────────────────────────────
-    if not audio_path:
-        st.caption("_Playback unavailable — audio file not found._")
-        st.caption(
-            "_Tip: verify the transcript's source recording exists under mounted recordings._"
-        )
+    if not audio_path or not Path(audio_path).is_file():
+        clear_playback_session_keys(play_key)
+        render_playback_unavailable(PlaybackUnavailableReason.audio_missing)
         if include_segment_rows:
-            lines_shown: int = st.session_state.get(lines_key, max_lines)
-            for seg in all_segs[:lines_shown]:
-                col_time, col_text = st.columns([1, 5])
-                with col_time:
-                    st.caption(f"{_fmt_time(seg.start)} – {_fmt_time(seg.end)}")
-                with col_text:
-                    st.write(seg.text or "_(empty)_")
+            lines_shown = sanitize_lines_shown(
+                st.session_state.get(lines_key, max_lines),
+                length=len(all_segs),
+                default=max_lines,
+            )
+            _render_fallback_segment_rows(all_segs, lines_shown)
         return
 
     if not controller.ffmpeg_available():
-        st.caption("_Playback unavailable — ffmpeg not found._")
-        st.caption("_Tip: install ffmpeg or ensure it is on PATH inside runtime._")
+        clear_playback_session_keys(play_key)
+        render_playback_unavailable(PlaybackUnavailableReason.ffmpeg_missing)
         if include_segment_rows:
-            lines_shown: int = st.session_state.get(lines_key, max_lines)
-            for seg in all_segs[:lines_shown]:
-                col_time, col_text = st.columns([1, 5])
-                with col_time:
-                    st.caption(f"{_fmt_time(seg.start)} – {_fmt_time(seg.end)}")
-                with col_text:
-                    st.write(seg.text or "_(empty)_")
+            lines_shown = sanitize_lines_shown(
+                st.session_state.get(lines_key, max_lines),
+                length=len(all_segs),
+                default=max_lines,
+            )
+            _render_fallback_segment_rows(all_segs, lines_shown)
         return
 
-    play_seg_idx: Optional[int] = st.session_state.get(play_key)
-    lines_shown = st.session_state.get(lines_key, max_lines)
+    play_seg_idx = sanitize_play_index(st.session_state.get(play_key), len(all_segs))
+    if st.session_state.get(play_key) is not None and play_seg_idx is None:
+        st.session_state[play_key] = None
+    lines_shown = sanitize_lines_shown(
+        st.session_state.get(lines_key, max_lines),
+        length=len(all_segs),
+        default=max_lines,
+    )
+    st.session_state[lines_key] = lines_shown
     visible_segs = all_segs[:lines_shown]
 
     # ── pre-warm trigger ───────────────────────────────────────────────────────
     # Runs before the audio player so warm jobs start as early as possible.
-    _trigger_warm(
+    trigger_clip_warm(
         controller,
         transcript_path,
         audio_path,
@@ -185,18 +427,13 @@ def render_playback_panel(
 
     # ── audio player ───────────────────────────────────────────────────────────
     if play_seg_idx is not None:
-        seg_to_play = all_segs[play_seg_idx] if play_seg_idx < len(all_segs) else None
-        if seg_to_play:
-            try:
-                clip_bytes = controller.get_clip_bytes(
-                    transcript_path,
-                    seg_to_play.start,
-                    seg_to_play.end,
-                    format="mp3",
-                )
-                st.audio(clip_bytes, format="audio/mpeg", autoplay=autoplay)
-            except Exception as e:
-                st.warning(f"Could not load clip: {e}")
+        seg_to_play = all_segs[play_seg_idx]
+        render_active_clip(
+            controller,
+            transcript_path,
+            seg_to_play,
+            autoplay=autoplay,
+        )
 
     if not include_segment_rows:
         return
@@ -207,7 +444,7 @@ def render_playback_panel(
     for i, seg in enumerate(visible_segs):
         col_time, col_text, col_play = st.columns([1, 5, 0.5])
         with col_time:
-            st.caption(f"{_fmt_time(seg.start)} – {_fmt_time(seg.end)}")
+            st.caption(f"{fmt_time(seg.start)} – {fmt_time(seg.end)}")
         with col_text:
             st.write(seg.text or "_(empty)_")
         with col_play:
@@ -217,7 +454,7 @@ def render_playback_panel(
                 "▶",
                 key=f"play_{active_id}_{i}",
                 help="Play this clip",
-                on_click=_set_play_idx,
+                on_click=set_active_clip,
                 args=(play_key, i),
             )
 

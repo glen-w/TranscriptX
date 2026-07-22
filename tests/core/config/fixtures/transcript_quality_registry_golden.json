@@ -1,0 +1,72 @@
+{
+  "analysis.transcript_quality.cluster_merge_seconds": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 2.0,
+    "description": "",
+    "key": "analysis.transcript_quality.cluster_merge_seconds",
+    "max": null,
+    "min": 0.0,
+    "path": "analysis.transcript_quality.cluster_merge_seconds",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.transcript_quality.low_score_threshold": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.5,
+    "description": "",
+    "key": "analysis.transcript_quality.low_score_threshold",
+    "max": 1.0,
+    "min": 0.0,
+    "path": "analysis.transcript_quality.low_score_threshold",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.transcript_quality.max_clusters": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 25,
+    "description": "",
+    "key": "analysis.transcript_quality.max_clusters",
+    "max": null,
+    "min": 1.0,
+    "path": "analysis.transcript_quality.max_clusters",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.transcript_quality.max_gap_seconds": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.75,
+    "description": "",
+    "key": "analysis.transcript_quality.max_gap_seconds",
+    "max": null,
+    "min": 0.0,
+    "path": "analysis.transcript_quality.max_gap_seconds",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.transcript_quality.max_spans": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 50,
+    "description": "",
+    "key": "analysis.transcript_quality.max_spans",
+    "max": null,
+    "min": 1.0,
+    "path": "analysis.transcript_quality.max_spans",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  }
+}

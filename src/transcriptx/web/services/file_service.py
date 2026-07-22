@@ -233,19 +233,15 @@ class FileService:
         return None
 
     @staticmethod
-    def load_transcript_by_session(session_name: str) -> Optional[Dict[str, Any]]:
+    def load_transcript_with_path_by_session(
+        session_name: str,
+    ) -> Optional[tuple[Dict[str, Any], Path]]:
         """
-        Load transcript from data/transcripts/ or data/outputs/{session}/.
+        Load transcript and return ``(data, canonical_path)`` actually used.
 
-        Web viewer only: loads by session name (run/slug), not by file path.
-        Uses resolve_transcript_path for a single source of truth, then loads via
-        transcript service.
-
-        Args:
-            session_name: Name of the session
-
-        Returns:
-            Transcript data dictionary or None if not found
+        The returned path is the file that was loaded — callers that need
+        playback or sidecar resolution must use this path rather than calling
+        ``resolve_transcript_path`` again on a composite ``session_slug/run_id``.
         """
         # Single-char session_name usually means a bug (e.g. iterating over a
         # UUID string); skip to avoid log spam and still resolve normally.
@@ -274,10 +270,33 @@ class FileService:
 
         service = get_transcript_service()
         try:
-            return service.load_transcript(str(path))
+            data = service.load_transcript(str(path))
         except Exception as e:
             logger.error(f"Failed to load transcript from {path}: {e}")
             return None
+        if data is None:
+            return None
+        return data, path
+
+    @staticmethod
+    def load_transcript_by_session(session_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Load transcript from data/transcripts/ or data/outputs/{session}/.
+
+        Web viewer only: loads by session name (run/slug), not by file path.
+        Uses resolve_transcript_path for a single source of truth, then loads via
+        transcript service.
+
+        Args:
+            session_name: Name of the session
+
+        Returns:
+            Transcript data dictionary or None if not found
+        """
+        loaded = FileService.load_transcript_with_path_by_session(session_name)
+        if loaded is None:
+            return None
+        return loaded[0]
 
     @staticmethod
     def load_analysis_data(

@@ -22,6 +22,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -46,6 +47,29 @@ CODEC_PARAMS = {"mp3": "128k", "wav": "16k_16bit_mono"}
 # Cache cleanup thresholds
 _PRUNE_MAX_AGE_DAYS = 30
 _PRUNE_MAX_BYTES = 500 * 1024 * 1024  # 500 MB
+
+
+@dataclass(frozen=True)
+class WarmClipsResult:
+    """Outcome of a best-effort warm_clips enqueue pass.
+
+    ``accepted`` counts targets that were enqueued, already on disk, or already
+    in flight. ``requested`` is the number of (start, end) pairs passed in.
+    ``stopped_reason`` is set when the pass could not fully satisfy every
+    requested target (or could not start at all).
+    """
+
+    accepted: int
+    enqueued: int
+    already_cached: int
+    already_inflight: int
+    requested: int = 0
+    stopped_reason: str | None = None
+
+    @property
+    def fully_accepted(self) -> bool:
+        """True when every requested target was accepted and nothing aborted early."""
+        return self.stopped_reason is None and self.accepted == self.requested
 
 
 # ── ffmpeg helpers ────────────────────────────────────────────────────────────
@@ -171,6 +195,7 @@ class ClipService:
         # Unified in-flight registry for both warm-path and foreground collapses.
         self._inflight: Dict[str, Future] = {}
         self._lock = threading.Lock()
+        self._closed = False
 
         # Observability counters — approximate (incremented under lock where possible).
         self._stats: Dict[str, float] = {
@@ -345,6 +370,8 @@ class ClipService:
         rather than spawning a second ffmpeg process. Falls back to synchronous
         generation if no warm job is in-flight or if the warm job failed.
         """
+        if self._closed:
+            raise RuntimeError("ClipService is closed")
         audio_path = Path(audio_path)
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
@@ -362,6 +389,8 @@ class ClipService:
         # Check whether a warm job is in-flight for this key.
         fut_to_join: Optional[Future] = None
         with self._lock:
+            if self._closed:
+                raise RuntimeError("ClipService is closed")
             if out_path.exists():
                 self._stats["hits"] += 1
                 return out_path
@@ -383,6 +412,8 @@ class ClipService:
 
         # Generate synchronously in the calling (foreground) thread.
         with self._lock:
+            if self._closed:
+                raise RuntimeError("ClipService is closed")
             self._stats["misses"] += 1
         self._generate_sync(
             audio_path, extract_start, extract_duration, out_path, format=format
@@ -414,22 +445,64 @@ class ClipService:
         segments: List[Tuple[float, float]],
         *,
         format: str = DEFAULT_FORMAT,
-    ) -> None:
+    ) -> WarmClipsResult:
         """
         Best-effort fire-and-forget: enqueue background clip generation for a list
         of (start_s, end_s) pairs.
 
-        Returns immediately. Safe to call from the Streamlit render thread.
-        Worker threads do only file I/O — never touch Streamlit APIs.
+        Returns immediately with a structured result. Safe to call from the
+        Streamlit render thread. Worker threads do only file I/O — never touch
+        Streamlit APIs.
 
-        Deduplicates: clips already cached or already in-flight are skipped.
-        Applies backpressure: stops enqueuing when inflight cap is reached.
+        Deduplicates: clips already cached or already in-flight are counted as
+        accepted. Applies backpressure: stops enqueuing when inflight cap is
+        reached (``stopped_reason="backpressure"``).
         """
+        if not segments:
+            return WarmClipsResult(
+                accepted=0,
+                enqueued=0,
+                already_cached=0,
+                already_inflight=0,
+                requested=0,
+                stopped_reason="empty",
+            )
+        requested = len(segments)
+        with self._lock:
+            if self._closed:
+                return WarmClipsResult(
+                    accepted=0,
+                    enqueued=0,
+                    already_cached=0,
+                    already_inflight=0,
+                    requested=requested,
+                    stopped_reason="closed",
+                )
         if not self.ffmpeg_available():
-            return
+            return WarmClipsResult(
+                accepted=0,
+                enqueued=0,
+                already_cached=0,
+                already_inflight=0,
+                requested=requested,
+                stopped_reason="ffmpeg_missing",
+            )
         audio_path = Path(audio_path)
-        if not audio_path.exists():
-            return
+        if not audio_path.is_file():
+            return WarmClipsResult(
+                accepted=0,
+                enqueued=0,
+                already_cached=0,
+                already_inflight=0,
+                requested=requested,
+                stopped_reason="audio_missing",
+            )
+
+        enqueued = 0
+        already_cached = 0
+        already_inflight = 0
+        skipped_invalid = 0
+        stopped_reason: str | None = None
 
         for start_s, end_s in segments:
             try:
@@ -439,37 +512,75 @@ class ClipService:
                     )
                 )
             except Exception:
+                skipped_invalid += 1
                 continue
 
             if out_path.exists():
+                already_cached += 1
                 continue
 
             with self._lock:
+                if self._closed:
+                    stopped_reason = "closed"
+                    break
                 if out_path.exists():
+                    already_cached += 1
+                    continue
+                existing = self._inflight.get(key)
+                if existing is not None and not existing.done():
+                    # Count already-in-flight before global backpressure so a
+                    # saturated pool still accepts requested keys already running.
+                    already_inflight += 1
                     continue
                 if len(self._inflight) >= self._MAX_INFLIGHT:
                     logger.debug("clip_warm: inflight cap reached, skipping remaining")
-                    return
-                if key in self._inflight and not self._inflight[key].done():
-                    continue  # already queued or running
+                    stopped_reason = "backpressure"
+                    break
 
-                fut = self._executor.submit(
-                    self._generate_safe,
-                    audio_path,
-                    extract_start,
-                    extract_duration,
-                    key,
-                    out_path,
-                    format,
-                )
+                try:
+                    fut = self._executor.submit(
+                        self._generate_safe,
+                        audio_path,
+                        extract_start,
+                        extract_duration,
+                        key,
+                        out_path,
+                        format,
+                    )
+                except RuntimeError:
+                    # Executor shut down between the closed check and submit.
+                    self._closed = True
+                    stopped_reason = "closed"
+                    break
                 self._inflight[key] = fut
                 self._stats["warm_enqueued"] += 1
+                enqueued += 1
                 n = len(self._inflight)
                 if n > self._stats["inflight_peak"]:
                     self._stats["inflight_peak"] = n
 
+        accepted = enqueued + already_cached + already_inflight
+        if stopped_reason is None:
+            if accepted == 0 and skipped_invalid == requested:
+                stopped_reason = "empty"
+            elif accepted + skipped_invalid != requested:
+                stopped_reason = "incomplete"
+
+        return WarmClipsResult(
+            accepted=accepted,
+            enqueued=enqueued,
+            already_cached=already_cached,
+            already_inflight=already_inflight,
+            requested=requested,
+            stopped_reason=stopped_reason,
+        )
+
     def close(self) -> None:
-        """Shutdown background executor. Call on app/process teardown."""
+        """Shutdown background executor. Idempotent; safe to call multiple times."""
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
         self._executor.shutdown(wait=False, cancel_futures=True)
 
     # ── cache cleanup ─────────────────────────────────────────────────────────

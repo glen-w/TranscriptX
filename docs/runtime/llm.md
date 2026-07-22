@@ -44,7 +44,7 @@ On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `prov
 
 - Use **one shared model** for all LLM consumers, or **select per module**
 - Load / save **LLM model profiles** (ProfileManager target `llm_models`, stored under `.transcriptx/profiles/llm_models/`)
-- Inspect a collapsible table of LLM modules and what transcript tasks they are best for
+- Inspect a collapsible table of **installed Ollama models** and what transcript LLM tasks they are best for (to guide per-module picks)
 
 Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a profile and optionally set it as the project active profile (Settings → Configuration → Active Profiles, or the save checkbox on the run form).
 
@@ -59,6 +59,8 @@ Effort-profile `model` fields are **not** part of this chain when a consumer id 
 On the run form, **Project default (active)** loads the already-applied project `llm.model_selection` pack. **Custom (this run)** keeps free-edited widgets for this launch only. Unavailable saved tags are cleared with an explanation (no silent substitute); launch stays gated until an installed model is chosen.
 
 If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled.
+
+**Thinking models (JSON-unsafe):** tags matching `qwen3*`, `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, and `group_llm_synthesis`. The Run Analysis model selector **hides** those tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers. Launch stays gated if a saved profile still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, or `mistral:*` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
 
 If a selected model is missing at generate time, the LLM consumer fails with a clear model-missing error (no silent substitute). Corrections Studio continues to use global `llm.model` only.
 

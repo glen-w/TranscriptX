@@ -4,6 +4,10 @@ This document is the **authoritative release gate** for public version tags. It 
 
 **Do not create the next version tag until every item below is green.**
 
+## Wave 0 eng criteria (closed)
+
+Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed 2026-07-22). Remaining work before a public tag is this checklist + evidence runbook — not missing Wave 0 code.
+
 ## Checklist
 
 1. All Wave 0 acceptance criteria green (release hygiene A1–A10 + Config 1.7 atomic apply + docs/inventory parity).
@@ -31,3 +35,81 @@ Attach (machine- or human-readable) at tag time:
 - Canonical Compose assertions (`scripts/release/assert_compose_bind.sh`)
 - Docker smoke result after fresh build
 - Config 1.7 inventory / parity evidence
+
+## Local evidence runbook (checklist item 7)
+
+Run from the repository root on the **intended release commit** (clean worktree preferred). Record each outcome as `pass` / `failure` / `skipped` (with reason). Environment-dependent checks that cannot run must be **`skipped`**, never a silent pass. Write machine-readable artefacts under `artifacts/pre-release/` when a script does so (that directory is gitignored).
+
+### A. Always-run hygiene (no Docker required)
+
+```bash
+bash scripts/release/stale_refs.sh
+bash scripts/release/assert_compose_bind.sh
+python3 scripts/release/check_tracked_data.py
+bash scripts/secrets_check.sh
+PYTHONPATH=src python3 -c "import re, pathlib, transcriptx; t=pathlib.Path('pyproject.toml').read_text(); m=re.search(r'^version\\s*=\\s*\"([^\"]+)\"', t, re.M); assert m and m.group(1)==transcriptx.__version__, (m.group(1) if m else None, transcriptx.__version__); print(transcriptx.__version__)"
+```
+
+Use `PYTHONPATH=src` so the check reads the tree under release, not a stale site-packages install.
+
+Expected: each script prints `OK` / exits 0. Denylist may **soft-warn** on ignored forbidden paths; that is not a hard failure unless `TRANSCRIPTX_STRICT_IGNORED_FORBIDDEN=1`.
+
+Unit coverage for helpers:
+
+```bash
+python -m pytest -q tests/release/test_wave0_release_hygiene.py
+```
+
+### B. Config 1.7 / inventory parity evidence
+
+```bash
+python -m pytest -q \
+  tests/core/config/test_file_overrides_atomicity.py \
+  tests/core/config/test_registry_ownership.py \
+  tests/core/config/test_nested_file_overrides_probe.py \
+  tests/core/config/test_settings_file_load_pilots.py
+```
+
+Expected: green. Ownership invariant (authoritative): **45 pilots / 619 Pydantic leaves / 16 legacy** (635 total) via `test_ownership_invariant_counts`. Behaviour matrix: `docs/dev/file_override_behaviour_matrix.md`.
+
+### C. Dependency / clean-env audit (optional locally; required for tag when tooling available)
+
+```bash
+bash scripts/release/clean_env_audit.sh
+```
+
+Expected: `pass`, or `skipped` with reason (missing `build` / network / host blockers). Host `pip install '.[full]'` is **not** required for Wave 0 when platform blockers apply — see `docs/dev/dependency_audit.md`. Attach waiver rows for any accepted CVEs.
+
+### D. Docker smoke + image audit (optional locally; required for tag when Docker available)
+
+```bash
+docker compose -f docker-compose.yml build
+make docker-smoke
+bash scripts/release/image_pip_check.sh
+```
+
+Expected: `pass`, or `skipped (Docker not available)`.
+
+### E. Install-matrix cells
+
+Execute the cells claimed in `docs/runtime/install_verification_matrix.md` (core extras, Docker production-image proof, Python 3.10–3.12 as practical). Record pass/fail/skip per cell; do not claim a cell green without evidence.
+
+### F. CI on exact commit
+
+Confirm GitHub Actions on the intended SHA: jobs `tests` (3.10–3.12), `compose-config`, and `release-checks` are green. Failed or cancelled matrix members block tagging.
+
+### Bundle contents checklist
+
+| Artefact | Command / source | Location / note |
+|----------|------------------|-----------------|
+| Stale refs | `scripts/release/stale_refs.sh` | stdout / CI log |
+| Compose bind | `scripts/release/assert_compose_bind.sh` | stdout / CI log |
+| Tracked data | `scripts/release/check_tracked_data.py` | stdout / CI log |
+| Secrets + denylist | `scripts/secrets_check.sh` | stdout / CI log |
+| Package version | pyproject ↔ `transcriptx.__version__` | stdout |
+| Config atomicity + ownership | pytest commands in §B | pytest log |
+| Clean-env audit | `scripts/release/clean_env_audit.sh` | `artifacts/pre-release/` when produced |
+| Image pip check | `scripts/release/image_pip_check.sh` | stdout / artefacts |
+| Docker smoke | `make docker-smoke` | stdout |
+| Install matrix | manual / scripted per matrix doc | notes attached at tag |
+| CI | Actions on exact SHA | link or run IDs |

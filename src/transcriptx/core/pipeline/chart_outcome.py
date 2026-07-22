@@ -23,6 +23,8 @@ GROUP_CHART_OUTCOME_OPTIONAL_KEYS: FrozenSet[str] = frozenset(
         "stats_pooled",
         "interactions_pooled",
         "contagion_pooled",
+        "transcript_quality_pooled",
+        "cohort_summaries",
     }
 )
 

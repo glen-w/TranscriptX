@@ -16,6 +16,7 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 _DELEGATION_SUBTREES = (
     "pauses",
+    "transcript_quality",
     "voice",
     "corrections",
     "summary",

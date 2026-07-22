@@ -505,6 +505,9 @@ class AnalysisConfig:
         default_factory=lambda: TemporalDynamicsConfig()
     )
     pauses: PausesConfig = field(default_factory=lambda: PausesConfig())
+    transcript_quality: "TranscriptQualityConfig" = field(
+        default_factory=lambda: TranscriptQualityConfig()
+    )
     echoes: EchoesConfig = field(default_factory=lambda: EchoesConfig())
     momentum: MomentumConfig = field(default_factory=lambda: MomentumConfig())
     moments: MomentsConfig = field(default_factory=lambda: MomentsConfig())
@@ -871,6 +874,24 @@ class PausesConfig:
         from transcriptx.core.config.models.pauses import PausesSettingsModel
 
         _hydrate_dataclass_from_pydantic(self, PausesSettingsModel())
+
+
+@dataclass
+class TranscriptQualityConfig:
+    """ASR confidence settings. Defaults owned by TranscriptQualitySettingsModel."""
+
+    low_score_threshold: float = field(init=False, repr=True)
+    max_gap_seconds: float = field(init=False, repr=True)
+    cluster_merge_seconds: float = field(init=False, repr=True)
+    max_spans: int = field(init=False, repr=True)
+    max_clusters: int = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.transcript_quality import (
+            TranscriptQualitySettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, TranscriptQualitySettingsModel())
 
 
 @dataclass

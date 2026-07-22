@@ -16,10 +16,10 @@ Related docs:
 | Order | Candidate | Why |
 |-------|-----------|-----|
 | **Done** | **#2 Shared analysis I/O** | Complete 2026-07-17 (affect/dynamics/group-chart + A3 + char) |
-| **1st parallel track** | **#1 Config ownership collapse** | Already mid-flight (registry complete; 8 subtrees delegated); keep momentum on Batch 5+ |
-| **2nd / after char tests** | **#3 Rename + corrections split** | Medium–high; needs E2E characterization first; do not interleave with config validation PRs |
+| **Done** | **#1 Config ownership collapse** | Complete through 1.8 (2026-07-20+): nested + flat + mapping + system/workflow + atomic file overrides + curated `to_dict`. Inventory invariant **44 / 614 / 16** (630). Optional follow-up **1.9** structural split of `analysis.py` is outside Candidate 1 done criteria. |
+| **Next / after char tests** | **#3 Rename + corrections split** | Medium–high; needs E2E characterization first; do not interleave with leftover config 1.9 work |
 
-**Parallelism:** Candidate 2 is complete and independent of 1 and 3. Candidate 1 and 3 both touch “careful state machines / settings”; avoid same-week mega-PRs that change both. Within #1, do one nested subtree per PR.
+**Parallelism:** Candidates 1 and 2 are complete. Candidate 3 touches “careful state machines / settings”; do not mix it with optional config 1.9 structural-split PRs.
 
 ---
 
@@ -52,4 +52,4 @@ Do **not** do these while executing these plans:
 
 ### One-line summary for prioritization
 
-**#2 Shared analysis I/O is Done.** Continue **#1** one subtree per PR using the existing hydrate recipe; only then tackle **#3**, starting with characterization tests so splits stay boring.
+**#1 Config ownership and #2 Shared analysis I/O are Done.** Tackle **#3** next, starting with characterization tests so splits stay boring. Optional config **1.9** is unrelated follow-up, not a Wave 0 or Candidate 1 blocker.

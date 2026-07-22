@@ -28,6 +28,13 @@ def load_transcript_by_session(session_name: str) -> Optional[Dict[str, Any]]:
     return FileService.load_transcript_by_session(session_name)
 
 
+def load_transcript_with_path_by_session(
+    session_name: str,
+) -> Optional[tuple[Dict[str, Any], Path]]:
+    """Load transcript data together with the canonical path that was read."""
+    return FileService.load_transcript_with_path_by_session(session_name)
+
+
 def get_analysis_modules(session_name: str) -> List[str]:
     from transcriptx.web.module_registry import get_analysis_modules
 

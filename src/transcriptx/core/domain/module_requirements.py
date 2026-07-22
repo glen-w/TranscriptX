@@ -21,6 +21,7 @@ class Requirement(str, Enum):
 
 class Enhancement(str, Enum):
     SPEAKER_DISPLAY_NAMES = "speaker_display_names"
+    WORD_CONFIDENCE = "word_confidence"
 
 
 @dataclass

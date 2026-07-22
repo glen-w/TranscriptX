@@ -318,6 +318,9 @@ class TranscriptXConfig:
                 "summary": self._config_to_dict(self.analysis.summary),
                 "bertopic": self._config_to_dict(self.analysis.bertopic),
                 "pauses": self._config_to_dict(self.analysis.pauses),
+                "transcript_quality": self._config_to_dict(
+                    self.analysis.transcript_quality
+                ),
                 "echoes": self._config_to_dict(self.analysis.echoes),
                 "momentum": self._config_to_dict(self.analysis.momentum),
                 "moments": self._config_to_dict(self.analysis.moments),

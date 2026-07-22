@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 from transcriptx.core.llm import DEFAULT_OLLAMA_MODEL
+from transcriptx.core.llm.thinking_models import is_thinking_model as _is_thinking_model
 
 # Family/size buckets used by the diversity selector. Order within each bucket
 # prefers faster/smaller tags first.
@@ -38,13 +39,6 @@ _BUCKET_CANDIDATES: dict[str, tuple[str, ...]] = {
         "gpt-oss:20b",
     ),
 }
-
-_THINKING_NAME_MARKERS = (
-    "qwen3",
-    "qwen3.6",
-    "deepseek-r1",
-    "gpt-oss",
-)
 
 
 @dataclass(frozen=True)
@@ -82,8 +76,8 @@ def installed_ollama_models(base_url: str) -> list[str]:
 
 
 def is_thinking_model(name: str) -> bool:
-    lowered = name.lower()
-    return any(marker in lowered for marker in _THINKING_NAME_MARKERS)
+    """Proxy to production heuristic (kept for live-test imports)."""
+    return _is_thinking_model(name)
 
 
 def resolve_live_model(base_url: str) -> str:

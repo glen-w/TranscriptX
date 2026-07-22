@@ -21,6 +21,7 @@ class TranscriptCapabilities:
     has_speaker_labels: bool
     has_word_timestamps: bool
     has_word_speakers: bool
+    has_word_confidence: bool
 
     @classmethod
     def from_segments(cls, segments: List[Dict[str, Any]]) -> "TranscriptCapabilities":
@@ -43,12 +44,30 @@ class TranscriptCapabilities:
             and any("speaker" in word for word in seg.get("words", []))
             for seg in segments
         )
+        has_word_confidence = False
+        for seg in segments:
+            words = seg.get("words")
+            if not isinstance(words, list):
+                continue
+            for word in words:
+                if not isinstance(word, dict) or "score" not in word:
+                    continue
+                try:
+                    value = float(word["score"])
+                except (TypeError, ValueError):
+                    continue
+                if value == value and 0.0 <= value <= 1.0:
+                    has_word_confidence = True
+                    break
+            if has_word_confidence:
+                break
         return cls(
             has_segments=has_segments,
             has_segment_timestamps=has_segment_timestamps,
             has_speaker_labels=has_speaker_labels,
             has_word_timestamps=has_word_timestamps,
             has_word_speakers=has_word_speakers,
+            has_word_confidence=has_word_confidence,
         )
 
 

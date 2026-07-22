@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from transcriptx.web.blocks.implementations import asr_confidence as asr_confidence_blocks
 from transcriptx.web.blocks.implementations import charts as charts_blocks
 from transcriptx.web.blocks.implementations import data as data_blocks
 from transcriptx.web.blocks.implementations import insights as insights_blocks
@@ -173,6 +174,19 @@ def _register_insights_blocks() -> None:
         },
     }
     specs = [
+        BlockSpec(
+            id="asr_confidence",
+            title="ASR Confidence",
+            group="Insights",
+            description=(
+                "Word-score coverage, low-confidence spans/clusters, and "
+                "open-in-transcript review. Model uncertainty evidence — not WER."
+            ),
+            module_deps=("transcript_quality",),
+            artifact_patterns=("_transcript_quality.json",),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=asr_confidence_blocks.render_asr_confidence,
+        ),
         BlockSpec(
             id="insights_contract",
             title="Content vs Style",

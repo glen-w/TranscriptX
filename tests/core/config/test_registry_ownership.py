@@ -165,7 +165,7 @@ def test_ownership_snapshot_matches_committed_fixture() -> None:
 def test_ownership_invariant_counts() -> None:
     """Delegation PRs must preserve pilot / owned / baseline totals."""
     snap = _build_ownership_snapshot()
-    assert snap["pilot_count"] == 44
-    assert snap["pydantic_owned_keys"] == 614
+    assert snap["pilot_count"] == 45
+    assert snap["pydantic_owned_keys"] == 619
     assert snap["non_pydantic_baseline_keys"] == 16
-    assert snap["total_registry_keys"] == 630
+    assert snap["total_registry_keys"] == 635

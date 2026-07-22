@@ -1,17 +1,24 @@
 # Export Exemplars (# export-exemplars)
 
-Find the 10 most representative substantive functional-code files in the workspace about a given topic and copy them (flat, no subfolders) into a new folder on the Desktop named after the topic.
+Find the 10 most representative substantive functional-code files in the workspace about a given topic and copy them (flat, no subfolders) into a new folder on the Desktop named after the topic. If no topic is given, use the plan or topic currently under discussion.
 
-**Usage:** `/export-exemplars <topic>`
-Example: `export-exemplars docker setup` → finds 10 files best showing Docker setup and copies them to `~/Desktop/docker setup/`.
+**Usage:** `/export-exemplars [topic]`
+Examples:
+- `export-exemplars docker setup` → finds 10 files best showing Docker setup and copies them to `~/Desktop/docker setup/`.
+- `export-exemplars` (no topic) → infers the topic from the plan or discussion currently in focus and exports for that.
 
-Execute from the workspace root. The topic is everything after "export-exemplars" in the user's message.
+Execute from the workspace root. The topic is everything after "export-exemplars" in the user's message, when present.
 
 ---
 
 ## 1. Parse the topic
 
-- Take the full topic phrase from the user (e.g. "docker setup", "authentication", "API rate limiting").
+- If the user supplied a topic phrase (e.g. "docker setup", "authentication", "API rate limiting"), use that exactly.
+- If the topic is empty or missing, **do not ask** — infer it from the current conversation:
+  1. Prefer the active/confirmed plan title or plan file name under discussion (e.g. Cursor plan for the task being implemented).
+  2. Otherwise use the main topic of the latest substantive thread (feature, bugfix, or refactor under discussion).
+  3. Derive a short Desktop folder name from that plan/topic (plain words, spaces allowed; e.g. "per-segment audio playback").
+  4. Briefly state the inferred topic in the summary so the user can see what was assumed.
 - The destination folder name is exactly this topic (with spaces allowed): `~/Desktop/<topic>/`.
 - Normalize for filesystem: create the folder with the topic as given; avoid characters that are invalid in folder names.
 
@@ -53,4 +60,4 @@ Execute from the workspace root. The topic is everything after "export-exemplars
 - Only copy; never delete or modify the originals.
 - Never export test-related files; every selected source file must contain substantive functional implementation.
 - Resolve the Desktop path appropriately (e.g. `$HOME/Desktop` or `~/Desktop` on macOS).
-- If the topic is empty or missing, ask the user to specify the topic.
+- If the topic is empty or missing, infer from the current plan/discussion (see §1); only ask the user if there is no usable plan or discussion context to infer from.

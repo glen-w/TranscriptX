@@ -12,11 +12,27 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.core.utils.logger import get_logger
+from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.components.playback_panel import (
+    PlaybackAvailability,
+    PlaybackUnavailableReason,
+    clear_playback_session_keys,
+    render_active_clip,
+    render_playback_unavailable,
+    resolve_playback_availability,
+    trigger_clip_warm,
+)
+from transcriptx.web.models.search import NavRequest, SegmentRef
 from transcriptx.web.services import FileService, RunIndex, SubjectService
-from transcriptx.web.utils import list_available_sessions
+from transcriptx.web.speaker_studio_runtime import get_shared_speaker_studio_controller
+from transcriptx.web.state import (
+    NAV_REQUEST_KEY,
+    PAGE_KEY,
+)
 from transcriptx.web.transcript_view_state import (
     consume_nav_request,
     filtered_display_segments,
@@ -27,28 +43,35 @@ from transcriptx.web.transcript_viewer.metadata import (
     segment_word_stats,
     speaker_tooltip,
 )
+from transcriptx.web.transcript_viewer.playback_targets import (
+    build_playback_targets,
+    filtered_view_signature,
+    ordered_playback_targets,
+    owner_prefix_hash,
+    transcript_revision_identity,
+    warm_list_position,
+)
 from transcriptx.web.transcript_viewer.preflight import (
     ViewerPreflight,
     resolve_viewer_preflight,
 )
 from transcriptx.web.transcript_viewer.segments import (
+    TranscriptPlaybackBinding,
     render_plain_segments,
     render_segmented_tab,
 )
 from transcriptx.web.utils import (
-    load_transcript_by_session,
+    list_available_sessions,
+    load_transcript_with_path_by_session,
     resolve_speaker_names_from_db,
 )
-from transcriptx.web.state import (
-    NAV_REQUEST_KEY,
-    PAGE_KEY,
-)
-
-from transcriptx.core.utils.logger import get_logger
-from transcriptx.web.models.search import NavRequest, SegmentRef
-from transcriptx.utils.text_utils import format_duration_display_from_config
 
 logger = get_logger()
+
+_PLAY_KEY = "transcript_viewer_play_seg"
+_OWNER_KEY = "transcript_viewer_play_owner"
+_VIEW_SIG_KEY = "transcript_viewer_play_view_sig"
+_WARM_SIG_SUFFIX = "_warm_sig"
 
 
 @dataclass(frozen=True)
@@ -209,12 +232,101 @@ def _resolve_and_prepare_segments(
     return segments
 
 
+def _playback_owner_identity(
+    *,
+    session_slug: str,
+    run_id: str,
+    transcript_path: str,
+    size: int,
+    mtime_ns: int,
+) -> tuple[str, str, str, int, int]:
+    return (session_slug, run_id, transcript_path, size, mtime_ns)
+
+
+def _owner_prefix(owner: tuple[Any, ...]) -> str:
+    return owner_prefix_hash(owner)
+
+
+def reset_transcript_playback_state_if_needed(
+    session_state: dict[str, Any],
+    *,
+    owner: tuple[Any, ...],
+    view_signature: tuple[Any, ...],
+    targets: dict[int, Any],
+) -> None:
+    """
+    Clear active play / warm state when owner or filtered view changes.
+
+    Must run before widgets that use related keys.
+    """
+    prev_owner = session_state.get(_OWNER_KEY)
+    prev_sig = session_state.get(_VIEW_SIG_KEY)
+    if prev_owner != owner or prev_sig != view_signature:
+        session_state[_PLAY_KEY] = None
+        session_state[f"{_PLAY_KEY}{_WARM_SIG_SUFFIX}"] = None
+        session_state[_OWNER_KEY] = owner
+        session_state[_VIEW_SIG_KEY] = view_signature
+
+    active = session_state.get(_PLAY_KEY)
+    if active is not None and (
+        type(active) is not int or active not in targets
+    ):
+        session_state[_PLAY_KEY] = None
+        session_state[f"{_PLAY_KEY}{_WARM_SIG_SUFFIX}"] = None
+
+
+def _resolve_canonical_transcript_path(
+    loaded_path: Path | None,
+    artifacts_json: Path | None,
+) -> Path | None:
+    """Prefer the path used to load; fall back to artifacts.json_file.
+
+    Attempts each candidate independently with ``resolve(strict=True)`` so a
+    present-but-missing ``loaded_path`` still falls back to artifacts.
+    """
+    for candidate in (loaded_path, artifacts_json):
+        if candidate is None:
+            continue
+        try:
+            return candidate.resolve(strict=True)
+        except (FileNotFoundError, OSError):
+            continue
+    return None
+
+
+def _setup_playback_availability(
+    transcript_path: Path | None,
+) -> PlaybackAvailability:
+    """Optional enrichment: never raise into the page-wide exception handler."""
+    if transcript_path is None:
+        return PlaybackAvailability(
+            enabled=False,
+            audio_path=None,
+            reason=PlaybackUnavailableReason.transcript_unresolved,
+        )
+    try:
+        controller = get_shared_speaker_studio_controller()
+        return resolve_playback_availability(transcript_path, controller)
+    except Exception:
+        logger.warning(
+            "Playback setup failed for transcript=%s",
+            transcript_path,
+            exc_info=True,
+        )
+        return PlaybackAvailability(
+            enabled=False,
+            audio_path=None,
+            reason=PlaybackUnavailableReason.controller_error,
+        )
+
+
 def _render_transcript_tabs(
     display_segments: list[tuple[int, dict[str, Any]]],
     *,
     controls: TranscriptControlsState,
     highlight_query: str | None,
     jump_index: int | None,
+    playback: TranscriptPlaybackBinding | None,
 ) -> None:
     """Render turns/segments tabs for already-filtered display segments."""
     tab_turns, tab_segments = st.tabs(["Turns", "Segments"])
@@ -223,6 +335,7 @@ def _render_transcript_tabs(
             display_segments,
             show_timestamps=controls.show_timestamps,
             format_key=controls.format_key,
+            playback=playback,
         )
     with tab_segments:
         render_plain_segments(
@@ -231,6 +344,7 @@ def _render_transcript_tabs(
             format_key=controls.format_key,
             highlight_query=highlight_query,
             jump_index=jump_index,
+            playback=playback,
         )
 
 
@@ -240,6 +354,12 @@ def _transcript_interaction_fragment(
     *,
     highlight_query: str | None,
     jump_index: int | None,
+    session_slug: str,
+    run_id: str,
+    transcript_path: str | None,
+    transcript_size: int,
+    transcript_mtime_ns: int,
+    playback_availability: PlaybackAvailability,
 ) -> None:
     """Transcript search and segment tabs without full-app rerun."""
     controls = _render_transcript_controls()
@@ -252,11 +372,99 @@ def _transcript_interaction_fragment(
     if filter_caption:
         st.caption(filter_caption)
 
+    owner = _playback_owner_identity(
+        session_slug=session_slug,
+        run_id=run_id,
+        transcript_path=transcript_path or "",
+        size=transcript_size,
+        mtime_ns=transcript_mtime_ns,
+    )
+    targets = build_playback_targets(display_segments)
+    view_sig = filtered_view_signature(
+        owner_identity=owner,
+        display_segments=display_segments,
+        search_text=controls.search_text,
+        jump_index=jump_index,
+    )
+    reset_transcript_playback_state_if_needed(
+        st.session_state,
+        owner=owner,
+        view_signature=view_sig,
+        targets=targets,
+    )
+
+    playback_enabled = bool(
+        playback_availability.enabled
+        and transcript_path
+        and playback_availability.audio_path is not None
+        and targets
+    )
+    # Empty search: clear active, skip warm, still render tabs.
+    if not display_segments:
+        clear_playback_session_keys(_PLAY_KEY)
+        playback_enabled = False
+
+    if not playback_availability.enabled and playback_availability.reason is not None:
+        clear_playback_session_keys(_PLAY_KEY)
+        render_playback_unavailable(playback_availability.reason)
+    elif (
+        playback_availability.enabled
+        and display_segments
+        and not targets
+    ):
+        clear_playback_session_keys(_PLAY_KEY)
+        render_playback_unavailable(PlaybackUnavailableReason.timing_unavailable)
+    elif playback_enabled and transcript_path and playback_availability.audio_path:
+        try:
+            controller = get_shared_speaker_studio_controller()
+            ordered = ordered_playback_targets(display_segments, targets)
+            active_source = st.session_state.get(_PLAY_KEY)
+            if type(active_source) is not int:
+                active_source = None
+            warm_pos = warm_list_position(ordered, active_source)
+            trigger_clip_warm(
+                controller,
+                transcript_path,
+                playback_availability.audio_path,
+                ordered,
+                warm_pos if warm_pos is not None else None,
+                active_id=_owner_prefix(owner),
+                play_key=_PLAY_KEY,
+            )
+            active_seg = (
+                targets.get(active_source) if active_source is not None else None
+            )
+            render_active_clip(
+                controller,
+                transcript_path,
+                active_seg,
+                autoplay=True,
+            )
+        except Exception:
+            logger.warning(
+                "Playback rendering failed for transcript=%s; continuing text-only",
+                transcript_path,
+                exc_info=True,
+            )
+            clear_playback_session_keys(_PLAY_KEY)
+            render_playback_unavailable(PlaybackUnavailableReason.controller_error)
+            playback_enabled = False
+
+    binding: TranscriptPlaybackBinding | None = None
+    if playback_enabled:
+        binding = TranscriptPlaybackBinding(
+            enabled=True,
+            targets=targets,
+            play_key=_PLAY_KEY,
+            owner_prefix=_owner_prefix(owner),
+        )
+
     _render_transcript_tabs(
         display_segments,
         controls=controls,
         highlight_query=highlight_query,
         jump_index=jump_index,
+        playback=binding,
     )
 
 
@@ -301,10 +509,11 @@ def render_transcript_viewer() -> None:
             return
 
         with st.spinner(f"Loading transcript for {selected}..."):
-            transcript_data = load_transcript_by_session(selected)
-        if not transcript_data:
+            loaded = load_transcript_with_path_by_session(selected)
+        if not loaded:
             st.error(f"Transcript not found for session: {selected}")
             return
+        transcript_data, loaded_path = loaded
 
         segments = _resolve_and_prepare_segments(transcript_data, selected)
         _render_metadata_metrics(transcript_data, segments)
@@ -331,10 +540,39 @@ def render_transcript_viewer() -> None:
         if nav_state.clear_nav_request:
             st.session_state[NAV_REQUEST_KEY] = None
 
+        canonical_path = _resolve_canonical_transcript_path(
+            loaded_path, artifacts.json_file
+        )
+        playback_availability = _setup_playback_availability(canonical_path)
+        path_str: str | None = None
+        size = 0
+        mtime_ns = 0
+        if canonical_path is not None:
+            try:
+                path_str, size, mtime_ns = transcript_revision_identity(canonical_path)
+            except (FileNotFoundError, OSError):
+                logger.warning(
+                    "Transcript disappeared before revision identity path=%s",
+                    canonical_path,
+                    exc_info=True,
+                )
+                path_str, size, mtime_ns = None, 0, 0
+                playback_availability = PlaybackAvailability(
+                    enabled=False,
+                    audio_path=None,
+                    reason=PlaybackUnavailableReason.transcript_unresolved,
+                )
+
         _transcript_interaction_fragment(
             segments,
             highlight_query=nav_state.highlight_query,
             jump_index=nav_state.jump_index,
+            session_slug=session_slug,
+            run_id=run_id,
+            transcript_path=path_str,
+            transcript_size=size,
+            transcript_mtime_ns=mtime_ns,
+            playback_availability=playback_availability,
         )
     except Exception as exc:
         logger.error(f"Error loading transcript: {exc}", exc_info=True)

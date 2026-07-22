@@ -150,6 +150,13 @@ MODULE_CONFIG_ALLOWLIST = {
         "analysis.voice.top_k_moments",
     ],
     "stats": [],
+    "transcript_quality": [
+        "analysis.transcript_quality.low_score_threshold",
+        "analysis.transcript_quality.max_gap_seconds",
+        "analysis.transcript_quality.cluster_merge_seconds",
+        "analysis.transcript_quality.max_spans",
+        "analysis.transcript_quality.max_clusters",
+    ],
 }
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from transcriptx.core.domain.module_requirements import Requirement
+from transcriptx.core.domain.module_requirements import Enhancement, Requirement
 
 
 def build_core_module_definitions(
@@ -26,6 +26,14 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+        },
+        "transcript_quality": {
+            "description": "ASR Confidence",
+            "dependencies": [],
+            "category": "light",
+            "determinism_tier": "T0",
+            "requirements": [Requirement.SEGMENTS],
+            "enhancements": [Enhancement.WORD_CONFIDENCE],
         },
         "insight_eligibility": {
             "description": "Shared content-vs-style insight eligibility pipeline",

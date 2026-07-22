@@ -23,6 +23,7 @@
     "lexical_diversity",
     "wordclouds",
     "tics",
+    "transcript_quality",
     "insight_eligibility",
     "temporal_dynamics",
     "qa_analysis",
@@ -347,6 +348,18 @@
       "requirements": [
         "segments",
         "speaker_labels"
+      ]
+    },
+    "transcript_quality": {
+      "category": "light",
+      "dependencies": [],
+      "description": "ASR Confidence",
+      "determinism_tier": "T0",
+      "enhancements": [
+        "word_confidence"
+      ],
+      "requirements": [
+        "segments"
       ]
     },
     "insight_eligibility": {

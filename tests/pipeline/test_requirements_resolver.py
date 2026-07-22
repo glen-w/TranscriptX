@@ -14,6 +14,7 @@ def test_should_skip_missing_segments() -> None:
         has_speaker_labels=False,
         has_word_timestamps=False,
         has_word_speakers=False,
+        has_word_confidence=False,
     )
     resolver = ModuleRequirementsResolver(capabilities=capabilities, has_db=False)
     should_skip, reasons = resolver.should_skip([Requirement.SEGMENTS])
@@ -28,6 +29,7 @@ def test_should_not_skip_when_requirements_met() -> None:
         has_speaker_labels=True,
         has_word_timestamps=False,
         has_word_speakers=False,
+        has_word_confidence=False,
     )
     resolver = ModuleRequirementsResolver(capabilities=capabilities, has_db=True)
     should_skip, reasons = resolver.should_skip(

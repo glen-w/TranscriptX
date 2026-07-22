@@ -33,7 +33,8 @@ def test_speaker_id_page_imports_only_controller() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text()
-    assert "SpeakerStudioController" in source
+    assert "get_shared_speaker_studio_controller" in source
+    assert "SpeakerStudioController()" not in source
     assert "SegmentIndexService" not in source
     assert "ClipService" not in source
     assert "SpeakerMappingService" not in source
