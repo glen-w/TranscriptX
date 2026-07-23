@@ -21,6 +21,7 @@ _FEATURE_MODULES = (
     "transcriptx.core.analysis.llm_summary",
     "transcriptx.core.analysis.llm_speaker_summary",
     "transcriptx.core.analysis.llm_action_items",
+    "transcriptx.core.analysis.llm_custom_qa",
     "transcriptx.core.analysis.narrative_summary",
 )
 

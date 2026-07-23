@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import statistics
+import time
 from typing import Any, Mapping, Sequence
 
 from transcriptx.core.analysis.topic_shift.detector import (
@@ -10,7 +11,10 @@ from transcriptx.core.analysis.topic_shift.detector import (
     detect_peaks,
     reconcile_chunk_peaks,
 )
-from transcriptx.core.analysis.topic_shift.embed import TopicShiftEmbedder
+from transcriptx.core.analysis.topic_shift.embed import (
+    TopicShiftEmbedder,
+    model_weights_locally_available,
+)
 from transcriptx.core.analysis.topic_shift.keywords import keyword_hints_for_segments
 from transcriptx.core.analysis.topic_shift.language import (
     resolve_transcript_language,
@@ -34,6 +38,7 @@ from transcriptx.core.analysis.topic_shift.semantics import (
     DEFAULT_SMOOTH_WIDTH,
     DEFAULT_STRIDE,
     DEFAULT_WINDOW_SIZE,
+    ENGLISH_CODES,
     SCHEMA_VERSION,
     SEMANTICS_BY_BACKEND,
 )
@@ -43,6 +48,7 @@ from transcriptx.core.analysis.topic_shift.spans import (
     transcript_identity_for_segments,
 )
 from transcriptx.core.analysis.topic_shift.windowing import (
+    TopicWindow,
     build_rolling_windows,
     partition_overlapping_chunks,
 )
@@ -61,17 +67,53 @@ def _thresholds_for(backend: str, overrides: Mapping[str, Any] | None) -> Detect
     )
 
 
-def _transformers_probe(allow_downloads: bool) -> tuple[bool, bool]:
-    """Return (en_available_local_or_downloadable, multi_available)."""
+def _transformers_probe(
+    allow_downloads: bool,
+    *,
+    en_model: str,
+    multi_model: str,
+) -> tuple[bool, bool]:
+    """Return (en_available, multi_available). Offline probes local weights only."""
     try:
         import transformers  # noqa: F401
         import torch  # noqa: F401
     except Exception:
         return False, False
-    if not allow_downloads:
-        # Availability of weights checked at embed time; probe import only
+    if allow_downloads:
         return True, True
-    return True, True
+    return (
+        model_weights_locally_available(en_model),
+        model_weights_locally_available(multi_model),
+    )
+
+
+def _texts_for_backend(
+    windows: Sequence[TopicWindow], backend: str
+) -> list[str]:
+    """Transformers use raw_text; TF-IDF paths use lexical_text (raw fallback)."""
+    if backend in ("tfidf", "tfidf_char"):
+        return [
+            (w.lexical_text.strip() if w.lexical_text and w.lexical_text.strip() else w.raw_text)
+            for w in windows
+        ]
+    return [w.raw_text for w in windows]
+
+
+def _embed_failed_status(
+    *,
+    preferred: str,
+    limited: bool,
+    lang_code: str | None,
+) -> str:
+    """unsupported_language when non-English path cannot embed; else backend_unavailable.
+
+    Do not use post-fallback ``limited`` (e.g. English transformers → tfidf_char):
+    that flag means lexical fallback was attempted, not that the language is unsupported.
+    """
+    del limited  # retained for call-site stability; classification uses preferred/lang only
+    code = (lang_code or "en").lower()
+    non_english = preferred == "transformers_multi" or code not in ENGLISH_CODES
+    return "unsupported_language" if non_english else "backend_unavailable"
 
 
 def run_topic_shift_analysis(
@@ -107,7 +149,11 @@ def run_topic_shift_analysis(
 
     segs = canon.segments
     lang_code, lang_tag = resolve_transcript_language(raw_segments, metadata)
-    en_ok, multi_ok = _transformers_probe(allow_downloads)
+    en_model = str(cfg.get("en_model", DEFAULT_EN_MODEL))
+    multi_model = str(cfg.get("multi_model", DEFAULT_MULTI_MODEL))
+    en_ok, multi_ok = _transformers_probe(
+        allow_downloads, en_model=en_model, multi_model=multi_model
+    )
     preferred, limited = select_backend(
         lang_code,
         lang_tag,
@@ -149,31 +195,37 @@ def run_topic_shift_analysis(
             reason="incomplete_coverage",
         )
 
+    timeout_seconds = float(cfg.get("timeout_seconds", 600.0) or 600.0)
+    deadline = time.perf_counter() + max(1.0, timeout_seconds)
     embedder = TopicShiftEmbedder(
-        en_model=str(cfg.get("en_model", DEFAULT_EN_MODEL)),
-        multi_model=str(cfg.get("multi_model", DEFAULT_MULTI_MODEL)),
+        en_model=en_model,
+        multi_model=multi_model,
         batch_size=int(cfg.get("batch_size", 32)),
         allow_downloads=allow_downloads,
         lru_size=int(cfg.get("lru_size", 4096)),
+        deadline_monotonic=deadline,
     )
 
-    texts = [w.raw_text for w in windows]
     backend = preferred
     semantics = SEMANTICS_BY_BACKEND[backend]
+    texts = _texts_for_backend(windows, backend)
     embed = embedder.embed(texts, backend=backend, semantics_version=semantics)
     if embed is None and backend.startswith("transformers"):
-        # Full corpus TF-IDF restart
+        # Full corpus TF-IDF restart (lexical channel)
         backend = "tfidf"
         semantics = SEMANTICS_BY_BACKEND[backend]
+        texts = _texts_for_backend(windows, backend)
         embed = embedder.embed(texts, backend=backend, semantics_version=semantics)
         if embed is None:
             backend = "tfidf_char"
             semantics = SEMANTICS_BY_BACKEND[backend]
+            texts = _texts_for_backend(windows, backend)
             embed = embedder.embed(texts, backend=backend, semantics_version=semantics)
             limited = True
     elif embed is None and backend == "tfidf":
         backend = "tfidf_char"
         semantics = SEMANTICS_BY_BACKEND[backend]
+        texts = _texts_for_backend(windows, backend)
         embed = embedder.embed(texts, backend=backend, semantics_version=semantics)
         limited = True
 
@@ -181,7 +233,9 @@ def run_topic_shift_analysis(
         return _empty_result(
             identity=identity,
             generation_id=generation_id,
-            analytical_status="backend_unavailable",
+            analytical_status=_embed_failed_status(
+                preferred=preferred, limited=limited, lang_code=lang_code
+            ),
             backend=preferred,
             reason="embed_failed",
             language_code=lang_code,

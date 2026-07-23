@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-07-23
+
+### Added
+
+- Analysis module `llm_custom_qa` (B21): Settings question library, Run/Batch picker, cite-or-unavailable Insights cards, generation commit-marker artifacts, and group `qa_answer_rows` / `qa_member_failures` aggregation.
+- Project-config `FileLock` writers (`config_write_lock` / `patch_project_config_keys`) with typed lock/corrupt errors.
+- Settings → Questions tab and conditional LLM gating when the effective question set is empty.
+
+### Changed
+
+- Config ownership pilots include `llm_custom_qa_settings` (**47** pilots / **651** Pydantic leaves / **667** registry keys).
+- Topic-shift embedding hardening (offline Hub scope, enrichment/spans coverage) and related docs/tests.
+
+### Fixed
+
+- Settings page orchestration for the Questions tab; module UI pinned order and audit guardrails for custom-QA commit writes.
+
 ## [0.6.5] - 2026-07-23
 
 ### Added

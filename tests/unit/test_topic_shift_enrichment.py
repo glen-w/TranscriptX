@@ -152,3 +152,103 @@ def test_visibility_suppresses_failed(tmp_path: Path) -> None:
         resolve_topic_shift_visibility(run_root, run_results=run_results)
         == "suppress_failed"
     )
+
+
+def test_enrichment_envelope_rejects_duplicate_span_ids() -> None:
+    from pydantic import ValidationError
+
+    from transcriptx.core.analysis.topic_shift.schemas import validate_enrichment_payload
+
+    payload = {
+        "schema_version": "topic_shift_enrichment_schema_v1",
+        "prompt_version": "topic_shift_enrichment_prompt_v1",
+        "outcome": "success",
+        "skip_reason": None,
+        "deterministic_generation_id": "g1",
+        "deterministic_digest": "d" * 64,
+        "model": "m",
+        "selection_source": "config",
+        "entries": [
+            {
+                "span_id": "s1",
+                "title": "A",
+                "summary": None,
+                "key_points": [],
+                "title_source": "llm",
+                "error_category": None,
+            },
+            {
+                "span_id": "s1",
+                "title": "B",
+                "summary": None,
+                "key_points": [],
+                "title_source": "llm",
+                "error_category": None,
+            },
+        ],
+        "overall_summary": None,
+        "ui_mode": "chapter_titles",
+    }
+    with pytest.raises(ValidationError, match="duplicate"):
+        validate_enrichment_payload(payload)
+
+
+def test_malformed_enrichment_does_not_break_commit(tmp_path: Path, monkeypatch) -> None:
+    from transcriptx.core.analysis.topic_shift import enrichment as enrich_mod
+
+    module_dir = tmp_path / "topic_shift"
+    module_dir.mkdir()
+    spans = {
+        "deterministic_generation_id": "det1",
+        "analytical_status": "success",
+        "schema_version": "topic_shift_result_schema_v1",
+        "semantics_version": "topic_shift_semantics_v1",
+        "backend": "tfidf",
+        "coverage_spans": [
+            {"span_id": "s1", "index": 0, "label": "Opening"},
+            {"span_id": "s2", "index": 1, "label": "Next"},
+        ],
+    }
+
+    def _bad_titles(*, model, spans, llm_cfg):
+        return (
+            "success",
+            [
+                {
+                    "span_id": "s1",
+                    "title": "One",
+                    "summary": None,
+                    "key_points": [],
+                    "title_source": "llm",
+                    "error_category": None,
+                },
+                {
+                    "span_id": "s1",
+                    "title": "Dup",
+                    "summary": None,
+                    "key_points": [],
+                    "title_source": "llm",
+                    "error_category": None,
+                },
+            ],
+            None,
+        )
+
+    monkeypatch.setattr(enrich_mod, "_try_generate_titles", _bad_titles)
+    monkeypatch.setattr(
+        enrich_mod,
+        "resolve_topic_shift_enrichment_model",
+        lambda *a, **k: SimpleNamespace(
+            status="ok", model="m:1", source="config", skip_reason=None
+        ),
+    )
+    det_before = spans["coverage_spans"]
+    payload = maybe_run_topic_shift_enrichment(
+        module_output_dir=module_dir,
+        spans_envelope=spans,
+        llm_cfg=SimpleNamespace(enabled=True, model="m:1", model_selection=None),
+        llm_enabled=True,
+    )
+    assert payload["outcome"] == "skipped"
+    assert payload["skip_reason"] == "malformed_enrichment"
+    assert spans["coverage_spans"] is det_before

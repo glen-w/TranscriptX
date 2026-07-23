@@ -53,6 +53,7 @@ def write_row_outputs(
     content_rows_name: Optional[str] = None,
     bundle: bool = True,
     drop_csv_keys: Optional[List[str]] = None,
+    extra_tables: Optional[Dict[str, List[Dict[str, Any]]]] = None,
 ) -> Tuple[bool, Optional[AggregationWarning]]:
     """
     Write standardized row outputs for a group aggregation.
@@ -85,6 +86,7 @@ def write_row_outputs(
             content_rows_name=content_rows_name,
             bundle=bundle,
             drop_csv_keys=drop_csv_keys,
+            extra_tables=extra_tables,
         )
 
 
@@ -99,6 +101,7 @@ def _write_row_outputs_body(
     content_rows_name: Optional[str] = None,
     bundle: bool = True,
     drop_csv_keys: Optional[List[str]] = None,
+    extra_tables: Optional[Dict[str, List[Dict[str, Any]]]] = None,
 ) -> Tuple[bool, Optional[AggregationWarning]]:
     agg_dir = base_dir / agg_id
     agg_dir.mkdir(parents=True, exist_ok=True)
@@ -142,6 +145,18 @@ def _write_row_outputs_body(
             header=content_header,
         )
 
+    if extra_tables:
+        for table_name, rows in extra_tables.items():
+            if not isinstance(table_name, str) or not table_name:
+                continue
+            safe_rows = rows if isinstance(rows, list) else []
+            write_json(
+                agg_dir / f"{table_name}.json",
+                safe_rows,
+                indent=2,
+                ensure_ascii=False,
+            )
+
     if bundle:
         bundle_payload = {
             "schema_version": 1,
@@ -152,6 +167,10 @@ def _write_row_outputs_body(
         }
         if content_rows is not None and content_rows_name:
             bundle_payload[content_rows_name] = content_rows
+        if extra_tables:
+            for table_name, rows in extra_tables.items():
+                if isinstance(table_name, str) and table_name:
+                    bundle_payload[table_name] = rows if isinstance(rows, list) else []
         write_json(
             agg_dir / "aggregation.json", bundle_payload, indent=2, ensure_ascii=False
         )

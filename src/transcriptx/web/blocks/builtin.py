@@ -6,6 +6,7 @@ from transcriptx.web.blocks.implementations import asr_confidence as asr_confide
 from transcriptx.web.blocks.implementations import charts as charts_blocks
 from transcriptx.web.blocks.implementations import data as data_blocks
 from transcriptx.web.blocks.implementations import insights as insights_blocks
+from transcriptx.web.blocks.implementations import insights_custom_qa
 from transcriptx.web.blocks.implementations import overview as overview_blocks
 from transcriptx.web.blocks.implementations import overview_curated as curated_blocks
 from transcriptx.web.blocks.registry import register_block
@@ -271,6 +272,20 @@ def _register_insights_blocks() -> None:
             ),
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=insights_blocks.render_llm_action_items_block,
+        ),
+        BlockSpec(
+            id="llm_custom_qa_block",
+            title="Custom Questions",
+            group="Insights",
+            description="Answers to user-defined questions with grounded citations.",
+            module_deps=("llm_custom_qa",),
+            artifact_patterns=(
+                "_llm_custom_qa.json",
+                "_llm_custom_qa.md",
+                "qa_answer_rows.json",
+            ),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_custom_qa.render_llm_custom_qa_block,
         ),
         BlockSpec(
             id="lexical_diversity_block",

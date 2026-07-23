@@ -25,6 +25,7 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 | `llm_summary_block` | `llm_summary` / `narrative_summary` (parametric) | `default` |
 | `llm_speaker_summary_block` | `llm_speaker_summary` (group runs: synthesised index via resolver) | `default` |
 | `llm_action_items_block` | `llm_action_items` | `default`, `executive` |
+| `llm_custom_qa_block` | `llm_custom_qa` | `default`, `executive` |
 | `lexical_diversity_block` | `lexical_diversity` | `default` |
 | `insights_contract` | `insights` | `default` |
 | `highlights` | `highlights` | `default`, `executive` |
@@ -46,6 +47,7 @@ On **group** runs, content blocks show:
 | Highlights | `highlights/highlight_rows.json` | member `_highlights.json` |
 | Insights contract | `insights/insight_rows.json` | member `_insights.json` |
 | Action items | `llm_action_items/action_item_rows.json` | member `_llm_action_items.json` |
+| Custom questions | `llm_custom_qa/qa_answer_rows.json` (+ `qa_member_failures.json`) | member `_llm_custom_qa.json` |
 | Executive summary / commitments | blob `summary/summary.json` | member `_summary.json` |
 | LLM summary (block) | synthesis / collect blob | member `_llm_summary` |
 | LLM speaker summaries | synthesis index | member speaker index + files |

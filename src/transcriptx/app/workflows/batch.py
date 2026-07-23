@@ -98,6 +98,7 @@ def run_batch_analysis(
             modules=request.selected_modules,
             persist=request.persist,
             llm_model_selection=request.llm_model_selection,
+            llm_custom_qa_questions=request.llm_custom_qa_questions,
         )
         result: AnalysisResult = run_analysis(analysis_request, progress)
         if result.success:

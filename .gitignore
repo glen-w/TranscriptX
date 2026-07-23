@@ -114,3 +114,6 @@ data/transcripts/originals/260615_Ana_phd_presentation_QA.json
 data/transcripts/originals/260615_Ana_phd_supervision_meeting.json
 data/transcripts/originals/foo.json
 data/transcripts/projects/foo/call1.json
+
+# Hypothesis database / examples
+.hypothesis/

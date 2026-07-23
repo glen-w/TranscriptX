@@ -124,3 +124,54 @@ def test_load_chapters_and_pending_jump(tmp_path: Path) -> None:
     pending = consume_chapter_pending(state)
     assert pending == {"jump_index": 3, "play": True}
     assert consume_chapter_pending(state) is None
+
+
+def test_moments_point_event_seeds_segment_refs() -> None:
+    from transcriptx.core.analysis.dynamics.moments import MomentsAnalysis
+    from transcriptx.core.models.events import Event
+
+    analysis = MomentsAnalysis(
+        {
+            "merge_seconds": 0.0,
+            "top_n": 5,
+            "max_span_seconds": 120.0,
+            "weight_map": {"topic_shift": 1.0},
+            "diversity_bonus": 0.0,
+            "multi_speaker_bonus": 0.0,
+        }
+    )
+    segments = [
+        {"start": 0.0, "end": 1.0, "text": "hello there friend", "speaker": "A"},
+        {"start": 1.0, "end": 2.0, "text": "second utterance here", "speaker": "B"},
+        {"start": 2.0, "end": 3.0, "text": "third utterance here", "speaker": "A"},
+    ]
+    event = Event(
+        event_id="e1",
+        kind="topic_shift",
+        time_start=1.5,
+        time_end=1.5,
+        speaker=None,
+        segment_start_idx=1,
+        segment_end_idx=1,
+        severity=0.8,
+        score=0.8,
+        evidence=[],
+        links=[],
+    )
+    out = analysis.analyze(
+        segments,
+        topic_shift_data={"events": [event]},
+        transcript_hash="testhash",
+    )
+    moments = out["moments"]
+    assert len(moments) == 1
+    assert 1 in moments[0]["segment_refs"]
+    assert float(moments[0]["time_end"]) > float(moments[0]["time_start"])
+
+
+def test_nearest_renderable_source_index_snaps() -> None:
+    from transcriptx.core.analysis.topic_shift.spans import nearest_renderable_source_index
+
+    assert nearest_renderable_source_index(5, renderable=[0, 2, 8, 10]) == 8
+    assert nearest_renderable_source_index(2, renderable=[0, 2, 8]) == 2
+    assert nearest_renderable_source_index(1, renderable=[]) is None

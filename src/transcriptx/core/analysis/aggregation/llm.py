@@ -281,3 +281,135 @@ def aggregate_llm_action_items_group(
             },
         ],
     }
+
+
+def aggregate_llm_custom_qa_group(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    """Collect custom-QA answer rows; flag hash/schema mismatches separately."""
+    del canonical_speaker_map
+    session_rows: List[Dict[str, Any]] = []
+    qa_answer_rows: List[Dict[str, Any]] = []
+    qa_member_failures: List[Dict[str, Any]] = []
+    expected_hash: Optional[str] = None
+    expected_schema: Optional[str] = None
+    expected_questions: List[str] = []
+    expected_resolved_from: Optional[str] = None
+
+    for result in per_transcript_results:
+        module_result = result.module_results.get("llm_custom_qa") or {}
+        payload = extract_payload(result.module_results, "llm_custom_qa")
+        transcript_id = get_transcript_id(result, transcript_set)
+        status = str(module_result.get("status") or "")
+        if status and status != "success":
+            qa_member_failures.append(
+                {
+                    "source_transcript_id": transcript_id,
+                    "order_index": result.order_index,
+                    "reason": "module_not_success",
+                    "status": status,
+                }
+            )
+            continue
+        if not payload:
+            qa_member_failures.append(
+                {
+                    "source_transcript_id": transcript_id,
+                    "order_index": result.order_index,
+                    "reason": "missing_payload",
+                }
+            )
+            continue
+
+        qhash = payload.get("questions_hash")
+        schema_id = payload.get("schema_id")
+        if expected_hash is None:
+            expected_hash = qhash
+            expected_schema = schema_id
+            raw_qs = payload.get("questions_requested") or []
+            expected_questions = list(raw_qs) if isinstance(raw_qs, list) else []
+            expected_resolved_from = (payload.get("provenance") or {}).get(
+                "resolved_from"
+            )
+        elif qhash != expected_hash or schema_id != expected_schema:
+            qa_member_failures.append(
+                {
+                    "source_transcript_id": transcript_id,
+                    "order_index": result.order_index,
+                    "reason": "hash_or_schema_mismatch",
+                    "questions_hash": qhash,
+                    "schema_id": schema_id,
+                }
+            )
+            continue
+
+        answers = payload.get("answers") or []
+        if not isinstance(answers, list):
+            qa_member_failures.append(
+                {
+                    "source_transcript_id": transcript_id,
+                    "order_index": result.order_index,
+                    "reason": "invalid_answers",
+                }
+            )
+            continue
+
+        session_row = _session_row_base(result, transcript_set)
+        session_row["question_count"] = len(payload.get("questions_requested") or [])
+        session_row["outcome"] = payload.get("outcome")
+        session_row["questions_hash"] = qhash
+        session_row["resolved_from"] = (payload.get("provenance") or {}).get(
+            "resolved_from"
+        )
+        session_rows.append(session_row)
+
+        source_rel = _artifact_relpath(module_result, "llm_custom_qa")
+        for answer in answers:
+            if not isinstance(answer, dict):
+                continue
+            qa_answer_rows.append(
+                {
+                    "order_index": result.order_index,
+                    "source_transcript_id": transcript_id,
+                    "question_index": answer.get("question_index"),
+                    "question": answer.get("question"),
+                    "status": answer.get("status"),
+                    "answer": answer.get("answer"),
+                    "abstain_reason": answer.get("abstain_reason"),
+                    "system_reason": answer.get("system_reason"),
+                    "confidence": answer.get("confidence"),
+                    "citations": answer.get("citations") or [],
+                    "questions_hash": qhash,
+                    "resolved_from": (payload.get("provenance") or {}).get(
+                        "resolved_from"
+                    ),
+                    "artifact_path": source_rel,
+                    "source_run_relpath": result.output_dir,
+                }
+            )
+
+    if not session_rows and not qa_member_failures:
+        return None
+
+    extra_tables = {"qa_member_failures": qa_member_failures}
+    return {
+        "session_rows": session_rows,
+        "speaker_rows": [],
+        "content_rows": qa_answer_rows,
+        "content_rows_name": "qa_answer_rows",
+        "extra_tables": extra_tables,
+        "metrics_spec": [
+            {
+                "name": "question_count",
+                "format": "int",
+                "description": "Questions requested in session",
+            },
+        ],
+        "group_metadata": {
+            "questions_hash": expected_hash,
+            "questions_requested": expected_questions,
+            "resolved_from": expected_resolved_from,
+        },
+    }

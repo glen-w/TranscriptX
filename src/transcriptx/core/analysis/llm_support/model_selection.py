@@ -22,6 +22,7 @@ LLM_MODEL_CONSUMER_IDS: tuple[str, ...] = (
     "llm_summary",
     "llm_speaker_summary",
     "llm_action_items",
+    "llm_custom_qa",
     "chart_descriptions",
     "group_llm_synthesis",
     "topic_shift",

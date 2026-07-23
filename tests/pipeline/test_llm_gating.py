@@ -67,6 +67,48 @@ def test_llm_speaker_summary_requires_llm_registered() -> None:
 
 
 @pytest.mark.unit
+def test_llm_custom_qa_requires_llm_registered() -> None:
+    info = get_module_info("llm_custom_qa")
+    assert info is not None
+    assert info.requires_llm is True
+
+
+@pytest.mark.unit
+def test_llm_custom_qa_empty_gate_allows_run_without_provider() -> None:
+    from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+        bind_custom_qa_questions,
+        reset_custom_qa_questions,
+    )
+    from transcriptx.core.analysis.llm_custom_qa.resolve import (
+        EffectiveCustomQAQuestions,
+    )
+    from transcriptx.core.pipeline.dag_pipeline_run import evaluate_llm_gate
+
+    effective = EffectiveCustomQAQuestions(
+        questions=(),
+        questions_hash="x",
+        empty=True,
+        resolved_from="explicit_empty",
+        max_questions_per_run=8,
+        max_question_chars=500,
+        max_run_total_question_chars=4000,
+        max_answer_chars=800,
+    )
+    token = bind_custom_qa_questions(effective)
+    try:
+        cfg = TranscriptXConfig()
+        cfg.llm.enabled = False
+        cfg.llm.provider = "null"
+        with patch("transcriptx.core.utils.config.get_config", return_value=cfg):
+            action, skip_reason, fail = evaluate_llm_gate("llm_custom_qa")
+        assert action == "run"
+        assert skip_reason is None
+        assert fail is None
+    finally:
+        reset_custom_qa_questions(token)
+
+
+@pytest.mark.unit
 def test_llm_action_items_requires_llm_registered() -> None:
     info = get_module_info("llm_action_items")
     assert info is not None

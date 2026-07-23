@@ -38,6 +38,7 @@
     "llm_summary",
     "llm_speaker_summary",
     "llm_action_items",
+    "llm_custom_qa",
     "chart_descriptions",
     "insights",
     "voice_features",
@@ -541,6 +542,17 @@
       "requirements": [
         "segments",
         "speaker_labels"
+      ],
+      "requires_llm": true
+    },
+    "llm_custom_qa": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Answer custom questions against the transcript via local LLM",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "requirements": [
+        "segments"
       ],
       "requires_llm": true
     },

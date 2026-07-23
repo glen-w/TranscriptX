@@ -24,6 +24,7 @@ class TopicShiftSettingsModel(BaseModel):
     )
     batch_size: int = Field(default=32, ge=1)
     lru_size: int = Field(default=4096, ge=0)
+    timeout_seconds: float = Field(default=600.0, ge=1.0)
     k_mad: float = Field(default=3.0, ge=0.0)
     absolute_floor: float = Field(default=0.15, ge=0.0)
     min_prominence: float = Field(default=0.05, ge=0.0)

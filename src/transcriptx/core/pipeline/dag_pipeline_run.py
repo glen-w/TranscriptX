@@ -106,6 +106,18 @@ def evaluate_llm_gate(module_name: str) -> tuple[str, Optional[str], Optional[st
     if not requires_llm:
         return ("run", None, None)
 
+    # Conditional consumer override: empty custom questions still schedule
+    # the module but do not require a live LLM provider.
+    try:
+        from transcriptx.core.analysis.llm_custom_qa.gating import (
+            consumer_requires_live_llm,
+        )
+
+        if not consumer_requires_live_llm(module_name):
+            return ("run", None, None)
+    except Exception:
+        pass
+
     if registry_error is not None:
         return (
             "fail",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Mapping, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -149,3 +149,53 @@ class StatsEnvelopeModel(BaseModel):
     thresholds: dict[str, Any] = Field(default_factory=dict)
     coverage_map: dict[str, Any] = Field(default_factory=dict)
     provenance_compatibility_key: str = ""
+
+
+class EnrichmentEntryModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    span_id: str
+    title: Optional[str] = None
+    summary: Optional[str] = None
+    key_points: list[str] = Field(default_factory=list)
+    title_source: str = "deterministic_fallback"
+    error_category: Optional[str] = None
+
+
+class EnrichmentEnvelopeModel(BaseModel):
+    """Validated enrichment sidecar (unique span_ids required)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str
+    prompt_version: str
+    outcome: Literal["success", "partial", "skipped", "failed"]
+    skip_reason: Optional[str] = None
+    deterministic_generation_id: str
+    deterministic_digest: str
+    model: Optional[str] = None
+    selection_source: Optional[str] = None
+    entries: list[EnrichmentEntryModel] = Field(default_factory=list)
+    overall_summary: Optional[str] = None
+    ui_mode: str = "chapter_titles"
+    analytical_status_hint: Optional[str] = None
+
+    @field_validator("entries")
+    @classmethod
+    def _unique_span_ids(
+        cls, entries: list[EnrichmentEntryModel]
+    ) -> list[EnrichmentEntryModel]:
+        seen: set[str] = set()
+        for entry in entries:
+            sid = str(entry.span_id or "")
+            if not sid:
+                raise ValueError("enrichment entries require non-empty span_id")
+            if sid in seen:
+                raise ValueError(f"duplicate enrichment span_id: {sid}")
+            seen.add(sid)
+        return entries
+
+
+def validate_enrichment_payload(payload: Mapping[str, Any] | dict[str, Any]) -> dict[str, Any]:
+    """Validate enrichment dict; raises ValidationError on contract breach."""
+    return EnrichmentEnvelopeModel.model_validate(payload).model_dump()

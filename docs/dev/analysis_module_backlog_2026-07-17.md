@@ -53,7 +53,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 |------|----|------|------|----------|--------|---------|
 | 1 | B1 | **BERTopic rewire** as topic path | revive (**shipped**; default install for now) | Language & Meaning | M | base deps + registry + agg + charts; public release → install profiles |
 | 2 | B3 | **ASR / transcript quality** diagnostics — shipped as Foundations module `transcript_quality` (**ASR confidence** evidence/review; no quality scorecard; filler deferred) | new (**shipped** Phase 1+2; 0.6.3+) | Foundations | M | WhisperX word scores + provenance-aware group agg |
-| 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new (**shipped** — module `topic_shift`; dual stores; Chapters tab; group cohort agg + overlays; Stage 5 acceptance) | Dynamics & Flow | M | reuse semantic embeddings |
+| 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new (**shipped** — module `topic_shift`; dual stores; Chapters tab; group cohort agg + overlays; Stage 5 acceptance; finalize: language status / lexical embed / offline+deadline / enrichment envelope). Residual: group-synthesis shared ACTIVE migration **waived** | Dynamics & Flow | M | reuse semantic embeddings |
 | 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen (**shipped** 0.4.8; semantics v2 + group charts) | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
 | 5 | B6 | **Hedging / certainty / epistemic markers** | new | Language & Meaning | S–M | lexicon + optional classifier; group charts |
 | 6 | — | *(P1 routing infrastructure continues; not a ranked module)* | platform | — | M | see §2 |
@@ -76,7 +76,9 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 17 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new or deepen wordclouds | Visualisations / Language & Meaning | S | optional dep; group pooled phrases; P1 for language |
 | 18 | B17 | **Toxicity / hostility** (optional, labeled) | new | Language & Meaning | S–M | Detoxify or similar; clear ethics/docs |
 | 19 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars |
+| 19 | B19 | **Multilingual-aware NER / entity paths** | deepen | Language & Meaning | M | after P1 |
 | 20 | B20 | **Pooled wordcloud deferred variant matrix** | deepen | Visualisations | S | eng backlog already listed in ROADMAP |
+| — | B21 | **Custom questions at analysis time** (`llm_custom_qa`) — Settings library + Run/Batch picker → Insights citation cards (not viewer chat) | new (**shipped**) | Summary & Synthesis | M | Ollama; frozen envelope/row contract; empty-Q gate |
 
 ### 3.1 B10 — decisions vs action items (required taxonomy)
 

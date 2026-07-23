@@ -26,6 +26,7 @@ from transcriptx.core.analysis.topic_shift.store import (
     resolve_active_generation,
 )
 from transcriptx.core.analysis.topic_shift.visibility import (
+    resolve_topic_shift_visibility,
     suppress_topic_shift_surface_artifacts,
 )
 from transcriptx.core.domain.transcript_set import TranscriptSet
@@ -308,3 +309,69 @@ def test_module_save_pipeline_smoke(tmp_path: Path) -> None:
     assert (data_dir / "topic_shift.stats.json").is_file()
     # Enrichment sidecar present (skipped when llm off)
     assert (data_dir / "topic_shift.enrichment.json").is_file()
+
+
+def test_dual_active_matrix_det_active_enrich_fail_keeps_chapters(tmp_path: Path) -> None:
+    """Deterministic ACTIVE + enrichment skipped → chapters still visible."""
+    run_root = tmp_path / "run"
+    data = run_root / "topic_shift" / "data" / "global"
+    data.mkdir(parents=True)
+    spans = {
+        "analytical_status": "success",
+        "coverage_spans": [
+            {
+                "span_id": "s1",
+                "index": 0,
+                "label": "Opening",
+                "time_start": 0.0,
+                "time_end": 5.0,
+                "viewer_target_source_index": 0,
+                "leading_boundary_id": None,
+            }
+        ],
+    }
+    (data / "topic_shift.spans.json").write_text(json.dumps(spans), encoding="utf-8")
+    enrich = {
+        "outcome": "skipped",
+        "skip_reason": "llm_disabled",
+        "entries": [],
+        "ui_mode": "chapter_titles",
+    }
+    (data / "topic_shift.enrichment.json").write_text(
+        json.dumps(enrich), encoding="utf-8"
+    )
+    rr = {
+        "schema_version": 2,
+        "run_id": "r1",
+        "transcript_key": "sess",
+        "modules_enabled": ["topic_shift"],
+        "modules_run": ["topic_shift"],
+        "modules_failed": [],
+        "modules_skipped": [],
+        "errors": [],
+        "module_outcomes": [
+            {"module_id": "topic_shift", "status": "succeeded"},
+        ],
+    }
+    (run_root / "run_results.json").write_text(json.dumps(rr), encoding="utf-8")
+    assert resolve_topic_shift_visibility(run_root, run_results=rr) == "show"
+    from transcriptx.web.transcript_viewer.chapters import load_chapter_rows
+
+    rows = load_chapter_rows(run_root)
+    assert len(rows) == 1
+    assert rows[0].title == "Opening"
+
+
+def test_offline_probe_without_local_weights(monkeypatch) -> None:
+    from transcriptx.core.analysis.topic_shift import analyze as analyze_mod
+
+    monkeypatch.setattr(
+        analyze_mod,
+        "model_weights_locally_available",
+        lambda name: False,
+    )
+    en_ok, multi_ok = analyze_mod._transformers_probe(
+        False, en_model="x", multi_model="y"
+    )
+    assert en_ok is False
+    assert multi_ok is False

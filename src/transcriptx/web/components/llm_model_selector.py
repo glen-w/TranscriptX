@@ -291,6 +291,17 @@ def build_selection_from_session(
     ).normalized()
 
 
+def _consumer_needs_live_llm(module_name: str) -> bool:
+    try:
+        from transcriptx.core.analysis.llm_custom_qa.gating import (
+            consumer_requires_live_llm,
+        )
+
+        return consumer_requires_live_llm(module_name)
+    except Exception:
+        return True
+
+
 def launch_gate_reasons(
     *,
     selection: LlmModelSelection,
@@ -309,6 +320,15 @@ def launch_gate_reasons(
     for mid in selected_modules:
         info = get_module_info(mid)
         if info is not None and getattr(info, "requires_llm", False):
+            try:
+                from transcriptx.core.analysis.llm_custom_qa.gating import (
+                    consumer_requires_live_llm,
+                )
+
+                if not consumer_requires_live_llm(mid):
+                    continue
+            except Exception:
+                pass
             needs_llm = True
             break
     if _include_group_consumer(include_group):
@@ -357,6 +377,7 @@ def launch_gate_reasons(
         for mid in selected_modules
         if (info := get_module_info(mid)) is not None
         and getattr(info, "requires_llm", False)
+        and _consumer_needs_live_llm(mid)
     ]
     if _include_group_consumer(include_group):
         consumers = list(dict.fromkeys([*consumers, "group_llm_synthesis"]))

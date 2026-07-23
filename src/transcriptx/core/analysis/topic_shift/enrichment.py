@@ -13,6 +13,7 @@ from transcriptx.core.analysis.llm_generational_store import (
 from transcriptx.core.analysis.topic_shift.enrichment_resolve import (
     resolve_topic_shift_enrichment_model,
 )
+from transcriptx.core.analysis.topic_shift.schemas import validate_enrichment_payload
 from transcriptx.core.analysis.topic_shift.store import content_digest
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger
@@ -149,10 +150,13 @@ def _try_generate_titles(
         return "skipped", [], None
     if not isinstance(parsed, dict):
         return "skipped", [], None
+    known_ids = {str(span.get("span_id") or "") for span in spans if span.get("span_id")}
     by_id = {
         str(e.get("span_id")): e
         for e in (parsed.get("entries") or [])
-        if isinstance(e, dict) and e.get("span_id")
+        if isinstance(e, dict)
+        and e.get("span_id")
+        and str(e.get("span_id")) in known_ids
     }
     entries: list[dict[str, Any]] = []
     filled = 0
@@ -288,6 +292,23 @@ def maybe_run_topic_shift_enrichment(
                     "overall_summary": overall,
                     "ui_mode": ui_mode,
                 }
+
+    try:
+        payload = validate_enrichment_payload(payload)
+    except Exception as exc:
+        logger.info("topic_shift enrichment validation failed: %s", exc)
+        payload = build_skipped_enrichment(
+            deterministic_generation_id=det_gid,
+            deterministic_digest=det_digest,
+            skip_reason="malformed_enrichment",
+            spans=spans,
+            model=payload.get("model") if isinstance(payload, dict) else None,
+            selection_source=(
+                payload.get("selection_source") if isinstance(payload, dict) else None
+            ),
+        )
+        payload["ui_mode"] = ui_mode
+        payload = validate_enrichment_payload(payload)
 
     staged = begin_generation(
         Path(module_output_dir),

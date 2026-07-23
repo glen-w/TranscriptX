@@ -1,0 +1,10 @@
+{
+  "effort": "high",
+  "max_answer_chars": 800,
+  "max_library_questions": 50,
+  "max_library_total_question_chars": 20000,
+  "max_question_chars": 500,
+  "max_questions_per_run": 8,
+  "max_run_total_question_chars": 4000,
+  "saved_questions": []
+}

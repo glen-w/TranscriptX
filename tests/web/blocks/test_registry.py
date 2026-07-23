@@ -34,6 +34,7 @@ def test_register_builtin_blocks_loads_catalog() -> None:
     assert "highlights" in ids
     assert "llm_summary_block" in ids
     assert "llm_action_items_block" in ids
+    assert "llm_custom_qa_block" in ids
     assert "lexical_diversity_block" in ids
     assert "module_metrics" in ids
     assert "chart_gallery" in ids

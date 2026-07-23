@@ -359,7 +359,12 @@ def _call_aggregate_fn(
 
 
 _ROW_KEYS = {"session_rows", "speaker_rows", "metrics_spec"}
-_WRITER_EXTRA_KEYS = {"content_rows", "content_rows_name", "drop_csv_keys"}
+_WRITER_EXTRA_KEYS = {
+    "content_rows",
+    "content_rows_name",
+    "drop_csv_keys",
+    "extra_tables",
+}
 
 
 def _row_payload(outcome: Dict[str, Any]) -> Dict[str, Any]:
@@ -457,6 +462,17 @@ def finalize_group_analysis(
         transcript_set.metadata["group_run_id"] = group_run_id
         member_transcript_ids = [member.id for member in members]
         member_display_names = [member.file_name for member in members]
+        qa_extra: Dict[str, Any] = {}
+        try:
+            from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+                get_bound_custom_qa_questions,
+            )
+
+            effective_qa = get_bound_custom_qa_questions()
+            if effective_qa is not None:
+                qa_extra = effective_qa.to_metadata()
+        except Exception:
+            qa_extra = {}
         group_output_service.write_group_run_metadata(
             group_uuid=group_uuid,
             group_name_at_run=scope.display_name,
@@ -464,6 +480,7 @@ def finalize_group_analysis(
             member_transcript_ids=member_transcript_ids,
             member_display_names=member_display_names,
             selected_modules=selected_modules,
+            extra_metadata=qa_extra or None,
         )
         _write_group_member_runs_json(
             Path(group_output_service.base_dir), per_transcript_results
@@ -624,6 +641,8 @@ def finalize_group_analysis(
 
                 drop_csv_keys = row_payload.get("drop_csv_keys")
 
+                extra_tables = row_payload.get("extra_tables")
+
                 session_rows = _attach_session_identity(
                     session_rows,
                     per_transcript_results,
@@ -641,6 +660,7 @@ def finalize_group_analysis(
                     content_rows_name=content_rows_name,
                     bundle=True,
                     drop_csv_keys=drop_csv_keys,
+                    extra_tables=extra_tables,
                 )
 
                 if warning:

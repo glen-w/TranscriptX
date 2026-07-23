@@ -10,6 +10,7 @@ from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import (
     render_configuration_panel,
     render_interface_panel,
+    render_questions_panel,
     render_storage_panel,
 )
 
@@ -33,7 +34,9 @@ def render_settings_page() -> None:
         subject_display = subject.display.name
         run_display = run_id
 
-    tab_cfg, tab_stor, tab_iface = st.tabs(["Configuration", "Storage", "Interface"])
+    tab_cfg, tab_stor, tab_iface, tab_q = st.tabs(
+        ["Configuration", "Storage", "Interface", "Questions"]
+    )
     with tab_cfg:
         try:
             render_configuration_panel(
@@ -53,3 +56,8 @@ def render_settings_page() -> None:
             render_interface_panel()
         except Exception as e:
             st.error(f"Could not load Interface: {e}")
+    with tab_q:
+        try:
+            render_questions_panel()
+        except Exception as e:
+            st.error(f"Could not load Questions: {e}")

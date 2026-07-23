@@ -75,6 +75,7 @@
     "input": 6,
     "llm": 14,
     "llm_action_items_settings": 1,
+    "llm_custom_qa_settings": 8,
     "llm_speaker_summary_settings": 1,
     "llm_summary_settings": 1,
     "logging": 6,
@@ -93,13 +94,13 @@
     "tag_extraction": 3,
     "temporal_dynamics": 13,
     "topic_modeling": 12,
-    "topic_shift": 22,
+    "topic_shift": 23,
     "transcript_quality": 5,
     "vectorization": 6,
     "voice": 18,
     "workflow": 13
   },
-  "pilot_count": 46,
-  "pydantic_owned_keys": 642,
-  "total_registry_keys": 658
+  "pilot_count": 47,
+  "pydantic_owned_keys": 651,
+  "total_registry_keys": 667
 }

@@ -494,6 +494,9 @@ class AnalysisConfig:
     llm_action_items: LLMActionItemsConfig = field(
         default_factory=lambda: LLMActionItemsConfig()
     )
+    llm_custom_qa: "LLMCustomQAConfig" = field(
+        default_factory=lambda: LLMCustomQAConfig()
+    )
     group_llm_synthesis: "GroupLLMSynthesisConfig" = field(
         default_factory=lambda: GroupLLMSynthesisConfig()
     )
@@ -710,6 +713,27 @@ class LLMActionItemsConfig:
 
 
 @dataclass
+class LLMCustomQAConfig:
+    """Defaults owned by LLMCustomQASettingsModel."""
+
+    effort: str = field(init=False, repr=True)
+    saved_questions: list = field(init=False, repr=True)
+    max_library_questions: int = field(init=False, repr=True)
+    max_library_total_question_chars: int = field(init=False, repr=True)
+    max_questions_per_run: int = field(init=False, repr=True)
+    max_question_chars: int = field(init=False, repr=True)
+    max_run_total_question_chars: int = field(init=False, repr=True)
+    max_answer_chars: int = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.llm_custom_qa import (
+            LLMCustomQASettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, LLMCustomQASettingsModel())
+
+
+@dataclass
 class GroupLLMSynthesisConfig:
     """Defaults owned by GroupLLMSynthesisSettingsModel."""
 
@@ -919,6 +943,7 @@ class TopicShiftConfig:
     multi_model: str = field(init=False, repr=True)
     batch_size: int = field(init=False, repr=True)
     lru_size: int = field(init=False, repr=True)
+    timeout_seconds: float = field(init=False, repr=True)
     k_mad: float = field(init=False, repr=True)
     absolute_floor: float = field(init=False, repr=True)
     min_prominence: float = field(init=False, repr=True)

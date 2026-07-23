@@ -82,6 +82,15 @@ def build_summary_module_definitions(
             "enhancements": [],
             "requires_llm": True,
         },
+        "llm_custom_qa": {
+            "description": "Answer custom questions against the transcript via local LLM",
+            "dependencies": [],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [Requirement.SEGMENTS],
+            "enhancements": [],
+            "requires_llm": True,
+        },
         "chart_descriptions": {
             "description": (
                 "Per-chart LLM narratives (finalize-phase; after all charts)"

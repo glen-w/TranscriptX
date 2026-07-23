@@ -176,7 +176,7 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 - Emotion family deepen (Phase 5 calibration for `contextual_emotion` / `fine_grained_emotion`; tension metrics; divergence summaries) — not “converge into one emotion module”
 - NER-driven insight (entity–sentiment, concordance, timelines)
 - Interaction and network analysis (graphs, network outputs); turn-taking **equity pack already shipped** on `interactions`
-- **Ask-this-transcript (viewer chat)** — optional Streamlit panel; prefer stuffed-context / lexical-retrieve-then-LLM + jump-to-segment citations over a full RAG + streaming ReAct workspace (see competitive note W1)
+- **Ask-this-transcript (viewer chat)** — optional Streamlit panel; prefer stuffed-context / lexical-retrieve-then-LLM + jump-to-segment citations over a full RAG + streaming ReAct workspace (see competitive note W1). **Shipped lighter path:** analysis-time `llm_custom_qa` (Settings library + Run/Batch picker → Insights citation cards).
 - Adapters and plugins (design only; no marketplace)
 - Architecture cleanup and module contract docs
 - **GPU + native install** — first-class docs and recipes for MPS (native Mac) and CUDA (Linux Docker/native); see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term)

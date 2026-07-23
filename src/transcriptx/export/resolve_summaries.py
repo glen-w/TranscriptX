@@ -20,7 +20,8 @@ _SUMMARY_KIND_ORDER = {
     "narrative_summary": 2,
     "llm_speaker_summary": 3,
     "llm_action_items": 4,
-    "run_report": 5,
+    "llm_custom_qa": 5,
+    "run_report": 6,
 }
 
 
@@ -44,6 +45,8 @@ def _summary_kind_from_rel_path(
         return "llm_speaker_summary"
     if name.endswith("_llm_action_items.json") or name.endswith("_llm_action_items.md"):
         return "llm_action_items"
+    if name.endswith("_llm_custom_qa.json") or name.endswith("_llm_custom_qa.md"):
+        return "llm_custom_qa"
     if (
         module == "summary"
         and (name.endswith("_summary.json") or name.endswith("_summary.md"))
@@ -74,6 +77,8 @@ def _default_summary_title(kind: str, *, rel_posix: str) -> str:
         return "Speaker Summary"
     if kind == "llm_action_items":
         return "Action Items"
+    if kind == "llm_custom_qa":
+        return "Custom Questions"
     return "Summary"
 
 

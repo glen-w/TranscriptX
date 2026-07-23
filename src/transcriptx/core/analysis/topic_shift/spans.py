@@ -50,7 +50,8 @@ def nearest_renderable_source_index(
         return None
     if preferred in renderable:
         return preferred
-    return min(renderable, key=lambda idx: (abs(idx - preferred), idx))
+    # Equal distance → prefer later index (forward snap for viewer jumps).
+    return min(renderable, key=lambda idx: (abs(idx - preferred), -idx))
 
 
 def map_peak_to_boundary(

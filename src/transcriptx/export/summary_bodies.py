@@ -179,4 +179,10 @@ def summary_text_from_payload(payload: dict[str, Any], *, kind: str) -> str:
         return str(payload.get("summary") or "").strip()
     if kind == "llm_action_items":
         return action_items_markdown(payload)
+    if kind == "llm_custom_qa":
+        from transcriptx.core.analysis.llm_custom_qa.render import (
+            render_custom_qa_markdown,
+        )
+
+        return render_custom_qa_markdown(payload).strip()
     return str(payload.get("summary") or payload.get("narrative") or "").strip()

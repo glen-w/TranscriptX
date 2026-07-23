@@ -109,6 +109,7 @@ class GroupOutputService:
         member_transcript_ids: List[int],
         member_display_names: Optional[List[str]],
         selected_modules: List[str],
+        extra_metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         payload = {
             "schema_version": 1,
@@ -123,6 +124,8 @@ class GroupOutputService:
             "run_id": self.run_id,
             "tx_version": _resolve_version(),
         }
+        if extra_metadata:
+            payload.update(extra_metadata)
         with per_run_lock(self.base_dir):
             path = self.base_dir / "group_run_metadata.json"
             save_json(payload, str(path))

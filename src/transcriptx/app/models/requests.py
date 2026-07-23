@@ -23,6 +23,8 @@ class AnalysisRequest:
     persist: bool = False
     include_unidentified_speakers: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
+    # None/omitted → library; [] → explicit empty run; non-empty → request
+    llm_custom_qa_questions: list[str] | None = None
 
 
 @dataclass
@@ -104,6 +106,7 @@ class GroupAnalysisRequest:
     output_dir: Optional[Path] = None
     persist: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
+    llm_custom_qa_questions: list[str] | None = None
 
 
 @dataclass
@@ -116,6 +119,7 @@ class BatchAnalysisRequest:
     selected_modules: Optional[list[str]] = None
     persist: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
+    llm_custom_qa_questions: list[str] | None = None
 
 
 @dataclass(frozen=True)

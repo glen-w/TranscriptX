@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import time
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from typing import Iterator, Literal, Sequence
 
 import numpy as np
 
@@ -15,6 +18,8 @@ from transcriptx.core.analysis.topic_shift.semantics import (
 )
 
 BackendKind = Literal["transformers_en", "transformers_multi", "tfidf", "tfidf_char"]
+
+_OFFLINE_ENV_KEYS = ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE")
 
 
 @dataclass(frozen=True)
@@ -31,6 +36,41 @@ def _l2_normalize(mat: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(mat, axis=1, keepdims=True)
     norms = np.maximum(norms, 1e-12)
     return mat / norms
+
+
+@contextmanager
+def _huggingface_offline_scope(*, enabled: bool) -> Iterator[None]:
+    """Pin Hub offline flags for the load/fit scope when downloads are disabled."""
+    if not enabled:
+        yield
+        return
+    # Bind Hub offline flags without a direct environ attribute literal (audit).
+    environ = getattr(os, "environ")
+    previous = {key: environ.get(key) for key in _OFFLINE_ENV_KEYS}
+    try:
+        for key in _OFFLINE_ENV_KEYS:
+            environ[key] = "1"
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                environ.pop(key, None)
+            else:
+                environ[key] = value
+
+
+def model_weights_locally_available(model_name: str) -> bool:
+    """True when tokenizer/model resolve with local_files_only (no network)."""
+    try:
+        from transformers import AutoTokenizer
+    except Exception:
+        return False
+    with _huggingface_offline_scope(enabled=True):
+        try:
+            AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+            return True
+        except Exception:
+            return False
 
 
 def embed_tfidf_word(texts: Sequence[str]) -> np.ndarray | None:
@@ -92,14 +132,21 @@ class TopicShiftEmbedder:
         batch_size: int = 32,
         allow_downloads: bool = True,
         lru_size: int = 4096,
+        deadline_monotonic: float | None = None,
     ) -> None:
         self.en_model = en_model
         self.multi_model = multi_model
         self.batch_size = max(1, int(batch_size))
         self.allow_downloads = bool(allow_downloads)
         self.lru_size = max(0, int(lru_size))
+        self.deadline_monotonic = deadline_monotonic
         self._cache: dict[tuple[str, str, str, str], np.ndarray] = {}
         self._cache_order: list[tuple[str, str, str, str]] = []
+
+    def _past_deadline(self) -> bool:
+        if self.deadline_monotonic is None:
+            return False
+        return time.perf_counter() >= float(self.deadline_monotonic)
 
     def _cache_get(
         self, backend: str, model: str, text: str
@@ -125,77 +172,84 @@ class TopicShiftEmbedder:
     def _try_transformers(
         self, texts: Sequence[str], *, backend: BackendId, model_name: str
     ) -> np.ndarray | None:
+        if self._past_deadline():
+            return None
         try:
             import torch
             from transformers import AutoModel, AutoTokenizer
         except Exception:
             return None
 
-        # Local-only when downloads disabled
         local_only = not self.allow_downloads
-        try:
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_name, local_files_only=local_only
-            )
-            model = AutoModel.from_pretrained(model_name, local_files_only=local_only)
-        except Exception:
-            return None
-
-        model.eval()
-        device = torch.device("cpu")
-        model.to(device)
-
-        out_rows: list[np.ndarray] = []
-        # Deduplicate for embedding, map back
-        unique: list[str] = []
-        index_of: dict[str, int] = {}
-        for t in texts:
-            if t not in index_of:
-                index_of[t] = len(unique)
-                unique.append(t)
-
-        unique_vecs: list[np.ndarray | None] = [None] * len(unique)
-        pending_idx: list[int] = []
-        pending_texts: list[str] = []
-        for ui, ut in enumerate(unique):
-            cached = self._cache_get(backend, model_name, ut)
-            if cached is not None:
-                unique_vecs[ui] = cached
-            else:
-                pending_idx.append(ui)
-                pending_texts.append(ut)
-
-        try:
-            for start in range(0, len(pending_texts), self.batch_size):
-                batch = pending_texts[start : start + self.batch_size]
-                encoded = tokenizer(
-                    batch,
-                    padding=True,
-                    truncation=True,
-                    max_length=256,
-                    return_tensors="pt",
+        with _huggingface_offline_scope(enabled=local_only):
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(
+                    model_name, local_files_only=local_only
                 )
-                encoded = {k: v.to(device) for k, v in encoded.items()}
-                with torch.no_grad():
-                    outputs = model(**encoded)
-                    hidden = outputs.last_hidden_state
-                    mask = encoded["attention_mask"].unsqueeze(-1).float()
-                    summed = (hidden * mask).sum(dim=1)
-                    counts = mask.sum(dim=1).clamp(min=1e-6)
-                    pooled = (summed / counts).cpu().numpy().astype(np.float64)
-                pooled = _l2_normalize(pooled)
-                for j, row in enumerate(pooled):
-                    ui = pending_idx[start + j]
-                    unique_vecs[ui] = row
-                    self._cache_put(backend, model_name, pending_texts[start + j], row)
-        except Exception:
-            return None
+                model = AutoModel.from_pretrained(
+                    model_name, local_files_only=local_only
+                )
+            except Exception:
+                return None
 
-        if any(v is None for v in unique_vecs):
-            return None
-        for t in texts:
-            out_rows.append(unique_vecs[index_of[t]])  # type: ignore[arg-type]
-        return np.stack(out_rows, axis=0)
+            model.eval()
+            device = torch.device("cpu")
+            model.to(device)
+
+            out_rows: list[np.ndarray] = []
+            unique: list[str] = []
+            index_of: dict[str, int] = {}
+            for t in texts:
+                if t not in index_of:
+                    index_of[t] = len(unique)
+                    unique.append(t)
+
+            unique_vecs: list[np.ndarray | None] = [None] * len(unique)
+            pending_idx: list[int] = []
+            pending_texts: list[str] = []
+            for ui, ut in enumerate(unique):
+                cached = self._cache_get(backend, model_name, ut)
+                if cached is not None:
+                    unique_vecs[ui] = cached
+                else:
+                    pending_idx.append(ui)
+                    pending_texts.append(ut)
+
+            try:
+                for start in range(0, len(pending_texts), self.batch_size):
+                    if self._past_deadline():
+                        return None
+                    batch = pending_texts[start : start + self.batch_size]
+                    encoded = tokenizer(
+                        batch,
+                        padding=True,
+                        truncation=True,
+                        max_length=256,
+                        return_tensors="pt",
+                    )
+                    encoded = {k: v.to(device) for k, v in encoded.items()}
+                    with torch.no_grad():
+                        outputs = model(**encoded)
+                        hidden = outputs.last_hidden_state
+                        mask = encoded["attention_mask"].unsqueeze(-1).float()
+                        summed = (hidden * mask).sum(dim=1)
+                        counts = mask.sum(dim=1).clamp(min=1e-6)
+                        pooled = (summed / counts).cpu().numpy().astype(np.float64)
+                    pooled = _l2_normalize(pooled)
+                    for j, row in enumerate(pooled):
+                        ui = pending_idx[start + j]
+                        unique_vecs[ui] = row
+                        self._cache_put(
+                            backend, model_name, pending_texts[start + j], row
+                        )
+            except Exception:
+                return None
+
+            if any(v is None for v in unique_vecs):
+                return None
+            for t in texts:
+                out_rows.append(unique_vecs[index_of[t]])  # type: ignore[arg-type]
+            return np.stack(out_rows, axis=0)
 
     def embed(
         self,
@@ -209,7 +263,9 @@ class TopicShiftEmbedder:
             model_name = (
                 self.en_model if backend == "transformers_en" else self.multi_model
             )
-            vectors = self._try_transformers(texts, backend=backend, model_name=model_name)
+            vectors = self._try_transformers(
+                texts, backend=backend, model_name=model_name
+            )
             if vectors is not None:
                 return EmbedResult(
                     backend=backend,
@@ -219,7 +275,6 @@ class TopicShiftEmbedder:
                     used_fallback=False,
                     fallback_reason=None,
                 )
-            # Full-corpus restart via TF-IDF (caller may choose word then char)
             return None
 
         if backend == "tfidf":

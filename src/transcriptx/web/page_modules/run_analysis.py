@@ -196,13 +196,34 @@ def _run_analysis_config_and_launch_fragment(
         )
         st.caption(f"**{len(selected_modules)} modules** selected.")
 
+    from transcriptx.web.components.llm_custom_qa_picker import (
+        maybe_save_questions_for_later,
+        render_custom_qa_picker,
+    )
     from transcriptx.web.components.llm_model_selector import render_llm_model_selector
 
-    llm_selection, llm_gates = render_llm_model_selector(
-        key_prefix="run_analysis_llm",
-        selected_modules=selected_modules,
-        include_group=(target_type == "Group"),
+    qa_request_questions, qa_effective = render_custom_qa_picker(
+        key_prefix="run_analysis_qa",
+        module_selected="llm_custom_qa" in selected_modules,
     )
+
+    from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+        bind_custom_qa_questions,
+        reset_custom_qa_questions,
+    )
+
+    _qa_ui_token = None
+    if qa_effective is not None:
+        _qa_ui_token = bind_custom_qa_questions(qa_effective)
+    try:
+        llm_selection, llm_gates = render_llm_model_selector(
+            key_prefix="run_analysis_llm",
+            selected_modules=selected_modules,
+            include_group=(target_type == "Group"),
+        )
+    finally:
+        if _qa_ui_token is not None:
+            reset_custom_qa_questions(_qa_ui_token)
 
     can_launch = bool(selected_modules) and not llm_gates
     if target_type == "Transcript":
@@ -233,6 +254,7 @@ def _run_analysis_config_and_launch_fragment(
                 modules=selected_modules,
                 profile=profile,
                 llm_model_selection=llm_selection,
+                llm_custom_qa_questions=qa_request_questions,
             )
 
             errors = analysis_ctrl.validate_readiness(request)
@@ -240,6 +262,8 @@ def _run_analysis_config_and_launch_fragment(
                 for e in errors:
                     st.error(e)
                 return
+
+            maybe_save_questions_for_later(key_prefix="run_analysis_qa")
 
             def run_fn():
                 return analysis_ctrl.run_analysis(
@@ -258,6 +282,7 @@ def _run_analysis_config_and_launch_fragment(
                 profile=profile,
                 include_unidentified_speakers=False,
                 llm_model_selection=llm_selection,
+                llm_custom_qa_questions=qa_request_questions,
             )
 
             errors = analysis_ctrl.validate_group_readiness(group_request)
@@ -265,6 +290,8 @@ def _run_analysis_config_and_launch_fragment(
                 for e in errors:
                     st.error(e)
                 return
+
+            maybe_save_questions_for_later(key_prefix="run_analysis_qa")
 
             def run_fn():
                 return analysis_ctrl.run_group_analysis(

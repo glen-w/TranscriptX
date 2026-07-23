@@ -48,7 +48,7 @@ On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `prov
 
 Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a profile and optionally set it as the project active profile (Settings → Configuration → Active Profiles, or the save checkbox on the run form).
 
-**Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `chart_descriptions`, `group_llm_synthesis`):
+**Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `llm_custom_qa`, `chart_descriptions`, `group_llm_synthesis`):
 
 1. Request override from Run Analysis / Batch
 2. Active `llm_models` profile applied onto `llm.model_selection`
@@ -90,6 +90,7 @@ If a selected model is missing at generate time, the LLM consumer fails with a c
 | `llm_summary` | Abstractive transcript summary from readable transcript text (plain text, `default_temperature`) | segments only |
 | `llm_speaker_summary` | Abstractive summary per **named** speaker from that speaker's utterances only (plain text, `default_temperature`) | segments + speaker labels |
 | `llm_action_items` | Structured action items (owner, deadline, status, quote) from transcript text (strict JSON, `default_temperature`) | segments + speaker labels |
+| `llm_custom_qa` | Answers to user-defined questions with grounded citations (strict JSON envelope+rows; empty questions succeed without Ollama) | segments |
 | `chart_descriptions` | Finalize-phase per-chart LLM narratives (temperature 0.0, JSON). Excluded from DAG execution; run by the run-finalization coordinator after all charts exist | selected + `analysis.chart_descriptions.enabled` + LLM enabled |
 
 All LLM modules except finalize-phase `chart_descriptions` are included in the **recommended** default module list when enabled. `chart_descriptions` is selectable and recommended with other LLM modules but executes only in finalization. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`. For `chart_descriptions`, a skipped generation is still **committed** (ACTIVE + epoch) with **zero client calls**.
@@ -188,6 +189,52 @@ Each named speaker triggers one sequential Ollama call over that speaker's utter
 
 - `llm_speaker_summary/data/speakers/{base}_{Speaker}_llm_speaker_summary.json` (+ `.md`) per speaker
 - `llm_speaker_summary/data/global/{base}_llm_speaker_summary_index.json` (+ `.md`) listing speakers and statuses
+
+## `llm_custom_qa` (custom questions)
+
+Answers user-defined questions against a bounded transcript excerpt with
+**cite-or-unavailable** rows. Product entry: Settings → Questions library +
+Run Analysis / Batch picker (before the model selector). Insights block:
+`llm_custom_qa_block`.
+
+### Settings
+
+```json
+{
+  "analysis": {
+    "llm_custom_qa": {
+      "effort": "high",
+      "saved_questions": [],
+      "max_library_questions": 50,
+      "max_library_total_question_chars": 20000,
+      "max_questions_per_run": 8,
+      "max_question_chars": 500,
+      "max_run_total_question_chars": 4000,
+      "max_answer_chars": 800
+    }
+  }
+}
+```
+
+`saved_questions` is hidden from the generic Configuration editor; edit via
+the Questions tab. Request field `llm_custom_qa_questions`: omit/`null` →
+library; `[]` → empty-run success (no Ollama); non-empty list → request.
+
+### Contract
+
+- Model envelope `{ "answers": [ ... ] }` then per-row validation (bad rows
+  never fail the module alone).
+- Artifact `schema_id`: `transcriptx.llm_custom_qa.v1`
+- Citations use grounding-corpus slices (cross-segment includes `\n`).
+- Artifacts use staging + commit marker + `.active` pointer; readers require
+  module success in `run_results` and commit consistency.
+- Empty questions still schedule the module and write a success artifact.
+
+### Artifacts
+
+- `llm_custom_qa/data/global/{base}_llm_custom_qa.json` (+ `.md`)
+- `llm_custom_qa/questions_metadata.json` (full list + hash + `resolved_from`)
+- Group: `qa_answer_rows.json`, `qa_member_failures.json`
 
 ## `llm_action_items` effort
 

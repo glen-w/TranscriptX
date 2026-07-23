@@ -911,6 +911,7 @@ def build_registry() -> List[AggregationEntry]:
     )
     from transcriptx.core.analysis.aggregation.llm import (
         aggregate_llm_action_items_group,
+        aggregate_llm_custom_qa_group,
         aggregate_llm_speaker_summary_group,
         aggregate_llm_summary_blob,
         aggregate_narrative_summary_blob,
@@ -1142,6 +1143,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["llm_action_items"]),
             deps=[],
             aggregate_fn=aggregate_llm_action_items_group,
+        ),
+        AggregationEntry(
+            agg_id="llm_custom_qa",
+            selector=any_of(["llm_custom_qa"]),
+            deps=[],
+            aggregate_fn=aggregate_llm_custom_qa_group,
         ),
         AggregationEntry(
             agg_id="insights",

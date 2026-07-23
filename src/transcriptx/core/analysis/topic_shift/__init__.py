@@ -61,6 +61,7 @@ class TopicShiftAnalysis(AnalysisModule):
             "multi_model": str(s.multi_model),
             "batch_size": int(s.batch_size),
             "lru_size": int(s.lru_size),
+            "timeout_seconds": float(s.timeout_seconds),
             "thresholds": {
                 "k_mad": float(s.k_mad),
                 "absolute_floor": float(s.absolute_floor),

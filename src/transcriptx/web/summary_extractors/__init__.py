@@ -80,6 +80,7 @@ def _register_all_extractors():
         "understandability",
         "lexical_diversity",
         "llm_action_items",
+        "llm_custom_qa",
         "temporal_dynamics",
         "qa_analysis",
         "generic",

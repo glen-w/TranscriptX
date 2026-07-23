@@ -156,13 +156,34 @@ def render_batch_analysis_panel() -> None:
         mode = "quick"
     selected = list(st.session_state.get("batch_modules") or [])
 
+    from transcriptx.web.components.llm_custom_qa_picker import (
+        maybe_save_questions_for_later,
+        render_custom_qa_picker,
+    )
     from transcriptx.web.components.llm_model_selector import render_llm_model_selector
 
-    llm_selection, llm_gates = render_llm_model_selector(
-        key_prefix="batch_llm",
-        selected_modules=selected,
-        include_group=False,
+    qa_request_questions, qa_effective = render_custom_qa_picker(
+        key_prefix="batch_qa",
+        module_selected="llm_custom_qa" in selected,
     )
+
+    from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+        bind_custom_qa_questions,
+        reset_custom_qa_questions,
+    )
+
+    _qa_ui_token = None
+    if qa_effective is not None:
+        _qa_ui_token = bind_custom_qa_questions(qa_effective)
+    try:
+        llm_selection, llm_gates = render_llm_model_selector(
+            key_prefix="batch_llm",
+            selected_modules=selected,
+            include_group=False,
+        )
+    finally:
+        if _qa_ui_token is not None:
+            reset_custom_qa_questions(_qa_ui_token)
 
     if st.button(
         "Run Batch Analysis",
@@ -175,11 +196,13 @@ def render_batch_analysis_panel() -> None:
         else:
             # Clear prior result so a new launch cannot leave a stale success banner.
             st.session_state.pop(_BATCH_RESULT_KEY, None)
+            maybe_save_questions_for_later(key_prefix="batch_qa")
             request = BatchAnalysisRequest(
                 transcript_paths=selected_paths,
                 analysis_mode=mode,
                 selected_modules=selected if selected else None,
                 llm_model_selection=llm_selection,
+                llm_custom_qa_questions=qa_request_questions,
             )
             try:
                 with st.spinner("Running batch analysis..."):

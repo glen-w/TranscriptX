@@ -341,10 +341,23 @@ def run_analysis(
         bind_llm_model_selection,
         reset_llm_model_selection,
     )
+    from transcriptx.core.analysis.llm_custom_qa.resolve import (
+        resolve_effective_custom_qa_questions,
+    )
+    from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+        bind_custom_qa_questions,
+        reset_custom_qa_questions,
+    )
 
     _selection_token = bind_llm_model_selection(
         _coerce_llm_model_selection(request.llm_model_selection)
     )
+    # Dataclass field always present: None means omit/null → library; [] → empty.
+    _qa_effective = resolve_effective_custom_qa_questions(
+        request_questions=request.llm_custom_qa_questions,
+        request_field_present=True,
+    )
+    _qa_token = bind_custom_qa_questions(_qa_effective)
     try:
         manifest = RunManifestInput.from_cli_kwargs(
             transcript_file=path,
@@ -360,6 +373,7 @@ def run_analysis(
     except Exception as e:
         _pipeline_exception = e
     finally:
+        reset_custom_qa_questions(_qa_token)
         reset_llm_model_selection(_selection_token)
         if _log_handler is not None:
             _tx_logger.removeHandler(_log_handler)
@@ -625,10 +639,22 @@ def run_group_analysis(
         bind_llm_model_selection,
         reset_llm_model_selection,
     )
+    from transcriptx.core.analysis.llm_custom_qa.resolve import (
+        resolve_effective_custom_qa_questions,
+    )
+    from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+        bind_custom_qa_questions,
+        reset_custom_qa_questions,
+    )
 
     _selection_token = bind_llm_model_selection(
         _coerce_llm_model_selection(request.llm_model_selection)
     )
+    _qa_effective = resolve_effective_custom_qa_questions(
+        request_questions=request.llm_custom_qa_questions,
+        request_field_present=True,
+    )
+    _qa_token = bind_custom_qa_questions(_qa_effective)
     try:
         results = run_analysis_pipeline(
             target=target,
@@ -642,6 +668,7 @@ def run_group_analysis(
     except Exception as e:
         _pipeline_exception = e
     finally:
+        reset_custom_qa_questions(_qa_token)
         reset_llm_model_selection(_selection_token)
         if _log_handler is not None:
             _tx_logger.removeHandler(_log_handler)

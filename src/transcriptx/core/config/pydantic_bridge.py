@@ -27,6 +27,7 @@ from transcriptx.core.utils.config.analysis import (
     LLMSummaryConfig,
     LLMSpeakerSummaryConfig,
     LLMActionItemsConfig,
+    LLMCustomQAConfig,
     TagExtractionConfig,
     TemporalDynamicsConfig,
     TopicModelingConfig,
@@ -75,6 +76,7 @@ from .models.llm import LLMSettingsModel
 from .models.llm_summary import LLMSummarySettingsModel
 from .models.llm_speaker_summary import LLMSpeakerSummarySettingsModel
 from .models.llm_action_items import LLMActionItemsSettingsModel
+from .models.llm_custom_qa import LLMCustomQASettingsModel
 from .models.logging import LoggingSettingsModel
 from .models.metadata import MetadataSettingsModel
 from .models.moments import MomentsSettingsModel
@@ -269,6 +271,13 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="analysis.llm_action_items",
         category="analysis",
         dataclass_type=LLMActionItemsConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="llm_custom_qa_settings",
+        model=LLMCustomQASettingsModel,
+        dotpath_prefix="analysis.llm_custom_qa",
+        category="analysis",
+        dataclass_type=LLMCustomQAConfig,
     ),
     PydanticPilotSpec(
         pilot_id="workflow",

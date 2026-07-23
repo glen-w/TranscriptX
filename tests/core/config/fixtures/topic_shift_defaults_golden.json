@@ -20,5 +20,6 @@
   "multi_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
   "smooth_width": 3,
   "stride": 2,
+  "timeout_seconds": 600.0,
   "window_size": 5
 }

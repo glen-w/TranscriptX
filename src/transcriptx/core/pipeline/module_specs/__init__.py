@@ -56,6 +56,7 @@ MODULE_REGISTRY_ORDER: tuple[str, ...] = (
     "llm_summary",
     "llm_speaker_summary",
     "llm_action_items",
+    "llm_custom_qa",
     "chart_descriptions",
     "insights",
     "voice_features",
