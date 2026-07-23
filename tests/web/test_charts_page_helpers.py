@@ -13,6 +13,8 @@ from transcriptx.web.services.chart_view_model_service import (
     ChartGallerySlice,
 )
 from transcriptx.web.state import (
+    CHARTS_CHART_TEXT_NONE,
+    CHARTS_KEY_CHART_TEXT,
     CHARTS_KEY_EXPORT_RESULT,
     CHARTS_KEY_EXPORT_SIG,
     CHARTS_KEY_FILTERS_INIT,
@@ -21,6 +23,7 @@ from transcriptx.web.state import (
     CHARTS_KEY_OPEN_MODULES,
     CHARTS_KEY_SOURCE_PRESET,
     CHARTS_SORT_ALPHA,
+    CHARTS_SORT_MODULE_FAMILY,
 )
 
 
@@ -244,3 +247,73 @@ def test_render_charts_body_empty_shows_empty_state(monkeypatch, tmp_path) -> No
     assert empty_calls
     assert empty_calls[0][0][0] == "no_results_yet"
     assert "No chart artifacts" in empty_calls[0][0][1]
+
+
+@pytest.mark.unit
+def test_current_sort_mode_falls_back_on_invalid(monkeypatch) -> None:
+    import transcriptx.web.page_modules.charts as mod
+
+    ss = {CHARTS_KEY_MODULE_SORT: "not-a-mode"}
+
+    class _St:
+        session_state = ss
+
+    monkeypatch.setattr(mod, "st", _St)
+    assert mod._current_sort_mode() == CHARTS_SORT_MODULE_FAMILY
+    assert ss[CHARTS_KEY_MODULE_SORT] == CHARTS_SORT_MODULE_FAMILY
+
+
+@pytest.mark.unit
+def test_build_view_from_session_wires_filters(monkeypatch) -> None:
+    import transcriptx.web.page_modules.charts as mod
+
+    ss = {
+        CHARTS_KEY_SOURCE_PRESET: "All",
+        CHARTS_KEY_FILTER_MODULE: "stats",
+        CHARTS_KEY_MODULE_SORT: CHARTS_SORT_ALPHA,
+        "charts_search": "pitch",
+        "charts_kind_pills": ["Static"],
+    }
+    captured: dict = {}
+
+    class _St:
+        session_state = ss
+
+    def _fake_build(charts, **kwargs):
+        captured["charts"] = charts
+        captured["kwargs"] = kwargs
+        return SimpleNamespace(modules=[], filtered_charts=charts)
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "build_charts_gallery_view", _fake_build)
+    monkeypatch.setattr(mod, "_apply_source_tag_coupling", lambda *_a, **_k: None)
+    charts = [_chart("c1")]
+    mod._build_view_from_session(
+        charts, user_overview=[], missing_behavior="omit", max_items=None
+    )
+    assert captured["charts"] is charts
+    assert captured["kwargs"]["module"] == "stats"
+    assert captured["kwargs"]["kind"] == "chart_static"
+    assert captured["kwargs"]["search"] == "pitch"
+    assert captured["kwargs"]["sort_mode"] == CHARTS_SORT_ALPHA
+
+
+@pytest.mark.unit
+def test_chart_text_preference_survives_filter_reset() -> None:
+    from transcriptx.web.charts_filter_state import (
+        charts_filters_are_dirty,
+        reset_charts_filters_to_defaults,
+    )
+    from transcriptx.web.state import CHARTS_FILTER_DEFAULTS, CHARTS_KEY_SEARCH
+
+    session: dict = {
+        key: (list(val) if isinstance(val, list) else val)
+        for key, val in CHARTS_FILTER_DEFAULTS.items()
+    }
+    session[CHARTS_KEY_CHART_TEXT] = CHARTS_CHART_TEXT_NONE
+    session[CHARTS_KEY_SEARCH] = "x"
+    assert charts_filters_are_dirty(session) is True
+    reset_charts_filters_to_defaults(session)
+    assert session[CHARTS_KEY_SEARCH] == ""
+    assert session[CHARTS_KEY_CHART_TEXT] == CHARTS_CHART_TEXT_NONE
+    assert charts_filters_are_dirty(session) is False

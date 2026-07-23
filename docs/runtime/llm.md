@@ -192,10 +192,18 @@ Each named speaker triggers one sequential Ollama call over that speaker's utter
 
 ## `llm_custom_qa` (custom questions)
 
-Answers user-defined questions against a bounded transcript excerpt with
-**cite-or-unavailable** rows. Product entry: Settings → Questions library +
-Run Analysis / Batch picker (before the model selector). Insights block:
-`llm_custom_qa_block`.
+Answers user-defined questions against routed evidence packs and/or a bounded
+transcript excerpt. Product entry: Settings → Questions (per-question scopes +
+evidence catalog) and Run Analysis / Batch structured picker. Insights:
+global answers under the summary hero (with fallback); per-speaker answers
+under speaker summaries (with fallback). Actions placement removed.
+
+### Activation
+
+New execution/writes are gated by `get_custom_qa_activation()` (`v1_live` |
+`v2_live`). Historical reads dispatch by the artifact’s frozen `schema_id`
+(`V1_SCHEMA_ID` / `V2_SCHEMA_ID`), not the live activation branch. Parallel v2
+contracts live in `contracts_v2.py` and must not import live writer aliases.
 
 ### Settings
 
@@ -204,7 +212,12 @@ Run Analysis / Batch picker (before the model selector). Insights block:
   "analysis": {
     "llm_custom_qa": {
       "effort": "high",
-      "saved_questions": [],
+      "saved_questions": [
+        {"text": "What was decided?", "scopes": {"global": true, "per_speaker": false}}
+      ],
+      "evidence_pack_ids": null,
+      "include_transcript": true,
+      "routing_enabled": true,
       "max_library_questions": 50,
       "max_library_total_question_chars": 20000,
       "max_questions_per_run": 8,
@@ -216,28 +229,30 @@ Run Analysis / Batch picker (before the model selector). Insights block:
 }
 ```
 
-`saved_questions` is hidden from the generic Configuration editor; edit via
-the Questions tab. Request field `llm_custom_qa_questions`: omit/`null` →
-library; `[]` → empty-run success (no Ollama); non-empty list → request.
+`saved_questions` is structured (`text` + `scopes`); legacy `list[str]` migrates
+idempotently to global-only. `evidence_pack_ids: null` means all present and
+future catalog packs (expanded only onto the run plan). Request field
+`llm_custom_qa_questions`: omit/`null` → library; `[]` → empty-run success;
+list (str or structured) → request. Resolve/bind only when the module is selected.
 
 ### Contract
 
-- Model envelope `{ "answers": [ ... ] }` then per-row validation (bad rows
-  never fail the module alone).
-- Artifact `schema_id`: `transcriptx.llm_custom_qa.v1`
-- Citations use grounding-corpus slices (cross-segment includes `\n`).
-- Corpus is capped for citation fidelity (`MAX_CUSTOM_QA_CORPUS_CHARS`) and
-  prefers the meeting **tail** when truncated so end-of-meeting evidence stays
-  available. One quality retry runs when rows are incomplete or ungrounded.
-- Artifacts use staging + commit marker + `.active` pointer; readers require
-  module success in `run_results` and commit consistency.
-- Empty questions still schedule the module and write a success artifact.
+- Live writer (`v2_live`): artifact `schema_id` `transcriptx.llm_custom_qa.v2`
+  with `reasoning`, scopes, `speaker_answers`, `evidence_used`,
+  `V2_CONTRACT_VERSION`; soft quote grounding (no row-kill)
+- Historical v1 artifacts remain readable via frozen `V1_SCHEMA_ID` validators
+- Corpus capped (`MAX_CUSTOM_QA_CORPUS_CHARS`), tail-preferring when truncated
+- Artifacts use immutable generation files `{stem}.json.{gid}` / `.md.{gid}`,
+  marker schema v2 (`run_execution_id`), atomic `.active`, and best-effort
+  bare aliases; readers resolve a canonical stem then active→marker
+- Empty questions / `no_scheduled_cells` still succeed and commit
 
 ### Artifacts
 
-- `llm_custom_qa/data/global/{base}_llm_custom_qa.json` (+ `.md`)
-- `llm_custom_qa/questions_metadata.json` (full list + hash + `resolved_from`)
-- Group: `qa_answer_rows.json`, `qa_member_failures.json`
+- Authoritative: `…/{base}_llm_custom_qa.json.{generation_id}` (+ `.md.{gid}`)
+- Compat aliases: `{base}_llm_custom_qa.json` (+ `.md`)
+- Generation metadata: `{base}_llm_custom_qa.questions_metadata.{gid}.json`
+- Group: `qa_answer_rows.json`, `qa_member_failures.json` (via group content loader)
 
 ## `llm_action_items` effort
 

@@ -92,9 +92,20 @@ def _load_summary_body(
     json_path: Optional[Path],
     md_path: Optional[Path],
     kind: str,
+    staging_dir: Optional[Path] = None,
 ) -> tuple[str, dict[str, Any]]:
     payload: Optional[dict[str, Any]] = None
-    if json_path is not None and json_path.is_file():
+    if kind == "llm_custom_qa" and staging_dir is not None:
+        # Prefer authoritative committed loader over bare alias bytes.
+        try:
+            from transcriptx.core.analysis.llm_custom_qa.readers import (
+                load_committed_custom_qa_payload,
+            )
+
+            payload = load_committed_custom_qa_payload(Path(staging_dir))
+        except Exception:
+            payload = None
+    if payload is None and json_path is not None and json_path.is_file():
         try:
             raw = json.loads(json_path.read_text(encoding="utf-8"))
             if isinstance(raw, dict):
@@ -104,6 +115,24 @@ def _load_summary_body(
 
     body = ""
     if payload:
+        if kind == "llm_custom_qa":
+            schema_id = str(payload.get("schema_id") or "")
+            from transcriptx.core.analysis.llm_custom_qa.versioning import (
+                V1_SCHEMA_ID,
+                V2_SCHEMA_ID,
+            )
+
+            if schema_id and schema_id not in (V1_SCHEMA_ID, V2_SCHEMA_ID):
+                return "", {}
+            if schema_id == V2_SCHEMA_ID:
+                try:
+                    from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import (
+                        validate_artifact_v2,
+                    )
+
+                    payload = validate_artifact_v2(payload)
+                except Exception:
+                    return "", {}
         body = summary_text_from_payload(payload, kind=kind)
     if not body and md_path is not None and md_path.is_file():
         try:
@@ -171,6 +200,7 @@ def resolve_export_text_summaries(
             json_path=entry.get("json_path"),
             md_path=entry.get("md_path"),
             kind=kind,
+            staging_dir=staging_dir if kind == "llm_custom_qa" else None,
         )
         if not body:
             continue

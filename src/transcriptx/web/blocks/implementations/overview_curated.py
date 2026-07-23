@@ -102,16 +102,32 @@ def render_transcript_summary_hero(
                 key="overview_summary_hero",
                 ctx=ctx,
             )
+            # Global custom QA fallback when summary hero is absent
+            from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+                render_global_custom_qa_under_summary,
+            )
+
+            render_global_custom_qa_under_summary(ctx.run_root)
             return
         st.info(result.unavailable_message)
         if failed:
             with st.expander("Technical details"):
                 for c in failed:
                     st.caption(f"{c.module}: {c.outcome}")
+        from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+            render_global_custom_qa_under_summary,
+        )
+
+        render_global_custom_qa_under_summary(ctx.run_root)
         return
     st.markdown("# Transcript Summary")
     render_badge_row(_summary_hero_badges(result.primary))
     _render_summary_body(result.primary, strip_heading=True, strip_provenance=True)
+    from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+        render_global_custom_qa_under_summary,
+    )
+
+    render_global_custom_qa_under_summary(ctx.run_root)
 
 
 def render_other_summaries(ctx: BlockContext, _placement: BlockPlacement) -> None:

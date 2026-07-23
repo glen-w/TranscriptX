@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.9] - 2026-07-23
+
+### Added
+
+- `llm_custom_qa` v2 staged migration: activation-gated writer (`v2_live`), structured scopes (global / per-speaker), evidence catalog + routing plan, deterministic scheduler, soft quote grounding, and immutable generation-named artifacts (`{stem}.json.{gid}`) with marker schema v2 + `run_execution_id`.
+- Settings/Run structured question library (scopes + evidence packs); Insights placement under summary/speaker fallbacks (Actions placements removed).
+- Dual-compatible readers (canonical stem under `llm_custom_qa/data/global/`), export via authoritative loader, and consumer activation inventory.
+
+### Changed
+
+- Config ownership goldens for expanded `llm_custom_qa` settings (47 pilots / 660 Pydantic leaves / 16 legacy).
+- Group aggregation for custom QA remains registry-disabled pending v2 group loader.
+
+### Fixed
+
+- Empty-run orphan sweep preserves the active generation under the writer lock.
+- V2 answer rows no longer leave `question_index` in committed artifacts.
+
 ## [0.6.8] - 2026-07-23
 
 ### Changed

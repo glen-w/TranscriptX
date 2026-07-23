@@ -1714,3 +1714,43 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Final default run after expansion: **6600 passed**, **1 skipped**, **182** deselected.
 - **Production code in this #tests pass:** none (tests-only expansion). Import feature production modules remain untracked/new from prior build.
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 64. Expansion (2026-07-23) – transcript viewer chapters + Charts GUI
+
+### Trigger
+`/tests` focused on transcript viewer and charts in GUI.
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260723-1402.zip` (5.2M).
+- **Collection:** default `6960` selected / `7138` with `-m ""` (`178` deselected by addopts).
+- **Default baseline before expansion:** `6957 passed`, **2 failed**, `1 skipped`, `178` deselected.
+  - **Charts (in focus):** `test_charts_resettable_keys_match_filter_defaults` stale vs unified `CHARTS_KEY_CHART_TEXT` view preference (legacy toggles no longer in `CHARTS_FILTER_DEFAULTS`).
+  - **Unrelated:** `test_fresh_process_import_config_then_module[llm_custom_qa]` — fresh-process `ModuleNotFoundError` for WIP `llm_custom_qa` tree; left untouched.
+- **Quarantined:** `0` active `@pytest.mark.quarantined` (`tests/quarantine/COUNT` historical).
+- **Cleanup:** disabled (per command).
+- **Markers / addopts:** unchanged.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Chapters loader / jump | Thin smoke only in topic_shift unit file | Dedicated `test_chapters.py` (visibility, enrichment modes, strength, sticky jump) |
+| Transcript page chapters UI | No tab-nav / panel glue | Tab includes/omits Chapters; Jump queues `play=False`; empty caption |
+| Charts filter defaults contract | Stale legacy-toggle assertions | Align with `CHARTS_VIEW_PREF_DEFAULTS` / chart-text migration |
+| Charts page helpers | Sort fallback + session→view wiring | `_current_sort_mode`, `_build_view_from_session`, chart-text survives Reset |
+
+### Tests added or updated
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_state_unit.py` | fix | Resettable keys vs view prefs / legacy toggles |
+| `tests/web/transcript_viewer/test_chapters.py` | **new** (+9) | Chapters loader + jump session contracts |
+| `tests/web/test_transcript_page_refactor_contracts.py` | +4 | Tab nav + chapters panel Jump/empty |
+| `tests/web/test_charts_page_helpers.py` | +3 | Sort fallback, view wiring, chart-text survives reset |
+
+### Validation
+- Focused viewer/charts slice: **37 passed**.
+- Final default run after expansion: **6985 passed**, **1 failed** (unrelated `llm_custom_qa` fresh-process import), **1 skipped**, **178** deselected.
+- **Production code in this #tests pass:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

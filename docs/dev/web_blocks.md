@@ -25,7 +25,7 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 | `llm_summary_block` | `llm_summary` / `narrative_summary` (parametric) | `default` |
 | `llm_speaker_summary_block` | `llm_speaker_summary` (group runs: synthesised index via resolver) | `default` |
 | `llm_action_items_block` | `llm_action_items` | `default`, `executive` |
-| `llm_custom_qa_block` | `llm_custom_qa` | `default`, `executive` |
+| `llm_custom_qa_block` | `llm_custom_qa` | presentation helpers under summary/speakers (Actions placement removed) |
 | `lexical_diversity_block` | `lexical_diversity` | `default` |
 | `insights_contract` | `insights` | `default` |
 | `highlights` | `highlights` | `default`, `executive` |

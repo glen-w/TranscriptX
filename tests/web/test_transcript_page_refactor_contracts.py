@@ -163,3 +163,113 @@ def test_render_transcript_viewer_does_not_consume_nav_request_on_empty_segments
 
     mod.render_transcript_viewer()
     assert state[mod.NAV_REQUEST_KEY] == "keep-me"
+
+
+def test_transcript_tab_nav_includes_chapters_when_available(monkeypatch) -> None:
+    state: dict = {"transcript_viewer_tab": "turns"}
+
+    class _DummySt:
+        session_state = state
+
+        @staticmethod
+        def segmented_control(_label, options, key, label_visibility="collapsed"):
+            assert "Chapters" in options
+            assert key == "transcript_viewer_tab_control"
+            return "Chapters"
+
+    monkeypatch.setattr(mod, "st", _DummySt)
+    selected = mod._render_transcript_tab_nav(has_chapters=True)
+    assert selected == "chapters"
+    assert state["transcript_viewer_tab"] == "chapters"
+
+
+def test_transcript_tab_nav_omits_chapters_without_rows(monkeypatch) -> None:
+    state: dict = {"transcript_viewer_tab": "chapters"}
+
+    class _DummySt:
+        session_state = state
+
+        @staticmethod
+        def segmented_control(_label, options, key, label_visibility="collapsed"):
+            assert "Chapters" not in options
+            return "Turns"
+
+    monkeypatch.setattr(mod, "st", _DummySt)
+    selected = mod._render_transcript_tab_nav(has_chapters=False)
+    assert selected == "turns"
+    assert state["transcript_viewer_tab"] == "turns"
+
+
+def test_chapters_panel_jump_queues_without_play(monkeypatch) -> None:
+    from transcriptx.web.transcript_viewer.chapters import ChapterRow
+
+    state: dict = {}
+    captions: list[str] = []
+    markdowns: list[str] = []
+    reruns: list = []
+
+    class _Col:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    class _DummySt:
+        session_state = state
+
+        @staticmethod
+        def caption(text):
+            captions.append(text)
+
+        @staticmethod
+        def markdown(text, **_k):
+            markdowns.append(text)
+
+        @staticmethod
+        def columns(_spec):
+            return (_Col(), _Col(), _Col(), _Col())
+
+        @staticmethod
+        def button(label, **_k):
+            return label == "Jump"
+
+        @staticmethod
+        def rerun(*, scope=None):
+            reruns.append(scope)
+
+    row = ChapterRow(
+        span_id="s1",
+        index=0,
+        title="Opening",
+        time_start=0.0,
+        time_end=12.0,
+        viewer_target_source_index=3,
+        leading_boundary_id=None,
+        strength=None,
+        summary="Brief",
+    )
+    monkeypatch.setattr(mod, "st", _DummySt)
+    mod._render_chapters_panel([row])
+    assert any("Opening" in m for m in markdowns)
+    assert any("Brief" in c for c in captions)
+    assert state["transcript_viewer_chapter_pending"] == {
+        "jump_index": 3,
+        "play": False,
+    }
+    assert reruns == ["fragment"]
+
+
+def test_chapters_panel_empty_caption(monkeypatch) -> None:
+    captions: list[str] = []
+
+    class _DummySt:
+        session_state: dict = {}
+
+        @staticmethod
+        def caption(text):
+            captions.append(text)
+
+    monkeypatch.setattr(mod, "st", _DummySt)
+    mod._render_chapters_panel([])
+    assert captions == ["No topic-shift chapters for this run."]

@@ -75,7 +75,7 @@
     "input": 6,
     "llm": 14,
     "llm_action_items_settings": 2,
-    "llm_custom_qa_settings": 8,
+    "llm_custom_qa_settings": 16,
     "llm_speaker_summary_settings": 1,
     "llm_summary_settings": 1,
     "logging": 6,
@@ -101,6 +101,6 @@
     "workflow": 13
   },
   "pilot_count": 47,
-  "pydantic_owned_keys": 652,
-  "total_registry_keys": 668
+  "pydantic_owned_keys": 660,
+  "total_registry_keys": 676
 }

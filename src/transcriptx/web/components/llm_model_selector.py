@@ -34,13 +34,6 @@ _CUSTOM_PROFILE = "Custom (this run)"
 _PROJECT_DEFAULT_LABEL = "Project default (active)"
 _UNSET_MODEL = "(choose a model)"
 _LLM_MODELS_TARGET = "llm_models"
-_THINKING_MODEL_HELP = (
-    "Thinking-family Ollama tags (qwen3*, deepseek-r1*, gpt-oss*, …) often leave "
-    "the `response` field empty when TranscriptX requests JSON. They are excluded "
-    "from picks that feed JSON modules (narrative_summary, llm_action_items, "
-    "chart_descriptions, group_llm_synthesis). Prefer gemma3, qwen2.5, llama3.2, "
-    "or mistral for those modules."
-)
 
 logger = logging.getLogger(__name__)
 
@@ -150,24 +143,6 @@ def _ensure_session_model_in_options(
     elif current not in (_UNSET_MODEL, ""):
         st.caption(f"{label}: `{current}` is not available — choose another model.")
     st.session_state[key] = _UNSET_MODEL
-
-
-def _thinking_excluded_note(
-    installed: Sequence[str],
-    *,
-    json_consumers_selected: Sequence[str],
-) -> str | None:
-    if not json_consumers_selected:
-        return None
-    hidden = [name for name in installed if is_thinking_model(name)]
-    if not hidden:
-        return None
-    sample = ", ".join(f"`{n}`" for n in hidden[:4])
-    extra = f" (+{len(hidden) - 4} more)" if len(hidden) > 4 else ""
-    return (
-        f"Hidden thinking models for JSON modules: {sample}{extra}. "
-        f"{_THINKING_MODEL_HELP}"
-    )
 
 
 def _session_model_value(value: Any) -> str | None:
@@ -499,11 +474,6 @@ def render_llm_model_selector(
     json_consumers = _selected_json_consumers(
         selected_modules, include_group=include_group
     )
-    thinking_note = _thinking_excluded_note(
-        installed, json_consumers_selected=json_consumers
-    )
-    if thinking_note:
-        st.info(thinking_note)
 
     if shared_key not in st.session_state:
         seeded = _seed_from_configured(installed, llm.model)
@@ -585,7 +555,7 @@ def render_llm_model_selector(
                 disabled=not bool(installed),
             )
 
-    with st.expander("Installed models — what they're good at", expanded=False):
+    with st.expander("Model information", expanded=False):
         st.caption(
             "Use this when assigning models per module. Avoid thinking-family "
             "tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON modules — they often "

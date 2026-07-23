@@ -22,16 +22,17 @@ from transcriptx.core.analysis.llm_custom_qa.bounded_input import (
 from transcriptx.core.analysis.llm_custom_qa.cache import try_load_cached_artifact
 from transcriptx.core.analysis.llm_custom_qa.commit import (
     commit_llm_custom_qa_artifacts,
-    sweep_orphan_staging,
 )
 from transcriptx.core.analysis.llm_custom_qa.constants import (
     MAX_CUSTOM_QA_CORPUS_CHARS,
     MAX_QUALITY_RETRY_ATTEMPTS,
     MAX_RETRY_ATTEMPTS,
     MODULE_NAME,
-    MODULE_VERSION,
     PROMPT_VERSION,
-    SCHEMA_ID,
+)
+from transcriptx.core.analysis.llm_custom_qa.versioning import (
+    V1_MODULE_VERSION,
+    V1_SCHEMA_ID,
 )
 from transcriptx.core.analysis.llm_custom_qa.contract import (
     build_llm_custom_qa_cache_key,
@@ -217,8 +218,8 @@ def _empty_run_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
     provenance = {
         "module": MODULE_NAME,
         "prompt_version": PROMPT_VERSION,
-        "schema_id": SCHEMA_ID,
-        "module_version": MODULE_VERSION,
+        "schema_id": V1_SCHEMA_ID,
+        "module_version": V1_MODULE_VERSION,
         "provider": None,
         "model": None,
         "seed": None,
@@ -237,9 +238,9 @@ def _empty_run_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
         "model_selection_source": None,
     }
     return {
-        "schema_id": SCHEMA_ID,
+        "schema_id": V1_SCHEMA_ID,
         "module": MODULE_NAME,
-        "module_version": MODULE_VERSION,
+        "module_version": V1_MODULE_VERSION,
         "questions_requested": [],
         "questions_hash": effective.questions_hash,
         "answers": [],
@@ -294,6 +295,19 @@ class LLMCustomQAAnalysis(AnalysisModule):
         )
 
     def run_from_context(self, context: Any) -> Dict[str, Any]:
+        from transcriptx.core.analysis.llm_custom_qa.versioning import (
+            is_v2_execution_enabled,
+        )
+
+        if is_v2_execution_enabled():
+            from transcriptx.core.analysis.llm_custom_qa.analyze_v2 import (
+                run_v2_from_context,
+            )
+
+            return run_v2_from_context(self, context)
+        return self._run_from_context_v1(context)
+
+    def _run_from_context_v1(self, context: Any) -> Dict[str, Any]:
         started_at = now_iso()
         start_time = time.time()
         try:
@@ -320,14 +334,14 @@ class LLMCustomQAAnalysis(AnalysisModule):
             if effective.empty:
                 payload = validate_artifact(_empty_run_payload(effective))
                 markdown = render_custom_qa_markdown(payload)
-                commit_llm_custom_qa_artifacts(
+                gid = commit_llm_custom_qa_artifacts(
                     stem=stem,
                     json_final=json_final,
                     md_final=md_final,
                     payload=payload,
                     markdown=markdown,
+                    force_protocol="v1",
                 )
-                sweep_orphan_staging(stem, keep_generation_id=None)
                 output_service.record_file(json_final, "json")
                 output_service.record_file(md_final, "md")
                 context.store_analysis_result(self.module_name, payload)
@@ -449,6 +463,7 @@ class LLMCustomQAAnalysis(AnalysisModule):
                     md_final=md_final,
                     payload=payload,
                     markdown=markdown,
+                    force_protocol="v1",
                 )
                 output_service.record_file(json_final, "json")
                 output_service.record_file(md_final, "md")
@@ -529,8 +544,8 @@ class LLMCustomQAAnalysis(AnalysisModule):
             provenance = {
                 "module": MODULE_NAME,
                 "prompt_version": PROMPT_VERSION,
-                "schema_id": SCHEMA_ID,
-                "module_version": MODULE_VERSION,
+                "schema_id": V1_SCHEMA_ID,
+                "module_version": V1_MODULE_VERSION,
                 "provider": llm_cfg.provider,
                 "model": getattr(client, "model", llm_cfg.model or ""),
                 "seed": int(llm_cfg.seed),
@@ -549,9 +564,9 @@ class LLMCustomQAAnalysis(AnalysisModule):
                 "model_selection_source": effort_runtime.model_source,
             }
             payload = {
-                "schema_id": SCHEMA_ID,
+                "schema_id": V1_SCHEMA_ID,
                 "module": MODULE_NAME,
-                "module_version": MODULE_VERSION,
+                "module_version": V1_MODULE_VERSION,
                 "questions_requested": list(effective.questions),
                 "questions_hash": effective.questions_hash,
                 "answers": answers,
@@ -573,6 +588,7 @@ class LLMCustomQAAnalysis(AnalysisModule):
                 md_final=md_final,
                 payload=payload,
                 markdown=markdown,
+                force_protocol="v1",
             )
             output_service.record_file(json_final, "json")
             output_service.record_file(md_final, "md")

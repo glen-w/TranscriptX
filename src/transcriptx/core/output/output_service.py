@@ -874,10 +874,13 @@ class OutputService:
         artifact_type: str = "pdf",
         *,
         lease: RunWriterLease | None = None,
+        artifact_role: str = "primary",
     ) -> None:
         """Record an existing file as an artifact (e.g. a PDF built outside save_*)."""
         self._run_write(
-            lambda: self._record_artifact(Path(path), artifact_type),
+            lambda: self._record_artifact(
+                Path(path), artifact_type, artifact_role=artifact_role
+            ),
             lease=lease,
         )
 

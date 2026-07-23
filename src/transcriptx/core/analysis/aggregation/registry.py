@@ -926,6 +926,29 @@ def build_registry() -> List[AggregationEntry]:
         aggregate_voice_tension_group,
     )
 
+    def _disabled_llm_custom_qa_group_agg(
+        results: List[PerTranscriptResult],
+        context: AggregationContext,
+        canonical_map: Optional[CanonicalSpeakerMap] = None,
+    ) -> Dict[str, Any]:
+        """Registry-level disable until v2 aggregation is activation-enabled."""
+        return {
+            "schema_id": "transcriptx.llm_custom_qa.group.disabled",
+            "disabled": True,
+            "reason": "llm_custom_qa_group_aggregation_disabled_pending_v2",
+            "content_rows": [],
+            "content_rows_name": "qa_answer_rows",
+            "warnings": [
+                build_warning(
+                    code="llm_custom_qa_agg_disabled",
+                    message=(
+                        "Custom QA group aggregation is disabled until v2 loader is enabled"
+                    ),
+                    aggregation_key="llm_custom_qa",
+                )
+            ],
+        }
+
     def any_of(ids: List[str]) -> Callable[[List[str]], bool]:
         return lambda selected: any(module_id in selected for module_id in ids)
 
@@ -1148,7 +1171,8 @@ def build_registry() -> List[AggregationEntry]:
             agg_id="llm_custom_qa",
             selector=any_of(["llm_custom_qa"]),
             deps=[],
-            aggregate_fn=aggregate_llm_custom_qa_group,
+            # Disabled at registry until v2 aggregation is activation-enabled.
+            aggregate_fn=_disabled_llm_custom_qa_group_agg,
         ),
         AggregationEntry(
             agg_id="insights",

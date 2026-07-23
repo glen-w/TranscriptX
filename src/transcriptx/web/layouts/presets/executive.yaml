@@ -31,12 +31,6 @@ pages:
           title: Meeting extracts
           artifact_stem: _llm_action_items
           empty_hint: Run the `llm_action_items` module (with LLM enabled) to populate this view.
-      - placement_id: exec_custom_qa
-        block_id: llm_custom_qa_block
-        visible: true
-        params:
-          title: Custom Questions
-          empty_hint: Run the `llm_custom_qa` module to populate this view.
       - placement_id: exec_highlights
         block_id: highlights
         visible: true

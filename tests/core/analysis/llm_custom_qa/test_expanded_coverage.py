@@ -128,8 +128,9 @@ def test_normalize_rejects_non_str_and_oversize() -> None:
 
 @pytest.mark.unit
 def test_resolve_request_and_from_mapping() -> None:
+    # Case-sensitive identity: differing case is two questions
     effective = resolve_effective_custom_qa_questions(
-        request_questions=["  What next?  ", "what NEXT?"],
+        request_questions=["  What next?  ", "What next?"],
         request_field_present=True,
         settings=_Settings(),
     )
@@ -155,7 +156,7 @@ def test_normalize_library_uses_library_limits() -> None:
     settings = _Settings()
     settings.max_library_questions = 2
     out = normalize_library_questions(["A?", "B?"], settings=settings)
-    assert out == ("A?", "B?")
+    assert [q["text"] for q in out] == ["A?", "B?"]
     with pytest.raises(CustomQAQuestionsValidationError):
         normalize_library_questions(["A?", "B?", "C?"], settings=settings)
 
@@ -680,8 +681,8 @@ def test_effective_metadata_export() -> None:
         max_answer_chars=800,
     )
     meta = effective.to_metadata()
-    assert meta == {
-        "questions_requested": ["Only?"],
-        "questions_hash": "abc",
-        "resolved_from": "request",
-    }
+    assert meta["questions_requested"] == ["Only?"]
+    assert meta["questions_hash"] == "abc"
+    assert meta["resolved_from"] == "request"
+    assert meta["question_order"] == []
+    assert meta["structured"] == []

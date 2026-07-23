@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-import json
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +58,19 @@ def _render_answer_card(
     if status == "answered":
         answer = _csv_safe(str(row.get("answer") or ""))
         st.markdown(_escape(answer), unsafe_allow_html=True)
+        reasoning = row.get("reasoning")
+        if reasoning:
+            st.caption("Evidence explanation")
+            st.markdown(
+                _escape(_csv_safe(str(reasoning))),
+                unsafe_allow_html=True,
+            )
+        evidence_used = row.get("evidence_used") or {}
+        if isinstance(evidence_used, dict) and evidence_used.get("pack_ids_rendered"):
+            st.caption(
+                f"Evidence: packs={evidence_used.get('pack_ids_rendered')} "
+                f"transcript={evidence_used.get('use_transcript')}"
+            )
         citations = row.get("citations") or []
         if isinstance(citations, list):
             for i, cite in enumerate(citations):
@@ -112,14 +124,13 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
 
     if is_group_run(run_root):
         rows = load_group_content_rows(run_root, "llm_custom_qa", "qa_answer_rows")
-        failures_path = Path(run_root) / "llm_custom_qa" / "qa_member_failures.json"
-        if failures_path.exists():
-            try:
-                failures = json.loads(failures_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                failures = []
-            if failures:
-                st.caption(f"{len(failures)} member failure(s) recorded")
+        from transcriptx.core.analysis.llm_custom_qa.readers import (
+            load_group_member_failures,
+        )
+
+        failures = load_group_member_failures(Path(run_root))
+        if failures:
+            st.caption(f"{len(failures)} member failure(s) recorded")
         members = list_group_members(run_root)
         member_keys = {m.transcript_key for m in members if m.transcript_key}
         member_paths = {m.transcript_path for m in members if m.transcript_path}
@@ -138,11 +149,13 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
                 run_rel = str(row.get("source_run_relpath") or "")
                 run_ok = True
                 if member_runs and run_rel:
-                    # artifact ownership: member run id must appear in path or known runs
-                    run_ok = any(rid and rid in run_rel for rid in member_runs) or True
+                    # artifact ownership: member run id must appear in path
+                    run_ok = any(rid and rid in run_rel for rid in member_runs)
                 allow_jump = bool(owned and run_ok)
                 if not owned:
                     st.warning("Citation jump blocked: member subject mismatch")
+                elif member_runs and run_rel and not run_ok:
+                    st.warning("Citation jump blocked: member run ownership mismatch")
                 _render_answer_card(
                     row, key_prefix=f"group_qa_{i}", allow_jump=allow_jump
                 )

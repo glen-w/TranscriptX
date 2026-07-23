@@ -10,6 +10,23 @@ if TYPE_CHECKING:
     from transcriptx.core.analysis.llm_support.model_selection import LlmModelSelection
 
 
+def _validate_llm_custom_qa_questions_field(raw: Any) -> None:
+    """Reject malformed custom-QA request payloads at construction time."""
+    if raw is None:
+        return
+    from transcriptx.core.analysis.llm_custom_qa.request_questions import (
+        coerce_request_questions,
+    )
+
+    coerce_request_questions(
+        raw,
+        field_present=True,
+        max_questions=50,
+        max_question_chars=2000,
+        max_total_question_chars=20000,
+    )
+
+
 @dataclass
 class AnalysisRequest:
     """Input for single-transcript analysis."""
@@ -23,8 +40,11 @@ class AnalysisRequest:
     persist: bool = False
     include_unidentified_speakers: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
-    # None/omitted → library; [] → explicit empty run; non-empty → request
-    llm_custom_qa_questions: list[str] | None = None
+    # None/omitted → library; [] → explicit empty run; list[str]|list[dict] → request
+    llm_custom_qa_questions: list[str] | list[dict[str, Any]] | None = None
+
+    def __post_init__(self) -> None:
+        _validate_llm_custom_qa_questions_field(self.llm_custom_qa_questions)
 
 
 @dataclass
@@ -106,7 +126,10 @@ class GroupAnalysisRequest:
     output_dir: Optional[Path] = None
     persist: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
-    llm_custom_qa_questions: list[str] | None = None
+    llm_custom_qa_questions: list[str] | list[dict[str, Any]] | None = None
+
+    def __post_init__(self) -> None:
+        _validate_llm_custom_qa_questions_field(self.llm_custom_qa_questions)
 
 
 @dataclass
@@ -119,7 +142,10 @@ class BatchAnalysisRequest:
     selected_modules: Optional[list[str]] = None
     persist: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
-    llm_custom_qa_questions: list[str] | None = None
+    llm_custom_qa_questions: list[str] | list[dict[str, Any]] | None = None
+
+    def __post_init__(self) -> None:
+        _validate_llm_custom_qa_questions_field(self.llm_custom_qa_questions)
 
 
 @dataclass(frozen=True)

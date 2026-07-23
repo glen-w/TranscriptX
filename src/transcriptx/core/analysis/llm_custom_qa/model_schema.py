@@ -52,6 +52,8 @@ class LLMCustomQAModelAnswerRow(BaseModel):
     question_index: int
     status: ModelAnswerStatus
     answer: Optional[str] = None
+    # Optional for v1; v2 answer processing requires non-empty reasoning when answered.
+    reasoning: Optional[str] = None
     abstain_reason: Optional[ModelAbstainReason] = None
     # Local models (e.g. mistral-nemo) often emit null confidence on abstains.
     confidence: Optional[float] = None

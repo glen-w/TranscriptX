@@ -10,10 +10,13 @@ from transcriptx.core.analysis.llm_custom_qa.artifact_schema import (
 )
 from transcriptx.core.analysis.llm_custom_qa.constants import (
     ABSENCE_DETECTOR_VERSION,
-    MODULE_VERSION,
     PROMPT_VERSION,
-    SCHEMA_ID,
 )
+from transcriptx.core.analysis.llm_custom_qa.versioning import (
+    V1_MODULE_VERSION,
+    V1_SCHEMA_ID,
+)
+
 from transcriptx.core.analysis.llm_custom_qa.model_schema import (
     extract_question_index,
     try_parse_answer_row,
@@ -170,8 +173,8 @@ def build_llm_custom_qa_cache_key(
     llm_request_sha256: str,
     template_hash: str,
     prompt_version: str = PROMPT_VERSION,
-    schema_id: str = SCHEMA_ID,
-    module_version: str = MODULE_VERSION,
+    schema_id: str = V1_SCHEMA_ID,
+    module_version: str = V1_MODULE_VERSION,
     absence_detector_version: str = ABSENCE_DETECTOR_VERSION,
 ) -> str:
     payload = {

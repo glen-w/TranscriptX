@@ -1,22 +1,38 @@
 {
   "asdict": {
     "effort": "high",
+    "evidence_pack_ids": null,
+    "include_transcript": true,
     "max_answer_chars": 800,
+    "max_eligible_speakers": 12,
     "max_library_questions": 50,
     "max_library_total_question_chars": 20000,
+    "max_llm_calls_per_run": 16,
+    "max_packs_per_question": 3,
     "max_question_chars": 500,
     "max_questions_per_run": 8,
+    "max_reasoning_chars": 600,
     "max_run_total_question_chars": 4000,
+    "max_speaker_question_cells": 48,
+    "routing_enabled": true,
     "saved_questions": []
   },
   "to_dict": {
     "effort": "high",
+    "evidence_pack_ids": null,
+    "include_transcript": true,
     "max_answer_chars": 800,
+    "max_eligible_speakers": 12,
     "max_library_questions": 50,
     "max_library_total_question_chars": 20000,
+    "max_llm_calls_per_run": 16,
+    "max_packs_per_question": 3,
     "max_question_chars": 500,
     "max_questions_per_run": 8,
+    "max_reasoning_chars": 600,
     "max_run_total_question_chars": 4000,
+    "max_speaker_question_cells": 48,
+    "routing_enabled": true,
     "saved_questions": []
   }
 }

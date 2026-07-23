@@ -3,10 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, Literal, Mapping, Optional, Sequence
 
 from transcriptx.core.analysis.llm_custom_qa.constants import MAX_ANSWER_CHARS
 from transcriptx.core.analysis.llm_custom_qa.normalize import normalize_questions
+from transcriptx.core.analysis.llm_custom_qa.question_identity import (
+    CanonicalQuestion,
+    canonicalize_questions,
+    project_questions_for_v1_runtime,
+    questions_hash_for_canonical,
+)
+from transcriptx.core.analysis.llm_custom_qa.request_questions import (
+    structured_library_from_settings,
+)
 from transcriptx.core.analysis.llm_support.hashing import sha256_canonical_json
 
 ResolvedFrom = Literal["library", "request", "explicit_empty"]
@@ -14,7 +23,7 @@ ResolvedFrom = Literal["library", "request", "explicit_empty"]
 
 @dataclass(frozen=True)
 class EffectiveCustomQAQuestions:
-    """Immutable questions authority for one analysis run."""
+    """Immutable questions authority for one analysis run (v1 analyser view)."""
 
     questions: tuple[str, ...]
     questions_hash: str
@@ -24,12 +33,20 @@ class EffectiveCustomQAQuestions:
     max_question_chars: int
     max_run_total_question_chars: int
     max_answer_chars: int
+    # Structured canonical questions retained for scopes (v2 / bridge).
+    structured: tuple[CanonicalQuestion, ...] = ()
+    question_order: tuple[str, ...] = ()
 
     def to_metadata(self) -> dict[str, Any]:
         return {
             "questions_requested": list(self.questions),
             "questions_hash": self.questions_hash,
             "resolved_from": self.resolved_from,
+            "question_order": list(self.question_order),
+            "structured": [
+                {"text": q.text, "scopes": q.scopes.as_dict(), "question_id": q.question_id}
+                for q in self.structured
+            ],
         }
 
 
@@ -58,6 +75,51 @@ def _limits_from_settings(settings: Any) -> dict[str, int]:
     }
 
 
+def _build_effective(
+    *,
+    structured_raw: Any,
+    resolved_from: ResolvedFrom,
+    limits: dict[str, int],
+) -> EffectiveCustomQAQuestions:
+    if structured_raw is None or (
+        isinstance(structured_raw, (list, tuple)) and len(structured_raw) == 0
+    ):
+        return EffectiveCustomQAQuestions(
+            questions=(),
+            questions_hash=questions_hash_for(()),
+            empty=True,
+            resolved_from=resolved_from,
+            max_questions_per_run=limits["max_questions_per_run"],
+            max_question_chars=limits["max_question_chars"],
+            max_run_total_question_chars=limits["max_run_total_question_chars"],
+            max_answer_chars=limits["max_answer_chars"],
+            structured=(),
+            question_order=(),
+        )
+
+    # Accept legacy list[str] or structured
+    canonical, order = canonicalize_questions(
+        structured_raw,
+        max_questions=limits["max_questions_per_run"],
+        max_question_chars=limits["max_question_chars"],
+        max_total_question_chars=limits["max_run_total_question_chars"],
+    )
+    v1_texts = project_questions_for_v1_runtime(canonical)
+    # v1 hash remains text-list hash for live v1 writer compatibility
+    return EffectiveCustomQAQuestions(
+        questions=v1_texts,
+        questions_hash=questions_hash_for(v1_texts),
+        empty=len(v1_texts) == 0,
+        resolved_from=resolved_from,
+        max_questions_per_run=limits["max_questions_per_run"],
+        max_question_chars=limits["max_question_chars"],
+        max_run_total_question_chars=limits["max_run_total_question_chars"],
+        max_answer_chars=limits["max_answer_chars"],
+        structured=canonical,
+        question_order=order,
+    )
+
+
 def resolve_effective_custom_qa_questions(
     *,
     request_questions: Any = None,
@@ -80,38 +142,18 @@ def resolve_effective_custom_qa_questions(
         settings = get_config().analysis.llm_custom_qa
     limits = _limits_from_settings(settings)
 
-    # Distinguish omit/null from explicit []
     if not request_field_present or request_questions is None:
         resolved_from: ResolvedFrom = "library"
-        raw = getattr(settings, "saved_questions", []) or []
-        questions = normalize_questions(
-            raw,
-            max_questions=limits["max_questions_per_run"],
-            max_question_chars=limits["max_question_chars"],
-            max_total_question_chars=limits["max_run_total_question_chars"],
+        raw = structured_library_from_settings(settings)
+        return _build_effective(
+            structured_raw=raw, resolved_from=resolved_from, limits=limits
         )
-    elif isinstance(request_questions, (list, tuple)) and len(request_questions) == 0:
-        resolved_from = "explicit_empty"
-        questions = ()
-    else:
-        resolved_from = "request"
-        questions = normalize_questions(
-            request_questions,
-            max_questions=limits["max_questions_per_run"],
-            max_question_chars=limits["max_question_chars"],
-            max_total_question_chars=limits["max_run_total_question_chars"],
+    if isinstance(request_questions, (list, tuple)) and len(request_questions) == 0:
+        return _build_effective(
+            structured_raw=[], resolved_from="explicit_empty", limits=limits
         )
-
-    qhash = questions_hash_for(questions)
-    return EffectiveCustomQAQuestions(
-        questions=questions,
-        questions_hash=qhash,
-        empty=len(questions) == 0,
-        resolved_from=resolved_from,
-        max_questions_per_run=limits["max_questions_per_run"],
-        max_question_chars=limits["max_question_chars"],
-        max_run_total_question_chars=limits["max_run_total_question_chars"],
-        max_answer_chars=limits["max_answer_chars"],
+    return _build_effective(
+        structured_raw=request_questions, resolved_from="request", limits=limits
     )
 
 
@@ -119,18 +161,22 @@ def normalize_library_questions(
     raw: Any,
     *,
     settings: Any = None,
-) -> tuple[str, ...]:
-    """Normalise questions for library save (library totals + max_question_chars)."""
+) -> tuple[dict[str, Any], ...]:
+    """Normalise questions for library save → structured dicts."""
     if settings is None:
         from transcriptx.core.utils.config import get_config
 
         settings = get_config().analysis.llm_custom_qa
     limits = _limits_from_settings(settings)
-    return normalize_questions(
+    # Allow legacy list[str] input from older UI during transition
+    canonical, _ = canonicalize_questions(
         raw,
         max_questions=limits["max_library_questions"],
         max_question_chars=limits["max_question_chars"],
         max_total_question_chars=limits["max_library_total_question_chars"],
+    )
+    return tuple(
+        {"text": q.text, "scopes": q.scopes.as_dict()} for q in canonical
     )
 
 

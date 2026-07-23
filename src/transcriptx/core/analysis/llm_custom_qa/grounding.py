@@ -210,3 +210,40 @@ def apply_grounding(
         ) + int((grounded.get("grounding") or {}).get("cross_segment_citations", 0))
         out.append(grounded)
     return out
+
+
+def apply_soft_grounding(
+    answers: list[dict[str, Any]],
+    corpus: BoundedGroundingCorpus,
+    *,
+    diagnostics: dict[str, int],
+) -> list[dict[str, Any]]:
+    """Attach citations when quotes match; never kill answered rows for miss."""
+    out: list[dict[str, Any]] = []
+    for row in answers:
+        if row.get("status") != "answered":
+            out.append(row)
+            continue
+        grounded = ground_answered_row(row, corpus)
+        if grounded.get("system_reason") == "grounding_failed":
+            soft = dict(row)
+            soft["citations"] = []
+            soft_grounding = dict(grounded.get("grounding") or {})
+            soft_grounding["quotes_soft_dropped"] = int(
+                soft_grounding.get("quotes_requested", 0)
+            )
+            soft["grounding"] = soft_grounding
+            soft.pop("system_reason", None)
+            diagnostics["soft_quote_drops"] = int(
+                diagnostics.get("soft_quote_drops", 0)
+            ) + int(soft_grounding.get("quotes_requested", 0))
+            out.append(soft)
+            continue
+        diagnostics["citations_total"] = int(diagnostics.get("citations_total", 0)) + len(
+            grounded.get("citations") or []
+        )
+        diagnostics["cross_segment_citations_total"] = int(
+            diagnostics.get("cross_segment_citations_total", 0)
+        ) + int((grounded.get("grounding") or {}).get("cross_segment_citations", 0))
+        out.append(grounded)
+    return out

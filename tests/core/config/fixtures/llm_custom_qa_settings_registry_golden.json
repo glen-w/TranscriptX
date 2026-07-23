@@ -18,6 +18,34 @@
     "sensitivity": "normal",
     "type": "str"
   },
+  "analysis.llm_custom_qa.evidence_pack_ids": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": null,
+    "description": "Packs eligible for routing. null = all present and future catalog packs; [] = packs disabled; list = explicit enable set.",
+    "key": "analysis.llm_custom_qa.evidence_pack_ids",
+    "max": null,
+    "min": null,
+    "path": "analysis.llm_custom_qa.evidence_pack_ids",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "list"
+  },
+  "analysis.llm_custom_qa.include_transcript": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": true,
+    "description": "Allow transcript excerpt in answer prompts.",
+    "key": "analysis.llm_custom_qa.include_transcript",
+    "max": null,
+    "min": null,
+    "path": "analysis.llm_custom_qa.include_transcript",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
   "analysis.llm_custom_qa.max_answer_chars": {
     "advanced": false,
     "category": "analysis",
@@ -28,6 +56,20 @@
     "max": 4000.0,
     "min": 100.0,
     "path": "analysis.llm_custom_qa.max_answer_chars",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.llm_custom_qa.max_eligible_speakers": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 12,
+    "description": "",
+    "key": "analysis.llm_custom_qa.max_eligible_speakers",
+    "max": 64.0,
+    "min": 0.0,
+    "path": "analysis.llm_custom_qa.max_eligible_speakers",
     "scope": "project",
     "sensitivity": "normal",
     "type": "int"
@@ -60,6 +102,34 @@
     "sensitivity": "normal",
     "type": "int"
   },
+  "analysis.llm_custom_qa.max_llm_calls_per_run": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 16,
+    "description": "",
+    "key": "analysis.llm_custom_qa.max_llm_calls_per_run",
+    "max": 64.0,
+    "min": 1.0,
+    "path": "analysis.llm_custom_qa.max_llm_calls_per_run",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.llm_custom_qa.max_packs_per_question": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 3,
+    "description": "",
+    "key": "analysis.llm_custom_qa.max_packs_per_question",
+    "max": 16.0,
+    "min": 0.0,
+    "path": "analysis.llm_custom_qa.max_packs_per_question",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
   "analysis.llm_custom_qa.max_question_chars": {
     "advanced": false,
     "category": "analysis",
@@ -88,6 +158,20 @@
     "sensitivity": "normal",
     "type": "int"
   },
+  "analysis.llm_custom_qa.max_reasoning_chars": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 600,
+    "description": "",
+    "key": "analysis.llm_custom_qa.max_reasoning_chars",
+    "max": 4000.0,
+    "min": 50.0,
+    "path": "analysis.llm_custom_qa.max_reasoning_chars",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
   "analysis.llm_custom_qa.max_run_total_question_chars": {
     "advanced": false,
     "category": "analysis",
@@ -101,6 +185,34 @@
     "scope": "project",
     "sensitivity": "normal",
     "type": "int"
+  },
+  "analysis.llm_custom_qa.max_speaker_question_cells": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 48,
+    "description": "",
+    "key": "analysis.llm_custom_qa.max_speaker_question_cells",
+    "max": 512.0,
+    "min": 0.0,
+    "path": "analysis.llm_custom_qa.max_speaker_question_cells",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.llm_custom_qa.routing_enabled": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": true,
+    "description": "If false, skip router and use all available enabled packs.",
+    "key": "analysis.llm_custom_qa.routing_enabled",
+    "max": null,
+    "min": null,
+    "path": "analysis.llm_custom_qa.routing_enabled",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
   },
   "analysis.llm_custom_qa.saved_questions": {
     "advanced": false,

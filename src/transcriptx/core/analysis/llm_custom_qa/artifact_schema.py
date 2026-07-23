@@ -6,10 +6,10 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from transcriptx.core.analysis.llm_custom_qa.constants import (
-    MODULE_NAME,
-    MODULE_VERSION,
-    SCHEMA_ID,
+from transcriptx.core.analysis.llm_custom_qa.constants import MODULE_NAME
+from transcriptx.core.analysis.llm_custom_qa.versioning import (
+    V1_MODULE_VERSION,
+    V1_SCHEMA_ID,
 )
 from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAArtifactValidationError,
@@ -114,8 +114,8 @@ class ProvenanceModel(BaseModel):
 
     module: str = MODULE_NAME
     prompt_version: str
-    schema_id: str = SCHEMA_ID
-    module_version: str = MODULE_VERSION
+    schema_id: str = V1_SCHEMA_ID
+    module_version: str = V1_MODULE_VERSION
     provider: Optional[str] = None
     model: Optional[str] = None
     seed: Optional[int] = None
@@ -137,9 +137,9 @@ class ProvenanceModel(BaseModel):
 class LLMCustomQAArtifact(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_id: str = SCHEMA_ID
+    schema_id: str = V1_SCHEMA_ID
     module: str = MODULE_NAME
-    module_version: str = MODULE_VERSION
+    module_version: str = V1_MODULE_VERSION
     questions_requested: list[str]
     questions_hash: str
     answers: list[ArtifactAnswerRow]

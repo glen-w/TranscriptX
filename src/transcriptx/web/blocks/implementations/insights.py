@@ -1020,6 +1020,11 @@ def render_llm_speaker_summary_block(
             ctx=ctx,
             key="llm_speaker_summary_index",
         )
+        from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+            render_speaker_custom_qa_fallback,
+        )
+
+        render_speaker_custom_qa_fallback(run_root)
         return
 
     speakers = index_payload.get("speakers") or []
@@ -1032,6 +1037,11 @@ def render_llm_speaker_summary_block(
             ctx=ctx,
             key="llm_speaker_summary_speakers",
         )
+        from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+            render_speaker_custom_qa_fallback,
+        )
+
+        render_speaker_custom_qa_fallback(run_root)
         return
 
     for entry in speakers:
@@ -1065,6 +1075,20 @@ def render_llm_speaker_summary_block(
             else:
                 st.caption("Artifact missing for this speaker.")
                 continue
+            speaker_key = str(
+                (payload or {}).get("speaker_key")
+                or entry.get("speaker_key")
+                or speaker
+            )
+            from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+                render_speaker_custom_qa,
+            )
+
+            render_speaker_custom_qa(
+                run_root,
+                speaker_key=speaker_key,
+                key_prefix=f"spk_{safe}",
+            )
             _render_view_raw_file_link(
                 ctx,
                 module,
