@@ -394,6 +394,57 @@ def render_storage_panel() -> None:
                 "Voice matching consent is controlled solely by "
                 "privacy.voice_settings.json under speaker_profiles."
             )
+            from transcriptx.core.speaker_profiles.voice.operator import (
+                VoiceOperatorStore,
+            )
+            from transcriptx.core.speaker_profiles.voice.operator_service import (
+                VoiceOperatorService,
+            )
+            from transcriptx.core.speaker_profiles.voice.versioning import (
+                BOOTSTRAP_MAX_LINKS_MAX,
+                BOOTSTRAP_MAX_LINKS_MIN,
+                DEFAULT_BOOTSTRAP_MAX_LINKS,
+            )
+
+            operator = VoiceOperatorStore(root).read()
+            if "voice_bootstrap_max_links" not in st.session_state:
+                st.session_state["voice_bootstrap_max_links"] = (
+                    operator.bootstrap_max_links
+                )
+            st.number_input(
+                "Max confirmed links per voice enrol",
+                min_value=BOOTSTRAP_MAX_LINKS_MIN,
+                max_value=BOOTSTRAP_MAX_LINKS_MAX,
+                step=1,
+                key="voice_bootstrap_max_links",
+                help=(
+                    "Speakers → Enrol trusted voice walks confirmed links in "
+                    f"deterministic order up to this cap (default "
+                    f"{DEFAULT_BOOTSTRAP_MAX_LINKS}). Stored in "
+                    "operator.voice_settings.json; survives privacy revoke. "
+                    "Match-time still caps references per link separately."
+                ),
+            )
+            save_cap_key = ensure_idempotency_key(
+                st.session_state, "voice_operator_bootstrap_max_links"
+            )
+            if st.button(
+                "Save enrol link cap",
+                key="voice_operator_save_bootstrap_max_links",
+            ):
+                try:
+                    desired = int(st.session_state["voice_bootstrap_max_links"])
+                    VoiceOperatorService().update_bootstrap_max_links(
+                        operation_idempotency_key=save_cap_key,
+                        bootstrap_max_links=desired,
+                    )
+                    st.session_state.pop(
+                        "voice_operator_bootstrap_max_links", None
+                    )
+                    st.success(f"Enrol link cap saved ({desired}).")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(str(exc))
             if privacy.enabled and not privacy.wipe_required:
                 st.success("Local voice matching is enabled.")
                 revoke_key = ensure_idempotency_key(

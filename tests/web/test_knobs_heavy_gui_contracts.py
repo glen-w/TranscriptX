@@ -447,6 +447,10 @@ def test_storage_panel_wires_voice_privacy_knobs() -> None:
         "VoicePrivacyService",
         "privacy.voice_settings.json",
         "FEATURE_GATE_COMPLETE",
+        "voice_bootstrap_max_links",
+        "Save enrol link cap",
+        "operator.voice_settings.json",
+        "VoiceOperatorService",
     ):
         assert needle in src, needle
 

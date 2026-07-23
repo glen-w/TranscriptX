@@ -43,7 +43,8 @@ def _list_voice_canonical_paths(root: Path) -> list[str]:
         for p in sorted(d.rglob("*")):
             if p.is_file():
                 rels.append(p.relative_to(root).as_posix())
-    # Keep privacy settings unless full wipe includes consent clear (caller decides)
+    # Keep privacy / operator settings unless full wipe includes consent clear
+    # (caller decides via include_privacy). Operator knobs are not evidence.
     return rels
 
 

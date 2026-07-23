@@ -335,6 +335,10 @@ def relative_voice_privacy_path() -> str:
     return "voice/privacy.voice_settings.json"
 
 
+def relative_voice_operator_path() -> str:
+    return "voice/operator.voice_settings.json"
+
+
 def relative_voice_sample_path(sample_id: str) -> str:
     return f"voice/samples/{sample_id}.voice_sample.json"
 

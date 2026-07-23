@@ -624,8 +624,15 @@ def _render_voice_controls(
         samples = list_samples_for_profile(profile.profile_id, root=snap.root)
         eligible = sum(1 for s in samples if s.eligibility_state == "eligible")
         ineligible = sum(1 for s in samples if s.eligibility_state != "eligible")
+        from transcriptx.core.speaker_profiles.voice.operator import VoiceOperatorStore
+
+        bootstrap_max_links = (
+            VoiceOperatorStore(snap.root).read().bootstrap_max_links
+        )
         st.caption(
-            f"{len(samples)} sample(s) · {eligible} eligible · {ineligible} need promotion"
+            f"{len(samples)} sample(s) · {eligible} eligible · "
+            f"{ineligible} need promotion · enrol cap {bootstrap_max_links} "
+            "link(s) (Settings → Storage)"
         )
         enrol_action = f"voice_bootstrap_{profile.profile_id}"
         if st.button(
@@ -633,7 +640,8 @@ def _render_voice_controls(
             key=f"spk_voice_bootstrap_{profile.profile_id}",
             help=(
                 "Explicit bootstrap: extracts and embeds voice from this profile's "
-                "confirmed links. Privacy opt-in alone does not enrol anything."
+                "confirmed links (up to the Settings → Storage enrol link cap). "
+                "Privacy opt-in alone does not enrol anything."
             ),
         ):
             try:

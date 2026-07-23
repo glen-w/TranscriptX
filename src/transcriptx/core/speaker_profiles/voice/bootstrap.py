@@ -22,11 +22,16 @@ from transcriptx.core.speaker_profiles.voice.evidence import (
     VoiceEvidenceService,
 )
 from transcriptx.core.speaker_profiles.voice.generations import VoiceGenerationRegistry
+from transcriptx.core.speaker_profiles.voice.operator import VoiceOperatorStore
 from transcriptx.core.speaker_profiles.voice.runtime import (
     MODEL_ID,
     MODEL_REVISION_PIN,
     ModelUnavailable,
     SpeakerEmbeddingRuntime,
+)
+from transcriptx.core.speaker_profiles.voice.versioning import (
+    BOOTSTRAP_MAX_LINKS_MAX,
+    BOOTSTRAP_MAX_LINKS_MIN,
 )
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.io.speaker_map_resolver import normalize_diarized_id
@@ -76,7 +81,7 @@ class VoiceBootstrapService:
         profile_id: str,
         actor: str = "user",
         require_activation: bool = True,
-        max_links: int = 20,
+        max_links: int | None = None,
     ) -> BootstrapEnrolResult:
         if require_activation:
             self.barrier.assert_processing_allowed()
@@ -86,6 +91,14 @@ class VoiceBootstrapService:
         if profile.status != "active":
             raise SpeakerProfileContractError(
                 f"cannot enrol voice for profile status {profile.status!r}"
+            )
+
+        if max_links is None:
+            max_links = VoiceOperatorStore(self.root).read().bootstrap_max_links
+        if not (BOOTSTRAP_MAX_LINKS_MIN <= max_links <= BOOTSTRAP_MAX_LINKS_MAX):
+            raise SpeakerProfileContractError(
+                "max_links must be between "
+                f"{BOOTSTRAP_MAX_LINKS_MIN} and {BOOTSTRAP_MAX_LINKS_MAX}"
             )
 
         pin = self.generations.ensure_default_generation_and_activate(

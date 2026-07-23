@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from transcriptx.core.speaker_profiles.errors import SpeakerProfileContractError
 from transcriptx.core.speaker_profiles.voice.versioning import (
+    BOOTSTRAP_MAX_LINKS_MAX,
+    BOOTSTRAP_MAX_LINKS_MIN,
+    DEFAULT_BOOTSTRAP_MAX_LINKS,
+    OPERATOR_SETTINGS_SCHEMA_ID,
     PRIVACY_SETTINGS_SCHEMA_ID,
     VOICE_DECISION_SCHEMA_ID,
     VOICE_EMBEDDING_SCHEMA_ID,
@@ -63,6 +67,39 @@ class VoicePrivacySettingsV1(BaseModel):
         if self.enabled and self.revoked_at:
             raise SpeakerProfileContractError(
                 "enabled settings cannot carry revoked_at"
+            )
+        return self
+
+
+class VoiceOperatorSettingsV1(BaseModel):
+    """Durable operator knobs for voice enrolment (not consent / activation).
+
+    Survives privacy revoke + evidence wipe. Consent remains solely in
+    ``privacy.voice_settings.json``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal[1] = VOICE_SCHEMA_VERSION
+    schema_id: Literal["voice_operator_settings.v1"] = OPERATOR_SETTINGS_SCHEMA_ID  # type: ignore[assignment]
+    bootstrap_max_links: int = DEFAULT_BOOTSTRAP_MAX_LINKS
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _check_invariants(self) -> VoiceOperatorSettingsV1:
+        if self.schema_id != OPERATOR_SETTINGS_SCHEMA_ID:
+            raise SpeakerProfileContractError(
+                f"schema_id must be {OPERATOR_SETTINGS_SCHEMA_ID!r}"
+            )
+        if not (
+            BOOTSTRAP_MAX_LINKS_MIN
+            <= self.bootstrap_max_links
+            <= BOOTSTRAP_MAX_LINKS_MAX
+        ):
+            raise SpeakerProfileContractError(
+                "bootstrap_max_links must be between "
+                f"{BOOTSTRAP_MAX_LINKS_MIN} and {BOOTSTRAP_MAX_LINKS_MAX}"
             )
         return self
 

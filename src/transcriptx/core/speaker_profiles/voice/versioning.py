@@ -9,6 +9,14 @@ VOICE_SUBTREE = "voice"
 PRIVACY_SETTINGS_SCHEMA_ID = "voice_privacy_settings.v1"
 PRIVACY_SETTINGS_FILENAME = "privacy.voice_settings.json"
 
+OPERATOR_SETTINGS_SCHEMA_ID = "voice_operator_settings.v1"
+OPERATOR_SETTINGS_FILENAME = "operator.voice_settings.json"
+# Bootstrap enrol walks confirmed links in deterministic path order up to this
+# cap (overridable via Settings → Storage). Match-time still caps refs per link.
+DEFAULT_BOOTSTRAP_MAX_LINKS = 40
+BOOTSTRAP_MAX_LINKS_MIN = 1
+BOOTSTRAP_MAX_LINKS_MAX = 200
+
 ACTIVE_GENERATION_SCHEMA_ID = "voice_active_generation.v1"
 ACTIVE_GENERATION_FILENAME = "active_generation.json"
 

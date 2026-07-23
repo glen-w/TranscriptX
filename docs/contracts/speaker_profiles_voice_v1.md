@@ -24,6 +24,11 @@ Related storage: `docs/runtime/STORAGE.md`.
   and UI acceptance stay inaccessible until lifecycle, recovery, deletion,
   privacy, and integrity stages complete (`FEATURE_GATE_COMPLETE`).
 - Explicit bootstrap enrols trusted references; privacy opt-in alone enrols nothing.
+- Confirmed `speaker_profile_link` rows are **not** voice evidence. Matching
+  compares query excerpts only to enrolled samples under `voice/samples/`,
+  `voice/embeddings/`, and `voice/vectors/`. An empty reference corpus is
+  expected to analyse successfully and return **no suggestion**
+  (`NoReliableMatch`) — that is not a model failure.
 - Leave unlinked is session-only — not a durable rejection.
 - Never put raw cosine scores in immutable Phase 1 events.
 
@@ -36,6 +41,7 @@ speaker_profiles_dir/
   profiles/ links/ events/ operations/     # Phase 1; voice files use same journal
   voice/
     privacy.voice_settings.json
+    operator.voice_settings.json           # enrol link cap etc. (not consent)
     active_generation.json
     generations/{model_generation_id}.json
     samples/{sample_id}.voice_sample.json
@@ -60,6 +66,7 @@ or backup (`assert_safe_relpath`). Same symlink / containment rules as Phase 1.
 | Artifact | `schema_id` |
 |----------|-------------|
 | Privacy settings | `voice_privacy_settings.v1` |
+| Operator settings | `voice_operator_settings.v1` |
 | Active generation pointer | `voice_active_generation.v1` |
 | Model generation pin | `voice_model_generation.v1` |
 | Voice sample | `voice_sample.v1` |
@@ -105,7 +112,18 @@ file remains sole authority and is never overridden by the env var.
 
 Explicit bootstrap: Speakers detail → “Enrol trusted voice from confirmed links”
 (`VoiceBootstrapService`). Promote suggestion-assisted samples before they enter
-the reference corpus.
+the reference corpus. Bootstrap walks confirmed links in deterministic path
+order up to `bootstrap_max_links` from `operator.voice_settings.json`
+(Settings → Storage → **Max confirmed links per voice enrol**; default **40**,
+range 1–200). That file is operator config only — not consent — and survives
+privacy revoke / evidence wipe. Match-time still caps refs per source link
+(`MAX_REFS_PER_SOURCE_LINK`).
+
+**Operator expectation:** enabling voice privacy (or the local privacy-default
+env exception) only unlocks analyse/enrol/accept. Until at least one profile
+has eligible enrolled embeddings, Speakers “Find voice match” / analyse will
+not propose a profile — check for `voice/embeddings/*.voice_embedding.json`
+(and matching vectors) before debugging thresholds or SpeechBrain.
 
 ---
 
@@ -114,7 +132,9 @@ the reference corpus.
 `VoiceEvidenceService.enrol_trusted_excerpts_from_link` journals samples,
 embeddings, vectors, and a `voice_evidence_enrolled` event (ids/counts only —
 no raw scores) through the **root** `OperationEngine`. Deterministic
-`sample_id` / `embedding_id` prevent duplicate evidence on retry.
+`sample_id` / `embedding_id` prevent duplicate evidence on retry. Explicit
+bootstrap enrol (`VoiceBootstrapService`) caps confirmed links via
+`bootstrap_max_links` in `operator.voice_settings.json` (default 40).
 
 Trust: `suggestion_assisted` → `ineligible_trust` until journalled promotion.
 Opt-in alone enrols nothing.
@@ -129,6 +149,11 @@ in `voice/thresholds.py` are **provisional** until eval freeze
 (`threshold_policy_id` separate from `model_generation_id`).
 Reference load caps duplicate evidence per source link
 (`MAX_REFS_PER_SOURCE_LINK`).
+
+With **zero** eligible reference embeddings, ranking has no candidates and the
+analyse outcome is `NoReliableMatch` (same as scores below `tau_no_match`).
+Enrol trusted voice from confirmed links first; only then can scores clear
+thresholds and surface `SuggestionAvailable`.
 
 Reject decisions suppress re-suggestion until generation or
 `reference_corpus_digest` changes. Leave-unlinked writes no decision.
