@@ -60,7 +60,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 7 | B10 | **Structured decisions / commitments** — extraction-family deepen (`llm_action_items` v2 meeting extracts) | deepen (**shipped** v2 contract: typed records + sectioned render + group schema 2; residual: broader P2 platform) | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
 | 8 | B7 | **Politeness / formality / power** (lexicon-first) | new (**shipped** as `politeness`; power = lexical directiveness; B12 equity for interactional power) | Speakers & Interaction | M | lexicon path first; ConvoKit optional later |
 | 9 | B14 | **Cross-session concept drift / recurring motifs** | deepen | Language & Meaning (+ Groups) | M | `semantic_similarity_v2` + group finalize |
-| 10 | B13 | **Speaker interaction graphs** (NetworkX artifacts + gallery) | deepen | Speakers & Interaction / Visualisations | M | Phase 3 network mention; B12 primitives help |
+| 10 | B13 | **Speaker interaction graphs** (NetworkX artifacts + gallery) | deepen (**shipped**: GraphML/JSON + upgraded `interactions.network_graph.global`) | Speakers & Interaction / Visualisations | M | Phase 3 network mention; B12 primitives help |
 
 ### Later / lower in the same global list
 
@@ -151,7 +151,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers; B13 graphs |
+| **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers; ~~B13 graphs~~ shipped |
 | **Add** | ~~B7 politeness/formality~~ **shipped** as `politeness` |
 | **Optional revive** | B4 ConvoKit only after desired outputs are specified (§3.2) |
 
@@ -177,7 +177,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 | Prefer | Items |
 |--------|-------|
 | **Deepen** | B20 pooled variant matrix; optional B16 keyphrase charts |
-| **Add** | graph viz for B13 (or nest under Speakers gallery) |
+| **Add** | none required near-term (~~B13 graph viz~~ shipped under Speakers & Interaction / `interactions`) |
 
 ---
 
@@ -195,11 +195,11 @@ flowchart LR
 |------|------|-------|--------|
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
 | **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
-| **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; **B13** remaining | Interaction depth from existing data + light linguistics |
+| **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; ~~B13~~ interaction graphs (+ profile avatars) | Interaction depth from existing data + light linguistics |
 | **3** | Phase 3 product | B5, B10 (extraction deepen), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
 | **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |
 
-**Next product capacity (ranked open):** B13 (with P1 infrastructure in parallel when eng capacity allows).
+**Next product capacity (ranked open):** Wave 3 items (B5 remainder, B14, B18 / P2); P1 infrastructure in parallel when eng capacity allows.
 
 **Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
 
@@ -265,3 +265,4 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Stocktake sequencing | `docs/dev/stocktake_2026-07-17.md` |
 | Competitive inspiration (5 OSS tools vs TX) | [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) |
 | Wave 2 lexicon linguistics (B6/B7) | [`wave2_lexicon_linguistics_2026-07-23.md`](wave2_lexicon_linguistics_2026-07-23.md) |
+| Wave B13 interaction graphs | [`wave_b13_interaction_graphs_2026-07-23.md`](wave_b13_interaction_graphs_2026-07-23.md) |

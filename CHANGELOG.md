@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-07-23
+
+### Added
+
+- B13 speaker interaction graphs: durable `{base}_interaction_graph.json` + `.graphml` under `interactions/data/`, upgraded `interactions.network_graph.global` (seeded layout, equity-aware node sizes), empty-rerun stale artifact removal; design doc `docs/dev/wave_b13_interaction_graphs_2026-07-23.md`.
+- Speaker profile avatars: optional photo on `speaker_profile.v1` (`avatar_relpath` / `avatar_sha256` / `avatar_content_type`), journalled set/clear, merge adopt/target-wins, integrity checks, fixed-size photo-or-initials Speakers chip.
+
 ## [0.7.1] - 2026-07-23
 
 ### Added

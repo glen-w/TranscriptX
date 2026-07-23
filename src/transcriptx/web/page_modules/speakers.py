@@ -43,7 +43,7 @@ from transcriptx.core.utils.speaker import parse_speaker_name
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.services.subject_service import SubjectService
-from transcriptx.web.speaker_accent import speaker_heading_html
+from transcriptx.web.speaker_avatar import speaker_heading_with_avatar_html
 from transcriptx.web.speaker_profile_signals import consume_cache_invalidation_signal
 from transcriptx.web.state import PAGE_KEY, SELECTBOX_PLACEHOLDER_SPEAKER
 
@@ -410,11 +410,18 @@ def _render_profile_detail(
         f"{profile.status} · freshness `{agg.freshness_token[:12]}…` · "
         f"{agg.appearance_count:,} appearances"
     )
+    avatar_bytes = None
+    try:
+        avatar_bytes = _service().read_avatar_bytes(profile.profile_id)
+    except Exception:
+        avatar_bytes = None
     st.markdown(
-        speaker_heading_html(
+        speaker_heading_with_avatar_html(
             profile.display_name,
             meta=meta,
             accent=profile.accent_color,
+            image_bytes=avatar_bytes,
+            content_type=profile.avatar_content_type or "image/webp",
         ),
         unsafe_allow_html=True,
     )
@@ -760,6 +767,62 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
                 ):
                     st.session_state[f"{form_prefix}_color_picker"] = accent
                     st.rerun()
+
+    st.markdown("##### Photo")
+    upload = st.file_uploader(
+        "Upload photo (JPEG/PNG/WebP, max 2 MB)",
+        type=["jpg", "jpeg", "png", "webp"],
+        key=f"{form_prefix}_avatar_upload",
+    )
+    clear_avatar = st.checkbox(
+        "Remove photo",
+        value=False,
+        key=f"{form_prefix}_clear_avatar",
+        help="Clears the stored avatar; chip falls back to initials + accent.",
+    )
+    if st.button(
+        "Save photo changes",
+        key=f"{form_prefix}_avatar_save",
+        disabled=upload is None and not clear_avatar,
+    ):
+        try:
+            sha_avatar = profile_content_sha256(profile.profile_id, root=root)
+            if not sha_avatar:
+                raise RuntimeError("Could not read profile content hash")
+            if clear_avatar:
+                result = _service().clear_avatar(
+                    operation_idempotency_key=_idempotency_key(
+                        f"clear_avatar_{profile.profile_id}",
+                        {"profile_id": profile.profile_id, "sha": sha_avatar},
+                    ),
+                    profile_id=profile.profile_id,
+                    expected_content_sha256=sha_avatar,
+                )
+            else:
+                assert upload is not None
+                result = _service().set_avatar(
+                    operation_idempotency_key=_idempotency_key(
+                        f"set_avatar_{profile.profile_id}",
+                        {
+                            "profile_id": profile.profile_id,
+                            "sha": sha_avatar,
+                            "name": upload.name,
+                            "size": upload.size,
+                        },
+                    ),
+                    profile_id=profile.profile_id,
+                    expected_content_sha256=sha_avatar,
+                    image_bytes=upload.getvalue(),
+                )
+            consume_cache_invalidation_signal(result.cache_signal)
+            _clear_idempotency(f"set_avatar_{profile.profile_id}")
+            _clear_idempotency(f"clear_avatar_{profile.profile_id}")
+            st.success("Photo updated.")
+            st.rerun()
+        except StaleUpdateError as exc:
+            st.error(f"Stale update — refresh and try again. {exc}")
+        except Exception as exc:
+            st.error(str(exc))
 
     sha = profile_content_sha256(profile.profile_id, root=root)
     if not sha:

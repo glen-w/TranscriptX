@@ -29,7 +29,7 @@ from transcriptx.core.utils._path_core import (
     get_canonical_base_name,
     get_transcript_dir,
 )
-from transcriptx.core.utils.artifact_writer import write_text
+from transcriptx.core.utils.artifact_writer import write_text, write_bytes
 from transcriptx.core.utils.output_standards import (
     create_standard_output_structure,
     OutputStructure,
@@ -886,6 +886,48 @@ class OutputService:
 
     def get_artifacts(self) -> List[Dict[str, Any]]:
         return list(self._artifacts)
+
+    def write_artifact_bytes(
+        self,
+        path: Path | str,
+        data: bytes,
+        *,
+        artifact_type: str = "bin",
+        lease: RunWriterLease | None = None,
+    ) -> str:
+        """Atomically write bytes and record the artifact."""
+
+        def _body() -> str:
+            target = Path(path)
+            write_bytes(target, data)
+            self._record_artifact(target, artifact_type)
+            return str(target)
+
+        return self._run_write(_body, lease=lease)
+
+    def remove_artifacts(
+        self,
+        paths: List[Path | str],
+        *,
+        lease: RunWriterLease | None = None,
+    ) -> None:
+        """Best-effort delete of known artifact paths (stale empty-result cleanup)."""
+
+        def _body() -> None:
+            seen: set[str] = set()
+            for raw in paths:
+                path = Path(raw)
+                key = str(path)
+                if key in seen:
+                    continue
+                seen.add(key)
+                try:
+                    if path.is_file() or path.is_symlink():
+                        path.unlink()
+                except OSError:
+                    logger.debug("Failed to remove artifact path %s", path, exc_info=True)
+
+        self._run_write(_body, lease=lease)
 
     def get_output_structure(self) -> OutputStructure:
         """

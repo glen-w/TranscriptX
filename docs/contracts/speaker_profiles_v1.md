@@ -184,6 +184,43 @@ Optional `accent_color` on `speaker_profile.v1`: uppercase `#RRGGBB` or null
 palette colour (then freeform `#RRGGBB` if the palette is exhausted). Update
 supports `clear_accent`. GUI may pick any validated hex via colour wheel.
 
+### Profile avatar (optional photo)
+
+Additive optional fields on the same `speaker_profile.v1` (no schema_id bump):
+
+| Field | Rule |
+|-------|------|
+| `avatar_relpath` | null, or exactly `profiles/assets/{profile_id}/avatar.webp` |
+| `avatar_sha256` | null, or lowercase hex SHA-256 of normalised WebP bytes |
+| `avatar_content_type` | null, or exactly `image/webp` |
+
+All three null **or** all three set — partial sets are contract errors.
+Pre-avatar files omit the keys; readers default to null (no migrate-on-read).
+
+Bytes live under `speaker_profiles_dir/profiles/assets/{profile_id}/avatar.webp`
+(canonical PII media — include in backups of the profiles tree; never `.cache/`).
+`set_avatar` / `clear_avatar` are journalled multi-file ops (asset + profile +
+event). Upload admission: ≤2 MiB; JPEG/PNG/WebP; reject animated; EXIF
+orientation then strip metadata; alpha composited on white; square ≤512 WebP.
+Failed admission/commit is non-destructive. Reads re-verify hash; mismatch /
+missing / corrupt → unavailable (UI initials chip) without breaking Speakers.
+
+**Merge:** target avatar wins when present; otherwise adopt source asset onto
+target path and clear source pointer; always clear source avatar fields on the
+merged source record and delete displaced source asset. Archive/unarchive keep
+assets. There is no hard profile-delete API in Phase 1; orphan assets under
+`profiles/assets/` are reported by integrity (`avatar_orphan`) for manual
+cleanup, not auto-deleted. Integrity also reports `avatar_missing`,
+`avatar_hash_mismatch`, `avatar_corrupt`.
+
+**Privacy:** face photos are sensitive PII. Prefer
+`TRANSCRIPTX_SPEAKER_PROFILES_DIR` outside the git clone. Manual recovery: run
+integrity scan + `recover_operation`; do not hand-edit pointers. Include
+`profiles/assets/` in any backup of `speaker_profiles_dir`.
+
+**UI:** fixed-size circular chip — photo or accent+initials; absence must not
+leave empty image holes.
+
 ### Appearance flag precedence
 
 Single winner: `repair_required` → `missing_source` → `collision` →

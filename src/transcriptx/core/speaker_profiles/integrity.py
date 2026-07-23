@@ -64,6 +64,7 @@ class IntegrityReport:
     blocking_details: tuple[BlockingOperationInfo, ...]
     duplicate_link_keys: tuple[str, ...]
     ok: bool
+    avatar_issues: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -130,12 +131,44 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
     corrupt_events: list[str] = []
     seen_keys: dict[str, str] = {}
     duplicates: list[str] = []
+    avatar_issues: list[str] = []
+    claimed_avatar_paths: set[str] = set()
 
     for path in profiles:
         try:
-            parse_model(SpeakerProfileV1, path)
+            profile = parse_model(SpeakerProfileV1, path)
         except Exception:
             corrupt_profiles.append(str(path))
+            continue
+        if profile.avatar_relpath:
+            claimed_avatar_paths.add(profile.avatar_relpath)
+            asset = root / profile.avatar_relpath
+            if not asset.is_file():
+                avatar_issues.append(f"avatar_missing:{profile.profile_id}")
+            else:
+                try:
+                    from transcriptx.core.speaker_profiles.avatars import (
+                        verify_avatar_bytes,
+                    )
+                    from transcriptx.core.speaker_profiles.path_safety import (
+                        assert_not_symlink,
+                    )
+
+                    assert_not_symlink(asset, what="avatar integrity")
+                    data = asset.read_bytes()
+                    if profile.avatar_sha256 and not verify_avatar_bytes(
+                        data, expected_sha256=profile.avatar_sha256
+                    ):
+                        avatar_issues.append(f"avatar_hash_mismatch:{profile.profile_id}")
+                except Exception:
+                    avatar_issues.append(f"avatar_corrupt:{profile.profile_id}")
+
+    assets_root = profiles_dir(root) / "assets"
+    if assets_root.is_dir():
+        for asset in assets_root.glob("*/avatar.webp"):
+            rel = str(asset.relative_to(root)).replace("\\", "/")
+            if rel not in claimed_avatar_paths:
+                avatar_issues.append(f"avatar_orphan:{rel}")
 
     for path in link_paths:
         try:
@@ -194,6 +227,7 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
         or corrupt_operations
         or duplicates
         or blocking_ids
+        or avatar_issues
     )
     return IntegrityReport(
         profiles_scanned=len(profiles),
@@ -209,6 +243,7 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
         blocking_details=tuple(blocking_details),
         duplicate_link_keys=tuple(sorted(set(duplicates))),
         ok=ok,
+        avatar_issues=tuple(avatar_issues),
     )
 
 

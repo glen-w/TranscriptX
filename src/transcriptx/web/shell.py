@@ -137,6 +137,31 @@ def inject_global_styles() -> None:
         flex-shrink: 0;
         display: inline-block;
     }
+    .tx-speaker-avatar {
+        width: var(--tx-avatar-size, 40px);
+        height: var(--tx-avatar-size, 40px);
+        border-radius: 999px;
+        background: var(--speaker-accent, #5b8def);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        vertical-align: middle;
+        line-height: 1;
+        font-size: calc(var(--tx-avatar-size, 40px) * 0.38);
+        font-weight: 700;
+    }
+    .tx-speaker-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .tx-speaker-avatar-initials {
+        user-select: none;
+    }
     .tx-speaker-expander-swatch {
         display: flex;
         align-items: center;

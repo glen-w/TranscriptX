@@ -13,14 +13,12 @@ from transcriptx.core.analysis.interactions.visualization import (
     create_dominance_analysis,
     create_interaction_heatmap,
     create_interaction_network,
-    create_interaction_network_graph,
     create_speaker_timeline_charts,
 )
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
-    NetworkGraphSpec,
 )
 
 
@@ -137,39 +135,6 @@ def test_create_interaction_network_saves_heatmap() -> None:
 def test_create_interaction_network_skips_empty_matrix() -> None:
     output_service = MagicMock()
     create_interaction_network({"interaction_matrix": {}}, output_service, "sample")
-    output_service.save_chart.assert_not_called()
-
-
-@pytest.mark.unit
-def test_create_interaction_network_graph_saves_network_spec() -> None:
-    output_service = MagicMock()
-    create_interaction_network_graph(_matrix_results(), output_service, "sample")
-
-    output_service.save_chart.assert_called_once()
-    spec = output_service.save_chart.call_args.args[0]
-    assert output_service.save_chart.call_args.kwargs["chart_type"] == "network"
-    assert isinstance(spec, NetworkGraphSpec)
-    assert spec.viz_id == "interactions.network_graph.global"
-    assert {n["id"] for n in spec.nodes} == {"Alice", "Bob"}
-    assert len(spec.edges) == 1
-    edge = spec.edges[0]
-    assert {edge["source"], edge["target"]} == {"Alice", "Bob"}
-    # Combined undirected weight: 3 + 1 = 4
-    assert edge["weight"] == 4
-
-
-@pytest.mark.unit
-def test_create_interaction_network_graph_skips_when_no_edge_weight() -> None:
-    output_service = MagicMock()
-    create_interaction_network_graph(
-        {
-            "interaction_matrix": {
-                "Alice": {"Bob": {"interruptions": 0, "responses": 0}},
-            }
-        },
-        output_service,
-        "sample",
-    )
     output_service.save_chart.assert_not_called()
 
 

@@ -13,8 +13,8 @@ class InteractionEvent:
     """
 
     timestamp: float  # When the interaction occurred
-    speaker_a: str  # Interrupted / prior addressee
-    speaker_b: str  # Interrupter / responder
+    speaker_a: str  # Interrupted / prior addressee (display label)
+    speaker_b: str  # Interrupter / responder (display label)
     interaction_type: (
         str  # Type: 'interruption_overlap', 'interruption_gap', 'response'
     )
@@ -26,3 +26,6 @@ class InteractionEvent:
     speaker_a_end: float  # End time of speaker A's segment
     speaker_b_start: float  # Start time of speaker B's segment
     speaker_b_end: float  # End time of speaker B's segment
+    # Immutable grouping keys (B13 graph node ids). Optional for legacy fixtures.
+    speaker_a_key: str = ""
+    speaker_b_key: str = ""

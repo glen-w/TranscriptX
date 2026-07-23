@@ -11,7 +11,6 @@ from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
     HeatmapMatrixSpec,
     LineTimeSeriesSpec,
-    NetworkGraphSpec,
 )
 
 
@@ -128,95 +127,6 @@ def create_interaction_network(
         z=heatmap,
         x_labels=speakers,
         y_labels=speakers,
-    )
-    output_service.save_chart(spec, chart_type="network")
-
-
-def create_interaction_network_graph(
-    analysis_results: dict[str, Any], output_service: Any, base_name: str
-):
-    """Create a network graph visualization of speaker interactions."""
-    matrix = analysis_results["interaction_matrix"]
-    if not matrix or not output_service:
-        return
-
-    # Get all speakers
-    speakers = sorted(
-        set(matrix.keys()) | {s for targets in matrix.values() for s in targets}
-    )
-    if not speakers:
-        return
-
-    # Calculate node sizes based on total interactions (degree)
-    speaker_degrees = {}
-    for speaker in speakers:
-        total = 0
-        # Count outgoing interactions
-        for target, interactions in matrix.get(speaker, {}).items():
-            total += interactions.get("interruptions", 0) + interactions.get(
-                "responses", 0
-            )
-        # Count incoming interactions
-        for source, targets in matrix.items():
-            if speaker in targets:
-                total += targets[speaker].get("interruptions", 0) + targets[
-                    speaker
-                ].get("responses", 0)
-        speaker_degrees[speaker] = total
-
-    # Create nodes
-    nodes = []
-    for speaker in speakers:
-        degree = speaker_degrees.get(speaker, 0)
-        nodes.append(
-            {
-                "id": speaker,
-                "label": speaker,
-                "size": max(20, min(100, degree * 5 + 20)),  # Scale node size
-            }
-        )
-
-    # Create edges (undirected, combining both directions)
-    edges = []
-    edge_weights = {}  # Track combined weights for undirected edges
-
-    for speaker_a, targets in matrix.items():
-        for speaker_b, interactions in targets.items():
-            # Combine responses and interruptions
-            weight = interactions.get("interruptions", 0) + interactions.get(
-                "responses", 0
-            )
-            if weight > 0:
-                # Use sorted pair as key for undirected edge
-                pair = tuple(sorted([speaker_a, speaker_b]))
-                if pair not in edge_weights:
-                    edge_weights[pair] = 0
-                edge_weights[pair] += weight
-
-    # Create edges from combined weights
-    for (speaker_a, speaker_b), weight in edge_weights.items():
-        if weight > 0:
-            edges.append(
-                {
-                    "source": speaker_a,
-                    "target": speaker_b,
-                    "weight": weight,
-                    "label": f"res:{int(weight)}",
-                }
-            )
-
-    if not edges:
-        return
-
-    spec = NetworkGraphSpec(
-        viz_id="interactions.network_graph.global",
-        module="interactions",
-        name="network_graph",
-        scope="global",
-        chart_intent="network_graph",
-        title=f"Speaker Interaction Network - {base_name}",
-        nodes=nodes,
-        edges=edges,
     )
     output_service.save_chart(spec, chart_type="network")
 

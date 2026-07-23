@@ -40,6 +40,9 @@ class SpeakerProfileV1(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     notes: Optional[str] = None
     accent_color: Optional[str] = None
+    avatar_relpath: Optional[str] = None
+    avatar_sha256: Optional[str] = None
+    avatar_content_type: Optional[str] = None
     status: ProfileStatus = "active"
     merged_into_profile_id: Optional[str] = None
     created_at: str
@@ -61,6 +64,14 @@ class SpeakerProfileV1(BaseModel):
             )
         if not self.display_name.strip():
             raise SpeakerProfileContractError("display_name must be non-empty")
+        from transcriptx.core.speaker_profiles.avatars import validate_avatar_field_set
+
+        validate_avatar_field_set(
+            avatar_relpath=self.avatar_relpath,
+            avatar_sha256=self.avatar_sha256,
+            avatar_content_type=self.avatar_content_type,
+            profile_id=self.profile_id,
+        )
         return self
 
 

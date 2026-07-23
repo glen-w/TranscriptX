@@ -12,6 +12,7 @@ from transcriptx.core.analysis.interactions.serialize import (
     serialize_equity,
     serialize_interactions_summary,
 )
+from transcriptx.core.analysis.interactions.graph_export import commit_interaction_graph
 from transcriptx.core.analysis.interactions.visualization import (
     create_combined_timeline,
     create_dominance_analysis,
@@ -19,7 +20,6 @@ from transcriptx.core.analysis.interactions.visualization import (
     create_equity_summary_chart,
     create_interaction_heatmap,
     create_interaction_network,
-    create_interaction_network_graph,
     create_speaker_timeline_charts,
 )
 from transcriptx.core.utils.segment_duration import compute_eligible_speaker_durations
@@ -121,6 +121,9 @@ def analyze_interactions(
             interactions=interactions,
         )
     )
+    analysis_results["speaker_key_map"] = dict(
+        getattr(duration_result, "speaker_key_map", {}) or {}
+    )
     analysis_results["semantics_version"] = analysis_results.get(
         "semantics_version", INTERACTIONS_SEMANTICS_VERSION
     )
@@ -138,11 +141,17 @@ def analyze_interactions(
     # Save interaction matrix data
     save_interaction_matrix_data(analysis_results, output_structure, base_name)
 
+    # B13 graph artifacts (clears stale files when empty)
+    commit_interaction_graph(
+        interactions=list(interactions),
+        analysis_results=analysis_results,
+        output_service=output_service,
+    )
+
     # Generate visualizations if interactions were detected
     if interactions:
         create_combined_timeline(interactions, None, output_service, base_name)
         create_interaction_network(analysis_results, output_service, base_name)
-        create_interaction_network_graph(analysis_results, output_service, base_name)
         create_interaction_heatmap(analysis_results, output_service, base_name)
         create_dominance_analysis(analysis_results, output_service, base_name)
         create_speaker_timeline_charts(interactions, None, output_service, base_name)

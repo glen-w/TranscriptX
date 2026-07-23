@@ -54,8 +54,8 @@ Implications:
   - A file at `transcripts_dir/*.json` alone is not library-valid; library admission requires a managed artifact set (canonical JSON + valid import sidecar, with archived original path linkage).
   - Naming leaves room for future subtypes (`diarised/`, `normalized/`, `export/`).
 - **data_dir**: App-owned, persistent but partially reconstructable, not user-authored.  
-  - `groups/` and `speaker_profiles/` are durable local project state (not safe to auto-delete). Speaker profile `.cache/` is disposable; profiles/links/events/operations are canonical (see `docs/contracts/speaker_profiles_v1.md`).
-  - **Speaker profiles contain real display names (PII).** Do not commit them. The in-repo default `data/speaker_profiles/` is gitignored. For real use, point `TRANSCRIPTX_SPEAKER_PROFILES_DIR` (or `TRANSCRIPTX_DATA_DIR`) at a directory **outside the git clone**, the same way `TRANSCRIPTX_TRANSCRIPTS_DIR` / `TRANSCRIPTX_OUTPUT_DIR` keep metadata and outputs mountable off the repo root.
+  - `groups/` and `speaker_profiles/` are durable local project state (not safe to auto-delete). Speaker profile `.cache/` is disposable; profiles/links/events/operations **and** `profiles/assets/` (optional avatar WebP photos — face PII) are canonical (see `docs/contracts/speaker_profiles_v1.md`).
+  - **Speaker profiles contain real display names (PII) and may contain avatar photos.** Do not commit them. The in-repo default `data/speaker_profiles/` is gitignored. For real use, point `TRANSCRIPTX_SPEAKER_PROFILES_DIR` (or `TRANSCRIPTX_DATA_DIR`) at a directory **outside the git clone**, the same way `TRANSCRIPTX_TRANSCRIPTS_DIR` / `TRANSCRIPTX_OUTPUT_DIR` keep metadata and outputs mountable off the repo root.
   - Other subtrees (outputs, preprocessing, cache) remain reconstructable by re-running.
 - **config_dir**: User/app config, persistent, not safe to auto-delete.  
   - `profiles/` lives under config_dir (user-editable config presets).
@@ -101,6 +101,7 @@ data_dir/                       # app-managed working state
   groups/                       # group definition manifests (*.group.json); local user data — not tracked
   speaker_profiles/             # longitudinal speaker profiles, links, events, ops (canonical PII); override with TRANSCRIPTX_SPEAKER_PROFILES_DIR; see docs/contracts/speaker_profiles_v1.md
     profiles/                   # *.speaker_profile.json
+      assets/{profile_id}/      # optional avatar.webp (face PII; include in backups)
     links/                      # *.speaker_link.json
     events/                     # *.speaker_event.json (filename stem = event idempotency id)
     operations/                 # *.op.json + staging/backup while active

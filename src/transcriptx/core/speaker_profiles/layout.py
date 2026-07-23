@@ -63,6 +63,12 @@ def profile_path(profile_id: str, *, root: Path | None = None) -> Path:
     return assert_operation_path_under_root(path, base, what="profile path")
 
 
+def avatar_path(profile_id: str, *, root: Path | None = None) -> Path:
+    base = root or speaker_profiles_dir()
+    path = profiles_dir(base) / "assets" / profile_id / "avatar.webp"
+    return assert_operation_path_under_root(path, base, what="avatar path")
+
+
 def link_path(link_file_key: str, *, root: Path | None = None) -> Path:
     base = root or speaker_profiles_dir()
     path = links_dir(base) / f"{link_file_key}{LINK_FILE_SUFFIX}"

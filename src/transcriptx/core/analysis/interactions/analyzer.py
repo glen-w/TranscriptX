@@ -110,6 +110,8 @@ class SpeakerInteractionAnalyzer:
             if current_info.grouping_key == next_info.grouping_key:
                 continue
 
+            current_key = str(current_info.grouping_key)
+            next_key = str(next_info.grouping_key)
             current_speaker = get_speaker_display_name(
                 current_info.grouping_key, [current_seg], sorted_segments
             )
@@ -148,6 +150,8 @@ class SpeakerInteractionAnalyzer:
                         speaker_a_end=current_end,
                         speaker_b_start=next_start,
                         speaker_b_end=next_end,
+                        speaker_a_key=current_key,
+                        speaker_b_key=next_key,
                     )
                 )
             elif self.include_overlaps and gap > 0 and gap <= self.overlap_threshold:
@@ -166,6 +170,8 @@ class SpeakerInteractionAnalyzer:
                         speaker_a_end=current_end,
                         speaker_b_start=next_start,
                         speaker_b_end=next_end,
+                        speaker_a_key=current_key,
+                        speaker_b_key=next_key,
                     )
                 )
 
@@ -185,6 +191,8 @@ class SpeakerInteractionAnalyzer:
                         speaker_a_end=current_end,
                         speaker_b_start=next_start,
                         speaker_b_end=next_end,
+                        speaker_a_key=current_key,
+                        speaker_b_key=next_key,
                     )
                 )
 

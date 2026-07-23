@@ -23,6 +23,7 @@ from transcriptx.core.speaker_profiles.errors import (
 from transcriptx.core.speaker_profiles.hashing import sha256_file
 from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.layout import (
+    avatar_path,
     link_path,
     profiles_dir,
     speaker_profiles_dir,
@@ -42,6 +43,7 @@ from transcriptx.core.speaker_profiles.operations import (
     OperationOutcome,
     PlannedDelete,
     PlannedWrite,
+    relative_avatar_path,
     relative_event_path,
     relative_link_path,
     relative_profile_path,
@@ -821,6 +823,241 @@ class SpeakerProfileService:
                 ),
             )
 
+    def set_avatar(
+        self,
+        *,
+        operation_idempotency_key: str,
+        profile_id: str,
+        expected_content_sha256: str,
+        image_bytes: bytes,
+        actor: str = "user",
+    ) -> MutationResult:
+        """Journalled avatar upload/replace. Non-destructive on admission failure."""
+        from transcriptx.core.speaker_profiles.avatars import (
+            normalize_avatar_image,
+            set_avatar_fields,
+        )
+        from transcriptx.core.speaker_profiles.path_safety import assert_not_symlink
+
+        # Admission before lock so decode failures never touch the store.
+        webp, digest = normalize_avatar_image(image_bytes)
+
+        ensure_layout(self.root)
+        with self._project_lock():
+            replay = self.engine.find_complete(operation_idempotency_key)
+            if replay is not None:
+                return self._result_from_receipt(replay)
+
+            self._assert_entities_readable(profile_ids=(profile_id,))
+            current = read_profile(profile_id, root=self.root)
+            if current is None:
+                raise SpeakerProfileContractError(f"profile not found: {profile_id}")
+            if current.status == "merged":
+                raise SpeakerProfileContractError("cannot set avatar on merged profile")
+            actual = profile_content_sha256(profile_id, root=self.root)
+            if actual != expected_content_sha256:
+                raise StaleUpdateError(
+                    f"profile {profile_id} stale: expected {expected_content_sha256}, "
+                    f"found {actual}"
+                )
+
+            asset = avatar_path(profile_id, root=self.root)
+            if asset.exists():
+                assert_not_symlink(asset, what="avatar path")
+            from transcriptx.core.speaker_profiles.hashing import sha256_bytes
+
+            # Verify hash of normalised bytes before pointer commit
+            if digest != sha256_bytes(webp):
+                raise SpeakerProfileContractError("avatar hash mismatch before commit")
+
+            now = utc_now_iso()
+            updated = set_avatar_fields(current, sha256=digest).model_copy(
+                update={"updated_at": now}
+            )
+            event_id = str(uuid4())
+            event = SpeakerProfileEventV1(
+                event_id=event_id,
+                idempotency_id=event_id,
+                operation_idempotency_key=operation_idempotency_key,
+                event_type="profile_avatar_set",
+                created_at=now,
+                actor=actor,
+                payload={
+                    "profile_id": profile_id,
+                    "avatar_sha256": digest,
+                    "avatar_relpath": relative_avatar_path(profile_id),
+                },
+            )
+            before_asset = sha256_file(asset) if asset.is_file() else None
+            outcome = self.engine.run(
+                op_type="set_avatar",
+                operation_idempotency_key=operation_idempotency_key,
+                writes=[
+                    PlannedWrite(
+                        relpath=relative_avatar_path(profile_id),
+                        data=webp,
+                        expected_before_sha256=before_asset,
+                    ),
+                    PlannedWrite(
+                        relpath=relative_profile_path(profile_id),
+                        data=dumps_model(updated),
+                        expected_before_sha256=expected_content_sha256,
+                    ),
+                    PlannedWrite(
+                        relpath=relative_event_path(event_id),
+                        data=dumps_model(event),
+                    ),
+                ],
+                deletes=[],
+                receipt_extra={
+                    "profile_id": profile_id,
+                    "event_ids": [event_id],
+                    "profile_ids": [profile_id],
+                    "link_ids": [],
+                    "managed_transcript_ids": [],
+                    "scopes": ["speaker_profiles"],
+                },
+            )
+            return MutationResult(
+                outcome=outcome,
+                profile_id=profile_id,
+                event_ids=(event_id,),
+                cache_signal=CacheInvalidationSignal(
+                    scopes=("speaker_profiles",),
+                    profile_ids=(profile_id,),
+                ),
+            )
+
+    def clear_avatar(
+        self,
+        *,
+        operation_idempotency_key: str,
+        profile_id: str,
+        expected_content_sha256: str,
+        actor: str = "user",
+    ) -> MutationResult:
+        from transcriptx.core.speaker_profiles.avatars import clear_avatar_fields
+        from transcriptx.core.speaker_profiles.path_safety import assert_not_symlink
+
+        ensure_layout(self.root)
+        with self._project_lock():
+            replay = self.engine.find_complete(operation_idempotency_key)
+            if replay is not None:
+                return self._result_from_receipt(replay)
+
+            self._assert_entities_readable(profile_ids=(profile_id,))
+            current = read_profile(profile_id, root=self.root)
+            if current is None:
+                raise SpeakerProfileContractError(f"profile not found: {profile_id}")
+            actual = profile_content_sha256(profile_id, root=self.root)
+            if actual != expected_content_sha256:
+                raise StaleUpdateError(
+                    f"profile {profile_id} stale: expected {expected_content_sha256}, "
+                    f"found {actual}"
+                )
+
+            asset = avatar_path(profile_id, root=self.root)
+            has_asset = asset.is_file()
+            if has_asset:
+                assert_not_symlink(asset, what="avatar path")
+            already_clear = (
+                current.avatar_relpath is None
+                and current.avatar_sha256 is None
+                and current.avatar_content_type is None
+                and not has_asset
+            )
+            if already_clear:
+                # Idempotent no-op via empty complete receipt pattern: still journal
+                # a no-op event so retries replay cleanly.
+                pass
+
+            now = utc_now_iso()
+            updated = clear_avatar_fields(current).model_copy(update={"updated_at": now})
+            event_id = str(uuid4())
+            event = SpeakerProfileEventV1(
+                event_id=event_id,
+                idempotency_id=event_id,
+                operation_idempotency_key=operation_idempotency_key,
+                event_type="profile_avatar_cleared",
+                created_at=now,
+                actor=actor,
+                payload={"profile_id": profile_id},
+            )
+            writes: list[PlannedWrite] = [
+                PlannedWrite(
+                    relpath=relative_profile_path(profile_id),
+                    data=dumps_model(updated),
+                    expected_before_sha256=expected_content_sha256,
+                ),
+                PlannedWrite(
+                    relpath=relative_event_path(event_id),
+                    data=dumps_model(event),
+                ),
+            ]
+            deletes: list[PlannedDelete] = []
+            if has_asset:
+                deletes.append(
+                    PlannedDelete(
+                        relpath=relative_avatar_path(profile_id),
+                        expected_before_sha256=sha256_file(asset),
+                    )
+                )
+            outcome = self.engine.run(
+                op_type="clear_avatar",
+                operation_idempotency_key=operation_idempotency_key,
+                writes=writes,
+                deletes=deletes,
+                receipt_extra={
+                    "profile_id": profile_id,
+                    "event_ids": [event_id],
+                    "profile_ids": [profile_id],
+                    "link_ids": [],
+                    "managed_transcript_ids": [],
+                    "scopes": ["speaker_profiles"],
+                },
+            )
+            return MutationResult(
+                outcome=outcome,
+                profile_id=profile_id,
+                event_ids=(event_id,),
+                cache_signal=CacheInvalidationSignal(
+                    scopes=("speaker_profiles",),
+                    profile_ids=(profile_id,),
+                ),
+            )
+
+    def read_avatar_bytes(self, profile_id: str) -> bytes | None:
+        """Return verified avatar bytes, or None if unavailable (never raises for missing)."""
+        from transcriptx.core.speaker_profiles.avatars import verify_avatar_bytes
+        from transcriptx.core.speaker_profiles.path_safety import (
+            assert_not_symlink,
+            assert_operation_path_under_root,
+        )
+
+        with self._project_lock():
+            profile = read_profile(profile_id, root=self.root)
+            if profile is None:
+                return None
+            if (
+                profile.avatar_relpath is None
+                or profile.avatar_sha256 is None
+                or profile.avatar_content_type is None
+            ):
+                return None
+            path = self.root / profile.avatar_relpath
+            try:
+                assert_operation_path_under_root(path, self.root, what="avatar read")
+                if path.exists():
+                    assert_not_symlink(path, what="avatar read")
+                if not path.is_file():
+                    return None
+                data = path.read_bytes()
+            except Exception:
+                return None
+            if not verify_avatar_bytes(data, expected_sha256=profile.avatar_sha256):
+                return None
+            return data
+
     def archive_profile(
         self,
         *,
@@ -1034,13 +1271,93 @@ class SpeakerProfileService:
 
             now = utc_now_iso()
             event_id = str(uuid4())
-            merged = source.model_copy(
-                update={
-                    "status": "merged",
-                    "merged_into_profile_id": target_profile_id,
-                    "updated_at": now,
-                }
+            from transcriptx.core.speaker_profiles.avatars import (
+                set_avatar_fields,
             )
+            from transcriptx.core.speaker_profiles.path_safety import assert_not_symlink
+
+            source_has = bool(source.avatar_sha256 and source.avatar_relpath)
+            target_has = bool(target.avatar_sha256 and target.avatar_relpath)
+            source_asset = avatar_path(source_profile_id, root=self.root)
+            target_asset = avatar_path(target_profile_id, root=self.root)
+
+            merged_updates: dict[str, Any] = {
+                "status": "merged",
+                "merged_into_profile_id": target_profile_id,
+                "updated_at": now,
+                "avatar_relpath": None,
+                "avatar_sha256": None,
+                "avatar_content_type": None,
+            }
+            merged = source.model_copy(update=merged_updates)
+
+            writes: list[PlannedWrite] = []
+            deletes: list[PlannedDelete] = []
+
+            # Target wins if it has an avatar; else adopt source bytes onto target.
+            if source_has and not target_has:
+                if not source_asset.is_file():
+                    raise SpeakerProfileContractError(
+                        "source avatar pointer set but asset missing"
+                    )
+                assert_not_symlink(source_asset, what="source avatar")
+                webp = source_asset.read_bytes()
+                if webp and source.avatar_sha256:
+                    from transcriptx.core.speaker_profiles.avatars import (
+                        verify_avatar_bytes,
+                    )
+
+                    if not verify_avatar_bytes(
+                        webp, expected_sha256=source.avatar_sha256
+                    ):
+                        raise SpeakerProfileContractError(
+                            "source avatar hash mismatch; refuse merge adopt"
+                        )
+                target_before = profile_content_sha256(target_profile_id, root=self.root)
+                adopted = set_avatar_fields(target, sha256=source.avatar_sha256 or "").model_copy(
+                    update={"updated_at": now}
+                )
+                writes.append(
+                    PlannedWrite(
+                        relpath=relative_avatar_path(target_profile_id),
+                        data=webp,
+                        expected_before_sha256=(
+                            sha256_file(target_asset) if target_asset.is_file() else None
+                        ),
+                    )
+                )
+                writes.append(
+                    PlannedWrite(
+                        relpath=relative_profile_path(target_profile_id),
+                        data=dumps_model(adopted),
+                        expected_before_sha256=target_before,
+                    )
+                )
+                deletes.append(
+                    PlannedDelete(
+                        relpath=relative_avatar_path(source_profile_id),
+                        expected_before_sha256=sha256_file(source_asset),
+                    )
+                )
+            elif source_has and target_has:
+                if source_asset.is_file():
+                    assert_not_symlink(source_asset, what="source avatar")
+                    deletes.append(
+                        PlannedDelete(
+                            relpath=relative_avatar_path(source_profile_id),
+                            expected_before_sha256=sha256_file(source_asset),
+                        )
+                    )
+            elif (not source_has) and source_asset.is_file():
+                # Orphan source asset: delete to prevent orphan after merge
+                assert_not_symlink(source_asset, what="source avatar orphan")
+                deletes.append(
+                    PlannedDelete(
+                        relpath=relative_avatar_path(source_profile_id),
+                        expected_before_sha256=sha256_file(source_asset),
+                    )
+                )
+
             event = SpeakerProfileEventV1(
                 event_id=event_id,
                 idempotency_id=event_id,
@@ -1052,19 +1369,28 @@ class SpeakerProfileService:
                     "source_profile_id": source_profile_id,
                     "target_profile_id": target_profile_id,
                     "retargeted_link_ids": [lnk.link_id for lnk in links],
+                    "avatar_policy": (
+                        "adopt_source"
+                        if source_has and not target_has
+                        else "target_wins"
+                        if target_has
+                        else "none"
+                    ),
                 },
             )
-            writes: list[PlannedWrite] = [
-                PlannedWrite(
-                    relpath=relative_profile_path(source_profile_id),
-                    data=dumps_model(merged),
-                    expected_before_sha256=expected_source_sha256,
-                ),
-                PlannedWrite(
-                    relpath=relative_event_path(event_id),
-                    data=dumps_model(event),
-                ),
-            ]
+            writes.extend(
+                [
+                    PlannedWrite(
+                        relpath=relative_profile_path(source_profile_id),
+                        data=dumps_model(merged),
+                        expected_before_sha256=expected_source_sha256,
+                    ),
+                    PlannedWrite(
+                        relpath=relative_event_path(event_id),
+                        data=dumps_model(event),
+                    ),
+                ]
+            )
             for lnk, key in zip(links, link_keys, strict=True):
                 updated_link = lnk.model_copy(
                     update={"profile_id": target_profile_id, "updated_at": now}
@@ -1086,7 +1412,7 @@ class SpeakerProfileService:
                 op_type="merge_profiles",
                 operation_idempotency_key=operation_idempotency_key,
                 writes=writes,
-                deletes=[],
+                deletes=deletes,
                 receipt_extra={
                     "profile_id": source_profile_id,
                     "target_profile_id": target_profile_id,

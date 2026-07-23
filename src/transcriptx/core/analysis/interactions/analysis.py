@@ -15,6 +15,7 @@ from transcriptx.core.analysis.interactions.serialize import (
     serialize_equity,
     serialize_interactions_summary,
 )
+from transcriptx.core.analysis.interactions.graph_export import commit_interaction_graph
 from transcriptx.core.analysis.interactions.visualization import (
     create_combined_timeline,
     create_dominance_analysis,
@@ -22,7 +23,6 @@ from transcriptx.core.analysis.interactions.visualization import (
     create_equity_summary_chart,
     create_interaction_heatmap,
     create_interaction_network,
-    create_interaction_network_graph,
     create_speaker_timeline_charts,
 )
 from transcriptx.core.utils.segment_duration import compute_eligible_speaker_durations
@@ -77,6 +77,9 @@ class InteractionsAnalysis(AnalysisModule):
             interactions=interactions,
         )
         analysis_results["equity"] = serialize_equity(equity)
+        analysis_results["speaker_key_map"] = dict(
+            getattr(duration_result, "speaker_key_map", {}) or {}
+        )
         analysis_results["semantics_version"] = analysis_results.get(
             "semantics_version", INTERACTIONS_SEMANTICS_VERSION
         )
@@ -132,6 +135,17 @@ class InteractionsAnalysis(AnalysisModule):
 
         output_structure.global_charts_dir.mkdir(parents=True, exist_ok=True)
 
+        # B13 graph artifacts: always run so empty reruns clear stale files
+        events_for_graph = [
+            InteractionEvent(**event) if isinstance(event, dict) else event
+            for event in interactions
+        ]
+        commit_interaction_graph(
+            interactions=events_for_graph,
+            analysis_results=results,
+            output_service=output_service,
+        )
+
         if interactions:
             self._create_interaction_network(results, output_service, base_name)
             self._create_interaction_charts(results, output_service, base_name)
@@ -150,9 +164,8 @@ class InteractionsAnalysis(AnalysisModule):
         output_service: "OutputService",
         base_name: str,
     ) -> None:
-        """Create interaction network visualization."""
+        """Create interaction network heatmap (graph chart is via commit_interaction_graph)."""
         create_interaction_network(analysis_results, output_service, base_name)
-        create_interaction_network_graph(analysis_results, output_service, base_name)
 
     def _create_interaction_charts(
         self,

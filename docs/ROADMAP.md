@@ -175,7 +175,7 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 - **Longitudinal speaker tracking v1 and v2** — **v1 identity store + Speakers UI charts (Phase 1.5) shipped**. Richer cross-session / DB-backed analytics views remain planned.
 - Emotion family deepen (Phase 5 calibration for `contextual_emotion` / `fine_grained_emotion`; tension metrics; divergence summaries) — not “converge into one emotion module”
 - NER-driven insight (entity–sentiment, concordance, timelines)
-- Interaction and network analysis (graphs, network outputs); turn-taking **equity pack already shipped** on `interactions`
+- Interaction and network analysis — **B13 shipped** on `interactions` (GraphML/JSON + `interactions.network_graph.global`); turn-taking **equity pack already shipped**
 - **Ask-this-transcript (viewer chat)** — optional Streamlit panel; prefer stuffed-context / lexical-retrieve-then-LLM + jump-to-segment citations over a full RAG + streaming ReAct workspace (see competitive note W1). **Shipped lighter path:** analysis-time `llm_custom_qa` (Settings library + Run/Batch picker → Insights citation cards).
 - Adapters and plugins (design only; no marketplace)
 - Architecture cleanup and module contract docs
@@ -208,7 +208,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.7.x — current packaging line (**0.7.1**); Wave 0 eng criteria closed; Top-3 eng programs Done; Wave 1/2 product items partial (B1/B3/B12/**B9**/B6/B7 shipped; Speakers Phase 1.5 shipped); public tags still via release governance evidence
+- **M3:** 0.7.x — current packaging line (**0.7.2**); Wave 0 eng criteria closed; Top-3 eng programs Done; Wave 1/2 product items shipped through B13 (+ Speakers Phase 1.5 / avatars); public tags still via release governance evidence
 
 ---
 

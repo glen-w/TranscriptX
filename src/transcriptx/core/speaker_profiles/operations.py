@@ -312,3 +312,7 @@ def relative_link_path(link_file_key: str) -> str:
 
 def relative_event_path(idempotency_id: str) -> str:
     return f"events/{idempotency_id}.speaker_event.json"
+
+
+def relative_avatar_path(profile_id: str) -> str:
+    return f"profiles/assets/{profile_id}/avatar.webp"

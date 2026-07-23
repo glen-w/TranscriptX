@@ -167,7 +167,7 @@ def test_analyze_interactions_generates_visualizations_when_events_exist(
         _mark("network"),
     )
     monkeypatch.setattr(
-        "transcriptx.core.analysis.interactions.output.create_interaction_network_graph",
+        "transcriptx.core.analysis.interactions.output.commit_interaction_graph",
         _mark("network_graph"),
     )
     monkeypatch.setattr(
@@ -219,7 +219,7 @@ def test_interactions_analysis_module_save_results_includes_timelines(
         _mark("network"),
     )
     monkeypatch.setattr(
-        "transcriptx.core.analysis.interactions.analysis.create_interaction_network_graph",
+        "transcriptx.core.analysis.interactions.analysis.commit_interaction_graph",
         _mark("network_graph"),
     )
     monkeypatch.setattr(
