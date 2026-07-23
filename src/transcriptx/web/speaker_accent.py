@@ -92,6 +92,33 @@ def speaker_inline_html(name: object, *, accent: str | None = None) -> str:
     )
 
 
+def speaker_meta_line_html(
+    name: object,
+    *,
+    timestamp: str | None = None,
+    marker_html: str = "",
+    accent: str | None = None,
+) -> str:
+    """Compact ``Name · timestamp`` line for transcript Turns/Segments."""
+    label = str(name or "Unknown").strip() or "Unknown"
+    color = accent or speaker_accent_color(label)
+    name_html = (
+        f'<span class="tx-speaker-name" style="--speaker-accent: {color}">'
+        f"{html.escape(label)}</span>"
+    )
+    line = f"{name_html}{marker_html}"
+    if timestamp:
+        line = (
+            f"{line} · "
+            f'<span class="tx-speaker-time">{html.escape(timestamp)}</span>'
+        )
+    return (
+        f'<div class="tx-turn-header" style="--speaker-accent: {color}">'
+        f"{line}"
+        f"</div>"
+    )
+
+
 @contextmanager
 def speaker_expander(
     name: object,

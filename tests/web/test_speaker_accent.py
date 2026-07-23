@@ -49,3 +49,16 @@ def test_speaker_chip_and_inline_html() -> None:
     assert "Carol" in inline
     assert speaker_inline_html("") == ""
     assert speaker_inline_html("   ") == ""
+
+
+@pytest.mark.unit
+def test_speaker_meta_line_html_compact() -> None:
+    from transcriptx.web.speaker_accent import speaker_meta_line_html
+
+    line = speaker_meta_line_html("Ana", timestamp="52.2s - 59.0s")
+    assert 'class="tx-turn-header"' in line
+    assert 'class="tx-speaker-name"' in line
+    assert "Ana" in line
+    assert "52.2s - 59.0s" in line
+    assert "⏱️" not in line
+    assert "tx-speaker-chip" not in line

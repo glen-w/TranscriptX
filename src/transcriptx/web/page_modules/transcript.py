@@ -323,6 +323,15 @@ def _setup_playback_availability(
         )
 
 
+def _seed_transcript_tab_widget(key: str, current: str, labels: list[str]) -> None:
+    """Initialize or repair a keyed tab widget without pairing default=/index=."""
+    # Streamlit warns if a widget key is written via Session State *and* default=
+    # (or index=) is passed on the same instantiation. Chapter Jump/Play writes
+    # these keys before the widget exists, so seed here and omit defaults.
+    if key not in st.session_state or st.session_state.get(key) not in labels:
+        st.session_state[key] = current
+
+
 def _render_transcript_tab_nav(*, has_chapters: bool) -> str:
     """Programmable section nav (Insights-style) so Jump/Play can select Segments."""
     from transcriptx.web.transcript_viewer.chapters import (
@@ -334,30 +343,27 @@ def _render_transcript_tab_nav(*, has_chapters: bool) -> str:
     if has_chapters:
         options.append(("chapters", "Chapters"))
     labels = [label for _, label in options]
-    keys = [key for key, _ in options]
     current = st.session_state.get(TRANSCRIPT_TAB_KEY, "turns")
-    if current not in keys:
+    if current not in {key for key, _ in options}:
         current = "turns"
         st.session_state[TRANSCRIPT_TAB_KEY] = current
     default_label = dict(options)[current]
-    # Keep widget key aligned when Jump/Play sets the control programmatically.
-    if st.session_state.get(TRANSCRIPT_TAB_CONTROL_KEY) not in labels:
-        st.session_state[TRANSCRIPT_TAB_CONTROL_KEY] = default_label
+    _seed_transcript_tab_widget(TRANSCRIPT_TAB_CONTROL_KEY, default_label, labels)
     try:
         choice = st.segmented_control(
             "Transcript view",
             options=labels,
-            default=default_label,
             key=TRANSCRIPT_TAB_CONTROL_KEY,
             label_visibility="collapsed",
         )
     except Exception:
+        radio_key = "transcript_viewer_tab_radio"
+        _seed_transcript_tab_widget(radio_key, default_label, labels)
         choice = st.radio(
             "Transcript view",
             labels,
-            index=keys.index(current),
             horizontal=True,
-            key="transcript_viewer_tab_radio",
+            key=radio_key,
             label_visibility="collapsed",
         )
     selected_key = next(k for k, lab in options if lab == choice)
@@ -459,12 +465,15 @@ def _transcript_interaction_fragment(
 ) -> None:
     """Transcript search and segment tabs without full-app rerun."""
     from transcriptx.web.transcript_viewer.chapters import (
+        apply_deferred_chapter_jump,
         clear_chapter_jump,
         consume_chapter_pending,
         load_chapter_rows,
         sticky_chapter_jump,
     )
 
+    # Jump/Play deferred widget writes must land before search/tab instantiate.
+    apply_deferred_chapter_jump(st.session_state)
     controls = _render_transcript_controls()
     pending = consume_chapter_pending(st.session_state)
     sticky = sticky_chapter_jump(st.session_state)

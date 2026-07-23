@@ -18,6 +18,10 @@ CHAPTER_PENDING_KEY = "transcript_viewer_chapter_pending"
 CHAPTER_JUMP_KEY = "transcript_viewer_chapter_jump"
 TRANSCRIPT_TAB_KEY = "transcript_viewer_tab"
 TRANSCRIPT_TAB_CONTROL_KEY = "transcript_viewer_tab_control"
+# One-shot: Jump/Play runs after tab/search widgets exist, so widget keys
+# must be written on the next fragment run (see apply_deferred_chapter_jump).
+TRANSCRIPT_FORCE_SEGMENTS_KEY = "transcript_viewer_force_segments_tab"
+TRANSCRIPT_SEARCH_KEY = "transcript_search"
 
 _TAB_LABELS = {
     "turns": "Turns",
@@ -201,18 +205,30 @@ def queue_chapter_jump(
     source_index: int,
     play: bool = True,
 ) -> None:
-    """Queue chapter navigation: switch to Segments, filter, optional play."""
+    """Queue chapter navigation: switch to Segments, filter, optional play.
+
+    Logical keys are written immediately. Keyed widgets (tab control, search)
+    are already instantiated when Jump/Play fires, so their writes are deferred
+    via ``TRANSCRIPT_FORCE_SEGMENTS_KEY`` until ``apply_deferred_chapter_jump``.
+    """
     idx = int(source_index)
     session_state[CHAPTER_PENDING_KEY] = {
         "jump_index": idx,
         "play": bool(play),
     }
     session_state[CHAPTER_JUMP_KEY] = idx
-    # Programmatic tab switch (widget key must match label option).
+    session_state[TRANSCRIPT_TAB_KEY] = "segments"
+    session_state[TRANSCRIPT_FORCE_SEGMENTS_KEY] = True
+
+
+def apply_deferred_chapter_jump(session_state: dict[str, Any]) -> None:
+    """Apply deferred tab/search widget writes before those widgets instantiate."""
+    if not session_state.pop(TRANSCRIPT_FORCE_SEGMENTS_KEY, None):
+        return
     session_state[TRANSCRIPT_TAB_KEY] = "segments"
     session_state[TRANSCRIPT_TAB_CONTROL_KEY] = _TAB_LABELS["segments"]
     # Search wins over jump in filtered_display_segments — clear it.
-    session_state["transcript_search"] = ""
+    session_state[TRANSCRIPT_SEARCH_KEY] = ""
 
 
 def consume_chapter_pending(

@@ -592,10 +592,45 @@ def inject_global_styles() -> None:
         width: 0.5rem;
         height: 0.5rem;
     }
+    /* Compact Turns / Segments rows */
+    .tx-turn {
+        margin: 0 0 0.55rem 0;
+        padding: 0 0 0.45rem 0;
+        border-bottom: 1px solid rgba(120, 130, 145, 0.22);
+    }
+    .tx-turn-header {
+        margin: 0 0 0.15rem 0;
+        line-height: 1.25;
+        font-size: 0.92rem;
+    }
+    .tx-speaker-name {
+        color: var(--speaker-accent, #5b8def);
+        font-weight: 650;
+    }
+    .tx-speaker-time {
+        color: rgba(180, 190, 205, 0.92);
+        font-weight: 450;
+    }
+    .tx-turn-body {
+        margin: 0;
+        padding: 0;
+        line-height: 1.45;
+        white-space: pre-wrap;
+    }
+    .tx-turn--jump {
+        border-left: 3px solid rgba(31, 119, 180, 0.55);
+        padding-left: 0.55rem;
+        background: rgba(31, 119, 180, 0.06);
+        border-radius: 0 0.35rem 0.35rem 0;
+    }
+    /* Collapse Streamlit markdown chrome around compact turns */
+    [data-testid="stMarkdownContainer"]:has(.tx-turn) p {
+        margin: 0 !important;
+    }
     .tx-segment-block {
-        margin: 0.65rem 0;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        margin: 0.15rem 0 0.35rem 0;
+        padding: 0;
+        border-bottom: none;
     }
     .tx-segment-block--jump {
         border-left: 3px solid rgba(31, 119, 180, 0.55);
@@ -605,13 +640,12 @@ def inject_global_styles() -> None:
     }
     span.tx-jump-target {
         display: inline-block;
-        padding: 0.15rem 0.45rem;
+        padding: 0.1rem 0.4rem;
         border-radius: 999px;
         font-size: 0.72rem;
         font-weight: 600;
-        margin-left: 0.25rem;
         background: rgba(31, 119, 180, 0.12);
-        color: #2c5282;
+        color: #8eb7e8;
         border: 1px solid rgba(31, 119, 180, 0.25);
     }
     /* Avoid browser scroll-anchoring jumps when the player updates in-place. */

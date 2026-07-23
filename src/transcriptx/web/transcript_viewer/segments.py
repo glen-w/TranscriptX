@@ -12,7 +12,7 @@ from transcriptx.export.grouping import segment_speaker_label
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.components.playback_panel import set_active_clip
-from transcriptx.web.speaker_accent import speaker_chip_html, speaker_expander
+from transcriptx.web.speaker_accent import speaker_meta_line_html
 from transcriptx.web.transcript_viewer.highlight import render_highlight_html
 from transcriptx.web.transcript_viewer.playback_targets import (
     format_safe_timestamp_range,
@@ -113,6 +113,23 @@ def _render_play_button(
     )
 
 
+def _turn_block_html(
+    *,
+    header_html: str,
+    body_html: str,
+    jump: bool = False,
+) -> str:
+    block_class = "tx-turn"
+    if jump:
+        block_class += " tx-turn--jump"
+    return (
+        f'<div class="{block_class}">'
+        f"{header_html}"
+        f'<div class="tx-turn-body">{body_html}</div>'
+        f"</div>"
+    )
+
+
 def render_plain_segments(
     display_segments: list[tuple[int, dict[str, Any]]],
     *,
@@ -134,28 +151,23 @@ def render_plain_segments(
         is_jump_target = jump_index is not None and segment_index == jump_index
         if highlight_query and is_jump_target:
             rendered_text = render_highlight_html(text, highlight_query)
-        chip = speaker_chip_html(speaker)
         marker = (
             ' <span class="tx-jump-target">Selected</span>' if is_jump_target else ""
         )
+        timestamp = None
         if show_timestamps:
             timestamp = _safe_display_timestamp_range(start, end, format_key)
-            if timestamp:
-                st.markdown(
-                    f"{chip}{marker} · ⏱️ {html.escape(timestamp)}",
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(f"{chip}{marker}", unsafe_allow_html=True)
-        else:
-            st.markdown(f"{chip}{marker}", unsafe_allow_html=True)
-        block_class = (
-            "tx-segment-block tx-segment-block--jump"
-            if is_jump_target
-            else "tx-segment-block"
+        header = speaker_meta_line_html(
+            speaker, timestamp=timestamp, marker_html=marker
         )
-        st.markdown(f'<div class="{block_class}">', unsafe_allow_html=True)
+        body = rendered_text if rendered_text != text else html.escape(text)
         if play_button_eligible(playback, segment_index):
+            st.markdown(
+                _turn_block_html(
+                    header_html=header, body_html="", jump=is_jump_target
+                ),
+                unsafe_allow_html=True,
+            )
             col_text, col_play = st.columns([20, 1])
             with col_text:
                 if rendered_text != text:
@@ -165,12 +177,12 @@ def render_plain_segments(
             with col_play:
                 _render_play_button(playback, tab="segments", source_index=segment_index)
         else:
-            if rendered_text != text:
-                st.markdown(rendered_text, unsafe_allow_html=True)
-            else:
-                st.write(text)
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.divider()
+            st.markdown(
+                _turn_block_html(
+                    header_html=header, body_html=body, jump=is_jump_target
+                ),
+                unsafe_allow_html=True,
+            )
     if copy_chunks:
         joined = "\n\n".join(copy_chunks)
         st.download_button(
@@ -189,38 +201,62 @@ def render_segmented_tab(
     format_key: str,
     playback: TranscriptPlaybackBinding | None = None,
 ) -> None:
-    """Render transcript segments grouped by contiguous speakers."""
+    """Render contiguous speaker turns with a compact name · time header."""
     speaker_groups = group_segments_by_speaker(display_segments)
     for speaker_name, group_segments in speaker_groups:
-        meta = f"{len(group_segments)} segments"
+        timestamp = None
         if show_timestamps:
             bounds = group_timestamp_bounds(group_segments)
             if bounds is not None:
-                group_timestamp = _format_timestamp_range(
-                    bounds[0], bounds[1], format_key
-                )
-                meta = f"{meta} · {group_timestamp}"
-        with speaker_expander(speaker_name, meta=meta, expanded=True):
-            for source_index, segment in group_segments:
-                text = segment.get("text", "")
-                if play_button_eligible(playback, source_index):
-                    col_text, col_play = st.columns([20, 1])
-                    with col_text:
-                        st.write(text)
-                    with col_play:
-                        _render_play_button(
-                            playback, tab="turns", source_index=source_index
-                        )
-                else:
+                timestamp = _format_timestamp_range(bounds[0], bounds[1], format_key)
+        header = speaker_meta_line_html(speaker_name, timestamp=timestamp)
+        body_parts = [
+            html.escape(str(segment.get("text", "")))
+            for _, segment in group_segments
+        ]
+        # Prefer a single markdown block so Streamlit does not insert large gaps.
+        has_play = any(
+            play_button_eligible(playback, source_index)
+            for source_index, _ in group_segments
+        )
+        has_extras = any(
+            ("sentiment" in segment) or ("emotion" in segment)
+            for _, segment in group_segments
+        )
+        if not has_play and not has_extras:
+            st.markdown(
+                _turn_block_html(
+                    header_html=header,
+                    body_html="<br/>".join(body_parts),
+                ),
+                unsafe_allow_html=True,
+            )
+            continue
+
+        st.markdown(
+            _turn_block_html(header_html=header, body_html=""),
+            unsafe_allow_html=True,
+        )
+        for source_index, segment in group_segments:
+            text = segment.get("text", "")
+            if play_button_eligible(playback, source_index):
+                col_text, col_play = st.columns([20, 1])
+                with col_text:
                     st.write(text)
-                if "sentiment" in segment:
-                    sentiment = segment["sentiment"]
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.caption(f"Sentiment: {sentiment.get('compound', 0):.2f}")
-                    with col2:
-                        st.caption(f"Positive: {sentiment.get('pos', 0):.2f}")
-                    with col3:
-                        st.caption(f"Negative: {sentiment.get('neg', 0):.2f}")
-                if "emotion" in segment:
-                    st.caption(f"Emotion: {segment['emotion']}")
+                with col_play:
+                    _render_play_button(
+                        playback, tab="turns", source_index=source_index
+                    )
+            else:
+                st.write(text)
+            if "sentiment" in segment:
+                sentiment = segment["sentiment"]
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.caption(f"Sentiment: {sentiment.get('compound', 0):.2f}")
+                with col2:
+                    st.caption(f"Positive: {sentiment.get('pos', 0):.2f}")
+                with col3:
+                    st.caption(f"Negative: {sentiment.get('neg', 0):.2f}")
+            if "emotion" in segment:
+                st.caption(f"Emotion: {segment['emotion']}")

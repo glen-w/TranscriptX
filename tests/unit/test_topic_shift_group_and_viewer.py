@@ -9,6 +9,7 @@ from transcriptx.core.analysis.topic_shift.aggregation import aggregate_topic_sh
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.web.transcript_viewer.chapters import (
+    apply_deferred_chapter_jump,
     consume_chapter_pending,
     load_chapter_rows,
     queue_chapter_jump,
@@ -119,10 +120,16 @@ def test_load_chapters_and_pending_jump(tmp_path: Path) -> None:
     assert len(rows) == 1
     assert rows[0].title == "Opening"
     assert rows[0].viewer_target_source_index == 3
-    state: dict = {"transcript_search": "stale"}
+    state: dict = {"transcript_search": "stale", "transcript_viewer_tab_control": "Chapters"}
     queue_chapter_jump(state, source_index=3, play=True)
     assert state["transcript_viewer_chapter_jump"] == 3
     assert state["transcript_viewer_tab"] == "segments"
+    # Widget keys deferred until apply_deferred_chapter_jump (post-instantiate safe).
+    assert state["transcript_viewer_force_segments_tab"] is True
+    assert state["transcript_viewer_tab_control"] == "Chapters"
+    assert state["transcript_search"] == "stale"
+    apply_deferred_chapter_jump(state)
+    assert "transcript_viewer_force_segments_tab" not in state
     assert state["transcript_viewer_tab_control"] == "Segments"
     assert state["transcript_search"] == ""
     pending = consume_chapter_pending(state)
