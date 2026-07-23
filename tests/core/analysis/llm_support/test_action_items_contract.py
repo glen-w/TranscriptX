@@ -199,6 +199,72 @@ def test_parse_enforces_output_length_gate() -> None:
 
 
 @pytest.mark.unit
+def test_parse_salvages_truncated_unterminated_string() -> None:
+    """Canal-walk failure mode: num_predict cuts mid-string after valid items."""
+    complete = _item(text="Book lock passage", quote="book the lock")
+    prefix = json.dumps({"items": [complete]}, separators=(",", ":"))
+    assert prefix.endswith("]}")
+    truncated = (
+        prefix[:-2]
+        + ',{"record_type":"action_item","text":"Unfinished item with "open quote'
+    )
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(truncated)
+
+    parsed, diagnostics = parse_action_items_json(truncated)
+    assert len(parsed) == 1
+    assert parsed[0]["text"] == "Book lock passage"
+    assert diagnostics["items_raw"] == 1
+    assert diagnostics["items_parsed_valid"] == 1
+    assert diagnostics["output_truncated"] == 1
+
+
+@pytest.mark.unit
+def test_parse_salvages_truncated_after_complete_objects() -> None:
+    first = _item(text="Send the report", quote="send the report")
+    second = _item(
+        record_type="decision",
+        text="Use the north route",
+        quote="north route",
+        status="open",
+    )
+    prefix = json.dumps({"items": [first, second]}, separators=(",", ":"))
+    assert prefix.endswith("]}")
+    truncated = prefix[:-2] + ',{"record_type":"proposal","text":"Maybe later'
+    parsed, diagnostics = parse_action_items_json(truncated)
+    assert [item["text"] for item in parsed] == [
+        "Send the report",
+        "Use the north route",
+    ]
+    assert diagnostics["output_truncated"] == 1
+    assert diagnostics["items_parsed_valid"] == 2
+
+
+@pytest.mark.unit
+def test_parse_truncated_with_no_complete_items_still_fails() -> None:
+    truncated = '{"items":[{"record_type":"action_item","text":"Only a fragment'
+    with pytest.raises(LLMResponseError, match="not valid JSON"):
+        parse_action_items_json(truncated)
+
+
+@pytest.mark.unit
+def test_finalize_salvages_truncated_json_end_to_end() -> None:
+    transcript = "Alice: I will send the report by Friday."
+    complete = _item(
+        text="send the report by Friday",
+        quote="send the report by Friday",
+        owner="Alice",
+    )
+    prefix = json.dumps({"items": [complete]}, separators=(",", ":"))
+    truncated = prefix[:-2] + ',{"record_type":"action_item","text":"Broken trailing'
+    items, diagnostics = finalize_action_items(truncated, transcript)
+    assert len(items) == 1
+    assert items[0]["text"] == "send the report by Friday"
+    assert diagnostics["output_truncated"] == 1
+    assert diagnostics["items_committed"] == 1
+
+
+@pytest.mark.unit
 def test_proposal_done_without_lexicon_dropped() -> None:
     parsed, diagnostics = parse_action_items_json(
         _raw(

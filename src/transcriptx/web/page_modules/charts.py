@@ -70,16 +70,23 @@ from transcriptx.web.state import (
     CHARTS_KEY_MODULE_SORT,
     CHARTS_KEY_OPEN_MODULES,
     CHARTS_KEY_SEARCH,
+    CHARTS_KEY_SECTION,
     CHARTS_KEY_SLICE_SELECTOR,
     CHARTS_KEY_SOURCE_PRESET,
     CHARTS_KEY_SUBVIEW_TABS,
     CHARTS_KEY_TAGS_MULTI,
     CHARTS_KIND_DYNAMIC,
     CHARTS_KIND_STATIC,
+    CHARTS_SECTION_BROWSE,
+    CHARTS_SECTION_OVERVIEW,
     CHARTS_SORT_ALPHA,
     CHARTS_SORT_MODULE_FAMILY,
     SELECTBOX_PLACEHOLDER_MODULE,
 )
+
+_CHARTS_SECTIONS = (CHARTS_SECTION_OVERVIEW, CHARTS_SECTION_BROWSE)
+_SECTION_CONTROL_KEY = "charts_section_control"
+_SECTION_RADIO_KEY = "charts_section_radio"
 
 _CHARTS_CONFIG = RunScopedPageConfig(
     title="Charts Gallery",
@@ -352,17 +359,9 @@ def _render_module_row(
     show_registry_description: bool,
     show_llm_summary: bool,
 ) -> None:
-    parts = [f"{group.total} chart{'s' if group.total != 1 else ''}"]
-    kind_bits: list[str] = []
-    if group.static:
-        kind_bits.append(f"{group.static} static")
-    if group.dynamic:
-        kind_bits.append(f"{group.dynamic} dynamic")
-    if kind_bits:
-        parts.append(" · ".join(kind_bits))
-    counts = "    ".join(parts)
     chevron = "▾" if is_open else "›"
-    label = f"{chevron}  {group.display_name}    {counts}"
+    count = f"{group.total} chart{'s' if group.total != 1 else ''}"
+    label = f"{chevron}  {group.display_name}  ·  {count}"
     st.markdown('<div class="tx-chart-module-row">', unsafe_allow_html=True)
     if st.button(
         label,
@@ -478,6 +477,46 @@ def _current_sort_mode() -> str:
     return str(sort_mode)
 
 
+def _seed_section_widget(key: str, current: str, labels: Sequence[str]) -> None:
+    if key not in st.session_state or st.session_state.get(key) not in labels:
+        st.session_state[key] = current
+
+
+def _render_section_nav(*, has_overview: bool) -> str:
+    labels = list(_CHARTS_SECTIONS)
+    default = (
+        CHARTS_SECTION_OVERVIEW if has_overview else CHARTS_SECTION_BROWSE
+    )
+    current = st.session_state.get(CHARTS_KEY_SECTION, default)
+    if current not in labels:
+        current = default
+        st.session_state[CHARTS_KEY_SECTION] = current
+    if not has_overview and current == CHARTS_SECTION_OVERVIEW:
+        current = CHARTS_SECTION_BROWSE
+        st.session_state[CHARTS_KEY_SECTION] = current
+    _seed_section_widget(_SECTION_CONTROL_KEY, current, labels)
+    try:
+        choice = st.segmented_control(
+            "Charts section",
+            options=labels,
+            key=_SECTION_CONTROL_KEY,
+            label_visibility="collapsed",
+        )
+    except Exception:
+        _seed_section_widget(_SECTION_RADIO_KEY, current, labels)
+        choice = st.radio(
+            "Charts section",
+            labels,
+            horizontal=True,
+            key=_SECTION_RADIO_KEY,
+            label_visibility="collapsed",
+        )
+    if choice not in labels:
+        choice = current
+    st.session_state[CHARTS_KEY_SECTION] = choice
+    return str(choice)
+
+
 def _build_view_from_session(
     all_charts: list[Artifact],
     *,
@@ -581,11 +620,6 @@ def _charts_filters_and_gallery_fragment(
                 key=locked_key,
             )
 
-    if chart_source == "All":
-        st.caption(
-            "Showing all chart sources. Use Source to focus group or member charts."
-        )
-
     if subviews:
         slice_state = render_subview_slice_filter(
             all_charts,
@@ -659,37 +693,42 @@ def _charts_filters_and_gallery_fragment(
                     st.markdown(llm_text)
         st.divider()
 
-    if view.overview_slots:
-        st.markdown("### Run overview")
-        for slot in view.overview_slots:
-            st.markdown(f"**{slot['label']}**")
-            slot_description = slot.get("description")
-            if slot_description and show_registry_description:
-                st.caption(slot_description)
-            if slot.get("missing"):
-                render_empty_state(
-                    "module_unavailable",
-                    "Chart not available",
-                    "This overview slot has no artifact for this run (module skipped or not configured).",
-                    primary_action=("Overview", "Overview"),
-                    secondary_action=("Run Analysis", "Run Analysis"),
-                )
-                st.divider()
-                continue
-            family = family_from_overview_slot(slot)
-            if family:
-                _render_chart_family_section(
-                    run_root,
-                    family,
-                    f"overview_chart_{slot['viz_id']}",
-                    sections_expanded=False,
-                    show_family_expander=False,
-                    show_registry_description=show_registry_description,
-                    show_llm_summary=show_llm_summary,
-                )
-            st.divider()
+    section = _render_section_nav(has_overview=bool(view.overview_slots))
 
-    st.markdown(f"### Browse charts  ·  {view.matching_count} matching")
+    if section == CHARTS_SECTION_OVERVIEW:
+        if not view.overview_slots:
+            st.caption("No overview slots for the current filters.")
+        else:
+            for slot in view.overview_slots:
+                st.markdown(f"**{slot['label']}**")
+                slot_description = slot.get("description")
+                if slot_description and show_registry_description:
+                    st.caption(slot_description)
+                if slot.get("missing"):
+                    render_empty_state(
+                        "module_unavailable",
+                        "Chart not available",
+                        "This overview slot has no artifact for this run (module skipped or not configured).",
+                        primary_action=("Overview", "Overview"),
+                        secondary_action=("Run Analysis", "Run Analysis"),
+                    )
+                    st.divider()
+                    continue
+                family = family_from_overview_slot(slot)
+                if family:
+                    _render_chart_family_section(
+                        run_root,
+                        family,
+                        f"overview_chart_{slot['viz_id']}",
+                        sections_expanded=False,
+                        show_family_expander=False,
+                        show_registry_description=show_registry_description,
+                        show_llm_summary=show_llm_summary,
+                    )
+                st.divider()
+        return
+
+    st.caption(f"{view.matching_count} matching")
     st.segmented_control(
         "Sort",
         options=[CHARTS_SORT_MODULE_FAMILY, CHARTS_SORT_ALPHA],

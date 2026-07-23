@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Settings → **Models** tab for Ollama refresh, model guidance, and Model preset create/overwrite/activate (moved off the Run Analysis form).
+
+### Changed
+
+- Run Analysis page configures one run: Analysis preset (Quick / Balanced / Thorough / Custom), compact custom questions, collapsed LLM setup, and a sticky Run footer with two-phase launch. Model management lives under Settings → Models.
+- `analysis.llm_action_items.effort` default is now `max` (was `high`) so dense meeting-extract JSON has a larger `num_predict` budget by default.
+- `llm_action_items` prompt v6 asks models to close the items array cleanly rather than emit truncated JSON.
+
+### Fixed
+
+- `llm_action_items` salvages complete items from truncated / unterminated LLM JSON instead of failing the whole module with no artifacts.
+- Empty/failed `llm_action_items` UI no longer tells users only to re-run: availability and Insights/Overview show why it failed and what to change (effort max + stronger model) before retrying.
+
 ## [0.6.9] - 2026-07-23
 
 ### Added

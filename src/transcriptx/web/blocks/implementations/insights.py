@@ -52,17 +52,17 @@ def _module_failure_hint(run_root: Path, module_id: str) -> str | None:
     if not rr_path.exists():
         return None
     try:
+        from transcriptx.core.analysis.llm_support.action_items_guidance import (
+            format_module_failure_for_user,
+        )
+
         run_results = load_run_results(rr_path)
         for row in project_canonical_outcomes(run_results):
             if row.module_id == module_id and row.status == "failed":
-                detail = row.reason or ""
-                if row.error_code:
-                    prefix = f"[{row.error_code}]"
-                    detail = f"{prefix} {detail}".strip()
-                return (
-                    detail or f"[{row.error_code}]"
-                    if row.error_code
-                    else "Module failed"
+                return format_module_failure_for_user(
+                    module_id=module_id,
+                    error_message=row.reason,
+                    error_code=row.error_code,
                 )
     except Exception:
         return None
@@ -152,8 +152,8 @@ def _render_quiet_module_empty(
         st.info(quiet_unavailable_message(label, outcome=outcome))
         hint = _module_failure_hint(run_root, module) if run_root else None
         if hint:
-            with st.expander("Technical details"):
-                st.caption(hint)
+            # Guidance is the action; keep it visible, not buried.
+            st.warning(hint)
         return
     render_module_required_hint(empty_hint, key=key, ctx=ctx)
 
@@ -1116,12 +1116,21 @@ def _render_action_items_payload(
         RECORD_TYPE_LABELS,
         is_v1_action_items_payload,
     )
+    from transcriptx.core.analysis.llm_support.action_items_guidance import (
+        truncated_output_user_warning,
+    )
 
     if payload is not None and is_v1_action_items_payload(payload):
         st.caption("Legacy v1 action items (not native v2).")
         st.caption(HUMAN_REVIEW_BANNER)
     else:
         st.caption(HUMAN_REVIEW_BANNER)
+
+    trunc_warn = truncated_output_user_warning(
+        (payload or {}).get("diagnostics") if isinstance(payload, dict) else None
+    )
+    if trunc_warn:
+        st.warning(trunc_warn)
 
     if md:
         render_markdown_without_heading_or_provenance(md)

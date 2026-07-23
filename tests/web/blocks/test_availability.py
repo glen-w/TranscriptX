@@ -121,3 +121,44 @@ def test_llm_summary_placement_narrows_module_deps() -> None:
         placement_params={"module": "llm_summary", "artifact_stem": "_llm_summary"},
     )
     assert not unavailable_for_llm.available
+
+
+def test_action_items_unavailable_uses_failure_guidance_not_rerun_hint() -> None:
+    clear_registry_for_tests()
+    register_builtin_blocks()
+    spec = get_block("llm_action_items_block")
+    assert spec is not None
+    run_results = {
+        "schema_version": 2,
+        "modules_enabled": ["llm_action_items"],
+        "modules_run": [],
+        "modules_failed": ["llm_action_items"],
+        "modules_skipped": [],
+        "module_outcomes": [
+            {
+                "module_id": "llm_action_items",
+                "execution_status": "failed",
+                "error_code": "llm_invalid_response",
+                "error_message": (
+                    "Action items output is not valid JSON: Unterminated string "
+                    "starting at: line 760 column 13 (char 26531)"
+                ),
+            }
+        ],
+    }
+    ctx = build_block_context(
+        run_root=Path("/tmp/run"),
+        subject_type="transcript",
+        subject_id="slug",
+        run_id="run1",
+        session_name="slug/run1",
+        artifacts=(),
+        run_results=run_results,
+        layout_profile_id="default",
+    )
+    result = check_block_availability(spec, ctx)
+    assert not result.available
+    reason = result.reason or ""
+    assert "failed for this run" in reason
+    assert "same settings will usually fail" in reason.lower()
+    assert "Run the required analysis modules" not in reason

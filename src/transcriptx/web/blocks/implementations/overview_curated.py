@@ -385,6 +385,11 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         RECORD_TYPE_LABELS,
         TITLE_MEETING_EXTRACTS,
     )
+    from transcriptx.core.analysis.llm_support.action_items_guidance import (
+        format_module_failure_for_user,
+        truncated_output_user_warning,
+    )
+    from transcriptx.web.run_health_presentation import module_outcome_state
 
     st.subheader(TITLE_MEETING_EXTRACTS)
     st.caption(HUMAN_REVIEW_BANNER)
@@ -425,6 +430,11 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
     render_badge_row(
         provenance_badges((payload or {}).get("provenance") if payload else None)
     )
+    trunc_warn = truncated_output_user_warning(
+        (payload or {}).get("diagnostics") if isinstance(payload, dict) else None
+    )
+    if trunc_warn:
+        st.warning(trunc_warn)
     items = (payload or {}).get("items") if isinstance(payload, dict) else None
     if items:
         for item in items[:5]:
@@ -442,6 +452,38 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         return
     if md:
         render_markdown_without_heading_or_provenance(md)
+        return
+
+    outcome = module_outcome_state(run_root, "llm_action_items", run_results=ctx.run_results)
+    if outcome == "failed" and run_root is not None:
+        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS, outcome=outcome))
+        # Prefer guidance from run_results via shared formatter.
+        from transcriptx.core.pipeline.manifest_loader import load_run_results
+        from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
+
+        try:
+            rr = ctx.run_results
+            if rr is None:
+                rr = load_run_results(run_root / "run_results.json")
+            for row in project_canonical_outcomes(rr or {}):
+                if row.module_id == "llm_action_items" and row.status == "failed":
+                    st.warning(
+                        format_module_failure_for_user(
+                            module_id="llm_action_items",
+                            error_message=row.reason,
+                            error_code=row.error_code,
+                        )
+                    )
+                    return
+        except Exception:
+            pass
+        st.warning(
+            format_module_failure_for_user(
+                module_id="llm_action_items",
+                error_message=None,
+                error_code=None,
+            )
+        )
         return
     st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
 

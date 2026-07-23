@@ -314,7 +314,8 @@ def launch_gate_reasons(
     if not llm_enabled or (provider or "").strip().lower() != "ollama":
         reasons.append(
             "LLM modules are selected but LLM is disabled or provider is not Ollama. "
-            "Enable Ollama under Settings → Configuration."
+            "Enable Ollama under Settings → Configuration; manage models under "
+            "Settings → Models."
         )
         return reasons
 
@@ -363,126 +364,56 @@ def launch_gate_reasons(
     return reasons
 
 
-def render_llm_model_selector(
+def _active_model_summary_label() -> str:
+    """Human label for the project-active / configured model."""
+    cfg = get_config().llm
+    sel = selection_from_config_obj(getattr(cfg, "model_selection", None))
+    if sel is None:
+        return (cfg.model or "not configured").strip() or "not configured"
+    norm = sel.normalized()
+    if norm.mode == "per_module" and norm.module_models:
+        n = len(norm.module_models)
+        return f"{n} model assignments"
+    return (norm.shared_model or cfg.model or "not configured").strip() or (
+        "not configured"
+    )
+
+
+def _footer_model_label(selection: LlmModelSelection | None) -> str:
+    if selection is None:
+        return _active_model_summary_label()
+    norm = selection.normalized()
+    if norm.mode == "per_module" and norm.module_models:
+        n = len({*norm.module_models.values()})
+        if n > 1:
+            return "Mixed models"
+        if n == 1:
+            return next(iter(norm.module_models.values()))
+        return f"{len(norm.module_models)} model assignments"
+    return (norm.shared_model or _active_model_summary_label()).strip()
+
+
+def _render_assignment_widgets(
     *,
     key_prefix: str,
     selected_modules: Sequence[str],
-    include_group: bool = False,
-) -> tuple[LlmModelSelection | None, list[str]]:
-    """
-    Render model profile / shared-vs-per-module controls.
-
-    Returns ``(selection_or_none, gate_reasons)``. Selection is ``None`` when
-    LLM is not Ollama-enabled (callers still pass ``None`` on the request).
-    Gate reasons are still computed when LLM modules require a working Ollama
-    setup so launch stays blocked.
-    """
-    config = get_config()
-    llm = config.llm
-    provider = (llm.provider or "null").strip().lower()
-    st.markdown("#### LLM models")
-
-    if not llm.enabled or provider != "ollama":
-        st.caption(
-            "LLM is disabled or not set to Ollama. Enable it in Settings to choose "
-            "models for LLM-backed modules."
-        )
-        gates = launch_gate_reasons(
-            selection=LlmModelSelection(),
-            selected_modules=selected_modules,
-            installed=(),
-            list_error=None,
-            include_group=include_group,
-            llm_enabled=bool(llm.enabled),
-            provider=provider,
-        )
-        for reason in gates:
-            st.warning(reason)
-        return None, gates
-
-    base_url = llm.base_url
-    installed, list_error = cached_list_ollama_models(base_url)
-    if st.button("Refresh models", key=_key(key_prefix, "refresh")):
-        cached_list_ollama_models.clear()
-        installed, list_error = cached_list_ollama_models(base_url)
-        st.rerun()
-
-    if list_error:
-        st.warning(list_error)
-    if not installed:
-        st.info("No installed Ollama models found. Pull a model with `ollama pull …`.")
-
-    ctrl = ProfileController()
-    profiles = ctrl.list_profiles(_LLM_MODELS_TARGET)
-    profile_options = [_CUSTOM_PROFILE]
-    for name in profiles:
-        profile_options.append(_profile_display_label(name))
-    # Deduplicate while preserving order (list_profiles already includes default).
-    seen: set[str] = set()
-    deduped: list[str] = []
-    for opt in profile_options:
-        if opt not in seen:
-            seen.add(opt)
-            deduped.append(opt)
-    profile_options = deduped
-
-    active = ctrl.get_active_profile(_LLM_MODELS_TARGET)
-    active_label = _profile_display_label(active)
-    default_ix = 0
-    if active_label in profile_options:
-        default_ix = profile_options.index(active_label)
-
-    profile_key = _key(key_prefix, "profile")
-    if profile_key not in st.session_state:
-        st.session_state[profile_key] = profile_options[default_ix]
-    elif st.session_state.get(profile_key) not in profile_options:
-        preferred = (
-            active_label
-            if active_label in profile_options
-            else profile_options[default_ix]
-        )
-        st.session_state[profile_key] = preferred
-
-    selected_profile = st.selectbox(
-        "LLM model profile",
-        options=profile_options,
-        key=profile_key,
-        help=(
-            f"{_PROJECT_DEFAULT_LABEL} loads the project-active llm_models pack "
-            f"(or global defaults). {_CUSTOM_PROFILE} keeps this run's widgets."
-        ),
-    )
-
-    applied_key = _key(key_prefix, "applied_profile")
-    if st.session_state.get(applied_key) != selected_profile:
-        loaded, load_warning = _load_profile_selection(selected_profile)
-        if load_warning:
-            st.caption(load_warning)
-        if selected_profile != _CUSTOM_PROFILE:
-            for note in _apply_selection_to_session(key_prefix, loaded, installed):
-                st.caption(note)
-        st.session_state[applied_key] = selected_profile
-
+    include_group: bool,
+    installed: Sequence[str],
+    llm_model: str | None,
+) -> None:
     mode = st.radio(
         "Model assignment",
         ["Same model for all", "Select per module"],
         horizontal=True,
         key=_key(key_prefix, "mode"),
     )
-
     shared_key = _key(key_prefix, "shared_model")
     json_consumers = _selected_json_consumers(
         selected_modules, include_group=include_group
     )
-
     if shared_key not in st.session_state:
-        seeded = _seed_from_configured(installed, llm.model)
-        # Do not seed a thinking global default into a JSON-safe shared pick.
-        if (
-            seeded
-            and json_consumers
-            and is_thinking_model(seeded)
-        ):
+        seeded = _seed_from_configured(installed, llm_model)
+        if seeded and json_consumers and is_thinking_model(seeded):
             seeded = None
         st.session_state[shared_key] = seeded or _UNSET_MODEL
     else:
@@ -516,132 +447,150 @@ def render_llm_model_selector(
             key=shared_key,
             disabled=not bool(installed),
         )
-    else:
-        for consumer_id in _consumer_ids(include_group=include_group):
-            mk = _key(key_prefix, f"module_{consumer_id}")
-            if mk not in st.session_state:
-                shared_val = _session_model_value(st.session_state.get(shared_key))
-                st.session_state[mk] = shared_val or _UNSET_MODEL
-            else:
-                kept = _installed_choice(st.session_state.get(mk), installed)
-                prev = st.session_state.get(mk)
-                if (
-                    isinstance(prev, str)
-                    and prev not in (_UNSET_MODEL, "")
-                    and kept is None
-                    and prev not in installed
-                ):
-                    st.caption(
-                        f"Model `{prev}` for `{consumer_id}` is not installed — "
-                        "choose an installed model."
-                    )
-                st.session_state[mk] = kept or _UNSET_MODEL
-            module_options = (
-                _options_for_consumer(
-                    installed,
-                    consumer_id=consumer_id,
-                    json_consumers_selected=json_consumers,
-                )
-                if installed
-                else [_UNSET_MODEL]
-            )
-            _ensure_session_model_in_options(
-                mk, module_options, label=f"Model · {consumer_id}"
-            )
-            st.selectbox(
-                f"Model · {consumer_id}",
-                options=module_options,
-                key=mk,
-                disabled=not bool(installed),
-            )
+        return
 
-    with st.expander("Model information", expanded=False):
-        st.caption(
-            "Use this when assigning models per module. Avoid thinking-family "
-            "tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON modules — they often "
-            "return an empty `response`. Prefer gemma3 / qwen2.5 / llama3.2 / "
-            "mistral for narrative_summary, llm_action_items, and chart_descriptions."
-        )
-        rows = list_llm_model_guidance(installed)
-        if not rows:
-            st.info(
-                "No installed models to describe. Pull one with "
-                "`ollama pull gemma3:12b`, then Refresh models."
-            )
+    for consumer_id in _consumer_ids(include_group=include_group):
+        mk = _key(key_prefix, f"module_{consumer_id}")
+        if mk not in st.session_state:
+            shared_val = _session_model_value(st.session_state.get(shared_key))
+            st.session_state[mk] = shared_val or _UNSET_MODEL
         else:
-            table = {
-                "Model": [r.model for r in rows],
-                "Class": [r.size_class for r in rows],
-                "Strengths": [r.strengths for r in rows],
-                "Best for": [r.best_for for r in rows],
-                "Notes": [r.notes for r in rows],
-            }
-            st.dataframe(table, hide_index=True, width="stretch")
-
-    with st.expander("Save as LLM model profile", expanded=False):
-        name = st.text_input(
-            "Profile name",
-            key=_key(key_prefix, "save_name"),
-            help="Cannot be 'default'. Use overwrite to replace an existing name.",
-        )
-        description = st.text_input(
-            "Description (optional)",
-            key=_key(key_prefix, "save_description"),
-        )
-        overwrite = st.checkbox(
-            "Overwrite existing profile",
-            value=False,
-            key=_key(key_prefix, "save_overwrite"),
-        )
-        set_active = st.checkbox(
-            "Set as project active profile",
-            value=False,
-            key=_key(key_prefix, "save_set_active"),
-        )
-        if st.button("Save profile", key=_key(key_prefix, "save_btn")):
-            draft = build_selection_from_session(
-                key_prefix, include_group=include_group
+            kept = _installed_choice(st.session_state.get(mk), installed)
+            prev = st.session_state.get(mk)
+            if (
+                isinstance(prev, str)
+                and prev not in (_UNSET_MODEL, "")
+                and kept is None
+                and prev not in installed
+            ):
+                st.caption(
+                    f"Model `{prev}` for `{consumer_id}` is not installed — "
+                    "choose an installed model."
+                )
+            st.session_state[mk] = kept or _UNSET_MODEL
+        module_options = (
+            _options_for_consumer(
+                installed,
+                consumer_id=consumer_id,
+                json_consumers_selected=json_consumers,
             )
-            try:
-                validated = validate_llm_model_selection(draft, for_profile_save=True)
-            except ValueError as exc:
-                st.error(str(exc))
-            else:
-                profile_name = (name or "").strip()
-                if (
-                    not profile_name
-                    or ProfileController.is_virtual_default_profile_name(profile_name)
-                ):
-                    st.error("Enter a non-default profile name.")
-                else:
-                    payload = selection_to_profile_config(validated)
-                    desc = description or f"LLM model profile {profile_name}"
-                    if overwrite:
-                        ok = ctrl.save_profile(
-                            _LLM_MODELS_TARGET, profile_name, payload, description=desc
-                        )
-                    else:
-                        ok = ctrl.create_profile(
-                            _LLM_MODELS_TARGET, profile_name, payload, description=desc
-                        )
-                    if not ok:
-                        if not overwrite:
-                            st.error(
-                                "Failed to save profile (it may already exist). "
-                                "Enable “Overwrite existing profile” to replace it."
-                            )
-                        else:
-                            st.error("Failed to save profile.")
-                    else:
-                        st.success(f"Saved LLM model profile `{profile_name}`.")
-                        if set_active:
-                            adapter = get_profile_target_adapter(_LLM_MODELS_TARGET)
-                            if adapter is not None:
-                                adapter.set_active_profile_name(config, profile_name)
-                                save_project_config(config.to_dict())
-                                st.info(
-                                    f"Active project profile set to `{profile_name}`."
-                                )
+            if installed
+            else [_UNSET_MODEL]
+        )
+        _ensure_session_model_in_options(
+            mk, module_options, label=f"Model · {consumer_id}"
+        )
+        st.selectbox(
+            f"Model · {consumer_id}",
+            options=module_options,
+            key=mk,
+            disabled=not bool(installed),
+        )
+
+
+def render_compact_llm_setup(
+    *,
+    key_prefix: str,
+    selected_modules: Sequence[str],
+    include_group: bool = False,
+) -> tuple[LlmModelSelection | None, list[str], str]:
+    """
+    Per-run LLM setup only (no refresh / preset CRUD / set-active).
+
+    Returns ``(selection_or_none, gate_reasons, footer_model_label)``.
+    """
+    config = get_config()
+    llm = config.llm
+    provider = (llm.provider or "null").strip().lower()
+    summary = _active_model_summary_label()
+
+    st.markdown("#### LLM setup")
+    st.caption(f"Project default · `{summary}`")
+
+    if not llm.enabled or provider != "ollama":
+        st.caption(
+            "LLM is disabled or not set to Ollama. Enable it under "
+            "Settings → Configuration; manage Model presets under Settings → Models."
+        )
+        gates = launch_gate_reasons(
+            selection=LlmModelSelection(),
+            selected_modules=selected_modules,
+            installed=(),
+            list_error=None,
+            include_group=include_group,
+            llm_enabled=bool(llm.enabled),
+            provider=provider,
+        )
+        for reason in gates:
+            st.caption(reason)
+        return None, gates, summary
+
+    installed, list_error = cached_list_ollama_models(llm.base_url)
+    if list_error:
+        st.caption(f"Ollama unavailable: {list_error}. Manage models in Settings → Models.")
+    if not installed and not list_error:
+        st.caption(
+            "No installed Ollama models found. Pull a model, then open "
+            "Settings → Models."
+        )
+
+    # Seed widgets from project-active Model preset without management UI.
+    active = ProfileController().get_active_profile(_LLM_MODELS_TARGET)
+    active_label = _profile_display_label(active)
+    applied_key = _key(key_prefix, "applied_profile")
+    if st.session_state.get(applied_key) != active_label:
+        loaded, load_warning = _load_profile_selection(active_label)
+        if load_warning:
+            st.caption(load_warning)
+        for note in _apply_selection_to_session(key_prefix, loaded, installed):
+            st.caption(note)
+        st.session_state[applied_key] = active_label
+        st.session_state[_key(key_prefix, "profile")] = active_label
+
+    with st.expander("Change for this run", expanded=False):
+        st.caption(
+            "Overrides apply to this launch only. Create or activate Model presets "
+            "in Settings → Models."
+        )
+        profile_options = [_CUSTOM_PROFILE]
+        for name in ProfileController().list_profiles(_LLM_MODELS_TARGET):
+            label = _profile_display_label(name)
+            if label not in profile_options:
+                profile_options.append(label)
+        profile_key = _key(key_prefix, "profile")
+        if profile_key not in st.session_state:
+            st.session_state[profile_key] = (
+                active_label if active_label in profile_options else profile_options[0]
+            )
+        elif st.session_state.get(profile_key) not in profile_options:
+            st.session_state[profile_key] = (
+                active_label if active_label in profile_options else profile_options[0]
+            )
+        selected_profile = st.selectbox(
+            "Model preset",
+            options=profile_options,
+            key=profile_key,
+            help=(
+                f"{_PROJECT_DEFAULT_LABEL} loads the project-active pack. "
+                f"{_CUSTOM_PROFILE} keeps this run's widgets."
+            ),
+        )
+        if st.session_state.get(applied_key) != selected_profile:
+            loaded, load_warning = _load_profile_selection(selected_profile)
+            if load_warning:
+                st.caption(load_warning)
+            if selected_profile != _CUSTOM_PROFILE:
+                for note in _apply_selection_to_session(key_prefix, loaded, installed):
+                    st.caption(note)
+            st.session_state[applied_key] = selected_profile
+
+        _render_assignment_widgets(
+            key_prefix=key_prefix,
+            selected_modules=selected_modules,
+            include_group=include_group,
+            installed=installed,
+            llm_model=llm.model,
+        )
 
     selection = build_selection_from_session(key_prefix, include_group=include_group)
     gates = launch_gate_reasons(
@@ -654,5 +603,180 @@ def render_llm_model_selector(
         provider=provider,
     )
     for reason in gates:
-        st.warning(reason)
+        st.caption(reason)
+    return selection, gates, _footer_model_label(selection)
+
+
+def render_llm_models_settings_panel() -> None:
+    """Settings → Models: refresh, guidance table, create/overwrite, set active."""
+    key_prefix = "settings_llm_models"
+    config = get_config()
+    llm = config.llm
+    provider = (llm.provider or "null").strip().lower()
+
+    st.markdown("#### Model presets")
+    st.caption(
+        "Manage Ollama tags and Model presets used by analysis. "
+        "Run Analysis only overrides models for a single launch."
+    )
+
+    if not llm.enabled or provider != "ollama":
+        st.info(
+            "LLM is disabled or provider is not Ollama. Enable Ollama under "
+            "Settings → Configuration before managing models."
+        )
+        return
+
+    installed, list_error = cached_list_ollama_models(llm.base_url)
+    if st.button("Refresh models", key=_key(key_prefix, "refresh")):
+        cached_list_ollama_models.clear()
+        st.rerun()
+
+    if list_error:
+        st.warning(list_error)
+    if not installed:
+        st.info("No installed Ollama models found. Pull a model with `ollama pull …`.")
+
+    ctrl = ProfileController()
+    profiles = ctrl.list_profiles(_LLM_MODELS_TARGET)
+    profile_options = [_CUSTOM_PROFILE]
+    for name in profiles:
+        label = _profile_display_label(name)
+        if label not in profile_options:
+            profile_options.append(label)
+
+    active = ctrl.get_active_profile(_LLM_MODELS_TARGET)
+    active_label = _profile_display_label(active)
+    st.caption(f"Project active Model preset: **{active_label}**")
+
+    profile_key = _key(key_prefix, "profile")
+    if profile_key not in st.session_state:
+        st.session_state[profile_key] = (
+            active_label if active_label in profile_options else profile_options[0]
+        )
+    elif st.session_state.get(profile_key) not in profile_options:
+        st.session_state[profile_key] = (
+            active_label if active_label in profile_options else profile_options[0]
+        )
+
+    selected_profile = st.selectbox(
+        "Model preset",
+        options=profile_options,
+        key=profile_key,
+    )
+    applied_key = _key(key_prefix, "applied_profile")
+    if st.session_state.get(applied_key) != selected_profile:
+        loaded, load_warning = _load_profile_selection(selected_profile)
+        if load_warning:
+            st.caption(load_warning)
+        if selected_profile != _CUSTOM_PROFILE:
+            for note in _apply_selection_to_session(key_prefix, loaded, installed):
+                st.caption(note)
+        st.session_state[applied_key] = selected_profile
+
+    _render_assignment_widgets(
+        key_prefix=key_prefix,
+        selected_modules=(),
+        include_group=True,
+        installed=installed,
+        llm_model=llm.model,
+    )
+
+    st.markdown("##### Model information")
+    st.caption(
+        "Avoid thinking-family tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON "
+        "modules — they often return an empty `response`. Prefer gemma3 / "
+        "qwen2.5 / llama3.2 / mistral for narrative_summary, llm_action_items, "
+        "and chart_descriptions."
+    )
+    rows = list_llm_model_guidance(installed)
+    if not rows:
+        st.info(
+            "No installed models to describe. Pull one with "
+            "`ollama pull gemma3:12b`, then Refresh models."
+        )
+    else:
+        table = {
+            "Model": [r.model for r in rows],
+            "Class": [r.size_class for r in rows],
+            "Strengths": [r.strengths for r in rows],
+            "Best for": [r.best_for for r in rows],
+            "Notes": [r.notes for r in rows],
+        }
+        st.dataframe(table, hide_index=True, width="stretch")
+
+    st.markdown("##### Save as Model preset")
+    name = st.text_input(
+        "Preset name",
+        key=_key(key_prefix, "save_name"),
+        help="Cannot be 'default'. Use overwrite to replace an existing name.",
+    )
+    description = st.text_input(
+        "Description (optional)",
+        key=_key(key_prefix, "save_description"),
+    )
+    overwrite = st.checkbox(
+        "Overwrite existing preset",
+        value=False,
+        key=_key(key_prefix, "save_overwrite"),
+    )
+    set_active = st.checkbox(
+        "Set as project active preset",
+        value=False,
+        key=_key(key_prefix, "save_set_active"),
+    )
+    if st.button("Save preset", key=_key(key_prefix, "save_btn")):
+        draft = build_selection_from_session(key_prefix, include_group=True)
+        try:
+            validated = validate_llm_model_selection(draft, for_profile_save=True)
+        except ValueError as exc:
+            st.error(str(exc))
+        else:
+            profile_name = (name or "").strip()
+            if (
+                not profile_name
+                or ProfileController.is_virtual_default_profile_name(profile_name)
+            ):
+                st.error("Enter a non-default preset name.")
+            else:
+                payload = selection_to_profile_config(validated)
+                desc = description or f"Model preset {profile_name}"
+                if overwrite:
+                    ok = ctrl.save_profile(
+                        _LLM_MODELS_TARGET, profile_name, payload, description=desc
+                    )
+                else:
+                    ok = ctrl.create_profile(
+                        _LLM_MODELS_TARGET, profile_name, payload, description=desc
+                    )
+                if not ok:
+                    if not overwrite:
+                        st.error(
+                            "Failed to save preset (it may already exist). "
+                            "Enable “Overwrite existing preset” to replace it."
+                        )
+                    else:
+                        st.error("Failed to save preset.")
+                else:
+                    st.success(f"Saved Model preset `{profile_name}`.")
+                    if set_active:
+                        adapter = get_profile_target_adapter(_LLM_MODELS_TARGET)
+                        if adapter is not None:
+                            adapter.set_active_profile_name(config, profile_name)
+                            save_project_config(config.to_dict())
+                            st.info(f"Active project preset set to `{profile_name}`.")
+
+
+def render_llm_model_selector(
+    *,
+    key_prefix: str,
+    selected_modules: Sequence[str],
+    include_group: bool = False,
+) -> tuple[LlmModelSelection | None, list[str]]:
+    """Compatibility wrapper → compact run setup (no management actions)."""
+    selection, gates, _label = render_compact_llm_setup(
+        key_prefix=key_prefix,
+        selected_modules=selected_modules,
+        include_group=include_group,
+    )
     return selection, gates

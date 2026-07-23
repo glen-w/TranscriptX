@@ -6,61 +6,69 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import streamlit as st
 
 from transcriptx.app.controllers.analysis_controller import AnalysisController
-from transcriptx.core.domain.group import Group
 from transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisRequest
 from transcriptx.app.models.results import RunSummary
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
+from transcriptx.core.domain.group import Group
 from transcriptx.core.utils.config import get_config
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
-from transcriptx.web.components.action_links import render_action_link
-from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_shell
-from transcriptx.web.components.recent_run_row import render_recent_run_actions
-from transcriptx.web.state import (
-    SELECTBOX_PLACEHOLDER_GROUP,
-    SELECTBOX_PLACEHOLDER_TRANSCRIPT,
-    set_page_flash,
+from transcriptx.web.cache_helpers import (
+    cached_get_available_modules,
+    cached_get_default_modules,
+    cached_get_default_modules_for_paths,
+    cached_get_module_info_list,
+    cached_list_groups,
+    get_cached_list_transcripts,
 )
+from transcriptx.web.components.action_links import render_action_link
+from transcriptx.web.components.analysis_preset_controls import (
+    apply_custom_qa_to_plan,
+    format_preset_label,
+    render_analysis_preset_selector,
+    render_effective_module_summary,
+)
+from transcriptx.web.components.empty_state import render_empty_state
+from transcriptx.web.components.llm_custom_qa_picker import render_custom_qa_picker
+from transcriptx.web.components.llm_model_selector import render_compact_llm_setup
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.progress_panel import (
     SNAPSHOT_KEY,
     StreamlitProgressCallback,
     render_progress_panel,
 )
-from transcriptx.web.cache_helpers import (
-    get_cached_list_transcripts,
-    cached_list_groups,
-    cached_get_available_modules,
-    cached_get_default_modules,
-    cached_get_default_modules_for_paths,
-    cached_get_module_info_list,
-)
-from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.components.recent_run_row import render_recent_run_actions
+from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.page_modules.batch_ops import render_batch_analysis_panel
 from transcriptx.web.services.group_service import GroupService
+from transcriptx.web.services.subject_service import SubjectService
+from transcriptx.web.state import (
+    SELECTBOX_PLACEHOLDER_GROUP,
+    SELECTBOX_PLACEHOLDER_TRANSCRIPT,
+    set_page_flash,
+)
 from transcriptx.web.transcript_option_format import (
     format_transcript_option_with_speaker_status,
 )
-from transcriptx.web.navigation import make_session_path_resolver
-from transcriptx.web.page_modules.batch_ops import render_batch_analysis_panel
-from transcriptx.web.services.subject_service import SubjectService
 
 _RUN_ANALYSIS_DESCRIPTION = (
-    "Configure modules and run analysis on one transcript, a group, or a batch. "
-    "Quick uses a lighter preset; full lets you pick a profile. "
-    "Recommended modules adapt to the selected transcript(s)."
+    "Choose a target (transcript, group, or batch), an analysis preset, "
+    "optional custom questions, and model setup — then run."
 )
 _KEY_LAST_SUCCESS = "run_analysis_last_success"
 _RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
+_PENDING_LAUNCH_KEY = "run_analysis_pending_launch"
 
 
 def _normalize_run_analysis_target(*, group_target_available: bool) -> str:
-    """Coerce persisted target before the radio binds; preserve explicit Batch."""
+    """Coerce persisted target before the control binds; preserve explicit Batch."""
     allowed = {"Transcript", "Batch"}
     if group_target_available:
         allowed.add("Group")
@@ -148,64 +156,150 @@ def _render_post_analysis_actions() -> None:
     render_configured_actions(SectionId.RUN_ANALYSIS_COMPLETE, ctx)
 
 
+def _truncate_label(text: str, *, max_chars: int = 28) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1] + "…"
+
+
+def _execute_pending_launch(pending: dict[str, Any]) -> None:
+    """Execute a snapshotted request; sole launch authority after Run click."""
+    analysis_ctrl = AnalysisController()
+    target_type = pending["target_type"]
+    modules = list(pending["modules"])
+    st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(modules))
+    progress = StreamlitProgressCallback()
+    snapshot = st.session_state[SNAPSHOT_KEY]
+
+    request = pending["request"]
+    selected_group = pending.get("selected_group")
+    transcript_path = pending.get("transcript_path")
+    if transcript_path is not None:
+        transcript_path = Path(transcript_path)
+
+    def run_fn():
+        if target_type == "Transcript":
+            return analysis_ctrl.run_analysis(
+                request, progress=progress, snapshot=snapshot
+            )
+        return analysis_ctrl.run_group_analysis(
+            request, progress=progress, snapshot=snapshot
+        )
+
+    with st.spinner("Running analysis…"):
+        try:
+            with capture_output() as (stdout_buf, stderr_buf):
+                result = run_fn()
+        finally:
+            st.session_state["analysis_run_in_progress"] = False
+            st.session_state.pop(_PENDING_LAUNCH_KEY, None)
+
+        captured = stdout_buf.getvalue() + stderr_buf.getvalue()
+
+    if result.success:
+        from transcriptx.web.cache_helpers import clear_run_listing_caches
+
+        clear_run_listing_caches()
+        rd = result.run_dir
+        if target_type == "Transcript":
+            st.session_state["subject_type"] = "transcript"
+            st.session_state["subject_id"] = rd.parent.name
+            subject_type = "transcript"
+        else:
+            st.session_state["subject_type"] = "group"
+            st.session_state["subject_id"] = selected_group
+            subject_type = "group"
+        st.session_state["run_id"] = rd.name
+        _store_last_success(
+            run_dir=rd,
+            transcript_path=transcript_path if target_type == "Transcript" else None,
+            subject_type=subject_type,
+            modules=list(result.modules_executed or []),
+        )
+        set_page_flash("success", f"Analysis completed. Output: `{rd}`")
+        if result.modules_executed:
+            st.caption(f"Modules run: {', '.join(result.modules_executed)}")
+        agg_warns = getattr(result, "aggregation_warnings", None) or []
+        if agg_warns:
+            chart_failed_n = sum(
+                1
+                for w in agg_warns
+                if isinstance(w, dict) and w.get("code") == "GROUP_CHART_FAILED"
+            )
+            if chart_failed_n:
+                st.error(
+                    f"Group chart generation failed for {chart_failed_n} "
+                    "aggregation step(s). Charts for those modules may be missing. "
+                    "See **Aggregation notices** below."
+                )
+            with st.expander(
+                f"Aggregation notices ({len(agg_warns)})",
+                expanded=bool(chart_failed_n),
+            ):
+                for w in agg_warns[:50]:
+                    if isinstance(w, dict):
+                        code = w.get("code") or "—"
+                        msg = w.get("message") or ""
+                        ak = w.get("aggregation_key")
+                        st.markdown(
+                            f"- **`{code}`**"
+                            + (f" (`{ak}`)" if ak else "")
+                            + f": {msg}"
+                        )
+                    else:
+                        st.markdown(f"- {w!s}")
+                if len(agg_warns) > 50:
+                    st.caption(
+                        f"… and {len(agg_warns) - 50} more "
+                        "(see aggregation_warnings.json in the run directory)."
+                    )
+        if result.warnings:
+            for w in result.warnings[:5]:
+                st.warning(w)
+        if result.errors:
+            st.warning(f"{len(result.errors)} warning(s) during run:")
+            for e in result.errors[:5]:
+                st.caption(f"  • {e}")
+    else:
+        st.error("Analysis failed.")
+        for e in result.errors:
+            st.error(e)
+
+    if captured:
+        with st.expander("Full log output"):
+            st.text(captured)
+
+    st.rerun()
+
+
 @st.fragment
 def _run_analysis_config_and_launch_fragment(
     target_type: str,
     transcript_path: Path | None,
     selected_group: Group | None,
     available: tuple[str, ...],
-    default_modules: tuple[str, ...],
+    transcript_targets: tuple[str, ...],
 ) -> None:
-    """
-    Config widgets + launch + post-run UI in one fragment so module multiselect
-    does not rerun sidebar/context bar. Target selection stays in the parent
-    (full rerun when transcript/group changes). Launch/progress remain explicit
-    commit paths with full ``st.rerun()`` after completion/navigation.
-    """
-    analysis_ctrl = AnalysisController()
-    mode = st.radio(
-        "Analysis mode", ["quick", "full"], horizontal=True, key="run_analysis_mode"
-    )
-    st.caption(
-        "**Quick** — faster preset with fewer heavy modules. **Full** — profile-driven, more artifacts."
-    )
-    profile = None
-    if mode == "full":
-        profile = st.selectbox(
-            "Profile",
-            ["balanced", "academic", "business", "casual", "technical", "interview"],
-            key="run_analysis_profile",
-        )
+    """Config widgets + sticky footer; launch snapshots then reruns for execution."""
+    analysis_target = "group" if target_type == "Group" else "transcript"
 
-    use_defaults = st.checkbox(
-        "Use recommended modules", value=True, key="run_analysis_use_defaults"
+    resolved = render_analysis_preset_selector(
+        key_prefix="run_analysis",
+        target=analysis_target,  # type: ignore[arg-type]
+        transcript_targets=transcript_targets or None,
+        available_modules=available,
     )
-    if use_defaults:
-        selected_modules = list(default_modules)
-        st.caption(
-            f"**{len(selected_modules)} modules** (recommended): "
-            f"{', '.join(selected_modules[:8])}{'...' if len(selected_modules) > 8 else ''}"
-        )
-    else:
-        selected_modules = st.multiselect(
-            "Select modules",
-            list(available),
-            default=list(default_modules[:5]) if default_modules else [],
-            format_func=format_module_option,
-            key="run_analysis_modules",
-        )
-        st.caption(f"**{len(selected_modules)} modules** selected.")
 
-    from transcriptx.web.components.llm_custom_qa_picker import (
-        maybe_save_questions_for_later,
-        render_custom_qa_picker,
-    )
-    from transcriptx.web.components.llm_model_selector import render_llm_model_selector
-
-    qa_request_questions, qa_effective = render_custom_qa_picker(
+    qa_request_questions, qa_effective, custom_qa_execution = render_custom_qa_picker(
         key_prefix="run_analysis_qa",
-        module_selected="llm_custom_qa" in selected_modules,
+        always_show=True,
     )
+    plan = apply_custom_qa_to_plan(
+        resolved, custom_qa_execution=custom_qa_execution
+    )
+    render_effective_module_summary(plan, preset=resolved.preset)
+    selected_modules = list(plan.module_ids)
 
     from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
         bind_custom_qa_questions,
@@ -216,7 +310,7 @@ def _run_analysis_config_and_launch_fragment(
     if qa_effective is not None:
         _qa_ui_token = bind_custom_qa_questions(qa_effective)
     try:
-        llm_selection, llm_gates = render_llm_model_selector(
+        llm_selection, llm_gates, model_label = render_compact_llm_setup(
             key_prefix="run_analysis_llm",
             selected_modules=selected_modules,
             include_group=(target_type == "Group"),
@@ -226,171 +320,113 @@ def _run_analysis_config_and_launch_fragment(
             reset_custom_qa_questions(_qa_ui_token)
 
     can_launch = bool(selected_modules) and not llm_gates
+    disable_reason = ""
+    if not selected_modules:
+        disable_reason = "Select at least one module."
+    elif llm_gates:
+        disable_reason = llm_gates[0]
     if target_type == "Transcript":
-        can_launch = (
-            can_launch and transcript_path is not None and transcript_path.exists()
+        if transcript_path is None or not transcript_path.exists():
+            can_launch = False
+            disable_reason = disable_reason or "Select a transcript."
+    elif selected_group is None:
+        can_launch = False
+        disable_reason = disable_reason or "Select a group."
+
+    subject_label = "—"
+    if target_type == "Transcript" and transcript_path is not None:
+        subject_label = _truncate_label(transcript_path.stem)
+    elif target_type == "Group" and selected_group is not None:
+        subject_label = _truncate_label(selected_group.name or selected_group.uuid)
+
+    n_questions = 0
+    if isinstance(qa_request_questions, list):
+        n_questions = len(qa_request_questions)
+    q_part = (
+        f"{n_questions} custom question"
+        + ("s" if n_questions != 1 else "")
+        if custom_qa_execution
+        else "custom questions skipped"
+    )
+    summary_html = (
+        f'<span class="tx-ellipsis">{subject_label}</span> · '
+        f"{format_preset_label(resolved.preset)} · "
+        f"{len(selected_modules)} modules · {q_part} · {model_label}"
+    )
+
+    st.markdown(
+        '<div class="tx-run-analysis-footer" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
+    with st.container():
+        st.markdown(
+            f'<div class="tx-run-analysis-footer-summary">{summary_html}</div>',
+            unsafe_allow_html=True,
         )
-    else:
-        can_launch = can_launch and selected_group is not None
+        cols = st.columns([4, 1.4])
+        with cols[0]:
+            if disable_reason and not can_launch:
+                st.caption(disable_reason)
+        with cols[1]:
+            launch = st.button(
+                "Run analysis",
+                type="primary",
+                key="run_analysis_launch",
+                disabled=not can_launch,
+                width="stretch",
+            )
 
-    if st.button(
-        "▶ Run Analysis",
-        type="primary",
-        key="run_analysis_launch",
-        disabled=not can_launch,
-    ):
-        if not selected_modules:
-            st.error("Please select at least one module.")
+    if not launch:
+        return
+
+    analysis_ctrl = AnalysisController()
+    if target_type == "Transcript":
+        if not transcript_path or not transcript_path.exists():
+            st.error("Please select a valid transcript.")
             return
+        request: AnalysisRequest | GroupAnalysisRequest = AnalysisRequest(
+            transcript_path=transcript_path,
+            mode=resolved.mode,
+            modules=selected_modules,
+            profile=resolved.profile,
+            llm_model_selection=llm_selection,
+            llm_custom_qa_questions=qa_request_questions,
+        )
+        errors = analysis_ctrl.validate_readiness(request)
+    else:
+        if not selected_group:
+            st.error("Please select a group.")
+            return
+        request = GroupAnalysisRequest(
+            group_uuid=selected_group.uuid,
+            mode=resolved.mode,
+            modules=selected_modules,
+            profile=resolved.profile,
+            include_unidentified_speakers=False,
+            llm_model_selection=llm_selection,
+            llm_custom_qa_questions=qa_request_questions,
+        )
+        errors = analysis_ctrl.validate_group_readiness(request)
 
-        if target_type == "Transcript":
-            if not transcript_path or not transcript_path.exists():
-                st.error("Please select a valid transcript.")
-                return
+    if errors:
+        for e in errors:
+            st.error(e)
+        return
 
-            request = AnalysisRequest(
-                transcript_path=transcript_path,
-                mode=mode,
-                modules=selected_modules,
-                profile=profile,
-                llm_model_selection=llm_selection,
-                llm_custom_qa_questions=qa_request_questions,
-            )
-
-            errors = analysis_ctrl.validate_readiness(request)
-            if errors:
-                for e in errors:
-                    st.error(e)
-                return
-
-            maybe_save_questions_for_later(key_prefix="run_analysis_qa")
-
-            def run_fn():
-                return analysis_ctrl.run_analysis(
-                    request, progress=progress, snapshot=snapshot
-                )
-
-        else:
-            if not selected_group:
-                st.error("Please select a group.")
-                return
-
-            group_request = GroupAnalysisRequest(
-                group_uuid=selected_group.uuid,
-                mode=mode,
-                modules=selected_modules,
-                profile=profile,
-                include_unidentified_speakers=False,
-                llm_model_selection=llm_selection,
-                llm_custom_qa_questions=qa_request_questions,
-            )
-
-            errors = analysis_ctrl.validate_group_readiness(group_request)
-            if errors:
-                for e in errors:
-                    st.error(e)
-                return
-
-            maybe_save_questions_for_later(key_prefix="run_analysis_qa")
-
-            def run_fn():
-                return analysis_ctrl.run_group_analysis(
-                    group_request, progress=progress, snapshot=snapshot
-                )
-
-        st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(selected_modules))
-        st.session_state["analysis_run_in_progress"] = True
-
-        progress = StreamlitProgressCallback()
-        snapshot = st.session_state[SNAPSHOT_KEY]
-
-        with st.spinner("Running analysis…"):
-            try:
-                with capture_output() as (stdout_buf, stderr_buf):
-                    result = run_fn()
-            finally:
-                st.session_state["analysis_run_in_progress"] = False
-
-            captured = stdout_buf.getvalue() + stderr_buf.getvalue()
-
-        if result.success:
-            from transcriptx.web.cache_helpers import clear_run_listing_caches
-
-            clear_run_listing_caches()
-            rd = result.run_dir
-            if target_type == "Transcript":
-                st.session_state["subject_type"] = "transcript"
-                st.session_state["subject_id"] = rd.parent.name
-                subject_type = "transcript"
-            else:
-                st.session_state["subject_type"] = "group"
-                st.session_state["subject_id"] = selected_group.group_id
-                subject_type = "group"
-            st.session_state["run_id"] = rd.name
-            _store_last_success(
-                run_dir=rd,
-                transcript_path=(
-                    transcript_path if target_type == "Transcript" else None
-                ),
-                subject_type=subject_type,
-                modules=list(result.modules_executed or []),
-            )
-            set_page_flash(
-                "success",
-                f"Analysis completed. Output: `{rd}`",
-            )
-            if result.modules_executed:
-                st.caption(f"Modules run: {', '.join(result.modules_executed)}")
-            agg_warns = getattr(result, "aggregation_warnings", None) or []
-            if agg_warns:
-                chart_failed_n = sum(
-                    1
-                    for w in agg_warns
-                    if isinstance(w, dict) and w.get("code") == "GROUP_CHART_FAILED"
-                )
-                if chart_failed_n:
-                    st.error(
-                        f"Group chart generation failed for {chart_failed_n} "
-                        "aggregation step(s). Charts for those modules may be missing. "
-                        "See **Aggregation notices** below."
-                    )
-                with st.expander(
-                    f"Aggregation notices ({len(agg_warns)})",
-                    expanded=bool(chart_failed_n),
-                ):
-                    for w in agg_warns[:50]:
-                        if isinstance(w, dict):
-                            code = w.get("code") or "—"
-                            msg = w.get("message") or ""
-                            ak = w.get("aggregation_key")
-                            st.markdown(
-                                f"- **`{code}`**"
-                                + (f" (`{ak}`)" if ak else "")
-                                + f": {msg}"
-                            )
-                        else:
-                            st.markdown(f"- {w!s}")
-                    if len(agg_warns) > 50:
-                        st.caption(
-                            f"… and {len(agg_warns) - 50} more (see aggregation_warnings.json in the run directory)."
-                        )
-            if result.warnings:
-                for w in result.warnings[:5]:
-                    st.warning(w)
-            if result.errors:
-                st.warning(f"{len(result.errors)} warning(s) during run:")
-                for e in result.errors[:5]:
-                    st.caption(f"  • {e}")
-        else:
-            st.error("Analysis failed.")
-            for e in result.errors:
-                st.error(e)
-
-        if captured:
-            with st.expander("Full log output"):
-                st.text(captured)
-
-        st.rerun()
+    st.session_state[_PENDING_LAUNCH_KEY] = {
+        "target_type": target_type,
+        "modules": list(selected_modules),
+        "request": request,
+        "transcript_path": str(transcript_path) if transcript_path else None,
+        "selected_group": (
+            selected_group.group_id if selected_group is not None else None
+        ),
+        "started": False,
+        "footer_summary": summary_html,
+    }
+    st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(selected_modules))
+    st.session_state["analysis_run_in_progress"] = True
+    st.rerun()
 
 
 def render_run_analysis_page() -> None:
@@ -399,7 +435,6 @@ def render_run_analysis_page() -> None:
     group_analysis_enabled = getattr(config.group_analysis, "enabled", False)
     group_target_available = group_analysis_enabled
 
-    # Normalize before the shell so Batch can skip the post-run strip under the flash.
     _normalize_run_analysis_target(group_target_available=group_target_available)
 
     render_page_shell(
@@ -409,7 +444,6 @@ def render_run_analysis_page() -> None:
         actions=None,
     )
 
-    # Directly under the success flash (page shell), above Target — not under Batch.
     if st.session_state.get(_RUN_ANALYSIS_TARGET_KEY) != "Batch":
         _render_post_analysis_actions()
 
@@ -417,18 +451,26 @@ def render_run_analysis_page() -> None:
     if group_target_available:
         target_options.append("Group")
     target_options.append("Batch")
-    target_type = st.radio(
+
+    current = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY, "Transcript")
+    if current not in target_options:
+        current = "Transcript"
+        st.session_state[_RUN_ANALYSIS_TARGET_KEY] = current
+
+    target_type = st.segmented_control(
         "Target",
-        target_options,
-        horizontal=True,
+        options=target_options,
         key=_RUN_ANALYSIS_TARGET_KEY,
     )
+    if target_type is None:
+        target_type = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY, "Transcript")
+
     if not group_target_available:
         st.caption("Enable group analysis in config to run analysis on groups.")
-    if group_target_available:
+    if target_type == "Group" and group_target_available:
         st.caption(
-            "Group scope: modules differ—registry-backed aggregate charts, special paths (e.g. wordclouds), "
-            "data-only (e.g. temporal dynamics), or blob-only (summary). "
+            "Group scope: modules differ—registry-backed aggregate charts, special paths "
+            "(e.g. wordclouds), data-only (e.g. temporal dynamics), or blob-only (summary). "
             "See docs/groups/group_analysis_module_outputs.md in the project."
         )
 
@@ -436,8 +478,42 @@ def render_run_analysis_page() -> None:
         render_batch_analysis_panel()
         return
 
+    # Two-phase launch: show progress footer, then execute stored request.
+    pending = st.session_state.get(_PENDING_LAUNCH_KEY)
+    if st.session_state.get("analysis_run_in_progress", False) and isinstance(
+        pending, dict
+    ):
+        summary = pending.get("footer_summary") or "Running analysis…"
+        st.markdown(
+            '<div class="tx-run-analysis-footer" aria-hidden="true"></div>',
+            unsafe_allow_html=True,
+        )
+        with st.container():
+            st.markdown(
+                f'<div class="tx-run-analysis-footer-summary">{summary}</div>',
+                unsafe_allow_html=True,
+            )
+            snapshot = st.session_state.get(SNAPSHOT_KEY)
+            if snapshot is not None:
+                render_progress_panel(snapshot)
+            else:
+                st.info("Analysis is running…")
+        if not pending.get("started"):
+            pending["started"] = True
+            st.session_state[_PENDING_LAUNCH_KEY] = pending
+            _execute_pending_launch(pending)
+        return
+
+    if st.session_state.get("analysis_run_in_progress", False):
+        snapshot = st.session_state.get(SNAPSHOT_KEY)
+        if snapshot is not None:
+            render_progress_panel(snapshot)
+        else:
+            st.info("Analysis is running…")
+        return
+
     transcript_path: Path | None = None
-    selected_group = None  # set when target is Group
+    selected_group = None
     resolved_member_paths: list[str] = []
 
     if target_type == "Transcript":
@@ -533,9 +609,11 @@ def render_run_analysis_page() -> None:
 
     available = cached_get_available_modules()
     if target_type == "Transcript" and transcript_path:
-        default_modules = cached_get_default_modules(str(transcript_path))
+        # Keep cache warm; preset resolver recomputes authoritative lists.
+        cached_get_default_modules(str(transcript_path))
+        transcript_targets: tuple[str, ...] = (str(transcript_path),)
     elif target_type == "Group" and resolved_member_paths:
-        default_modules = cached_get_default_modules_for_paths(
+        cached_get_default_modules_for_paths(
             tuple(resolved_member_paths), for_group=True
         )
         group_supported = {
@@ -546,24 +624,10 @@ def render_run_analysis_page() -> None:
         available = [
             module_id for module_id in available if module_id in group_supported
         ]
+        transcript_targets = tuple(resolved_member_paths)
     else:
-        default_modules = available[:5] if available else []
+        transcript_targets = ()
 
-    # ------------------------------------------------------------------
-    # If a run is in progress, show the live progress panel instead of
-    # the launch button.  The snapshot is persisted in session_state so
-    # Streamlit reruns rehydrate it without regressing to a generic message.
-    # ------------------------------------------------------------------
-    if st.session_state.get("analysis_run_in_progress", False):
-        snapshot = st.session_state.get(SNAPSHOT_KEY)
-        if snapshot is not None:
-            render_progress_panel(snapshot)
-        else:
-            st.info("Analysis is running…")
-        return
-
-    # Show panel for the last run (completed or failed) so the result persists
-    # on the page after execution finishes without requiring a manual refresh.
     last_snapshot = st.session_state.get(SNAPSHOT_KEY)
     if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
         with st.expander("Last run progress", expanded=False):
@@ -582,5 +646,5 @@ def render_run_analysis_page() -> None:
         transcript_path,
         selected_group,
         tuple(available),
-        tuple(default_modules),
+        transcript_targets,
     )

@@ -104,7 +104,20 @@ def test_feature_default_efforts_unchanged() -> None:
 
     assert LLMSummarySettingsModel().effort == "high"
     assert LLMSpeakerSummarySettingsModel().effort == "high"
-    assert LLMActionItemsSettingsModel().effort == "high"
+    assert LLMActionItemsSettingsModel().effort == "max"
+
+
+@pytest.mark.unit
+def test_action_items_default_effort_resolves_max_output_budget() -> None:
+    from transcriptx.core.config.models.llm_action_items import (
+        LLMActionItemsSettingsModel,
+    )
+
+    effort = LLMActionItemsSettingsModel().effort
+    runtime = resolve_llm_runtime(llm_cfg=_llm_cfg(), effort=effort)
+    assert effort == "max"
+    assert runtime.max_output_tokens == 16_384
+    assert runtime.max_output_tokens > BUILTIN_LLM_EFFORT_PROFILES["high"].max_output_tokens
 
 
 @pytest.mark.unit

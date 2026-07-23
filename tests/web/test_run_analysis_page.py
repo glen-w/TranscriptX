@@ -16,13 +16,13 @@ def test_run_analysis_empty_transcripts_renders_empty_state(monkeypatch) -> None
 
     DummyHomeStreamlit.session_state = {}
     empty_calls: list[tuple] = []
-    radio_options: list[list[str]] = []
+    target_options: list[list[str]] = []
 
     class _St(DummyHomeStreamlit):
         @staticmethod
-        def radio(_label, options, index=0, **_kwargs):
-            radio_options.append(list(options))
-            return options[index]
+        def segmented_control(_label, options, index=0, **_kwargs):
+            target_options.append(list(options))
+            return options[index] if options else None
 
         @staticmethod
         def selectbox(*_a, **_k):
@@ -71,7 +71,7 @@ def test_run_analysis_empty_transcripts_renders_empty_state(monkeypatch) -> None
 
     mod.render_run_analysis_page()
 
-    assert radio_options == [["Transcript", "Batch"]]
+    assert target_options == [["Transcript", "Batch"]]
     assert empty_calls
     assert empty_calls[0][0][0] == "no_results_yet"
     assert "No transcripts" in empty_calls[0][0][1]
@@ -87,13 +87,18 @@ def test_run_analysis_in_progress_skips_launch_fragment(monkeypatch) -> None:
     DummyHomeStreamlit.session_state = {
         "analysis_run_in_progress": True,
         mod.SNAPSHOT_KEY: {"status": "running", "pct": 10},
+        mod._PENDING_LAUNCH_KEY: {
+            "started": True,
+            "footer_summary": "Running…",
+            "modules": ["stats"],
+        },
     }
     progress_calls: list = []
     fragment_calls: list = []
 
     class _St(DummyHomeStreamlit):
         @staticmethod
-        def radio(_label, options, index=0, **_kwargs):
+        def segmented_control(_label, options, index=0, **_kwargs):
             return options[index]
 
         @staticmethod
@@ -109,6 +114,14 @@ def test_run_analysis_in_progress_skips_launch_fragment(monkeypatch) -> None:
         @staticmethod
         def caption(*_a, **_k):
             return None
+
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+        @staticmethod
+        def container():
+            return DummyHomeStreamlit.expander()
 
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
@@ -170,8 +183,8 @@ def test_run_analysis_page_renders_post_success_action_links() -> None:
     # Batch is skipped via session-state guard (not via early-return placement).
     shell_call = source.index("render_page_shell(")
     post_actions = source.index("_render_post_analysis_actions()", shell_call)
-    target_radio = source.index('st.radio(\n        "Target"', shell_call)
-    assert shell_call < post_actions < target_radio
+    target_ctrl = source.index('st.segmented_control(\n        "Target"', shell_call)
+    assert shell_call < post_actions < target_ctrl
     assert '_RUN_ANALYSIS_TARGET_KEY) != "Batch"' in source
 
 
@@ -244,13 +257,13 @@ def test_render_post_analysis_actions_uses_recent_run_strip(monkeypatch) -> None
 
 def _run_analysis_st_base():
     class _St(DummyHomeStreamlit):
-        radio_options_seen: list = []
+        target_options_seen: list = []
         captions: list[str] = []
         target_choice: str | None = None
 
         @classmethod
-        def radio(cls, _label, options, index=0, **_kwargs):
-            cls.radio_options_seen.append(list(options))
+        def segmented_control(cls, _label, options, index=0, **_kwargs):
+            cls.target_options_seen.append(list(options))
             if cls.target_choice is not None and cls.target_choice in options:
                 return cls.target_choice
             return options[index]
@@ -288,7 +301,7 @@ def test_run_analysis_transcript_path_invokes_post_actions(monkeypatch) -> None:
     DummyHomeStreamlit.session_state = {}
     post_calls: list[bool] = []
     _St = _run_analysis_st_base()
-    _St.radio_options_seen = []
+    _St.target_options_seen = []
     _St.captions = []
     _St.target_choice = "Transcript"
 
@@ -313,7 +326,7 @@ def test_run_analysis_transcript_path_invokes_post_actions(monkeypatch) -> None:
     mod.render_run_analysis_page()
 
     assert post_calls == [True]
-    assert _St.radio_options_seen[0] == ["Transcript", "Batch"]
+    assert _St.target_options_seen[0] == ["Transcript", "Batch"]
 
 
 @pytest.mark.unit
@@ -322,7 +335,7 @@ def test_run_analysis_group_target_hidden_when_disabled(monkeypatch) -> None:
 
     DummyHomeStreamlit.session_state = {}
     _St = _run_analysis_st_base()
-    _St.radio_options_seen = []
+    _St.target_options_seen = []
     _St.captions = []
     _St.target_choice = None
 
@@ -344,8 +357,8 @@ def test_run_analysis_group_target_hidden_when_disabled(monkeypatch) -> None:
 
     mod.render_run_analysis_page()
 
-    assert _St.radio_options_seen
-    assert _St.radio_options_seen[0] == ["Transcript", "Batch"]
+    assert _St.target_options_seen
+    assert _St.target_options_seen[0] == ["Transcript", "Batch"]
     assert any("Enable group analysis" in c for c in _St.captions)
 
 
@@ -357,7 +370,7 @@ def test_run_analysis_group_enabled_empty_groups_empty_state(monkeypatch) -> Non
     empty_calls: list[tuple] = []
     fragment_calls: list = []
     _St = _run_analysis_st_base()
-    _St.radio_options_seen = []
+    _St.target_options_seen = []
     _St.captions = []
     _St.target_choice = "Group"
 
@@ -384,7 +397,7 @@ def test_run_analysis_group_enabled_empty_groups_empty_state(monkeypatch) -> Non
 
     mod.render_run_analysis_page()
 
-    assert _St.radio_options_seen[0] == ["Transcript", "Group", "Batch"]
+    assert _St.target_options_seen[0] == ["Transcript", "Group", "Batch"]
     assert empty_calls
     assert empty_calls[0][0][0] == "no_results_yet"
     assert "No groups yet" in empty_calls[0][0][1]
@@ -407,7 +420,7 @@ def test_run_analysis_batch_target_skips_single_run_paths(monkeypatch) -> None:
     progress_calls: list = []
 
     _St = _run_analysis_st_base()
-    _St.radio_options_seen = []
+    _St.target_options_seen = []
     _St.captions = []
     _St.target_choice = "Batch"
 
@@ -462,7 +475,7 @@ def test_run_analysis_batch_target_skips_single_run_paths(monkeypatch) -> None:
     assert module_calls == []
     assert progress_calls == []
     assert fragment_calls == []
-    assert _St.radio_options_seen[0] == ["Transcript", "Group", "Batch"]
+    assert _St.target_options_seen[0] == ["Transcript", "Group", "Batch"]
 
 
 @pytest.mark.unit
@@ -502,7 +515,7 @@ def test_run_analysis_batch_with_group_disabled_still_offers_batch(monkeypatch) 
     DummyHomeStreamlit.session_state = {"run_analysis_target": "Batch"}
     panel_calls: list[bool] = []
     _St = _run_analysis_st_base()
-    _St.radio_options_seen = []
+    _St.target_options_seen = []
     _St.captions = []
     _St.target_choice = "Batch"
 
@@ -523,7 +536,7 @@ def test_run_analysis_batch_with_group_disabled_still_offers_batch(monkeypatch) 
 
     mod.render_run_analysis_page()
 
-    assert _St.radio_options_seen[0] == ["Transcript", "Batch"]
+    assert _St.target_options_seen[0] == ["Transcript", "Batch"]
     assert panel_calls == [True]
 
 
@@ -539,7 +552,7 @@ def test_run_analysis_group_enabled_selects_group(monkeypatch) -> None:
     fragment_calls: list = []
     group = Group(group_id="g-1", name="Alpha", members=["/tmp/a.json"])
     _St = _run_analysis_st_base()
-    _St.radio_options_seen = []
+    _St.target_options_seen = []
     _St.captions = []
     _St.target_choice = "Group"
 
@@ -593,3 +606,42 @@ def test_run_analysis_group_enabled_selects_group(monkeypatch) -> None:
     assert fragment_calls
     assert fragment_calls[0][0] == "Group"
     assert fragment_calls[0][2] is group
+
+
+@pytest.mark.unit
+def test_compact_llm_setup_has_no_management_actions() -> None:
+    import transcriptx.web.components.llm_model_selector as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    compact_start = source.index("def render_compact_llm_setup")
+    settings_start = source.index("def render_llm_models_settings_panel")
+    compact = source[compact_start:settings_start]
+    assert "Refresh models" not in compact
+    assert "Save preset" not in compact
+    assert "Set as project active" not in compact
+    settings = source[settings_start:]
+    assert "Refresh models" in settings
+    assert "Save preset" in settings
+    assert "Set as project active preset" in settings
+
+
+@pytest.mark.unit
+def test_run_analysis_group_copy_only_when_group_selected() -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert 'if target_type == "Group"' in source
+    assert "Group scope:" in source
+    assert (
+        'if group_target_available:\n        st.caption(\n            "Group scope:'
+        not in source
+    )
+
+
+@pytest.mark.unit
+def test_run_analysis_single_launch_button() -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert source.count('key="run_analysis_launch"') == 1
+    assert "_PENDING_LAUNCH_KEY" in source

@@ -1,10 +1,10 @@
 {
   "asdict": {
     "coerce_v1_artifacts": false,
-    "effort": "high"
+    "effort": "max"
   },
   "to_dict": {
     "coerce_v1_artifacts": false,
-    "effort": "high"
+    "effort": "max"
   }
 }

@@ -41,12 +41,62 @@ def _effective_artifact_patterns(
     return spec.artifact_patterns
 
 
+def _failed_module_reason(
+    *,
+    module_deps: tuple[str, ...],
+    run_results: Mapping[str, Any] | None,
+) -> str | None:
+    """Prefer actionable failure copy over a blind 're-run modules' hint."""
+    if not module_deps or not run_results:
+        return None
+    try:
+        from transcriptx.core.analysis.llm_support.action_items_guidance import (
+            format_module_failure_for_user,
+        )
+        from transcriptx.core.pipeline.module_registry import canonical_module_id
+        from transcriptx.core.pipeline.run_outcome_truth import (
+            project_canonical_outcomes,
+        )
+
+        wanted = {canonical_module_id(m) for m in module_deps}
+        for row in project_canonical_outcomes(dict(run_results)):
+            if row.module_id in wanted and row.status == "failed":
+                return format_module_failure_for_user(
+                    module_id=row.module_id,
+                    error_message=row.reason,
+                    error_code=row.error_code,
+                )
+        # Fall back to raw module_outcomes when modules_failed was not projected.
+        for raw in run_results.get("module_outcomes") or []:
+            if not isinstance(raw, dict) or not raw.get("module_id"):
+                continue
+            mid = canonical_module_id(str(raw["module_id"]))
+            if mid not in wanted:
+                continue
+            status = str(raw.get("execution_status") or "").lower()
+            if status != "failed":
+                continue
+            return format_module_failure_for_user(
+                module_id=mid,
+                error_message=raw.get("error_message"),
+                error_code=raw.get("error_code"),
+            )
+    except Exception:
+        return None
+    return None
+
+
 def _missing_artifact_reason(
     *,
     deps: str,
     detail: str,
     run_root: Path | None,
+    module_deps: tuple[str, ...] = (),
+    run_results: Mapping[str, Any] | None = None,
 ) -> str:
+    failed = _failed_module_reason(module_deps=module_deps, run_results=run_results)
+    if failed:
+        return failed
     if run_root is not None and is_group_run(run_root):
         return (
             f"No matching artifacts for {deps}{detail}. "
@@ -121,7 +171,11 @@ def check_block_availability(
         return BlockAvailability(
             available=False,
             reason=_missing_artifact_reason(
-                deps=deps, detail=detail, run_root=ctx.run_root
+                deps=deps,
+                detail=detail,
+                run_root=ctx.run_root,
+                module_deps=module_deps,
+                run_results=ctx.run_results,
             ),
             matched_artifacts=(),
         )

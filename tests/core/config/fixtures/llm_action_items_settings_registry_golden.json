@@ -22,8 +22,8 @@
       "high",
       "max"
     ],
-    "default": "high",
-    "description": "Effort tier for llm_action_items when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that module only. Defaults to high because action extraction is completeness-oriented across long meetings.",
+    "default": "max",
+    "description": "Effort tier for llm_action_items when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that module only. Defaults to max because meeting extracts emit dense JSON lists that truncate under lower output budgets.",
     "key": "analysis.llm_action_items.effort",
     "max": null,
     "min": null,

@@ -46,11 +46,11 @@ def test_file_override_partial_merge(tmp_path: Path) -> None:
     cfg = TranscriptXConfig()
     config_file = tmp_path / "config.json"
     config_file.write_text(
-        json.dumps({"analysis": {"llm_action_items": {"effort": "max"}}}),
+        json.dumps({"analysis": {"llm_action_items": {"effort": "high"}}}),
         encoding="utf-8",
     )
     load_config_file_into(cfg, str(config_file))
-    assert cfg.analysis.llm_action_items.effort == "max"
+    assert cfg.analysis.llm_action_items.effort == "high"
 
 
 def test_setattr_accepts_value_pydantic_would_reject_at_validation_boundary() -> None:

@@ -50,7 +50,9 @@ def render_global_custom_qa_under_summary(run_root: Optional[Path]) -> None:
         return
     st.markdown("#### Custom questions")
     for i, row in enumerate(answers):
-        _render_answer_card(row, key_prefix=f"hero_qa_{i}")
+        _render_answer_card(
+            row, key_prefix=f"hero_qa_{i}", show_evidence=False
+        )
 
 
 def render_speaker_custom_qa(

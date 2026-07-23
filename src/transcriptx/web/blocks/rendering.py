@@ -12,7 +12,13 @@ from transcriptx.web.blocks.registry import get_block
 
 def render_unavailable_placeholder(title: str, reason: str | None) -> None:
     st.caption(title)
-    st.info(reason or "This block is not available for the current run.")
+    text = reason or "This block is not available for the current run."
+    # Failed-module copy already includes remediation; use warning so it is not
+    # mistaken for a "just re-run" empty state.
+    if "failed for this run" in text.lower() or "same settings will usually fail" in text.lower():
+        st.warning(text)
+    else:
+        st.info(text)
 
 
 def render_block(

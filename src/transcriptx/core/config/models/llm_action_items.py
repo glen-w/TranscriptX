@@ -11,12 +11,12 @@ class LLMActionItemsSettingsModel(BaseModel):
     """Effort tier for the llm_action_items analysis module (Ollama path only)."""
 
     effort: LLMSummaryEffort = Field(
-        default="high",
+        default="max",
         description=(
             "Effort tier for llm_action_items when llm.provider is ollama. "
             "Controls max_input_chars, request_timeout, and max_output_tokens "
-            "for that module only. Defaults to high because action extraction "
-            "is completeness-oriented across long meetings."
+            "for that module only. Defaults to max because meeting extracts "
+            "emit dense JSON lists that truncate under lower output budgets."
         ),
     )
     coerce_v1_artifacts: bool = Field(

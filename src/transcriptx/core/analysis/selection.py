@@ -5,13 +5,15 @@ This module holds the single source of truth for:
 - Applying analysis mode (quick/full) and profile to config
 - Filtering modules by mode (e.g. semantic_similarity_v2 basic vs advanced)
 - Recommended/default module list policy
+- UI analysis presets (quick / balanced / thorough / custom)
 
 Web UI and Python API callers use this; they do not duplicate this logic.
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, List, Optional
+from dataclasses import dataclass
+from typing import Any, Callable, Iterable, List, Literal, Optional, Sequence
 
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.pipeline.module_registry import (
@@ -30,6 +32,37 @@ VALID_PROFILES = (
     "technical",
     "interview",
 )
+
+AnalysisPreset = Literal["quick", "balanced", "thorough", "custom"]
+AnalysisTarget = Literal["transcript", "group", "batch"]
+VALID_PRESETS: tuple[AnalysisPreset, ...] = (
+    "quick",
+    "balanced",
+    "thorough",
+    "custom",
+)
+_UI_DEFAULT_PROFILE = "balanced"
+_CUSTOM_QA_MODULE = "llm_custom_qa"
+
+
+@dataclass(frozen=True)
+class ResolvedAnalysisPreset:
+    """Deterministic preset resolution for one analysis launch configuration."""
+
+    preset: AnalysisPreset
+    mode: str
+    profile: str
+    module_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class EffectiveModulePlan:
+    """Single authoritative module list for summary, footer, gates, and request."""
+
+    module_ids: tuple[str, ...]
+    llm_count: int
+    heavy_count: int
+    custom_qa_execution: bool
 
 _LEGACY_SEMANTIC_IDS = frozenset(
     {"semantic_similarity", "semantic_similarity_advanced"}
@@ -181,6 +214,7 @@ def get_recommended_modules(
     include_heavy: bool = True,
     include_excluded_from_default: bool = False,
     include_legacy: Optional[bool] = None,
+    for_group: bool = False,
 ) -> List[str]:
     """
     Return the recommended/default module list for analysis (single source of truth).
@@ -203,5 +237,199 @@ def get_recommended_modules(
             include_heavy=include_heavy,
             include_excluded_from_default=include_excluded_from_default,
             include_legacy=include_legacy,
+            for_group=for_group,
         )
+    )
+
+
+def _for_group_target(target: AnalysisTarget) -> bool:
+    return target == "group"
+
+
+def _suitable_module_ids(
+    transcript_targets: Optional[Iterable[Any]],
+    *,
+    target: AnalysisTarget,
+    include_heavy: bool,
+    include_excluded_from_default: bool,
+    audio_resolver: Optional[Callable[[Any], bool]] = None,
+    dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
+    include_legacy: Optional[bool] = None,
+) -> tuple[str, ...]:
+    """User-facing suitable modules for a target (excludes legacy by default)."""
+    modules = get_default_modules(
+        transcript_targets,
+        audio_resolver=audio_resolver,
+        dep_resolver=dep_resolver,
+        include_heavy=include_heavy,
+        include_excluded_from_default=include_excluded_from_default,
+        include_legacy=include_legacy,
+        for_group=_for_group_target(target),
+    )
+    return tuple(_dedupe_preserve_order(list(modules)))
+
+
+def reconcile_custom_modules(
+    selected: Sequence[str],
+    *,
+    suitable: Sequence[str],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Keep Custom selection that remains suitable; return (kept, removed)."""
+    suitable_set = set(suitable)
+    kept: list[str] = []
+    removed: list[str] = []
+    seen: set[str] = set()
+    for mid in selected:
+        if mid in seen:
+            continue
+        seen.add(mid)
+        if mid in suitable_set:
+            kept.append(mid)
+        else:
+            removed.append(mid)
+    return tuple(kept), tuple(removed)
+
+
+def resolve_analysis_preset(
+    preset: AnalysisPreset | str,
+    *,
+    target: AnalysisTarget = "transcript",
+    transcript_targets: Optional[Iterable[Any]] = None,
+    custom_modules: Optional[Sequence[str]] = None,
+    audio_resolver: Optional[Callable[[Any], bool]] = None,
+    dep_resolver: Optional[Callable[[ModuleInfo], bool]] = None,
+    include_legacy: Optional[bool] = None,
+) -> ResolvedAnalysisPreset:
+    """
+    Resolve a UI analysis preset into mode, profile, and module ids.
+
+    ``profile`` is always ``\"balanced\"`` for UI presets (including Quick) so
+    request construction has no None / ignored special case.
+    """
+    if preset not in VALID_PRESETS:
+        preset = "balanced"
+    preset_key: AnalysisPreset = preset  # type: ignore[assignment]
+
+    if preset_key == "quick":
+        modules = _suitable_module_ids(
+            transcript_targets,
+            target=target,
+            include_heavy=False,
+            include_excluded_from_default=False,
+            audio_resolver=audio_resolver,
+            dep_resolver=dep_resolver,
+            include_legacy=include_legacy,
+        )
+        return ResolvedAnalysisPreset(
+            preset="quick",
+            mode="quick",
+            profile=_UI_DEFAULT_PROFILE,
+            module_ids=modules,
+        )
+
+    if preset_key == "thorough":
+        modules = _suitable_module_ids(
+            transcript_targets,
+            target=target,
+            include_heavy=True,
+            include_excluded_from_default=True,
+            audio_resolver=audio_resolver,
+            dep_resolver=dep_resolver,
+            include_legacy=include_legacy,
+        )
+        return ResolvedAnalysisPreset(
+            preset="thorough",
+            mode="full",
+            profile=_UI_DEFAULT_PROFILE,
+            module_ids=modules,
+        )
+
+    if preset_key == "custom":
+        suitable = _suitable_module_ids(
+            transcript_targets,
+            target=target,
+            include_heavy=True,
+            include_excluded_from_default=True,
+            audio_resolver=audio_resolver,
+            dep_resolver=dep_resolver,
+            include_legacy=include_legacy,
+        )
+        kept, _removed = reconcile_custom_modules(
+            list(custom_modules or ()), suitable=suitable
+        )
+        if not kept:
+            # Seed Custom from Balanced when empty.
+            kept = _suitable_module_ids(
+                transcript_targets,
+                target=target,
+                include_heavy=True,
+                include_excluded_from_default=False,
+                audio_resolver=audio_resolver,
+                dep_resolver=dep_resolver,
+                include_legacy=include_legacy,
+            )
+        return ResolvedAnalysisPreset(
+            preset="custom",
+            mode="full",
+            profile=_UI_DEFAULT_PROFILE,
+            module_ids=kept,
+        )
+
+    # balanced (default)
+    modules = _suitable_module_ids(
+        transcript_targets,
+        target=target,
+        include_heavy=True,
+        include_excluded_from_default=False,
+        audio_resolver=audio_resolver,
+        dep_resolver=dep_resolver,
+        include_legacy=include_legacy,
+    )
+    return ResolvedAnalysisPreset(
+        preset="balanced",
+        mode="full",
+        profile=_UI_DEFAULT_PROFILE,
+        module_ids=modules,
+    )
+
+
+def _count_llm_and_heavy(module_ids: Sequence[str]) -> tuple[int, int]:
+    llm = 0
+    heavy = 0
+    for mid in module_ids:
+        info = get_module_info(mid)
+        if info is None:
+            continue
+        if getattr(info, "requires_llm", False):
+            llm += 1
+        if getattr(info, "cost_tier", "") == "heavy":
+            heavy += 1
+    return llm, heavy
+
+
+def compute_effective_modules(
+    resolved: ResolvedAnalysisPreset,
+    *,
+    custom_qa_execution: bool,
+) -> EffectiveModulePlan:
+    """
+    Build the single authoritative module list for UI summary and launch.
+
+    When custom-question execution is requested, ensure ``llm_custom_qa`` is
+    present exactly once. When Skip is active (``custom_qa_execution=False``),
+    strip ``llm_custom_qa`` if the preset included it.
+    """
+    modules = list(resolved.module_ids)
+    if custom_qa_execution:
+        if _CUSTOM_QA_MODULE not in modules:
+            modules.append(_CUSTOM_QA_MODULE)
+    else:
+        modules = [m for m in modules if m != _CUSTOM_QA_MODULE]
+    deduped = tuple(_dedupe_preserve_order(modules))
+    llm_count, heavy_count = _count_llm_and_heavy(deduped)
+    return EffectiveModulePlan(
+        module_ids=deduped,
+        llm_count=llm_count,
+        heavy_count=heavy_count,
+        custom_qa_execution=bool(custom_qa_execution),
     )

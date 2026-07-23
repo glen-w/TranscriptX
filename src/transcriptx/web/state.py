@@ -173,6 +173,7 @@ CHARTS_KEY_SEARCH = "charts_search"
 CHARTS_KEY_MODULE_SORT = "charts_module_sort"
 CHARTS_KEY_CHART_TEXT = "charts_chart_text"
 CHARTS_KEY_OPEN_MODULES = "charts_open_modules"
+CHARTS_KEY_SECTION = "charts_gallery_section"
 # Legacy display toggles — migrated once into CHARTS_KEY_CHART_TEXT, then ignored.
 CHARTS_KEY_SHOW_CHART_DESCRIPTIONS = "show_chart_descriptions_toggle"
 CHARTS_KEY_SHOW_LLM_SUMMARIES = "show_llm_summaries_toggle"
@@ -189,6 +190,8 @@ CHARTS_CHART_TEXT_LLM = "LLM summary"
 CHARTS_CHART_TEXT_BOTH = "Both"
 CHARTS_KIND_STATIC = "Static"
 CHARTS_KIND_DYNAMIC = "Dynamic"
+CHARTS_SECTION_OVERVIEW = "Run overview"
+CHARTS_SECTION_BROWSE = "Browse charts"
 
 DATA_KEY_ARTIFACT_PRESET = "data_artifact_preset"
 
@@ -249,6 +252,7 @@ CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
 # Persistent view preference (not resettable, not dirty).
 CHARTS_VIEW_PREF_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_CHART_TEXT: CHARTS_CHART_TEXT_BOTH,
+    CHARTS_KEY_SECTION: CHARTS_SECTION_OVERVIEW,
 }
 
 

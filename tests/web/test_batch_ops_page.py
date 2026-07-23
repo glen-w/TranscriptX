@@ -58,6 +58,7 @@ def test_batch_panel_renders_processed_runs_with_action_links(monkeypatch) -> No
     monkeypatch.setattr(recent_run_row, "st", _BatchStreamlit)
     monkeypatch.setattr(action_render, "st", _BatchStreamlit)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod, "_slug_display_labels_from_index", lambda: {"slug-a": "Alice"}
     )
@@ -105,16 +106,12 @@ def test_sanitize_batch_widget_state_drops_stale_values(monkeypatch) -> None:
 
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/keep.json", "/gone.json"],
-        "batch_modules": ["stats", "removed_mod"],
-        "batch_mode": "bogus",
     }
     monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
 
-    mod._sanitize_batch_widget_state(["/keep.json"], ["stats"])
+    mod._sanitize_batch_widget_state(["/keep.json"])
 
     assert DummyHomeStreamlit.session_state["batch_transcripts"] == ["/keep.json"]
-    assert DummyHomeStreamlit.session_state["batch_modules"] == ["stats"]
-    assert DummyHomeStreamlit.session_state["batch_mode"] == "quick"
 
 
 @pytest.mark.unit
@@ -123,16 +120,48 @@ def test_sanitize_batch_widget_state_clears_non_list_values(monkeypatch) -> None
 
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": "/not-a-list.json",
-        "batch_modules": "stats",
-        "batch_mode": "full",
     }
     monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
 
-    mod._sanitize_batch_widget_state(["/keep.json"], ["stats"])
+    mod._sanitize_batch_widget_state(["/keep.json"])
 
     assert DummyHomeStreamlit.session_state["batch_transcripts"] == []
-    assert DummyHomeStreamlit.session_state["batch_modules"] == []
-    assert DummyHomeStreamlit.session_state["batch_mode"] == "full"
+
+
+def _stub_batch_config_ui(monkeypatch, mod) -> None:
+    """Shared helpers so panel tests focus on launch/execute paths."""
+    from transcriptx.core.analysis.selection import (
+        EffectiveModulePlan,
+        ResolvedAnalysisPreset,
+    )
+
+    resolved = ResolvedAnalysisPreset(
+        preset="quick",
+        mode="quick",
+        profile="balanced",
+        module_ids=("stats",),
+    )
+    plan = EffectiveModulePlan(
+        module_ids=("stats",),
+        llm_count=0,
+        heavy_count=0,
+        custom_qa_execution=False,
+    )
+    monkeypatch.setattr(
+        mod, "render_analysis_preset_selector", lambda **_k: resolved
+    )
+    monkeypatch.setattr(
+        mod,
+        "render_custom_qa_picker",
+        lambda **_k: (None, None, False),
+    )
+    monkeypatch.setattr(mod, "apply_custom_qa_to_plan", lambda *_a, **_k: plan)
+    monkeypatch.setattr(mod, "render_effective_module_summary", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "render_compact_llm_setup",
+        lambda **_k: (None, [], "n/a"),
+    )
 
 
 @pytest.mark.unit
@@ -140,11 +169,18 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
     monkeypatch,
 ) -> None:
     import transcriptx.web.page_modules.batch_ops as mod
+    from transcriptx.app.models.requests import BatchAnalysisRequest
 
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/tmp/alice.json"],
-        "batch_mode": "quick",
-        "batch_modules": [],
+        mod._PENDING_BATCH_KEY: {
+            "request": BatchAnalysisRequest(
+                transcript_paths=[Path("/tmp/alice.json")],
+                analysis_mode="quick",
+                selected_modules=["stats"],
+            ),
+            "execute": True,
+        },
         mod._BATCH_RESULT_KEY: SimpleNamespace(success=True, runs=[], errors=[]),
     }
     errors: list[str] = []
@@ -153,7 +189,7 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
     class _BatchStreamlit(DummyHomeStreamlit):
         @staticmethod
         def button(*_args, **_kwargs):
-            return True
+            return False
 
         @staticmethod
         def warning(*_args, **_kwargs):
@@ -168,14 +204,6 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
             return DummyHomeStreamlit.expander()
 
         @staticmethod
-        def multiselect(*_args, **_kwargs):
-            return ["/tmp/alice.json"]
-
-        @staticmethod
-        def selectbox(*_args, **_kwargs):
-            return "quick"
-
-        @staticmethod
         def fragment(fn=None, **_kwargs):
             if fn is None:
 
@@ -185,12 +213,17 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
                 return _decorator
             return fn
 
+        @staticmethod
+        def rerun():
+            return None
+
     class _Ctrl:
         def run_batch_analysis(self, _request):
             raise ValidationError("transcript_paths must not be empty")
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod,
         "get_cached_list_transcripts",
@@ -215,11 +248,18 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
 @pytest.mark.unit
 def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
     import transcriptx.web.page_modules.batch_ops as mod
+    from transcriptx.app.models.requests import BatchAnalysisRequest
 
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/tmp/alice.json"],
-        "batch_mode": "quick",
-        "batch_modules": [],
+        mod._PENDING_BATCH_KEY: {
+            "request": BatchAnalysisRequest(
+                transcript_paths=[Path("/tmp/alice.json")],
+                analysis_mode="quick",
+                selected_modules=["stats"],
+            ),
+            "execute": True,
+        },
         mod._BATCH_RESULT_KEY: SimpleNamespace(
             success=True, message="old", runs=[], errors=[]
         ),
@@ -229,7 +269,7 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
     class _BatchStreamlit(DummyHomeStreamlit):
         @staticmethod
         def button(*_args, **_kwargs):
-            return True
+            return False
 
         @staticmethod
         def error(msg, **_kwargs):
@@ -240,12 +280,8 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
             return DummyHomeStreamlit.expander()
 
         @staticmethod
-        def multiselect(*_args, **_kwargs):
-            return ["/tmp/alice.json"]
-
-        @staticmethod
-        def selectbox(*_args, **_kwargs):
-            return "quick"
+        def rerun():
+            return None
 
     class _Ctrl:
         def run_batch_analysis(self, _request):
@@ -253,6 +289,7 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod,
         "get_cached_list_transcripts",
@@ -274,6 +311,7 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
 @pytest.mark.unit
 def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
     import transcriptx.web.page_modules.batch_ops as mod
+    from transcriptx.app.models.requests import BatchAnalysisRequest
 
     old = SimpleNamespace(success=True, message="old", runs=[], errors=[])
     new = SimpleNamespace(
@@ -281,15 +319,21 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
     )
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/tmp/alice.json"],
-        "batch_mode": "quick",
-        "batch_modules": [],
+        mod._PENDING_BATCH_KEY: {
+            "request": BatchAnalysisRequest(
+                transcript_paths=[Path("/tmp/alice.json")],
+                analysis_mode="quick",
+                selected_modules=["stats"],
+            ),
+            "execute": True,
+        },
         mod._BATCH_RESULT_KEY: old,
     }
 
     class _BatchStreamlit(DummyHomeStreamlit):
         @staticmethod
         def button(*_args, **_kwargs):
-            return True
+            return False
 
         @staticmethod
         def success(*_args, **_kwargs):
@@ -300,12 +344,8 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
             return DummyHomeStreamlit.expander()
 
         @staticmethod
-        def multiselect(*_args, **_kwargs):
-            return ["/tmp/alice.json"]
-
-        @staticmethod
-        def selectbox(*_args, **_kwargs):
-            return "quick"
+        def rerun():
+            return None
 
     class _Ctrl:
         def run_batch_analysis(self, _request):
@@ -313,6 +353,7 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod,
         "get_cached_list_transcripts",

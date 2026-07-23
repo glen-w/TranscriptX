@@ -41,4 +41,4 @@ def test_llm_effort_rejects_unknown_tier() -> None:
 def test_llm_summary_effort_default_is_high() -> None:
     assert LLMSummarySettingsModel().effort == "high"
     assert LLMSpeakerSummarySettingsModel().effort == "high"
-    assert LLMActionItemsSettingsModel().effort == "high"
+    assert LLMActionItemsSettingsModel().effort == "max"

@@ -10,12 +10,19 @@ import json
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+from transcriptx.core.analysis.llm_support.action_items_guidance import (
+    format_invalid_json_error,
+    format_oversized_output_error,
+)
 from transcriptx.core.analysis.llm_support.hashing import sha256_canonical_json
 from transcriptx.core.analysis.llm_support.json_parse import (
     loads_llm_json,
     strip_json_fence,
 )
 from transcriptx.core.llm.errors import LLMResponseError
+from transcriptx.core.utils.logger import get_logger
+
+logger = get_logger()
 
 __all__ = [
     "LLM_ACTION_ITEMS_SCHEMA_ID",
@@ -261,6 +268,61 @@ def _validate_action_item(
     return item, None
 
 
+def _find_items_array_body_start(candidate: str) -> Optional[int]:
+    """Return index just after ``[`` of the top-level ``items`` array, if present."""
+    key_match = re.search(r'"items"\s*:', candidate)
+    if key_match is None:
+        return None
+    index = key_match.end()
+    while index < len(candidate) and candidate[index] in " \t\r\n":
+        index += 1
+    if index >= len(candidate) or candidate[index] != "[":
+        return None
+    return index + 1
+
+
+def _recover_truncated_action_items(candidate: str) -> Optional[List[Any]]:
+    """Salvage complete ``items`` elements from truncated meeting-extract JSON.
+
+    Local models often hit ``num_predict`` mid-object (unterminated string).
+    When at least one complete element can be ``raw_decode``d from the array,
+    return those elements so the module can still publish artifacts. Returns
+    ``None`` when nothing salvageable is found.
+    """
+    body_start = _find_items_array_body_start(candidate)
+    if body_start is None:
+        return None
+    decoder = json.JSONDecoder()
+    items: List[Any] = []
+    index = body_start
+    length = len(candidate)
+    while index < length:
+        while index < length and candidate[index] in " \t\r\n":
+            index += 1
+        if index >= length:
+            break
+        if candidate[index] == "]":
+            break
+        if candidate[index] == ",":
+            index += 1
+            continue
+        try:
+            value, end = decoder.raw_decode(candidate, index)
+        except json.JSONDecodeError:
+            break
+        items.append(value)
+        index = end
+        while index < length and candidate[index] in " \t\r\n":
+            index += 1
+        if index < length and candidate[index] == ",":
+            index += 1
+            continue
+        break
+    if not items:
+        return None
+    return items
+
+
 def parse_action_items_json(
     text: str,
     *,
@@ -269,7 +331,8 @@ def parse_action_items_json(
     """Parse meeting-extract JSON with per-record isolation.
 
     Top-level failures raise ``LLMResponseError``. Invalid items are dropped
-    and counted in diagnostics.
+    and counted in diagnostics. Truncated arrays with at least one complete
+    item are salvaged and flagged via ``diagnostics["output_truncated"]``.
     """
     diagnostics = empty_diagnostics()
     candidate = strip_json_fence(text)
@@ -278,12 +341,23 @@ def parse_action_items_json(
         if len(candidate) > char_limit:
             diagnostics["output_truncated"] = 1
             raise LLMResponseError(
-                f"Action items output exceeds expected length ({len(candidate)} > {char_limit})"
+                format_oversized_output_error(
+                    length=len(candidate), char_limit=char_limit
+                )
             )
     try:
         data = loads_llm_json(text)
     except json.JSONDecodeError as exc:
-        raise LLMResponseError(f"Action items output is not valid JSON: {exc}") from exc
+        recovered_items = _recover_truncated_action_items(candidate)
+        if recovered_items is None:
+            raise LLMResponseError(format_invalid_json_error(exc)) from exc
+        data = {"items": recovered_items}
+        diagnostics["output_truncated"] = 1
+        logger.warning(
+            "llm_action_items salvaged %s complete item(s) from truncated JSON; "
+            "raise effort/model before re-running if extracts look incomplete",
+            len(recovered_items),
+        )
     if not isinstance(data, dict):
         raise LLMResponseError("Action items output JSON must be an object")
     extra_keys = set(data.keys()) - _ACTION_ITEMS_SCHEMA_KEYS

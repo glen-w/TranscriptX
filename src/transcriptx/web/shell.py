@@ -272,6 +272,35 @@ def inject_global_styles() -> None:
     #scroll-to-top-btn.show {
         display: block;
     }
+    /* Run Analysis sticky footer — keyed via .tx-run-analysis-footer flag */
+    .main .block-container {
+        padding-bottom: 5.5rem;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div.tx-run-analysis-footer),
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.tx-run-analysis-footer) {
+        position: sticky;
+        bottom: 0;
+        z-index: 60;
+        margin-top: 1rem;
+        padding: 0.65rem 0.85rem 0.75rem 0.85rem;
+        background: var(--background-color, #0e1117);
+        border-top: 1px solid rgba(250, 250, 250, 0.12);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.18);
+    }
+    .tx-run-analysis-footer-summary {
+        font-size: 0.85rem;
+        color: #8a9ab0;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+    .tx-run-analysis-footer-summary .tx-ellipsis {
+        display: inline-block;
+        max-width: min(28ch, 42vw);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: bottom;
+    }
     /* Context bar — single quiet orientation line; rule matches st.divider */
     .tx-context-bar-wrap {
         position: sticky;
@@ -559,8 +588,12 @@ def inject_global_styles() -> None:
         box-shadow: none;
         color: inherit;
         font-weight: 500;
-        justify-content: flex-start;
-        text-align: left;
+        justify-content: flex-start !important;
+        text-align: left !important;
+    }
+    .tx-chart-module-row div[data-testid="stButton"] > button p {
+        text-align: left !important;
+        width: 100%;
     }
     .tx-chart-module-row div[data-testid="stButton"] > button:hover {
         background: rgba(120, 130, 145, 0.08);

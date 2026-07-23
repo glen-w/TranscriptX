@@ -1754,3 +1754,43 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Final default run after expansion: **6985 passed**, **1 failed** (unrelated `llm_custom_qa` fresh-process import), **1 skipped**, **178** deselected.
 - **Production code in this #tests pass:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 65. Expansion (2026-07-23) – Run Analysis GUI declutter contracts
+
+### Trigger
+`/tests` focused on GUI Run Analysis page (post declutter: presets, effective modules, Skip QA, Settings → Models, two-phase launch).
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260723-1541.zip` (5.3M).
+- **Collection (container, tests copied to `/tmp`):** `6922` selected / `7090` with ignores for known blockers (`168` deselected by addopts). Full collect without ignores hits 2 errors: path-sensitive `test_stale_surface_references` under `/tmp` copy, and missing `hypothesis` for `llm_custom_qa/test_plan_coverage.py`.
+- **Focused baseline (Run Analysis slice) before expansion:** `86 passed` (`test_run_analysis_page`, `test_batch_ops_page`, `test_selection`, `test_llm_model_selection`, `test_module_run_prompt`, `test_gui_surface_orchestration`).
+- **Quarantined:** `0` active `@pytest.mark.quarantined`.
+- **Cleanup:** disabled (per command).
+- **Markers / addopts:** unchanged.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Legacy session migration | No tests for mode/profile → preset keys | `migrate_legacy_analysis_keys` cases |
+| Custom selection persistence | Only resolver smoke | Custom list round-trip + reconcile on target change |
+| Skip vs empty-artifact QA | Wording/semantics untested | Picker doubles for Skip / Advanced empty artifact |
+| Stable question row ids | Source risk only | AST/source guard against index-based widget keys |
+| Settings → Models | New tab untested | Hub + panel delegation contracts |
+| Two-phase launch / footer | Partial page tests | Pending snapshot authority + sticky footer CSS |
+| Compact LLM degrade | Gate path only | Non-Ollama compact setup returns without crash |
+| Shared Batch/Run helpers | Implicit | Import/source share of preset + compact LLM |
+
+### Tests added
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_run_analysis_gui_contracts.py` | **new** (+16) | Run Analysis GUI acceptance contracts above |
+| `tests/core/analysis/test_selection.py` | earlier in declutter | Preset → mode/profile/modules + effective QA fold-in |
+| `tests/web/test_run_analysis_page.py` | earlier in declutter | Segmented Target, single launch key, compact vs Settings |
+
+### Validation
+- Focused Run Analysis GUI slice after expansion: **58 passed** (`gui_contracts` + `run_analysis_page` + `batch_ops` + `selection`).
+- **Production code in this #tests pass:** none (tests-only expansion).
+- **Quarantined tests:** not re-enabled.

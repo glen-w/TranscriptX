@@ -40,13 +40,16 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 
 ## Run Analysis model selection
 
-On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `provider=ollama`, you can:
+On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `provider=ollama`, the **LLM setup** section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module).
 
-- Use **one shared model** for all LLM consumers, or **select per module**
-- Load / save **LLM model profiles** (ProfileManager target `llm_models`, stored under `.transcriptx/profiles/llm_models/`)
-- Inspect a collapsible table of **installed Ollama models** and what transcript LLM tasks they are best for (to guide per-module picks)
+**Settings → Models** owns management actions:
 
-Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a profile and optionally set it as the project active profile (Settings → Configuration → Active Profiles, or the save checkbox on the run form).
+- Refresh installed Ollama tags
+- Model information / guidance table
+- Create / overwrite **Model presets** (ProfileManager target `llm_models`, under `.transcriptx/profiles/llm_models/`)
+- Set the project-active Model preset
+
+Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a Model preset under Settings → Models (or activate one under Settings → Configuration → Active Profiles).
 
 **Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `llm_custom_qa`, `chart_descriptions`, `group_llm_synthesis`):
 
@@ -56,11 +59,11 @@ Per-run selections are snapshotted onto the analysis request and do **not** rewr
 
 Effort-profile `model` fields are **not** part of this chain when a consumer id is set. Corrections Studio (no consumer id) may still use an effort-profile model over global `llm.model`.
 
-On the run form, **Project default (active)** loads the already-applied project `llm.model_selection` pack. **Custom (this run)** keeps free-edited widgets for this launch only. Unavailable saved tags are cleared with an explanation (no silent substitute); launch stays gated until an installed model is chosen.
+On the run form, **Project default** reflects the already-applied project `llm.model_selection` pack. **Custom (this run)** (under Change for this run) keeps free-edited widgets for this launch only. Unavailable saved tags are cleared with an explanation (no silent substitute); launch stays gated until an installed model is chosen when LLM modules are selected.
 
-If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled.
+If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled. Non-LLM analysis remains runnable when no live-LLM modules are in the effective module list.
 
-**Thinking models (JSON-unsafe):** tags matching `qwen3*`, `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, and `group_llm_synthesis`. The Run Analysis model selector **hides** those tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers. Launch stays gated if a saved profile still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, `mistral:*`, or `mistral-nemo` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
+**Thinking models (JSON-unsafe):** tags matching `qwen3*`, `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, and `group_llm_synthesis`. The compact Run Analysis selector **hides** those tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers. Launch stays gated if a saved preset still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, `mistral:*`, or `mistral-nemo` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
 
 ### Complementary Ollama picks for transcript analysis
 
@@ -256,13 +259,13 @@ list (str or structured) → request. Resolve/bind only when the module is selec
 
 ## `llm_action_items` effort
 
-The setting **`analysis.llm_action_items.effort`** controls meeting-extract effort for the **`llm_action_items` module only**. It uses the same builtin tiers as `llm_summary` (`low`, `medium`, `high`, `max`; default **`high`** because extraction is completeness-oriented across long meetings).
+The setting **`analysis.llm_action_items.effort`** controls meeting-extract effort for the **`llm_action_items` module only**. It uses the same builtin tiers as `llm_summary` (`low`, `medium`, `high`, `max`; default **`max`** because meeting-extract JSON lists often truncate under lower output budgets).
 
 ```json
 {
   "analysis": {
     "llm_action_items": {
-      "effort": "high",
+      "effort": "max",
       "coerce_v1_artifacts": false
     }
   }
@@ -279,7 +282,7 @@ The setting **`analysis.llm_action_items.effort`** controls meeting-extract effo
 
 `schema_id`: `transcriptx.llm_action_items.v2`  
 `render_contract_id`: `transcriptx.llm_action_items.render.v2`  
-`module_version`: `2` · `prompt_version`: `5`
+`module_version`: `2` · `prompt_version`: `6`
 
 | Field | Notes |
 |-------|-------|
@@ -290,7 +293,9 @@ The setting **`analysis.llm_action_items.effort`** controls meeting-extract effo
 | `items[].status` | `open` \| `done` \| `unclear`. For `decision` / `proposal` / `open_question`, `done` requires lexicon evidence in text/quote |
 | `items[].quote` | Exact transcript substring after whitespace normalisation, or `null` |
 | `items[].confidence` | Finite float in `[0, 1]` |
-| `diagnostics` | `items_raw`, `items_parsed_valid`, `record_type_defaulted`, `items_invalid_dropped`, `status_unsupported_dropped`, `items_ungrounded_dropped`, `quotes_nulled`, `items_duplicate_removed`, `items_truncated`, `output_truncated`, `counts_by_type` (all five types), `items_committed` |
+| `diagnostics` | `items_raw`, `items_parsed_valid`, `record_type_defaulted`, `items_invalid_dropped`, `status_unsupported_dropped`, `items_ungrounded_dropped`, `quotes_nulled`, `items_duplicate_removed`, `items_truncated`, `output_truncated` (1 when the model response was truncated / salvaged from incomplete JSON), `counts_by_type` (all five types), `items_committed` |
+
+When `output_truncated` is set, Insights / Overview show a warning that extracts may be incomplete and that re-running unchanged will usually repeat the failure — raise `analysis.llm_action_items.effort` to `max` and/or pick a stronger JSON-capable model for `llm_action_items`, then re-run only that module. Hard parse failures persist the same remediation text into `run_results` / block availability (instead of a bare “Run the required analysis modules”).
 | `provenance` | Includes `module_version`, `prompt_version`, `schema_id`, `render_contract_id`, `cache_key`, effort/runtime, input coverage |
 
 Top-level malformed JSON / unknown top-level keys / oversize raw output fail with `llm_invalid_response`. **Per-record isolation:** invalid items are dropped with diagnostics so sibling valid extracts survive. Grounding is record-type agnostic and never rewrites `record_type` / `text` / `owner` / `deadline` / `status`. Bounds: max **48** total / **16** per type after validation. Markdown uses section labels from `RECORD_TYPE_LABELS` and always includes **AI-generated draft. Human review required.**

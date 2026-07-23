@@ -47,6 +47,7 @@ def _render_answer_card(
     *,
     key_prefix: str,
     allow_jump: bool = True,
+    show_evidence: bool = True,
 ) -> None:
     q = _csv_safe(str(row.get("question") or ""))
     status = str(row.get("status") or "")
@@ -58,40 +59,43 @@ def _render_answer_card(
     if status == "answered":
         answer = _csv_safe(str(row.get("answer") or ""))
         st.markdown(_escape(answer), unsafe_allow_html=True)
-        reasoning = row.get("reasoning")
-        if reasoning:
-            st.caption("Evidence explanation")
-            st.markdown(
-                _escape(_csv_safe(str(reasoning))),
-                unsafe_allow_html=True,
-            )
-        evidence_used = row.get("evidence_used") or {}
-        if isinstance(evidence_used, dict) and evidence_used.get("pack_ids_rendered"):
-            st.caption(
-                f"Evidence: packs={evidence_used.get('pack_ids_rendered')} "
-                f"transcript={evidence_used.get('use_transcript')}"
-            )
-        citations = row.get("citations") or []
-        if isinstance(citations, list):
-            for i, cite in enumerate(citations):
-                if not isinstance(cite, dict):
-                    continue
-                quote = _csv_safe(str(cite.get("quote") or ""))
-                segs = _valid_segment_indexes(cite.get("segment_indexes"))
-                st.code(quote, language=None)
-                st.caption(
-                    f"segments={_escape(segs)} "
-                    f"start={_escape(cite.get('start_time'))} "
-                    f"end={_escape(cite.get('end_time'))}"
+        if show_evidence:
+            reasoning = row.get("reasoning")
+            if reasoning:
+                st.caption("Evidence explanation")
+                st.markdown(
+                    _escape(_csv_safe(str(reasoning))),
+                    unsafe_allow_html=True,
                 )
-                if allow_jump and segs and st.button(
-                    f"Jump to segment {segs[0]}",
-                    key=f"{key_prefix}_jump_{row.get('question_index')}_{i}",
-                ):
-                    st.session_state["transcript_jump_segment_index"] = segs[0]
-                    st.toast(f"Jump requested to segment {segs[0]}")
-                elif allow_jump and cite.get("segment_indexes") and not segs:
-                    st.caption("Jump blocked: invalid segment_indexes")
+            evidence_used = row.get("evidence_used") or {}
+            if isinstance(evidence_used, dict) and evidence_used.get(
+                "pack_ids_rendered"
+            ):
+                st.caption(
+                    f"Evidence: packs={evidence_used.get('pack_ids_rendered')} "
+                    f"transcript={evidence_used.get('use_transcript')}"
+                )
+            citations = row.get("citations") or []
+            if isinstance(citations, list):
+                for i, cite in enumerate(citations):
+                    if not isinstance(cite, dict):
+                        continue
+                    quote = _csv_safe(str(cite.get("quote") or ""))
+                    segs = _valid_segment_indexes(cite.get("segment_indexes"))
+                    st.code(quote, language=None)
+                    st.caption(
+                        f"segments={_escape(segs)} "
+                        f"start={_escape(cite.get('start_time'))} "
+                        f"end={_escape(cite.get('end_time'))}"
+                    )
+                    if allow_jump and segs and st.button(
+                        f"Jump to segment {segs[0]}",
+                        key=f"{key_prefix}_jump_{row.get('question_index')}_{i}",
+                    ):
+                        st.session_state["transcript_jump_segment_index"] = segs[0]
+                        st.toast(f"Jump requested to segment {segs[0]}")
+                    elif allow_jump and cite.get("segment_indexes") and not segs:
+                        st.caption("Jump blocked: invalid segment_indexes")
     elif status == "abstained":
         st.info(f"Abstained: `{_escape(row.get('abstain_reason'))}`")
     elif status == "unavailable":
