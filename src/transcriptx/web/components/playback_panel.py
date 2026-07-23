@@ -32,6 +32,7 @@ tolerate the recording disappearing or changing after preflight.
 
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -48,6 +49,22 @@ logger = get_logger()
 
 # Number of clips to pre-warm on initial panel load / after a click.
 _WARM_WINDOW = 3
+
+# Tiny silent MP3 kept mounted when no segment is selected so the first ▶ click
+# updates an existing ``st.audio`` widget instead of inserting one above the
+# transcript (which Streamlit scrolls into view as the "player bar").
+_IDLE_CLIP_MP3 = base64.b64decode(
+    "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYyLjEyLjEwMAAAAAAAAAAAAAAA/+M4wAAA"
+    "AAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+    "qqqqqqqq1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV////////////////"
+    "////////////////////////////AAAAAExhdmM2Mi4yOAAAAAAAAAAAAAAAACQC8AAA"
+    "AAAAAAGw9wpEpwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAA/+MYxAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+    "VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVV"
+    "VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MY"
+    "xHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+    "VVVVVVVVVVVVVVVVVVVVVVVV"
+)
 
 
 class PlaybackUnavailableReason(str, Enum):
@@ -296,10 +313,15 @@ def render_active_clip(
     """
     Render ``st.audio`` for one segment, or a sanitised warning on failure.
 
+    When ``segment`` is None, mounts a silent idle clip so the player widget
+    stays in the layout. First-play must not insert a new audio block above
+    the transcript (Streamlit scrolls that into view).
+
     Failures are caught locally so surrounding transcript UI stays usable and
     another segment can be selected without clearing the fragment.
     """
     if segment is None:
+        st.audio(_IDLE_CLIP_MP3, format="audio/mpeg", autoplay=False)
         return
     try:
         clip_bytes = controller.get_clip_bytes(
@@ -425,15 +447,14 @@ def render_playback_panel(
         play_key,
     )
 
-    # ── audio player ───────────────────────────────────────────────────────────
-    if play_seg_idx is not None:
-        seg_to_play = all_segs[play_seg_idx]
-        render_active_clip(
-            controller,
-            transcript_path,
-            seg_to_play,
-            autoplay=autoplay,
-        )
+    # ── audio player (always mounted when playback is available) ───────────────
+    seg_to_play = all_segs[play_seg_idx] if play_seg_idx is not None else None
+    render_active_clip(
+        controller,
+        transcript_path,
+        seg_to_play,
+        autoplay=autoplay,
+    )
 
     if not include_segment_rows:
         return

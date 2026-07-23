@@ -247,6 +247,112 @@ def test_compute_outcome_variants_and_finalize_strips_private() -> None:
 
 
 @pytest.mark.unit
+def test_grounding_corpus_prefer_tail_keeps_meeting_end() -> None:
+    segments = [
+        {"text": "AAAA", "start": 0.0, "end": 1.0},
+        {"text": "BBBB", "start": 1.0, "end": 2.0},
+        {"text": "CCCC", "start": 2.0, "end": 3.0},
+        {"text": "DDDD", "start": 3.0, "end": 4.0},
+    ]
+    # Full corpus is "AAAA\nBBBB\nCCCC\nDDDD" (19 chars). Cap forces truncation.
+    head = build_grounding_corpus(segments, max_corpus_chars=9, prefer="head")
+    tail = build_grounding_corpus(segments, max_corpus_chars=9, prefer="tail")
+    assert head.truncated and tail.truncated
+    assert head.corpus_text.startswith("AAAA")
+    assert "DDDD" not in head.corpus_text
+    assert tail.corpus_text.endswith("DDDD")
+    assert not tail.corpus_text.startswith("AAAA")
+    # Tail window should include the newest original index.
+    assert tail.entries[-1].original_segment_index == 3
+
+
+@pytest.mark.unit
+def test_grounding_corpus_tail_partial_cuts_oldest_kept_segment() -> None:
+    segments = [
+        {"text": "ABCDEFGH", "start": 0.0, "end": 1.0},
+        {"text": "XYZ", "start": 1.0, "end": 2.0},
+    ]
+    # Keep "XYZ" (3) + sep (1) + suffix of first segment.
+    corpus = build_grounding_corpus(segments, max_corpus_chars=7, prefer="tail")
+    assert corpus.truncated
+    assert corpus.partial_final_segment
+    assert corpus.corpus_text.endswith("XYZ")
+    assert corpus.entries[-1].text == "XYZ"
+    assert "XYZ" in corpus.corpus_text
+    # Oldest kept text is a suffix of ABCDEFGH.
+    assert "ABCDEFGH".endswith(corpus.entries[0].text)
+
+
+@pytest.mark.unit
+def test_quality_retry_helpers_detect_and_describe_failures() -> None:
+    from transcriptx.core.analysis.llm_custom_qa.analyze import (
+        _build_repair_user_prompt,
+        _needs_quality_retry,
+        _system_prompt,
+    )
+
+    assert not _needs_quality_retry(empty_diagnostics())
+    assert _needs_quality_retry({**empty_diagnostics(), "response_incomplete_count": 1})
+    assert _needs_quality_retry({**empty_diagnostics(), "grounding_failed_count": 2})
+
+    prompt = _system_prompt(question_count=2)
+    assert "exactly 2 answer objects" in prompt
+    assert "0 through 1" in prompt
+    assert "never paraphrase" in prompt
+
+    repair = _build_repair_user_prompt(
+        base_user_prompt="BASE",
+        answers=[
+            {
+                "question_index": 0,
+                "status": "unavailable",
+                "system_reason": "grounding_failed",
+            },
+            {
+                "question_index": 1,
+                "status": "unavailable",
+                "system_reason": "response_incomplete",
+            },
+        ],
+        question_count=2,
+    )
+    assert repair.startswith("BASE")
+    assert "<<<REPAIR>>>" in repair
+    assert "question_index 0: grounding_failed" in repair
+    assert "question_index 1: response_incomplete" in repair
+
+
+@pytest.mark.unit
+def test_grounding_recovers_longest_interior_word_span() -> None:
+    segments = [
+        {
+            "text": "it doesn't actually mean we're doing a bad job.",
+            "start": 0.0,
+            "end": 1.0,
+        }
+    ]
+    corpus = build_grounding_corpus(segments, max_corpus_chars=10_000)
+    paraphrased = (
+        "I don't know, like I just think we've done really well and it's not "
+        "perfect but it doesn't actually mean we're doing a bad job."
+    )
+    out = ground_answered_row(
+        {
+            "question_index": 0,
+            "question": "q",
+            "status": "answered",
+            "answer": "aligned",
+            "confidence": 0.9,
+            "_model_quotes": [paraphrased],
+        },
+        corpus,
+    )
+    assert out["status"] == "answered"
+    assert out["citations"]
+    assert "doesn't actually mean we're doing a bad job" in out["citations"][0]["quote"]
+
+
+@pytest.mark.unit
 def test_grounding_failed_and_citation_cap() -> None:
     segments = [
         {"text": "alpha one", "start": 0.0, "end": 1.0},

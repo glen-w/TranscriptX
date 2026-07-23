@@ -23,6 +23,8 @@ def test_speaker_accent_color_cycles_distinct_palette() -> None:
     assert first != second
     assert first.startswith("#")
     assert oc._speaker_accent_color(len(oc._SPEAKER_ACCENTS)) == first
+    # Name-stable accents match the shared helper used across the viewer.
+    assert oc._speaker_accent_color("Alice") == oc._speaker_accent_color(" alice ")
 
 
 @pytest.mark.unit
@@ -94,3 +96,91 @@ def test_render_summary_body_strips_and_falls_back(
     oc._render_summary_body(cand3)
     assert json_payloads[-1] == {"summary": "", "x": 1}
     assert "commitments" not in json_payloads[-1]
+
+
+@pytest.mark.unit
+def test_highlights_compact_skips_empty_unthemed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    infos: list[str] = []
+    writes: list[str] = []
+
+    class _St:
+        @staticmethod
+        def subheader(_title):
+            return None
+
+        @staticmethod
+        def info(msg):
+            infos.append(str(msg))
+
+        @staticmethod
+        def write(msg):
+            writes.append(str(msg))
+
+    loader = SimpleNamespace(
+        load_json=lambda module, suffix: {
+            "themes": [
+                {
+                    "label": "Unthemed",
+                    "is_unthemed": True,
+                    "quote_ids": [],
+                    "conflict_event_ids": [],
+                }
+            ]
+        }
+    )
+    ctx = SimpleNamespace(
+        run_root=None,
+        services=SimpleNamespace(content_loader=loader),
+    )
+    monkeypatch.setattr(oc, "st", _St)
+    oc.render_highlights_compact(ctx, SimpleNamespace())
+    assert writes == []
+    assert infos == ["No highlight themes for this run."]
+
+
+@pytest.mark.unit
+def test_highlights_compact_shows_themed_labels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    writes: list[str] = []
+
+    class _St:
+        @staticmethod
+        def subheader(_title):
+            return None
+
+        @staticmethod
+        def info(_msg):
+            return None
+
+        @staticmethod
+        def write(msg):
+            writes.append(str(msg))
+
+    loader = SimpleNamespace(
+        load_json=lambda module, suffix: {
+            "themes": [
+                {
+                    "label": "Hiring plan",
+                    "is_unthemed": False,
+                    "quote_ids": ["q1"],
+                    "conflict_event_ids": [],
+                },
+                {
+                    "label": "Unthemed",
+                    "is_unthemed": True,
+                    "quote_ids": [],
+                    "conflict_event_ids": [],
+                },
+            ]
+        }
+    )
+    ctx = SimpleNamespace(
+        run_root=None,
+        services=SimpleNamespace(content_loader=loader),
+    )
+    monkeypatch.setattr(oc, "st", _St)
+    oc.render_highlights_compact(ctx, SimpleNamespace())
+    assert writes == ["- Hiring plan"]

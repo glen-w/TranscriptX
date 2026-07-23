@@ -14,6 +14,7 @@ from transcriptx.web.blocks.implementations.insights import (
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.utils.text_utils import format_time_detailed
+from transcriptx.web.speaker_accent import speaker_inline_html
 
 
 def _render_span_rows(
@@ -41,7 +42,19 @@ def _render_span_rows(
                 f"-{format_time_detailed(float(end))}"
             )
         mean_s = f"{float(mean):.3f}" if isinstance(mean, (int, float)) else "—"
-        st.markdown(f"**{speaker}** · {time_range} · mean score {mean_s}")
+        speaker_label = str(speaker).strip()
+        speaker_html = (
+            speaker_inline_html(speaker_label)
+            if speaker_label and speaker_label != "—"
+            else ""
+        )
+        if speaker_html:
+            st.markdown(
+                f"{speaker_html} · {time_range} · mean score {mean_s}",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(f"**{speaker_label or '—'}** · {time_range} · mean score {mean_s}")
         if preview:
             st.write(preview)
         playback = row.get("playback") or {}

@@ -202,7 +202,9 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
         ),
         notes=(
             "Complements gemma3:12b with extreme context headroom for long "
-            "meetings; ~7GB download."
+            "meetings; ~7GB download. For llm_custom_qa, TranscriptX caps the "
+            "citation corpus (~24k chars, meeting tail) — full-meeting dumps "
+            "make NeMo skip questions and invent quotes."
         ),
     ),
     _FamilyRule(

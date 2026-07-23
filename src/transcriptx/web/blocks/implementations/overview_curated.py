@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-import html
 import json
 from pathlib import Path
 
 import streamlit as st
 
 from transcriptx.utils.text_utils import format_duration_display_from_config
+from transcriptx.core.analysis.llm_support.text_cleanup import (
+    strip_llm_summary_preface,
+)
 from transcriptx.web.blocks.context import BlockContext
 from transcriptx.web.blocks.group_content import (
     is_group_run,
@@ -25,6 +27,11 @@ from transcriptx.web.blocks.llm_presentation import (
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.module_run_prompt import render_module_required_hint
+from transcriptx.web.speaker_accent import (
+    SPEAKER_ACCENTS as _SPEAKER_ACCENTS,
+    speaker_accent_color as _speaker_accent_color,
+    speaker_heading_html,
+)
 from transcriptx.web.run_health_presentation import build_run_status_summary
 from transcriptx.web.services.artifact_service import USER_REPORT_JSON
 from transcriptx.web.summary_precedence import (
@@ -61,11 +68,16 @@ def _render_summary_body(
             body = strip_leading_markdown_heading(body)
         if strip_provenance:
             body = strip_provenance_footer(body)
+        if candidate.kind in {"llm_summary", "narrative_summary"}:
+            body = strip_llm_summary_preface(body)
         st.markdown(body)
         return
     payload = candidate.payload or {}
     if payload.get(candidate.text_field):
-        st.markdown(str(payload[candidate.text_field]))
+        text = str(payload[candidate.text_field])
+        if candidate.kind in {"llm_summary", "narrative_summary"}:
+            text = strip_llm_summary_preface(text)
+        st.markdown(text)
         return
     if payload:
         # Keep commitments out of inline JSON dumps; Actions owns that table.
@@ -248,21 +260,6 @@ def _format_wpm(value: object) -> str:
         return "—"
 
 
-# Distinct accents for speaker cards (readable on dark and light themes).
-_SPEAKER_ACCENTS = (
-    "#5B8DEF",  # blue
-    "#E07A5F",  # coral
-    "#81B29A",  # sage
-    "#F2CC8F",  # gold
-    "#9B8BB8",  # lavender
-    "#7EB8DA",  # sky
-)
-
-
-def _speaker_accent_color(index: int) -> str:
-    return _SPEAKER_ACCENTS[index % len(_SPEAKER_ACCENTS)]
-
-
 def _speaker_fourth_stat(entry: dict) -> tuple[str, str]:
     """Pick one extra interesting metric for a speaker card."""
     tic = entry.get("tic_rate")
@@ -340,17 +337,15 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
     cols = st.columns(min(3, len(ranked)))
     for i, entry in enumerate(ranked[:6]):
         name = str(entry.get("name") or "Speaker")
-        accent = _speaker_accent_color(i)
+        # Prefer name-stable accents so the same speaker matches elsewhere
+        # in the viewer; fall back to rank index only for empty names.
+        accent = _speaker_accent_color(name if name.strip() else i)
         fourth_label, fourth_value = _speaker_fourth_stat(entry)
         with cols[i % len(cols)]:
             with st.container(border=True):
                 st.markdown(
-                    (
-                        f'<div class="tx-speaker-card-title" '
-                        f'style="--speaker-accent: {accent}">'
-                        f'<span class="tx-speaker-swatch" aria-hidden="true"></span>'
-                        f"<strong>{html.escape(name)}</strong>"
-                        f"</div>"
+                    speaker_heading_html(
+                        name, accent=accent, css_class="tx-speaker-card-title"
                     ),
                     unsafe_allow_html=True,
                 )
@@ -469,14 +464,28 @@ def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
     themes = highlights.get("themes") or highlights.get("top_themes") or []
     quotes = highlights.get("quotes") or highlights.get("items") or []
     shown = 0
-    for theme in themes[:3]:
-        if isinstance(theme, dict):
-            label = theme.get("label") or theme.get("theme") or theme.get("name")
-        else:
-            label = theme
+    for theme in themes:
+        if not isinstance(theme, dict):
+            label = str(theme).strip()
+            if label and label.lower() != "unthemed":
+                st.write(f"- {label}")
+                shown += 1
+                if shown >= 3:
+                    break
+            continue
+        has_q = bool(theme.get("quote_ids"))
+        has_e = bool(theme.get("conflict_event_ids"))
+        # Synthetic empty Unthemed (and any theme with no content) is not user-facing.
+        if theme.get("is_unthemed") and not has_q and not has_e:
+            continue
+        if not (has_q or has_e):
+            continue
+        label = theme.get("label") or theme.get("theme") or theme.get("name")
         if label:
             st.write(f"- {label}")
             shown += 1
+            if shown >= 3:
+                break
     if shown == 0:
         for q in quotes[:3]:
             if isinstance(q, dict):
@@ -487,7 +496,7 @@ def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
                 st.write(f"- {str(text)[:160]}")
                 shown += 1
     if shown == 0:
-        st.info(quiet_unavailable_message("Highlights"))
+        st.info("No highlight themes for this run.")
 
 
 def render_run_status_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:

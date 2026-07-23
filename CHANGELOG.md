@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-07-23
+
+### Changed
+
+- Charts Gallery UI: compact filters (Search, Source, Analysis scope, Static/Dynamic pills), View options popover with Chart text mode, filtered Run overview section, searchable module rows with Module family / A–Z sort, and dirty-only Reset.
+- Studio presentation polish: LLM text cleanup helpers, speaker accents in the transcript viewer, and shell spacing fixes.
+
+### Fixed
+
+- Charts filter state categories (resettable filters vs persistent Chart text vs run-scoped open modules); Source presets no longer leave invisible free-form tag filters.
+
 ## [0.6.7] - 2026-07-23
 
 ### Added

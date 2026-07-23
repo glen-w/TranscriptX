@@ -17,7 +17,10 @@ from transcriptx.web.state import (
     CHARTS_KEY_EXPORT_SIG,
     CHARTS_KEY_FILTERS_INIT,
     CHARTS_KEY_FILTER_MODULE,
+    CHARTS_KEY_MODULE_SORT,
+    CHARTS_KEY_OPEN_MODULES,
     CHARTS_KEY_SOURCE_PRESET,
+    CHARTS_SORT_ALPHA,
 )
 
 
@@ -37,32 +40,6 @@ def _chart(artifact_id: str, *, tags: list[str] | None = None) -> Artifact:
         tags=tags or [],
         title=artifact_id,
     )
-
-
-@pytest.mark.unit
-def test_overview_candidate_charts_source_and_tags() -> None:
-    from transcriptx.web.page_modules.charts import _overview_candidate_charts
-
-    charts = [
-        _chart("g", tags=["group_aggregate"]),
-        _chart("m", tags=["member_session"]),
-        _chart("both", tags=["group_aggregate", "member_session"]),
-        _chart("plain", tags=["other"]),
-        _chart("tagged", tags=["foo", "bar"]),
-    ]
-    assert [
-        c.id for c in _overview_candidate_charts(charts, "Group aggregate", [])
-    ] == [
-        "g",
-        "both",
-    ]
-    assert [
-        c.id for c in _overview_candidate_charts(charts, "Member sessions", [])
-    ] == ["m", "both"]
-    assert [
-        c.id for c in _overview_candidate_charts(charts, "All", ["foo", "bar"])
-    ] == ["tagged"]
-    assert len(_overview_candidate_charts(charts, "All", [])) == 5
 
 
 @pytest.mark.unit
@@ -140,12 +117,12 @@ def test_ensure_charts_filters_for_run_resets_on_identity_change(monkeypatch) ->
         CHARTS_KEY_FILTERS_INIT: "old|run",
         CHARTS_KEY_FILTER_MODULE: "noise",
         CHARTS_KEY_SOURCE_PRESET: "Member sessions",
+        CHARTS_KEY_MODULE_SORT: CHARTS_SORT_ALPHA,
+        CHARTS_KEY_OPEN_MODULES: ["acts"],
         CHARTS_KEY_EXPORT_RESULT: SimpleNamespace(),
         CHARTS_KEY_EXPORT_SIG: frozenset({"x"}),
     }
-    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
 
-    # st.session_state may be a special object; assign via module patch
     class _St:
         session_state = ss
 
@@ -154,6 +131,8 @@ def test_ensure_charts_filters_for_run_resets_on_identity_change(monkeypatch) ->
     assert ss[CHARTS_KEY_FILTERS_INIT] == "slug|run-2"
     assert ss[CHARTS_KEY_FILTER_MODULE] is None  # default
     assert ss[CHARTS_KEY_SOURCE_PRESET] == "All"
+    assert ss[CHARTS_KEY_MODULE_SORT] == CHARTS_SORT_ALPHA  # preserved
+    assert ss[CHARTS_KEY_OPEN_MODULES] == []
     assert CHARTS_KEY_EXPORT_RESULT not in ss
     assert CHARTS_KEY_EXPORT_SIG not in ss
 
@@ -161,6 +140,53 @@ def test_ensure_charts_filters_for_run_resets_on_identity_change(monkeypatch) ->
     ss[CHARTS_KEY_FILTER_MODULE] = "keep"
     mod._ensure_charts_filters_for_run("slug", "run-2")
     assert ss[CHARTS_KEY_FILTER_MODULE] == "keep"
+
+
+@pytest.mark.unit
+def test_source_return_to_all_does_not_keep_locked_preset(monkeypatch) -> None:
+    import transcriptx.web.page_modules.charts as mod
+    from transcriptx.web.state import CHARTS_KEY_FILTER_TAGS, CHARTS_KEY_TAGS_MULTI
+
+    ss = {
+        CHARTS_KEY_TAGS_MULTI: ["foo"],
+        CHARTS_KEY_FILTER_TAGS: ["foo"],
+    }
+
+    class _St:
+        session_state = ss
+
+    monkeypatch.setattr(mod, "st", _St)
+    mod._apply_source_tag_coupling("Group aggregate")
+    assert ss[CHARTS_KEY_FILTER_TAGS] == ["group_aggregate"]
+    assert ss[CHARTS_KEY_TAGS_MULTI] == []
+    mod._apply_source_tag_coupling("All")
+    assert ss[CHARTS_KEY_FILTER_TAGS] == []
+    assert ss[CHARTS_KEY_TAGS_MULTI] == []
+
+
+@pytest.mark.unit
+def test_sort_is_dirty_and_reset_restores_module_family() -> None:
+    from transcriptx.web.charts_filter_state import (
+        charts_filters_are_dirty,
+        reset_charts_filters_to_defaults,
+    )
+    from transcriptx.web.state import (
+        CHARTS_FILTER_DEFAULTS,
+        CHARTS_KEY_MODULE_SORT,
+        CHARTS_SORT_ALPHA,
+        CHARTS_SORT_MODULE_FAMILY,
+    )
+
+    session: dict = {
+        key: (list(val) if isinstance(val, list) else val)
+        for key, val in CHARTS_FILTER_DEFAULTS.items()
+    }
+    assert charts_filters_are_dirty(session) is False
+    session[CHARTS_KEY_MODULE_SORT] = CHARTS_SORT_ALPHA
+    assert charts_filters_are_dirty(session) is True
+    reset_charts_filters_to_defaults(session)
+    assert session[CHARTS_KEY_MODULE_SORT] == CHARTS_SORT_MODULE_FAMILY
+    assert charts_filters_are_dirty(session) is False
 
 
 @pytest.mark.unit
@@ -214,6 +240,7 @@ def test_render_charts_body_empty_shows_empty_state(monkeypatch, tmp_path) -> No
 
     assert shell_calls
     assert shell_calls[0][0][0] == "Charts Gallery"
+    assert shell_calls[0][0][1] is None  # no permanent browse description
     assert empty_calls
     assert empty_calls[0][0][0] == "no_results_yet"
     assert "No chart artifacts" in empty_calls[0][0][1]

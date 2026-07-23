@@ -5,19 +5,25 @@ Charts gallery page for TranscriptX Studio.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import streamlit as st
 from PIL import Image
 
-from transcriptx.web.charts_filter_state import (
-    ensure_charts_display_toggles_default_on,
-    reset_charts_filters_to_defaults,
-)
-from transcriptx.core.config import (
-    resolve_effective_config,
-)
+from transcriptx.core.config import resolve_effective_config
+from transcriptx.export import ChartsExportResult
 from transcriptx.web.blocks.filters.subview_slice import render_subview_slice_filter
+from transcriptx.web.charts_filter_state import (
+    chart_text_flags,
+    charts_filters_are_dirty,
+    ensure_charts_chart_text,
+    intersect_charts_open_modules,
+    kind_filter_from_session,
+    reset_charts_filters_for_run_change,
+    reset_charts_filters_to_defaults,
+    set_charts_open_modules,
+    sync_kind_toggles_from_pills,
+)
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.run_scoped_page import (
@@ -26,29 +32,33 @@ from transcriptx.web.components.run_scoped_page import (
     render_run_scoped_page,
 )
 from transcriptx.web.models.artifact import Artifact
+from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.services import ArtifactService
+from transcriptx.web.services.artifact_service import (
+    MAX_FULLSCREEN_HTML_BYTES,
+    MAX_INLINE_HTML_BYTES,
+)
+from transcriptx.web.services.chart_llm_description import resolve_chart_llm_description
 from transcriptx.web.services.chart_view_model_service import (
     ChartGalleryFamily,
-    apply_chart_filters,
+    ChartModuleGroupCounts,
+    build_charts_gallery_view,
     build_filter_options,
-    build_overview_slots,
     compute_chart_badges,
     family_from_overview_slot,
     group_charts_into_families,
     resolve_chart_display_description,
 )
-from transcriptx.web.services.chart_llm_description import resolve_chart_llm_description
-from transcriptx.web.services.artifact_service import (
-    MAX_INLINE_HTML_BYTES,
-    MAX_FULLSCREEN_HTML_BYTES,
-)
-from transcriptx.export import ChartsExportResult
 from transcriptx.web.services.export_service import ExportService
-from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.speaker_accent import speaker_expander
 from transcriptx.web.state import (
+    CHARTS_CHART_TEXT_BOTH,
+    CHARTS_CHART_TEXT_DESCRIPTION,
+    CHARTS_CHART_TEXT_LLM,
+    CHARTS_CHART_TEXT_NONE,
+    CHARTS_KEY_CHART_TEXT,
     CHARTS_KEY_EXPORT_RESULT,
     CHARTS_KEY_EXPORT_SIG,
-    CHARTS_KEY_EXPAND_ALL,
     CHARTS_KEY_FILTERS_INIT,
     CHARTS_KEY_FILTER_MODULE,
     CHARTS_KEY_FILTER_SCOPE,
@@ -56,22 +66,24 @@ from transcriptx.web.state import (
     CHARTS_KEY_FILTER_SUBVIEW,
     CHARTS_KEY_FILTER_TAGS,
     CHARTS_KEY_FULL_SCREEN,
-    CHARTS_KEY_SHOW_SUMMARY_TOGGLE,
-    CHARTS_KEY_SHOW_CHART_DESCRIPTIONS,
-    CHARTS_KEY_SHOW_LLM_SUMMARIES,
+    CHARTS_KEY_KIND_PILLS,
+    CHARTS_KEY_MODULE_SORT,
+    CHARTS_KEY_OPEN_MODULES,
+    CHARTS_KEY_SEARCH,
     CHARTS_KEY_SLICE_SELECTOR,
     CHARTS_KEY_SOURCE_PRESET,
-    CHARTS_KEY_STATIC_TOGGLE,
-    CHARTS_KEY_DYNAMIC_TOGGLE,
     CHARTS_KEY_SUBVIEW_TABS,
     CHARTS_KEY_TAGS_MULTI,
+    CHARTS_KIND_DYNAMIC,
+    CHARTS_KIND_STATIC,
+    CHARTS_SORT_ALPHA,
+    CHARTS_SORT_MODULE_FAMILY,
     SELECTBOX_PLACEHOLDER_MODULE,
 )
 
 _CHARTS_CONFIG = RunScopedPageConfig(
     title="Charts Gallery",
     description=(
-        "Browse static and dynamic chart artifacts for the current run. "
         "Select a subject and run in the sidebar if the gallery is empty."
     ),
     empty_headline="No subject or run selected",
@@ -80,18 +92,22 @@ _CHARTS_CONFIG = RunScopedPageConfig(
     secondary_action=("Run Analysis", "Run Analysis"),
 )
 
+_SOURCE_HELP = (
+    "Member session charts are merged from each transcript run in the group; "
+    "group aggregate charts summarize the whole group."
+)
 
-def _overview_candidate_charts(
-    all_charts: list[Artifact], chart_source: str, tag_filter: list[str]
-) -> list[Artifact]:
-    """Charts pool for overview: same tag semantics as gallery preset + optional tags."""
-    if chart_source == "Group aggregate":
-        return [a for a in all_charts if "group_aggregate" in a.tags]
-    if chart_source == "Member sessions":
-        return [a for a in all_charts if "member_session" in a.tags]
-    if tag_filter:
-        return [a for a in all_charts if all(t in a.tags for t in tag_filter)]
-    return list(all_charts)
+_CHART_TEXT_OPTIONS = (
+    CHARTS_CHART_TEXT_NONE,
+    CHARTS_CHART_TEXT_DESCRIPTION,
+    CHARTS_CHART_TEXT_LLM,
+    CHARTS_CHART_TEXT_BOTH,
+)
+
+_SORT_LABELS = {
+    CHARTS_SORT_MODULE_FAMILY: "Module family",
+    CHARTS_SORT_ALPHA: "A–Z",
+}
 
 
 def _render_chart_gallery_card(
@@ -174,6 +190,16 @@ def _family_renders_directly(family: ChartGalleryFamily) -> bool:
     )
 
 
+def _slice_is_speaker(family: ChartGalleryFamily, slice_artifacts: list) -> bool:
+    if family.cardinality == "speaker_set":
+        return True
+    return any(
+        getattr(artifact, "subview", None) == "by_speaker"
+        or getattr(artifact, "scope", None) == "speaker"
+        for artifact in slice_artifacts
+    )
+
+
 def _render_chart_family_slices(
     run_root: Path,
     family: ChartGalleryFamily,
@@ -204,10 +230,17 @@ def _render_chart_family_slices(
                 show_llm_summary=show_llm_summary,
             )
             continue
-        with st.expander(
-            f"{sl.label} ({len(sl.artifacts)})",
-            expanded=sections_expanded,
-        ):
+        meta = str(len(sl.artifacts))
+        if _slice_is_speaker(family, sl.artifacts):
+            section = speaker_expander(
+                sl.label, meta=meta, expanded=sections_expanded
+            )
+        else:
+            section = st.expander(
+                f"{sl.label} ({meta})",
+                expanded=sections_expanded,
+            )
+        with section:
             st.markdown('<div class="tx-chart-slice-shell">', unsafe_allow_html=True)
             _render_chart_card_grid(
                 run_root,
@@ -263,11 +296,9 @@ def _ensure_charts_filters_for_run(subject_id: str, run_id: str) -> None:
     marker = st.session_state.get(CHARTS_KEY_FILTERS_INIT)
     identity = f"{subject_id}|{run_id}"
     if marker != identity:
-        reset_charts_filters_to_defaults(st.session_state)
+        reset_charts_filters_for_run_change(st.session_state)
         st.session_state[CHARTS_KEY_FILTERS_INIT] = identity
-        st.session_state.pop(CHARTS_KEY_EXPORT_RESULT, None)
-        st.session_state.pop(CHARTS_KEY_EXPORT_SIG, None)
-    ensure_charts_display_toggles_default_on(st.session_state)
+    ensure_charts_chart_text(st.session_state)
 
 
 def _charts_export_signature(charts: list[Artifact]) -> frozenset[str]:
@@ -278,6 +309,199 @@ def _has_current_export(
     stored_result: object, stored_sig: object, current_sig: frozenset[str]
 ) -> bool:
     return isinstance(stored_result, ChartsExportResult) and stored_sig == current_sig
+
+
+def _fragment_rerun() -> None:
+    try:
+        st.rerun(scope="fragment")
+    except TypeError:
+        st.rerun()
+
+
+def _apply_source_tag_coupling(chart_source: str) -> None:
+    """Force source tags and clear incompatible free-form tag selections."""
+    if chart_source == "Group aggregate":
+        st.session_state[CHARTS_KEY_FILTER_TAGS] = ["group_aggregate"]
+        st.session_state[CHARTS_KEY_TAGS_MULTI] = []
+    elif chart_source == "Member sessions":
+        st.session_state[CHARTS_KEY_FILTER_TAGS] = ["member_session"]
+        st.session_state[CHARTS_KEY_TAGS_MULTI] = []
+    else:
+        # Free-form tags only apply when Source is All.
+        st.session_state[CHARTS_KEY_FILTER_TAGS] = list(
+            st.session_state.get(CHARTS_KEY_TAGS_MULTI) or []
+        )
+
+
+def _toggle_module_open(module_id: str) -> None:
+    current = list(st.session_state.get(CHARTS_KEY_OPEN_MODULES) or [])
+    if module_id in current:
+        set_charts_open_modules(
+            st.session_state, [mid for mid in current if mid != module_id]
+        )
+    else:
+        set_charts_open_modules(st.session_state, current + [module_id])
+    _fragment_rerun()
+
+
+def _render_module_row(
+    run_root: Path,
+    group: ChartModuleGroupCounts,
+    *,
+    is_open: bool,
+    show_registry_description: bool,
+    show_llm_summary: bool,
+) -> None:
+    parts = [f"{group.total} chart{'s' if group.total != 1 else ''}"]
+    kind_bits: list[str] = []
+    if group.static:
+        kind_bits.append(f"{group.static} static")
+    if group.dynamic:
+        kind_bits.append(f"{group.dynamic} dynamic")
+    if kind_bits:
+        parts.append(" · ".join(kind_bits))
+    counts = "    ".join(parts)
+    chevron = "▾" if is_open else "›"
+    label = f"{chevron}  {group.display_name}    {counts}"
+    st.markdown('<div class="tx-chart-module-row">', unsafe_allow_html=True)
+    if st.button(
+        label,
+        key=f"charts_module_toggle_{group.module_id}",
+        use_container_width=True,
+        type="secondary",
+    ):
+        _toggle_module_open(group.module_id)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if not is_open:
+        return
+
+    families = group_charts_into_families(group.charts)
+    for fi, family in enumerate(families):
+        _render_chart_family_section(
+            run_root,
+            family,
+            f"chart_{group.module_id}_{family.key}",
+            sections_expanded=False,
+            show_family_expander=True,
+            show_registry_description=show_registry_description,
+            show_llm_summary=show_llm_summary,
+        )
+        if fi < len(families) - 1:
+            st.divider()
+
+
+def _render_view_options_popover(visible_module_ids: list[str]) -> None:
+    ensure_charts_chart_text(st.session_state)
+    with st.popover("More view options"):
+        st.segmented_control(
+            "Chart text",
+            options=list(_CHART_TEXT_OPTIONS),
+            key=CHARTS_KEY_CHART_TEXT,
+        )
+        expand_col, collapse_col = st.columns(2)
+        with expand_col:
+            if st.button("Expand visible", key="charts_expand_visible"):
+                ids = list(
+                    visible_module_ids
+                    or st.session_state.get("_charts_visible_module_ids")
+                    or []
+                )
+                set_charts_open_modules(st.session_state, ids)
+                _fragment_rerun()
+        with collapse_col:
+            if st.button("Collapse all", key="charts_collapse_all"):
+                set_charts_open_modules(st.session_state, [])
+                _fragment_rerun()
+
+
+def _render_header_actions(
+    run_root: Path,
+    filtered_charts: list[Artifact],
+) -> None:
+    dirty = charts_filters_are_dirty(st.session_state)
+    current_sig = _charts_export_signature(filtered_charts)
+    stored_result = st.session_state.get(CHARTS_KEY_EXPORT_RESULT)
+    stored_sig = st.session_state.get(CHARTS_KEY_EXPORT_SIG)
+    export_is_current = _has_current_export(stored_result, stored_sig, current_sig)
+
+    action_cols = st.columns([1.2, 1.0, 3.0] if dirty else [1.2, 4.0])
+    with action_cols[0]:
+        if not filtered_charts:
+            st.caption("No visible charts to export.")
+        elif st.button("Export visible", key="charts_export_btn"):
+            try:
+                result = ExportService.zip_charts(
+                    run_root, filtered_charts, st.session_state.get("run_id", "")
+                )
+                st.session_state[CHARTS_KEY_EXPORT_RESULT] = result
+                st.session_state[CHARTS_KEY_EXPORT_SIG] = current_sig
+                stored_result = result
+                export_is_current = True
+            except ValueError as exc:
+                st.error(str(exc))
+                st.session_state.pop(CHARTS_KEY_EXPORT_RESULT, None)
+                st.session_state.pop(CHARTS_KEY_EXPORT_SIG, None)
+                stored_result = None
+                export_is_current = False
+
+    if dirty:
+        with action_cols[1]:
+            if st.button("Reset", key="charts_reset_filters"):
+                reset_charts_filters_to_defaults(st.session_state)
+                _fragment_rerun()
+
+    if export_is_current and isinstance(stored_result, ChartsExportResult):
+        st.download_button(
+            "Download ZIP",
+            data=stored_result.bytes,
+            file_name=stored_result.filename,
+            mime="application/zip",
+            key="charts_export_download",
+        )
+        parts = [
+            f"{stored_result.exported_count} chart"
+            + ("s" if stored_result.exported_count != 1 else ""),
+            f"across {stored_result.module_count} module"
+            + ("s" if stored_result.module_count != 1 else ""),
+        ]
+        if stored_result.omitted_count:
+            parts.append(f"{stored_result.omitted_count} omitted")
+        st.caption(" · ".join(parts))
+
+
+def _current_sort_mode() -> str:
+    sort_mode = st.session_state.get(CHARTS_KEY_MODULE_SORT, CHARTS_SORT_MODULE_FAMILY)
+    if sort_mode not in {CHARTS_SORT_MODULE_FAMILY, CHARTS_SORT_ALPHA}:
+        sort_mode = CHARTS_SORT_MODULE_FAMILY
+        st.session_state[CHARTS_KEY_MODULE_SORT] = sort_mode
+    return str(sort_mode)
+
+
+def _build_view_from_session(
+    all_charts: list[Artifact],
+    *,
+    user_overview: Sequence[Any],
+    missing_behavior: str,
+    max_items: Optional[int],
+):
+    chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
+    _apply_source_tag_coupling(chart_source)
+    sync_kind_toggles_from_pills(st.session_state)
+    return build_charts_gallery_view(
+        all_charts,
+        module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
+        scope=st.session_state.get(CHARTS_KEY_FILTER_SCOPE),
+        kind=kind_filter_from_session(st.session_state),
+        tags=st.session_state.get(CHARTS_KEY_FILTER_TAGS) or None,
+        subview=st.session_state.get(CHARTS_KEY_FILTER_SUBVIEW),
+        slice_id=st.session_state.get(CHARTS_KEY_FILTER_SLICE_ID),
+        search=st.session_state.get(CHARTS_KEY_SEARCH) or "",
+        sort_mode=_current_sort_mode(),
+        user_overview=user_overview,
+        missing_behavior=missing_behavior,
+        max_items=max_items,
+    )
 
 
 @st.fragment
@@ -292,34 +516,16 @@ def _charts_filters_and_gallery_fragment(
     max_items: Optional[int],
     missing_behavior: str,
 ) -> None:
-    col_reset, _ = st.columns([1, 4])
-    with col_reset:
-        if st.button("Reset filters", key="charts_reset_filters"):
-            reset_charts_filters_to_defaults(st.session_state)
-            try:
-                st.rerun(scope="fragment")
-            except TypeError:
-                st.rerun()
-
-    st.caption(
-        "Member session charts are merged from each transcript run in the group; "
-        "group aggregate charts summarize the whole group."
+    render_page_shell(
+        "Charts Gallery",
+        None,
+        badges=compute_chart_badges(all_charts),
+        actions=None,
     )
-    st.radio(
-        "Show charts from",
-        options=["All", "Group aggregate", "Member sessions"],
-        horizontal=True,
-        key=CHARTS_KEY_SOURCE_PRESET,
-        help="Quick filter by how charts were produced (uses artifact tags).",
-    )
-    chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All")
-    if chart_source == "Group aggregate":
-        st.session_state[CHARTS_KEY_FILTER_TAGS] = ["group_aggregate"]
-    elif chart_source == "Member sessions":
-        st.session_state[CHARTS_KEY_FILTER_TAGS] = ["member_session"]
 
-    # Responsive: stack filters in at most two columns (avoid 4 cramped columns).
-    row1a, row1b = st.columns(2)
+    st.text_input("Search charts…", key=CHARTS_KEY_SEARCH)
+
+    row1a, row1b, row1c = st.columns([1.4, 1.6, 1.2])
     with row1a:
         st.selectbox(
             "Module",
@@ -330,37 +536,54 @@ def _charts_filters_and_gallery_fragment(
             key=CHARTS_KEY_FILTER_MODULE,
         )
     with row1b:
+        st.segmented_control(
+            "Source",
+            options=["All", "Group aggregate", "Member sessions"],
+            key=CHARTS_KEY_SOURCE_PRESET,
+            help=_SOURCE_HELP,
+        )
+    with row1c:
         st.selectbox(
-            "Scope",
+            "Analysis scope",
             [None] + scopes,
+            format_func=lambda s: "All" if s is None else str(s),
             key=CHARTS_KEY_FILTER_SCOPE,
         )
 
-    row2a, row2b = st.columns(2)
+    chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
+    _apply_source_tag_coupling(chart_source)
+
+    row2a, row2b = st.columns([1.2, 2.0])
     with row2a:
-        st.markdown("**Type**")
-        t1, t2 = st.columns(2)
-        with t1:
-            st.toggle("Static", key=CHARTS_KEY_STATIC_TOGGLE)
-        with t2:
-            st.toggle("Dynamic", key=CHARTS_KEY_DYNAMIC_TOGGLE)
+        st.pills(
+            "Type",
+            options=[CHARTS_KIND_STATIC, CHARTS_KIND_DYNAMIC],
+            selection_mode="multi",
+            key=CHARTS_KEY_KIND_PILLS,
+        )
+        sync_kind_toggles_from_pills(st.session_state)
     with row2b:
         if chart_source == "All":
             st.multiselect("Tags", tags, key=CHARTS_KEY_TAGS_MULTI)
+            st.session_state[CHARTS_KEY_FILTER_TAGS] = list(
+                st.session_state.get(CHARTS_KEY_TAGS_MULTI) or []
+            )
         else:
-            locked_defaults = st.session_state.get(CHARTS_KEY_FILTER_TAGS) or []
+            locked_defaults = list(st.session_state.get(CHARTS_KEY_FILTER_TAGS) or [])
             tag_options = sorted(set(tags) | set(locked_defaults))
+            locked_key = "charts_tags_multiselect_locked"
+            if st.session_state.get(locked_key) != locked_defaults:
+                st.session_state[locked_key] = locked_defaults
             st.multiselect(
                 "Tags",
                 tag_options,
-                default=locked_defaults,
                 disabled=True,
-                key="charts_tags_multiselect_locked",
+                key=locked_key,
             )
 
     if chart_source == "All":
-        st.session_state[CHARTS_KEY_FILTER_TAGS] = list(
-            st.session_state.get(CHARTS_KEY_TAGS_MULTI) or []
+        st.caption(
+            "Showing all chart sources. Use Source to focus group or member charts."
         )
 
     if subviews:
@@ -372,103 +595,35 @@ def _charts_filters_and_gallery_fragment(
         st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = slice_state.subview
         st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = slice_state.slice_id
 
-    toggle_col1, toggle_col2, toggle_col3, toggle_col4 = st.columns(4)
-    with toggle_col1:
-        st.toggle("Expand all sections", key=CHARTS_KEY_EXPAND_ALL)
-        sections_expanded = st.session_state.get(CHARTS_KEY_EXPAND_ALL, False)
-    with toggle_col2:
-        st.toggle(
-            "Show Overview",
-            key=CHARTS_KEY_SHOW_SUMMARY_TOGGLE,
-        )
-    with toggle_col3:
-        st.toggle(
-            "Show chart descriptions",
-            key=CHARTS_KEY_SHOW_CHART_DESCRIPTIONS,
-        )
-    with toggle_col4:
-        st.toggle(
-            "Show LLM summaries",
-            key=CHARTS_KEY_SHOW_LLM_SUMMARIES,
-        )
-    show_registry_description = bool(
-        st.session_state.get(CHARTS_KEY_SHOW_CHART_DESCRIPTIONS, True)
-    )
-    show_llm_summary = bool(st.session_state.get(CHARTS_KEY_SHOW_LLM_SUMMARIES, True))
-
-    show_static = st.session_state.get(CHARTS_KEY_STATIC_TOGGLE, True)
-    show_dynamic = st.session_state.get(CHARTS_KEY_DYNAMIC_TOGGLE, True)
-    if show_static and show_dynamic:
-        kind_filter = None
-    elif show_static and not show_dynamic:
-        kind_filter = "chart_static"
-    elif not show_static and show_dynamic:
-        kind_filter = "chart_dynamic"
-    else:
-        kind_filter = "__none__"
-
-    charts = apply_chart_filters(
+    # Single canonical filtered collection for Export, overview, browse, and counts.
+    view = _build_view_from_session(
         all_charts,
-        module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
-        scope=st.session_state.get(CHARTS_KEY_FILTER_SCOPE),
-        kind=kind_filter,
-        tags=st.session_state.get(CHARTS_KEY_FILTER_TAGS) or None,
-        subview=st.session_state.get(CHARTS_KEY_FILTER_SUBVIEW),
-        slice_id=st.session_state.get(CHARTS_KEY_FILTER_SLICE_ID),
+        user_overview=user_overview,
+        missing_behavior=missing_behavior,
+        max_items=max_items,
     )
+    visible_module_ids = [g.module_id for g in view.module_groups]
+    st.session_state["_charts_visible_module_ids"] = list(visible_module_ids)
+    open_modules = intersect_charts_open_modules(
+        st.session_state, frozenset(visible_module_ids)
+    )
+    chart_text = ensure_charts_chart_text(st.session_state)
+    show_registry_description, show_llm_summary = chart_text_flags(str(chart_text))
 
-    if not charts and all_charts and kind_filter != "__none__":
+    action_left, action_right = st.columns([3.0, 1.2])
+    with action_left:
+        _render_header_actions(run_root, view.filtered_charts)
+    with action_right:
+        _render_view_options_popover(visible_module_ids)
+
+    if not view.filtered_charts and all_charts:
         render_empty_state(
             "filtered_to_zero",
             "No charts match these filters",
-            "Try another source preset, clear tags, or use **Reset filters** above.",
+            "Try another source, clear search or tags, or use **Reset**.",
             primary_action=("Overview", "Overview"),
             secondary_action=None,
         )
-
-    current_sig = _charts_export_signature(charts)
-    stored_result = st.session_state.get(CHARTS_KEY_EXPORT_RESULT)
-    stored_sig = st.session_state.get(CHARTS_KEY_EXPORT_SIG)
-    export_is_current = _has_current_export(stored_result, stored_sig, current_sig)
-
-    export_col, _ = st.columns([2, 3])
-    with export_col:
-        if not charts:
-            st.caption("No visible charts to export.")
-        else:
-            if st.button("Export Visible Charts", key="charts_export_btn"):
-                try:
-                    result = ExportService.zip_charts(
-                        run_root, charts, st.session_state.get("run_id", "")
-                    )
-                    st.session_state[CHARTS_KEY_EXPORT_RESULT] = result
-                    st.session_state[CHARTS_KEY_EXPORT_SIG] = current_sig
-                    stored_result = result
-                    export_is_current = True
-                except ValueError as exc:
-                    st.error(str(exc))
-                    st.session_state.pop(CHARTS_KEY_EXPORT_RESULT, None)
-                    st.session_state.pop(CHARTS_KEY_EXPORT_SIG, None)
-                    stored_result = None
-                    export_is_current = False
-
-            if export_is_current and isinstance(stored_result, ChartsExportResult):
-                st.download_button(
-                    "Download ZIP",
-                    data=stored_result.bytes,
-                    file_name=stored_result.filename,
-                    mime="application/zip",
-                    key="charts_export_download",
-                )
-                parts = [
-                    f"{stored_result.exported_count} chart"
-                    + ("s" if stored_result.exported_count != 1 else ""),
-                    f"across {stored_result.module_count} module"
-                    + ("s" if stored_result.module_count != 1 else ""),
-                ]
-                if stored_result.omitted_count:
-                    parts.append(f"{stored_result.omitted_count} omitted")
-                st.caption(" · ".join(parts))
 
     full_screen_id = st.session_state.get(CHARTS_KEY_FULL_SCREEN)
     if full_screen_id:
@@ -504,82 +659,52 @@ def _charts_filters_and_gallery_fragment(
                     st.markdown(llm_text)
         st.divider()
 
-    overview_candidates = _overview_candidate_charts(
-        all_charts,
-        chart_source,
-        list(st.session_state.get(CHARTS_KEY_FILTER_TAGS) or []),
-    )
-    overview_slots = build_overview_slots(
-        overview_candidates=overview_candidates,
-        user_overview=user_overview,
-        missing_behavior=missing_behavior,
-        max_items=max_items,
-    )
-
-    overview_chart_count = sum(
-        len(slot["artifacts"]) for slot in overview_slots if slot["artifacts"]
-    )
-    overview_slot_count = len(overview_slots)
-    display_overview_count = overview_chart_count or overview_slot_count
-
-    show_summary = st.session_state.get(CHARTS_KEY_SHOW_SUMMARY_TOGGLE, True)
-    if overview_slot_count and show_summary:
-        with st.expander(
-            f"📋 Overview ({display_overview_count} chart{'s' if display_overview_count != 1 else ''})",
-            expanded=sections_expanded,
-        ):
-            for slot in overview_slots:
-                st.markdown(f"**{slot['label']}**")
-                slot_description = slot.get("description")
-                if slot_description and show_registry_description:
-                    st.caption(slot_description)
-                if slot.get("missing"):
-                    render_empty_state(
-                        "module_unavailable",
-                        "Chart not available",
-                        "This overview slot has no artifact for this run (module skipped or not configured).",
-                        primary_action=("Overview", "Overview"),
-                        secondary_action=("Run Analysis", "Run Analysis"),
-                    )
-                    st.divider()
-                    continue
-                family = family_from_overview_slot(slot)
-                if family:
-                    _render_chart_family_section(
-                        run_root,
-                        family,
-                        f"overview_chart_{slot['viz_id']}",
-                        sections_expanded=sections_expanded,
-                        show_family_expander=False,
-                        show_registry_description=show_registry_description,
-                        show_llm_summary=show_llm_summary,
-                    )
+    if view.overview_slots:
+        st.markdown("### Run overview")
+        for slot in view.overview_slots:
+            st.markdown(f"**{slot['label']}**")
+            slot_description = slot.get("description")
+            if slot_description and show_registry_description:
+                st.caption(slot_description)
+            if slot.get("missing"):
+                render_empty_state(
+                    "module_unavailable",
+                    "Chart not available",
+                    "This overview slot has no artifact for this run (module skipped or not configured).",
+                    primary_action=("Overview", "Overview"),
+                    secondary_action=("Run Analysis", "Run Analysis"),
+                )
                 st.divider()
-
-    module_groups: Dict[str, List[Artifact]] = {}
-    for chart in charts:
-        module = chart.module or "Other"
-        module_groups.setdefault(module, []).append(chart)
-
-    for module_name in sorted(module_groups.keys(), key=str.casefold):
-        module_charts = module_groups[module_name]
-        with st.expander(
-            f"📊 {module_name} ({len(module_charts)} chart{'s' if len(module_charts) != 1 else ''})",
-            expanded=sections_expanded,
-        ):
-            families = group_charts_into_families(module_charts)
-            for fi, family in enumerate(families):
+                continue
+            family = family_from_overview_slot(slot)
+            if family:
                 _render_chart_family_section(
                     run_root,
                     family,
-                    f"chart_{module_name}_{family.key}",
-                    sections_expanded=sections_expanded,
-                    show_family_expander=True,
+                    f"overview_chart_{slot['viz_id']}",
+                    sections_expanded=False,
+                    show_family_expander=False,
                     show_registry_description=show_registry_description,
                     show_llm_summary=show_llm_summary,
                 )
-                if fi < len(families) - 1:
-                    st.divider()
+            st.divider()
+
+    st.markdown(f"### Browse charts  ·  {view.matching_count} matching")
+    st.segmented_control(
+        "Sort",
+        options=[CHARTS_SORT_MODULE_FAMILY, CHARTS_SORT_ALPHA],
+        format_func=lambda k: _SORT_LABELS.get(k, k),
+        key=CHARTS_KEY_MODULE_SORT,
+    )
+
+    for group in view.module_groups:
+        _render_module_row(
+            run_root,
+            group,
+            is_open=group.module_id in open_modules,
+            show_registry_description=show_registry_description,
+            show_llm_summary=show_llm_summary,
+        )
 
 
 def _render_charts_body(ctx: RunScopedPageContext) -> None:
@@ -591,16 +716,13 @@ def _render_charts_body(ctx: RunScopedPageContext) -> None:
         a for a in all_artifacts if a.kind in {"chart_static", "chart_dynamic"}
     ]
 
-    badge_bits = compute_chart_badges(all_charts)
-
-    render_page_shell(
-        "Charts Gallery",
-        "Browse static and dynamic chart artifacts for the current run.",
-        badges=badge_bits,
-        actions=None,
-    )
-
     if not all_charts:
+        render_page_shell(
+            "Charts Gallery",
+            None,
+            badges=compute_chart_badges(all_charts),
+            actions=None,
+        )
         render_empty_state(
             "no_results_yet",
             "No chart artifacts for this run",

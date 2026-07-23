@@ -6,14 +6,26 @@ import re
 
 import streamlit as st
 
+from transcriptx.core.analysis.llm_support.text_cleanup import (
+    strip_llm_summary_preface,
+)
+
 _LEADING_MD_HEADING = re.compile(r"^#[^\n]*\n+")
 _PROVENANCE_FOOTER = re.compile(
-    r"\n---\s*\n(?:Prompt version:[^\n]*\n)?(?:Model:[^\n]*\n?)?\s*$",
+    r"\n---\s*\n"
+    r"(?:Render contract:[^\n]*\n)?"
+    r"(?:Prompt version:[^\n]*\n)?"
+    r"(?:Model:[^\n]*\n?)?\s*$",
     re.IGNORECASE,
 )
 _COMMITMENTS_SECTION = re.compile(
     r"(?:^|\n)##\s+Commitments\s*/\s*Next steps\s*\n.*?(?=\n##\s|\n---\s*\n|\Z)",
     re.IGNORECASE | re.DOTALL,
+)
+# Artifact markdown embeds this; UI already shows it as a caption.
+_HUMAN_REVIEW_BANNER_LINE = re.compile(
+    r"^(?:AI-generated draft\.\s*Human review required\.\s*\n+)+",
+    re.IGNORECASE,
 )
 
 
@@ -23,10 +35,13 @@ def provenance_badges(provenance: dict | None) -> list[str]:
     badges: list[str] = []
     prompt_version = str(provenance.get("prompt_version") or "").strip()
     model = str(provenance.get("model") or "").strip()
+    provider = str(provenance.get("provider") or "").strip()
     if prompt_version:
         badges.append(f"Prompt v{prompt_version}")
     if model:
         badges.append(model)
+    if provider:
+        badges.append(provider)
     return badges
 
 
@@ -44,6 +59,11 @@ def strip_commitments_section(markdown: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", cleaned).strip() + "\n"
 
 
+def strip_human_review_banner(markdown: str) -> str:
+    """Drop leading human-review banner lines duplicated by UI captions."""
+    return _HUMAN_REVIEW_BANNER_LINE.sub("", markdown.lstrip()).lstrip()
+
+
 def render_badge_row(labels: list[str]) -> None:
     parts = "".join(
         f'<span class="tx-badge">{label}</span>' for label in labels if label
@@ -57,5 +77,7 @@ def render_badge_row(labels: list[str]) -> None:
 
 def render_markdown_without_heading_or_provenance(markdown: str) -> None:
     body = strip_provenance_footer(strip_leading_markdown_heading(markdown))
+    body = strip_human_review_banner(body)
+    body = strip_llm_summary_preface(body)
     if body.strip():
         st.markdown(body)

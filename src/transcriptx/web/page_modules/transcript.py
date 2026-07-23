@@ -209,12 +209,15 @@ def _render_metadata_metrics(
 
 
 def _render_transcript_controls() -> TranscriptControlsState:
-    """Render search and timestamp controls with existing widget keys."""
-    st.markdown('<div class="tx-transcript-controls">', unsafe_allow_html=True)
+    """Render search and timestamp controls with existing widget keys.
+
+    Do not wrap widgets in ``st.markdown`` open/close ``<div>`` tags: Streamlit
+    cannot nest widgets inside markdown HTML, so an empty styled div renders as
+    a thick white horizontal bar (especially with a light fallback background).
+    """
     search_text = st.text_input("🔍 Search in transcript", key="transcript_search")
     show_timestamps = st.checkbox("Show timestamps", key="show_timestamps")
     format_key = st.session_state.get("timestamp_format", "seconds")
-    st.markdown("</div>", unsafe_allow_html=True)
     return TranscriptControlsState(
         search_text=search_text,
         show_timestamps=show_timestamps,
@@ -320,6 +323,95 @@ def _setup_playback_availability(
         )
 
 
+def _render_transcript_tab_nav(*, has_chapters: bool) -> str:
+    """Programmable section nav (Insights-style) so Jump/Play can select Segments."""
+    from transcriptx.web.transcript_viewer.chapters import (
+        TRANSCRIPT_TAB_CONTROL_KEY,
+        TRANSCRIPT_TAB_KEY,
+    )
+
+    options = [("turns", "Turns"), ("segments", "Segments")]
+    if has_chapters:
+        options.append(("chapters", "Chapters"))
+    labels = [label for _, label in options]
+    keys = [key for key, _ in options]
+    current = st.session_state.get(TRANSCRIPT_TAB_KEY, "turns")
+    if current not in keys:
+        current = "turns"
+        st.session_state[TRANSCRIPT_TAB_KEY] = current
+    default_label = dict(options)[current]
+    # Keep widget key aligned when Jump/Play sets the control programmatically.
+    if st.session_state.get(TRANSCRIPT_TAB_CONTROL_KEY) not in labels:
+        st.session_state[TRANSCRIPT_TAB_CONTROL_KEY] = default_label
+    try:
+        choice = st.segmented_control(
+            "Transcript view",
+            options=labels,
+            default=default_label,
+            key=TRANSCRIPT_TAB_CONTROL_KEY,
+            label_visibility="collapsed",
+        )
+    except Exception:
+        choice = st.radio(
+            "Transcript view",
+            labels,
+            index=keys.index(current),
+            horizontal=True,
+            key="transcript_viewer_tab_radio",
+            label_visibility="collapsed",
+        )
+    selected_key = next(k for k, lab in options if lab == choice)
+    st.session_state[TRANSCRIPT_TAB_KEY] = selected_key
+    return selected_key
+
+
+def _render_chapters_panel(chapter_rows: list[Any]) -> None:
+    from transcriptx.web.transcript_viewer.chapters import (
+        format_chapter_time_range,
+        queue_chapter_jump,
+    )
+
+    if not chapter_rows:
+        st.caption("No topic-shift chapters for this run.")
+        return
+    st.caption(
+        "Topic-shift chapters. Jump opens the matching transcript context; "
+        "Play also starts that clip."
+    )
+    for row in chapter_rows:
+        cols = st.columns([4, 2, 1, 1])
+        with cols[0]:
+            label = row.title
+            st.markdown(f"**{label}**")
+            if row.summary:
+                st.caption(row.summary[:240])
+            meta = format_chapter_time_range(row.time_start, row.time_end)
+            if row.strength is not None and row.leading_boundary_id:
+                meta += f" · strength {row.strength:.2f}"
+            st.caption(meta)
+        target = row.viewer_target_source_index
+        with cols[2]:
+            if target is not None and st.button(
+                "Jump",
+                key=f"tx_chapter_jump_{row.span_id}",
+                use_container_width=True,
+            ):
+                queue_chapter_jump(
+                    st.session_state, source_index=int(target), play=False
+                )
+                st.rerun(scope="fragment")
+        with cols[3]:
+            if target is not None and st.button(
+                "Play",
+                key=f"tx_chapter_play_{row.span_id}",
+                use_container_width=True,
+            ):
+                queue_chapter_jump(
+                    st.session_state, source_index=int(target), play=True
+                )
+                st.rerun(scope="fragment")
+
+
 def _render_transcript_tabs(
     display_segments: list[tuple[int, dict[str, Any]]],
     *,
@@ -329,27 +421,17 @@ def _render_transcript_tabs(
     playback: TranscriptPlaybackBinding | None,
     chapter_rows: list[Any] | None = None,
 ) -> None:
-    """Render turns/segments/chapters tabs for already-filtered display segments."""
-    from transcriptx.web.transcript_viewer.chapters import (
-        format_chapter_time_range,
-        queue_chapter_jump,
-    )
-
-    if chapter_rows:
-        tab_turns, tab_segments, tab_chapters = st.tabs(
-            ["Turns", "Segments", "Chapters"]
-        )
-    else:
-        tab_turns, tab_segments = st.tabs(["Turns", "Segments"])
-        tab_chapters = None
-    with tab_turns:
+    """Render turns/segments/chapters views for already-filtered display segments."""
+    has_chapters = bool(chapter_rows)
+    selected = _render_transcript_tab_nav(has_chapters=has_chapters)
+    if selected == "turns":
         render_segmented_tab(
             display_segments,
             show_timestamps=controls.show_timestamps,
             format_key=controls.format_key,
             playback=playback,
         )
-    with tab_segments:
+    elif selected == "segments":
         render_plain_segments(
             display_segments,
             show_timestamps=controls.show_timestamps,
@@ -358,50 +440,8 @@ def _render_transcript_tabs(
             jump_index=jump_index,
             playback=playback,
         )
-    if tab_chapters is not None and chapter_rows is not None:
-        with tab_chapters:
-            if not chapter_rows:
-                st.caption("No topic-shift chapters for this run.")
-            else:
-                st.caption(
-                    "Chapters from topic_shift. Jump selects the nearest transcript "
-                    "segment; optional play starts after navigation."
-                )
-                for row in chapter_rows:
-                    cols = st.columns([4, 2, 1, 1])
-                    with cols[0]:
-                        label = row.title
-                        if row.summary:
-                            st.markdown(f"**{label}**")
-                            st.caption(row.summary[:240])
-                        else:
-                            st.markdown(f"**{label}**")
-                        meta = format_chapter_time_range(row.time_start, row.time_end)
-                        if row.strength is not None and row.leading_boundary_id:
-                            meta += f" · strength {row.strength:.2f}"
-                        st.caption(meta)
-                    target = row.viewer_target_source_index
-                    with cols[2]:
-                        if target is not None and st.button(
-                            "Jump",
-                            key=f"tx_chapter_jump_{row.span_id}",
-                            use_container_width=True,
-                        ):
-                            queue_chapter_jump(
-                                st.session_state, source_index=int(target), play=False
-                            )
-                            st.rerun()
-                    with cols[3]:
-                        if target is not None and st.button(
-                            "Play",
-                            key=f"tx_chapter_play_{row.span_id}",
-                            use_container_width=True,
-                        ):
-                            queue_chapter_jump(
-                                st.session_state, source_index=int(target), play=True
-                            )
-                            st.rerun()
-
+    elif selected == "chapters":
+        _render_chapters_panel(chapter_rows or [])
 
 @st.fragment
 def _transcript_interaction_fragment(
@@ -419,13 +459,20 @@ def _transcript_interaction_fragment(
 ) -> None:
     """Transcript search and segment tabs without full-app rerun."""
     from transcriptx.web.transcript_viewer.chapters import (
+        clear_chapter_jump,
         consume_chapter_pending,
         load_chapter_rows,
+        sticky_chapter_jump,
     )
 
     controls = _render_transcript_controls()
     pending = consume_chapter_pending(st.session_state)
-    effective_jump = jump_index
+    sticky = sticky_chapter_jump(st.session_state)
+    # Typing a search query takes over; drop the sticky chapter filter.
+    if controls.search_text and sticky is not None:
+        clear_chapter_jump(st.session_state)
+        sticky = None
+    effective_jump = sticky if sticky is not None else jump_index
     if pending and isinstance(pending.get("jump_index"), int):
         effective_jump = int(pending["jump_index"])
 
@@ -435,8 +482,19 @@ def _transcript_interaction_fragment(
         jump_index=effective_jump,
     )
     if filter_caption:
-        st.caption(filter_caption)
-
+        cap_cols = st.columns([5, 1])
+        with cap_cols[0]:
+            st.caption(filter_caption)
+        if sticky is not None and not controls.search_text:
+            with cap_cols[1]:
+                if st.button(
+                    "Show all",
+                    key="tx_clear_chapter_jump",
+                    use_container_width=True,
+                    help="Clear chapter jump and show the full transcript",
+                ):
+                    clear_chapter_jump(st.session_state)
+                    st.rerun(scope="fragment")
     owner = _playback_owner_identity(
         session_slug=session_slug,
         run_id=run_id,
@@ -594,7 +652,7 @@ def render_transcript_viewer() -> None:
             selected_session=session_slug,
             run_id=run_id,
         )
-        render_download_row(artifacts, transcript_data, selected, run_root=run_root)
+        render_download_row(artifacts, transcript_data, selected)
 
         if not segments:
             render_empty_state(

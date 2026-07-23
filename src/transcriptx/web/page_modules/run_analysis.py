@@ -112,7 +112,7 @@ def _run_summary_from_last_success(payload: dict) -> RunSummary | None:
 
 
 def _render_post_analysis_actions() -> None:
-    """Configured action strip under the success flash."""
+    """Configured action strip immediately under the success flash."""
     payload = st.session_state.get(_KEY_LAST_SUCCESS)
     if not isinstance(payload, dict):
         return
@@ -395,6 +395,13 @@ def _run_analysis_config_and_launch_fragment(
 
 def render_run_analysis_page() -> None:
     """Render the Run Analysis page with form and execution."""
+    config = get_config()
+    group_analysis_enabled = getattr(config.group_analysis, "enabled", False)
+    group_target_available = group_analysis_enabled
+
+    # Normalize before the shell so Batch can skip the post-run strip under the flash.
+    _normalize_run_analysis_target(group_target_available=group_target_available)
+
     render_page_shell(
         "Run Analysis",
         _RUN_ANALYSIS_DESCRIPTION,
@@ -402,11 +409,9 @@ def render_run_analysis_page() -> None:
         actions=None,
     )
 
-    config = get_config()
-    group_analysis_enabled = getattr(config.group_analysis, "enabled", False)
-    group_target_available = group_analysis_enabled
-
-    _normalize_run_analysis_target(group_target_available=group_target_available)
+    # Directly under the success flash (page shell), above Target — not under Batch.
+    if st.session_state.get(_RUN_ANALYSIS_TARGET_KEY) != "Batch":
+        _render_post_analysis_actions()
 
     target_options = ["Transcript"]
     if group_target_available:
@@ -430,9 +435,6 @@ def render_run_analysis_page() -> None:
     if target_type == "Batch":
         render_batch_analysis_panel()
         return
-
-    # Single/group completion actions only — never show under Batch.
-    _render_post_analysis_actions()
 
     transcript_path: Path | None = None
     selected_group = None  # set when target is Group

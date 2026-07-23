@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import unicodedata
 from typing import Any, Optional
 
@@ -11,9 +10,9 @@ from transcriptx.core.analysis.llm_custom_qa.bounded_input import (
     SegmentMapEntry,
 )
 from transcriptx.core.analysis.llm_custom_qa.constants import (
-    GROUNDING_SEGMENT_SEPARATOR,
     MAX_CITATIONS_PER_ANSWER,
     MAX_CROSS_SEGMENT_SPAN,
+    MIN_RECOVERED_QUOTE_WORDS,
 )
 
 
@@ -81,10 +80,29 @@ def _find_matches(
             break
         corp_start = origins[pos]
         corp_end = origins[end_pos] + 1
-        # Expand corp_end through any trailing whitespace that was folded
         matches.append((corp_start, corp_end))
         start = pos + 1
     return matches
+
+
+def _recover_groundable_quote(
+    corpus: BoundedGroundingCorpus, quote: str
+) -> Optional[str]:
+    """Return the longest grounded contiguous word span inside a near-miss quote.
+
+    Local models often prepend/append a few paraphrased words around a real
+    transcript span. Recovering the grounded interior keeps cite-or-unavailable
+    honest (citation text still comes from the corpus slice).
+    """
+    words = _ws_fold(quote).split()
+    if len(words) < MIN_RECOVERED_QUOTE_WORDS:
+        return None
+    for n in range(len(words), MIN_RECOVERED_QUOTE_WORDS - 1, -1):
+        for i in range(0, len(words) - n + 1):
+            candidate = " ".join(words[i : i + n])
+            if _find_matches(corpus, candidate):
+                return candidate
+    return None
 
 
 def ground_answered_row(
@@ -108,6 +126,10 @@ def ground_answered_row(
 
     for quote in quotes:
         matches = _find_matches(corpus, quote)
+        if not matches:
+            recovered = _recover_groundable_quote(corpus, quote)
+            if recovered is not None:
+                matches = _find_matches(corpus, recovered)
         grounded_any = False
         for corp_start, corp_end in matches:
             entries = _entries_for_span(corpus.entries, corp_start, corp_end)

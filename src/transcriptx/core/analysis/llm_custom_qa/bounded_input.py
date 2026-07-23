@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import unicodedata
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from transcriptx.core.analysis.llm_custom_qa.constants import (
     GROUNDING_SEGMENT_SEPARATOR,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_text
+
+CorpusPrefer = Literal["head", "tail"]
 
 
 @dataclass(frozen=True)
@@ -71,15 +73,117 @@ def _segment_times(seg: dict[str, Any]) -> tuple[Optional[float], Optional[float
     return start_f, end_f
 
 
+def _pack_entries(
+    selected: list[tuple[int, str, Optional[float], Optional[float]]],
+    *,
+    sep: str,
+) -> tuple[str, list[SegmentMapEntry]]:
+    entries: list[SegmentMapEntry] = []
+    parts: list[str] = []
+    cursor = 0
+    for orig_i, text, start, end in selected:
+        start_off = 0 if not parts else cursor + len(sep)
+        end_off = start_off + len(text)
+        entries.append(
+            SegmentMapEntry(
+                canonical_index=len(entries),
+                original_segment_index=orig_i,
+                text=text,
+                start_time=start,
+                end_time=end,
+                corpus_start=start_off,
+                corpus_end=end_off,
+                prompt_start=start_off,
+                prompt_end=end_off,
+            )
+        )
+        parts.append(text)
+        cursor = end_off
+    return sep.join(parts), entries
+
+
+def _select_head_window(
+    usable: list[tuple[int, str, Optional[float], Optional[float]]],
+    *,
+    max_corpus_chars: int,
+    sep: str,
+) -> tuple[list[tuple[int, str, Optional[float], Optional[float]]], bool, bool]:
+    """Keep meeting prefix; may partially cut the newest kept segment."""
+    selected: list[tuple[int, str, Optional[float], Optional[float]]] = []
+    used = 0
+    partial = False
+    for orig_i, text, start, end in usable:
+        extra = len(text) if not selected else len(sep) + len(text)
+        if used + extra <= max_corpus_chars:
+            selected.append((orig_i, text, start, end))
+            used += extra
+            continue
+        remaining = max_corpus_chars - used
+        if selected:
+            remaining -= len(sep)
+        if remaining <= 0:
+            break
+        partial_text = text[:remaining]
+        if not partial_text:
+            break
+        selected.append((orig_i, partial_text, start, end))
+        partial = True
+        break
+    truncated = partial or len(selected) < len(usable)
+    return selected, truncated, partial
+
+
+def _select_tail_window(
+    usable: list[tuple[int, str, Optional[float], Optional[float]]],
+    *,
+    max_corpus_chars: int,
+    sep: str,
+) -> tuple[list[tuple[int, str, Optional[float], Optional[float]]], bool, bool]:
+    """Keep meeting suffix; may partially cut the oldest kept segment.
+
+    Preferring the tail keeps end-of-meeting evidence available for cite-or-
+    unavailable QA when the full transcript exceeds the citation budget.
+    """
+    selected_rev: list[tuple[int, str, Optional[float], Optional[float]]] = []
+    used = 0
+    partial = False
+    for orig_i, text, start, end in reversed(usable):
+        extra = len(text) if not selected_rev else len(sep) + len(text)
+        if used + extra <= max_corpus_chars:
+            selected_rev.append((orig_i, text, start, end))
+            used += extra
+            continue
+        remaining = max_corpus_chars - used
+        if selected_rev:
+            remaining -= len(sep)
+        if remaining <= 0:
+            break
+        # Keep the suffix of the older segment so it stays contiguous with newer text.
+        partial_text = text[-remaining:]
+        if not partial_text:
+            break
+        selected_rev.append((orig_i, partial_text, start, end))
+        partial = True
+        break
+    selected = list(reversed(selected_rev))
+    truncated = partial or len(selected) < len(usable)
+    return selected, truncated, partial
+
+
 def build_grounding_corpus(
     segments: list[dict[str, Any]],
     *,
     max_corpus_chars: int,
+    prefer: CorpusPrefer = "tail",
 ) -> BoundedGroundingCorpus:
     """Pack transcript segments into a grounding corpus with coordinate maps.
 
     Join with GROUNDING_SEGMENT_SEPARATOR. Never infer membership via substring
     search of a truncated prompt — membership comes from this offset map.
+
+    When ``max_corpus_chars`` forces truncation, ``prefer="tail"`` keeps the
+    end of the meeting (default; better for meeting QA) and ``prefer="head"``
+    keeps the beginning.
     """
     sep = GROUNDING_SEGMENT_SEPARATOR
     usable: list[tuple[int, str, Optional[float], Optional[float]]] = []
@@ -101,108 +205,40 @@ def build_grounding_corpus(
     total_chars = len(full_corpus)
     fingerprint = sha256_text(full_corpus) if full_corpus else sha256_text("")
 
-    entries: list[SegmentMapEntry] = []
-    parts: list[str] = []
-    cursor = 0
-    truncated = False
-    partial_final = False
-    used_chars = 0
-
-    for canonical_index, (orig_i, text, start, end) in enumerate(usable):
-        piece = text if not parts else sep + text
-        if max_corpus_chars >= 0 and cursor + len(piece) > max_corpus_chars:
-            remaining = max_corpus_chars - cursor
-            if remaining <= 0:
-                truncated = True
-                break
-            # Partial final segment
-            if parts:
-                # need room for separator + some text
-                if remaining <= len(sep):
-                    truncated = True
-                    break
-                take = remaining - len(sep)
-                if take <= 0:
-                    truncated = True
-                    break
-                partial = text[:take]
-                piece = sep + partial
-                partial_final = True
-            else:
-                take = remaining
-                partial = text[:take]
-                piece = partial
-                partial_final = take < len(text)
-            truncated = True
-            start_off = cursor + (len(sep) if parts else 0)
-            end_off = cursor + len(piece)
-            entries.append(
-                SegmentMapEntry(
-                    canonical_index=len(entries),
-                    original_segment_index=orig_i,
-                    text=partial,
-                    start_time=start,
-                    end_time=end,
-                    corpus_start=start_off,
-                    corpus_end=end_off,
-                    prompt_start=start_off,
-                    prompt_end=end_off,
-                )
-            )
-            parts.append(piece if not parts else partial)
-            # Fix parts list: store only segment text without leading sep
-            if len(parts) == 1 and piece == partial:
-                pass
-            else:
-                parts[-1] = partial if parts else partial
-            # Rebuild corpus cleanly
-            texts = [e.text for e in entries]
-            corpus_text = sep.join(texts)
-            used_chars = len(corpus_text)
-            # recompute offsets
-            entries = _recompute_offsets(entries, sep)
-            return BoundedGroundingCorpus(
-                corpus_text=corpus_text,
-                entries=entries,
-                input_chars_total=total_chars,
-                input_chars_used=used_chars,
-                truncated=True,
-                partial_final_segment=partial_final,
-                segments_total=len(segments),
-                segments_used=len(entries),
-                segments_omitted_empty=omitted_empty,
-                segments_omitted_invalid=omitted_invalid,
-                transcript_fingerprint=fingerprint,
-                bounded_input_fingerprint=sha256_text(corpus_text),
-            )
-
-        start_off = cursor + (len(sep) if parts else 0)
-        end_off = cursor + len(piece)
-        entries.append(
-            SegmentMapEntry(
-                canonical_index=len(entries),
-                original_segment_index=orig_i,
-                text=text,
-                start_time=start,
-                end_time=end,
-                corpus_start=start_off,
-                corpus_end=end_off,
-                prompt_start=start_off,
-                prompt_end=end_off,
-            )
+    if max_corpus_chars < 0 or total_chars <= max_corpus_chars:
+        corpus_text, entries = _pack_entries(usable, sep=sep)
+        return BoundedGroundingCorpus(
+            corpus_text=corpus_text,
+            entries=entries,
+            input_chars_total=total_chars,
+            input_chars_used=len(corpus_text),
+            truncated=False,
+            partial_final_segment=False,
+            segments_total=len(segments),
+            segments_used=len(entries),
+            segments_omitted_empty=omitted_empty,
+            segments_omitted_invalid=omitted_invalid,
+            transcript_fingerprint=fingerprint,
+            bounded_input_fingerprint=sha256_text(corpus_text) if corpus_text else sha256_text(""),
         )
-        parts.append(text)
-        cursor = end_off
 
-    corpus_text = sep.join(parts)
-    used_chars = len(corpus_text)
+    if prefer == "head":
+        selected, truncated, partial = _select_head_window(
+            usable, max_corpus_chars=max_corpus_chars, sep=sep
+        )
+    else:
+        selected, truncated, partial = _select_tail_window(
+            usable, max_corpus_chars=max_corpus_chars, sep=sep
+        )
+
+    corpus_text, entries = _pack_entries(selected, sep=sep)
     return BoundedGroundingCorpus(
         corpus_text=corpus_text,
         entries=entries,
         input_chars_total=total_chars,
-        input_chars_used=used_chars,
+        input_chars_used=len(corpus_text),
         truncated=truncated,
-        partial_final_segment=partial_final,
+        partial_final_segment=partial,
         segments_total=len(segments),
         segments_used=len(entries),
         segments_omitted_empty=omitted_empty,
@@ -210,35 +246,6 @@ def build_grounding_corpus(
         transcript_fingerprint=fingerprint,
         bounded_input_fingerprint=sha256_text(corpus_text) if corpus_text else sha256_text(""),
     )
-
-
-def _recompute_offsets(
-    entries: list[SegmentMapEntry], sep: str
-) -> list[SegmentMapEntry]:
-    out: list[SegmentMapEntry] = []
-    cursor = 0
-    for i, entry in enumerate(entries):
-        if i == 0:
-            start = 0
-            end = len(entry.text)
-        else:
-            start = cursor + len(sep)
-            end = start + len(entry.text)
-        out.append(
-            SegmentMapEntry(
-                canonical_index=i,
-                original_segment_index=entry.original_segment_index,
-                text=entry.text,
-                start_time=entry.start_time,
-                end_time=entry.end_time,
-                corpus_start=start,
-                corpus_end=end,
-                prompt_start=start,
-                prompt_end=end,
-            )
-        )
-        cursor = end
-    return out
 
 
 def coverage_dict(corpus: BoundedGroundingCorpus, *, empty_run: bool = False) -> dict[str, Any]:

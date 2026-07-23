@@ -168,14 +168,27 @@ CHARTS_KEY_SLICE_SELECTOR = "charts_slice_selector"
 CHARTS_KEY_TAGS_MULTI = "charts_tags_multiselect"
 CHARTS_KEY_STATIC_TOGGLE = "filter_static_toggle"
 CHARTS_KEY_DYNAMIC_TOGGLE = "filter_dynamic_toggle"
-CHARTS_KEY_EXPAND_ALL = "charts_expand_all"
-CHARTS_KEY_SHOW_SUMMARY_TOGGLE = "show_summary_toggle"
+CHARTS_KEY_KIND_PILLS = "charts_kind_pills"
+CHARTS_KEY_SEARCH = "charts_search"
+CHARTS_KEY_MODULE_SORT = "charts_module_sort"
+CHARTS_KEY_CHART_TEXT = "charts_chart_text"
+CHARTS_KEY_OPEN_MODULES = "charts_open_modules"
+# Legacy display toggles — migrated once into CHARTS_KEY_CHART_TEXT, then ignored.
 CHARTS_KEY_SHOW_CHART_DESCRIPTIONS = "show_chart_descriptions_toggle"
 CHARTS_KEY_SHOW_LLM_SUMMARIES = "show_llm_summaries_toggle"
 CHARTS_KEY_FULL_SCREEN = "full_screen_artifact"
 CHARTS_KEY_FILTERS_INIT = "tx_charts_filters_initialized_for"
 CHARTS_KEY_EXPORT_RESULT = "charts_export_result"
 CHARTS_KEY_EXPORT_SIG = "charts_export_signature"
+
+CHARTS_SORT_MODULE_FAMILY = "module_family"
+CHARTS_SORT_ALPHA = "alpha"
+CHARTS_CHART_TEXT_NONE = "None"
+CHARTS_CHART_TEXT_DESCRIPTION = "Description"
+CHARTS_CHART_TEXT_LLM = "LLM summary"
+CHARTS_CHART_TEXT_BOTH = "Both"
+CHARTS_KIND_STATIC = "Static"
+CHARTS_KIND_DYNAMIC = "Dynamic"
 
 DATA_KEY_ARTIFACT_PRESET = "data_artifact_preset"
 
@@ -213,6 +226,7 @@ def consume_artifact_preset(session_state: Any) -> str | None:
     return None
 
 
+# Resettable filter defaults only (dirty detection + Reset). Not view prefs / ephemeral.
 CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_FILTER_MODULE: None,
     CHARTS_KEY_FILTER_SCOPE: None,
@@ -221,42 +235,28 @@ CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_FILTER_TAGS: [],
     CHARTS_KEY_FILTER_SUBVIEW: None,
     CHARTS_KEY_FILTER_SLICE_ID: None,
-    # Widget keys must match Streamlit widget state
     CHARTS_KEY_SOURCE_PRESET: "All",
     CHARTS_KEY_SUBVIEW_TABS: "All",
     CHARTS_KEY_SLICE_SELECTOR: "All",
-    CHARTS_KEY_EXPAND_ALL: False,
     CHARTS_KEY_STATIC_TOGGLE: True,
     CHARTS_KEY_DYNAMIC_TOGGLE: True,
-    CHARTS_KEY_SHOW_SUMMARY_TOGGLE: True,
-    CHARTS_KEY_SHOW_CHART_DESCRIPTIONS: True,
-    CHARTS_KEY_SHOW_LLM_SUMMARIES: True,
-    CHARTS_KEY_FULL_SCREEN: None,
+    CHARTS_KEY_KIND_PILLS: [CHARTS_KIND_STATIC, CHARTS_KIND_DYNAMIC],
     CHARTS_KEY_TAGS_MULTI: [],
-    CHARTS_KEY_EXPORT_RESULT: None,
-    CHARTS_KEY_EXPORT_SIG: None,
+    CHARTS_KEY_SEARCH: "",
+    CHARTS_KEY_MODULE_SORT: CHARTS_SORT_MODULE_FAMILY,
+}
+
+# Persistent view preference (not resettable, not dirty).
+CHARTS_VIEW_PREF_DEFAULTS: dict[str, Any] = {
+    CHARTS_KEY_CHART_TEXT: CHARTS_CHART_TEXT_BOTH,
 }
 
 
 def charts_resettable_keys() -> list[str]:
-    """Keys mutated by reset_charts_filters_to_defaults (excludes init marker)."""
-    return [
-        CHARTS_KEY_FILTER_MODULE,
-        CHARTS_KEY_FILTER_SCOPE,
-        CHARTS_KEY_FILTER_SHOW_STATIC,
-        CHARTS_KEY_FILTER_SHOW_DYNAMIC,
-        CHARTS_KEY_FILTER_TAGS,
-        CHARTS_KEY_FILTER_SUBVIEW,
-        CHARTS_KEY_FILTER_SLICE_ID,
-        CHARTS_KEY_SOURCE_PRESET,
-        CHARTS_KEY_SUBVIEW_TABS,
-        CHARTS_KEY_SLICE_SELECTOR,
-        CHARTS_KEY_EXPAND_ALL,
-        CHARTS_KEY_STATIC_TOGGLE,
-        CHARTS_KEY_DYNAMIC_TOGGLE,
-        CHARTS_KEY_SHOW_SUMMARY_TOGGLE,
-        CHARTS_KEY_FULL_SCREEN,
-        CHARTS_KEY_TAGS_MULTI,
-        CHARTS_KEY_EXPORT_RESULT,
-        CHARTS_KEY_EXPORT_SIG,
-    ]
+    """Filter keys restored by Reset and compared for dirty detection."""
+    return list(CHARTS_FILTER_DEFAULTS.keys())
+
+
+def charts_run_change_reset_keys() -> list[str]:
+    """Filter keys cleared on subject/run change (sort is preserved)."""
+    return [k for k in charts_resettable_keys() if k != CHARTS_KEY_MODULE_SORT]

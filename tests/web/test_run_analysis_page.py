@@ -166,11 +166,13 @@ def test_run_analysis_page_renders_post_success_action_links() -> None:
     assert 'key_prefix="post_run"' in source
     assert "render_batch_analysis_panel" in source
     assert "batch" in mod._RUN_ANALYSIS_DESCRIPTION.lower()
-    # Post-actions must sit after the Batch early-return, not before Target.
-    batch_branch = source.index('if target_type == "Batch":')
-    batch_return = source.index("return", batch_branch)
-    post_actions = source.index("_render_post_analysis_actions()", batch_return)
-    assert post_actions > batch_return
+    # Post-actions sit directly under the page-shell flash, before Target;
+    # Batch is skipped via session-state guard (not via early-return placement).
+    shell_call = source.index("render_page_shell(")
+    post_actions = source.index("_render_post_analysis_actions()", shell_call)
+    target_radio = source.index('st.radio(\n        "Target"', shell_call)
+    assert shell_call < post_actions < target_radio
+    assert '_RUN_ANALYSIS_TARGET_KEY) != "Batch"' in source
 
 
 @pytest.mark.unit

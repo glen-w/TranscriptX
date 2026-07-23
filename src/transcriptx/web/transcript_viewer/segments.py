@@ -12,6 +12,7 @@ from transcriptx.export.grouping import segment_speaker_label
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.components.playback_panel import set_active_clip
+from transcriptx.web.speaker_accent import speaker_chip_html, speaker_expander
 from transcriptx.web.transcript_viewer.highlight import render_highlight_html
 from transcriptx.web.transcript_viewer.playback_targets import (
     format_safe_timestamp_range,
@@ -130,21 +131,30 @@ def render_plain_segments(
         start = segment.get("start", 0)
         end = segment.get("end", 0)
         rendered_text = text
-        if highlight_query and segment_index == jump_index:
+        is_jump_target = jump_index is not None and segment_index == jump_index
+        if highlight_query and is_jump_target:
             rendered_text = render_highlight_html(text, highlight_query)
-        chip = f'<span class="tx-speaker-chip">{html.escape(str(speaker))}</span>'
+        chip = speaker_chip_html(speaker)
+        marker = (
+            ' <span class="tx-jump-target">Selected</span>' if is_jump_target else ""
+        )
         if show_timestamps:
             timestamp = _safe_display_timestamp_range(start, end, format_key)
             if timestamp:
                 st.markdown(
-                    f"{chip} · ⏱️ {html.escape(timestamp)}",
+                    f"{chip}{marker} · ⏱️ {html.escape(timestamp)}",
                     unsafe_allow_html=True,
                 )
             else:
-                st.markdown(chip, unsafe_allow_html=True)
+                st.markdown(f"{chip}{marker}", unsafe_allow_html=True)
         else:
-            st.markdown(chip, unsafe_allow_html=True)
-        st.markdown('<div class="tx-segment-block">', unsafe_allow_html=True)
+            st.markdown(f"{chip}{marker}", unsafe_allow_html=True)
+        block_class = (
+            "tx-segment-block tx-segment-block--jump"
+            if is_jump_target
+            else "tx-segment-block"
+        )
+        st.markdown(f'<div class="{block_class}">', unsafe_allow_html=True)
         if play_button_eligible(playback, segment_index):
             col_text, col_play = st.columns([20, 1])
             with col_text:
@@ -182,21 +192,15 @@ def render_segmented_tab(
     """Render transcript segments grouped by contiguous speakers."""
     speaker_groups = group_segments_by_speaker(display_segments)
     for speaker_name, group_segments in speaker_groups:
+        meta = f"{len(group_segments)} segments"
         if show_timestamps:
             bounds = group_timestamp_bounds(group_segments)
             if bounds is not None:
                 group_timestamp = _format_timestamp_range(
                     bounds[0], bounds[1], format_key
                 )
-                expander_title = (
-                    f"🎤 {speaker_name} ({len(group_segments)} segments)"
-                    f" · ⏱️ {group_timestamp}"
-                )
-            else:
-                expander_title = f"🎤 {speaker_name} ({len(group_segments)} segments)"
-        else:
-            expander_title = f"🎤 {speaker_name} ({len(group_segments)} segments)"
-        with st.expander(expander_title, expanded=True):
+                meta = f"{meta} · {group_timestamp}"
+        with speaker_expander(speaker_name, meta=meta, expanded=True):
             for source_index, segment in group_segments:
                 text = segment.get("text", "")
                 if play_button_eligible(playback, source_index):

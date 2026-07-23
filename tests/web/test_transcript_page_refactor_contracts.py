@@ -52,7 +52,7 @@ def test_navigate_to_segment_sets_canonical_state_and_reruns(monkeypatch) -> Non
 
 
 def test_render_transcript_controls_contract(monkeypatch) -> None:
-    calls: list[str] = []
+    markdown_calls: list[str] = []
     state = {"timestamp_format": "seconds"}
 
     class _DummySt:
@@ -60,8 +60,7 @@ def test_render_transcript_controls_contract(monkeypatch) -> None:
 
         @staticmethod
         def markdown(text, unsafe_allow_html=False):
-            if unsafe_allow_html:
-                calls.append(text)
+            markdown_calls.append(text)
 
         @staticmethod
         def text_input(_label, key):
@@ -78,8 +77,9 @@ def test_render_transcript_controls_contract(monkeypatch) -> None:
     assert result.search_text == "needle"
     assert result.show_timestamps is True
     assert result.format_key == "seconds"
-    assert calls[0] == '<div class="tx-transcript-controls">'
-    assert calls[-1] == "</div>"
+    # Empty markdown wrappers cannot contain Streamlit widgets and paint as a
+    # thick white bar under dark chrome — controls must not emit them.
+    assert markdown_calls == []
 
 
 def test_resolve_and_prepare_segments_only_enriches_when_non_empty(monkeypatch) -> None:

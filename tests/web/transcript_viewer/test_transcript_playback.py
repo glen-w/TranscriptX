@@ -338,12 +338,26 @@ def test_render_active_clip_success_and_failure(monkeypatch: pytest.MonkeyPatch)
     assert "FileNotFoundError" not in warnings[0]
 
 
-def test_render_active_clip_tolerates_none_segment(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_render_active_clip_mounts_idle_player_when_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Idle mount keeps st.audio in layout so first ▶ does not scroll to player."""
     from transcriptx.web.components import playback_panel as panel
+
+    audio_calls: list[Any] = []
+    monkeypatch.setattr(
+        panel.st,
+        "audio",
+        lambda *a, **k: audio_calls.append((a, k)),
+    )
 
     controller = MagicMock()
     panel.render_active_clip(controller, "/t.json", None)
     controller.get_clip_bytes.assert_not_called()
+    assert len(audio_calls) == 1
+    assert audio_calls[0][0][0] == panel._IDLE_CLIP_MP3
+    assert audio_calls[0][1]["autoplay"] is False
+    assert audio_calls[0][1]["format"] == "audio/mpeg"
 
 
 def test_no_nested_fragment_in_playback_helpers() -> None:

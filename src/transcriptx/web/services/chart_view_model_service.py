@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 from transcriptx.core.utils.chart_registry import (
     ChartDefinition,
@@ -13,8 +13,14 @@ from transcriptx.core.utils.chart_registry import (
     get_chart_registry,
     select_preferred_artifacts,
 )
-from transcriptx.web.module_ui_groups import order_module_ids
+from transcriptx.web.module_display_name import gallery_module_display_name
+from transcriptx.web.module_ui_groups import (
+    flattened_spec_module_ids,
+    is_known_spec_module_id,
+    order_module_ids,
+)
 from transcriptx.web.models.artifact import Artifact, ArtifactFilters
+from transcriptx.web.state import CHARTS_SORT_ALPHA, CHARTS_SORT_MODULE_FAMILY
 
 _UNREGISTERED_RANK = 9999
 
@@ -38,6 +44,26 @@ class ChartGalleryFamily:
     @property
     def artifact_count(self) -> int:
         return sum(len(s.artifacts) for s in self.slices)
+
+
+@dataclass(frozen=True)
+class ChartModuleGroupCounts:
+    module_id: str
+    display_name: str
+    total: int
+    static: int
+    dynamic: int
+    charts: list[Artifact]
+
+
+@dataclass(frozen=True)
+class ChartsGalleryViewModel:
+    """Single filtered gallery result used by overview, browse, counts, and export."""
+
+    filtered_charts: list[Artifact]
+    overview_slots: list[dict[str, Any]]
+    module_groups: list[ChartModuleGroupCounts]
+    matching_count: int
 
 
 def resolve_chart_description(artifact: Artifact) -> str | None:
@@ -121,6 +147,7 @@ def apply_chart_filters(
     tags: List[str] | None,
     subview: str | None,
     slice_id: str | None,
+    search: str | None = None,
 ) -> List[Artifact]:
     if kind == "__none__":
         return []
@@ -132,7 +159,127 @@ def apply_chart_filters(
         subview=subview,
         slice_id=slice_id,
     )
-    return [a for a in all_charts if flt.matches(a)]
+    matched = [a for a in all_charts if flt.matches(a)]
+    return [a for a in matched if chart_matches_search(a, search)]
+
+
+def chart_matches_search(artifact: Artifact, search: str | None) -> bool:
+    """Case-insensitive match on module id/name, title, scope, speaker, and tags."""
+    query = (search or "").strip()
+    if not query:
+        return True
+    needle = query.casefold()
+    module_id = artifact.module or ""
+    haystacks: list[str] = [
+        module_id,
+        gallery_module_display_name(artifact.module),
+        artifact.title or "",
+        artifact.scope or "",
+        artifact.speaker or "",
+        *(artifact.tags or []),
+    ]
+    return any(needle in text.casefold() for text in haystacks if text)
+
+
+def sort_gallery_module_ids(
+    module_ids: Iterable[str],
+    *,
+    sort_mode: str,
+) -> list[str]:
+    """Deterministic module ordering for Browse charts rows."""
+    want = {mid for mid in module_ids if isinstance(mid, str) and mid}
+    if not want:
+        return []
+    if sort_mode == CHARTS_SORT_ALPHA:
+        return sorted(
+            want,
+            key=lambda mid: (gallery_module_display_name(mid).casefold(), mid),
+        )
+    # Module family: known ids in presentation order, unknown last by display name.
+    known_ordered = [
+        mid for mid in flattened_spec_module_ids() if mid in want
+    ]
+    unknown = sorted(
+        (mid for mid in want if not is_known_spec_module_id(mid)),
+        key=lambda mid: (gallery_module_display_name(mid).casefold(), mid),
+    )
+    return known_ordered + unknown
+
+
+def module_group_counts(charts: Sequence[Artifact]) -> dict[str, ChartModuleGroupCounts]:
+    """Group filtered charts by module id with static/dynamic totals."""
+    buckets: dict[str, list[Artifact]] = {}
+    for chart in charts:
+        module = chart.module or "Other"
+        buckets.setdefault(module, []).append(chart)
+    out: dict[str, ChartModuleGroupCounts] = {}
+    for module_id, module_charts in buckets.items():
+        static = sum(1 for c in module_charts if c.kind == "chart_static")
+        dynamic = sum(1 for c in module_charts if c.kind == "chart_dynamic")
+        out[module_id] = ChartModuleGroupCounts(
+            module_id=module_id,
+            display_name=gallery_module_display_name(module_id),
+            total=len(module_charts),
+            static=static,
+            dynamic=dynamic,
+            charts=list(module_charts),
+        )
+    return out
+
+
+def build_charts_gallery_view(
+    all_charts: List[Artifact],
+    *,
+    module: str | None,
+    scope: str | None,
+    kind: str | None,
+    tags: List[str] | None,
+    subview: str | None,
+    slice_id: str | None,
+    search: str | None,
+    sort_mode: str,
+    user_overview: Sequence[Any],
+    missing_behavior: str,
+    max_items: int | None,
+) -> ChartsGalleryViewModel:
+    """Apply filters once; derive overview, module rows, and export set from the result."""
+    filtered = apply_chart_filters(
+        all_charts,
+        module=module,
+        scope=scope,
+        kind=kind,
+        tags=tags,
+        subview=subview,
+        slice_id=slice_id,
+        search=search,
+    )
+    overview_slots = build_overview_slots(
+        overview_candidates=filtered,
+        user_overview=list(user_overview or []),
+        missing_behavior=missing_behavior,
+        max_items=max_items,
+    )
+    # Hide overview section when filtering leaves no usable slots.
+    visible_overview = [
+        slot
+        for slot in overview_slots
+        if slot.get("artifacts") or slot.get("missing")
+    ]
+    if missing_behavior != "show_placeholder":
+        visible_overview = [slot for slot in visible_overview if slot.get("artifacts")]
+
+    groups_by_id = module_group_counts(filtered)
+    ordered_ids = sort_gallery_module_ids(
+        groups_by_id.keys(),
+        sort_mode=sort_mode if sort_mode in {CHARTS_SORT_ALPHA, CHARTS_SORT_MODULE_FAMILY} else CHARTS_SORT_MODULE_FAMILY,
+    )
+    module_groups = [groups_by_id[mid] for mid in ordered_ids if mid in groups_by_id]
+    return ChartsGalleryViewModel(
+        filtered_charts=filtered,
+        overview_slots=visible_overview,
+        module_groups=module_groups,
+        matching_count=len(filtered),
+    )
 
 
 def _meta_str(artifact: Artifact, key: str) -> str | None:

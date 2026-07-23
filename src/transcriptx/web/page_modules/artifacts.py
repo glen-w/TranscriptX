@@ -97,25 +97,34 @@ def _force_preview_section() -> None:
     st.session_state.pop("_artifacts_force_preview", None)
 
 
+def _seed_section_widget(key: str, current: str, labels: list[str]) -> None:
+    """Initialize or repair a keyed nav widget without pairing default=/index=."""
+    # Streamlit warns if a widget key is written via Session State *and* default=
+    # (or index=) is passed on the same instantiation. Programmatic Preview jumps
+    # write these keys before the widget exists, so seed here and omit defaults.
+    if key not in st.session_state or st.session_state.get(key) not in labels:
+        st.session_state[key] = current
+
+
 def _section_nav() -> str:
     labels = [lab for _, lab in ARTIFACTS_SECTIONS]
     current = st.session_state.get(ARTIFACTS_KEY_SECTION, "Browse")
     if current not in labels:
         current = "Browse"
         st.session_state[ARTIFACTS_KEY_SECTION] = current
+    _seed_section_widget(_SECTION_CONTROL_KEY, current, labels)
     try:
         choice = st.segmented_control(
             "Artifacts section",
             options=labels,
-            default=current,
             key=_SECTION_CONTROL_KEY,
             label_visibility="collapsed",
         )
     except Exception:
+        _seed_section_widget(_SECTION_RADIO_KEY, current, labels)
         choice = st.radio(
             "Artifacts section",
             labels,
-            index=labels.index(current),
             horizontal=True,
             key=_SECTION_RADIO_KEY,
             label_visibility="collapsed",

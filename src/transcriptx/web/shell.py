@@ -108,18 +108,26 @@ def inject_global_styles() -> None:
         font-weight: 500;
         margin-right: 0.5rem;
     }
-    .tx-speaker-card-title {
+    .tx-speaker-card-title,
+    .tx-speaker-heading {
         display: flex;
         align-items: center;
         gap: 0.55rem;
         margin: 0.1rem 0 0.35rem 0;
         padding-left: 0.65rem;
         border-left: 4px solid var(--speaker-accent, #5b8def);
+        flex-wrap: wrap;
     }
-    .tx-speaker-card-title strong {
+    .tx-speaker-card-title strong,
+    .tx-speaker-heading strong {
         color: var(--speaker-accent, #5b8def);
         font-size: 1.05rem;
         letter-spacing: 0.01em;
+    }
+    .tx-speaker-heading-meta {
+        color: #6b7c90;
+        font-size: 0.85rem;
+        font-weight: 500;
     }
     .tx-speaker-swatch {
         width: 0.65rem;
@@ -127,6 +135,22 @@ def inject_global_styles() -> None:
         border-radius: 999px;
         background: var(--speaker-accent, #5b8def);
         flex-shrink: 0;
+        display: inline-block;
+    }
+    .tx-speaker-expander-swatch {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.4rem;
+    }
+    .tx-speaker-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-right: 0.15rem;
+    }
+    .tx-speaker-inline strong {
+        color: var(--speaker-accent, #5b8def);
     }
     /* Navigation section headers */
     .nav-section-header,
@@ -526,31 +550,73 @@ def inject_global_styles() -> None:
         padding: 0.1rem 0 0.1rem 0.45rem;
         margin: 0.1rem 0 0.25rem 0;
     }
-    /* Speaker chips (transcript viewer) */
+    .tx-chart-module-row {
+        margin: 0.15rem 0 0.35rem 0;
+    }
+    .tx-chart-module-row div[data-testid="stButton"] > button {
+        background: transparent;
+        border: 1px solid transparent;
+        box-shadow: none;
+        color: inherit;
+        font-weight: 500;
+        justify-content: flex-start;
+        text-align: left;
+    }
+    .tx-chart-module-row div[data-testid="stButton"] > button:hover {
+        background: rgba(120, 130, 145, 0.08);
+        border-color: rgba(120, 130, 145, 0.18);
+    }
+    /* Speaker chips (transcript viewer) — accent from --speaker-accent */
     span.tx-speaker-chip {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
         padding: 0.2rem 0.55rem;
         border-radius: 999px;
         font-size: 0.8rem;
         font-weight: 600;
         margin-right: 0.4rem;
-        background: linear-gradient(135deg, #e8f0fe 0%, #eef4fb 100%);
-        color: #2c5282;
-        border: 1px solid rgba(31, 119, 180, 0.2);
+        background: color-mix(
+            in srgb,
+            var(--speaker-accent, #5b8def) 16%,
+            #f7fafc
+        );
+        color: var(--speaker-accent, #2c5282);
+        border: 1px solid color-mix(
+            in srgb,
+            var(--speaker-accent, #5b8def) 35%,
+            transparent
+        );
+    }
+    span.tx-speaker-chip .tx-speaker-swatch {
+        width: 0.5rem;
+        height: 0.5rem;
     }
     .tx-segment-block {
         margin: 0.65rem 0;
         padding: 0.5rem 0;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
-    .tx-transcript-controls {
-        position: sticky;
-        top: 2.1rem;
-        z-index: 40;
-        padding: 0.35rem 0 0.65rem 0;
-        margin-bottom: 0.5rem;
-        background: var(--background-color, rgba(255, 255, 255, 0.94));
-        border-bottom: 1px solid rgba(120, 130, 145, 0.15);
+    .tx-segment-block--jump {
+        border-left: 3px solid rgba(31, 119, 180, 0.55);
+        padding-left: 0.55rem;
+        background: rgba(31, 119, 180, 0.06);
+        border-radius: 0 0.35rem 0.35rem 0;
+    }
+    span.tx-jump-target {
+        display: inline-block;
+        padding: 0.15rem 0.45rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin-left: 0.25rem;
+        background: rgba(31, 119, 180, 0.12);
+        color: #2c5282;
+        border: 1px solid rgba(31, 119, 180, 0.25);
+    }
+    /* Avoid browser scroll-anchoring jumps when the player updates in-place. */
+    [data-testid="stMain"] {
+        overflow-anchor: none;
     }
 </style>
 <script>
@@ -575,6 +641,45 @@ def inject_global_styles() -> None:
             }
         });
     });
+
+    // Keep reading position when ▶ / Play triggers a fragment redraw that
+    // would otherwise scroll the newly focused audio player into view.
+    (function() {
+        if (window.__txPlayScrollPreserve) return;
+        window.__txPlayScrollPreserve = true;
+        const KEY = 'txPreserveScrollY';
+        const isPlayControl = function(el) {
+            const btn = el && el.closest ? el.closest('button') : null;
+            if (!btn) return false;
+            const text = (btn.innerText || btn.textContent || '').trim();
+            return text === '▶' || text.indexOf('Play') === 0;
+        };
+        const restore = function() {
+            const raw = sessionStorage.getItem(KEY);
+            if (raw === null) return;
+            const y = parseInt(raw, 10);
+            if (!Number.isFinite(y)) return;
+            window.scrollTo(0, y);
+        };
+        document.addEventListener('pointerdown', function(e) {
+            if (!isPlayControl(e.target)) return;
+            sessionStorage.setItem(
+                KEY,
+                String(window.scrollY || window.pageYOffset || 0)
+            );
+            let frames = 0;
+            const tick = function() {
+                restore();
+                frames += 1;
+                if (frames < 45) {
+                    window.requestAnimationFrame(tick);
+                } else {
+                    sessionStorage.removeItem(KEY);
+                }
+            };
+            window.requestAnimationFrame(tick);
+        }, true);
+    })();
 </script>
 """,
         unsafe_allow_html=True,

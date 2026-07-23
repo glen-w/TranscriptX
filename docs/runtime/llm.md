@@ -226,6 +226,9 @@ library; `[]` → empty-run success (no Ollama); non-empty list → request.
   never fail the module alone).
 - Artifact `schema_id`: `transcriptx.llm_custom_qa.v1`
 - Citations use grounding-corpus slices (cross-segment includes `\n`).
+- Corpus is capped for citation fidelity (`MAX_CUSTOM_QA_CORPUS_CHARS`) and
+  prefers the meeting **tail** when truncated so end-of-meeting evidence stays
+  available. One quality retry runs when rows are incomplete or ungrounded.
 - Artifacts use staging + commit marker + `.active` pointer; readers require
   module success in `run_results` and commit consistency.
 - Empty questions still schedule the module and write a success artifact.

@@ -119,11 +119,118 @@ def test_load_chapters_and_pending_jump(tmp_path: Path) -> None:
     assert len(rows) == 1
     assert rows[0].title == "Opening"
     assert rows[0].viewer_target_source_index == 3
-    state: dict = {}
+    state: dict = {"transcript_search": "stale"}
     queue_chapter_jump(state, source_index=3, play=True)
+    assert state["transcript_viewer_chapter_jump"] == 3
+    assert state["transcript_viewer_tab"] == "segments"
+    assert state["transcript_viewer_tab_control"] == "Segments"
+    assert state["transcript_search"] == ""
     pending = consume_chapter_pending(state)
     assert pending == {"jump_index": 3, "play": True}
     assert consume_chapter_pending(state) is None
+
+
+def test_chapter_titles_prefer_hints_and_rewrite_segment_label(tmp_path: Path) -> None:
+    run_root = tmp_path / "run"
+    data = run_root / "topic_shift" / "data" / "global"
+    data.mkdir(parents=True)
+    spans = {
+        "analytical_status": "success",
+        "coverage_spans": [
+            {
+                "span_id": "s1",
+                "index": 0,
+                "label": "Segment 1 · 00:00–01:00",
+                "keyword_hints": ["budget", "finance", "planning"],
+                "time_start": 0.0,
+                "time_end": 60.0,
+                "viewer_target_source_index": 0,
+            },
+            {
+                "span_id": "s2",
+                "index": 1,
+                "label": "Segment 2 · 01:00–02:00",
+                "keyword_hints": [],
+                "time_start": 60.0,
+                "time_end": 120.0,
+                "viewer_target_source_index": 5,
+            },
+        ],
+    }
+    (data / "topic_shift.spans.json").write_text(json.dumps(spans), encoding="utf-8")
+    (run_root / "run_results.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "run_id": "r1",
+                "transcript_key": "sess",
+                "modules_enabled": ["topic_shift"],
+                "modules_run": ["topic_shift"],
+                "modules_failed": [],
+                "modules_skipped": [],
+                "errors": [],
+                "module_outcomes": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = load_chapter_rows(run_root)
+    assert rows[0].title == "Budget · Finance · Planning"
+    assert rows[1].title == "Chapter 2 · 01:00–02:00"
+
+
+def test_chapter_titles_prefer_llm_enrichment(tmp_path: Path) -> None:
+    run_root = tmp_path / "run"
+    data = run_root / "topic_shift" / "data" / "global"
+    data.mkdir(parents=True)
+    spans = {
+        "analytical_status": "success",
+        "coverage_spans": [
+            {
+                "span_id": "s1",
+                "index": 0,
+                "label": "Segment 1 · 00:00–01:00",
+                "keyword_hints": ["budget"],
+                "time_start": 0.0,
+                "time_end": 60.0,
+                "viewer_target_source_index": 0,
+            }
+        ],
+    }
+    (data / "topic_shift.spans.json").write_text(json.dumps(spans), encoding="utf-8")
+    enrich = {
+        "ui_mode": "chapter_titles",
+        "outcome": "success",
+        "entries": [
+            {
+                "span_id": "s1",
+                "title": "Q3 budget review",
+                "summary": "Discussed forecast.",
+            }
+        ],
+    }
+    (data / "topic_shift.enrichment.json").write_text(
+        json.dumps(enrich), encoding="utf-8"
+    )
+    (run_root / "run_results.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "run_id": "r1",
+                "transcript_key": "sess",
+                "modules_enabled": ["topic_shift"],
+                "modules_run": ["topic_shift"],
+                "modules_failed": [],
+                "modules_skipped": [],
+                "errors": [],
+                "module_outcomes": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = load_chapter_rows(run_root)
+    assert rows[0].title == "Q3 budget review"
+    assert rows[0].summary == "Discussed forecast."
 
 
 def test_moments_point_event_seeds_segment_refs() -> None:

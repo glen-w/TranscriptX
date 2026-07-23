@@ -149,6 +149,21 @@ def test_confidence_int_ok_bool_rejected() -> None:
     assert bad is None
 
 
+def test_confidence_null_allowed() -> None:
+    row = try_parse_answer_row(
+        {
+            "question_index": 1,
+            "status": "abstained",
+            "answer": None,
+            "abstain_reason": "insufficient_evidence",
+            "confidence": None,
+            "quotes": [],
+        }
+    )
+    assert row is not None
+    assert row.confidence is None
+
+
 def test_cross_segment_citation_quote_contains_separator() -> None:
     segments = [
         {"text": "alpha one", "start": 0.0, "end": 1.0},

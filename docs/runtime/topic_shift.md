@@ -56,7 +56,7 @@ Failed enrichment never invalidates deterministic ACTIVE. Deterministic spans/ev
 
 ## LLM enrichment
 
-Optional sidecar under `.topic_shift_enrichment/` (shared `llm_generational_store`; empty digests rejected). Boundaries immutable. Resolve `consumer_id=topic_shift` without `DEFAULT_OLLAMA_MODEL` fallthrough; configured model must be **installed** or enrichment is `skipped`. Payload validated as Pydantic envelope with **unique `span_id`s** before COMMIT; malformed → enrichment `skipped` (`malformed_enrichment`). Single-batch soft cap (`spans[:40]`). `no_shift_detected` enrichment UI uses **overall summary**, not chapter title. Transcript downloads expose chapters (+ optional enrichment) when visibility is `show`.
+Optional sidecar under `.topic_shift_enrichment/` (shared `llm_generational_store`; empty digests rejected). Boundaries immutable. Resolve `consumer_id=topic_shift` without `DEFAULT_OLLAMA_MODEL` fallthrough; configured model must be **installed** or enrichment is `skipped`. Payload validated as Pydantic envelope with **unique `span_id`s** before COMMIT; malformed → enrichment `skipped` (`malformed_enrichment`). Single-batch soft cap (`spans[:40]`). `no_shift_detected` enrichment UI uses **overall summary**, not chapter title.
 
 ## Viewer
 

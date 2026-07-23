@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from transcriptx.core.analysis.llm_support.text_cleanup import (
+    strip_llm_summary_preface,
+)
 
 def strip_summary_markdown(md: str) -> str:
     """Drop generated top-level titles and provenance footers from markdown bodies."""
@@ -211,9 +214,11 @@ def summary_text_from_payload(payload: dict[str, Any], *, kind: str) -> str:
     if kind == "executive":
         return executive_summary_markdown(payload)
     if kind == "narrative_summary":
-        return str(payload.get("narrative") or payload.get("summary") or "").strip()
+        return strip_llm_summary_preface(
+            str(payload.get("narrative") or payload.get("summary") or "").strip()
+        )
     if kind == "llm_speaker_summary":
-        return str(payload.get("summary") or "").strip()
+        return strip_llm_summary_preface(str(payload.get("summary") or "").strip())
     if kind == "llm_action_items":
         return action_items_markdown(payload)
     if kind == "llm_custom_qa":
@@ -222,4 +227,6 @@ def summary_text_from_payload(payload: dict[str, Any], *, kind: str) -> str:
         )
 
         return render_custom_qa_markdown(payload).strip()
-    return str(payload.get("summary") or payload.get("narrative") or "").strip()
+    return strip_llm_summary_preface(
+        str(payload.get("summary") or payload.get("narrative") or "").strip()
+    )

@@ -36,6 +36,7 @@ from transcriptx.web.blocks.llm_presentation import (
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.module_run_prompt import render_module_required_hint
+from transcriptx.web.speaker_accent import speaker_expander, speaker_inline_html
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_data_artifact,
@@ -300,7 +301,14 @@ def _render_highlights_theme_body(
         end = float(item.get("end") or 0.0)
         time_range = f"{format_time_detailed(start)}-{format_time_detailed(end)}"
         speaker = item.get("speaker") or ""
-        st.markdown(f"**{speaker}** · {time_range} · score {score:.3f}")
+        speaker_html = speaker_inline_html(speaker)
+        if speaker_html:
+            st.markdown(
+                f"{speaker_html} · {time_range} · score {score:.3f}",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(f"{time_range} · score {score:.3f}")
         st.write(item.get("quote") or "")
         _render_open_in_transcript_button(
             session_slug=session_slug,
@@ -462,7 +470,13 @@ def _highlights_browser_fragment(
         time_range = (
             f"{format_time_detailed(item['start'])}-{format_time_detailed(item['end'])}"
         )
-        st.markdown(f"**{item['speaker']}** · {time_range} · score {item['score']:.3f}")
+        st.markdown(
+            (
+                f"{speaker_inline_html(item['speaker'])} · {time_range} · "
+                f"score {item['score']:.3f}"
+            ),
+            unsafe_allow_html=True,
+        )
         st.write(item["quote"])
         if item["section"] != "conflict_points":
             _render_open_in_transcript_button(
@@ -906,7 +920,7 @@ def render_llm_speaker_summary_block(
                 status = str(entry.get("status") or "")
                 if not speaker:
                     continue
-                with st.expander(speaker, expanded=len(speakers) == 1):
+                with speaker_expander(speaker, expanded=len(speakers) == 1):
                     if status != "success":
                         code = entry.get("error_code")
                         message = (
@@ -927,8 +941,13 @@ def render_llm_speaker_summary_block(
                         if rel_json
                         else None
                     )
+                    render_badge_row(
+                        provenance_badges(
+                            (payload or {}).get("provenance") if payload else None
+                        )
+                    )
                     if md:
-                        st.markdown(md)
+                        render_markdown_without_heading_or_provenance(md)
                     elif payload and payload.get("summary"):
                         st.markdown(str(payload["summary"]))
                     elif payload:
@@ -961,7 +980,7 @@ def render_llm_speaker_summary_block(
             safe = _safe_speaker_artifact_token(speaker)
             suffix_json = f"_{safe}_llm_speaker_summary.json"
             suffix_md = f"_{safe}_llm_speaker_summary.md"
-            with st.expander(speaker, expanded=len(speakers) == 1):
+            with speaker_expander(speaker, expanded=len(speakers) == 1):
                 if status != "success":
                     code = entry.get("error_code")
                     message = entry.get("error_message") or "Summary generation failed"
@@ -970,8 +989,13 @@ def render_llm_speaker_summary_block(
                     continue
                 md = load_member_module_text(loader, member, module, suffix_md)
                 payload = load_member_module_json(loader, member, module, suffix_json)
+                render_badge_row(
+                    provenance_badges(
+                        (payload or {}).get("provenance") if payload else None
+                    )
+                )
                 if md:
-                    st.markdown(md)
+                    render_markdown_without_heading_or_provenance(md)
                 elif payload and payload.get("summary"):
                     st.markdown(str(payload["summary"]))
                 elif payload:
@@ -1018,7 +1042,7 @@ def render_llm_speaker_summary_block(
         safe = _safe_speaker_artifact_token(speaker)
         suffix_json = f"_{safe}_llm_speaker_summary.json"
         suffix_md = f"_{safe}_llm_speaker_summary.md"
-        with st.expander(speaker, expanded=len(speakers) == 1):
+        with speaker_expander(speaker, expanded=len(speakers) == 1):
             if status != "success":
                 code = entry.get("error_code")
                 message = entry.get("error_message") or "Summary generation failed"
@@ -1027,8 +1051,13 @@ def render_llm_speaker_summary_block(
                 continue
             md = loader.load_text(module, suffix_md)
             payload = loader.load_json(module, suffix_json)
+            render_badge_row(
+                provenance_badges(
+                    (payload or {}).get("provenance") if payload else None
+                )
+            )
             if md:
-                st.markdown(md)
+                render_markdown_without_heading_or_provenance(md)
             elif payload and payload.get("summary"):
                 st.markdown(str(payload["summary"]))
             elif payload:
@@ -1046,21 +1075,6 @@ def render_llm_speaker_summary_block(
             if prov.get("truncated"):
                 st.caption("Input was truncated to fit the model context window.")
 
-    prov = index_payload.get("provenance") or {}
-    if prov:
-        with st.expander("Generation details"):
-            model = prov.get("model")
-            provider = prov.get("provider")
-            if model:
-                st.write(f"Model: {model}")
-            if provider:
-                st.write(f"Provider: {provider}")
-            success_count = prov.get("success_count")
-            failure_count = prov.get("failure_count")
-            if success_count is not None:
-                st.write(f"Summaries generated: {success_count}")
-            if failure_count:
-                st.write(f"Failed speakers: {failure_count}")
     _render_view_raw_file_link(
         ctx,
         module,

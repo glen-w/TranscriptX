@@ -15,6 +15,15 @@ from transcriptx.core.analysis.topic_shift.visibility import (
 from transcriptx.utils.text_utils import format_duration_display_from_config
 
 CHAPTER_PENDING_KEY = "transcript_viewer_chapter_pending"
+CHAPTER_JUMP_KEY = "transcript_viewer_chapter_jump"
+TRANSCRIPT_TAB_KEY = "transcript_viewer_tab"
+TRANSCRIPT_TAB_CONTROL_KEY = "transcript_viewer_tab_control"
+
+_TAB_LABELS = {
+    "turns": "Turns",
+    "segments": "Segments",
+    "chapters": "Chapters",
+}
 
 
 @dataclass(frozen=True)
@@ -30,33 +39,65 @@ class ChapterRow:
     summary: str | None
 
 
+def _deterministic_display_label(span: dict[str, Any]) -> str:
+    """Viewer-facing fallback when LLM titles / keyword hints are absent."""
+    raw = str(span.get("label") or "").strip()
+    idx = span.get("index", 0)
+    try:
+        chapter_n = int(idx) + 1
+    except (TypeError, ValueError):
+        chapter_n = 1
+    if raw.startswith("Segment "):
+        return f"Chapter {raw[len('Segment ') :]}"
+    if raw:
+        return raw
+    return f"Chapter {chapter_n}"
+
+
+def _title_from_keyword_hints(hints: object) -> str | None:
+    if not isinstance(hints, list):
+        return None
+    parts: list[str] = []
+    for hint in hints:
+        tok = str(hint or "").strip()
+        if not tok:
+            continue
+        parts.append(tok[:1].upper() + tok[1:] if len(tok) > 1 else tok.upper())
+        if len(parts) >= 4:
+            break
+    if not parts:
+        return None
+    return " · ".join(parts)
+
+
 def _title_for_span(
     span: dict[str, Any],
     *,
     enrichment: dict[str, Any] | None,
 ) -> tuple[str, str | None]:
     sid = str(span.get("span_id") or "")
-    det_label = str(span.get("label") or f"Segment {span.get('index', 0)}")
+    det_label = _deterministic_display_label(span)
     summary = None
-    if not enrichment:
-        return det_label, None
-    ui_mode = enrichment.get("ui_mode") or "chapter_titles"
-    if ui_mode == "overall_summary":
-        overall = enrichment.get("overall_summary")
-        if overall:
-            return det_label, str(overall)
-        return det_label, None
-    for entry in enrichment.get("entries") or []:
-        if not isinstance(entry, dict):
-            continue
-        if str(entry.get("span_id") or "") != sid:
-            continue
-        title = entry.get("title")
-        if title and str(title).strip():
-            return str(title).strip(), (
-                str(entry.get("summary")).strip() if entry.get("summary") else None
-            )
-        break
+    if enrichment:
+        ui_mode = enrichment.get("ui_mode") or "chapter_titles"
+        if ui_mode == "overall_summary":
+            overall = enrichment.get("overall_summary")
+            hint_title = _title_from_keyword_hints(span.get("keyword_hints"))
+            return hint_title or det_label, (str(overall) if overall else None)
+        for entry in enrichment.get("entries") or []:
+            if not isinstance(entry, dict):
+                continue
+            if str(entry.get("span_id") or "") != sid:
+                continue
+            title = entry.get("title")
+            if title and str(title).strip():
+                return str(title).strip(), (
+                    str(entry.get("summary")).strip() if entry.get("summary") else None
+                )
+            break
+    hint_title = _title_from_keyword_hints(span.get("keyword_hints"))
+    if hint_title:
+        return hint_title, summary
     return det_label, summary
 
 
@@ -145,17 +186,33 @@ def load_chapter_rows(run_root: Path | None) -> list[ChapterRow]:
     return rows
 
 
+def sticky_chapter_jump(session_state: dict[str, Any]) -> int | None:
+    value = session_state.get(CHAPTER_JUMP_KEY)
+    return int(value) if type(value) is int else None
+
+
+def clear_chapter_jump(session_state: dict[str, Any]) -> None:
+    session_state[CHAPTER_JUMP_KEY] = None
+
+
 def queue_chapter_jump(
     session_state: dict[str, Any],
     *,
     source_index: int,
     play: bool = True,
 ) -> None:
-    """Queue a chapter navigation that re-applies play after view-signature reset."""
+    """Queue chapter navigation: switch to Segments, filter, optional play."""
+    idx = int(source_index)
     session_state[CHAPTER_PENDING_KEY] = {
-        "jump_index": int(source_index),
+        "jump_index": idx,
         "play": bool(play),
     }
+    session_state[CHAPTER_JUMP_KEY] = idx
+    # Programmatic tab switch (widget key must match label option).
+    session_state[TRANSCRIPT_TAB_KEY] = "segments"
+    session_state[TRANSCRIPT_TAB_CONTROL_KEY] = _TAB_LABELS["segments"]
+    # Search wins over jump in filtered_display_segments — clear it.
+    session_state["transcript_search"] = ""
 
 
 def consume_chapter_pending(

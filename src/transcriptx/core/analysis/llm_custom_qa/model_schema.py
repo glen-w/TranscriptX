@@ -46,13 +46,15 @@ class LLMCustomQAModelQuote(BaseModel):
 class LLMCustomQAModelAnswerRow(BaseModel):
     """Strict per-row model schema (never fails the module alone)."""
 
-    model_config = ConfigDict(extra="forbid")
+    # Ignore unknown keys — local models often add helper fields.
+    model_config = ConfigDict(extra="ignore")
 
     question_index: int
     status: ModelAnswerStatus
     answer: Optional[str] = None
     abstain_reason: Optional[ModelAbstainReason] = None
-    confidence: float
+    # Local models (e.g. mistral-nemo) often emit null confidence on abstains.
+    confidence: Optional[float] = None
     quotes: list[str] = Field(default_factory=list)
 
     @field_validator("question_index", mode="before")
@@ -64,7 +66,9 @@ class LLMCustomQAModelAnswerRow(BaseModel):
 
     @field_validator("confidence", mode="before")
     @classmethod
-    def _strict_confidence(cls, value: Any) -> float:
+    def _strict_confidence(cls, value: Any) -> Optional[float]:
+        if value is None:
+            return None
         if not _is_finite_number(value):
             raise ValueError("confidence must be a finite JSON number (bool rejected)")
         conf = float(value)

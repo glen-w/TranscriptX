@@ -25,6 +25,8 @@ from transcriptx.core.analysis.llm_custom_qa.commit import (
     sweep_orphan_staging,
 )
 from transcriptx.core.analysis.llm_custom_qa.constants import (
+    MAX_CUSTOM_QA_CORPUS_CHARS,
+    MAX_QUALITY_RETRY_ATTEMPTS,
     MAX_RETRY_ATTEMPTS,
     MODULE_NAME,
     MODULE_VERSION,
@@ -84,15 +86,20 @@ def _write_questions_metadata_sidecar(
     )
 
 
-def _system_prompt() -> str:
+def _system_prompt(*, question_count: int) -> str:
+    last_index = max(0, question_count - 1)
     return (
         "You answer questions about a transcript excerpt. "
         'Respond with strict JSON only: {"answers": [...]}. '
+        f"Emit exactly {question_count} answer objects covering every "
+        f"question_index from 0 through {last_index} (no missing indexes). "
         "Each answer object must include question_index, status, answer, "
         "abstain_reason, confidence, quotes. "
         "status is answered or abstained. "
         "For answered: answer is a short string, abstain_reason is null, "
-        "quotes is an array of 1-3 exact substrings from the transcript. "
+        "quotes is an array of 1-3 short phrases copied verbatim from "
+        "<<<TRANSCRIPT>>> (exact characters, including punctuation; "
+        "prefer 5-25 words; never paraphrase or invent quotes). "
         "For abstained: answer is null, abstain_reason is one of "
         "insufficient_evidence, ambiguous, out_of_scope, not_in_provided_excerpt, "
         "quotes is []. "
@@ -114,6 +121,96 @@ def _build_user_prompt(
         f"<<<QUESTIONS_JSON>>>\n{questions_json}\n<<<END QUESTIONS_JSON>>>\n\n"
         f"<<<TRANSCRIPT>>>\n{corpus_text}\n<<<END TRANSCRIPT>>>"
     )
+
+
+def _needs_quality_retry(diagnostics: dict[str, Any]) -> bool:
+    return (
+        int(diagnostics.get("response_incomplete_count", 0)) > 0
+        or int(diagnostics.get("grounding_failed_count", 0)) > 0
+    )
+
+
+def _build_repair_user_prompt(
+    *,
+    base_user_prompt: str,
+    answers: list[dict[str, Any]],
+    question_count: int,
+) -> str:
+    problems: list[str] = []
+    for row in answers:
+        if row.get("status") != "unavailable":
+            continue
+        idx = row.get("question_index")
+        reason = row.get("system_reason") or "unavailable"
+        problems.append(f"- question_index {idx}: {reason}")
+    problem_block = "\n".join(problems) if problems else "- one or more rows unavailable"
+    last_index = max(0, question_count - 1)
+    return (
+        f"{base_user_prompt}\n\n"
+        "<<<REPAIR>>>\n"
+        "Your previous JSON was incomplete or had quotes that were not exact "
+        "transcript substrings. Return a full answers array with exactly one "
+        f"object for every question_index from 0 through {last_index}. "
+        "For answered rows, copy short quotes character-for-character from "
+        "<<<TRANSCRIPT>>> only (do not paraphrase).\n"
+        f"Problems:\n{problem_block}\n"
+        "<<<END REPAIR>>>"
+    )
+
+
+def _generate_raw_with_transport_retries(
+    client: Any,
+    *,
+    user_prompt: str,
+    system_prompt: str,
+    temperature: float,
+    max_tokens: int,
+) -> tuple[str, int]:
+    raw: Optional[str] = None
+    last_exc: Optional[BaseException] = None
+    attempt_index = 0
+    for attempt in range(1, MAX_RETRY_ATTEMPTS + 1):
+        attempt_index = attempt
+        try:
+            raw = client.generate(
+                prompt=user_prompt,
+                system_prompt=system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format="json",
+            )
+            last_exc = None
+            break
+        except BaseException as exc:
+            last_exc = exc
+            if not _is_retryable(exc) or attempt >= MAX_RETRY_ATTEMPTS:
+                if _is_retryable(exc) and attempt >= MAX_RETRY_ATTEMPTS:
+                    raise CustomQAError(
+                        f"Retryable transport failed after {attempt} attempts",
+                        code=CustomQAFailureCode.CUSTOM_QA_RETRY_EXHAUSTED,
+                    ) from exc
+                code = map_exception_to_failure_code(exc)
+                raise CustomQAError(str(exc), code=code) from exc
+    if raw is None and last_exc is not None:
+        raise last_exc
+    return str(raw or ""), attempt_index
+
+
+def _process_grounded_answers(
+    raw: str,
+    *,
+    questions: list[str],
+    max_answer_chars: int,
+    corpus: Any,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    raw_answers = parse_model_envelope(raw)
+    answers, diagnostics = process_raw_answers(
+        raw_answers,
+        questions_requested=questions,
+        max_answer_chars=max_answer_chars,
+    )
+    answers = apply_grounding(answers, corpus, diagnostics=diagnostics)
+    return answers, diagnostics
 
 
 def _empty_run_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
@@ -279,15 +376,24 @@ class LLMCustomQAAnalysis(AnalysisModule):
             segments = context.get_segments()
             # Reserve headroom for system/schema/questions/delimiters/response
             questions_json = json.dumps(list(effective.questions), ensure_ascii=False)
+            question_count = len(effective.questions)
+            system_prompt = _system_prompt(question_count=question_count)
             reserved = (
-                len(_system_prompt())
+                len(system_prompt)
                 + len(INSTRUCTION)
                 + len(questions_json)
                 + 256
                 + int(effort_runtime.max_output_tokens) * 4
             )
-            max_corpus = max(0, int(effort_runtime.max_input_chars) - reserved)
-            corpus = build_grounding_corpus(segments, max_corpus_chars=max_corpus)
+            # Citation budget: keep windows small enough for mid-size local models
+            # to copy verbatim quotes and emit one row per question.
+            max_corpus = min(
+                max(0, int(effort_runtime.max_input_chars) - reserved),
+                MAX_CUSTOM_QA_CORPUS_CHARS,
+            )
+            corpus = build_grounding_corpus(
+                segments, max_corpus_chars=max_corpus, prefer="tail"
+            )
             if not corpus.corpus_text.strip():
                 raise CustomQAEmptyInputError()
 
@@ -299,7 +405,6 @@ class LLMCustomQAAnalysis(AnalysisModule):
                 questions=effective.questions,
                 corpus_text=corpus.corpus_text,
             )
-            system_prompt = _system_prompt()
             llm_request_sha256 = sha256_llm_request(
                 user_prompt, system_prompt=system_prompt
             )
@@ -376,41 +481,44 @@ class LLMCustomQAAnalysis(AnalysisModule):
                     payload=payload,
                 )
 
-            raw: Optional[str] = None
-            last_exc: Optional[BaseException] = None
-            attempt_index = 0
-            for attempt in range(1, MAX_RETRY_ATTEMPTS + 1):
-                attempt_index = attempt
-                try:
-                    raw = client.generate(
-                        prompt=user_prompt,
-                        system_prompt=system_prompt,
-                        temperature=temperature,
-                        max_tokens=int(effort_runtime.max_output_tokens),
-                        response_format="json",
-                    )
-                    last_exc = None
-                    break
-                except BaseException as exc:
-                    last_exc = exc
-                    if not _is_retryable(exc) or attempt >= MAX_RETRY_ATTEMPTS:
-                        if _is_retryable(exc) and attempt >= MAX_RETRY_ATTEMPTS:
-                            raise CustomQAError(
-                                f"Retryable transport failed after {attempt} attempts",
-                                code=CustomQAFailureCode.CUSTOM_QA_RETRY_EXHAUSTED,
-                            ) from exc
-                        code = map_exception_to_failure_code(exc)
-                        raise CustomQAError(str(exc), code=code) from exc
-            if raw is None and last_exc is not None:
-                raise last_exc
-
-            raw_answers = parse_model_envelope(raw or "")
-            answers, diagnostics = process_raw_answers(
-                raw_answers,
-                questions_requested=list(effective.questions),
-                max_answer_chars=effective.max_answer_chars,
+            raw, attempt_index = _generate_raw_with_transport_retries(
+                client,
+                user_prompt=user_prompt,
+                system_prompt=system_prompt,
+                temperature=temperature,
+                max_tokens=int(effort_runtime.max_output_tokens),
             )
-            answers = apply_grounding(answers, corpus, diagnostics=diagnostics)
+            answers, diagnostics = _process_grounded_answers(
+                raw,
+                questions=list(effective.questions),
+                max_answer_chars=effective.max_answer_chars,
+                corpus=corpus,
+            )
+            quality_attempts = 0
+            while (
+                quality_attempts < MAX_QUALITY_RETRY_ATTEMPTS
+                and _needs_quality_retry(diagnostics)
+            ):
+                quality_attempts += 1
+                repair_prompt = _build_repair_user_prompt(
+                    base_user_prompt=user_prompt,
+                    answers=answers,
+                    question_count=question_count,
+                )
+                raw, repair_attempt = _generate_raw_with_transport_retries(
+                    client,
+                    user_prompt=repair_prompt,
+                    system_prompt=system_prompt,
+                    temperature=temperature,
+                    max_tokens=int(effort_runtime.max_output_tokens),
+                )
+                attempt_index += repair_attempt
+                answers, diagnostics = _process_grounded_answers(
+                    raw,
+                    questions=list(effective.questions),
+                    max_answer_chars=effective.max_answer_chars,
+                    corpus=corpus,
+                )
             answers = apply_absence_detector(
                 answers, truncated=corpus.truncated, diagnostics=diagnostics
             )
