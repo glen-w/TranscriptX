@@ -139,13 +139,11 @@ def test_pending_launch_snapshot_is_launch_authority() -> None:
 
 
 @pytest.mark.unit
-def test_custom_qa_picker_skip_strips_execution(monkeypatch) -> None:
+def test_custom_qa_picker_empty_selection_is_implicit_skip(monkeypatch) -> None:
     import transcriptx.web.components.llm_custom_qa_picker as mod
 
     DummyHomeStreamlit.session_state = {
         "run_analysis_qa_adhoc_rows": [],
-        "run_analysis_qa_skip": True,
-        "run_analysis_qa_empty_artifact": False,
     }
 
     class _St(DummyHomeStreamlit):
@@ -156,12 +154,6 @@ def test_custom_qa_picker_skip_strips_execution(monkeypatch) -> None:
         @staticmethod
         def expander(*_a, **_k):
             return DummyExpander()
-
-        @staticmethod
-        def checkbox(label, value=False, key=None, **_kwargs):
-            if key is not None and key in DummyHomeStreamlit.session_state:
-                return bool(DummyHomeStreamlit.session_state[key])
-            return value
 
         @staticmethod
         def multiselect(*_a, **_k):
@@ -199,61 +191,14 @@ def test_custom_qa_picker_skip_strips_execution(monkeypatch) -> None:
 
 
 @pytest.mark.unit
-def test_custom_qa_picker_empty_artifact_executes(monkeypatch) -> None:
+def test_custom_qa_picker_hides_skip_and_empty_artifact_controls() -> None:
     import transcriptx.web.components.llm_custom_qa_picker as mod
 
-    DummyHomeStreamlit.session_state = {
-        "run_analysis_qa_adhoc_rows": [],
-        "run_analysis_qa_skip": False,
-        "run_analysis_qa_empty_artifact": True,
-    }
-
-    class _St(DummyHomeStreamlit):
-        @staticmethod
-        def empty():
-            return SimpleNamespace(markdown=lambda *_a, **_k: None)
-
-        @staticmethod
-        def expander(*_a, **_k):
-            return DummyExpander()
-
-        @staticmethod
-        def checkbox(label, value=False, key=None, **_kwargs):
-            if key is not None and key in DummyHomeStreamlit.session_state:
-                return bool(DummyHomeStreamlit.session_state[key])
-            return value
-
-        @staticmethod
-        def multiselect(*_a, **_k):
-            return []
-
-    monkeypatch.setattr(mod, "st", _St)
-    cfg = SimpleNamespace(
-        max_questions_per_run=8,
-        saved_questions=[],
-        max_question_chars=500,
-        max_library_questions=50,
-        max_library_total_question_chars=5000,
-    )
-    monkeypatch.setattr(
-        mod,
-        "get_config",
-        lambda: SimpleNamespace(analysis=SimpleNamespace(llm_custom_qa=cfg)),
-    )
-    monkeypatch.setattr(mod, "structured_library_from_settings", lambda _cfg: [])
-    monkeypatch.setattr(
-        mod,
-        "resolve_effective_custom_qa_questions",
-        lambda **_k: SimpleNamespace(structured=[]),
-    )
-
-    questions, effective, execution = mod.render_custom_qa_picker(
-        key_prefix="run_analysis_qa",
-        always_show=True,
-    )
-    assert questions == []
-    assert effective is not None
-    assert execution is True
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Skip custom questions" not in source
+    assert "Create an empty custom-questions result" not in source
+    assert "_empty_artifact" not in source
+    assert "empty_artifact" not in source
 
 
 @pytest.mark.unit

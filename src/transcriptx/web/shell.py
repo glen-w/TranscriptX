@@ -582,22 +582,57 @@ def inject_global_styles() -> None:
     .tx-chart-module-row {
         margin: 0.15rem 0 0.35rem 0;
     }
-    .tx-chart-module-row div[data-testid="stButton"] > button {
+    .tx-charts-filter-toolbar {
+        margin: 0.15rem 0 0.45rem 0;
+    }
+    .tx-charts-filter-toolbar div[data-testid="stHorizontalBlock"] {
+        justify-content: flex-start !important;
+        gap: 0.5rem !important;
+    }
+    /* Key-based: markdown wrappers do not parent Streamlit widgets in the DOM.
+       Target the element container, button, and Streamlit's inner flex/markdown
+       so labels stay left (default secondary buttons center their content). */
+    [class*="st-key-charts_module_toggle_"],
+    [class*="st-key-charts_module_toggle_"] [data-testid="stButton"] {
+        width: 100% !important;
+        text-align: left !important;
+    }
+    [class*="st-key-charts_module_toggle_"] [data-testid="stButton"] > button,
+    [class*="st-key-charts_module_toggle_"] [data-testid="stBaseButton-secondary"],
+    [class*="st-key-charts_module_toggle_"] button {
         background: transparent;
         border: 1px solid transparent;
         box-shadow: none;
         color: inherit;
         font-weight: 500;
+        width: 100% !important;
+        display: inline-flex !important;
         justify-content: flex-start !important;
         text-align: left !important;
     }
-    .tx-chart-module-row div[data-testid="stButton"] > button p {
+    /* Streamlit BaseButton nests a full-width flex row with justify-content:center. */
+    [class*="st-key-charts_module_toggle_"] button div,
+    [class*="st-key-charts_module_toggle_"] button [data-testid="stMarkdownContainer"],
+    [class*="st-key-charts_module_toggle_"] button p,
+    [class*="st-key-charts_module_toggle_"] button span {
+        width: 100% !important;
+        margin: 0;
+        justify-content: flex-start !important;
         text-align: left !important;
-        width: 100%;
     }
-    .tx-chart-module-row div[data-testid="stButton"] > button:hover {
+    [class*="st-key-charts_module_toggle_"] [data-testid="stButton"] > button:hover,
+    [class*="st-key-charts_module_toggle_"] [data-testid="stBaseButton-secondary"]:hover,
+    [class*="st-key-charts_module_toggle_"] button:hover {
         background: rgba(120, 130, 145, 0.08);
         border-color: rgba(120, 130, 145, 0.18);
+    }
+    /* Chart family / slice expanders — keep summary labels left-aligned */
+    .main [data-testid="stExpander"] details summary,
+    .main [data-testid="stExpander"] details summary [data-testid="stMarkdownContainer"],
+    .main [data-testid="stExpander"] details summary p,
+    .main [data-testid="stExpander"] details summary span {
+        text-align: left !important;
+        justify-content: flex-start !important;
     }
     /* Speaker chips (transcript viewer) — accent from --speaker-accent */
     span.tx-speaker-chip {

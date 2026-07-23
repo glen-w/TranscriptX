@@ -38,11 +38,13 @@ class PathSettings:
     readable_transcripts_dir: Path
     # Working (app-managed)
     data_dir: Path
+    speaker_profiles_dir: Path
     outputs_dir: Path
     group_outputs_dir: Path
     preprocessing_dir: Path
     state_dir: Path
     processing_state_file: Path
+    speaker_profiles_lock_file: Path
     # Config
     config_dir: Path
     profiles_dir: Path
@@ -78,6 +80,11 @@ def _build_paths() -> PathSettings:
         config_dir / "profiles"
     )
     state_dir = data_dir / "state"
+    # Prefer a dedicated override so longitudinal speaker PII can live outside
+    # the clone (same pattern as TRANSCRIPTX_OUTPUT_DIR / TRANSCRIPTX_TRANSCRIPTS_DIR).
+    speaker_profiles_dir = _env_path_value("TRANSCRIPTX_SPEAKER_PROFILES_DIR") or (
+        data_dir / "speaker_profiles"
+    )
     wav_backup_env = _env_path_value("TRANSCRIPTX_WAV_BACKUP_DIR")
     wav_backup_dir = wav_backup_env or (data_dir / "backups" / "wav")
     # Writable directory for uploads: env override, else recordings_dir/imports if writable, else data/recordings/imports
@@ -97,6 +104,7 @@ def _build_paths() -> PathSettings:
     return PathSettings(
         project_root=project_root,
         data_dir=data_dir,
+        speaker_profiles_dir=speaker_profiles_dir,
         config_dir=config_dir,
         profiles_dir=profiles_dir,
         recordings_dir=recordings_dir,
@@ -112,6 +120,7 @@ def _build_paths() -> PathSettings:
         preprocessing_dir=data_dir / "preprocessing",
         state_dir=state_dir,
         processing_state_file=state_dir / "processing_state.json",
+        speaker_profiles_lock_file=state_dir / "speaker_profiles.lock",
         wav_backup_dir=wav_backup_dir,
         state_backup_dir=data_dir / "backups" / "processing_state",
         audio_playback_cache_dir=data_dir / "cache" / "audio_playback",
@@ -169,6 +178,11 @@ def ensure_data_dirs() -> None:
         PATHS.state_dir,
         PATHS.data_dir / "groups",
         PATHS.data_dir / "corrections",
+        PATHS.speaker_profiles_dir,
+        PATHS.speaker_profiles_dir / "profiles",
+        PATHS.speaker_profiles_dir / "links",
+        PATHS.speaker_profiles_dir / "events",
+        PATHS.speaker_profiles_dir / "operations",
     ]
     for d in dirs:
         try:

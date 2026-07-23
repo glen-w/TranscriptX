@@ -123,8 +123,8 @@ def build_page_renderers(
         ),
         "Diagnostics": _lazy_renderer("diagnostics", "render_diagnostics_page"),
         "Groups": _lazy_renderer("groups", "render_groups"),
-        "Speakers": lambda: st.info("Speaker pages were removed."),
-        "Speaker Detail": lambda: st.info("Speaker pages were removed."),
+        "Speakers": _lazy_renderer("speakers", "render_speakers_page"),
+        "Speaker Detail": _lazy_renderer("speakers", "render_speakers_page"),
     }
     if corrections_studio_available and render_corrections_studio:
         page_renderers["Corrections Studio"] = render_corrections_studio

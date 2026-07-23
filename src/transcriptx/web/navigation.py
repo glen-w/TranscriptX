@@ -69,6 +69,8 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
     _spec("Home", "Home", "primary"),
     _spec("Library", "Library", "primary", may_mutate_context=True),
     _spec("Search", "Search", "primary"),
+    _spec("Speakers", "Speakers", "primary", may_mutate_context=True),
+    _spec("Groups", "Groups", "primary", may_mutate_context=True),
     _spec("Transcribe Audio", "Transcribe Audio", "workflow", may_mutate_context=True),
     _spec(
         "Import Transcript", "Import Transcript", "workflow", may_mutate_context=True
@@ -81,7 +83,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
     ),
     _spec("Corrections Studio", "Corrections Studio", "workflow"),
     _spec("Run Analysis", "Run Analysis", "workflow", may_mutate_context=True),
-    _spec("Groups", "Groups", "workflow", may_mutate_context=True),
     _spec(
         "Overview",
         "Overview",

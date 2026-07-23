@@ -17,12 +17,18 @@ from transcriptx.web.charts_filter_state import (
     chart_text_flags,
     charts_filters_are_dirty,
     ensure_charts_chart_text,
+    ensure_charts_scope_filter,
     intersect_charts_open_modules,
     kind_filter_from_session,
     reset_charts_filters_for_run_change,
     reset_charts_filters_to_defaults,
+    scope_filter_from_session,
     set_charts_open_modules,
     sync_kind_toggles_from_pills,
+)
+from transcriptx.web.components.action_links import (
+    render_action_link,
+    render_download_link,
 )
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
@@ -414,49 +420,52 @@ def _render_view_options_popover(visible_module_ids: list[str]) -> None:
                 _fragment_rerun()
 
 
-def _render_header_actions(
+def _run_export_visible(run_root: Path, filtered_charts: list[Artifact]) -> None:
+    current_sig = _charts_export_signature(filtered_charts)
+    try:
+        result = ExportService.zip_charts(
+            run_root, filtered_charts, st.session_state.get("run_id", "")
+        )
+        st.session_state[CHARTS_KEY_EXPORT_RESULT] = result
+        st.session_state[CHARTS_KEY_EXPORT_SIG] = current_sig
+    except ValueError as exc:
+        st.error(str(exc))
+        st.session_state.pop(CHARTS_KEY_EXPORT_RESULT, None)
+        st.session_state.pop(CHARTS_KEY_EXPORT_SIG, None)
+
+
+def _render_export_under_badges(
     run_root: Path,
     filtered_charts: list[Artifact],
 ) -> None:
-    dirty = charts_filters_are_dirty(st.session_state)
     current_sig = _charts_export_signature(filtered_charts)
     stored_result = st.session_state.get(CHARTS_KEY_EXPORT_RESULT)
     stored_sig = st.session_state.get(CHARTS_KEY_EXPORT_SIG)
     export_is_current = _has_current_export(stored_result, stored_sig, current_sig)
 
-    action_cols = st.columns([1.2, 1.0, 3.0] if dirty else [1.2, 4.0])
-    with action_cols[0]:
-        if not filtered_charts:
-            st.caption("No visible charts to export.")
-        elif st.button("Export visible", key="charts_export_btn"):
-            try:
-                result = ExportService.zip_charts(
-                    run_root, filtered_charts, st.session_state.get("run_id", "")
-                )
-                st.session_state[CHARTS_KEY_EXPORT_RESULT] = result
-                st.session_state[CHARTS_KEY_EXPORT_SIG] = current_sig
-                stored_result = result
-                export_is_current = True
-            except ValueError as exc:
-                st.error(str(exc))
-                st.session_state.pop(CHARTS_KEY_EXPORT_RESULT, None)
-                st.session_state.pop(CHARTS_KEY_EXPORT_SIG, None)
-                stored_result = None
-                export_is_current = False
+    if not filtered_charts:
+        st.caption("No visible charts to export.")
+        return
 
-    if dirty:
-        with action_cols[1]:
-            if st.button("Reset", key="charts_reset_filters"):
-                reset_charts_filters_to_defaults(st.session_state)
-                _fragment_rerun()
+    if render_action_link(
+        "Export visible",
+        key="charts_export_visible",
+        icon=":material/folder_zip:",
+        help="Zip the charts matching the current filters",
+    ):
+        _run_export_visible(run_root, filtered_charts)
+        stored_result = st.session_state.get(CHARTS_KEY_EXPORT_RESULT)
+        stored_sig = st.session_state.get(CHARTS_KEY_EXPORT_SIG)
+        export_is_current = _has_current_export(stored_result, stored_sig, current_sig)
 
     if export_is_current and isinstance(stored_result, ChartsExportResult):
-        st.download_button(
+        render_download_link(
             "Download ZIP",
             data=stored_result.bytes,
             file_name=stored_result.filename,
             mime="application/zip",
             key="charts_export_download",
+            icon=":material/download:",
         )
         parts = [
             f"{stored_result.exported_count} chart"
@@ -467,6 +476,24 @@ def _render_header_actions(
         if stored_result.omitted_count:
             parts.append(f"{stored_result.omitted_count} omitted")
         st.caption(" · ".join(parts))
+
+
+def _render_filter_toolbar(visible_module_ids: list[str]) -> None:
+    dirty = charts_filters_are_dirty(st.session_state)
+    st.markdown('<div class="tx-charts-filter-toolbar">', unsafe_allow_html=True)
+    if dirty:
+        reset_col, options_col, _ = st.columns([0.9, 1.5, 4.5])
+        with reset_col:
+            if st.button("Reset", key="charts_reset_filters", width="content"):
+                reset_charts_filters_to_defaults(st.session_state)
+                _fragment_rerun()
+        with options_col:
+            _render_view_options_popover(visible_module_ids)
+    else:
+        options_col, _ = st.columns([1.5, 5.5])
+        with options_col:
+            _render_view_options_popover(visible_module_ids)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _current_sort_mode() -> str:
@@ -527,10 +554,11 @@ def _build_view_from_session(
     chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
     _apply_source_tag_coupling(chart_source)
     sync_kind_toggles_from_pills(st.session_state)
+    ensure_charts_scope_filter(st.session_state)
     return build_charts_gallery_view(
         all_charts,
         module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
-        scope=st.session_state.get(CHARTS_KEY_FILTER_SCOPE),
+        scope=scope_filter_from_session(st.session_state),
         kind=kind_filter_from_session(st.session_state),
         tags=st.session_state.get(CHARTS_KEY_FILTER_TAGS) or None,
         subview=st.session_state.get(CHARTS_KEY_FILTER_SUBVIEW),
@@ -541,6 +569,23 @@ def _build_view_from_session(
         missing_behavior=missing_behavior,
         max_items=max_items,
     )
+
+
+def _sync_derived_filter_keys() -> None:
+    """Align derived filter keys with widget keys before building the view."""
+    chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
+    _apply_source_tag_coupling(chart_source)
+    ensure_charts_scope_filter(st.session_state)
+    sync_kind_toggles_from_pills(st.session_state)
+
+    tab = st.session_state.get(CHARTS_KEY_SUBVIEW_TABS, "All")
+    subview = None if not tab or tab == "All" else str(tab)
+    slice_choice = st.session_state.get(CHARTS_KEY_SLICE_SELECTOR, "All")
+    slice_id = (
+        None if not slice_choice or slice_choice == "All" else str(slice_choice)
+    )
+    st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = subview
+    st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = slice_id
 
 
 @st.fragment
@@ -555,17 +600,65 @@ def _charts_filters_and_gallery_fragment(
     max_items: Optional[int],
     missing_behavior: str,
 ) -> None:
+    _sync_derived_filter_keys()
+
+    view = _build_view_from_session(
+        all_charts,
+        user_overview=user_overview,
+        missing_behavior=missing_behavior,
+        max_items=max_items,
+    )
+    visible_module_ids = [g.module_id for g in view.module_groups]
+    st.session_state["_charts_visible_module_ids"] = list(visible_module_ids)
+    open_modules = intersect_charts_open_modules(
+        st.session_state, frozenset(visible_module_ids)
+    )
+    chart_text = ensure_charts_chart_text(st.session_state)
+    show_registry_description, show_llm_summary = chart_text_flags(str(chart_text))
+
     render_page_shell(
         "Charts Gallery",
         None,
         badges=compute_chart_badges(all_charts),
         actions=None,
+        extra=lambda: _render_export_under_badges(run_root, view.filtered_charts),
     )
 
     st.text_input("Search charts…", key=CHARTS_KEY_SEARCH)
 
-    row1a, row1b, row1c = st.columns([1.4, 1.6, 1.2])
+    scope_options = ["All"] + list(scopes)
+    current_scope = st.session_state.get(CHARTS_KEY_FILTER_SCOPE, "All")
+    if current_scope not in scope_options:
+        st.session_state[CHARTS_KEY_FILTER_SCOPE] = "All"
+
+    row1a, row1b, row1c = st.columns([1.6, 1.4, 1.2])
     with row1a:
+        st.segmented_control(
+            "Source",
+            options=["All", "Group aggregate", "Member sessions"],
+            key=CHARTS_KEY_SOURCE_PRESET,
+            help=_SOURCE_HELP,
+        )
+    with row1b:
+        st.segmented_control(
+            "Scope",
+            options=scope_options,
+            key=CHARTS_KEY_FILTER_SCOPE,
+        )
+    with row1c:
+        st.pills(
+            "Type",
+            options=[CHARTS_KIND_STATIC, CHARTS_KIND_DYNAMIC],
+            selection_mode="multi",
+            key=CHARTS_KEY_KIND_PILLS,
+        )
+        sync_kind_toggles_from_pills(st.session_state)
+
+    chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
+    _apply_source_tag_coupling(chart_source)
+
+    row2a, row2b = st.columns([1.4, 2.0])
+    with row2a:
         st.selectbox(
             "Module",
             [None] + modules,
@@ -574,33 +667,6 @@ def _charts_filters_and_gallery_fragment(
             ),
             key=CHARTS_KEY_FILTER_MODULE,
         )
-    with row1b:
-        st.segmented_control(
-            "Source",
-            options=["All", "Group aggregate", "Member sessions"],
-            key=CHARTS_KEY_SOURCE_PRESET,
-            help=_SOURCE_HELP,
-        )
-    with row1c:
-        st.selectbox(
-            "Analysis scope",
-            [None] + scopes,
-            format_func=lambda s: "All" if s is None else str(s),
-            key=CHARTS_KEY_FILTER_SCOPE,
-        )
-
-    chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
-    _apply_source_tag_coupling(chart_source)
-
-    row2a, row2b = st.columns([1.2, 2.0])
-    with row2a:
-        st.pills(
-            "Type",
-            options=[CHARTS_KIND_STATIC, CHARTS_KIND_DYNAMIC],
-            selection_mode="multi",
-            key=CHARTS_KEY_KIND_PILLS,
-        )
-        sync_kind_toggles_from_pills(st.session_state)
     with row2b:
         if chart_source == "All":
             st.multiselect("Tags", tags, key=CHARTS_KEY_TAGS_MULTI)
@@ -629,26 +695,7 @@ def _charts_filters_and_gallery_fragment(
         st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = slice_state.subview
         st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = slice_state.slice_id
 
-    # Single canonical filtered collection for Export, overview, browse, and counts.
-    view = _build_view_from_session(
-        all_charts,
-        user_overview=user_overview,
-        missing_behavior=missing_behavior,
-        max_items=max_items,
-    )
-    visible_module_ids = [g.module_id for g in view.module_groups]
-    st.session_state["_charts_visible_module_ids"] = list(visible_module_ids)
-    open_modules = intersect_charts_open_modules(
-        st.session_state, frozenset(visible_module_ids)
-    )
-    chart_text = ensure_charts_chart_text(st.session_state)
-    show_registry_description, show_llm_summary = chart_text_flags(str(chart_text))
-
-    action_left, action_right = st.columns([3.0, 1.2])
-    with action_left:
-        _render_header_actions(run_root, view.filtered_charts)
-    with action_right:
-        _render_view_options_popover(visible_module_ids)
+    _render_filter_toolbar(visible_module_ids)
 
     if not view.filtered_charts and all_charts:
         render_empty_state(

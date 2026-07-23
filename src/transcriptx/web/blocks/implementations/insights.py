@@ -36,7 +36,7 @@ from transcriptx.web.blocks.llm_presentation import (
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.module_run_prompt import render_module_required_hint
-from transcriptx.web.speaker_accent import speaker_expander, speaker_inline_html
+from transcriptx.web.speaker_accent import speaker_inline_html
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_data_artifact,
@@ -920,7 +920,7 @@ def render_llm_speaker_summary_block(
                 status = str(entry.get("status") or "")
                 if not speaker:
                     continue
-                with speaker_expander(speaker, expanded=len(speakers) == 1):
+                with st.expander(speaker, expanded=len(speakers) == 1):
                     if status != "success":
                         code = entry.get("error_code")
                         message = (
@@ -980,7 +980,7 @@ def render_llm_speaker_summary_block(
             safe = _safe_speaker_artifact_token(speaker)
             suffix_json = f"_{safe}_llm_speaker_summary.json"
             suffix_md = f"_{safe}_llm_speaker_summary.md"
-            with speaker_expander(speaker, expanded=len(speakers) == 1):
+            with st.expander(speaker, expanded=len(speakers) == 1):
                 if status != "success":
                     code = entry.get("error_code")
                     message = entry.get("error_message") or "Summary generation failed"
@@ -1052,7 +1052,7 @@ def render_llm_speaker_summary_block(
         safe = _safe_speaker_artifact_token(speaker)
         suffix_json = f"_{safe}_llm_speaker_summary.json"
         suffix_md = f"_{safe}_llm_speaker_summary.md"
-        with speaker_expander(speaker, expanded=len(speakers) == 1):
+        with st.expander(speaker, expanded=len(speakers) == 1):
             if status != "success":
                 code = entry.get("error_code")
                 message = entry.get("error_message") or "Summary generation failed"
@@ -1117,6 +1117,7 @@ def _render_action_items_payload(
         is_v1_action_items_payload,
     )
     from transcriptx.core.analysis.llm_support.action_items_guidance import (
+        empty_extracts_user_warning,
         truncated_output_user_warning,
     )
 
@@ -1126,11 +1127,15 @@ def _render_action_items_payload(
     else:
         st.caption(HUMAN_REVIEW_BANNER)
 
-    trunc_warn = truncated_output_user_warning(
+    diagnostics = (
         (payload or {}).get("diagnostics") if isinstance(payload, dict) else None
     )
+    trunc_warn = truncated_output_user_warning(diagnostics)
     if trunc_warn:
         st.warning(trunc_warn)
+    empty_warn = empty_extracts_user_warning(diagnostics)
+    if empty_warn:
+        st.warning(empty_warn)
 
     if md:
         render_markdown_without_heading_or_provenance(md)
@@ -1138,7 +1143,8 @@ def _render_action_items_payload(
     if payload and isinstance(payload.get("items"), list):
         items = payload["items"]
         if not items:
-            st.caption(EMPTY_EXTRACTS_MESSAGE)
+            if not empty_warn:
+                st.caption(EMPTY_EXTRACTS_MESSAGE)
             return True
         rows = [
             {

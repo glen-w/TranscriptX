@@ -64,6 +64,22 @@ class TestEnvOverride:
         assert (
             result.processing_state_file == tmp_path / "state" / "processing_state.json"
         )
+        assert result.speaker_profiles_dir == tmp_path / "speaker_profiles"
+        assert (
+            result.speaker_profiles_lock_file
+            == tmp_path / "state" / "speaker_profiles.lock"
+        )
+
+    def test_speaker_profiles_dir_from_env(self, monkeypatch, tmp_path):
+        """Dedicated override keeps speaker PII off the data_dir default tree."""
+        monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(tmp_path / "data"))
+        monkeypatch.setenv(
+            "TRANSCRIPTX_SPEAKER_PROFILES_DIR", str(tmp_path / "external-speakers")
+        )
+        result = paths_module._build_paths()
+        assert result.speaker_profiles_dir == tmp_path / "external-speakers"
+        assert result.data_dir == tmp_path / "data"
+        assert not str(result.speaker_profiles_dir).startswith(str(result.data_dir))
 
     def test_recordings_and_transcripts_from_env(self, monkeypatch, tmp_path):
         monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(tmp_path))

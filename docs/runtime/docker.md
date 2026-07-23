@@ -176,6 +176,7 @@ Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/
 | `TRANSCRIPTX_IMPORTS_DIR` | `/mnt/recordings/imports` (compose) | Writable upload staging |
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` | `/mnt/transcripts` (compose) | Transcript JSON files |
 | `TRANSCRIPTX_OUTPUT_DIR` | `/mnt/outputs` (compose) | Analysis outputs |
+| `TRANSCRIPTX_SPEAKER_PROFILES_DIR` | `$TRANSCRIPTX_DATA_DIR/speaker_profiles` | Longitudinal speaker profiles (PII); optional override to keep names outside the clone |
 | `TRANSCRIPTX_WAV_BACKUP_DIR` | `/mnt/wav` (compose) | WAV archive |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | `0` | Enable model/resource downloads (`1` disables) |
 | `TRANSCRIPTX_HOST` | `0.0.0.0` | Streamlit bind host |

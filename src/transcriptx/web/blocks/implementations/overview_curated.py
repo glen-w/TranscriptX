@@ -386,6 +386,7 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         TITLE_MEETING_EXTRACTS,
     )
     from transcriptx.core.analysis.llm_support.action_items_guidance import (
+        empty_extracts_user_warning,
         format_module_failure_for_user,
         truncated_output_user_warning,
     )
@@ -430,11 +431,15 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
     render_badge_row(
         provenance_badges((payload or {}).get("provenance") if payload else None)
     )
-    trunc_warn = truncated_output_user_warning(
+    diagnostics = (
         (payload or {}).get("diagnostics") if isinstance(payload, dict) else None
     )
+    trunc_warn = truncated_output_user_warning(diagnostics)
     if trunc_warn:
         st.warning(trunc_warn)
+    empty_warn = empty_extracts_user_warning(diagnostics)
+    if empty_warn:
+        st.warning(empty_warn)
     items = (payload or {}).get("items") if isinstance(payload, dict) else None
     if items:
         for item in items[:5]:
@@ -449,6 +454,8 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
                 st.write(f"- [{type_label}] {text}{suffix}")
         if len(items) > 5:
             st.caption(f"+{len(items) - 5} more on Insights → Meeting extracts")
+        return
+    if empty_warn:
         return
     if md:
         render_markdown_without_heading_or_provenance(md)

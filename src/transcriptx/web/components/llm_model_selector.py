@@ -339,8 +339,9 @@ def launch_gate_reasons(
         joined = ", ".join(f"`{c}`" for c in thinking_hits)
         reasons.append(
             "Thinking-family models often return an empty Ollama `response` for "
-            f"JSON modules ({joined}). Choose a non-thinking model such as "
-            "gemma3, qwen2.5, llama3.2, or mistral."
+            f"JSON modules ({joined}). Choose a non-thinking mid/large model such as "
+            "gemma3:12b, qwen2.5:7b, or mistral — avoid tiny/small tags for "
+            "llm_action_items."
         )
 
     if sel.mode == "shared":
@@ -685,9 +686,11 @@ def render_llm_models_settings_panel() -> None:
     st.markdown("##### Model information")
     st.caption(
         "Avoid thinking-family tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON "
-        "modules — they often return an empty `response`. Prefer gemma3 / "
-        "qwen2.5 / llama3.2 / mistral for narrative_summary, llm_action_items, "
-        "and chart_descriptions."
+        "modules — they often return an empty `response`. Prefer mid/large "
+        "non-thinking tags (gemma3:12b+, qwen2.5:7b+, mistral) for "
+        "narrative_summary, llm_action_items, and chart_descriptions. "
+        "Tiny/small tags (e.g. llama3.2:3b, gemma3:1b) usually cannot satisfy "
+        "llm_action_items schema validation and publish empty extracts."
     )
     rows = list_llm_model_guidance(installed)
     if not rows:

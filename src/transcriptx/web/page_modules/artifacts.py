@@ -268,19 +268,21 @@ def _render_preview(ctx: RunScopedPageContext) -> None:
     preset = consume_artifact_preset(st.session_state)
     if preset and preset in options:
         st.session_state[ARTIFACTS_KEY_PREVIEW_ID] = preset
+        # Keyed selectbox ignores index= once present; write the widget key
+        # before instantiate (same rule as _sync_preview_nav_widgets).
+        st.session_state[_PREVIEW_SELECTOR_KEY] = preset
 
     current = st.session_state.get(ARTIFACTS_KEY_PREVIEW_ID) or ""
     keys = list(options.keys())
-    index_pos = 0
-    if current in options:
-        index_pos = keys.index(current) + 1
+    choices = [""] + keys
+    desired = current if current in options else ""
+    _seed_section_widget(_PREVIEW_SELECTOR_KEY, desired, choices)
     selected_id = st.selectbox(
         "Select artifact",
-        [""] + keys,
+        choices,
         format_func=lambda k: (
             SELECTBOX_PLACEHOLDER_ARTIFACT if k == "" else options.get(k, k)
         ),
-        index=index_pos if index_pos <= len(keys) else 0,
         key=_PREVIEW_SELECTOR_KEY,
     )
     if selected_id:

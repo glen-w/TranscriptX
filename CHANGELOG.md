@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-23
+
 ### Added
 
+- Speaker profiles v1: longitudinal identity store under `speaker_profiles_dir` (default `data/speaker_profiles/`, override via `TRANSCRIPTX_SPEAKER_PROFILES_DIR`), Speakers directory/detail UI, create-and-name from speaker maps, backfill script, integrity/recovery, and contract docs.
 - Settings → **Models** tab for Ollama refresh, model guidance, and Model preset create/overwrite/activate (moved off the Run Analysis form).
 
 ### Changed
@@ -16,11 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run Analysis page configures one run: Analysis preset (Quick / Balanced / Thorough / Custom), compact custom questions, collapsed LLM setup, and a sticky Run footer with two-phase launch. Model management lives under Settings → Models.
 - `analysis.llm_action_items.effort` default is now `max` (was `high`) so dense meeting-extract JSON has a larger `num_predict` budget by default.
 - `llm_action_items` prompt v6 asks models to close the items array cleanly rather than emit truncated JSON.
+- Speaker profiles (real display names) are gitignored under `data/speaker_profiles/` and can be pointed outside the clone via `TRANSCRIPTX_SPEAKER_PROFILES_DIR` (same mountable-root pattern as transcripts/outputs).
+- Charts Gallery: Analysis scope filter helper, export/download as action links under badges.
 
 ### Fixed
 
 - `llm_action_items` salvages complete items from truncated / unterminated LLM JSON instead of failing the whole module with no artifacts.
 - Empty/failed `llm_action_items` UI no longer tells users only to re-run: availability and Insights/Overview show why it failed and what to change (effort max + stronger model) before retrying.
+- When `llm_action_items` publishes an empty `items` list after dropping invalid/unsupported/ungrounded records, Insights/Overview explain the drop counts and discourage tiny/small models (e.g. `llama3.2:3b`). LLM model-selection guidance now flags those tags as unreliable for meeting extracts.
 
 ## [0.6.9] - 2026-07-23
 

@@ -11,6 +11,7 @@ from typing import Any, Mapping, Optional
 __all__ = [
     "ACTION_ITEMS_RETRY_GUIDANCE",
     "ACTION_ITEMS_TRUNCATED_WARNING",
+    "empty_extracts_user_warning",
     "format_invalid_json_error",
     "format_oversized_output_error",
     "format_module_failure_for_user",
@@ -23,8 +24,9 @@ ACTION_ITEMS_RETRY_GUIDANCE = (
     "Re-running with the same settings will usually fail the same way. "
     "Before retrying: set analysis.llm_action_items.effort to max "
     "(Settings → Analysis, or config), prefer a mid/strong JSON-capable model "
-    "for llm_action_items (Settings → LLM model selection), then re-run only "
-    "the llm_action_items module."
+    "for llm_action_items — avoid tiny/small tags such as llama3.2:3b "
+    "(Settings → LLM model selection), then re-run only the llm_action_items "
+    "module."
 )
 
 ACTION_ITEMS_TRUNCATED_WARNING = (
@@ -116,3 +118,49 @@ def truncated_output_user_warning(
     if int(diagnostics.get("output_truncated") or 0) <= 0:
         return None
     return ACTION_ITEMS_TRUNCATED_WARNING
+
+
+def empty_extracts_user_warning(
+    diagnostics: Optional[Mapping[str, Any]] = None,
+) -> str | None:
+    """Explain empty published extracts when the model returned records that were dropped.
+
+    Genuine empty model output (``items_raw == 0``) returns ``None`` so the UI
+    can keep the short "No meeting extracts found" caption.
+    """
+    if not isinstance(diagnostics, Mapping):
+        return None
+    if int(diagnostics.get("items_committed") or 0) > 0:
+        return None
+    items_raw = int(diagnostics.get("items_raw") or 0)
+    if items_raw <= 0:
+        return None
+
+    invalid = int(diagnostics.get("items_invalid_dropped") or 0)
+    status_dropped = int(diagnostics.get("status_unsupported_dropped") or 0)
+    ungrounded = int(diagnostics.get("items_ungrounded_dropped") or 0)
+
+    reasons: list[str] = []
+    if invalid:
+        reasons.append(
+            f"{invalid} failed schema validation (extra fields, unknown "
+            "record_type, empty text, or invalid confidence)"
+        )
+    if status_dropped:
+        reasons.append(
+            f"{status_dropped} had unsupported status "
+            "(or done without required evidence)"
+        )
+    if ungrounded:
+        reasons.append(
+            f"{ungrounded} could not be grounded in the transcript"
+        )
+    if not reasons:
+        reasons.append("none survived filtering")
+
+    detail = "; ".join(reasons)
+    return (
+        f"No meeting extracts were published: the model returned {items_raw} "
+        f"raw record(s), but {detail}. "
+        f"{ACTION_ITEMS_RETRY_GUIDANCE}"
+    )

@@ -150,3 +150,33 @@ def test_source_preset_tags_cleared_from_dirty_when_reset() -> None:
     reset_charts_filters_to_defaults(session)
     assert session[CHARTS_KEY_TAGS_MULTI] == []
     assert charts_filters_are_dirty(session) is False
+
+
+def test_scope_filter_all_and_legacy_none() -> None:
+    from transcriptx.web.charts_filter_state import (
+        ensure_charts_scope_filter,
+        scope_filter_from_session,
+    )
+    from transcriptx.web.state import CHARTS_KEY_FILTER_SCOPE
+
+    session: dict = {}
+    assert ensure_charts_scope_filter(session) == "All"
+    assert session[CHARTS_KEY_FILTER_SCOPE] == "All"
+    assert scope_filter_from_session(session) is None
+
+    session[CHARTS_KEY_FILTER_SCOPE] = None
+    assert scope_filter_from_session(session) is None
+    assert session[CHARTS_KEY_FILTER_SCOPE] == "All"
+
+    session[CHARTS_KEY_FILTER_SCOPE] = "speaker"
+    assert scope_filter_from_session(session) == "speaker"
+    assert charts_filters_are_dirty(session) is True
+
+    filled = {
+        key: (list(val) if isinstance(val, list) else val)
+        for key, val in CHARTS_FILTER_DEFAULTS.items()
+    }
+    filled[CHARTS_KEY_FILTER_SCOPE] = "All"
+    assert charts_filters_are_dirty(filled) is False
+    filled[CHARTS_KEY_FILTER_SCOPE] = None
+    assert charts_filters_are_dirty(filled) is False

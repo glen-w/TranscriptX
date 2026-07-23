@@ -237,6 +237,8 @@ idempotently to global-only. `evidence_pack_ids: null` means all present and
 future catalog packs (expanded only onto the run plan). Request field
 `llm_custom_qa_questions`: omit/`null` → library; `[]` → empty-run success;
 list (str or structured) → request. Resolve/bind only when the module is selected.
+The Run Analysis / Batch picker treats an empty selection as implicit skip
+(omit); the empty-run (`[]`) path stays API-only for power users.
 
 ### Contract
 
@@ -296,7 +298,8 @@ The setting **`analysis.llm_action_items.effort`** controls meeting-extract effo
 | `diagnostics` | `items_raw`, `items_parsed_valid`, `record_type_defaulted`, `items_invalid_dropped`, `status_unsupported_dropped`, `items_ungrounded_dropped`, `quotes_nulled`, `items_duplicate_removed`, `items_truncated`, `output_truncated` (1 when the model response was truncated / salvaged from incomplete JSON), `counts_by_type` (all five types), `items_committed` |
 
 When `output_truncated` is set, Insights / Overview show a warning that extracts may be incomplete and that re-running unchanged will usually repeat the failure — raise `analysis.llm_action_items.effort` to `max` and/or pick a stronger JSON-capable model for `llm_action_items`, then re-run only that module. Hard parse failures persist the same remediation text into `run_results` / block availability (instead of a bare “Run the required analysis modules”).
-| `provenance` | Includes `module_version`, `prompt_version`, `schema_id`, `render_contract_id`, `cache_key`, effort/runtime, input coverage |
+
+When the artifact has an empty `items` list but `diagnostics.items_raw > 0` (typically `items_invalid_dropped` / status / grounding drops), Insights / Overview show a warning that records were returned then discarded, and steer users away from tiny/small tags (e.g. `llama3.2:3b`) toward mid+ JSON-capable models. A genuine empty model response (`items_raw == 0`) still shows the short “No meeting extracts found” caption.| `provenance` | Includes `module_version`, `prompt_version`, `schema_id`, `render_contract_id`, `cache_key`, effort/runtime, input coverage |
 
 Top-level malformed JSON / unknown top-level keys / oversize raw output fail with `llm_invalid_response`. **Per-record isolation:** invalid items are dropped with diagnostics so sibling valid extracts survive. Grounding is record-type agnostic and never rewrites `record_type` / `text` / `owner` / `deadline` / `status`. Bounds: max **48** total / **16** per type after validation. Markdown uses section labels from `RECORD_TYPE_LABELS` and always includes **AI-generated draft. Human review required.**
 

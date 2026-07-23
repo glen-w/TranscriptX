@@ -37,8 +37,14 @@ def test_workflow_section_excludes_legacy_batch_ops() -> None:
     keys = [s.key for s in pages_in_section("workflow")]
     assert "Run Analysis" in keys
     assert "Batch Ops" not in keys
-    assert "Groups" in keys
-    assert keys.index("Run Analysis") < keys.index("Groups")
+    assert "Groups" not in keys
+    assert "Speakers" not in keys
+
+
+def test_primary_section_places_speakers_and_groups_under_search() -> None:
+    keys = [s.key for s in pages_in_section("primary")]
+    assert keys.index("Search") < keys.index("Speakers")
+    assert keys.index("Speakers") < keys.index("Groups")
 
 
 def test_view_section_excludes_legacy_and_includes_artifacts() -> None:

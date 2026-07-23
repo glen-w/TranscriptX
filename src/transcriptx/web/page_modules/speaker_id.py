@@ -44,6 +44,7 @@ from transcriptx.web.cache_helpers import (
     cached_list_available_sessions,
     clear_transcript_listing_caches,
 )
+from transcriptx.web.speaker_profile_signals import consume_cache_invalidation_signal
 from transcriptx.web.speaker_studio_runtime import get_shared_speaker_studio_controller
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
@@ -425,6 +426,11 @@ def render_speaker_id_page() -> None:
     st.divider()
 
     # ── name assignment ───────────────────────────────────────────────────────
+    from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
+
+    _profile_resolver = ManagedTranscriptResolver()
+    is_managed_for_profiles = _profile_resolver.is_managed_path(transcript_path)
+
     col_name, col_save, col_ignore = st.columns([3, 1, 1])
     with col_name:
         name_input = st.text_input(
@@ -434,15 +440,54 @@ def render_speaker_id_page() -> None:
             placeholder="Type speaker name…",
             label_visibility="collapsed",
         )
+    link_profile = False
+    if is_managed_for_profiles:
+        link_profile = st.checkbox(
+            "Also link to longitudinal speaker profile",
+            value=True,
+            key=f"sid_link_profile_{active_id}",
+            help=(
+                "Creates a durable cross-transcript profile link for this managed "
+                "library speaker. Ad-hoc / run-output JSON supports local naming only."
+            ),
+        )
+    elif not is_managed_for_profiles:
+        st.caption(
+            "Longitudinal profile linking is available for managed library "
+            "transcripts only. Local naming still works here."
+        )
     with col_save:
         if st.button("Save name", key="sid_save", type="primary", width="stretch"):
             name = (name_input or "").strip()
             if name:
                 try:
-                    new_state = controller.apply_mapping_mutation(
-                        transcript_path, active_id, name, method="web"
-                    )
-                    _clear_speaker_id_listing_caches()
+                    if link_profile and is_managed_for_profiles:
+                        from transcriptx.services.speaker_profiles.create_and_name import (
+                            create_profile_link_and_name,
+                        )
+
+                        partial = create_profile_link_and_name(
+                            transcript_path=transcript_path,
+                            raw_speaker=active_id,
+                            display_name=name,
+                            controller=controller,
+                            create_profile=True,
+                            apply_sidecar_name=True,
+                            method="web",
+                        )
+                        consume_cache_invalidation_signal(partial.effective_signal)
+                        _clear_speaker_id_listing_caches()
+                        if partial.is_partial:
+                            st.warning(
+                                "Profile link saved, but local naming failed: "
+                                f"{partial.naming_error}"
+                            )
+                        new_state = controller.get_mapping_status(transcript_path)
+                    else:
+                        new_state = controller.apply_mapping_mutation(
+                            transcript_path, active_id, name, method="web"
+                        )
+                        _clear_speaker_id_listing_caches()
                     st.session_state["speaker_id_lines_shown"] = _LINES_PER_PAGE
                     clear_playback_session_keys("speaker_id_play_seg")
                     # Advance from persisted state (including when this was the last one).

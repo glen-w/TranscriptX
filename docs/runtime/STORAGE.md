@@ -53,7 +53,10 @@ Implications:
   - Language variants (e.g. `meeting_fr.json` beside `meeting.json`) are separate canonical transcripts with separate mirrored speaker-map sidecars. Import may copy the base speaker map into the variant sidecar; see `docs/runtime/transcription.md` (Multi-language variants).
   - A file at `transcripts_dir/*.json` alone is not library-valid; library admission requires a managed artifact set (canonical JSON + valid import sidecar, with archived original path linkage).
   - Naming leaves room for future subtypes (`diarised/`, `normalized/`, `export/`).
-- **data_dir**: App-owned, persistent but partially reconstructable, not user-authored.
+- **data_dir**: App-owned, persistent but partially reconstructable, not user-authored.  
+  - `groups/` and `speaker_profiles/` are durable local project state (not safe to auto-delete). Speaker profile `.cache/` is disposable; profiles/links/events/operations are canonical (see `docs/contracts/speaker_profiles_v1.md`).
+  - **Speaker profiles contain real display names (PII).** Do not commit them. The in-repo default `data/speaker_profiles/` is gitignored. For real use, point `TRANSCRIPTX_SPEAKER_PROFILES_DIR` (or `TRANSCRIPTX_DATA_DIR`) at a directory **outside the git clone**, the same way `TRANSCRIPTX_TRANSCRIPTS_DIR` / `TRANSCRIPTX_OUTPUT_DIR` keep metadata and outputs mountable off the repo root.
+  - Other subtrees (outputs, preprocessing, cache) remain reconstructable by re-running.
 - **config_dir**: User/app config, persistent, not safe to auto-delete.  
   - `profiles/` lives under config_dir (user-editable config presets).
 - **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
@@ -96,6 +99,12 @@ config_dir/                     # configuration
 
 data_dir/                       # app-managed working state
   groups/                       # group definition manifests (*.group.json); local user data — not tracked
+  speaker_profiles/             # longitudinal speaker profiles, links, events, ops (canonical PII); override with TRANSCRIPTX_SPEAKER_PROFILES_DIR; see docs/contracts/speaker_profiles_v1.md
+    profiles/                   # *.speaker_profile.json
+    links/                      # *.speaker_link.json
+    events/                     # *.speaker_event.json (filename stem = event idempotency id)
+    operations/                 # *.op.json + staging/backup while active
+    .cache/                     # disposable listing/aggregate caches only
   outputs/
     groups/                     # group analysis run outputs (per group uuid / run id)
   preprocessing/
@@ -105,6 +114,7 @@ data_dir/                       # app-managed working state
   state/                        # DB + processing state
     transcriptx.db
     processing_state.json
+    speaker_profiles.lock       # project operation lock for speaker profile mutations
   backups/
     wav/
     processing_state/

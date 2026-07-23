@@ -12,11 +12,11 @@ from transcriptx.web.charts_filter_state import (
     chart_text_flags,
     ensure_charts_chart_text,
     kind_filter_from_session,
+    scope_filter_from_session,
 )
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.state import (
     CHARTS_KEY_FILTER_MODULE,
-    CHARTS_KEY_FILTER_SCOPE,
     CHARTS_KEY_FILTER_SLICE_ID,
     CHARTS_KEY_FILTER_SUBVIEW,
     CHARTS_KEY_FILTER_TAGS,
@@ -87,7 +87,7 @@ def render_chart_gallery(ctx: BlockContext, _placement: BlockPlacement) -> None:
     filtered = apply_chart_filters(
         charts,
         module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
-        scope=st.session_state.get(CHARTS_KEY_FILTER_SCOPE),
+        scope=scope_filter_from_session(st.session_state),
         kind=kind_filter_from_session(st.session_state),
         tags=st.session_state.get(CHARTS_KEY_FILTER_TAGS) or None,
         subview=st.session_state.get(CHARTS_KEY_FILTER_SUBVIEW),
@@ -140,7 +140,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
     view = build_charts_gallery_view(
         all_charts,
         module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
-        scope=st.session_state.get(CHARTS_KEY_FILTER_SCOPE),
+        scope=scope_filter_from_session(st.session_state),
         kind=kind_filter_from_session(st.session_state),
         tags=st.session_state.get(CHARTS_KEY_FILTER_TAGS) or None,
         subview=st.session_state.get(CHARTS_KEY_FILTER_SUBVIEW),

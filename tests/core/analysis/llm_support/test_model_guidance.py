@@ -60,6 +60,15 @@ def test_gemma3_4b_small_caption_guidance():
     row = guidance_for_model("gemma3:4b")
     assert row.size_class == "small"
     assert "chart_descriptions" in row.best_for.lower()
+    assert "llm_action_items" in row.notes.lower()
+
+
+def test_llama32_3b_discourages_action_items():
+    row = guidance_for_model("llama3.2:3b")
+    assert row.size_class == "small"
+    blob = f"{row.best_for} {row.notes}".lower()
+    assert "llm_action_items" in blob
+    assert "not" in blob or "schema" in blob or "empty" in blob
 
 
 def test_mistral_nemo_long_context_guidance():

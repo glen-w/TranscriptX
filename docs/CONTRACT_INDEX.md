@@ -6,6 +6,8 @@ Authority: contracts
 Concept → Authority:
 
 - **Storage** → `docs/runtime/STORAGE.md`
+- **Speaker profiles (longitudinal)** → `docs/contracts/speaker_profiles_v1.md`
+- **Speaker profiles reference-env index gate** → `docs/dev/speaker_profiles_reference_env_index_gate.md`
 - **Run truth & statuses** → `docs/run_outcome_contract.md`
 - **Core pipeline layering & lifecycle** → `docs/dev/pipeline_contracts.md`
 - **Outputs & layout** → `docs/contracts/output-contract-v1.md`

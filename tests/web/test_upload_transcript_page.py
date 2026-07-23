@@ -202,6 +202,14 @@ def test_app_workflow_menu_order_under_workflow() -> None:
         "Speaker ID",
         "Corrections Studio",
         "Run Analysis",
+    ]
+
+    primary_keys = [spec.key for spec in pages_in_section("primary")]
+    assert primary_keys == [
+        "Home",
+        "Library",
+        "Search",
+        "Speakers",
         "Groups",
     ]
 

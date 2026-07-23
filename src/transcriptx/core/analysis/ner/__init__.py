@@ -303,13 +303,26 @@ class NERAnalysis(AnalysisModule):
         entity_sentences_per_speaker: Dict,
         output_service: "OutputService",
     ) -> None:
-        """Save location maps with geocoding."""
+        """Save location maps with geocoding.
+
+        Map rendering requires the optional ``[maps]`` extra (folium). NER entity
+        extraction still succeeds when maps deps are missing; only map artefacts
+        are skipped.
+        """
         from transcriptx.core.utils.lazy_imports import (
             get_folium,
             get_playwright_sync_api,
         )
 
-        folium = get_folium()
+        try:
+            folium = get_folium()
+        except ImportError as exc:
+            warnings.warn(
+                f"Skipping NER location maps (optional [maps] extra missing): {exc}",
+                UserWarning,
+                stacklevel=2,
+            )
+            return
         # Lazy load Playwright with runtime installation support
         # Returns None if playwright or browser cannot be installed
         # Pass silent=False to show installation progress

@@ -11,6 +11,7 @@ from transcriptx.core.analysis.llm_support.action_items_contract import (
 )
 from transcriptx.core.analysis.llm_support.action_items_guidance import (
     ACTION_ITEMS_RETRY_GUIDANCE,
+    empty_extracts_user_warning,
     format_invalid_json_error,
     format_module_failure_for_user,
     format_oversized_output_error,
@@ -81,6 +82,49 @@ def test_truncated_output_user_warning() -> None:
     assert warn is not None
     assert "incomplete" in warn.lower()
     assert ACTION_ITEMS_RETRY_GUIDANCE in warn
+    assert "llama3.2:3b" in warn
+
+
+@pytest.mark.unit
+def test_empty_extracts_user_warning_explains_invalid_drops() -> None:
+    assert empty_extracts_user_warning(None) is None
+    assert empty_extracts_user_warning({"items_raw": 0, "items_committed": 0}) is None
+    assert (
+        empty_extracts_user_warning(
+            {"items_raw": 2, "items_committed": 2, "items_invalid_dropped": 0}
+        )
+        is None
+    )
+    warn = empty_extracts_user_warning(
+        {
+            "items_raw": 1,
+            "items_parsed_valid": 0,
+            "items_invalid_dropped": 1,
+            "items_committed": 0,
+        }
+    )
+    assert warn is not None
+    assert "1 raw record" in warn
+    assert "schema validation" in warn.lower()
+    assert ACTION_ITEMS_RETRY_GUIDANCE in warn
+    assert "llama3.2:3b" in warn
+
+
+@pytest.mark.unit
+def test_empty_extracts_user_warning_covers_other_drop_buckets() -> None:
+    warn = empty_extracts_user_warning(
+        {
+            "items_raw": 3,
+            "items_committed": 0,
+            "items_invalid_dropped": 1,
+            "status_unsupported_dropped": 1,
+            "items_ungrounded_dropped": 1,
+        }
+    )
+    assert warn is not None
+    assert "schema validation" in warn.lower()
+    assert "unsupported status" in warn.lower()
+    assert "grounded" in warn.lower()
 
 
 @pytest.mark.unit

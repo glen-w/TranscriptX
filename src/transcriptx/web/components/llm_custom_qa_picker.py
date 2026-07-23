@@ -85,8 +85,9 @@ def render_custom_qa_picker(
 
     Returns ``(request_questions, effective, custom_qa_execution)``.
 
-    ``custom_qa_execution`` is True when the module should run (questions or
-    Advanced empty-artifact). False for Skip — strip ``llm_custom_qa``.
+    Empty selection is an implicit skip (omit / strip ``llm_custom_qa``).
+    Explicit empty-run (``[]`` → empty success artifact) remains available via
+    the API for power users; it is not exposed in this UI.
 
     ``module_selected`` is accepted for call-site compatibility and ignored;
     the section is always shown when ``always_show`` is True.
@@ -107,8 +108,6 @@ def render_custom_qa_picker(
             row["id"] = str(uuid.uuid4())
         row.pop("save", None)
 
-    skip_key = f"{key_prefix}_skip"
-    empty_artifact_key = f"{key_prefix}_empty_artifact"
     saved_key = f"{key_prefix}_saved"
 
     header = st.empty()
@@ -180,33 +179,6 @@ def render_custom_qa_picker(
             adhoc_rows.append(_new_row())
             st.rerun()
 
-        combined = _collect_combined(selected_labels, label_to_q, adhoc_rows)
-        has_active = bool(combined)
-
-        if not has_active:
-            st.checkbox(
-                "Skip custom questions",
-                value=True,
-                key=skip_key,
-                help=(
-                    "Do not run the custom-questions module for this analysis. "
-                    "No custom-questions artifact will be created."
-                ),
-            )
-            with st.expander("Advanced", expanded=False):
-                st.checkbox(
-                    "Create an empty custom-questions result",
-                    value=False,
-                    key=empty_artifact_key,
-                    help=(
-                        "Run llm_custom_qa with zero questions and write an empty "
-                        "success artifact. Distinct from Skip."
-                    ),
-                )
-        else:
-            st.session_state[skip_key] = False
-            st.session_state[empty_artifact_key] = False
-
     # Re-read after widgets (session may hold library selection).
     selected_labels = list(st.session_state.get(saved_key) or [])
     label_to_q = {_library_label(q): q for q in saved}
@@ -222,18 +194,7 @@ def render_custom_qa_picker(
             f"#### Custom questions · {n} · {_summary_scopes(combined)}"
         )
 
-    skip = bool(st.session_state.get(skip_key, True))
-    empty_artifact = bool(st.session_state.get(empty_artifact_key, False))
-
-    if empty_artifact and not combined:
-        effective = resolve_effective_custom_qa_questions(
-            request_questions=[],
-            request_field_present=True,
-            settings=cfg,
-        )
-        return [], effective, True
-
-    if (skip and not combined) or not combined:
+    if not combined:
         return None, None, False
 
     try:

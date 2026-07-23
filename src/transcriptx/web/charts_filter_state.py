@@ -13,6 +13,7 @@ from transcriptx.web.state import (
     CHARTS_KEY_CHART_TEXT,
     CHARTS_KEY_EXPORT_RESULT,
     CHARTS_KEY_EXPORT_SIG,
+    CHARTS_KEY_FILTER_SCOPE,
     CHARTS_KEY_FULL_SCREEN,
     CHARTS_KEY_KIND_PILLS,
     CHARTS_KEY_MODULE_SORT,
@@ -171,6 +172,24 @@ def kind_filter_from_session(session_state: MutableMapping[str, Any]) -> str | N
     return "__none__"
 
 
+def ensure_charts_scope_filter(session_state: MutableMapping[str, Any]) -> str:
+    """Normalize scope widget value; ``All`` / legacy ``None`` mean no scope filter."""
+    raw = session_state.get(CHARTS_KEY_FILTER_SCOPE)
+    if raw is None or raw == "":
+        value = "All"
+        session_state[CHARTS_KEY_FILTER_SCOPE] = value
+        return value
+    return str(raw)
+
+
+def scope_filter_from_session(session_state: MutableMapping[str, Any]) -> str | None:
+    """Return scope filter for ArtifactFilters (``None`` when All / unset)."""
+    value = ensure_charts_scope_filter(session_state)
+    if value == "All":
+        return None
+    return value
+
+
 def _values_equal(left: Any, right: Any) -> bool:
     if isinstance(left, list) and isinstance(right, list):
         return list(left) == list(right)
@@ -189,6 +208,12 @@ def charts_filters_are_dirty(session_state: MutableMapping[str, Any]) -> bool:
             elif isinstance(current, str):
                 current = [current]
             default = list(default)
+        if key == CHARTS_KEY_FILTER_SCOPE:
+            # Legacy None and ``All`` both mean no scope filter.
+            if current is None or current == "":
+                current = "All"
+            if default is None or default == "":
+                default = "All"
         if not _values_equal(current, default):
             return True
     return False

@@ -236,3 +236,33 @@ def test_ner_location_maps_render_fallback_keeps_html(
     assert "sample-locations-Alice.html" in html_artifacts
     assert "sample-locations-ALL.html" in html_artifacts
     assert not png_artifacts
+
+
+def test_ner_location_maps_soft_skip_without_folium(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Maps are optional ([maps]); missing folium must not fail NER."""
+    import warnings
+
+    ner = _ner_instance()
+    output_service = _OutputServiceFake(tmp_path / "ner")
+    monkeypatch.setattr(
+        "transcriptx.core.utils.lazy_imports.get_folium",
+        lambda: (_ for _ in ()).throw(
+            ImportError(
+                "folium is required for map visualization. "
+                "Install with: pip install transcriptx[maps]"
+            )
+        ),
+    )
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        ner._save_location_maps(
+            {"Alice": {"Paris": 1}},
+            {"Alice": {"Paris": ["A"]}},
+            output_service,
+        )
+
+    assert output_service.artifacts == []
+    assert any("Skipping NER location maps" in str(w.message) for w in caught)

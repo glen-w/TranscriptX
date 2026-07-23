@@ -146,7 +146,8 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
             "small": (
                 "Fast captions with usable 128K context (e.g. gemma3:4b).",
                 "chart_descriptions; short llm_speaker_summary / drafts.",
-                "Upgrade to 12b/27b for long digests and action items.",
+                "Too small for reliable llm_action_items — upgrade to 12b/27b "
+                "for long digests and meeting extracts.",
             ),
             "mid": (
                 "Good structured output and readable captions.",
@@ -169,22 +170,26 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
         by_size={
             "tiny": (
                 "Very fast, shallow understanding.",
-                "chart_descriptions only.",
-                "Prefer mid+ for summaries and action items.",
+                "chart_descriptions only — not llm_action_items.",
+                "Cannot reliably emit valid meeting-extract JSON; prefer mid+ "
+                "(e.g. gemma3:12b).",
             ),
             "small": (
                 "Quick overviews when hardware is constrained.",
-                "chart_descriptions; short llm_summary.",
-                "Upgrade for narrative_summary / llm_action_items.",
+                "chart_descriptions; short llm_summary — not llm_action_items.",
+                "Often fails llm_action_items schema validation (empty extracts). "
+                "Upgrade to mid+ for meeting extracts.",
             ),
             "mid": (
                 "Competent shared model for most modules.",
-                "llm_summary, llm_speaker_summary, chart_descriptions.",
+                "llm_summary, llm_speaker_summary, chart_descriptions, "
+                "llm_action_items.",
                 "Strong non-thinking alternative to Qwen3 for JSON modules.",
             ),
             "large": (
                 "Stronger long-form digests.",
-                "llm_summary, narrative_summary, group_llm_synthesis.",
+                "llm_summary, narrative_summary, llm_action_items, "
+                "group_llm_synthesis.",
                 "Heavier RAM/latency cost.",
             ),
         },
@@ -240,13 +245,14 @@ _GENERIC_BY_SIZE: dict[SizeClass, tuple[str, str, str]] = {
     "tiny": (
         "Minimal capacity; mostly connectivity smoke.",
         "chart_descriptions only (if anything).",
-        "Pull a mid-size non-thinking model (e.g. gemma3:12b or qwen2.5:7b) "
-        "for real runs.",
+        "Cannot handle llm_action_items. Pull a mid-size non-thinking model "
+        "(e.g. gemma3:12b or qwen2.5:7b) for real runs.",
     ),
     "small": (
         "Fast drafts on constrained hardware.",
         "chart_descriptions; short summaries when speed matters.",
-        "Prefer mid+ for narrative_summary and llm_action_items.",
+        "Not reliable for llm_action_items (schema drops → empty extracts). "
+        "Prefer mid+ for narrative_summary and meeting extracts.",
     ),
     "mid": (
         "Balanced local quality for transcript LLM work.",
@@ -261,7 +267,8 @@ _GENERIC_BY_SIZE: dict[SizeClass, tuple[str, str, str]] = {
     "unknown": (
         "General local instruct model (size unknown).",
         "Try as shared model; validate JSON modules first.",
-        "Prefer known non-thinking mid tags such as gemma3:12b when unsure.",
+        "Prefer known non-thinking mid tags such as gemma3:12b when unsure. "
+        "Tiny/small tags often fail llm_action_items.",
     ),
 }
 

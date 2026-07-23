@@ -190,8 +190,8 @@ CHARTS_CHART_TEXT_LLM = "LLM summary"
 CHARTS_CHART_TEXT_BOTH = "Both"
 CHARTS_KIND_STATIC = "Static"
 CHARTS_KIND_DYNAMIC = "Dynamic"
-CHARTS_SECTION_OVERVIEW = "Run overview"
-CHARTS_SECTION_BROWSE = "Browse charts"
+CHARTS_SECTION_OVERVIEW = "Overview"
+CHARTS_SECTION_BROWSE = "All"
 
 DATA_KEY_ARTIFACT_PRESET = "data_artifact_preset"
 
@@ -232,7 +232,7 @@ def consume_artifact_preset(session_state: Any) -> str | None:
 # Resettable filter defaults only (dirty detection + Reset). Not view prefs / ephemeral.
 CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_FILTER_MODULE: None,
-    CHARTS_KEY_FILTER_SCOPE: None,
+    CHARTS_KEY_FILTER_SCOPE: "All",
     CHARTS_KEY_FILTER_SHOW_STATIC: True,
     CHARTS_KEY_FILTER_SHOW_DYNAMIC: True,
     CHARTS_KEY_FILTER_TAGS: [],

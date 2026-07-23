@@ -20,21 +20,24 @@ data/cache/
 outputs/
 .transcriptx/
 
-# User data / PII (real meeting transcripts, corrections, groups, audio prep)
+# User data / PII (real meeting transcripts, corrections, groups, speaker names, audio prep)
 data/corrections/
 data/groups/
 data/preprocessing/
+data/speaker_profiles/
 data/performance_logs.jsonl
 data/perf/
 perf/
 data/processing_state.json.backup
 
-# Real user data (transcripts/corrections/groups/preprocessing). Contains PII;
-# never commit. Already-tracked entries are unaffected and must be removed with
+# Real user data (transcripts/corrections/groups/speaker profiles/preprocessing).
+# Contains PII (including real speaker display names); never commit.
+# Already-tracked entries are unaffected and must be removed with
 # `git rm --cached` separately if they should be purged.
 data/corrections/
 data/groups/
 data/preprocessing/
+data/speaker_profiles/
 
 # Local test / tooling artifacts (large; do not commit)
 .test_outputs/
