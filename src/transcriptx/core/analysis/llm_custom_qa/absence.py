@@ -18,7 +18,7 @@ def apply_absence_detector(
     Additionally, answered rows that failed grounding stay unavailable.
     Versioned hook for future lexical absence checks.
     """
-    del ABSENCE_DETECTOR_VERSION  # reserved for cache identity / future logic
+    _ = ABSENCE_DETECTOR_VERSION  # reserved for cache identity / future logic
     if not truncated:
         return answers
     out: list[dict[str, Any]] = []

@@ -19,3 +19,13 @@ class LLMActionItemsSettingsModel(BaseModel):
             "is completeness-oriented across long meetings."
         ),
     )
+    coerce_v1_artifacts: bool = Field(
+        default=False,
+        description=(
+            "When true, in-memory coerce v1 llm_action_items artifacts to "
+            "record_type=action_item with provenance.compat=v1_coerced for "
+            "presentation and group aggregation. When false, v1 artifacts are "
+            "not treated as native v2 and mixed-version group members fail "
+            "explicitly. Does not rewrite on-disk artifacts."
+        ),
+    )

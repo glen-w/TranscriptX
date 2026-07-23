@@ -124,9 +124,12 @@ def test_llm_action_items_ignores_non_dict_items_and_counts_status() -> None:
             {
                 "llm_action_items": {
                     "payload": {
+                        "schema_id": "transcriptx.llm_action_items.v2",
+                        "module_version": "2",
                         "items": [
                             "bad",
                             {
+                                "record_type": "action_item",
                                 "text": "Do A",
                                 "owner": None,
                                 "deadline": None,
@@ -135,6 +138,7 @@ def test_llm_action_items_ignores_non_dict_items_and_counts_status() -> None:
                                 "confidence": 0.1,
                             },
                             {
+                                "record_type": "action_item",
                                 "text": "Do B",
                                 "owner": "Alice",
                                 "deadline": None,
@@ -142,7 +146,7 @@ def test_llm_action_items_ignores_non_dict_items_and_counts_status() -> None:
                                 "quote": "do b",
                                 "confidence": 0.8,
                             },
-                        ]
+                        ],
                     }
                 }
             },

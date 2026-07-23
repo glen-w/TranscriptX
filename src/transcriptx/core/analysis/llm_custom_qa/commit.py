@@ -113,7 +113,12 @@ def commit_llm_custom_qa_artifacts(
     generation_id: str | None = None,
 ) -> str:
     """Full staging → validate hashes → commit marker → active → promote."""
-    from transcriptx.core.utils.run_writer_locks import per_run_lock
+    from transcriptx.core.utils.run_writer_locks import (
+        LockAcquisitionError,
+        assert_lease_for_run,
+        get_bound_run_writer_lease,
+        per_run_lock,
+    )
 
     gid = generation_id or allocate_generation_id()
     run_dir = stem.parent
@@ -121,26 +126,40 @@ def commit_llm_custom_qa_artifacts(
     lock_root = run_dir
     if run_dir.name == "global" and run_dir.parent.name == "data":
         lock_root = run_dir.parent.parent.parent
+
+    def _commit_body() -> None:
+        json_staging, md_staging = write_staged_artifacts(
+            stem=stem,
+            generation_id=gid,
+            payload=payload,
+            markdown=markdown,
+        )
+        write_commit_marker(
+            stem=stem,
+            generation_id=gid,
+            json_staging=json_staging,
+            md_staging=md_staging,
+        )
+        promote_generation(
+            stem=stem,
+            generation_id=gid,
+            json_final=json_final,
+            md_final=md_final,
+        )
+
     try:
+        # Prefer orchestrator-bound lease (worker threads cannot re-enter FileLock).
+        lease = get_bound_run_writer_lease()
+        if lease is not None:
+            try:
+                assert_lease_for_run(lease, lock_root)
+            except LockAcquisitionError:
+                lease = None
+            else:
+                _commit_body()
+                return gid
         with per_run_lock(lock_root):
-            json_staging, md_staging = write_staged_artifacts(
-                stem=stem,
-                generation_id=gid,
-                payload=payload,
-                markdown=markdown,
-            )
-            write_commit_marker(
-                stem=stem,
-                generation_id=gid,
-                json_staging=json_staging,
-                md_staging=md_staging,
-            )
-            promote_generation(
-                stem=stem,
-                generation_id=gid,
-                json_final=json_final,
-                md_final=md_final,
-            )
+            _commit_body()
     except CustomQAArtifactCommitError:
         cleanup_failed_generation(stem=stem, generation_id=gid)
         raise

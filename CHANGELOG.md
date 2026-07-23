@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-07-23
+
+### Added
+
+- `llm_action_items` v2 meeting extracts (B10): typed records (`decision`, `commitment`, `action_item`, `proposal`, `open_question`), sectioned render with human-review banner, and group aggregation schema 2 with fixed per-type count columns.
+- Config flag `llm_action_items.coerce_v1_artifacts` (default `false`) for optional v1 group-row coercion.
+
+### Changed
+
+- Presentation copy uses “Meeting extracts”; empty state “No meeting extracts found.”
+- Group row writer persists aggregator `schema_version` (no longer hardcodes `1`).
+
+### Fixed
+
+- `llm_custom_qa` artifact commit respects the orchestrator-bound run-writer lease (avoids worker-thread lock timeouts).
+- Smoke suite skips `llm_custom_qa` with other Ollama-backed LLM modules.
+
 ## [0.6.6] - 2026-07-23
 
 ### Added

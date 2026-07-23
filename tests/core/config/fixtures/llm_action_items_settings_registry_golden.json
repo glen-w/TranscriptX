@@ -1,4 +1,18 @@
 {
+  "analysis.llm_action_items.coerce_v1_artifacts": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": false,
+    "description": "When true, in-memory coerce v1 llm_action_items artifacts to record_type=action_item with provenance.compat=v1_coerced for presentation and group aggregation. When false, v1 artifacts are not treated as native v2 and mixed-version group members fail explicitly. Does not rewrite on-disk artifacts.",
+    "key": "analysis.llm_action_items.coerce_v1_artifacts",
+    "max": null,
+    "min": null,
+    "path": "analysis.llm_action_items.coerce_v1_artifacts",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
   "analysis.llm_action_items.effort": {
     "advanced": false,
     "category": "analysis",

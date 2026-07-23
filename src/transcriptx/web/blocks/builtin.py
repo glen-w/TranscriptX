@@ -63,9 +63,9 @@ def _register_curated_overview_blocks() -> None:
         ),
         BlockSpec(
             id="action_items_compact",
-            title="Action items",
+            title="Meeting extracts",
             group="Overview",
-            description="Compact LLM action items list.",
+            description="Compact LLM meeting extracts list.",
             module_deps=("llm_action_items",),
             artifact_patterns=(
                 "_llm_action_items.json",
@@ -261,9 +261,9 @@ def _register_insights_blocks() -> None:
         ),
         BlockSpec(
             id="llm_action_items_block",
-            title="Action Items",
+            title="Meeting extracts",
             group="Insights",
-            description="Structured action items extracted via local LLM.",
+            description="Structured meeting extracts extracted via local LLM.",
             module_deps=("llm_action_items",),
             artifact_patterns=(
                 "_llm_action_items.json",

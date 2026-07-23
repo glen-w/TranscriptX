@@ -127,7 +127,11 @@ def executive_summary_markdown(payload: dict[str, Any]) -> str:
 
 
 def action_items_markdown(payload: dict[str, Any]) -> str:
-    """Build export markdown via core action-items renderer (no provenance footer)."""
+    """Build export markdown via core meeting-extracts renderer."""
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        EMPTY_EXTRACTS_MESSAGE,
+        HUMAN_REVIEW_BANNER,
+    )
     from transcriptx.core.analysis.llm_support.action_items_render import (
         render_action_items_markdown,
     )
@@ -136,37 +140,70 @@ def action_items_markdown(payload: dict[str, Any]) -> str:
         rendered = render_action_items_markdown(payload, include_meta=False)
         body = strip_summary_markdown(rendered)
         if body:
-            # Core uses italic "No action items found." — normalize for export.
-            if body in {"_No action items found._", "*No action items found.*"}:
-                return "No action items found."
+            # Core uses italic empty copy — normalize for export while keeping banner.
+            empty_forms = {
+                f"_{EMPTY_EXTRACTS_MESSAGE}_",
+                f"*{EMPTY_EXTRACTS_MESSAGE}*",
+                EMPTY_EXTRACTS_MESSAGE,
+            }
+            # Preserve human-review banner + sectioned body from renderer.
+            if EMPTY_EXTRACTS_MESSAGE in body and HUMAN_REVIEW_BANNER in body:
+                return body
+            if body in empty_forms:
+                return f"{HUMAN_REVIEW_BANNER}\n\n{EMPTY_EXTRACTS_MESSAGE}"
             return body
     except Exception:
         pass
 
     items = payload.get("items") or []
     if not isinstance(items, list) or not items:
-        return "No action items found."
-    lines: list[str] = []
-    for index, item in enumerate(items, start=1):
+        return f"{HUMAN_REVIEW_BANNER}\n\n{EMPTY_EXTRACTS_MESSAGE}"
+    # Fallback should still preserve record_type section order via renderer path;
+    # if we reach here, emit a minimal typed list.
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        RECORD_TYPE_LABELS,
+        RECORD_TYPE_ORDER,
+    )
+
+    lines: list[str] = [HUMAN_REVIEW_BANNER, ""]
+    by_type: dict[str, list[dict[str, Any]]] = {
+        name: [] for name in RECORD_TYPE_ORDER
+    }
+    for item in items:
         if not isinstance(item, dict):
             continue
-        text = str(item.get("text") or "").strip()
-        if not text:
+        record_type = str(item.get("record_type") or "action_item")
+        if record_type not in by_type:
+            record_type = "action_item"
+        by_type[record_type].append(item)
+    emitted = False
+    for record_type in RECORD_TYPE_ORDER:
+        typed = by_type[record_type]
+        if not typed:
             continue
-        lines.append(f"{index}. **{text}**")
-        status = item.get("status")
-        if status:
-            lines.append(f"   - Status: {status}")
-        owner = item.get("owner")
-        if owner:
-            lines.append(f"   - Owner: {owner}")
-        deadline = item.get("deadline")
-        if deadline:
-            lines.append(f"   - Deadline: {deadline}")
-        quote = item.get("quote")
-        if quote:
-            lines.append(f'   - Quote: "{quote}"')
+        emitted = True
+        lines.append(f"## {RECORD_TYPE_LABELS[record_type]}")
         lines.append("")
+        for index, item in enumerate(typed, start=1):
+            text = str(item.get("text") or "").strip()
+            if not text:
+                continue
+            lines.append(f"{index}. **{text}**")
+            status = item.get("status")
+            if status:
+                lines.append(f"   - Status: {status}")
+            owner = item.get("owner")
+            if owner:
+                lines.append(f"   - Owner: {owner}")
+            deadline = item.get("deadline")
+            if deadline:
+                lines.append(f"   - Deadline: {deadline}")
+            quote = item.get("quote")
+            if quote:
+                lines.append(f'   - Quote: "{quote}"')
+            lines.append("")
+    if not emitted:
+        lines.append(EMPTY_EXTRACTS_MESSAGE)
     return "\n".join(lines).strip()
 
 

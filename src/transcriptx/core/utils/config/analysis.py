@@ -703,6 +703,7 @@ class LLMActionItemsConfig:
     """Defaults owned by LLMActionItemsSettingsModel."""
 
     effort: str = field(init=False, repr=True)
+    coerce_v1_artifacts: bool = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
         from transcriptx.core.config.models.llm_action_items import (

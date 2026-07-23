@@ -37,6 +37,7 @@ SMOKE_SKIP_MODULES: frozenset[str] = frozenset(
         "llm_speaker_summary",
         "narrative_summary",
         "llm_action_items",
+        "llm_custom_qa",
     }
 )
 

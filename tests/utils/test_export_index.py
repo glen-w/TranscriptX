@@ -522,7 +522,7 @@ def test_write_export_index_includes_llm_action_items(tmp_path: Path) -> None:
     ]
     summaries = resolve_export_text_summaries(staging_dir=staging, copied=copied)
     assert len(summaries) == 1
-    assert summaries[0]["title"] == "Action Items"
+    assert summaries[0]["title"] == "Meeting extracts"
     assert "Send the report" in summaries[0]["body"]
     assert "**Send the report**" in summaries[0]["body"]
     html = _write_index(staging, copied)

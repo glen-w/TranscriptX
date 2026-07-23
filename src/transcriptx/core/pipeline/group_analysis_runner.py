@@ -364,6 +364,7 @@ _WRITER_EXTRA_KEYS = {
     "content_rows_name",
     "drop_csv_keys",
     "extra_tables",
+    "schema_version",
 }
 
 
@@ -650,6 +651,12 @@ def finalize_group_analysis(
                     get_transcript_id,
                 )
 
+                raw_schema_version = row_payload.get("schema_version", 1)
+                try:
+                    schema_version = int(raw_schema_version)
+                except (TypeError, ValueError):
+                    schema_version = 1
+
                 _written, warning = write_row_outputs(
                     base_dir=Path(group_output_service.base_dir),
                     agg_id=entry.agg_id,
@@ -661,6 +668,7 @@ def finalize_group_analysis(
                     bundle=True,
                     drop_csv_keys=drop_csv_keys,
                     extra_tables=extra_tables,
+                    schema_version=schema_version,
                 )
 
                 if warning:

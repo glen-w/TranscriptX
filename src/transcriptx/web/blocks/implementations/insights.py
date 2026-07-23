@@ -1072,16 +1072,33 @@ def render_llm_speaker_summary_block(
 def _render_action_items_payload(
     payload: Dict[str, Any] | None, md: str | None
 ) -> bool:
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        EMPTY_EXTRACTS_MESSAGE,
+        HUMAN_REVIEW_BANNER,
+        RECORD_TYPE_LABELS,
+        is_v1_action_items_payload,
+    )
+
+    if payload is not None and is_v1_action_items_payload(payload):
+        st.caption("Legacy v1 action items (not native v2).")
+        st.caption(HUMAN_REVIEW_BANNER)
+    else:
+        st.caption(HUMAN_REVIEW_BANNER)
+
     if md:
         render_markdown_without_heading_or_provenance(md)
         return True
     if payload and isinstance(payload.get("items"), list):
         items = payload["items"]
         if not items:
-            st.caption("No action items found.")
+            st.caption(EMPTY_EXTRACTS_MESSAGE)
             return True
         rows = [
             {
+                "type": RECORD_TYPE_LABELS.get(
+                    str(item.get("record_type") or "action_item"),
+                    str(item.get("record_type") or "action_item"),
+                ),
                 "text": item.get("text", ""),
                 "status": item.get("status", ""),
                 "owner": item.get("owner") or "—",
@@ -1101,13 +1118,23 @@ def _render_action_items_payload(
 
 
 def _render_action_item_rows_rollup(rows: list[Dict[str, Any]]) -> None:
-    st.caption("Group rollup — action items across sessions")
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        HUMAN_REVIEW_BANNER,
+        RECORD_TYPE_LABELS,
+    )
+
+    st.caption("Group rollup — meeting extracts across sessions")
+    st.caption(HUMAN_REVIEW_BANNER)
     display = [
         {
             "session": (
                 f"s{int(row['order_index']) + 1}"
                 if row.get("order_index") is not None
                 else ""
+            ),
+            "type": RECORD_TYPE_LABELS.get(
+                str(row.get("record_type") or "action_item"),
+                str(row.get("record_type") or "action_item"),
             ),
             "text": row.get("text") or "",
             "owner": row.get("owner") or "—",
@@ -1119,7 +1146,7 @@ def _render_action_item_rows_rollup(rows: list[Dict[str, Any]]) -> None:
         if str(row.get("text") or "").strip()
     ]
     if not display:
-        st.write("No action items.")
+        st.write("No meeting extracts.")
         return
     st.dataframe(display[:40], width="stretch", hide_index=True)
     if len(display) > 40:
@@ -1127,9 +1154,13 @@ def _render_action_item_rows_rollup(rows: list[Dict[str, Any]]) -> None:
 
 
 def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) -> None:
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        TITLE_MEETING_EXTRACTS,
+    )
+
     module = "llm_action_items"
     title = placement.title_override or str(
-        placement.params.get("title", "Action Items")
+        placement.params.get("title", TITLE_MEETING_EXTRACTS)
     )
     empty_hint = str(
         placement.params.get(
@@ -1192,7 +1223,7 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
     )
     if not _render_action_items_payload(payload, md):
         _render_quiet_module_empty(
-            label="Action items",
+            label=TITLE_MEETING_EXTRACTS,
             run_root=run_root,
             module=module,
             empty_hint=empty_hint,

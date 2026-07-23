@@ -93,11 +93,18 @@ def test_executive_summary_falls_back_to_legacy_narrative(
 def test_action_items_markdown_normalizes_empty_and_legacy_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        EMPTY_EXTRACTS_MESSAGE,
+        HUMAN_REVIEW_BANNER,
+    )
+
     monkeypatch.setattr(
         "transcriptx.core.analysis.llm_support.action_items_render.render_action_items_markdown",
-        lambda *_a, **_k: "_No action items found._",
+        lambda *_a, **_k: f"_{EMPTY_EXTRACTS_MESSAGE}_",
     )
-    assert action_items_markdown({"items": []}) == "No action items found."
+    assert action_items_markdown({"items": []}) == (
+        f"{HUMAN_REVIEW_BANNER}\n\n{EMPTY_EXTRACTS_MESSAGE}"
+    )
 
     monkeypatch.setattr(
         "transcriptx.core.analysis.llm_support.action_items_render.render_action_items_markdown",
@@ -107,6 +114,7 @@ def test_action_items_markdown_normalizes_empty_and_legacy_fallback(
         {
             "items": [
                 {
+                    "record_type": "action_item",
                     "text": "Ship it",
                     "status": "open",
                     "owner": "Dev",
@@ -118,6 +126,7 @@ def test_action_items_markdown_normalizes_empty_and_legacy_fallback(
             ]
         }
     )
+    assert HUMAN_REVIEW_BANNER in out
     assert "1. **Ship it**" in out
     assert "Status: open" in out
     assert "Owner: Dev" in out

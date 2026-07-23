@@ -16,7 +16,12 @@ from transcriptx.core.analysis.aggregation.rows import (
     _session_row_base,
 )
 from transcriptx.core.analysis.llm_support.action_items_contract import (
+    LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION,
+    RECORD_TYPES,
+    STATUSES,
+    coerce_v1_action_items_payload,
     dedupe_action_items,
+    is_v1_action_items_payload,
 )
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
@@ -24,6 +29,7 @@ from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
 from transcriptx.core.analysis.aggregation.schema import get_transcript_id
 from transcriptx.core.analysis.llm_support.filenames import safe_speaker_filename
 from transcriptx.core.utils._path_core import get_canonical_base_name
+from transcriptx.core.utils.config import get_config
 
 
 def _artifact_relpath(result: Dict[str, Any], needle: str) -> Optional[str]:
@@ -38,11 +44,191 @@ def _artifact_relpath(result: Dict[str, Any], needle: str) -> Optional[str]:
 
 
 def _status_counts(items: List[Dict[str, Any]]) -> Dict[str, int]:
-    counts: Dict[str, int] = {}
+    counts = {status: 0 for status in STATUSES}
     for item in items:
-        status = str(item.get("status") or "unknown")
-        counts[status] = counts.get(status, 0) + 1
+        status = str(item.get("status") or "")
+        if status in counts:
+            counts[status] += 1
     return counts
+
+
+def _type_counts(items: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = {record_type: 0 for record_type in RECORD_TYPES}
+    for item in items:
+        record_type = str(item.get("record_type") or "")
+        if record_type in counts:
+            counts[record_type] += 1
+    return counts
+
+
+def _empty_session_count_fields() -> Dict[str, int]:
+    fields: Dict[str, int] = {"item_count": 0}
+    for record_type in RECORD_TYPES:
+        fields[f"count_{record_type}"] = 0
+    for status in STATUSES:
+        fields[f"status_{status}"] = 0
+    return fields
+
+
+def _resolve_member_payload(
+    payload: Dict[str, Any],
+    *,
+    coerce_v1: bool,
+    transcript_id: str,
+) -> tuple[Dict[str, Any] | None, Dict[str, Any] | None]:
+    """Return (normalized_payload, member_failure_or_none)."""
+    if is_v1_action_items_payload(payload):
+        if not coerce_v1:
+            return None, {
+                "source_transcript_id": transcript_id,
+                "error": "v1_action_items_requires_coerce_v1_artifacts",
+                "schema_id": payload.get("schema_id"),
+            }
+        return coerce_v1_action_items_payload(payload), None
+    return payload, None
+
+
+def aggregate_llm_action_items_group(
+    per_transcript_results: List[PerTranscriptResult],
+    canonical_speaker_map: CanonicalSpeakerMap,
+    transcript_set: TranscriptSet,
+) -> Dict[str, Any] | None:
+    """Concatenate and dedupe meeting extracts across group members."""
+    del canonical_speaker_map
+    coerce_v1 = bool(
+        getattr(get_config().analysis.llm_action_items, "coerce_v1_artifacts", False)
+    )
+    session_rows: List[Dict[str, Any]] = []
+    action_item_rows: List[Dict[str, Any]] = []
+    member_failures: List[Dict[str, Any]] = []
+    collected: List[Dict[str, Any]] = []
+    for result in per_transcript_results:
+        payload = extract_payload(result.module_results, "llm_action_items")
+        if not payload:
+            continue
+        transcript_id = get_transcript_id(result, transcript_set)
+        normalized, failure = _resolve_member_payload(
+            payload, coerce_v1=coerce_v1, transcript_id=transcript_id
+        )
+        if failure is not None:
+            member_failures.append(failure)
+            session_row = _session_row_base(result, transcript_set)
+            session_row.update(_empty_session_count_fields())
+            session_row["member_error"] = failure["error"]
+            session_rows.append(session_row)
+            continue
+        assert normalized is not None
+        items = normalized.get("items") or []
+        if not isinstance(items, list):
+            continue
+        typed_items = [item for item in items if isinstance(item, dict)]
+        status_counts = _status_counts(typed_items)
+        type_counts = _type_counts(typed_items)
+        session_row = _session_row_base(result, transcript_set)
+        session_row.update(_empty_session_count_fields())
+        session_row["item_count"] = len(typed_items)
+        for status, count in status_counts.items():
+            session_row[f"status_{status}"] = count
+        for record_type, count in type_counts.items():
+            session_row[f"count_{record_type}"] = count
+        session_rows.append(session_row)
+        source_rel = _artifact_relpath(
+            result.module_results.get("llm_action_items", {}), "llm_action_items"
+        )
+        for index, item in enumerate(typed_items):
+            enriched = dict(item)
+            if "record_type" not in enriched:
+                enriched["record_type"] = "action_item"
+            enriched["_model_index"] = index
+            enriched["_grounded"] = True
+            enriched["_source_transcript_id"] = transcript_id
+            enriched["_order_index"] = result.order_index
+            enriched["_source_run_relpath"] = result.output_dir
+            enriched["_source_artifact_relpath"] = source_rel
+            if (normalized.get("provenance") or {}).get("compat") == "v1_coerced":
+                enriched["_compat"] = "v1_coerced"
+            collected.append(enriched)
+
+    if not collected and not member_failures:
+        return None
+
+    deduped, _removed = dedupe_action_items(collected) if collected else ([], 0)
+    deduped.sort(
+        key=lambda item: (
+            int(item.get("_order_index", 0)),
+            int(item.get("_model_index", 0)),
+        )
+    )
+    for item in deduped:
+        text = str(item.get("text") or "")
+        transcript_id = str(item.get("_source_transcript_id") or "")
+        record_type = str(item.get("record_type") or "action_item")
+        hash_payload = (
+            f"{transcript_id}:{record_type}:{text[:200]}:"
+            f"{item.get('owner')}:{item.get('deadline')}:{item.get('status')}"
+        )
+        row = {
+            "id": hashlib.sha1(hash_payload.encode("utf-8")).hexdigest(),
+            "order_index": item.get("_order_index", 0),
+            "record_type": record_type,
+            "text": text,
+            "owner": item.get("owner"),
+            "deadline": item.get("deadline"),
+            "status": item.get("status"),
+            "quote": item.get("quote"),
+            "confidence": item.get("confidence"),
+            "source_transcript_id": transcript_id,
+            "source_run_relpath": item.get("_source_run_relpath"),
+            "source_artifact_relpath": item.get("_source_artifact_relpath"),
+        }
+        if item.get("_compat"):
+            row["compat"] = item.get("_compat")
+        action_item_rows.append(row)
+    return {
+        "schema_version": LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION,
+        "session_rows": session_rows,
+        "speaker_rows": [],
+        "content_rows": action_item_rows,
+        "content_rows_name": "action_item_rows",
+        "member_failures": member_failures,
+        "metrics_spec": [
+            {
+                "name": "item_count",
+                "format": "int",
+                "description": "Meeting extracts in session",
+            },
+            {
+                "name": "count_decision",
+                "format": "int",
+                "description": "Decisions in session",
+            },
+            {
+                "name": "count_commitment",
+                "format": "int",
+                "description": "Commitments in session",
+            },
+            {
+                "name": "count_action_item",
+                "format": "int",
+                "description": "Action items in session",
+            },
+            {
+                "name": "count_proposal",
+                "format": "int",
+                "description": "Proposals in session",
+            },
+            {
+                "name": "count_open_question",
+                "format": "int",
+                "description": "Open questions in session",
+            },
+            {
+                "name": "confidence",
+                "format": "float",
+                "description": "Meeting extract confidence",
+            },
+        ],
+    }
 
 
 def aggregate_llm_summary_blob(
@@ -191,95 +377,6 @@ def aggregate_llm_speaker_summary_group(
         "session_rows": session_rows,
         "speaker_rows": speaker_rows,
         "drop_csv_keys": ["summary"],
-    }
-
-
-def aggregate_llm_action_items_group(
-    per_transcript_results: List[PerTranscriptResult],
-    canonical_speaker_map: CanonicalSpeakerMap,
-    transcript_set: TranscriptSet,
-) -> Dict[str, Any] | None:
-    """Concatenate and dedupe action items across group members."""
-    del canonical_speaker_map
-    session_rows: List[Dict[str, Any]] = []
-    action_item_rows: List[Dict[str, Any]] = []
-    collected: List[Dict[str, Any]] = []
-    for result in per_transcript_results:
-        payload = extract_payload(result.module_results, "llm_action_items")
-        if not payload:
-            continue
-        items = payload.get("items") or []
-        if not isinstance(items, list):
-            continue
-        transcript_id = get_transcript_id(result, transcript_set)
-        typed_items = [item for item in items if isinstance(item, dict)]
-        status_counts = _status_counts(typed_items)
-        session_row = _session_row_base(result, transcript_set)
-        session_row["item_count"] = len(typed_items)
-        for status, count in status_counts.items():
-            session_row[f"status_{status}"] = count
-        session_rows.append(session_row)
-        source_rel = _artifact_relpath(
-            result.module_results.get("llm_action_items", {}), "llm_action_items"
-        )
-        for index, item in enumerate(typed_items):
-            enriched = dict(item)
-            enriched["_model_index"] = index
-            enriched["_source_transcript_id"] = transcript_id
-            enriched["_order_index"] = result.order_index
-            enriched["_source_run_relpath"] = result.output_dir
-            enriched["_source_artifact_relpath"] = source_rel
-            collected.append(enriched)
-
-    if not collected:
-        return None
-
-    deduped = dedupe_action_items(collected)
-    # Group-level ordering: stable by session then original model order.
-    deduped.sort(
-        key=lambda item: (
-            int(item.get("_order_index", 0)),
-            int(item.get("_model_index", 0)),
-        )
-    )
-    for item in deduped:
-        text = str(item.get("text") or "")
-        transcript_id = str(item.get("_source_transcript_id") or "")
-        hash_payload = (
-            f"{transcript_id}:{text[:200]}:{item.get('owner')}:{item.get('deadline')}"
-        )
-        action_item_rows.append(
-            {
-                "id": hashlib.sha1(hash_payload.encode("utf-8")).hexdigest(),
-                "order_index": item.get("_order_index", 0),
-                "text": text,
-                "owner": item.get("owner"),
-                "deadline": item.get("deadline"),
-                "status": item.get("status"),
-                "quote": item.get("quote"),
-                "confidence": item.get("confidence"),
-                "source_transcript_id": transcript_id,
-                "source_run_relpath": item.get("_source_run_relpath"),
-                "source_artifact_relpath": item.get("_source_artifact_relpath"),
-            }
-        )
-    return {
-        "session_rows": session_rows,
-        "speaker_rows": [],
-        "content_rows": action_item_rows,
-        "content_rows_name": "action_item_rows",
-        "metrics_spec": [
-            {
-                "name": "item_count",
-                "format": "int",
-                "description": "Action items in session",
-            },
-            {
-                "name": "confidence",
-                "format": "float",
-                "description": "Action item confidence",
-            },
-        ],
     }
 
 

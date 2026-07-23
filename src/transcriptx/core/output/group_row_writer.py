@@ -54,6 +54,7 @@ def write_row_outputs(
     bundle: bool = True,
     drop_csv_keys: Optional[List[str]] = None,
     extra_tables: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+    schema_version: int = 1,
 ) -> Tuple[bool, Optional[AggregationWarning]]:
     """
     Write standardized row outputs for a group aggregation.
@@ -87,6 +88,7 @@ def write_row_outputs(
             bundle=bundle,
             drop_csv_keys=drop_csv_keys,
             extra_tables=extra_tables,
+            schema_version=schema_version,
         )
 
 
@@ -102,6 +104,7 @@ def _write_row_outputs_body(
     bundle: bool = True,
     drop_csv_keys: Optional[List[str]] = None,
     extra_tables: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+    schema_version: int = 1,
 ) -> Tuple[bool, Optional[AggregationWarning]]:
     agg_dir = base_dir / agg_id
     agg_dir.mkdir(parents=True, exist_ok=True)
@@ -159,7 +162,7 @@ def _write_row_outputs_body(
 
     if bundle:
         bundle_payload = {
-            "schema_version": 1,
+            "schema_version": int(schema_version),
             "aggregation_key": agg_id,
             "session_rows": session_rows,
             "speaker_rows": speaker_rows,

@@ -93,6 +93,7 @@ def test_aggregate_narrative_summary_blob_none_when_empty() -> None:
 @pytest.mark.unit
 def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
     item = {
+        "record_type": "action_item",
         "text": "Ship it",
         "owner": "Alice",
         "deadline": None,
@@ -100,12 +101,20 @@ def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
         "quote": "ship it",
         "confidence": 0.9,
     }
+
+    def _payload(items: list) -> dict:
+        return {
+            "schema_id": "transcriptx.llm_action_items.v2",
+            "module_version": "2",
+            "items": items,
+        }
+
     results = [
         _result(
             "/x/a.json",
             "a",
             0,
-            {"llm_action_items": {"payload": {"items": [item]}}},
+            {"llm_action_items": {"payload": _payload([item])}},
         ),
         _result(
             "/x/b.json",
@@ -113,10 +122,11 @@ def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
             1,
             {
                 "llm_action_items": {
-                    "payload": {
-                        "items": [
+                    "payload": _payload(
+                        [
                             {**item, "confidence": 0.5, "quote": None},
                             {
+                                "record_type": "action_item",
                                 "text": "Other",
                                 "owner": None,
                                 "deadline": None,
@@ -125,7 +135,7 @@ def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
                                 "confidence": 0.4,
                             },
                         ]
-                    }
+                    )
                 }
             },
             output_dir="o2",
@@ -133,6 +143,7 @@ def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
     ]
     out = aggregate_llm_action_items_group(results, _cmap(), _ts())
     assert out is not None
+    assert out["schema_version"] == 2
     assert out["session_rows"][0]["item_count"] == 1
     assert out["session_rows"][1]["item_count"] == 2
     texts = [row["text"] for row in out["content_rows"]]

@@ -57,7 +57,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen (**shipped** 0.4.8; semantics v2 + group charts) | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
 | 5 | B6 | **Hedging / certainty / epistemic markers** | new | Language & Meaning | S–M | lexicon + optional classifier; group charts |
 | 6 | — | *(P1 routing infrastructure continues; not a ranked module)* | platform | — | M | see §2 |
-| 7 | B10 | **Structured decisions / commitments** — prefer extraction-family deepening over a wholly new module ID | deepen (prefer) / new only with overlap write-up | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
+| 7 | B10 | **Structured decisions / commitments** — extraction-family deepen (`llm_action_items` v2 meeting extracts) | deepen (**shipped** v2 contract: typed records + sectioned render + group schema 2; residual: broader P2 platform) | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
 | 8 | B7 | **Politeness / formality / power** (lexicon-first) | new | Speakers & Interaction | M | lexicon path first; ConvoKit optional later |
 | 9 | B14 | **Cross-session concept drift / recurring motifs** | deepen | Language & Meaning (+ Groups) | M | `semantic_similarity_v2` + group finalize |
 | 10 | B13 | **Speaker interaction graphs** (NetworkX artifacts + gallery) | deepen | Speakers & Interaction / Visualisations | M | Phase 3 network mention; B12 primitives help |

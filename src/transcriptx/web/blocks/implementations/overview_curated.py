@@ -369,11 +369,18 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
 
 
 def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:
-    st.subheader("Action items")
+    from transcriptx.core.analysis.llm_support.action_items_contract import (
+        HUMAN_REVIEW_BANNER,
+        RECORD_TYPE_LABELS,
+        TITLE_MEETING_EXTRACTS,
+    )
+
+    st.subheader(TITLE_MEETING_EXTRACTS)
+    st.caption(HUMAN_REVIEW_BANNER)
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None and run_root is None:
-        st.info(quiet_unavailable_message("Action items"))
+        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
         return
 
     if run_root is not None and is_group_run(run_root):
@@ -384,19 +391,23 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
             if not text:
                 continue
             owner = row.get("owner")
+            record_type = str(row.get("record_type") or "action_item")
+            type_label = RECORD_TYPE_LABELS.get(record_type, record_type)
             suffix = f" — {owner}" if owner else ""
-            st.write(f"- {text}{suffix}")
+            st.write(f"- [{type_label}] {text}{suffix}")
             shown += 1
         if shown:
             if len(rows) > 5:
-                st.caption(f"+{len(rows) - 5} more on Insights → Actions")
+                st.caption(f"+{len(rows) - 5} more on Insights → Meeting extracts")
             return
-        st.info(quiet_unavailable_message("Action items"))
-        st.caption("Browse per-session items on Insights → Actions when available.")
+        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
+        st.caption(
+            "Browse per-session extracts on Insights → Meeting extracts when available."
+        )
         return
 
     if loader is None:
-        st.info(quiet_unavailable_message("Action items"))
+        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
         return
     payload = loader.load_json("llm_action_items", "_llm_action_items.json")
     md = loader.load_text("llm_action_items", "_llm_action_items.md")
@@ -411,15 +422,17 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
             text = str(item.get("text") or "").strip()
             if text:
                 owner = item.get("owner")
+                record_type = str(item.get("record_type") or "action_item")
+                type_label = RECORD_TYPE_LABELS.get(record_type, record_type)
                 suffix = f" — {owner}" if owner else ""
-                st.write(f"- {text}{suffix}")
+                st.write(f"- [{type_label}] {text}{suffix}")
         if len(items) > 5:
-            st.caption(f"+{len(items) - 5} more on Insights → Actions")
+            st.caption(f"+{len(items) - 5} more on Insights → Meeting extracts")
         return
     if md:
         render_markdown_without_heading_or_provenance(md)
         return
-    st.info(quiet_unavailable_message("Action items"))
+    st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
 
 
 def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:

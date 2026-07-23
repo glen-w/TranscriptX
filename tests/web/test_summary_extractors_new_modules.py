@@ -61,7 +61,7 @@ def test_llm_action_items_extractor_counts_by_status() -> None:
         },
         summary,
     )
-    assert summary["key_metrics"]["Action items"] == 6
+    assert summary["key_metrics"]["Meeting extracts"] == 5
     assert summary["key_metrics"]["Open items"] == 2
     assert summary["key_metrics"]["Done items"] == 1
     assert summary["key_metrics"]["Unclear items"] == 1

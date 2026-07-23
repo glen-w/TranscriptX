@@ -43,6 +43,29 @@ def test_write_row_outputs_content_rows_and_bundle(tmp_path: Path) -> None:
     bundle = json.loads((agg_dir / "aggregation.json").read_text(encoding="utf-8"))
     assert "highlight_rows" in bundle
     assert bundle["highlight_rows"][0]["id"] == "h1"
+    assert bundle["schema_version"] == 1
+
+
+@pytest.mark.unit
+def test_write_row_outputs_passes_schema_version(tmp_path: Path) -> None:
+    written, warning = write_row_outputs(
+        base_dir=tmp_path,
+        agg_id="llm_action_items",
+        session_rows=[{"transcript_id": "t1", "order_index": 0, "item_count": 1}],
+        speaker_rows=[],
+        metrics_spec=[{"name": "item_count", "format": "int"}],
+        content_rows=[{"id": "a1", "record_type": "decision", "text": "Ship it"}],
+        content_rows_name="action_item_rows",
+        bundle=True,
+        schema_version=2,
+    )
+    assert written is True
+    assert warning is None
+    bundle = json.loads(
+        (tmp_path / "llm_action_items" / "aggregation.json").read_text(encoding="utf-8")
+    )
+    assert bundle["schema_version"] == 2
+    assert bundle["action_item_rows"][0]["record_type"] == "decision"
 
 
 @pytest.mark.unit

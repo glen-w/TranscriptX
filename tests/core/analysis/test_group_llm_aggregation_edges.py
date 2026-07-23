@@ -50,12 +50,19 @@ def _result(
 
 
 _ITEM = {
+    "record_type": "action_item",
     "text": "Ship it",
     "owner": None,
     "deadline": None,
     "status": "open",
     "quote": None,
     "confidence": 0.9,
+}
+
+_V2_PAYLOAD = {
+    "schema_id": "transcriptx.llm_action_items.v2",
+    "module_version": "2",
+    "items": [_ITEM],
 }
 
 
@@ -79,9 +86,9 @@ class TestArtifactRelpath:
 
 
 @pytest.mark.unit
-def test_status_counts_defaults_unknown() -> None:
+def test_status_counts_fixed_keys_ignore_unknown() -> None:
     counts = _status_counts([{"status": "open"}, {"status": "open"}, {}])
-    assert counts == {"open": 2, "unknown": 1}
+    assert counts == {"open": 2, "done": 0, "unclear": 0}
 
 
 @pytest.mark.unit
@@ -155,7 +162,10 @@ class TestActionItemsGroupEdges:
                 0,
                 {
                     "llm_action_items": {
-                        "payload": {"items": [_ITEM, "junk"]},
+                        "payload": {
+                            "schema_id": "transcriptx.llm_action_items.v2",
+                            "items": [_ITEM, "junk"],
+                        },
                         "artifacts": [
                             {
                                 "relative_path": (
@@ -169,10 +179,14 @@ class TestActionItemsGroupEdges:
         ]
         out = aggregate_llm_action_items_group(results, _cmap(), _ts())
         assert out is not None
+        assert out["schema_version"] == 2
         assert out["session_rows"][0]["item_count"] == 1
         assert out["session_rows"][0]["status_open"] == 1
+        assert out["session_rows"][0]["count_action_item"] == 1
+        assert out["session_rows"][0]["count_decision"] == 0
         rows = out["content_rows"]
         assert len(rows) == 1
+        assert rows[0]["record_type"] == "action_item"
         assert rows[0]["source_artifact_relpath"] == (
             "llm_action_items/data/a_llm_action_items.json"
         )
@@ -184,11 +198,100 @@ class TestActionItemsGroupEdges:
                 "/x/a.json",
                 "a",
                 0,
-                {"llm_action_items": {"payload": {"items": ["junk", 42]}}},
+                {
+                    "llm_action_items": {
+                        "payload": {
+                            "schema_id": "transcriptx.llm_action_items.v2",
+                            "items": ["junk", 42],
+                        }
+                    }
+                },
             )
         ]
         # Session row exists but no dict items were collected -> aggregator None.
         assert aggregate_llm_action_items_group(results, _cmap(), _ts()) is None
+
+    def test_v1_member_fails_without_coerce_flag(self, monkeypatch) -> None:
+        from transcriptx.core.utils.config.main import TranscriptXConfig
+
+        cfg = TranscriptXConfig()
+        cfg.analysis.llm_action_items.coerce_v1_artifacts = False
+        monkeypatch.setattr(
+            "transcriptx.core.analysis.aggregation.llm.get_config",
+            lambda: cfg,
+        )
+        results = [
+            _result(
+                "/x/a.json",
+                "a",
+                0,
+                {
+                    "llm_action_items": {
+                        "payload": {
+                            "schema_id": "transcriptx.llm_action_items.v1",
+                            "items": [
+                                {
+                                    "text": "Ship it",
+                                    "owner": None,
+                                    "deadline": None,
+                                    "status": "open",
+                                    "quote": None,
+                                    "confidence": 0.9,
+                                }
+                            ],
+                        }
+                    }
+                },
+            )
+        ]
+        out = aggregate_llm_action_items_group(results, _cmap(), _ts())
+        assert out is not None
+        assert out["content_rows"] == []
+        assert out["member_failures"]
+        assert out["member_failures"][0]["error"] == (
+            "v1_action_items_requires_coerce_v1_artifacts"
+        )
+        assert out["session_rows"][0]["item_count"] == 0
+
+    def test_v1_member_coerced_with_flag(self, monkeypatch) -> None:
+        from transcriptx.core.utils.config.main import TranscriptXConfig
+
+        cfg = TranscriptXConfig()
+        cfg.analysis.llm_action_items.coerce_v1_artifacts = True
+        monkeypatch.setattr(
+            "transcriptx.core.analysis.aggregation.llm.get_config",
+            lambda: cfg,
+        )
+        results = [
+            _result(
+                "/x/a.json",
+                "a",
+                0,
+                {
+                    "llm_action_items": {
+                        "payload": {
+                            "schema_id": "transcriptx.llm_action_items.v1",
+                            "items": [
+                                {
+                                    "text": "Ship it",
+                                    "owner": None,
+                                    "deadline": None,
+                                    "status": "open",
+                                    "quote": None,
+                                    "confidence": 0.9,
+                                }
+                            ],
+                        }
+                    }
+                },
+            )
+        ]
+        out = aggregate_llm_action_items_group(results, _cmap(), _ts())
+        assert out is not None
+        assert len(out["content_rows"]) == 1
+        assert out["content_rows"][0]["record_type"] == "action_item"
+        assert out["content_rows"][0]["compat"] == "v1_coerced"
+        assert out["member_failures"] == []
 
 
 @pytest.mark.unit

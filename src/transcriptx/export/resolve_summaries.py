@@ -76,7 +76,7 @@ def _default_summary_title(kind: str, *, rel_posix: str) -> str:
                 return f"Speaker Summary — {speaker_token.replace('_', ' ')}"
         return "Speaker Summary"
     if kind == "llm_action_items":
-        return "Action Items"
+        return "Meeting extracts"
     if kind == "llm_custom_qa":
         return "Custom Questions"
     return "Summary"

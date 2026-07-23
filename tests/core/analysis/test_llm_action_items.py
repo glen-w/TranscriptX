@@ -23,7 +23,6 @@ from transcriptx.core.analysis.llm_support.action_items_render import (
 )
 from transcriptx.core.analysis.llm_module_errors import ModuleEmptyInputError
 from transcriptx.core.analysis.llm_support.runtime import LLMRuntime
-from transcriptx.core.llm.errors import LLMResponseError
 from transcriptx.core.utils.config.main import TranscriptXConfig
 
 
@@ -66,9 +65,11 @@ def _valid_items_json() -> str:
 
 @pytest.mark.unit
 def test_parse_action_items_json_success() -> None:
-    items = parse_action_items_json(_valid_items_json())
+    items, diagnostics = parse_action_items_json(_valid_items_json())
     assert len(items) == 2
     assert items[0]["status"] == "open"
+    assert items[0]["record_type"] == "action_item"
+    assert diagnostics["items_parsed_valid"] == 2
 
 
 @pytest.mark.unit
@@ -95,7 +96,7 @@ def test_parse_action_items_repairs_missing_comma_between_objects() -> None:
       ]
     }
     """
-    items = parse_action_items_json(raw)
+    items, _ = parse_action_items_json(raw)
     assert len(items) == 2
     assert items[1]["status"] == "done"
 
@@ -116,13 +117,13 @@ def test_parse_action_items_repairs_trailing_comma() -> None:
       ],
     }
     """
-    items = parse_action_items_json(raw)
+    items, _ = parse_action_items_json(raw)
     assert len(items) == 1
     assert items[0]["text"] == "Send the report"
 
 
 @pytest.mark.unit
-def test_parse_action_items_rejects_invalid_status() -> None:
+def test_parse_action_items_drops_invalid_status() -> None:
     payload = json.dumps(
         {
             "items": [
@@ -137,13 +138,14 @@ def test_parse_action_items_rejects_invalid_status() -> None:
             ]
         }
     )
-    with pytest.raises(LLMResponseError, match="status"):
-        parse_action_items_json(payload)
+    items, diagnostics = parse_action_items_json(payload)
+    assert items == []
+    assert diagnostics["status_unsupported_dropped"] == 1
 
 
 @pytest.mark.unit
 def test_ground_action_items_drops_fabricated_quote() -> None:
-    items = parse_action_items_json(
+    items, _ = parse_action_items_json(
         json.dumps(
             {
                 "items": [
@@ -170,23 +172,30 @@ def test_ground_action_items_drops_fabricated_quote() -> None:
 def test_dedupe_action_items_keeps_higher_confidence() -> None:
     items = [
         {
+            "record_type": "action_item",
             "text": "Send report",
             "owner": "Alice",
             "deadline": None,
             "status": "open",
             "quote": "send report",
             "confidence": 0.5,
+            "_model_index": 0,
+            "_grounded": True,
         },
         {
+            "record_type": "action_item",
             "text": "Send report",
             "owner": "Alice",
             "deadline": None,
             "status": "open",
             "quote": "send report",
             "confidence": 0.9,
+            "_model_index": 1,
+            "_grounded": True,
         },
     ]
-    deduped = dedupe_action_items(items)
+    deduped, removed = dedupe_action_items(items)
+    assert removed == 1
     assert len(deduped) == 1
     assert deduped[0]["confidence"] == 0.9
 
@@ -196,6 +205,7 @@ def test_render_action_items_markdown_escapes() -> None:
     payload = {
         "items": [
             {
+                "record_type": "action_item",
                 "text": "Fix [bug] _now_",
                 "owner": None,
                 "deadline": None,
@@ -204,7 +214,7 @@ def test_render_action_items_markdown_escapes() -> None:
                 "confidence": 0.7,
             }
         ],
-        "provenance": {"prompt_version": "1", "model": "test"},
+        "provenance": {"prompt_version": "5", "model": "test"},
     }
     md = render_action_items_markdown(payload)
     assert "\\[bug\\]" in md

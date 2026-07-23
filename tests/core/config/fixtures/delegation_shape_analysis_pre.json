@@ -221,6 +221,7 @@
   "interaction_response_threshold": 2.0,
   "interaction_time_window": 30.0,
   "llm_action_items": {
+    "coerce_v1_artifacts": false,
     "effort": "high"
   },
   "llm_custom_qa": {

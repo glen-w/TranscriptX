@@ -89,7 +89,7 @@ If a selected model is missing at generate time, the LLM consumer fails with a c
 | `narrative_summary` | Grounded executive narrative from deterministic `summary` output (temperature 0.0, JSON) | `summary` chain (highlights + upstream) |
 | `llm_summary` | Abstractive transcript summary from readable transcript text (plain text, `default_temperature`) | segments only |
 | `llm_speaker_summary` | Abstractive summary per **named** speaker from that speaker's utterances only (plain text, `default_temperature`) | segments + speaker labels |
-| `llm_action_items` | Structured action items (owner, deadline, status, quote) from transcript text (strict JSON, `default_temperature`) | segments + speaker labels |
+| `llm_action_items` | Structured meeting extracts (decision / commitment / action_item / proposal / open_question) with owner, deadline, status, quote (strict JSON, `default_temperature`) | segments + speaker labels |
 | `llm_custom_qa` | Answers to user-defined questions with grounded citations (strict JSON envelope+rows; empty questions succeed without Ollama) | segments |
 | `chart_descriptions` | Finalize-phase per-chart LLM narratives (temperature 0.0, JSON). Excluded from DAG execution; run by the run-finalization coordinator after all charts exist | selected + `analysis.chart_descriptions.enabled` + LLM enabled |
 
@@ -238,46 +238,54 @@ library; `[]` → empty-run success (no Ollama); non-empty list → request.
 
 ## `llm_action_items` effort
 
-The setting **`analysis.llm_action_items.effort`** controls action-item extraction effort for the **`llm_action_items` module only**. It uses the same builtin tiers as `llm_summary` (`low`, `medium`, `high`, `max`; default **`high`** because extraction is completeness-oriented across long meetings).
+The setting **`analysis.llm_action_items.effort`** controls meeting-extract effort for the **`llm_action_items` module only**. It uses the same builtin tiers as `llm_summary` (`low`, `medium`, `high`, `max`; default **`high`** because extraction is completeness-oriented across long meetings).
 
 ```json
 {
   "analysis": {
     "llm_action_items": {
-      "effort": "high"
+      "effort": "high",
+      "coerce_v1_artifacts": false
     }
   }
 }
 ```
 
+`coerce_v1_artifacts` (default **false**): when true, in-memory coerce legacy v1 artifacts to `record_type=action_item` with `provenance.compat=v1_coerced` for presentation/group aggregation. Without it, mixed-version group members fail explicitly and UI shows a legacy v1 path — never as native v2. Does not rewrite on-disk artifacts.
+
 **Artifacts:**
 
 - `llm_action_items/data/global/{base}_llm_action_items.json` (+ `.md`)
 
-### Output contract
+### Output contract (v2)
 
-`schema_id`: `transcriptx.llm_action_items.v1`
+`schema_id`: `transcriptx.llm_action_items.v2`  
+`render_contract_id`: `transcriptx.llm_action_items.render.v2`  
+`module_version`: `2` · `prompt_version`: `5`
 
 | Field | Notes |
 |-------|-------|
-| `items[]` | Ordered list; empty list is a successful result |
-| `items[].text` | Non-empty trimmed action description |
-| `items[].owner` / `deadline` | Verbatim transcript wording or `null` (no entity/date normalisation in v1) |
-| `items[].status` | `open` \| `done` \| `unclear` — `done` only when completion is explicit; do not infer from tense alone |
+| `items[]` | Ordered meeting extracts; empty list is a successful result |
+| `items[].record_type` | `decision` \| `commitment` \| `action_item` \| `proposal` \| `open_question` (missing/null defaults to `action_item`; unknown strings drop the record) |
+| `items[].text` | Non-empty trimmed description |
+| `items[].owner` / `deadline` | Verbatim transcript wording or `null` |
+| `items[].status` | `open` \| `done` \| `unclear`. For `decision` / `proposal` / `open_question`, `done` requires lexicon evidence in text/quote |
 | `items[].quote` | Exact transcript substring after whitespace normalisation, or `null` |
 | `items[].confidence` | Finite float in `[0, 1]` |
-| `diagnostics` | `items_parsed`, `items_grounded`, `items_dropped`, `quotes_nulled` |
-| `provenance` | Includes `module_version`, `prompt_version`, `cache_key`, effort/runtime, input coverage |
+| `diagnostics` | `items_raw`, `items_parsed_valid`, `record_type_defaulted`, `items_invalid_dropped`, `status_unsupported_dropped`, `items_ungrounded_dropped`, `quotes_nulled`, `items_duplicate_removed`, `items_truncated`, `output_truncated`, `counts_by_type` (all five types), `items_committed` |
+| `provenance` | Includes `module_version`, `prompt_version`, `schema_id`, `render_contract_id`, `cache_key`, effort/runtime, input coverage |
 
-Malformed model JSON, unknown keys, or invalid fields fail with `llm_invalid_response` — no partially trusted items are stored. Ungrounded quotes are set to `null` (confidence reduced); items that cannot be grounded on text or quote are dropped. Deduplication prefers grounded quotes and higher confidence; ordering uses transcript occurrence of quote/text with stable model-order fallback.
+Top-level malformed JSON / unknown top-level keys / oversize raw output fail with `llm_invalid_response`. **Per-record isolation:** invalid items are dropped with diagnostics so sibling valid extracts survive. Grounding is record-type agnostic and never rewrites `record_type` / `text` / `owner` / `deadline` / `status`. Bounds: max **48** total / **16** per type after validation. Markdown uses section labels from `RECORD_TYPE_LABELS` and always includes **AI-generated draft. Human review required.**
 
-Identity for future caching is a distinct namespace (`provenance.cache_key`); it is not shared with `llm_summary` artifacts.
+Group aggregation `schema_version`: **2** with fixed `count_<record_type>` and `status_*` session columns.
+
+Identity for caching is a distinct namespace (`provenance.cache_key`); schema/prompt/module bumps invalidate the key.
 
 ### UI and export
 
-- **Insights** layout (`default`, `executive`): block `llm_action_items_block` renders Markdown or a structured table.
-- **Overview** module metrics: summary extractor surfaces item counts by status.
-- **Zip export**: JSON/MD are included in module/data exports; `index.html` lists an **Action Items** summary section (see `resolve_export_text_summaries` in `export_index.py`).
+- **Insights** layout (`default`, `executive`): block `llm_action_items_block` renders sectioned Markdown or a typed table titled **Meeting extracts**.
+- **Overview** module metrics: summary extractor surfaces meeting-extract counts by type and status.
+- **Zip export**: JSON/MD are included in module/data exports; `index.html` lists a **Meeting extracts** summary section (see `resolve_export_text_summaries` in `export_index.py`).
 
 ## Truncation
 
