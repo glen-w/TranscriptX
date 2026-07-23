@@ -86,6 +86,23 @@ GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
         }
     ),
     "tics": frozenset({"total_tics"}),
+    "epistemic_markers": frozenset(
+        {
+            "total_marker_hits",
+            "token_count",
+            "hits_per_100_tokens",
+            "hedge_share",
+            "booster_share",
+        }
+    ),
+    "politeness": frozenset(
+        {
+            "total_marker_hits",
+            "token_count",
+            "hits_per_100_tokens",
+            "soft_request_ratio",
+        }
+    ),
     "llm_action_items": frozenset({"item_count"}),
     "insights": frozenset(
         {"theme_count", "recurring_idea_count", "notable_moment_count"}

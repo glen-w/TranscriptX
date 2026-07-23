@@ -1,0 +1,61 @@
+{
+  "_canonical_rows": [],
+  "_pending_projections": [],
+  "all_scores": {},
+  "combined_rows": [],
+  "contextual_all": {},
+  "contextual_examples": {},
+  "emotions": {},
+  "global_stats": {},
+  "lexicon_digest": "3cf238056cde91a807e698160c5191b44da06bdb175dd4ea83653b47abfcd001",
+  "module_id": "emotion",
+  "nrc_scores": {},
+  "nrclex_version": "3.0.0",
+  "ordered_segment_ids": [],
+  "preflight_details": {
+    "message": "duplicate segment_id: dup"
+  },
+  "preflight_reason": "invalid_segment_ids",
+  "projection_fields": [
+    "segment_id",
+    "evaluation_state",
+    "nrc_emotion",
+    "nrc_emotion_coverage",
+    "emotion_scored_text_hash",
+    "canonical_ref"
+  ],
+  "run_status": "failed",
+  "runtime_metadata": {
+    "activation": "lexical",
+    "batch_size": null,
+    "device_class": null,
+    "effective_max_length": null,
+    "effective_threshold": null,
+    "label_map_hash": null,
+    "language_policy_version": "language_policy_v1",
+    "lexicon_digest": "3cf238056cde91a807e698160c5191b44da06bdb175dd4ea83653b47abfcd001",
+    "long_text_policy_version": null,
+    "model_id": null,
+    "model_revision": null,
+    "nrclex_version": "3.0.0",
+    "numerical_dtype": null,
+    "padding_policy_version": null,
+    "threshold_profile_version": null,
+    "tokenizer_id": null,
+    "tokenizer_revision": null,
+    "torch_version": "2.2.2",
+    "transformers_version": "4.53.2"
+  },
+  "schema_version": "emotion_result_schema_v2",
+  "segments_empty": 0,
+  "segments_failed": 0,
+  "segments_scored": 0,
+  "segments_skipped": 0,
+  "semantics_version": "emotion_lexical_v2",
+  "speaker_stats": {},
+  "ui_copy": "Emotion-associated vocabulary (NRC lexicon), not a definitive inference of speaker emotion.",
+  "usable_output": false,
+  "warnings": [
+    "invalid_segment_ids"
+  ]
+}

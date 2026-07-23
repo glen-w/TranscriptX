@@ -12,6 +12,96 @@ from transcriptx.web.cache_helpers import (
 )
 
 
+def _render_speaker_profile_ops() -> None:
+    st.subheader("Speaker profile operations")
+    try:
+        from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
+        from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
+        from transcriptx.core.speaker_profiles.service import SpeakerProfileService
+        from transcriptx.core.speaker_profiles.store_io import ensure_layout
+        from transcriptx.web.speaker_profile_signals import (
+            consume_cache_invalidation_signal,
+        )
+    except Exception as e:
+        st.caption(f"Speaker profile diagnostics unavailable: {e}")
+        return
+
+    root = speaker_profiles_dir()
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        ensure_layout(root)
+        report = run_integrity_scan(root)
+    except Exception as e:
+        st.error(f"Could not scan speaker profile integrity: {e}")
+        return
+
+    if report.ok and not report.blocking_details and not report.corrupt_operations:
+        st.caption("No blocking speaker-profile operations or corrupt op files.")
+        return
+
+    if not report.ok:
+        st.warning(
+            "Speaker profile integrity is not ok. "
+            f"Blocking ops={len(report.blocking_operations)}, "
+            f"corrupt profiles/links/events/ops="
+            f"{len(report.corrupt_profiles)}/"
+            f"{len(report.corrupt_links)}/"
+            f"{len(report.corrupt_events)}/"
+            f"{len(report.corrupt_operations)}."
+        )
+
+    if report.corrupt_operations:
+        st.markdown("**Corrupt operation files**")
+        for path in report.corrupt_operations:
+            st.code(path, language=None)
+
+    if not report.blocking_details:
+        return
+
+    st.markdown("**Blocking operations**")
+    svc = SpeakerProfileService()
+    for detail in report.blocking_details:
+        with st.container(border=True):
+            st.markdown(f"**Operation** `{detail.operation_id}`")
+            st.caption(
+                f"recovery_class=`{detail.recovery_class}` · phase=`{detail.phase}`"
+            )
+            if detail.affected_relpaths:
+                st.code("\n".join(detail.affected_relpaths), language=None)
+            if detail.profile_ids:
+                st.caption("Profiles: " + ", ".join(detail.profile_ids))
+            if detail.link_file_keys:
+                st.caption("Link keys: " + ", ".join(detail.link_file_keys))
+            if st.button(
+                "Attempt safe recovery",
+                key=f"diag_recover_{detail.operation_id}",
+                type="primary",
+            ):
+                try:
+                    result = svc.recover_operation(detail.operation_id)
+                    consume_cache_invalidation_signal(result.cache_signal)
+                    rc = result.report.recovery_class
+                    if rc == "complete":
+                        st.success(f"Recovery complete for `{detail.operation_id}`.")
+                    elif rc == "proven_aborted":
+                        st.info(
+                            f"Operation `{detail.operation_id}` proven aborted."
+                        )
+                    elif rc == "needs_repair" or result.report.blocking:
+                        st.warning(
+                            f"Operation `{detail.operation_id}` still needs_repair "
+                            f"(class=`{rc}`)."
+                        )
+                    else:
+                        st.warning(
+                            f"Recovery finished with class `{rc}` for "
+                            f"`{detail.operation_id}`."
+                        )
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Recovery failed: {e}")
+
+
 def _render_rename_repair_section() -> None:
     st.subheader("Incomplete renames")
     try:
@@ -85,6 +175,7 @@ def render_diagnostics_page() -> None:
             st.code(line, language=None)
 
     _render_rename_repair_section()
+    _render_speaker_profile_ops()
 
     st.subheader("Environment")
     st.write(

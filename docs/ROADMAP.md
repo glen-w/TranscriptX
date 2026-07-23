@@ -172,7 +172,7 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 
 **Goal:** Richer analysis and tooling without blocking beta or stability.
 
-- **Longitudinal speaker tracking v1 and v2** — including **web visualization** (speaker-over-time charts, cross-session views). Richer speaker-over-time and DB-backed analytics views are planned.
+- **Longitudinal speaker tracking v1 and v2** — **v1 identity store + Speakers UI charts (Phase 1.5) shipped**. Richer cross-session / DB-backed analytics views remain planned.
 - Emotion family deepen (Phase 5 calibration for `contextual_emotion` / `fine_grained_emotion`; tension metrics; divergence summaries) — not “converge into one emotion module”
 - NER-driven insight (entity–sentiment, concordance, timelines)
 - Interaction and network analysis (graphs, network outputs); turn-taking **equity pack already shipped** on `interactions`
@@ -189,7 +189,7 @@ The following are explicitly **not** part of the beta-ready scope; they are plan
 
 - **WhisperX Docker GUI orchestration** (+ host HTTP transcribe service and orchestrated Transcribe → Import → Analyze UI) — see Phase 2 transcription architecture above.
 - **OpenAI and other remote LLM providers** — Ollama only until then.
-- **Longitudinal speaker tracking / Speakers UI** — speaker-over-time charts, cross-session views, restored Speakers / Speaker Detail pages, and related extended speaker features.
+- **Longitudinal speaker tracking / Speakers UI** — Phase 1.5 Speakers directory/detail + over-time charts shipped; deferred remainder: voice suggested/rejected links, SQLite/DB analytics views, group gallery keyed by `profile_id`.
 - **Ask-this-transcript (viewer GUI)** — optional chat panel over the loaded run (Ollama + existing prompt budgeting / Search jump). **Not** a Retrievia-style RAG + streaming ReAct product; that remains competitive awareness only ([competitive inspiration W1](dev/competitive_inspiration_2026-07-22.md)). Prefer local stuffed-context or lexical-retrieve-then-LLM with segment citations.
 - **GPU acceleration & first-class native install** — MPS on native Mac; CUDA on Linux Docker/native; documented install parity — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term).
 - **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export Jinja2/Artifact Protocol follow-ups, optional config **1.9** structural split. **Shipped recently (not eng blockers):** BERTopic re-enabled (default install for now); interactions **equity pack**; `transcript_quality` (ASR confidence); emotion-family classifier modules; group LLM synthesis. Public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
@@ -208,7 +208,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.6.x — current packaging line (**0.6.4**); Wave 0 eng criteria closed; Top-3 eng programs Done; Wave 1/2 product items partial (B1/B3/B12/**B9** shipped; **B6** next); public tags still via release governance evidence
+- **M3:** 0.7.x — current packaging line (**0.7.1**); Wave 0 eng criteria closed; Top-3 eng programs Done; Wave 1/2 product items partial (B1/B3/B12/**B9**/B6/B7 shipped; Speakers Phase 1.5 shipped); public tags still via release governance evidence
 
 ---
 

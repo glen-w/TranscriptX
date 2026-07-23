@@ -1,0 +1,1 @@
+"""Emotion-family characterization package."""

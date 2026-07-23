@@ -301,6 +301,17 @@ def test_group_chart_registry_expected_generator_types() -> None:
         ), aid
 
     assert isinstance(GROUP_CHART_REGISTRY["tics"], TicsGroupChartGenerator)
+    from transcriptx.core.analysis.group_charts.epistemic_markers_group_charts import (
+        EpistemicMarkersGroupChartGenerator,
+    )
+    from transcriptx.core.analysis.group_charts.politeness_group_charts import (
+        PolitenessGroupChartGenerator,
+    )
+
+    assert isinstance(
+        GROUP_CHART_REGISTRY["epistemic_markers"], EpistemicMarkersGroupChartGenerator
+    )
+    assert isinstance(GROUP_CHART_REGISTRY["politeness"], PolitenessGroupChartGenerator)
 
 
 def test_ner_pooled_can_generate_requires_ner_pooled_payload() -> None:

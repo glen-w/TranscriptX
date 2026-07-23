@@ -36,6 +36,8 @@ def test_allowlist_map_keys_match_curated_generic_aggs() -> None:
             "understandability",
             "tics",
             "lexical_diversity",
+            "epistemic_markers",
+            "politeness",
             "simplified_transcript",
             "llm_action_items",
             "insights",

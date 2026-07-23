@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from transcriptx.core.speaker_profiles.aggregates import list_profiles
 from transcriptx.core.speaker_profiles.hashing import sha256_file
@@ -14,9 +15,38 @@ from transcriptx.core.speaker_profiles.layout import (
     operations_dir,
     profiles_dir,
 )
-from transcriptx.core.speaker_profiles.models import SpeakerProfileLinkV1
-from transcriptx.core.speaker_profiles.recovery import list_operations
+from transcriptx.core.speaker_profiles.models import (
+    SpeakerProfileEventV1,
+    SpeakerProfileLinkV1,
+    SpeakerProfileOperationV1,
+    SpeakerProfileV1,
+)
+from transcriptx.core.speaker_profiles.operations import relative_link_path, relative_profile_path
+from transcriptx.core.speaker_profiles.recovery import (
+    affected_relpaths,
+    classify_operation,
+    list_operations_detailed,
+)
 from transcriptx.core.speaker_profiles.store_io import parse_model
+
+
+RecoveryClass = Literal[
+    "complete",
+    "proven_aborted",
+    "partial",
+    "ambiguous",
+    "needs_repair",
+]
+
+
+@dataclass(frozen=True)
+class BlockingOperationInfo:
+    operation_id: str
+    recovery_class: RecoveryClass
+    phase: str
+    affected_relpaths: tuple[str, ...]
+    profile_ids: tuple[str, ...]
+    link_file_keys: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -26,8 +56,12 @@ class IntegrityReport:
     events_scanned: int
     operations_scanned: int
     link_key_mismatches: tuple[str, ...]
+    corrupt_profiles: tuple[str, ...]
     corrupt_links: tuple[str, ...]
+    corrupt_events: tuple[str, ...]
+    corrupt_operations: tuple[str, ...]
     blocking_operations: tuple[str, ...]
+    blocking_details: tuple[BlockingOperationInfo, ...]
     duplicate_link_keys: tuple[str, ...]
     ok: bool
 
@@ -52,23 +86,62 @@ def reverse_lookup_link(
     return ReverseLookupStats(examined_paths=1, found=path.is_file())
 
 
+def _entity_ids_from_relpaths(
+    relpaths: set[str],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    profile_ids: list[str] = []
+    link_keys: list[str] = []
+    for rel in sorted(relpaths):
+        if rel.startswith("profiles/") and rel.endswith(".speaker_profile.json"):
+            stem = Path(rel).name[: -len(".speaker_profile.json")]
+            profile_ids.append(stem)
+        elif rel.startswith("links/") and rel.endswith(".speaker_link.json"):
+            stem = Path(rel).name[: -len(".speaker_link.json")]
+            link_keys.append(stem)
+    return tuple(profile_ids), tuple(link_keys)
+
+
 def run_integrity_scan(root: Path) -> IntegrityReport:
     root = Path(root)
-    profiles = list(profiles_dir(root).glob("*.speaker_profile.json")) if profiles_dir(root).exists() else []
-    link_paths = list(links_dir(root).glob("*.speaker_link.json")) if links_dir(root).exists() else []
-    event_paths = list(events_dir(root).glob("*.speaker_event.json")) if events_dir(root).exists() else []
-    op_paths = list(operations_dir(root).glob("*.op.json")) if operations_dir(root).exists() else []
+    profiles = (
+        list(profiles_dir(root).glob("*.speaker_profile.json"))
+        if profiles_dir(root).exists()
+        else []
+    )
+    link_paths = (
+        list(links_dir(root).glob("*.speaker_link.json"))
+        if links_dir(root).exists()
+        else []
+    )
+    event_paths = (
+        list(events_dir(root).glob("*.speaker_event.json"))
+        if events_dir(root).exists()
+        else []
+    )
+    op_paths = (
+        list(operations_dir(root).glob("*.op.json"))
+        if operations_dir(root).exists()
+        else []
+    )
 
     mismatches: list[str] = []
-    corrupt: list[str] = []
+    corrupt_profiles: list[str] = []
+    corrupt_links: list[str] = []
+    corrupt_events: list[str] = []
     seen_keys: dict[str, str] = {}
     duplicates: list[str] = []
+
+    for path in profiles:
+        try:
+            parse_model(SpeakerProfileV1, path)
+        except Exception:
+            corrupt_profiles.append(str(path))
 
     for path in link_paths:
         try:
             link = parse_model(SpeakerProfileLinkV1, path)
         except Exception:
-            corrupt.append(str(path))
+            corrupt_links.append(str(path))
             continue
         expected = link_file_key(link.managed_transcript_id, link.local_speaker_key)
         stem = path.name[: -len(".speaker_link.json")]
@@ -79,25 +152,61 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
         else:
             seen_keys[expected] = str(path)
 
-    blocking = [
-        op.operation_id
-        for op in list_operations(root)
-        if op.phase not in {"complete"}
-        and not (
-            op.phase == "failed"
-            and (op.receipt or {}).get("abort_class") == "proven_aborted"
-        )
-    ]
+    for path in event_paths:
+        try:
+            parse_model(SpeakerProfileEventV1, path)
+        except Exception:
+            corrupt_events.append(str(path))
 
-    ok = not (mismatches or corrupt or duplicates or blocking)
+    ops_result = list_operations_detailed(root)
+    corrupt_operations = tuple(ops_result.corrupt_paths)
+
+    blocking_details: list[BlockingOperationInfo] = []
+    blocking_ids: list[str] = []
+    for op in ops_result.operations:
+        if op.phase == "complete":
+            continue
+        receipt = op.receipt or {}
+        if op.phase == "failed" and receipt.get("abort_class") == "proven_aborted":
+            continue
+        report = classify_operation(root, op)
+        if not report.blocking:
+            continue
+        rels = affected_relpaths(op)
+        profile_ids, link_keys = _entity_ids_from_relpaths(rels)
+        blocking_ids.append(op.operation_id)
+        blocking_details.append(
+            BlockingOperationInfo(
+                operation_id=op.operation_id,
+                recovery_class=report.recovery_class,
+                phase=op.phase,
+                affected_relpaths=tuple(sorted(rels)),
+                profile_ids=profile_ids,
+                link_file_keys=link_keys,
+            )
+        )
+
+    ok = not (
+        mismatches
+        or corrupt_profiles
+        or corrupt_links
+        or corrupt_events
+        or corrupt_operations
+        or duplicates
+        or blocking_ids
+    )
     return IntegrityReport(
         profiles_scanned=len(profiles),
         links_scanned=len(link_paths),
         events_scanned=len(event_paths),
         operations_scanned=len(op_paths),
         link_key_mismatches=tuple(mismatches),
-        corrupt_links=tuple(corrupt),
-        blocking_operations=tuple(blocking),
+        corrupt_profiles=tuple(corrupt_profiles),
+        corrupt_links=tuple(corrupt_links),
+        corrupt_events=tuple(corrupt_events),
+        corrupt_operations=corrupt_operations,
+        blocking_operations=tuple(blocking_ids),
+        blocking_details=tuple(blocking_details),
         duplicate_link_keys=tuple(sorted(set(duplicates))),
         ok=ok,
     )
@@ -134,3 +243,30 @@ def scan_bound_for_listing(root: Path) -> tuple[int, int]:
         if sha256_file(path) is not None:
             parsed += 1
     return (len(files), parsed)
+
+
+def intersected_entities(
+    report: IntegrityReport,
+) -> tuple[set[str], set[str]]:
+    """Profile ids and link file keys intersected by blocking operations."""
+    profiles: set[str] = set()
+    links: set[str] = set()
+    for detail in report.blocking_details:
+        profiles.update(detail.profile_ids)
+        links.update(detail.link_file_keys)
+    return profiles, links
+
+
+# Re-export helpers used by callers that previously imported relative paths here.
+__all__ = [
+    "BlockingOperationInfo",
+    "IntegrityReport",
+    "ReverseLookupStats",
+    "intersected_entities",
+    "rebuild_freshness_token",
+    "reverse_lookup_link",
+    "run_integrity_scan",
+    "scan_bound_for_listing",
+    "relative_link_path",
+    "relative_profile_path",
+]

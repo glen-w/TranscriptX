@@ -1,0 +1,30 @@
+{
+  "analysis.politeness.enabled_categories": {
+    "key": "analysis.politeness.enabled_categories",
+    "path": "analysis.politeness.enabled_categories",
+    "type": "list",
+    "default": [],
+    "min": null,
+    "max": null,
+    "choices": null,
+    "description": "",
+    "scope": "project",
+    "sensitivity": "normal",
+    "category": "analysis",
+    "advanced": false
+  },
+  "analysis.politeness.min_tokens_for_rates": {
+    "key": "analysis.politeness.min_tokens_for_rates",
+    "path": "analysis.politeness.min_tokens_for_rates",
+    "type": "int",
+    "default": 20,
+    "min": 1.0,
+    "max": null,
+    "choices": null,
+    "description": "",
+    "scope": "project",
+    "sensitivity": "normal",
+    "category": "analysis",
+    "advanced": false
+  }
+}

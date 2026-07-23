@@ -72,6 +72,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "semantic_similarity_v2",
             "understandability",
             "lexical_diversity",
+            "epistemic_markers",
         ),
     ),
     ModuleUIGroup(
@@ -84,6 +85,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "qa_analysis",
             "echoes",
             "contagion",
+            "politeness",
         ),
     ),
         ModuleUIGroup(

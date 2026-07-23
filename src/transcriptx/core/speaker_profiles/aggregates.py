@@ -107,6 +107,9 @@ class ProfileListItem:
     updated_at: str
     link_count: int
     needs_repair: bool = False
+    aliases: tuple[str, ...] = ()
+    accent_color: str | None = None
+    incomplete: bool = False
 
 
 def compute_occurrence_metrics(
@@ -158,6 +161,52 @@ def _is_ignored(transcript_path: Path, local_speaker_key: str) -> bool:
     return local_speaker_key in ignored
 
 
+def _transcript_duration_denominator(
+    segments: Sequence[Mapping[str, Any]],
+) -> float | None:
+    total = 0.0
+    any_valid = False
+    for segment in segments:
+        dur = valid_segment_duration(segment)
+        if dur is not None:
+            total += float(dur)
+            any_valid = True
+    return total if any_valid else None
+
+
+def resolve_appearance_flag(
+    *,
+    repair_required: bool = False,
+    missing_source: bool = False,
+    collision: bool = False,
+    needs_review: bool = False,
+    ignored: bool = False,
+) -> AppearanceFlag:
+    """Single-winner flag precedence (higher wins)."""
+    if repair_required:
+        return "repair_required"
+    if missing_source:
+        return "missing_source"
+    if collision:
+        return "collision"
+    if needs_review:
+        return "needs_review"
+    if ignored:
+        return "ignored"
+    return "ok"
+
+
+def headline_eligible(row: AppearanceRow, *, include_ignored: bool) -> bool:
+    """Public predicate shared by aggregates and time-series builders."""
+    if row.flag in {"needs_review", "missing_source", "collision", "repair_required"}:
+        return False
+    if row.ignored and not include_ignored:
+        return False
+    if row.flag == "ignored" and not include_ignored:
+        return False
+    return True
+
+
 def build_appearance_row(
     *,
     profile: SpeakerProfileV1,
@@ -165,15 +214,25 @@ def build_appearance_row(
     resolver: ManagedTranscriptResolver,
     include_ignored: bool = False,
 ) -> AppearanceRow:
+    del include_ignored  # flag construction is independent; eligibility uses it later
     key = link_file_key(link.managed_transcript_id, link.local_speaker_key)
-    flag: AppearanceFlag = "ok"
     ignored = False
     current_relpath: str | None = None
     appearance_date: date | None = None
     metrics = OccurrenceMetrics(
-        words=0, turns=0, duration_seconds=None,
-        avg_turn_duration=None, median_turn_duration=None, wpm=None,
+        words=0,
+        turns=0,
+        duration_seconds=None,
+        avg_turn_duration=None,
+        median_turn_duration=None,
+        wpm=None,
     )
+    speaking_share = None
+    speaking_share_basis: SpeakingShareBasis = "unavailable"
+    repair_required = False
+    missing_source = False
+    collision = False
+    needs_review = False
     try:
         resolved = resolver.resolve(link.managed_transcript_id)
         current_relpath = resolved.current_relpath
@@ -187,23 +246,30 @@ def build_appearance_row(
             for s in segments
             if normalize_diarized_id(s.get("speaker")) == link.local_speaker_key
         ]
-        # Collision among raw forms for this key
         raws = {str(s.get("speaker")).strip() for s in keyed if s.get("speaker")}
-        if len(raws) > 1:
-            flag = "collision"
+        collision = len(raws) > 1
         fp = compute_occurrence_fingerprint(keyed)
-        if fp != link.occurrence_fingerprint:
-            flag = "needs_review"
+        needs_review = fp != link.occurrence_fingerprint
         ignored = _is_ignored(resolved.transcript_path, link.local_speaker_key)
-        if ignored and flag == "ok":
-            flag = "ignored"
         metrics = compute_occurrence_metrics(keyed)
+        denom = _transcript_duration_denominator(segments)
+        if metrics.duration_seconds is not None and denom is not None and denom > 0:
+            speaking_share = metrics.duration_seconds / denom
+            speaking_share_basis = "duration"
     except UnresolvedManagedTranscriptError:
-        flag = "missing_source"
+        missing_source = True
     except (RepairRequiredError, CorruptLinkError):
-        flag = "repair_required"
+        repair_required = True
     except Exception:
-        flag = "missing_source"
+        missing_source = True
+
+    flag = resolve_appearance_flag(
+        repair_required=repair_required,
+        missing_source=missing_source,
+        collision=collision,
+        needs_review=needs_review,
+        ignored=ignored,
+    )
 
     return AppearanceRow(
         profile_id=profile.profile_id,
@@ -217,17 +283,9 @@ def build_appearance_row(
         flag=flag,
         ignored=ignored,
         metrics=metrics,
+        speaking_share=speaking_share,
+        speaking_share_basis=speaking_share_basis,
     )
-
-
-def _headline_eligible(row: AppearanceRow, *, include_ignored: bool) -> bool:
-    if row.flag in {"needs_review", "missing_source", "collision", "repair_required"}:
-        return False
-    if row.ignored and not include_ignored:
-        return False
-    if row.flag == "ignored" and not include_ignored:
-        return False
-    return True
 
 
 def aggregate_profile(
@@ -243,36 +301,19 @@ def aggregate_profile(
         )
         for link in links
     ]
-    headline = [r for r in rows if _headline_eligible(r, include_ignored=include_ignored)]
+    headline = [r for r in rows if headline_eligible(r, include_ignored=include_ignored)]
     total_duration = 0.0
     for r in headline:
         if r.metrics.duration_seconds is not None:
             total_duration += r.metrics.duration_seconds
-    # Denominator for speaking_share: sum of headline durations across this profile's
-    # appearances only when computing per-appearance shares against profile total.
-    # Profile-level speaking_share vs corpus requires corpus denom; here we expose
-    # share of each appearance within profile headline duration, and profile-level
-    # basis unavailable when total_duration == 0.
     enriched: list[AppearanceRow] = []
     headline_turns = sum(h.metrics.turns for h in headline)
     for r in rows:
-        share = None
-        basis: SpeakingShareBasis = "unavailable"
         turn_share = None
-        if _headline_eligible(r, include_ignored=include_ignored):
-            if total_duration > 0 and r.metrics.duration_seconds is not None:
-                share = r.metrics.duration_seconds / total_duration
-                basis = "duration"
-            if headline_turns > 0:
-                turn_share = r.metrics.turns / headline_turns
-        enriched.append(
-            replace(
-                r,
-                speaking_share=share,
-                speaking_share_basis=basis,
-                turn_share=turn_share,
-            )
-        )
+        if headline_eligible(r, include_ignored=include_ignored) and headline_turns > 0:
+            turn_share = r.metrics.turns / headline_turns
+        # speaking_share already transcript-relative from build_appearance_row
+        enriched.append(replace(r, turn_share=turn_share))
 
     hw = sum(r.metrics.words for r in headline)
     ht = sum(r.metrics.turns for r in headline)
@@ -298,13 +339,15 @@ def aggregate_profile(
         headline_turns=ht,
         headline_duration_seconds=total_duration,
         headline_speaking_share=None,
-        speaking_share_basis="duration" if total_duration > 0 else "unavailable",
+        speaking_share_basis="unavailable",
         headline_turn_share=None,
         appearance_count=len(enriched),
         headline_appearance_count=len(headline),
         pending_review_count=sum(1 for r in enriched if r.flag == "needs_review"),
         missing_source_count=sum(1 for r in enriched if r.flag == "missing_source"),
-        ignored_linked_count=sum(1 for r in enriched if r.ignored or r.flag == "ignored"),
+        ignored_linked_count=sum(
+            1 for r in enriched if r.ignored or r.flag == "ignored"
+        ),
         collision_count=sum(1 for r in enriched if r.flag == "collision"),
         repair_required_count=sum(1 for r in enriched if r.flag == "repair_required"),
         appearances=tuple(enriched),
@@ -313,37 +356,64 @@ def aggregate_profile(
 
 
 def list_profile_links(profile_id: str, *, root: Path) -> list[SpeakerProfileLinkV1]:
+    return list(_scan_links(root).links_by_profile.get(profile_id, ()))
+
+
+@dataclass(frozen=True)
+class LinkScanResult:
+    links_by_profile: dict[str, list[SpeakerProfileLinkV1]]
+    corrupt_paths: tuple[str, ...]
+    all_links: tuple[SpeakerProfileLinkV1, ...]
+
+
+def _scan_links(root: Path) -> LinkScanResult:
     links_root = links_dir(root)
     if not links_root.is_dir():
-        return []
-    out: list[SpeakerProfileLinkV1] = []
+        return LinkScanResult(links_by_profile={}, corrupt_paths=(), all_links=())
+    out: dict[str, list[SpeakerProfileLinkV1]] = {}
+    all_links: list[SpeakerProfileLinkV1] = []
+    corrupt: list[str] = []
     for path in sorted(links_root.glob("*.speaker_link.json")):
         try:
             link = parse_model(SpeakerProfileLinkV1, path)
         except Exception:
+            corrupt.append(str(path))
             continue
-        if link.profile_id == profile_id:
-            out.append(link)
-    return out
+        all_links.append(link)
+        out.setdefault(link.profile_id, []).append(link)
+    return LinkScanResult(
+        links_by_profile=out,
+        corrupt_paths=tuple(corrupt),
+        all_links=tuple(all_links),
+    )
 
 
 def list_profiles(*, root: Path) -> list[ProfileListItem]:
-    from transcriptx.core.speaker_profiles.recovery import blocking_operations_for_path
+    """Legacy listing helper — prefer AggregationSnapshot for Speakers UI."""
     from transcriptx.core.speaker_profiles.operations import relative_profile_path
+    from transcriptx.core.speaker_profiles.recovery import blocking_operations_index
 
     pref = profiles_dir(root)
     if not pref.is_dir():
         return []
+    link_scan = _scan_links(root)
+    blocked_by_path = blocking_operations_index(root)
+    incomplete = bool(link_scan.corrupt_paths)
     items: list[ProfileListItem] = []
     for path in sorted(pref.glob("*.speaker_profile.json")):
         try:
             profile = parse_model(SpeakerProfileV1, path)
         except Exception:
+            incomplete = True
             continue
-        links = list_profile_links(profile.profile_id, root=root)
-        blocked = blocking_operations_for_path(
-            root, relative_profile_path(profile.profile_id)
-        )
+        links = link_scan.links_by_profile.get(profile.profile_id, ())
+        blocked = blocked_by_path.get(relative_profile_path(profile.profile_id), ())
+        for link in links:
+            key = link_file_key(link.managed_transcript_id, link.local_speaker_key)
+            from transcriptx.core.speaker_profiles.operations import relative_link_path
+
+            if blocked_by_path.get(relative_link_path(key)):
+                blocked = list(blocked) + blocked_by_path[relative_link_path(key)]
         items.append(
             ProfileListItem(
                 profile_id=profile.profile_id,
@@ -353,6 +423,9 @@ def list_profiles(*, root: Path) -> list[ProfileListItem]:
                 updated_at=profile.updated_at,
                 link_count=len(links),
                 needs_repair=bool(blocked),
+                aliases=tuple(profile.aliases),
+                accent_color=profile.accent_color,
+                incomplete=incomplete,
             )
         )
     return items

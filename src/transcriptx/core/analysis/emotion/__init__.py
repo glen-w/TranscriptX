@@ -34,7 +34,6 @@ from transcriptx.core.analysis.emotion_family.fingerprints import (
     build_compatibility_payload,
     build_runtime_metadata,
     compatibility_fingerprint,
-    segment_text_hash,
     speaker_identity_digest,
     text_source_digest,
     timeline_identity_digest,
@@ -44,9 +43,10 @@ from transcriptx.core.analysis.emotion_family.cache_validation import (
 )
 from transcriptx.core.analysis.emotion_family.language import (
     LANGUAGE_POLICY_V1,
-    extract_transcript_metadata,
     is_english,
-    resolve_segment_language,
+)
+from transcriptx.core.analysis.emotion_family.work_items import (
+    build_segment_work_items,
 )
 from transcriptx.core.analysis.emotion_family.persist import (
     persist_canonical_then_enrich,
@@ -89,11 +89,6 @@ class EmotionAnalysis(AnalysisModule):
         self._nrclex_cls = None
 
     def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
-        from transcriptx.core.utils.speaker_extraction import (
-            extract_speaker_info,
-            get_speaker_display_name,
-        )
-
         artifact_generation_id = uuid.uuid4().hex
         preflight = run_lexical_preflight()
         if not preflight.ok:
@@ -228,7 +223,8 @@ class EmotionAnalysis(AnalysisModule):
             aggregation_settings=aggregation_settings,
         )
 
-        meta = extract_transcript_metadata(segments)
+        # Work items only after cache lookup (preserve call-order / failure timing).
+        work, assumed_en_warnings = build_segment_work_items(segments)
 
         canonical_rows: list[dict[str, Any]] = []
         pending_projections: list[tuple[dict[str, Any], dict[str, Any]]] = []
@@ -237,20 +233,14 @@ class EmotionAnalysis(AnalysisModule):
         segments_scored = 0
         segments_skipped = 0
         segments_empty = 0
-        assumed_en_warnings = 0
         scored_for_cache: dict[str, dict[str, Any]] = {}
 
-        for seg in segments:
-            speaker_info = extract_speaker_info(seg)
-            speaker = ""
-            if speaker_info is not None:
-                speaker = get_speaker_display_name(
-                    speaker_info.grouping_key, [seg], segments
-                )
-            sid = str(seg.get("id") or seg.get("segment_id"))
-            lang, lang_res = resolve_segment_language(seg, meta)
-            if lang_res == "assumed_en_missing_metadata":
-                assumed_en_warnings += 1
+        for item in work:
+            seg = item.seg
+            speaker = item.speaker
+            sid = item.sid
+            lang = item.lang
+            lang_res = item.lang_res
 
             if not is_english(lang):
                 segments_skipped += 1
@@ -261,7 +251,7 @@ class EmotionAnalysis(AnalysisModule):
                     "skip_reason": "unsupported_language",
                     "language": lang,
                     "language_resolution": lang_res,
-                    "scored_text_hash": segment_text_hash(seg.get("text")),
+                    "scored_text_hash": item.text_hash,
                     "coverage": 0.0,
                     "tokens_considered": 0,
                     "matched_occurrences": 0,
@@ -305,6 +295,7 @@ class EmotionAnalysis(AnalysisModule):
                 )
                 contributing = list(reused.get("contributing") or [])
             else:
+                # Score original segment text (not work.text) — locked policy.
                 result = score_segment_text(
                     seg.get("text") or "",
                     self._lexicon,
@@ -325,7 +316,7 @@ class EmotionAnalysis(AnalysisModule):
             elif result_state == "scored":
                 segments_scored += 1
 
-            text_hash = segment_text_hash(seg.get("text"))
+            text_hash = item.text_hash
             row = {
                 "segment_id": sid,
                 "speaker": speaker,

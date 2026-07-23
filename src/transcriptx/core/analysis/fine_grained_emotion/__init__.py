@@ -11,6 +11,9 @@ from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.emotion_family.cache_validation import (
     validate_classifier_cache_row,
 )
+from transcriptx.core.analysis.emotion_family.classifier_inference import (
+    resolve_classifier_scores,
+)
 from transcriptx.core.analysis.emotion_family.fingerprints import (
     build_aggregation_settings,
     build_compatibility_payload,
@@ -18,16 +21,16 @@ from transcriptx.core.analysis.emotion_family.fingerprints import (
     build_runtime_metadata,
     compatibility_fingerprint,
     library_versions,
-    segment_text_hash,
     speaker_identity_digest,
     text_source_digest,
     timeline_identity_digest,
 )
 from transcriptx.core.analysis.emotion_family.language import (
     LANGUAGE_POLICY_V1,
-    extract_transcript_metadata,
     is_english,
-    resolve_segment_language,
+)
+from transcriptx.core.analysis.emotion_family.work_items import (
+    build_segment_work_items,
 )
 from transcriptx.core.analysis.emotion_family.persist import (
     persist_canonical_then_enrich,
@@ -72,6 +75,29 @@ SCHEMA_VERSION = "fine_grained_emotion_result_schema_v2"
 SEMANTICS_VERSION = "fine_grained_emotion_v1"
 PROVISIONAL_LABEL_THRESHOLD = 0.28
 DEFAULT_MAX_LABELS = 3
+
+
+def format_fine_grained_failure_warning(
+    reason: str, details: dict[str, Any] | None = None
+) -> str:
+    """Reproduce exact historical fine-grained failure warning strings."""
+    details = details or {}
+    if reason == "preflight_failed":
+        return f"preflight_failed: {details.get('message', '')}"
+    if reason == "inference_failed":
+        return f"inference_failed: {details.get('message', '')}"
+    if reason == "scorer_cardinality_mismatch":
+        return (
+            f"scorer_cardinality_mismatch: expected {details.get('expected')} "
+            f"got {details.get('got')}"
+        )
+    if reason == "invalid_segment_ids":
+        return str(details.get("message", reason))
+    # Message-only paths (raw exception text) and unknown reasons.
+    if "message" in details:
+        return str(details["message"])
+    return reason
+
 
 _RESULT_SAVE_KEYS = (
     "schema_version",
@@ -171,18 +197,17 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
             return None
 
     def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
-        from transcriptx.core.utils.speaker_extraction import (
-            extract_speaker_info,
-            get_speaker_display_name,
-        )
-
         artifact_generation_id = uuid.uuid4().hex
         inference_generation_id = artifact_generation_id
         try:
             ensure_segment_ids(segments)
         except ValueError as exc:
             return self._failed(
-                segments, artifact_generation_id, RunStatus.FAILED, str(exc)
+                segments,
+                artifact_generation_id,
+                RunStatus.FAILED,
+                reason="invalid_segment_ids",
+                details={"message": str(exc)},
             )
 
         try:
@@ -193,42 +218,22 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 segments,
                 artifact_generation_id,
                 RunStatus.SKIPPED,
-                f"preflight_failed: {exc}",
+                reason="preflight_failed",
+                details={"message": str(exc)},
             )
 
         try:
             text_digest = text_source_digest(segments)
         except ValueError as exc:
             return self._failed(
-                segments, artifact_generation_id, RunStatus.FAILED, str(exc)
+                segments,
+                artifact_generation_id,
+                RunStatus.FAILED,
+                reason="invalid_segment_ids",
+                details={"message": str(exc)},
             )
 
-        meta = extract_transcript_metadata(segments)
-        work: list[dict[str, Any]] = []
-        assumed_en_warnings = 0
-        for seg in segments:
-            speaker_info = extract_speaker_info(seg)
-            speaker = ""
-            if speaker_info is not None:
-                speaker = get_speaker_display_name(
-                    speaker_info.grouping_key, [seg], segments
-                )
-            sid = str(seg.get("id") or seg.get("segment_id"))
-            lang, lang_res = resolve_segment_language(seg, meta)
-            if lang_res == "assumed_en_missing_metadata":
-                assumed_en_warnings += 1
-            text = (seg.get("text") or "").strip()
-            work.append(
-                {
-                    "seg": seg,
-                    "sid": sid,
-                    "speaker": speaker,
-                    "lang": lang,
-                    "lang_res": lang_res,
-                    "text": text,
-                    "text_hash": segment_text_hash(seg.get("text")),
-                }
-            )
+        work, assumed_en_warnings = build_segment_work_items(segments)
 
         effective_max = loaded.effective_max_length
         libs = library_versions()
@@ -281,82 +286,31 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
             compatibility_fingerprint=compat_fp, text_source_digest=text_digest
         )
 
-        to_score = [item for item in work if is_english(item["lang"]) and item["text"]]
-        needed_sids = [item["sid"] for item in to_score]
-
         cache_store = self._inference_cache()
-        scored_by_sid: dict[str, dict[str, Any]] | None = None
-        inference_cache_hit = False
-        if cache_store is not None:
-            cached = cache_store.load(inference_key)
-            if cached:
-                rows = cached.get("rows_by_segment") or {}
-                if needed_sids and all(
-                    sid in rows
-                    and validate_classifier_cache_row(
-                        rows[sid],
-                        expected_labels=self.profile.labels,
-                        activation="sigmoid",
-                    )
-                    for sid in needed_sids
-                ):
-                    scored_by_sid = {sid: dict(rows[sid]) for sid in needed_sids}
-                    inference_cache_hit = True
-                    cached_inference_id = str(
-                        cached.get("inference_generation_id") or ""
-                    ).strip()
-                    if cached_inference_id:
-                        inference_generation_id = cached_inference_id
-
-        if scored_by_sid is None:
-            texts_to_score = [item["text"] for item in to_score]
-            try:
-                scored = []
-                bs = max(1, self.batch_size)
-                for start in range(0, len(texts_to_score), bs):
-                    scored.extend(
-                        score_texts(
-                            loaded,
-                            texts_to_score[start : start + bs],
-                            max_length=effective_max,
-                        )
-                    )
-            except Exception as exc:
-                return self._failed(
-                    segments,
-                    artifact_generation_id,
-                    RunStatus.FAILED,
-                    f"inference_failed: {exc}",
-                )
-            if len(scored) != len(to_score):
-                return self._failed(
-                    segments,
-                    artifact_generation_id,
-                    RunStatus.FAILED,
-                    f"scorer_cardinality_mismatch: expected {len(to_score)} got {len(scored)}",
-                )
-            scored_by_sid = {}
-            for item, sr in zip(to_score, scored, strict=True):
-                scored_by_sid[item["sid"]] = {
-                    "scores": {k: float(v) for k, v in sr.scores.items()},
-                    "truncated": bool(sr.truncated),
-                    "omitted_token_count_lower_bound": int(
-                        sr.omitted_token_count_lower_bound
-                    ),
-                    "scored_text_hash": item["text_hash"],
-                }
-            if cache_store is not None:
-                try:
-                    cache_store.store(
-                        inference_key,
-                        inference_generation_id=inference_generation_id,
-                        rows_by_segment=scored_by_sid,
-                    )
-                except Exception as exc:
-                    log_warning(
-                        "FINE_GRAINED_EMOTION",
-                        f"inference cache write failed: {exc}",
-                    )
+        inference_result = resolve_classifier_scores(
+            loaded=loaded,
+            expected_labels=self.profile.labels,
+            activation="sigmoid",
+            batch_size=self.batch_size,
+            effective_max_length=effective_max,
+            inference_key=inference_key,
+            artifact_generation_id=artifact_generation_id,
+            cache_store=cache_store,
+            log_prefix="FINE_GRAINED_EMOTION",
+            work_items=work,
+            score_texts_fn=score_texts,
+        )
+        if inference_result.kind == "failure":
+            return self._failed(
+                segments,
+                artifact_generation_id,
+                RunStatus.FAILED,
+                reason=inference_result.reason,
+                details=dict(inference_result.details),
+            )
+        scored_by_sid = inference_result.scored_by_sid
+        inference_cache_hit = inference_result.inference_cache_hit
+        inference_generation_id = inference_result.inference_generation_id
 
         canonical_rows: list[dict[str, Any]] = []
         segments_skipped = 0
@@ -376,16 +330,16 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
         pending_projections: list[tuple[dict[str, Any], dict[str, Any]]] = []
 
         for item in work:
-            seg = item["seg"]
-            if not is_english(item["lang"]):
+            seg = item.seg
+            if not is_english(item.lang):
                 segments_skipped += 1
                 row = {
-                    "segment_id": item["sid"],
-                    "speaker": item["speaker"],
+                    "segment_id": item.sid,
+                    "speaker": item.speaker,
                     "evaluation_state": "skipped",
                     "skip_reason": "unsupported_language",
                     "scores": {},
-                    "scored_text_hash": item["text_hash"],
+                    "scored_text_hash": item.text_hash,
                     "display_labels": [],
                     "qualifying_emotion_count": 0,
                     "truncated": False,
@@ -398,14 +352,14 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 )
                 pending_projections.append((seg, proj))
                 continue
-            if not item["text"]:
+            if not item.text:
                 segments_empty += 1
                 row = {
-                    "segment_id": item["sid"],
-                    "speaker": item["speaker"],
+                    "segment_id": item.sid,
+                    "speaker": item.speaker,
                     "evaluation_state": "empty",
                     "scores": {},
-                    "scored_text_hash": item["text_hash"],
+                    "scored_text_hash": item.text_hash,
                     "display_labels": [],
                     "qualifying_emotion_count": 0,
                     "truncated": False,
@@ -419,20 +373,20 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 pending_projections.append((seg, proj))
                 continue
 
-            sr = scored_by_sid.get(item["sid"]) if scored_by_sid else None
+            sr = scored_by_sid.get(item.sid) if scored_by_sid else None
             if sr is None or not validate_classifier_cache_row(
                 sr,
                 expected_labels=self.profile.labels,
                 activation="sigmoid",
             ):
                 row = {
-                    "segment_id": item["sid"],
-                    "speaker": item["speaker"],
+                    "segment_id": item.sid,
+                    "speaker": item.speaker,
                     "evaluation_state": "failed",
                     "analytical_outcome": None,
                     "scores": {},
                     "fail_reason": "invalid_or_missing_scores",
-                    "scored_text_hash": item["text_hash"],
+                    "scored_text_hash": item.text_hash,
                     "display_labels": [],
                     "qualifying_emotion_count": 0,
                     "truncated": False,
@@ -475,14 +429,14 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
             outcome_counts[outcome] += 1
             for lab in qualifying:
                 native_prevalence[lab] += 1
-            if is_named_speaker(item["speaker"]):
-                speaker_outcome_counts[item["speaker"]][outcome] += 1
+            if is_named_speaker(item.speaker):
+                speaker_outcome_counts[item.speaker][outcome] += 1
                 for lab in qualifying:
-                    speaker_label_counts[item["speaker"]][lab] += 1
+                    speaker_label_counts[item.speaker][lab] += 1
 
             row = {
-                "segment_id": item["sid"],
-                "speaker": item["speaker"],
+                "segment_id": item.sid,
+                "speaker": item.speaker,
                 "evaluation_state": "scored",
                 "analytical_outcome": outcome,
                 "scores": scores,
@@ -493,8 +447,8 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 "display_labels": display,
                 "truncated": truncated,
                 "omitted_token_count_lower_bound": omitted_token_count,
-                "language_resolution": item["lang_res"],
-                "scored_text_hash": item["text_hash"],
+                "language_resolution": item.lang_res,
+                "scored_text_hash": item.text_hash,
             }
             canonical_rows.append(row)
             proj = project_fine_grained_segment(
@@ -506,8 +460,8 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
 
             timeline.append(
                 {
-                    "segment_id": item["sid"],
-                    "speaker": item["speaker"],
+                    "segment_id": item.sid,
+                    "speaker": item.speaker,
                     "start": seg.get("start"),
                     "end": seg.get("end"),
                     "labels": display,
@@ -519,9 +473,9 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
                 if len(examples[lab]) < 3:
                     examples[lab].append(
                         {
-                            "segment_id": item["sid"],
-                            "speaker": item["speaker"],
-                            "text": (item["text"] or "")[:160],
+                            "segment_id": item.sid,
+                            "speaker": item.speaker,
+                            "text": (item.text or "")[:160],
                             "confidence": scores.get(lab, 0.0),
                         }
                     )
@@ -683,11 +637,12 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
             "warnings": warnings,
         }
 
-    def _failed(self, segments, generation_id, status, warning):
+    def _failed(self, segments, generation_id, status, *, reason, details=None):
         from transcriptx.core.analysis.fine_grained_emotion.projections import (
             clear_fine_grained_projection,
         )
 
+        warning = format_fine_grained_failure_warning(reason, details)
         for seg in segments:
             clear_fine_grained_projection(seg)
         return {

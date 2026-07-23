@@ -36,6 +36,8 @@ _GALLERY_MODULE_DISPLAY_NAMES: dict[str, str] = {
     "temporal_dynamics": "Temporal dynamics",
     "insight_eligibility": "Insight eligibility",
     "lexical_diversity": "Lexical diversity",
+    "epistemic_markers": "Epistemic markers",
+    "politeness": "Politeness markers",
     "narrative_summary": "Narrative summary",
 }
 

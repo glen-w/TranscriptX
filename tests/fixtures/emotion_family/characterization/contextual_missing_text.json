@@ -1,0 +1,141 @@
+{
+  "_canonical_rows": [
+    {
+      "analytical_outcome": null,
+      "contextual_emotion_confidence": 0.0,
+      "contextual_emotion_label": null,
+      "evaluation_state": "empty",
+      "language": "en",
+      "language_resolution": "segment_override",
+      "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scores": {},
+      "segment_id": "1",
+      "skip_reason": "empty",
+      "speaker": "Alice",
+      "truncated": false
+    }
+  ],
+  "_pending_projections": [
+    {
+      "projection": {
+        "analytical_outcome": null,
+        "canonical_ref": {
+          "integrity_checksum": "440b3bbfd84bbbc94033ddb12382821a4dfe2b4eabf2de2a2c0e6f973fbddc74",
+          "module_id": "contextual_emotion",
+          "row_key": "1",
+          "schema_version": "contextual_emotion_result_schema_v2",
+          "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "semantics_version": "contextual_emotion_v1"
+        },
+        "context_emotion": "",
+        "context_emotion_primary": "",
+        "context_emotion_source": "contextual_emotion",
+        "contextual_emotion_analytical_outcome": null,
+        "contextual_emotion_canonical_ref": {
+          "integrity_checksum": "440b3bbfd84bbbc94033ddb12382821a4dfe2b4eabf2de2a2c0e6f973fbddc74",
+          "module_id": "contextual_emotion",
+          "row_key": "1",
+          "schema_version": "contextual_emotion_result_schema_v2",
+          "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "semantics_version": "contextual_emotion_v1"
+        },
+        "contextual_emotion_confidence": 0.0,
+        "contextual_emotion_label": "",
+        "contextual_emotion_scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "contextual_emotion_truncated": false,
+        "evaluation_state": "empty",
+        "segment_id": "1",
+        "truncated": false
+      },
+      "segment_id": "1"
+    }
+  ],
+  "aggregation_cache_hit": true,
+  "aggregation_cache_key": "d1c4a7d4df5f08df1bc9fc460fa5c4f97e6e5b1a72de8148573dc38d78388349",
+  "cache_fingerprint": "4d3a64de240ed87152d4a21941ad2d35d82c789b615848fdf6daecd504eb334e",
+  "compatibility_fingerprint": "6107e35abac29761d1691529d4bda20e72737fd72a8389b974a2bd836f6414c8",
+  "confidence_summary": {
+    "max": 0.0,
+    "mean": 0.0,
+    "min": 0.0,
+    "n": 0
+  },
+  "confidence_threshold": 0.3,
+  "effective_max_length": 64,
+  "global_stats": {
+    "abstained_rate": 0.0,
+    "confidence_summary": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 0
+    },
+    "label_counts": {},
+    "labeled_rate": 0.0,
+    "neutral_rate": 0.0
+  },
+  "inference_cache_hit": false,
+  "inference_cache_key": "1b0283803b0a5dfcc5c5feb386589d6029b0fa897a9fde3f141f460558787d0c",
+  "label_counts": {},
+  "module_id": "contextual_emotion",
+  "ordered_segment_ids": [
+    "1"
+  ],
+  "outcome_counts": {},
+  "primary_rates": {
+    "abstained_rate": 0.0,
+    "labeled_rate": 0.0,
+    "neutral_rate": 0.0
+  },
+  "profile_id": "contextual_hartmann_distilroberta_v1",
+  "projection_fields": [
+    "segment_id",
+    "evaluation_state",
+    "analytical_outcome",
+    "contextual_emotion_label",
+    "contextual_emotion_confidence",
+    "truncated",
+    "canonical_ref"
+  ],
+  "release_channel": "experimental",
+  "representative_examples": {},
+  "run_status": "complete",
+  "runtime_metadata": {
+    "activation": "softmax",
+    "batch_size": 8,
+    "device_class": "cpu",
+    "effective_max_length": 64,
+    "effective_threshold": 0.3,
+    "label_map_hash": "char-label-map-hash",
+    "language_policy_version": "language_policy_v1",
+    "lexicon_digest": null,
+    "long_text_policy_version": "long_text_policy_v2",
+    "model_id": "j-hartmann/emotion-english-distilroberta-base",
+    "model_revision": "0e1cd914e3d46199ed785853e12b57304e04178b",
+    "nrclex_version": null,
+    "numerical_dtype": "float32",
+    "padding_policy_version": null,
+    "threshold_profile_version": "threshold_profile_provisional_v0",
+    "tokenizer_id": "j-hartmann/emotion-english-distilroberta-base",
+    "tokenizer_revision": "0e1cd914e3d46199ed785853e12b57304e04178b",
+    "torch_version": "2.2.2",
+    "transformers_version": "4.53.2"
+  },
+  "sample_projection": null,
+  "schema_version": "contextual_emotion_result_schema_v2",
+  "segments_empty": 1,
+  "segments_failed": 0,
+  "segments_scored": 0,
+  "segments_skipped": 0,
+  "semantics_version": "contextual_emotion_v1",
+  "speaker_identity_digest": "8f4b477cfefe7b1621c73185250163841e00d1975b0293d3b37b0543fb0e5463",
+  "speaker_stats": {},
+  "text_source_digest": "eb00dff4c32ae045732dc541f0a3ff6a768b3023924c0a1f8445e7f1c1559b5e",
+  "threshold_profile_version": "threshold_profile_provisional_v0",
+  "timeline": [],
+  "timeline_identity_digest": "ca1e1fb6cc7efafa243b905289f431f04a907bb9a6072b610a94d02e32bda681",
+  "usable_output": false,
+  "warnings": [
+    "experimental: provisional threshold profile"
+  ]
+}

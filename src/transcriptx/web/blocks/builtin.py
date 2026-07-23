@@ -302,6 +302,36 @@ def _register_insights_blocks() -> None:
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=insights_blocks.render_lexical_diversity_block,
         ),
+        BlockSpec(
+            id="epistemic_markers_block",
+            title="Epistemic Markers",
+            group="Insights",
+            description="Hedging and certainty marker rates by speaker (lexicon).",
+            module_deps=("epistemic_markers",),
+            artifact_patterns=(
+                "_epistemic_markers.json",
+                "_epistemic_markers.csv",
+                "session_rows.json",
+                "speaker_rows.json",
+            ),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_blocks.render_epistemic_markers_block,
+        ),
+        BlockSpec(
+            id="politeness_block",
+            title="Politeness Markers",
+            group="Insights",
+            description="Politeness, formality, and directiveness markers by speaker.",
+            module_deps=("politeness",),
+            artifact_patterns=(
+                "_politeness.json",
+                "_politeness.csv",
+                "session_rows.json",
+                "speaker_rows.json",
+            ),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_blocks.render_politeness_block,
+        ),
     ]
     for spec in specs:
         register_block(spec)

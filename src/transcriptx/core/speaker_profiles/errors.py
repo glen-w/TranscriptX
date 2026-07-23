@@ -53,3 +53,11 @@ class UnresolvedManagedTranscriptError(ManagedTranscriptResolverError):
 
 class NotManagedTranscriptError(ManagedTranscriptResolverError):
     """Path is outside the managed library or fails admission for linking."""
+
+
+class StaleConfirmationError(SpeakerProfileContractError):
+    """Destructive mutation preconditions no longer match reviewed state."""
+
+
+class AlreadyCurrentError(SpeakerProfileContractError):
+    """Reserved — prefer MutationResult.noop for same-profile / current fp."""

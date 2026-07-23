@@ -29,6 +29,8 @@ _DELEGATION_SUBTREES = (
     "momentum",
     "moments",
     "topic_shift",
+    "epistemic_markers",
+    "politeness",
     "affect_tension",
     "acts",
     "topic_modeling",

@@ -1,0 +1,249 @@
+{
+  "_canonical_rows": [
+    {
+      "analytical_outcome": "labeled",
+      "contextual_emotion_confidence": 0.88,
+      "contextual_emotion_label": "joy",
+      "evaluation_state": "scored",
+      "language_resolution": "segment_override",
+      "omitted_token_count_lower_bound": 0,
+      "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+      "scores": {
+        "anger": 0.02,
+        "disgust": 0.02,
+        "fear": 0.02,
+        "joy": 0.88,
+        "neutral": 0.02,
+        "sadness": 0.02,
+        "surprise": 0.02
+      },
+      "segment_id": "1",
+      "speaker": "Alice",
+      "truncated": false
+    },
+    {
+      "analytical_outcome": null,
+      "contextual_emotion_confidence": 0.0,
+      "contextual_emotion_label": null,
+      "evaluation_state": "skipped",
+      "language": "fr",
+      "language_resolution": "segment_override",
+      "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+      "scores": {},
+      "segment_id": "2",
+      "skip_reason": "unsupported_language",
+      "speaker": "Bob",
+      "truncated": false
+    }
+  ],
+  "_pending_projections": [
+    {
+      "projection": {
+        "analytical_outcome": "labeled",
+        "canonical_ref": {
+          "integrity_checksum": "6ce19fe47899f3b9bb7fee98a7c7ec8531cede6b3d8b32c526af3b0828c9804f",
+          "module_id": "contextual_emotion",
+          "row_key": "1",
+          "schema_version": "contextual_emotion_result_schema_v2",
+          "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+          "semantics_version": "contextual_emotion_v1"
+        },
+        "context_emotion": "joy",
+        "context_emotion_primary": "joy",
+        "context_emotion_source": "contextual_emotion",
+        "contextual_emotion_analytical_outcome": "labeled",
+        "contextual_emotion_canonical_ref": {
+          "integrity_checksum": "6ce19fe47899f3b9bb7fee98a7c7ec8531cede6b3d8b32c526af3b0828c9804f",
+          "module_id": "contextual_emotion",
+          "row_key": "1",
+          "schema_version": "contextual_emotion_result_schema_v2",
+          "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+          "semantics_version": "contextual_emotion_v1"
+        },
+        "contextual_emotion_confidence": 0.88,
+        "contextual_emotion_label": "joy",
+        "contextual_emotion_scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+        "contextual_emotion_truncated": false,
+        "evaluation_state": "scored",
+        "segment_id": "1",
+        "truncated": false
+      },
+      "segment_id": "1"
+    },
+    {
+      "projection": {
+        "analytical_outcome": null,
+        "canonical_ref": {
+          "integrity_checksum": "a0917740123cb2e3edf0e5e57fe3b75cdf5e9535d406827af8d68241ab7335db",
+          "module_id": "contextual_emotion",
+          "row_key": "2",
+          "schema_version": "contextual_emotion_result_schema_v2",
+          "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+          "semantics_version": "contextual_emotion_v1"
+        },
+        "context_emotion": "",
+        "context_emotion_primary": "",
+        "context_emotion_source": "contextual_emotion",
+        "contextual_emotion_analytical_outcome": null,
+        "contextual_emotion_canonical_ref": {
+          "integrity_checksum": "a0917740123cb2e3edf0e5e57fe3b75cdf5e9535d406827af8d68241ab7335db",
+          "module_id": "contextual_emotion",
+          "row_key": "2",
+          "schema_version": "contextual_emotion_result_schema_v2",
+          "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+          "semantics_version": "contextual_emotion_v1"
+        },
+        "contextual_emotion_confidence": 0.0,
+        "contextual_emotion_label": "",
+        "contextual_emotion_scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+        "contextual_emotion_truncated": false,
+        "evaluation_state": "skipped",
+        "segment_id": "2",
+        "truncated": false
+      },
+      "segment_id": "2"
+    }
+  ],
+  "aggregation_cache_hit": false,
+  "aggregation_cache_key": "c9cef43a6980e9297fd6f61e4544fb6b1638bd8f447ea301cff3452431048b7d",
+  "cache_fingerprint": "57da585c8e07b421f31db58c6d76a5900e532e61685458bca1ccb6ce07ca43c0",
+  "compatibility_fingerprint": "6107e35abac29761d1691529d4bda20e72737fd72a8389b974a2bd836f6414c8",
+  "confidence_summary": {
+    "max": 0.88,
+    "mean": 0.88,
+    "min": 0.88,
+    "n": 1
+  },
+  "confidence_threshold": 0.3,
+  "effective_max_length": 64,
+  "global_stats": {
+    "abstained_rate": 0.0,
+    "confidence_summary": {
+      "max": 0.88,
+      "mean": 0.88,
+      "min": 0.88,
+      "n": 1
+    },
+    "label_counts": {
+      "joy": 1
+    },
+    "labeled_rate": 1.0,
+    "neutral_rate": 0.0
+  },
+  "inference_cache_hit": false,
+  "inference_cache_key": "27a4cdc3136659c6e189aa628daa5e95058759253162f08fb75e8d892e65ef3c",
+  "label_counts": {
+    "joy": 1
+  },
+  "module_id": "contextual_emotion",
+  "ordered_segment_ids": [
+    "1",
+    "2"
+  ],
+  "outcome_counts": {
+    "labeled": 1
+  },
+  "primary_rates": {
+    "abstained_rate": 0.0,
+    "labeled_rate": 1.0,
+    "neutral_rate": 0.0
+  },
+  "profile_id": "contextual_hartmann_distilroberta_v1",
+  "projection_fields": [
+    "segment_id",
+    "evaluation_state",
+    "analytical_outcome",
+    "contextual_emotion_label",
+    "contextual_emotion_confidence",
+    "truncated",
+    "canonical_ref"
+  ],
+  "release_channel": "experimental",
+  "representative_examples": {
+    "joy": [
+      {
+        "confidence": 0.88,
+        "segment_id": "1",
+        "speaker": "Alice",
+        "text": "Hello there"
+      }
+    ]
+  },
+  "run_status": "complete",
+  "runtime_metadata": {
+    "activation": "softmax",
+    "batch_size": 8,
+    "device_class": "cpu",
+    "effective_max_length": 64,
+    "effective_threshold": 0.3,
+    "label_map_hash": "char-label-map-hash",
+    "language_policy_version": "language_policy_v1",
+    "lexicon_digest": null,
+    "long_text_policy_version": "long_text_policy_v2",
+    "model_id": "j-hartmann/emotion-english-distilroberta-base",
+    "model_revision": "0e1cd914e3d46199ed785853e12b57304e04178b",
+    "nrclex_version": null,
+    "numerical_dtype": "float32",
+    "padding_policy_version": null,
+    "threshold_profile_version": "threshold_profile_provisional_v0",
+    "tokenizer_id": "j-hartmann/emotion-english-distilroberta-base",
+    "tokenizer_revision": "0e1cd914e3d46199ed785853e12b57304e04178b",
+    "torch_version": "2.2.2",
+    "transformers_version": "4.53.2"
+  },
+  "sample_projection": {
+    "analytical_outcome": "labeled",
+    "canonical_ref": {
+      "integrity_checksum": "6ce19fe47899f3b9bb7fee98a7c7ec8531cede6b3d8b32c526af3b0828c9804f",
+      "module_id": "contextual_emotion",
+      "row_key": "1",
+      "schema_version": "contextual_emotion_result_schema_v2",
+      "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+      "semantics_version": "contextual_emotion_v1"
+    },
+    "contextual_emotion_confidence": 0.88,
+    "contextual_emotion_label": "joy",
+    "evaluation_state": "scored",
+    "segment_id": "1",
+    "truncated": false
+  },
+  "schema_version": "contextual_emotion_result_schema_v2",
+  "segments_empty": 0,
+  "segments_failed": 0,
+  "segments_scored": 1,
+  "segments_skipped": 1,
+  "semantics_version": "contextual_emotion_v1",
+  "speaker_identity_digest": "a72c232b93cffc174d8482d1d69b2b7db24093dae28c18c07842ba5c94e67894",
+  "speaker_stats": {
+    "Alice": {
+      "label_counts": {
+        "joy": 1
+      },
+      "outcome_counts": {
+        "labeled": 1
+      },
+      "rates": {
+        "labeled": 1.0
+      },
+      "segments_scored": 1
+    }
+  },
+  "text_source_digest": "adb46ae5b9c9df1322074292521a447339f056453efd27f79b60867e7fd50329",
+  "threshold_profile_version": "threshold_profile_provisional_v0",
+  "timeline": [
+    {
+      "analytical_outcome": "labeled",
+      "confidence": 0.88,
+      "end": 1.0,
+      "label": "joy",
+      "segment_id": "1",
+      "speaker": "Alice",
+      "start": 0.0
+    }
+  ],
+  "timeline_identity_digest": "b7ecb1ef7fae8e26cc67f0737207869db40be44b4e325f0f693d424f7d746370",
+  "usable_output": true,
+  "warnings": [
+    "experimental: provisional threshold profile"
+  ]
+}

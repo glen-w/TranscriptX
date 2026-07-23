@@ -322,6 +322,10 @@ class TranscriptXConfig:
                 "transcript_quality": self._config_to_dict(
                     self.analysis.transcript_quality
                 ),
+                "epistemic_markers": self._config_to_dict(
+                    self.analysis.epistemic_markers
+                ),
+                "politeness": self._config_to_dict(self.analysis.politeness),
                 "topic_shift": self._config_to_dict(self.analysis.topic_shift),
                 "echoes": self._config_to_dict(self.analysis.echoes),
                 "momentum": self._config_to_dict(self.analysis.momentum),

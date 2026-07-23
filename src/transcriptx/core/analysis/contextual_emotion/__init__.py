@@ -15,22 +15,25 @@ from transcriptx.core.analysis.contextual_emotion.projections import (
 from transcriptx.core.analysis.emotion_family.cache_validation import (
     validate_classifier_cache_row,
 )
+from transcriptx.core.analysis.emotion_family.classifier_inference import (
+    resolve_classifier_scores,
+)
 from transcriptx.core.analysis.emotion_family.fingerprints import (
     build_aggregation_settings,
     build_compatibility_payload,
     build_runtime_metadata,
     compatibility_fingerprint,
     library_versions,
-    segment_text_hash,
     speaker_identity_digest,
     text_source_digest,
     timeline_identity_digest,
 )
 from transcriptx.core.analysis.emotion_family.language import (
     LANGUAGE_POLICY_V1,
-    extract_transcript_metadata,
     is_english,
-    resolve_segment_language,
+)
+from transcriptx.core.analysis.emotion_family.work_items import (
+    build_segment_work_items,
 )
 from transcriptx.core.analysis.emotion_family.persist import (
     persist_canonical_then_enrich,
@@ -155,11 +158,6 @@ class ContextualEmotionAnalysis(AnalysisModule):
             return None
 
     def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
-        from transcriptx.core.utils.speaker_extraction import (
-            extract_speaker_info,
-            get_speaker_display_name,
-        )
-
         artifact_generation_id = uuid.uuid4().hex
         try:
             ensure_segment_ids(segments)
@@ -195,32 +193,7 @@ class ContextualEmotionAnalysis(AnalysisModule):
                 details={"message": str(exc)},
             )
 
-        meta = extract_transcript_metadata(segments)
-        work: list[dict[str, Any]] = []
-        assumed_en_warnings = 0
-        for seg in segments:
-            speaker_info = extract_speaker_info(seg)
-            speaker = ""
-            if speaker_info is not None:
-                speaker = get_speaker_display_name(
-                    speaker_info.grouping_key, [seg], segments
-                )
-            sid = str(seg.get("id") or seg.get("segment_id"))
-            lang, lang_res = resolve_segment_language(seg, meta)
-            if lang_res == "assumed_en_missing_metadata":
-                assumed_en_warnings += 1
-            text = (seg.get("text") or "").strip()
-            work.append(
-                {
-                    "seg": seg,
-                    "sid": sid,
-                    "speaker": speaker,
-                    "lang": lang,
-                    "lang_res": lang_res,
-                    "text": text,
-                    "text_hash": segment_text_hash(seg.get("text")),
-                }
-            )
+        work, assumed_en_warnings = build_segment_work_items(segments)
 
         label_map_hash = loaded.resolved_label_map_hash
         effective_max = loaded.effective_max_length
@@ -269,86 +242,36 @@ class ContextualEmotionAnalysis(AnalysisModule):
             compatibility_fingerprint=compat_fp, text_source_digest=text_digest
         )
 
-        to_score = [item for item in work if is_english(item["lang"]) and item["text"]]
-        needed_sids = [item["sid"] for item in to_score]
-
         cache_store = self._inference_cache()
-        scored_by_sid: dict[str, dict[str, Any]] | None = None
-        inference_cache_hit = False
-        inference_generation_id = artifact_generation_id
-        if cache_store is not None:
-            cached = cache_store.load(inference_key)
-            if cached:
-                rows = cached.get("rows_by_segment") or {}
-                if needed_sids and all(
-                    sid in rows
-                    and validate_classifier_cache_row(
-                        rows[sid],
-                        expected_labels=self.profile.labels,
-                        activation="softmax",
-                    )
-                    for sid in needed_sids
-                ):
-                    scored_by_sid = {sid: dict(rows[sid]) for sid in needed_sids}
-                    inference_cache_hit = True
-                    cached_inference_id = cached.get("inference_generation_id")
-                    if cached_inference_id:
-                        inference_generation_id = str(cached_inference_id)
-
-        if scored_by_sid is None:
-            texts_to_score = [item["text"] for item in to_score]
-            try:
-                scored: list = []
-                bs = max(1, self.batch_size)
-                for start in range(0, len(texts_to_score), bs):
-                    scored.extend(
-                        score_texts(
-                            loaded,
-                            texts_to_score[start : start + bs],
-                            max_length=effective_max,
-                        )
-                    )
-            except Exception as exc:
-                log_warning("CONTEXTUAL_EMOTION", f"inference failed: {exc}")
-                return self._failed(
-                    segments,
-                    artifact_generation_id,
-                    RunStatus.FAILED,
-                    reason="inference_failed",
-                    details={"message": str(exc)},
+        inference_result = resolve_classifier_scores(
+            loaded=loaded,
+            expected_labels=self.profile.labels,
+            activation="softmax",
+            batch_size=self.batch_size,
+            effective_max_length=effective_max,
+            inference_key=inference_key,
+            artifact_generation_id=artifact_generation_id,
+            cache_store=cache_store,
+            log_prefix="CONTEXTUAL_EMOTION",
+            work_items=work,
+            score_texts_fn=score_texts,
+        )
+        if inference_result.kind == "failure":
+            if inference_result.reason == "inference_failed":
+                log_warning(
+                    "CONTEXTUAL_EMOTION",
+                    f"inference failed: {inference_result.details.get('message')}",
                 )
-            if len(scored) != len(to_score):
-                return self._failed(
-                    segments,
-                    artifact_generation_id,
-                    RunStatus.FAILED,
-                    reason="scorer_cardinality_mismatch",
-                    details={
-                        "expected": len(to_score),
-                        "got": len(scored),
-                    },
-                )
-            scored_by_sid = {}
-            for item, sr in zip(to_score, scored, strict=True):
-                scored_by_sid[item["sid"]] = {
-                    "scores": {k: float(v) for k, v in sr.scores.items()},
-                    "truncated": bool(sr.truncated),
-                    "omitted_token_count_lower_bound": int(
-                        sr.omitted_token_count_lower_bound
-                    ),
-                    "scored_text_hash": item["text_hash"],
-                }
-            if cache_store is not None:
-                try:
-                    cache_store.store(
-                        inference_key,
-                        inference_generation_id=inference_generation_id,
-                        rows_by_segment=scored_by_sid,
-                    )
-                except Exception as exc:
-                    log_warning(
-                        "CONTEXTUAL_EMOTION", f"inference cache write failed: {exc}"
-                    )
+            return self._failed(
+                segments,
+                artifact_generation_id,
+                RunStatus.FAILED,
+                reason=inference_result.reason,
+                details=dict(inference_result.details),
+            )
+        scored_by_sid = inference_result.scored_by_sid
+        inference_cache_hit = inference_result.inference_cache_hit
+        inference_generation_id = inference_result.inference_generation_id
 
         label_counts: dict[str, int] = defaultdict(int)
         outcome_counts: dict[str, int] = defaultdict(int)
@@ -367,16 +290,16 @@ class ContextualEmotionAnalysis(AnalysisModule):
         pending_projections: list[tuple[dict[str, Any], dict[str, Any]]] = []
 
         for item in work:
-            seg = item["seg"]
-            if not is_english(item["lang"]):
+            seg = item.seg
+            if not is_english(item.lang):
                 segments_skipped += 1
                 row = self._skip_row(
-                    item["sid"],
-                    item["speaker"],
-                    item["lang"],
-                    item["lang_res"],
+                    item.sid,
+                    item.speaker,
+                    item.lang,
+                    item.lang_res,
                     "unsupported_language",
-                    text_hash=item["text_hash"],
+                    text_hash=item.text_hash,
                 )
                 canonical_rows.append(row)
                 proj = project_contextual_segment(
@@ -386,15 +309,15 @@ class ContextualEmotionAnalysis(AnalysisModule):
                 )
                 pending_projections.append((seg, proj))
                 continue
-            if not item["text"]:
+            if not item.text:
                 segments_empty += 1
                 row = self._skip_row(
-                    item["sid"],
-                    item["speaker"],
-                    item["lang"],
-                    item["lang_res"],
+                    item.sid,
+                    item.speaker,
+                    item.lang,
+                    item.lang_res,
                     "empty",
-                    text_hash=item["text_hash"],
+                    text_hash=item.text_hash,
                 )
                 canonical_rows.append(row)
                 proj = project_contextual_segment(
@@ -405,21 +328,21 @@ class ContextualEmotionAnalysis(AnalysisModule):
                 pending_projections.append((seg, proj))
                 continue
 
-            sr = scored_by_sid.get(item["sid"]) if scored_by_sid else None
+            sr = scored_by_sid.get(item.sid) if scored_by_sid else None
             if sr is None or not validate_classifier_cache_row(
                 sr,
                 expected_labels=self.profile.labels,
                 activation="softmax",
             ):
                 row = {
-                    "segment_id": item["sid"],
-                    "speaker": item["speaker"],
+                    "segment_id": item.sid,
+                    "speaker": item.speaker,
                     "evaluation_state": "failed",
                     "analytical_outcome": None,
                     "scores": {},
                     "truncated": False,
                     "fail_reason": "invalid_or_missing_scores",
-                    "scored_text_hash": item["text_hash"],
+                    "scored_text_hash": item.text_hash,
                 }
                 canonical_rows.append(row)
                 proj = project_contextual_segment(
@@ -460,8 +383,8 @@ class ContextualEmotionAnalysis(AnalysisModule):
             confidences.append(top_score)
 
             row = {
-                "segment_id": item["sid"],
-                "speaker": item["speaker"],
+                "segment_id": item.sid,
+                "speaker": item.speaker,
                 "evaluation_state": "scored",
                 "analytical_outcome": outcome,
                 "contextual_emotion_label": selected,
@@ -469,8 +392,8 @@ class ContextualEmotionAnalysis(AnalysisModule):
                 "scores": scores,
                 "truncated": truncated,
                 "omitted_token_count_lower_bound": omitted_token_count_lower_bound,
-                "language_resolution": item["lang_res"],
-                "scored_text_hash": item["text_hash"],
+                "language_resolution": item.lang_res,
+                "scored_text_hash": item.text_hash,
             }
             canonical_rows.append(row)
 
@@ -481,15 +404,15 @@ class ContextualEmotionAnalysis(AnalysisModule):
             )
             pending_projections.append((seg, proj))
 
-            if is_named_speaker(item["speaker"]):
+            if is_named_speaker(item.speaker):
                 if selected:
-                    speaker_label_counts[item["speaker"]][selected] += 1
-                speaker_outcome_counts[item["speaker"]][outcome] += 1
+                    speaker_label_counts[item.speaker][selected] += 1
+                speaker_outcome_counts[item.speaker][outcome] += 1
 
             timeline.append(
                 {
-                    "segment_id": item["sid"],
-                    "speaker": item["speaker"],
+                    "segment_id": item.sid,
+                    "speaker": item.speaker,
                     "start": seg.get("start"),
                     "end": seg.get("end"),
                     "label": selected,
@@ -500,9 +423,9 @@ class ContextualEmotionAnalysis(AnalysisModule):
             if selected and len(examples[selected]) < 3:
                 examples[selected].append(
                     {
-                        "segment_id": item["sid"],
-                        "speaker": item["speaker"],
-                        "text": (item["text"] or "")[:160],
+                        "segment_id": item.sid,
+                        "speaker": item.speaker,
+                        "text": (item.text or "")[:160],
                         "confidence": top_score,
                     }
                 )

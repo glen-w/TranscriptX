@@ -351,11 +351,54 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
         return
 
     cols = st.columns(min(3, len(ranked)))
+    accent_ctx = None
+    try:
+        from transcriptx.core.speaker_profiles.layout import (
+            links_dir,
+            profiles_dir,
+            speaker_profiles_dir,
+        )
+        from transcriptx.core.speaker_profiles.models import (
+            SpeakerProfileLinkV1,
+            SpeakerProfileV1,
+        )
+        from transcriptx.core.speaker_profiles.store_io import parse_model
+        from transcriptx.web.speaker_accent import (
+            build_accent_context_from_profiles,
+            resolve_speaker_accent,
+        )
+
+        root = speaker_profiles_dir()
+        pref = profiles_dir(root)
+        profiles = []
+        if pref.is_dir():
+            for path in pref.glob("*.speaker_profile.json"):
+                try:
+                    profiles.append(parse_model(SpeakerProfileV1, path))
+                except Exception:
+                    continue
+        link_items = []
+        lref = links_dir(root)
+        if lref.is_dir():
+            for path in lref.glob("*.speaker_link.json"):
+                try:
+                    link_items.append(parse_model(SpeakerProfileLinkV1, path))
+                except Exception:
+                    continue
+        accent_ctx = build_accent_context_from_profiles(profiles, links=link_items)
+    except Exception:
+        accent_ctx = None
+
     for i, entry in enumerate(ranked[:6]):
         name = str(entry.get("name") or "Speaker")
-        # Prefer name-stable accents so the same speaker matches elsewhere
-        # in the viewer; fall back to rank index only for empty names.
-        accent = _speaker_accent_color(name if name.strip() else i)
+        if accent_ctx is not None:
+            from transcriptx.web.speaker_accent import resolve_speaker_accent
+
+            accent = resolve_speaker_accent(
+                name if name.strip() else i, context=accent_ctx
+            )
+        else:
+            accent = _speaker_accent_color(name if name.strip() else i)
         fourth_label, fourth_value = _speaker_fourth_stat(entry)
         with cols[i % len(cols)]:
             with st.container(border=True):

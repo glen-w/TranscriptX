@@ -55,10 +55,10 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 2 | B3 | **ASR / transcript quality** diagnostics — shipped as Foundations module `transcript_quality` (**ASR confidence** evidence/review; no quality scorecard; filler deferred) | new (**shipped** Phase 1+2; 0.6.3+) | Foundations | M | WhisperX word scores + provenance-aware group agg |
 | 3 | B9 | **Agenda / topic-shift segmentation** (embedding change-points) | new (**shipped** — module `topic_shift`; dual stores; Chapters tab; group cohort agg + overlays; Stage 5 acceptance; finalize: language status / lexical embed / offline+deadline / enrichment envelope). Residual: group-synthesis shared ACTIVE migration **waived** | Dynamics & Flow | M | reuse semantic embeddings |
 | 4 | B12 | **Turn-taking equity pack** (floor entropy, interruption asymmetry, response latency fairness) | deepen (**shipped** 0.4.8; semantics v2 + group charts) | Speakers & Interaction | S–M | mostly from `interactions` + `stats` |
-| 5 | B6 | **Hedging / certainty / epistemic markers** | new | Language & Meaning | S–M | lexicon + optional classifier; group charts |
+| 5 | B6 | **Hedging / certainty / epistemic markers** | new (**shipped** as `epistemic_markers`) | Language & Meaning | S–M | lexicon + optional classifier; group charts |
 | 6 | — | *(P1 routing infrastructure continues; not a ranked module)* | platform | — | M | see §2 |
 | 7 | B10 | **Structured decisions / commitments** — extraction-family deepen (`llm_action_items` v2 meeting extracts) | deepen (**shipped** v2 contract: typed records + sectioned render + group schema 2; residual: broader P2 platform) | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
-| 8 | B7 | **Politeness / formality / power** (lexicon-first) | new | Speakers & Interaction | M | lexicon path first; ConvoKit optional later |
+| 8 | B7 | **Politeness / formality / power** (lexicon-first) | new (**shipped** as `politeness`; power = lexical directiveness; B12 equity for interactional power) | Speakers & Interaction | M | lexicon path first; ConvoKit optional later |
 | 9 | B14 | **Cross-session concept drift / recurring motifs** | deepen | Language & Meaning (+ Groups) | M | `semantic_similarity_v2` + group finalize |
 | 10 | B13 | **Speaker interaction graphs** (NetworkX artifacts + gallery) | deepen | Speakers & Interaction / Visualisations | M | Phase 3 network mention; B12 primitives help |
 
@@ -66,7 +66,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
-| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces | Speakers & Interaction (+ Groups) | L | Phase 3; group cross-session allowlists |
+| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 shipped**: file store, Speakers UX, over-time charts, accents; remainder: voice links, DB views, group `profile_id` charts) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
 | 12 | B18 | **Insight narratives grounded in module evidence** | deepen | Summary & Synthesis | M | `insights` + LLM; **P2** provenance contracts |
 | — | — | **Group LLM synthesis** (cross-session rollup of member `llm_summary` / `llm_speaker_summary`) | deepen (finalize; no new module ID) | Summary & Synthesis (+ Groups) | M | Shipped contract: [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md) |
 | 13 | B4 | **ConvoKit accommodation / coordination** — implementation option, not product objective | revive (optional) | Speakers & Interaction | L | define desired outputs first; resolve numpy/spaCy/thinc only if still needed |
@@ -142,7 +142,7 @@ Avoid: another free-form summarizer that overlaps `llm_summary` / `narrative_sum
 | Prefer | Items |
 |--------|-------|
 | **Deepen** | ~~B1 BERTopic~~ shipped; B14 concept drift; P1 multilingual routing adoption; emotion-family Phase 5 calibration; model upgrades per `docs/runtime/models.md` |
-| **Add** | B6 hedging/certainty; B16 keyphrases; B17 toxicity (optional) |
+| **Add** | ~~B6 hedging/certainty~~ **shipped** as `epistemic_markers`; B16 keyphrases; B17 toxicity (optional) |
 
 Avoid: third sentiment backend as a product feature (keep as config only). Emotion family is intentional separate module IDs (see §6 override).
 
@@ -152,7 +152,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 | Prefer | Items |
 |--------|-------|
 | **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers; B13 graphs |
-| **Add** | B7 politeness/formality (lexicon-first) |
+| **Add** | ~~B7 politeness/formality~~ **shipped** as `politeness` |
 | **Optional revive** | B4 ConvoKit only after desired outputs are specified (§3.2) |
 
 ### Dynamics & Flow
@@ -195,11 +195,11 @@ flowchart LR
 |------|------|-------|--------|
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
 | **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
-| **2** | **Partial** (B12 early) | ~~B12~~ shipped (0.4.8); **B6**, **B7** (lexicon-first), **B13** remaining | Interaction depth from existing data + light linguistics |
+| **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; **B13** remaining | Interaction depth from existing data + light linguistics |
 | **3** | Phase 3 product | B5, B10 (extraction deepen), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
 | **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |
 
-**Next product capacity (ranked open):** B6 → B7 → B13 (with P1 infrastructure in parallel when eng capacity allows).
+**Next product capacity (ranked open):** B13 (with P1 infrastructure in parallel when eng capacity allows).
 
 **Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
 
@@ -264,3 +264,4 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Group output classes | `docs/groups/group_analysis_module_outputs.md` |
 | Stocktake sequencing | `docs/dev/stocktake_2026-07-17.md` |
 | Competitive inspiration (5 OSS tools vs TX) | [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) |
+| Wave 2 lexicon linguistics (B6/B7) | [`wave2_lexicon_linguistics_2026-07-23.md`](wave2_lexicon_linguistics_2026-07-23.md) |

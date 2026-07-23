@@ -511,6 +511,10 @@ class AnalysisConfig:
     transcript_quality: "TranscriptQualityConfig" = field(
         default_factory=lambda: TranscriptQualityConfig()
     )
+    epistemic_markers: "EpistemicMarkersConfig" = field(
+        default_factory=lambda: EpistemicMarkersConfig()
+    )
+    politeness: "PolitenessConfig" = field(default_factory=lambda: PolitenessConfig())
     topic_shift: "TopicShiftConfig" = field(
         default_factory=lambda: TopicShiftConfig()
     )
@@ -928,6 +932,34 @@ class TranscriptQualityConfig:
         )
 
         _hydrate_dataclass_from_pydantic(self, TranscriptQualitySettingsModel())
+
+
+@dataclass
+class EpistemicMarkersConfig:
+    """Epistemic marker settings. Defaults owned by EpistemicMarkersSettingsModel."""
+
+    min_tokens_for_rates: int = field(init=False, repr=True)
+    enabled_categories: list = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.epistemic_markers import (
+            EpistemicMarkersSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, EpistemicMarkersSettingsModel())
+
+
+@dataclass
+class PolitenessConfig:
+    """Politeness marker settings. Defaults owned by PolitenessSettingsModel."""
+
+    min_tokens_for_rates: int = field(init=False, repr=True)
+    enabled_categories: list = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.politeness import PolitenessSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, PolitenessSettingsModel())
 
 
 @dataclass

@@ -68,4 +68,13 @@ def build_conversation_module_definitions(
             "requires_multiple_speakers": True,
             "gate_on_turn_taking_speakers": True,
         },
+        "politeness": {
+            "description": "Politeness / formality / directiveness markers",
+            "dependencies": [],
+            "category": "light",
+            "determinism_tier": "T0",
+            "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
+            "enhancements": [],
+            "gate_on_turn_taking_speakers": True,
+        },
     }

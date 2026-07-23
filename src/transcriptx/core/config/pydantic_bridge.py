@@ -33,6 +33,8 @@ from transcriptx.core.utils.config.analysis import (
     TopicModelingConfig,
     TranscriptQualityConfig,
     TopicShiftConfig,
+    EpistemicMarkersConfig,
+    PolitenessConfig,
     VectorizationConfig,
     VoiceConfig,
 )
@@ -92,6 +94,8 @@ from .models.semantic_similarity_v2_profiles import (
 )
 from .models.speaker_exemplars import SpeakerExemplarsSettingsModel
 from .models.transcript_quality import TranscriptQualitySettingsModel
+from .models.epistemic_markers import EpistemicMarkersSettingsModel
+from .models.politeness import PolitenessSettingsModel
 from .models.topic_shift import TopicShiftSettingsModel
 from .models.summary import SummarySettingsModel
 from .models.tag_extraction import TagExtractionSettingsModel
@@ -383,6 +387,20 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="analysis.transcript_quality",
         category="analysis",
         dataclass_type=TranscriptQualityConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="epistemic_markers",
+        model=EpistemicMarkersSettingsModel,
+        dotpath_prefix="analysis.epistemic_markers",
+        category="analysis",
+        dataclass_type=EpistemicMarkersConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="politeness",
+        model=PolitenessSettingsModel,
+        dotpath_prefix="analysis.politeness",
+        category="analysis",
+        dataclass_type=PolitenessConfig,
     ),
     PydanticPilotSpec(
         pilot_id="topic_shift",

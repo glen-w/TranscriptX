@@ -43,6 +43,12 @@ from transcriptx.core.analysis.group_charts.stats_charts import StatsGroupChartG
 from transcriptx.core.analysis.group_charts.tics_group_charts import (
     TicsGroupChartGenerator,
 )
+from transcriptx.core.analysis.group_charts.epistemic_markers_group_charts import (
+    EpistemicMarkersGroupChartGenerator,
+)
+from transcriptx.core.analysis.group_charts.politeness_group_charts import (
+    PolitenessGroupChartGenerator,
+)
 from transcriptx.core.analysis.group_charts.transcript_quality_charts import (
     TranscriptQualityGroupChartGenerator,
 )
@@ -88,6 +94,8 @@ GROUP_AGGREGATE_CHART_FAMILIES: Dict[str, Tuple[str, ...]] = {
     "emotion": ("session_bars", "temporal_overlay", "pooled_single_view"),
     "interactions": ("session_bars", "pooled_single_view"),
     "tics": ("session_bars", "pooled_single_view"),
+    "epistemic_markers": ("session_bars", "pooled_single_view"),
+    "politeness": ("session_bars", "pooled_single_view"),
     "transcript_quality": ("session_bars",),
     "topic_shift": ("session_bars", "temporal_overlay"),
     "understandability": ("session_bars",),
@@ -168,6 +176,8 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
         "topic_modeling": TopicModelingGroupChartGenerator(),
         "bertopic": BertopicGroupChartGenerator(),
         "tics": TicsGroupChartGenerator(),
+        "epistemic_markers": EpistemicMarkersGroupChartGenerator(),
+        "politeness": PolitenessGroupChartGenerator(),
         "transcript_quality": TranscriptQualityGroupChartGenerator(),
         "topic_shift": TopicShiftGroupChartGenerator(),
     }

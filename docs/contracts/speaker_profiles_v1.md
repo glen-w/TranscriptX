@@ -173,6 +173,54 @@ Supersession is a separate journalled op.
 - Language variants: no auto profile-link inheritance.
 - No new analysis module; do not reuse `speaker_id_to_db_id`.
 
+---
+
+## Phase 1.5 additions
+
+### Profile `accent_color`
+
+Optional `accent_color` on `speaker_profile.v1`: uppercase `#RRGGBB` or null
+(auto name-hash at display time). Create without an accent assigns an unused
+palette colour (then freeform `#RRGGBB` if the palette is exhausted). Update
+supports `clear_accent`. GUI may pick any validated hex via colour wheel.
+
+### Appearance flag precedence
+
+Single winner: `repair_required` → `missing_source` → `collision` →
+`needs_review` → `ignored` → `ok`. Higher flags must not be overwritten.
+
+### Speaking share
+
+Per-appearance share = occurrence duration ÷ transcript duration denominator.
+Same-date / multi-appearance share buckets:
+`sum(durations) ÷ sum(unique transcript denominators)` (each
+`managed_transcript_id` counted once). Do not sum percentage shares.
+
+### Aggregates and charts
+
+Public `headline_eligible` is shared by aggregates and time-series builders.
+Time-series emit separate `headline` and `all` series (no mixed-eligibility
+point flag). `AggregationSnapshot` is the Speakers listing/aggregation entry
+(one-pass links + memoized `TranscriptBundle` per managed transcript). Corrupt
+canonical/operation files and blocking ops mark the snapshot incomplete —
+partial totals must not be presented as complete.
+
+### Link APIs
+
+- `link_existing_profile`: unlinked occurrence → existing active profile.
+- `relink`: requires a live link; same-owner is a service-level no-op;
+  cross-owner requires expected link/owner preconditions.
+- `unlink` / fingerprint supersede bind expected link id/hash/fingerprint;
+  already-current fingerprint is a no-op; reject collision/ignored on supersede.
+
+### Integrity
+
+`run_integrity_scan` returns typed blocking details (`recovery_class`, affected
+paths, entity intersections) and corrupt profile/link/event/operation paths.
+Mutations assert intersecting entities are readable under the project lock.
+Operation receipts must persist full cache-invalidation metadata for replay;
+`recover_operation` invalidates affected profile/link caches.
+
 ### Completed-operation retention
 
 After `complete`: delete staging/ and backup/ bytes; retain compact operation

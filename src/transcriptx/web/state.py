@@ -34,6 +34,7 @@ SELECTBOX_PLACEHOLDER_GROUP = "— Select a group —"
 SELECTBOX_PLACEHOLDER_SESSION = "— Select a session —"
 SELECTBOX_PLACEHOLDER_MODULE = "— Select a module —"
 SELECTBOX_PLACEHOLDER_ARTIFACT = "— Select an artifact —"
+SELECTBOX_PLACEHOLDER_SPEAKER = "— Select a speaker —"
 SELECTED_RUN_DIR = "selected_run_dir"
 SELECTED_PROFILE_NAME = "selected_profile_name"
 

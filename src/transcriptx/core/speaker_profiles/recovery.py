@@ -67,16 +67,29 @@ class OperationRecoveryReport:
 
 
 def list_operations(root: Path) -> list[SpeakerProfileOperationV1]:
+    """Parseable operations only (corrupt files omitted — see list_operations_detailed)."""
+    return list(list_operations_detailed(root).operations)
+
+
+@dataclass(frozen=True)
+class OperationsListResult:
+    operations: tuple[SpeakerProfileOperationV1, ...]
+    corrupt_paths: tuple[str, ...]
+
+
+def list_operations_detailed(root: Path) -> OperationsListResult:
+    """List operations and surface corrupt ``.op.json`` paths (fail-closed)."""
     ops_dir = Path(root) / "operations"
     if not ops_dir.is_dir():
-        return []
+        return OperationsListResult(operations=(), corrupt_paths=())
     out: list[SpeakerProfileOperationV1] = []
+    corrupt: list[str] = []
     for path in sorted(ops_dir.glob("*.op.json")):
         try:
             out.append(load_operation(path))
         except Exception:
-            continue
-    return out
+            corrupt.append(str(path))
+    return OperationsListResult(operations=tuple(out), corrupt_paths=tuple(corrupt))
 
 
 def classify_action(root: Path, action: OperationPlanActionV1) -> ActionClassification:
@@ -108,13 +121,12 @@ def classify_operation(
     root: Path, op: SpeakerProfileOperationV1
 ) -> OperationRecoveryReport:
     """Derive recovery class from phase + per-action hash classification."""
-    classes = tuple(classify_action(root, a) for a in op.plan.actions)
-
+    # Terminal non-blocking phases: skip hashing action files.
     if op.phase == "complete":
         return OperationRecoveryReport(
             operation_id=op.operation_id,
             phase=op.phase,
-            classifications=classes,
+            classifications=(),
             recovery_class="complete",
             blocking=False,
         )
@@ -124,10 +136,12 @@ def classify_operation(
         return OperationRecoveryReport(
             operation_id=op.operation_id,
             phase=op.phase,
-            classifications=classes,
+            classifications=(),
             recovery_class="proven_aborted",
             blocking=False,
         )
+
+    classes = tuple(classify_action(root, a) for a in op.plan.actions)
 
     if not classes:
         # Never-started empty plan — treat as proven abort candidate.
@@ -217,18 +231,34 @@ def affected_relpaths(op: SpeakerProfileOperationV1) -> set[str]:
     return {a.path for a in op.plan.actions}
 
 
+def blocking_operations_index(
+    root: Path,
+) -> dict[str, list[SpeakerProfileOperationV1]]:
+    """Map relative paths to ops that currently block reads of that path.
+
+    Lists operations once and skips hash classification for terminal
+    non-blocking phases (``complete`` / proven-aborted ``failed``).
+    """
+    index: dict[str, list[SpeakerProfileOperationV1]] = {}
+    for op in list_operations(root):
+        if op.phase == "complete":
+            continue
+        receipt = op.receipt or {}
+        if op.phase == "failed" and receipt.get("abort_class") == PROVEN_ABORTED:
+            continue
+        report = classify_operation(root, op)
+        if not report.blocking:
+            continue
+        for relpath in affected_relpaths(op):
+            index.setdefault(relpath, []).append(op)
+    return index
+
+
 def blocking_operations_for_path(
     root: Path, relpath: str
 ) -> list[SpeakerProfileOperationV1]:
     """Return ops that currently block reads of ``relpath``."""
-    blocked: list[SpeakerProfileOperationV1] = []
-    for op in list_operations(root):
-        report = classify_operation(root, op)
-        if not report.blocking:
-            continue
-        if relpath in affected_relpaths(op):
-            blocked.append(op)
-    return blocked
+    return list(blocking_operations_index(root).get(relpath, ()))
 
 
 def assert_relpath_readable(root: Path, relpath: str) -> None:

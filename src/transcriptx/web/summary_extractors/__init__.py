@@ -79,6 +79,8 @@ def _register_all_extractors():
         "entity_sentiment",
         "understandability",
         "lexical_diversity",
+        "epistemic_markers",
+        "politeness",
         "llm_action_items",
         "llm_custom_qa",
         "temporal_dynamics",

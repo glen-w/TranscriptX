@@ -1210,6 +1210,50 @@
     "variant": null
   },
   {
+    "viz_id": "epistemic_markers.category_rates.speaker",
+    "label": "Epistemic Markers (Per Speaker)",
+    "rank_default": 245,
+    "kind": "chart",
+    "module": "epistemic_markers",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "epistemic_markers.category_rates.speaker",
+      "by_artifact_key_prefix": "epistemic_markers/charts/",
+      "by_chart_slug_regex": "epistemic_markers",
+      "by_filename_glob": null
+    },
+    "description": "Hedging and certainty marker rates (or counts) by category for one speaker. Distinct from dialogue-act uncertainty labels and filler tics.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "politeness.category_rates.speaker",
+    "label": "Politeness Markers (Per Speaker)",
+    "rank_default": 246,
+    "kind": "chart",
+    "module": "politeness",
+    "scope": "speaker",
+    "cardinality": "speaker_set",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "politeness.category_rates.speaker",
+      "by_artifact_key_prefix": "politeness/charts/",
+      "by_chart_slug_regex": "politeness",
+      "by_filename_glob": null
+    },
+    "description": "Politeness, formality, and directiveness marker rates (or counts) by category for one speaker. Not affect polite-tension or structural meeting formality.",
+    "family_id": null,
+    "variant": null
+  },
+  {
     "viz_id": "entity_sentiment.sentiment_heatmap.global",
     "label": "Entity Sentiment Heatmap",
     "rank_default": 250,
@@ -3237,6 +3281,50 @@
       "by_filename_glob": null
     },
     "description": "Counts of verbal tics and filler patterns pooled across the entire group corpus. Taller bars mean that tic occurs more across all sessions combined.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.epistemic_markers.pooled.by_category.global",
+    "label": "Group pooled \u2014 epistemic marker counts",
+    "rank_default": 765,
+    "kind": "chart",
+    "module": "epistemic_markers",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.epistemic_markers.pooled.by_category.global",
+      "by_artifact_key_prefix": "epistemic_markers/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": "Hedging and certainty marker category counts pooled across the group corpus.",
+    "family_id": null,
+    "variant": null
+  },
+  {
+    "viz_id": "group.politeness.pooled.by_category.global",
+    "label": "Group pooled \u2014 politeness marker counts",
+    "rank_default": 766,
+    "kind": "chart",
+    "module": "politeness",
+    "scope": "global",
+    "cardinality": "single",
+    "prefer_formats": [
+      "html",
+      "png"
+    ],
+    "match": {
+      "by_viz_id": "group.politeness.pooled.by_category.global",
+      "by_artifact_key_prefix": "politeness/charts/",
+      "by_chart_slug_regex": null,
+      "by_filename_glob": null
+    },
+    "description": "Politeness and directiveness marker category counts pooled across the group corpus.",
     "family_id": null,
     "variant": null
   },

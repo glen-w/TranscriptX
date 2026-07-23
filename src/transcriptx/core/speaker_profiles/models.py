@@ -39,6 +39,7 @@ class SpeakerProfileV1(BaseModel):
     display_name: str
     aliases: list[str] = Field(default_factory=list)
     notes: Optional[str] = None
+    accent_color: Optional[str] = None
     status: ProfileStatus = "active"
     merged_into_profile_id: Optional[str] = None
     created_at: str

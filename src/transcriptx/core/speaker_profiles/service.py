@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from transcriptx.core.speaker_profiles.accents import assign_unused_accent
 from transcriptx.core.speaker_profiles.discovery import (
     SpeakerOccurrence,
     assert_occurrence_linkable,
@@ -16,10 +17,14 @@ from transcriptx.core.speaker_profiles.errors import (
     IgnoredSpeakerLinkError,
     LinkConflictError,
     SpeakerProfileContractError,
+    StaleConfirmationError,
     StaleUpdateError,
 )
+from transcriptx.core.speaker_profiles.hashing import sha256_file
 from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.layout import (
+    link_path,
+    profiles_dir,
     speaker_profiles_dir,
     speaker_profiles_lock_path,
 )
@@ -27,6 +32,10 @@ from transcriptx.core.speaker_profiles.models import (
     SpeakerProfileEventV1,
     SpeakerProfileLinkV1,
     SpeakerProfileV1,
+)
+from transcriptx.core.speaker_profiles.normalize import (
+    apply_profile_update,
+    normalize_profile_fields,
 )
 from transcriptx.core.speaker_profiles.operations import (
     OperationEngine,
@@ -38,18 +47,26 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_profile_path,
 )
 from transcriptx.core.speaker_profiles.recovery import (
+    OperationRecoveryReport,
+    affected_relpaths,
     assert_relpath_readable,
-    recover_operation,
+    recover_operation as recover_operation_impl,
 )
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.core.speaker_profiles.signals import CacheInvalidationSignal
 from transcriptx.core.speaker_profiles.store_io import (
     dumps_model,
     ensure_layout,
+    load_operation,
+    parse_model,
     profile_content_sha256,
     read_live_link,
     read_profile,
     utc_now_iso,
+)
+from transcriptx.core.speaker_profiles.versioning import (
+    LINK_FILE_SUFFIX,
+    PROFILE_FILE_SUFFIX,
 )
 from transcriptx.core.utils.file_lock import FileLock
 from transcriptx.core.utils.paths import PATHS
@@ -68,6 +85,72 @@ class MutationResult:
     profile_id: str | None = None
     link_id: str | None = None
     event_ids: tuple[str, ...] = ()
+    noop: bool = False
+
+
+@dataclass(frozen=True)
+class RecoveryResult:
+    """Result of classifying / completing a portable operation."""
+
+    report: OperationRecoveryReport
+    cache_signal: CacheInvalidationSignal
+
+
+def _noop_result(
+    op_type: str,
+    operation_idempotency_key: str,
+    **ids: Any,
+) -> MutationResult:
+    """Return a no-journal MutationResult when the store is already current."""
+    profile_id = ids.get("profile_id")
+    link_id = ids.get("link_id")
+    event_ids = tuple(ids.get("event_ids") or ())
+    profile_ids = tuple(
+        ids.get("profile_ids")
+        or ((profile_id,) if profile_id else ())
+    )
+    link_ids = tuple(
+        ids.get("link_ids") or ((link_id,) if link_id else ())
+    )
+    managed_transcript_ids = tuple(ids.get("managed_transcript_ids") or ())
+    scopes: list[str] = ["speaker_profiles"]
+    if link_ids or ids.get("link_file_key") or ids.get("link_id"):
+        scopes.append("speaker_links")
+    receipt: dict[str, Any] = {
+        "noop": True,
+        "op_type": op_type,
+        "operation_idempotency_key": operation_idempotency_key,
+        "profile_ids": list(profile_ids),
+        "link_ids": list(link_ids),
+        "managed_transcript_ids": list(managed_transcript_ids),
+        "scopes": list(scopes),
+    }
+    for key, value in ids.items():
+        if key not in receipt:
+            receipt[key] = value
+    if profile_id is not None:
+        receipt.setdefault("profile_id", profile_id)
+    if link_id is not None:
+        receipt.setdefault("link_id", link_id)
+    return MutationResult(
+        outcome=OperationOutcome(
+            operation_id="noop",
+            operation_idempotency_key=operation_idempotency_key,
+            op_type=op_type,
+            replayed=False,
+            receipt=receipt,
+        ),
+        cache_signal=CacheInvalidationSignal(
+            scopes=tuple(scopes),  # type: ignore[arg-type]
+            profile_ids=profile_ids,
+            link_ids=link_ids,
+            managed_transcript_ids=managed_transcript_ids,
+        ),
+        profile_id=profile_id,
+        link_id=link_id,
+        event_ids=event_ids,
+        noop=True,
+    )
 
 
 class SpeakerProfileService:
@@ -96,6 +179,33 @@ class SpeakerProfileService:
             sentinel.write_text("", encoding="utf-8")
         return FileLock(sentinel, timeout=60, blocking=True)
 
+    def _assert_entities_readable(
+        self,
+        *,
+        profile_ids: tuple[str, ...] | list[str] = (),
+        link_file_keys: tuple[str, ...] | list[str] = (),
+    ) -> None:
+        """Fail closed when profile/link paths intersect blocking ops (caller holds lock)."""
+        for profile_id in profile_ids:
+            assert_relpath_readable(self.root, relative_profile_path(profile_id))
+        for key in link_file_keys:
+            assert_relpath_readable(self.root, relative_link_path(key))
+
+    def _active_accent_colors(self) -> list[str | None]:
+        """Accent colours currently claimed by active profiles."""
+        colors: list[str | None] = []
+        root = profiles_dir(self.root)
+        if not root.is_dir():
+            return colors
+        for path in sorted(root.glob(f"*{PROFILE_FILE_SUFFIX}")):
+            try:
+                profile = parse_model(SpeakerProfileV1, path)
+            except Exception:
+                continue
+            if profile.status == "active":
+                colors.append(profile.accent_color)
+        return colors
+
     def get_profile(self, profile_id: str) -> SpeakerProfileV1 | None:
         ensure_layout(self.root)
         assert_relpath_readable(self.root, relative_profile_path(profile_id))
@@ -106,11 +216,30 @@ class SpeakerProfileService:
         assert_relpath_readable(self.root, relative_link_path(link_file_key_value))
         return read_live_link(link_file_key_value, root=self.root)
 
-    def recover_operation(self, operation_id: str):
+    def recover_operation(self, operation_id: str) -> RecoveryResult:
         """Classify and auto-complete / proven-abort a portable operation."""
         ensure_layout(self.root)
         with self._project_lock():
-            return recover_operation(self.root, operation_id)
+            report = recover_operation_impl(self.root, operation_id)
+            from transcriptx.core.speaker_profiles.layout import operation_path
+
+            op = load_operation(operation_path(operation_id, root=self.root))
+            profile_ids: list[str] = []
+            link_ids: list[str] = []
+            for rel in sorted(affected_relpaths(op)):
+                name = Path(rel).name
+                if rel.startswith("profiles/") and name.endswith(PROFILE_FILE_SUFFIX):
+                    profile_ids.append(name[: -len(PROFILE_FILE_SUFFIX)])
+                elif rel.startswith("links/") and name.endswith(LINK_FILE_SUFFIX):
+                    link_ids.append(name[: -len(LINK_FILE_SUFFIX)])
+            return RecoveryResult(
+                report=report,
+                cache_signal=CacheInvalidationSignal(
+                    scopes=("speaker_profiles", "speaker_links"),
+                    profile_ids=tuple(dict.fromkeys(profile_ids)),
+                    link_ids=tuple(dict.fromkeys(link_ids)),
+                ),
+            )
 
     def create_profile_and_link(
         self,
@@ -121,6 +250,7 @@ class SpeakerProfileService:
         local_speaker_key: str,
         notes: str | None = None,
         aliases: list[str] | None = None,
+        accent_color: str | None = None,
         created_by: str = "user",
     ) -> MutationResult:
         ensure_layout(self.root)
@@ -136,22 +266,42 @@ class SpeakerProfileService:
             self._reject_if_ignored(resolved.transcript_path, local_speaker_key)
 
             key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
+            self._assert_entities_readable(link_file_keys=(key,))
+
             existing = read_live_link(key, root=self.root)
             if existing is not None:
                 raise LinkConflictError(
                     f"occurrence already linked to profile {existing.profile_id}"
                 )
 
+            chosen_accent = (
+                accent_color
+                if accent_color is not None
+                else assign_unused_accent(self._active_accent_colors())
+            )
+            fields = normalize_profile_fields(
+                display_name=display_name,
+                aliases=aliases,
+                notes=notes,
+                accent_color=chosen_accent,
+            )
+
             now = utc_now_iso()
             profile_id = str(uuid4())
             link_id = str(uuid4())
             event_id = str(uuid4())
 
+            self._assert_entities_readable(
+                profile_ids=(profile_id,),
+                link_file_keys=(key,),
+            )
+
             profile = SpeakerProfileV1(
                 profile_id=profile_id,
-                display_name=display_name.strip(),
-                aliases=list(aliases or []),
-                notes=notes,
+                display_name=fields.display_name,
+                aliases=list(fields.aliases),
+                notes=fields.notes,
+                accent_color=fields.accent_color,
                 status="active",
                 merged_into_profile_id=None,
                 created_at=now,
@@ -165,7 +315,7 @@ class SpeakerProfileService:
                 profile_id=profile_id,
                 status="confirmed",
                 occurrence_fingerprint=occ.occurrence_fingerprint,
-                observed_label=display_name.strip(),
+                observed_label=fields.display_name,
                 created_at=now,
                 updated_at=now,
                 created_by=created_by,
@@ -187,6 +337,7 @@ class SpeakerProfileService:
                 },
             )
 
+            scopes = ["speaker_profiles", "speaker_links"]
             outcome = self.engine.run(
                 op_type="create_profile_and_link",
                 operation_idempotency_key=operation_idempotency_key,
@@ -210,6 +361,10 @@ class SpeakerProfileService:
                     "link_id": link_id,
                     "event_ids": [event_id],
                     "link_file_key": key,
+                    "profile_ids": [profile_id],
+                    "link_ids": [link_id],
+                    "managed_transcript_ids": [resolved.managed_transcript_id],
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -231,6 +386,8 @@ class SpeakerProfileService:
         operation_idempotency_key: str,
         managed_transcript_id: str,
         local_speaker_key: str,
+        expected_link_id: str | None = None,
+        expected_link_sha256: str | None = None,
         actor: str = "user",
     ) -> MutationResult:
         ensure_layout(self.root)
@@ -241,11 +398,24 @@ class SpeakerProfileService:
 
             resolved = self.resolver.resolve(managed_transcript_id)
             key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
+            self._assert_entities_readable(link_file_keys=(key,))
+
             existing = read_live_link(key, root=self.root)
             if existing is None:
                 raise SpeakerProfileContractError(
                     f"no live link for occurrence key {key}"
                 )
+
+            self._assert_entities_readable(
+                profile_ids=(existing.profile_id,),
+                link_file_keys=(key,),
+            )
+            self._assert_expected_link(
+                existing,
+                link_file_key_value=key,
+                expected_link_id=expected_link_id,
+                expected_link_sha256=expected_link_sha256,
+            )
 
             now = utc_now_iso()
             event_id = str(uuid4())
@@ -264,10 +434,8 @@ class SpeakerProfileService:
                     "link_before": existing.model_dump(mode="python"),
                 },
             )
-            from transcriptx.core.speaker_profiles.hashing import sha256_file
-            from transcriptx.core.speaker_profiles.layout import link_path
-
             before = sha256_file(link_path(key, root=self.root))
+            scopes = ["speaker_profiles", "speaker_links"]
             outcome = self.engine.run(
                 op_type="unlink",
                 operation_idempotency_key=operation_idempotency_key,
@@ -288,6 +456,10 @@ class SpeakerProfileService:
                     "link_id": existing.link_id,
                     "event_ids": [event_id],
                     "link_file_key": key,
+                    "profile_ids": [existing.profile_id],
+                    "link_ids": [existing.link_id],
+                    "managed_transcript_ids": [existing.managed_transcript_id],
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -303,7 +475,7 @@ class SpeakerProfileService:
                 ),
             )
 
-    def relink(
+    def link_existing_profile(
         self,
         *,
         operation_idempotency_key: str,
@@ -312,12 +484,20 @@ class SpeakerProfileService:
         profile_id: str,
         actor: str = "user",
     ) -> MutationResult:
-        """Point an occurrence at an existing active profile (replace live link)."""
+        """Link an unlinked occurrence to an existing active profile."""
         ensure_layout(self.root)
         with self._project_lock():
             replay = self.engine.find_complete(operation_idempotency_key)
             if replay is not None:
                 return self._result_from_receipt(replay)
+
+            resolved = self.resolver.resolve(managed_transcript_id)
+            key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
+
+            self._assert_entities_readable(
+                profile_ids=(profile_id,),
+                link_file_keys=(key,),
+            )
 
             profile = read_profile(profile_id, root=self.root)
             if profile is None:
@@ -327,14 +507,16 @@ class SpeakerProfileService:
                     f"cannot link to profile in status {profile.status!r}"
                 )
 
-            resolved = self.resolver.resolve(managed_transcript_id)
+            existing = read_live_link(key, root=self.root)
+            if existing is not None:
+                raise SpeakerProfileContractError(
+                    "occurrence already has a live link; use relink"
+                )
+
             occurrences = discover_occurrences_for_resolved(resolved)
             occ = self._require_occurrence(occurrences, local_speaker_key)
             assert_occurrence_linkable(occ)
             self._reject_if_ignored(resolved.transcript_path, local_speaker_key)
-
-            key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
-            existing = read_live_link(key, root=self.root)
 
             now = utc_now_iso()
             link_id = str(uuid4())
@@ -351,51 +533,47 @@ class SpeakerProfileService:
                 created_at=now,
                 updated_at=now,
                 created_by=actor,
-                provenance={"relinked_from": existing.link_id if existing else None},
+                provenance={},
             )
             event = SpeakerProfileEventV1(
                 event_id=event_id,
                 idempotency_id=event_id,
                 operation_idempotency_key=operation_idempotency_key,
-                event_type="link_relinked",
+                event_type="link_confirmed",
                 created_at=now,
                 actor=actor,
                 payload={
                     "profile_id": profile_id,
                     "link_id": link_id,
-                    "previous_link_id": existing.link_id if existing else None,
                     "managed_transcript_id": resolved.managed_transcript_id,
                     "local_speaker_key": local_speaker_key,
+                    "created_profile": False,
                 },
             )
-
-            from transcriptx.core.speaker_profiles.hashing import sha256_file
-            from transcriptx.core.speaker_profiles.layout import link_path
-
-            before = (
-                sha256_file(link_path(key, root=self.root)) if existing is not None else None
-            )
-            writes = [
-                PlannedWrite(
-                    relpath=relative_link_path(key),
-                    data=dumps_model(link),
-                    expected_before_sha256=before,
-                ),
-                PlannedWrite(
-                    relpath=relative_event_path(event_id),
-                    data=dumps_model(event),
-                ),
-            ]
+            scopes = ["speaker_profiles", "speaker_links"]
             outcome = self.engine.run(
-                op_type="relink",
+                op_type="link_existing_profile",
                 operation_idempotency_key=operation_idempotency_key,
-                writes=writes,
+                writes=[
+                    PlannedWrite(
+                        relpath=relative_link_path(key),
+                        data=dumps_model(link),
+                    ),
+                    PlannedWrite(
+                        relpath=relative_event_path(event_id),
+                        data=dumps_model(event),
+                    ),
+                ],
                 deletes=[],
                 receipt_extra={
                     "profile_id": profile_id,
                     "link_id": link_id,
                     "event_ids": [event_id],
                     "link_file_key": key,
+                    "profile_ids": [profile_id],
+                    "link_ids": [link_id],
+                    "managed_transcript_ids": [resolved.managed_transcript_id],
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -411,6 +589,151 @@ class SpeakerProfileService:
                 ),
             )
 
+    def relink(
+        self,
+        *,
+        operation_idempotency_key: str,
+        managed_transcript_id: str,
+        local_speaker_key: str,
+        profile_id: str,
+        expected_link_id: str | None = None,
+        expected_owner_profile_id: str | None = None,
+        expected_link_sha256: str | None = None,
+        actor: str = "user",
+    ) -> MutationResult:
+        """Replace an existing live link's owner profile."""
+        ensure_layout(self.root)
+        with self._project_lock():
+            replay = self.engine.find_complete(operation_idempotency_key)
+            if replay is not None:
+                return self._result_from_receipt(replay)
+
+            resolved = self.resolver.resolve(managed_transcript_id)
+            key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
+            existing = read_live_link(key, root=self.root)
+            if existing is None:
+                raise SpeakerProfileContractError(
+                    "no live link for occurrence; use link_existing_profile"
+                )
+
+            self._assert_entities_readable(
+                profile_ids=(profile_id, existing.profile_id),
+                link_file_keys=(key,),
+            )
+
+            profile = read_profile(profile_id, root=self.root)
+            if profile is None:
+                raise SpeakerProfileContractError(f"profile not found: {profile_id}")
+            if profile.status != "active":
+                raise SpeakerProfileContractError(
+                    f"cannot link to profile in status {profile.status!r}"
+                )
+
+            self._assert_expected_link(
+                existing,
+                link_file_key_value=key,
+                expected_link_id=expected_link_id,
+                expected_link_sha256=expected_link_sha256,
+                expected_owner_profile_id=expected_owner_profile_id,
+            )
+
+            if existing.profile_id == profile_id:
+                return _noop_result(
+                    "relink",
+                    operation_idempotency_key,
+                    profile_id=profile_id,
+                    link_id=existing.link_id,
+                    profile_ids=[existing.profile_id, profile_id],
+                    link_ids=[existing.link_id],
+                    managed_transcript_ids=[resolved.managed_transcript_id],
+                    link_file_key=key,
+                )
+
+            occurrences = discover_occurrences_for_resolved(resolved)
+            occ = self._require_occurrence(occurrences, local_speaker_key)
+            assert_occurrence_linkable(occ)
+            self._reject_if_ignored(resolved.transcript_path, local_speaker_key)
+
+            now = utc_now_iso()
+            link_id = str(uuid4())
+            event_id = str(uuid4())
+            previous_link_id = existing.link_id
+            previous_profile_id = existing.profile_id
+            link = SpeakerProfileLinkV1(
+                link_id=link_id,
+                managed_transcript_id=resolved.managed_transcript_id,
+                observed_transcript_relpath=resolved.current_relpath,
+                local_speaker_key=local_speaker_key,
+                profile_id=profile_id,
+                status="confirmed",
+                occurrence_fingerprint=occ.occurrence_fingerprint,
+                observed_label=profile.display_name,
+                created_at=now,
+                updated_at=now,
+                created_by=actor,
+                provenance={"relinked_from": previous_link_id},
+            )
+            event = SpeakerProfileEventV1(
+                event_id=event_id,
+                idempotency_id=event_id,
+                operation_idempotency_key=operation_idempotency_key,
+                event_type="link_relinked",
+                created_at=now,
+                actor=actor,
+                payload={
+                    "profile_id": profile_id,
+                    "link_id": link_id,
+                    "previous_link_id": previous_link_id,
+                    "previous_profile_id": previous_profile_id,
+                    "managed_transcript_id": resolved.managed_transcript_id,
+                    "local_speaker_key": local_speaker_key,
+                },
+            )
+
+            before = sha256_file(link_path(key, root=self.root))
+            scopes = ["speaker_profiles", "speaker_links"]
+            profile_ids = list(
+                dict.fromkeys([previous_profile_id, profile_id])
+            )
+            outcome = self.engine.run(
+                op_type="relink",
+                operation_idempotency_key=operation_idempotency_key,
+                writes=[
+                    PlannedWrite(
+                        relpath=relative_link_path(key),
+                        data=dumps_model(link),
+                        expected_before_sha256=before,
+                    ),
+                    PlannedWrite(
+                        relpath=relative_event_path(event_id),
+                        data=dumps_model(event),
+                    ),
+                ],
+                deletes=[],
+                receipt_extra={
+                    "profile_id": profile_id,
+                    "link_id": link_id,
+                    "event_ids": [event_id],
+                    "link_file_key": key,
+                    "profile_ids": profile_ids,
+                    "link_ids": [link_id, previous_link_id],
+                    "managed_transcript_ids": [resolved.managed_transcript_id],
+                    "scopes": scopes,
+                },
+            )
+            return MutationResult(
+                outcome=outcome,
+                profile_id=profile_id,
+                link_id=link_id,
+                event_ids=(event_id,),
+                cache_signal=CacheInvalidationSignal(
+                    scopes=("speaker_profiles", "speaker_links"),
+                    profile_ids=tuple(profile_ids),
+                    link_ids=(link_id, previous_link_id),
+                    managed_transcript_ids=(resolved.managed_transcript_id,),
+                ),
+            )
+
     def update_profile(
         self,
         *,
@@ -420,6 +743,9 @@ class SpeakerProfileService:
         display_name: str | None = None,
         aliases: list[str] | None = None,
         notes: str | None = None,
+        clear_notes: bool = False,
+        accent_color: str | None = None,
+        clear_accent: bool = False,
         actor: str = "user",
     ) -> MutationResult:
         ensure_layout(self.root)
@@ -427,6 +753,8 @@ class SpeakerProfileService:
             replay = self.engine.find_complete(operation_idempotency_key)
             if replay is not None:
                 return self._result_from_receipt(replay)
+
+            self._assert_entities_readable(profile_ids=(profile_id,))
 
             current = read_profile(profile_id, root=self.root)
             if current is None:
@@ -439,20 +767,15 @@ class SpeakerProfileService:
                 )
 
             now = utc_now_iso()
-            updated = current.model_copy(
-                update={
-                    "display_name": (
-                        display_name.strip()
-                        if display_name is not None
-                        else current.display_name
-                    ),
-                    "aliases": (
-                        list(aliases) if aliases is not None else list(current.aliases)
-                    ),
-                    "notes": notes if notes is not None else current.notes,
-                    "updated_at": now,
-                }
-            )
+            updated = apply_profile_update(
+                current,
+                display_name=display_name,
+                aliases=aliases,
+                notes=notes,
+                clear_notes=clear_notes,
+                accent_color=accent_color,
+                clear_accent=clear_accent,
+            ).model_copy(update={"updated_at": now})
             event_id = str(uuid4())
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -463,6 +786,7 @@ class SpeakerProfileService:
                 actor=actor,
                 payload={"profile_id": profile_id},
             )
+            scopes = ["speaker_profiles"]
             outcome = self.engine.run(
                 op_type="update_profile",
                 operation_idempotency_key=operation_idempotency_key,
@@ -481,6 +805,10 @@ class SpeakerProfileService:
                 receipt_extra={
                     "profile_id": profile_id,
                     "event_ids": [event_id],
+                    "profile_ids": [profile_id],
+                    "link_ids": [],
+                    "managed_transcript_ids": [],
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -506,6 +834,9 @@ class SpeakerProfileService:
             replay = self.engine.find_complete(operation_idempotency_key)
             if replay is not None:
                 return self._result_from_receipt(replay)
+
+            self._assert_entities_readable(profile_ids=(profile_id,))
+
             current = read_profile(profile_id, root=self.root)
             if current is None:
                 raise SpeakerProfileContractError(f"profile not found: {profile_id}")
@@ -531,6 +862,7 @@ class SpeakerProfileService:
                 actor=actor,
                 payload={"profile_id": profile_id},
             )
+            scopes = ["speaker_profiles"]
             outcome = self.engine.run(
                 op_type="archive_profile",
                 operation_idempotency_key=operation_idempotency_key,
@@ -546,7 +878,97 @@ class SpeakerProfileService:
                     ),
                 ],
                 deletes=[],
-                receipt_extra={"profile_id": profile_id, "event_ids": [event_id]},
+                receipt_extra={
+                    "profile_id": profile_id,
+                    "event_ids": [event_id],
+                    "profile_ids": [profile_id],
+                    "link_ids": [],
+                    "managed_transcript_ids": [],
+                    "scopes": scopes,
+                },
+            )
+            return MutationResult(
+                outcome=outcome,
+                profile_id=profile_id,
+                event_ids=(event_id,),
+                cache_signal=CacheInvalidationSignal(
+                    scopes=("speaker_profiles",),
+                    profile_ids=(profile_id,),
+                ),
+            )
+
+    def unarchive_profile(
+        self,
+        *,
+        operation_idempotency_key: str,
+        profile_id: str,
+        expected_content_sha256: str,
+        actor: str = "user",
+    ) -> MutationResult:
+        """Restore an archived profile to active status."""
+        ensure_layout(self.root)
+        with self._project_lock():
+            replay = self.engine.find_complete(operation_idempotency_key)
+            if replay is not None:
+                return self._result_from_receipt(replay)
+
+            self._assert_entities_readable(profile_ids=(profile_id,))
+
+            current = read_profile(profile_id, root=self.root)
+            if current is None:
+                raise SpeakerProfileContractError(f"profile not found: {profile_id}")
+            if current.status == "merged":
+                raise SpeakerProfileContractError("cannot unarchive a merged profile")
+            if current.status == "active":
+                raise SpeakerProfileContractError("profile is already active")
+            if current.status != "archived":
+                raise SpeakerProfileContractError(
+                    f"cannot unarchive profile in status {current.status!r}"
+                )
+            actual = profile_content_sha256(profile_id, root=self.root)
+            if actual != expected_content_sha256:
+                raise StaleUpdateError(
+                    f"profile {profile_id} stale: expected {expected_content_sha256}, "
+                    f"found {actual}"
+                )
+            now = utc_now_iso()
+            updated = current.model_copy(
+                update={"status": "active", "updated_at": now}
+            )
+            event_id = str(uuid4())
+            event = SpeakerProfileEventV1(
+                event_id=event_id,
+                idempotency_id=event_id,
+                operation_idempotency_key=operation_idempotency_key,
+                event_type="profile_unarchived",
+                created_at=now,
+                actor=actor,
+                payload={"profile_id": profile_id},
+            )
+            scopes = ["speaker_profiles"]
+            outcome = self.engine.run(
+                op_type="unarchive_profile",
+                operation_idempotency_key=operation_idempotency_key,
+                writes=[
+                    PlannedWrite(
+                        relpath=relative_profile_path(profile_id),
+                        data=dumps_model(updated),
+                        expected_before_sha256=expected_content_sha256,
+                    ),
+                    PlannedWrite(
+                        relpath=relative_event_path(event_id),
+                        data=dumps_model(event),
+                    ),
+                ],
+                deletes=[],
+                receipt_extra={
+                    "profile_id": profile_id,
+                    "event_ids": [event_id],
+                    "profile_ids": [profile_id],
+                    "link_ids": [],
+                    "managed_transcript_ids": [],
+                    "scopes": scopes,
+                },
             )
             return MutationResult(
                 outcome=outcome,
@@ -575,6 +997,11 @@ class SpeakerProfileService:
                 return self._result_from_receipt(replay)
             if source_profile_id == target_profile_id:
                 raise SpeakerProfileContractError("cannot merge a profile into itself")
+
+            self._assert_entities_readable(
+                profile_ids=(source_profile_id, target_profile_id)
+            )
+
             source = read_profile(source_profile_id, root=self.root)
             target = read_profile(target_profile_id, root=self.root)
             if source is None or target is None:
@@ -584,7 +1011,6 @@ class SpeakerProfileService:
                     f"merge target must be active, got {target.status!r}"
                 )
             if source.status == "merged":
-                # Idempotent: already merged into same target
                 if source.merged_into_profile_id == target_profile_id:
                     raise SpeakerProfileContractError(
                         "source already merged into target; use operation replay"
@@ -597,11 +1023,15 @@ class SpeakerProfileService:
                 )
 
             from transcriptx.core.speaker_profiles.aggregates import list_profile_links
-            from transcriptx.core.speaker_profiles.hashing import sha256_file
-            from transcriptx.core.speaker_profiles.layout import link_path
             from transcriptx.core.speaker_profiles.identity import link_file_key as lfk
 
             links = list_profile_links(source_profile_id, root=self.root)
+            link_keys = [
+                lfk(lnk.managed_transcript_id, lnk.local_speaker_key) for lnk in links
+            ]
+            if link_keys:
+                self._assert_entities_readable(link_file_keys=link_keys)
+
             now = utc_now_iso()
             event_id = str(uuid4())
             merged = source.model_copy(
@@ -635,8 +1065,7 @@ class SpeakerProfileService:
                     data=dumps_model(event),
                 ),
             ]
-            for lnk in links:
-                key = lfk(lnk.managed_transcript_id, lnk.local_speaker_key)
+            for lnk, key in zip(links, link_keys, strict=True):
                 updated_link = lnk.model_copy(
                     update={"profile_id": target_profile_id, "updated_at": now}
                 )
@@ -648,6 +1077,11 @@ class SpeakerProfileService:
                         expected_before_sha256=before,
                     )
                 )
+            link_ids = [lnk.link_id for lnk in links]
+            managed_ids = list(
+                dict.fromkeys(lnk.managed_transcript_id for lnk in links)
+            )
+            scopes = ["speaker_profiles", "speaker_links"]
             outcome = self.engine.run(
                 op_type="merge_profiles",
                 operation_idempotency_key=operation_idempotency_key,
@@ -657,6 +1091,10 @@ class SpeakerProfileService:
                     "profile_id": source_profile_id,
                     "target_profile_id": target_profile_id,
                     "event_ids": [event_id],
+                    "profile_ids": [source_profile_id, target_profile_id],
+                    "link_ids": link_ids,
+                    "managed_transcript_ids": managed_ids,
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -666,6 +1104,8 @@ class SpeakerProfileService:
                 cache_signal=CacheInvalidationSignal(
                     scopes=("speaker_profiles", "speaker_links"),
                     profile_ids=(source_profile_id, target_profile_id),
+                    link_ids=tuple(link_ids),
+                    managed_transcript_ids=tuple(managed_ids),
                 ),
             )
 
@@ -675,6 +1115,9 @@ class SpeakerProfileService:
         operation_idempotency_key: str,
         managed_transcript_id: str,
         local_speaker_key: str,
+        expected_link_id: str | None = None,
+        expected_fingerprint: str | None = None,
+        expected_link_sha256: str | None = None,
         actor: str = "user",
     ) -> MutationResult:
         """Journalled fingerprint supersession after needs_review mismatch."""
@@ -683,15 +1126,44 @@ class SpeakerProfileService:
             replay = self.engine.find_complete(operation_idempotency_key)
             if replay is not None:
                 return self._result_from_receipt(replay)
+
             resolved = self.resolver.resolve(managed_transcript_id)
-            occurrences = discover_occurrences_for_resolved(resolved)
-            occ = self._require_occurrence(occurrences, local_speaker_key)
             key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
+            self._assert_entities_readable(link_file_keys=(key,))
+
             existing = read_live_link(key, root=self.root)
             if existing is None:
                 raise SpeakerProfileContractError("no live link to supersede")
-            from transcriptx.core.speaker_profiles.hashing import sha256_file
-            from transcriptx.core.speaker_profiles.layout import link_path
+
+            self._assert_entities_readable(
+                profile_ids=(existing.profile_id,),
+                link_file_keys=(key,),
+            )
+
+            occurrences = discover_occurrences_for_resolved(resolved)
+            occ = self._require_occurrence(occurrences, local_speaker_key)
+            assert_occurrence_linkable(occ)
+            self._reject_if_ignored(resolved.transcript_path, local_speaker_key)
+
+            self._assert_expected_link(
+                existing,
+                link_file_key_value=key,
+                expected_link_id=expected_link_id,
+                expected_link_sha256=expected_link_sha256,
+                expected_fingerprint=expected_fingerprint,
+            )
+
+            if occ.occurrence_fingerprint == existing.occurrence_fingerprint:
+                return _noop_result(
+                    "supersede_link_fingerprint",
+                    operation_idempotency_key,
+                    profile_id=existing.profile_id,
+                    link_id=existing.link_id,
+                    profile_ids=[existing.profile_id],
+                    link_ids=[existing.link_id],
+                    managed_transcript_ids=[existing.managed_transcript_id],
+                    link_file_key=key,
+                )
 
             now = utc_now_iso()
             updated = existing.model_copy(
@@ -715,6 +1187,7 @@ class SpeakerProfileService:
                 },
             )
             before = sha256_file(link_path(key, root=self.root))
+            scopes = ["speaker_profiles", "speaker_links"]
             outcome = self.engine.run(
                 op_type="supersede_link_fingerprint",
                 operation_idempotency_key=operation_idempotency_key,
@@ -735,6 +1208,10 @@ class SpeakerProfileService:
                     "link_id": existing.link_id,
                     "event_ids": [event_id],
                     "link_file_key": key,
+                    "profile_ids": [existing.profile_id],
+                    "link_ids": [existing.link_id],
+                    "managed_transcript_ids": [existing.managed_transcript_id],
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -746,6 +1223,7 @@ class SpeakerProfileService:
                     scopes=("speaker_profiles", "speaker_links"),
                     profile_ids=(existing.profile_id,),
                     link_ids=(existing.link_id,),
+                    managed_transcript_ids=(existing.managed_transcript_id,),
                 ),
             )
 
@@ -768,13 +1246,19 @@ class SpeakerProfileService:
             replay = self.engine.find_complete(operation_idempotency_key)
             if replay is not None:
                 return self._result_from_receipt(replay)
+
             resolved = self.resolver.resolve(managed_transcript_id)
             key = link_file_key(resolved.managed_transcript_id, local_speaker_key)
+            self._assert_entities_readable(link_file_keys=(key,))
+
             existing = read_live_link(key, root=self.root)
             if existing is None:
                 raise SpeakerProfileContractError("no live link to migrate")
-            from transcriptx.core.speaker_profiles.hashing import sha256_file
-            from transcriptx.core.speaker_profiles.layout import link_path
+
+            self._assert_entities_readable(
+                profile_ids=(existing.profile_id,),
+                link_file_keys=(key,),
+            )
 
             now = utc_now_iso()
             # Audit field stays immutable; only updated_at + provenance bump.
@@ -803,6 +1287,7 @@ class SpeakerProfileService:
                 },
             )
             before = sha256_file(link_path(key, root=self.root))
+            scopes = ["speaker_profiles", "speaker_links"]
             outcome = self.engine.run(
                 op_type="migrate_link",
                 operation_idempotency_key=operation_idempotency_key,
@@ -822,6 +1307,11 @@ class SpeakerProfileService:
                     "profile_id": existing.profile_id,
                     "link_id": existing.link_id,
                     "event_ids": [event_id],
+                    "link_file_key": key,
+                    "profile_ids": [existing.profile_id],
+                    "link_ids": [existing.link_id],
+                    "managed_transcript_ids": [existing.managed_transcript_id],
+                    "scopes": scopes,
                 },
             )
             return MutationResult(
@@ -833,17 +1323,45 @@ class SpeakerProfileService:
                     scopes=("speaker_profiles", "speaker_links"),
                     profile_ids=(existing.profile_id,),
                     link_ids=(existing.link_id,),
+                    managed_transcript_ids=(existing.managed_transcript_id,),
                 ),
             )
 
     def _result_from_receipt(self, outcome: OperationOutcome) -> MutationResult:
         receipt = outcome.receipt
-        profile_id = receipt.get("profile_id")
-        link_id = receipt.get("link_id")
-        event_ids = tuple(receipt.get("event_ids") or ())
-        scopes: list[Any] = ["speaker_profiles"]
-        if link_id or receipt.get("link_file_key"):
+        profile_ids_raw = receipt.get("profile_ids")
+        if isinstance(profile_ids_raw, list):
+            profile_ids = tuple(str(x) for x in profile_ids_raw)
+        else:
+            scalar = receipt.get("profile_id")
+            profile_ids = (str(scalar),) if scalar else ()
+
+        link_ids_raw = receipt.get("link_ids")
+        if isinstance(link_ids_raw, list):
+            link_ids = tuple(str(x) for x in link_ids_raw)
+        else:
+            scalar_link = receipt.get("link_id")
+            link_ids = (str(scalar_link),) if scalar_link else ()
+
+        managed_raw = receipt.get("managed_transcript_ids") or ()
+        managed_transcript_ids = tuple(str(x) for x in managed_raw)
+
+        scopes_raw = receipt.get("scopes")
+        scopes: list[str] = []
+        if isinstance(scopes_raw, list) and scopes_raw:
+            scopes = [str(s) for s in scopes_raw]
+        if "speaker_profiles" not in scopes:
+            scopes.insert(0, "speaker_profiles")
+        if (
+            link_ids or receipt.get("link_file_key") or receipt.get("link_id")
+        ) and "speaker_links" not in scopes:
             scopes.append("speaker_links")
+
+        profile_id = receipt.get("profile_id") or (
+            profile_ids[0] if profile_ids else None
+        )
+        link_id = receipt.get("link_id") or (link_ids[0] if link_ids else None)
+        event_ids = tuple(receipt.get("event_ids") or ())
         return MutationResult(
             outcome=outcome,
             profile_id=profile_id,
@@ -851,10 +1369,50 @@ class SpeakerProfileService:
             event_ids=event_ids,
             cache_signal=CacheInvalidationSignal(
                 scopes=tuple(scopes),  # type: ignore[arg-type]
-                profile_ids=(profile_id,) if profile_id else (),
-                link_ids=(link_id,) if link_id else (),
+                profile_ids=profile_ids,
+                link_ids=link_ids,
+                managed_transcript_ids=managed_transcript_ids,
             ),
         )
+
+    def _assert_expected_link(
+        self,
+        existing: SpeakerProfileLinkV1,
+        *,
+        link_file_key_value: str,
+        expected_link_id: str | None = None,
+        expected_link_sha256: str | None = None,
+        expected_owner_profile_id: str | None = None,
+        expected_fingerprint: str | None = None,
+    ) -> None:
+        if expected_link_id is not None and existing.link_id != expected_link_id:
+            raise StaleConfirmationError(
+                f"link_id mismatch: expected {expected_link_id}, "
+                f"found {existing.link_id}"
+            )
+        if (
+            expected_owner_profile_id is not None
+            and existing.profile_id != expected_owner_profile_id
+        ):
+            raise StaleConfirmationError(
+                f"owner profile_id mismatch: expected {expected_owner_profile_id}, "
+                f"found {existing.profile_id}"
+            )
+        if (
+            expected_fingerprint is not None
+            and existing.occurrence_fingerprint != expected_fingerprint
+        ):
+            raise StaleConfirmationError(
+                f"fingerprint mismatch: expected {expected_fingerprint}, "
+                f"found {existing.occurrence_fingerprint}"
+            )
+        if expected_link_sha256 is not None:
+            actual = sha256_file(link_path(link_file_key_value, root=self.root))
+            if actual != expected_link_sha256:
+                raise StaleConfirmationError(
+                    f"link content sha256 mismatch: expected {expected_link_sha256}, "
+                    f"found {actual}"
+                )
 
     @staticmethod
     def _require_occurrence(

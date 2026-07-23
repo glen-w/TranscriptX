@@ -11,6 +11,34 @@ from transcriptx.web.summary_extractors import get_extractor, has_extractor
 def test_lexical_diversity_and_action_items_extractors_registered() -> None:
     assert has_extractor("lexical_diversity")
     assert has_extractor("llm_action_items")
+    assert has_extractor("epistemic_markers")
+    assert has_extractor("politeness")
+
+
+@pytest.mark.unit
+def test_epistemic_and_politeness_extractors() -> None:
+    epi = get_extractor("epistemic_markers")
+    assert epi is not None
+    summary: dict = {"key_metrics": {}, "highlights": []}
+    epi(
+        {
+            "global_stats": {
+                "total_marker_hits": 4,
+                "hits_per_100_tokens": 1.25,
+                "hedge_share": 0.75,
+                "booster_share": 0.25,
+            }
+        },
+        summary,
+    )
+    assert summary["key_metrics"]["Epistemic marker hits"] == "4"
+    assert summary["key_metrics"]["Hedge share"] == "0.750"
+
+    pol = get_extractor("politeness")
+    assert pol is not None
+    summary2: dict = {"key_metrics": {}, "highlights": []}
+    pol({"usable": False, "global_stats": {}}, summary2)
+    assert any("abstained" in h.lower() for h in summary2["highlights"])
 
 
 @pytest.mark.unit

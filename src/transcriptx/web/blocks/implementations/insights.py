@@ -1427,3 +1427,186 @@ def render_lexical_diversity_block(
     _render_view_raw_file_link(
         ctx, module, "_lexical_diversity.json", link_key="lexical_diversity_raw"
     )
+
+
+def _render_marker_module_payload(
+    payload: Dict[str, Any],
+    *,
+    share_keys: tuple[str, ...],
+) -> None:
+    if payload.get("usable") is False:
+        meta = payload.get("metadata") or {}
+        st.info(
+            "Markers unavailable for this transcript "
+            f"(language_status={meta.get('language_status', 'unsupported')})."
+        )
+        return
+
+    global_stats = payload.get("global_stats") or {}
+    if isinstance(global_stats, dict) and global_stats:
+        cols = st.columns(min(3, 1 + len(share_keys)))
+        cols[0].metric(
+            "Hits / 100 tokens",
+            (
+                "n/a"
+                if global_stats.get("hits_per_100_tokens") is None
+                else f"{float(global_stats['hits_per_100_tokens']):.2f}"
+            ),
+        )
+        for col, key in zip(cols[1:], share_keys):
+            value = global_stats.get(key)
+            label = key.replace("_", " ").title()
+            if value is None:
+                col.metric(label, "n/a")
+            else:
+                col.metric(label, f"{float(value):.3f}")
+
+        counts = global_stats.get("category_counts") or {}
+        if isinstance(counts, dict) and counts:
+            st.caption("Global category counts")
+            st.dataframe(
+                [{"category": k, "count": v} for k, v in sorted(counts.items())],
+                width="stretch",
+                hide_index=True,
+            )
+
+    speaker_stats = payload.get("speaker_stats") or {}
+    if isinstance(speaker_stats, dict) and speaker_stats:
+        rows = []
+        for speaker in sorted(speaker_stats):
+            stats = speaker_stats[speaker]
+            if not isinstance(stats, dict):
+                continue
+            row = {
+                "speaker": speaker,
+                "token_count": stats.get("token_count"),
+                "total_marker_hits": stats.get("total_marker_hits"),
+                "hits_per_100_tokens": stats.get("hits_per_100_tokens"),
+            }
+            for key in share_keys:
+                row[key] = stats.get(key)
+            rows.append(row)
+        if rows:
+            st.caption("Per-speaker marker rates")
+            st.dataframe(rows, width="stretch", hide_index=True)
+
+    hits = payload.get("hits") or []
+    if isinstance(hits, list) and hits:
+        with st.expander(f"Marker hits ({len(hits)})"):
+            preview = [
+                {
+                    "speaker": h.get("speaker"),
+                    "category": h.get("category"),
+                    "surface": h.get("surface"),
+                    "segment_index": h.get("segment_index"),
+                }
+                for h in hits[:80]
+                if isinstance(h, dict)
+            ]
+            if preview:
+                st.dataframe(preview, width="stretch", hide_index=True)
+
+
+def _render_marker_module_block(
+    ctx: BlockContext,
+    placement: BlockPlacement,
+    *,
+    module: str,
+    title_default: str,
+    json_suffix: str,
+    share_keys: tuple[str, ...],
+) -> None:
+    title = placement.title_override or str(
+        placement.params.get("title", title_default)
+    )
+    empty_hint = str(
+        placement.params.get(
+            "empty_hint",
+            f"Run the `{module}` module to populate this view.",
+        )
+    )
+    st.subheader(title)
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    if run_root is None:
+        render_module_required_hint(
+            empty_hint, key=f"{module}_no_loader", ctx=ctx
+        )
+        return
+
+    if is_group_run(run_root):
+        session_rows = load_group_session_rows(run_root, module)
+        speaker_rows = load_group_speaker_rows(run_root, module)
+        if session_rows:
+            st.caption("Group rollup — per-session metrics")
+            st.dataframe(session_rows, width="stretch", hide_index=True)
+        if speaker_rows:
+            st.caption("Group rollup — per-speaker metrics")
+            st.dataframe(speaker_rows[:40], width="stretch", hide_index=True)
+        if not session_rows and not speaker_rows:
+            st.info(group_rollup_empty_hint(module, content_name="session_rows"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session")
+        member = select_group_member(members, key=f"{module}_session_select")
+        if member is None:
+            return
+        payload = load_member_module_json(loader, member, module, json_suffix)
+        if not payload:
+            st.info(member_empty_hint(module))
+            return
+        _render_marker_module_payload(payload, share_keys=share_keys)
+        _render_view_raw_file_link(
+            ctx,
+            module,
+            json_suffix,
+            link_key=f"{module}_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
+    if loader is None:
+        render_module_required_hint(
+            empty_hint, key=f"{module}_no_loader", ctx=ctx
+        )
+        return
+
+    failure_hint = _module_failure_hint(run_root, module)
+    payload = loader.load_json(module, json_suffix)
+    if not payload:
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            render_module_required_hint(
+                empty_hint, key=f"{module}_empty", ctx=ctx
+            )
+        return
+
+    _render_marker_module_payload(payload, share_keys=share_keys)
+    _render_view_raw_file_link(
+        ctx, module, json_suffix, link_key=f"{module}_raw"
+    )
+
+
+def render_epistemic_markers_block(
+    ctx: BlockContext, placement: BlockPlacement
+) -> None:
+    _render_marker_module_block(
+        ctx,
+        placement,
+        module="epistemic_markers",
+        title_default="Epistemic Markers",
+        json_suffix="_epistemic_markers.json",
+        share_keys=("hedge_share", "booster_share"),
+    )
+
+
+def render_politeness_block(ctx: BlockContext, placement: BlockPlacement) -> None:
+    _render_marker_module_block(
+        ctx,
+        placement,
+        module="politeness",
+        title_default="Politeness Markers",
+        json_suffix="_politeness.json",
+        share_keys=("soft_request_ratio",),
+    )

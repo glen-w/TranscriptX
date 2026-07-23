@@ -20,7 +20,7 @@ All registered pipeline modules support group runs (`supports_group=true`) and h
 
 | Module | Class |
 | --- | --- |
-| stats, sentiment, acts, ner, lexical_diversity, simplified_transcript, transcript_quality, … | Registry-backed group charts (+ row CSV/JSON); **transcript_quality** pools only within matching ASR provenance cohorts (see below) |
+| stats, sentiment, acts, ner, lexical_diversity, simplified_transcript, transcript_quality, epistemic_markers, politeness, … | Registry-backed group charts (+ row CSV/JSON); **transcript_quality** pools only within matching ASR provenance cohorts (see below) |
 | wordclouds | Module-specific group visuals (special path) |
 | temporal_dynamics, insight_eligibility, voice_contours, llm_speaker_summary | Data outputs only (no group chart registry entry); **llm_speaker_summary** may also feed [group LLM synthesis](group_llm_synthesis_contract.md) |
 | summary, llm_summary, narrative_summary, transcript_output | Blob-only composite; **llm_summary** may also feed [group LLM synthesis](group_llm_synthesis_contract.md) |

@@ -64,4 +64,13 @@ def build_nlp_module_definitions(
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
         },
+        "epistemic_markers": {
+            "description": "Hedging / certainty / epistemic markers",
+            "dependencies": [],
+            "category": "light",
+            "determinism_tier": "T0",
+            "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
+            "enhancements": [],
+            "gate_on_turn_taking_speakers": True,
+        },
     }

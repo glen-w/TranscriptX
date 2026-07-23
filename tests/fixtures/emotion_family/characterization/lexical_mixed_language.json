@@ -1,0 +1,388 @@
+{
+  "_canonical_rows": [
+    {
+      "assignment_counts": {
+        "anger": 0,
+        "anticipation": 0,
+        "disgust": 0,
+        "fear": 0,
+        "joy": 1,
+        "sadness": 0,
+        "surprise": 0,
+        "trust": 0
+      },
+      "contributing": [
+        {
+          "categories": [
+            "joy"
+          ],
+          "normalized_token": "hello",
+          "original_end": 5,
+          "original_start": 0,
+          "surface": "Hello"
+        }
+      ],
+      "coverage": 0.5,
+      "emotion_scores": {
+        "anger": 0.0,
+        "anticipation": 0.0,
+        "disgust": 0.0,
+        "fear": 0.0,
+        "joy": 1.0,
+        "sadness": 0.0,
+        "surprise": 0.0,
+        "trust": 0.0
+      },
+      "evaluation_state": "scored",
+      "language": "en",
+      "language_resolution": "segment_override",
+      "matched_occurrences": 1,
+      "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+      "segment_id": "1",
+      "speaker": "Alice",
+      "tokens_considered": 2,
+      "valence_assignment_counts": {
+        "negative": 0,
+        "positive": 0
+      },
+      "valence_scores": {
+        "negative": 0.0,
+        "positive": 0.0
+      }
+    },
+    {
+      "assignment_counts": {
+        "anger": 0,
+        "anticipation": 0,
+        "disgust": 0,
+        "fear": 0,
+        "joy": 0,
+        "sadness": 0,
+        "surprise": 0,
+        "trust": 0
+      },
+      "contributing": [],
+      "coverage": 0.0,
+      "emotion_scores": {
+        "anger": 0.0,
+        "anticipation": 0.0,
+        "disgust": 0.0,
+        "fear": 0.0,
+        "joy": 0.0,
+        "sadness": 0.0,
+        "surprise": 0.0,
+        "trust": 0.0
+      },
+      "evaluation_state": "skipped",
+      "language": "fr",
+      "language_resolution": "segment_override",
+      "matched_occurrences": 0,
+      "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+      "segment_id": "2",
+      "skip_reason": "unsupported_language",
+      "speaker": "Bob",
+      "tokens_considered": 0,
+      "valence_assignment_counts": {
+        "negative": 0,
+        "positive": 0
+      },
+      "valence_scores": {
+        "negative": 0.0,
+        "positive": 0.0
+      }
+    }
+  ],
+  "_pending_projections": [
+    {
+      "projection": {
+        "canonical_ref": {
+          "integrity_checksum": "73dbeefab8cc1a1b30a36834629f8ea1ce9a80695657df493c93fc309dcff98f",
+          "module_id": "emotion",
+          "row_key": "1",
+          "schema_version": "emotion_result_schema_v2",
+          "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+          "semantics_version": "emotion_lexical_v2"
+        },
+        "contributing_words_preview": [
+          {
+            "categories": [
+              "joy"
+            ],
+            "normalized_token": "hello",
+            "original_end": 5,
+            "original_start": 0,
+            "surface": "Hello"
+          }
+        ],
+        "emotion_scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+        "evaluation_state": "scored",
+        "nrc_emotion": {
+          "anger": 0.0,
+          "anticipation": 0.0,
+          "disgust": 0.0,
+          "fear": 0.0,
+          "joy": 1.0,
+          "sadness": 0.0,
+          "surprise": 0.0,
+          "trust": 0.0
+        },
+        "nrc_emotion_coverage": 0.5,
+        "nrc_valence_scores": {
+          "negative": 0.0,
+          "positive": 0.0
+        },
+        "segment_id": "1"
+      },
+      "segment_id": "1"
+    },
+    {
+      "projection": {
+        "canonical_ref": {
+          "integrity_checksum": "b8dda28262aab540580d03bcda3681d8ff916bcd2509d2792edae1710a21d9fd",
+          "module_id": "emotion",
+          "row_key": "2",
+          "schema_version": "emotion_result_schema_v2",
+          "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+          "semantics_version": "emotion_lexical_v2"
+        },
+        "contributing_words_preview": [],
+        "emotion_scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
+        "evaluation_state": "skipped",
+        "nrc_emotion": {
+          "anger": 0.0,
+          "anticipation": 0.0,
+          "disgust": 0.0,
+          "fear": 0.0,
+          "joy": 0.0,
+          "sadness": 0.0,
+          "surprise": 0.0,
+          "trust": 0.0
+        },
+        "nrc_emotion_coverage": 0.0,
+        "nrc_valence_scores": {
+          "negative": 0.0,
+          "positive": 0.0
+        },
+        "segment_id": "2"
+      },
+      "segment_id": "2"
+    }
+  ],
+  "aggregation_cache_hit": false,
+  "aggregation_cache_key": "792622ba245f2b2b8498e6b5a9bdc752efed3199ea166ae4209d364cb3dd4263",
+  "aggregation_semantics_version": "emotion_aggregation_v1",
+  "all_scores": {
+    "anger": 0.0,
+    "anticipation": 0.0,
+    "disgust": 0.0,
+    "fear": 0.0,
+    "joy": 1.0,
+    "sadness": 0.0,
+    "surprise": 0.0,
+    "trust": 0.0
+  },
+  "cache_fingerprint": "8f7e3ed87eb3a669fadeca18eaf00392063c8988090d2f7d723c3c09218a8d76",
+  "combined_rows": [
+    {
+      "anger": 0.0,
+      "anticipation": 0.0,
+      "disgust": 0.0,
+      "fear": 0.0,
+      "joy": 1.0,
+      "sadness": 0.0,
+      "speaker": "Alice",
+      "surprise": 0.0,
+      "trust": 0.0
+    }
+  ],
+  "compatibility_fingerprint": "52e23a5a045a6f6eb3c5b8963dc66ae727db63ccd8786a6c6923c20669913aef",
+  "contextual_all": {},
+  "contextual_examples": {},
+  "emotions": {
+    "anger": 0.0,
+    "anticipation": 0.0,
+    "disgust": 0.0,
+    "fear": 0.0,
+    "joy": 1.0,
+    "sadness": 0.0,
+    "surprise": 0.0,
+    "trust": 0.0
+  },
+  "global_stats": {
+    "anger": 0.0,
+    "anticipation": 0.0,
+    "assignment_counts": {
+      "anger": 0,
+      "anticipation": 0,
+      "disgust": 0,
+      "fear": 0,
+      "joy": 1,
+      "sadness": 0,
+      "surprise": 0,
+      "trust": 0
+    },
+    "disgust": 0.0,
+    "emotion_scores": {
+      "anger": 0.0,
+      "anticipation": 0.0,
+      "disgust": 0.0,
+      "fear": 0.0,
+      "joy": 1.0,
+      "sadness": 0.0,
+      "surprise": 0.0,
+      "trust": 0.0
+    },
+    "fear": 0.0,
+    "joy": 1.0,
+    "matched_occurrences": 1,
+    "mean_coverage": 0.5,
+    "no_hit_rate": 0.0,
+    "sadness": 0.0,
+    "surprise": 0.0,
+    "tokens_considered": 2,
+    "trust": 0.0,
+    "valence_assignment_counts": {
+      "negative": 0,
+      "positive": 0
+    },
+    "valence_scores": {
+      "negative": 0.0,
+      "positive": 0.0
+    },
+    "zero_hit_segments": 0
+  },
+  "inference_cache_hit": false,
+  "inference_cache_key": "071dce2a7967868818b2f46d6fb6eb793eaa87906895375a08848ac6325b4348",
+  "lexicon_digest": "3cf238056cde91a807e698160c5191b44da06bdb175dd4ea83653b47abfcd001",
+  "method": "nrc_lexical",
+  "module_id": "emotion",
+  "nrc_scores": {
+    "Alice": {
+      "anger": 0.0,
+      "anticipation": 0.0,
+      "disgust": 0.0,
+      "fear": 0.0,
+      "joy": 1.0,
+      "sadness": 0.0,
+      "surprise": 0.0,
+      "trust": 0.0
+    }
+  },
+  "nrclex_version": "3.0.0",
+  "ordered_segment_ids": [
+    "1",
+    "2"
+  ],
+  "projection_fields": [
+    "segment_id",
+    "evaluation_state",
+    "nrc_emotion",
+    "nrc_emotion_coverage",
+    "emotion_scored_text_hash",
+    "canonical_ref"
+  ],
+  "release_channel": "stable",
+  "run_status": "complete",
+  "runtime_metadata": {
+    "activation": "lexical",
+    "batch_size": null,
+    "device_class": null,
+    "effective_max_length": null,
+    "effective_threshold": null,
+    "label_map_hash": null,
+    "language_policy_version": "language_policy_v1",
+    "lexicon_digest": "3cf238056cde91a807e698160c5191b44da06bdb175dd4ea83653b47abfcd001",
+    "long_text_policy_version": null,
+    "model_id": null,
+    "model_revision": null,
+    "nrclex_version": "3.0.0",
+    "numerical_dtype": null,
+    "padding_policy_version": null,
+    "threshold_profile_version": null,
+    "tokenizer_id": null,
+    "tokenizer_revision": null,
+    "torch_version": "2.2.2",
+    "transformers_version": "4.53.2"
+  },
+  "sample_projection": {
+    "canonical_ref": {
+      "integrity_checksum": "73dbeefab8cc1a1b30a36834629f8ea1ce9a80695657df493c93fc309dcff98f",
+      "module_id": "emotion",
+      "row_key": "1",
+      "schema_version": "emotion_result_schema_v2",
+      "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+      "semantics_version": "emotion_lexical_v2"
+    },
+    "emotion_scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
+    "evaluation_state": "scored",
+    "nrc_emotion": {
+      "anger": 0.0,
+      "anticipation": 0.0,
+      "disgust": 0.0,
+      "fear": 0.0,
+      "joy": 1.0,
+      "sadness": 0.0,
+      "surprise": 0.0,
+      "trust": 0.0
+    },
+    "nrc_emotion_coverage": 0.5,
+    "segment_id": "1"
+  },
+  "schema_version": "emotion_result_schema_v2",
+  "segments_empty": 0,
+  "segments_failed": 0,
+  "segments_scored": 1,
+  "segments_skipped": 1,
+  "semantics_version": "emotion_lexical_v2",
+  "speaker_identity_digest": "a72c232b93cffc174d8482d1d69b2b7db24093dae28c18c07842ba5c94e67894",
+  "speaker_stats": {
+    "Alice": {
+      "anger": 0.0,
+      "anticipation": 0.0,
+      "assignment_counts": {
+        "anger": 0,
+        "anticipation": 0,
+        "disgust": 0,
+        "fear": 0,
+        "joy": 1,
+        "sadness": 0,
+        "surprise": 0,
+        "trust": 0
+      },
+      "disgust": 0.0,
+      "emotion_scores": {
+        "anger": 0.0,
+        "anticipation": 0.0,
+        "disgust": 0.0,
+        "fear": 0.0,
+        "joy": 1.0,
+        "sadness": 0.0,
+        "surprise": 0.0,
+        "trust": 0.0
+      },
+      "fear": 0.0,
+      "joy": 1.0,
+      "matched_occurrences": 1,
+      "mean_coverage": 0.5,
+      "no_hit_rate": 0.0,
+      "sadness": 0.0,
+      "surprise": 0.0,
+      "tokens_considered": 2,
+      "trust": 0.0,
+      "valence_assignment_counts": {
+        "negative": 0,
+        "positive": 0
+      },
+      "valence_scores": {
+        "negative": 0.0,
+        "positive": 0.0
+      },
+      "zero_hit_segments": 0
+    }
+  },
+  "text_source_digest": "adb46ae5b9c9df1322074292521a447339f056453efd27f79b60867e7fd50329",
+  "timeline_identity_digest": "b7ecb1ef7fae8e26cc67f0737207869db40be44b4e325f0f693d424f7d746370",
+  "ui_copy": "Emotion-associated vocabulary (NRC lexicon), not a definitive inference of speaker emotion.",
+  "usable_output": true,
+  "warnings": []
+}

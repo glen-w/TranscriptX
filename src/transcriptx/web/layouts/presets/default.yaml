@@ -73,6 +73,20 @@ pages:
         params:
           title: Lexical Diversity
           empty_hint: Run the `lexical_diversity` module to populate this view.
+      - placement_id: insights_epistemic_markers
+        block_id: epistemic_markers_block
+        section: analysis
+        visible: true
+        params:
+          title: Epistemic Markers
+          empty_hint: Run the `epistemic_markers` module to populate this view.
+      - placement_id: insights_politeness
+        block_id: politeness_block
+        section: analysis
+        visible: true
+        params:
+          title: Politeness Markers
+          empty_hint: Run the `politeness` module to populate this view.
   charts:
     page_id: charts
     blocks:

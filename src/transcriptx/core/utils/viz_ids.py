@@ -60,6 +60,8 @@ VIZ_QA_RESPONSE_TIME_ANALYSIS = "qa_analysis.response_time_analysis.global"
 
 # Tics
 VIZ_TICS_SPEAKER = "tics.tics.speaker"
+VIZ_EPISTEMIC_MARKERS_CATEGORY_SPEAKER = "epistemic_markers.category_rates.speaker"
+VIZ_POLITENESS_CATEGORY_SPEAKER = "politeness.category_rates.speaker"
 
 # Lexical diversity
 VIZ_LEXICAL_DIVERSITY_TTR_SPEAKER = "lexical_diversity.ttr.speaker"

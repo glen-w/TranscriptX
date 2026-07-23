@@ -1,0 +1,122 @@
+{
+  "_canonical_rows": [
+    {
+      "display_labels": [],
+      "evaluation_state": "skipped",
+      "qualifying_emotion_count": 0,
+      "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scores": {},
+      "segment_id": "1",
+      "skip_reason": "unsupported_language",
+      "speaker": "Alice",
+      "truncated": false
+    }
+  ],
+  "_pending_projections": [
+    {
+      "projection": {
+        "analytical_outcome": null,
+        "evaluation_state": "skipped",
+        "fine_grained_emotion_analytical_outcome": null,
+        "fine_grained_emotion_canonical_ref": {
+          "integrity_checksum": "3a3140b22ded79a1eddfb18f6b02129369aee99ba2d1488d7c8dad5981b4f0f2",
+          "module_id": "fine_grained_emotion",
+          "row_key": "1",
+          "schema_version": "fine_grained_emotion_result_schema_v2",
+          "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "semantics_version": "fine_grained_emotion_v1"
+        },
+        "fine_grained_emotion_evaluation_state": "skipped",
+        "fine_grained_emotion_families": {},
+        "fine_grained_emotion_labels": [],
+        "fine_grained_emotion_mixed": false,
+        "fine_grained_emotion_qualifying_emotion_count": 0,
+        "fine_grained_emotion_scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "fine_grained_emotion_truncated": false,
+        "segment_id": "1"
+      },
+      "segment_id": "1"
+    }
+  ],
+  "aggregation_cache_hit": true,
+  "aggregation_cache_key": "f7a51cb35141990c60a445d3a670d4e6d338897a70330547f89766d96378812c",
+  "cache_fingerprint": "2478053ea305a57d10077700d0e20196af73c3affd415e98d10c626b5716bee2",
+  "compatibility_fingerprint": "ed26f29542649fcf4e2c22c857b103853534d0f6cc180412c51d12a1da694bd7",
+  "confidence_summary": {
+    "max": 0.0,
+    "mean": 0.0,
+    "min": 0.0,
+    "n": 0
+  },
+  "display_fingerprint": "d63fd4e3568b901d9a600ab8a15dc4c89d91988b22f7aadcff0f8e3bc1fddb36",
+  "effective_max_length": 64,
+  "family_ontology_version": "fine_grained_family_ontology_v1",
+  "global_stats": {
+    "confidence_summary": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "n": 0
+    },
+    "labeled_rate": 0.0,
+    "mixed_rate": 0.0,
+    "native_label_prevalence": {},
+    "neutral_rate": 0.0,
+    "no_label_rate": 0.0
+  },
+  "inference_cache_hit": false,
+  "inference_cache_key": "b55cccfd8511e015244ab0a3b93b382915bd36c05ac1454c320f0e70bbcebf52",
+  "label_threshold": 0.3,
+  "max_labels_per_segment": 3,
+  "module_id": "fine_grained_emotion",
+  "native_label_prevalence": {},
+  "outcome_counts": {},
+  "primary_rates": {
+    "labeled_rate": 0.0,
+    "mixed_rate": 0.0,
+    "neutral_rate": 0.0,
+    "no_label_rate": 0.0
+  },
+  "profile_id": "fine_grained_samlowe_go_emotions_v1",
+  "release_channel": "experimental",
+  "representative_examples": {},
+  "run_status": "complete",
+  "runtime_metadata": {
+    "activation": "sigmoid",
+    "batch_size": 8,
+    "device_class": "cpu",
+    "effective_max_length": 64,
+    "effective_threshold": 0.3,
+    "label_map_hash": "char-label-map-hash",
+    "language_policy_version": "language_policy_v1",
+    "lexicon_digest": null,
+    "long_text_policy_version": "long_text_policy_v2",
+    "model_id": "SamLowe/roberta-base-go_emotions",
+    "model_revision": "d75048347613a25d77de8cf6412eaae9fa7b26be",
+    "nrclex_version": null,
+    "numerical_dtype": "float32",
+    "padding_policy_version": null,
+    "threshold_profile_version": "threshold_profile_provisional_v0",
+    "tokenizer_id": "SamLowe/roberta-base-go_emotions",
+    "tokenizer_revision": "d75048347613a25d77de8cf6412eaae9fa7b26be",
+    "torch_version": "2.2.2",
+    "transformers_version": "4.53.2"
+  },
+  "schema_version": "fine_grained_emotion_result_schema_v2",
+  "segments_empty": 0,
+  "segments_failed": 0,
+  "segments_scored": 0,
+  "segments_skipped": 1,
+  "semantics_version": "fine_grained_emotion_v1",
+  "speaker_identity_digest": "8f4b477cfefe7b1621c73185250163841e00d1975b0293d3b37b0543fb0e5463",
+  "speaker_stats": {},
+  "text_source_digest": "eb00dff4c32ae045732dc541f0a3ff6a768b3023924c0a1f8445e7f1c1559b5e",
+  "threshold_profile_version": "threshold_profile_provisional_v0",
+  "timeline": [],
+  "timeline_identity_digest": "ca1e1fb6cc7efafa243b905289f431f04a907bb9a6072b610a94d02e32bda681",
+  "usable_output": false,
+  "warnings": [
+    "experimental: GoEmotions-domain model; not definitive transcript emotion",
+    "provisional threshold profile \u2014 not stable until Phase 5"
+  ]
+}

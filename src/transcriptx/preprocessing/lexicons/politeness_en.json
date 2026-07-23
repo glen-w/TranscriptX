@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "language": "en",
+  "categories": {
+    "gratitude": [
+      "thank you",
+      "thanks",
+      "thanks a lot",
+      "thanks so much",
+      "appreciate it",
+      "really appreciate",
+      "appreciate you",
+      "grateful",
+      "thankful",
+      "much obliged",
+      "owe you one",
+      "thx",
+      "ty"
+    ],
+    "apology": [
+      "i'm sorry",
+      "i am sorry",
+      "my apologies",
+      "apologies",
+      "excuse me",
+      "pardon me",
+      "pardon",
+      "sorry about that",
+      "my bad",
+      "my fault",
+      "i apologize",
+      "forgive me",
+      "sorry to interrupt"
+    ],
+    "request_softener": [
+      "would you mind",
+      "could you please",
+      "could you",
+      "can you",
+      "would you",
+      "please",
+      "kindly",
+      "if you could",
+      "if you wouldn't mind",
+      "just checking if",
+      "wondering if",
+      "mind if",
+      "care to"
+    ],
+    "polite_disagreement": [
+      "i beg to differ",
+      "i'm afraid not",
+      "i am afraid not",
+      "not quite",
+      "i see it differently",
+      "with respect",
+      "respectfully disagree",
+      "i'm not sure i agree",
+      "i don't quite agree"
+    ],
+    "bare_directive": [
+      "tell me",
+      "give me",
+      "send me",
+      "let me know",
+      "do this",
+      "explain to me",
+      "stop",
+      "wait",
+      "listen",
+      "look"
+    ],
+    "formal_marker": [
+      "mister",
+      "missus",
+      "miss",
+      "doctor",
+      "professor",
+      "sir",
+      "madam",
+      "ma'am",
+      "regarding",
+      "pursuant to",
+      "hereby",
+      "therefore",
+      "furthermore",
+      "nevertheless",
+      "accordingly"
+    ]
+  }
+}

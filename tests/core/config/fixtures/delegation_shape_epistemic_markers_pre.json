@@ -1,0 +1,10 @@
+{
+  "asdict": {
+    "min_tokens_for_rates": 20,
+    "enabled_categories": []
+  },
+  "to_dict": {
+    "min_tokens_for_rates": 20,
+    "enabled_categories": []
+  }
+}

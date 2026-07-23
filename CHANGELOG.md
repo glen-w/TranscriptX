@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-07-23
+
+### Added
+
+- Speakers Phase 1.5: authoritative `AggregationSnapshot`, dual headline/all over-time charts, directory top-N + Other activity chart, freeform profile `accent_color` (colour-wheel picker; unused palette colour auto-assigned on create), Speakers lifecycle UX (edit/unlink/link/relink/unarchive/fingerprint accept), Diagnostics speaker-ops recovery panel, and expanded integrity typing.
+- Wave 2 lexicon linguistics (B6/B7): shared `lexicon_markers` kit plus `epistemic_markers` and `politeness` modules (EN lexicons, rates, group pooled charts, Insights/Overview extractors, runtime docs).
+- Emotion family shared `classifier_inference` / `work_items` helpers with offline characterization fixtures.
+
+### Changed
+
+- Speaker profile mutations assert readable entities under the project lock; `relink` requires a live link (`link_existing_profile` for first link); destructive confirms bind expected link/owner/fingerprint; operation receipts carry full cache-invalidation metadata; speaking share is transcript-relative (unique-transcript denoms in date buckets).
+- Lexical / contextual / fine-grained emotion modules route through the shared emotion-family work-item and classifier-inference helpers.
+
+### Fixed
+
+- Appearance flags use single-winner precedence (`collision` is not overwritten by `needs_review`); corrupt canonical/operation files surface as incomplete rather than silent skips.
+
 ## [0.7.0] - 2026-07-23
 
 ### Added

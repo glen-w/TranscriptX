@@ -1,0 +1,20 @@
+{
+  "_canonical_rows": [],
+  "_pending_projections": [],
+  "global_stats": {},
+  "module_id": "fine_grained_emotion",
+  "ordered_segment_ids": [],
+  "release_channel": "experimental",
+  "run_status": "failed",
+  "schema_version": "fine_grained_emotion_result_schema_v2",
+  "segments_empty": 0,
+  "segments_failed": 0,
+  "segments_scored": 0,
+  "segments_skipped": 0,
+  "semantics_version": "fine_grained_emotion_v1",
+  "speaker_stats": {},
+  "usable_output": false,
+  "warnings": [
+    "duplicate segment_id: dup"
+  ]
+}

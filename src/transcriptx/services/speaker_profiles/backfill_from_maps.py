@@ -398,7 +398,7 @@ def apply_backfill_plan(
                         f"missing target profile for link of "
                         f"{item.managed_transcript_id}/{item.local_speaker_key}"
                     )
-                svc.relink(
+                svc.link_existing_profile(
                     operation_idempotency_key=_idempotency_key(
                         "link",
                         item.managed_transcript_id,

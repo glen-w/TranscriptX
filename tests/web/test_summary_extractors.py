@@ -52,6 +52,8 @@ class TestSummaryExtractors:
             "entity_sentiment",
             "understandability",
             "lexical_diversity",
+            "epistemic_markers",
+            "politeness",
             "llm_action_items",
             "temporal_dynamics",
             "qa_analysis",

@@ -29,6 +29,10 @@ from transcriptx.core.analysis.transcript_quality.aggregation import (
     aggregate_transcript_quality,
 )
 from transcriptx.core.analysis.topic_shift.aggregation import aggregate_topic_shift
+from transcriptx.core.analysis.epistemic_markers.aggregation import (
+    aggregate_epistemic_markers,
+)
+from transcriptx.core.analysis.politeness.aggregation import aggregate_politeness
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
@@ -1036,6 +1040,18 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["transcript_quality"]),
             deps=[],
             aggregate_fn=aggregate_transcript_quality,
+        ),
+        AggregationEntry(
+            agg_id="epistemic_markers",
+            selector=any_of(["epistemic_markers"]),
+            deps=[],
+            aggregate_fn=aggregate_epistemic_markers,
+        ),
+        AggregationEntry(
+            agg_id="politeness",
+            selector=any_of(["politeness"]),
+            deps=[],
+            aggregate_fn=aggregate_politeness,
         ),
         AggregationEntry(
             agg_id="topic_shift",

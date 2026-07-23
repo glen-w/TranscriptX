@@ -14,6 +14,7 @@
     "semantic_similarity_advanced",
     "semantic_similarity_v2",
     "sentiment",
+    "epistemic_markers",
     "stats",
     "topic_modeling",
     "bertopic",
@@ -29,6 +30,7 @@
     "qa_analysis",
     "pauses",
     "echoes",
+    "politeness",
     "momentum",
     "topic_shift",
     "moments",
@@ -243,6 +245,18 @@
         "speaker_labels"
       ]
     },
+    "epistemic_markers": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Hedging / certainty / epistemic markers",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "gate_on_turn_taking_speakers": true,
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
     "stats": {
       "category": "light",
       "dependencies": [],
@@ -427,6 +441,18 @@
         "speaker_labels"
       ],
       "requires_multiple_speakers": true
+    },
+    "politeness": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Politeness / formality / directiveness markers",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "gate_on_turn_taking_speakers": true,
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
     },
     "momentum": {
       "category": "medium",
