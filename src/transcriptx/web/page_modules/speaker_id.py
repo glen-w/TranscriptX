@@ -431,6 +431,194 @@ def render_speaker_id_page() -> None:
     _profile_resolver = ManagedTranscriptResolver()
     is_managed_for_profiles = _profile_resolver.is_managed_path(transcript_path)
 
+    # Voice matching: gated by ActivationBarrier.
+    if is_managed_for_profiles and not is_ignored:
+        try:
+            from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
+            from transcriptx.core.speaker_profiles.voice.activation import (
+                ActivationBarrier,
+            )
+            from transcriptx.io.speaker_map_resolver import normalize_diarized_id
+            from transcriptx.services.speaker_profiles.voice_facade import (
+                SpeakerIdVoiceFacade,
+                ensure_idempotency_key,
+                voice_session_key,
+            )
+
+            _voice_status = ActivationBarrier(speaker_profiles_dir()).status()
+            if not _voice_status.allowed:
+                st.caption(
+                    "Local voice suggestions are not available yet "
+                    f"({_voice_status.block_reason or 'unavailable'})."
+                )
+            else:
+                st.markdown("##### Voice suggestions")
+                st.caption(
+                    "Probabilistic local match — not identity verification. "
+                    "Confirming uses the existing profile-link workflow."
+                )
+                facade = SpeakerIdVoiceFacade()
+                resolved = _profile_resolver.resolve_path(transcript_path)
+                lsk = normalize_diarized_id(active_id)
+                analyse_key = voice_session_key(
+                    resolved.managed_transcript_id, lsk, "analyse"
+                )
+                result_key = voice_session_key(
+                    resolved.managed_transcript_id, lsk, "result"
+                )
+                if st.button("Analyse voice", key=f"sid_voice_analyse_{active_id}"):
+                    with st.spinner("Analysing voice…"):
+                        seg_dicts = [
+                            {
+                                "speaker": s.speaker,
+                                "start": s.start,
+                                "end": s.end,
+                                "text": getattr(s, "text", "") or "",
+                            }
+                            for s in active_segs
+                        ]
+                        st.session_state[result_key] = facade.analyse(
+                            transcript_path=Path(transcript_path),
+                            raw_speaker=active_id,
+                            segments=seg_dicts,
+                        )
+                result = st.session_state.get(result_key)
+                if result is not None:
+                    if result.outcome == "SuggestionAvailable" and result.candidates_ui:
+                        from transcriptx.core.speaker_profiles.service import (
+                            SpeakerProfileService,
+                        )
+
+                        _name_svc = SpeakerProfileService()
+                        for cand in result.candidates_ui:
+                            live_profile = _name_svc.get_profile(cand["profile_id"])
+                            display = (
+                                live_profile.display_name
+                                if live_profile is not None
+                                else cand.get("display_name") or cand["profile_id"]
+                            )
+                            st.write(
+                                f"**{display}** — {cand['confidence']} "
+                                f"({cand['reference_count']} refs)"
+                            )
+                            accept_key = voice_session_key(
+                                resolved.managed_transcript_id,
+                                lsk,
+                                f"accept_{cand['profile_id']}",
+                            )
+                            op_key = ensure_idempotency_key(
+                                st.session_state, accept_key
+                            )
+                            cols = st.columns(3)
+                            if cols[0].button(
+                                "Confirm this profile",
+                                key=f"sid_voice_confirm_{active_id}_{cand['profile_id']}",
+                            ):
+                                try:
+                                    from transcriptx.core.speaker_profiles.identity import (
+                                        link_file_key,
+                                    )
+
+                                    svc = SpeakerProfileService()
+                                    live = svc.get_live_link(
+                                        link_file_key(
+                                            resolved.managed_transcript_id, lsk
+                                        )
+                                    )
+                                    ar = facade.accept(
+                                        operation_idempotency_key=op_key,
+                                        managed_transcript_id=resolved.managed_transcript_id,
+                                        local_speaker_key=lsk,
+                                        candidate_profile_id=cand["profile_id"],
+                                        suggestion_id=result.suggestion_id or "",
+                                        suggestion_digest=result.suggestion_digest
+                                        or "",
+                                        confidence_category=cand["confidence"],
+                                        model_generation_id=result.model_generation_id
+                                        or "",
+                                        occurrence_fingerprint=result.occurrence_fingerprint
+                                        or "",
+                                        expected_link_id=(
+                                            result.expected_link_id
+                                            if result.expected_link_id is not None
+                                            else (live.link_id if live else None)
+                                        ),
+                                        expected_owner_profile_id=(
+                                            result.expected_owner_profile_id
+                                            if result.expected_owner_profile_id
+                                            is not None
+                                            else (live.profile_id if live else None)
+                                        ),
+                                        expected_fingerprint=(
+                                            result.expected_fingerprint
+                                            if result.expected_fingerprint is not None
+                                            else (
+                                                live.occurrence_fingerprint
+                                                if live
+                                                else None
+                                            )
+                                        ),
+                                        expected_audio_stat_fingerprint=result.audio_stat_fingerprint,
+                                        expected_audio_content_sha256=result.audio_content_sha256,
+                                    )
+                                    consume_cache_invalidation_signal(ar.cache_signal)
+                                    st.session_state.pop(result_key, None)
+                                    st.success("Profile link confirmed from suggestion.")
+                                    st.rerun()
+                                except Exception as exc:
+                                    st.error(str(exc))
+                            if cols[1].button(
+                                "Reject suggestion",
+                                key=f"sid_voice_reject_{active_id}_{cand['profile_id']}",
+                            ):
+                                rej_key = voice_session_key(
+                                    resolved.managed_transcript_id,
+                                    lsk,
+                                    f"reject_{cand['profile_id']}",
+                                )
+                                try:
+                                    facade.reject(
+                                        operation_idempotency_key=ensure_idempotency_key(
+                                            st.session_state, rej_key
+                                        ),
+                                        managed_transcript_id=resolved.managed_transcript_id,
+                                        local_speaker_key=lsk,
+                                        occurrence_fingerprint=result.occurrence_fingerprint
+                                        or "",
+                                        candidate_profile_id=cand["profile_id"],
+                                        suggestion_id=result.suggestion_id or "",
+                                        suggestion_digest=result.suggestion_digest
+                                        or "",
+                                        model_generation_id=result.model_generation_id
+                                        or "",
+                                        reference_corpus_digest=result.reference_corpus_digest
+                                        or "",
+                                        reference_count=int(
+                                            cand.get("reference_count") or 0
+                                        ),
+                                    )
+                                    st.info("Suggestion rejected for this evidence set.")
+                                    st.session_state.pop(result_key, None)
+                                    st.rerun()
+                                except Exception as exc:
+                                    st.error(str(exc))
+                            if cols[2].button(
+                                "Leave unlinked",
+                                key=f"sid_voice_leave_{active_id}_{cand['profile_id']}",
+                            ):
+                                facade.acceptance.leave_unlinked()
+                                st.session_state.pop(result_key, None)
+                                st.info("Left unlinked for this session.")
+                                st.rerun()
+                    elif result.outcome == "NoReliableMatch":
+                        st.info("No reliable voice match.")
+                    else:
+                        st.warning(f"Voice analyse: {result.outcome}")
+                        if result.detail:
+                            st.caption(result.detail)
+        except Exception:
+            pass
+
     col_name, col_save, col_ignore = st.columns([3, 1, 1])
     with col_name:
         name_input = st.text_input(

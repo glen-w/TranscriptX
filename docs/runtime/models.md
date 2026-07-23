@@ -147,6 +147,23 @@ Defaults are **English**. For other languages, language-matched models usually b
 
 TranscriptX does not auto-select models from transcript `language` metadata today.
 
+## Longitudinal voice matching (`[speaker_match]`)
+
+Optional local speaker embeddings for suggested profile matches (see
+`docs/contracts/speaker_profiles_voice_v1.md`). Default install does **not**
+include this extra. Production analyse/enrol/accept stay behind
+`ActivationBarrier` until the Stage 8 lifecycle gate opens.
+
+| Field | Value |
+|-------|--------|
+| Extra | `speaker_match` (`speechbrain==1.0.2`, torch/torchaudio) |
+| Model | `speechbrain/spkrec-ecapa-voxceleb` |
+| Hub revision | `0f99f2d0ebe89ac095bcc5903c4dd8f72b367286` (pinned) |
+| Embedding | 192-d float32 `<f4`, L2-normalised `.npy` |
+| Offline | `TRANSCRIPTX_DISABLE_DOWNLOADS=1` → local files only; no model substitution |
+
+Never silently swap embedding models; a change creates a new `model_generation_id`.
+
 ## Troubleshooting
 
 - **First run slow after upgrade** — models download into `HF_HOME` / spaCy data dirs; cache under `./data` when using Compose.

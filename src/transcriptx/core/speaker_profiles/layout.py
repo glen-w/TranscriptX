@@ -37,6 +37,23 @@ def speaker_profiles_lock_path(state_dir: Path | None = None) -> Path:
     return (state_dir or PATHS.state_dir) / PROJECT_LOCK_NAME
 
 
+def speaker_profiles_project_lock(state_dir: Path | None = None):
+    """Shared re-entrant project lock for Phase 1 + voice mutations.
+
+    Uses a sentinel file beside ``speaker_profiles.lock`` so every caller
+    (SpeakerProfileService, VoiceAcceptanceOwner, MatchService, wipe, …)
+    serializes on the same flock identity.
+    """
+    from transcriptx.core.utils.file_lock import FileLock
+
+    lock_path = speaker_profiles_lock_path(state_dir)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    sentinel = lock_path.with_suffix(".lock.target")
+    if not sentinel.exists():
+        sentinel.write_text("", encoding="utf-8")
+    return FileLock(sentinel, timeout=60, blocking=True)
+
+
 def profiles_dir(root: Path | None = None) -> Path:
     return (root or speaker_profiles_dir()) / "profiles"
 
@@ -55,6 +72,24 @@ def operations_dir(root: Path | None = None) -> Path:
 
 def cache_dir(root: Path | None = None) -> Path:
     return (root or speaker_profiles_dir()) / ".cache"
+
+
+def voice_dir(root: Path | None = None) -> Path:
+    return (root or speaker_profiles_dir()) / "voice"
+
+
+def voice_cache_dir(root: Path | None = None) -> Path:
+    return cache_dir(root) / "voice"
+
+
+def privacy_settings_path(root: Path | None = None) -> Path:
+    from transcriptx.core.speaker_profiles.voice.versioning import (
+        PRIVACY_SETTINGS_FILENAME,
+    )
+
+    base = root or speaker_profiles_dir()
+    path = voice_dir(base) / PRIVACY_SETTINGS_FILENAME
+    return assert_operation_path_under_root(path, base, what="voice privacy path")
 
 
 def profile_path(profile_id: str, *, root: Path | None = None) -> Path:
@@ -97,3 +132,17 @@ def operation_backup_dir(operation_id: str, *, root: Path | None = None) -> Path
     base = root or speaker_profiles_dir()
     path = operations_dir(base) / operation_id / "backup"
     return assert_operation_path_under_root(path, base, what="backup path")
+
+
+def iter_paths_for_ordinary_backup(root: Path | None = None) -> list[Path]:
+    """Durable speaker_profiles files for ordinary backup/export (excludes voice/).
+
+    Callers that walk ``speaker_profiles_dir`` for project archives **must** use
+    this helper (or ``iter_speaker_profiles_paths_for_backup``) instead of raw
+    ``rglob`` so biometric-derived ``voice/`` and ``.cache/voice/`` stay out.
+    """
+    from transcriptx.core.speaker_profiles.voice.backup_inventory import (
+        iter_speaker_profiles_paths_for_backup,
+    )
+
+    return iter_speaker_profiles_paths_for_backup(root or speaker_profiles_dir())

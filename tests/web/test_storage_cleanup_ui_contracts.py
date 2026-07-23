@@ -53,6 +53,99 @@ def test_storage_panel_exports_render():
     assert callable(render_storage_panel)
 
 
+def test_storage_panel_renders_speaker_profile_toggles(monkeypatch):
+    from transcriptx.web.speaker_profile_signals import (
+        INCLUDE_IGNORED_SESSION_KEY,
+        SHOW_ARCHIVED_SESSION_KEY,
+        SHOW_MERGED_SESSION_KEY,
+    )
+    from transcriptx.web.ui.settings import storage_panel as sp
+
+    checkboxes: list[dict] = []
+    subheaders: list[str] = []
+
+    class _Ctrl:
+        def get_storage_roots(self):
+            return {"data": "/tmp/data"}
+
+    class _St:
+        session_state = {}
+
+        def subheader(self, title):
+            subheaders.append(title)
+
+        def text(self, *_a, **_k):
+            pass
+
+        def checkbox(self, label, value=False, key=None, help=None):
+            checkboxes.append(
+                {"label": label, "value": value, "key": key, "help": help}
+            )
+            return value
+
+        def caption(self, *_a, **_k):
+            pass
+
+        def divider(self):
+            pass
+
+        def success(self, *_a, **_k):
+            pass
+
+        def warning(self, *_a, **_k):
+            pass
+
+        def info(self, *_a, **_k):
+            pass
+
+        def error(self, *_a, **_k):
+            pass
+
+        def button(self, *_a, **_k):
+            return False
+
+        def radio(self, *_a, **_k):
+            return "Delete old runs"
+
+        def expander(self, *_a, **_k):
+            class _E:
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *_a2):
+                    return False
+
+            return _E()
+
+        def number_input(self, *_a, **_k):
+            return 30
+
+        def columns(self, n):
+            return [
+                type("C", (), {"checkbox": lambda *a, **k: False})() for _ in range(n)
+            ]
+
+    monkeypatch.setattr(sp, "SettingsController", _Ctrl)
+    monkeypatch.setattr(sp, "st", _St())
+    monkeypatch.setattr(sp, "_render_cleanup_section", lambda: None)
+    monkeypatch.setattr(sp, "_render_pending_staging_section", lambda: None)
+
+    # Avoid voice-matching branch side effects.
+    import transcriptx.core.speaker_profiles.voice.versioning as voice_ver
+
+    monkeypatch.setattr(voice_ver, "FEATURE_GATE_COMPLETE", False)
+
+    sp.render_storage_panel()
+
+    assert "Speaker profiles" in subheaders
+    keys = {c["key"] for c in checkboxes}
+    assert keys >= {
+        INCLUDE_IGNORED_SESSION_KEY,
+        SHOW_ARCHIVED_SESSION_KEY,
+        SHOW_MERGED_SESSION_KEY,
+    }
+
+
 def test_render_cleanup_result_surfaces_operation_id_and_errors():
     from transcriptx.web.services.run_cleanup.models import (
         CleanupMode,

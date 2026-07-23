@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.7.4] - 2026-07-23
+
+### Added
+
+- Speakers voice match Phase 2 R2: local ECAPA fingerprints, suggested matches, consent/privacy wipe, bootstrap from confirmed links, shared project lock journaling, `[speaker_match]` extra, and contract coverage (`docs/contracts/speaker_profiles_voice_v1.md`).
+
+### Changed
+
+- Custom QA answered rows omit redundant Status captions in markdown/UI; storage Settings panel covers speaker-profile visibility and voice wipe controls.
+
 ## [0.7.3] - 2026-07-23
 
 ### Added

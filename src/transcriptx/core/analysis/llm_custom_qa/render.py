@@ -35,9 +35,7 @@ def _render_row(lines: list[str], row: dict[str, Any], questions: list[Any]) -> 
     lines.append(header)
     lines.append("")
     status = row.get("status")
-    lines.append(f"Status: `{status}`")
     if status == "answered":
-        lines.append("")
         lines.append("### Answer")
         lines.append(str(row.get("answer") or ""))
         reasoning = row.get("reasoning")
@@ -63,9 +61,13 @@ def _render_row(lines: list[str], row: dict[str, Any], questions: list[Any]) -> 
                 f"transcript={evidence_used.get('use_transcript')}"
             )
     elif status == "abstained":
+        lines.append(f"Status: `{status}`")
         lines.append(f"Abstain reason: `{row.get('abstain_reason')}`")
     elif status == "unavailable":
+        lines.append(f"Status: `{status}`")
         lines.append(f"System reason: `{row.get('system_reason')}`")
+    elif status:
+        lines.append(f"Status: `{status}`")
     lines.append("")
 
 

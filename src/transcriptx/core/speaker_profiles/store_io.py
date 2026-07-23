@@ -40,7 +40,7 @@ def utc_now_iso() -> str:
 
 
 def ensure_layout(root: Path) -> None:
-    for sub in ("profiles", "links", "events", "operations"):
+    for sub in ("profiles", "links", "events", "operations", "voice"):
         (root / sub).mkdir(parents=True, exist_ok=True)
 
 

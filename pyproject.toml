@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.7.3"
+version = "0.7.4"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -118,6 +118,13 @@ voice = [
     "librosa>=0.10.0",
     "soundfile>=0.12.1",
 ]
+# Local speaker-embedding match (longitudinal voice phase). Separate from analysis [voice].
+speaker_match = [
+    "speechbrain==1.0.2",
+    "torch>=2.6.0",
+    "torchaudio>=2.6.0",
+    "soundfile>=0.12.1",
+]
 nlp = [
     "spacy==3.7.5",
     "thinc==8.2.5",
@@ -163,6 +170,8 @@ full = [
     "seaborn==0.12.2",
     "wordcloud==1.9.2",
     "plotly>=5.0.0",
+    "speechbrain==1.0.2",
+    "torchaudio>=2.6.0",
 ]
 
 [project.scripts]

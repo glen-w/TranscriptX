@@ -409,6 +409,35 @@ def inject_global_styles() -> None:
         opacity: 1;
         visibility: visible;
     }
+    /* Multi-line methodology / help tips (reuse run-id info control) */
+    .tx-methodology-info {
+        margin-left: 0.35rem;
+    }
+    .tx-methodology-info-tip {
+        left: 0;
+        transform: none;
+        bottom: auto;
+        top: calc(100% + 0.35rem);
+        min-width: 16rem;
+        max-width: 28rem;
+        padding: 0.5rem 0.65rem;
+        word-break: normal;
+        overflow-wrap: anywhere;
+        text-align: left;
+    }
+    .tx-trends-heading,
+    .tx-section-info-heading {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin: 0.75rem 0 0.35rem;
+    }
+    .tx-trends-heading h4,
+    .tx-section-info-heading h4 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
     /* Badges (page shell + inline) */
     span.tx-badge {
         display: inline-block;

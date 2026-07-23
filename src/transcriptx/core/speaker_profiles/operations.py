@@ -122,10 +122,22 @@ class OperationEngine:
         staging.mkdir(parents=True, exist_ok=True)
         backup.mkdir(parents=True, exist_ok=True)
 
+        from transcriptx.core.speaker_profiles.path_safety import assert_safe_relpath
+
         actions: list[OperationPlanActionV1] = []
         staged_payloads: dict[str, bytes] = {}
 
         for item in writes:
+            safe_rel = assert_safe_relpath(item.relpath, what="operation write")
+            if safe_rel != item.relpath.replace("\\", "/"):
+                from transcriptx.core.speaker_profiles.errors import (
+                    SpeakerProfileContractError,
+                )
+
+                raise SpeakerProfileContractError(
+                    f"operation write path must be normalised POSIX relpath: "
+                    f"{item.relpath!r}"
+                )
             abs_path = self.root / item.relpath
             before = sha256_file(abs_path)
             if item.expected_before_sha256 is not None and before != item.expected_before_sha256:
@@ -160,6 +172,7 @@ class OperationEngine:
             )
 
         for item in deletes:
+            assert_safe_relpath(item.relpath, what="operation delete")
             abs_path = self.root / item.relpath
             before = sha256_file(abs_path)
             if before is None:
@@ -316,3 +329,31 @@ def relative_event_path(idempotency_id: str) -> str:
 
 def relative_avatar_path(profile_id: str) -> str:
     return f"profiles/assets/{profile_id}/avatar.webp"
+
+
+def relative_voice_privacy_path() -> str:
+    return "voice/privacy.voice_settings.json"
+
+
+def relative_voice_sample_path(sample_id: str) -> str:
+    return f"voice/samples/{sample_id}.voice_sample.json"
+
+
+def relative_voice_embedding_path(embedding_id: str) -> str:
+    return f"voice/embeddings/{embedding_id}.voice_embedding.json"
+
+
+def relative_voice_vector_path(embedding_id: str) -> str:
+    return f"voice/vectors/{embedding_id}.npy"
+
+
+def relative_voice_decision_path(decision_id: str) -> str:
+    return f"voice/decisions/{decision_id}.voice_decision.json"
+
+
+def relative_voice_generation_path(model_generation_id: str) -> str:
+    return f"voice/generations/{model_generation_id}.json"
+
+
+def relative_voice_active_generation_path() -> str:
+    return "voice/active_generation.json"

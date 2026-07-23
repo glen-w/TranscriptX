@@ -55,7 +55,8 @@ def _render_answer_card(
         f"**Q{row.get('question_index', '?')}:** {_escape(q)}",
         unsafe_allow_html=True,
     )
-    st.caption(f"Status: `{_escape(status)}`")
+    if status and status != "answered":
+        st.caption(f"Status: `{_escape(status)}`")
     if status == "answered":
         answer = _csv_safe(str(row.get("answer") or ""))
         st.markdown(_escape(answer), unsafe_allow_html=True)

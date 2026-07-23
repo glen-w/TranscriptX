@@ -48,6 +48,10 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_link_path,
     relative_profile_path,
 )
+from transcriptx.core.speaker_profiles.provenance import (
+    LinkProvenanceV1,
+    coerce_link_provenance,
+)
 from transcriptx.core.speaker_profiles.recovery import (
     OperationRecoveryReport,
     affected_relpaths,
@@ -173,13 +177,9 @@ class SpeakerProfileService:
         self.engine = OperationEngine(self.root)
 
     def _project_lock(self) -> FileLock:
-        lock_path = speaker_profiles_lock_path(self.state_dir)
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        # FileLock locks the path; use a sentinel file beside the lock name.
-        sentinel = lock_path.with_suffix(".lock.target")
-        if not sentinel.exists():
-            sentinel.write_text("", encoding="utf-8")
-        return FileLock(sentinel, timeout=60, blocking=True)
+        from transcriptx.core.speaker_profiles.layout import speaker_profiles_project_lock
+
+        return speaker_profiles_project_lock(self.state_dir)
 
     def _assert_entities_readable(
         self,
@@ -254,6 +254,10 @@ class SpeakerProfileService:
         aliases: list[str] | None = None,
         accent_color: str | None = None,
         created_by: str = "user",
+        provenance: LinkProvenanceV1 | None = None,
+        extra_writes: list[PlannedWrite] | None = None,
+        extra_scopes: list[str] | None = None,
+        extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
         ensure_layout(self.root)
         with self._project_lock():
@@ -292,6 +296,7 @@ class SpeakerProfileService:
             profile_id = str(uuid4())
             link_id = str(uuid4())
             event_id = str(uuid4())
+            link_provenance = coerce_link_provenance(provenance)
 
             self._assert_entities_readable(
                 profile_ids=(profile_id,),
@@ -321,7 +326,7 @@ class SpeakerProfileService:
                 created_at=now,
                 updated_at=now,
                 created_by=created_by,
-                provenance={},
+                provenance=link_provenance.to_storage_dict(),
             )
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -339,7 +344,19 @@ class SpeakerProfileService:
                 },
             )
 
-            scopes = ["speaker_profiles", "speaker_links"]
+            scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
+            receipt = {
+                "profile_id": profile_id,
+                "link_id": link_id,
+                "event_ids": [event_id],
+                "link_file_key": key,
+                "profile_ids": [profile_id],
+                "link_ids": [link_id],
+                "managed_transcript_ids": [resolved.managed_transcript_id],
+                "scopes": scopes,
+            }
+            if extra_receipt:
+                receipt.update(extra_receipt)
             outcome = self.engine.run(
                 op_type="create_profile_and_link",
                 operation_idempotency_key=operation_idempotency_key,
@@ -356,18 +373,10 @@ class SpeakerProfileService:
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
+                    *(extra_writes or []),
                 ],
                 deletes=[],
-                receipt_extra={
-                    "profile_id": profile_id,
-                    "link_id": link_id,
-                    "event_ids": [event_id],
-                    "link_file_key": key,
-                    "profile_ids": [profile_id],
-                    "link_ids": [link_id],
-                    "managed_transcript_ids": [resolved.managed_transcript_id],
-                    "scopes": scopes,
-                },
+                receipt_extra=receipt,
             )
             return MutationResult(
                 outcome=outcome,
@@ -375,7 +384,7 @@ class SpeakerProfileService:
                 link_id=link_id,
                 event_ids=(event_id,),
                 cache_signal=CacheInvalidationSignal(
-                    scopes=("speaker_profiles", "speaker_links"),
+                    scopes=tuple(dict.fromkeys(scopes)),
                     profile_ids=(profile_id,),
                     link_ids=(link_id,),
                     managed_transcript_ids=(resolved.managed_transcript_id,),
@@ -485,6 +494,10 @@ class SpeakerProfileService:
         local_speaker_key: str,
         profile_id: str,
         actor: str = "user",
+        provenance: LinkProvenanceV1 | None = None,
+        extra_writes: list[PlannedWrite] | None = None,
+        extra_scopes: list[str] | None = None,
+        extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
         """Link an unlinked occurrence to an existing active profile."""
         ensure_layout(self.root)
@@ -523,6 +536,7 @@ class SpeakerProfileService:
             now = utc_now_iso()
             link_id = str(uuid4())
             event_id = str(uuid4())
+            link_provenance = coerce_link_provenance(provenance)
             link = SpeakerProfileLinkV1(
                 link_id=link_id,
                 managed_transcript_id=resolved.managed_transcript_id,
@@ -535,7 +549,7 @@ class SpeakerProfileService:
                 created_at=now,
                 updated_at=now,
                 created_by=actor,
-                provenance={},
+                provenance=link_provenance.to_storage_dict(),
             )
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -552,7 +566,19 @@ class SpeakerProfileService:
                     "created_profile": False,
                 },
             )
-            scopes = ["speaker_profiles", "speaker_links"]
+            scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
+            receipt = {
+                "profile_id": profile_id,
+                "link_id": link_id,
+                "event_ids": [event_id],
+                "link_file_key": key,
+                "profile_ids": [profile_id],
+                "link_ids": [link_id],
+                "managed_transcript_ids": [resolved.managed_transcript_id],
+                "scopes": scopes,
+            }
+            if extra_receipt:
+                receipt.update(extra_receipt)
             outcome = self.engine.run(
                 op_type="link_existing_profile",
                 operation_idempotency_key=operation_idempotency_key,
@@ -565,18 +591,10 @@ class SpeakerProfileService:
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
+                    *(extra_writes or []),
                 ],
                 deletes=[],
-                receipt_extra={
-                    "profile_id": profile_id,
-                    "link_id": link_id,
-                    "event_ids": [event_id],
-                    "link_file_key": key,
-                    "profile_ids": [profile_id],
-                    "link_ids": [link_id],
-                    "managed_transcript_ids": [resolved.managed_transcript_id],
-                    "scopes": scopes,
-                },
+                receipt_extra=receipt,
             )
             return MutationResult(
                 outcome=outcome,
@@ -584,7 +602,7 @@ class SpeakerProfileService:
                 link_id=link_id,
                 event_ids=(event_id,),
                 cache_signal=CacheInvalidationSignal(
-                    scopes=("speaker_profiles", "speaker_links"),
+                    scopes=tuple(dict.fromkeys(scopes)),
                     profile_ids=(profile_id,),
                     link_ids=(link_id,),
                     managed_transcript_ids=(resolved.managed_transcript_id,),
@@ -602,6 +620,10 @@ class SpeakerProfileService:
         expected_owner_profile_id: str | None = None,
         expected_link_sha256: str | None = None,
         actor: str = "user",
+        provenance: LinkProvenanceV1 | None = None,
+        extra_writes: list[PlannedWrite] | None = None,
+        extra_scopes: list[str] | None = None,
+        extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
         """Replace an existing live link's owner profile."""
         ensure_layout(self.root)
@@ -661,6 +683,13 @@ class SpeakerProfileService:
             event_id = str(uuid4())
             previous_link_id = existing.link_id
             previous_profile_id = existing.profile_id
+            link_provenance = coerce_link_provenance(
+                provenance, default_method="relink"
+            )
+            if link_provenance.relinked_from is None:
+                link_provenance = link_provenance.model_copy(
+                    update={"relinked_from": previous_link_id}
+                )
             link = SpeakerProfileLinkV1(
                 link_id=link_id,
                 managed_transcript_id=resolved.managed_transcript_id,
@@ -673,7 +702,7 @@ class SpeakerProfileService:
                 created_at=now,
                 updated_at=now,
                 created_by=actor,
-                provenance={"relinked_from": previous_link_id},
+                provenance=link_provenance.to_storage_dict(),
             )
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -693,10 +722,22 @@ class SpeakerProfileService:
             )
 
             before = sha256_file(link_path(key, root=self.root))
-            scopes = ["speaker_profiles", "speaker_links"]
+            scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
             profile_ids = list(
                 dict.fromkeys([previous_profile_id, profile_id])
             )
+            receipt = {
+                "profile_id": profile_id,
+                "link_id": link_id,
+                "event_ids": [event_id],
+                "link_file_key": key,
+                "profile_ids": profile_ids,
+                "link_ids": [link_id, previous_link_id],
+                "managed_transcript_ids": [resolved.managed_transcript_id],
+                "scopes": scopes,
+            }
+            if extra_receipt:
+                receipt.update(extra_receipt)
             outcome = self.engine.run(
                 op_type="relink",
                 operation_idempotency_key=operation_idempotency_key,
@@ -710,18 +751,10 @@ class SpeakerProfileService:
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
+                    *(extra_writes or []),
                 ],
                 deletes=[],
-                receipt_extra={
-                    "profile_id": profile_id,
-                    "link_id": link_id,
-                    "event_ids": [event_id],
-                    "link_file_key": key,
-                    "profile_ids": profile_ids,
-                    "link_ids": [link_id, previous_link_id],
-                    "managed_transcript_ids": [resolved.managed_transcript_id],
-                    "scopes": scopes,
-                },
+                receipt_extra=receipt,
             )
             return MutationResult(
                 outcome=outcome,
@@ -729,7 +762,7 @@ class SpeakerProfileService:
                 link_id=link_id,
                 event_ids=(event_id,),
                 cache_signal=CacheInvalidationSignal(
-                    scopes=("speaker_profiles", "speaker_links"),
+                    scopes=tuple(dict.fromkeys(scopes)),
                     profile_ids=tuple(profile_ids),
                     link_ids=(link_id, previous_link_id),
                     managed_transcript_ids=(resolved.managed_transcript_id,),
@@ -1403,11 +1436,24 @@ class SpeakerProfileService:
                         expected_before_sha256=before,
                     )
                 )
+
+            from transcriptx.core.speaker_profiles.voice.merge_transfer import (
+                plan_voice_transfer_on_merge,
+            )
+
+            voice_writes, voice_deletes = plan_voice_transfer_on_merge(
+                root=self.root,
+                source_profile_id=source_profile_id,
+                target_profile_id=target_profile_id,
+            )
+            writes.extend(voice_writes)
+            deletes.extend(voice_deletes)
+
             link_ids = [lnk.link_id for lnk in links]
             managed_ids = list(
                 dict.fromkeys(lnk.managed_transcript_id for lnk in links)
             )
-            scopes = ["speaker_profiles", "speaker_links"]
+            scopes = ["speaker_profiles", "speaker_links", "speaker_voice"]
             outcome = self.engine.run(
                 op_type="merge_profiles",
                 operation_idempotency_key=operation_idempotency_key,
@@ -1423,12 +1469,20 @@ class SpeakerProfileService:
                     "scopes": scopes,
                 },
             )
+            try:
+                from transcriptx.core.speaker_profiles.voice.caches import (
+                    VoiceSuggestionCache,
+                )
+
+                VoiceSuggestionCache(self.root).invalidate_all()
+            except Exception:
+                pass
             return MutationResult(
                 outcome=outcome,
                 profile_id=source_profile_id,
                 event_ids=(event_id,),
                 cache_signal=CacheInvalidationSignal(
-                    scopes=("speaker_profiles", "speaker_links"),
+                    scopes=("speaker_profiles", "speaker_links", "speaker_voice"),
                     profile_ids=(source_profile_id, target_profile_id),
                     link_ids=tuple(link_ids),
                     managed_transcript_ids=tuple(managed_ids),
@@ -1445,6 +1499,10 @@ class SpeakerProfileService:
         expected_fingerprint: str | None = None,
         expected_link_sha256: str | None = None,
         actor: str = "user",
+        provenance: LinkProvenanceV1 | None = None,
+        extra_writes: list[PlannedWrite] | None = None,
+        extra_scopes: list[str] | None = None,
+        extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
         """Journalled fingerprint supersession after needs_review mismatch."""
         ensure_layout(self.root)
@@ -1480,24 +1538,86 @@ class SpeakerProfileService:
             )
 
             if occ.occurrence_fingerprint == existing.occurrence_fingerprint:
-                return _noop_result(
-                    "supersede_link_fingerprint",
-                    operation_idempotency_key,
+                if not extra_writes:
+                    return _noop_result(
+                        "supersede_link_fingerprint",
+                        operation_idempotency_key,
+                        profile_id=existing.profile_id,
+                        link_id=existing.link_id,
+                        profile_ids=[existing.profile_id],
+                        link_ids=[existing.link_id],
+                        managed_transcript_ids=[existing.managed_transcript_id],
+                        link_file_key=key,
+                    )
+                # Fingerprint already current, but co-journal extras (voice accept).
+                now = utc_now_iso()
+                writes = list(extra_writes)
+                scopes = ["speaker_profiles", "speaker_links"] + list(
+                    extra_scopes or []
+                )
+                receipt = {
+                    "profile_id": existing.profile_id,
+                    "link_id": existing.link_id,
+                    "event_ids": [],
+                    "link_file_key": key,
+                    "profile_ids": [existing.profile_id],
+                    "link_ids": [existing.link_id],
+                    "managed_transcript_ids": [existing.managed_transcript_id],
+                    "scopes": scopes,
+                    "noop_fingerprint": True,
+                }
+                if provenance is not None:
+                    link_provenance = coerce_link_provenance(
+                        provenance, default_method="supersede"
+                    )
+                    updated = existing.model_copy(
+                        update={
+                            "provenance": link_provenance.to_storage_dict(),
+                            "updated_at": now,
+                        }
+                    )
+                    before = sha256_file(link_path(key, root=self.root))
+                    writes.insert(
+                        0,
+                        PlannedWrite(
+                            relpath=relative_link_path(key),
+                            data=dumps_model(updated),
+                            expected_before_sha256=before,
+                        ),
+                    )
+                if extra_receipt:
+                    receipt.update(extra_receipt)
+                outcome = self.engine.run(
+                    op_type="supersede_link_fingerprint",
+                    operation_idempotency_key=operation_idempotency_key,
+                    writes=writes,
+                    deletes=[],
+                    receipt_extra=receipt,
+                )
+                return MutationResult(
+                    outcome=outcome,
                     profile_id=existing.profile_id,
                     link_id=existing.link_id,
-                    profile_ids=[existing.profile_id],
-                    link_ids=[existing.link_id],
-                    managed_transcript_ids=[existing.managed_transcript_id],
-                    link_file_key=key,
+                    event_ids=(),
+                    cache_signal=CacheInvalidationSignal(
+                        scopes=tuple(dict.fromkeys(scopes)),
+                        profile_ids=(existing.profile_id,),
+                        link_ids=(existing.link_id,),
+                        managed_transcript_ids=(existing.managed_transcript_id,),
+                    ),
                 )
 
             now = utc_now_iso()
-            updated = existing.model_copy(
-                update={
-                    "occurrence_fingerprint": occ.occurrence_fingerprint,
-                    "updated_at": now,
-                }
-            )
+            update_fields: dict[str, Any] = {
+                "occurrence_fingerprint": occ.occurrence_fingerprint,
+                "updated_at": now,
+            }
+            if provenance is not None:
+                link_provenance = coerce_link_provenance(
+                    provenance, default_method="supersede"
+                )
+                update_fields["provenance"] = link_provenance.to_storage_dict()
+            updated = existing.model_copy(update=update_fields)
             event_id = str(uuid4())
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -1513,7 +1633,19 @@ class SpeakerProfileService:
                 },
             )
             before = sha256_file(link_path(key, root=self.root))
-            scopes = ["speaker_profiles", "speaker_links"]
+            scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
+            receipt = {
+                "profile_id": existing.profile_id,
+                "link_id": existing.link_id,
+                "event_ids": [event_id],
+                "link_file_key": key,
+                "profile_ids": [existing.profile_id],
+                "link_ids": [existing.link_id],
+                "managed_transcript_ids": [existing.managed_transcript_id],
+                "scopes": scopes,
+            }
+            if extra_receipt:
+                receipt.update(extra_receipt)
             outcome = self.engine.run(
                 op_type="supersede_link_fingerprint",
                 operation_idempotency_key=operation_idempotency_key,
@@ -1527,18 +1659,10 @@ class SpeakerProfileService:
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
+                    *(extra_writes or []),
                 ],
                 deletes=[],
-                receipt_extra={
-                    "profile_id": existing.profile_id,
-                    "link_id": existing.link_id,
-                    "event_ids": [event_id],
-                    "link_file_key": key,
-                    "profile_ids": [existing.profile_id],
-                    "link_ids": [existing.link_id],
-                    "managed_transcript_ids": [existing.managed_transcript_id],
-                    "scopes": scopes,
-                },
+                receipt_extra=receipt,
             )
             return MutationResult(
                 outcome=outcome,
@@ -1546,7 +1670,7 @@ class SpeakerProfileService:
                 link_id=existing.link_id,
                 event_ids=(event_id,),
                 cache_signal=CacheInvalidationSignal(
-                    scopes=("speaker_profiles", "speaker_links"),
+                    scopes=tuple(dict.fromkeys(scopes)),
                     profile_ids=(existing.profile_id,),
                     link_ids=(existing.link_id,),
                     managed_transcript_ids=(existing.managed_transcript_id,),

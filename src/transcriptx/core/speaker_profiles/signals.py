@@ -12,6 +12,7 @@ CacheScope = Literal[
     "speaker_profiles",
     "speaker_links",
     "transcript_summaries",
+    "speaker_voice",
 ]
 
 

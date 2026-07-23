@@ -537,9 +537,12 @@ def test_render_markdown_covers_row_statuses() -> None:
         }
     )
     assert "Outcome: `mixed`" in md
-    assert "Status: `answered`" in md
+    assert "### Answer" in md
+    assert "Status: `answered`" not in md
     assert "hello / world" in md
+    assert "Status: `abstained`" in md
     assert "Abstain reason: `ambiguous`" in md
+    assert "Status: `unavailable`" in md
     assert "System reason: `response_incomplete`" in md
 
 

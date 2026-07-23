@@ -65,6 +65,7 @@ class IntegrityReport:
     duplicate_link_keys: tuple[str, ...]
     ok: bool
     avatar_issues: tuple[str, ...] = ()
+    voice_issues: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -170,6 +171,50 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
             if rel not in claimed_avatar_paths:
                 avatar_issues.append(f"avatar_orphan:{rel}")
 
+    voice_issues: list[str] = []
+    wipe_receipt = root / "voice" / "wipe_receipt.json"
+    if wipe_receipt.is_file():
+        try:
+            import json
+
+            receipt = json.loads(wipe_receipt.read_text(encoding="utf-8"))
+            pending = receipt.get("pending_paths") or []
+            if pending:
+                voice_issues.append(f"wipe_incomplete:{len(pending)}")
+            else:
+                voice_issues.append("wipe_receipt_stale")
+        except Exception:
+            voice_issues.append("wipe_receipt_corrupt")
+    try:
+        from transcriptx.core.speaker_profiles.voice.privacy import VoicePrivacyStore
+
+        privacy = VoicePrivacyStore(root).read()
+        if privacy.wipe_required:
+            voice_issues.append("wipe_required")
+    except Exception:
+        pass
+    samples_dir = root / "voice" / "samples"
+    if samples_dir.is_dir():
+        for path in samples_dir.glob("*.voice_sample.json"):
+            try:
+                from transcriptx.core.speaker_profiles.voice.models import VoiceSampleV1
+
+                parse_model(VoiceSampleV1, path)
+            except Exception:
+                voice_issues.append(f"voice_sample_corrupt:{path.name}")
+    emb_dir = root / "voice" / "embeddings"
+    if emb_dir.is_dir():
+        for path in emb_dir.glob("*.voice_embedding.json"):
+            try:
+                from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1
+
+                emb = parse_model(VoiceEmbeddingV1, path)
+                vec = root / "voice" / "vectors" / f"{emb.embedding_id}.npy"
+                if not vec.is_file():
+                    voice_issues.append(f"voice_vector_missing:{emb.embedding_id}")
+            except Exception:
+                voice_issues.append(f"voice_embedding_corrupt:{path.name}")
+
     for path in link_paths:
         try:
             link = parse_model(SpeakerProfileLinkV1, path)
@@ -228,6 +273,7 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
         or duplicates
         or blocking_ids
         or avatar_issues
+        or voice_issues
     )
     return IntegrityReport(
         profiles_scanned=len(profiles),
@@ -244,6 +290,7 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
         duplicate_link_keys=tuple(sorted(set(duplicates))),
         ok=ok,
         avatar_issues=tuple(avatar_issues),
+        voice_issues=tuple(voice_issues),
     )
 
 

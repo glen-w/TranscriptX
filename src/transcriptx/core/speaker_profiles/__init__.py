@@ -12,6 +12,7 @@ from transcriptx.core.speaker_profiles.errors import (
     StaleUpdateError,
     UnresolvedManagedTranscriptError,
 )
+from transcriptx.core.speaker_profiles.provenance import LinkProvenanceV1
 from transcriptx.core.speaker_profiles.resolver import (
     ManagedTranscriptResolver,
     ResolvedManagedTranscript,
@@ -28,6 +29,7 @@ from transcriptx.core.speaker_profiles.versioning import (
 __all__ = [
     "EVENT_SCHEMA_ID",
     "LINK_SCHEMA_ID",
+    "LinkProvenanceV1",
     "OPERATION_SCHEMA_ID",
     "PROFILE_SCHEMA_ID",
     "SCHEMA_VERSION",

@@ -13,6 +13,7 @@ from typing import Dict, Optional
 # Prefer distribution metadata over import names so catalogue never loads natives.
 EXTRA_DISTRIBUTION_NAME: Dict[str, str] = {
     "voice": "opensmile",
+    "speaker_match": "speechbrain",
     "emotion": "transformers",
     "emotion_lexical": "nrclex",
     "emotion_transformers": "transformers",

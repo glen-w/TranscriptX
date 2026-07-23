@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 from math import floor
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 from uuid import uuid4
 
 import streamlit as st
@@ -71,18 +72,80 @@ def _evidence_caption(note: str | None) -> str:
         return f"Non-finite {note.split(':', 1)[1]} excluded."
     return note
 
+
+def _methodology_lines(codes: Sequence[str]) -> list[str]:
+    return [
+        _METHODOLOGY_CAPTIONS[code]
+        for code in codes
+        if code in _METHODOLOGY_CAPTIONS and not code.startswith("partners.")
+    ]
+
+
+def _info_tooltip_html(
+    lines: Sequence[str],
+    *,
+    control_id: str,
+    aria_label: str,
+    test_id: str = "tx-info-tooltip",
+) -> str:
+    """Build an ⓘ tooltip for multi-line help / notes."""
+    if not lines:
+        return ""
+    tip_body = "<br>".join(html.escape(line) for line in lines)
+    tip_id = html.escape(control_id, quote=True)
+    aria = html.escape(aria_label, quote=True)
+    test = html.escape(test_id, quote=True)
+    return (
+        f'<span class="tx-run-id-info tx-methodology-info" '
+        f'data-testid="{test}">'
+        f'<button type="button" class="tx-run-id-info-btn" tabindex="0" '
+        f'aria-label="{aria}" aria-describedby="{tip_id}">ⓘ</button>'
+        f'<span id="{tip_id}" class="tx-run-id-info-tip tx-methodology-info-tip" '
+        f'role="tooltip">{tip_body}</span>'
+        f"</span>"
+    )
+
+
+def _methodology_info_html(
+    lines: Sequence[str],
+    *,
+    control_id: str,
+) -> str:
+    """Build an ⓘ tooltip for trends methodology notes."""
+    return _info_tooltip_html(
+        lines,
+        control_id=control_id,
+        aria_label="Trends methodology",
+        test_id="tx-methodology-info",
+    )
+
+
+def _section_heading_with_info_html(title: str, tip_html: str) -> str:
+    return (
+        '<div class="tx-section-info-heading">'
+        f"<h4>{html.escape(title)}</h4>"
+        f"{tip_html}"
+        "</div>"
+    )
+
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.speaker import parse_speaker_name
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.speaker_avatar import speaker_heading_with_avatar_html
-from transcriptx.web.speaker_profile_signals import consume_cache_invalidation_signal
+from transcriptx.web.speaker_profile_signals import (
+    INCLUDE_IGNORED_SESSION_KEY,
+    SHOW_ARCHIVED_SESSION_KEY,
+    SHOW_MERGED_SESSION_KEY,
+    consume_cache_invalidation_signal,
+)
 from transcriptx.web.state import PAGE_KEY, SELECTBOX_PLACEHOLDER_SPEAKER
 
 _SPEAKERS_DESCRIPTION = (
     "Longitudinal speaker profiles linked across managed library transcripts. "
-    "Headline totals exclude needs-review, missing-source, collision, and ignored appearances."
+    "Headline totals exclude needs-review, missing-source, collision, and ignored appearances "
+    "(toggle inclusion under Settings → Storage)."
 )
 
 _SELECTED_KEY = "speakers_selected_profile"
@@ -130,15 +193,6 @@ def _surname_sort_key(item: ProfileListItem) -> tuple[str, str, str, str]:
         item.display_name.casefold(),
         item.profile_id,
     )
-
-
-def _matches_search(item: ProfileListItem, query: str) -> bool:
-    q = query.strip().casefold()
-    if not q:
-        return True
-    if q in item.display_name.casefold():
-        return True
-    return any(q in alias.casefold() for alias in item.aliases)
 
 
 def _directory_chart_frame(
@@ -232,11 +286,7 @@ def render_speakers_page() -> None:
     root.mkdir(parents=True, exist_ok=True)
     ensure_layout(root)
 
-    include_ignored = st.checkbox(
-        "Include ignored appearances in headline totals",
-        value=False,
-        key="speakers_include_ignored",
-    )
+    include_ignored = bool(st.session_state.get(INCLUDE_IGNORED_SESSION_KEY, False))
 
     snap = build_aggregation_snapshot(
         root=root,
@@ -267,35 +317,24 @@ def render_speakers_page() -> None:
     active = [i for i in items if i.status == "active"]
     archived = [i for i in items if i.status == "archived"]
     merged = [i for i in items if i.status == "merged"]
+    show_archived = bool(st.session_state.get(SHOW_ARCHIVED_SESSION_KEY, False))
+    show_merged = bool(st.session_state.get(SHOW_MERGED_SESSION_KEY, False))
 
-    col_a, col_b, col_c = st.columns(3)
-    col_a.metric("Active", len(active))
-    col_b.metric("Archived", len(archived))
-    col_c.metric("Merged", len(merged))
-
-    search = st.text_input(
-        "Search display name or aliases",
-        value="",
-        key="speakers_search",
-        placeholder="Filter by name or alias…",
-    )
-    show_archived = st.checkbox("Show archived", value=False, key="speakers_show_archived")
-    show_merged = st.checkbox("Show merged", value=False, key="speakers_show_merged")
-
-    visible = [i for i in active if _matches_search(i, search)]
+    metric_specs: list[tuple[str, int]] = [("Active", len(active))]
     if show_archived:
-        visible.extend(i for i in archived if _matches_search(i, search))
+        metric_specs.append(("Archived", len(archived)))
     if show_merged:
-        visible.extend(i for i in merged if _matches_search(i, search))
-    visible.sort(key=_surname_sort_key)
+        metric_specs.append(("Merged", len(merged)))
+    cols = st.columns(len(metric_specs))
+    for col, (label, value) in zip(cols, metric_specs):
+        col.metric(label, value)
 
-    name_by_id = {i.profile_id: i.display_name for i in items}
-    _render_directory_overview(
-        snap,
-        active_items=active,
-        name_by_id=name_by_id,
-        include_ignored=include_ignored,
-    )
+    visible = list(active)
+    if show_archived:
+        visible.extend(archived)
+    if show_merged:
+        visible.extend(merged)
+    visible.sort(key=_surname_sort_key)
 
     if not visible:
         st.info("No profiles match the current filters.")
@@ -324,6 +363,18 @@ def render_speakers_page() -> None:
         ),
         key=_SELECTED_KEY,
     )
+
+    name_by_id = {i.profile_id: i.display_name for i in items}
+    chart_profile_ids = (
+        [selected] if selected else [i.profile_id for i in active]
+    )
+    _render_directory_overview(
+        snap,
+        chart_profile_ids=chart_profile_ids,
+        name_by_id=name_by_id,
+        include_ignored=include_ignored,
+    )
+
     if not selected:
         return
 
@@ -358,13 +409,12 @@ def render_speakers_page() -> None:
 def _render_directory_overview(
     snap: AggregationSnapshot,
     *,
-    active_items: list[ProfileListItem],
+    chart_profile_ids: Sequence[str],
     name_by_id: Mapping[str, str],
     include_ignored: bool,
 ) -> None:
-    if not active_items:
+    if not chart_profile_ids:
         return
-    st.markdown("#### Directory activity")
     headline_words = {
         pid: int(agg.headline_words)
         for pid, agg in snap.aggregates_by_profile.items()
@@ -372,7 +422,7 @@ def _render_directory_overview(
     chart = build_directory_activity_chart(
         profile_rows=snap.appearances_by_profile,
         profile_headline_words=headline_words,
-        active_profile_ids=[i.profile_id for i in active_items],
+        active_profile_ids=list(chart_profile_ids),
         include_ignored=include_ignored,
         metric="words",
     )
@@ -488,6 +538,10 @@ def _render_profile_detail(
         profile_blocked=profile_blocked,
     )
 
+    if not profile_blocked and profile.status == "active":
+        st.divider()
+        _render_voice_controls(snap=snap, profile=profile)
+
     st.divider()
     if not profile_blocked:
         _render_edit_form(profile, root=snap.root)
@@ -504,6 +558,114 @@ def _render_profile_detail(
     )
 
 
+def _render_voice_controls(
+    *,
+    snap: AggregationSnapshot,
+    profile: SpeakerProfileV1,
+) -> None:
+    """Promote / wipe profile voice evidence when ActivationBarrier allows."""
+    try:
+        from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
+        from transcriptx.core.speaker_profiles.voice.inventory import (
+            list_samples_for_profile,
+        )
+        from transcriptx.core.speaker_profiles.voice.promote import VoicePromotionService
+        from transcriptx.core.speaker_profiles.voice.wipe import VoiceWipeService
+    except Exception:
+        return
+
+    status = ActivationBarrier(snap.root).status()
+    st.markdown("#### Voice evidence")
+    if not status.allowed:
+        st.caption(
+            "Local voice matching is not active "
+            f"({status.block_reason or 'unavailable'})."
+        )
+        return
+
+    samples = list_samples_for_profile(profile.profile_id, root=snap.root)
+    eligible = sum(1 for s in samples if s.eligibility_state == "eligible")
+    ineligible = sum(1 for s in samples if s.eligibility_state != "eligible")
+    st.caption(
+        f"{len(samples)} sample(s) · {eligible} eligible · {ineligible} need promotion"
+    )
+    enrol_action = f"voice_bootstrap_{profile.profile_id}"
+    if st.button(
+        "Enrol trusted voice from confirmed links",
+        key=f"spk_voice_bootstrap_{profile.profile_id}",
+        help=(
+            "Explicit bootstrap: extracts and embeds voice from this profile's "
+            "confirmed links. Privacy opt-in alone does not enrol anything."
+        ),
+    ):
+        try:
+            from transcriptx.services.speaker_profiles.voice_facade import (
+                SpeakerIdVoiceFacade,
+            )
+
+            result = SpeakerIdVoiceFacade(root=snap.root).bootstrap_enrol_profile(
+                operation_idempotency_key=_idempotency_key(
+                    enrol_action, {"profile_id": profile.profile_id}
+                ),
+                profile_id=profile.profile_id,
+            )
+            _clear_idempotency(enrol_action)
+            st.success(
+                f"Enrolled {result.links_enrolled}/{result.links_attempted} link(s); "
+                f"{len(result.sample_ids)} sample(s)."
+            )
+            for item in result.per_link:
+                if item.outcome != "Enrolled":
+                    st.caption(f"{item.link_file_key}: {item.outcome} — {item.detail or ''}")
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+
+    for sample in samples:
+        if sample.eligibility_state == "eligible":
+            continue
+        cols = st.columns([4, 1])
+        cols[0].write(
+            f"`{sample.sample_id[:12]}…` · {sample.trust_level} · "
+            f"{sample.local_speaker_key}"
+        )
+        promo_action = f"voice_promote_{sample.sample_id}"
+        if cols[1].button(
+            "Promote",
+            key=f"spk_voice_promote_{sample.sample_id}",
+        ):
+            try:
+                VoicePromotionService(root=snap.root).promote_sample(
+                    operation_idempotency_key=_idempotency_key(
+                        promo_action, {"sample_id": sample.sample_id}
+                    ),
+                    sample_id=sample.sample_id,
+                )
+                _clear_idempotency(promo_action)
+                st.success("Sample promoted to trusted reference.")
+                st.rerun()
+            except Exception as exc:
+                st.error(str(exc))
+
+    wipe_action = f"voice_wipe_profile_{profile.profile_id}"
+    if samples and st.button(
+        "Delete voice evidence for this profile",
+        key=f"spk_voice_wipe_{profile.profile_id}",
+    ):
+        try:
+            VoiceWipeService(root=snap.root).wipe_profile_voice(
+                operation_idempotency_key=_idempotency_key(
+                    wipe_action, {"profile_id": profile.profile_id}
+                ),
+                profile_id=profile.profile_id,
+            )
+            _clear_idempotency(wipe_action)
+            st.warning("Profile voice artefacts deleted.")
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+
+
 def _render_detail_charts(
     snap: AggregationSnapshot,
     profile_id: str,
@@ -511,7 +673,8 @@ def _render_detail_charts(
     *,
     include_ignored: bool,
 ) -> None:
-    st.markdown("#### Trends")
+    trends_header = st.empty()
+    trends_header.markdown("#### Trends")
     c_chart, c_grain, c_all = st.columns([2, 1, 1])
     chart_choice = c_chart.selectbox(
         "Chart",
@@ -552,20 +715,33 @@ def _render_detail_charts(
         st.error(f"Could not build analytics pack: {exc}")
         return
 
+    series_map = {
+        "Speaking time": ("speaking_minutes", "Speaking minutes"),
+        "Speaking share": ("speaking_share", "Speaking share"),
+        "Turn length": ("turn_length", "Turn length (seconds)"),
+        "Speaking rate": ("speaking_rate_wpm", "Words per minute"),
+    }
+    methodology = _methodology_lines(pack.methodology_codes)
+    if chart_choice in series_map:
+        methodology = [*methodology, f"Headline — {series_map[chart_choice][1]}"]
+    elif chart_choice == "Words & turns":
+        methodology = [*methodology, "Headline — Words & turns"]
+    elif chart_choice == "Turn length":
+        methodology = [*methodology, "Headline — Turn length"]
+    tip_html = _methodology_info_html(
+        methodology,
+        control_id=f"spk-meth-{profile_id}",
+    )
+    if tip_html:
+        trends_header.markdown(
+            _section_heading_with_info_html("Trends", tip_html),
+            unsafe_allow_html=True,
+        )
+
     if not appearances:
         st.caption("No linked appearances to chart yet.")
     else:
-        for code in pack.methodology_codes:
-            if code in _METHODOLOGY_CAPTIONS and not code.startswith("partners."):
-                st.caption(_METHODOLOGY_CAPTIONS[code])
-
         bundle = pack.headline
-        series_map = {
-            "Speaking time": ("speaking_minutes", "Speaking minutes"),
-            "Speaking share": ("speaking_share", "Speaking share"),
-            "Turn length": ("turn_length", "Turn length (seconds)"),
-            "Speaking rate": ("speaking_rate_wpm", "Words per minute"),
-        }
 
         if chart_choice == "Words & turns":
             wdata = _series_points_frame(bundle.words, "words")
@@ -629,7 +805,6 @@ def _render_detail_charts(
             attr, ylabel = series_map[chart_choice]
             points = getattr(bundle, attr)
             data = _series_points_frame(points, "value")
-            st.caption(f"Headline — {ylabel}")
             if data:
                 st.bar_chart(data, x="period", y="value")
             else:
@@ -668,10 +843,16 @@ def _render_detail_charts(
             ]
             st.dataframe(rows, hide_index=True, width="stretch")
 
-    st.markdown("#### Conversation partners")
-    st.caption(_METHODOLOGY_CAPTIONS["partners.co_appearance_only"])
-    if pack.integrity_warnings:
-        st.caption("Integrity notes: " + "; ".join(pack.integrity_warnings))
+    partners_tip = _info_tooltip_html(
+        [_METHODOLOGY_CAPTIONS["partners.co_appearance_only"]],
+        control_id=f"spk-partners-{profile_id}",
+        aria_label="Conversation partners notes",
+        test_id="tx-partners-info",
+    )
+    st.markdown(
+        _section_heading_with_info_html("Conversation partners", partners_tip),
+        unsafe_allow_html=True,
+    )
     if not pack.partners:
         st.info("No co-appearances yet.")
         return

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from transcriptx.core.speaker_profiles.errors import SpeakerProfilePathError
 
@@ -18,6 +18,41 @@ def assert_not_symlink(path: Path, *, what: str = "path") -> Path:
     if p.is_symlink():
         raise SpeakerProfilePathError(f"symlink rejected for {what}: {p}")
     return p
+
+
+def assert_safe_relpath(relpath: str, *, what: str = "relpath") -> str:
+    """Reject absolute paths and traversal before any stat/read/staging/backup.
+
+    Voice and operation plan paths must be relative POSIX-style segments under
+    the speaker_profiles root. Call this before joining onto the root.
+    """
+    if not isinstance(relpath, str) or not relpath.strip():
+        raise SpeakerProfilePathError(f"{what} must be a non-empty relative path")
+    raw = relpath.strip()
+    if raw.startswith("/") or raw.startswith("\\"):
+        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
+    # Windows drive / UNC style
+    if len(raw) >= 2 and raw[1] == ":":
+        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
+    if raw.startswith("//") or raw.startswith("\\\\"):
+        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
+    pure = PurePosixPath(raw.replace("\\", "/"))
+    if pure.is_absolute():
+        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
+    parts = pure.parts
+    if not parts or parts == (".",):
+        raise SpeakerProfilePathError(f"{what} must be a non-empty relative path")
+    for part in parts:
+        if part in ("", ".", ".."):
+            raise SpeakerProfilePathError(
+                f"path traversal rejected for {what}: {raw!r}"
+            )
+    normalised = pure.as_posix()
+    if normalised != raw.replace("\\", "/"):
+        # Allow equivalent normalisation only when no traversal was present;
+        # still return the normalised form for callers that want a canonical key.
+        pass
+    return normalised
 
 
 def assert_path_under_root(path: Path, root: Path, *, what: str = "path") -> Path:
@@ -51,3 +86,11 @@ def assert_operation_path_under_root(
     """Containment check for operation/staging/backup/file paths."""
     assert_speaker_profiles_root(root)
     return assert_path_under_root(path, root, what=what)
+
+
+def assert_relpath_under_root(
+    relpath: str, root: Path, *, what: str = "relpath"
+) -> Path:
+    """Lexical relpath safety then join + containment under root."""
+    safe = assert_safe_relpath(relpath, what=what)
+    return assert_operation_path_under_root(root / safe, root, what=what)
