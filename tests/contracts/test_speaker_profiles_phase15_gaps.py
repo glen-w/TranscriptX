@@ -127,12 +127,13 @@ def _row(
     words: int = 2,
     duration: float | None = 1.0,
     ignored: bool = False,
+    local_speaker_key: str = "SPEAKER_00",
 ) -> AppearanceRow:
     return AppearanceRow(
         profile_id="p1",
         link_id=link_id,
         managed_transcript_id=managed_transcript_id,
-        local_speaker_key="SPEAKER_00",
+        local_speaker_key=local_speaker_key,
         link_file_key="k",
         observed_transcript_relpath="a.json",
         current_relpath="a.json",
@@ -146,6 +147,7 @@ def _row(
             avg_turn_duration=duration,
             median_turn_duration=duration,
             wpm=None,
+            timing_valid_turn_count=1 if duration is not None else 0,
         ),
         speaking_share=None,
         speaking_share_basis="unavailable",
@@ -400,10 +402,10 @@ def test_speakers_merged_readonly_and_fingerprint_gate_ast() -> None:
     assert "_render_merged_readonly" in src
     assert "Open target profile" in src
     assert 'row.flag != "needs_review"' in src
-    assert 'kind="all"' in src
-    assert 'kind="headline"' in src
-    assert src.count('kind="headline"') >= 2
-    assert src.count('kind="all"') >= 2
+    assert "#### Trends" in src
+    assert "build_profile_analytics_pack" in src
+    assert "include_all_series" in src
+    assert "Conversation partners" in src
     assert "_render_merged_readonly(profile, profiles_by_id=profiles_by_id)" in src
     tree = ast.parse(src)
     found_early_return = False
@@ -451,7 +453,7 @@ def test_bundle_uses_memoized_occurrence_fingerprint(
 
 def test_duplicate_transcript_denominator_counted_once() -> None:
     day = date(2026, 1, 15)
-    # Two appearances in the same transcript must not double the denom.
+    # Distinct local keys on one transcript: sum numerators; denom once.
     rows = (
         _row(
             link_id="a0",
@@ -460,6 +462,7 @@ def test_duplicate_transcript_denominator_counted_once() -> None:
             flag="ok",
             duration=2.0,
             words=5,
+            local_speaker_key="SPEAKER_00",
         ),
         _row(
             link_id="a1",
@@ -468,6 +471,7 @@ def test_duplicate_transcript_denominator_counted_once() -> None:
             flag="ok",
             duration=3.0,
             words=7,
+            local_speaker_key="SPEAKER_01",
         ),
     )
     series = build_time_series(
@@ -479,6 +483,33 @@ def test_duplicate_transcript_denominator_counted_once() -> None:
     assert len(series.points) == 1
     assert series.points[0].value == pytest.approx(0.5)  # (2+3)/10
     assert series.points[0].managed_transcript_ids == ("same",)
+
+    # Same local key twice: keep one contribution (no double-count).
+    dup_key = (
+        _row(
+            link_id="b0",
+            managed_transcript_id="same",
+            appearance_date=day,
+            flag="ok",
+            duration=2.0,
+            local_speaker_key="SPEAKER_00",
+        ),
+        _row(
+            link_id="b1",
+            managed_transcript_id="same",
+            appearance_date=day,
+            flag="ok",
+            duration=3.0,
+            local_speaker_key="SPEAKER_00",
+        ),
+    )
+    series2 = build_time_series(
+        dup_key,
+        metric="speaking_share",
+        kind="headline",
+        transcript_denominators={"same": 10.0},
+    )
+    assert series2.points[0].value == pytest.approx(0.2)  # smallest link_id keeps 2.0
 
 
 def test_flag_precedence_full_chain() -> None:

@@ -43,6 +43,22 @@ Algorithmic assertions only:
 
 Optional nightly/reference-env jobs may track latency regressions without blocking merges.
 
+## Phase 1.6 analytics pack (2026-07)
+
+Speakers detail builds `AggregationSnapshot` then `build_profile_analytics_pack`
+as an in-memory pure transform. **No disposable analytics disk cache** under
+`speaker_profiles/.cache/` in v1.
+
+Correctness does not depend on Streamlit TTL for pack payloads (snapshot rebuilt
+each Speakers render). `CacheInvalidationSignal` scopes today are
+`speaker_profiles`, `speaker_links`, `transcript_summaries` — transcript-library
+date edits outside profile mutations may not emit a signal; the next Speakers
+render still rebuilds from disk.
+
+Reference-env measurement of snapshot+pack wall time on a many-link fixture is
+optional before introducing a versioned disposable analytics cache. Prefer
+freshness-key misses for correctness if a cache is added later.
+
 ## When to add an index
 
 Add a disposable file JSON index under `speaker_profiles/.cache/` only if

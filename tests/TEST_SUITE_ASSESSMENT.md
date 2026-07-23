@@ -1794,3 +1794,41 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Focused Run Analysis GUI slice after expansion: **58 passed** (`gui_contracts` + `run_analysis_page` + `batch_ops` + `selection`).
 - **Production code in this #tests pass:** none (tests-only expansion).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 66. Expansion (2026-07-23) – Speaker profile longitudinal charts
+
+### Trigger
+`/tests speaker profile charts` after Phase 1.6 analytics pack (Trends + Conversation partners).
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260723-2209.zip` (5.5M).
+- **Collection:** `7473` collected with 1 collection error (`hypothesis` missing for `tests/core/analysis/llm_custom_qa/test_plan_coverage.py`) — pre-existing, unrelated.
+- **Focused baseline before expansion:** Phase 1.5 + longitudinal slice green (`45 passed`).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** not re-enabled.
+- **Markers / addopts:** unchanged.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Period WPM | No proof weighted ≠ mean-of-WPMs | Uneven-duration fixture |
+| Speaking minutes partial | Untimed sibling fabrication risk | Partial availability + provenance |
+| Share across grains | Helper vs month/quarter builders | Same-bucket stability |
+| Turn length period | Avg/median from indexed segments | Bundle-backed durations |
+| Partner ranking | Ties / top-N remainder | Minutes secondary + remainder_count |
+| Unknown in month grain | Calendar bleed risk | Isolated Unknown date bucket |
+| time_series share path | Divergence from longitudinal helper | Cross-path equality |
+
+### Tests added
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/contracts/test_speaker_profiles_longitudinal.py` | **+7** | Weighted WPM, partial minutes, share grain stability, turn-length period, partner ties/top-N, unknown-month isolation, time_series↔helper share |
+
+### Validation
+- Focused speaker-profile charts slice: **52 passed** (`longitudinal` + `phase15` + `phase15_gaps`).
+- All `tests/contracts/test_speaker_profiles*.py`: **133 passed**.
+- **Production code in this #tests pass:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

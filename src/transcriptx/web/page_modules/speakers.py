@@ -32,12 +32,45 @@ from transcriptx.core.speaker_profiles.store_io import (
     profile_content_sha256,
     read_live_link,
 )
+from transcriptx.core.speaker_profiles.analytics_pack import (
+    build_profile_analytics_pack,
+)
+from transcriptx.core.speaker_profiles.longitudinal import AnalyticsGrain
 from transcriptx.core.speaker_profiles.time_series import (
     DirectoryChartSeries,
-    TimeSeries,
     build_directory_activity_chart,
-    build_time_series,
 )
+
+_METHODOLOGY_CAPTIONS: dict[str, str] = {
+    "share.duration_only": "Speaking share uses duration only (never turn share).",
+    "wpm.weighted_period": "Speaking rate is words ÷ speaking minutes (weighted across sessions).",
+    "turn_length.timing_valid_only": "Turn length uses timing-valid turns only (includes zero-duration).",
+    "partial.available_while_reporting_missing": "Partial periods sum available timing and note missing evidence.",
+    "partners.co_appearance_only": "Partners are co-appearances in shared sessions, not interaction proof.",
+    "pack.phase16": "Trends are derived from confirmed profile links; not persisted as canonical data.",
+    "grain.appearance_date": "Grouped by appearance date.",
+    "grain.month": "Grouped by calendar month (YYYY-MM).",
+    "grain.quarter": "Grouped by calendar quarter (YYYY-Qn).",
+}
+
+_EVIDENCE_CAPTIONS: dict[str, str] = {
+    "no_timing_valid_turns": "No timing-valid turns in this period.",
+    "denom_unavailable": "Speaking-share denominator unavailable.",
+    "missing_timing:all": "No valid timing evidence in this period.",
+}
+
+
+def _evidence_caption(note: str | None) -> str:
+    if not note:
+        return ""
+    if note in _EVIDENCE_CAPTIONS:
+        return _EVIDENCE_CAPTIONS[note]
+    if note.startswith("missing_timing:"):
+        return f"Missing timing for {note.split(':', 1)[1]} sessions."
+    if note.startswith("non_finite_metric:"):
+        return f"Non-finite {note.split(':', 1)[1]} excluded."
+    return note
+
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.speaker import parse_speaker_name
 from transcriptx.web.components.empty_state import render_empty_state
@@ -106,14 +139,6 @@ def _matches_search(item: ProfileListItem, query: str) -> bool:
     if q in item.display_name.casefold():
         return True
     return any(q in alias.casefold() for alias in item.aliases)
-
-
-def _time_series_chart_data(series: TimeSeries) -> dict[str, list[float | None]]:
-    labels = [p.display_label for p in series.points]
-    values = [p.value for p in series.points]
-    if not labels:
-        return {}
-    return {"date": labels, series.metric: values}
 
 
 def _directory_chart_frame(
@@ -300,11 +325,6 @@ def render_speakers_page() -> None:
         key=_SELECTED_KEY,
     )
     if not selected:
-        render_empty_state(
-            "missing_prerequisite",
-            "Select a speaker",
-            "Pick a profile from the dropdown to view appearances and lifecycle actions.",
-        )
         return
 
     profiles_by_id = {p.profile_id: p for p in snap.profiles}
@@ -451,9 +471,10 @@ def _render_profile_detail(
         p5.metric("Repair required", agg.repair_required_count)
 
     _render_detail_charts(
+        snap,
+        profile.profile_id,
         appearances,
         include_ignored=include_ignored,
-        transcript_denominators=snap.transcript_denominators,
     )
 
     links_by_id = {
@@ -484,67 +505,199 @@ def _render_profile_detail(
 
 
 def _render_detail_charts(
+    snap: AggregationSnapshot,
+    profile_id: str,
     appearances: tuple[AppearanceRow, ...],
     *,
     include_ignored: bool,
-    transcript_denominators: dict[str, float],
 ) -> None:
-    st.markdown("#### Activity over time")
-    words_headline = build_time_series(
-        appearances,
-        metric="words",
-        kind="headline",
-        include_ignored=include_ignored,
-        transcript_denominators=transcript_denominators,
+    st.markdown("#### Trends")
+    c_chart, c_grain, c_all = st.columns([2, 1, 1])
+    chart_choice = c_chart.selectbox(
+        "Chart",
+        [
+            "Speaking time",
+            "Speaking share",
+            "Words & turns",
+            "Turn length",
+            "Speaking rate",
+        ],
+        key=f"spk_trend_chart_{profile_id}",
     )
-    words_all = build_time_series(
-        appearances,
-        metric="words",
-        kind="all",
-        include_ignored=include_ignored,
-        transcript_denominators=transcript_denominators,
+    grain_label = c_grain.selectbox(
+        "Grain",
+        ["By date", "Month", "Quarter"],
+        key=f"spk_trend_grain_{profile_id}",
     )
-    duration_headline = build_time_series(
-        appearances,
-        metric="duration_seconds",
-        kind="headline",
-        include_ignored=include_ignored,
-        transcript_denominators=transcript_denominators,
+    include_all = c_all.checkbox(
+        "Show all-appearances series",
+        value=False,
+        key=f"spk_trend_all_{profile_id}",
     )
-    duration_all = build_time_series(
-        appearances,
-        metric="duration_seconds",
-        kind="all",
-        include_ignored=include_ignored,
-        transcript_denominators=transcript_denominators,
-    )
-    c1, c2 = st.columns(2)
-    with c1:
-        st.caption("Headline words")
-        data = _time_series_chart_data(words_headline)
-        if data:
-            st.bar_chart(data, x="date", y="words")
+    grain_map: dict[str, AnalyticsGrain] = {
+        "By date": "appearance_date",
+        "Month": "month",
+        "Quarter": "quarter",
+    }
+    grain = grain_map[grain_label]
+    try:
+        pack = build_profile_analytics_pack(
+            snap,
+            profile_id,
+            grain=grain,
+            include_ignored=include_ignored,
+            include_all_series=include_all,
+        )
+    except Exception as exc:
+        st.error(f"Could not build analytics pack: {exc}")
+        return
+
+    if not appearances:
+        st.caption("No linked appearances to chart yet.")
+    else:
+        for code in pack.methodology_codes:
+            if code in _METHODOLOGY_CAPTIONS and not code.startswith("partners."):
+                st.caption(_METHODOLOGY_CAPTIONS[code])
+
+        bundle = pack.headline
+        series_map = {
+            "Speaking time": ("speaking_minutes", "Speaking minutes"),
+            "Speaking share": ("speaking_share", "Speaking share"),
+            "Turn length": ("turn_length", "Turn length (seconds)"),
+            "Speaking rate": ("speaking_rate_wpm", "Words per minute"),
+        }
+
+        if chart_choice == "Words & turns":
+            wdata = _series_points_frame(bundle.words, "words")
+            tdata = _series_points_frame(bundle.turns, "turns")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.caption("Headline words")
+                if wdata:
+                    st.bar_chart(wdata, x="period", y="words")
+                else:
+                    st.caption("No word points.")
+            with c2:
+                st.caption("Headline turns")
+                if tdata:
+                    st.bar_chart(tdata, x="period", y="turns")
+                else:
+                    st.caption("No turn points.")
+            if include_all and pack.all_appearances is not None:
+                aw = _series_points_frame(pack.all_appearances.words, "words")
+                at = _series_points_frame(pack.all_appearances.turns, "turns")
+                st.caption("All appearances")
+                a1, a2 = st.columns(2)
+                with a1:
+                    if aw:
+                        st.bar_chart(aw, x="period", y="words")
+                with a2:
+                    if at:
+                        st.bar_chart(at, x="period", y="turns")
+        elif chart_choice == "Turn length":
+            avg_f = _series_points_frame(bundle.turn_length_avg, "avg_seconds")
+            med_f = _series_points_frame(bundle.turn_length_median, "median_seconds")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.caption("Average turn length (headline)")
+                if avg_f:
+                    st.bar_chart(avg_f, x="period", y="avg_seconds")
+                else:
+                    st.caption("No average turn-length points.")
+            with c2:
+                st.caption("Median turn length (headline)")
+                if med_f:
+                    st.bar_chart(med_f, x="period", y="median_seconds")
+                else:
+                    st.caption("No median turn-length points.")
+            if include_all and pack.all_appearances is not None:
+                a_avg = _series_points_frame(
+                    pack.all_appearances.turn_length_avg, "avg_seconds"
+                )
+                a_med = _series_points_frame(
+                    pack.all_appearances.turn_length_median, "median_seconds"
+                )
+                st.caption("All appearances")
+                a1, a2 = st.columns(2)
+                with a1:
+                    if a_avg:
+                        st.bar_chart(a_avg, x="period", y="avg_seconds")
+                with a2:
+                    if a_med:
+                        st.bar_chart(a_med, x="period", y="median_seconds")
         else:
-            st.caption("No headline word points.")
-        st.caption("All appearances (words)")
-        data_all = _time_series_chart_data(words_all)
-        if data_all:
-            st.bar_chart(data_all, x="date", y="words")
-        else:
-            st.caption("No all-appearance word points.")
-    with c2:
-        st.caption("Headline duration (seconds)")
-        data = _time_series_chart_data(duration_headline)
-        if data:
-            st.bar_chart(data, x="date", y="duration_seconds")
-        else:
-            st.caption("No headline duration points.")
-        st.caption("All appearances (duration)")
-        data_all = _time_series_chart_data(duration_all)
-        if data_all:
-            st.bar_chart(data_all, x="date", y="duration_seconds")
-        else:
-            st.caption("No all-appearance duration points.")
+            attr, ylabel = series_map[chart_choice]
+            points = getattr(bundle, attr)
+            data = _series_points_frame(points, "value")
+            st.caption(f"Headline — {ylabel}")
+            if data:
+                st.bar_chart(data, x="period", y="value")
+            else:
+                st.caption("No headline points.")
+            unavail = sum(1 for p in points if p.availability == "unavailable")
+            partial = sum(1 for p in points if p.availability == "partial")
+            if unavail or partial:
+                st.caption(
+                    f"Availability: {partial} partial, {unavail} unavailable period(s)."
+                )
+            if include_all and pack.all_appearances is not None:
+                all_points = getattr(pack.all_appearances, attr)
+                adata = _series_points_frame(all_points, "value")
+                st.caption(f"All appearances — {ylabel}")
+                if adata:
+                    st.bar_chart(adata, x="period", y="value")
+
+        support_points = (
+            bundle.words
+            if chart_choice == "Words & turns"
+            else bundle.turn_length_avg
+            if chart_choice == "Turn length"
+            else getattr(bundle, series_map[chart_choice][0])
+        )
+        if support_points:
+            rows = [
+                {
+                    "period": p.display_label,
+                    "value": p.value,
+                    "availability": p.availability,
+                    "evidence": _evidence_caption(p.evidence_note),
+                    "n_turns": p.n_valid_turns,
+                    "transcripts": len(p.managed_transcript_ids),
+                }
+                for p in support_points
+            ]
+            st.dataframe(rows, hide_index=True, width="stretch")
+
+    st.markdown("#### Conversation partners")
+    st.caption(_METHODOLOGY_CAPTIONS["partners.co_appearance_only"])
+    if pack.integrity_warnings:
+        st.caption("Integrity notes: " + "; ".join(pack.integrity_warnings))
+    if not pack.partners:
+        st.info("No co-appearances yet.")
+        return
+    partner_rows = [
+        {
+            "Partner": p.display_name,
+            "Status": p.status,
+            "Shared sessions": p.shared_transcript_count,
+            "Your speaking minutes": p.shared_speaking_minutes,
+            "Availability": p.availability,
+            "Evidence": _evidence_caption(p.evidence_note),
+        }
+        for p in pack.partners
+    ]
+    st.dataframe(partner_rows, hide_index=True, width="stretch")
+    if pack.partners_remainder_count:
+        st.caption(f"+{pack.partners_remainder_count} more partners not shown.")
+
+
+def _series_points_frame(points: tuple[Any, ...], value_key: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for p in points:
+        if p.value is None:
+            continue
+        rows.append({"period": p.display_label, value_key: float(p.value)})
+    return rows
 
 
 def _open_transcript(snap: AggregationSnapshot, row: AppearanceRow) -> None:

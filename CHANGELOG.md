@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.7.3] - 2026-07-23
+
+### Added
+
+- Speakers Phase 1.6 profile analytics pack: typed Trends (headline + optional all-appearances) and Conversation partners from `AggregationSnapshot`, with shared freshness tokens, partial-availability timing, and contract/test coverage.
+
 ## [0.7.2] - 2026-07-23
 
 ### Added

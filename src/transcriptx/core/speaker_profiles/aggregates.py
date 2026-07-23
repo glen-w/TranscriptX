@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
+import math
 import statistics
 from dataclasses import dataclass, replace
 from datetime import date
@@ -34,6 +33,17 @@ from transcriptx.io.speaker_map_resolver import (
     normalize_diarized_id,
 )
 
+
+def finite_valid_duration(segment: Mapping[str, Any]) -> float | None:
+    """Timing-valid duration: finite and >= 0 (includes zero-duration turns)."""
+    dur = valid_segment_duration(segment)
+    if dur is None:
+        return None
+    value = float(dur)
+    if not math.isfinite(value) or value < 0:
+        return None
+    return value
+
 SpeakingShareBasis = Literal["duration", "unavailable"]
 AppearanceFlag = Literal[
     "ok",
@@ -55,6 +65,8 @@ class OccurrenceMetrics:
     avg_turn_duration: float | None
     median_turn_duration: float | None
     wpm: float | None
+    timing_valid_turn_count: int = 0
+    """Count of turns with finite duration >= 0 (includes zero-duration)."""
 
 
 @dataclass(frozen=True)
@@ -73,6 +85,7 @@ class AppearanceRow:
     speaking_share: float | None = None
     speaking_share_basis: SpeakingShareBasis = "unavailable"
     turn_share: float | None = None
+    occurrence_fingerprint: str = ""
 
 
 @dataclass(frozen=True)
@@ -124,9 +137,10 @@ def compute_occurrence_metrics(
         text = segment.get("text")
         if text is not None:
             words += len(str(text).split())
-        dur = valid_segment_duration(segment)
+        dur = finite_valid_duration(segment)
         if dur is not None:
-            durations.append(float(dur))
+            durations.append(dur)
+    timing_valid_turn_count = len(durations)
     if not durations:
         duration_sum: float | None = None
         avg = None
@@ -134,10 +148,23 @@ def compute_occurrence_metrics(
         wpm = None
     else:
         duration_sum = float(sum(durations))
-        avg = duration_sum / len(durations)
-        med = float(statistics.median(durations))
-        minutes = duration_sum / 60.0
-        wpm = (words / minutes) if minutes > 0 else None
+        if not math.isfinite(duration_sum):
+            duration_sum = None
+            avg = None
+            med = None
+            wpm = None
+            timing_valid_turn_count = 0
+        else:
+            avg = duration_sum / timing_valid_turn_count
+            med = float(statistics.median(durations))
+            minutes = duration_sum / 60.0
+            wpm = (words / minutes) if minutes > 0 else None
+            if wpm is not None and not math.isfinite(wpm):
+                wpm = None
+            if avg is not None and not math.isfinite(avg):
+                avg = None
+            if med is not None and not math.isfinite(med):
+                med = None
     return OccurrenceMetrics(
         words=words,
         turns=turns,
@@ -145,6 +172,7 @@ def compute_occurrence_metrics(
         avg_turn_duration=avg,
         median_turn_duration=med,
         wpm=wpm,
+        timing_valid_turn_count=timing_valid_turn_count,
     )
 
 
@@ -167,11 +195,15 @@ def _transcript_duration_denominator(
     total = 0.0
     any_valid = False
     for segment in segments:
-        dur = valid_segment_duration(segment)
+        dur = finite_valid_duration(segment)
         if dur is not None:
             total += float(dur)
             any_valid = True
-    return total if any_valid else None
+    if not any_valid:
+        return None
+    if not math.isfinite(total) or total < 0:
+        return None
+    return total
 
 
 def resolve_appearance_flag(
@@ -196,8 +228,8 @@ def resolve_appearance_flag(
     return "ok"
 
 
-def headline_eligible(row: AppearanceRow, *, include_ignored: bool) -> bool:
-    """Public predicate shared by aggregates and time-series builders."""
+def series_eligible(row: AppearanceRow, *, include_ignored: bool) -> bool:
+    """Shared eligibility for headline aggregates and trend series."""
     if row.flag in {"needs_review", "missing_source", "collision", "repair_required"}:
         return False
     if row.ignored and not include_ignored:
@@ -205,6 +237,11 @@ def headline_eligible(row: AppearanceRow, *, include_ignored: bool) -> bool:
     if row.flag == "ignored" and not include_ignored:
         return False
     return True
+
+
+def headline_eligible(row: AppearanceRow, *, include_ignored: bool) -> bool:
+    """Alias of series_eligible (Phase 1.5 name retained for callers)."""
+    return series_eligible(row, include_ignored=include_ignored)
 
 
 def build_appearance_row(
@@ -226,6 +263,7 @@ def build_appearance_row(
         avg_turn_duration=None,
         median_turn_duration=None,
         wpm=None,
+        timing_valid_turn_count=0,
     )
     speaking_share = None
     speaking_share_basis: SpeakingShareBasis = "unavailable"
@@ -253,9 +291,19 @@ def build_appearance_row(
         ignored = _is_ignored(resolved.transcript_path, link.local_speaker_key)
         metrics = compute_occurrence_metrics(keyed)
         denom = _transcript_duration_denominator(segments)
-        if metrics.duration_seconds is not None and denom is not None and denom > 0:
+        if (
+            metrics.duration_seconds is not None
+            and math.isfinite(metrics.duration_seconds)
+            and denom is not None
+            and math.isfinite(denom)
+            and denom > 0
+        ):
             speaking_share = metrics.duration_seconds / denom
-            speaking_share_basis = "duration"
+            if not math.isfinite(speaking_share):
+                speaking_share = None
+                speaking_share_basis = "unavailable"
+            else:
+                speaking_share_basis = "duration"
     except UnresolvedManagedTranscriptError:
         missing_source = True
     except (RepairRequiredError, CorruptLinkError):
@@ -285,6 +333,7 @@ def build_appearance_row(
         metrics=metrics,
         speaking_share=speaking_share,
         speaking_share_basis=speaking_share_basis,
+        occurrence_fingerprint=link.occurrence_fingerprint,
     )
 
 
@@ -301,34 +350,33 @@ def aggregate_profile(
         )
         for link in links
     ]
-    headline = [r for r in rows if headline_eligible(r, include_ignored=include_ignored)]
-    total_duration = 0.0
-    for r in headline:
-        if r.metrics.duration_seconds is not None:
-            total_duration += r.metrics.duration_seconds
+    from transcriptx.core.speaker_profiles.freshness import build_profile_freshness_token
+    from transcriptx.core.speaker_profiles.longitudinal import (
+        dedupe_to_transcript_contributions,
+    )
+
+    headline = [r for r in rows if series_eligible(r, include_ignored=include_ignored)]
+    contribs = dedupe_to_transcript_contributions(headline)
+    total_duration = sum(
+        c.duration_seconds for c in contribs if c.duration_seconds is not None
+    )
+    hw = sum(c.words for c in contribs)
+    ht = sum(c.turns for c in contribs)
     enriched: list[AppearanceRow] = []
-    headline_turns = sum(h.metrics.turns for h in headline)
     for r in rows:
         turn_share = None
-        if headline_eligible(r, include_ignored=include_ignored) and headline_turns > 0:
-            turn_share = r.metrics.turns / headline_turns
+        if series_eligible(r, include_ignored=include_ignored) and ht > 0:
+            turn_share = r.metrics.turns / ht
         # speaking_share already transcript-relative from build_appearance_row
         enriched.append(replace(r, turn_share=turn_share))
 
-    hw = sum(r.metrics.words for r in headline)
-    ht = sum(r.metrics.turns for r in headline)
-    token_payload = {
-        "profile_id": profile.profile_id,
-        "updated_at": profile.updated_at,
-        "link_ids": sorted(r.link_id for r in enriched),
-        "flags": sorted(f"{r.link_id}:{r.flag}" for r in enriched),
-        "headline_words": hw,
-        "headline_turns": ht,
-        "headline_duration": total_duration,
-    }
-    freshness = hashlib.sha256(
-        json.dumps(token_payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    ).hexdigest()
+    fps = {r.link_id: r.occurrence_fingerprint for r in enriched}
+    freshness = build_profile_freshness_token(
+        profile=profile,
+        appearance_rows=enriched,
+        occurrence_fingerprints=fps,
+        transcript_denominators={},
+    )
 
     return ProfileAggregate(
         profile_id=profile.profile_id,
@@ -337,7 +385,7 @@ def aggregate_profile(
         merged_into_profile_id=profile.merged_into_profile_id,
         headline_words=hw,
         headline_turns=ht,
-        headline_duration_seconds=total_duration,
+        headline_duration_seconds=float(total_duration),
         headline_speaking_share=None,
         speaking_share_basis="unavailable",
         headline_turn_share=None,

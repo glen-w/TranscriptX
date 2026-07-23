@@ -322,3 +322,88 @@ Streamlit.
 - Required SQLite
 - Migrate-on-read
 - Rename-transaction coupling for link keys
+
+---
+
+## Phase 1.6 profile analytics pack
+
+Descriptive Speakers-detail trends and co-appearance partners built from
+`AggregationSnapshot` only. Not a new analysis module. Not Charts Gallery.
+Chart payloads are derived and disposable; never canonical.
+
+### Eligibility
+
+Public `series_eligible(row, *, include_ignored)` (alias of `headline_eligible`)
+gates headline series. Uncertain flags always exclude: `needs_review`,
+`missing_source`, `collision`, `repair_required`. Ignored rows gated solely by
+`include_ignored`. All-appearances series includes every row for the profile.
+
+### Partial availability
+
+Period and partner values use constituents with valid evidence and report
+`availability=partial` plus an evidence note when siblings lack timing.
+`unavailable` / `null` only when zero valid evidence remains after dedupe.
+
+### Timing-valid turns
+
+A turn is timing-valid when `valid_segment_duration` yields finite `d >= 0`
+(including `0.0` for `end==start`). `timing_valid_turn_count` counts those turns.
+Zero-duration turns enter avg/median; WPM requires `duration_seconds > 0`.
+Non-finite or negative timing never reaches UI (unavailable + integrity warning).
+
+### Dedupe
+
+Within a period: drop duplicate `link_id`; collapse `(managed_transcript_id,
+local_speaker_key)`; sum distinct keys per transcript for additive numerators;
+count densoms and partner sessions once per `managed_transcript_id`.
+
+### Speaking share
+
+One helper `compute_period_speaking_share` for date/month/quarter: sum finite
+subject durations ÷ sum unique finite densoms `> 0`. Never average daily shares.
+
+### Grains and labels
+
+`appearance_date` | `month` (`YYYY-MM`) | `quarter` (`YYYY-Qn`); unknown →
+`unknown` / `Unknown date`, sorted last. Use `AppearanceRow.appearance_date`
+only; do not reparse `imported_at` in longitudinal builders.
+
+**Ordering (frozen):** points ascending `(sort_key, period_id)` with unknown
+last; provenance tuples (`source_appearance_ids`, `managed_transcript_ids`,
+partner shared transcript ids) lexicographically sorted and unique; partners
+ranked by shared-transcript count desc, subject minutes desc (nulls last),
+display name asc, `profile_id` asc; integrity warning codes sorted unique.
+
+### Dual series
+
+Pack always returns typed `headline` TrendBundle. `all_appearances` is present
+iff requested; independently typed provenance and coverage counters.
+
+### Partners
+
+Co-appearance / shared sessions only. Rank by shared transcript count, then
+subject speaking minutes on those transcripts, then name/`profile_id`.
+Partial minutes: sum valid subject minutes + evidence note; `null` only if no
+valid duration. Exclude dangling, merged-owner, unknown-status, and duplicate
+live links from rankings; emit pack `integrity_warnings`; never crash.
+
+### Freshness
+
+Shared `build_profile_freshness_token` inputs: profile identity/status/
+`updated_at`; per appearance link id, transcript id, local key, fingerprint,
+flag, ignored, appearance date, metrics digest; referenced densoms. Pack and
+aggregates must use the same builder.
+
+### Pack contracts
+
+- Known profile, no appearances → empty success pack.
+- Unknown profile → typed not-found error.
+- Merged → existing Speakers redirect; pack refuses if called.
+
+### Cache
+
+Disk analytics cache deferred until profiling proves need. If added: versioned
+atomic disposable files under `.cache/`; freshness-key miss is sufficient for
+correctness. Speakers detail rebuilds snapshot each render.
+`CacheInvalidationSignal` scopes today: `speaker_profiles`, `speaker_links`,
+`transcript_summaries` — do not claim coverage the service does not emit.

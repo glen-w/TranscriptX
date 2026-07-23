@@ -66,7 +66,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
-| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 shipped**: file store, Speakers UX, over-time charts, accents; remainder: voice links, DB views, group `profile_id` charts) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
+| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 + 1.6 shipped**: file store, Speakers UX, over-time charts, accents, analytics pack Trends/partners; remainder: voice links, DB views, group `profile_id` charts) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
 | 12 | B18 | **Insight narratives grounded in module evidence** | deepen | Summary & Synthesis | M | `insights` + LLM; **P2** provenance contracts |
 | — | — | **Group LLM synthesis** (cross-session rollup of member `llm_summary` / `llm_speaker_summary`) | deepen (finalize; no new module ID) | Summary & Synthesis (+ Groups) | M | Shipped contract: [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md) |
 | 13 | B4 | **ConvoKit accommodation / coordination** — implementation option, not product objective | revive (optional) | Speakers & Interaction | L | define desired outputs first; resolve numpy/spaCy/thinc only if still needed |
@@ -196,7 +196,7 @@ flowchart LR
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
 | **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
 | **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; ~~B13~~ interaction graphs (+ profile avatars) | Interaction depth from existing data + light linguistics |
-| **3** | Phase 3 product | B5, B10 (extraction deepen), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
+| **3** | Phase 3 product | B5 remainder (voice links / DB / group `profile_id`), B10 (extraction deepen), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
 | **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |
 
 **Next product capacity (ranked open):** Wave 3 items (B5 remainder, B14, B18 / P2); P1 infrastructure in parallel when eng capacity allows.

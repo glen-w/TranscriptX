@@ -14,7 +14,7 @@ from transcriptx.core.speaker_profiles.aggregates import (
     ProfileAggregate,
     ProfileListItem,
     compute_occurrence_metrics,
-    headline_eligible,
+    series_eligible,
 )
 from transcriptx.core.speaker_profiles.dates import appearance_date_from_sources
 from transcriptx.core.speaker_profiles.discovery import (
@@ -26,6 +26,7 @@ from transcriptx.core.speaker_profiles.errors import (
     RepairRequiredError,
     UnresolvedManagedTranscriptError,
 )
+from transcriptx.core.speaker_profiles.freshness import build_profile_freshness_token
 from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
 from transcriptx.core.speaker_profiles.layout import links_dir, profiles_dir
@@ -44,7 +45,7 @@ from transcriptx.core.speaker_profiles.resolver import (
     load_transcript_segments,
 )
 from transcriptx.core.speaker_profiles.store_io import parse_model
-from transcriptx.core.utils.segment_duration import valid_segment_duration
+from transcriptx.core.speaker_profiles.aggregates import finite_valid_duration
 from transcriptx.io.speaker_map_resolver import (
     SpeakerMapResolver,
     normalize_diarized_id,
@@ -67,11 +68,22 @@ class TranscriptBundle:
 
 
 @dataclass(frozen=True)
+class ProfileRef:
+    """Lightweight profile status metadata for analytics (no FS reads)."""
+
+    profile_id: str
+    display_name: str
+    status: str
+    merged_into_profile_id: str | None
+
+
+@dataclass(frozen=True)
 class AggregationSnapshot:
     """Single-pass Speakers listing + aggregation input."""
 
     root: Path
     profiles: tuple[SpeakerProfileV1, ...]
+    profiles_by_id: dict[str, ProfileRef]
     links: tuple[SpeakerProfileLinkV1, ...]
     links_by_profile: dict[str, tuple[SpeakerProfileLinkV1, ...]]
     listing: tuple[ProfileListItem, ...]
@@ -119,11 +131,17 @@ def _transcript_duration_denominator(segments: Sequence[Mapping[str, Any]]) -> f
     total = 0.0
     any_valid = False
     for segment in segments:
-        dur = valid_segment_duration(segment)
+        dur = finite_valid_duration(segment)
         if dur is not None:
             total += float(dur)
             any_valid = True
-    return total if any_valid else None
+    if not any_valid:
+        return None
+    import math
+
+    if not math.isfinite(total) or total < 0:
+        return None
+    return total
 
 
 def _load_bundle(
@@ -217,6 +235,7 @@ def _appearance_from_bundle(
         avg_turn_duration=None,
         median_turn_duration=None,
         wpm=None,
+        timing_valid_turn_count=0,
     )
     speaking_share = None
     speaking_share_basis: Any = "unavailable"
@@ -255,6 +274,7 @@ def _appearance_from_bundle(
                     avg_turn_duration=None,
                     median_turn_duration=None,
                     wpm=None,
+                    timing_valid_turn_count=0,
                 ),
             )
         else:
@@ -267,16 +287,25 @@ def _appearance_from_bundle(
                 avg_turn_duration=None,
                 median_turn_duration=None,
                 wpm=None,
+                timing_valid_turn_count=0,
             )
         ignored = link.local_speaker_key in bundle.ignored_keys
         denom = bundle.transcript_duration_denominator
+        import math
+
         if (
             metrics.duration_seconds is not None
+            and math.isfinite(metrics.duration_seconds)
             and denom is not None
+            and math.isfinite(denom)
             and denom > 0
         ):
             speaking_share = metrics.duration_seconds / denom
-            speaking_share_basis = "duration"
+            if not math.isfinite(speaking_share):
+                speaking_share = None
+                speaking_share_basis = "unavailable"
+            else:
+                speaking_share_basis = "duration"
         flag = _flag_precedence(
             repair_required=False,
             missing_source=False,
@@ -299,6 +328,7 @@ def _appearance_from_bundle(
         metrics=metrics,
         speaking_share=speaking_share,
         speaking_share_basis=speaking_share_basis,
+        occurrence_fingerprint=link.occurrence_fingerprint,
     )
 
 
@@ -307,39 +337,35 @@ def _aggregate_from_rows(
     rows: Sequence[AppearanceRow],
     *,
     include_ignored: bool,
+    transcript_denominators: Mapping[str, float],
 ) -> ProfileAggregate:
-    import hashlib
-    import json
     from dataclasses import replace
 
-    headline = [r for r in rows if headline_eligible(r, include_ignored=include_ignored)]
-    total_duration = sum(
-        (r.metrics.duration_seconds or 0.0)
-        for r in headline
-        if r.metrics.duration_seconds is not None
+    from transcriptx.core.speaker_profiles.longitudinal import (
+        dedupe_to_transcript_contributions,
     )
-    headline_turns = sum(h.metrics.turns for h in headline)
+
+    headline = [r for r in rows if series_eligible(r, include_ignored=include_ignored)]
+    contribs = dedupe_to_transcript_contributions(headline)
+    total_duration = sum(
+        c.duration_seconds for c in contribs if c.duration_seconds is not None
+    )
+    hw = sum(c.words for c in contribs)
+    ht = sum(c.turns for c in contribs)
     enriched: list[AppearanceRow] = []
     for r in rows:
         turn_share = None
-        if headline_eligible(r, include_ignored=include_ignored) and headline_turns > 0:
-            turn_share = r.metrics.turns / headline_turns
+        if series_eligible(r, include_ignored=include_ignored) and ht > 0:
+            turn_share = r.metrics.turns / ht
         enriched.append(replace(r, turn_share=turn_share))
 
-    hw = sum(r.metrics.words for r in headline)
-    ht = sum(r.metrics.turns for r in headline)
-    token_payload = {
-        "profile_id": profile.profile_id,
-        "updated_at": profile.updated_at,
-        "link_ids": sorted(r.link_id for r in enriched),
-        "flags": sorted(f"{r.link_id}:{r.flag}" for r in enriched),
-        "headline_words": hw,
-        "headline_turns": ht,
-        "headline_duration": total_duration,
-    }
-    freshness = hashlib.sha256(
-        json.dumps(token_payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    ).hexdigest()
+    fps = {r.link_id: r.occurrence_fingerprint for r in enriched}
+    freshness = build_profile_freshness_token(
+        profile=profile,
+        appearance_rows=enriched,
+        transcript_denominators=transcript_denominators,
+        occurrence_fingerprints=fps,
+    )
     return ProfileAggregate(
         profile_id=profile.profile_id,
         display_name=profile.display_name,
@@ -347,7 +373,7 @@ def _aggregate_from_rows(
         merged_into_profile_id=profile.merged_into_profile_id,
         headline_words=hw,
         headline_turns=ht,
-        headline_duration_seconds=total_duration,
+        headline_duration_seconds=float(total_duration),
         headline_speaking_share=None,
         speaking_share_basis="unavailable",
         headline_turn_share=None,
@@ -467,7 +493,10 @@ def build_aggregation_snapshot(
             )
         appearances_by_profile[profile.profile_id] = tuple(rows)
         aggregates_by_profile[profile.profile_id] = _aggregate_from_rows(
-            profile, rows, include_ignored=include_ignored
+            profile,
+            rows,
+            include_ignored=include_ignored,
+            transcript_denominators=transcript_denominators,
         )
         listing.append(
             ProfileListItem(
@@ -493,9 +522,20 @@ def build_aggregation_snapshot(
         or not integrity.ok
     )
 
+    profiles_by_id = {
+        p.profile_id: ProfileRef(
+            profile_id=p.profile_id,
+            display_name=p.display_name,
+            status=p.status,
+            merged_into_profile_id=p.merged_into_profile_id,
+        )
+        for p in profiles
+    }
+
     return AggregationSnapshot(
         root=root,
         profiles=tuple(profiles),
+        profiles_by_id=profiles_by_id,
         links=tuple(links),
         links_by_profile={k: tuple(v) for k, v in links_by_profile.items()},
         listing=tuple(listing),

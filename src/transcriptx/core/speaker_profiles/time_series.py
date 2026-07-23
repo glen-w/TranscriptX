@@ -10,6 +10,10 @@ from transcriptx.core.speaker_profiles.aggregates import (
     AppearanceRow,
     headline_eligible,
 )
+from transcriptx.core.speaker_profiles.longitudinal import (
+    compute_period_speaking_share,
+    dedupe_to_transcript_contributions,
+)
 
 TimeSeriesMetric = Literal["words", "turns", "duration_seconds", "speaking_share"]
 SeriesKind = Literal["headline", "all"]
@@ -40,16 +44,6 @@ def _bucket_key(row: AppearanceRow) -> tuple[date, str]:
     return (row.appearance_date, row.appearance_date.isoformat())
 
 
-def _additive_value(row: AppearanceRow, metric: TimeSeriesMetric) -> float | None:
-    if metric == "words":
-        return float(row.metrics.words)
-    if metric == "turns":
-        return float(row.metrics.turns)
-    if metric == "duration_seconds":
-        return row.metrics.duration_seconds
-    return None
-
-
 def build_time_series(
     appearances: Sequence[AppearanceRow],
     *,
@@ -73,36 +67,32 @@ def build_time_series(
         buckets.setdefault(_bucket_key(row), []).append(row)
 
     points: list[TimeSeriesPoint] = []
+    dens = transcript_denominators or {}
     for sort_key, label in sorted(buckets.keys(), key=lambda k: (k[0], k[1])):
         group = buckets[(sort_key, label)]
-        ids = tuple(r.link_id for r in group)
-        transcript_ids = tuple(
-            dict.fromkeys(r.managed_transcript_id for r in group)
-        )
+        contribs = dedupe_to_transcript_contributions(group)
+        ids = tuple(sorted({aid for c in contribs for aid in c.source_appearance_ids}))
+        transcript_ids = tuple(c.managed_transcript_id for c in contribs)
         if metric == "speaking_share":
-            dens = transcript_denominators or {}
-            num = 0.0
-            denom = 0.0
-            seen_transcripts: set[str] = set()
-            for r in group:
-                if r.metrics.duration_seconds is not None:
-                    num += r.metrics.duration_seconds
-                tid = r.managed_transcript_id
-                if tid not in seen_transcripts:
-                    seen_transcripts.add(tid)
-                    d = dens.get(tid)
-                    if d is not None and d > 0:
-                        denom += d
-            value = (num / denom) if denom > 0 else None
+            share = compute_period_speaking_share(contribs, dens)
+            value = share.value
         else:
             total = 0.0
             any_value = False
-            for r in group:
-                v = _additive_value(r, metric)
-                if v is not None:
-                    total += v
+            for c in contribs:
+                if metric == "words":
+                    total += float(c.words)
                     any_value = True
-            value = total if any_value else (0.0 if metric in {"words", "turns"} else None)
+                elif metric == "turns":
+                    total += float(c.turns)
+                    any_value = True
+                elif metric == "duration_seconds":
+                    if c.duration_seconds is not None:
+                        total += c.duration_seconds
+                        any_value = True
+            value = (
+                total if any_value else (0.0 if metric in {"words", "turns"} else None)
+            )
         points.append(
             TimeSeriesPoint(
                 metric=metric,

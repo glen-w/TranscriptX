@@ -61,3 +61,11 @@ class StaleConfirmationError(SpeakerProfileContractError):
 
 class AlreadyCurrentError(SpeakerProfileContractError):
     """Reserved — prefer MutationResult.noop for same-profile / current fp."""
+
+
+class ProfileAnalyticsNotFoundError(SpeakerProfileContractError):
+    """Unknown profile_id for analytics pack."""
+
+
+class ProfileAnalyticsMergedError(SpeakerProfileContractError):
+    """Merged profiles must follow Speakers redirect before pack build."""
