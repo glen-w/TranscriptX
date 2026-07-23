@@ -13,6 +13,14 @@ from transcriptx._bootstrap import bootstrap
 
 bootstrap()
 
+# Before Streamlit imports speechbrain into sys.modules and the file watcher
+# probes lazy optional integrations (flair/k2/…).
+from transcriptx.web.streamlit_watcher_noise import (
+    install_speechbrain_watcher_noise_filter,
+)
+
+install_speechbrain_watcher_noise_filter()
+
 import streamlit as st
 
 try:
