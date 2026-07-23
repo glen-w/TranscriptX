@@ -84,7 +84,10 @@ def _parse_speaker_intervals(
     target: list[TimeInterval] = []
     other: list[TimeInterval] = []
     for idx, seg in enumerate(segments):
-        raw = seg.get("speaker")
+        # Prefer diarized ID when UI passes remapped display names in "speaker".
+        raw = seg.get("speaker_diarized_id")
+        if raw is None or str(raw).strip() == "":
+            raw = seg.get("speaker")
         if raw is None:
             continue
         key = normalize_speaker(str(raw))

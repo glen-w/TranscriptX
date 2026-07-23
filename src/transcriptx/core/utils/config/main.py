@@ -294,6 +294,7 @@ class TranscriptXConfig:
                     self.analysis.llm_action_items
                 ),
                 "llm_custom_qa": self._config_to_dict(self.analysis.llm_custom_qa),
+                "ui_presets": self._config_to_dict(self.analysis.ui_presets),
                 "chart_descriptions": self._config_to_dict(
                     self.analysis.chart_descriptions
                 ),

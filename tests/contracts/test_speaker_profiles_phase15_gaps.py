@@ -402,15 +402,20 @@ def test_speakers_merged_readonly_and_fingerprint_gate_ast() -> None:
     assert "_render_merged_readonly" in src
     assert "Open target profile" in src
     assert 'row.flag != "needs_review"' in src
-    assert "#### Trends" in src
+    assert 'st.expander("Trends"' in src
     assert "build_profile_analytics_pack" in src
     assert "include_all_series" in src
-    assert "Conversation partners" in src
+    assert 'st.expander("Conversation partners"' in src
     assert "_render_merged_readonly(profile, profiles_by_id=profiles_by_id)" in src
+    assert "_speakers_browser_fragment" in src
+    assert "_rerun_ui" in src
     tree = ast.parse(src)
     found_early_return = False
     for node in ast.walk(tree):
-        if not isinstance(node, ast.FunctionDef) or node.name != "render_speakers_page":
+        if (
+            not isinstance(node, ast.FunctionDef)
+            or node.name != "_speakers_browser_fragment"
+        ):
             continue
         for stmt in node.body:
             if not isinstance(stmt, ast.If):

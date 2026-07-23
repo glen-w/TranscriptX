@@ -1,4 +1,9 @@
-"""Speakers directory + detail for longitudinal speaker profiles."""
+"""Speakers directory + detail for longitudinal speaker profiles.
+
+High-churn widgets run in ``@st.fragment`` so selectbox / form / confirm toggles do
+not rebuild the aggregation snapshot (sidebar + full Speakers page). Commit
+mutations still call full ``st.rerun()`` so the snapshot refreshes.
+"""
 
 from __future__ import annotations
 
@@ -36,11 +41,17 @@ from transcriptx.core.speaker_profiles.store_io import (
 from transcriptx.core.speaker_profiles.analytics_pack import (
     build_profile_analytics_pack,
 )
+from transcriptx.core.speaker_profiles.locations_pack import (
+    ProfileLocationMention,
+    build_profile_locations_pack,
+)
 from transcriptx.core.speaker_profiles.longitudinal import AnalyticsGrain
 from transcriptx.core.speaker_profiles.time_series import (
     DirectoryChartSeries,
     build_directory_activity_chart,
 )
+from transcriptx.utils.html_utils import wrap_tooltip_text
+from transcriptx.web.navigation import navigate_highlight_to_transcript
 
 _METHODOLOGY_CAPTIONS: dict[str, str] = {
     "share.duration_only": "Speaking share uses duration only (never turn share).",
@@ -183,6 +194,11 @@ def _payload_digest(payload_dict: Mapping[str, Any]) -> str:
 
 def _clear_idempotency(action: str) -> None:
     st.session_state.pop(f"speakers_idem_{action}", None)
+
+
+def _rerun_ui() -> None:
+    """Rerun only the nearest fragment (preview / confirm toggles)."""
+    st.rerun(scope="fragment")
 
 
 def _surname_sort_key(item: ProfileListItem) -> tuple[str, str, str, str]:
@@ -355,6 +371,27 @@ def render_speakers_page() -> None:
     if selected_now and selected_now not in options and selected_now != "":
         st.session_state[_SELECTED_KEY] = ""
 
+    _speakers_browser_fragment(
+        snap=snap,
+        items=items,
+        labels=labels,
+        options=options,
+        active_ids=[i.profile_id for i in active],
+        include_ignored=include_ignored,
+    )
+
+
+@st.fragment
+def _speakers_browser_fragment(
+    *,
+    snap: AggregationSnapshot,
+    items: list[ProfileListItem],
+    labels: Mapping[str, str],
+    options: list[str],
+    active_ids: list[str],
+    include_ignored: bool,
+) -> None:
+    """Profile select + overview + detail; avoids snapshot rebuild on selection change."""
     selected = st.selectbox(
         "Select profile",
         options=[""] + options,
@@ -365,9 +402,7 @@ def render_speakers_page() -> None:
     )
 
     name_by_id = {i.profile_id: i.display_name for i in items}
-    chart_profile_ids = (
-        [selected] if selected else [i.profile_id for i in active]
-    )
+    chart_profile_ids = [selected] if selected else list(active_ids)
     _render_directory_overview(
         snap,
         chart_profile_ids=chart_profile_ids,
@@ -455,7 +490,7 @@ def _render_merged_readonly(
         type="primary",
     ):
         st.session_state[_SELECTED_KEY] = target_id
-        st.rerun()
+        _rerun_ui()
 
 
 def _render_profile_detail(
@@ -527,6 +562,12 @@ def _render_profile_detail(
         include_ignored=include_ignored,
     )
 
+    _render_locations_map(
+        snap,
+        profile,
+        include_ignored=include_ignored,
+    )
+
     links_by_id = {
         link.link_id: link for link in snap.links_by_profile.get(profile.profile_id, ())
     }
@@ -539,16 +580,12 @@ def _render_profile_detail(
     )
 
     if not profile_blocked and profile.status == "active":
-        st.divider()
         _render_voice_controls(snap=snap, profile=profile)
 
-    st.divider()
     if not profile_blocked:
         _render_edit_form(profile, root=snap.root)
-        st.divider()
         if profile.status == "active":
             _render_link_another(snap=snap, profile=profile)
-            st.divider()
 
     _render_lifecycle(
         snap=snap,
@@ -558,6 +595,7 @@ def _render_profile_detail(
     )
 
 
+@st.fragment
 def _render_voice_controls(
     *,
     snap: AggregationSnapshot,
@@ -575,97 +613,100 @@ def _render_voice_controls(
         return
 
     status = ActivationBarrier(snap.root).status()
-    st.markdown("#### Voice evidence")
-    if not status.allowed:
+    with st.expander("Voice evidence", expanded=False):
+        if not status.allowed:
+            st.caption(
+                "Local voice matching is not active "
+                f"({status.block_reason or 'unavailable'})."
+            )
+            return
+
+        samples = list_samples_for_profile(profile.profile_id, root=snap.root)
+        eligible = sum(1 for s in samples if s.eligibility_state == "eligible")
+        ineligible = sum(1 for s in samples if s.eligibility_state != "eligible")
         st.caption(
-            "Local voice matching is not active "
-            f"({status.block_reason or 'unavailable'})."
+            f"{len(samples)} sample(s) · {eligible} eligible · {ineligible} need promotion"
         )
-        return
-
-    samples = list_samples_for_profile(profile.profile_id, root=snap.root)
-    eligible = sum(1 for s in samples if s.eligibility_state == "eligible")
-    ineligible = sum(1 for s in samples if s.eligibility_state != "eligible")
-    st.caption(
-        f"{len(samples)} sample(s) · {eligible} eligible · {ineligible} need promotion"
-    )
-    enrol_action = f"voice_bootstrap_{profile.profile_id}"
-    if st.button(
-        "Enrol trusted voice from confirmed links",
-        key=f"spk_voice_bootstrap_{profile.profile_id}",
-        help=(
-            "Explicit bootstrap: extracts and embeds voice from this profile's "
-            "confirmed links. Privacy opt-in alone does not enrol anything."
-        ),
-    ):
-        try:
-            from transcriptx.services.speaker_profiles.voice_facade import (
-                SpeakerIdVoiceFacade,
-            )
-
-            result = SpeakerIdVoiceFacade(root=snap.root).bootstrap_enrol_profile(
-                operation_idempotency_key=_idempotency_key(
-                    enrol_action, {"profile_id": profile.profile_id}
-                ),
-                profile_id=profile.profile_id,
-            )
-            _clear_idempotency(enrol_action)
-            st.success(
-                f"Enrolled {result.links_enrolled}/{result.links_attempted} link(s); "
-                f"{len(result.sample_ids)} sample(s)."
-            )
-            for item in result.per_link:
-                if item.outcome != "Enrolled":
-                    st.caption(f"{item.link_file_key}: {item.outcome} — {item.detail or ''}")
-            st.rerun()
-        except Exception as exc:
-            st.error(str(exc))
-
-    for sample in samples:
-        if sample.eligibility_state == "eligible":
-            continue
-        cols = st.columns([4, 1])
-        cols[0].write(
-            f"`{sample.sample_id[:12]}…` · {sample.trust_level} · "
-            f"{sample.local_speaker_key}"
-        )
-        promo_action = f"voice_promote_{sample.sample_id}"
-        if cols[1].button(
-            "Promote",
-            key=f"spk_voice_promote_{sample.sample_id}",
+        enrol_action = f"voice_bootstrap_{profile.profile_id}"
+        if st.button(
+            "Enrol trusted voice from confirmed links",
+            key=f"spk_voice_bootstrap_{profile.profile_id}",
+            help=(
+                "Explicit bootstrap: extracts and embeds voice from this profile's "
+                "confirmed links. Privacy opt-in alone does not enrol anything."
+            ),
         ):
             try:
-                VoicePromotionService(root=snap.root).promote_sample(
-                    operation_idempotency_key=_idempotency_key(
-                        promo_action, {"sample_id": sample.sample_id}
-                    ),
-                    sample_id=sample.sample_id,
+                from transcriptx.services.speaker_profiles.voice_facade import (
+                    SpeakerIdVoiceFacade,
                 )
-                _clear_idempotency(promo_action)
-                st.success("Sample promoted to trusted reference.")
+
+                result = SpeakerIdVoiceFacade(root=snap.root).bootstrap_enrol_profile(
+                    operation_idempotency_key=_idempotency_key(
+                        enrol_action, {"profile_id": profile.profile_id}
+                    ),
+                    profile_id=profile.profile_id,
+                )
+                _clear_idempotency(enrol_action)
+                st.success(
+                    f"Enrolled {result.links_enrolled}/{result.links_attempted} link(s); "
+                    f"{len(result.sample_ids)} sample(s)."
+                )
+                for item in result.per_link:
+                    if item.outcome != "Enrolled":
+                        st.caption(
+                            f"{item.link_file_key}: {item.outcome} — {item.detail or ''}"
+                        )
                 st.rerun()
             except Exception as exc:
                 st.error(str(exc))
 
-    wipe_action = f"voice_wipe_profile_{profile.profile_id}"
-    if samples and st.button(
-        "Delete voice evidence for this profile",
-        key=f"spk_voice_wipe_{profile.profile_id}",
-    ):
-        try:
-            VoiceWipeService(root=snap.root).wipe_profile_voice(
-                operation_idempotency_key=_idempotency_key(
-                    wipe_action, {"profile_id": profile.profile_id}
-                ),
-                profile_id=profile.profile_id,
+        for sample in samples:
+            if sample.eligibility_state == "eligible":
+                continue
+            cols = st.columns([4, 1])
+            cols[0].write(
+                f"`{sample.sample_id[:12]}…` · {sample.trust_level} · "
+                f"{sample.local_speaker_key}"
             )
-            _clear_idempotency(wipe_action)
-            st.warning("Profile voice artefacts deleted.")
-            st.rerun()
-        except Exception as exc:
-            st.error(str(exc))
+            promo_action = f"voice_promote_{sample.sample_id}"
+            if cols[1].button(
+                "Promote",
+                key=f"spk_voice_promote_{sample.sample_id}",
+            ):
+                try:
+                    VoicePromotionService(root=snap.root).promote_sample(
+                        operation_idempotency_key=_idempotency_key(
+                            promo_action, {"sample_id": sample.sample_id}
+                        ),
+                        sample_id=sample.sample_id,
+                    )
+                    _clear_idempotency(promo_action)
+                    st.success("Sample promoted to trusted reference.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(str(exc))
+
+        wipe_action = f"voice_wipe_profile_{profile.profile_id}"
+        if samples and st.button(
+            "Delete voice evidence for this profile",
+            key=f"spk_voice_wipe_{profile.profile_id}",
+        ):
+            try:
+                VoiceWipeService(root=snap.root).wipe_profile_voice(
+                    operation_idempotency_key=_idempotency_key(
+                        wipe_action, {"profile_id": profile.profile_id}
+                    ),
+                    profile_id=profile.profile_id,
+                )
+                _clear_idempotency(wipe_action)
+                st.warning("Profile voice artefacts deleted.")
+                st.rerun()
+            except Exception as exc:
+                st.error(str(exc))
 
 
+@st.fragment
 def _render_detail_charts(
     snap: AggregationSnapshot,
     profile_id: str,
@@ -673,175 +714,177 @@ def _render_detail_charts(
     *,
     include_ignored: bool,
 ) -> None:
-    trends_header = st.empty()
-    trends_header.markdown("#### Trends")
-    c_chart, c_grain, c_all = st.columns([2, 1, 1])
-    chart_choice = c_chart.selectbox(
-        "Chart",
-        [
-            "Speaking time",
-            "Speaking share",
-            "Words & turns",
-            "Turn length",
-            "Speaking rate",
-        ],
-        key=f"spk_trend_chart_{profile_id}",
-    )
-    grain_label = c_grain.selectbox(
-        "Grain",
-        ["By date", "Month", "Quarter"],
-        key=f"spk_trend_grain_{profile_id}",
-    )
-    include_all = c_all.checkbox(
-        "Show all-appearances series",
-        value=False,
-        key=f"spk_trend_all_{profile_id}",
-    )
-    grain_map: dict[str, AnalyticsGrain] = {
-        "By date": "appearance_date",
-        "Month": "month",
-        "Quarter": "quarter",
-    }
-    grain = grain_map[grain_label]
-    try:
-        pack = build_profile_analytics_pack(
-            snap,
-            profile_id,
-            grain=grain,
-            include_ignored=include_ignored,
-            include_all_series=include_all,
+    """High-churn Trends + partners UI; fragment avoids snapshot rebuild on chart toggle."""
+    with st.expander("Trends", expanded=False):
+        tip_slot = st.empty()
+        c_chart, c_grain, c_all = st.columns([2, 1, 1])
+        chart_choice = c_chart.selectbox(
+            "Chart",
+            [
+                "Speaking time",
+                "Speaking share",
+                "Words & turns",
+                "Turn length",
+                "Speaking rate",
+            ],
+            key=f"spk_trend_chart_{profile_id}",
         )
-    except Exception as exc:
-        st.error(f"Could not build analytics pack: {exc}")
-        return
-
-    series_map = {
-        "Speaking time": ("speaking_minutes", "Speaking minutes"),
-        "Speaking share": ("speaking_share", "Speaking share"),
-        "Turn length": ("turn_length", "Turn length (seconds)"),
-        "Speaking rate": ("speaking_rate_wpm", "Words per minute"),
-    }
-    methodology = _methodology_lines(pack.methodology_codes)
-    if chart_choice in series_map:
-        methodology = [*methodology, f"Headline — {series_map[chart_choice][1]}"]
-    elif chart_choice == "Words & turns":
-        methodology = [*methodology, "Headline — Words & turns"]
-    elif chart_choice == "Turn length":
-        methodology = [*methodology, "Headline — Turn length"]
-    tip_html = _methodology_info_html(
-        methodology,
-        control_id=f"spk-meth-{profile_id}",
-    )
-    if tip_html:
-        trends_header.markdown(
-            _section_heading_with_info_html("Trends", tip_html),
-            unsafe_allow_html=True,
+        grain_label = c_grain.selectbox(
+            "Grain",
+            ["By date", "Month", "Quarter"],
+            key=f"spk_trend_grain_{profile_id}",
         )
+        include_all = c_all.checkbox(
+            "Show all-appearances series",
+            value=False,
+            key=f"spk_trend_all_{profile_id}",
+        )
+        grain_map: dict[str, AnalyticsGrain] = {
+            "By date": "appearance_date",
+            "Month": "month",
+            "Quarter": "quarter",
+        }
+        grain = grain_map[grain_label]
+        try:
+            pack = build_profile_analytics_pack(
+                snap,
+                profile_id,
+                grain=grain,
+                include_ignored=include_ignored,
+                include_all_series=include_all,
+            )
+        except Exception as exc:
+            st.error(f"Could not build analytics pack: {exc}")
+            return
 
-    if not appearances:
-        st.caption("No linked appearances to chart yet.")
-    else:
-        bundle = pack.headline
-
-        if chart_choice == "Words & turns":
-            wdata = _series_points_frame(bundle.words, "words")
-            tdata = _series_points_frame(bundle.turns, "turns")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.caption("Headline words")
-                if wdata:
-                    st.bar_chart(wdata, x="period", y="words")
-                else:
-                    st.caption("No word points.")
-            with c2:
-                st.caption("Headline turns")
-                if tdata:
-                    st.bar_chart(tdata, x="period", y="turns")
-                else:
-                    st.caption("No turn points.")
-            if include_all and pack.all_appearances is not None:
-                aw = _series_points_frame(pack.all_appearances.words, "words")
-                at = _series_points_frame(pack.all_appearances.turns, "turns")
-                st.caption("All appearances")
-                a1, a2 = st.columns(2)
-                with a1:
-                    if aw:
-                        st.bar_chart(aw, x="period", y="words")
-                with a2:
-                    if at:
-                        st.bar_chart(at, x="period", y="turns")
+        series_map = {
+            "Speaking time": ("speaking_minutes", "Speaking minutes"),
+            "Speaking share": ("speaking_share", "Speaking share"),
+            "Turn length": ("turn_length", "Turn length (seconds)"),
+            "Speaking rate": ("speaking_rate_wpm", "Words per minute"),
+        }
+        methodology = _methodology_lines(pack.methodology_codes)
+        if chart_choice in series_map:
+            methodology = [*methodology, f"Headline — {series_map[chart_choice][1]}"]
+        elif chart_choice == "Words & turns":
+            methodology = [*methodology, "Headline — Words & turns"]
         elif chart_choice == "Turn length":
-            avg_f = _series_points_frame(bundle.turn_length_avg, "avg_seconds")
-            med_f = _series_points_frame(bundle.turn_length_median, "median_seconds")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.caption("Average turn length (headline)")
-                if avg_f:
-                    st.bar_chart(avg_f, x="period", y="avg_seconds")
-                else:
-                    st.caption("No average turn-length points.")
-            with c2:
-                st.caption("Median turn length (headline)")
-                if med_f:
-                    st.bar_chart(med_f, x="period", y="median_seconds")
-                else:
-                    st.caption("No median turn-length points.")
-            if include_all and pack.all_appearances is not None:
-                a_avg = _series_points_frame(
-                    pack.all_appearances.turn_length_avg, "avg_seconds"
-                )
-                a_med = _series_points_frame(
-                    pack.all_appearances.turn_length_median, "median_seconds"
-                )
-                st.caption("All appearances")
-                a1, a2 = st.columns(2)
-                with a1:
-                    if a_avg:
-                        st.bar_chart(a_avg, x="period", y="avg_seconds")
-                with a2:
-                    if a_med:
-                        st.bar_chart(a_med, x="period", y="median_seconds")
-        else:
-            attr, ylabel = series_map[chart_choice]
-            points = getattr(bundle, attr)
-            data = _series_points_frame(points, "value")
-            if data:
-                st.bar_chart(data, x="period", y="value")
-            else:
-                st.caption("No headline points.")
-            unavail = sum(1 for p in points if p.availability == "unavailable")
-            partial = sum(1 for p in points if p.availability == "partial")
-            if unavail or partial:
-                st.caption(
-                    f"Availability: {partial} partial, {unavail} unavailable period(s)."
-                )
-            if include_all and pack.all_appearances is not None:
-                all_points = getattr(pack.all_appearances, attr)
-                adata = _series_points_frame(all_points, "value")
-                st.caption(f"All appearances — {ylabel}")
-                if adata:
-                    st.bar_chart(adata, x="period", y="value")
-
-        support_points = (
-            bundle.words
-            if chart_choice == "Words & turns"
-            else bundle.turn_length_avg
-            if chart_choice == "Turn length"
-            else getattr(bundle, series_map[chart_choice][0])
+            methodology = [*methodology, "Headline — Turn length"]
+        tip_html = _methodology_info_html(
+            methodology,
+            control_id=f"spk-meth-{profile_id}",
         )
-        if support_points:
-            rows = [
-                {
-                    "period": p.display_label,
-                    "value": p.value,
-                    "availability": p.availability,
-                    "evidence": _evidence_caption(p.evidence_note),
-                    "n_turns": p.n_valid_turns,
-                    "transcripts": len(p.managed_transcript_ids),
-                }
-                for p in support_points
-            ]
-            st.dataframe(rows, hide_index=True, width="stretch")
+        if tip_html:
+            tip_slot.markdown(
+                f'<div class="tx-section-info-heading">{tip_html}</div>',
+                unsafe_allow_html=True,
+            )
+
+        if not appearances:
+            st.caption("No linked appearances to chart yet.")
+        else:
+            bundle = pack.headline
+
+            if chart_choice == "Words & turns":
+                wdata = _series_points_frame(bundle.words, "words")
+                tdata = _series_points_frame(bundle.turns, "turns")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.caption("Headline words")
+                    if wdata:
+                        st.bar_chart(wdata, x="period", y="words")
+                    else:
+                        st.caption("No word points.")
+                with c2:
+                    st.caption("Headline turns")
+                    if tdata:
+                        st.bar_chart(tdata, x="period", y="turns")
+                    else:
+                        st.caption("No turn points.")
+                if include_all and pack.all_appearances is not None:
+                    aw = _series_points_frame(pack.all_appearances.words, "words")
+                    at = _series_points_frame(pack.all_appearances.turns, "turns")
+                    st.caption("All appearances")
+                    a1, a2 = st.columns(2)
+                    with a1:
+                        if aw:
+                            st.bar_chart(aw, x="period", y="words")
+                    with a2:
+                        if at:
+                            st.bar_chart(at, x="period", y="turns")
+            elif chart_choice == "Turn length":
+                avg_f = _series_points_frame(bundle.turn_length_avg, "avg_seconds")
+                med_f = _series_points_frame(bundle.turn_length_median, "median_seconds")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.caption("Average turn length (headline)")
+                    if avg_f:
+                        st.bar_chart(avg_f, x="period", y="avg_seconds")
+                    else:
+                        st.caption("No average turn-length points.")
+                with c2:
+                    st.caption("Median turn length (headline)")
+                    if med_f:
+                        st.bar_chart(med_f, x="period", y="median_seconds")
+                    else:
+                        st.caption("No median turn-length points.")
+                if include_all and pack.all_appearances is not None:
+                    a_avg = _series_points_frame(
+                        pack.all_appearances.turn_length_avg, "avg_seconds"
+                    )
+                    a_med = _series_points_frame(
+                        pack.all_appearances.turn_length_median, "median_seconds"
+                    )
+                    st.caption("All appearances")
+                    a1, a2 = st.columns(2)
+                    with a1:
+                        if a_avg:
+                            st.bar_chart(a_avg, x="period", y="avg_seconds")
+                    with a2:
+                        if a_med:
+                            st.bar_chart(a_med, x="period", y="median_seconds")
+            else:
+                attr, ylabel = series_map[chart_choice]
+                points = getattr(bundle, attr)
+                data = _series_points_frame(points, "value")
+                if data:
+                    st.bar_chart(data, x="period", y="value")
+                else:
+                    st.caption("No headline points.")
+                unavail = sum(1 for p in points if p.availability == "unavailable")
+                partial = sum(1 for p in points if p.availability == "partial")
+                if unavail or partial:
+                    st.caption(
+                        f"Availability: {partial} partial, "
+                        f"{unavail} unavailable period(s)."
+                    )
+                if include_all and pack.all_appearances is not None:
+                    all_points = getattr(pack.all_appearances, attr)
+                    adata = _series_points_frame(all_points, "value")
+                    st.caption(f"All appearances — {ylabel}")
+                    if adata:
+                        st.bar_chart(adata, x="period", y="value")
+
+            support_points = (
+                bundle.words
+                if chart_choice == "Words & turns"
+                else bundle.turn_length_avg
+                if chart_choice == "Turn length"
+                else getattr(bundle, series_map[chart_choice][0])
+            )
+            if support_points:
+                rows = [
+                    {
+                        "period": p.display_label,
+                        "value": p.value,
+                        "availability": p.availability,
+                        "evidence": _evidence_caption(p.evidence_note),
+                        "n_turns": p.n_valid_turns,
+                        "transcripts": len(p.managed_transcript_ids),
+                    }
+                    for p in support_points
+                ]
+                st.dataframe(rows, hide_index=True, width="stretch")
 
     partners_tip = _info_tooltip_html(
         [_METHODOLOGY_CAPTIONS["partners.co_appearance_only"]],
@@ -849,27 +892,159 @@ def _render_detail_charts(
         aria_label="Conversation partners notes",
         test_id="tx-partners-info",
     )
-    st.markdown(
-        _section_heading_with_info_html("Conversation partners", partners_tip),
-        unsafe_allow_html=True,
+    with st.expander("Conversation partners", expanded=False):
+        if partners_tip:
+            st.markdown(
+                f'<div class="tx-section-info-heading">{partners_tip}</div>',
+                unsafe_allow_html=True,
+            )
+        if not pack.partners:
+            st.info("No co-appearances yet.")
+            return
+        partner_rows = [
+            {
+                "Partner": p.display_name,
+                "Status": p.status,
+                "Shared sessions": p.shared_transcript_count,
+                "Your speaking minutes": p.shared_speaking_minutes,
+                "Availability": p.availability,
+                "Evidence": _evidence_caption(p.evidence_note),
+            }
+            for p in pack.partners
+        ]
+        st.dataframe(partner_rows, hide_index=True, width="stretch")
+        if pack.partners_remainder_count:
+            st.caption(f"+{pack.partners_remainder_count} more partners not shown.")
+
+
+def _mention_label(mention: ProfileLocationMention, index: int) -> str:
+    date_label = (
+        mention.appearance_date.isoformat()
+        if mention.appearance_date is not None
+        else "Unknown date"
     )
-    if not pack.partners:
-        st.info("No co-appearances yet.")
-        return
-    partner_rows = [
-        {
-            "Partner": p.display_name,
-            "Status": p.status,
-            "Shared sessions": p.shared_transcript_count,
-            "Your speaking minutes": p.shared_speaking_minutes,
-            "Availability": p.availability,
-            "Evidence": _evidence_caption(p.evidence_note),
-        }
-        for p in pack.partners
-    ]
-    st.dataframe(partner_rows, hide_index=True, width="stretch")
-    if pack.partners_remainder_count:
-        st.caption(f"+{pack.partners_remainder_count} more partners not shown.")
+    return f"{index + 1}. {mention.name} · {date_label} · {mention.transcript_label}"
+
+
+def _build_locations_folium_html(
+    mentions: tuple[ProfileLocationMention, ...],
+    *,
+    speaker_name: str,
+) -> str | None:
+    """Return Folium map HTML, or None when [maps] extra is unavailable."""
+    try:
+        from transcriptx.core.utils.lazy_imports import get_folium
+
+        folium = get_folium()
+    except ImportError:
+        return None
+
+    fmap = folium.Map(zoom_start=2)
+    # Slight jitter when multiple mentions share coordinates.
+    seen: dict[tuple[float, float], int] = {}
+    for mention in mentions:
+        key = (round(mention.lat, 5), round(mention.lon, 5))
+        n = seen.get(key, 0)
+        seen[key] = n + 1
+        lat = mention.lat + (0.00015 * n)
+        lon = mention.lon + (0.00015 * n)
+        folium.Marker(
+            [lat, lon],
+            popup=folium.Popup(
+                wrap_tooltip_text(
+                    mention.name,
+                    speaker=speaker_name,
+                    sentence=mention.sentence or mention.name,
+                ),
+                max_width=320,
+            ),
+        ).add_to(fmap)
+    return fmap._repr_html_()
+
+
+@st.fragment
+def _render_locations_map(
+    snap: AggregationSnapshot,
+    profile: SpeakerProfileV1,
+    *,
+    include_ignored: bool,
+) -> None:
+    """Collapsed NER geo map + jump controls for the selected profile."""
+    with st.expander("Locations", expanded=False):
+        agg = snap.aggregates_by_profile.get(profile.profile_id)
+        freshness = agg.freshness_token if agg is not None else ""
+        cache_key = f"spk_loc_pack_{profile.profile_id}_{freshness}_{include_ignored}"
+        pack = st.session_state.get(cache_key)
+        if pack is None:
+            try:
+                pack = build_profile_locations_pack(
+                    snap,
+                    profile.profile_id,
+                    include_ignored=include_ignored,
+                )
+            except Exception as exc:
+                st.error(f"Could not load location mentions: {exc}")
+                return
+            st.session_state[cache_key] = pack
+
+        if pack.status == "empty" or not pack.mentions:
+            st.info("No geocoded location mentions for this profile yet.")
+            if pack.appearances_without_ner:
+                st.caption(
+                    f"{pack.appearances_without_ner} appearance(s) had no usable NER "
+                    "location data."
+                )
+            if pack.unresolved_mentions:
+                st.caption(
+                    f"{pack.unresolved_mentions} mention(s) skipped (could not resolve "
+                    "segment for jump)."
+                )
+            return
+
+        map_html = _build_locations_folium_html(
+            pack.mentions, speaker_name=profile.display_name
+        )
+        if map_html:
+            st.components.v1.html(map_html, height=400)
+        else:
+            st.caption(
+                "Map preview unavailable (install optional `[maps]` extra for Folium)."
+            )
+
+        labels = [_mention_label(m, i) for i, m in enumerate(pack.mentions)]
+        selected = st.selectbox(
+            "Mention",
+            options=list(range(len(pack.mentions))),
+            format_func=lambda i: labels[i],
+            key=f"spk_loc_select_{profile.profile_id}",
+        )
+        mention = pack.mentions[int(selected)]
+        if mention.sentence:
+            st.caption(mention.sentence)
+        if st.button(
+            "Open in transcript",
+            key=f"spk_loc_jump_{profile.profile_id}",
+            type="primary",
+        ):
+            navigate_highlight_to_transcript(
+                session_slug=mention.session_slug,
+                run_id=mention.run_id,
+                segment_index=mention.segment_index,
+                start_time=mention.start_time,
+                highlight_query=(mention.sentence or mention.name)[:120],
+            )
+
+        notes: list[str] = []
+        if pack.appearances_without_ner:
+            notes.append(
+                f"{pack.appearances_without_ner} appearance(s) without NER locations"
+            )
+        if pack.unresolved_mentions:
+            notes.append(
+                f"{pack.unresolved_mentions} mention(s) skipped (unresolved segment)"
+            )
+        if notes:
+            st.caption(" · ".join(notes))
 
 
 def _series_points_frame(points: tuple[Any, ...], value_key: str) -> list[dict[str, Any]]:
@@ -898,6 +1073,7 @@ def _open_transcript(snap: AggregationSnapshot, row: AppearanceRow) -> None:
     st.rerun()
 
 
+@st.fragment
 def _render_appearances_table(
     *,
     snap: AggregationSnapshot,
@@ -906,485 +1082,488 @@ def _render_appearances_table(
     links_by_id: Mapping[str, Any],
     profile_blocked: bool,
 ) -> None:
-    st.markdown("#### Appearances")
-    if not appearances:
-        st.info("No linked appearances.")
-        return
+    with st.expander("Appearances", expanded=False):
+        if not appearances:
+            st.info("No linked appearances.")
+            return
 
-    svc = _service()
-    for row in appearances:
-        link_blocked = row.link_file_key in snap.blocked_link_keys
-        mutate_disabled = profile_blocked or link_blocked
-        with st.container(border=True):
-            date_label = (
-                row.appearance_date.isoformat()
-                if row.appearance_date is not None
-                else "Unknown date"
-            )
-            transcript_label = row.current_relpath or row.observed_transcript_relpath
-            share = (
-                f"{floor(row.speaking_share * 100)}%"
-                if row.speaking_share is not None
-                else "—"
-            )
-            st.markdown(
-                f"**{date_label}** · `{transcript_label}` · "
-                f"flag=`{row.flag}` · words={row.metrics.words:,} · "
-                f"turns={row.metrics.turns:,} · share={share}"
-            )
-            cols = st.columns([1, 1, 1, 2])
-            with cols[0]:
-                if st.button(
-                    "Open transcript",
-                    key=f"speakers_open_tx_{row.link_id}",
-                ):
-                    _open_transcript(snap, row)
+        svc = _service()
+        for row in appearances:
+            link_blocked = row.link_file_key in snap.blocked_link_keys
+            mutate_disabled = profile_blocked or link_blocked
+            with st.container(border=True):
+                date_label = (
+                    row.appearance_date.isoformat()
+                    if row.appearance_date is not None
+                    else "Unknown date"
+                )
+                transcript_label = row.current_relpath or row.observed_transcript_relpath
+                share = (
+                    f"{floor(row.speaking_share * 100)}%"
+                    if row.speaking_share is not None
+                    else "—"
+                )
+                st.markdown(
+                    f"**{date_label}** · `{transcript_label}` · "
+                    f"flag=`{row.flag}` · words={row.metrics.words:,} · "
+                    f"turns={row.metrics.turns:,} · share={share}"
+                )
+                cols = st.columns([1, 1, 1, 2])
+                with cols[0]:
+                    if st.button(
+                        "Open transcript",
+                        key=f"speakers_open_tx_{row.link_id}",
+                    ):
+                        _open_transcript(snap, row)
 
-            confirm_unlink = f"speakers_confirm_unlink_{row.link_id}"
-            with cols[1]:
-                if mutate_disabled:
-                    st.caption("Unlink blocked")
-                elif st.session_state.get(confirm_unlink):
-                    st.caption("Confirm unlink?")
-                    u1, u2 = st.columns(2)
-                    with u1:
-                        if st.button(
-                            "Confirm",
-                            key=f"speakers_unlink_yes_{row.link_id}",
-                            type="primary",
-                        ):
-                            payload = {
-                                "managed_transcript_id": row.managed_transcript_id,
-                                "local_speaker_key": row.local_speaker_key,
-                                "expected_link_id": row.link_id,
-                            }
-                            try:
-                                result = svc.unlink(
-                                    operation_idempotency_key=_idempotency_key(
-                                        f"unlink_{row.link_id}", payload
-                                    ),
-                                    managed_transcript_id=row.managed_transcript_id,
-                                    local_speaker_key=row.local_speaker_key,
-                                    expected_link_id=row.link_id,
-                                )
-                                consume_cache_invalidation_signal(result.cache_signal)
-                                _clear_idempotency(f"unlink_{row.link_id}")
-                                st.session_state.pop(confirm_unlink, None)
-                                st.rerun()
-                            except Exception as exc:
-                                st.error(str(exc))
-                    with u2:
-                        if st.button(
-                            "Cancel",
-                            key=f"speakers_unlink_no_{row.link_id}",
-                        ):
-                            _clear_idempotency(f"unlink_{row.link_id}")
-                            st.session_state.pop(confirm_unlink, None)
-                            st.rerun()
-                elif st.button(
-                    "Unlink",
-                    key=f"speakers_unlink_{row.link_id}",
-                    disabled=mutate_disabled,
-                ):
-                    st.session_state[confirm_unlink] = True
-                    st.rerun()
-
-            with cols[2]:
-                if row.flag != "needs_review":
-                    st.caption("")
-                elif mutate_disabled:
-                    st.caption("Accept blocked")
-                else:
-                    link = links_by_id.get(row.link_id)
-                    expected_fp = (
-                        link.occurrence_fingerprint if link is not None else None
-                    )
-                    confirm_fp = f"speakers_confirm_fp_{row.link_id}"
-                    if st.session_state.get(confirm_fp):
-                        st.caption("Accept fingerprint?")
-                        f1, f2 = st.columns(2)
-                        with f1:
+                confirm_unlink = f"speakers_confirm_unlink_{row.link_id}"
+                with cols[1]:
+                    if mutate_disabled:
+                        st.caption("Unlink blocked")
+                    elif st.session_state.get(confirm_unlink):
+                        st.caption("Confirm unlink?")
+                        u1, u2 = st.columns(2)
+                        with u1:
                             if st.button(
                                 "Confirm",
-                                key=f"speakers_fp_yes_{row.link_id}",
+                                key=f"speakers_unlink_yes_{row.link_id}",
                                 type="primary",
                             ):
                                 payload = {
                                     "managed_transcript_id": row.managed_transcript_id,
                                     "local_speaker_key": row.local_speaker_key,
                                     "expected_link_id": row.link_id,
-                                    "expected_fingerprint": expected_fp,
                                 }
                                 try:
-                                    result = svc.supersede_link_fingerprint(
+                                    result = svc.unlink(
                                         operation_idempotency_key=_idempotency_key(
-                                            f"fp_{row.link_id}", payload
+                                            f"unlink_{row.link_id}", payload
                                         ),
                                         managed_transcript_id=row.managed_transcript_id,
                                         local_speaker_key=row.local_speaker_key,
                                         expected_link_id=row.link_id,
-                                        expected_fingerprint=expected_fp,
                                     )
-                                    consume_cache_invalidation_signal(
-                                        result.cache_signal
-                                    )
-                                    _clear_idempotency(f"fp_{row.link_id}")
-                                    st.session_state.pop(confirm_fp, None)
+                                    consume_cache_invalidation_signal(result.cache_signal)
+                                    _clear_idempotency(f"unlink_{row.link_id}")
+                                    st.session_state.pop(confirm_unlink, None)
                                     st.rerun()
                                 except Exception as exc:
                                     st.error(str(exc))
-                        with f2:
+                        with u2:
                             if st.button(
                                 "Cancel",
-                                key=f"speakers_fp_no_{row.link_id}",
+                                key=f"speakers_unlink_no_{row.link_id}",
                             ):
-                                _clear_idempotency(f"fp_{row.link_id}")
-                                st.session_state.pop(confirm_fp, None)
-                                st.rerun()
+                                _clear_idempotency(f"unlink_{row.link_id}")
+                                st.session_state.pop(confirm_unlink, None)
+                                _rerun_ui()
                     elif st.button(
-                        "Accept fingerprint",
-                        key=f"speakers_fp_{row.link_id}",
-                        disabled=mutate_disabled or expected_fp is None,
+                        "Unlink",
+                        key=f"speakers_unlink_{row.link_id}",
+                        disabled=mutate_disabled,
                     ):
-                        st.session_state[confirm_fp] = True
-                        st.rerun()
+                        st.session_state[confirm_unlink] = True
+                        _rerun_ui()
+
+                with cols[2]:
+                    if row.flag != "needs_review":
+                        st.caption("")
+                    elif mutate_disabled:
+                        st.caption("Accept blocked")
+                    else:
+                        link = links_by_id.get(row.link_id)
+                        expected_fp = (
+                            link.occurrence_fingerprint if link is not None else None
+                        )
+                        confirm_fp = f"speakers_confirm_fp_{row.link_id}"
+                        if st.session_state.get(confirm_fp):
+                            st.caption("Accept fingerprint?")
+                            f1, f2 = st.columns(2)
+                            with f1:
+                                if st.button(
+                                    "Confirm",
+                                    key=f"speakers_fp_yes_{row.link_id}",
+                                    type="primary",
+                                ):
+                                    payload = {
+                                        "managed_transcript_id": row.managed_transcript_id,
+                                        "local_speaker_key": row.local_speaker_key,
+                                        "expected_link_id": row.link_id,
+                                        "expected_fingerprint": expected_fp,
+                                    }
+                                    try:
+                                        result = svc.supersede_link_fingerprint(
+                                            operation_idempotency_key=_idempotency_key(
+                                                f"fp_{row.link_id}", payload
+                                            ),
+                                            managed_transcript_id=row.managed_transcript_id,
+                                            local_speaker_key=row.local_speaker_key,
+                                            expected_link_id=row.link_id,
+                                            expected_fingerprint=expected_fp,
+                                        )
+                                        consume_cache_invalidation_signal(
+                                            result.cache_signal
+                                        )
+                                        _clear_idempotency(f"fp_{row.link_id}")
+                                        st.session_state.pop(confirm_fp, None)
+                                        st.rerun()
+                                    except Exception as exc:
+                                        st.error(str(exc))
+                            with f2:
+                                if st.button(
+                                    "Cancel",
+                                    key=f"speakers_fp_no_{row.link_id}",
+                                ):
+                                    _clear_idempotency(f"fp_{row.link_id}")
+                                    st.session_state.pop(confirm_fp, None)
+                                    _rerun_ui()
+                        elif st.button(
+                            "Accept fingerprint",
+                            key=f"speakers_fp_{row.link_id}",
+                            disabled=mutate_disabled or expected_fp is None,
+                        ):
+                            st.session_state[confirm_fp] = True
+                            _rerun_ui()
 
 
+@st.fragment
 def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
-    st.markdown("#### Edit profile")
-    form_prefix = f"speakers_edit_{profile.profile_id}"
-    display_name = st.text_input(
-        "Display name",
-        value=profile.display_name,
-        key=f"{form_prefix}_display_name",
-    )
-    aliases_text = st.text_area(
-        "Aliases (one per line)",
-        value="\n".join(profile.aliases),
-        key=f"{form_prefix}_aliases",
-    )
-    notes = st.text_area(
-        "Notes",
-        value=profile.notes or "",
-        key=f"{form_prefix}_notes",
-    )
-    clear_notes = st.checkbox(
-        "Clear notes",
-        value=False,
-        key=f"{form_prefix}_clear_notes",
-    )
-
-    clear_accent = st.checkbox(
-        "Auto from name (clear stored accent)",
-        value=False,
-        key=f"{form_prefix}_clear_accent",
-        help="Clears accent_color so display falls back to the name-hash palette.",
-    )
-    default_accent = profile.accent_color or SPEAKER_ACCENTS[0]
-    chosen_accent: str | None = None
-    with st.popover("Choose colour"):
-        chosen_accent = st.color_picker(
-            "Accent colour",
-            value=default_accent if str(default_accent).startswith("#") else SPEAKER_ACCENTS[0],
-            key=f"{form_prefix}_color_picker",
-            disabled=clear_accent,
+    with st.expander("Edit profile", expanded=False):
+        form_prefix = f"speakers_edit_{profile.profile_id}"
+        display_name = st.text_input(
+            "Display name",
+            value=profile.display_name,
+            key=f"{form_prefix}_display_name",
         )
-        st.caption("Quick palette")
-        chip_cols = st.columns(len(SPEAKER_ACCENTS))
-        for idx, accent in enumerate(SPEAKER_ACCENTS):
-            with chip_cols[idx]:
-                if st.button(
-                    accent,
-                    key=f"{form_prefix}_chip_{accent}",
-                    help=accent,
-                    disabled=clear_accent,
-                ):
-                    st.session_state[f"{form_prefix}_color_picker"] = accent
-                    st.rerun()
+        aliases_text = st.text_area(
+            "Aliases (one per line)",
+            value="\n".join(profile.aliases),
+            key=f"{form_prefix}_aliases",
+        )
+        notes = st.text_area(
+            "Notes",
+            value=profile.notes or "",
+            key=f"{form_prefix}_notes",
+        )
+        clear_notes = st.checkbox(
+            "Clear notes",
+            value=False,
+            key=f"{form_prefix}_clear_notes",
+        )
 
-    st.markdown("##### Photo")
-    upload = st.file_uploader(
-        "Upload photo (JPEG/PNG/WebP, max 2 MB)",
-        type=["jpg", "jpeg", "png", "webp"],
-        key=f"{form_prefix}_avatar_upload",
-    )
-    clear_avatar = st.checkbox(
-        "Remove photo",
-        value=False,
-        key=f"{form_prefix}_clear_avatar",
-        help="Clears the stored avatar; chip falls back to initials + accent.",
-    )
-    if st.button(
-        "Save photo changes",
-        key=f"{form_prefix}_avatar_save",
-        disabled=upload is None and not clear_avatar,
-    ):
-        try:
-            sha_avatar = profile_content_sha256(profile.profile_id, root=root)
-            if not sha_avatar:
-                raise RuntimeError("Could not read profile content hash")
-            if clear_avatar:
-                result = _service().clear_avatar(
-                    operation_idempotency_key=_idempotency_key(
-                        f"clear_avatar_{profile.profile_id}",
-                        {"profile_id": profile.profile_id, "sha": sha_avatar},
-                    ),
-                    profile_id=profile.profile_id,
-                    expected_content_sha256=sha_avatar,
-                )
-            else:
-                assert upload is not None
-                result = _service().set_avatar(
-                    operation_idempotency_key=_idempotency_key(
-                        f"set_avatar_{profile.profile_id}",
-                        {
-                            "profile_id": profile.profile_id,
-                            "sha": sha_avatar,
-                            "name": upload.name,
-                            "size": upload.size,
-                        },
-                    ),
-                    profile_id=profile.profile_id,
-                    expected_content_sha256=sha_avatar,
-                    image_bytes=upload.getvalue(),
-                )
-            consume_cache_invalidation_signal(result.cache_signal)
-            _clear_idempotency(f"set_avatar_{profile.profile_id}")
-            _clear_idempotency(f"clear_avatar_{profile.profile_id}")
-            st.success("Photo updated.")
-            st.rerun()
-        except StaleUpdateError as exc:
-            st.error(f"Stale update — refresh and try again. {exc}")
-        except Exception as exc:
-            st.error(str(exc))
+        clear_accent = st.checkbox(
+            "Auto from name (clear stored accent)",
+            value=False,
+            key=f"{form_prefix}_clear_accent",
+            help="Clears accent_color so display falls back to the name-hash palette.",
+        )
+        default_accent = profile.accent_color or SPEAKER_ACCENTS[0]
+        chosen_accent: str | None = None
+        with st.popover("Choose colour"):
+            chosen_accent = st.color_picker(
+                "Accent colour",
+                value=default_accent if str(default_accent).startswith("#") else SPEAKER_ACCENTS[0],
+                key=f"{form_prefix}_color_picker",
+                disabled=clear_accent,
+            )
+            st.caption("Quick palette")
+            chip_cols = st.columns(len(SPEAKER_ACCENTS))
+            for idx, accent in enumerate(SPEAKER_ACCENTS):
+                with chip_cols[idx]:
+                    if st.button(
+                        accent,
+                        key=f"{form_prefix}_chip_{accent}",
+                        help=accent,
+                        disabled=clear_accent,
+                    ):
+                        st.session_state[f"{form_prefix}_color_picker"] = accent
+                        _rerun_ui()
 
-    sha = profile_content_sha256(profile.profile_id, root=root)
-    if not sha:
-        st.error("Could not read profile content hash; edit disabled.")
-        return
-
-    aliases = [line.strip() for line in aliases_text.splitlines() if line.strip()]
-    picker_value = st.session_state.get(f"{form_prefix}_color_picker", chosen_accent)
-    payload = {
-        "profile_id": profile.profile_id,
-        "expected_content_sha256": sha,
-        "display_name": display_name,
-        "aliases": aliases,
-        "notes": None if clear_notes else notes,
-        "clear_notes": clear_notes,
-        "accent_color": None if clear_accent else picker_value,
-        "clear_accent": clear_accent,
-    }
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("Save changes", key=f"{form_prefix}_save", type="primary"):
+        st.markdown("##### Photo")
+        upload = st.file_uploader(
+            "Upload photo (JPEG/PNG/WebP, max 2 MB)",
+            type=["jpg", "jpeg", "png", "webp"],
+            key=f"{form_prefix}_avatar_upload",
+        )
+        clear_avatar = st.checkbox(
+            "Remove photo",
+            value=False,
+            key=f"{form_prefix}_clear_avatar",
+            help="Clears the stored avatar; chip falls back to initials + accent.",
+        )
+        if st.button(
+            "Save photo changes",
+            key=f"{form_prefix}_avatar_save",
+            disabled=upload is None and not clear_avatar,
+        ):
             try:
-                result = _service().update_profile(
-                    operation_idempotency_key=_idempotency_key(
-                        f"update_{profile.profile_id}", payload
-                    ),
-                    profile_id=profile.profile_id,
-                    expected_content_sha256=sha,
-                    display_name=display_name,
-                    aliases=aliases,
-                    notes=None if clear_notes else (notes or None),
-                    clear_notes=clear_notes,
-                    accent_color=None if clear_accent else picker_value,
-                    clear_accent=clear_accent,
-                )
+                sha_avatar = profile_content_sha256(profile.profile_id, root=root)
+                if not sha_avatar:
+                    raise RuntimeError("Could not read profile content hash")
+                if clear_avatar:
+                    result = _service().clear_avatar(
+                        operation_idempotency_key=_idempotency_key(
+                            f"clear_avatar_{profile.profile_id}",
+                            {"profile_id": profile.profile_id, "sha": sha_avatar},
+                        ),
+                        profile_id=profile.profile_id,
+                        expected_content_sha256=sha_avatar,
+                    )
+                else:
+                    assert upload is not None
+                    result = _service().set_avatar(
+                        operation_idempotency_key=_idempotency_key(
+                            f"set_avatar_{profile.profile_id}",
+                            {
+                                "profile_id": profile.profile_id,
+                                "sha": sha_avatar,
+                                "name": upload.name,
+                                "size": upload.size,
+                            },
+                        ),
+                        profile_id=profile.profile_id,
+                        expected_content_sha256=sha_avatar,
+                        image_bytes=upload.getvalue(),
+                    )
                 consume_cache_invalidation_signal(result.cache_signal)
-                _clear_idempotency(f"update_{profile.profile_id}")
-                st.success("Profile updated.")
+                _clear_idempotency(f"set_avatar_{profile.profile_id}")
+                _clear_idempotency(f"clear_avatar_{profile.profile_id}")
+                st.success("Photo updated.")
                 st.rerun()
             except StaleUpdateError as exc:
                 st.error(f"Stale update — refresh and try again. {exc}")
             except Exception as exc:
                 st.error(str(exc))
-    with c2:
-        if st.button("Cancel edit", key=f"{form_prefix}_cancel"):
-            _clear_idempotency(f"update_{profile.profile_id}")
-            for suffix in (
-                "display_name",
-                "aliases",
-                "notes",
-                "clear_notes",
-                "clear_accent",
-                "color_picker",
-            ):
-                st.session_state.pop(f"{form_prefix}_{suffix}", None)
-            st.rerun()
+
+        sha = profile_content_sha256(profile.profile_id, root=root)
+        if not sha:
+            st.error("Could not read profile content hash; edit disabled.")
+            return
+
+        aliases = [line.strip() for line in aliases_text.splitlines() if line.strip()]
+        picker_value = st.session_state.get(f"{form_prefix}_color_picker", chosen_accent)
+        payload = {
+            "profile_id": profile.profile_id,
+            "expected_content_sha256": sha,
+            "display_name": display_name,
+            "aliases": aliases,
+            "notes": None if clear_notes else notes,
+            "clear_notes": clear_notes,
+            "accent_color": None if clear_accent else picker_value,
+            "clear_accent": clear_accent,
+        }
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Save changes", key=f"{form_prefix}_save", type="primary"):
+                try:
+                    result = _service().update_profile(
+                        operation_idempotency_key=_idempotency_key(
+                            f"update_{profile.profile_id}", payload
+                        ),
+                        profile_id=profile.profile_id,
+                        expected_content_sha256=sha,
+                        display_name=display_name,
+                        aliases=aliases,
+                        notes=None if clear_notes else (notes or None),
+                        clear_notes=clear_notes,
+                        accent_color=None if clear_accent else picker_value,
+                        clear_accent=clear_accent,
+                    )
+                    consume_cache_invalidation_signal(result.cache_signal)
+                    _clear_idempotency(f"update_{profile.profile_id}")
+                    st.success("Profile updated.")
+                    st.rerun()
+                except StaleUpdateError as exc:
+                    st.error(f"Stale update — refresh and try again. {exc}")
+                except Exception as exc:
+                    st.error(str(exc))
+        with c2:
+            if st.button("Cancel edit", key=f"{form_prefix}_cancel"):
+                _clear_idempotency(f"update_{profile.profile_id}")
+                for suffix in (
+                    "display_name",
+                    "aliases",
+                    "notes",
+                    "clear_notes",
+                    "clear_accent",
+                    "color_picker",
+                ):
+                    st.session_state.pop(f"{form_prefix}_{suffix}", None)
+                _rerun_ui()
 
 
+@st.fragment
 def _render_link_another(
     *,
     snap: AggregationSnapshot,
     profile: SpeakerProfileV1,
 ) -> None:
-    st.markdown("#### Link another occurrence")
-    if profile.profile_id in snap.blocked_profile_ids:
-        st.caption("Linking disabled while this profile is blocked.")
-        return
+    with st.expander("Link another occurrence", expanded=False):
+        if profile.profile_id in snap.blocked_profile_ids:
+            st.caption("Linking disabled while this profile is blocked.")
+            return
 
-    resolver = ManagedTranscriptResolver()
-    try:
-        admitted = resolver.list_admitted()
-    except Exception as exc:
-        st.error(f"Could not list managed transcripts: {exc}")
-        return
-    if not admitted:
-        st.caption("No admitted managed transcripts.")
-        return
+        resolver = ManagedTranscriptResolver()
+        try:
+            admitted = resolver.list_admitted()
+        except Exception as exc:
+            st.error(f"Could not list managed transcripts: {exc}")
+            return
+        if not admitted:
+            st.caption("No admitted managed transcripts.")
+            return
 
-    labels = {
-        r.managed_transcript_id: f"{r.current_relpath} ({r.managed_transcript_id[:8]}…)"
-        for r in admitted
-    }
-    options = [r.managed_transcript_id for r in admitted]
-    chosen_tid = st.selectbox(
-        "Managed transcript",
-        options=[""] + options,
-        format_func=lambda tid: (
-            "— Select a transcript —" if tid == "" else labels.get(tid, tid)
-        ),
-        key=f"speakers_link_tid_{profile.profile_id}",
-    )
-    if not chosen_tid:
-        return
-
-    resolved = next(
-        (r for r in admitted if r.managed_transcript_id == chosen_tid), None
-    )
-    if resolved is None:
-        st.error("Selected transcript is no longer admitted.")
-        return
-
-    try:
-        occurrences = discover_occurrences_for_resolved(resolved)
-    except Exception as exc:
-        st.error(f"Occurrence discovery failed: {exc}")
-        return
-    if not occurrences:
-        st.info("No speaker occurrences in this transcript.")
-        return
-
-    occ_labels = {
-        o.local_speaker_key: (
-            f"{o.local_speaker_key} ({o.segment_count} segs"
-            f"{' · collision' if o.collision else ''})"
+        labels = {
+            r.managed_transcript_id: f"{r.current_relpath} ({r.managed_transcript_id[:8]}…)"
+            for r in admitted
+        }
+        options = [r.managed_transcript_id for r in admitted]
+        chosen_tid = st.selectbox(
+            "Managed transcript",
+            options=[""] + options,
+            format_func=lambda tid: (
+                "— Select a transcript —" if tid == "" else labels.get(tid, tid)
+            ),
+            key=f"speakers_link_tid_{profile.profile_id}",
         )
-        for o in occurrences
-    }
-    chosen_key = st.selectbox(
-        "Local speaker key",
-        options=[""] + [o.local_speaker_key for o in occurrences],
-        format_func=lambda key: (
-            "— Select occurrence —" if key == "" else occ_labels.get(key, key)
-        ),
-        key=f"speakers_link_key_{profile.profile_id}",
-    )
-    if not chosen_key:
-        return
+        if not chosen_tid:
+            return
 
-    existing = read_live_link(
-        next(o.link_file_key for o in occurrences if o.local_speaker_key == chosen_key),
-        root=snap.root,
-    )
-    svc = _service()
-    if existing is None:
-        if st.button(
-            "Link to this profile",
-            key=f"speakers_link_existing_{profile.profile_id}",
-            type="primary",
-        ):
-            payload = {
-                "managed_transcript_id": chosen_tid,
-                "local_speaker_key": chosen_key,
-                "profile_id": profile.profile_id,
-            }
-            try:
-                result = svc.link_existing_profile(
-                    operation_idempotency_key=_idempotency_key(
-                        f"link_{profile.profile_id}", payload
-                    ),
-                    managed_transcript_id=chosen_tid,
-                    local_speaker_key=chosen_key,
-                    profile_id=profile.profile_id,
-                )
-                consume_cache_invalidation_signal(result.cache_signal)
-                _clear_idempotency(f"link_{profile.profile_id}")
-                st.success("Occurrence linked.")
-                st.rerun()
-            except Exception as exc:
-                st.error(str(exc))
-        return
+        resolved = next(
+            (r for r in admitted if r.managed_transcript_id == chosen_tid), None
+        )
+        if resolved is None:
+            st.error("Selected transcript is no longer admitted.")
+            return
 
-    if existing.profile_id == profile.profile_id:
-        st.info("This occurrence is already linked to this profile.")
-        return
+        try:
+            occurrences = discover_occurrences_for_resolved(resolved)
+        except Exception as exc:
+            st.error(f"Occurrence discovery failed: {exc}")
+            return
+        if not occurrences:
+            st.info("No speaker occurrences in this transcript.")
+            return
 
-    owner_name = next(
-        (
-            p.display_name
-            for p in snap.profiles
-            if p.profile_id == existing.profile_id
-        ),
-        existing.profile_id,
-    )
-    st.warning(
-        f"Occurrence is linked to **{owner_name}** (`{existing.profile_id}`). "
-        "Relink to move it to this profile."
-    )
-    confirm_key = f"speakers_confirm_relink_{profile.profile_id}_{chosen_key}"
-    if st.session_state.get(confirm_key):
-        r1, r2 = st.columns(2)
-        with r1:
+        occ_labels = {
+            o.local_speaker_key: (
+                f"{o.local_speaker_key} ({o.segment_count} segs"
+                f"{' · collision' if o.collision else ''})"
+            )
+            for o in occurrences
+        }
+        chosen_key = st.selectbox(
+            "Local speaker key",
+            options=[""] + [o.local_speaker_key for o in occurrences],
+            format_func=lambda key: (
+                "— Select occurrence —" if key == "" else occ_labels.get(key, key)
+            ),
+            key=f"speakers_link_key_{profile.profile_id}",
+        )
+        if not chosen_key:
+            return
+
+        existing = read_live_link(
+            next(o.link_file_key for o in occurrences if o.local_speaker_key == chosen_key),
+            root=snap.root,
+        )
+        svc = _service()
+        if existing is None:
             if st.button(
-                "Confirm relink",
-                key=f"speakers_relink_yes_{profile.profile_id}",
+                "Link to this profile",
+                key=f"speakers_link_existing_{profile.profile_id}",
                 type="primary",
             ):
                 payload = {
                     "managed_transcript_id": chosen_tid,
                     "local_speaker_key": chosen_key,
                     "profile_id": profile.profile_id,
-                    "expected_owner_profile_id": existing.profile_id,
-                    "expected_link_id": existing.link_id,
                 }
                 try:
-                    result = svc.relink(
+                    result = svc.link_existing_profile(
                         operation_idempotency_key=_idempotency_key(
-                            f"relink_{profile.profile_id}", payload
+                            f"link_{profile.profile_id}", payload
                         ),
                         managed_transcript_id=chosen_tid,
                         local_speaker_key=chosen_key,
                         profile_id=profile.profile_id,
-                        expected_link_id=existing.link_id,
-                        expected_owner_profile_id=existing.profile_id,
                     )
                     consume_cache_invalidation_signal(result.cache_signal)
-                    _clear_idempotency(f"relink_{profile.profile_id}")
-                    st.session_state.pop(confirm_key, None)
-                    st.success("Occurrence relinked.")
+                    _clear_idempotency(f"link_{profile.profile_id}")
+                    st.success("Occurrence linked.")
                     st.rerun()
                 except Exception as exc:
                     st.error(str(exc))
-        with r2:
-            if st.button(
-                "Cancel",
-                key=f"speakers_relink_no_{profile.profile_id}",
-            ):
-                _clear_idempotency(f"relink_{profile.profile_id}")
-                st.session_state.pop(confirm_key, None)
-                st.rerun()
-    elif st.button(
-        "Relink to this profile",
-        key=f"speakers_relink_{profile.profile_id}",
-    ):
-        st.session_state[confirm_key] = True
-        st.rerun()
+            return
+
+        if existing.profile_id == profile.profile_id:
+            st.info("This occurrence is already linked to this profile.")
+            return
+
+        owner_name = next(
+            (
+                p.display_name
+                for p in snap.profiles
+                if p.profile_id == existing.profile_id
+            ),
+            existing.profile_id,
+        )
+        st.warning(
+            f"Occurrence is linked to **{owner_name}** (`{existing.profile_id}`). "
+            "Relink to move it to this profile."
+        )
+        confirm_key = f"speakers_confirm_relink_{profile.profile_id}_{chosen_key}"
+        if st.session_state.get(confirm_key):
+            r1, r2 = st.columns(2)
+            with r1:
+                if st.button(
+                    "Confirm relink",
+                    key=f"speakers_relink_yes_{profile.profile_id}",
+                    type="primary",
+                ):
+                    payload = {
+                        "managed_transcript_id": chosen_tid,
+                        "local_speaker_key": chosen_key,
+                        "profile_id": profile.profile_id,
+                        "expected_owner_profile_id": existing.profile_id,
+                        "expected_link_id": existing.link_id,
+                    }
+                    try:
+                        result = svc.relink(
+                            operation_idempotency_key=_idempotency_key(
+                                f"relink_{profile.profile_id}", payload
+                            ),
+                            managed_transcript_id=chosen_tid,
+                            local_speaker_key=chosen_key,
+                            profile_id=profile.profile_id,
+                            expected_link_id=existing.link_id,
+                            expected_owner_profile_id=existing.profile_id,
+                        )
+                        consume_cache_invalidation_signal(result.cache_signal)
+                        _clear_idempotency(f"relink_{profile.profile_id}")
+                        st.session_state.pop(confirm_key, None)
+                        st.success("Occurrence relinked.")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(str(exc))
+            with r2:
+                if st.button(
+                    "Cancel",
+                    key=f"speakers_relink_no_{profile.profile_id}",
+                ):
+                    _clear_idempotency(f"relink_{profile.profile_id}")
+                    st.session_state.pop(confirm_key, None)
+                    _rerun_ui()
+        elif st.button(
+            "Relink to this profile",
+            key=f"speakers_relink_{profile.profile_id}",
+        ):
+            st.session_state[confirm_key] = True
+            _rerun_ui()
 
 
+@st.fragment
 def _render_lifecycle(
     *,
     snap: AggregationSnapshot,
@@ -1392,127 +1571,127 @@ def _render_lifecycle(
     directory_items: list[ProfileListItem],
     profile_blocked: bool,
 ) -> None:
-    st.markdown("#### Lifecycle")
-    sha = profile_content_sha256(profile.profile_id, root=snap.root)
-    if not sha:
-        st.error("Could not read profile content hash; lifecycle disabled.")
-        return
-    if profile_blocked:
-        st.caption("Lifecycle actions disabled while this profile is blocked.")
-        return
+    with st.expander("Lifecycle", expanded=False):
+        sha = profile_content_sha256(profile.profile_id, root=snap.root)
+        if not sha:
+            st.error("Could not read profile content hash; lifecycle disabled.")
+            return
+        if profile_blocked:
+            st.caption("Lifecycle actions disabled while this profile is blocked.")
+            return
 
-    svc = _service()
-    c1, c2, c3 = st.columns(3)
+        svc = _service()
+        c1, c2, c3 = st.columns(3)
 
-    with c1:
-        if profile.status == "active":
-            if st.button(
-                "Archive profile",
-                key=f"speakers_archive_{profile.profile_id}",
-            ):
-                payload = {
-                    "profile_id": profile.profile_id,
-                    "expected_content_sha256": sha,
-                }
-                try:
-                    result = svc.archive_profile(
-                        operation_idempotency_key=_idempotency_key(
-                            f"archive_{profile.profile_id}", payload
-                        ),
-                        profile_id=profile.profile_id,
-                        expected_content_sha256=sha,
-                    )
-                    consume_cache_invalidation_signal(result.cache_signal)
-                    _clear_idempotency(f"archive_{profile.profile_id}")
-                    st.rerun()
-                except Exception as exc:
-                    st.error(str(exc))
-        elif profile.status == "archived":
-            if st.button(
-                "Unarchive profile",
-                key=f"speakers_unarchive_{profile.profile_id}",
-            ):
-                payload = {
-                    "profile_id": profile.profile_id,
-                    "expected_content_sha256": sha,
-                }
-                try:
-                    result = svc.unarchive_profile(
-                        operation_idempotency_key=_idempotency_key(
-                            f"unarchive_{profile.profile_id}", payload
-                        ),
-                        profile_id=profile.profile_id,
-                        expected_content_sha256=sha,
-                    )
-                    consume_cache_invalidation_signal(result.cache_signal)
-                    _clear_idempotency(f"unarchive_{profile.profile_id}")
-                    st.rerun()
-                except Exception as exc:
-                    st.error(str(exc))
+        with c1:
+            if profile.status == "active":
+                if st.button(
+                    "Archive profile",
+                    key=f"speakers_archive_{profile.profile_id}",
+                ):
+                    payload = {
+                        "profile_id": profile.profile_id,
+                        "expected_content_sha256": sha,
+                    }
+                    try:
+                        result = svc.archive_profile(
+                            operation_idempotency_key=_idempotency_key(
+                                f"archive_{profile.profile_id}", payload
+                            ),
+                            profile_id=profile.profile_id,
+                            expected_content_sha256=sha,
+                        )
+                        consume_cache_invalidation_signal(result.cache_signal)
+                        _clear_idempotency(f"archive_{profile.profile_id}")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(str(exc))
+            elif profile.status == "archived":
+                if st.button(
+                    "Unarchive profile",
+                    key=f"speakers_unarchive_{profile.profile_id}",
+                ):
+                    payload = {
+                        "profile_id": profile.profile_id,
+                        "expected_content_sha256": sha,
+                    }
+                    try:
+                        result = svc.unarchive_profile(
+                            operation_idempotency_key=_idempotency_key(
+                                f"unarchive_{profile.profile_id}", payload
+                            ),
+                            profile_id=profile.profile_id,
+                            expected_content_sha256=sha,
+                        )
+                        consume_cache_invalidation_signal(result.cache_signal)
+                        _clear_idempotency(f"unarchive_{profile.profile_id}")
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(str(exc))
 
-    with c2:
-        active_others = sorted(
-            (
-                i
-                for i in directory_items
-                if i.status == "active" and i.profile_id != profile.profile_id
-            ),
-            key=_surname_sort_key,
-        )
-        if profile.status == "active" and active_others:
-            target = st.selectbox(
-                "Merge into",
-                options=[i.profile_id for i in active_others],
-                format_func=lambda pid: next(
-                    (i.display_name for i in active_others if i.profile_id == pid), pid
+        with c2:
+            active_others = sorted(
+                (
+                    i
+                    for i in directory_items
+                    if i.status == "active" and i.profile_id != profile.profile_id
                 ),
-                key=f"speakers_merge_target_{profile.profile_id}",
+                key=_surname_sort_key,
             )
-            confirm_merge = f"speakers_confirm_merge_{profile.profile_id}"
-            if st.session_state.get(confirm_merge):
-                st.caption(f"Merge into `{target}`?")
-                m1, m2 = st.columns(2)
-                with m1:
-                    if st.button(
-                        "Confirm merge",
-                        key=f"speakers_merge_yes_{profile.profile_id}",
-                        type="primary",
-                    ):
-                        payload = {
-                            "source_profile_id": profile.profile_id,
-                            "target_profile_id": target,
-                            "expected_source_sha256": sha,
-                        }
-                        try:
-                            result = svc.merge_profiles(
-                                operation_idempotency_key=_idempotency_key(
-                                    f"merge_{profile.profile_id}", payload
-                                ),
-                                source_profile_id=profile.profile_id,
-                                target_profile_id=target,
-                                expected_source_sha256=sha,
-                            )
-                            consume_cache_invalidation_signal(result.cache_signal)
+            if profile.status == "active" and active_others:
+                target = st.selectbox(
+                    "Merge into",
+                    options=[i.profile_id for i in active_others],
+                    format_func=lambda pid: next(
+                        (i.display_name for i in active_others if i.profile_id == pid), pid
+                    ),
+                    key=f"speakers_merge_target_{profile.profile_id}",
+                )
+                confirm_merge = f"speakers_confirm_merge_{profile.profile_id}"
+                if st.session_state.get(confirm_merge):
+                    st.caption(f"Merge into `{target}`?")
+                    m1, m2 = st.columns(2)
+                    with m1:
+                        if st.button(
+                            "Confirm merge",
+                            key=f"speakers_merge_yes_{profile.profile_id}",
+                            type="primary",
+                        ):
+                            payload = {
+                                "source_profile_id": profile.profile_id,
+                                "target_profile_id": target,
+                                "expected_source_sha256": sha,
+                            }
+                            try:
+                                result = svc.merge_profiles(
+                                    operation_idempotency_key=_idempotency_key(
+                                        f"merge_{profile.profile_id}", payload
+                                    ),
+                                    source_profile_id=profile.profile_id,
+                                    target_profile_id=target,
+                                    expected_source_sha256=sha,
+                                )
+                                consume_cache_invalidation_signal(result.cache_signal)
+                                _clear_idempotency(f"merge_{profile.profile_id}")
+                                st.session_state.pop(confirm_merge, None)
+                                st.session_state[_SELECTED_KEY] = target
+                                st.rerun()
+                            except Exception as exc:
+                                st.error(str(exc))
+                    with m2:
+                        if st.button(
+                            "Cancel",
+                            key=f"speakers_merge_no_{profile.profile_id}",
+                        ):
                             _clear_idempotency(f"merge_{profile.profile_id}")
                             st.session_state.pop(confirm_merge, None)
-                            st.session_state[_SELECTED_KEY] = target
-                            st.rerun()
-                        except Exception as exc:
-                            st.error(str(exc))
-                with m2:
-                    if st.button(
-                        "Cancel",
-                        key=f"speakers_merge_no_{profile.profile_id}",
-                    ):
-                        _clear_idempotency(f"merge_{profile.profile_id}")
-                        st.session_state.pop(confirm_merge, None)
-                        st.rerun()
-            elif st.button(
-                "Merge into selected",
-                key=f"speakers_merge_{profile.profile_id}",
-            ):
-                st.session_state[confirm_merge] = True
-                st.rerun()
+                            _rerun_ui()
+                elif st.button(
+                    "Merge into selected",
+                    key=f"speakers_merge_{profile.profile_id}",
+                ):
+                    st.session_state[confirm_merge] = True
+                    _rerun_ui()
 
-    with c3:
-        st.caption(f"profile_id `{profile.profile_id}`")
+        with c3:
+            st.caption(f"profile_id `{profile.profile_id}`")

@@ -290,6 +290,138 @@ def reconcile_custom_modules(
     return tuple(kept), tuple(removed)
 
 
+def is_heavy_module(info: ModuleInfo | None) -> bool:
+    """True when registry marks the module heavy via cost_tier or category."""
+    if info is None:
+        return False
+    return (
+        getattr(info, "cost_tier", "") == "heavy"
+        or getattr(info, "category", "") == "heavy"
+    )
+
+
+def _preset_mode(preset_key: AnalysisPreset) -> str:
+    return "quick" if preset_key == "quick" else "full"
+
+
+def _policy_for_preset(preset_key: AnalysisPreset) -> Any:
+    """Return the configured policy object for quick/balanced/thorough."""
+    config = get_config()
+    ui_presets = getattr(config.analysis, "ui_presets", None)
+    policy = getattr(ui_presets, preset_key, None) if ui_presets is not None else None
+    if policy is not None:
+        return policy
+    # Built-in fallback mirrors AnalysisUiPresetsModel defaults (no models import).
+    from types import SimpleNamespace
+
+    defaults = {
+        "quick": SimpleNamespace(
+            allow_llm=False,
+            llm_module_ids=[],
+            allow_heavy=False,
+            heavy_module_ids=[],
+            include_excluded_from_default=False,
+            module_ids=None,
+        ),
+        "balanced": SimpleNamespace(
+            allow_llm=True,
+            llm_module_ids=["llm_summary"],
+            allow_heavy=True,
+            heavy_module_ids=["semantic_similarity_v2", "fine_grained_emotion"],
+            include_excluded_from_default=False,
+            module_ids=None,
+        ),
+        "thorough": SimpleNamespace(
+            allow_llm=True,
+            llm_module_ids=[],
+            allow_heavy=True,
+            heavy_module_ids=[],
+            include_excluded_from_default=True,
+            module_ids=None,
+        ),
+    }
+    return defaults[preset_key]
+
+
+def _module_passes_policy(mid: str, policy: Any) -> bool:
+    """Apply LLM / heavy / exclude_from_default gates from a preset policy."""
+    info = get_module_info(mid)
+    if info is None:
+        return False
+
+    if getattr(info, "exclude_from_default", False) and not bool(
+        getattr(policy, "include_excluded_from_default", False)
+    ):
+        return False
+
+    requires_llm = bool(getattr(info, "requires_llm", False))
+    heavy = is_heavy_module(info)
+
+    if requires_llm:
+        if not bool(getattr(policy, "allow_llm", False)):
+            return False
+        llm_allow = list(getattr(policy, "llm_module_ids", None) or [])
+        if llm_allow and mid not in llm_allow:
+            return False
+
+    if heavy:
+        if not bool(getattr(policy, "allow_heavy", False)):
+            return False
+        heavy_allow = list(getattr(policy, "heavy_module_ids", None) or [])
+        if heavy_allow and mid not in heavy_allow:
+            return False
+
+    return True
+
+
+def _required_dependencies(mid: str) -> tuple[str, ...]:
+    """Registry-declared hard dependencies (not optional_dependencies)."""
+    info = get_module_info(mid)
+    if info is None:
+        return ()
+    return tuple(str(d) for d in (info.dependencies or ()) if d)
+
+
+def _prune_modules_with_unsatisfied_deps(
+    module_ids: Sequence[str],
+) -> tuple[str, ...]:
+    """
+    Drop modules whose hard deps are not also selected.
+
+    Prevents DAG expansion from pulling heavy/LLM modules that the preset
+    policy intentionally excluded (e.g. Quick selecting voice_charts_core
+    which depends on voice_features).
+    """
+    selected = _dedupe_preserve_order(list(module_ids))
+    changed = True
+    while changed:
+        changed = False
+        selected_set = set(selected)
+        kept: list[str] = []
+        for mid in selected:
+            deps = _required_dependencies(mid)
+            if any(dep not in selected_set for dep in deps):
+                changed = True
+                continue
+            kept.append(mid)
+        selected = kept
+    return tuple(selected)
+
+
+def _modules_from_policy(
+    suitable: Sequence[str],
+    policy: Any,
+) -> tuple[str, ...]:
+    override = getattr(policy, "module_ids", None)
+    if override is not None:
+        kept, _removed = reconcile_custom_modules(list(override), suitable=suitable)
+        # Overrides are explicit picks; still prune so DAG cannot reintroduce
+        # modules the override list did not include.
+        return _prune_modules_with_unsatisfied_deps(kept)
+    selected = tuple(mid for mid in suitable if _module_passes_policy(mid, policy))
+    return _prune_modules_with_unsatisfied_deps(selected)
+
+
 def resolve_analysis_preset(
     preset: AnalysisPreset | str,
     *,
@@ -303,6 +435,10 @@ def resolve_analysis_preset(
     """
     Resolve a UI analysis preset into mode, profile, and module ids.
 
+    Quick / Balanced / Thorough apply ``analysis.ui_presets`` policies (with
+    optional per-preset ``module_ids`` overrides). Custom uses the caller
+    selection (seeded from Balanced when empty).
+
     ``profile`` is always ``\"balanced\"`` for UI presets (including Quick) so
     request construction has no None / ignored special case.
     """
@@ -310,64 +446,30 @@ def resolve_analysis_preset(
         preset = "balanced"
     preset_key: AnalysisPreset = preset  # type: ignore[assignment]
 
-    if preset_key == "quick":
-        modules = _suitable_module_ids(
-            transcript_targets,
-            target=target,
-            include_heavy=False,
-            include_excluded_from_default=False,
-            audio_resolver=audio_resolver,
-            dep_resolver=dep_resolver,
-            include_legacy=include_legacy,
-        )
-        return ResolvedAnalysisPreset(
-            preset="quick",
-            mode="quick",
-            profile=_UI_DEFAULT_PROFILE,
-            module_ids=modules,
-        )
-
-    if preset_key == "thorough":
-        modules = _suitable_module_ids(
-            transcript_targets,
-            target=target,
-            include_heavy=True,
-            include_excluded_from_default=True,
-            audio_resolver=audio_resolver,
-            dep_resolver=dep_resolver,
-            include_legacy=include_legacy,
-        )
-        return ResolvedAnalysisPreset(
-            preset="thorough",
-            mode="full",
-            profile=_UI_DEFAULT_PROFILE,
-            module_ids=modules,
-        )
+    suitable = _suitable_module_ids(
+        transcript_targets,
+        target=target,
+        include_heavy=True,
+        include_excluded_from_default=True,
+        audio_resolver=audio_resolver,
+        dep_resolver=dep_resolver,
+        include_legacy=include_legacy,
+    )
 
     if preset_key == "custom":
-        suitable = _suitable_module_ids(
-            transcript_targets,
-            target=target,
-            include_heavy=True,
-            include_excluded_from_default=True,
-            audio_resolver=audio_resolver,
-            dep_resolver=dep_resolver,
-            include_legacy=include_legacy,
-        )
         kept, _removed = reconcile_custom_modules(
             list(custom_modules or ()), suitable=suitable
         )
         if not kept:
             # Seed Custom from Balanced when empty.
-            kept = _suitable_module_ids(
-                transcript_targets,
+            kept = resolve_analysis_preset(
+                "balanced",
                 target=target,
-                include_heavy=True,
-                include_excluded_from_default=False,
+                transcript_targets=transcript_targets,
                 audio_resolver=audio_resolver,
                 dep_resolver=dep_resolver,
                 include_legacy=include_legacy,
-            )
+            ).module_ids
         return ResolvedAnalysisPreset(
             preset="custom",
             mode="full",
@@ -375,19 +477,12 @@ def resolve_analysis_preset(
             module_ids=kept,
         )
 
-    # balanced (default)
-    modules = _suitable_module_ids(
-        transcript_targets,
-        target=target,
-        include_heavy=True,
-        include_excluded_from_default=False,
-        audio_resolver=audio_resolver,
-        dep_resolver=dep_resolver,
-        include_legacy=include_legacy,
-    )
+    policy = _policy_for_preset(preset_key)
+    modules = _modules_from_policy(suitable, policy)
+
     return ResolvedAnalysisPreset(
-        preset="balanced",
-        mode="full",
+        preset=preset_key,
+        mode=_preset_mode(preset_key),
         profile=_UI_DEFAULT_PROFILE,
         module_ids=modules,
     )
@@ -402,7 +497,7 @@ def _count_llm_and_heavy(module_ids: Sequence[str]) -> tuple[int, int]:
             continue
         if getattr(info, "requires_llm", False):
             llm += 1
-        if getattr(info, "cost_tier", "") == "heavy":
+        if is_heavy_module(info):
             heavy += 1
     return llm, heavy
 

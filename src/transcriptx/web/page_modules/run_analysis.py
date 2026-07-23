@@ -298,7 +298,12 @@ def _run_analysis_config_and_launch_fragment(
     plan = apply_custom_qa_to_plan(
         resolved, custom_qa_execution=custom_qa_execution
     )
-    render_effective_module_summary(plan, preset=resolved.preset)
+    render_effective_module_summary(
+        plan,
+        preset=resolved.preset,
+        key_prefix="run_analysis",
+        qa_key_prefix="run_analysis_qa",
+    )
     selected_modules = list(plan.module_ids)
 
     from transcriptx.core.analysis.llm_custom_qa.questions_binding import (

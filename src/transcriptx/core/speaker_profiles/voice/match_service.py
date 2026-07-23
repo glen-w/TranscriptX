@@ -39,7 +39,12 @@ from transcriptx.core.speaker_profiles.voice.matching import (
     reference_corpus_digest,
     suggestion_digest,
 )
-from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1, VoiceMatchDecisionV1
+from transcriptx.core.speaker_profiles.voice.models import VoiceMatchDecisionV1
+from transcriptx.core.speaker_profiles.voice.ref_index import (
+    VoiceRefIndexStore,
+    list_eligible_embedding_ids,
+    load_or_rebuild_refs,
+)
 from transcriptx.core.speaker_profiles.voice.runtime import (
     MODEL_ID,
     MODEL_REVISION_PIN,
@@ -47,7 +52,6 @@ from transcriptx.core.speaker_profiles.voice.runtime import (
     SpeakerEmbeddingRuntime,
 )
 from transcriptx.core.speaker_profiles.voice.thresholds import PROVISIONAL_THRESHOLDS
-from transcriptx.core.speaker_profiles.voice.vectors import load_vector_npy
 from transcriptx.core.speaker_profiles.voice.versioning import (
     PREPROCESSING_POLICY_ID,
     QUALITY_POLICY_ID,
@@ -55,9 +59,6 @@ from transcriptx.core.speaker_profiles.voice.versioning import (
 from transcriptx.core.utils.file_lock import FileLock
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.io.speaker_map_resolver import normalize_diarized_id
-
-# Cap duplicate evidence per occurrence / transcript in the reference set.
-MAX_REFS_PER_SOURCE_LINK = 5
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,7 @@ class AnalyseResult:
     expected_link_id: str | None = None
     expected_owner_profile_id: str | None = None
     expected_fingerprint: str | None = None
+    query_cache_key: str | None = None
 
 
 class SpeakerMatchService:
@@ -111,6 +113,7 @@ class SpeakerMatchService:
         self.suggestion_cache = VoiceSuggestionCache(self.root)
         self.excerpts = VoiceExcerptStore(self.root)
         self.runtime = runtime or SpeakerEmbeddingRuntime()
+        self.ref_index = VoiceRefIndexStore(self.root)
 
     def _lock(self) -> FileLock:
         return speaker_profiles_project_lock(self.state_dir)
@@ -118,43 +121,18 @@ class SpeakerMatchService:
     def _load_eligible_refs(
         self, model_generation_id: str
     ) -> tuple[dict[str, list[np.ndarray]], list[str]]:
-        emb_dir = self.root / "voice" / "embeddings"
-        refs: dict[str, list[np.ndarray]] = {}
-        ids: list[str] = []
-        per_link_counts: dict[str, int] = {}
-        if not emb_dir.is_dir():
-            return refs, ids
-        for path in sorted(emb_dir.glob("*.voice_embedding.json")):
-            try:
-                emb = VoiceEmbeddingV1.model_validate_json(
-                    path.read_text(encoding="utf-8")
-                )
-            except Exception:
-                continue
-            if emb.model_generation_id != model_generation_id:
-                continue
-            if emb.eligibility_state != "eligible":
-                continue
-            if emb.trust_level not in ("manual", "promoted"):
-                continue
-            link_cap_key = emb.source_link_id or emb.source_link_fingerprint
-            used = per_link_counts.get(link_cap_key, 0)
-            if used >= MAX_REFS_PER_SOURCE_LINK:
-                continue
-            profile = read_profile(emb.profile_id, root=self.root)
-            if profile is None or profile.status != "active":
-                continue
-            vec_path = self.root / "voice" / "vectors" / f"{emb.embedding_id}.npy"
-            if not vec_path.is_file():
-                continue
-            try:
-                vec = load_vector_npy(vec_path, expected_sha256=emb.vector_sha256)
-            except Exception:
-                continue
-            refs.setdefault(emb.profile_id, []).append(vec)
-            ids.append(emb.embedding_id)
-            per_link_counts[link_cap_key] = used + 1
-        return refs, ids
+        """Load eligible refs via Stage 9 file index when digest-fresh, else scan."""
+        emb_ids_meta = list_eligible_embedding_ids(
+            self.root, model_generation_id=model_generation_id
+        )
+        corpus = reference_corpus_digest(emb_ids_meta)
+        refs, emb_ids, _source = load_or_rebuild_refs(
+            self.root,
+            model_generation_id=model_generation_id,
+            corpus_digest=corpus,
+            store=self.ref_index,
+        )
+        return refs, emb_ids
 
     def _load_decisions_for_occurrence(
         self, *, managed_transcript_id: str, local_speaker_key: str
@@ -196,7 +174,9 @@ class SpeakerMatchService:
                 model_generation_id = pin.model_generation_id
             else:
                 model_generation_id = active.model_generation_id
-            _, emb_ids = self._load_eligible_refs(model_generation_id)
+            emb_ids = list_eligible_embedding_ids(
+                self.root, model_generation_id=model_generation_id
+            )
             corpus = reference_corpus_digest(emb_ids)
             key = link_file_key(managed_transcript_id, local_speaker_key)
             link = read_live_link(key, root=self.root)
@@ -389,6 +369,7 @@ class SpeakerMatchService:
                     expected_link_id=live_link_id,
                     expected_owner_profile_id=live_profile_id,
                     expected_fingerprint=live_fp,
+                    query_cache_key=cached_sug.get("query_cache_key") or qkey,
                 )
 
             self.query_cache.write(
@@ -396,6 +377,8 @@ class SpeakerMatchService:
                 meta={
                     "occurrence_fingerprint": snap.occurrence_fingerprint,
                     "model_generation_id": snap.model_generation_id,
+                    "model_id": MODEL_ID,
+                    "model_revision": MODEL_REVISION_PIN,
                     "created_at": utc_now_iso(),
                     "ranges_us": ranges,
                     "audio_stat_fingerprint": audio.audio_stat_fingerprint,
@@ -457,6 +440,7 @@ class SpeakerMatchService:
                 "threshold_policy_id": PROVISIONAL_THRESHOLDS.policy_id,
                 "candidates_ui": kept,
                 "one_excerpt_fallback": selection.one_excerpt_fallback,
+                "query_cache_key": qkey,
                 "created_at": utc_now_iso(),
             }
             self.suggestion_cache.write(skey, payload)
@@ -475,4 +459,5 @@ class SpeakerMatchService:
                 expected_link_id=live_link_id,
                 expected_owner_profile_id=live_profile_id,
                 expected_fingerprint=live_fp,
+                query_cache_key=qkey,
             )

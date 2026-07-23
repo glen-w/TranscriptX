@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from transcriptx.core.speaker_profiles.path_safety import (
@@ -24,8 +25,31 @@ from transcriptx.io.atomic_json import strict_json_dumps, write_bytes_atomic
 # Bump when user-facing privacy notice text changes → require re-consent.
 PRIVACY_NOTICE_VERSION = "voice_privacy_notice.v1"
 
+# Local/dev only: when privacy.voice_settings.json is absent, treat voice as
+# enabled. Never overrides an existing settings file (sole authority).
+_VOICE_PRIVACY_DEFAULT_ENABLED_ENV = "TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED"
+_DEFAULT_ENABLED_CONSENT_AT = "1970-01-01T00:00:00Z"
+_DEFAULT_ENABLED_CONSENT_ACTOR = "env:TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED"
+
+
+def _env_default_enabled() -> bool:
+    raw = os.environ.get(_VOICE_PRIVACY_DEFAULT_ENABLED_ENV, "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
 
 def default_privacy_settings() -> VoicePrivacySettingsV1:
+    """Return settings used when ``privacy.voice_settings.json`` is missing.
+
+    Production fail-closed: disabled unless
+    ``TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED`` is set (local/dev override).
+    """
+    if _env_default_enabled():
+        return VoicePrivacySettingsV1(
+            enabled=True,
+            consent_at=_DEFAULT_ENABLED_CONSENT_AT,
+            consent_actor=_DEFAULT_ENABLED_CONSENT_ACTOR,
+            privacy_notice_version=PRIVACY_NOTICE_VERSION,
+        )
     return VoicePrivacySettingsV1(
         enabled=False,
         privacy_notice_version=PRIVACY_NOTICE_VERSION,

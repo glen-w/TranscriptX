@@ -222,6 +222,88 @@ def test_shell_defines_keyed_run_analysis_footer_css() -> None:
 
 
 @pytest.mark.unit
+def test_shell_defines_review_module_remove_hover_css() -> None:
+    import transcriptx.web.shell as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_review_rm_" in source
+    assert "opacity: 0" in source
+
+
+@pytest.mark.unit
+def test_review_module_removal_queues_custom_remainder() -> None:
+    from transcriptx.web.components.analysis_preset_controls import (
+        apply_pending_review_module_removal,
+        apply_review_module_removal,
+    )
+
+    ss: dict = {"run_analysis_preset": "Balanced"}
+    ok = apply_review_module_removal(
+        ss,
+        key_prefix="run_analysis",
+        qa_key_prefix="run_analysis_qa",
+        module_ids=["stats", "sentiment", "ner"],
+        remove_id="sentiment",
+    )
+    assert ok is True
+    assert ss["run_analysis_review_modules_keep_open"] is True
+    assert "run_analysis_pending_review_removal" in ss
+    # Widgets must not be mutated until apply_pending (next run, before widgets).
+    assert ss["run_analysis_preset"] == "Balanced"
+
+    apply_pending_review_module_removal(ss, key_prefix="run_analysis")
+    assert ss["run_analysis_preset"] == "Custom"
+    assert ss["run_analysis_custom_modules"] == ["stats", "ner"]
+    assert "run_analysis_custom_modules_widget" not in ss
+    assert "run_analysis_pending_review_removal" not in ss
+
+
+@pytest.mark.unit
+def test_review_module_removal_clears_custom_qa_picker() -> None:
+    from transcriptx.web.components.analysis_preset_controls import (
+        apply_pending_review_module_removal,
+        apply_review_module_removal,
+    )
+
+    ss: dict = {
+        "run_analysis_qa_adhoc_rows": [{"id": "1", "text": "Why?"}],
+        "run_analysis_qa_saved": ["Why? [G]"],
+    }
+    ok = apply_review_module_removal(
+        ss,
+        key_prefix="run_analysis",
+        qa_key_prefix="run_analysis_qa",
+        module_ids=["stats", "llm_custom_qa"],
+        remove_id="llm_custom_qa",
+    )
+    assert ok is True
+    apply_pending_review_module_removal(ss, key_prefix="run_analysis")
+    assert ss["run_analysis_custom_modules"] == ["stats"]
+    assert ss["run_analysis_qa_adhoc_rows"] == []
+    assert ss["run_analysis_qa_saved"] == []
+
+
+@pytest.mark.unit
+def test_review_module_removal_refuses_empty_plan() -> None:
+    from transcriptx.web.components.analysis_preset_controls import (
+        apply_review_module_removal,
+    )
+
+    ss: dict = {}
+    assert (
+        apply_review_module_removal(
+            ss,
+            key_prefix="run_analysis",
+            qa_key_prefix=None,
+            module_ids=["stats"],
+            remove_id="stats",
+        )
+        is False
+    )
+    assert "run_analysis_pending_review_removal" not in ss
+
+
+@pytest.mark.unit
 def test_compact_llm_degrades_without_ollama(monkeypatch) -> None:
     import transcriptx.web.components.llm_model_selector as mod
 

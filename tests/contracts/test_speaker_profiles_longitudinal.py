@@ -492,8 +492,12 @@ def test_speakers_page_has_trends_not_gallery() -> None:
         / "speakers.py"
     )
     src = path.read_text(encoding="utf-8")
-    assert "#### Trends" in src
-    assert "Conversation partners" in src
+    assert 'st.expander("Trends"' in src
+    assert 'st.expander("Conversation partners"' in src
+    assert "@st.fragment" in src
+    assert "def _render_detail_charts" in src
+    assert "_speakers_browser_fragment" in src
+    assert "scope=\"fragment\"" in src or "scope='fragment'" in src
     assert "build_profile_analytics_pack" in src
     assert "chart_definitions" not in src
     assert "_evidence_caption" in src

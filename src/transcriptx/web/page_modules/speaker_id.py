@@ -192,6 +192,29 @@ def _group_by_diarized_id(
     return {k: groups[k] for k in seen_order}
 
 
+def _voice_analyse_segment_dicts(segments: List[SegmentInfo]) -> list[dict]:
+    """Build segment dicts for voice analyse using diarized IDs.
+
+    ``SegmentInfo.speaker`` may already be a remapped display name; voice
+    excerpt selection keys on the diarized ID, so always prefer
+    ``speaker_diarized_id``. Pass the full transcript (all speakers) so overlap
+    filtering against other speakers can run.
+    """
+    out: list[dict] = []
+    for s in segments:
+        did = s.speaker_diarized_id or s.speaker
+        out.append(
+            {
+                "speaker": did,
+                "speaker_diarized_id": did,
+                "start": s.start,
+                "end": s.end,
+                "text": s.text or "",
+            }
+        )
+    return out
+
+
 def _latest_run_summary_for_transcript(transcript_path: Path) -> RunSummary | None:
     """Build a RunSummary for the newest run linked to this transcript, if any."""
     resolution = resolve_transcript_context(
@@ -460,28 +483,85 @@ def render_speaker_id_page() -> None:
                 facade = SpeakerIdVoiceFacade()
                 resolved = _profile_resolver.resolve_path(transcript_path)
                 lsk = normalize_diarized_id(active_id)
-                analyse_key = voice_session_key(
-                    resolved.managed_transcript_id, lsk, "analyse"
-                )
                 result_key = voice_session_key(
                     resolved.managed_transcript_id, lsk, "result"
                 )
-                if st.button("Analyse voice", key=f"sid_voice_analyse_{active_id}"):
+                # Full transcript with diarized IDs — remapped display names in
+                # SegmentInfo.speaker must not starve excerpt selection.
+                voice_seg_dicts = _voice_analyse_segment_dicts(segments)
+                btn_one, btn_all = st.columns(2)
+                if btn_one.button(
+                    "Analyse voice",
+                    key=f"sid_voice_analyse_{active_id}",
+                    help="Embed this speaker and rank local profile suggestions.",
+                ):
                     with st.spinner("Analysing voice…"):
-                        seg_dicts = [
-                            {
-                                "speaker": s.speaker,
-                                "start": s.start,
-                                "end": s.end,
-                                "text": getattr(s, "text", "") or "",
-                            }
-                            for s in active_segs
-                        ]
                         st.session_state[result_key] = facade.analyse(
                             transcript_path=Path(transcript_path),
                             raw_speaker=active_id,
-                            segments=seg_dicts,
+                            segments=voice_seg_dicts,
                         )
+                if btn_all.button(
+                    "Analyse all speakers",
+                    key="sid_voice_analyse_all",
+                    help=(
+                        "Run voice matching for every non-ignored speaker so "
+                        "suggestions are ready as you step through the list."
+                    ),
+                ):
+                    targets = [
+                        sid
+                        for sid in speaker_ids
+                        if not _is_speaker_ignored(ignored, sid)
+                    ]
+                    suggestions = 0
+                    no_match = 0
+                    other = 0
+                    with st.spinner(
+                        f"Analysing voice for {len(targets)} speakers…"
+                    ):
+                        from transcriptx.core.speaker_profiles.voice.match_service import (
+                            AnalyseResult as _AnalyseResult,
+                        )
+
+                        for sid in targets:
+                            sid_key = normalize_diarized_id(sid)
+                            sid_result_key = voice_session_key(
+                                resolved.managed_transcript_id, sid_key, "result"
+                            )
+                            try:
+                                ar = facade.analyse(
+                                    transcript_path=Path(transcript_path),
+                                    raw_speaker=sid,
+                                    segments=voice_seg_dicts,
+                                )
+                            except Exception as exc:
+                                ar = _AnalyseResult(
+                                    outcome="AnalyseFailed",
+                                    match=None,
+                                    suggestion_id=None,
+                                    suggestion_digest=None,
+                                    detail=str(exc),
+                                )
+                            st.session_state[sid_result_key] = ar
+                            if ar.outcome == "SuggestionAvailable":
+                                suggestions += 1
+                            elif ar.outcome == "NoReliableMatch":
+                                no_match += 1
+                            else:
+                                other += 1
+                    st.session_state["sid_voice_analyse_all_summary"] = (
+                        f"Analysed {len(targets)} speakers: "
+                        f"{suggestions} suggestion(s), "
+                        f"{no_match} no match, "
+                        f"{other} other."
+                    )
+                    st.rerun()
+                batch_summary = st.session_state.pop(
+                    "sid_voice_analyse_all_summary", None
+                )
+                if batch_summary:
+                    st.info(batch_summary)
                 result = st.session_state.get(result_key)
                 if result is not None:
                     if result.outcome == "SuggestionAvailable" and result.candidates_ui:
@@ -560,6 +640,7 @@ def render_speaker_id_page() -> None:
                                         ),
                                         expected_audio_stat_fingerprint=result.audio_stat_fingerprint,
                                         expected_audio_content_sha256=result.audio_content_sha256,
+                                        query_cache_key=result.query_cache_key,
                                     )
                                     consume_cache_invalidation_signal(ar.cache_signal)
                                     st.session_state.pop(result_key, None)
@@ -612,6 +693,13 @@ def render_speaker_id_page() -> None:
                                 st.rerun()
                     elif result.outcome == "NoReliableMatch":
                         st.info("No reliable voice match.")
+                    elif result.outcome == "insufficient_speech":
+                        st.warning(
+                            "Voice analyse: insufficient speech — need at least "
+                            "8 seconds of speech attributed to this speaker."
+                        )
+                        if result.detail:
+                            st.caption(result.detail)
                     else:
                         st.warning(f"Voice analyse: {result.outcome}")
                         if result.detail:

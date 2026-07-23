@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -20,7 +21,7 @@ from transcriptx.core.speaker_profiles.errors import (
     StaleConfirmationError,
     StaleUpdateError,
 )
-from transcriptx.core.speaker_profiles.hashing import sha256_file
+from transcriptx.core.speaker_profiles.hashing import sha256_bytes, sha256_file
 from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.layout import (
     avatar_path,
@@ -92,6 +93,33 @@ class MutationResult:
     link_id: str | None = None
     event_ids: tuple[str, ...] = ()
     noop: bool = False
+
+
+@dataclass(frozen=True)
+class LinkMutationContext:
+    """Known link identity after planning, before the journal commit."""
+
+    profile_id: str
+    link_id: str
+    link_file_key: str
+    occurrence_fingerprint: str
+    managed_transcript_id: str
+    local_speaker_key: str
+    link_content_sha256: str
+
+
+ExtraWritesBuilder = Callable[[LinkMutationContext], Sequence[PlannedWrite]]
+
+
+def _combine_extra_writes(
+    base: list[PlannedWrite] | None,
+    builder: ExtraWritesBuilder | None,
+    ctx: LinkMutationContext,
+) -> list[PlannedWrite]:
+    writes = list(base or [])
+    if builder is not None:
+        writes.extend(builder(ctx))
+    return writes
 
 
 @dataclass(frozen=True)
@@ -256,6 +284,7 @@ class SpeakerProfileService:
         created_by: str = "user",
         provenance: LinkProvenanceV1 | None = None,
         extra_writes: list[PlannedWrite] | None = None,
+        extra_writes_builder: ExtraWritesBuilder | None = None,
         extra_scopes: list[str] | None = None,
         extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
@@ -328,6 +357,7 @@ class SpeakerProfileService:
                 created_by=created_by,
                 provenance=link_provenance.to_storage_dict(),
             )
+            link_data = dumps_model(link)
             event = SpeakerProfileEventV1(
                 event_id=event_id,
                 idempotency_id=event_id,
@@ -342,6 +372,19 @@ class SpeakerProfileService:
                     "local_speaker_key": local_speaker_key,
                     "created_profile": True,
                 },
+            )
+            extras = _combine_extra_writes(
+                extra_writes,
+                extra_writes_builder,
+                LinkMutationContext(
+                    profile_id=profile_id,
+                    link_id=link_id,
+                    link_file_key=key,
+                    occurrence_fingerprint=occ.occurrence_fingerprint,
+                    managed_transcript_id=resolved.managed_transcript_id,
+                    local_speaker_key=local_speaker_key,
+                    link_content_sha256=sha256_bytes(link_data),
+                ),
             )
 
             scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
@@ -367,13 +410,13 @@ class SpeakerProfileService:
                     ),
                     PlannedWrite(
                         relpath=relative_link_path(key),
-                        data=dumps_model(link),
+                        data=link_data,
                     ),
                     PlannedWrite(
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
-                    *(extra_writes or []),
+                    *extras,
                 ],
                 deletes=[],
                 receipt_extra=receipt,
@@ -496,6 +539,7 @@ class SpeakerProfileService:
         actor: str = "user",
         provenance: LinkProvenanceV1 | None = None,
         extra_writes: list[PlannedWrite] | None = None,
+        extra_writes_builder: ExtraWritesBuilder | None = None,
         extra_scopes: list[str] | None = None,
         extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
@@ -551,6 +595,7 @@ class SpeakerProfileService:
                 created_by=actor,
                 provenance=link_provenance.to_storage_dict(),
             )
+            link_data = dumps_model(link)
             event = SpeakerProfileEventV1(
                 event_id=event_id,
                 idempotency_id=event_id,
@@ -565,6 +610,19 @@ class SpeakerProfileService:
                     "local_speaker_key": local_speaker_key,
                     "created_profile": False,
                 },
+            )
+            extras = _combine_extra_writes(
+                extra_writes,
+                extra_writes_builder,
+                LinkMutationContext(
+                    profile_id=profile_id,
+                    link_id=link_id,
+                    link_file_key=key,
+                    occurrence_fingerprint=occ.occurrence_fingerprint,
+                    managed_transcript_id=resolved.managed_transcript_id,
+                    local_speaker_key=local_speaker_key,
+                    link_content_sha256=sha256_bytes(link_data),
+                ),
             )
             scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
             receipt = {
@@ -585,13 +643,13 @@ class SpeakerProfileService:
                 writes=[
                     PlannedWrite(
                         relpath=relative_link_path(key),
-                        data=dumps_model(link),
+                        data=link_data,
                     ),
                     PlannedWrite(
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
-                    *(extra_writes or []),
+                    *extras,
                 ],
                 deletes=[],
                 receipt_extra=receipt,
@@ -622,6 +680,7 @@ class SpeakerProfileService:
         actor: str = "user",
         provenance: LinkProvenanceV1 | None = None,
         extra_writes: list[PlannedWrite] | None = None,
+        extra_writes_builder: ExtraWritesBuilder | None = None,
         extra_scopes: list[str] | None = None,
         extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
@@ -704,6 +763,7 @@ class SpeakerProfileService:
                 created_by=actor,
                 provenance=link_provenance.to_storage_dict(),
             )
+            link_data = dumps_model(link)
             event = SpeakerProfileEventV1(
                 event_id=event_id,
                 idempotency_id=event_id,
@@ -722,6 +782,19 @@ class SpeakerProfileService:
             )
 
             before = sha256_file(link_path(key, root=self.root))
+            extras = _combine_extra_writes(
+                extra_writes,
+                extra_writes_builder,
+                LinkMutationContext(
+                    profile_id=profile_id,
+                    link_id=link_id,
+                    link_file_key=key,
+                    occurrence_fingerprint=occ.occurrence_fingerprint,
+                    managed_transcript_id=resolved.managed_transcript_id,
+                    local_speaker_key=local_speaker_key,
+                    link_content_sha256=sha256_bytes(link_data),
+                ),
+            )
             scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
             profile_ids = list(
                 dict.fromkeys([previous_profile_id, profile_id])
@@ -744,14 +817,14 @@ class SpeakerProfileService:
                 writes=[
                     PlannedWrite(
                         relpath=relative_link_path(key),
-                        data=dumps_model(link),
+                        data=link_data,
                         expected_before_sha256=before,
                     ),
                     PlannedWrite(
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
-                    *(extra_writes or []),
+                    *extras,
                 ],
                 deletes=[],
                 receipt_extra=receipt,
@@ -1264,6 +1337,18 @@ class SpeakerProfileService:
         with self._project_lock():
             replay = self.engine.find_complete(operation_idempotency_key)
             if replay is not None:
+                from transcriptx.core.speaker_profiles.voice.merge_transfer import (
+                    apply_chunked_voice_transfer,
+                )
+
+                # Resume voice chunks if merge receipt landed before transfer finished.
+                apply_chunked_voice_transfer(
+                    root=self.root,
+                    engine=self.engine,
+                    operation_idempotency_key=operation_idempotency_key,
+                    source_profile_id=source_profile_id,
+                    target_profile_id=target_profile_id,
+                )
                 return self._result_from_receipt(replay)
             if source_profile_id == target_profile_id:
                 raise SpeakerProfileContractError("cannot merge a profile into itself")
@@ -1437,18 +1522,6 @@ class SpeakerProfileService:
                     )
                 )
 
-            from transcriptx.core.speaker_profiles.voice.merge_transfer import (
-                plan_voice_transfer_on_merge,
-            )
-
-            voice_writes, voice_deletes = plan_voice_transfer_on_merge(
-                root=self.root,
-                source_profile_id=source_profile_id,
-                target_profile_id=target_profile_id,
-            )
-            writes.extend(voice_writes)
-            deletes.extend(voice_deletes)
-
             link_ids = [lnk.link_id for lnk in links]
             managed_ids = list(
                 dict.fromkeys(lnk.managed_transcript_id for lnk in links)
@@ -1469,6 +1542,23 @@ class SpeakerProfileService:
                     "scopes": scopes,
                 },
             )
+
+            from transcriptx.core.speaker_profiles.voice.merge_transfer import (
+                apply_chunked_voice_transfer,
+            )
+
+            voice_receipt = apply_chunked_voice_transfer(
+                root=self.root,
+                engine=self.engine,
+                operation_idempotency_key=operation_idempotency_key,
+                source_profile_id=source_profile_id,
+                target_profile_id=target_profile_id,
+            )
+            # Attach chunk summary onto the in-memory receipt for callers.
+            outcome.receipt["voice_chunks_total"] = voice_receipt.chunks_total
+            outcome.receipt["voice_chunks_complete"] = voice_receipt.chunks_complete
+            outcome.receipt["voice_write_count"] = voice_receipt.write_count
+
             try:
                 from transcriptx.core.speaker_profiles.voice.caches import (
                     VoiceSuggestionCache,
@@ -1501,6 +1591,7 @@ class SpeakerProfileService:
         actor: str = "user",
         provenance: LinkProvenanceV1 | None = None,
         extra_writes: list[PlannedWrite] | None = None,
+        extra_writes_builder: ExtraWritesBuilder | None = None,
         extra_scopes: list[str] | None = None,
         extra_receipt: dict[str, Any] | None = None,
     ) -> MutationResult:
@@ -1538,7 +1629,7 @@ class SpeakerProfileService:
             )
 
             if occ.occurrence_fingerprint == existing.occurrence_fingerprint:
-                if not extra_writes:
+                if not extra_writes and extra_writes_builder is None:
                     return _noop_result(
                         "supersede_link_fingerprint",
                         operation_idempotency_key,
@@ -1551,7 +1642,44 @@ class SpeakerProfileService:
                     )
                 # Fingerprint already current, but co-journal extras (voice accept).
                 now = utc_now_iso()
-                writes = list(extra_writes)
+                link_data: bytes | None = None
+                link_sha = sha256_file(link_path(key, root=self.root)) or ""
+                writes: list[PlannedWrite] = []
+                if provenance is not None:
+                    link_provenance = coerce_link_provenance(
+                        provenance, default_method="supersede"
+                    )
+                    updated = existing.model_copy(
+                        update={
+                            "provenance": link_provenance.to_storage_dict(),
+                            "updated_at": now,
+                        }
+                    )
+                    link_data = dumps_model(updated)
+                    link_sha = sha256_bytes(link_data)
+                    before = sha256_file(link_path(key, root=self.root))
+                    writes.append(
+                        PlannedWrite(
+                            relpath=relative_link_path(key),
+                            data=link_data,
+                            expected_before_sha256=before,
+                        )
+                    )
+                writes.extend(
+                    _combine_extra_writes(
+                        extra_writes,
+                        extra_writes_builder,
+                        LinkMutationContext(
+                            profile_id=existing.profile_id,
+                            link_id=existing.link_id,
+                            link_file_key=key,
+                            occurrence_fingerprint=existing.occurrence_fingerprint,
+                            managed_transcript_id=existing.managed_transcript_id,
+                            local_speaker_key=local_speaker_key,
+                            link_content_sha256=link_sha,
+                        ),
+                    )
+                )
                 scopes = ["speaker_profiles", "speaker_links"] + list(
                     extra_scopes or []
                 )
@@ -1566,25 +1694,6 @@ class SpeakerProfileService:
                     "scopes": scopes,
                     "noop_fingerprint": True,
                 }
-                if provenance is not None:
-                    link_provenance = coerce_link_provenance(
-                        provenance, default_method="supersede"
-                    )
-                    updated = existing.model_copy(
-                        update={
-                            "provenance": link_provenance.to_storage_dict(),
-                            "updated_at": now,
-                        }
-                    )
-                    before = sha256_file(link_path(key, root=self.root))
-                    writes.insert(
-                        0,
-                        PlannedWrite(
-                            relpath=relative_link_path(key),
-                            data=dumps_model(updated),
-                            expected_before_sha256=before,
-                        ),
-                    )
                 if extra_receipt:
                     receipt.update(extra_receipt)
                 outcome = self.engine.run(
@@ -1618,6 +1727,7 @@ class SpeakerProfileService:
                 )
                 update_fields["provenance"] = link_provenance.to_storage_dict()
             updated = existing.model_copy(update=update_fields)
+            link_data = dumps_model(updated)
             event_id = str(uuid4())
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -1633,6 +1743,19 @@ class SpeakerProfileService:
                 },
             )
             before = sha256_file(link_path(key, root=self.root))
+            extras = _combine_extra_writes(
+                extra_writes,
+                extra_writes_builder,
+                LinkMutationContext(
+                    profile_id=existing.profile_id,
+                    link_id=existing.link_id,
+                    link_file_key=key,
+                    occurrence_fingerprint=occ.occurrence_fingerprint,
+                    managed_transcript_id=existing.managed_transcript_id,
+                    local_speaker_key=local_speaker_key,
+                    link_content_sha256=sha256_bytes(link_data),
+                ),
+            )
             scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
             receipt = {
                 "profile_id": existing.profile_id,
@@ -1652,14 +1775,14 @@ class SpeakerProfileService:
                 writes=[
                     PlannedWrite(
                         relpath=relative_link_path(key),
-                        data=dumps_model(updated),
+                        data=link_data,
                         expected_before_sha256=before,
                     ),
                     PlannedWrite(
                         relpath=relative_event_path(event_id),
                         data=dumps_model(event),
                     ),
-                    *(extra_writes or []),
+                    *extras,
                 ],
                 deletes=[],
                 receipt_extra=receipt,

@@ -31,6 +31,8 @@ class VoicePrivacySettingsV1(BaseModel):
     """Sole activation and consent authority for local voice matching.
 
     No parallel config.json / env enable flag may disagree with this file.
+    ``TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED`` only seeds the missing-file
+    default; it never overrides an on-disk settings document.
     """
 
     model_config = ConfigDict(extra="forbid")

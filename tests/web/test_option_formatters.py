@@ -64,6 +64,14 @@ def test_format_module_option_uses_default_label_builder_when_not_provided(
     assert formatted == "Foundations · Label:stats"
 
 
+def test_build_module_label_marks_category_heavy() -> None:
+    from transcriptx.web.module_registry import build_module_label
+
+    # topic_modeling is category=heavy with cost_tier=normal
+    label = build_module_label("topic_modeling")
+    assert "heavy" in label
+
+
 def test_format_transcript_option_partial_missing_counts_defaults_to_zero() -> None:
     summary = SimpleNamespace(
         base_name="daily_sync",

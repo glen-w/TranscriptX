@@ -150,7 +150,12 @@ def render_batch_analysis_panel() -> None:
     plan = apply_custom_qa_to_plan(
         resolved, custom_qa_execution=custom_qa_execution
     )
-    render_effective_module_summary(plan, preset=resolved.preset)
+    render_effective_module_summary(
+        plan,
+        preset=resolved.preset,
+        key_prefix="batch",
+        qa_key_prefix="batch_qa",
+    )
     selected_modules = list(plan.module_ids)
 
     from transcriptx.core.analysis.llm_custom_qa.questions_binding import (

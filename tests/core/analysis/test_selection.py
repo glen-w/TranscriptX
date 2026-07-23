@@ -146,6 +146,154 @@ class TestResolveAnalysisPreset:
         assert thorough.profile == "balanced"
         assert set(balanced.module_ids).issubset(set(thorough.module_ids))
 
+    def test_quick_excludes_llm_and_heavy(self) -> None:
+        from transcriptx.core.analysis.selection import (
+            is_heavy_module,
+            resolve_analysis_preset,
+        )
+        from transcriptx.core.pipeline.module_registry import get_module_info
+
+        quick = resolve_analysis_preset("quick")
+        for mid in quick.module_ids:
+            info = get_module_info(mid)
+            assert info is not None
+            assert not info.requires_llm
+            assert not is_heavy_module(info)
+
+    def test_balanced_llm_and_heavy_allowlists(self) -> None:
+        from transcriptx.core.analysis.selection import (
+            is_heavy_module,
+            resolve_analysis_preset,
+        )
+        from transcriptx.core.pipeline.module_registry import get_module_info
+
+        balanced = resolve_analysis_preset("balanced")
+        llm = {
+            mid
+            for mid in balanced.module_ids
+            if get_module_info(mid) and get_module_info(mid).requires_llm
+        }
+        heavy = {
+            mid for mid in balanced.module_ids if is_heavy_module(get_module_info(mid))
+        }
+        assert llm <= {"llm_summary"}
+        assert heavy <= {"semantic_similarity_v2", "fine_grained_emotion"}
+        assert "llm_summary" in balanced.module_ids
+        assert "semantic_similarity_v2" in balanced.module_ids
+        assert "fine_grained_emotion" in balanced.module_ids
+
+    def test_module_override_replaces_policy(self) -> None:
+        from transcriptx.core.analysis.selection import resolve_analysis_preset
+        from transcriptx.core.utils.config import get_config
+
+        cfg = get_config()
+        cfg.analysis.ui_presets.quick.module_ids = ["stats", "not_a_real_module_zzz"]
+        try:
+            resolved = resolve_analysis_preset("quick")
+            assert resolved.module_ids == ("stats",)
+        finally:
+            cfg.analysis.ui_presets.quick.module_ids = None
+
+    def test_balanced_policy_knobs_filter_without_override(self) -> None:
+        from transcriptx.core.analysis.selection import resolve_analysis_preset
+        from transcriptx.core.utils.config import get_config
+
+        cfg = get_config()
+        original = list(cfg.analysis.ui_presets.balanced.llm_module_ids)
+        cfg.analysis.ui_presets.balanced.llm_module_ids = []
+        cfg.analysis.ui_presets.balanced.allow_llm = False
+        try:
+            resolved = resolve_analysis_preset("balanced")
+            from transcriptx.core.pipeline.module_registry import get_module_info
+
+            assert not any(
+                get_module_info(mid) and get_module_info(mid).requires_llm
+                for mid in resolved.module_ids
+            )
+        finally:
+            cfg.analysis.ui_presets.balanced.allow_llm = True
+            cfg.analysis.ui_presets.balanced.llm_module_ids = original
+
+    def test_quick_excludes_modules_needing_heavy_deps(self) -> None:
+        from transcriptx.core.analysis.selection import resolve_analysis_preset
+
+        quick = resolve_analysis_preset("quick")
+        # voice_charts_core / prosody_dashboard depend on heavy voice_features;
+        # insights depends on heavy topic_modeling.
+        for mid in (
+            "voice_charts_core",
+            "prosody_dashboard",
+            "voice_features",
+            "insights",
+            "topic_modeling",
+        ):
+            assert mid not in quick.module_ids
+
+    def test_balanced_excludes_unallowlisted_heavy_dependents(self) -> None:
+        from transcriptx.core.analysis.selection import resolve_analysis_preset
+
+        balanced = resolve_analysis_preset("balanced")
+        assert "topic_modeling" not in balanced.module_ids
+        assert "insights" not in balanced.module_ids
+        assert "bertopic" not in balanced.module_ids
+        assert "semantic_similarity_v2" in balanced.module_ids
+        assert "fine_grained_emotion" in balanced.module_ids
+
+    def test_thorough_empty_allowlists_mean_all_llm_and_heavy(self) -> None:
+        from transcriptx.core.analysis.selection import (
+            is_heavy_module,
+            resolve_analysis_preset,
+        )
+        from transcriptx.core.pipeline.module_registry import get_module_info
+
+        thorough = resolve_analysis_preset("thorough")
+        assert any(
+            get_module_info(mid) and get_module_info(mid).requires_llm
+            for mid in thorough.module_ids
+        )
+        assert any(is_heavy_module(get_module_info(mid)) for mid in thorough.module_ids)
+        assert "llm_summary" in thorough.module_ids
+        assert "llm_action_items" in thorough.module_ids
+        assert "topic_modeling" in thorough.module_ids
+
+    def test_override_prunes_when_dep_missing(self) -> None:
+        from transcriptx.core.analysis.selection import resolve_analysis_preset
+        from transcriptx.core.utils.config import get_config
+
+        cfg = get_config()
+        # Pick a module that hard-depends on voice_features without including it.
+        cfg.analysis.ui_presets.quick.module_ids = ["voice_charts_core", "stats"]
+        try:
+            resolved = resolve_analysis_preset("quick")
+            assert "voice_charts_core" not in resolved.module_ids
+            assert "stats" in resolved.module_ids
+        finally:
+            cfg.analysis.ui_presets.quick.module_ids = None
+
+    def test_effective_heavy_count_uses_category(self) -> None:
+        from transcriptx.core.analysis.selection import (
+            ResolvedAnalysisPreset,
+            compute_effective_modules,
+            is_heavy_module,
+        )
+        from transcriptx.core.pipeline.module_registry import get_module_info
+
+        # topic_modeling is category=heavy but cost_tier=normal
+        info = get_module_info("topic_modeling")
+        assert info is not None
+        assert info.cost_tier != "heavy"
+        assert is_heavy_module(info)
+        plan = compute_effective_modules(
+            ResolvedAnalysisPreset(
+                preset="custom",
+                mode="full",
+                profile="balanced",
+                module_ids=("stats", "topic_modeling"),
+            ),
+            custom_qa_execution=False,
+        )
+        assert plan.heavy_count == 1
+
     def test_thorough_excludes_legacy_by_default(self) -> None:
         from transcriptx.core.analysis.selection import (
             is_legacy_module,
@@ -195,3 +343,45 @@ class TestResolveAnalysisPreset:
         )
         plan = compute_effective_modules(resolved, custom_qa_execution=False)
         assert plan.module_ids == ("stats",)
+
+    def test_is_heavy_module_cost_tier_and_category(self) -> None:
+        from types import SimpleNamespace
+
+        from transcriptx.core.analysis.selection import is_heavy_module
+
+        assert is_heavy_module(None) is False
+        assert (
+            is_heavy_module(SimpleNamespace(cost_tier="normal", category="light"))
+            is False
+        )
+        assert (
+            is_heavy_module(SimpleNamespace(cost_tier="heavy", category="light"))
+            is True
+        )
+        assert (
+            is_heavy_module(SimpleNamespace(cost_tier="normal", category="heavy"))
+            is True
+        )
+
+    def test_custom_empty_seeds_from_balanced(self) -> None:
+        from transcriptx.core.analysis.selection import resolve_analysis_preset
+
+        custom = resolve_analysis_preset("custom", custom_modules=[])
+        balanced = resolve_analysis_preset("balanced")
+        assert custom.module_ids == balanced.module_ids
+        assert custom.preset == "custom"
+
+    def test_quick_excludes_llm_custom_qa(self) -> None:
+        from transcriptx.core.analysis.selection import (
+            compute_effective_modules,
+            resolve_analysis_preset,
+        )
+
+        quick = resolve_analysis_preset("quick")
+        assert "llm_custom_qa" not in quick.module_ids
+        # Even with execution flag, Quick policy should not already include it;
+        # compute_effective_modules may append for Custom/Balanced flows only
+        # when the caller opts in — Quick base stays free of LLM modules.
+        plan = compute_effective_modules(quick, custom_qa_execution=True)
+        # Flag injects the module once for run planning regardless of preset.
+        assert plan.module_ids.count("llm_custom_qa") == 1

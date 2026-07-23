@@ -74,6 +74,7 @@ class TestNERContracts:
         assert "label_counts_per_speaker" in result
         assert "location_entities_per_speaker" in result
         assert "entity_sentences_per_speaker" in result
+        assert "location_mentions_per_speaker" in result
         assert "summary_json" in result
         assert "speaker_csv_rows" in result
         assert "all_rows" in result
@@ -85,5 +86,14 @@ class TestNERContracts:
         assert isinstance(result["entity_counts_per_speaker"], dict)
         assert isinstance(result["label_counts_per_speaker"], dict)
         assert isinstance(result["all_label_counter"], dict)
+        assert isinstance(result["location_mentions_per_speaker"], dict)
         assert isinstance(result["entities"], list)
         assert result["segments"] is sample_segments
+
+        alice_mentions = result["location_mentions_per_speaker"]["Alice"]["New York"]
+        assert alice_mentions[0]["segment_index"] == 0
+        assert alice_mentions[0]["start"] == 0.0
+        assert "New York" in alice_mentions[0]["text"]
+        bob_mentions = result["location_mentions_per_speaker"]["Bob"]["London"]
+        assert bob_mentions[0]["segment_index"] == 1
+        assert bob_mentions[0]["start"] == 3.0

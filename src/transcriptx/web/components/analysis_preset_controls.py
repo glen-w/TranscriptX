@@ -18,6 +18,7 @@ from transcriptx.core.analysis.selection import (
 )
 from transcriptx.core.utils.audio_availability import has_resolvable_audio
 from transcriptx.web.module_option_format import format_module_option
+from transcriptx.web.module_registry import build_module_label
 from transcriptx.web.module_ui_groups import MODULE_UI_GROUPS, TECHNICAL_OTHER_TITLE
 
 _PRESET_LABELS: dict[AnalysisPreset, str] = {
@@ -27,10 +28,15 @@ _PRESET_LABELS: dict[AnalysisPreset, str] = {
     "custom": "Custom",
 }
 _PRESET_HELP = (
-    "**Quick** — lightweight modules. **Balanced** — recommended default. "
+    "**Quick** — no LLM, no heavy modules (and no modules that require them). "
+    "**Balanced** — limited heavy modules + global LLM summary only. "
     "**Thorough** — all suitable modules for this target. "
-    "**Custom** — pick modules."
+    "**Custom** — pick modules. "
+    "Edit Quick/Balanced/Thorough under Settings → Analysis."
 )
+_CUSTOM_QA_MODULE = "llm_custom_qa"
+_REVIEW_KEEP_OPEN_SUFFIX = "_review_modules_keep_open"
+_PENDING_REVIEW_REMOVAL_SUFFIX = "_pending_review_removal"
 
 
 def migrate_legacy_analysis_keys(session_state: Any, *, key_prefix: str) -> None:
@@ -87,6 +93,59 @@ def format_preset_label(preset: AnalysisPreset | str) -> str:
     return str(preset).title()
 
 
+def _pending_review_removal_key(key_prefix: str) -> str:
+    return f"{key_prefix}{_PENDING_REVIEW_REMOVAL_SUFFIX}"
+
+
+def apply_pending_review_module_removal(
+    session_state: Any, *, key_prefix: str
+) -> None:
+    """Apply a Review-modules removal queued after widgets already ran last tick."""
+    pending = session_state.pop(_pending_review_removal_key(key_prefix), None)
+    if not isinstance(pending, dict):
+        return
+    remaining = pending.get("remaining")
+    if not isinstance(remaining, list) or not remaining:
+        return
+    session_state[f"{key_prefix}_preset"] = "Custom"
+    session_state[f"{key_prefix}_custom_modules"] = list(remaining)
+    # Drop the multiselect widget key so it re-seeds from custom_modules
+    # (filtered to picker options) before the widget is created.
+    session_state.pop(f"{key_prefix}_custom_modules_widget", None)
+    qa_key_prefix = pending.get("clear_qa_key_prefix")
+    if isinstance(qa_key_prefix, str) and qa_key_prefix:
+        session_state[f"{qa_key_prefix}_adhoc_rows"] = []
+        session_state[f"{qa_key_prefix}_saved"] = []
+
+
+def apply_review_module_removal(
+    session_state: Any,
+    *,
+    key_prefix: str,
+    qa_key_prefix: str | None,
+    module_ids: Sequence[str],
+    remove_id: str,
+) -> bool:
+    """
+    Queue dropping ``remove_id`` from the run (Custom + remainder).
+
+    Returns False when the module is absent or would leave the plan empty.
+    Removing ``llm_custom_qa`` also clears the Custom questions picker on apply.
+    """
+    if remove_id not in module_ids:
+        return False
+    remaining = [m for m in module_ids if m != remove_id]
+    if not remaining:
+        return False
+
+    payload: dict[str, Any] = {"remaining": list(remaining)}
+    if remove_id == _CUSTOM_QA_MODULE and qa_key_prefix:
+        payload["clear_qa_key_prefix"] = qa_key_prefix
+    session_state[_pending_review_removal_key(key_prefix)] = payload
+    session_state[f"{key_prefix}{_REVIEW_KEEP_OPEN_SUFFIX}"] = True
+    return True
+
+
 def render_analysis_preset_selector(
     *,
     key_prefix: str,
@@ -101,6 +160,7 @@ def render_analysis_preset_selector(
     Callers apply ``compute_effective_modules`` / ``apply_custom_qa_to_plan``.
     """
     migrate_legacy_analysis_keys(st.session_state, key_prefix=key_prefix)
+    apply_pending_review_module_removal(st.session_state, key_prefix=key_prefix)
 
     preset_key = f"{key_prefix}_preset"
     custom_key = f"{key_prefix}_custom_modules"
@@ -201,6 +261,8 @@ def render_effective_module_summary(
     plan: EffectiveModulePlan,
     *,
     preset: AnalysisPreset,
+    key_prefix: str,
+    qa_key_prefix: str | None = None,
 ) -> None:
     """Summary + Review expander from the authoritative effective plan."""
     n = len(plan.module_ids)
@@ -210,25 +272,83 @@ def render_effective_module_summary(
     if plan.heavy_count:
         parts.append(f"{plan.heavy_count} heavy")
     st.caption(" · ".join(parts))
-    with st.expander("Review modules", expanded=False):
-        _render_grouped_module_names(plan.module_ids)
+    keep_open_key = f"{key_prefix}{_REVIEW_KEEP_OPEN_SUFFIX}"
+    expanded = bool(st.session_state.pop(keep_open_key, False))
+    with st.expander("Review modules", expanded=expanded):
+        _render_grouped_module_names(
+            plan.module_ids,
+            key_prefix=key_prefix,
+            qa_key_prefix=qa_key_prefix,
+        )
 
 
-def _render_grouped_module_names(module_ids: Sequence[str]) -> None:
+def _render_grouped_module_names(
+    module_ids: Sequence[str],
+    *,
+    key_prefix: str,
+    qa_key_prefix: str | None,
+) -> None:
     remaining = set(module_ids)
     claimed: set[str] = set()
+    can_remove = len(module_ids) > 1
     for group in MODULE_UI_GROUPS:
-        names: list[str] = []
+        rows: list[str] = []
         for mid in group.module_ids:
             if mid in remaining and mid not in claimed:
-                names.append(format_module_option(mid))
+                rows.append(mid)
                 claimed.add(mid)
-        if names:
+        if rows:
             st.markdown(f"**{group.title}**")
-            for name in names:
-                st.markdown(f"- {name}")
+            for mid in rows:
+                _render_review_module_row(
+                    mid,
+                    key_prefix=key_prefix,
+                    qa_key_prefix=qa_key_prefix,
+                    module_ids=module_ids,
+                    can_remove=can_remove,
+                )
     other = [m for m in module_ids if m not in claimed]
     if other:
         st.markdown(f"**{TECHNICAL_OTHER_TITLE}**")
         for mid in other:
-            st.markdown(f"- {format_module_option(mid)}")
+            _render_review_module_row(
+                mid,
+                key_prefix=key_prefix,
+                qa_key_prefix=qa_key_prefix,
+                module_ids=module_ids,
+                can_remove=can_remove,
+            )
+
+
+def _render_review_module_row(
+    module_id: str,
+    *,
+    key_prefix: str,
+    qa_key_prefix: str | None,
+    module_ids: Sequence[str],
+    can_remove: bool,
+) -> None:
+    label = build_module_label(module_id)
+    if not can_remove:
+        st.markdown(f"- {label}")
+        return
+    label_col, remove_col = st.columns([20, 1], vertical_alignment="center")
+    with label_col:
+        st.markdown(f"- {label}")
+    with remove_col:
+        if st.button(
+            "✕",
+            key=f"{key_prefix}_review_rm_{module_id}",
+            help=f"Remove from run: {label}",
+            type="tertiary",
+        ):
+            if apply_review_module_removal(
+                st.session_state,
+                key_prefix=key_prefix,
+                qa_key_prefix=qa_key_prefix,
+                module_ids=module_ids,
+                remove_id=module_id,
+            ):
+                st.rerun()
+            else:
+                st.toast("Keep at least one module in the run.")

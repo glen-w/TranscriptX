@@ -274,6 +274,38 @@ def test_speaker_id_segments_grouped_by_diarized_id(
     assert len(groups["SPEAKER_01"]) == 2
 
 
+def test_voice_analyse_segment_dicts_prefer_diarized_id_after_naming(
+    monkeypatch: pytest.MonkeyPatch,
+    transcript_dir: Path,
+    two_speaker_transcript: Path,
+) -> None:
+    """After naming, SegmentInfo.speaker is a display name; voice dicts keep diarized IDs."""
+    from transcriptx.web.page_modules.speaker_id import _voice_analyse_segment_dicts
+
+    _configure_paths_for_transcripts_root(monkeypatch, transcript_dir / "transcripts")
+
+    controller = SpeakerStudioController(data_dir=transcript_dir)
+    controller.apply_mapping_mutation(
+        str(two_speaker_transcript), "SPEAKER_00", "Speaker 1", method="web"
+    )
+    segments = controller.list_segments(str(two_speaker_transcript))
+    assert any(s.speaker == "Speaker 1" for s in segments)
+
+    dicts = _voice_analyse_segment_dicts(segments)
+    assert len(dicts) == len(segments)
+    named = [d for d in dicts if d["speaker_diarized_id"] == "SPEAKER_00"]
+    assert named
+    assert all(d["speaker"] == "SPEAKER_00" for d in named)
+
+
+def test_speaker_id_page_exposes_analyse_all_speakers_button() -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Analyse all speakers" in source
+    assert "_voice_analyse_segment_dicts" in source
+
+
 def test_speaker_id_assign_name_reflected_in_mapping(
     monkeypatch: pytest.MonkeyPatch,
     transcript_dir: Path,

@@ -92,6 +92,10 @@ class NERAnalysis(AnalysisModule):
         label_counts_per_speaker = defaultdict(Counter)
         location_entities_per_speaker = defaultdict(Counter)
         entity_sentences_per_speaker = defaultdict(lambda: defaultdict(list))
+        # Rich location mentions (additive; string sentence lists kept for CSV).
+        location_mentions_per_speaker: dict[str, dict[str, list[dict[str, Any]]]] = (
+            defaultdict(lambda: defaultdict(list))
+        )
 
         # Process segments in batches
         for i in range(0, total_segments, batch_size):
@@ -101,7 +105,8 @@ class NERAnalysis(AnalysisModule):
                 f"({len(batch)} segments)"
             )
 
-            for seg in batch:
+            for offset, seg in enumerate(batch):
+                segment_index = i + offset
                 speaker_info = extract_speaker_info(seg)
                 if speaker_info is None:
                     continue
@@ -113,6 +118,13 @@ class NERAnalysis(AnalysisModule):
 
                 text = seg.get("text", "")
                 entities = extract_named_entities(text)
+                start_raw = seg.get("start")
+                try:
+                    start_val: float | None = (
+                        float(start_raw) if start_raw is not None else None
+                    )
+                except (TypeError, ValueError):
+                    start_val = None
 
                 for ent_text, label in entities:
                     entity_counts_per_speaker[speaker][ent_text] += 1
@@ -120,6 +132,13 @@ class NERAnalysis(AnalysisModule):
                     entity_sentences_per_speaker[speaker][ent_text].append(text)
                     if label in {"GPE", "LOC"}:
                         location_entities_per_speaker[speaker][ent_text] += 1
+                        location_mentions_per_speaker[speaker][ent_text].append(
+                            {
+                                "text": text,
+                                "segment_index": segment_index,
+                                "start": start_val,
+                            }
+                        )
 
         print("NER processing complete.")
 
@@ -172,6 +191,10 @@ class NERAnalysis(AnalysisModule):
             "entity_sentences_per_speaker": {
                 k: dict(v) for k, v in entity_sentences_per_speaker.items()
             },
+            "location_mentions_per_speaker": {
+                speaker: {ent: list(mentions) for ent, mentions in ents.items()}
+                for speaker, ents in location_mentions_per_speaker.items()
+            },
             "summary_json": summary_json,
             "speaker_csv_rows": speaker_csv_rows,
             "all_rows": all_rows,
@@ -196,6 +219,7 @@ class NERAnalysis(AnalysisModule):
         label_counts_per_speaker = results["label_counts_per_speaker"]
         location_entities_per_speaker = results["location_entities_per_speaker"]
         entity_sentences_per_speaker = results["entity_sentences_per_speaker"]
+        location_mentions_per_speaker = results.get("location_mentions_per_speaker") or {}
         summary_json = results["summary_json"]
         speaker_csv_rows = results["speaker_csv_rows"]
         all_rows = results["all_rows"]
@@ -265,6 +289,7 @@ class NERAnalysis(AnalysisModule):
                 location_entities_per_speaker,
                 entity_sentences_per_speaker,
                 output_service,
+                location_mentions_per_speaker=location_mentions_per_speaker,
             )
 
         # Save summary text file
@@ -302,39 +327,45 @@ class NERAnalysis(AnalysisModule):
         location_entities_per_speaker: Dict,
         entity_sentences_per_speaker: Dict,
         output_service: "OutputService",
+        location_mentions_per_speaker: Dict | None = None,
     ) -> None:
-        """Save location maps with geocoding.
+        """Save geocoded location JSON and optional Folium maps.
 
-        Map rendering requires the optional ``[maps]`` extra (folium). NER entity
-        extraction still succeeds when maps deps are missing; only map artefacts
-        are skipped.
+        Geocoding + ``ner-locations`` JSON always run when this method is called.
+        Map HTML/PNG rendering requires the optional ``[maps]`` extra (folium);
+        missing maps deps skip only map artefacts.
         """
         from transcriptx.core.utils.lazy_imports import (
             get_folium,
             get_playwright_sync_api,
         )
 
+        folium = None
         try:
             folium = get_folium()
         except ImportError as exc:
             warnings.warn(
-                f"Skipping NER location maps (optional [maps] extra missing): {exc}",
+                f"Skipping NER location map HTML/PNG (optional [maps] extra missing): {exc}",
                 UserWarning,
                 stacklevel=2,
             )
-            return
-        # Lazy load Playwright with runtime installation support
-        # Returns None if playwright or browser cannot be installed
-        # Pass silent=False to show installation progress
-        sync_playwright = get_playwright_sync_api(silent=False)
 
-        # Create maps directories (not part of standard output structure)
-        output_structure = output_service.get_output_structure()
-        maps_dir = output_structure.module_dir / "maps"
-        html_dir = maps_dir / "html"
-        image_dir = maps_dir / "images"
-        for d in [html_dir, image_dir]:
-            d.mkdir(parents=True, exist_ok=True)
+        sync_playwright = None
+        if folium is not None:
+            # Lazy load Playwright with runtime installation support
+            # Returns None if playwright or browser cannot be installed
+            sync_playwright = get_playwright_sync_api(silent=False)
+
+        # Create maps directories only when rendering HTML/PNG
+        html_dir: Path | None = None
+        image_dir: Path | None = None
+        if folium is not None:
+            output_structure = output_service.get_output_structure()
+            maps_dir = output_structure.module_dir / "maps"
+            html_dir = maps_dir / "html"
+            image_dir = maps_dir / "images"
+            for d in [html_dir, image_dir]:
+                d.mkdir(parents=True, exist_ok=True)
 
         # Filter for named speakers only
         filtered_locations = {
@@ -343,8 +374,9 @@ class NERAnalysis(AnalysisModule):
             if is_named_speaker(speaker)
         }
 
-        per_speaker_coords = {}
-        global_coord_records = []
+        mentions_by_speaker = location_mentions_per_speaker or {}
+        per_speaker_coords: dict[str, list[dict[str, Any]]] = {}
+        global_coord_records: list[dict[str, Any]] = []
         base_name = output_service.base_name
 
         for speaker, counter in filtered_locations.items():
@@ -357,28 +389,41 @@ class NERAnalysis(AnalysisModule):
             enriched = []
             for loc in coords:
                 name = loc["name"]
-                sentence = next(
-                    iter(entity_sentences_per_speaker.get(speaker, {}).get(name, [])),
-                    "",
-                )
-                enriched.append(
-                    {
-                        **loc,
-                        "speaker": display_name,
-                        "sentence": sentence,
-                    }
-                )
-                global_coord_records.append(
-                    {
-                        **loc,
-                        "speaker": display_name,
-                        "sentence": sentence,
-                    }
-                )
+                mention_list = mentions_by_speaker.get(speaker, {}).get(name, [])
+                first_mention = mention_list[0] if mention_list else None
+                if isinstance(first_mention, dict):
+                    sentence = str(first_mention.get("text") or "")
+                    segment_index = first_mention.get("segment_index")
+                    start = first_mention.get("start")
+                else:
+                    sentence = next(
+                        iter(
+                            entity_sentences_per_speaker.get(speaker, {}).get(name, [])
+                        ),
+                        "",
+                    )
+                    segment_index = None
+                    start = None
+                if not sentence:
+                    sentence = next(
+                        iter(
+                            entity_sentences_per_speaker.get(speaker, {}).get(name, [])
+                        ),
+                        "",
+                    )
+                record = {
+                    **loc,
+                    "speaker": display_name,
+                    "sentence": sentence,
+                    "segment_index": segment_index,
+                    "start": start,
+                }
+                enriched.append(record)
+                global_coord_records.append(dict(record))
 
             per_speaker_coords[display_name] = enriched
 
-            if enriched:
+            if enriched and folium is not None and html_dir is not None and image_dir is not None:
                 # Create per-speaker map
                 fmap = folium.Map(zoom_start=3)
                 for loc in enriched:
@@ -432,7 +477,13 @@ class NERAnalysis(AnalysisModule):
                     )
 
         # Create global map only when more than one identified speaker
-        if global_coord_records and len(filtered_locations) > 1:
+        if (
+            folium is not None
+            and html_dir is not None
+            and image_dir is not None
+            and global_coord_records
+            and len(filtered_locations) > 1
+        ):
             fmap = folium.Map(zoom_start=2)
             for loc in global_coord_records:
                 folium.Marker(
@@ -478,7 +529,7 @@ class NERAnalysis(AnalysisModule):
                     },
                 )
 
-        # Save location coordinates JSON
+        # Save location coordinates JSON (even when Folium is unavailable)
         output_service.save_data(
             per_speaker_coords, "ner-locations", format_type="json"
         )

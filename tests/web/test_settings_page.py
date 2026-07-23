@@ -17,8 +17,22 @@ class _Tabs:
         return False
 
 
+_SETTINGS_TABS = (
+    "Configuration",
+    "Analysis",
+    "Storage",
+    "Interface",
+    "Models",
+    "Questions",
+)
+
+
+def _six_tabs():
+    return (_Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs())
+
+
 @pytest.mark.unit
-def test_settings_page_invokes_all_five_panels(monkeypatch) -> None:
+def test_settings_page_invokes_all_panels(monkeypatch) -> None:
     import transcriptx.web.page_modules.settings as mod
 
     DummyHomeStreamlit.session_state = {}
@@ -31,14 +45,8 @@ def test_settings_page_invokes_all_five_panels(monkeypatch) -> None:
 
         @staticmethod
         def tabs(_labels):
-            assert list(_labels) == [
-                "Configuration",
-                "Storage",
-                "Interface",
-                "Models",
-                "Questions",
-            ]
-            return (_Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs())
+            assert list(_labels) == list(_SETTINGS_TABS)
+            return _six_tabs()
 
         @staticmethod
         def error(*_a, **_k):
@@ -50,6 +58,11 @@ def test_settings_page_invokes_all_five_panels(monkeypatch) -> None:
         mod,
         "render_configuration_panel",
         lambda **kwargs: panel_calls.append(("configuration", kwargs)),
+    )
+    monkeypatch.setattr(
+        mod,
+        "render_analysis_presets_panel",
+        lambda: panel_calls.append(("analysis", {})),
     )
     monkeypatch.setattr(
         mod, "render_storage_panel", lambda: panel_calls.append(("storage", {}))
@@ -69,6 +82,7 @@ def test_settings_page_invokes_all_five_panels(monkeypatch) -> None:
     names = [c[0] for c in panel_calls]
     assert names == [
         "configuration",
+        "analysis",
         "storage",
         "interface",
         "models",
@@ -94,7 +108,7 @@ def test_settings_page_passes_resolved_run_dir(monkeypatch, tmp_path) -> None:
 
         @staticmethod
         def tabs(_labels):
-            return (_Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs())
+            return _six_tabs()
 
     subject = SimpleNamespace(
         scope="transcript",
@@ -111,6 +125,7 @@ def test_settings_page_passes_resolved_run_dir(monkeypatch, tmp_path) -> None:
         "render_configuration_panel",
         lambda **kwargs: cfg_kwargs.append(kwargs),
     )
+    monkeypatch.setattr(mod, "render_analysis_presets_panel", lambda: None)
     monkeypatch.setattr(mod, "render_storage_panel", lambda: None)
     monkeypatch.setattr(mod, "render_interface_panel", lambda: None)
     monkeypatch.setattr(mod, "render_models_panel", lambda: None)
@@ -138,7 +153,7 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
 
         @staticmethod
         def tabs(_labels):
-            return (_Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs())
+            return _six_tabs()
 
         @classmethod
         def error(cls, msg, **_k):
@@ -151,6 +166,7 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
         raise RuntimeError("cfg boom")
 
     monkeypatch.setattr(mod, "render_configuration_panel", _boom)
+    monkeypatch.setattr(mod, "render_analysis_presets_panel", lambda: None)
     monkeypatch.setattr(mod, "render_storage_panel", lambda: None)
     monkeypatch.setattr(mod, "render_interface_panel", lambda: None)
     monkeypatch.setattr(mod, "render_models_panel", lambda: None)

@@ -1,8 +1,9 @@
 """Cross-domain voice acceptance owner (link + decision).
 
-Reject is a single root journal. Accept journals the link mutation and the
-accept decision in one ``OperationEngine.run`` via ``extra_writes`` on the
-Phase 1 link APIs (avatar co-journal precedent).
+Reject is a single root journal. Accept journals the link mutation, the
+accept decision, and retained query-evidence enrolment in one
+``OperationEngine.run`` via ``extra_writes`` / ``extra_writes_builder`` on
+the Phase 1 link APIs (avatar co-journal precedent).
 """
 
 from __future__ import annotations
@@ -22,7 +23,11 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_voice_decision_path,
 )
 from transcriptx.core.speaker_profiles.provenance import LinkProvenanceV1
-from transcriptx.core.speaker_profiles.service import MutationResult, SpeakerProfileService
+from transcriptx.core.speaker_profiles.service import (
+    LinkMutationContext,
+    MutationResult,
+    SpeakerProfileService,
+)
 from transcriptx.core.speaker_profiles.signals import CacheInvalidationSignal
 from transcriptx.core.speaker_profiles.store_io import (
     dumps_model,
@@ -32,7 +37,13 @@ from transcriptx.core.speaker_profiles.store_io import (
     utc_now_iso,
 )
 from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
+from transcriptx.core.speaker_profiles.voice.caches import VoiceQueryCache
+from transcriptx.core.speaker_profiles.voice.evidence import (
+    EnrolExcerptInput,
+    plan_enrol_excerpt_writes,
+)
 from transcriptx.core.speaker_profiles.voice.models import VoiceMatchDecisionV1
+from transcriptx.core.speaker_profiles.voice.runtime import MODEL_ID, MODEL_REVISION_PIN
 from transcriptx.core.utils.paths import PATHS
 
 
@@ -56,6 +67,8 @@ class AcceptSuggestionRequest:
     create_new_profile: bool = False
     display_name: str | None = None
     actor: str = "user"
+    query_cache_key: str | None = None
+    query_excerpts: tuple[EnrolExcerptInput, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -63,6 +76,8 @@ class AcceptanceResult:
     mutation: MutationResult | None
     decision_id: str | None
     cache_signal: CacheInvalidationSignal
+    sample_ids: tuple[str, ...] = ()
+    embedding_ids: tuple[str, ...] = ()
 
 
 class VoiceAcceptanceOwner:
@@ -82,6 +97,7 @@ class VoiceAcceptanceOwner:
         )
         self.barrier = ActivationBarrier(self.root)
         self.engine = OperationEngine(self.root)
+        self.query_cache = VoiceQueryCache(self.root)
 
     def _assert_accept_preconditions(self, request: AcceptSuggestionRequest) -> None:
         """Fail closed on stale link/owner/fingerprint/profile/suggestion digest."""
@@ -165,6 +181,57 @@ class VoiceAcceptanceOwner:
             raise StaleConfirmationError(
                 "occurrence fingerprint drift; pass expected_fingerprint for supersede"
             )
+
+    def _resolve_query_excerpts(
+        self, request: AcceptSuggestionRequest
+    ) -> list[EnrolExcerptInput]:
+        if request.query_excerpts:
+            return list(request.query_excerpts)
+        if not request.query_cache_key:
+            return []
+        cached = self.query_cache.read(request.query_cache_key)
+        if cached is None:
+            return []
+        meta, vectors = cached
+        ranges = list(meta.get("ranges_us") or [])
+        if len(ranges) != len(vectors):
+            return []
+        model_id = str(meta.get("model_id") or MODEL_ID)
+        model_revision = str(meta.get("model_revision") or MODEL_REVISION_PIN)
+        model_generation_id = str(
+            meta.get("model_generation_id") or request.model_generation_id
+        )
+        audio_stat = str(
+            meta.get("audio_stat_fingerprint")
+            or request.expected_audio_stat_fingerprint
+            or ""
+        )
+        audio_sha = str(
+            meta.get("audio_content_sha256")
+            or request.expected_audio_content_sha256
+            or ""
+        )
+        if not audio_stat or not audio_sha:
+            return []
+        excerpts: list[EnrolExcerptInput] = []
+        for (start_us, end_us), vector in zip(ranges, vectors, strict=True):
+            excerpts.append(
+                EnrolExcerptInput(
+                    clip_start_us=int(start_us),
+                    clip_end_us=int(end_us),
+                    audio_stat_fingerprint=audio_stat,
+                    audio_content_sha256=audio_sha,
+                    vector=vector,
+                    runtime_metadata={
+                        "source": "accept_query_cache",
+                        "query_cache_key": request.query_cache_key,
+                    },
+                    model_id=model_id,
+                    model_revision=model_revision,
+                    model_generation_id=model_generation_id,
+                )
+            )
+        return excerpts
 
     def _decision_write(self, request: AcceptSuggestionRequest, decision_id: str) -> PlannedWrite:
         decision = VoiceMatchDecisionV1(
@@ -271,16 +338,49 @@ class VoiceAcceptanceOwner:
                 cache_signal=CacheInvalidationSignal(
                     scopes=("speaker_profiles", "speaker_links", "speaker_voice"),
                 ),
+                sample_ids=tuple(replay.receipt.get("sample_ids") or ()),
+                embedding_ids=tuple(replay.receipt.get("embedding_ids") or ()),
             )
 
         self._assert_accept_preconditions(request)
+        excerpts = self._resolve_query_excerpts(request)
 
         decision_id = str(uuid4())
         decision_write = self._decision_write(request, decision_id)
+        sample_ids: list[str] = []
+        embedding_ids: list[str] = []
+
+        def _builder(ctx: LinkMutationContext) -> list[PlannedWrite]:
+            if not excerpts:
+                return []
+            planned = plan_enrol_excerpt_writes(
+                profile_id=ctx.profile_id,
+                link_id=ctx.link_id,
+                source_link_content_sha256=ctx.link_content_sha256,
+                managed_transcript_id=ctx.managed_transcript_id,
+                local_speaker_key=ctx.local_speaker_key,
+                occurrence_fingerprint=ctx.occurrence_fingerprint,
+                excerpts=excerpts,
+                operation_idempotency_key=request.operation_idempotency_key,
+                trust="suggestion_assisted",
+                actor=request.actor,
+            )
+            # Mutate in place so extra_receipt lists (same objects) stay current.
+            sample_ids.clear()
+            sample_ids.extend(planned.sample_ids)
+            embedding_ids.clear()
+            embedding_ids.extend(planned.embedding_ids)
+            return list(planned.writes)
+
         extra_kw = {
             "extra_writes": [decision_write],
+            "extra_writes_builder": _builder if excerpts else None,
             "extra_scopes": ["speaker_voice"],
-            "extra_receipt": {"decision_id": decision_id},
+            "extra_receipt": {
+                "decision_id": decision_id,
+                "sample_ids": sample_ids,
+                "embedding_ids": embedding_ids,
+            },
         }
 
         provenance = LinkProvenanceV1(
@@ -346,6 +446,13 @@ class VoiceAcceptanceOwner:
                 **extra_kw,
             )
 
+        # Builder mutates sample_ids during the journal; refresh receipt fields.
+        receipt_sample_ids = tuple(
+            mutation.outcome.receipt.get("sample_ids") or sample_ids
+        )
+        receipt_embedding_ids = tuple(
+            mutation.outcome.receipt.get("embedding_ids") or embedding_ids
+        )
         scopes = ("speaker_profiles", "speaker_links", "speaker_voice")
         return AcceptanceResult(
             mutation=mutation,
@@ -356,4 +463,6 @@ class VoiceAcceptanceOwner:
                 link_ids=mutation.cache_signal.link_ids,
                 managed_transcript_ids=mutation.cache_signal.managed_transcript_ids,
             ),
+            sample_ids=tuple(receipt_sample_ids),
+            embedding_ids=tuple(receipt_embedding_ids),
         )

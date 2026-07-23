@@ -241,7 +241,7 @@ def test_ner_location_maps_render_fallback_keeps_html(
 def test_ner_location_maps_soft_skip_without_folium(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """Maps are optional ([maps]); missing folium must not fail NER."""
+    """Maps HTML/PNG are optional ([maps]); missing folium must not fail NER JSON."""
     import warnings
 
     ner = _ner_instance()
@@ -255,6 +255,12 @@ def test_ner_location_maps_soft_skip_without_folium(
             )
         ),
     )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.ner.geocode_with_cache",
+        lambda items: [
+            {"name": name, "lat": 1.0, "lon": 2.0} for name, _count in items
+        ],
+    )
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
@@ -262,7 +268,50 @@ def test_ner_location_maps_soft_skip_without_folium(
             {"Alice": {"Paris": 1}},
             {"Alice": {"Paris": ["A"]}},
             output_service,
+            location_mentions_per_speaker={
+                "Alice": {
+                    "Paris": [
+                        {"text": "A", "segment_index": 3, "start": 12.5},
+                    ]
+                }
+            },
         )
 
     assert output_service.artifacts == []
-    assert any("Skipping NER location maps" in str(w.message) for w in caught)
+    assert (tmp_path / "ner" / "ner-locations.json").exists()
+    assert any(
+        "Skipping NER location map HTML/PNG" in str(w.message) for w in caught
+    )
+
+
+def test_ner_location_maps_include_segment_refs(tmp_path: Path, monkeypatch) -> None:
+    """ner-locations records include segment_index and start when mentions provided."""
+    import ast
+
+    ner = _ner_instance()
+    output_service = _OutputServiceFake(tmp_path / "ner")
+    _patch_maps_deps(monkeypatch, ner, write_png=False)
+
+    ner._save_location_maps(
+        {"Alice": {"Paris": 1}},
+        {"Alice": {"Paris": ["Alice mentioned Paris."]}},
+        output_service,
+        location_mentions_per_speaker={
+            "Alice": {
+                "Paris": [
+                    {
+                        "text": "Alice mentioned Paris.",
+                        "segment_index": 7,
+                        "start": 42.0,
+                    }
+                ]
+            }
+        },
+    )
+
+    raw = (tmp_path / "ner" / "ner-locations.json").read_text(encoding="utf-8")
+    payload = ast.literal_eval(raw)
+    assert payload["Alice"][0]["segment_index"] == 7
+    assert payload["Alice"][0]["start"] == 42.0
+    assert payload["Alice"][0]["sentence"] == "Alice mentioned Paris."
+

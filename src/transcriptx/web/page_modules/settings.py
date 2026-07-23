@@ -8,6 +8,7 @@ import streamlit as st
 
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import (
+    render_analysis_presets_panel,
     render_configuration_panel,
     render_interface_panel,
     render_models_panel,
@@ -35,8 +36,8 @@ def render_settings_page() -> None:
         subject_display = subject.display.name
         run_display = run_id
 
-    tab_cfg, tab_stor, tab_iface, tab_models, tab_q = st.tabs(
-        ["Configuration", "Storage", "Interface", "Models", "Questions"]
+    tab_cfg, tab_analysis, tab_stor, tab_iface, tab_models, tab_q = st.tabs(
+        ["Configuration", "Analysis", "Storage", "Interface", "Models", "Questions"]
     )
     with tab_cfg:
         try:
@@ -47,6 +48,11 @@ def render_settings_page() -> None:
             )
         except Exception as e:
             st.error(f"Could not load Configuration: {e}")
+    with tab_analysis:
+        try:
+            render_analysis_presets_panel()
+        except Exception as e:
+            st.error(f"Could not load Analysis: {e}")
     with tab_stor:
         try:
             render_storage_panel()

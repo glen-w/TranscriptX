@@ -25,6 +25,7 @@ _DELEGATION_SUBTREES = (
     "llm_speaker_summary",
     "llm_action_items",
     "llm_custom_qa",
+    "ui_presets",
     "echoes",
     "momentum",
     "moments",

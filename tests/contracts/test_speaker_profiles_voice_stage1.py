@@ -27,6 +27,46 @@ def test_insufficient_speech() -> None:
     assert result.excerpts == ()
 
 
+def test_display_name_speaker_uses_diarized_id_field() -> None:
+    """Remapped UI display names must not starve excerpt selection."""
+    segments = [
+        {
+            "speaker": "Speaker 1",
+            "speaker_diarized_id": "SPEAKER_00",
+            "start": 0.0,
+            "end": 4.0,
+            "text": "a",
+        },
+        {
+            "speaker": "Speaker 1",
+            "speaker_diarized_id": "SPEAKER_00",
+            "start": 5.0,
+            "end": 10.0,
+            "text": "b",
+        },
+    ]
+    result = select_excerpts_v1(
+        segments,
+        local_speaker_key="SPEAKER_00",
+        normalize_speaker=normalize_diarized_id,
+    )
+    assert result.outcome == "ok"
+    assert len(result.excerpts) >= 1
+
+
+def test_display_name_only_without_diarized_id_is_insufficient() -> None:
+    """Without diarized id, a remapped display name does not match SPEAKER_00."""
+    segments = [
+        {"speaker": "Speaker 1", "start": 0.0, "end": 10.0, "text": "a"},
+    ]
+    result = select_excerpts_v1(
+        segments,
+        local_speaker_key="SPEAKER_00",
+        normalize_speaker=normalize_diarized_id,
+    )
+    assert result.outcome == "insufficient_speech"
+
+
 def test_stable_excerpt_selection_golden() -> None:
     segments = _segs(
         ("SPEAKER_00", 0.0, 3.0),

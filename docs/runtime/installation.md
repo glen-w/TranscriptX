@@ -92,12 +92,14 @@ If you install the NLP extra but never download the model, analyses that need it
 
 ## Analysis presets
 
-When you run analysis, you choose a **Preset** (or an explicit module list) that determines which modules run. Use mode `quick` (default) or `full` to control depth.
+When you run analysis, choose a **Preset** that determines which modules run:
 
-- **Recommended** — Default set of modules: safe, non-heavy, runnable for the current transcript (skips audio-required modules when audio is missing, heavy modules when deps unavailable). Best for most sessions.
-- **All modules** — Every available module (subject to mode and pipeline requirements). Use for full coverage.
-- **Light modules only** — Only light-category modules (fast, low-cost). Excludes medium and heavy.
-- **Custom** — Pick exactly which modules to run. Only runnable modules are offered.
+- **Quick** — no LLM modules and no heavy modules (fast local path). Modules that hard-depend on excluded heavy/LLM modules are omitted so the DAG cannot pull them back in.
+- **Balanced** — recommended default: non-heavy modules plus a limited heavy allowlist (`semantic_similarity_v2`, `fine_grained_emotion`) and **global transcript LLM summary only** (`llm_summary`).
+- **Thorough** — all suitable modules for the target (including LLM and heavy).
+- **Custom** — pick exactly which modules to run for this launch.
+
+Edit Quick / Balanced / Thorough policies (and optional full module overrides) under **Settings → Analysis**. Mode `quick` vs `full` still controls depth knobs (semantic/NER limits) for the chosen preset.
 
 ### Single-speaker behavior
 

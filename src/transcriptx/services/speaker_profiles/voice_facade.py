@@ -32,6 +32,19 @@ def ensure_idempotency_key(session_state: Any, key: str) -> str:
     return str(session_state[key])
 
 
+def _segment_diarized_key(segment: dict[str, Any]) -> str:
+    """Resolve the diarized speaker key from a segment dict.
+
+    Speaker Identification may pass remapped display names in ``speaker`` after
+    naming; prefer ``speaker_diarized_id`` when present so excerpt selection and
+    fingerprints still attribute speech to the correct local speaker.
+    """
+    raw = segment.get("speaker_diarized_id")
+    if raw is None or str(raw).strip() == "":
+        raw = segment.get("speaker")
+    return normalize_diarized_id(str(raw or ""))
+
+
 class SpeakerIdVoiceFacade:
     def __init__(self, root: Path | None = None) -> None:
         self.root = root or speaker_profiles_dir()
@@ -60,11 +73,7 @@ class SpeakerIdVoiceFacade:
             )
         resolved = resolver.resolve_path(transcript_path)
         key = normalize_diarized_id(raw_speaker)
-        keyed = [
-            s
-            for s in segments
-            if normalize_diarized_id(str(s.get("speaker") or "")) == key
-        ]
+        keyed = [s for s in segments if _segment_diarized_key(s) == key]
         fp = compute_occurrence_fingerprint(keyed)
         return self.match.analyse_occurrence(
             managed_transcript_id=resolved.managed_transcript_id,
@@ -91,6 +100,7 @@ class SpeakerIdVoiceFacade:
         expected_fingerprint: str | None = None,
         expected_audio_stat_fingerprint: str | None = None,
         expected_audio_content_sha256: str | None = None,
+        query_cache_key: str | None = None,
     ):
         return self.acceptance.accept_suggestion(
             AcceptSuggestionRequest(
@@ -108,6 +118,7 @@ class SpeakerIdVoiceFacade:
                 expected_fingerprint=expected_fingerprint,
                 expected_audio_stat_fingerprint=expected_audio_stat_fingerprint,
                 expected_audio_content_sha256=expected_audio_content_sha256,
+                query_cache_key=query_cache_key,
             )
         )
 

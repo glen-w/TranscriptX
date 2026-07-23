@@ -688,6 +688,56 @@ def inject_global_styles() -> None:
         text-align: left !important;
         justify-content: flex-start !important;
     }
+    /* Review modules — compact rows; reveal ✕ on hover / keyboard focus */
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"]) {
+        gap: 0.25rem !important;
+        align-items: center !important;
+        margin: 0 !important;
+        padding: 0.05rem 0.2rem;
+        border-radius: 0.35rem;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"]):hover {
+        background: rgba(120, 130, 145, 0.08);
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"])
+        [data-testid="stColumn"] {
+        padding: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"])
+        [data-testid="stMarkdownContainer"] {
+        margin: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"])
+        [data-testid="stMarkdownContainer"] p {
+        margin: 0 !important;
+        line-height: 1.35;
+    }
+    [class*="st-key-"][class*="_review_rm_"] [data-testid="stButton"] {
+        margin: 0 !important;
+    }
+    [class*="st-key-"][class*="_review_rm_"] [data-testid="stButton"] > button,
+    [class*="st-key-"][class*="_review_rm_"] button {
+        min-height: unset !important;
+        height: 1.5rem !important;
+        padding: 0 0.35rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        opacity: 0;
+        transition: opacity 0.12s ease;
+        color: #c9a0a0 !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"]):hover
+        [class*="_review_rm_"] button,
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="_review_rm_"]):focus-within
+        [class*="_review_rm_"] button,
+    [class*="st-key-"][class*="_review_rm_"] button:focus-visible {
+        opacity: 1;
+    }
+    [class*="st-key-"][class*="_review_rm_"] [data-testid="stButton"] > button:hover,
+    [class*="st-key-"][class*="_review_rm_"] button:hover {
+        color: #e8b4b4 !important;
+        background: rgba(180, 90, 90, 0.12) !important;
+    }
     /* Speaker chips (transcript viewer) — accent from --speaker-accent */
     span.tx-speaker-chip {
         display: inline-flex;

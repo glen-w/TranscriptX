@@ -198,3 +198,37 @@ def test_llm_summary_nested_partial_override(tmp_path: Path) -> None:
     )
     load_config_file_into(cfg, str(path))
     assert cfg.analysis.llm_summary.effort == "high"
+
+
+def test_ui_presets_nested_partial_override(tmp_path: Path) -> None:
+    """Project file can retarget Balanced LLM/heavy allowlists."""
+    cfg = TranscriptXConfig()
+    assert cfg.analysis.ui_presets.balanced.llm_module_ids == ["llm_summary"]
+    path = tmp_path / "presets.json"
+    path.write_text(
+        json.dumps(
+            {
+                "analysis": {
+                    "ui_presets": {
+                        "balanced": {
+                            "allow_llm": True,
+                            "llm_module_ids": ["llm_summary", "llm_action_items"],
+                            "heavy_module_ids": ["semantic_similarity_v2"],
+                        }
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    load_config_file_into(cfg, str(path))
+    assert cfg.analysis.ui_presets.balanced.llm_module_ids == [
+        "llm_summary",
+        "llm_action_items",
+    ]
+    assert cfg.analysis.ui_presets.balanced.heavy_module_ids == [
+        "semantic_similarity_v2"
+    ]
+    # Unspecified presets keep defaults.
+    assert cfg.analysis.ui_presets.quick.allow_llm is False
+    assert cfg.analysis.ui_presets.thorough.include_excluded_from_default is True

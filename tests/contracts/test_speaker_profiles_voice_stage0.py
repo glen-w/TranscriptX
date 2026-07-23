@@ -52,7 +52,8 @@ def test_activation_barrier_allows_when_privacy_enabled(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_default_privacy_disabled() -> None:
+def test_default_privacy_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED", raising=False)
     settings = default_privacy_settings()
     assert settings.enabled is False
     assert settings.schema_id == PRIVACY_SETTINGS_SCHEMA_ID
@@ -60,7 +61,34 @@ def test_default_privacy_disabled() -> None:
 
 
 @pytest.mark.unit
-def test_privacy_store_round_trip(tmp_path: Path) -> None:
+def test_default_privacy_enabled_via_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED", "1")
+    settings = default_privacy_settings()
+    assert settings.enabled is True
+    assert settings.consent_at is not None
+    assert settings.consent_actor is not None
+    assert settings.privacy_notice_version == PRIVACY_NOTICE_VERSION
+
+
+@pytest.mark.unit
+def test_env_default_does_not_override_existing_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED", "1")
+    root = tmp_path / "speaker_profiles"
+    root.mkdir()
+    store = VoicePrivacyStore(root)
+    assert store.read().enabled is True  # missing file → env default
+    store.revoke(actor="test")
+    assert store.read().enabled is False  # file wins over env
+    assert store.read().wipe_required is True
+
+
+@pytest.mark.unit
+def test_privacy_store_round_trip(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED", raising=False)
     root = tmp_path / "speaker_profiles"
     root.mkdir()
     store = VoicePrivacyStore(root)

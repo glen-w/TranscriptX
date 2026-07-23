@@ -98,6 +98,10 @@ Until the gate opens, Settings must not offer enablement.
 **Current tree status:** `FEATURE_GATE_COMPLETE = True` after Stage 8 exit.
 Privacy still defaults to disabled — users must consent via journalled
 `privacy.voice_settings.json` (Settings → Storage) before analyse/enrol/accept.
+Local/dev exception: when that file is **absent**,
+`TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1` (set in
+`docker-compose.override.yml`) may treat voice as enabled. An existing settings
+file remains sole authority and is never overridden by the env var.
 
 Explicit bootstrap: Speakers detail → “Enrol trusted voice from confirmed links”
 (`VoiceBootstrapService`). Promote suggestion-assisted samples before they enter
@@ -141,11 +145,14 @@ audio identity, and corpus digest before commit or cache write.
 
 ## Journals
 
-Cross-domain acceptance (link/event + voice decision) is one
-`operation_idempotency_key` and one root journal plan via `extra_writes` on
-Phase 1 link APIs. Accept preconditions include optional audio identity checks.
+Cross-domain acceptance (link/event + voice decision + retained query-evidence
+enrolment) is one `operation_idempotency_key` and one root journal plan via
+`extra_writes` / `extra_writes_builder` on Phase 1 link APIs. Accept
+preconditions include optional audio identity checks.
 `CacheInvalidationSignal` may include scope `speaker_voice`.
 
+Query excerpts enrolled on accept use trust `suggestion_assisted` /
+eligibility `ineligible_trust` until an explicit promote.
 ---
 
 ## Export / backup
@@ -163,17 +170,25 @@ archives. Profiles and confirmed links remain.
 
 ## Delivery residuals (honest)
 
-Still open / provisional (not release blockers for gate-open + privacy-default-off):
+Closed in the file-backed residual wave:
 
-- Thresholds remain provisional; `scripts/eval_speaker_voice_match.py` is a scaffold
-  until labeled speaker/recording-held eval freezes `threshold_policy_id`.
-- Multiprocess crash-injection matrix is thin vs the full plan list (accept
-  atomicity, wipe resume, revoke→wipe, lock-during-embed covered; deeper
-  recovery fault suites can deepen later).
-- Accept does not yet co-journal retained query-evidence promotion (decision +
-  link only).
-- Merge voice transfer is in-journal metadata rewrite; very large corpora may
-  need chunked transfer receipts later.
-- Stage 9 disposable index is gated by
-  [`docs/dev/speaker_voice_match_index_gate.md`](../dev/speaker_voice_match_index_gate.md)
-  — not implemented until measured.
+- Accept co-journals retained query-evidence as `suggestion_assisted` /
+  `ineligible_trust` (promote still required for corpus eligibility).
+- Eval harness (`scripts/eval_speaker_voice_match.py` + `voice/eval_metrics.py`)
+  reports FAR/FRR against provisional bands; **do not invent new thresholds**
+  without a labeled held-out library run.
+- Merge voice transfer uses chunked continuation journals
+  (`voice_merge_transfer_chunk`) with content-addressed idempotency keys.
+- Stage 9 disposable file matrix under `.cache/voice/indexes/` is implemented
+  and preferred when digest-fresh (see
+  [`speaker_voice_match_index_gate.md`](../dev/speaker_voice_match_index_gate.md)).
+
+Still open / provisional:
+
+- Threshold constants in `voice/thresholds.py` remain **`voice_threshold.v1`**
+  until an operator-labeled speaker/recording-held eval freezes
+  `threshold_policy_id` to v2 (keep current taus until then).
+- Multiprocess crash-injection matrix can deepen further beyond accept+evidence,
+  promote, and chunked merge coverage.
+- SQLite/DB analytics views and group gallery keyed by `profile_id` are
+  **not** voice-file work (B5 remainder without DB is closed).

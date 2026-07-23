@@ -128,6 +128,7 @@ def test_trust_mapping() -> None:
 def test_enrol_gated_by_activation_barrier(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.delenv("TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED", raising=False)
     svc, profiles = _svc(tmp_path, monkeypatch)
     created = svc.create_profile_and_link(
         operation_idempotency_key=str(uuid4()),

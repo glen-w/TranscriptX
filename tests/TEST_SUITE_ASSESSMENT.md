@@ -1832,3 +1832,47 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - All `tests/contracts/test_speaker_profiles*.py`: **133 passed**.
 - **Production code in this #tests pass:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 67. Expansion (2026-07-24) – Config nobs, voice match, profiles, llm_custom_qa
+
+### Trigger
+`/tests recent changes to config nobs, speaker voice recognition, speaker profiles, llm custom qa`
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-0017.zip` (5.7M).
+- **Collection (default filter):** `7406/7586` selected (`180` deselected).
+- **Full collection:** `7586`.
+- **Baseline before expansion:** `7404 passed, 2 skipped, 180 deselected` — green.
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow).
+- **Structure:** `tests/{analysis,app,contracts,core,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}`.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| `analysis.ui_presets` validation | Round-trip only | Reject extras/bad types; partial fill; project-config patch |
+| Preset policy helpers | `is_heavy_module` / Custom seed / QA fold-in | Direct unit + Quick vs `compute_effective_modules` |
+| Voice ref index | Happy path only | Corrupt meta miss, empty corpus scan, write shape, link cap |
+| Voice eval harness | Non-empty pairs only | Empty FAR/FRR `None` rates |
+| Locations pack | Happy/unresolved only | Missing + merged profile errors |
+| `llm_custom_qa` settings | Library migration only | Scopes assert + extra-forbid on saved questions |
+
+### Tests added / extended
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_analysis_presets_settings.py` | **+3** | ui_presets validate reject/partial + patch persistence |
+| `tests/core/analysis/test_selection.py` | **+3** | `is_heavy_module`, Custom→Balanced seed, Quick+QA inject |
+| `tests/contracts/test_speaker_profiles_voice_stage9_index.py` | **+3** | Corrupt/empty/link-cap ref index |
+| `tests/contracts/test_speaker_profiles_voice_eval_harness.py` | **+1** | Empty pair FAR/FRR |
+| `tests/unit/test_speaker_profile_locations_pack.py` | **+2** | Not-found / merged analytics errors |
+| `tests/core/config/test_llm_custom_qa_settings_migration.py` | **+1** | Saved-question scopes + extra forbid |
+
+### Validation
+- Focused slice: **50 passed**.
+- Default suite after expansion: **7417 passed, 2 skipped, 180 deselected**.
+- **Production code in this #tests pass:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

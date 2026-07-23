@@ -434,7 +434,11 @@ def render_storage_panel() -> None:
                     except Exception as exc:
                         st.error(str(exc))
             else:
-                st.info("Local voice matching is disabled (default).")
+                st.info(
+                    "Local voice matching is disabled (default). "
+                    "Set TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1 for a "
+                    "local/dev missing-file default, or enable below."
+                )
                 enable_key = ensure_idempotency_key(
                     st.session_state, "voice_privacy_enable"
                 )

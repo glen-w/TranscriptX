@@ -88,6 +88,147 @@ class EnrolExcerptInput:
 
 
 @dataclass(frozen=True)
+class PlannedEvidenceEnrolment:
+    writes: list[PlannedWrite]
+    sample_ids: list[str]
+    embedding_ids: list[str]
+    event_id: str
+
+
+def plan_enrol_excerpt_writes(
+    *,
+    profile_id: str,
+    link_id: str,
+    source_link_content_sha256: str | None,
+    managed_transcript_id: str,
+    local_speaker_key: str,
+    occurrence_fingerprint: str,
+    excerpts: list[EnrolExcerptInput],
+    operation_idempotency_key: str,
+    trust: EvidenceTrust = "suggestion_assisted",
+    actor: str = "user",
+    created_at: str | None = None,
+) -> PlannedEvidenceEnrolment:
+    """Plan sample/embedding/vector/event writes without running the journal."""
+    eligibility = eligibility_for_trust(trust)
+    now = created_at or utc_now_iso()
+    writes: list[PlannedWrite] = []
+    sample_ids: list[str] = []
+    embedding_ids: list[str] = []
+
+    for excerpt in excerpts:
+        sample_id = compute_sample_id(
+            occurrence_fingerprint=occurrence_fingerprint,
+            audio_content_sha256=excerpt.audio_content_sha256,
+            clip_start_us=excerpt.clip_start_us,
+            clip_end_us=excerpt.clip_end_us,
+            model_generation_id=excerpt.model_generation_id,
+        )
+        embedding_id = compute_embedding_id(
+            sample_id=sample_id,
+            model_generation_id=excerpt.model_generation_id,
+        )
+        vec_rel = relative_voice_vector_path(embedding_id)
+        vector_bytes, meta = encode_vector_npy_bytes(excerpt.vector)
+
+        sample = VoiceSampleV1(
+            sample_id=sample_id,
+            profile_id=profile_id,
+            source_link_id=link_id,
+            source_link_fingerprint=occurrence_fingerprint,
+            source_link_content_sha256=source_link_content_sha256,
+            managed_transcript_id=managed_transcript_id,
+            local_speaker_key=local_speaker_key,
+            occurrence_fingerprint=occurrence_fingerprint,
+            audio_stat_fingerprint=excerpt.audio_stat_fingerprint,
+            audio_content_sha256=excerpt.audio_content_sha256,
+            clip_start_us=excerpt.clip_start_us,
+            clip_end_us=excerpt.clip_end_us,
+            model_generation_id=excerpt.model_generation_id,
+            preprocessing_policy_id=PREPROCESSING_POLICY_ID,
+            quality_policy_id=QUALITY_POLICY_ID,
+            trust_level=trust,
+            eligibility_state=eligibility,  # type: ignore[arg-type]
+            ownership_provenance={
+                "enrolled_by": actor,
+                "link_method": trust,
+                "retained_query_evidence": trust == "suggestion_assisted",
+            },
+            created_at=now,
+            eligibility_metrics=dict(excerpt.eligibility_metrics or {}),
+        )
+        embedding = VoiceEmbeddingV1(
+            embedding_id=embedding_id,
+            sample_id=sample_id,
+            profile_id=profile_id,
+            source_link_id=link_id,
+            source_link_fingerprint=occurrence_fingerprint,
+            embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+            model_id=excerpt.model_id,
+            model_revision=excerpt.model_revision,
+            model_generation_id=excerpt.model_generation_id,
+            preprocessing_policy_id=PREPROCESSING_POLICY_ID,
+            quality_policy_id=QUALITY_POLICY_ID,
+            trust_level=trust,
+            eligibility_state=eligibility,  # type: ignore[arg-type]
+            vector_sha256=str(meta["vector_sha256"]),
+            nbytes=int(meta["nbytes"]),
+            dimension=int(meta["dimension"]),
+            dtype="<f4",
+            runtime_metadata=dict(excerpt.runtime_metadata),
+            created_at=now,
+        )
+        writes.append(
+            PlannedWrite(
+                relpath=relative_voice_sample_path(sample_id),
+                data=dumps_model(sample),
+            )
+        )
+        writes.append(
+            PlannedWrite(
+                relpath=relative_voice_embedding_path(embedding_id),
+                data=dumps_model(embedding),
+            )
+        )
+        writes.append(PlannedWrite(relpath=vec_rel, data=vector_bytes))
+        sample_ids.append(sample_id)
+        embedding_ids.append(embedding_id)
+
+    event_id = str(uuid4())
+    from transcriptx.core.speaker_profiles.models import SpeakerProfileEventV1
+    from transcriptx.core.speaker_profiles.operations import relative_event_path
+
+    event = SpeakerProfileEventV1(
+        event_id=event_id,
+        idempotency_id=event_id,
+        operation_idempotency_key=operation_idempotency_key,
+        event_type="voice_evidence_enrolled",
+        created_at=now,
+        actor=actor,
+        payload={
+            "profile_id": profile_id,
+            "link_id": link_id,
+            "sample_ids": sample_ids,
+            "embedding_ids": embedding_ids,
+            "trust_level": trust,
+            "retained_query_evidence": trust == "suggestion_assisted",
+        },
+    )
+    writes.append(
+        PlannedWrite(
+            relpath=relative_event_path(event_id),
+            data=dumps_model(event),
+        )
+    )
+    return PlannedEvidenceEnrolment(
+        writes=writes,
+        sample_ids=sample_ids,
+        embedding_ids=embedding_ids,
+        event_id=event_id,
+    )
+
+
+@dataclass(frozen=True)
 class EnrolResult:
     sample_ids: tuple[str, ...]
     embedding_ids: tuple[str, ...]
@@ -147,140 +288,38 @@ class VoiceEvidenceService:
                 raise SpeakerProfileContractError("no live link for enrolment")
 
             trust = trust_from_link_provenance(link.provenance)
-            eligibility = eligibility_for_trust(trust)
             link_path_abs = link_path(link_file_key_value, root=self.root)
             link_sha = sha256_file(link_path_abs)
-            now = utc_now_iso()
-
-            writes: list[PlannedWrite] = []
-            sample_ids: list[str] = []
-            embedding_ids: list[str] = []
-
-            for excerpt in excerpts:
-                sample_id = compute_sample_id(
-                    occurrence_fingerprint=link.occurrence_fingerprint,
-                    audio_content_sha256=excerpt.audio_content_sha256,
-                    clip_start_us=excerpt.clip_start_us,
-                    clip_end_us=excerpt.clip_end_us,
-                    model_generation_id=excerpt.model_generation_id,
-                )
-                embedding_id = compute_embedding_id(
-                    sample_id=sample_id,
-                    model_generation_id=excerpt.model_generation_id,
-                )
-                vec_rel = relative_voice_vector_path(embedding_id)
-                vector_bytes, meta = encode_vector_npy_bytes(excerpt.vector)
-
-                sample = VoiceSampleV1(
-                    sample_id=sample_id,
-                    profile_id=link.profile_id,
-                    source_link_id=link.link_id,
-                    source_link_fingerprint=link.occurrence_fingerprint,
-                    source_link_content_sha256=link_sha,
-                    managed_transcript_id=link.managed_transcript_id,
-                    local_speaker_key=link.local_speaker_key,
-                    occurrence_fingerprint=link.occurrence_fingerprint,
-                    audio_stat_fingerprint=excerpt.audio_stat_fingerprint,
-                    audio_content_sha256=excerpt.audio_content_sha256,
-                    clip_start_us=excerpt.clip_start_us,
-                    clip_end_us=excerpt.clip_end_us,
-                    model_generation_id=excerpt.model_generation_id,
-                    preprocessing_policy_id=PREPROCESSING_POLICY_ID,
-                    quality_policy_id=QUALITY_POLICY_ID,
-                    trust_level=trust,
-                    eligibility_state=eligibility,  # type: ignore[arg-type]
-                    ownership_provenance={
-                        "enrolled_by": actor,
-                        "link_method": (link.provenance or {}).get(
-                            "link_method", "manual"
-                        ),
-                    },
-                    created_at=now,
-                    eligibility_metrics=dict(excerpt.eligibility_metrics or {}),
-                )
-                embedding = VoiceEmbeddingV1(
-                    embedding_id=embedding_id,
-                    sample_id=sample_id,
-                    profile_id=link.profile_id,
-                    source_link_id=link.link_id,
-                    source_link_fingerprint=link.occurrence_fingerprint,
-                    embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
-                    model_id=excerpt.model_id,
-                    model_revision=excerpt.model_revision,
-                    model_generation_id=excerpt.model_generation_id,
-                    preprocessing_policy_id=PREPROCESSING_POLICY_ID,
-                    quality_policy_id=QUALITY_POLICY_ID,
-                    trust_level=trust,
-                    eligibility_state=eligibility,  # type: ignore[arg-type]
-                    vector_sha256=str(meta["vector_sha256"]),
-                    nbytes=int(meta["nbytes"]),
-                    dimension=int(meta["dimension"]),
-                    dtype="<f4",
-                    runtime_metadata=dict(excerpt.runtime_metadata),
-                    created_at=now,
-                )
-                writes.append(
-                    PlannedWrite(
-                        relpath=relative_voice_sample_path(sample_id),
-                        data=dumps_model(sample),
-                    )
-                )
-                writes.append(
-                    PlannedWrite(
-                        relpath=relative_voice_embedding_path(embedding_id),
-                        data=dumps_model(embedding),
-                    )
-                )
-                writes.append(
-                    PlannedWrite(relpath=vec_rel, data=vector_bytes)
-                )
-                sample_ids.append(sample_id)
-                embedding_ids.append(embedding_id)
-
-            event_id = str(uuid4())
-            from transcriptx.core.speaker_profiles.models import SpeakerProfileEventV1
-            from transcriptx.core.speaker_profiles.operations import relative_event_path
-
-            # No raw scores in Phase 1 events — counts and ids only.
-            event = SpeakerProfileEventV1(
-                event_id=event_id,
-                idempotency_id=event_id,
+            planned = plan_enrol_excerpt_writes(
+                profile_id=link.profile_id,
+                link_id=link.link_id,
+                source_link_content_sha256=link_sha,
+                managed_transcript_id=link.managed_transcript_id,
+                local_speaker_key=link.local_speaker_key,
+                occurrence_fingerprint=link.occurrence_fingerprint,
+                excerpts=excerpts,
                 operation_idempotency_key=operation_idempotency_key,
-                event_type="voice_evidence_enrolled",
-                created_at=now,
+                trust=trust,
                 actor=actor,
-                payload={
-                    "profile_id": link.profile_id,
-                    "link_id": link.link_id,
-                    "sample_ids": sample_ids,
-                    "embedding_ids": embedding_ids,
-                    "trust_level": trust,
-                },
-            )
-            writes.append(
-                PlannedWrite(
-                    relpath=relative_event_path(event_id),
-                    data=dumps_model(event),
-                )
             )
 
             self.engine.run(
                 op_type="voice_enrol_from_link",
                 operation_idempotency_key=operation_idempotency_key,
-                writes=writes,
+                writes=planned.writes,
                 deletes=[],
                 receipt_extra={
                     "profile_id": link.profile_id,
                     "link_id": link.link_id,
-                    "sample_ids": sample_ids,
-                    "embedding_ids": embedding_ids,
-                    "event_ids": [event_id],
+                    "sample_ids": planned.sample_ids,
+                    "embedding_ids": planned.embedding_ids,
+                    "event_ids": [planned.event_id],
                     "scopes": ["speaker_voice"],
                 },
             )
             return EnrolResult(
-                sample_ids=tuple(sample_ids),
-                embedding_ids=tuple(embedding_ids),
+                sample_ids=tuple(planned.sample_ids),
+                embedding_ids=tuple(planned.embedding_ids),
                 cache_signal=CacheInvalidationSignal(
                     scopes=("speaker_voice",),
                     profile_ids=(link.profile_id,),

@@ -151,8 +151,9 @@ TranscriptX does not auto-select models from transcript `language` metadata toda
 
 Optional local speaker embeddings for suggested profile matches (see
 `docs/contracts/speaker_profiles_voice_v1.md`). Default install does **not**
-include this extra. Production analyse/enrol/accept stay behind
-`ActivationBarrier` until the Stage 8 lifecycle gate opens.
+include this extra. Stage 8 lifecycle gate is **open**
+(`FEATURE_GATE_COMPLETE = True`); production analyse/enrol/accept still require
+privacy consent via `ActivationBarrier` (voice privacy defaults off).
 
 | Field | Value |
 |-------|--------|

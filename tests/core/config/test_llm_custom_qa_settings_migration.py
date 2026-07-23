@@ -40,3 +40,25 @@ def test_evidence_pack_ids_null_default() -> None:
     assert m.evidence_pack_ids is None
     m2 = LLMCustomQASettingsModel.model_validate({"evidence_pack_ids": []})
     assert m2.evidence_pack_ids == []
+
+
+@pytest.mark.unit
+def test_saved_question_scopes_and_extra_forbid() -> None:
+    from pydantic import ValidationError
+
+    m = LLMCustomQASettingsModel.model_validate(
+        {
+            "saved_questions": [
+                {
+                    "text": "Who decided?",
+                    "scopes": {"global": False, "per_speaker": True},
+                }
+            ]
+        }
+    )
+    assert m.saved_questions[0].scopes.global_scope is False
+    assert m.saved_questions[0].scopes.per_speaker is True
+    with pytest.raises(ValidationError):
+        LLMCustomQASettingsModel.model_validate(
+            {"saved_questions": [{"text": "x", "scopes": {"global": True}, "extra": 1}]}
+        )

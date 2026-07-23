@@ -58,7 +58,9 @@ def build_module_label(
             missing_deps = context.get("missing_deps") or []
             if missing_deps:
                 badges.append(f"deps missing: {', '.join(missing_deps)}")
-    if getattr(module_info, "cost_tier", None) == "heavy":
+    from transcriptx.core.analysis.selection import is_heavy_module
+
+    if is_heavy_module(module_info):
         badges.append("heavy")
     if badges:
         return f"{description} ({'; '.join(badges)})"

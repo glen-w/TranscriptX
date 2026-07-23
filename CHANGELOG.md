@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.7.5] - 2026-07-24
+
+### Added
+
+- Configurable analysis presets under **Settings → Analysis** (`analysis.ui_presets`): policy knobs plus optional module overrides for Quick / Balanced / Thorough, with defaults Quick = no LLM/no heavy, Balanced = `llm_summary` + heavy allowlist `semantic_similarity_v2`/`fine_grained_emotion`, Thorough = all suitable modules. Preset resolution also drops modules whose hard deps would reintroduce disallowed heavy/LLM modules via the DAG.
+- Speaker profile **Locations** analytics pack from NER location mentions across linked appearances.
+- Speaker voice match file residuals: accept query-evidence co-journal, eval harness, chunked merge transfer, Stage 9 disposable file index under `.cache/voice/indexes/`.
+- NER `location_mentions_per_speaker` rich mention records (segment index + start) feeding the locations pack.
+
+### Changed
+
+- Run Analysis / Batch preset help copy points at Settings → Analysis; heavy-module counting treats registry `category` or `cost_tier` as heavy.
+- Speakers voice UX / privacy defaults and contract docs updated for the residual voice match work.
+
+
 ## [0.7.4] - 2026-07-23
 
 ### Added
