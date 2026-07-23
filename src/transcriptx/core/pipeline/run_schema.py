@@ -106,6 +106,8 @@ class RunResultsSummary(BaseModel):
     modules_failed: List[str]
     errors: List[str]
     preset_explanation: Optional[str] = None
+    # UI analysis preset used to launch the run (quick|balanced|thorough|custom).
+    analysis_preset: Optional[str] = None
     module_outcomes: Optional[List[Dict[str, Any]]] = None
 
     @classmethod

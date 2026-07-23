@@ -424,6 +424,11 @@ def run_analysis(
     modules_run = results.get("modules_run", [])
     result_errors = results.get("errors", [])
 
+    if output_path and getattr(request, "analysis_preset", None):
+        from transcriptx.core.pipeline.manifest_builder import record_analysis_preset
+
+        record_analysis_preset(output_path, request.analysis_preset)
+
     status = "completed"
     if result_errors:
         status = "partial" if modules_run else "failed"
@@ -709,6 +714,10 @@ def run_group_analysis(
     manifest_path = output_path / "manifest.json" if output_path else Path()
     group_errors = results.get("errors", [])
     modules_executed = results.get("modules_run", filtered)
+    if output_path and getattr(request, "analysis_preset", None):
+        from transcriptx.core.pipeline.manifest_builder import record_analysis_preset
+
+        record_analysis_preset(output_path, request.analysis_preset)
     if output_path and output_path.exists():
         try:
             group_truth = project_group_outcomes(output_path)

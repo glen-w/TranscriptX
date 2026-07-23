@@ -127,7 +127,9 @@ pytest \
 
 ## End state (registry ownership complete)
 
-**41 Pydantic pilots** own **598** flattened registry leaf keys. The non-pydantic baseline is **10 keys** by design (**608** total registry keys):
+**41 Pydantic pilots** originally owned **598** flattened registry leaf keys (historical Wave 9 baseline). **Current invariant** (authoritative): see `tests/core/config/test_registry_ownership.py::test_ownership_invariant_counts` — **50 / 682 / 16** (698 total) as of 0.7.x.
+
+Historical Wave 9 non-pydantic baseline (**10** keys) was:
 
 | Key | Reason |
 |-----|--------|
@@ -135,6 +137,8 @@ pytest \
 | `active_workflow_profile` | Workflow profile activation — permanent legacy |
 | `use_emojis` | Simple global flag — kept legacy (Wave 9: no empty-prefix bridge) |
 | `core_mode` | Install/runtime mode flag — kept legacy (Wave 9: no empty-prefix bridge) |
+
+**Current** permanent legacy set is **16** keys (same activation/global flags plus additional nested `analysis.active_*_profile` selectors and a small `analysis.chart_descriptions.*` holdout — see `non_pydantic_registry_baseline.json`).
 
 Wave 9 evaluated two single-key pilots and empty-prefix bridge hacks; **legacy retention** was chosen to avoid destabilizing `collect_model_leaf_dotpaths`, `find_pilot_for_dotpath_key`, and env drift tests.
 
@@ -148,7 +152,7 @@ Registry ownership and runtime dataclass defaults are **separate phases**:
 
 | Phase | Status | Meaning |
 |-------|--------|---------|
-| Registry ownership | Complete (**41 / 598 / 10**, 608 total) | Pydantic models own field definitions, validation, registry metadata |
+| Registry ownership | Complete (see live invariant **50 / 682 / 16**; historical Wave 9 was **41 / 598 / 10**) | Pydantic models own field definitions, validation, registry metadata |
 | Runtime delegation | Partial — see [`config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md) | Thin dataclasses hydrate from Pydantic models; duplicate literals removed per subtree |
 
 Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. Nested dict dumps are reconstructed as nested dataclasses when field annotations require it. Direct programmatic `setattr` on leaf fields does **not** revalidate through Pydantic; profile application via `apply_profile_to_config` may call the target’s `validate()` after applying fields. Validation also remains at `validate_config()` / file-load boundaries.
@@ -179,7 +183,7 @@ Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pa
 
 | Artifact | Purpose |
 |----------|---------|
-| `test_registry_ownership.py` | Ownership inventory snapshot, **41/598/10** (608 total) invariant |
+| `test_registry_ownership.py` | Ownership inventory snapshot; live invariant **50/682/16** (698 total) |
 | `test_delegation_shape_snapshots.py` | Pre-delegation default shapes |
 | `test_registry_metadata_constraints.py` | Bounded choices/defaults/type agreement |
 | `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all 41 pilots) |

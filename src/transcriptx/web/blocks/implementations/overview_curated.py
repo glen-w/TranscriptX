@@ -51,8 +51,21 @@ def _summary_source_badge(kind: SummaryKind) -> str:
     return "Standard"
 
 
-def _summary_hero_badges(candidate) -> list[str]:
-    badges = [_summary_source_badge(candidate.kind)]
+def _analysis_preset_badge(run_results: dict | None) -> str | None:
+    """Named UI preset badge (Quick/Balanced/Thorough); omit Custom / unknown."""
+    from transcriptx.core.analysis.selection import analysis_preset_badge_label
+
+    if not isinstance(run_results, dict):
+        return None
+    return analysis_preset_badge_label(run_results.get("analysis_preset"))
+
+
+def _summary_hero_badges(candidate, *, run_results: dict | None = None) -> list[str]:
+    badges: list[str] = []
+    preset = _analysis_preset_badge(run_results)
+    if preset:
+        badges.append(preset)
+    badges.append(_summary_source_badge(candidate.kind))
     badges.extend(provenance_badges((candidate.payload or {}).get("provenance")))
     return badges
 
@@ -121,7 +134,9 @@ def render_transcript_summary_hero(
         render_global_custom_qa_under_summary(ctx.run_root)
         return
     st.markdown("# Transcript Summary")
-    render_badge_row(_summary_hero_badges(result.primary))
+    render_badge_row(
+        _summary_hero_badges(result.primary, run_results=ctx.run_results)
+    )
     _render_summary_body(result.primary, strip_heading=True, strip_provenance=True)
     from transcriptx.web.blocks.implementations.custom_qa_presentation import (
         render_global_custom_qa_under_summary,

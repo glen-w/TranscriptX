@@ -66,7 +66,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
-| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 + 1.6 + R2 voice shipped**: file store, Speakers UX, over-time charts, accents, analytics pack, voice match/accept/enrol; **file-backed voice residuals shipped** — accept query-evidence co-journal, eval harness, chunked merge transfer, Stage 9 file index; remainder: **DB analytics views**, **group gallery keyed by `profile_id`**) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
+| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 + 1.6 + R2 voice + Locations pack shipped**: file store, Speakers UX, over-time charts, accents, analytics pack, avatars, voice match/accept/enrol, NER locations map; **file-backed voice residuals shipped** — accept query-evidence co-journal, eval harness, chunked merge transfer, Stage 9 file index; remainder: **DB analytics views**, **group gallery keyed by `profile_id`**) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
 | 12 | B18 | **Insight narratives grounded in module evidence** | deepen | Summary & Synthesis | M | `insights` + LLM; **P2** provenance contracts |
 | — | — | **Group LLM synthesis** (cross-session rollup of member `llm_summary` / `llm_speaker_summary`) | deepen (finalize; no new module ID) | Summary & Synthesis (+ Groups) | M | Shipped contract: [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md) |
 | 13 | B4 | **ConvoKit accommodation / coordination** — implementation option, not product objective | revive (optional) | Speakers & Interaction | L | define desired outputs first; resolve numpy/spaCy/thinc only if still needed |
@@ -151,7 +151,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers; ~~B13 graphs~~ shipped |
+| **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers (file-backed + locations **shipped**; DB/group `profile_id` remainder); ~~B13 graphs~~ shipped |
 | **Add** | ~~B7 politeness/formality~~ **shipped** as `politeness` |
 | **Optional revive** | B4 ConvoKit only after desired outputs are specified (§3.2) |
 
@@ -196,14 +196,14 @@ flowchart LR
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
 | **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
 | **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; ~~B13~~ interaction graphs (+ profile avatars) | Interaction depth from existing data + light linguistics |
-| **3** | Phase 3 product | B5 remainder (**DB views** / group `profile_id` charts; voice file residuals closed), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
+| **3** | Phase 3 product (in progress via 0.7.x Speakers) | B5 remainder (**DB views** / group `profile_id` charts; file-backed Speakers/voice/locations **closed**), B14, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
 | **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |
 
-**Next product capacity (ranked open):** Wave 3 items (B5 DB/group `profile_id` remainder, B14, B18 / P2); P1 infrastructure in parallel when eng capacity allows.
+**Next product capacity (ranked open):** Wave 3 items (B5 DB/group `profile_id` remainder, B14, B18 / P2); P1 infrastructure in parallel when eng capacity allows. **Also shipped adjacent to Wave 3:** configurable analysis presets (`analysis.ui_presets`, 0.7.5); Speakers Locations pack (0.7.5).
 
 **Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
 
-P1 may begin alongside remaining Wave 1/2 work as infrastructure; do not call “multilingual routing” shipped until named consumers adopt it.
+P1 may begin alongside remaining Wave 3 work as infrastructure; do not call “multilingual routing” shipped until named consumers adopt it.
 
 ---
 
@@ -266,3 +266,6 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Competitive inspiration (5 OSS tools vs TX) | [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) |
 | Wave 2 lexicon linguistics (B6/B7) | [`wave2_lexicon_linguistics_2026-07-23.md`](wave2_lexicon_linguistics_2026-07-23.md) |
 | Wave B13 interaction graphs | [`wave_b13_interaction_graphs_2026-07-23.md`](wave_b13_interaction_graphs_2026-07-23.md) |
+| Speaker profiles v1 | [`../contracts/speaker_profiles_v1.md`](../contracts/speaker_profiles_v1.md) |
+| Speaker profiles voice | [`../contracts/speaker_profiles_voice_v1.md`](../contracts/speaker_profiles_voice_v1.md) |
+| Analysis presets (runtime) | [`../runtime/installation.md`](../runtime/installation.md) (Analysis presets) |

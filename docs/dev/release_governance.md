@@ -6,7 +6,7 @@ This document is the **authoritative release gate** for public version tags. It 
 
 ## Wave 0 eng criteria (closed)
 
-Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed 2026-07-22 for **0.6.5**). Remaining work before a public tag is this checklist + evidence runbook — not missing Wave 0 code.
+Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed 2026-07-24 for **0.7.5**). Remaining work before a public tag is this checklist + evidence runbook — not missing Wave 0 code.
 
 ## Checklist
 

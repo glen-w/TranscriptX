@@ -9,6 +9,7 @@ from unittest.mock import patch
 from transcriptx.core.analysis.selection import (
     VALID_MODES,
     VALID_PROFILES,
+    analysis_preset_badge_label,
     apply_analysis_mode_settings,
     filter_modules_by_mode,
     filter_modules_for_speaker_count,
@@ -29,6 +30,14 @@ class TestSelectionConstants:
         assert "balanced" in VALID_PROFILES
         assert "academic" in VALID_PROFILES
         assert "business" in VALID_PROFILES
+
+    def test_analysis_preset_badge_label_named_only(self) -> None:
+        assert analysis_preset_badge_label("quick") == "Quick"
+        assert analysis_preset_badge_label("Balanced") == "Balanced"
+        assert analysis_preset_badge_label("thorough") == "Thorough"
+        assert analysis_preset_badge_label("custom") is None
+        assert analysis_preset_badge_label(None) is None
+        assert analysis_preset_badge_label("  ") is None
 
 
 class TestApplyAnalysisModeSettings:
@@ -385,3 +394,46 @@ class TestResolveAnalysisPreset:
         plan = compute_effective_modules(quick, custom_qa_execution=True)
         # Flag injects the module once for run planning regardless of preset.
         assert plan.module_ids.count("llm_custom_qa") == 1
+
+
+class TestSelectionHelpersAndFullMode:
+    def test_analysis_preset_badge_label(self) -> None:
+        from transcriptx.core.analysis.selection import analysis_preset_badge_label
+
+        assert analysis_preset_badge_label(None) is None
+        assert analysis_preset_badge_label("") is None
+        assert analysis_preset_badge_label("custom") is None
+        assert analysis_preset_badge_label("QUICK") == "Quick"
+        assert analysis_preset_badge_label("balanced") == "Balanced"
+        assert analysis_preset_badge_label("thorough") == "Thorough"
+
+    def test_is_legacy_module(self) -> None:
+        from transcriptx.core.analysis.selection import is_legacy_module
+
+        assert is_legacy_module("not_a_module_zzz") is False
+
+    def test_apply_full_mode_and_invalid_profile(self) -> None:
+        from unittest.mock import patch
+
+        from transcriptx.core.analysis.selection import apply_analysis_mode_settings
+
+        with patch("transcriptx.core.analysis.selection.get_config") as mock_get:
+            cfg = mock_get.return_value
+            cfg.analysis.full_analysis_settings = {
+                "semantic_method": "advanced",
+                "max_segments_for_semantic": 1000,
+                "max_semantic_comparisons": 500,
+                "ner_use_light_model": False,
+                "ner_max_segments": 5000,
+                "skip_geocoding": False,
+                "max_segments_per_speaker": 50,
+                "max_segments_for_cross_speaker": 100,
+            }
+            cfg.analysis.semantic_similarity_v2 = type(
+                "V2", (), {"mode": "basic"}
+            )()
+            apply_analysis_mode_settings("full", profile="not-a-profile")
+            assert cfg.analysis.analysis_mode == "full"
+            assert cfg.analysis.quality_filtering_profile == "balanced"
+            assert cfg.analysis.semantic_similarity_v2.mode == "advanced"
+            assert cfg.analysis.max_segments_per_speaker == 50

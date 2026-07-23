@@ -407,3 +407,42 @@ atomic disposable files under `.cache/`; freshness-key miss is sufficient for
 correctness. Speakers detail rebuilds snapshot each render.
 `CacheInvalidationSignal` scopes today: `speaker_profiles`, `speaker_links`,
 `transcript_summaries` — do not claim coverage the service does not emit.
+
+---
+
+## Locations pack (Speakers detail)
+
+Derived Speakers-detail map of geocoded NER location mentions across linked
+appearances. Not a new analysis module. Not Charts Gallery. Pack payloads are
+derived and disposable; never canonical.
+
+### Inputs
+
+- `AggregationSnapshot` appearances (same eligibility as Phase 1.6 headline
+  series via `series_eligible` / `include_ignored`)
+- Newest run under each appearance session that contains NER locations JSON
+  (`find_ner_locations_path`: canonical `ner/data/global/*_ner-locations.json`,
+  legacy `ner/ner-locations.json`, or nested `*ner-locations.json`)
+- Speaker-map resolution so mentions are attributed to the profile’s local
+  speaker key on that transcript
+
+### Output
+
+`ProfileLocationsPack`: `profile_id`, shared `freshness_token`,
+`include_ignored`, ordered `mentions` (`ProfileLocationMention`: name, lat/lon,
+sentence, session/run ids, segment index, start time, transcript ids/labels,
+appearance date), plus `appearances_without_ner` and `unresolved_mentions`
+counters. `status` is `ok` or `empty`.
+
+### Contracts
+
+- Known profile, no eligible mentions → empty success pack (`status=empty`)
+- Unknown profile → typed not-found error
+- Merged profile → pack refuses (`ProfileAnalyticsMergedError`)
+- Missing NER artifacts for an appearance increment `appearances_without_ner`;
+  do not fail the pack
+
+### UI
+
+Speakers detail renders an optional Folium map when mentions exist; empty /
+partial states surface the without-NER / unresolved counters.

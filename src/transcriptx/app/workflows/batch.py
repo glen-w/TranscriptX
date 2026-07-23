@@ -96,6 +96,7 @@ def run_batch_analysis(
             transcript_path=path,
             mode=request.analysis_mode,
             modules=request.selected_modules,
+            analysis_preset=request.analysis_preset,
             persist=request.persist,
             llm_model_selection=request.llm_model_selection,
             llm_custom_qa_questions=request.llm_custom_qa_questions,

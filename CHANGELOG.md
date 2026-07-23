@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Overview / run-summary badge for named analysis presets (Quick / Balanced / Thorough); Custom runs omit the badge.
+- Extra offline coverage: voice bootstrap early paths, `llm_custom_qa` analyze_v2 helpers, locations-pack path fallbacks, geo utils.
+
 
 ## [0.7.5] - 2026-07-24
 

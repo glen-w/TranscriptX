@@ -117,6 +117,42 @@ def test_locations_pack_merged_profile_raises() -> None:
         build_profile_locations_pack(snap, "p1")
 
 
+def test_find_ner_locations_path_missing_and_rglob(tmp_path: Path) -> None:
+    assert find_ner_locations_path(tmp_path / "nope") is None
+
+    run = tmp_path / "run-nested"
+    nested = run / "ner" / "extra" / "deep"
+    nested.mkdir(parents=True)
+    target = nested / "x_ner-locations.json"
+    target.write_text("{}", encoding="utf-8")
+    assert find_ner_locations_path(run) == target
+
+
+def test_paths_match_and_appearance_path_fallbacks(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    from transcriptx.core.speaker_profiles import locations_pack as lp
+
+    a = tmp_path / "a.json"
+    b = tmp_path / "b.json"
+    a.write_text("x", encoding="utf-8")
+    b.write_text("y", encoding="utf-8")
+    assert lp._paths_match(a, a) is True
+    assert lp._paths_match(a, b) is False
+    assert lp._paths_match("/no/such/left", "/no/such/right") is False
+
+    profile = _profile()
+    row = _appearance(current_relpath="", observed_transcript_relpath="obs.json")
+    snap = _snap(profile=profile, appearances=(row,), bundles={})
+    # No bundle resolved path → falls through to PATHS.transcripts_dir / relpath
+    monkey_path = tmp_path / "tx"
+    monkey_path.mkdir()
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(lp, "PATHS", SimpleNamespace(transcripts_dir=monkey_path))
+        path = lp._appearance_transcript_path(snap, row)
+        assert path == monkey_path / "obs.json"
+
+
 def test_find_ner_locations_path_canonical_and_legacy(tmp_path: Path) -> None:
     run = tmp_path / "run1"
     global_dir = run / "ner" / "data" / "global"

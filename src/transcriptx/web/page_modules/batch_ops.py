@@ -211,6 +211,7 @@ def render_batch_analysis_panel() -> None:
                 transcript_paths=selected_paths,
                 analysis_mode=resolved.mode,
                 selected_modules=selected_modules,
+                analysis_preset=resolved.preset,
                 llm_model_selection=llm_selection,
                 llm_custom_qa_questions=qa_request_questions,
             )

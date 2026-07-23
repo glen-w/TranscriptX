@@ -8,6 +8,7 @@ Concept → Authority:
 - **Storage** → `docs/runtime/STORAGE.md`
 - **Speaker profiles (longitudinal)** → `docs/contracts/speaker_profiles_v1.md`
 - **Speaker profiles voice phase (local matching)** → `docs/contracts/speaker_profiles_voice_v1.md`
+- **Speaker voice match index gate (Stage 9)** → `docs/dev/speaker_voice_match_index_gate.md`
 - **Speaker profiles reference-env index gate** → `docs/dev/speaker_profiles_reference_env_index_gate.md`
 - **Run truth & statuses** → `docs/run_outcome_contract.md`
 - **Core pipeline layering & lifecycle** → `docs/dev/pipeline_contracts.md`

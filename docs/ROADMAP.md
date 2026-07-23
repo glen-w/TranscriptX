@@ -39,20 +39,20 @@ TranscriptX is evolving toward a **personal audio analysis companion**. The GUI 
 - **GPU-accelerated inference** where the host can expose it (CUDA on Linux; Apple MPS on native Mac)
 - **First-class native installation** alongside Docker (venv / `./transcriptx.sh`), especially where Docker cannot use the host GPU
 
-**Near-term (0.6.x)**
+**Near-term (0.7.x)**
 
-- Harden GUI and Python API ergonomics
+- Harden GUI and Python API ergonomics (Run Analysis presets; Settings → Models / Analysis)
 - Improve run summaries and explainability
-- Improve speaker identification workflow
+- Speaker profiles: file-backed identity, Speakers UI, voice match, locations (DB/group `profile_id` remainder deferred)
 - Improve installation reliability
 - Stabilize output contracts
 - **CI matrix (Python 3.10–3.12) + release-checks** — see `.github/workflows/ci.yml`
 - **Transcript-first by default** (especially Docker); optional orchestrated transcribe→import workflow later — see [Transcription architecture](#phase-2--transcription-architecture-analysis-first-integration-deferred)
 
-**Later (0.7+)**
+**Later (0.8+)**
 
 - Enhanced GUI capabilities: run comparison, artifact filtering, richer visualizations
-- Deeper cross-session and longitudinal views in the GUI
+- Deeper cross-session and longitudinal views (DB analytics / group `profile_id` gallery)
 - Personal audio analysis workflows
 - Optional **ask-this-transcript** chat in the viewer GUI — see [Deferred to post-beta](#deferred-to-post-beta)
 - GPU and native install paths — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term)
@@ -91,7 +91,7 @@ These would enable summarization, conversational insights, and semantic analysis
 
 ## Phases (priority order)
 
-### Phase 1 — Beta-ready (0.6.x honesty)
+### Phase 1 — Beta-ready (0.6.x honesty → 0.7.x packaging)
 
 **Goal:** Install, core flows, docs, and **in-repo CI** work for a beta user.
 
@@ -101,7 +101,7 @@ These would enable summarization, conversational insights, and semantic analysis
 - Dependencies: clean-env audit + image `pip check` (see `docs/dev/dependency_audit.md`)
 - CI: `.github/workflows/ci.yml` — smoke, contracts, fast on Python 3.10–3.12; release-checks job
 
-Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng criteria (A1–A10 + Config 1.7/1.8 + docs/inventory parity) are **closed**; Top-3 eng programs are **Done**. Wave 1/2 product items are **partial** (BERTopic, `transcript_quality`, interactions equity, **`topic_shift`/B9** shipped; see [analysis module backlog](dev/analysis_module_backlog_2026-07-17.md)). The next public tag still requires the evidence checklist in [`docs/dev/release_governance.md`](dev/release_governance.md).
+Feature delivery continues under beta; “no new features” language is retired. Wave 0 eng criteria (A1–A10 + Config 1.7/1.8 + docs/inventory parity) are **closed**; Top-3 eng programs are **Done**. Waves 1–2 product items are **shipped** (BERTopic, `transcript_quality`, equity, `topic_shift`, B6/B7, B10, B13, Speakers 1.5/1.6/voice/locations, analysis presets; see [analysis module backlog](dev/analysis_module_backlog_2026-07-17.md)). The next public tag still requires the evidence checklist in [`docs/dev/release_governance.md`](dev/release_governance.md).
 
 ---
 
@@ -122,7 +122,7 @@ Feature delivery continues under beta; “no new features” language is retired
 - An earlier **Transcribe Audio** experiment invoked whispermlx via `subprocess` on the same native macOS host as Streamlit. That broke down for Docker users and duplicated what a shell loop or `whispermlx-missing` already does well—so the page is now an **instruction hub** only.
 - Merging stacks would couple analysis releases to transcription toolchains (ffmpeg, HF tokens, model weights, platform quirks).
 
-**Current state (0.6.x)**
+**Current state (0.7.x)**
 
 - [x] **Transcribe Audio** GUI — instruction hub (shell examples, `whispermlx-missing`); no in-app transcription forms.
 - [x] **Import Transcript** GUI + `run_managed_import_workflow()` — all platforms; primary handoff after external transcribe.
@@ -172,9 +172,9 @@ Configuration remains env-driven (`whisperx.env`, provider registry); no transcr
 
 **Goal:** Richer analysis and tooling without blocking beta or stability.
 
-- **Longitudinal speaker tracking v1 and v2** — **v1 identity store + Speakers UI charts (Phase 1.5) + Phase 1.6 analytics pack shipped**. Richer cross-session / DB-backed analytics views remain planned.
+- **Longitudinal speaker tracking v1 and v2** — **v1 identity store + Speakers UI (Phase 1.5) + Phase 1.6 analytics + avatars + voice R2 + locations pack shipped**. Richer cross-session / DB-backed analytics views and group gallery keyed by `profile_id` remain planned.
 - Emotion family deepen (Phase 5 calibration for `contextual_emotion` / `fine_grained_emotion`; tension metrics; divergence summaries) — not “converge into one emotion module”
-- NER-driven insight (entity–sentiment, concordance, timelines)
+- NER-driven insight (entity–sentiment, concordance, timelines); Speakers **Locations** map from NER location mentions is shipped
 - Interaction and network analysis — **B13 shipped** on `interactions` (GraphML/JSON + `interactions.network_graph.global`); turn-taking **equity pack already shipped**
 - **Ask-this-transcript (viewer chat)** — optional Streamlit panel; prefer stuffed-context / lexical-retrieve-then-LLM + jump-to-segment citations over a full RAG + streaming ReAct workspace (see competitive note W1). **Shipped lighter path:** analysis-time `llm_custom_qa` (Settings library + Run/Batch picker → Insights citation cards).
 - Adapters and plugins (design only; no marketplace)
@@ -192,7 +192,7 @@ The following are explicitly **not** part of the beta-ready scope; they are plan
 - **Longitudinal speaker tracking / Speakers UI** — Phase 1.5–1.6 Speakers UI/analytics and Phase 2 R2 local voice suggested matches shipped (incl. file-backed residuals: accept query-evidence, eval harness, chunked merge transfer, Stage 9 digest-keyed file matrix under `.cache/voice/indexes/`). Deferred remainder: SQLite/DB analytics views, group gallery keyed by `profile_id`.
 - **Ask-this-transcript (viewer GUI)** — optional chat panel over the loaded run (Ollama + existing prompt budgeting / Search jump). **Not** a Retrievia-style RAG + streaming ReAct product; that remains competitive awareness only ([competitive inspiration W1](dev/competitive_inspiration_2026-07-22.md)). Prefer local stuffed-context or lexical-retrieve-then-LLM with segment citations.
 - **GPU acceleration & first-class native install** — MPS on native Mac; CUDA on Linux Docker/native; documented install parity — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term).
-- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export Jinja2/Artifact Protocol follow-ups, optional config **1.9** structural split. **Shipped recently (not eng blockers):** BERTopic re-enabled (default install for now); interactions **equity pack**; `transcript_quality` (ASR confidence); emotion-family classifier modules; group LLM synthesis. Public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
+- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export Jinja2/Artifact Protocol follow-ups, optional config **1.9** structural split. **Shipped recently (not eng blockers):** BERTopic; interactions equity; `transcript_quality`; emotion-family classifiers; group LLM synthesis; Waves 1–2 analysis (B6/B7/B9/B10/B12/B13); speaker profiles + voice + locations; configurable analysis presets. Public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
 
 ### ConvoKit analysis (archived)
 
@@ -208,13 +208,13 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.7.x — current packaging line (**0.7.3**); Wave 0 eng criteria closed; Top-3 eng programs Done; Wave 1/2 product items shipped through B13 (+ Speakers Phase 1.5/1.6 / avatars); public tags still via release governance evidence
+- **M3:** 0.7.x — current packaging line (**0.7.5**); Wave 0 eng criteria closed; Top-3 eng programs Done; Waves 1–2 product items shipped (through B13 + Speakers 1.5/1.6/voice/locations + analysis presets); Wave 3 open (B5 DB/group remainder, B14, B18/P2); public tags still via release governance evidence
 
 ---
 
 ## Sprint plan (archived backlog)
 
-Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus: Phase 1 beta machinery is in place; remaining Wave 1/2 analysis capacity and Phase 2 transcription stance follow. See the [stocktake](dev/stocktake_2026-07-17.md) and [analysis module backlog](dev/analysis_module_backlog_2026-07-17.md) for current packaging and product truth.
+Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md](archive/sprint_archive.md) (historical backlog only — not live). Focus: Phase 1 beta machinery is in place; Wave 3 analysis capacity and Phase 2 transcription stance follow. See the [stocktake](dev/stocktake_2026-07-17.md) and [analysis module backlog](dev/analysis_module_backlog_2026-07-17.md) for current packaging and product truth.
 
 ---
 
@@ -233,5 +233,5 @@ Historical sprint notes (Sprints 1–12) live in [docs/archive/sprint_archive.md
 - A serious researcher can trust the outputs and cite the artifacts
 - Stats outputs are coherent (MD + JSON) and stable across versions
 - Adding a new analysis module feels low-risk
-- GUI and Python workflows for speaker identity exist and do not corrupt data; richer speaker-over-time visualization is deferred to a later release
+- GUI and Python workflows for speaker identity exist (file-backed Speakers + voice); richer DB-backed / group `profile_id` analytics remain deferred
 - You still enjoy working on the codebase

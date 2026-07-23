@@ -71,10 +71,17 @@ def _render_overview_body(ctx: RunScopedPageContext) -> None:
         subject_id=ctx.subject.subject_id,
         run_id=ctx.run_id,
     )
+    from transcriptx.core.analysis.selection import analysis_preset_badge_label
+    from transcriptx.web.blocks.session_context import load_run_results_dict
+
+    run_results = load_run_results_dict(ctx.run_root)
+    preset_badge = analysis_preset_badge_label(
+        (run_results or {}).get("analysis_preset") if run_results else None
+    )
     render_page_shell(
         "Overview",
         f"Run started: {run_datetime}.",
-        badges=None,
+        badges=[preset_badge] if preset_badge else None,
         actions=None,
     )
 

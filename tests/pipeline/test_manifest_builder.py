@@ -11,6 +11,7 @@ from transcriptx.core.pipeline.manifest_builder import (
     _infer_kind,
     build_output_manifest,
     build_run_results_summary,
+    record_analysis_preset,
     write_run_results_summary,
 )
 
@@ -237,6 +238,29 @@ class TestBuildRunResultsSummary:
         )
         assert "preset_explanation" not in payload
 
+    def test_analysis_preset_included_when_provided(self) -> None:
+        payload = build_run_results_summary(
+            run_id="r",
+            transcript_key="k",
+            modules_enabled=[],
+            modules_run=[],
+            skipped_modules=[],
+            errors=[],
+            analysis_preset="Balanced",
+        )
+        assert payload["analysis_preset"] == "balanced"
+
+    def test_analysis_preset_absent_when_not_provided(self) -> None:
+        payload = build_run_results_summary(
+            run_id="r",
+            transcript_key="k",
+            modules_enabled=[],
+            modules_run=[],
+            skipped_modules=[],
+            errors=[],
+        )
+        assert "analysis_preset" not in payload
+
     def test_errors_passed_through(self) -> None:
         payload = build_run_results_summary(
             run_id="r",
@@ -274,3 +298,28 @@ def test_write_run_results_summary_creates_file(tmp_path: Path) -> None:
     from transcriptx.core.pipeline.run_schema import RunResultsSummary
 
     RunResultsSummary.validate_run_results(data)
+
+
+@pytest.mark.unit
+def test_record_analysis_preset_patches_run_results(tmp_path: Path) -> None:
+    run_dir = tmp_path / "out"
+    run_dir.mkdir()
+    write_run_results_summary(
+        run_dir=run_dir,
+        run_id="run-1",
+        transcript_key="tkey",
+        modules_enabled=["stats"],
+        modules_run=["stats"],
+        skipped_modules=[],
+        errors=[],
+    )
+    assert record_analysis_preset(run_dir, "Balanced") is True
+    data = json.loads((run_dir / "run_results.json").read_text(encoding="utf-8"))
+    assert data["analysis_preset"] == "balanced"
+    # Idempotent when unchanged
+    assert record_analysis_preset(run_dir, "balanced") is False
+
+    from transcriptx.core.pipeline.manifest_loader import load_run_results
+
+    loaded = load_run_results(run_dir / "run_results.json")
+    assert loaded["analysis_preset"] == "balanced"

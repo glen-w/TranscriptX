@@ -394,6 +394,7 @@ def _run_analysis_config_and_launch_fragment(
             mode=resolved.mode,
             modules=selected_modules,
             profile=resolved.profile,
+            analysis_preset=resolved.preset,
             llm_model_selection=llm_selection,
             llm_custom_qa_questions=qa_request_questions,
         )
@@ -407,6 +408,7 @@ def _run_analysis_config_and_launch_fragment(
             mode=resolved.mode,
             modules=selected_modules,
             profile=resolved.profile,
+            analysis_preset=resolved.preset,
             include_unidentified_speakers=False,
             llm_model_selection=llm_selection,
             llm_custom_qa_questions=qa_request_questions,

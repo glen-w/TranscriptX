@@ -35,6 +35,8 @@ class AnalysisRequest:
     mode: str = "quick"
     modules: Optional[list[str]] = None
     profile: Optional[str] = None
+    # UI launch preset: quick | balanced | thorough | custom (optional; persisted on run)
+    analysis_preset: Optional[str] = None
     output_dir: Optional[Path] = None
     run_label: Optional[str] = None
     persist: bool = False
@@ -122,6 +124,7 @@ class GroupAnalysisRequest:
     mode: str = "quick"
     modules: Optional[list[str]] = None
     profile: Optional[str] = None
+    analysis_preset: Optional[str] = None
     include_unidentified_speakers: bool = False
     output_dir: Optional[Path] = None
     persist: bool = False
@@ -140,6 +143,7 @@ class BatchAnalysisRequest:
     folder: Optional[Path] = None
     analysis_mode: str = "quick"
     selected_modules: Optional[list[str]] = None
+    analysis_preset: Optional[str] = None
     persist: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
     llm_custom_qa_questions: list[str] | list[dict[str, Any]] | None = None

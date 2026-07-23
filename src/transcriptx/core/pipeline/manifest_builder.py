@@ -479,6 +479,7 @@ def build_run_results_summary(
     skipped_modules: List[Any],
     errors: List[str],
     preset_explanation: Optional[str] = None,
+    analysis_preset: Optional[str] = None,
     module_results: Optional[Dict[str, Any]] = None,
     terminal_outcomes: Optional[Dict[str, Any]] = None,
     pipeline_status: Optional[str] = None,
@@ -508,6 +509,8 @@ def build_run_results_summary(
     }
     if preset_explanation:
         payload["preset_explanation"] = preset_explanation
+    if analysis_preset:
+        payload["analysis_preset"] = str(analysis_preset).strip().lower()
     return payload
 
 
@@ -520,6 +523,7 @@ def write_run_results_summary(
     skipped_modules: List[Any],
     errors: List[str],
     preset_explanation: Optional[str] = None,
+    analysis_preset: Optional[str] = None,
     module_results: Optional[Dict[str, Any]] = None,
     terminal_outcomes: Optional[Dict[str, Any]] = None,
     pipeline_status: Optional[str] = None,
@@ -533,6 +537,7 @@ def write_run_results_summary(
         skipped_modules=skipped_modules,
         errors=errors,
         preset_explanation=preset_explanation,
+        analysis_preset=analysis_preset,
         module_results=module_results,
         terminal_outcomes=terminal_outcomes,
         pipeline_status=pipeline_status,
@@ -541,3 +546,44 @@ def write_run_results_summary(
     write_json(output_path, payload, indent=2, ensure_ascii=False)
     logger.info(f"Saved run results summary to {output_path}")
     return output_path
+
+
+def record_analysis_preset(run_dir: Path | str | None, preset: str | None) -> bool:
+    """
+    Persist the UI analysis preset onto an existing run_results.json.
+
+    Named presets (quick/balanced/thorough/custom) are stored lowercased.
+    Returns True when the file was updated.
+    """
+    if run_dir is None or not preset:
+        return False
+    key = str(preset).strip().lower()
+    if not key:
+        return False
+    path = Path(run_dir) / "run_results.json"
+    if not path.is_file():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("analysis_preset") == key:
+        return False
+    payload["analysis_preset"] = key
+    try:
+        write_json(path, payload, indent=2, ensure_ascii=False)
+    except OSError:
+        logger.warning("Failed to record analysis_preset on %s", path)
+        return False
+    group_meta = Path(run_dir) / "group_run_metadata.json"
+    if group_meta.is_file():
+        try:
+            meta = json.loads(group_meta.read_text(encoding="utf-8"))
+            if isinstance(meta, dict) and meta.get("analysis_preset") != key:
+                meta["analysis_preset"] = key
+                write_json(group_meta, meta, indent=2, ensure_ascii=False)
+        except (OSError, json.JSONDecodeError):
+            pass
+    return True

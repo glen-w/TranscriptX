@@ -1,5 +1,7 @@
 # Pytest Suite Assessment
 
+> **Historical (2026-02-02).** Do **not** treat counts, quarantines, or backlog rows below as current truth. Prefer [`docs/dev/stocktake_2026-07-17.md`](../docs/dev/stocktake_2026-07-17.md) §7, Makefile lanes, and live `pytest --collect-only`. Streamlit GUI testing posture: [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md).
+
 **Date:** 2026-02-02  
 **Scope:** Assess suite, quarantine obsolete tests, add high-leverage unit and integration tests.
 
@@ -1876,3 +1878,74 @@ Live full analysis on REN21 team meetings: container SIGTERM mid-finalize left p
 - Default suite after expansion: **7417 passed, 2 skipped, 180 deselected**.
 - **Production code in this #tests pass:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 68. Expansion (2026-07-24) – aim for 80% core coverage
+
+### Trigger
+`/tests aim for 80% coverage of core code`
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-0029.zip` (5.7M).
+- **Cleanup:** disabled.
+- **Quarantined:** `0` active; not re-enabled.
+- **Markers / addopts:** unchanged.
+- **Subset-only coverage trap:** `tests/core+contracts+unit+pipeline` alone measured **~69%** core — understates reality because most analysis module coverage lives under `tests/analysis/` (included in the default suite).
+- **Baseline full default suite + `--cov=src/transcriptx/core`:** **83.43%** (already above 80% before this expansion).
+- Packages still under 80% after baseline: `audio` (~48%), `integration` (~52%). Large residual miss: `llm_custom_qa/analyze_v2.py` was **0%** (never imported).
+
+### Coverage gaps targeted (offline)
+| Module | Before | Action |
+|--------|--------|--------|
+| `analysis/llm_custom_qa/analyze_v2.py` | 0% | Helper unit tests (prompt/payload/retry) |
+| `speaker_profiles/voice/bootstrap.py` | 0% | Early-path contracts (missing/inactive/empty/ModelUnavailable) |
+| `geo_utils.py` | ~67% | Cache miss + geocode exception (mocked, no network) |
+| `analysis/selection.py` | ~58–87% | Badge labels + full-mode/invalid profile |
+| `speaker_profiles/locations_pack.py` | ~63% | Path helpers, rglob find, appearance path fallback |
+
+### Tests added / extended
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/core/analysis/llm_custom_qa/test_analyze_v2_helpers.py` | **new (+5)** | analyze_v2 pure helpers |
+| `tests/contracts/test_speaker_profiles_voice_bootstrap.py` | **new (+4)** | bootstrap early outcomes |
+| `tests/core/test_geo_utils_unit.py` | **+1** | geocode miss/exception |
+| `tests/core/analysis/test_selection.py` | **+3** | badge / legacy / full-mode |
+| `tests/unit/test_speaker_profile_locations_pack.py` | **+2** | find/rglob + path fallbacks |
+
+### Validation
+- Focused new slice: **22 passed**.
+- Default suite + core cov: **7445 passed, 2 skipped, 180 deselected**.
+- **Core coverage after expansion:** **83.97%** (`50140/59711`, miss `9571`) — **meets ≥80% goal**.
+- Notable module lifts: `analyze_v2` 0%→16.7%, `voice/bootstrap` 0%→68.6%, `geo_utils` →96.3%, `selection` →95.0%, `locations_pack` →69.1%.
+- Remaining under-80% packages: `audio`, `integration` (model/heavy I/O surface; left for later offline doubles).
+- **Production code in this #tests pass:** none (tests-only).
+- **Quarantined tests:** not re-enabled.
+
+---
+
+## 69. Expansion (2026-07-24) – knobs-heavy GUI pages
+
+### Trigger
+Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA, Run/Batch wiring, Speakers/Speaker ID voice, Storage voice privacy).
+
+### Coverage gaps targeted
+| Surface | Gap | Action |
+|---------|-----|--------|
+| Settings → Analysis | Source-only pin | Catalogue/seed helpers + save/reset L3 doubles + widget key contracts |
+| Custom QA picker | Empty-skip only | Scope helpers, collect_combined, adhoc → execution=True |
+| Run / Batch | Implicit share | Shared preset+QA call-site + `apply_custom_qa_to_plan` + QA clear on review remove |
+| Speaker ID / Speakers | Thin voice wiring | Source contracts for analyse/accept/reject/bootstrap/promote/wipe/locations |
+| Storage voice privacy | Partial toggles | Enable/revoke/wipe key + privacy authority contracts |
+| Settings → Questions | Hub only | Library panel persists `saved_questions` |
+
+### Tests added
+| File | Change |
+|------|--------|
+| `tests/web/test_knobs_heavy_gui_contracts.py` | **new (+15)** |
+
+### Validation
+- Focused file: **15 passed**.
+- Related GUI cluster (presets/settings/run/batch/speaker_id/storage + knobs): run in same pass.
+- **Production code:** none (tests-only).

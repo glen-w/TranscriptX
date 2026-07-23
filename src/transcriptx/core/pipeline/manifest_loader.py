@@ -111,6 +111,7 @@ def load_run_results(path: str | Path) -> Dict[str, Any]:
         "modules_failed": data.get("modules_failed"),
         "errors": data.get("errors"),
         "preset_explanation": data.get("preset_explanation"),
+        "analysis_preset": data.get("analysis_preset"),
         "module_outcomes": data.get("module_outcomes"),
     }
     return RunResultsSummary.validate_run_results(normalized).model_dump()

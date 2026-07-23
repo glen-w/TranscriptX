@@ -47,6 +47,25 @@ def test_summary_hero_badges_include_provenance(
 
 
 @pytest.mark.unit
+def test_summary_hero_badges_include_named_analysis_preset() -> None:
+    cand = SimpleNamespace(kind="llm_summary", payload={})
+    assert oc._summary_hero_badges(
+        cand, run_results={"analysis_preset": "balanced"}
+    ) == ["Balanced", "LLM"]
+    assert oc._summary_hero_badges(
+        cand, run_results={"analysis_preset": "quick"}
+    ) == ["Quick", "LLM"]
+    assert oc._summary_hero_badges(
+        cand, run_results={"analysis_preset": "thorough"}
+    ) == ["Thorough", "LLM"]
+    # Custom / missing → no preset badge
+    assert oc._summary_hero_badges(
+        cand, run_results={"analysis_preset": "custom"}
+    ) == ["LLM"]
+    assert oc._summary_hero_badges(cand, run_results={}) == ["LLM"]
+
+
+@pytest.mark.unit
 def test_render_summary_body_strips_and_falls_back(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

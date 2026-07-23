@@ -43,6 +43,23 @@ VALID_PRESETS: tuple[AnalysisPreset, ...] = (
 )
 _UI_DEFAULT_PROFILE = "balanced"
 _CUSTOM_QA_MODULE = "llm_custom_qa"
+_NAMED_PRESET_BADGES: dict[str, str] = {
+    "quick": "Quick",
+    "balanced": "Balanced",
+    "thorough": "Thorough",
+}
+
+
+def analysis_preset_badge_label(preset: str | None) -> str | None:
+    """
+    Badge label for a named UI analysis preset.
+
+    Returns Quick / Balanced / Thorough for those presets; None for custom,
+    blank, or unknown values (so Custom runs do not get a misleading badge).
+    """
+    if not preset:
+        return None
+    return _NAMED_PRESET_BADGES.get(str(preset).strip().lower())
 
 
 @dataclass(frozen=True)
