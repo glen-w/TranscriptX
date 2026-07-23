@@ -437,8 +437,8 @@ def test_speakers_page_wires_voice_and_locations_knobs() -> None:
 
 
 @pytest.mark.unit
-def test_storage_panel_wires_voice_privacy_knobs() -> None:
-    src = Path("src/transcriptx/web/ui/settings/storage_panel.py").read_text()
+def test_speakers_panel_wires_voice_privacy_knobs() -> None:
+    src = Path("src/transcriptx/web/ui/settings/speakers_panel.py").read_text()
     for needle in (
         "Local voice matching",
         "voice_privacy_enable",

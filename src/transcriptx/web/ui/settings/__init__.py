@@ -7,6 +7,7 @@ from .forms import render_config_form
 from .interface_panel import render_interface_panel
 from .models_panel import render_models_panel
 from .questions_panel import render_questions_panel
+from .speakers_panel import render_speakers_panel
 from .storage_panel import render_storage_panel
 from .widgets import render_field_widget
 
@@ -19,5 +20,6 @@ __all__ = [
     "render_interface_panel",
     "render_models_panel",
     "render_questions_panel",
+    "render_speakers_panel",
     "render_storage_panel",
 ]

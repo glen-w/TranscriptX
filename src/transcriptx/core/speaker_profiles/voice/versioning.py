@@ -12,7 +12,7 @@ PRIVACY_SETTINGS_FILENAME = "privacy.voice_settings.json"
 OPERATOR_SETTINGS_SCHEMA_ID = "voice_operator_settings.v1"
 OPERATOR_SETTINGS_FILENAME = "operator.voice_settings.json"
 # Bootstrap enrol walks confirmed links in deterministic path order up to this
-# cap (overridable via Settings → Storage). Match-time still caps refs per link.
+# cap (overridable via Settings → Speakers). Match-time still caps refs per link.
 DEFAULT_BOOTSTRAP_MAX_LINKS = 40
 BOOTSTRAP_MAX_LINKS_MIN = 1
 BOOTSTRAP_MAX_LINKS_MAX = 200

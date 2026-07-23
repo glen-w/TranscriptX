@@ -619,10 +619,14 @@ def test_compact_llm_setup_has_no_management_actions() -> None:
     assert "Refresh models" not in compact
     assert "Save preset" not in compact
     assert "Set as project active" not in compact
+    assert 'st.expander("Change for this run"' in compact
+    assert 'st.expander("Model information"' in compact
+    assert "_render_model_information(installed)" in compact
     settings = source[settings_start:]
     assert "Refresh models" in settings
     assert "Save preset" in settings
     assert "Set as project active preset" in settings
+    assert "_render_model_information(installed)" in settings
 
 
 @pytest.mark.unit

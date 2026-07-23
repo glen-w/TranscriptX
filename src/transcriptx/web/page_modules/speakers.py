@@ -156,7 +156,7 @@ from transcriptx.web.state import PAGE_KEY, SELECTBOX_PLACEHOLDER_SPEAKER
 _SPEAKERS_DESCRIPTION = (
     "Longitudinal speaker profiles linked across managed library transcripts. "
     "Headline totals exclude needs-review, missing-source, collision, and ignored appearances "
-    "(toggle inclusion under Settings → Storage)."
+    "(toggle inclusion under Settings → Speakers)."
 )
 
 _SELECTED_KEY = "speakers_selected_profile"
@@ -632,7 +632,7 @@ def _render_voice_controls(
         st.caption(
             f"{len(samples)} sample(s) · {eligible} eligible · "
             f"{ineligible} need promotion · enrol cap {bootstrap_max_links} "
-            "link(s) (Settings → Storage)"
+            "link(s) (Settings → Speakers)"
         )
         enrol_action = f"voice_bootstrap_{profile.profile_id}"
         if st.button(
@@ -640,7 +640,7 @@ def _render_voice_controls(
             key=f"spk_voice_bootstrap_{profile.profile_id}",
             help=(
                 "Explicit bootstrap: extracts and embeds voice from this profile's "
-                "confirmed links (up to the Settings → Storage enrol link cap). "
+                "confirmed links (up to the Settings → Speakers enrol link cap). "
                 "Privacy opt-in alone does not enrol anything."
             ),
         ):

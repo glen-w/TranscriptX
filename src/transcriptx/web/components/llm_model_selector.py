@@ -394,6 +394,34 @@ def _footer_model_label(selection: LlmModelSelection | None) -> str:
     return (norm.shared_model or _active_model_summary_label()).strip()
 
 
+def _render_model_information(installed: Sequence[str]) -> None:
+    """Guidance table for installed Ollama tags (Run Analysis + Settings)."""
+    st.caption(
+        "Use this when assigning models per module. Avoid thinking-family "
+        "tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON modules — they often "
+        "return an empty `response`. Prefer mid/large non-thinking tags "
+        "(gemma3:12b+, qwen2.5:7b+, mistral) for narrative_summary, "
+        "llm_action_items, and chart_descriptions. Tiny/small tags "
+        "(e.g. llama3.2:3b, gemma3:1b) usually cannot satisfy "
+        "llm_action_items schema validation and publish empty extracts."
+    )
+    rows = list_llm_model_guidance(installed)
+    if not rows:
+        st.info(
+            "No installed models to describe. Pull one with "
+            "`ollama pull gemma3:12b`, then refresh models under Settings → Models."
+        )
+        return
+    table = {
+        "Model": [r.model for r in rows],
+        "Class": [r.size_class for r in rows],
+        "Strengths": [r.strengths for r in rows],
+        "Best for": [r.best_for for r in rows],
+        "Notes": [r.notes for r in rows],
+    }
+    st.dataframe(table, hide_index=True, width="stretch")
+
+
 def _render_assignment_widgets(
     *,
     key_prefix: str,
@@ -593,6 +621,9 @@ def render_compact_llm_setup(
             llm_model=llm.model,
         )
 
+        with st.expander("Model information", expanded=False):
+            _render_model_information(installed)
+
     selection = build_selection_from_session(key_prefix, include_group=include_group)
     gates = launch_gate_reasons(
         selection=selection,
@@ -684,29 +715,7 @@ def render_llm_models_settings_panel() -> None:
     )
 
     st.markdown("##### Model information")
-    st.caption(
-        "Avoid thinking-family tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON "
-        "modules — they often return an empty `response`. Prefer mid/large "
-        "non-thinking tags (gemma3:12b+, qwen2.5:7b+, mistral) for "
-        "narrative_summary, llm_action_items, and chart_descriptions. "
-        "Tiny/small tags (e.g. llama3.2:3b, gemma3:1b) usually cannot satisfy "
-        "llm_action_items schema validation and publish empty extracts."
-    )
-    rows = list_llm_model_guidance(installed)
-    if not rows:
-        st.info(
-            "No installed models to describe. Pull one with "
-            "`ollama pull gemma3:12b`, then Refresh models."
-        )
-    else:
-        table = {
-            "Model": [r.model for r in rows],
-            "Class": [r.size_class for r in rows],
-            "Strengths": [r.strengths for r in rows],
-            "Best for": [r.best_for for r in rows],
-            "Notes": [r.notes for r in rows],
-        }
-        st.dataframe(table, hide_index=True, width="stretch")
+    _render_model_information(installed)
 
     st.markdown("##### Save as Model preset")
     name = st.text_input(

@@ -213,11 +213,87 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
         ),
     ),
     _FamilyRule(
+        prefixes=("mistral-small",),
+        family_label="Mistral Small",
+        strengths=(
+            "Higher-quality Mistral instruct (~22–24B class); non-thinking with "
+            "strong structured output."
+        ),
+        best_for=(
+            "Shared high-quality JSON + prose: narrative_summary, "
+            "llm_action_items, llm_summary, group_llm_synthesis."
+        ),
+        notes=(
+            "Step up from mistral-nemo / gemma3:12b when you want better digests "
+            "without thinking-family tags. Heavier RAM/latency than mid 7–12B."
+        ),
+    ),
+    _FamilyRule(
         prefixes=("mistral", "mixtral"),
         family_label="Mistral",
         strengths="Capable general mid-size chat and summarisation.",
         best_for="llm_summary and llm_speaker_summary as a shared mid model.",
         notes="Fine default alternative; validate JSON action items on your hardware.",
+    ),
+    _FamilyRule(
+        prefixes=("phi4", "phi3", "phi"),
+        family_label="Phi",
+        strengths=(
+            "Strong instruction following for size; non-thinking; usually solid "
+            "JSON when prompted strictly."
+        ),
+        best_for=(
+            "Shared mid pick for narrative_summary, llm_action_items, "
+            "chart_descriptions, and llm_custom_qa (phi4 ~14B)."
+        ),
+        notes=(
+            "Good alternative when gemma3/qwen2.5 are already installed. Tiny "
+            "phi tags remain smoke-only — prefer phi4 for meeting extracts."
+        ),
+        by_size={
+            "tiny": (
+                "Minimal capacity.",
+                "Local smoke only.",
+                "Prefer phi4 / gemma3:12b for TranscriptX JSON modules.",
+            ),
+            "small": (
+                "Fast drafts; limited meeting-extract fidelity.",
+                "chart_descriptions; short summaries.",
+                "Upgrade to phi4 for llm_action_items.",
+            ),
+        },
+    ),
+    _FamilyRule(
+        prefixes=("command-r7b", "command-r", "command"),
+        family_label="Command R",
+        strengths=(
+            "Cohere instruct oriented toward retrieval-style summarisation; "
+            "non-thinking."
+        ),
+        best_for=(
+            "llm_summary, llm_speaker_summary, narrative_summary; validate "
+            "llm_action_items JSON on your hardware."
+        ),
+        notes=(
+            "command-r7b (~7B) is a useful diversity pick beside gemma3/qwen2.5. "
+            "Larger Command R tags exceed the usual mid local budget."
+        ),
+    ),
+    _FamilyRule(
+        prefixes=("granite3.3", "granite3.2", "granite3", "granite"),
+        family_label="Granite",
+        strengths=(
+            "IBM instruct family; non-thinking mid tags with steady JSON "
+            "behaviour."
+        ),
+        best_for=(
+            "Shared mid alternative (e.g. granite3.3:8b) for llm_summary, "
+            "chart_descriptions, and llm_action_items."
+        ),
+        notes=(
+            "Complements Llama/Gemma libraries when you want another JSON-safe "
+            "family without qwen3 thinking quirks."
+        ),
     ),
     _FamilyRule(
         prefixes=("deepseek-r1", "deepseek"),

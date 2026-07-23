@@ -13,6 +13,7 @@ from transcriptx.web.ui.settings import (
     render_interface_panel,
     render_models_panel,
     render_questions_panel,
+    render_speakers_panel,
     render_storage_panel,
 )
 
@@ -36,8 +37,24 @@ def render_settings_page() -> None:
         subject_display = subject.display.name
         run_display = run_id
 
-    tab_cfg, tab_analysis, tab_stor, tab_iface, tab_models, tab_q = st.tabs(
-        ["Configuration", "Analysis", "Storage", "Interface", "Models", "Questions"]
+    (
+        tab_cfg,
+        tab_analysis,
+        tab_stor,
+        tab_speakers,
+        tab_iface,
+        tab_models,
+        tab_q,
+    ) = st.tabs(
+        [
+            "Configuration",
+            "Analysis",
+            "Storage",
+            "Speakers",
+            "Interface",
+            "Models",
+            "Questions",
+        ]
     )
     with tab_cfg:
         try:
@@ -58,6 +75,11 @@ def render_settings_page() -> None:
             render_storage_panel()
         except Exception as e:
             st.error(f"Could not load Storage: {e}")
+    with tab_speakers:
+        try:
+            render_speakers_panel()
+        except Exception as e:
+            st.error(f"Could not load Speakers: {e}")
     with tab_iface:
         try:
             render_interface_panel()

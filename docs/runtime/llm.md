@@ -40,7 +40,7 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 
 ## Run Analysis model selection
 
-On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `provider=ollama`, the **LLM setup** section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module).
+On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `provider=ollama`, the **LLM setup** section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module), including a **Model information** expander with installed-tag guidance.
 
 **Settings → Models** owns management actions:
 
@@ -81,7 +81,7 @@ ollama pull mistral-nemo
 ollama pull gemma3:27b
 ```
 
-The Run Analysis expander **Installed models — what they're good at** describes installed tags (including these) for per-module assignment.
+Under **Change for this run**, the **Model information** expander describes installed tags (including these) for per-module assignment.
 
 If a selected model is missing at generate time, the LLM consumer fails with a clear model-missing error (no silent substitute). Corrections Studio continues to use global `llm.model` only.
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from transcriptx.core.speaker_profiles.signals import CacheInvalidationSignal
 
-# Session keys shared by Settings → Storage and the Speakers page.
+# Session keys shared by Settings → Speakers and the Speakers page.
 INCLUDE_IGNORED_SESSION_KEY = "speakers_include_ignored"
 SHOW_ARCHIVED_SESSION_KEY = "speakers_show_archived"
 SHOW_MERGED_SESSION_KEY = "speakers_show_merged"
