@@ -30,8 +30,8 @@ Explicit **Load demo project** / **Explore examples**; isolated demo ownership i
 - [x] Label synthetic demo outputs
 - [x] Keep image/repo size small (no large run trees)
 
-## Non-goals
+## Known soft gaps vs full design plan
 
-- Mixing demo artifacts into the user’s default data root without isolation
-- Committing large completed run trees by default
-- Voice-licensed audio examples (deferred)
+- v1 generate writes **synthetic placeholder runs** (manifest `base_install_modules` may be empty) — not a live analysis-module fan-out; still network-free and provenance-labelled.
+- Interrupted-install **automatic journal resume** is manual via Refresh (remove+install), not step-replay.
+- Onboarding auto-hints are display-only; they do not auto-commit item state.

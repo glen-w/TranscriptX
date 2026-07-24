@@ -24,8 +24,9 @@ Authoritative human acceptance checklist for principal journeys. Automated GUI a
 - [ ] Understand results (Overview / Insights / Charts / Artifacts)
 - [ ] Recover from a deliberate failure (missing dep, bad path, or cancelled run)
 - [ ] Export or download artifacts
-- [ ] (When shipped) Guided vs Full controls switch
-- [ ] (When shipped) Load demo project / remove demo project
+- [ ] Guided vs Full controls switch (shipped **0.9.6** — verify Home/Settings)
+- [ ] Load demo project / remove demo project (shipped **0.9.6** — verify ownership cleanup copy)
+- [ ] Getting started checklist dismiss / reopen (shipped **0.9.6**)
 
 ## Accessibility / browsers
 

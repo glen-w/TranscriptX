@@ -233,10 +233,17 @@ def _preflight_collisions(pack: DemoPack) -> list[str]:
 
 
 def _preflight_group_collision(members: list[str]) -> str | None:
-    intended = [str(Path(m).resolve()) for m in members]
+    from transcriptx.core.store.group_manifest_store import (
+        canonicalize_group_member_paths,
+    )
+
+    try:
+        intended = sorted(canonicalize_group_member_paths(members))
+    except ValueError as exc:
+        return f"Cannot normalise demo group members: {exc}"
     store = GroupManifestStore()
     for existing in store.list_groups_best_effort()[0]:
-        existing_members = [str(Path(m).resolve()) for m in existing.members]
+        existing_members = sorted(str(m) for m in existing.members)
         if existing_members == intended:
             return (
                 f"A group with the same members already exists ({existing.group_id}); "
@@ -551,6 +558,63 @@ def compare_and_delete_slug(
         return True, "unregistered"
 
 
+def _revalidate_managed_identity(path: Path, expected_identity: str) -> tuple[bool, str]:
+    """Confirm on-disk segments still match the inventory identity snapshot."""
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        return False, f"unreadable managed path: {exc}"
+    try:
+        actual = _segments_identity(data)
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return False, f"identity parse failed: {exc}"
+    if actual != expected_identity:
+        return False, "identity mismatch vs inventory"
+    return True, "ok"
+
+
+def _bounded_delete_run(path: Path, roots: list[Path]) -> tuple[bool, str]:
+    """Delete a run dir holding the per-run writer lock when possible."""
+    if not path.exists():
+        return True, "already absent"
+    try:
+        from transcriptx.core.utils.run_writer_locks import try_per_run_lock
+    except Exception:
+        return _bounded_delete(path, roots)
+    lock = try_per_run_lock(path)
+    if lock is None:
+        return False, "run writer lock busy"
+    try:
+        return _bounded_delete(path, roots)
+    finally:
+        try:
+            lock.release()
+        except Exception:
+            pass
+
+
+def refresh_demo_project() -> DemoResult:
+    """Stale/partial recovery: remove then install (structured result)."""
+    status = status_demo_project()
+    if status.kind == DemoStatusKind.BUSY:
+        return DemoResult(False, DemoStatusKind.BUSY, "Demo operation busy")
+    if status.kind == DemoStatusKind.INSTALLED:
+        return DemoResult(
+            True, DemoStatusKind.INSTALLED, "Already installed", inventory=status.inventory
+        )
+    if status.kind != DemoStatusKind.MISSING:
+        removed = remove_demo_project()
+        if not removed.ok and removed.status != DemoStatusKind.MISSING:
+            return DemoResult(
+                False,
+                removed.status,
+                f"Refresh remove failed: {removed.detail}",
+                errors=removed.errors,
+                partial=removed.partial,
+            )
+    return install_demo_project()
+
+
 def remove_demo_project() -> DemoResult:
     lock = _acquire_demo_busy_lock()
     if lock is None:
@@ -583,16 +647,16 @@ def remove_demo_project() -> DemoResult:
             if not slug or not run_id:
                 continue
             run_dir = Path(paths_mod.OUTPUTS_DIR) / slug / run_id
-            ok, msg = _bounded_delete(run_dir, roots)
+            ok, msg = _bounded_delete_run(run_dir, roots)
             if not ok:
                 errors.append(f"run {slug}/{run_id}: {msg}")
-            # Also remove other runs under owned slug dirs after identity check.
+            # Also remove other runs under owned slug dirs (later user runs).
             slug_dir = Path(paths_mod.OUTPUTS_DIR) / slug
             if slug_dir.is_dir():
                 for child in list(slug_dir.iterdir()):
                     if child.name.startswith("."):
                         continue
-                    ok, msg = _bounded_delete(child, roots)
+                    ok, msg = _bounded_delete_run(child, roots)
                     if not ok:
                         errors.append(f"run-extra {child}: {msg}")
                 ok, msg = _bounded_delete(slug_dir, roots)
@@ -609,8 +673,14 @@ def remove_demo_project() -> DemoResult:
                 )
                 if not ok:
                     errors.append(f"index {slug}: {msg}")
-            if managed:
-                ok, msg = _bounded_delete(Path(managed), roots)
+            if managed and identity:
+                managed_path = Path(managed)
+                if managed_path.exists():
+                    ok, msg = _revalidate_managed_identity(managed_path, str(identity))
+                    if not ok:
+                        errors.append(f"managed {managed}: skip delete ({msg})")
+                        continue
+                ok, msg = _bounded_delete(managed_path, roots)
                 if not ok:
                     errors.append(f"managed {managed}: {msg}")
                 stem = Path(managed).stem
@@ -623,6 +693,10 @@ def remove_demo_project() -> DemoResult:
                         ok, msg = _bounded_delete(candidate, roots)
                         if not ok and "already absent" not in msg:
                             errors.append(f"meta {candidate}: {msg}")
+            elif managed:
+                ok, msg = _bounded_delete(Path(managed), roots)
+                if not ok:
+                    errors.append(f"managed {managed}: {msg}")
 
         group = inv.get("group") or {}
         if group.get("ownership") == "owned" and group.get("group_id"):

@@ -11,6 +11,7 @@ from transcriptx.demo.service import (
     install_demo_project,
     plan_install,
     plan_remove,
+    refresh_demo_project,
     remove_demo_project,
     status_demo_project,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "install_demo_project",
     "plan_install",
     "plan_remove",
+    "refresh_demo_project",
     "remove_demo_project",
     "status_demo_project",
 ]

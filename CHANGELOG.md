@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Demo same-members group collision uses canonical group paths (not cwd-resolved relatives).
+- Demo remove revalidates managed identity and takes per-run writer locks; `refresh_demo_project` recovers stale/partial installs.
+- Home empty-library primary CTA for demo load; plan-coverage tests for guard, allowlist, collisions, symlink escape.
+
 ## [0.9.6] - 2026-07-24
 
 ### Added

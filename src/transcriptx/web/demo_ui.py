@@ -7,9 +7,11 @@ import streamlit as st
 from transcriptx.demo import (
     DemoStatusKind,
     install_demo_project,
+    refresh_demo_project,
     remove_demo_project,
     status_demo_project,
 )
+from transcriptx.web.cache_helpers import get_cached_count_managed_transcripts
 from transcriptx.web.onboarding.prefs import (
     ALL_ITEM_IDS,
     ITEM_LABELS,
@@ -25,7 +27,44 @@ from transcriptx.web.state import PAGE_KEY
 
 def render_home_demo_and_onboarding() -> None:
     status = status_demo_project()
-    with st.expander("Explore examples", expanded=status.kind == DemoStatusKind.MISSING):
+    library_empty = False
+    try:
+        library_empty = int(get_cached_count_managed_transcripts()) == 0
+    except Exception:
+        library_empty = status.kind == DemoStatusKind.MISSING
+
+    if library_empty and status.kind == DemoStatusKind.MISSING:
+        st.info(
+            "Your library is empty. Load the demo project for a quick guided walkthrough, "
+            "or import your own transcript."
+        )
+        cols = st.columns(2)
+        with cols[0]:
+            if st.button("Load demo project", type="primary", key="demo_load_primary"):
+                with st.spinner("Installing demo…"):
+                    result = install_demo_project()
+                if result.ok:
+                    st.success(result.detail)
+                    st.rerun()
+                else:
+                    st.error(result.detail)
+                    for err in result.errors[:8]:
+                        st.caption(err)
+        with cols[1]:
+            if st.button("Import transcript", key="demo_import_primary"):
+                st.session_state[PAGE_KEY] = "Import Transcript"
+                st.rerun()
+
+    with st.expander(
+        "Explore examples",
+        expanded=status.kind
+        in {
+            DemoStatusKind.MISSING,
+            DemoStatusKind.STALE,
+            DemoStatusKind.PARTIAL,
+            DemoStatusKind.CORRUPT,
+        },
+    ):
         st.caption(
             "Load a small synthetic demo project (isolated ownership). "
             "Removal deletes demo transcripts, the owned demo group, and analysis "
@@ -38,15 +77,20 @@ def render_home_demo_and_onboarding() -> None:
         return
     with st.expander("Getting started", expanded=True):
         st.caption("Lightweight checklist — optional, skippable where marked, non-blocking.")
+        hints = _workspace_hints()
         for item_id in ALL_ITEM_IDS:
             item = prefs.items.get(item_id)
             state = item.state if item else "pending"
             label = ITEM_LABELS.get(item_id, item_id)
             optional = item_id in OPTIONAL_ITEM_IDS
+            hint = ""
+            if state == "pending" and item_id in hints:
+                hint = f" — suggested by workspace: {hints[item_id]}"
             cols = st.columns([4, 1, 1, 1])
             with cols[0]:
                 suffix = " (optional)" if optional else ""
-                st.write(f"{'✅' if state == 'completed' else '○'} {label}{suffix} — *{state}*")
+                mark = "✅" if state == "completed" else ("⏭" if state == "skipped" else "○")
+                st.write(f"{mark} {label}{suffix} — *{state}*{hint}")
             with cols[1]:
                 if st.button("Go", key=f"onboard_go_{item_id}"):
                     st.session_state[PAGE_KEY] = ITEM_PAGES.get(item_id, "Home")
@@ -78,6 +122,25 @@ def render_settings_demo_controls() -> None:
             st.rerun()
 
 
+def _workspace_hints() -> dict[str, str]:
+    """Display-only auto signals; never override explicit skipped/completed."""
+    hints: dict[str, str] = {}
+    try:
+        if int(get_cached_count_managed_transcripts()) > 0:
+            hints["import_or_demo"] = "library has transcripts"
+            hints["open_library"] = "library reachable"
+    except Exception:
+        pass
+    try:
+        from transcriptx.demo import status_demo_project as _status
+
+        if _status().kind == DemoStatusKind.INSTALLED:
+            hints["import_or_demo"] = "demo installed"
+    except Exception:
+        pass
+    return hints
+
+
 def _render_demo_controls(status) -> None:
     cols = st.columns(3)
     with cols[0]:
@@ -87,9 +150,23 @@ def _render_demo_controls(status) -> None:
             DemoStatusKind.PARTIAL,
             DemoStatusKind.CORRUPT,
         }:
-            if st.button("Load demo project", type="primary", key="demo_load"):
-                with st.spinner("Installing demo…"):
-                    result = install_demo_project()
+            label = (
+                "Refresh demo project"
+                if status.kind
+                in {
+                    DemoStatusKind.STALE,
+                    DemoStatusKind.PARTIAL,
+                    DemoStatusKind.CORRUPT,
+                }
+                else "Load demo project"
+            )
+            if st.button(label, type="primary", key="demo_load"):
+                with st.spinner("Updating demo…"):
+                    result = (
+                        refresh_demo_project()
+                        if status.kind != DemoStatusKind.MISSING
+                        else install_demo_project()
+                    )
                 if result.ok:
                     st.success(result.detail)
                     st.rerun()
@@ -115,4 +192,6 @@ def _render_demo_controls(status) -> None:
                         st.caption(err)
     with cols[2]:
         if status.kind == DemoStatusKind.STALE:
-            st.warning("Demo is stale vs pack/schema — remove and reload.")
+            st.warning("Demo is stale vs pack/schema — refresh removes then reloads.")
+        elif status.kind == DemoStatusKind.PARTIAL:
+            st.warning("Demo install/remove was interrupted — refresh to recover.")
