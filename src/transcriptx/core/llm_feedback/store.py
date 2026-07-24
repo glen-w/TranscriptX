@@ -159,6 +159,18 @@ class FeedbackStore:
                 f"cannot open events.jsonl for append: {exc}"
             ) from exc
         try:
+            # Seal a truncated final line so the new event starts on its own line.
+            try:
+                size = os.fstat(fd).st_size
+            except OSError:
+                size = 0
+            if size > 0:
+                # O_APPEND ignores seek for write; use a separate read to check tail.
+                with open(self._events_path, "rb") as probe:
+                    probe.seek(-1, os.SEEK_END)
+                    last = probe.read(1)
+                if last != b"\n":
+                    os.write(fd, b"\n")
             data = line.encode("utf-8")
             if not data.endswith(b"\n"):
                 data += b"\n"
@@ -210,6 +222,14 @@ class FeedbackStore:
                 )
         except LockAcquisitionError as exc:
             raise LlmFeedbackPersistenceError(str(exc)) from exc
+        except LlmFeedbackPathError:
+            raise
+        except LlmFeedbackPersistenceError:
+            raise
+        except OSError as exc:
+            raise LlmFeedbackPersistenceError(
+                f"cannot append feedback event: {exc}"
+            ) from exc
 
     def iter_events(self) -> IterEventsResult:
         self._ensure_store_dir()

@@ -74,6 +74,7 @@
     "group_analysis": 9,
     "highlights": 30,
     "input": 6,
+    "keyphrases": 15,
     "llm": 14,
     "llm_action_items_settings": 2,
     "llm_custom_qa_settings": 16,
@@ -103,7 +104,7 @@
     "voice": 18,
     "workflow": 13
   },
-  "pilot_count": 50,
-  "pydantic_owned_keys": 690,
-  "total_registry_keys": 706
+  "pilot_count": 51,
+  "pydantic_owned_keys": 705,
+  "total_registry_keys": 721
 }

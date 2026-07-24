@@ -37,8 +37,8 @@ def test_feedback_widget_not_under_cache_data() -> None:
     source = Path("src/transcriptx/web/components/llm_feedback.py").read_text(
         encoding="utf-8"
     )
-    assert "@st.cache_data" not in source
     assert "st.cache_data" not in source
+    assert "@st.cache_resource" not in source
 
 
 def test_surface_fixtures_validate(tmp_path: Path) -> None:

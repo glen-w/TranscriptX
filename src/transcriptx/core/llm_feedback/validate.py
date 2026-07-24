@@ -5,7 +5,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
-from transcriptx.core.llm_feedback.errors import LlmFeedbackValidationError
+from transcriptx.core.llm_feedback.errors import (
+    LlmFeedbackPathError,
+    LlmFeedbackValidationError,
+)
 from transcriptx.core.llm_feedback.models import (
     EVENT_SCHEMA_ID,
     REASONS_BY_RATING,
@@ -83,7 +86,10 @@ def validate_target(target: FeedbackTarget | Mapping[str, Any]) -> FeedbackTarge
     _require_nonempty_str(t.subject_id, "target.subject_id")
 
     if t.artifact_rel_path is not None:
-        assert_safe_artifact_relpath(t.artifact_rel_path)
+        try:
+            assert_safe_artifact_relpath(t.artifact_rel_path)
+        except LlmFeedbackPathError as exc:
+            raise LlmFeedbackValidationError(str(exc)) from exc
 
     if t.questions_hash is not None:
         h = t.questions_hash.strip().lower()

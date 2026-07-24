@@ -78,7 +78,7 @@ def render_llm_feedback_controls(
 ) -> None:
     """Render non-intrusive thumbs + form. ``store`` must be injected (no path resolve).
 
-    Not safe to call from ``@st.cache_data`` / cached helpers — submit mutates disk.
+    Not safe to call from cached Streamlit helpers — submit mutates disk.
     """
     if not output_text or not str(output_text).strip():
         return

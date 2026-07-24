@@ -33,8 +33,10 @@ Resolve `data_dir` outside the UI widget; inject a configured store/service.
 
 ### Truncated tail
 
-Never rewrite or truncate earlier valid lines to “repair” the file. Readers must
-tolerate and **report** a malformed final line (`tail_error`). New appends go to EOF.
+Never rewrite or truncate earlier valid lines to “repair” the file. If the file
+does not end with a newline, the next append seals the incomplete line with `\n`
+then writes the new event (so new events are never glued onto a truncated line).
+Readers must tolerate and **report** a malformed final line (`tail_error`).
 
 ---
 
