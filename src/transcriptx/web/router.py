@@ -105,8 +105,6 @@ def build_page_renderers(
         "Settings": _lazy_renderer("settings", "render_settings_page"),
         "Profiles": _lazy_renderer("profiles", "render_profiles_page"),
         "Speaker ID": _lazy_renderer("speaker_id", "render_speaker_id_page"),
-        "Audio Prep": _lazy_renderer("audio_prep", "render_audio_prep_page"),
-        "Audio Merge": _lazy_renderer("audio_merge", "render_audio_merge_page"),
         "Batch Ops": _redirect_legacy_batch_ops,
         "Dashboard Builder": _lazy_renderer(
             "dashboard_builder", "render_dashboard_builder"

@@ -269,7 +269,7 @@ Use these as defaults unless you consciously override them:
 ### Product (Wave 3 open)
 
 14. **Post-1.0 analysis capacity (not default 0.9.x track):** Wave 3 remainder — **B5 remainder** (DB analytics views / group gallery keyed by `profile_id`), **B18** / **P2** provenance. ~~B14~~ / ~~B16~~ shipped. See [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md).
-15. UX: Corrections Studio / Audio Prep fragment follow-ups (deferred).
+15. UX: Corrections Studio fragment follow-ups (deferred). Audio Prep GUI removed — helpers only.
 16. ~~Remove legacy Data/Explorer redirect routes after “one more release”~~ **Done** (**0.9.7**).
 17. User-facing docs thinner than contract corpus — optional researcher guide.
 

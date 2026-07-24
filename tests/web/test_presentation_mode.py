@@ -113,13 +113,14 @@ def test_seed_existing_workspace_full(tmp_path: Path) -> None:
 
 
 def test_visibility_filters_full_only() -> None:
-    prep = get_page_spec("Audio Prep")
+    diag = get_page_spec("Diagnostics")
     home = get_page_spec("Home")
-    assert page_visible_in_presentation(prep, MODE_GUIDED) is False
-    assert page_visible_in_presentation(prep, MODE_FULL) is True
+    assert page_visible_in_presentation(diag, MODE_GUIDED) is False
+    assert page_visible_in_presentation(diag, MODE_FULL) is True
     assert page_visible_in_presentation(home, MODE_GUIDED) is True
     tools = visible_pages_in_section("tools", MODE_GUIDED)
-    assert all(p.key != "Audio Prep" for p in tools)
+    assert tools == []
+    assert all(p.key != "Diagnostics" for p in tools)
 
 
 def test_set_presentation_mode_roundtrip(tmp_path: Path, monkeypatch) -> None:

@@ -156,7 +156,7 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 
 The Streamlit app reads options from `.streamlit/config.toml` when present.
 
-- **File upload limit** — Audio Prep (and other upload widgets) accept files up to **500 MB per file**. This is set in `.streamlit/config.toml` as `[server] maxUploadSize = 500` (value in megabytes). To change it, edit that file or set the `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` environment variable.
+- **File upload limit** — Upload widgets accept files up to **500 MB per file**. This is set in `.streamlit/config.toml` as `[server] maxUploadSize = 500` (value in megabytes). To change it, edit that file or set the `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` environment variable.
 
 ## Troubleshooting
 

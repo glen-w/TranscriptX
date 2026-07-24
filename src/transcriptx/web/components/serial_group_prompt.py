@@ -54,7 +54,7 @@ def render_serial_group_prompt(
         "These files look like **parts of one recording**. Transcribing them "
         "separately will create **separate transcripts**. Merging first is "
         "recommended for **one unified transcript**. Order is based on filename "
-        "indices; you can review order in Audio Merge."
+        "indices; merge with `scripts/audio_merge.py` before transcription."
     )
 
     for group in groups:
@@ -88,7 +88,7 @@ def render_serial_group_prompt(
         )
     with col_review:
         review_clicked = st.button(
-            "Review in Audio Merge",
+            "Show merge command hint",
             key=review_button_key,
         )
 

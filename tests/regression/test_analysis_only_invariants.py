@@ -50,7 +50,6 @@ def test_no_docker_invocation_strings():
     # User-facing help text that shows example docker run for users (no orchestration)
     allowlist = frozenset(
         {
-            "web/page_modules/audio_prep.py",
             # Host-side WhisperX helper emits example `docker run` command strings.
             "services/transcription/command_gen.py",
         }

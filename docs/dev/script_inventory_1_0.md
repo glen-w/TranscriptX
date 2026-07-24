@@ -12,7 +12,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | Status | Count |
 |--------|------:|
 | supported | 3 |
-| maintainer | 19 |
+| maintainer | 21 |
 | internal | 8 |
 | archived | 3 |
 | disposable | 8 |
@@ -24,6 +24,8 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `transcriptx` (`pyproject` console) | Launch Streamlit web app | end user | README, install docs, Docker ENTRYPOINT | yes | yes (indirect) | read-only | any | package | valid | supported | retain supported |
 | `transcriptx.sh` | Native venv install + launch (`.transcriptx`; CUDA left available unless `TRANSCRIPTX_FORCE_CPU=1`) | end user | README, installation.md | yes | partial | mutates venv | macOS/Linux | requirements.txt | valid | supported | retain supported |
 | `scripts/whispermlx-missing.py` | Batch whispermlx for MP3s missing JSON | end user | transcription.md; tests/scripts | yes | yes | writes transcripts | Apple Silicon typical | whispermlx (external) | valid | supported | retain supported |
+| `scripts/audio_preprocess.py` | Assess/preprocess audio before external transcription | power user | transcription.md; ROADMAP 1.2 | yes | yes | writes audio | any | pydub/ffmpeg | valid | maintainer | retain helper; **consider remove in 1.2** (not core) |
+| `scripts/audio_merge.py` | Merge split recordings into one MP3 | power user | transcription.md; ROADMAP 1.2 | yes | yes | writes audio | any | ffmpeg | valid | maintainer | retain helper; **consider remove in 1.2** (not core) |
 | `scripts/release/assert_compose_bind.sh` | Canonical compose bind/port asserts | maintainer | CI | yes (release_governance) | CI | read-only | Docker | compose | valid | maintainer | retain internal |
 | `scripts/release/stale_refs.sh` | Forbidden stale refs + TODO gate | maintainer | CI | yes | CI | read-only | any | ripgrep-like | valid | maintainer | retain internal |
 | `scripts/release/clean_env_audit.sh` | Wheel + clean venv pip-check/audit | maintainer | CI / release | yes | CI | creates temp venv | any | pip-audit | valid | maintainer | retain internal |

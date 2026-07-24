@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.2] - 2026-07-25
+
+### Changed
+- Remove Audio Pre-processing and Audio Merge from the GUI Tools nav (not core). Capability moved to helper scripts `scripts/audio_preprocess.py` and `scripts/audio_merge.py`; documented in transcription docs; **1.2** roadmap notes consider full removal.
+
 ## [0.9.8.1] - 2026-07-25
 
 ### Changed

@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 
 FULL_ONLY_PAGE_KEYS: frozenset[str] = frozenset(
     {
-        "Audio Prep",
-        "Audio Merge",
         "Corrections Studio",
         "Speaker ID",
         "Performance",

@@ -175,7 +175,7 @@ Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/
 | `HOST_TRANSCRIPT_INBOX_DIR` | `./data/transcript-inbox` | Host path mounted at `/mnt/transcript-inbox` (folder-import inbox) |
 | `HOST_OUTPUT_DIR` | `./data/outputs` | Host path mounted at `/mnt/outputs` |
 | `HOST_WAV_BACKUP_DIR` | `./data/backups/wav` | Host path mounted at `/mnt/wav` |
-| `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
+| `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file. Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
 | `TRANSCRIPTX_DATA_DIR` | `/data` | Base data directory inside container |
 | `TRANSCRIPTX_CONFIG_DIR` | `/data/.transcriptx` (compose) | Project config + menus + profiles (`config.json` holds saved custom questions) |
 | `TRANSCRIPTX_RECORDINGS_DIR` | `/mnt/recordings` (compose) | Source audio |

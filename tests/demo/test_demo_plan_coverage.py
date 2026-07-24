@@ -41,11 +41,12 @@ def demo_ws(monkeypatch, tmp_path: Path):
     return ws
 
 
-def test_pages_in_section_unchanged_includes_full_only() -> None:
+def test_pages_in_section_tools_empty_after_audio_helpers() -> None:
     tools = pages_in_section("tools")
     keys = {p.key for p in tools}
-    assert "Audio Prep" in keys
-    assert "Audio Merge" in keys
+    assert "Audio Prep" not in keys
+    assert "Audio Merge" not in keys
+    assert keys == set()
 
 
 def test_guided_allowlist_narrower_than_common() -> None:
@@ -66,7 +67,7 @@ def test_visibility_matrix_full_only_pages() -> None:
 
 
 def test_router_full_only_guard_banner_only(monkeypatch) -> None:
-    session = {PAGE_KEY: "Audio Prep"}
+    session = {PAGE_KEY: "Diagnostics"}
     banner = MagicMock()
     monkeypatch.setattr(
         "transcriptx.web.router.resolve_presentation_mode",
@@ -86,8 +87,8 @@ def test_router_full_only_guard_banner_only(monkeypatch) -> None:
         corrections_studio_available=False,
         render_corrections_studio=None,
     )
-    assert session[PAGE_KEY] == "Audio Prep"
-    banner.assert_called_once_with("Audio Prep")
+    assert session[PAGE_KEY] == "Diagnostics"
+    banner.assert_called_once_with("Diagnostics")
 
 
 def test_package_data_declares_demo_pack() -> None:

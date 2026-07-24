@@ -168,6 +168,6 @@ def test_unlock_banner_calls_set_mode(monkeypatch) -> None:
     monkeypatch.setattr(real_st, "button", _St.button)
     monkeypatch.setattr(real_st, "rerun", _St.rerun)
     monkeypatch.setattr(real_st, "error", _St.error)
-    vis.render_full_only_unlock_banner("Audio Prep")
+    vis.render_full_only_unlock_banner("Diagnostics")
     assert seen == [MODE_FULL]
     assert "rerun" in calls

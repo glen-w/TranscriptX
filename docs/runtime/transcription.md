@@ -103,6 +103,28 @@ Install `scripts/whispermlx-missing.py` as `whispermlx-missing` (see script head
 
 **`whisperx.env`** is used only for the whispermlx **subprocess** environment (`HF_TOKEN`, etc.), not for resolving config paths. Repo `.env` is loaded early (without overriding existing shell env) for `TRANSCRIPTX_*` path overrides — same pattern as Docker/native TranscriptX.
 
+### Audio prep / merge helpers (non-core)
+
+Optional host-side helpers for recordings **before** external transcription. Not part of the core GUI (removed from the Tools nav) and candidates for removal in **1.2** — see [ROADMAP.md](../ROADMAP.md).
+
+**Assess / preprocess** (`scripts/audio_preprocess.py`):
+
+```bash
+uv run python scripts/audio_preprocess.py assess recording.wav
+uv run python scripts/audio_preprocess.py run recording.wav --mode auto
+uv run python scripts/audio_preprocess.py run recording.wav \
+  --mode selected --step denoise --step normalize -o ./out --format mp3
+```
+
+**Merge split parts** (`scripts/audio_merge.py`):
+
+```bash
+uv run python scripts/audio_merge.py part_1.wav part_2.wav -o merged.mp3
+uv run python scripts/audio_merge.py --list paths.txt --no-backup --overwrite
+```
+
+Requires `ffmpeg` (and typically `pydub` via the project install). Transcribe the resulting files externally, then use **Import Transcript**.
+
 ---
 
 ## External transcription (all platforms)

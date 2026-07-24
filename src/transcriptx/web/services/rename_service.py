@@ -254,8 +254,6 @@ class RenameService:
 
         old_t = result.old_transcript_path
         new_t = result.new_transcript_path
-        old_a = result.old_audio_path
-        new_a = result.new_audio_path
         old_slug = result.old_slug
         new_slug = result.new_slug
 
@@ -271,24 +269,6 @@ class RenameService:
         import_path = st.session_state.get(IMPORT_LAST_TRANSCRIPT_PATH)
         if RenameService._paths_equal(import_path, old_t) and new_t:
             st.session_state[IMPORT_LAST_TRANSCRIPT_PATH] = new_t
-
-        single_audio = st.session_state.get("audio_prep_selected_file")
-        if old_a and new_a and RenameService._paths_equal(single_audio, old_a):
-            st.session_state["audio_prep_selected_file"] = new_a
-
-        multi_audio = st.session_state.get("audio_prep_selected_files")
-        if isinstance(multi_audio, list) and old_a and new_a:
-            st.session_state["audio_prep_selected_files"] = [
-                new_a if RenameService._paths_equal(item, old_a) else item
-                for item in multi_audio
-            ]
-
-        merge_order = st.session_state.get("audio_merge_ordered_paths")
-        if isinstance(merge_order, list) and old_a and new_a:
-            st.session_state["audio_merge_ordered_paths"] = [
-                new_a if RenameService._paths_equal(item, old_a) else item
-                for item in merge_order
-            ]
 
         if library_transcripts and new_t:
             from transcriptx.web.navigation import library_transcript_index

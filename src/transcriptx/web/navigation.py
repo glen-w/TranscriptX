@@ -147,8 +147,8 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         subsection="legacy",
         may_mutate_context=False,
     ),
-    _spec("Audio Prep", "Audio Pre-processing", "tools", presentation="full_only"),
-    _spec("Audio Merge", "Audio Merge", "tools", presentation="full_only"),
+    # Audio Prep / Audio Merge removed from GUI nav — helper scripts only
+    # (scripts/audio_preprocess.py, scripts/audio_merge.py). See ROADMAP 1.2.
     _spec("Settings", "Settings", "settings"),
     _spec("Profiles", "Profiles", "settings", presentation="full_only"),
     _spec(
@@ -211,6 +211,9 @@ LEGACY_PAGE_REDIRECTS: dict[str, tuple[str, str | None]] = {
     # page_key -> (target_page, artifacts_section or None)
     # Data / Explorer aliases removed in 0.9.7 — use Artifacts Preview / Browse.
     "Statistics": ("Home", None),
+    # Audio tools moved to helper scripts (not core GUI).
+    "Audio Prep": ("Transcribe Audio", None),
+    "Audio Merge": ("Transcribe Audio", None),
 }
 
 
@@ -257,14 +260,6 @@ def library_transcript_index(transcripts: list, transcript_path: str | Path) -> 
 
 
 TRANSCRIPTION_NAV_PATHS_KEY = "transcription_nav_paths"
-
-
-def navigate_to_audio_merge_with_paths(
-    session_state: dict[str, Any], paths: list[Path | str]
-) -> None:
-    """Pre-fill Audio Merge ordered paths and switch to the Audio Merge page."""
-    session_state["audio_merge_ordered_paths"] = [str(p) for p in paths]
-    session_state["page"] = "Audio Merge"
 
 
 def navigate_to_transcribe_with_paths(

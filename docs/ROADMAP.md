@@ -72,6 +72,15 @@ Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, 
 
   **Design before build — interaction with Groups:** tags and groups must stay distinct. Tags find/filter/surface individual transcripts; Groups are analysis cohorts for cross-session runs. Tagging must not create or imply group membership. Tags may act as **filters** in the group member picker, but must not auto-materialise a Group without an explicit user action. Decide whether “more visible” means facet filters, optional pin/favourite, or both — without overlapping Groups as the named-collection surface. Kind tags like `lone speaker` may later feed soft suitability hints (e.g. interaction modules), but must remain optional metadata, not silent default changes. Prefer transcript-local / library storage; keep tags out of group run schemas unless a deliberate filter snapshot is needed.
 
+## 1.2 – audio helpers (consider removal)
+
+Audio **pre-processing** and **merge** are **not core** to the analysis-first product (import → analyze). GUI pages were removed from the nav; capability lives in helper scripts:
+
+- `scripts/audio_preprocess.py` — assess / preprocess before external transcription
+- `scripts/audio_merge.py` — concatenate split recorder parts into one MP3
+
+**1.2 decision:** consider deleting these helpers (and related workflows/config) if usage stays niche — they are convenience around external transcription, not TranscriptX analysis. Until then, keep them documented as **helper / non-core**, not as GUI or supported public surfaces.
+
 ---
 
 ## 2.0 vision

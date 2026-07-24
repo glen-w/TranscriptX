@@ -126,9 +126,6 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     DummyRenameStreamlit.session_state = {
         "subject_id": "/tmp/old.json",
         "run_id": "run_1",
-        "audio_prep_selected_file": "/tmp/old.mp3",
-        "audio_prep_selected_files": ["/tmp/old.mp3", "/tmp/other.mp3"],
-        "audio_merge_ordered_paths": ["/tmp/old.mp3"],
     }
 
     class _DummyService:
@@ -160,17 +157,6 @@ def test_refresh_after_rename_updates_state_and_caches(monkeypatch) -> None:
     assert "selected_transcript_path" not in DummyRenameStreamlit.session_state
     assert DummyRenameStreamlit.session_state["subject_id"] == "/tmp/new.json"
     assert DummyRenameStreamlit.session_state["run_id"] is None
-    assert (
-        DummyRenameStreamlit.session_state["audio_prep_selected_file"] == "/tmp/new.mp3"
-    )
-    assert (
-        DummyRenameStreamlit.session_state["audio_prep_selected_files"][0]
-        == "/tmp/new.mp3"
-    )
-    assert (
-        DummyRenameStreamlit.session_state["audio_merge_ordered_paths"][0]
-        == "/tmp/new.mp3"
-    )
 
 
 def test_after_rename_patches_slug_subject_and_library_select(
