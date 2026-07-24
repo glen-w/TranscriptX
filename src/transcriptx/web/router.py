@@ -12,7 +12,14 @@ from transcriptx.web.navigation import (
     build_prerequisites,
     context_readiness,
     evaluate_page_access,
+    get_page_spec,
     migrate_legacy_page_key,
+)
+from transcriptx.web.presentation.prefs import MODE_GUIDED
+from transcriptx.web.presentation.resolve import resolve_presentation_mode
+from transcriptx.web.presentation.visibility import (
+    page_visible_in_presentation,
+    render_full_only_unlock_banner,
 )
 from transcriptx.web.state import ARTIFACTS_KEY_SECTION, PAGE_KEY
 
@@ -147,6 +154,13 @@ def route_current_page(
 
     readiness = context_readiness(session_state)
     current = session_state.get(PAGE_KEY, "Home")
+    mode = resolve_presentation_mode()
+    spec = get_page_spec(current)
+    if mode == MODE_GUIDED and not page_visible_in_presentation(spec, mode):
+        # Preserve PAGE_KEY; banner only — do not load page body.
+        render_full_only_unlock_banner(current)
+        return
+
     access = evaluate_page_access(current, PAGE_PREREQUISITES, readiness)
     effective_page = (
         current if access.allowed else (fallback_for_page(current) or "Home")

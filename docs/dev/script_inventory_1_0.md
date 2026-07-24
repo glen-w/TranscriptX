@@ -58,6 +58,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/release/repo_hygiene_audit.py` | Phase 0A hygiene checks (allowlist, paths, banners, …) | maintainer | CI release-checks | yes | warn + strict subset | read-only | any | — | valid | maintainer | retain; `--checks` subset (**0.9.5**) |
 | `scripts/release/build_docs.sh` | Sphinx HTML build wrapper | maintainer | `make docs` / CI docs | yes | CI | writes `_build` | any | `[docs]` | valid | maintainer | retain (**0.9.5**) |
 | `scripts/release/regen_module_docs.py` | Regen module catalog + quality-audit scaffold | maintainer | `make docs-gen` | yes | no | writes docs | any | package import | valid | maintainer | retain (**0.9.5**) |
+| `scripts/generate_demo_runs.py` | Validate/install bundled demo pack | maintainer | demo_project.md | yes | optional | writes data root on `--install` | any | package import | valid | maintainer | retain (**0.9.6**) |
 | `archive/scripts/build_docs.sh` | Historical Sphinx builder (pre-revive) | historical | none | archived banner | no | writes `_build` | any | — | archived | archived | retain (archived); live builder is `scripts/release/build_docs.sh` |
 | `scripts/docker-data-setup.sh` | Data download via wrong image / missing helpers | developer | none | stale | no | Docker mutate | Docker | missing peers | **stale** | disposable | delete |
 | `scripts/docker-clean.sh` | `compose down` + unscoped system/volume prune | developer | none | no | no | **destructive** | Docker | — | stale | disposable | delete |

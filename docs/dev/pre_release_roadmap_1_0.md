@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**; Guided/demo datasets and remaining harden themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**; remaining harden themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -24,7 +24,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI (**cut as 0.9.3**)
 - [x] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs (**cut as 0.9.4**)
 - [x] **0.9.x — hosted docs + harden scaffolds** — Sphinx revive + CI docs build; hygiene strict subset; quality-audit registry scaffold; draft model-licence matrix (**cut as 0.9.5**)
-- [ ] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs (**deferred past 0.9.5** — example datasets need owner design)
+- [x] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs (**cut as 0.9.6**)
 - [ ] **0.9.x — harden + public surfaces** — Complete quality audit judgements; performance envelopes; trust/privacy/model gate evidence; onboarding; RTD go-live + modest website; accessibility acceptance
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
@@ -445,7 +445,9 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 **Cut as `0.9.4` / tag `v0.9.4` (2026-07-24).** Install-profile honesty + Transcribe Audio command generator + whispermlx-missing/corpus docs.
 
-**Cut as `0.9.5` (2026-07-24).** Hosted docs revive (Sphinx) + CI docs build; hygiene strict subset; analysis-quality audit registry scaffold; draft model-licence matrix; light release tests. Guided/demo/example datasets deferred.
+**Cut as `0.9.5` (2026-07-24).** Hosted docs revive (Sphinx) + CI docs build; hygiene strict subset; analysis-quality audit registry scaffold; draft model-licence matrix; light release tests.
+
+**Cut as `0.9.6` (2026-07-24).** Guided/Full controls presentation mode; demo project pack + transactional load/remove; lightweight onboarding checklist.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -511,13 +513,13 @@ Focus: mechanical foundations for usable hosted docs and later human hardening �
 - [ ] Human completion of audit recommendations / severity tags
 - [ ] Trust gate evidence sign-off (privacy wording, telemetry confirmation, NOTICE polish)
 
-### 0.9.x — Guided mode and demo project
+### 0.9.x — Guided mode and demo project (**0.9.6**)
 
-Focus: first-run product experience (presentation + examples). **Deferred past 0.9.5** — example datasets need thought; quality-audit scaffold may still inform Guided hide/relabel later.
+Focus: first-run product experience (presentation + examples).
 
-- [ ] Initial Guided/Full controls (presentation/defaults only)
-- [ ] Demo project launcher + one-click removal
-- [ ] Lightweight onboarding checklist (not elaborate tour)
+- [x] Initial Guided/Full controls (presentation/defaults only) (**0.9.6**)
+- [x] Demo project launcher + one-click removal (**0.9.6**)
+- [x] Lightweight onboarding checklist (not elaborate tour) (**0.9.6**)
 
 ### 0.9.x — Quality hardening, hosted docs, public presentation
 
@@ -609,7 +611,7 @@ flowchart LR
   rtd --> gov
 ```
 
-Critical path: **repository inventory and classification → product/docs alignment → schema inventory/reset → install/transcription → hosted-docs + harden scaffolds (**0.9.5**) → modes/demo (when datasets designed) → quality judgements + performance + trust evidence → unfamiliar-user validation → RC evidence.**
+Critical path: **repository inventory and classification → product/docs alignment → schema inventory/reset → install/transcription → hosted-docs + harden scaffolds (**0.9.5**) → modes/demo (**0.9.6**) → quality judgements + performance + trust evidence → unfamiliar-user validation → RC evidence.**
 
 Cut intermediate tags around coherent tested increments; do not force install+schema+modes into one patch.
 
@@ -1039,6 +1041,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3** / `v0.9.3`)
 8. [x] Execute **0.9.x install + transcription** theme (**0.9.4** / `v0.9.4`)
 9. [x] Execute **0.9.x hosted docs + harden scaffolds** theme (**0.9.5**)
-10. [ ] Execute **0.9.x Guided mode + demo** theme when example datasets are designed ← **next product UX**
+10. [x] Execute **0.9.x Guided mode + demo** theme (**0.9.6**) ← **landed**
+11. [ ] Continue quality-hardening / RTD go-live / website / unfamiliar-user validation toward RC
 11. [ ] Continue **0.9.x harden + public surfaces** (audit judgements, perf envelopes, trust evidence, RTD go-live, website) toward RC
 12. [ ] Unfamiliar-user validation → RC evidence when gates pass

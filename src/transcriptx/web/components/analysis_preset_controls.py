@@ -172,9 +172,57 @@ def render_analysis_preset_selector(
     elif st.session_state.get(preset_key) not in options:
         st.session_state[preset_key] = "Balanced"
 
+    # Presentation must never reset preset / custom-module session keys.
+    from transcriptx.web.presentation.prefs import MODE_FULL, MODE_GUIDED
+    from transcriptx.web.presentation.resolve import MODE_LABELS, resolve_presentation_mode
+    from transcriptx.web.presentation.resolve import set_presentation_mode
+
+    presentation_mode = resolve_presentation_mode()
+    current_label = st.session_state.get(preset_key) or "Balanced"
+    current_preset = _label_to_preset(str(current_label))
+
+    if presentation_mode == MODE_GUIDED and current_preset == "custom":
+        stored = list(st.session_state.get(custom_key) or [])
+        st.info(
+            "Custom module selection is preserved. Edit modules in Full controls."
+        )
+        if stored:
+            st.caption(
+                "Selected modules: "
+                + ", ".join(format_module_option(m) for m in stored[:12])
+                + ("…" if len(stored) > 12 else "")
+            )
+        if st.button(
+            f"Edit in {MODE_LABELS[MODE_FULL]}",
+            key=f"{key_prefix}_edit_custom_in_full",
+        ):
+            result = set_presentation_mode(MODE_FULL)
+            if result.ok:
+                st.rerun()
+            elif result.error:
+                st.error(result.error)
+        # Keep Custom active; do not rewrite keys.
+        return resolve_analysis_preset(
+            "custom",
+            target=target,
+            transcript_targets=transcript_targets,
+            custom_modules=list(st.session_state.get(custom_key) or []),
+            audio_resolver=has_resolvable_audio,
+        )
+
+    guided_options = [
+        format_preset_label(p) for p in VALID_PRESETS if p != "custom"
+    ]
+    control_options = (
+        guided_options if presentation_mode == MODE_GUIDED else options
+    )
+    if presentation_mode == MODE_GUIDED and current_label not in control_options:
+        # Do not reset Custom (handled above). For unknown labels, leave key.
+        pass
+
     label = st.segmented_control(
         "Analysis preset",
-        options=options,
+        options=control_options,
         key=preset_key,
         help=_PRESET_HELP,
     )

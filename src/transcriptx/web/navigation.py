@@ -16,6 +16,7 @@ from transcriptx.web.services.transcript_context_resolver import (
 NavSection = Literal["primary", "workflow", "view", "tools", "settings"]
 RequiredContext = Literal["none", "subject", "run_scoped", "transcript_or_group"]
 FallbackBehavior = Literal["stay", "home", "overview", "library", "run_analysis"]
+PresentationVisibility = Literal["always", "full_only"]
 _HYDRATING_CONTEXTS: frozenset[RequiredContext] = frozenset(
     {"subject", "run_scoped", "transcript_or_group"}
 )
@@ -30,6 +31,7 @@ class PageSpec:
     required_context: RequiredContext
     allowed_fallback: FallbackBehavior
     may_mutate_context: bool = False
+    presentation: PresentationVisibility = "always"
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ def _spec(
     required_context: RequiredContext = "none",
     allowed_fallback: FallbackBehavior = "stay",
     may_mutate_context: bool = False,
+    presentation: PresentationVisibility = "always",
 ) -> PageSpec:
     return PageSpec(
         key=key,
@@ -62,6 +65,7 @@ def _spec(
         required_context=required_context,
         allowed_fallback=allowed_fallback,
         may_mutate_context=may_mutate_context,
+        presentation=presentation,
     )
 
 
@@ -80,8 +84,14 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Speaker Identification",
         "workflow",
         may_mutate_context=True,
+        presentation="full_only",
     ),
-    _spec("Corrections Studio", "Corrections Studio", "workflow"),
+    _spec(
+        "Corrections Studio",
+        "Corrections Studio",
+        "workflow",
+        presentation="full_only",
+    ),
     _spec("Run Analysis", "Run Analysis", "workflow", may_mutate_context=True),
     _spec(
         "Overview",
@@ -125,6 +135,7 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "view",
         required_context="run_scoped",
         allowed_fallback="overview",
+        presentation="full_only",
     ),
     # Legacy keys retained for redirect aliases (not shown in sidebar — filtered out).
     # Batch Ops is intentionally NOT in LEGACY_PAGE_REDIRECTS: the router must apply
@@ -152,12 +163,17 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         required_context="run_scoped",
         allowed_fallback="overview",
     ),
-    _spec("Audio Prep", "Audio Pre-processing", "tools"),
-    _spec("Audio Merge", "Audio Merge", "tools"),
+    _spec("Audio Prep", "Audio Pre-processing", "tools", presentation="full_only"),
+    _spec("Audio Merge", "Audio Merge", "tools", presentation="full_only"),
     _spec("Settings", "Settings", "settings"),
-    _spec("Profiles", "Profiles", "settings"),
-    _spec("Dashboard Builder", "Dashboard Builder", "settings"),
-    _spec("Diagnostics", "Diagnostics", "settings"),
+    _spec("Profiles", "Profiles", "settings", presentation="full_only"),
+    _spec(
+        "Dashboard Builder",
+        "Dashboard Builder",
+        "settings",
+        presentation="full_only",
+    ),
+    _spec("Diagnostics", "Diagnostics", "settings", presentation="full_only"),
 )
 
 _PAGE_SPECS_BY_KEY: dict[str, PageSpec] = {spec.key: spec for spec in PAGE_SPECS}
@@ -175,6 +191,7 @@ def get_page_spec(page: str | None) -> PageSpec:
         required_context="none",
         allowed_fallback="home",
         may_mutate_context=False,
+        presentation="always",
     )
 
 

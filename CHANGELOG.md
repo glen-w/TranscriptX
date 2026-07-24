@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-07-24
+
+### Added
+- **Guided / Full controls** presentation mode: atomic prefs, empty→Guided / existing→Full seed, sidebar visibility filter, Full-only unlock banner, Guided Settings tabs + curated config schema, Custom analysis read-only under Guided.
+- **Demo project**: bundled synthetic pack (`demo__*`), transactional install/remove with ownership inventory + journal, deterministic placeholder runs, Home/Settings CTAs, `scripts/generate_demo_runs.py`.
+- Lightweight **Getting started** onboarding checklist prefs (stable item IDs; dismissible).
+
+### Changed
+- Pre-release programme: Guided/demo cut ships as **0.9.6** (no longer deferred past 0.9.5).
+
 ## [0.9.5] - 2026-07-24
 
 ### Added

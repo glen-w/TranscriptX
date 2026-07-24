@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "source": {
+    "type": "manual",
+    "original_path": "demo__multispeaker.json",
+    "imported_at": "2026-07-24T00:00:00Z"
+  },
+  "metadata": {
+    "title": "Demo multi-speaker interaction",
+    "language": "en",
+    "transcript_uuid": "00000000-0000-4000-8000-0000000000d3",
+    "duration_seconds": 10.299999999999999,
+    "segment_count": 4,
+    "speaker_count": 3,
+    "demo": true,
+    "provenance_label": "synthetic/authored"
+  },
+  "segments": [
+    {
+      "speaker": "Dana",
+      "speaker_db_id": 1,
+      "text": "Can we clarify who owns the follow-up?",
+      "start": 0.0,
+      "end": 2.5
+    },
+    {
+      "speaker": "Ellis",
+      "speaker_db_id": 2,
+      "text": "I can own outreach if Fran owns the draft summary.",
+      "start": 2.6,
+      "end": 5.1
+    },
+    {
+      "speaker": "Fran",
+      "speaker_db_id": 3,
+      "text": "Happy to draft. Dana, please review before Friday.",
+      "start": 5.199999999999999,
+      "end": 7.699999999999999
+    },
+    {
+      "speaker": "Dana",
+      "speaker_db_id": 1,
+      "text": "Deal. Let's reconvene after the draft lands.",
+      "start": 7.799999999999999,
+      "end": 10.299999999999999
+    }
+  ]
+}

@@ -30,6 +30,9 @@ from transcriptx.core.config import (
     strip_activation_keys_from_flat_map,
     strip_activation_keys_from_nested_map,
 )
+from transcriptx.web.presentation.guided_settings import GUIDED_SETTINGS_SCHEMA
+from transcriptx.web.presentation.prefs import MODE_GUIDED
+from transcriptx.web.presentation.resolve import resolve_presentation_mode
 from transcriptx.web.ui.settings.diff_view import render_config_diff
 from transcriptx.web.ui.settings.forms import render_config_form
 
@@ -315,6 +318,8 @@ def render_configuration_panel(
     form_scope_key = scope.lower().replace(" ", "_")
 
     if edit_mode and scope != "Default":
+        presentation_mode = resolve_presentation_mode()
+        guided_keys = {item.key for item in GUIDED_SETTINGS_SCHEMA}
         common_keys = {item.key for item in COMMON_SETTINGS_SCHEMA}
         activation_keys = {
             adapter.activation_key for adapter in iter_all_profile_target_adapters()
@@ -322,7 +327,17 @@ def render_configuration_panel(
         editable_registry_keys = {
             key for key in registry.keys() if key not in activation_keys
         }
-        st.markdown("**Common Settings (Guided)**")
+        # Presentation affects rendering only — never rewrite saved config.
+        surface_keys = (
+            guided_keys - activation_keys
+            if presentation_mode == MODE_GUIDED
+            else common_keys - activation_keys
+        )
+        st.markdown(
+            "**Guided settings**"
+            if presentation_mode == MODE_GUIDED
+            else "**Common Settings**"
+        )
         for category in categories:
             fields = [meta for meta in registry.values() if meta.category == category]
             if not fields:
@@ -335,7 +350,7 @@ def render_configuration_panel(
                     show_only_changed=show_only_changed,
                     base_values=base_dot,
                     scope=form_scope_key,
-                    allowed_keys=common_keys - activation_keys,
+                    allowed_keys=surface_keys,
                 )
                 draft_dot.update(updated)
 
@@ -349,11 +364,17 @@ def render_configuration_panel(
             )
 
         st.divider()
-        show_advanced = st.toggle(
-            "Show advanced/raw settings editor",
-            value=False,
-            key="settings_config_show_advanced_editor",
-        )
+        if presentation_mode == MODE_GUIDED:
+            st.caption(
+                "Advanced/raw settings editor is available in **Full controls**."
+            )
+            show_advanced = False
+        else:
+            show_advanced = st.toggle(
+                "Show advanced/raw settings editor",
+                value=False,
+                key="settings_config_show_advanced_editor",
+            )
         if show_advanced:
             st.caption("Advanced editor exposes all registered keys. Use with care.")
             for category in categories:

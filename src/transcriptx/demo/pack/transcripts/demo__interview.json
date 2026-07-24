@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "source": {
+    "type": "manual",
+    "original_path": "demo__interview.json",
+    "imported_at": "2026-07-24T00:00:00Z"
+  },
+  "metadata": {
+    "title": "Demo interview",
+    "language": "en",
+    "transcript_uuid": "00000000-0000-4000-8000-0000000000d2",
+    "duration_seconds": 10.299999999999999,
+    "segment_count": 4,
+    "speaker_count": 2,
+    "demo": true,
+    "provenance_label": "synthetic/authored"
+  },
+  "segments": [
+    {
+      "speaker": "Interviewer",
+      "speaker_db_id": 1,
+      "text": "What changed in your workflow this quarter?",
+      "start": 0.0,
+      "end": 2.5
+    },
+    {
+      "speaker": "Guest",
+      "speaker_db_id": 2,
+      "text": "We moved reviews earlier and cut duplicate meetings.",
+      "start": 2.6,
+      "end": 5.1
+    },
+    {
+      "speaker": "Interviewer",
+      "speaker_db_id": 3,
+      "text": "What would you keep if time was scarce?",
+      "start": 5.199999999999999,
+      "end": 7.699999999999999
+    },
+    {
+      "speaker": "Guest",
+      "speaker_db_id": 1,
+      "text": "The decision log. It saves re-litigating the same debates.",
+      "start": 7.799999999999999,
+      "end": 10.299999999999999
+    }
+  ]
+}

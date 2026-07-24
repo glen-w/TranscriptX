@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "TranscriptX"
 author = "TranscriptX contributors"
 copyright = f"{date.today().year}, {author}"
-release = "0.9.5"
+release = "0.9.6"
 version = "0.9"
 
 extensions = [
