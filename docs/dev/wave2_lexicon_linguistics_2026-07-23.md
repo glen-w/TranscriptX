@@ -1,4 +1,4 @@
-Type: DESIGN
+Type: GUIDE
 Authority: self
 
 # Wave 2 lexicon linguistics — B6 + B7

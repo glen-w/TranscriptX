@@ -75,5 +75,5 @@ Session/speaker rows are collected for group charts. Allowlisted numeric fields:
 ## Related docs
 
 - LLM modules: [llm.md](llm.md)
-- Group chart curation: [group_charts_phase4_outcome_table.md](../groups/group_charts_phase4_outcome_table.md)
+- Group chart curation: [group_charts_phase4_outcome_table.md](../archive/assessments/group_charts_phase4_outcome_table.md)
 - Web blocks: [web_blocks.md](../dev/web_blocks.md)

@@ -1,3 +1,6 @@
+Type: GUIDE
+Authority: self
+
 # Changelog
 
 All notable changes to TranscriptX will be documented in this file.
@@ -6,6 +9,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.9.1] - 2026-07-24
+
+Phase 0A/0B baseline: repository hygiene, documentation information architecture, and product-doc alignment on the 0.9.x → 1.0 programme.
+
+### Added
+
+- Documentation and script inventories (`docs/dev/documentation_inventory_1_0.md`, `docs/dev/script_inventory_1_0.md`).
+- Curated navigation indexes: `docs/USER_INDEX.md`, `docs/DEV_INDEX.md`, tracked `docs/archive/` with archive banners.
+- Authoritative short product definition (`docs/PRODUCT.md`).
+- Local scratch convention (`.local/`) and `docs/dev/local_scratch.md`.
+- Repo hygiene audit (`scripts/release/repo_hygiene_audit.py` + root markdown allowlist) in CI warn mode.
+- Programme plan relocated to `docs/dev/pre_release_roadmap_1_0.md`.
+
+### Changed
+
+- README and `docs/ROADMAP.md` rewritten for the 1.0 north star; stocktake/backlog retargeted to 0.9.x stabilisation (module freeze).
+- Install/transcription docs honesty: runtime markers `core`|`full` only; Docker smoke no longer oversold; `transcriptx.sh` CUDA caveat documented.
+- Public surfaces note Guided/Full as presentation-only and transcription command generation as a GUI capability.
+- Canonical script archive remains `archive/scripts/`; stale setup/Docker helpers removed; broken Sphinx builder archived.
+
+### Removed
+
+- Disposable root/setup helpers (`activate_env.sh`, `scripts/setup_env.sh`, misleading Docker cleanup/data-setup scripts, orphan assess README).
 
 ## [0.9.0] - 2026-07-24
 

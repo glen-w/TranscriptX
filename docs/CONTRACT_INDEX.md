@@ -3,6 +3,10 @@ Authority: contracts
 
 # Contract boundary map
 
+**Product definition (non-contract):** [PRODUCT.md](PRODUCT.md)  
+**Support / public surfaces:** [public_surfaces.md](public_surfaces.md)  
+**Schema epoch policy:** planned under Phase 0B stubs / 0.9.1 — see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md)
+
 Concept → Authority:
 
 - **Storage** → `docs/runtime/STORAGE.md`
@@ -30,4 +34,3 @@ All other docs (README, guides, architecture, runtime docs) may only summarize t
 ## Truth hierarchy (summary)
 
 When interpreting a run, precedence is defined in **`docs/run_outcome_contract.md`** (execution truth in `run_results.json` over `manifest.json` and raw file presence). This index does not restate those rules — see that contract for allowed statuses, projection rules, and invalid combinations.
-

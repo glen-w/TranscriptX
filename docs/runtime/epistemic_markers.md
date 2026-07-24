@@ -1,4 +1,4 @@
-Type: RUNTIME
+Type: GUIDE
 Authority: self
 
 # Epistemic markers (`epistemic_markers`)

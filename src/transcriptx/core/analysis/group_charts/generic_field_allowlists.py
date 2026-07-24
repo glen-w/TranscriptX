@@ -5,7 +5,7 @@ If an ``agg_id`` is absent from this map, the generic generator charts all numer
 session columns (subject to ``max_charts``). Listed ids only chart approved keys so
 Phase-4 curation applies at field level, not only registry membership.
 
-Source of truth for outcomes: ``docs/group_charts_phase4_outcome_table.md``.
+Source of truth for outcomes: ``docs/archive/assessments/group_charts_phase4_outcome_table.md``.
 """
 
 from __future__ import annotations

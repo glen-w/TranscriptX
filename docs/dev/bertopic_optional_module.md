@@ -19,7 +19,7 @@ The package is **not on PyPI**; install from this repository (see [install_verif
 
 Sentence Transformers remains a base dependency (shared with semantic/echoes).
 
-> **Public release:** install profiles will split more clearly (e.g. basic / full / llm) so this stack can move back behind an opt-in profile. See [installation.md](../runtime/installation.md).
+> **Public release:** runtime install markers are **`core` | `full`** only. Heavier re-splits of optional stacks remain a later install-profile audit — see [installation.md](../runtime/installation.md).
 
 ## Lifecycle states
 

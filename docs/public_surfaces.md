@@ -43,6 +43,18 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Compose mounts and environment variables are operational configuration only; storage layout, output layout, and run-truth rules are defined in the contracts linked from §1.
 - See `docs/runtime/docker.md` for build commands, volume mounts, and container-specific pitfalls.
 
+### 1.5 Presentation modes (not a new surface)
+
+- **Guided** / **Full controls** (aliases Simple / Advanced) are a **presentation and configuration layer** only.
+- They do not introduce a second execution system or a separate public API surface.
+- Prefer documenting them as UI/config behaviour, not as additional supported entrypoints.
+
+### 1.6 Transcription command generation (GUI capability)
+
+- Generating shell/CLI commands for **external** transcription tools (e.g. whispermlx helpers) is a planned/in-progress **GUI capability**, not a built-in transcription engine.
+- Supported product path remains: external transcript → managed import → analysis.
+- Corpus helpers such as `scripts/whispermlx-missing.py` are documented user-facing scripts when referenced from runtime docs; they are not a replacement for managed import.
+
 ## 2. Not supported surfaces / patterns
 
 The following patterns are **explicitly not supported** and should be avoided in user flows, docs, and contributions:

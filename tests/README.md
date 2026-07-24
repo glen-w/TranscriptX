@@ -1,6 +1,6 @@
 # TranscriptX tests: how to run locally
 
-**Streamlit GUI test assessment:** see [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). No Playwright for the Streamlit GUI before 1.0.
+**Streamlit GUI test assessment:** see [`docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md`](../docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). No Playwright for the Streamlit GUI before 1.0.
 
 ## Quick commands (single source of truth)
 

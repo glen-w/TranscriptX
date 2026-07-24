@@ -16,10 +16,12 @@ _rg() {
     --glob '!docs/archive/**' \
     --glob '!CHANGELOG.md' \
     --glob '!docs/dev/stocktake_*.md' \
-    --glob '!docs/dev/shim_inventory.md' \
+    --glob '!docs/dev/pre_release_roadmap_1_0.md' \
+    --glob '!docs/dev/documentation_inventory_1_0.md' \
+    --glob '!docs/dev/script_inventory_1_0.md' \
+    --glob '!docs/archive/assessments/shim_inventory.md' \
     --glob '!docs/dev/dependency_audit.md' \
     --glob '!docs/dev/release_governance.md' \
-    --glob '!docs/dev/file_override_behaviour_matrix.md' \
     --glob '!docs/runtime/install_verification_matrix.md' \
     --glob '!scripts/release/**' \
     --glob '!artifacts/**' \

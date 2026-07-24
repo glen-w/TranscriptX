@@ -54,7 +54,7 @@ Apply or verify at minimum:
 	•	docs/runtime/transcription.md → Type: GUIDE → Authority: docs/runtime/STORAGE.md
 	•	docs/runtime/installation.md → Type: GUIDE → Authority: docs/runtime/STORAGE.md
 	•	docs/runtime/docker.md → Type: GUIDE → Authority: docs/runtime/STORAGE.md and/or docs/public_surfaces.md where relevant
-	•	docs/dev/developer_quickstart.md → Type: GUIDE → Authority: contracts + architecture
+	•	docs/developer_quickstart.md → Type: GUIDE → Authority: contracts + architecture
 	•	docs/ARCHITECTURE.md → Type: ARCHITECTURE → Authority: self
 	•	docs/ROADMAP.md and other roadmap/assessment/archive docs → Type: PRODUCT → Authority: self
 	•	docs/CONTRACT_INDEX.md → Type: GUIDE → Authority: contracts

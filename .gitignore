@@ -88,10 +88,11 @@ htmlcov/
 *.tmp
 *.temp
 
-# Archived docs/reports
-docs/archive/
+# Local developer scratch (not an archive — see docs/dev/local_scratch.md)
+.local/
+
+# Local reports archive (run dumps; docs archive is tracked under docs/archive/)
 reports/archive/
-docs/dev/competitive_inspiration_2026-07-22.md
 
 # Accidental test output when mocks leak Path(".") as output roots
 MagicMock/

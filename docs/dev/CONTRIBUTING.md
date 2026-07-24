@@ -124,4 +124,4 @@ When adding/changing transcript import adapters:
 
 ## Development and testing
 
-See [developer_quickstart.md](../dev/developer_quickstart.md) for pipeline structure, adding analysis modules, and testing. Run tests from the repo root (e.g. `pytest`); see `tests/README.md` and the Makefile for CI and smoke tests.
+See [developer_quickstart.md](../developer_quickstart.md) for pipeline structure, adding analysis modules, and testing. Run tests from the repo root (e.g. `pytest`); see `tests/README.md` and the Makefile for CI and smoke tests.

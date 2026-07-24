@@ -3,9 +3,11 @@ Authority: self
 
 # Analysis module backlog (ranked) — 2026-07-17
 
+> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. This backlog remains the ranked post-1.0 / repair-only list. See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md).
+
 > Ranked product backlog for **new or deepened** analysis modules, libraries, and approaches.  
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md) and the prior coverage discussion.  
-> Related research: [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) (five OSS tools vs TranscriptX — features, S/W, learnings for B10/P2/B18).  
+> Related research: [`local_scratch.md`](local_scratch.md) (private competitive notes belong under `.local/`).  
 > Organized against web UI groups in `src/transcriptx/web/module_ui_groups.py`.
 
 **Non-goals:** release hygiene, Top-3 eng refactors, transcription engine integration, plugin marketplace, realtime analysis.
@@ -98,7 +100,7 @@ Without this taxonomy, B10 mostly duplicates `llm_action_items`, summaries, and 
 
 B4 is **deferred until after TranscriptX 1.0**. It remains a valuable optional research-method family, but dependency isolation, conversational-topology semantics, testing burden, and maintenance cost make it inappropriate for the **1.0 critical path**. Do not schedule it in Wave 4, presets, dependency bumps, or near-term capacity.
 
-**Product objective:** optional **citeable methods**, not “ConvoKit enabled.” Public module IDs describe the **method**; vendor name and version belong only in provenance and method documentation. Historical pin conflict (archived only): [`docs/archive/convokit_dependency_conflict.md`](../archive/convokit_dependency_conflict.md). Active roadmap placeholder: [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 — optional citeable research methods).
+**Product objective:** optional **citeable methods**, not “ConvoKit enabled.” Public module IDs describe the **method**; vendor name and version belong only in provenance and method documentation. Historical pin conflict (archived only): [`docs/archive/investigations/convokit_dependency_conflict.md`](../archive/investigations/convokit_dependency_conflict.md). Active roadmap placeholder: [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 — optional citeable research methods).
 
 **Native defaults stay (not replaced):** B7 `politeness`, B12 interaction equity, B13 interaction graphs, `keyphrases` / topics.
 
@@ -285,12 +287,12 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Current module order | `src/transcriptx/core/pipeline/module_specs/__init__.py` |
 | UI groups | `src/transcriptx/web/module_ui_groups.py` |
 | B4 post-1.0 citeable research methods | [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 section); this doc §3.2 |
-| Historical ConvoKit pin conflict | [`docs/archive/convokit_dependency_conflict.md`](../archive/convokit_dependency_conflict.md) |
+| Historical ConvoKit pin conflict | [`docs/archive/investigations/convokit_dependency_conflict.md`](../archive/investigations/convokit_dependency_conflict.md) |
 | BERTopic / other deferrals | `docs/ROADMAP.md` |
 | Model upgrade matrix | `docs/runtime/models.md` |
 | Group output classes | `docs/groups/group_analysis_module_outputs.md` |
 | Stocktake sequencing | `docs/dev/stocktake_2026-07-17.md` |
-| Competitive inspiration (5 OSS tools vs TX) | [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) |
+| Competitive inspiration (5 OSS tools vs TX) | [`local_scratch.md`](local_scratch.md) |
 | Wave 2 lexicon linguistics (B6/B7) | [`wave2_lexicon_linguistics_2026-07-23.md`](wave2_lexicon_linguistics_2026-07-23.md) |
 | Wave B13 interaction graphs | [`wave_b13_interaction_graphs_2026-07-23.md`](wave_b13_interaction_graphs_2026-07-23.md) |
 | Wave B16 keyphrases | [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md) |

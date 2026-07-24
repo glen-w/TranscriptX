@@ -1,0 +1,111 @@
+Type: GUIDE
+Authority: ARCHITECTURE.md
+
+# Developer Quick Start — TranscriptX
+
+This guide is for developers who want to understand how TranscriptX is structured internally and how to extend it safely, without reading the entire codebase.
+
+It prioritises mental models, execution flow, and stable extension points over exhaustive reference.
+
+## 1. Mental model
+
+TranscriptX is a deterministic analysis pipeline for transcripts.
+
+At a high level:
+
+1. A canonical transcript (JSON) is the single source of truth.
+2. An analysis run executes a set of modules over that transcript.
+3. Modules execute in dependency-aware order (a DAG).
+4. Modules share data only via a PipelineContext.
+5. Each module produces structured artifacts.
+6. Artifacts are written through a shared OutputService.
+7. Each run is isolated, reproducible, and traceable.
+
+Narrative flow:
+
+canonical transcript  
+→ dependency resolution (DAG)  
+→ module execution  
+→ artifact writing + manifest  
+→ inspection (GUI / Python API / downstream tools)
+
+If an output exists, it can always be traced back to the input transcript, the effective configuration, and the modules that produced it.
+
+## 2. Repository layout
+
+src/transcriptx/  
+├── core/  
+│   ├── analysis/ — Analysis modules (primary extension surface)  
+│   ├── pipeline/ — DAG construction & execution  
+│   ├── output/ — Artifact writing & manifest tracking  
+│   ├── config/ — Configuration resolution  
+│   └── domain/ — Canonical transcript and group structures  
+├── web/ — Streamlit GUI (analysis, speaker ID, batch ops, browsing)  
+├── app/ — App-layer workflows (AnalysisRequest, run_analysis, etc.)  
+  
+data/  (example)
+├── recordings/ — Input audio  
+├── transcripts/ — Transcript JSON under the storage contract  
+└── outputs/ — Analysis run outputs (layout defined in the output contract)  
+
+.transcriptx/ — Local runtime state  
+.local/ — Ignored developer scratch (see [local_scratch.md](dev/local_scratch.md))  
+scripts/ — Maintainer / supported helpers (see [script_inventory_1_0.md](dev/script_inventory_1_0.md))  
+archive/scripts/ — Historical non-supported scripts  
+tests/ — Pytest-based tests  
+docs/ — See [USER_INDEX.md](USER_INDEX.md) / [DEV_INDEX.md](DEV_INDEX.md) / [archive/ARCHIVE_INDEX.md](archive/ARCHIVE_INDEX.md)
+
+## 3. How an analysis run works
+
+Runs are initiated via the web interface or the Python API (`app.workflows.run_analysis`). Configuration is resolved from defaults, environment variables, and config files, then snapshotted for reproducibility.
+
+Each module declares its dependencies. The pipeline builds a DAG, sorts it, and executes modules deterministically. Modules communicate only through the shared PipelineContext.
+
+Failures stop dependent modules but preserve completed artifacts.
+
+## 4. Adding a new analysis module (worked example)
+
+**1. Create the module** under `src/transcriptx/core/analysis/<module_name>/`. Define a class inheriting from `AnalysisModule`, set `self.module_name = "<module_name>"`, and implement `run_from_context(self, context)`.
+
+**2. Requirements and optional deps.** In your module, use `context.get_segments()` and other context APIs. If the module needs speaker labels or audio, declare `Requirement.SPEAKER_LABELS` or use the pipeline’s requirement resolver. For optional heavy deps (e.g. voice, NLP), use `optional_import("package_name", "Description", "package_name", auto_install=False)` and skip or degrade when missing. Add an extra in `pyproject.toml` (e.g. `[voice]`, `[nlp]`) and document it so installs stay deterministic.
+
+**3. Output contract.** Do not build paths by hand. Use `create_output_service(context.transcript_path, self.module_name, run_id=..., output_dir=..., runtime_flags=...)` from the pipeline’s output helpers, then `output_service.save_data(payload, base_name, format_type="json")` or `save_text(...)`. For versioned namespaces (e.g. `voice/v1/`), set `output_namespace` and `output_version` in the registry entry so the run root gets `<namespace>/<version>/` (see `docs/dev/output_conventions.md`).
+
+**4. Registry entry.** In `src/transcriptx/core/pipeline/module_registry.py`, inside `_setup_modules()`, add an entry to `module_definitions` with at least: `description`, `dependencies` (list of other module names or `[]`), `category` (`"light"` | `"medium"` | `"heavy"`), `determinism_tier` (e.g. `"T0"`), `requirements` (e.g. `[Requirement.SEGMENTS]` or `[Requirement.SEGMENTS, Requirement.SPEAKER_LABELS]`), `enhancements` (often `[]`). Optionally: `requires_audio`, `requires_multiple_speakers`, `exclude_from_default`, `output_namespace`, `output_version`. Then add the module’s lazy loader to the `module_definitions` → `ModuleInfo` construction (see existing entries for the pattern: `function` is a callable that imports and returns the module class or run function).
+
+**5. Test.** Add a test under `tests/analysis/` or `tests/contracts/` that either mocks the pipeline and checks your module’s `analyze()` output shape, or runs the pipeline with `selected_modules=["<module_name>"]` on `tests/fixtures/mini_transcript.json` and asserts expected files under the run dir (see `tests/contracts/test_run_results_and_manifest_contracts.py` for a pipeline run + manifest check).
+
+**6. Validate registry.** Run `python scripts/validate_registry.py` to ensure no duplicate names, valid categories, and every dependency is a registered module.
+
+## 5. Outputs and artifacts
+
+Each run produces a directory containing configuration snapshots, a manifest, and module folders. Directory structure and artifact schemas are treated as stable contracts; see:
+
+- `docs/contracts/output-contract-v1.md` for output layout and manifests.
+- `docs/run_outcome_contract.md` for run_results semantics and statuses.
+
+## 6. Configuration & conventions
+
+TranscriptX uses env-first configuration. Unknown speakers are excluded from most per-speaker analyses by default to avoid misleading outputs.
+
+## 7. Performance & dependencies
+
+Modules are loosely grouped into light, medium, and heavy. Heavy modules should be gated and degrade gracefully if optional dependencies are missing.
+
+**BERTopic status:** BERTopic ships in the **default** install (`bertopic` / `hdbscan` / `umap-learn` in base deps; Sentence Transformers already base). The `[bertopic]` extra is a compatibility alias. Catalogue / UI detection still uses non-importing distribution metadata; execution distinguishes `missing_extra:bertopic` vs `broken_extra:bertopic` for degraded installs. Group aggregation refits from pooled source segments. Runtime install markers are **`core` | `full`** only — see [installation.md](runtime/installation.md).
+
+**Keyphrases status:** Module `keyphrases` (B16) ranks noun-chunks always; YAKE/KeyBERT need `pip install -e ".[keyphrases]"` (also in `.[full]`). See [keyphrases.md](runtime/keyphrases.md) and [wave_b16_keyphrases_2026-07-24.md](dev/wave_b16_keyphrases_2026-07-24.md).
+
+## 8. Development workflow
+
+Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging.
+
+**Docker:** The image uses `ENTRYPOINT ["transcriptx"]`. Compose mounts `./data` at `/data` for app state, outputs, and cache, and requires **`HOST_RECORDINGS_DIR`** (outside the repo) for source audio—see [docker.md](runtime/docker.md). For a minimal health check with `docker run`, mount `./data` and add a second bind for recordings plus `TRANSCRIPTX_RECORDINGS_DIR` (see compose file). When changing the Dockerfile or dependency constraints, build and run a quick smoke and hit `http://localhost:8501/_stcore/health` to avoid “works locally, fails in container” drift. The builder stage installs with `-c constraints.txt`; do not add pip installs in the runtime stage or without constraints. Full details: [docker.md](runtime/docker.md) and the [Architecture](ARCHITECTURE.md#docker-runtime--deployment) Docker section.
+
+## 9. What not to do
+
+Do not write directly to disk, mutate canonical transcripts, rely on global state, or introduce undeclared cross-module coupling.
+
+## 10. Follow-up / technical debt
+
+- **Workflow duplication:** Batch workflows, file selection, and interactive web flows share repeated patterns (progress, confirmations, path resolution). The WAV workflow refactor (`wav_processing_workflow/` + `wav_workflow_ui`) is the template for extracting shared helpers; consider auditing other entry points and consolidating where it hurts most.

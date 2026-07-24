@@ -7,6 +7,9 @@ This document gives a high-level mental model for how TranscriptX works today.
 It describes **system shape and typical data flow only** and is **non-authoritative**:  
 **All invariants, rules, and behavioral guarantees live in CONTRACT documents.**
 
+**Product definition:** [PRODUCT.md](PRODUCT.md) (what TranscriptX is for).  
+**Support policy:** [public_surfaces.md](public_surfaces.md).
+
 ## Core flow
 
 1. Load transcript segments (canonical JSON format).
@@ -20,9 +23,11 @@ It describes **system shape and typical data flow only** and is **non-authoritat
 TranscriptX is structured in two layers:
 
 - **Engine** — Pipeline, modules, and shared context. Responsible for execution and artifact production.
-- **GUI** — Streamlit-based web interface. Provides transcript processing, speaker identification, analysis browsing, batch operations, audio preparation, settings, groups, and more.
+- **GUI** — Streamlit-based web interface (primary product surface). Provides transcript processing, speaker identification, analysis browsing, batch operations, audio preparation, settings, groups, and more.
 
-Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`).
+Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`). Transcription is **external**; the GUI may generate commands for external tools rather than running a built-in engine.
+
+Presentation modes (**Guided** / **Full controls**) are a presentation/config layer only — one execution system.
 
 ## Components
 
@@ -40,7 +45,7 @@ For detailed storage roots and directory layout, see `docs/runtime/STORAGE.md`.
 
 ## Docker (summary)
 
-- Docker Compose is the recommended way to run TranscriptX in containers (no local Python install). See `docs/runtime/docker.md` for compose configuration, volume layout, and environment variables.
+- Docker Compose is a supported way to run TranscriptX in containers (no local Python install). See `docs/runtime/docker.md` for compose configuration, volume layout, and environment variables.
 - Transcription is external; TranscriptX consumes diarized transcript JSON (see `docs/runtime/transcription.md`).
 
 ## Extension points
@@ -57,3 +62,7 @@ For detailed storage roots and directory layout, see `docs/runtime/STORAGE.md`.
 - **Paths and helpers** → path utilities in `src/transcriptx/core/utils/paths.py` and related modules
 
 Architecture references these contracts but does not restate their rules.
+
+## Related indexes
+
+- [USER_INDEX.md](USER_INDEX.md) · [DEV_INDEX.md](DEV_INDEX.md) · [CONTRACT_INDEX.md](CONTRACT_INDEX.md)

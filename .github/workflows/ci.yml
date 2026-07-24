@@ -127,6 +127,9 @@ jobs:
         run: bash scripts/secrets_check.sh
       - name: Stale refs + TODO gate
         run: bash scripts/release/stale_refs.sh
+      - name: Repo hygiene audit (warn mode)
+        continue-on-error: true
+        run: python3 scripts/release/repo_hygiene_audit.py
       - name: Canonical Compose asserts
         run: bash scripts/release/assert_compose_bind.sh
       - name: Package build + wheel import smoke

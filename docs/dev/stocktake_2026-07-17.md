@@ -3,8 +3,9 @@ Authority: self
 
 # TranscriptX Codebase Stocktake — 2026-07-17
 
-> Living decision foundation for near-term work. Supersedes the historical assessment in [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2026-03-10.md).  
-> Metrics refreshed **2026-07-24** against package **0.9.0** (pre-pre-release / beta). Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.
+> Living decision foundation for the **0.9.x → 1.0** stabilisation programme. Supersedes the historical assessment in [`docs/archive/assessments/assessment-2026-03-10.md`](../archive/assessments/assessment-2026-03-10.md).  
+> Metrics refreshed **2026-07-24** against package **0.9.1**. Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x / 0.9.0 describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.  
+> **Product authority:** [PRODUCT.md](../PRODUCT.md) · **Roadmap:** [ROADMAP.md](../ROADMAP.md) · **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md)
 
 ---
 
@@ -12,13 +13,13 @@ Authority: self
 
 | Dimension | Verdict | Confidence |
 |-----------|---------|------------|
-| **What it is** | Local-first transcript **analysis** toolkit (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
-| **Honest stage** | **Beta** (`0.9.0`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
-| **OSS local-first public release** | **Conditional go** — Wave 0 eng criteria closed; next public tag still requires [`release_governance.md`](release_governance.md) evidence (clean tree, green CI on exact commit, evidence bundle). | High |
+| **What it is** | Local-first personal transcript **analysis workbench** (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
+| **Honest stage** | **0.9.x stabilisation toward 1.0** (`0.9.1`, classifier Beta). Strong contracts and test culture; not consumer polish; not multi-user. | High |
+| **OSS local-first public 1.0** | **Conditional go** — Phase 0A hygiene + Phase 0B docs in flight; public 1.0 still requires unfamiliar-user validation, severity triage, and [`release_governance.md`](release_governance.md) evidence. | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
-| **Immediate process blocker** | Manual next-tag checklist / evidence bundle — not missing A1–A10 or Config 1.7 code. | High |
+| **Immediate process focus** | Complete Phase 0A/0B acceptance; then schema epoch inventory — not Wave 3 module sprawl. | High |
 
-**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; Waves 1–2 analysis ships are Done through 0.7.x; **B14** + **B16** (`keyphrases`) shipped in 0.8.0; product capacity points at Wave 3 remainder (B5 DB/group `profile_id`, B18/P2); do not market as a hosted product.
+**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; **default next capacity is 0.9→1.0 stabilisation** (docs, schema epoch, install/transcription handoff, Guided/Full, demo, hardening) — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
 
 ---
 
@@ -26,7 +27,7 @@ Authority: self
 
 | Fact | Value / evidence |
 |------|------------------|
-| Version | `0.9.0` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
+| Version | `0.9.1` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
 | License | MIT |
 | Scale | Large `src/transcriptx/` + extensive `tests/` (~4.5k test functions; see Makefile lanes) |
 | Smoke gate | `make test-smoke` (CI matrix 3.10–3.12; Core+dev and NLP smoke lanes) |
@@ -58,7 +59,7 @@ flowchart LR
 
 ### 3.1 What docs claim
 
-- **North star** ([`docs/ROADMAP.md`](../ROADMAP.md)): credible beta — stable contracts, strong UX, safe extensibility; evolve toward a personal audio analysis companion.
+- **North star** ([`docs/PRODUCT.md`](../PRODUCT.md); [`docs/ROADMAP.md`](../ROADMAP.md); programme [`pre_release_roadmap_1_0.md`](pre_release_roadmap_1_0.md)): ship a credible **1.0** workbench, then evolve toward a personal audio and transcript intelligence companion.
 - **Phase 1 (0.6.x honesty):** install, core flows, docs, dep consistency, **in-repo CI** — feature delivery continues under beta; “no new features” language is retired.
 - **Locked principles:** core-first correctness; contracts+tests before features; GUI primary; deferred platformisation.
 - **Out of scope (6 months):** plugin marketplace, realtime transcription, cloud SaaS, heavy training, mobile.
@@ -70,7 +71,7 @@ flowchart LR
 | Historical Phase 1 vs shipping | Older ROADMAP/stocktake language said “no new features” while 0.3.x→0.7.x shipped continuously — **reconciled** in ROADMAP (language retired). |
 | Historical version bands | Older docs said “v0.42 current” / stocktake once said **0.6.5** — **reconciled**; package is **0.8.0**. |
 | Groups story | ~~README “DB-backed”~~ **Fixed** (file-backed). Storage contract is file-first; DB-backed **speaker** analytics views remain Phase 3 remainder. |
-| Sprint archive | [`docs/archive/sprint_archive.md`](../archive/sprint_archive.md) is historical backlog only — not live. |
+| Sprint archive | [`docs/archive/plans/sprint_archive.md`](../archive/plans/sprint_archive.md) is historical backlog only — not live. |
 | Identity | ~~`pyproject` URLs ≠ remote~~ **Fixed** → `glen-w/TranscriptX`. |
 | Install story | Documented: not on PyPI; Docker + git tags; see [`install_verification_matrix.md`](../runtime/install_verification_matrix.md). |
 | Stale packaging | ~~`src/setup.py`~~ **Removed** (Wave 0 A6). |
@@ -134,15 +135,15 @@ Largest risk files (illustrative): `qa_analysis/analysis.py`, `highlights/core.p
 
 ## 6. Active engineering programs
 
-Authoritative sequencing: [`docs/dev/refactor_top3_index_2026-07-16.md`](refactor_top3_index_2026-07-16.md).
+Authoritative sequencing: [`refactor_top3_index_2026-07-16.md`](../archive/plans/refactor_top3_index_2026-07-16.md).
 
 | Order | Program | Doc | Status (2026-07-24) |
 |-------|---------|-----|---------------------|
-| **Done** | Run cleanup Phase B hardening | [`run_cleanup_refactor_contracts.md`](run_cleanup_refactor_contracts.md) | Policy 7; journal RMW; recovery matrix; Identity/Snapshot hot paths; LockAcquisitionOutcome; adversarial + idempotency suite. |
-| **Done** | Config ownership collapse (Candidate 1) | [`docs/config/config_ownership_collapse_plan.md`](../config/config_ownership_collapse_plan.md) | Through 1.8; atomic overrides + curated `to_dict`; inventory **51 / 705 / 16** (721). Optional follow-up: **1.9** structural split. |
-| **Done** | Shared analysis I/O | [`shared_analysis_io_refactor_plan.md`](shared_analysis_io_refactor_plan.md) | Affect + dynamics + group-chart families complete; A3 entity_sentiment + char closeout 2026-07-17 |
-| **Done** | Rename + corrections split | [`rename_corrections_orchestrator_split_plan.md`](rename_corrections_orchestrator_split_plan.md) | Steps 3.1–3.13 landed; compat table documents aliases; public import paths unchanged |
-| **Done** | Export system refactor | [`export_system_refactor_plan.md`](export_system_refactor_plan.md) | Steps 1–9 + residual finish; Jinja2 + Artifact Protocol remain optional backlog |
+| **Done** | Run cleanup Phase B hardening | [`run_cleanup_refactor_contracts.md`](../archive/plans/run_cleanup_refactor_contracts.md) | Policy 7; journal RMW; recovery matrix; Identity/Snapshot hot paths; LockAcquisitionOutcome; adversarial + idempotency suite. |
+| **Done** | Config ownership collapse (Candidate 1) | [`config_ownership_collapse_plan.md`](../archive/plans/config_ownership_collapse_plan.md) | Through 1.8; atomic overrides + curated `to_dict`; inventory **51 / 705 / 16** (721). Optional follow-up: **1.9** structural split. |
+| **Done** | Shared analysis I/O | [`shared_analysis_io_refactor_plan.md`](../archive/plans/shared_analysis_io_refactor_plan.md) | Affect + dynamics + group-chart families complete; A3 entity_sentiment + char closeout 2026-07-17 |
+| **Done** | Rename + corrections split | [`rename_corrections_orchestrator_split_plan.md`](../archive/plans/rename_corrections_orchestrator_split_plan.md) | Steps 3.1–3.13 landed; compat table documents aliases; public import paths unchanged |
+| **Done** | Export system refactor | [`export_system_refactor_plan.md`](../archive/plans/export_system_refactor_plan.md) | Steps 1–9 + residual finish; Jinja2 + Artifact Protocol remain optional backlog |
 
 **Explicit non-goals** (from Top-3 index): no full config framework rewrite; no algorithm rewrites under I/O extract; no rename journal schema/policy changes in a “split” PR; no interleaved Candidate 1 + 3 mega-PRs.
 
@@ -181,7 +182,7 @@ Authoritative sequencing: [`docs/dev/refactor_top3_index_2026-07-16.md`](refacto
 | Ruff/mypy counts | 332 / 2111 (stale) | Not re-baselined as release gate; treat archive numbers as **historical only** |
 | CI | Weak | **In-repo** `.github/workflows/ci.yml` |
 
-Do **not** use [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2026-03-10.md) or [`tests/TEST_SUITE_ASSESSMENT.md`](../../tests/TEST_SUITE_ASSESSMENT.md) as current truth without refresh.
+Do **not** use [`docs/archive/assessments/assessment-2026-03-10.md`](../archive/assessments/assessment-2026-03-10.md) or [`docs/archive/assessments/TEST_SUITE_ASSESSMENT.md`](../archive/assessments/TEST_SUITE_ASSESSMENT.md) as current truth without refresh.
 
 ---
 
@@ -204,7 +205,7 @@ Do **not** use [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2
 | **B2** | ~~Mid-flight run_cleanup extract~~ **Closed** | Phase A + B complete |
 | **B3** | ~~No in-repo CI workflows~~ **Closed** | `.github/workflows/ci.yml` |
 | **B4** | ~~Public URLs ≠ git remote~~ **Closed** | `glen-w/TranscriptX` |
-| **B5** | ~~Groups README contradiction~~ **Closed** | README now “file-backed”; see [`group_functionality_audit_2026-07-17.md`](group_functionality_audit_2026-07-17.md) |
+| **B5** | ~~Groups README contradiction~~ **Closed** | README now “file-backed”; see [`group_functionality_audit_2026-07-17.md`](../archive/assessments/group_functionality_audit_2026-07-17.md) |
 | **B6** | Public tag evidence incomplete until governance runbook executed on a clean commit | Process — see [`release_governance.md`](release_governance.md) |
 
 ### 8.3 High pitfalls (not always blockers)
@@ -303,15 +304,15 @@ Use these as defaults unless you consciously override them:
 | Roadmap | `docs/ROADMAP.md` |
 | Public surfaces | `docs/public_surfaces.md` |
 | Storage | `docs/runtime/STORAGE.md` |
-| Top-3 refactors | `docs/dev/refactor_top3_index_2026-07-16.md` |
-| Cleanup contracts / assessment | `docs/dev/run_cleanup_refactor_*.md` |
-| Config ownership | `docs/config/config_ownership_collapse_plan.md` |
+| Top-3 refactors | `docs/archive/plans/refactor_top3_index_2026-07-16.md` |
+| Cleanup contracts / assessment | `docs/archive/plans/run_cleanup_refactor_contracts.md` / assessments |
+| Config ownership | `docs/archive/plans/config_ownership_collapse_plan.md` |
 | Release governance (tag gate) | `docs/dev/release_governance.md` |
 | Pre-release checklist (local confidence) | `.cursor/commands/pre-release.md` |
 | Analysis module backlog (ranked) | `docs/dev/analysis_module_backlog_2026-07-17.md` |
 | Wave B16 keyphrases | `docs/dev/wave_b16_keyphrases_2026-07-24.md` |
 | Keyphrases runtime | `docs/runtime/keyphrases.md` |
-| Group functionality audit | `docs/dev/group_functionality_audit_2026-07-17.md` |
+| Group functionality audit | `docs/archive/assessments/group_functionality_audit_2026-07-17.md` |
 | Speaker profiles (longitudinal) | `docs/contracts/speaker_profiles_v1.md` |
 | Speaker profiles voice | `docs/contracts/speaker_profiles_voice_v1.md` |
-| Historical assessment (superseded) | `docs/archive/assessment-2026-03-10.md` |
+| Historical assessment (superseded) | `docs/archive/assessments/assessment-2026-03-10.md` |

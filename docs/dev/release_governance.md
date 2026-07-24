@@ -1,3 +1,6 @@
+Type: GUIDE
+Authority: self
+
 # Release governance (manual next-tag checklist)
 
 This document is the **authoritative release gate** for public version tags. It is **not** enforced by `.cursor/commands/pre-release.md` (local developer confidence only).
@@ -6,7 +9,7 @@ This document is the **authoritative release gate** for public version tags. It 
 
 ## Wave 0 eng criteria (closed)
 
-Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed 2026-07-24 for **0.8.0**). Remaining work before a public tag is this checklist + evidence runbook — not missing Wave 0 code.
+Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed for **0.9.1**). Remaining work before a public **1.0** tag is this checklist + evidence runbook, plus programme gates in [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) (unfamiliar-user validation, severity triage, performance/trust gates) — not missing Wave 0 code.
 
 ## Checklist
 
@@ -28,6 +31,7 @@ Humans (or an explicit user instruction outside the pre-release command) perform
 Attach (machine- or human-readable) at tag time:
 
 - Stale-reference sweep (`scripts/release/stale_refs.sh`)
+- Repo hygiene audit (`scripts/release/repo_hygiene_audit.py` — warn mode until promoted)
 - Dependency audit + installed-package inventory (clean-env and, where practical, image)
 - Documented-install matrix results
 - Tracked-data allowlist comparison (`scripts/release/check_tracked_data.py`)
@@ -72,7 +76,7 @@ python -m pytest -q \
   tests/core/config/test_settings_file_load_pilots.py
 ```
 
-Expected: green. Ownership invariant (authoritative): **47 pilots / 660 Pydantic leaves / 16 legacy** (676 total) via `test_ownership_invariant_counts`. Behaviour matrix: `docs/dev/file_override_behaviour_matrix.md`.
+Expected: green. Ownership invariant (authoritative): **47 pilots / 660 Pydantic leaves / 16 legacy** (676 total) via `test_ownership_invariant_counts`. Behaviour matrix: `docs/dev/../archive/plans/file_override_behaviour_matrix.md`.
 
 ### C. Dependency / clean-env audit (optional locally; required for tag when tooling available)
 

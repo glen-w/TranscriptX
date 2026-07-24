@@ -1,4 +1,4 @@
-Type: RUNTIME
+Type: GUIDE
 Authority: self
 
 # Politeness markers (`politeness`)

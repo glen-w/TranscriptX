@@ -1,3 +1,6 @@
+Type: PRODUCT
+Authority: self
+
 # Wave B13 — speaker interaction graphs
 
 Companion to [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md). Deepen `interactions` (no new module ID).

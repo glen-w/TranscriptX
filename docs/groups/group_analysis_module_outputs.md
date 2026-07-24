@@ -61,12 +61,12 @@ Pipeline already runs selected modules on each member. The web Insights and Over
 1. Group rollups (`*_rows.json`, summary blobs, optional [group LLM synthesis](group_llm_synthesis_contract.md))
 2. Per-session member contracts via a session picker (`storage_root`-aware loader)
 
-See [`docs/dev/web_blocks.md`](../dev/web_blocks.md) and [`docs/dev/group_functionality_audit_2026-07-17.md`](../dev/group_functionality_audit_2026-07-17.md) (E6/E7).
+See [`docs/dev/web_blocks.md`](../dev/web_blocks.md) and [`docs/dev/group_functionality_audit_2026-07-17.md`](../archive/assessments/group_functionality_audit_2026-07-17.md) (E6/E7).
 
 ## Related docs
 
 - [Group charts: default overview vs gallery](group_charts_default_overview.md) — session, temporal overlay, cross-session speaker, pooled single view
-- [Phase 4 outcome table](group_charts_phase4_outcome_table.md) — per-`agg_id` chart decisions
+- [Phase 4 outcome table](../archive/assessments/group_charts_phase4_outcome_table.md) — per-`agg_id` chart decisions
 - [Keyphrases pooled contract](group_charts_keyphrases_pooled_contract.md) — B16 noun_chunk group chart
 - [Relational pooling model](group_charts_relational_pooling_model.md) — pooled semantics for interactions / contagion
 - [Runtime keyphrases](../runtime/keyphrases.md) — single-transcript + install extras

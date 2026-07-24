@@ -31,13 +31,15 @@ Then open http://localhost:8501. Full details: [docker.md](docker.md).
 
 **Python 3.10–3.12** required (`requires-python = ">=3.10,<3.13"`).
 
-**Launcher (fast path):** Creates a virtual environment, installs full dependencies, and starts the web interface:
+**Launcher (fast path):** Creates a `.transcriptx` virtual environment, installs dependencies, and starts the web interface:
 
 ```bash
 ./transcriptx.sh
 ```
 
 With no arguments, starts the web interface at http://localhost:8501. Core-only: `TRANSCRIPTX_CORE=1 ./transcriptx.sh`.
+
+> **GPU note:** `transcriptx.sh` currently exports `CUDA_VISIBLE_DEVICES=""` (disables CUDA in that shell). Prefer Docker or a manual venv when you need GPU-backed optional stacks.
 
 **Manual install (from this repository — not PyPI):**
 
@@ -47,7 +49,7 @@ The package is **not published on PyPI**. Do not use bare `pip install transcrip
 - **Full:** `pip install -e ".[full]"` (all optional modules; core_mode off; may fail on some hosts)
 - **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, `pip install -e ".[keyphrases]"` (optional YAKE / KeyBERT for the `keyphrases` module; noun-chunks path works without the extra), etc.
 
-> **Install profiles:** BERTopic (`bertopic` / `hdbscan` / `umap-learn`) may ship in the default install so Docker and editable core installs get topic clustering without an extra. The `[bertopic]` extra remains a compatibility alias.
+> **Install profiles (honesty):** Runtime markers today are **`core` | `full` only**. Aspirational names such as `basic` / `llm` as separate install profiles are **not** implemented. Docker images typically follow the fuller dependency set via `requirements.txt` / image build — that is **not** the same path as `pip install -e ".[full]"`. Treat Docker, `./transcriptx.sh`, and editable extras as related but non-equivalent install stories. BERTopic (`bertopic` / `hdbscan` / `umap-learn`) may ship in the default install so Docker and editable core installs get topic clustering without an extra; the `[bertopic]` extra remains a compatibility alias.
 
 **Dedicated environment (recommended):** TranscriptX does not use Prefect, Dagster, or other workflow engines. For a clean environment with only project dependencies, use a fresh virtualenv and install from the repo:
 

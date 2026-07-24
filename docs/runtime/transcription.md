@@ -3,7 +3,7 @@ Authority: runtime/STORAGE.md
 
 # Transcription (external workflow)
 
-TranscriptX is **analysis-first**: transcription produces JSON elsewhere; the web app **imports** it. The **Transcribe Audio** page is an **instruction hub** (shell examples, `whispermlx-missing`); **Import Transcript** is the GUI admission gate. WhisperX Docker is documented as an external recipe, not orchestrated from Streamlit.
+TranscriptX is **analysis-first**: transcription produces JSON elsewhere; the web app **imports** it. The **Transcribe Audio** page is an **instruction hub** today (shell examples, `whispermlx-missing`); **Import Transcript** is the GUI admission gate. A stronger in-app **command-generation** handoff is part of the 0.9.x programme ([ROADMAP.md](../ROADMAP.md)). WhisperX Docker is documented as an external recipe, not orchestrated from Streamlit.
 
 ## Design: why transcription stays outside the GUI
 
@@ -20,7 +20,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 
 **Why not merge stacks?** Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
 
-**Future (optional):** a **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) could let the GUI orchestrate jobs without executing MLX inside Linux. See [ROADMAP.md](../ROADMAP.md) Phase 2 transcription architecture.
+**Future (optional):** a **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) could let the GUI orchestrate jobs without executing MLX inside Linux. Built-in transcription remains **non-near-term** — see [ROADMAP.md](../ROADMAP.md).
 
 ## Transcribe Audio page (external workflow)
 

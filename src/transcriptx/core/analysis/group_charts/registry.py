@@ -142,7 +142,7 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
 
     Field-level allowlists for generic numerics live in
     ``generic_field_allowlists.py``; outcomes in
-    ``docs/groups/group_charts_phase4_outcome_table.md``.
+    ``docs/archive/assessments/group_charts_phase4_outcome_table.md``.
     """
     generic_ids = (
         "understandability",

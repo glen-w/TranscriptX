@@ -1,3 +1,6 @@
+Type: GUIDE
+Authority: docs/dev/release_governance.md
+
 # Dependency audit & CVE waiver policy
 
 TranscriptX Wave 0 audit gate:

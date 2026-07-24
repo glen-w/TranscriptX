@@ -1,45 +1,44 @@
+Type: PRODUCT
+Authority: docs/PRODUCT.md
+
 # TranscriptX
 
-TranscriptX is a local-first transcript analysis toolkit. It treats transcripts as canonical data and runs deterministic, reproducible analysis pipelines on your machine.
+**TranscriptX** is a local-first personal transcript analysis workbench for people who want to think with transcripts.
 
-## Why TranscriptX
+Import and organise transcripts on your machine; explore language, themes, speakers, interactions, emotion, voice and conversational dynamics; use structured analyses and optional local AI to find useful patterns; compare over time; inspect and export machine-readable results — without sending your corpus to a cloud analysis SaaS.
 
-Most transcript tools are either cloud SaaS (Otter, Fireflies), transcription tools (Whisper, AssemblyAI), or research libraries with limited UX. TranscriptX focuses on analysis. It is designed to:
+Product definition (authoritative): [docs/PRODUCT.md](docs/PRODUCT.md).
 
-- analyze transcripts locally
-- run modular analysis pipelines
-- produce reproducible outputs
-- support both personal workflows and academic research
+## Get started
 
-## Supported Entry Points
+TranscriptX does **not** transcribe audio itself. Bring transcript files from external tools (WhisperX, AssemblyAI, Deepgram, Otter, manual, …). See [transcription](docs/runtime/transcription.md) and [storage](docs/runtime/STORAGE.md).
 
-### Primary: Web app launcher
+### Docker (no local Python)
 
-After install, the `transcriptx` console script starts the Streamlit app (same as `python -m transcriptx.web`).
+Copy `.env.example` to `.env` and set **`HOST_RECORDINGS_DIR`** to an absolute path **outside this repository**.
 
-- Supported flags: `--host`, `--port`
-- Env overrides: `TRANSCRIPTX_HOST`, `TRANSCRIPTX_PORT`
+```bash
+docker build -t transcriptx:latest .
+docker compose up transcriptx-web
+```
 
-### Secondary: Python API
+Open http://localhost:8501.
 
-For automation or notebooks, use `transcriptx.app.workflows` with typed requests (for example `AnalysisRequest` + `run_analysis`).
+### Local install (from git — not PyPI)
 
-## Architecture (high level)
+Python 3.10–3.12. Core: `pip install -e .`. Broader stack: `pip install -e ".[full]"`. Helper: `./transcriptx.sh` (creates a `.transcriptx` venv; currently forces `CUDA_VISIBLE_DEVICES=""` — see [installation](docs/runtime/installation.md)).
 
-TranscriptX has two layers:
+Runtime install markers today are **`core`** and **`full`** only (aspirational `basic`/`llm` profile names are not implemented).
 
-- **Engine** — Pipeline and modules.
-- **GUI** — Streamlit web interface.
+Details: [installation](docs/runtime/installation.md) · [install verification matrix](docs/runtime/install_verification_matrix.md).
 
-For a full architecture overview and extension points, see `docs/ARCHITECTURE.md`.
+## How you use it
 
-## Minimal Python workflow
-
-A typical library workflow is:
-
-raw transcript → managed import → analysis
-
-Managed import produces a library-valid transcript under the storage contract; see `docs/runtime/STORAGE.md` and `docs/runtime/transcription.md` for details. A minimal programmatic flow is:
+| Surface | Role |
+|---------|------|
+| **GUI** (`transcriptx`) | Primary — import, analyse, browse, settings |
+| **Python API** | Scripting via `transcriptx.app.workflows` |
+| **Managed import** | Only supported way to admit transcripts into the library |
 
 ```python
 from pathlib import Path
@@ -48,111 +47,32 @@ from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
 from transcriptx.io.managed_import_workflow import run_managed_import_workflow
 
-# Import a raw transcript file (WhisperX JSON, SRT, VTT, etc.) into managed storage.
-imported = run_managed_import_workflow(
-    Path("path/to/raw_transcript.json"),
-    overwrite=False,
-)
-
-# Then run analysis on the managed canonical JSON path.
-result = run_analysis(AnalysisRequest(
-    transcript_path=imported.json_path,
-    modules=["stats"],
-))
-print("success:", result.success)
-print("status:", result.status)
-print("errors:", result.errors)
+imported = run_managed_import_workflow(Path("path/to/raw_transcript.json"), overwrite=False)
+result = run_analysis(AnalysisRequest(transcript_path=imported.json_path, modules=["stats"]))
+print(result.success, result.status, result.errors)
 ```
 
-If `result.success` is `False`, inspect `result.errors` for missing optional dependencies or capability-gated modules.
+More: [generated CLI / API notes](docs/generated/cli.md) · [public surfaces](docs/public_surfaces.md).
 
-## Quickstart
+## What it does today
 
-TranscriptX does not perform audio transcription. Bring your own transcript files from external tools (WhisperX, AssemblyAI, Deepgram, Otter, manual). For how to produce compatible JSON and admit it into managed storage, see `docs/runtime/transcription.md` and `docs/runtime/STORAGE.md`.
+- Modular, dependency-aware analysis pipeline with structured, traceable outputs
+- Speaker, interaction, sentiment, emotion, NER, topics, similarity, voice/prosody
+- Groups: analyse multiple transcripts together (file-backed); optional local LLM synthesis
+- File-first by default — groups, corrections, speaker maps, and discovery use files/sidecars
 
-**Docker (recommended):** No local Python required.
+## Architecture (brief)
 
-Copy `.env.example` to `.env` and set **`HOST_RECORDINGS_DIR`** to an absolute path on your machine **outside this repository** (your source-audio folder). Compose mounts it read-only at `/mnt/recordings`.
+**Engine** (pipeline + modules) and **GUI** (Streamlit). Invariants live in contracts, not this README — see [ARCHITECTURE.md](docs/ARCHITECTURE.md) and [CONTRACT_INDEX.md](docs/CONTRACT_INDEX.md).
 
-```bash
-docker build -t transcriptx:latest .
-docker compose up transcriptx-web
-```
+## Direction
 
-Then open http://localhost:8501 in your browser.
-
-**Local install (from git, not PyPI):** Python 3.10–3.12. Editable core: `pip install -e .`. Optional stack: `pip install -e ".[full]"`. Launcher helper: `./transcriptx.sh`. The package is **not on PyPI** — see [install verification matrix](docs/runtime/install_verification_matrix.md).
-
-For detailed installation, environment variables, NLP setup, and troubleshooting, see [docs/runtime/installation.md](docs/runtime/installation.md).
-
-Configuration precedence (settings UI): Environment → Run/Draft override → Project config → Defaults. See [installation guide](docs/runtime/installation.md) for env vars and gates.
-
-## Canonical sample transcript (development)
-
-For automated tests, integration checks, and local experiments, the repository’s shared minimal fixture is **`tests/fixtures/mini_transcript.json`** (short dialogue, schema v1.0). The Docker first-run script **`scripts/docker-smoke-test.sh`** instead writes a tiny inline example under **`data/transcripts/`** inside your configured data tree; use that flow when validating containers and compose mounts.
-
-## Output artifacts (high-level)
-
-Each analysis run writes structured artifacts under an outputs directory (per-run folders, manifests, and module subdirectories). Full layout and schema details live in:
-
-- `docs/contracts/output-contract-v1.md` — output layout, naming, manifests, and run results.
-- `docs/run_outcome_contract.md` — run outcome statuses and precedence rules.
-- `docs/dev/pipeline_contracts.md` — core pipeline layering, lifecycle, events, and cleanup invariants.
-
-## Public surfaces
-
-Supported public surfaces are:
-
-- **GUI** (Streamlit web app) — primary interface.
-- **Python API** — scripting and automation via typed workflows.
-- **Managed import workflow** — the supported way to admit transcripts into managed storage.
-
-See `docs/public_surfaces.md` for the full public-surface contract, including Docker usage, unsupported patterns (e.g. direct CLI analysis subcommands, ad hoc JSON ingestion, and direct filesystem operations on managed storage).
-
-## What TranscriptX does today
-
-- Modular, dependency-aware analysis pipeline
-- Speaker and interaction analysis
-- Sentiment, emotion, NER, topics, similarity
-- Structured, traceable outputs
-- Voice prosody dashboards (per-speaker profiles, timelines, comparisons)
-- Voice charts core: pause/turn-delivery + rhythm indices (audio-gated)
-- Groups: analyze multiple transcripts as a single unit (file-backed); optional [cross-session LLM synthesis](docs/groups/group_llm_synthesis_contract.md) of member summaries (see [docs/runtime/llm.md](docs/runtime/llm.md))
-
-> **Topic modeling note:** `Speaker-Topic Engagement Heatmap` uses shared attribution, not speaker-owned turn counts. Each window contributes one unit of topic engagement total (or the row's existing weight, when present), split evenly across the speakers named in that window.
-
-For **group runs**, which charts appear in the default overview strip versus the full gallery is documented in [docs/groups/group_charts_default_overview.md](docs/groups/group_charts_default_overview.md), including the four modes (**session**, **temporal overlay**, **cross-session speaker**, **pooled single view**) and allowlists (`CROSS_SESSION_SPEAKER_OVERVIEW_ALLOWLIST`, `POOLED_GROUP_OVERVIEW_ALLOWLIST`).
-
-Which modules emit **registry-backed group charts** vs **special-path visuals** (e.g. wordclouds) vs **data-only** or **blob-only** group outputs is summarized in [docs/groups/group_analysis_module_outputs.md](docs/groups/group_analysis_module_outputs.md).
-
-> **TranscriptX runs in file-first mode out of the box.** Groups, corrections, speaker mapping, and search/discovery are all backed by files and sidecars.
-
-## Product Direction
-
-TranscriptX is evolving toward a **personal audio analysis companion**. Long-term goals include analyzing personal recordings, voice note workflows, conversational analytics, and integration with local AI models. Tools like Plaud, Granola, and Otter address similar spaces, but TranscriptX is **local-first and modular** — your data stays on your machine, and the pipeline is yours to extend.
-
-## Roadmap
-
-**Current stage:** transcript analysis toolkit (beta).
-
-Next phases:
-
-1. Improved UX and stability
-2. Richer analysis modules
-3. Personal audio analysis workflows
-4. Integration with local LLMs (Ollama)
-5. Optional remote compute workflows (e.g. Colab)
+Stabilisation toward a credible **1.0** (schema epoch, install honesty, transcription handoff, Guided/Full presentation, demo project, unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion. See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
 
 ## Links
 
-- [Contract index](docs/CONTRACT_INDEX.md) — where each concept is defined
-- [Terminology index](docs/TERMS.md) — canonical vocabulary (links to contracts)
-- [Installation & configuration](docs/runtime/installation.md) — NLP setup, gates, core mode, env vars, troubleshooting
-- [Transcription guide](docs/runtime/transcription.md) — Canonical schema, how to produce transcript JSON
-- [Docker guide](docs/runtime/docker.md) — Volume layout, Apple Silicon, pitfalls
-- [Architecture](docs/ARCHITECTURE.md) — Engine, GUI, data flow
-- [Developer quickstart](docs/dev/developer_quickstart.md) — Adding modules, pipeline structure
-- [Roadmap](docs/ROADMAP.md) — Full roadmap and phases
-- [Codebase stocktake (2026-07-17)](docs/dev/stocktake_2026-07-17.md) — Status, unfinished work, release readiness, decision framework
-- [Group charts: default overview vs gallery](docs/groups/group_charts_default_overview.md) — Default strip, four chart modes, gallery-only charts, allowlists
-- [Group analysis module outputs](docs/groups/group_analysis_module_outputs.md) — Registry vs special-path vs data-only vs blob-only group modules
+- [User docs index](docs/USER_INDEX.md)
+- [Developer docs index](docs/DEV_INDEX.md)
+- [Contract index](docs/CONTRACT_INDEX.md)
+- [Installation](docs/runtime/installation.md) · [Transcription](docs/runtime/transcription.md) · [Docker](docs/runtime/docker.md)
+- [Maintainer Docker smoke](scripts/docker-smoke-test.sh) — compose + `transcriptx --help` only (does **not** write sample transcripts)

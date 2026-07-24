@@ -58,7 +58,7 @@ Optional full collection comparison:
 
 pytest –co -q -m “”
 
-Compare with tests/TEST_SUITE_ASSESSMENT.md if it notes an expected count (e.g. ~1558 tests).
+Compare with docs/archive/assessments/TEST_SUITE_ASSESSMENT.md if it notes an expected count (e.g. ~1558 tests).
 
 ⸻
 
@@ -84,7 +84,7 @@ quarantined, requires_ffmpeg, requires_docker, requires_models, requires_api, sl
 
 Read:
 
-tests/TEST_SUITE_ASSESSMENT.md
+docs/archive/assessments/TEST_SUITE_ASSESSMENT.md
 
 Identify:
 
@@ -225,7 +225,7 @@ Clearly separate production-code changes from test/doc changes.
 
 If high-leverage tests were added, update:
 
-tests/TEST_SUITE_ASSESSMENT.md
+docs/archive/assessments/TEST_SUITE_ASSESSMENT.md
 
 Add a brief note under:
 
