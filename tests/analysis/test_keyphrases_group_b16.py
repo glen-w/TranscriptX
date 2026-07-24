@@ -19,7 +19,11 @@ class _DummySet:
 
 def _ptr(tid: str, phrases: list[dict]) -> PerTranscriptResult:
     return PerTranscriptResult(
-        transcript_id=tid,
+        transcript_path=f"/tmp/{tid}.json",
+        transcript_key=tid,
+        run_id="r1",
+        order_index=0,
+        output_dir=f"/tmp/{tid}",
         module_results={
             "keyphrases": {
                 "schema_id": SCHEMA_ID,

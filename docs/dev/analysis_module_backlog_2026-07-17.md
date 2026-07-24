@@ -176,7 +176,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | B20 pooled variant matrix; optional B16 keyphrase charts |
+| **Deepen** | B20 pooled variant matrix; ~~optional B16 keyphrase charts~~ **shipped** (consume `keyphrases`) |
 | **Add** | none required near-term (~~B13 graph viz~~ shipped under Speakers & Interaction / `interactions`) |
 
 ---
