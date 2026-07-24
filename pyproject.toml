@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.7.5"
+version = "0.8.0"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -129,6 +129,10 @@ nlp = [
     "spacy==3.7.5",
     "thinc==8.2.5",
 ]
+keyphrases = [
+    "yake>=0.4.8",
+    "keybert>=0.8.0",
+]
 # Compat alias: packages are already in base dependencies (temporary default install).
 # Prefer editable `pip install -e .` from git (not PyPI). Kept so `.[bertopic]` still works.
 bertopic = [
@@ -172,6 +176,8 @@ full = [
     "plotly>=5.0.0",
     "speechbrain==1.0.2",
     "torchaudio>=2.6.0",
+    "yake>=0.4.8",
+    "keybert>=0.8.0",
 ]
 
 [project.scripts]

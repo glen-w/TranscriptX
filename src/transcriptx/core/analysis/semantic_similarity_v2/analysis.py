@@ -8,7 +8,14 @@ from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.semantic_similarity_v2.config_resolve import (
     resolve_semantic_similarity_v2_runtime,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.output import with_schema
+from transcriptx.core.analysis.semantic_similarity_v2.motifs import (
+    build_provenance,
+    empty_motif_envelope,
+)
+from transcriptx.core.analysis.semantic_similarity_v2.output import (
+    SCHEMA_VERSION,
+    with_schema,
+)
 from transcriptx.core.analysis.semantic_similarity_v2.pipeline import (
     run_semantic_similarity_v2_pipeline,
 )
@@ -44,6 +51,37 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
                 continue
         return present
 
+    def _failure_payload(
+        self,
+        *,
+        status: str,
+        reason: str,
+        eligible_segment_count: int = 0,
+    ) -> Dict[str, Any]:
+        """Stub motif envelope so readers never treat failures as valid zero."""
+        prov = build_provenance(
+            embedding_backend=None,
+            model_name=None,
+            model_revision=None,
+            vector_dimension=0,
+            fallback_vectorizer_signature=None,
+        )
+        env = empty_motif_envelope(
+            status=status,
+            reason=reason,
+            provenance=prov,
+            eligible_segment_count=eligible_segment_count,
+        )
+        return with_schema(
+            {
+                "speaker_repetitions": {},
+                "cross_speaker_repetitions": [],
+                "skipped": True,
+                "reason": reason,
+                **env,
+            }
+        )
+
     def run_from_context(self, context: Any) -> Dict[str, Any]:
         from transcriptx.core.output.output_service import create_output_service
         from transcriptx.core.utils.config import get_config
@@ -54,24 +92,8 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
         )
 
         segments = context.get_segments()
-        if count_named_speakers(segments) <= 1:
-            log_analysis_start(self.module_name, context.transcript_path)
-            context.store_analysis_result(self.module_name, {})
-            log_analysis_complete(self.module_name, context.transcript_path)
-            return build_module_result(
-                module_name=self.module_name,
-                status="success",
-                started_at=now_iso(),
-                finished_at=now_iso(),
-                artifacts=[],
-                metrics={
-                    "skipped": True,
-                    "reason": "single_identified_speaker",
-                    "schema_version": "semantic_similarity_v2.1",
-                },
-                payload_type="analysis_results",
-                payload={},
-            )
+        # B14: single-speaker runs motif-only (skip repetition pair path).
+        repetition_path_skipped = count_named_speakers(segments) <= 1
 
         started_at = now_iso()
         log_analysis_start(self.module_name, context.transcript_path)
@@ -85,6 +107,11 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
             )
         except Exception as exc:
             finished_at = now_iso()
+            payload = self._failure_payload(
+                status="dependency_failure",
+                reason=str(exc),
+            )
+            context.store_analysis_result(self.module_name, payload)
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(
                 module_name=self.module_name,
@@ -92,9 +119,14 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
                 started_at=started_at,
                 finished_at=finished_at,
                 artifacts=[],
-                metrics={"reason": str(exc)},
+                metrics={
+                    "reason": str(exc),
+                    "schema_version": SCHEMA_VERSION,
+                    "motif_export_status": payload.get("motif_export_status"),
+                    "repetition_path": "skipped",
+                },
                 payload_type="analysis_results",
-                payload={},
+                payload=payload,
             )
 
         try:
@@ -102,9 +134,15 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
                 segments,
                 v2_cfg,
                 resolve_diagnostics=resolve_diag,
+                repetition_path_skipped=repetition_path_skipped,
             )
         except ImportError:
             finished_at = now_iso()
+            payload = self._failure_payload(
+                status="dependency_failure",
+                reason="missing_dependency:torch",
+            )
+            context.store_analysis_result(self.module_name, payload)
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(
                 module_name=self.module_name,
@@ -112,9 +150,14 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
                 started_at=started_at,
                 finished_at=finished_at,
                 artifacts=[],
-                metrics={"reason": "missing_dependency:torch"},
+                metrics={
+                    "reason": "missing_dependency:torch",
+                    "schema_version": SCHEMA_VERSION,
+                    "motif_export_status": payload.get("motif_export_status"),
+                    "repetition_path": "skipped",
+                },
                 payload_type="analysis_results",
-                payload={},
+                payload=payload,
             )
         except Exception as exc:
             finished_at = now_iso()
@@ -123,6 +166,11 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
                 f"semantic_similarity_v2 failed: {exc}",
                 exception=exc,
             )
+            payload = self._failure_payload(
+                status="dependency_failure",
+                reason=str(exc),
+            )
+            context.store_analysis_result(self.module_name, payload)
             log_analysis_complete(self.module_name, context.transcript_path)
             return build_module_result(
                 module_name=self.module_name,
@@ -133,11 +181,19 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
                 metrics={
                     "reason": str(exc),
                     "exception_type": type(exc).__name__,
-                    "schema_version": "semantic_similarity_v2.1",
+                    "schema_version": SCHEMA_VERSION,
+                    "motif_export_status": payload.get("motif_export_status"),
+                    "repetition_path": "skipped",
                 },
                 payload_type="analysis_results",
-                payload={},
+                payload=payload,
             )
+
+        # Stamp before storage / ModuleResult (pipeline already stamps; ensure).
+        results = with_schema(results)
+        if repetition_path_skipped:
+            results["repetition_path"] = "skipped"
+            results["repetition_skip_reason"] = "single_identified_speaker"
 
         output_service = create_output_service(
             context.transcript_path,
@@ -161,7 +217,11 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
             artifacts=output_service.get_artifacts(),
             metrics={
                 "duration_seconds": duration,
-                "schema_version": "semantic_similarity_v2.1",
+                "schema_version": SCHEMA_VERSION,
+                "repetition_path_skipped": repetition_path_skipped,
+                "repetition_path": results.get("repetition_path"),
+                "motif_export_status": results.get("motif_export_status"),
+                "motif_count": results.get("motif_count"),
                 **diag.to_dict(),
             },
             payload_type="analysis_results",
@@ -171,8 +231,9 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
     def _save_results(self, results: Dict[str, Any], output_service: Any) -> None:
         diag = self._pending_v2_diag
         assert diag is not None
+        stamped = with_schema(results)
         output_service.save_data(
-            with_schema(results),
+            stamped,
             "semantic_similarity_v2_repetitions",
             format_type="json",
         )
@@ -201,7 +262,8 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
         global_stats = {
             "total_repetitions": int(results.get("total_repetitions", 0)),
             "unique_patterns": int(results.get("unique_patterns", 0)),
-            "schema_version": "semantic_similarity_v2.1",
+            "motif_count": results.get("motif_count"),
+            "schema_version": SCHEMA_VERSION,
         }
         output_service.save_summary(
             global_stats,

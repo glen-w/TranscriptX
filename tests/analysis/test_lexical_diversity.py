@@ -50,3 +50,21 @@ def test_global_uses_eligible_segments_only() -> None:
     result = module.analyze(segments)
     assert result["exclusions"]["skipped_reasons"]["no_speaker"] == 1
     assert result["global_stats"]["token_count"] == 2
+
+
+@pytest.mark.unit
+def test_analyze_keeps_turn_taking_unnamed_in_speaker_stats() -> None:
+    """JSON retains diarization labels; charts filter them separately."""
+    module = LexicalDiversityAnalysis()
+    segments = [
+        {"speaker": "Ana", "text": "hello world again", "start": 0.0, "end": 1.0},
+        {
+            "speaker": "SPEAKER_03",
+            "text": "unique rare words only once",
+            "start": 1.0,
+            "end": 2.0,
+        },
+    ]
+    result = module.analyze(segments)
+    assert "Ana" in result["speaker_stats"]
+    assert "SPEAKER_03" in result["speaker_stats"]

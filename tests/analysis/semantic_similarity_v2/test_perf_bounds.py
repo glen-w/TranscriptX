@@ -13,7 +13,9 @@ from transcriptx.core.analysis.semantic_similarity_v2.intake import SegmentRow
 @pytest.mark.semantic_v2_slow
 def test_max_candidate_pairs_bounds_pairs() -> None:
     rows = [
-        SegmentRow(str(i), "s", "S", float(i), float(i) + 0.5, "word " * 5, "word " * 5)
+        SegmentRow(
+            str(i), "s", "S", float(i), float(i) + 0.5, "word " * 5, "word " * 5, i
+        )
         for i in range(200)
     ]
     pairs, gen = generate_candidate_pairs(

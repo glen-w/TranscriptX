@@ -124,6 +124,19 @@ def inject_global_styles() -> None:
         font-size: 1.05rem;
         letter-spacing: 0.01em;
     }
+    a.tx-speaker-profile-link {
+        color: inherit;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    a.tx-speaker-profile-link:hover,
+    a.tx-speaker-profile-link:focus-visible {
+        text-decoration: underline;
+        text-underline-offset: 0.12em;
+    }
+    a.tx-speaker-profile-link strong {
+        color: inherit;
+    }
     .tx-speaker-heading-meta {
         color: #6b7c90;
         font-size: 0.85rem;
@@ -738,6 +751,37 @@ def inject_global_styles() -> None:
         color: #e8b4b4 !important;
         background: rgba(180, 90, 90, 0.12) !important;
     }
+    /* LLM feedback — quiet thumbs; persistent low opacity + hover/focus */
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="llm_fb_"]) {
+        gap: 0.2rem !important;
+        align-items: center !important;
+        margin: 0 !important;
+    }
+    [class*="st-key-"][class*="llm_fb_up_"] [data-testid="stButton"] > button,
+    [class*="st-key-"][class*="llm_fb_down_"] [data-testid="stButton"] > button,
+    [class*="st-key-"][class*="llm_fb_up_"] button,
+    [class*="st-key-"][class*="llm_fb_down_"] button {
+        min-height: unset !important;
+        height: 1.55rem !important;
+        padding: 0 0.3rem !important;
+        font-size: 0.9rem !important;
+        opacity: 0.4;
+        transition: opacity 0.12s ease;
+        color: #5a6570 !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="llm_fb_"]):hover
+        [class*="llm_fb_"] button,
+    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="llm_fb_"]):focus-within
+        [class*="llm_fb_"] button,
+    [class*="st-key-"][class*="llm_fb_up_"] button:focus-visible,
+    [class*="st-key-"][class*="llm_fb_down_"] button:focus-visible,
+    [class*="st-key-"][class*="llm_fb_up_"] button:hover,
+    [class*="st-key-"][class*="llm_fb_down_"] button:hover {
+        opacity: 1;
+        color: #2d3740 !important;
+    }
     /* Speaker chips (transcript viewer) — accent from --speaker-accent */
     span.tx-speaker-chip {
         display: inline-flex;
@@ -775,7 +819,8 @@ def inject_global_styles() -> None:
         line-height: 1.25;
         font-size: 0.92rem;
     }
-    .tx-speaker-name {
+    .tx-speaker-name,
+    a.tx-speaker-name.tx-speaker-profile-link {
         color: var(--speaker-accent, #5b8def);
         font-weight: 650;
     }

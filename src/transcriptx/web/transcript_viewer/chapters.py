@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from transcriptx.core.analysis.topic_shift.keywords import is_hint_stopword
+from transcriptx.core.analysis.topic_shift.titles import is_usable_chapter_title
 from transcriptx.core.analysis.topic_shift.visibility import (
     resolve_topic_shift_visibility,
     topic_shift_enrichment_path,
@@ -41,6 +43,7 @@ class ChapterRow:
     leading_boundary_id: str | None
     strength: float | None
     summary: str | None
+    keywords: tuple[str, ...] = ()
 
 
 def _deterministic_display_label(span: dict[str, Any]) -> str:
@@ -58,19 +61,28 @@ def _deterministic_display_label(span: dict[str, Any]) -> str:
     return f"Chapter {chapter_n}"
 
 
-def _title_from_keyword_hints(hints: object) -> str | None:
+def _normalize_keyword_hints(hints: object, *, limit: int = 5) -> tuple[str, ...]:
     if not isinstance(hints, list):
-        return None
+        return ()
     parts: list[str] = []
     for hint in hints:
         tok = str(hint or "").strip()
         if not tok:
             continue
+        # Drop discourse fillers from older runs that predate hint stopwords.
+        if is_hint_stopword(tok):
+            continue
         parts.append(tok[:1].upper() + tok[1:] if len(tok) > 1 else tok.upper())
-        if len(parts) >= 4:
+        if len(parts) >= limit:
             break
-    if not parts:
-        return None
+    return tuple(parts)
+
+
+def _title_from_keyword_hints(hints: object) -> str | None:
+    parts = _normalize_keyword_hints(hints, limit=4)
+    if len(parts) < 2:
+        # Single weak token is rarely a useful chapter title.
+        return parts[0] if len(parts) == 1 and len(parts[0]) >= 5 else None
     return " · ".join(parts)
 
 
@@ -78,31 +90,35 @@ def _title_for_span(
     span: dict[str, Any],
     *,
     enrichment: dict[str, Any] | None,
-) -> tuple[str, str | None]:
+) -> tuple[str, str | None, tuple[str, ...]]:
     sid = str(span.get("span_id") or "")
     det_label = _deterministic_display_label(span)
+    keywords = _normalize_keyword_hints(span.get("keyword_hints"))
+    hint_title = _title_from_keyword_hints(span.get("keyword_hints"))
     summary = None
     if enrichment:
         ui_mode = enrichment.get("ui_mode") or "chapter_titles"
         if ui_mode == "overall_summary":
             overall = enrichment.get("overall_summary")
-            hint_title = _title_from_keyword_hints(span.get("keyword_hints"))
-            return hint_title or det_label, (str(overall) if overall else None)
+            return (
+                hint_title or det_label,
+                (str(overall) if overall else None),
+                keywords,
+            )
         for entry in enrichment.get("entries") or []:
             if not isinstance(entry, dict):
                 continue
             if str(entry.get("span_id") or "") != sid:
                 continue
             title = entry.get("title")
-            if title and str(title).strip():
-                return str(title).strip(), (
-                    str(entry.get("summary")).strip() if entry.get("summary") else None
-                )
+            if entry.get("summary"):
+                summary = str(entry.get("summary")).strip() or None
+            if is_usable_chapter_title(title, span_label=str(span.get("label") or "")):
+                return str(title).strip(), summary, keywords
             break
-    hint_title = _title_from_keyword_hints(span.get("keyword_hints"))
     if hint_title:
-        return hint_title, summary
-    return det_label, summary
+        return hint_title, summary, keywords
+    return det_label, summary, keywords
 
 
 def load_chapter_rows(run_root: Path | None) -> list[ChapterRow]:
@@ -168,7 +184,7 @@ def load_chapter_rows(run_root: Path | None) -> list[ChapterRow]:
     for span in spans:
         if not isinstance(span, dict):
             continue
-        title, summary = _title_for_span(span, enrichment=enrichment)
+        title, summary, keywords = _title_for_span(span, enrichment=enrichment)
         lead = span.get("leading_boundary_id")
         strength = events_by_id.get(str(lead)) if lead else None
         target = span.get("viewer_target_source_index")
@@ -185,6 +201,7 @@ def load_chapter_rows(run_root: Path | None) -> list[ChapterRow]:
                 leading_boundary_id=str(lead) if lead else None,
                 strength=strength,
                 summary=summary,
+                keywords=keywords,
             )
         )
     return rows

@@ -99,13 +99,17 @@ config_dir/                     # configuration
 
 data_dir/                       # app-managed working state
   groups/                       # group definition manifests (*.group.json); local user data — not tracked
-  speaker_profiles/             # longitudinal speaker profiles, links, events, ops (canonical PII); voice/ subtree for optional local voice evidence; override with TRANSCRIPTX_SPEAKER_PROFILES_DIR; see docs/contracts/speaker_profiles_v1.md and speaker_profiles_voice_v1.md
+  speaker_profiles/             # longitudinal speaker profiles, links, events, ops (canonical PII); override with TRANSCRIPTX_SPEAKER_PROFILES_DIR; see docs/contracts/speaker_profiles_v1.md and speaker_profiles_voice_v1.md
     profiles/                   # *.speaker_profile.json
       assets/{profile_id}/      # optional avatar.webp (face PII; include in backups)
     links/                      # *.speaker_link.json
     events/                     # *.speaker_event.json (filename stem = event idempotency id)
     operations/                 # *.op.json + staging/backup while active
-    .cache/                     # disposable listing/aggregate caches only
+    voice/                      # enrolled trusted-voice evidence (biometric-derived; durable on ./data bind mount; ordinary export excludes this tree)
+      samples/ embeddings/ vectors/
+      privacy.voice_settings.json
+      active_generation.json generations/
+    .cache/                     # disposable listing/aggregate caches only (.cache/voice/ disposable)
   outputs/
     groups/                     # group analysis run outputs (per group uuid / run id)
   preprocessing/

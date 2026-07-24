@@ -1949,3 +1949,177 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Focused file: **15 passed**.
 - Related GUI cluster (presets/settings/run/batch/speaker_id/storage + knobs): run in same pass.
 - **Production code:** none (tests-only).
+
+---
+
+## 70. Expansion (2026-07-24) – unnamed speaker artifact exclusion
+
+### Trigger
+`/tests exclusion of unnamed speakers from generated artifacts`
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-0947.zip` (5.7M).
+- **Collection (default filter):** `7483/7663` selected (`180` deselected).
+- **Full collection:** `7663`.
+- **Baseline before expansion:** `7481 passed, 2 skipped, 180 deselected` — green.
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow).
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Global "All Speakers" charts | OutputService only skips `scope=speaker`; modules must filter bar categories | Contract for lexical_diversity plot + OutputService global bypass |
+| Diarization vs named predicates | Split poorly asserted for chart gating | Predicate contract (`SPEAKER_03` turn-taking but not named) |
+| Understandability persisted files | CSV covered; JSON speaker-dir globs thinner | Contract asserting no `*SPEAKER*` under speaker_data_dir |
+| Existing path-only exclusion | `test_speaker_exclusion` only checked stats speaker paths | Marked `@pytest.mark.contract`; left as path invariant |
+
+### Known remaining gaps (production, not fixed in this pass)
+- `lexical_diversity` CSV/`speaker_stats` JSON may still list turn-taking `SPEAKER_XX` (charts/UI filtered).
+- `build_rows_from_stats` still hashes unnamed labels into group `speaker_rows`.
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/contracts/test_unnamed_speaker_artifact_exclusion.py` | **new (+6)** | predicates, OutputService skip/bypass, LD charts, UD persist |
+| `tests/contracts/test_speaker_exclusion.py` | markers | `@pytest.mark.contract` on existing path/transcript tests |
+| `tests/analysis/test_lexical_diversity*.py` | prior turn | chart exclusion + JSON retention (already present) |
+
+### Validation
+- Focused unnamed-speaker slice: **29 passed**.
+- Default suite after expansion: **7481 passed, 6 failed, 2 skipped, 180 deselected**.
+- **Unrelated failures (not from this expansion):** `llm_action_items` parse/contract tests under dirty WIP (`action_items_contract.py` / guidance). Re-run in isolation: **44 passed, 1 failed** (`test_parse_action_items_drops_invalid_status`). Classify as pre-existing dirty-tree drift, not unnamed-speaker coverage.
+- **Production code in this #tests pass:** none required (chart/UI filter landed in prior turn; this pass is tests+assessment).
+- **Quarantined tests:** not re-enabled.
+
+---
+
+## 71. Expansion (2026-07-24) – LLM module response parsing
+
+### Trigger
+`/tests llm module response parsing`
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-1007.zip` (5.7M).
+- **Collection (default filter):** `7495/7675` selected (`180` deselected).
+- **Baseline before expansion:** `7492 passed, 1 failed, 2 skipped, 180 deselected`.
+  - Sole failure: `test_parse_action_items_drops_invalid_status` — stale expectation that `status=pending` is dropped; production now aliases `pending`→`open` (mistral coercion hardening). Classified as WIP drift from the parsing fix, not suite health.
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow).
+- **Structure:** `tests/` includes analysis, contracts, core, integration, io, pipeline, regression, services, smoke, unit, utils, web, quarantine, release, optional, packaging.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| `llm_action_items` coercion | Field/type/status aliases, wrapper keys, quote salvage under-tested vs new parse path | Contract + module tests |
+| Empty-extract debug dump | `_write_raw_response_dump` untested | Module tests for empty / all-invalid payloads |
+| `json_parse` | Missing array-comma repair + fence case / document fence | Extended unit tests |
+| `chart_descriptions._parse_description_json` | Helper had **no direct tests** | New unit file |
+| Narrative JSON | Already strong (fence, quotes, corpus) | Left as-is |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/core/analysis/chart_descriptions/test_parse_description_json.py` | **new (+7)** | fence, truncate, invalid/missing/empty |
+| `tests/core/analysis/llm_support/test_json_parse.py` | **+3** | array comma repair, JSON fence case, document fence |
+| `tests/core/analysis/llm_support/test_action_items_contract.py` | **+3** (plus prior mistal coerce coverage) | wrapper keys, field aliases, ellipsis quote salvage |
+| `tests/core/analysis/test_llm_action_items.py` | **fix +2** | `pending`→`open` alias; raw dump on empty / schema-drop |
+| `tests/core/analysis/llm_support/fixtures/llm_action_items_v2.py` | diagnostics keys | coerce/salvage counters |
+
+### Validation
+- Focused LLM parsing slice: **103 passed**.
+- Default suite after expansion: **7484 passed, 30 failed, 2 skipped, 180 deselected**.
+- **Unrelated failures (not from this expansion):** dirty-tree WIP around `semantic_similarity_v2` config/schema and config ownership/delegation goldens (registry counts, slice defaults, pydantic bridge). None of the failures are in the LLM response-parsing slice above.
+- **Production code in this #tests pass:** none (only tests + assessment). Prior turn already landed coercion in `action_items_contract.py` / `llm_action_items.py`.
+- **Quarantined tests:** not re-enabled.
+
+---
+
+## 72. Expansion (2026-07-24) – voice matching persistence
+
+### Trigger
+`/tests voice matching`
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-1008.zip` (5.7M); `custom-commands/` mirrored.
+- **Collection (default filter):** `7528/7708` selected (`180` deselected) after this expansion.
+- **Baseline before expansion:** `7492 passed, 1 failed, 2 skipped, 180 deselected`.
+  - Sole failure then: `test_parse_action_items_drops_invalid_status` (LLM WIP drift; classified unrelated).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0); not re-enabled.
+- **Markers / addopts:** unchanged.
+- **Voice contracts already present:** stages 0–9, bootstrap, operator, eval harness, finalize, chunked crash, audit fixes, completion (~80 tests). One skip when SpeechBrain is installed.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Speakers inventory UI helper | `list_samples_for_profile` untested | Filter + corrupt-skip contract |
+| Per-profile wipe | Global wipe covered; `wipe_profile_voice` not | Dual-profile wipe leaves other + privacy |
+| Export exclude prefixes | `./voice/...` thinner | Normalize-prefix contract |
+| `ensure_data_dirs` voice layout | New dirs after persistence fix untested | Unit under `TestEnsureDataDirs` |
+| Docker rebuild persistence | Implicit only | Compose bind-mount contract |
+| Settings revoke UX | Confirm checkbox + bind-mount caption | Knob source contracts |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/contracts/test_speaker_profiles_voice_persistence.py` | **new (+4)** | inventory, export exclude, profile wipe isolation, empty wipe noop |
+| `tests/core/utils/test_path_settings.py` | **+1** | `ensure_data_dirs` creates voice layout dirs |
+| `tests/contracts/test_playwright_container_contracts.py` | **+1** | `./data:/data` + no speaker_profiles named volume |
+| `tests/web/test_knobs_heavy_gui_contracts.py` | **+needles** | revoke confirm, bind-mount / rebuild captions |
+
+### Validation
+- Focused voice persistence + related knobs/layout: **9 passed**.
+- Full voice contract slice (`test_speaker_profiles_voice*.py` + layout/compose): **86 passed, 1 skipped**.
+- Default suite after expansion (dirty tree): **7484 passed, 30 failed, 2 skipped, 180 deselected**.
+- **Unrelated failures:** config ownership/delegation goldens + `semantic_similarity_v2` WIP (`pilot_keys` expected 682 vs live registry), plus prior LLM parse drift. Voice matching slice green in isolation.
+- **Production code from preceding persistence fix covered here:** `paths.ensure_data_dirs` voice layout, Speakers/Settings captions + revoke confirm, `docs/runtime/{docker,STORAGE}.md`.
+- **Quarantined tests:** not re-enabled.
+
+---
+
+## 69. Expansion (2026-07-24) – Speaker profile page calculations
+
+### Trigger
+`/tests speaker profile page calculations` after Interactions/equity + Sentiment Speakers-detail packs.
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-1120.zip` (5.8M).
+- **Cleanup:** disabled (per command).
+- **Collection (default filter):** `7558/7738` selected (`180` deselected).
+- **Baseline before expansion:** `7555 passed, 1 failed, 2 skipped, 180 deselected`.
+- **Unrelated failure (classified, not fixed):** `tests/unit/test_audit_guardrails.py::test_analysis_modules_do_not_access_env_or_repos` flags `src/transcriptx/core/analysis/keyphrases/optional_methods.py` — outside speaker-profile packs.
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow).
+- **Structure:** `tests/{analysis,app,contracts,core,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}`.
+- **Focused calc baseline:** locations + interactions + sentiment + longitudinal + phase15*: **52 → 76 passed** after expansion (includes new join helpers).
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Interactions pack totals/means | Single-appearance only | Two-appearance sum + mean dominance/floor |
+| Newest-run selection | Implicit | Explicit mtime prefers `run-new` |
+| Eligibility gate | Untested for pack | `needs_review` excluded from headline |
+| Sentiment headline compound | Risk of mean-of-means | Weighted by `segment_count` ≠ 0.5 |
+| Rows vs summary preference | Untested | Prefer segment rows; ignore `_with_sentiment` |
+| Ignored links | Untested for sentiment | `include_ignored` toggles empty→ok |
+| `run_artifact_join` | New shared helpers untested | `pick_speaker_entry` + `newest_run_with` |
+| Speakers page wiring | Trends-only source contract | Interactions & Sentiment expanders + builders |
+
+### Tests added / extended
+
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/unit/test_speaker_profile_interactions_pack.py` | **+3** | Multi-appearance sums/means, newest run, needs_review exclusion |
+| `tests/unit/test_speaker_profile_sentiment_pack.py` | **+3** | Weighted compound, rows-over-summary, ignored eligibility |
+| `tests/unit/test_speaker_profile_run_artifact_join.py` | **new (+2)** | Casefold pick + newest-run mtime |
+| `tests/contracts/test_speaker_profiles_longitudinal.py` | **extended** | Page has Interactions & equity / Sentiment UI |
+
+### Validation
+- Focused speaker-profile calc slice: **76 passed**.
+- Default suite after expansion (dirty tree): **7536 passed, 32 failed, 2 skipped, 181 deselected**.
+- **Speaker-profile calc tests:** all green in the default run; no failures under `test_speaker_profile_*` / longitudinal page wiring.
+- **Unrelated failures (dirty tree / WIP):** config ownership + pydantic pilot goldens, module-registry snapshot contracts, LLM presentation heading/footer strip, module UI group pin order, plus prior `audit_guardrails` keyphrases env access. Outside this expansion scope — not fixed here.
+- **Production code in this #tests pass:** none (tests-only expansion; packs landed in prior agent turn).
+- **Quarantined tests:** not re-enabled.

@@ -81,7 +81,7 @@ def test_build_llm_action_items_cache_key_changes_on_version_bumps() -> None:
     assert v1 != v2
     bumped_prompt = build_llm_action_items_cache_key(
         module_version="2",
-        prompt_version="6",
+        prompt_version="7",
         schema_id=LLM_ACTION_ITEMS_SCHEMA_ID,
         **base_kwargs,
     )
@@ -109,7 +109,7 @@ def test_build_llm_action_items_cache_key_golden_stable_payload() -> None:
 @pytest.mark.unit
 def test_parse_partial_survival_malformed_sibling() -> None:
     good = _item()
-    bad = _item(surprise=1)
+    bad = _item(text="")
     parsed, diagnostics = parse_action_items_json(_raw([bad, good]))
     assert len(parsed) == 1
     assert parsed[0]["text"] == "Send the report"
@@ -120,23 +120,37 @@ def test_parse_partial_survival_malformed_sibling() -> None:
 
 
 @pytest.mark.unit
-def test_parse_unknown_record_type_rejected_missing_defaulted() -> None:
+def test_parse_strips_extra_fields_instead_of_dropping() -> None:
+    noisy = _item(priority="high", id=3)
+    parsed, diagnostics = parse_action_items_json(_raw([noisy]))
+    assert len(parsed) == 1
+    assert "priority" not in parsed[0]
+    assert diagnostics["extra_fields_stripped"] == 1
+    assert diagnostics["items_invalid_dropped"] == 0
+
+
+@pytest.mark.unit
+def test_parse_aliases_record_type_and_defaults_missing_confidence() -> None:
     unknown = _item(record_type="task")
+    del unknown["confidence"]
     missing = _item()
     del missing["record_type"]
     null_type = _item(record_type=None)
     parsed, diagnostics = parse_action_items_json(_raw([unknown, missing, null_type]))
-    assert len(parsed) == 2
+    assert len(parsed) == 3
     assert all(item["record_type"] == "action_item" for item in parsed)
-    assert diagnostics["items_invalid_dropped"] == 1
+    assert diagnostics["items_invalid_dropped"] == 0
+    assert diagnostics["record_type_aliased"] == 1
     assert diagnostics["record_type_defaulted"] == 2
+    assert diagnostics["confidence_defaulted"] == 1
 
 
 @pytest.mark.unit
-def test_parse_rejects_unknown_top_level_keys() -> None:
-    payload = json.dumps({"items": [], "extra": True})
-    with pytest.raises(LLMResponseError, match="unexpected keys"):
-        parse_action_items_json(payload)
+def test_parse_tolerates_unknown_top_level_keys() -> None:
+    payload = json.dumps({"items": [_item()], "extra": True, "summary": "nope"})
+    parsed, diagnostics = parse_action_items_json(payload)
+    assert len(parsed) == 1
+    assert diagnostics["items_parsed_valid"] == 1
 
 
 @pytest.mark.unit
@@ -146,6 +160,22 @@ def test_parse_invalid_confidence_drops_record() -> None:
     )
     assert len(parsed) == 1
     assert parsed[0]["text"] == "Keep me"
+    assert diagnostics["items_invalid_dropped"] == 1
+
+
+@pytest.mark.unit
+def test_parse_coerces_percent_confidence() -> None:
+    parsed, diagnostics = parse_action_items_json(
+        _raw([_item(confidence=80), _item(confidence="high", text="Other", quote=None)])
+    )
+    assert [item["confidence"] for item in parsed] == [pytest.approx(0.8), pytest.approx(0.9)]
+    assert diagnostics["confidence_coerced"] == 2
+
+
+@pytest.mark.unit
+def test_parse_rejects_truly_unknown_record_type() -> None:
+    parsed, diagnostics = parse_action_items_json(_raw([_item(record_type="agenda")]))
+    assert parsed == []
     assert diagnostics["items_invalid_dropped"] == 1
 
 
@@ -280,6 +310,165 @@ def test_proposal_done_without_lexicon_dropped() -> None:
     )
     assert parsed == []
     assert diagnostics["status_unsupported_dropped"] == 1
+
+
+@pytest.mark.unit
+def test_finalize_mistral_missing_confidence_and_ellipsis_quotes() -> None:
+    """Canal-walk failure mode: mistral omits confidence and joins quote spans."""
+    transcript = (
+        "Glen: But I think I'm going to try and re-jig my finances a bit. "
+        "Glen: I've cancelled all my cards I've re-ordered the well some of the cards. "
+        "Glen: I say that but I've already just gone and bought £130 worth of stuff off Amazon. "
+        "Glen: Which an idea I have is I want to make somehow my things that magnetic so that they stay."
+    )
+    raw = json.dumps(
+        {
+            "items": [
+                {
+                    "record_type": "open_question",
+                    "text": "Is there any plan for managing finances?",
+                    "owner": None,
+                    "deadline": None,
+                    "status": "open",
+                    "quote": "I'm going to try and re-jig my finances a bit",
+                },
+                {
+                    "record_type": "action_item",
+                    "text": "Lower spending next month.",
+                    "owner": "Glen",
+                    "deadline": "Next month",
+                    "status": "open",
+                    "quote": (
+                        "I say that but I've already just gone and bought "
+                        "£130 worth of stuff off Amazon... Mom has even taken "
+                        "back most of her stuff now"
+                    ),
+                },
+                {
+                    "type": "task",
+                    "description": "Make pocket items magnetic",
+                    "assignee": "Glen",
+                    "due": None,
+                    "status": "pending",
+                    "evidence": (
+                        "I think I might have lost that... I want to make "
+                        "somehow my things that magnetic"
+                    ),
+                    "priority": "high",
+                },
+            ]
+        }
+    )
+    items, diagnostics = finalize_action_items(raw, transcript)
+    assert len(items) == 3
+    assert diagnostics["confidence_defaulted"] == 3
+    assert diagnostics["extra_fields_stripped"] >= 1
+    assert diagnostics["record_type_aliased"] >= 1
+    assert diagnostics["status_aliased"] >= 1
+    assert diagnostics["quotes_salvaged"] >= 1
+    assert diagnostics["items_committed"] == 3
+    assert any("£130 worth of stuff off Amazon" in (item.get("quote") or "") for item in items)
+
+
+@pytest.mark.unit
+def test_parse_accepts_action_items_or_extracts_wrapper_keys() -> None:
+    via_alias = json.dumps(
+        {
+            "action_items": [
+                {
+                    "record_type": "action_item",
+                    "text": "Send the report",
+                    "owner": "Alice",
+                    "deadline": None,
+                    "status": "open",
+                    "quote": None,
+                    "confidence": 0.7,
+                }
+            ]
+        }
+    )
+    via_extracts = json.dumps(
+        {
+            "extracts": [
+                {
+                    "record_type": "decision",
+                    "text": "Use Postgres",
+                    "owner": None,
+                    "deadline": None,
+                    "status": "open",
+                    "quote": None,
+                    "confidence": 0.8,
+                }
+            ]
+        }
+    )
+    parsed_a, diag_a = parse_action_items_json(via_alias)
+    parsed_b, diag_b = parse_action_items_json(via_extracts)
+    assert [item["text"] for item in parsed_a] == ["Send the report"]
+    assert [item["record_type"] for item in parsed_b] == ["decision"]
+    assert diag_a["items_raw"] == 1
+    assert diag_b["items_raw"] == 1
+
+
+@pytest.mark.unit
+def test_parse_field_aliases_description_assignee_evidence() -> None:
+    raw = json.dumps(
+        {
+            "items": [
+                {
+                    "type": "question",
+                    "description": "Who owns the budget?",
+                    "assignee": "Alice",
+                    "due": "Friday",
+                    "status": "todo",
+                    "evidence": "who owns the budget",
+                    "score": 80,
+                    "priority": "high",
+                }
+            ]
+        }
+    )
+    parsed, diagnostics = parse_action_items_json(raw)
+    assert len(parsed) == 1
+    item = parsed[0]
+    assert item["record_type"] == "open_question"
+    assert item["text"] == "Who owns the budget?"
+    assert item["owner"] == "Alice"
+    assert item["deadline"] == "Friday"
+    assert item["status"] == "open"
+    assert item["quote"] == "who owns the budget"
+    assert item["confidence"] == pytest.approx(0.8)
+    assert diagnostics["extra_fields_stripped"] == 1
+    assert diagnostics["record_type_aliased"] == 1
+    assert diagnostics["status_aliased"] == 1
+    assert diagnostics["confidence_coerced"] == 1
+
+
+@pytest.mark.unit
+def test_ground_salvages_ellipsis_joined_quote() -> None:
+    items, _ = parse_action_items_json(
+        _raw(
+            [
+                _item(
+                    text="Paraphrased magnetic plan",
+                    quote=(
+                        "I might have lost that... I want to make somehow my "
+                        "things that magnetic"
+                    ),
+                )
+            ]
+        )
+    )
+    transcript = (
+        "Glen: I think I might have lost that. "
+        "Glen: Which an idea I have is I want to make somehow my things that "
+        "magnetic so that they stay."
+    )
+    grounded, diagnostics = ground_action_items(items, transcript)
+    assert len(grounded) == 1
+    assert grounded[0]["quote"] == "I want to make somehow my things that magnetic"
+    assert diagnostics["quotes_salvaged"] == 1
+    assert diagnostics["quotes_nulled"] == 0
 
 
 @pytest.mark.unit

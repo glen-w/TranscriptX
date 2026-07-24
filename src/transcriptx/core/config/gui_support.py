@@ -197,6 +197,46 @@ COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
         group="Semantic Similarity v2 / General",
         label="Strict advanced inputs (block if integrations missing)",
     ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.motif_min_cluster_size",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="Minimum cluster size for a motif",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.cross_session_match_threshold",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="Cross-session motif match threshold",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.min_sessions_for_recurring",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="Min sessions for recurring motif",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.max_motifs_per_session",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="Max motifs per session",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.max_motifs_per_group",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="Max motifs per group / chart top-N",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.max_centroid_bytes",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="Max serialized centroid bytes",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.cluster_eps",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="DBSCAN eps (cosine)",
+    ),
+    CommonSettingField(
+        key="analysis.semantic_similarity_v2.cluster_min_samples",
+        group="Semantic Similarity v2 / Motifs (B14)",
+        label="DBSCAN min_samples",
+    ),
 )
 
 

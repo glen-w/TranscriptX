@@ -10,9 +10,9 @@ from transcriptx.core.analysis.semantic_similarity_v2.intake import SegmentRow
 
 def test_time_window_stops_forward_scan() -> None:
     rows = [
-        SegmentRow("0", "a", "A", 0.0, 1.0, "x y z", "x y z"),
-        SegmentRow("1", "a", "A", 10.0, 11.0, "a b c", "a b c"),
-        SegmentRow("2", "a", "A", 1000.0, 1001.0, "d e f", "d e f"),
+        SegmentRow("0", "a", "A", 0.0, 1.0, "x y z", "x y z", 0),
+        SegmentRow("1", "a", "A", 10.0, 11.0, "a b c", "a b c", 1),
+        SegmentRow("2", "a", "A", 1000.0, 1001.0, "d e f", "d e f", 2),
     ]
     pairs, _ = generate_candidate_pairs(
         rows,

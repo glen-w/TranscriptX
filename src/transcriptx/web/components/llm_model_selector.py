@@ -17,11 +17,18 @@ from transcriptx.core.analysis.llm_support.model_selection import (
     validate_llm_model_selection,
 )
 from transcriptx.core.analysis.llm_support.model_guidance import (
+    LibraryMeta,
+    fetch_ollama_library_meta,
     list_llm_model_guidance,
+    producer_for_model,
 )
 from transcriptx.core.config import get_profile_target_adapter
 from transcriptx.core.config.persistence import save_project_config
-from transcriptx.core.llm import list_installed_ollama_models
+from transcriptx.core.llm import (
+    OllamaModelInfo,
+    enrich_model_infos_with_context,
+    list_installed_ollama_models,
+)
 from transcriptx.core.llm.thinking_models import (
     LLM_JSON_FORMAT_CONSUMER_IDS,
     filter_models_for_json_consumers,
@@ -65,6 +72,51 @@ def cached_list_ollama_models(
     """Short-TTL list of installed Ollama tags for the selector UI."""
     result = list_installed_ollama_models(base_url)
     return result.models, result.error
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def cached_ollama_model_infos(
+    base_url: str | None,
+    model_names: tuple[str, ...],
+) -> tuple[dict[str, dict[str, object | None]], str | None]:
+    """Cached installed-model metadata (params/context/size) for the info table.
+
+    ``model_names`` is part of the cache key so a refresh after pull/delete
+    invalidates correctly. Values are plain dicts for Streamlit cache hashing.
+    """
+    result = list_installed_ollama_models(base_url)
+    if result.error:
+        return {}, result.error
+    infos = enrich_model_infos_with_context(result.infos, base_url)
+    # Keep only currently requested names (stable order not required here).
+    wanted = set(model_names)
+    payload: dict[str, dict[str, object | None]] = {}
+    for info in infos:
+        if info.name not in wanted:
+            continue
+        payload[info.name] = {
+            "name": info.name,
+            "size_bytes": info.size_bytes,
+            "modified_at": info.modified_at,
+            "family": info.family,
+            "parameter_size": info.parameter_size,
+            "quantization_level": info.quantization_level,
+            "context_length": info.context_length,
+        }
+    return payload, None
+
+
+@st.cache_data(ttl=86_400, show_spinner=False)
+def cached_ollama_library_meta(model_base: str) -> dict[str, str | None] | None:
+    """Daily-cached Ollama library meta (producer hints). Soft-fails offline."""
+    meta = fetch_ollama_library_meta(model_base)
+    if meta is None:
+        return None
+    return {
+        "producer": meta.producer,
+        "released": meta.released,
+        "description": meta.description,
+    }
 
 
 def _installed_choice(current: Any, installed: Sequence[str]) -> str | None:
@@ -405,21 +457,80 @@ def _render_model_information(installed: Sequence[str]) -> None:
         "(e.g. llama3.2:3b, gemma3:1b) usually cannot satisfy "
         "llm_action_items schema validation and publish empty extracts."
     )
-    rows = list_llm_model_guidance(installed)
-    if not rows:
+    if not installed:
         st.info(
             "No installed models to describe. Pull one with "
             "`ollama pull gemma3:12b`, then refresh models under Settings → Models."
         )
         return
+
+    config = get_config()
+    base_url = config.llm.base_url
+    info_payload, info_error = cached_ollama_model_infos(base_url, tuple(installed))
+    if info_error:
+        st.caption(f"Model metadata unavailable: {info_error}")
+
+    infos = [
+        OllamaModelInfo(
+            name=str(row["name"] or name),
+            size_bytes=row.get("size_bytes") if isinstance(row.get("size_bytes"), int) else None,
+            modified_at=row.get("modified_at")
+            if isinstance(row.get("modified_at"), str)
+            else None,
+            family=row.get("family") if isinstance(row.get("family"), str) else None,
+            parameter_size=row.get("parameter_size")
+            if isinstance(row.get("parameter_size"), str)
+            else None,
+            quantization_level=row.get("quantization_level")
+            if isinstance(row.get("quantization_level"), str)
+            else None,
+            context_length=row.get("context_length")
+            if isinstance(row.get("context_length"), int)
+            else None,
+        )
+        for name, row in info_payload.items()
+    ]
+
+    library_meta_by_base: dict[str, LibraryMeta] = {}
+    for tag in installed:
+        base = tag.split(":", 1)[0].strip().lower()
+        if not base or base in library_meta_by_base:
+            continue
+        # Skip network when the curated catalog already knows the producer.
+        if producer_for_model(tag):
+            continue
+        raw_meta = cached_ollama_library_meta(base)
+        if not raw_meta:
+            continue
+        library_meta_by_base[base] = LibraryMeta(
+            producer=raw_meta.get("producer"),
+            released=raw_meta.get("released"),
+            description=raw_meta.get("description"),
+        )
+
+    rows = list_llm_model_guidance(
+        installed,
+        infos=infos,
+        library_meta_by_base=library_meta_by_base,
+    )
     table = {
         "Model": [r.model for r in rows],
         "Class": [r.size_class for r in rows],
+        "Parameters": [r.parameters or "—" for r in rows],
+        "Context": [r.context_window or "—" for r in rows],
+        "Producer": [r.producer or "—" for r in rows],
+        "Released": [r.released or "—" for r in rows],
+        "Size": [r.disk_size or "—" for r in rows],
         "Strengths": [r.strengths for r in rows],
         "Best for": [r.best_for for r in rows],
         "Notes": [r.notes for r in rows],
     }
     st.dataframe(table, hide_index=True, width="stretch")
+    st.caption(
+        "Parameters, context, and size come from the local Ollama API. "
+        "Producer / release month use a curated catalog, refined from the "
+        "public Ollama library page when reachable."
+    )
 
 
 def _render_assignment_widgets(
@@ -662,6 +773,8 @@ def render_llm_models_settings_panel() -> None:
     installed, list_error = cached_list_ollama_models(llm.base_url)
     if st.button("Refresh models", key=_key(key_prefix, "refresh")):
         cached_list_ollama_models.clear()
+        cached_ollama_model_infos.clear()
+        cached_ollama_library_meta.clear()
         st.rerun()
 
     if list_error:

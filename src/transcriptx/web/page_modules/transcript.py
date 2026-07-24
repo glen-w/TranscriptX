@@ -389,6 +389,11 @@ def _render_chapters_panel(chapter_rows: list[Any]) -> None:
         with cols[0]:
             label = row.title
             st.markdown(f"**{label}**")
+            keywords = getattr(row, "keywords", ()) or ()
+            # Avoid repeating the same tokens when the title is already keyword-built.
+            title_as_keywords = " · ".join(keywords) if keywords else ""
+            if keywords and title_as_keywords != label:
+                st.caption(" · ".join(keywords))
             if row.summary:
                 st.caption(row.summary[:240])
             meta = format_chapter_time_range(row.time_start, row.time_end)

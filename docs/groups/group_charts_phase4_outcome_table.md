@@ -33,7 +33,7 @@ subsets are in
 | sentiment | dedicated | n/a (`SentimentGroupChartGenerator`) | Includes gallery **cross-session speaker** compound-style charts ([contract](group_charts_sentiment_cross_session_contract.md)). |
 | llm_action_items | keep generic | `item_count` | Session action-item counts; content rows in Data. |
 | insights | keep generic | `theme_count`, `recurring_idea_count`, `notable_moment_count` | Session insight counts; content rows in Data. |
-| semantic_similarity | keep generic | `total_repetitions`, `unique_patterns` | Covers legacy/advanced/v2 via one agg; no embedding re-pool. |
+| semantic_similarity | composite (`SemanticSimilarityGroupChartGenerator`) | `total_repetitions`, `unique_patterns`, `motif_count`, `recurring_motif_count`, `drift_score` + motif prevalence | B14: centroid match within comparable cohort; TF-IDF incomparable; `repetition_rows` unchanged; see [`group_charts_semantic_motifs_contract.md`](group_charts_semantic_motifs_contract.md). |
 | voice_mismatch | keep generic | `moments_count`, `mismatch_score_mean`, `mismatch_score_max` | Moment content rows in Data. |
 | voice_tension | keep generic | `bins`, `tension_mean`, `tension_max` | Curve points as content rows; temporal overlay deferred. |
 | voice_fingerprint | keep generic | `speakers`, `drift_moment_count` | Speaker baselines + drift content rows. |

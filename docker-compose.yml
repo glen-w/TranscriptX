@@ -55,11 +55,12 @@ services:
       - PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
       - MPLCONFIGDIR=/data/.cache/matplotlib
       - NLTK_DATA=/opt/venv/nltk_data
-      # Librosa uses Numba with cache=True; without a writable locator, JIT init raises
-      # "no locator available for file .../site-packages/librosa/...". Host UID override
-      # often leaves HOME unsuitable for Numba's default cache path.
-      - NUMBA_CACHE_DIR=/data/.cache/numba
-      - NUMBA_DISABLE_CACHING=1
+      # Librosa uses Numba with cache=True; Numba probes the cache dir via
+      # tempfile.TemporaryFile().close(). On Docker Desktop, that probe raises EIO on
+      # virtiofs-mounted ./data, so /data/.cache/numba is not a usable locator and
+      # voice_contours fails with "no locator available for file .../librosa/...".
+      # Keep the cache on the container overlay (/tmp), not a host bind mount.
+      - NUMBA_CACHE_DIR=/tmp/numba_cache
       # Optional model overrides from host .env (see docs/runtime/models.md).
       - TRANSCRIPTX_SPACY_MODEL=${TRANSCRIPTX_SPACY_MODEL:-}
       - TRANSCRIPTX_SEMANTIC_MODEL=${TRANSCRIPTX_SEMANTIC_MODEL:-}

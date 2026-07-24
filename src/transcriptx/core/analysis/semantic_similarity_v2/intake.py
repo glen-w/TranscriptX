@@ -16,6 +16,7 @@ class SegmentRow:
     end: float
     text: str
     normalized: str
+    source_index: int
 
 
 _FILLER_RE = re.compile(
@@ -64,9 +65,10 @@ def segment_rows_from_dicts(
                 end=end,
                 text=text,
                 normalized=norm,
+                source_index=int(i),
             )
         )
-    rows.sort(key=lambda r: (r.start, r.segment_id))
+    rows.sort(key=lambda r: (r.start, r.source_index, r.segment_id))
     return rows, {"skipped_reasons": skipped}
 
 

@@ -114,6 +114,8 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 |--------|----------------|---------------|
 | **NER** | `TRANSCRIPTX_SPACY_MODEL` | `en_core_web_lg`, `en_core_web_trf` |
 | **Semantic similarity** (legacy + v2) | `TRANSCRIPTX_SEMANTIC_MODEL`, `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `all-mpnet-base-v2`, other sentence-transformers checkpoints |
+
+**B14 cross-session motifs:** group matching requires a shared `provenance_compatibility_key` (backend, model/revision, embedding semantics version `semantic_v2_embed_sem.1`, pooling, truncation, L2, vector dim). TF-IDF fallback is **export-only / incomparable** (per-transcript vocabulary) and is never cross-matched.
 | **Echoes** (semantic paraphrase) | `TRANSCRIPTX_SEMANTIC_MODEL` | Same as semantic model |
 | **BERTopic** | `TRANSCRIPTX_BERTOPIC_*` (embedding + clustering knobs) | Same embedding family as semantic; packages in default install |
 | **Emotion** | `TRANSCRIPTX_EMOTION_MODEL` | Larger HF `text-classification` emotion models (English-tuned) |

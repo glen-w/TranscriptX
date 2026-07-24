@@ -4,7 +4,7 @@ Authority: self
 # TranscriptX Codebase Stocktake — 2026-07-17
 
 > Living decision foundation for near-term work. Supersedes the historical assessment in [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2026-03-10.md).  
-> Metrics refreshed **2026-07-24** against package **0.7.5** (beta). Historical findings below that still say 0.4.4 / 0.6.x describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.
+> Metrics refreshed **2026-07-24** against package **0.8.0** (beta). Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.
 
 ---
 
@@ -13,12 +13,12 @@ Authority: self
 | Dimension | Verdict | Confidence |
 |-----------|---------|------------|
 | **What it is** | Local-first transcript **analysis** toolkit (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
-| **Honest stage** | **Beta** (`0.7.5`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
+| **Honest stage** | **Beta** (`0.8.0`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
 | **OSS local-first public release** | **Conditional go** — Wave 0 eng criteria closed; next public tag still requires [`release_governance.md`](release_governance.md) evidence (clean tree, green CI on exact commit, evidence bundle). | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
 | **Immediate process blocker** | Manual next-tag checklist / evidence bundle — not missing A1–A10 or Config 1.7 code. | High |
 
-**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; Waves 1–2 analysis ships are Done through 0.7.x; product capacity points at Wave 3 (B5 DB/group `profile_id` remainder, B14, B18/P2); do not market as a hosted product.
+**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; Waves 1–2 analysis ships are Done through 0.7.x; product capacity points at Wave 3 (B5 DB/group `profile_id` remainder, B18/P2; B14 shipped); do not market as a hosted product.
 
 ---
 
@@ -26,7 +26,7 @@ Authority: self
 
 | Fact | Value / evidence |
 |------|------------------|
-| Version | `0.7.5` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
+| Version | `0.8.0` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
 | License | MIT |
 | Scale | Large `src/transcriptx/` + extensive `tests/` (~4.5k test functions; see Makefile lanes) |
 | Smoke gate | `make test-smoke` (CI matrix 3.10–3.12; Core+dev and NLP smoke lanes) |
@@ -37,7 +37,7 @@ Authority: self
 | SECURITY.md / CoC | `SECURITY.md` present (private vuln reporting) |
 | Distribution reality | Docker + git tags; **not on PyPI** — see install verification matrix |
 | Wave 0 eng gate | Closed 2026-07-22 (hygiene A1–A10 + Config 1.7/1.8 + docs/inventory parity) |
-| Recent product line (0.6.6→0.7.5) | `llm_custom_qa`, B10 meeting extracts, speaker profiles v1 + Phase 1.5/1.6 + avatars + voice R2 + locations pack, Wave 2 lexicons (B6/B7), B13 graphs, configurable analysis presets |
+| Recent product line (0.6.6→0.8.0) | `llm_custom_qa`, B10 meeting extracts, speaker profiles v1 + Phase 1.5/1.6 + avatars + voice R2 + locations pack, Wave 2 lexicons (B6/B7), B13 graphs, analysis presets, **B14** motifs/drift, **B16** keyphrases, LLM feedback v1 |
 
 ```mermaid
 flowchart LR
@@ -68,7 +68,7 @@ flowchart LR
 | Issue | Detail |
 |-------|--------|
 | Historical Phase 1 vs shipping | Older ROADMAP/stocktake language said “no new features” while 0.3.x→0.7.x shipped continuously — **reconciled** in ROADMAP (language retired). |
-| Historical version bands | Older docs said “v0.42 current” / stocktake once said **0.6.5** — **reconciled**; package is **0.7.5**. |
+| Historical version bands | Older docs said “v0.42 current” / stocktake once said **0.6.5** — **reconciled**; package is **0.8.0**. |
 | Groups story | ~~README “DB-backed”~~ **Fixed** (file-backed). Storage contract is file-first; DB-backed **speaker** analytics views remain Phase 3 remainder. |
 | Sprint archive | [`docs/archive/sprint_archive.md`](../archive/sprint_archive.md) is historical backlog only — not live. |
 | Identity | ~~`pyproject` URLs ≠ remote~~ **Fixed** → `glen-w/TranscriptX`. |
@@ -94,7 +94,7 @@ flowchart LR
 | Speaker profiles (longitudinal) | **Mature (file-backed)** | v1 store + Phase 1.5/1.6 analytics + avatars + voice R2 + locations pack; remainder: DB views / group `profile_id` gallery |
 | Groups analysis + charts | **Mature / experimental label** | File-backed; chart registry ~33 aggs incl. `topic_shift`, `epistemic_markers`, `politeness`; product label inconsistent |
 | Run cleanup | **Mature (Phase B complete)** | Phase A extract done; Phase B complete: policy **7**, result-schema **2**, journal schema **3** |
-| Config ownership collapse (Top-3 #1) | **Done through 1.8** | Nested + flat + mapping + system/workflow + atomic file overrides (1.7) + curated `to_dict` (1.8). Inventory invariant: **50 / 682 / 16** (698 total; see `test_ownership_invariant_counts`). **1.9** structural split is optional follow-up. |
+| Config ownership collapse (Top-3 #1) | **Done through 1.8** | Nested + flat + mapping + system/workflow + atomic file overrides (1.7) + curated `to_dict` (1.8). Inventory invariant: **50 / 690 / 16** (706 total; see `test_ownership_invariant_counts`). **1.9** structural split is optional follow-up. |
 | Shared analysis I/O (Top-3 #2) | **Done** | Affect/dynamics/group-chart helpers landed; A3 entity_sentiment CSV-then-JSON; characterization hardened (2026-07-17). Emotion NRC pairs intentionally local. |
 | Rename + corrections split (Top-3 #3) | **Done** | Structural extract landed (`rename/{transaction_phase,finalize_phase,reconcile,repair,post_commit}`; corrections `candidate_*` modules); `pipeline.py` / `candidate_service.py` are thin coordinators |
 | Export system package refactor | **Complete (residual finish landed)** | Package under `transcriptx.export/`; shims retired; path dedupe; zip on `ExportService` |
@@ -139,7 +139,7 @@ Authoritative sequencing: [`docs/dev/refactor_top3_index_2026-07-16.md`](refacto
 | Order | Program | Doc | Status (2026-07-24) |
 |-------|---------|-----|---------------------|
 | **Done** | Run cleanup Phase B hardening | [`run_cleanup_refactor_contracts.md`](run_cleanup_refactor_contracts.md) | Policy 7; journal RMW; recovery matrix; Identity/Snapshot hot paths; LockAcquisitionOutcome; adversarial + idempotency suite. |
-| **Done** | Config ownership collapse (Candidate 1) | [`docs/config/config_ownership_collapse_plan.md`](../config/config_ownership_collapse_plan.md) | Through 1.8; atomic overrides + curated `to_dict`; inventory **50 / 682 / 16** (698). Optional follow-up: **1.9** structural split. |
+| **Done** | Config ownership collapse (Candidate 1) | [`docs/config/config_ownership_collapse_plan.md`](../config/config_ownership_collapse_plan.md) | Through 1.8; atomic overrides + curated `to_dict`; inventory **50 / 690 / 16** (706). Optional follow-up: **1.9** structural split. |
 | **Done** | Shared analysis I/O | [`shared_analysis_io_refactor_plan.md`](shared_analysis_io_refactor_plan.md) | Affect + dynamics + group-chart families complete; A3 entity_sentiment + char closeout 2026-07-17 |
 | **Done** | Rename + corrections split | [`rename_corrections_orchestrator_split_plan.md`](rename_corrections_orchestrator_split_plan.md) | Steps 3.1–3.13 landed; compat table documents aliases; public import paths unchanged |
 | **Done** | Export system refactor | [`export_system_refactor_plan.md`](export_system_refactor_plan.md) | Steps 1–9 + residual finish; Jinja2 + Artifact Protocol remain optional backlog |
@@ -175,7 +175,7 @@ Authoritative sequencing: [`docs/dev/refactor_top3_index_2026-07-16.md`](refacto
 
 | Metric | Archive 2026-03-10 | This stocktake (refreshed 2026-07-24) |
 |--------|--------------------|----------------------------------------|
-| Product stage | Early / CLI-era narrative | Beta **0.7.5**, GUI+API, no analysis CLI |
+| Product stage | Early / CLI-era narrative | Beta **0.8.0**, GUI+API, no analysis CLI |
 | Smoke | 10/10 (then) | Makefile `test-smoke` (CI matrix) |
 | Coverage narrative | Mixed | Measured lane; web omitted |
 | Ruff/mypy counts | 332 / 2111 (stale) | Not re-baselined as release gate; treat archive numbers as **historical only** |
@@ -235,7 +235,7 @@ Use these as defaults unless you consciously override them:
 
 1. **Release type (next 1–2 months):** OSS **local-first single-user beta** — not hosted product.
 2. **run_cleanup:** Phase A + Phase B complete (policy 7 / schema 3 / result schema 2). Further behaviour changes need explicit schema/policy decisions; do not mix with Top-3 refactors.
-3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. Product capacity → analysis backlog ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)): **Wave 3** (B5 DB/group `profile_id` remainder, B14, B18/P2); Waves 1–2 shipped.
+3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. Product capacity → analysis backlog ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)): **Wave 3** (B5 DB/group `profile_id` remainder, B18/P2; B14 shipped); Waves 1–2 shipped.
 4. **Phase 1 honesty:** ROADMAP reflects 0.7.x + real CI; “no new features” retired.
 5. **Distribution:** Docker + git tags until PyPI decided; install matrix is authoritative.
 6. **Network threat model:** Localhost by default; LAN opt-in via `TRANSCRIPTX_BIND_HOST=0.0.0.0` (unauthenticated).
@@ -266,7 +266,7 @@ Use these as defaults unless you consciously override them:
 
 ### Product (Wave 3 open)
 
-14. Analysis backlog next: Wave 3 — **B5 remainder** (DB analytics views / group gallery keyed by `profile_id`), **B14** concept drift, **B18** / **P2** provenance. Waves 1–2 shipped (incl. B5 file-backed Speakers + voice + locations). See [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md).
+14. Analysis backlog next: Wave 3 — **B5 remainder** (DB analytics views / group gallery keyed by `profile_id`), **B18** / **P2** provenance (~~B14~~ concept drift **shipped**). Waves 1–2 shipped (incl. B5 file-backed Speakers + voice + locations). See [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md).
 15. UX: Corrections Studio / Audio Prep fragment follow-ups (deferred).
 16. Remove legacy Data/Explorer redirect routes after “one more release” (public_surfaces).
 17. User-facing docs thinner than contract corpus — optional researcher guide.

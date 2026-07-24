@@ -66,6 +66,7 @@ def build_topics_module_definitions(
         "wordclouds": {
             "description": "Word Cloud Generation",
             "dependencies": ["insight_eligibility"],
+            "optional_dependencies": ["keyphrases"],
             "category": "light",
             "determinism_tier": "T1",
             "requirements": default_requirements,

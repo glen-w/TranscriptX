@@ -13,7 +13,7 @@ from transcriptx.core.analysis.highlights.post_process import (
 )
 from transcriptx.core.pipeline.manifest_loader import load_run_results
 from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
-from transcriptx.utils.text_utils import format_time_detailed
+from transcriptx.utils.text_utils import format_time_detailed, is_named_speaker
 from transcriptx.web.blocks.context import BlockContext
 from transcriptx.web.blocks.group_content import (
     group_rollup_empty_hint,
@@ -28,15 +28,19 @@ from transcriptx.web.blocks.group_content import (
     member_empty_hint,
     select_group_member,
 )
+from transcriptx.core.llm_feedback.models import FeedbackSurface
 from transcriptx.web.blocks.llm_presentation import (
+    cleaned_llm_output_text,
     provenance_badges,
     render_badge_row,
+    render_badge_row_with_feedback,
     render_markdown_without_heading_or_provenance,
+    resolve_artifact_rel_path,
     strip_commitments_section,
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.module_run_prompt import render_module_required_hint
-from transcriptx.web.speaker_accent import speaker_inline_html
+from transcriptx.web.speaker_accent import load_accent_resolve_context, speaker_inline_html
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_data_artifact,
@@ -291,6 +295,7 @@ def _render_highlights_theme_body(
     run_id: str | None,
     key_prefix: str,
 ) -> None:
+    accent_ctx = load_accent_resolve_context()
     for qid in theme.get("quote_ids") or []:
         item = quotes_map.get(qid)
         if not item:
@@ -301,7 +306,7 @@ def _render_highlights_theme_body(
         end = float(item.get("end") or 0.0)
         time_range = f"{format_time_detailed(start)}-{format_time_detailed(end)}"
         speaker = item.get("speaker") or ""
-        speaker_html = speaker_inline_html(speaker)
+        speaker_html = speaker_inline_html(speaker, context=accent_ctx)
         if speaker_html:
             st.markdown(
                 f"{speaker_html} · {time_range} · score {score:.3f}",
@@ -466,14 +471,15 @@ def _highlights_browser_fragment(
     if not filtered:
         st.caption("No highlights match the current filters.")
         return
+    accent_ctx = load_accent_resolve_context()
     for index, item in enumerate(filtered):
         time_range = (
             f"{format_time_detailed(item['start'])}-{format_time_detailed(item['end'])}"
         )
         st.markdown(
             (
-                f"{speaker_inline_html(item['speaker'])} · {time_range} · "
-                f"score {item['score']:.3f}"
+                f"{speaker_inline_html(item['speaker'], context=accent_ctx)} · "
+                f"{time_range} · score {item['score']:.3f}"
             ),
             unsafe_allow_html=True,
         )
@@ -835,13 +841,7 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
     failure_hint = _module_failure_hint(run_root, module)
     payload = loader.load_json(module, f"{artifact_stem}.json", instance_id=inst)
     md = loader.load_text(module, f"{artifact_stem}.md", instance_id=inst)
-    if md:
-        st.markdown(md)
-    elif payload and payload.get(text_field):
-        st.markdown(str(payload[text_field]))
-    elif payload:
-        st.json(payload)
-    else:
+    if not md and not (payload and (payload.get(text_field) or payload)):
         _render_quiet_module_empty(
             label=title,
             run_root=run_root,
@@ -851,6 +851,37 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
             key=f"llm_{module}_{inst or 'default'}",
         )
         return
+
+    rated = cleaned_llm_output_text(md) if md else str(
+        (payload or {}).get(text_field) or ""
+    )
+    rel = resolve_artifact_rel_path(
+        loader, module, f"{artifact_stem}.md", instance_id=inst
+    ) or resolve_artifact_rel_path(
+        loader,
+        module,
+        f"{artifact_stem}.json",
+        kind="data_json",
+        instance_id=inst,
+    )
+    render_badge_row_with_feedback(
+        provenance_badges((payload or {}).get("provenance") if payload else None),
+        ctx=ctx,
+        surface=FeedbackSurface.INSIGHTS_BLOCK,
+        block_id=placement.block_id,
+        module=module,
+        artifact_rel_path=rel,
+        output_text=rated,
+        provenance=(payload or {}).get("provenance") if payload else None,
+        placement_id=placement.placement_id,
+        widget_key=f"fb_sum_{placement.placement_id}_{inst or 'default'}",
+    )
+    if md:
+        st.markdown(md)
+    elif payload and payload.get(text_field):
+        st.markdown(str(payload[text_field]))
+    elif payload:
+        st.json(payload)
     suffix = f"{artifact_stem}.json"
     _render_view_raw_file_link(
         ctx, module, suffix, link_key=f"llm_raw_{module}_{inst or 'default'}"
@@ -1061,10 +1092,29 @@ def render_llm_speaker_summary_block(
                 continue
             md = loader.load_text(module, suffix_md)
             payload = loader.load_json(module, suffix_json)
-            render_badge_row(
+            rated = (
+                cleaned_llm_output_text(md)
+                if md
+                else str((payload or {}).get("summary") or "")
+            )
+            rel = resolve_artifact_rel_path(
+                loader, module, suffix_md
+            ) or resolve_artifact_rel_path(
+                loader, module, suffix_json, kind="data_json"
+            )
+            render_badge_row_with_feedback(
                 provenance_badges(
                     (payload or {}).get("provenance") if payload else None
-                )
+                ),
+                ctx=ctx,
+                surface=FeedbackSurface.INSIGHTS_BLOCK,
+                block_id=placement.block_id,
+                module=module,
+                artifact_rel_path=rel,
+                output_text=rated,
+                provenance=(payload or {}).get("provenance") if payload else None,
+                placement_id=placement.placement_id,
+                widget_key=f"fb_spk_{placement.placement_id}_{safe}",
             )
             if md:
                 render_markdown_without_heading_or_provenance(md)
@@ -1271,8 +1321,31 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
 
     payload = loader.load_json(module, f"{artifact_stem}.json")
     md = loader.load_text(module, f"{artifact_stem}.md")
-    render_badge_row(
-        provenance_badges((payload or {}).get("provenance") if payload else None)
+    rated = cleaned_llm_output_text(md) if md else ""
+    if not rated and isinstance(payload, dict):
+        items = payload.get("items") or []
+        if isinstance(items, list):
+            rated = "\n".join(
+                str(it.get("text") or "")
+                for it in items
+                if isinstance(it, dict) and it.get("text")
+            )
+    rel = resolve_artifact_rel_path(
+        loader, module, f"{artifact_stem}.md"
+    ) or resolve_artifact_rel_path(
+        loader, module, f"{artifact_stem}.json", kind="data_json"
+    )
+    render_badge_row_with_feedback(
+        provenance_badges((payload or {}).get("provenance") if payload else None),
+        ctx=ctx,
+        surface=FeedbackSurface.INSIGHTS_BLOCK,
+        block_id=placement.block_id,
+        module=module,
+        artifact_rel_path=rel,
+        output_text=rated,
+        provenance=(payload or {}).get("provenance") if payload else None,
+        placement_id=placement.placement_id,
+        widget_key=f"fb_ai_{placement.placement_id}",
     )
     if not _render_action_items_payload(payload, md):
         _render_quiet_module_empty(
@@ -1313,6 +1386,8 @@ def _render_lexical_diversity_payload(payload: Dict[str, Any]) -> None:
     if isinstance(speaker_stats, dict) and speaker_stats:
         rows = []
         for speaker in sorted(speaker_stats):
+            if not is_named_speaker(str(speaker)):
+                continue
             stats = speaker_stats[speaker]
             if not isinstance(stats, dict):
                 continue

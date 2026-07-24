@@ -123,7 +123,7 @@ def test_parse_action_items_repairs_trailing_comma() -> None:
 
 
 @pytest.mark.unit
-def test_parse_action_items_drops_invalid_status() -> None:
+def test_parse_action_items_aliases_pending_status() -> None:
     payload = json.dumps(
         {
             "items": [
@@ -132,6 +132,29 @@ def test_parse_action_items_drops_invalid_status() -> None:
                     "owner": None,
                     "deadline": None,
                     "status": "pending",
+                    "quote": None,
+                    "confidence": 0.5,
+                }
+            ]
+        }
+    )
+    items, diagnostics = parse_action_items_json(payload)
+    assert len(items) == 1
+    assert items[0]["status"] == "open"
+    assert diagnostics["status_aliased"] == 1
+    assert diagnostics["status_unsupported_dropped"] == 0
+
+
+@pytest.mark.unit
+def test_parse_action_items_drops_truly_invalid_status() -> None:
+    payload = json.dumps(
+        {
+            "items": [
+                {
+                    "text": "x",
+                    "owner": None,
+                    "deadline": None,
+                    "status": "paused",
                     "quote": None,
                     "confidence": 0.5,
                 }
@@ -345,9 +368,96 @@ def test_llm_action_items_empty_items_success(tmp_path) -> None:
             "transcriptx.core.analysis.llm_action_items.create_output_service"
         ) as mock_os,
     ):
-        mock_os.return_value.get_output_structure.return_value.module_dir = tmp_path
+        structure = MagicMock()
+        structure.module_dir = tmp_path
+        structure.global_data_dir = tmp_path / "global"
+        mock_os.return_value.get_output_structure.return_value = structure
+        mock_os.return_value.base_name = "mini"
         mock_os.return_value.get_artifacts.return_value = []
         result = LLMActionItemsAnalysis().run_from_context(context)
 
     assert result["status"] == "success"
     assert result["payload"]["items"] == []
+    raw_dump = tmp_path / "global" / "mini_llm_action_items.raw.txt"
+    assert raw_dump.is_file()
+    assert raw_dump.read_text(encoding="utf-8") == '{"items": []}'
+    mock_os.return_value.record_file.assert_called()
+
+
+@pytest.mark.unit
+def test_llm_action_items_schema_drop_payload_still_writes_raw_dump(tmp_path) -> None:
+    """When all model records are invalid, publish empty items + raw dump."""
+    context = MagicMock()
+    context.transcript_path = str(tmp_path / "t.json")
+    context.get_segments.return_value = _mini_segments()
+    context.get_base_name.return_value = "mini"
+    context.get_transcript_dir.return_value = str(tmp_path / "out")
+    context.get_run_id.return_value = "run-1"
+    context.get_runtime_flags.return_value = {}
+
+    cfg = TranscriptXConfig()
+    cfg.llm.enabled = True
+    cfg.llm.provider = "ollama"
+
+    bad_raw = json.dumps(
+        {
+            "items": [
+                {
+                    "record_type": "action_item",
+                    "text": "",
+                    "owner": None,
+                    "deadline": None,
+                    "status": "open",
+                    "quote": None,
+                    "confidence": 0.9,
+                }
+            ]
+        }
+    )
+    mock_client = MagicMock()
+    mock_client.model = "mistral:latest"
+    mock_client.generate.return_value = bad_raw
+    runtime = LLMRuntime(
+        effort="max",
+        profile_name="max",
+        model="mistral:latest",
+        max_input_chars=512_000,
+        request_timeout=3600.0,
+        max_output_tokens=16384,
+    )
+
+    with (
+        patch(
+            "transcriptx.core.analysis.llm_action_items.get_config", return_value=cfg
+        ),
+        patch(
+            "transcriptx.core.analysis.llm_action_items.resolve_llm_runtime",
+            return_value=runtime,
+        ),
+        patch(
+            "transcriptx.core.analysis.llm_action_items.build_ollama_analysis_client",
+            return_value=mock_client,
+        ),
+        patch(
+            "transcriptx.core.analysis.llm_action_items.write_llm_artifacts",
+            return_value=("a.json", "a.md"),
+        ),
+        patch(
+            "transcriptx.core.analysis.llm_action_items.create_output_service"
+        ) as mock_os,
+    ):
+        structure = MagicMock()
+        structure.module_dir = tmp_path
+        structure.global_data_dir = tmp_path / "global"
+        mock_os.return_value.get_output_structure.return_value = structure
+        mock_os.return_value.base_name = "mini"
+        mock_os.return_value.get_artifacts.return_value = []
+        result = LLMActionItemsAnalysis().run_from_context(context)
+
+    assert result["status"] == "success"
+    assert result["payload"]["items"] == []
+    assert result["payload"]["diagnostics"]["items_raw"] == 1
+    assert result["payload"]["diagnostics"]["items_invalid_dropped"] == 1
+    raw_dump = tmp_path / "global" / "mini_llm_action_items.raw.txt"
+    assert raw_dump.is_file()
+    assert "items" in raw_dump.read_text(encoding="utf-8")

@@ -12,7 +12,11 @@ from transcriptx.export.grouping import segment_speaker_label
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.utils.text_utils import format_time_detailed
 from transcriptx.web.components.playback_panel import set_active_clip
-from transcriptx.web.speaker_accent import speaker_meta_line_html
+from transcriptx.web.speaker_accent import (
+    AccentResolveContext,
+    load_accent_resolve_context,
+    speaker_meta_line_html,
+)
 from transcriptx.web.transcript_viewer.highlight import render_highlight_html
 from transcriptx.web.transcript_viewer.playback_targets import (
     format_safe_timestamp_range,
@@ -138,8 +142,14 @@ def render_plain_segments(
     highlight_query: str | None,
     jump_index: int | None,
     playback: TranscriptPlaybackBinding | None = None,
+    accent_context: AccentResolveContext | None = None,
 ) -> None:
     """Render transcript segments in plain reading mode."""
+    accent_ctx = (
+        accent_context
+        if accent_context is not None
+        else load_accent_resolve_context()
+    )
     copy_chunks: list[str] = []
     for segment_index, segment in display_segments:
         speaker = segment.get("speaker_display") or segment.get("speaker", "Unknown")
@@ -158,7 +168,10 @@ def render_plain_segments(
         if show_timestamps:
             timestamp = _safe_display_timestamp_range(start, end, format_key)
         header = speaker_meta_line_html(
-            speaker, timestamp=timestamp, marker_html=marker
+            speaker,
+            timestamp=timestamp,
+            marker_html=marker,
+            context=accent_ctx,
         )
         body = rendered_text if rendered_text != text else html.escape(text)
         if play_button_eligible(playback, segment_index):
@@ -200,8 +213,14 @@ def render_segmented_tab(
     show_timestamps: bool,
     format_key: str,
     playback: TranscriptPlaybackBinding | None = None,
+    accent_context: AccentResolveContext | None = None,
 ) -> None:
     """Render contiguous speaker turns with a compact name · time header."""
+    accent_ctx = (
+        accent_context
+        if accent_context is not None
+        else load_accent_resolve_context()
+    )
     speaker_groups = group_segments_by_speaker(display_segments)
     for speaker_name, group_segments in speaker_groups:
         timestamp = None
@@ -209,7 +228,9 @@ def render_segmented_tab(
             bounds = group_timestamp_bounds(group_segments)
             if bounds is not None:
                 timestamp = _format_timestamp_range(bounds[0], bounds[1], format_key)
-        header = speaker_meta_line_html(speaker_name, timestamp=timestamp)
+        header = speaker_meta_line_html(
+            speaker_name, timestamp=timestamp, context=accent_ctx
+        )
         body_parts = [
             html.escape(str(segment.get("text", "")))
             for _, segment in group_segments

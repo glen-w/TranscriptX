@@ -2,15 +2,36 @@
 
 Helps users pick a tag per LLM module. Matching is intentionally loose:
 family/prefix + size-class heuristics, not a hard allow-list of tags.
+
+Parameter / context / disk size come from the live Ollama ``/api/tags``
+(and ``/api/show`` when needed). Producer and release month are filled from
+a curated catalog keyed by tag family, optionally refined by the public
+Ollama library page meta description when a fetcher is provided.
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from datetime import datetime, timezone
+from typing import Callable, Literal, Mapping, Sequence
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+
+from transcriptx.core.llm.ollama_client import OllamaModelInfo
 
 SizeClass = Literal["tiny", "small", "mid", "large", "unknown"]
+
+LibraryMetaFetcher = Callable[[str], "LibraryMeta | None"]
+
+
+@dataclass(frozen=True)
+class LibraryMeta:
+    """Optional metadata scraped/fetched from the public Ollama library."""
+
+    producer: str | None = None
+    released: str | None = None
+    description: str | None = None
 
 
 @dataclass(frozen=True)
@@ -20,6 +41,11 @@ class LlmModelGuidance:
     strengths: str
     best_for: str
     notes: str
+    parameters: str | None = None
+    context_window: str | None = None
+    producer: str | None = None
+    released: str | None = None
+    disk_size: str | None = None
 
 
 @dataclass(frozen=True)
@@ -39,6 +65,14 @@ _SIZE_RE = re.compile(
     r"(?:^|[:\-_/])(?P<size>\d+(?:\.\d+)?)\s*(?P<unit>[bm])\b",
     re.IGNORECASE,
 )
+_PARAM_SIZE_RE = re.compile(
+    r"^\s*(?P<size>\d+(?:\.\d+)?)\s*(?P<unit>[bmk])\s*$",
+    re.IGNORECASE,
+)
+_PRODUCER_FROM_DESC_RE = re.compile(
+    r"(?:released by|from|by)\s+([A-Z][A-Za-z0-9 .&'/+-]{1,48})",
+    re.IGNORECASE,
+)
 
 # Approximate parameter budgets for transcript LLM work on local Ollama.
 _SIZE_CLASS_BY_B: tuple[tuple[float, SizeClass], ...] = (
@@ -47,6 +81,59 @@ _SIZE_CLASS_BY_B: tuple[tuple[float, SizeClass], ...] = (
     (14.0, "mid"),
     (float("inf"), "large"),
 )
+
+# First matching prefix wins. Values are (producer, release YYYY-MM).
+_CATALOG_BY_PREFIX: tuple[tuple[str, str, str], ...] = (
+    ("qwen3-coder", "Alibaba", "2025-04"),
+    ("qwen2.5-coder", "Alibaba", "2024-09"),
+    ("qwen3.6", "Alibaba", "2026-04"),
+    ("qwen3", "Alibaba", "2025-04"),
+    ("qwen2.5", "Alibaba", "2024-09"),
+    ("qwen2", "Alibaba", "2024-06"),
+    ("gemma3", "Google", "2025-03"),
+    ("gemma2", "Google", "2024-06"),
+    ("gemma", "Google", "2024-02"),
+    ("llama3.2", "Meta", "2024-09"),
+    ("llama3.1", "Meta", "2024-07"),
+    ("llama3", "Meta", "2024-04"),
+    ("llama2", "Meta", "2023-07"),
+    ("llama", "Meta", "2023-02"),
+    ("mistral-nemo", "Mistral AI", "2024-07"),
+    ("mistral-small", "Mistral AI", "2025-03"),
+    ("mistral-large", "Mistral AI", "2024-07"),
+    ("mixtral", "Mistral AI", "2023-12"),
+    ("mistral", "Mistral AI", "2023-09"),
+    ("phi4", "Microsoft", "2024-12"),
+    ("phi3", "Microsoft", "2024-04"),
+    ("phi", "Microsoft", "2023-09"),
+    ("command-r7b", "Cohere", "2024-12"),
+    ("command-r", "Cohere", "2024-03"),
+    ("command", "Cohere", "2024-03"),
+    ("granite3.3", "IBM", "2025-04"),
+    ("granite3.2", "IBM", "2025-02"),
+    ("granite3", "IBM", "2024-10"),
+    ("granite", "IBM", "2024-05"),
+    ("deepseek-r1", "DeepSeek", "2025-01"),
+    ("deepseek", "DeepSeek", "2024-05"),
+    ("gpt-oss", "OpenAI", "2025-08"),
+    ("deepcoder", "Agentica", "2025-04"),
+)
+
+# Family strings returned by Ollama ``details.family`` (when tag prefix is vague).
+_PRODUCER_BY_FAMILY: dict[str, str] = {
+    "gemma3": "Google",
+    "gemma2": "Google",
+    "gemma": "Google",
+    "llama": "Meta",
+    "qwen2": "Alibaba",
+    "qwen3": "Alibaba",
+    "qwen35": "Alibaba",
+    "qwen3moe": "Alibaba",
+    "phi3": "Microsoft",
+    "cohere2": "Cohere",
+    "granite": "IBM",
+    "gptoss": "OpenAI",
+}
 
 _FAMILY_RULES: tuple[_FamilyRule, ...] = (
     _FamilyRule(
@@ -349,25 +436,152 @@ _GENERIC_BY_SIZE: dict[SizeClass, tuple[str, str, str]] = {
 }
 
 
-def infer_size_class(model_tag: str) -> SizeClass:
-    """Infer a coarse size class from an Ollama tag like ``qwen3:8b``."""
-    text = (model_tag or "").strip().lower()
-    if not text:
-        return "unknown"
-    match = _SIZE_RE.search(text.replace(" ", ""))
-    if match is None:
-        return "unknown"
-    value = float(match.group("size"))
-    unit = match.group("unit").lower()
-    billions = value if unit == "b" else value / 1000.0
+def _billions_from_size_unit(value: float, unit: str) -> float:
+    unit_l = unit.lower()
+    if unit_l == "b":
+        return value
+    if unit_l == "m":
+        return value / 1000.0
+    if unit_l == "k":
+        return value / 1_000_000.0
+    return value
+
+
+def _size_class_from_billions(billions: float) -> SizeClass:
     for ceiling, label in _SIZE_CLASS_BY_B:
         if billions < ceiling:
             return label
     return "unknown"
 
 
+def parse_parameter_billions(parameter_size: str | None) -> float | None:
+    """Parse Ollama ``parameter_size`` labels like ``7.2B`` / ``999.89M``."""
+    if not parameter_size:
+        return None
+    match = _PARAM_SIZE_RE.match(parameter_size.strip())
+    if match is None:
+        return None
+    return _billions_from_size_unit(float(match.group("size")), match.group("unit"))
+
+
+def format_parameter_size(parameter_size: str | None) -> str | None:
+    """Normalize parameter labels for the UI (``12.2B``, ``7.2B``, ``1B``)."""
+    billions = parse_parameter_billions(parameter_size)
+    if billions is None:
+        text = (parameter_size or "").strip()
+        return text or None
+    if billions >= 0.95:
+        if abs(billions - round(billions)) < 0.05:
+            return f"{int(round(billions))}B"
+        return f"{billions:.1f}".rstrip("0").rstrip(".") + "B"
+    millions = billions * 1000.0
+    if abs(millions - round(millions)) < 0.5:
+        return f"{int(round(millions))}M"
+    return f"{millions:.0f}M"
+
+
+def format_context_window(tokens: int | None) -> str | None:
+    if tokens is None or tokens <= 0:
+        return None
+    if tokens >= 1_000_000:
+        value = tokens / 1_000_000
+        text = f"{value:.1f}".rstrip("0").rstrip(".")
+        return f"{text}M"
+    # Prefer binary-K for power-of-two windows (32_768 → 32K, 131_072 → 128K).
+    kib = tokens / 1024
+    if abs(kib - round(kib)) < 0.05:
+        return f"{int(round(kib))}K"
+    if tokens >= 1000:
+        value = tokens / 1000
+        if abs(value - round(value)) < 0.05:
+            return f"{int(round(value))}K"
+        return f"{value:.1f}".rstrip("0").rstrip(".") + "K"
+    return str(tokens)
+
+
+def format_disk_size(size_bytes: int | None) -> str | None:
+    if size_bytes is None or size_bytes < 0:
+        return None
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    units = ("KB", "MB", "GB", "TB")
+    value = float(size_bytes)
+    for unit in units:
+        value /= 1024.0
+        if value < 1024.0 or unit == units[-1]:
+            if value >= 100 or abs(value - round(value)) < 0.05:
+                return f"{int(round(value))} {unit}"
+            return f"{value:.1f} {unit}"
+    return f"{size_bytes} B"
+
+
+def format_released_month(yyyy_mm: str | None) -> str | None:
+    """Format ``YYYY-MM`` as ``Mar 2025``."""
+    text = (yyyy_mm or "").strip()
+    if not text:
+        return None
+    try:
+        dt = datetime.strptime(text, "%Y-%m").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return text
+    return dt.strftime("%b %Y")
+
+
+def infer_size_class(
+    model_tag: str,
+    *,
+    parameter_size: str | None = None,
+) -> SizeClass:
+    """Infer a coarse size class from an Ollama tag and/or ``parameter_size``."""
+    text = (model_tag or "").strip().lower()
+    if text:
+        match = _SIZE_RE.search(text.replace(" ", ""))
+        if match is not None:
+            billions = _billions_from_size_unit(
+                float(match.group("size")), match.group("unit")
+            )
+            return _size_class_from_billions(billions)
+    from_params = parse_parameter_billions(parameter_size)
+    if from_params is not None:
+        return _size_class_from_billions(from_params)
+    return "unknown"
+
+
+def _model_base(model_tag: str) -> str:
+    return (model_tag or "").strip().lower().split(":", 1)[0]
+
+
+def _match_catalog(model_tag: str) -> tuple[str, str] | None:
+    base = _model_base(model_tag)
+    for prefix, producer, released in _CATALOG_BY_PREFIX:
+        if base == prefix or base.startswith(prefix):
+            return producer, released
+    return None
+
+
+def producer_for_model(
+    model_tag: str,
+    *,
+    family: str | None = None,
+) -> str | None:
+    catalog = _match_catalog(model_tag)
+    if catalog is not None:
+        return catalog[0]
+    fam = (family or "").strip().lower()
+    if fam and fam in _PRODUCER_BY_FAMILY:
+        return _PRODUCER_BY_FAMILY[fam]
+    return None
+
+
+def released_for_model(model_tag: str) -> str | None:
+    catalog = _match_catalog(model_tag)
+    if catalog is None:
+        return None
+    return format_released_month(catalog[1])
+
+
 def _match_family(model_tag: str) -> _FamilyRule | None:
-    base = (model_tag or "").strip().lower().split(":", 1)[0]
+    base = _model_base(model_tag)
     for rule in _FAMILY_RULES:
         for prefix in rule.prefixes:
             if base == prefix or base.startswith(prefix):
@@ -375,42 +589,130 @@ def _match_family(model_tag: str) -> _FamilyRule | None:
     return None
 
 
-def guidance_for_model(model_tag: str) -> LlmModelGuidance:
+def guidance_for_model(
+    model_tag: str,
+    *,
+    info: OllamaModelInfo | None = None,
+    library_meta: LibraryMeta | None = None,
+) -> LlmModelGuidance:
     """Return guidance for one installed Ollama tag."""
     tag = (model_tag or "").strip()
-    size = infer_size_class(tag)
+    parameter_size = info.parameter_size if info is not None else None
+    size = infer_size_class(tag, parameter_size=parameter_size)
     rule = _match_family(tag)
     if rule is None:
         strengths, best_for, notes = _GENERIC_BY_SIZE[size]
-        return LlmModelGuidance(
-            model=tag,
-            size_class=size,
-            strengths=strengths,
-            best_for=best_for,
-            notes=notes,
-        )
-    strengths, best_for, notes = rule.strengths, rule.best_for, rule.notes
-    if rule.by_size and size in rule.by_size:
-        strengths, best_for, notes = rule.by_size[size]
+    else:
+        strengths, best_for, notes = rule.strengths, rule.best_for, rule.notes
+        if rule.by_size and size in rule.by_size:
+            strengths, best_for, notes = rule.by_size[size]
+
+    producer = producer_for_model(
+        tag, family=info.family if info is not None else None
+    )
+    released = released_for_model(tag)
+    if library_meta is not None:
+        if library_meta.producer:
+            producer = library_meta.producer
+        if library_meta.released:
+            released = library_meta.released
+
     return LlmModelGuidance(
         model=tag,
         size_class=size,
         strengths=strengths,
         best_for=best_for,
         notes=notes,
+        parameters=format_parameter_size(parameter_size),
+        context_window=format_context_window(
+            info.context_length if info is not None else None
+        ),
+        producer=producer,
+        released=released,
+        disk_size=format_disk_size(info.size_bytes if info is not None else None),
     )
+
+
+def parse_library_html_meta(html: str) -> LibraryMeta | None:
+    """Extract producer / description hints from an Ollama library HTML page."""
+    if not html:
+        return None
+    desc_match = re.search(
+        r'<meta\s+name="description"\s+content="([^"]+)"',
+        html,
+        flags=re.IGNORECASE,
+    )
+    description = desc_match.group(1).strip() if desc_match else None
+    producer: str | None = None
+    if description:
+        prod_match = _PRODUCER_FROM_DESC_RE.search(description)
+        if prod_match is not None:
+            producer = prod_match.group(1).strip(" .,;")
+            # Trim trailing clause fragments.
+            for stop in (" updated", " designed", " built", " available"):
+                idx = producer.lower().find(stop)
+                if idx > 0:
+                    producer = producer[:idx].strip(" .,;")
+    if producer is None and description is None:
+        return None
+    return LibraryMeta(producer=producer, description=description)
+
+
+def fetch_ollama_library_meta(
+    model_tag: str,
+    *,
+    timeout: float = 3.0,
+) -> LibraryMeta | None:
+    """Soft-fetch public library metadata for a model base name. Never raises."""
+    base = _model_base(model_tag)
+    if not base:
+        return None
+    url = f"https://ollama.com/library/{quote(base)}"
+    try:
+        req = Request(url, headers={"User-Agent": "transcriptx-model-guidance/1.0"})
+        with urlopen(req, timeout=timeout) as resp:  # noqa: S310 — fixed host
+            raw = resp.read().decode("utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 — optional enrichment
+        return None
+    return parse_library_html_meta(raw)
 
 
 def list_llm_model_guidance(
     installed_models: Sequence[str],
+    *,
+    infos: Sequence[OllamaModelInfo] | Mapping[str, OllamaModelInfo] | None = None,
+    library_meta_by_base: Mapping[str, LibraryMeta] | None = None,
+    library_fetcher: LibraryMetaFetcher | None = None,
 ) -> list[LlmModelGuidance]:
     """Return guidance rows for installed tags (stable input order, de-duped)."""
+    info_map: dict[str, OllamaModelInfo] = {}
+    if isinstance(infos, Mapping):
+        info_map = {str(k): v for k, v in infos.items()}
+    elif infos is not None:
+        for row in infos:
+            info_map[row.name] = row
+
     rows: list[LlmModelGuidance] = []
     seen: set[str] = set()
+    library_cache: dict[str, LibraryMeta | None] = {}
+    if library_meta_by_base:
+        library_cache.update(dict(library_meta_by_base))
+
     for raw in installed_models:
         tag = (raw or "").strip()
         if not tag or tag in seen:
             continue
         seen.add(tag)
-        rows.append(guidance_for_model(tag))
+        base = _model_base(tag)
+        meta = library_cache.get(base)
+        if base not in library_cache and library_fetcher is not None:
+            meta = library_fetcher(tag)
+            library_cache[base] = meta
+        rows.append(
+            guidance_for_model(
+                tag,
+                info=info_map.get(tag),
+                library_meta=meta,
+            )
+        )
     return rows

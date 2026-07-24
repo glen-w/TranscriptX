@@ -61,6 +61,28 @@ POOLED_WORDCLOUD_VARIANT_CLASSIFICATION: dict[str, PooledVariantEntry] = {
         "pooled_per_speaker": "deferred",
         "notes": "Pool text then same nlp path; explicit basis required.",
     },
+    "keyphrase_noun_chunks": {
+        "single_transcript_source": "emit_keyphrase_wordclouds",
+        "pooled_global": "safe_for_pooled_global",
+        "pooled_per_speaker": "deferred",
+        "notes": (
+            "Pool pre-ranked noun_chunk rows by canonical_key "
+            "(keyphrase_noun_chunk_pool); never concat-reparse. "
+            "Weights from group aggregate rank_weight."
+        ),
+    },
+    "keyphrase_yake": {
+        "single_transcript_source": "emit_keyphrase_wordclouds",
+        "pooled_global": "deferred",
+        "pooled_per_speaker": "deferred",
+        "notes": "Deferred until document model for YAKE across sessions is fixed.",
+    },
+    "keyphrase_keybert": {
+        "single_transcript_source": "emit_keyphrase_wordclouds",
+        "pooled_global": "deferred",
+        "pooled_per_speaker": "deferred",
+        "notes": "Deferred until document model for KeyBERT across sessions is fixed.",
+    },
     "terms_json_and_explorer": {
         "single_transcript_source": "_save_terms_json / _save_wordcloud_view",
         "pooled_global": "deferred",

@@ -7,7 +7,7 @@
 
 **Status: Candidate 1 Done through 1.8** (Wave 0 Track B). Optional **1.9** structural split of `analysis.py` remains out of done criteria.
 
-Post-landing registry ownership invariant (enforced by `tests/core/config/test_registry_ownership.py`): **50 pilots / 682 Pydantic-owned flattened registry leaves / 16 permanent legacy** (**698** total). Historical planning text below may still mention earlier **46 / 642 / 16** (658), **44 / 614 / 16** (630), or **41 / 598 / 10** (608) targets; treat the test invariant as authoritative. Inventory key counts are **flattened registry-leaf counts**, not direct dataclass field counts (e.g. `MomentumConfig` has fewer direct fields than **11** leaves because nested `weights` flattens).
+Post-landing registry ownership invariant (enforced by `tests/core/config/test_registry_ownership.py`): **50 pilots / 690 Pydantic-owned flattened registry leaves / 16 permanent legacy** (**706** total). Historical planning text below may still mention earlier **50 / 682 / 16** (698), **46 / 642 / 16** (658), **44 / 614 / 16** (630), or **41 / 598 / 10** (608) targets; treat the test invariant as authoritative. Inventory key counts are **flattened registry-leaf counts**, not direct dataclass field counts (e.g. `MomentumConfig` has fewer direct fields than **11** leaves because nested `weights` flattens).
 
 ## Locked scope
 
@@ -375,7 +375,7 @@ Companion docs ([`pydantic_migration.md`](pydantic_migration.md), [`config_knobs
 - Every delegated config covered by expanded parity + store-specific consumers where applicable.
 - Constructor narrowing only as approved; call-site audits done for 1.1–1.6.
 - File profile/store replacements not revalidated through Pydantic.
-- Ownership invariant **50 / 682 / 16** (698 total) — see `test_ownership_invariant_counts`.
+- Ownership invariant **50 / 690 / 16** (706 total) — see `test_ownership_invariant_counts`.
 - Full config regression suite green after 1.6, 1.7, and 1.8.
 - Import ban green (frozen allowlist).
 - `to_dict()` curated projection preserves exclusions, key order, Python types (incl. tuples), and characterized aliasing.

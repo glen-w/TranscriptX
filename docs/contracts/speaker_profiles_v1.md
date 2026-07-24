@@ -446,3 +446,65 @@ counters. `status` is `ok` or `empty`.
 
 Speakers detail renders an optional Folium map when mentions exist; empty /
 partial states surface the without-NER / unresolved counters.
+
+---
+
+## Interactions / equity pack (Speakers detail)
+
+Derived Speakers-detail rollup of interactions + equity fields across linked
+appearances. Not a new analysis module. Not Charts Gallery. Pack payloads are
+derived and disposable; never canonical. Complements Phase 1.6 partners
+(co-appearance only) with interruption / response / floor evidence.
+
+### Inputs
+
+- `AggregationSnapshot` appearances (same eligibility as Phase 1.6 headline
+  series via `series_eligible` / `include_ignored`)
+- Newest run under each appearance session that contains
+  `interactions/data/global/*_speaker_summary.json` (legacy
+  `interactions/speaker_summary.json` or nested `*_speaker_summary.json`)
+- Speaker-map / display-name / alias match keys (same discipline as locations)
+
+### Output
+
+`ProfileInteractionsPack`: per-appearance interruption/response counts,
+dominance, optional `floor_share` / `interruption_asymmetry` /
+`response_latency_mean`, headline totals and means, plus
+`appearances_without_interactions`. `status` is `ok` or `empty`.
+
+### Contracts
+
+- Known profile, no usable summaries → empty success pack (`status=empty`)
+- Unknown / merged profile → same typed errors as locations pack
+- Missing interactions artifacts increment `appearances_without_interactions`;
+  do not fail the pack
+
+---
+
+## Sentiment pack (Speakers detail)
+
+Derived Speakers-detail rollup of sentiment means across linked appearances.
+Not a new analysis module. Not Charts Gallery. Pack payloads are derived and
+disposable; never canonical.
+
+### Inputs
+
+- Same appearance eligibility as Phase 1.6 / locations
+- Newest run with segment rows
+  (`sentiment/data/global/*_sentiment.json`, excluding `*_with_sentiment.json`)
+  preferred; otherwise `*_sentiment_summary.json` (`speaker_results`) for
+  compound (pos/neu/neg treated unavailable when summary stubs them as zero)
+- Speaker match keys as locations
+
+### Output
+
+`ProfileSentimentPack`: per-appearance `compound` / `pos` / `neu` / `neg`
+means, polarity bucket counts when rows are available, weighted headline
+means and polarity shares, plus `appearances_without_sentiment`.
+
+### Contracts
+
+- Known profile, no usable artifacts → empty success pack (`status=empty`)
+- Unknown / merged profile → same typed errors as locations pack
+- Missing sentiment artifacts increment `appearances_without_sentiment`;
+  do not fail the pack

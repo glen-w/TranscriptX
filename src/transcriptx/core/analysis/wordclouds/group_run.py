@@ -177,6 +177,7 @@ def run_group_wordclouds(
     group_uuid: str | None = None,
     per_transcript_results: List[Any] | None = None,
     aggregation_summary: Dict[str, Any] | None = None,
+    keyphrase_noun_chunk_pool: List[Any] | None = None,
 ) -> Dict[str, Any]:
     from transcriptx.core.analysis.aggregation.wordclouds import (
         build_full_transcript_text_pooled,
@@ -331,6 +332,78 @@ def run_group_wordclouds(
                 skipped_variants=skipped_variants,
             )
 
+        # Explicit deferred markers for optional keyphrase methods at group scope.
+        skipped_variants.append(
+            {
+                "variant_key": "keyphrase_yake",
+                "reason": "deferred_group_pooling",
+            }
+        )
+        skipped_variants.append(
+            {
+                "variant_key": "keyphrase_keybert",
+                "reason": "deferred_group_pooling",
+            }
+        )
+
+        if keyphrase_noun_chunk_pool:
+            from transcriptx.core.analysis.keyphrases.contract import (
+                SCHEMA_ID,
+                SEMANTICS_VERSION,
+            )
+            from transcriptx.core.analysis.wordclouds.keyphrase_clouds import (
+                _render_keyphrase_cloud,
+            )
+
+            freq: Dict[str, float] = {}
+            token_counts: Dict[str, int] = {}
+            for row in keyphrase_noun_chunk_pool:
+                if not isinstance(row, dict):
+                    continue
+                phrase = str(row.get("phrase") or "").strip()
+                weight = float(row.get("rank_weight") or 0.0)
+                if not phrase or weight <= 0:
+                    continue
+                freq[phrase] = weight
+                token_counts[phrase] = int(
+                    row.get("token_count") or len(phrase.split()) or 1
+                )
+            if freq:
+                output_service.prepare_pooled_artifact(
+                    pooled_view_kind="pooled_keyphrase_noun_chunks_global",
+                    pooled_input_basis="canonical_key_sum_rank_weight",
+                    pooled_lexicon_scope="named_and_resolved_speakers_only",
+                    classification="safe_for_pooled_global",
+                )
+                _render_keyphrase_cloud(
+                    freq,
+                    title="Pooled keyphrases (noun_chunks) — Group",
+                    filename="wordcloud-keyphrases-noun_chunks-pooled-ALL",
+                    viz_id="wordcloud.wordcloud.global.keyphrases_noun_chunks",
+                    speaker=None,
+                    method="noun_chunks",
+                    variant_key="keyphrase_noun_chunks",
+                    token_counts=token_counts,
+                    upstream_schema_id=SCHEMA_ID,
+                    upstream_semantics_version=SEMANTICS_VERSION,
+                    output_structure=output_structure,
+                    base_name=base_name,
+                )
+            else:
+                skipped_variants.append(
+                    {
+                        "variant_key": "keyphrase_noun_chunks",
+                        "reason": "no_positive_rank_weights",
+                    }
+                )
+        else:
+            skipped_variants.append(
+                {
+                    "variant_key": "keyphrase_noun_chunks",
+                    "reason": "upstream_pool_missing",
+                }
+            )
+
     sidecar: Dict[str, Any] = {
         "schema_version": 1,
         "session_count": session_count,
@@ -339,6 +412,19 @@ def run_group_wordclouds(
         "segment_order_within_transcript": "timestamp_then_stable_list",
         "skipped_variants": skipped_variants,
     }
+    if keyphrase_noun_chunk_pool is not None:
+        from transcriptx.core.analysis.keyphrases.contract import (
+            SCHEMA_ID,
+            SEMANTICS_VERSION,
+        )
+
+        sidecar["keyphrase_noun_chunks"] = {
+            "upstream_schema_id": SCHEMA_ID,
+            "upstream_semantics_version": SEMANTICS_VERSION,
+            "pool_basis": "canonical_key_sum_rank_weight",
+            "no_cross_session_span": True,
+            "phrase_count": len(keyphrase_noun_chunk_pool),
+        }
     if aggregation_summary:
         sidecar["aggregate_exclusions"] = {
             k: aggregation_summary[k]

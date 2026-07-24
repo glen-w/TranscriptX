@@ -35,6 +35,7 @@ from transcriptx.core.utils.config.analysis import (
     TranscriptQualityConfig,
     TopicShiftConfig,
     EpistemicMarkersConfig,
+    KeyphrasesConfig,
     PolitenessConfig,
     VectorizationConfig,
     VoiceConfig,
@@ -97,6 +98,7 @@ from .models.semantic_similarity_v2_profiles import (
 from .models.speaker_exemplars import SpeakerExemplarsSettingsModel
 from .models.transcript_quality import TranscriptQualitySettingsModel
 from .models.epistemic_markers import EpistemicMarkersSettingsModel
+from .models.keyphrases import KeyphrasesSettingsModel
 from .models.politeness import PolitenessSettingsModel
 from .models.topic_shift import TopicShiftSettingsModel
 from .models.summary import SummarySettingsModel
@@ -403,6 +405,13 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="analysis.epistemic_markers",
         category="analysis",
         dataclass_type=EpistemicMarkersConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="keyphrases",
+        model=KeyphrasesSettingsModel,
+        dotpath_prefix="analysis.keyphrases",
+        category="analysis",
+        dataclass_type=KeyphrasesConfig,
     ),
     PydanticPilotSpec(
         pilot_id="politeness",

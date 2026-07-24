@@ -19,7 +19,7 @@ Related docs:
 | Order | Candidate | Why |
 |-------|-----------|-----|
 | **Done** | **#2 Shared analysis I/O** | Complete 2026-07-17 (affect/dynamics/group-chart + A3 + char) |
-| **Done** | **#1 Config ownership collapse** | Complete through 1.8 (2026-07-20+): nested + flat + mapping + system/workflow + atomic file overrides + curated `to_dict`. Live inventory invariant **50 / 682 / 16** (698). Optional follow-up **1.9** structural split of `analysis.py` is outside Candidate 1 done criteria. |
+| **Done** | **#1 Config ownership collapse** | Complete through 1.8 (2026-07-20+): nested + flat + mapping + system/workflow + atomic file overrides + curated `to_dict`. Live inventory invariant **50 / 690 / 16** (706). Optional follow-up **1.9** structural split of `analysis.py` is outside Candidate 1 done criteria. |
 | **Done** | **#3 Rename + corrections split** | Structural extract complete: `rename/{transaction_phase,finalize_phase,reconcile,repair,post_commit}`; corrections `candidate_*` modules; thin `pipeline.py` / `candidate_service.py` coordinators; public imports unchanged |
 
 **Parallelism:** Candidates 1–3 are complete. Do not reopen them for optional config 1.9 or unrelated product work.

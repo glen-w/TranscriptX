@@ -5,6 +5,7 @@ This service handles calculation of session and aggregate statistics.
 """
 
 from datetime import datetime
+import json
 from typing import Any, Dict
 
 from pathlib import Path
@@ -13,7 +14,7 @@ from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.module_registry import get_analysis_modules, get_total_module_count
 from transcriptx.web.services.file_service import FileService
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.core.utils.paths import OUTPUTS_DIR
+from transcriptx.core.utils.paths import GROUP_OUTPUTS_DIR, OUTPUTS_DIR
 from transcriptx.io.metadata_display_options import get_metadata_config
 from transcriptx.io.metadata_stats import (
     duration_seconds_from_document,
@@ -58,6 +59,72 @@ def _unique_transcripts(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         seen.add(key)
         unique.append(session)
     return unique
+
+
+def _manifest_artifact_bytes(run_dir: Path) -> int:
+    """Sum declared artifact sizes from a run's ``manifest.json`` (0 if missing)."""
+    manifest_path = run_dir / "manifest.json"
+    if not manifest_path.is_file():
+        return 0
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return 0
+    if not isinstance(data, dict):
+        return 0
+    artifacts = data.get("artifacts")
+    if not isinstance(artifacts, list):
+        return 0
+    total = 0
+    for item in artifacts:
+        if not isinstance(item, dict):
+            continue
+        try:
+            total += int(item.get("bytes") or 0)
+        except (TypeError, ValueError):
+            continue
+    return total
+
+
+def _total_artifact_bytes(sessions: list[dict[str, Any]]) -> int:
+    """
+    Total produced-artifact bytes across all transcript sessions and group runs.
+
+    Uses each run's own artifact manifest (no group-member merge) so on-disk
+    outputs are counted once.
+    """
+    total = 0
+    for session in sessions:
+        path = session.get("path")
+        if not path:
+            continue
+        try:
+            total += _manifest_artifact_bytes(Path(path))
+        except Exception:
+            continue
+
+    group_root = Path(GROUP_OUTPUTS_DIR)
+    if not group_root.is_dir():
+        return total
+    try:
+        group_dirs = list(group_root.iterdir())
+    except OSError:
+        return total
+    for group_dir in group_dirs:
+        if not group_dir.is_dir() or group_dir.name.startswith("."):
+            continue
+        try:
+            run_dirs = list(group_dir.iterdir())
+        except OSError:
+            continue
+        for run_dir in run_dirs:
+            if not run_dir.is_dir() or run_dir.name.startswith("."):
+                continue
+            try:
+                total += _manifest_artifact_bytes(run_dir)
+            except Exception:
+                continue
+    return total
 
 
 class StatisticsService:
@@ -133,12 +200,14 @@ class StatisticsService:
 
         Multiple analysis runs for the same transcript count once (duration,
         words, speakers, and completion use the most recent run per transcript).
+        Artifact size sums every transcript session plus group runs.
 
         Returns:
             Dictionary with aggregate statistics
         """
         sessions = cached_list_available_sessions()
         transcripts = _unique_transcripts(sessions)
+        total_artifact_bytes = _total_artifact_bytes(sessions)
 
         if not transcripts:
             return {
@@ -150,6 +219,7 @@ class StatisticsService:
                 "total_word_count": 0,
                 "total_speakers": 0,
                 "average_completion": 0,
+                "total_artifact_bytes": total_artifact_bytes,
             }
 
         total_duration = sum(s.get("duration_seconds", 0) for s in transcripts)
@@ -172,4 +242,5 @@ class StatisticsService:
                 else 0
             ),
             "recent_sessions": len([s for s in transcripts if s.get("last_updated")]),
+            "total_artifact_bytes": total_artifact_bytes,
         }

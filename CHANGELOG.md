@@ -7,12 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-24
+
 ### Added
 
+- **B14** cross-session concept drift / recurring motifs: `semantic_similarity_v2` schema `1.1.1` motif envelope (centroids, provenance, export status), hardened clustering, group centroid matching with transition `drift_score`, additive `motif_rows` + `semantic_similarity_pooled` (persisted on group runs), composite group charts ([`docs/groups/group_charts_semantic_motifs_contract.md`](docs/groups/group_charts_semantic_motifs_contract.md)).
+- **B16** `keyphrases` module (noun-chunks / YAKE / KeyBERT) with optional `[keyphrases]` extra, group aggregation, wordcloud integration, and Insights extractor.
+- LLM feedback v1 (collect-only): append-only local ratings for LLM analysis cards (`docs/contracts/llm_feedback_v1.md`).
+- Speaker profile analytics packs: interactions/equity and sentiment across linked appearances, plus shared run-artifact join helpers.
+- Topic-shift chapter title usability helpers and enrichment/keyword improvements for viewer chapters.
 - Overview / run-summary badge for named analysis presets (Quick / Balanced / Thorough); Custom runs omit the badge.
 - Extra offline coverage: voice bootstrap early paths, `llm_custom_qa` analyze_v2 helpers, locations-pack path fallbacks, geo utils.
 - Voice enrol **Max confirmed links** operator setting (Settings → Storage → Local voice matching), stored in `operator.voice_settings.json` (default 40; survives privacy revoke).
 
+### Fixed
+
+- `llm_action_items` no longer drops otherwise-valid meeting extracts when local models omit `confidence`, add extra keys, use field/type aliases, or join quote spans with ellipses (mistral:latest canal-walk failure mode). Prompt v7; empty-extract runs also write a `.raw.txt` debug dump.
+
+### Changed
+
+- Speakers UI / accent / navigation polish; Docker Compose and image path hygiene for local runs.
 
 ## [0.7.5] - 2026-07-24
 

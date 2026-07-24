@@ -9,10 +9,19 @@ from typing import Any
 import streamlit as st
 
 from transcriptx.core.analysis.llm_custom_qa.readers import (
+    find_committed_custom_qa_artifact,
     load_committed_custom_qa_payload,
 )
+from transcriptx.core.llm_feedback.models import (
+    FeedbackProvenance,
+    FeedbackSurface,
+    FeedbackTarget,
+)
 from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.llm_presentation import feedback_subject_type
 from transcriptx.web.blocks.placement import BlockPlacement
+from transcriptx.web.components.llm_feedback import render_llm_feedback_controls
+from transcriptx.web.services.llm_feedback_service import get_llm_feedback_service
 
 
 def _escape(value: Any) -> str:
@@ -42,12 +51,32 @@ def _valid_segment_indexes(segs: Any) -> list[int]:
     return out
 
 
+def _artifact_rel_for_run(run_root: Path) -> str | None:
+    path = find_committed_custom_qa_artifact(run_root)
+    if path is None:
+        return None
+    try:
+        return path.resolve().relative_to(Path(run_root).resolve()).as_posix()
+    except ValueError:
+        # Alias may live under run_root already as relative-looking path
+        try:
+            return Path(path).relative_to(run_root).as_posix()
+        except ValueError:
+            name = path.name
+            return f"llm_custom_qa/{name}" if name else None
+
+
 def _render_answer_card(
     row: dict[str, Any],
     *,
     key_prefix: str,
     allow_jump: bool = True,
     show_evidence: bool = True,
+    ctx: BlockContext | None = None,
+    placement: BlockPlacement | None = None,
+    artifact_rel_path: str | None = None,
+    questions_hash: str | None = None,
+    provenance: dict[str, Any] | None = None,
 ) -> None:
     q = _csv_safe(str(row.get("question") or ""))
     status = str(row.get("status") or "")
@@ -55,11 +84,54 @@ def _render_answer_card(
         f"**Q{row.get('question_index', '?')}:** {_escape(q)}",
         unsafe_allow_html=True,
     )
-    if status and status != "answered":
+    if status == "unavailable":
+        reason = row.get("system_reason")
+        label = f"{status} ({reason})" if reason else status
+        st.markdown(
+            f'Status: <span style="color:#c62828">{_escape(label)}</span>',
+            unsafe_allow_html=True,
+        )
+    elif status and status != "answered":
         st.caption(f"Status: `{_escape(status)}`")
     if status == "answered":
         answer = _csv_safe(str(row.get("answer") or ""))
         st.markdown(_escape(answer), unsafe_allow_html=True)
+        question_id = str(row.get("question_id") or "").strip()
+        qhash = str(
+            questions_hash
+            or (provenance or {}).get("questions_hash")
+            or ""
+        ).strip()
+        if (
+            ctx is not None
+            and placement is not None
+            and artifact_rel_path
+            and question_id
+            and qhash
+            and answer.strip()
+            and ctx.run_id
+            and ctx.subject_id
+        ):
+            target = FeedbackTarget(
+                surface=FeedbackSurface.CUSTOM_QA_ANSWER.value,
+                block_id=placement.block_id,
+                placement_id=placement.placement_id,
+                module="llm_custom_qa",
+                run_id=str(ctx.run_id),
+                subject_type=feedback_subject_type(ctx),
+                subject_id=str(ctx.subject_id),
+                artifact_rel_path=artifact_rel_path,
+                question_id=question_id,
+                questions_hash=qhash.lower(),
+                logical_chart_id=None,
+            )
+            render_llm_feedback_controls(
+                store=get_llm_feedback_service(),
+                target=target,
+                output_text=answer,
+                provenance=FeedbackProvenance.from_artifact_provenance(provenance),
+                widget_key=f"fb_qa_{key_prefix}_{question_id}",
+            )
         if show_evidence:
             reasoning = row.get("reasoning")
             if reasoning:
@@ -99,8 +171,6 @@ def _render_answer_card(
                         st.caption("Jump blocked: invalid segment_indexes")
     elif status == "abstained":
         st.info(f"Abstained: `{_escape(row.get('abstain_reason'))}`")
-    elif status == "unavailable":
-        st.warning(f"Unavailable: `{_escape(row.get('system_reason'))}`")
     st.divider()
 
 
@@ -162,7 +232,17 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
                 elif member_runs and run_rel and not run_ok:
                     st.warning("Citation jump blocked: member run ownership mismatch")
                 _render_answer_card(
-                    row, key_prefix=f"group_qa_{i}", allow_jump=allow_jump
+                    row,
+                    key_prefix=f"group_qa_{i}",
+                    allow_jump=allow_jump,
+                    ctx=ctx,
+                    placement=placement,
+                    artifact_rel_path=str(row.get("source_artifact_relpath") or "")
+                    or None,
+                    questions_hash=str(row.get("questions_hash") or "") or None,
+                    provenance=row.get("provenance")
+                    if isinstance(row.get("provenance"), dict)
+                    else None,
                 )
         else:
             st.info(
@@ -183,6 +263,19 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
     if not answers:
         st.write("No questions for this run.")
         return
+    artifact_rel = _artifact_rel_for_run(Path(run_root))
+    qhash = str(payload.get("questions_hash") or "").strip() or None
+    prov = payload.get("provenance") if isinstance(payload.get("provenance"), dict) else None
+    if not qhash and isinstance(prov, dict):
+        qhash = str(prov.get("questions_hash") or "").strip() or None
     for i, row in enumerate(answers):
         if isinstance(row, dict):
-            _render_answer_card(row, key_prefix=f"qa_{i}")
+            _render_answer_card(
+                row,
+                key_prefix=f"qa_{i}",
+                ctx=ctx,
+                placement=placement,
+                artifact_rel_path=artifact_rel,
+                questions_hash=qhash,
+                provenance=prov,
+            )

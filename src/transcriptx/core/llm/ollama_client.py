@@ -8,7 +8,7 @@ import socket
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 from urllib.parse import urlparse
 from dataclasses import dataclass
 
@@ -65,20 +65,17 @@ def resolve_ollama_base_url(base_url: str) -> str:
     return url.replace("host.docker.internal", "127.0.0.1", 1)
 
 
-def parse_ollama_tags_payload(payload: Any) -> list[str]:
-    """Extract model ``name`` tags from an Ollama ``/api/tags`` JSON payload."""
-    models = payload.get("models") if isinstance(payload, dict) else None
-    if not isinstance(models, list):
-        return []
-    names: list[str] = []
-    seen: set[str] = set()
-    for row in models:
-        if isinstance(row, dict) and isinstance(row.get("name"), str):
-            name = row["name"].strip()
-            if name and name not in seen:
-                seen.add(name)
-                names.append(name)
-    return names
+@dataclass(frozen=True)
+class OllamaModelInfo:
+    """Installed-model metadata from Ollama ``/api/tags`` (and optional ``/api/show``)."""
+
+    name: str
+    size_bytes: int | None = None
+    modified_at: str | None = None
+    family: str | None = None
+    parameter_size: str | None = None
+    quantization_level: str | None = None
+    context_length: int | None = None
 
 
 @dataclass(frozen=True)
@@ -87,10 +84,97 @@ class OllamaModelListResult:
 
     models: tuple[str, ...]
     error: str | None = None
+    infos: tuple[OllamaModelInfo, ...] = ()
 
     @property
     def ok(self) -> bool:
         return self.error is None
+
+
+def _optional_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if text.isdigit():
+            return int(text)
+    return None
+
+
+def _optional_str(value: Any) -> str | None:
+    if isinstance(value, str):
+        text = value.strip()
+        return text or None
+    return None
+
+
+def parse_ollama_tags_models(payload: Any) -> list[OllamaModelInfo]:
+    """Parse rich model rows from an Ollama ``/api/tags`` JSON payload."""
+    models = payload.get("models") if isinstance(payload, dict) else None
+    if not isinstance(models, list):
+        return []
+    rows: list[OllamaModelInfo] = []
+    seen: set[str] = set()
+    for row in models:
+        if not isinstance(row, dict):
+            continue
+        name = _optional_str(row.get("name"))
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        details = row.get("details") if isinstance(row.get("details"), dict) else {}
+        context = _optional_int(details.get("context_length"))
+        rows.append(
+            OllamaModelInfo(
+                name=name,
+                size_bytes=_optional_int(row.get("size")),
+                modified_at=_optional_str(row.get("modified_at")),
+                family=_optional_str(details.get("family")),
+                parameter_size=_optional_str(details.get("parameter_size")),
+                quantization_level=_optional_str(details.get("quantization_level")),
+                context_length=context,
+            )
+        )
+    return rows
+
+
+def parse_ollama_tags_payload(payload: Any) -> list[str]:
+    """Extract model ``name`` tags from an Ollama ``/api/tags`` JSON payload."""
+    return [row.name for row in parse_ollama_tags_models(payload)]
+
+
+def context_length_from_show_payload(payload: Any) -> int | None:
+    """Extract context length from an Ollama ``/api/show`` JSON payload."""
+    if not isinstance(payload, dict):
+        return None
+    details = payload.get("details")
+    if isinstance(details, dict):
+        from_details = _optional_int(details.get("context_length"))
+        if from_details is not None:
+            return from_details
+    model_info = payload.get("model_info")
+    if not isinstance(model_info, dict):
+        return None
+    # Prefer architecture-specific keys (e.g. ``gemma3.context_length``).
+    candidates: list[tuple[str, int]] = []
+    for key, value in model_info.items():
+        if not isinstance(key, str) or not key.endswith(".context_length"):
+            continue
+        parsed = _optional_int(value)
+        if parsed is not None:
+            candidates.append((key, parsed))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (0 if item[0].startswith("general.") else 1, item[0]))
+    # Prefer non-general architecture keys when present.
+    for key, value in candidates:
+        if not key.startswith("general."):
+            return value
+    return candidates[0][1]
 
 
 def list_installed_ollama_models(
@@ -98,7 +182,7 @@ def list_installed_ollama_models(
     *,
     timeout: float = 5.0,
 ) -> OllamaModelListResult:
-    """List installed Ollama model tags. Never raises — returns empty + error."""
+    """List installed Ollama model tags + metadata. Never raises — empty + error."""
     url = resolve_ollama_base_url(base_url or DEFAULT_OLLAMA_BASE_URL)
     tags_url = f"{url}/api/tags"
     try:
@@ -106,12 +190,76 @@ def list_installed_ollama_models(
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8")
         data = json.loads(raw)
-        return OllamaModelListResult(models=tuple(parse_ollama_tags_payload(data)))
+        infos = tuple(parse_ollama_tags_models(data))
+        return OllamaModelListResult(
+            models=tuple(info.name for info in infos),
+            infos=infos,
+        )
     except Exception as exc:  # noqa: BLE001 — UI must not crash on probe failure
         return OllamaModelListResult(
             models=(),
+            infos=(),
             error=f"Ollama tags probe failed for {tags_url}: {exc}",
         )
+
+
+def show_ollama_model(
+    model: str,
+    base_url: str | None = None,
+    *,
+    timeout: float = 5.0,
+) -> dict[str, Any] | None:
+    """POST ``/api/show`` for one installed tag. Returns ``None`` on any failure."""
+    tag = (model or "").strip()
+    if not tag:
+        return None
+    url = resolve_ollama_base_url(base_url or DEFAULT_OLLAMA_BASE_URL)
+    show_url = f"{url}/api/show"
+    try:
+        body = json.dumps({"model": tag}).encode("utf-8")
+        req = urllib.request.Request(
+            show_url,
+            data=body,
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else None
+    except Exception:  # noqa: BLE001 — optional enrichment must not raise
+        return None
+
+
+def enrich_model_infos_with_context(
+    infos: Sequence[OllamaModelInfo],
+    base_url: str | None = None,
+    *,
+    timeout: float = 5.0,
+) -> tuple[OllamaModelInfo, ...]:
+    """Fill missing ``context_length`` via ``/api/show`` (one call per gap)."""
+    enriched: list[OllamaModelInfo] = []
+    for info in infos:
+        if info.context_length is not None:
+            enriched.append(info)
+            continue
+        payload = show_ollama_model(info.name, base_url, timeout=timeout)
+        ctx = context_length_from_show_payload(payload)
+        if ctx is None:
+            enriched.append(info)
+            continue
+        enriched.append(
+            OllamaModelInfo(
+                name=info.name,
+                size_bytes=info.size_bytes,
+                modified_at=info.modified_at,
+                family=info.family,
+                parameter_size=info.parameter_size,
+                quantization_level=info.quantization_level,
+                context_length=ctx,
+            )
+        )
+    return tuple(enriched)
 
 
 def build_ollama_client(

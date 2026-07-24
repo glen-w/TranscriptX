@@ -7,7 +7,10 @@ from pathlib import Path
 
 import streamlit as st
 
-from transcriptx.utils.text_utils import format_duration_display_from_config
+from transcriptx.utils.text_utils import (
+    format_bytes_display,
+    format_duration_display_from_config,
+)
 from transcriptx.core.analysis.llm_support.text_cleanup import (
     strip_llm_summary_preface,
 )
@@ -17,10 +20,14 @@ from transcriptx.web.blocks.group_content import (
     load_group_content_rows,
     load_group_speaker_rows,
 )
+from transcriptx.core.llm_feedback.models import FeedbackSurface
 from transcriptx.web.blocks.llm_presentation import (
+    cleaned_llm_output_text,
     provenance_badges,
     render_badge_row,
+    render_badge_row_with_feedback,
     render_markdown_without_heading_or_provenance,
+    resolve_artifact_rel_path,
     strip_commitments_section,
     strip_leading_markdown_heading,
     strip_provenance_footer,
@@ -134,10 +141,45 @@ def render_transcript_summary_hero(
         render_global_custom_qa_under_summary(ctx.run_root)
         return
     st.markdown("# Transcript Summary")
-    render_badge_row(
-        _summary_hero_badges(result.primary, run_results=ctx.run_results)
-    )
-    _render_summary_body(result.primary, strip_heading=True, strip_provenance=True)
+    primary = result.primary
+    rated = ""
+    if primary.markdown:
+        rated = cleaned_llm_output_text(primary.markdown)
+    elif primary.payload and primary.payload.get(primary.text_field):
+        rated = str(primary.payload[primary.text_field])
+    loader = _loader(ctx)
+    module = str(getattr(primary, "module", None) or primary.kind or "llm_summary")
+    stem = {
+        "llm_summary": "_llm_summary",
+        "narrative_summary": "_narrative_summary",
+    }.get(str(primary.kind), "_llm_summary")
+    rel = None
+    if loader is not None and primary.kind in {"llm_summary", "narrative_summary"}:
+        rel = resolve_artifact_rel_path(
+            loader, module, f"{stem}.md"
+        ) or resolve_artifact_rel_path(
+            loader, module, f"{stem}.json", kind="data_json"
+        )
+    if primary.kind in {"llm_summary", "narrative_summary"} and rated and rel:
+        render_badge_row_with_feedback(
+            _summary_hero_badges(primary, run_results=ctx.run_results),
+            ctx=ctx,
+            surface=FeedbackSurface.OVERVIEW_HERO,
+            block_id=_placement.block_id if _placement.block_id else "transcript_summary_hero",
+            module=module,
+            artifact_rel_path=rel,
+            output_text=rated,
+            provenance=(primary.payload or {}).get("provenance")
+            if primary.payload
+            else None,
+            placement_id=_placement.placement_id,
+            widget_key=f"fb_hero_{_placement.placement_id}",
+        )
+    else:
+        render_badge_row(
+            _summary_hero_badges(primary, run_results=ctx.run_results)
+        )
+    _render_summary_body(primary, strip_heading=True, strip_provenance=True)
     from transcriptx.web.blocks.implementations.custom_qa_presentation import (
         render_global_custom_qa_under_summary,
     )
@@ -229,6 +271,7 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
     modules = {a.module for a in artifacts if a.module}
     chart_count = sum(1 for a in artifacts if (a.kind or "").startswith("chart"))
     data_count = sum(1 for a in artifacts if (a.kind or "").startswith("data"))
+    disk_bytes = sum(int(a.bytes or 0) for a in artifacts)
 
     overview_payload = _load_run_overview_payload(ctx)
     duration_sec = _duration_seconds_from_overview(overview_payload)
@@ -263,7 +306,7 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
         run_results=ctx.run_results,
     )
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
         st.metric("Duration", duration_label)
     with c2:
@@ -274,6 +317,8 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
         st.metric("Charts", str(chart_count))
     with c5:
         st.metric("Data files", str(data_count))
+    with c6:
+        st.metric("Size on disk", format_bytes_display(disk_bytes))
     st.caption(f"Run status: {status.user_facing_label}")
 
 
@@ -366,60 +411,29 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
         return
 
     cols = st.columns(min(3, len(ranked)))
-    accent_ctx = None
-    try:
-        from transcriptx.core.speaker_profiles.layout import (
-            links_dir,
-            profiles_dir,
-            speaker_profiles_dir,
-        )
-        from transcriptx.core.speaker_profiles.models import (
-            SpeakerProfileLinkV1,
-            SpeakerProfileV1,
-        )
-        from transcriptx.core.speaker_profiles.store_io import parse_model
-        from transcriptx.web.speaker_accent import (
-            build_accent_context_from_profiles,
-            resolve_speaker_accent,
-        )
+    from transcriptx.web.speaker_accent import (
+        load_accent_resolve_context,
+        resolve_speaker_accent,
+    )
 
-        root = speaker_profiles_dir()
-        pref = profiles_dir(root)
-        profiles = []
-        if pref.is_dir():
-            for path in pref.glob("*.speaker_profile.json"):
-                try:
-                    profiles.append(parse_model(SpeakerProfileV1, path))
-                except Exception:
-                    continue
-        link_items = []
-        lref = links_dir(root)
-        if lref.is_dir():
-            for path in lref.glob("*.speaker_link.json"):
-                try:
-                    link_items.append(parse_model(SpeakerProfileLinkV1, path))
-                except Exception:
-                    continue
-        accent_ctx = build_accent_context_from_profiles(profiles, links=link_items)
-    except Exception:
-        accent_ctx = None
+    accent_ctx = load_accent_resolve_context()
 
     for i, entry in enumerate(ranked[:6]):
         name = str(entry.get("name") or "Speaker")
+        resolve_name = name if name.strip() else i
         if accent_ctx is not None:
-            from transcriptx.web.speaker_accent import resolve_speaker_accent
-
-            accent = resolve_speaker_accent(
-                name if name.strip() else i, context=accent_ctx
-            )
+            accent = resolve_speaker_accent(resolve_name, context=accent_ctx)
         else:
-            accent = _speaker_accent_color(name if name.strip() else i)
+            accent = _speaker_accent_color(resolve_name)
         fourth_label, fourth_value = _speaker_fourth_stat(entry)
         with cols[i % len(cols)]:
             with st.container(border=True):
                 st.markdown(
                     speaker_heading_html(
-                        name, accent=accent, css_class="tx-speaker-card-title"
+                        name,
+                        accent=accent,
+                        css_class="tx-speaker-card-title",
+                        context=accent_ctx,
                     ),
                     unsafe_allow_html=True,
                 )
@@ -486,8 +500,31 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         return
     payload = loader.load_json("llm_action_items", "_llm_action_items.json")
     md = loader.load_text("llm_action_items", "_llm_action_items.md")
-    render_badge_row(
-        provenance_badges((payload or {}).get("provenance") if payload else None)
+    rated = cleaned_llm_output_text(md) if md else ""
+    if not rated and isinstance(payload, dict):
+        items = payload.get("items") or []
+        if isinstance(items, list):
+            rated = "\n".join(
+                str(it.get("text") or "")
+                for it in items
+                if isinstance(it, dict) and it.get("text")
+            )
+    rel = resolve_artifact_rel_path(
+        loader, "llm_action_items", "_llm_action_items.md"
+    ) or resolve_artifact_rel_path(
+        loader, "llm_action_items", "_llm_action_items.json", kind="data_json"
+    )
+    render_badge_row_with_feedback(
+        provenance_badges((payload or {}).get("provenance") if payload else None),
+        ctx=ctx,
+        surface=FeedbackSurface.INSIGHTS_BLOCK,
+        block_id=_placement.block_id or "action_items_compact",
+        module="llm_action_items",
+        artifact_rel_path=rel,
+        output_text=rated,
+        provenance=(payload or {}).get("provenance") if payload else None,
+        placement_id=_placement.placement_id,
+        widget_key=f"fb_ai_ov_{_placement.placement_id}",
     )
     diagnostics = (
         (payload or {}).get("diagnostics") if isinstance(payload, dict) else None

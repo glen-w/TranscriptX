@@ -434,3 +434,61 @@ def navigate_highlight_to_transcript(
         timecode=start_time,
     )
     navigate_to_segment(segment_ref, highlight_query=highlight_query)
+
+
+def navigate_to_speaker_profile(profile_id: str) -> None:
+    """Open Speakers with a specific longitudinal profile preselected."""
+    import streamlit as st
+
+    from transcriptx.web.state import PAGE_KEY
+
+    pid = str(profile_id or "").strip()
+    if not pid:
+        return
+    st.session_state[PAGE_KEY] = "Speakers"
+    st.session_state["speakers_selected_profile"] = pid
+    st.rerun()
+
+
+def navigate_to_transcript_from_path(transcript_path: str | Path) -> bool:
+    """Open Transcript for a filesystem path when a run can be resolved.
+
+    The Transcript page requires ``transcript_or_group`` readiness (subject +
+    ``run_id``). Navigating with only a path/slug causes the router to fall back
+    to Home. Prefer the cheap index lookup first; only list sessions when a run
+    is still missing (including the index-has-slug-but-empty-runs case where
+    ``session_resolver`` is not consulted by ``resolve_transcript_context``).
+
+    Returns False when no run can be bound (caller should show an error).
+    On success sets page context and calls ``st.rerun()`` (does not return).
+    """
+    import streamlit as st
+
+    from transcriptx.web.state import PAGE_KEY, apply_subject_context
+
+    SubjectService.set_transcript_context_from_path(st.session_state, transcript_path)
+    if not st.session_state.get("run_id"):
+        session_resolver = make_session_path_resolver()
+        SubjectService.set_transcript_context_from_path(
+            st.session_state,
+            transcript_path,
+            session_resolver=session_resolver,
+        )
+        if not st.session_state.get("run_id"):
+            hit = session_resolver(tolerant_resolve(transcript_path))
+            if hit is None:
+                return False
+            slug, run_id = hit
+            if not run_id:
+                return False
+            apply_subject_context(
+                st.session_state,
+                subject_type="transcript",
+                subject_id=slug,
+                run_id=run_id,
+            )
+    if not st.session_state.get("run_id"):
+        return False
+    st.session_state[PAGE_KEY] = "Transcript"
+    st.rerun()
+    return True

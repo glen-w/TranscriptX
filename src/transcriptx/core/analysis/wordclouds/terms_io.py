@@ -15,7 +15,7 @@ def _build_terms_payload(
     variant: str,
     variant_key: str,
     speaker: str | None,
-    ngram: int,
+    ngram: int | None,
     metric: str,
     min_count: int | None = None,
     min_bigram_count: int | None = None,

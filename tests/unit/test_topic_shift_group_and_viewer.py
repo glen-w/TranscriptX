@@ -197,7 +197,7 @@ def test_chapter_titles_prefer_llm_enrichment(tmp_path: Path) -> None:
                 "span_id": "s1",
                 "index": 0,
                 "label": "Segment 1 · 00:00–01:00",
-                "keyword_hints": ["budget"],
+                "keyword_hints": ["budget", "forecast"],
                 "time_start": 0.0,
                 "time_end": 60.0,
                 "viewer_target_source_index": 0,
@@ -238,6 +238,87 @@ def test_chapter_titles_prefer_llm_enrichment(tmp_path: Path) -> None:
     rows = load_chapter_rows(run_root)
     assert rows[0].title == "Q3 budget review"
     assert rows[0].summary == "Discussed forecast."
+    assert rows[0].keywords == ("Budget", "Forecast")
+
+
+def test_chapter_rejects_segment_echo_title_and_keeps_keywords(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "run"
+    data = run_root / "topic_shift" / "data" / "global"
+    data.mkdir(parents=True)
+    spans = {
+        "analytical_status": "success",
+        "coverage_spans": [
+            {
+                "span_id": "s1",
+                "index": 0,
+                "label": "Segment 1 · 00:00–01:00",
+                "keyword_hints": ["policies", "supervision"],
+                "time_start": 0.0,
+                "time_end": 60.0,
+                "viewer_target_source_index": 0,
+            }
+        ],
+    }
+    (data / "topic_shift.spans.json").write_text(json.dumps(spans), encoding="utf-8")
+    enrich = {
+        "ui_mode": "chapter_titles",
+        "outcome": "success",
+        "entries": [
+            {
+                "span_id": "s1",
+                "title": "Segment 1 · 00:00–01:00",
+                "summary": "Talked through policy options.",
+            }
+        ],
+    }
+    (data / "topic_shift.enrichment.json").write_text(
+        json.dumps(enrich), encoding="utf-8"
+    )
+    (run_root / "run_results.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "run_id": "r1",
+                "transcript_key": "sess",
+                "modules_enabled": ["topic_shift"],
+                "modules_run": ["topic_shift"],
+                "modules_failed": [],
+                "modules_skipped": [],
+                "errors": [],
+                "module_outcomes": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = load_chapter_rows(run_root)
+    assert rows[0].title == "Policies · Supervision"
+    assert rows[0].summary == "Talked through policy options."
+    assert rows[0].keywords == ("Policies", "Supervision")
+
+
+def test_keyword_hints_drop_discourse_fillers() -> None:
+    from transcriptx.core.analysis.topic_shift.keywords import keyword_hints_for_segments
+    from transcriptx.core.analysis.topic_shift.segments import CanonicalTopicSegment
+
+    segs = [
+        CanonicalTopicSegment(
+            source_index=0,
+            canonical_position=0,
+            start=0.0,
+            end=1.0,
+            raw_text="I think it's because we don't know the policies around supervision",
+            lexical_text="think policies around supervision",
+        )
+    ]
+    hints = keyword_hints_for_segments(segs, max_hints=6)
+    assert "policies" in hints
+    assert "supervision" in hints
+    assert "think" not in hints
+    assert "it's" not in hints
+    assert "because" not in hints
+    assert "don't" not in hints
 
 
 def test_moments_point_event_seeds_segment_refs() -> None:

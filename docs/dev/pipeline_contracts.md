@@ -77,7 +77,9 @@ Cleanup must execute via `try/finally` for:
 ## Semantic similarity v2
 
 - Module id: `semantic_similarity_v2`. Outputs use `*_semantic_similarity_v2_*.json` with
-  top-level `schema_version: semantic_similarity_v2.1`.
+  top-level `schema_version: semantic_similarity_v2.1.1` (major still `1` under
+  `parse_schema_major`). Motif envelope fields: `motifs`, `motif_export_status`,
+  `provenance`, `eligible_segment_count`, `comparability` (TF-IDF incomparable).
 - Presets: `analysis.active_semantic_similarity_v2_profile` selects
   `analysis.semantic_similarity_v2_profiles` (`fast_v2`, `balanced_v2`, `deep_v2`).
   Runtime merge: dataclass defaults → preset dict → per-field user overrides (values that

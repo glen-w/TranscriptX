@@ -106,8 +106,11 @@ def test_empty_extracts_user_warning_explains_invalid_drops() -> None:
     assert warn is not None
     assert "1 raw record" in warn
     assert "schema validation" in warn.lower()
-    assert ACTION_ITEMS_RETRY_GUIDANCE in warn
-    assert "llama3.2:3b" in warn
+    assert "same settings will usually fail" in warn.lower()
+    assert "JSON-capable model" in warn
+    # Schema-only drops should not push the truncation/effort remediation.
+    assert "effort to max" not in warn
+    assert "llama3.2:3b" not in warn
 
 
 @pytest.mark.unit

@@ -149,7 +149,7 @@ volumes:
 
 | Host variable | Container path | App env (`TRANSCRIPTX_*`) | Notes |
 |---------------|----------------|---------------------------|-------|
-| (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, config copies, HF/Numba caches |
+| (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, config copies, HF caches. Numba/librosa cache is `NUMBA_CACHE_DIR=/tmp/numba_cache` (not under `/data`) so Docker Desktop virtiofs does not break Numba's cache-dir writability probe. |
 | `HOST_TRANSCRIPTS_DIR` (default `./data/transcripts`) | `/mnt/transcripts` | `TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts` | **Read-only** in base compose |
 | `HOST_TRANSCRIPT_INBOX_DIR` (default `./data/transcript-inbox`) | `/mnt/transcript-inbox` | (scan path only) | External inbox for **Import all from folder**; not under managed transcripts |
 | `HOST_OUTPUT_DIR` (default `./data/outputs`) | `/mnt/outputs` | `TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs` | Analysis run outputs |
@@ -176,7 +176,7 @@ Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/
 | `TRANSCRIPTX_IMPORTS_DIR` | `/mnt/recordings/imports` (compose) | Writable upload staging |
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` | `/mnt/transcripts` (compose) | Transcript JSON files |
 | `TRANSCRIPTX_OUTPUT_DIR` | `/mnt/outputs` (compose) | Analysis outputs |
-| `TRANSCRIPTX_SPEAKER_PROFILES_DIR` | `$TRANSCRIPTX_DATA_DIR/speaker_profiles` | Longitudinal speaker profiles (PII); optional override to keep names outside the clone |
+| `TRANSCRIPTX_SPEAKER_PROFILES_DIR` | `$TRANSCRIPTX_DATA_DIR/speaker_profiles` | Longitudinal speaker profiles (PII) including enrolled voice under `voice/`; lives on the `./data` bind mount so `docker compose build` / recreate keep it. Wiped only by Settings → Speakers revoke or per-profile Delete voice evidence. Optional override to keep names outside the clone |
 | `TRANSCRIPTX_WAV_BACKUP_DIR` | `/mnt/wav` (compose) | WAV archive |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | `0` | Enable model/resource downloads (`1` disables) |
 | `TRANSCRIPTX_HOST` | `0.0.0.0` | Streamlit bind host |

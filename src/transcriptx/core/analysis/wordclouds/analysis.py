@@ -90,15 +90,18 @@ class WordcloudsAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "wordclouds"
         self._eligibility_result: Dict[str, Any] | None = None
+        self._keyphrases_result: Dict[str, Any] | None = None
 
     def run_from_context(self, context):
         self._eligibility_result = (
             context.get_analysis_result("insight_eligibility") or {}
         )
+        self._keyphrases_result = context.get_analysis_result("keyphrases")
         try:
             return super().run_from_context(context)
         finally:
             self._eligibility_result = None
+            self._keyphrases_result = None
 
     def analyze(
         self,
@@ -152,12 +155,17 @@ class WordcloudsAnalysis(AnalysisModule):
                     detected.update(str(term).lower() for term in counts)
             tic_list = sorted(build_tic_mask(detected))
 
+        keyphrases_payload = self._keyphrases_result
+        if keyphrases_payload is not None and not isinstance(keyphrases_payload, dict):
+            keyphrases_payload = None
+
         return {
             "grouped_texts": dict(grouped),
             "tic_list": tic_list,
             "eligibility_fallback": not (
                 isinstance(filtered_segments, list) and len(filtered_segments) > 0
             ),
+            "keyphrases_payload": keyphrases_payload,
         }
 
     def _save_results(
@@ -177,12 +185,23 @@ class WordcloudsAnalysis(AnalysisModule):
         # This is a bridge approach - full refactoring would extract each wordcloud type
         # For now, we'll delegate to the existing function
         transcript_path = output_service.transcript_path
-        run_all_wordclouds(
+        outcome = run_all_wordclouds(
             transcript_path,
             tic_list,
             transcript_dir=output_structure.transcript_dir,
             grouped_texts=results.get("grouped_texts"),
+            keyphrases_payload=results.get("keyphrases_payload"),
         )
+        if isinstance(outcome, dict) and outcome.get("skipped_variants"):
+            results["skipped_variants"] = outcome["skipped_variants"]
+            try:
+                output_service.save_data(
+                    {"skipped_variants": outcome["skipped_variants"]},
+                    "wordclouds_skipped_variants",
+                    format_type="json",
+                )
+            except Exception:
+                pass
 
 
 def group_texts_by_speaker(segments: list) -> dict:
@@ -246,11 +265,16 @@ def run_all_wordclouds(
     tic_list: list[str],
     transcript_dir: str | None = None,
     grouped_texts: Dict[str, List[str]] | None = None,
-) -> None:
+    keyphrases_payload: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
     from transcriptx.core.utils._path_core import get_base_name, get_transcript_dir
     from transcriptx.core.utils.logger import get_logger
+    from transcriptx.core.analysis.wordclouds.keyphrase_clouds import (
+        emit_keyphrase_wordclouds,
+    )
 
     logger = get_logger()
+    skipped_variants: list[dict[str, Any]] = []
 
     base_name = get_base_name(transcript_path)
     # Use provided transcript_dir if available, otherwise use standardized path
@@ -285,7 +309,7 @@ def run_all_wordclouds(
                 technical=True,
                 section="wordclouds",
             )
-            return
+            return {"skipped_variants": skipped_variants}
 
         grouped = group_texts_by_speaker(segments)
         logger.info(
@@ -301,7 +325,7 @@ def run_all_wordclouds(
             technical=True,
             section="wordclouds",
         )
-        return
+        return {"skipped_variants": skipped_variants}
 
     # Basic
     try:
@@ -547,6 +571,28 @@ def run_all_wordclouds(
             )
 
     logger.info(f"[WORDCLOUDS] Completed wordcloud generation for {base_name}")
+
+    try:
+        skipped_variants.extend(
+            emit_keyphrase_wordclouds(
+                keyphrases_payload,
+                output_structure=output_structure,
+                base_name=base_name,
+            )
+        )
+    except Exception as e:
+        logger.error(
+            f"[WORDCLOUDS] Keyphrase cloud emission failed (non-fatal): {e}",
+            exc_info=True,
+        )
+        skipped_variants.append(
+            {
+                "variant_key": "keyphrase_*",
+                "reason": f"emitter_failure:{type(e).__name__}",
+            }
+        )
+
+    return {"skipped_variants": skipped_variants}
 
 
 def generate_wordclouds(

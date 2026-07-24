@@ -38,6 +38,7 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "pauses",
         "transcript_quality",
         "epistemic_markers",
+        "keyphrases",
         "politeness",
         "topic_shift",
         "voice",

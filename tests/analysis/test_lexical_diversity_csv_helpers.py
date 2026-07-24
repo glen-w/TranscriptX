@@ -100,3 +100,29 @@ def test_plot_lexical_diversity_charts_skips_empty_and_null_metrics() -> None:
     assert "lexical-ttr" in out.charts
     assert "lexical-mtld" in out.charts
     assert "lexical-hapax-rate" in out.charts
+
+
+@pytest.mark.unit
+def test_plot_lexical_diversity_charts_excludes_unnamed_speakers() -> None:
+    class _Out:
+        def __init__(self) -> None:
+            self.specs: list = []
+
+        def save_chart(self, spec, **_kwargs):
+            self.specs.append(spec)
+
+    out = _Out()
+    ld._plot_lexical_diversity_charts(
+        {
+            "speaker_stats": {
+                "Ana": {"ttr": 0.5, "mtld": 10.0, "hapax_rate": 0.53},
+                "Glen": {"ttr": 0.48, "mtld": 9.0, "hapax_rate": 0.52},
+                "SPEAKER_03": {"ttr": 0.9, "mtld": 2.0, "hapax_rate": 0.8},
+            }
+        },
+        out,
+    )
+    assert out.specs
+    for spec in out.specs:
+        assert "SPEAKER_03" not in spec.categories
+        assert set(spec.categories) <= {"Ana", "Glen"}

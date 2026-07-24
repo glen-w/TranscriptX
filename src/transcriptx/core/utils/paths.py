@@ -183,6 +183,13 @@ def ensure_data_dirs() -> None:
         PATHS.speaker_profiles_dir / "links",
         PATHS.speaker_profiles_dir / "events",
         PATHS.speaker_profiles_dir / "operations",
+        # Canonical voice evidence (not disposable .cache/voice); mkdir only —
+        # enrolment / privacy still gate writes.
+        PATHS.speaker_profiles_dir / "voice",
+        PATHS.speaker_profiles_dir / "voice" / "samples",
+        PATHS.speaker_profiles_dir / "voice" / "embeddings",
+        PATHS.speaker_profiles_dir / "voice" / "vectors",
+        PATHS.speaker_profiles_dir / "voice" / "generations",
     ]
     for d in dirs:
         try:

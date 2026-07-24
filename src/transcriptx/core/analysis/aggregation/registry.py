@@ -32,6 +32,7 @@ from transcriptx.core.analysis.topic_shift.aggregation import aggregate_topic_sh
 from transcriptx.core.analysis.epistemic_markers.aggregation import (
     aggregate_epistemic_markers,
 )
+from transcriptx.core.analysis.keyphrases.aggregation import aggregate_keyphrases
 from transcriptx.core.analysis.politeness.aggregation import aggregate_politeness
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
@@ -89,11 +90,23 @@ def _aggregate_wordclouds(
     from transcriptx.core.analysis.aggregation.wordclouds import (
         aggregate_wordclouds_group,
     )
+    from transcriptx.core.analysis.keyphrases.aggregation import aggregate_keyphrases
     from transcriptx.core.analysis.wordclouds.analysis import run_group_wordclouds
 
     grouped, summary = aggregate_wordclouds_group(
         per_transcript_results, canonical_speaker_map
     )
+    keyphrase_pool: list | None = None
+    try:
+        kp_agg = aggregate_keyphrases(
+            per_transcript_results, canonical_speaker_map, transcript_set
+        )
+        if isinstance(kp_agg, dict):
+            pool = kp_agg.get("keyphrase_noun_chunk_pool")
+            if isinstance(pool, list):
+                keyphrase_pool = pool
+    except Exception:
+        keyphrase_pool = None
     if summary is not None:
         summary["transcript_set_key"] = transcript_set.key
         summary["transcript_set_name"] = transcript_set.name
@@ -118,6 +131,7 @@ def _aggregate_wordclouds(
             group_uuid=transcript_set.metadata.get("group_uuid"),
             per_transcript_results=per_transcript_results,
             aggregation_summary=summary,
+            keyphrase_noun_chunk_pool=keyphrase_pool,
         )
         if summary is not None:
             p = wc_extra.get("pooled_cross_session_summary_path")
@@ -1046,6 +1060,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["epistemic_markers"]),
             deps=[],
             aggregate_fn=aggregate_epistemic_markers,
+        ),
+        AggregationEntry(
+            agg_id="keyphrases",
+            selector=any_of(["keyphrases"]),
+            deps=[],
+            aggregate_fn=aggregate_keyphrases,
         ),
         AggregationEntry(
             agg_id="politeness",

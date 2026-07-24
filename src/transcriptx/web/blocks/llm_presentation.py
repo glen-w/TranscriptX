@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import re
+from typing import Any, Mapping
 
 import streamlit as st
 
 from transcriptx.core.analysis.llm_support.text_cleanup import (
     strip_llm_summary_preface,
 )
+from transcriptx.core.llm_feedback.models import (
+    FeedbackProvenance,
+    FeedbackSurface,
+    FeedbackTarget,
+)
+from transcriptx.web.blocks.context import BlockContext
+from transcriptx.web.blocks.loader import ArtifactContentLoader
+from transcriptx.web.components.llm_feedback import render_llm_feedback_controls
+from transcriptx.web.services.llm_feedback_service import get_llm_feedback_service
 
 _LEADING_MD_HEADING = re.compile(r"^#[^\n]*\n+")
 _PROVENANCE_FOOTER = re.compile(
@@ -75,9 +85,143 @@ def render_badge_row(labels: list[str]) -> None:
         )
 
 
-def render_markdown_without_heading_or_provenance(markdown: str) -> None:
+def cleaned_llm_output_text(markdown: str) -> str:
+    """Normalize displayed LLM prose for hashing / feedback identity."""
     body = strip_provenance_footer(strip_leading_markdown_heading(markdown))
     body = strip_human_review_banner(body)
     body = strip_llm_summary_preface(body)
-    if body.strip():
+    return body.strip()
+
+
+def render_markdown_without_heading_or_provenance(markdown: str) -> None:
+    body = cleaned_llm_output_text(markdown)
+    if body:
         st.markdown(body)
+
+
+def resolve_artifact_rel_path(
+    loader: ArtifactContentLoader | None,
+    module: str,
+    suffix: str,
+    *,
+    kind: str = "data_txt",
+    instance_id: str | None = None,
+    storage_root: str | None = None,
+) -> str | None:
+    if loader is None:
+        return None
+    match = loader.find_artifact(
+        module,
+        kind=kind,
+        suffix=suffix,
+        instance_id=instance_id,
+        storage_root=storage_root,
+    )
+    if match is None and kind == "data_txt":
+        match = loader.find_artifact(
+            module,
+            kind="data_json",
+            suffix=suffix.rsplit(".", 1)[0] + ".json"
+            if suffix.endswith(".md")
+            else suffix,
+            instance_id=instance_id,
+            storage_root=storage_root,
+        )
+    if match is None:
+        return None
+    rel = str(match.rel_path or "").strip().replace("\\", "/")
+    return rel or None
+
+
+def feedback_subject_type(ctx: BlockContext) -> str:
+    raw = str(ctx.subject_type or "").strip().lower()
+    if raw == "group":
+        return "group"
+    return "transcript"
+
+
+def build_block_feedback_target(
+    ctx: BlockContext,
+    *,
+    surface: FeedbackSurface | str,
+    block_id: str,
+    module: str,
+    artifact_rel_path: str,
+    placement_id: str | None = None,
+    question_id: str | None = None,
+    questions_hash: str | None = None,
+    logical_chart_id: str | None = None,
+) -> FeedbackTarget | None:
+    run_id = str(ctx.run_id or "").strip()
+    subject_id = str(ctx.subject_id or "").strip()
+    if not run_id or not subject_id or not artifact_rel_path:
+        return None
+    return FeedbackTarget(
+        surface=surface.value if isinstance(surface, FeedbackSurface) else str(surface),
+        block_id=block_id,
+        placement_id=placement_id,
+        module=module,
+        run_id=run_id,
+        subject_type=feedback_subject_type(ctx),
+        subject_id=subject_id,
+        artifact_rel_path=artifact_rel_path,
+        question_id=question_id,
+        questions_hash=questions_hash,
+        logical_chart_id=logical_chart_id,
+    )
+
+
+def render_badge_row_with_feedback(
+    labels: list[str],
+    *,
+    ctx: BlockContext,
+    surface: FeedbackSurface | str,
+    block_id: str,
+    module: str,
+    artifact_rel_path: str | None,
+    output_text: str,
+    provenance: Mapping[str, Any] | None = None,
+    placement_id: str | None = None,
+    question_id: str | None = None,
+    questions_hash: str | None = None,
+    logical_chart_id: str | None = None,
+    widget_key: str | None = None,
+) -> None:
+    """Badge row plus quiet feedback controls when identity fields are complete."""
+    can_feedback = bool(
+        artifact_rel_path
+        and output_text
+        and str(output_text).strip()
+        and ctx.run_id
+        and ctx.subject_id
+    )
+    if not can_feedback:
+        render_badge_row(labels)
+        return
+
+    target = build_block_feedback_target(
+        ctx,
+        surface=surface,
+        block_id=block_id,
+        module=module,
+        artifact_rel_path=str(artifact_rel_path),
+        placement_id=placement_id,
+        question_id=question_id,
+        questions_hash=questions_hash,
+        logical_chart_id=logical_chart_id,
+    )
+    if target is None:
+        render_badge_row(labels)
+        return
+
+    badge_col, fb_col = st.columns([20, 2], vertical_alignment="center")
+    with badge_col:
+        render_badge_row(labels)
+    with fb_col:
+        render_llm_feedback_controls(
+            store=get_llm_feedback_service(),
+            target=target,
+            output_text=output_text,
+            provenance=FeedbackProvenance.from_artifact_provenance(provenance),
+            widget_key=widget_key,
+        )

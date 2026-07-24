@@ -15,7 +15,10 @@ from transcriptx.core.analysis.topic_shift.embed import (
     TopicShiftEmbedder,
     model_weights_locally_available,
 )
-from transcriptx.core.analysis.topic_shift.keywords import keyword_hints_for_segments
+from transcriptx.core.analysis.topic_shift.keywords import (
+    keyword_hints_for_segments,
+    text_excerpt_for_segments,
+)
 from transcriptx.core.analysis.topic_shift.language import (
     resolve_transcript_language,
     select_backend,
@@ -345,6 +348,7 @@ def run_topic_shift_analysis(
                 <= span["segment_end_idx"]
             ]
         span["keyword_hints"] = keyword_hints_for_segments(members)
+        span["text_excerpt"] = text_excerpt_for_segments(members)
 
     durations = [float(s["time_end"] - s["time_start"]) for s in spans]
     valid_duration = sum(float(s.end - s.start) for s in segs)

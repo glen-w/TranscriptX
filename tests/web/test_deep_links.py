@@ -6,7 +6,11 @@ from unittest.mock import patch
 
 import streamlit as st
 
-from transcriptx.web.navigation import navigate_to_charts, navigate_to_data_artifact
+from transcriptx.web.navigation import (
+    navigate_to_charts,
+    navigate_to_data_artifact,
+    navigate_to_speaker_profile,
+)
 
 
 @patch("streamlit.rerun")
@@ -30,4 +34,13 @@ def test_navigate_to_data_artifact_preset(mock_rerun) -> None:
     assert st.session_state["artifacts_section_control"] == "Preview"
     assert st.session_state["artifacts_section_radio"] == "Preview"
     assert st.session_state["artifacts_preview_selector"] == "art_123"
+    mock_rerun.assert_called_once()
+
+
+@patch("streamlit.rerun")
+def test_navigate_to_speaker_profile_presets_speakers_page(mock_rerun) -> None:
+    st.session_state.clear()
+    navigate_to_speaker_profile("prof_abc")
+    assert st.session_state["page"] == "Speakers"
+    assert st.session_state["speakers_selected_profile"] == "prof_abc"
     mock_rerun.assert_called_once()

@@ -37,6 +37,7 @@ _GALLERY_MODULE_DISPLAY_NAMES: dict[str, str] = {
     "insight_eligibility": "Insight eligibility",
     "lexical_diversity": "Lexical diversity",
     "epistemic_markers": "Epistemic markers",
+    "keyphrases": "Keyphrases",
     "politeness": "Politeness markers",
     "narrative_summary": "Narrative summary",
 }

@@ -24,7 +24,10 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_LEXICAL_DIVERSITY_TTR_SPEAKER,
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec
-from transcriptx.utils.text_utils import is_turn_taking_speaker_label
+from transcriptx.utils.text_utils import (
+    is_named_speaker,
+    is_turn_taking_speaker_label,
+)
 
 if TYPE_CHECKING:
     from transcriptx.core.output.output_service import OutputService
@@ -234,7 +237,13 @@ def _plot_lexical_diversity_charts(
     payload: Dict[str, Any],
     output_service: "OutputService",
 ) -> None:
-    speaker_stats = payload.get("speaker_stats") or {}
+    # Charts are named-speaker only (output-contract); JSON may still keep
+    # turn-taking labels such as SPEAKER_03 for completeness.
+    speaker_stats = {
+        speaker: stats
+        for speaker, stats in (payload.get("speaker_stats") or {}).items()
+        if is_named_speaker(str(speaker)) and isinstance(stats, dict)
+    }
     if not speaker_stats:
         return
 

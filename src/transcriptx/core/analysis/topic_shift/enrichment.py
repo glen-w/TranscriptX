@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -15,6 +17,7 @@ from transcriptx.core.analysis.topic_shift.enrichment_resolve import (
 )
 from transcriptx.core.analysis.topic_shift.schemas import validate_enrichment_payload
 from transcriptx.core.analysis.topic_shift.store import content_digest
+from transcriptx.core.analysis.topic_shift.titles import is_usable_chapter_title
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.io import save_json
@@ -22,7 +25,7 @@ from transcriptx.io import save_json
 logger = get_logger()
 
 ENRICHMENT_SCHEMA = "topic_shift_enrichment_schema_v1"
-PROMPT_VERSION = "topic_shift_enrichment_prompt_v1"
+PROMPT_VERSION = "topic_shift_enrichment_prompt_v2"
 STORE_DIRNAME = ".topic_shift_enrichment"
 ARTIFACT_NAME = "topic_shift.enrichment.json"
 
@@ -74,6 +77,22 @@ def _ui_mode_for(spans_envelope: Mapping[str, Any], spans: Sequence[Mapping[str,
     return "chapter_titles"
 
 
+def _span_prompt_block(span: Mapping[str, Any]) -> str:
+    sid = str(span.get("span_id") or "")
+    hints = span.get("keyword_hints") or []
+    hint_txt = ", ".join(str(h) for h in hints[:8] if str(h).strip())
+    excerpt = str(span.get("text_excerpt") or "").strip()
+    if len(excerpt) > 420:
+        excerpt = excerpt[:420].rsplit(" ", 1)[0]
+    # Never feed the "Segment N · time" label as content — it teaches echo titles.
+    return (
+        f"<SPAN id={sid!s}>\n"
+        f"  hints: {hint_txt or '(none)'}\n"
+        f"  excerpt: {excerpt or '(none)'}\n"
+        f"</SPAN>"
+    )
+
+
 def _try_generate_titles(
     *,
     model: str,
@@ -94,18 +113,13 @@ def _try_generate_titles(
         logger.info("topic_shift enrichment: OllamaClient unavailable: %s", exc)
         return "skipped", [], None
 
-    # Build a compact prompt; never ask the model to move boundaries.
-    lines = []
-    for span in spans[:40]:
-        label = str(span.get("label") or span.get("span_id") or "segment")
-        hints = span.get("keyword_hints") or []
-        hint_txt = ", ".join(str(h) for h in hints[:8])
-        lines.append(
-            f"<SPAN id={span.get('span_id')!s} label={label!s} hints={hint_txt!s}/>"
-        )
+    lines = [_span_prompt_block(span) for span in spans[:40]]
     prompt = (
-        "You label conversation chapters. Do NOT invent, move, merge, or remove "
-        "boundaries. Return JSON only with keys: entries (list of "
+        "You name conversation chapters from excerpts. Do NOT invent, move, merge, "
+        "or remove boundaries. For each SPAN return a short topical title "
+        "(3–7 words, specific to the excerpt), a one-sentence summary, and up to "
+        "3 key_points. Never use titles like 'Segment 1', 'Chapter 2', or time "
+        "ranges. Return JSON only with keys: entries (list of "
         "{span_id, title, summary, key_points}), optional overall_summary.\n"
         "Spans:\n" + "\n".join(lines)
     )
@@ -137,10 +151,6 @@ def _try_generate_titles(
     text = str(raw or "").strip()
     if not text:
         return "skipped", [], None
-    # Best-effort JSON extract
-    import json
-    import re
-
     match = re.search(r"\{[\s\S]*\}", text)
     if not match:
         return "skipped", [], None
@@ -162,25 +172,45 @@ def _try_generate_titles(
     filled = 0
     for span in spans:
         sid = str(span.get("span_id") or "")
+        label = str(span.get("label") or "")
         hit = by_id.get(sid)
-        if hit and str(hit.get("title") or "").strip():
+        raw_title = str(hit.get("title")).strip() if hit and hit.get("title") else ""
+        summary = (
+            str(hit.get("summary")).strip()[:800]
+            if hit and hit.get("summary")
+            else None
+        )
+        key_points = (
+            [
+                str(p).strip()[:200]
+                for p in (hit.get("key_points") or [])[:5]
+                if str(p).strip()
+            ]
+            if hit
+            else []
+        )
+        if hit and is_usable_chapter_title(raw_title, span_label=label):
             filled += 1
             entries.append(
                 {
                     "span_id": sid,
-                    "title": str(hit.get("title")).strip()[:120],
-                    "summary": (
-                        str(hit.get("summary")).strip()[:800]
-                        if hit.get("summary")
-                        else None
-                    ),
-                    "key_points": [
-                        str(p).strip()[:200]
-                        for p in (hit.get("key_points") or [])[:5]
-                        if str(p).strip()
-                    ],
+                    "title": raw_title[:120],
+                    "summary": summary,
+                    "key_points": key_points,
                     "title_source": "llm",
                     "error_category": None,
+                }
+            )
+        elif hit and (summary or key_points):
+            # Keep summary/key_points even when title is a Segment-N echo.
+            entries.append(
+                {
+                    "span_id": sid,
+                    "title": None,
+                    "summary": summary,
+                    "key_points": key_points,
+                    "title_source": "deterministic_fallback",
+                    "error_category": "generic_title",
                 }
             )
         else:
@@ -197,6 +227,9 @@ def _try_generate_titles(
     overall = parsed.get("overall_summary")
     overall_s = str(overall).strip()[:1200] if overall else None
     if filled == 0:
+        # Summaries alone still useful — treat as partial if any summary kept.
+        if any(e.get("summary") for e in entries):
+            return "partial", entries, overall_s
         return "skipped", entries, overall_s
     if filled < len(spans):
         return "partial", entries, overall_s

@@ -90,6 +90,23 @@ def test_loads_llm_json_document_rejects_prose_wrapped() -> None:
 
 
 @pytest.mark.unit
+def test_loads_llm_json_repairs_missing_comma_between_arrays() -> None:
+    assert loads_llm_json('{"items": [[1] [2]]}') == {"items": [[1], [2]]}
+
+
+@pytest.mark.unit
+def test_strip_json_fence_case_insensitive_lang_tag() -> None:
+    raw = '```JSON\n{"ok": true}\n```'
+    assert strip_json_fence(raw) == '{"ok": true}'
+
+
+@pytest.mark.unit
+def test_loads_llm_json_document_accepts_fenced_object() -> None:
+    raw = '```json\n{"narrative": "ok"}\n```'
+    assert loads_llm_json_document(raw) == {"narrative": "ok"}
+
+
+@pytest.mark.unit
 def test_loads_llm_json_raises_on_unescaped_inner_quotes() -> None:
     raw = '{"text": "She said "hello" then left."}'
     with pytest.raises(json.JSONDecodeError) as exc:

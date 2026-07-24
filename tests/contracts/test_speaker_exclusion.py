@@ -28,6 +28,7 @@ def _ensure_fixture() -> Path:
     return FIXTURE_MIXED
 
 
+@pytest.mark.contract
 def test_unidentified_excluded_from_per_speaker_outputs(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -64,6 +65,7 @@ def test_unidentified_excluded_from_per_speaker_outputs(
     )
 
 
+@pytest.mark.contract
 def test_unidentified_present_in_transcript_output(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

@@ -64,6 +64,96 @@ def test_parse_ollama_tags_payload_dedupes_and_skips_bad_rows():
     assert names == ["a:1", "b:2"]
 
 
+def test_parse_ollama_tags_models_extracts_details():
+    from transcriptx.core.llm.ollama_client import (
+        context_length_from_show_payload,
+        parse_ollama_tags_models,
+    )
+
+    rows = parse_ollama_tags_models(
+        {
+            "models": [
+                {
+                    "name": "mistral:latest",
+                    "size": 4_400_000_000,
+                    "modified_at": "2026-04-20T12:00:00Z",
+                    "details": {
+                        "family": "llama",
+                        "parameter_size": "7.2B",
+                        "quantization_level": "Q4_K_M",
+                        "context_length": 32768,
+                    },
+                },
+                {"name": "mistral:latest"},
+                {"name": " "},
+            ]
+        }
+    )
+    assert len(rows) == 1
+    assert rows[0].name == "mistral:latest"
+    assert rows[0].parameter_size == "7.2B"
+    assert rows[0].context_length == 32768
+    assert rows[0].size_bytes == 4_400_000_000
+
+    assert (
+        context_length_from_show_payload(
+            {"model_info": {"gemma3.context_length": 131072, "general.architecture": "gemma3"}}
+        )
+        == 131072
+    )
+
+
+def test_enrich_model_infos_fills_missing_context_via_show():
+    from transcriptx.core.llm.ollama_client import (
+        OllamaModelInfo,
+        enrich_model_infos_with_context,
+    )
+
+    missing = OllamaModelInfo(
+        name="gemma3:12b",
+        parameter_size="12.2B",
+        context_length=None,
+        size_bytes=8_100_000_000,
+        family="gemma3",
+    )
+    present = OllamaModelInfo(
+        name="qwen2.5:7b",
+        parameter_size="7.6B",
+        context_length=32768,
+        family="qwen2",
+    )
+
+    def _show(model: str, base_url=None, *, timeout: float = 5.0):
+        assert model == "gemma3:12b"
+        return {"model_info": {"gemma3.context_length": 131072}}
+
+    with patch(
+        "transcriptx.core.llm.ollama_client.show_ollama_model",
+        side_effect=_show,
+    ) as show_mock:
+        enriched = enrich_model_infos_with_context([missing, present])
+
+    assert show_mock.call_count == 1
+    assert enriched[0].context_length == 131072
+    assert enriched[0].parameter_size == "12.2B"
+    assert enriched[1].context_length == 32768
+
+
+def test_enrich_model_infos_keeps_row_when_show_fails():
+    from transcriptx.core.llm.ollama_client import (
+        OllamaModelInfo,
+        enrich_model_infos_with_context,
+    )
+
+    row = OllamaModelInfo(name="gemma3:4b", parameter_size="4.3B", context_length=None)
+    with patch(
+        "transcriptx.core.llm.ollama_client.show_ollama_model",
+        return_value=None,
+    ):
+        enriched = enrich_model_infos_with_context([row])
+    assert enriched == (row,)
+
+
 def test_list_installed_ollama_models_never_raises():
     with patch(
         "transcriptx.core.llm.ollama_client.urllib.request.urlopen",
@@ -71,6 +161,7 @@ def test_list_installed_ollama_models_never_raises():
     ):
         result = list_installed_ollama_models("http://127.0.0.1:11434")
     assert result.models == ()
+    assert result.infos == ()
     assert result.error is not None
 
 

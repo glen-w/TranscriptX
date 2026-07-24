@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -191,6 +192,89 @@ def test_enrichment_envelope_rejects_duplicate_span_ids() -> None:
     }
     with pytest.raises(ValidationError, match="duplicate"):
         validate_enrichment_payload(payload)
+
+
+def test_is_usable_chapter_title_rejects_segment_echo() -> None:
+    from transcriptx.core.analysis.topic_shift.titles import is_usable_chapter_title
+
+    assert is_usable_chapter_title("Budget review")
+    assert not is_usable_chapter_title("Segment 1")
+    assert not is_usable_chapter_title("Segment 2 · 01:00–02:00")
+    assert not is_usable_chapter_title("Chapter 3")
+    assert not is_usable_chapter_title(
+        "Segment 1 · 00:00–01:00",
+        span_label="Segment 1 · 00:00–01:00",
+    )
+    assert not is_usable_chapter_title("")
+
+
+def test_try_generate_titles_rejects_generic_and_keeps_summary(monkeypatch) -> None:
+    from transcriptx.core.analysis.topic_shift import enrichment as enrich_mod
+
+    class _Client:
+        def __init__(self, **kwargs):
+            pass
+
+        def generate(self, **kwargs):
+            return json.dumps(
+                {
+                    "entries": [
+                        {
+                            "span_id": "s1",
+                            "title": "Segment 1 · 00:00–01:00",
+                            "summary": "Discussed hiring plan.",
+                            "key_points": ["hiring"],
+                        },
+                        {
+                            "span_id": "s2",
+                            "title": "Q3 roadmap",
+                            "summary": "Prioritized features.",
+                            "key_points": [],
+                        },
+                    ]
+                }
+            )
+
+    monkeypatch.setattr(
+        enrich_mod,
+        "OllamaClient",
+        _Client,
+        raising=False,
+    )
+    # Patch inside the import path used by _try_generate_titles
+    import transcriptx.core.llm.ollama_client as oc
+
+    monkeypatch.setattr(oc, "OllamaClient", _Client)
+    monkeypatch.setattr(oc, "resolve_ollama_base_url", lambda x: x)
+
+    outcome, entries, _ = enrich_mod._try_generate_titles(
+        model="m:1",
+        spans=[
+            {
+                "span_id": "s1",
+                "label": "Segment 1 · 00:00–01:00",
+                "keyword_hints": ["hiring"],
+                "text_excerpt": "We need to hire two engineers.",
+            },
+            {
+                "span_id": "s2",
+                "label": "Segment 2 · 01:00–02:00",
+                "keyword_hints": ["roadmap"],
+                "text_excerpt": "Next quarter focus is the roadmap.",
+            },
+        ],
+        llm_cfg=SimpleNamespace(
+            base_url="http://localhost:11434",
+            request_timeout=30,
+            seed=1,
+            availability_timeout=1,
+        ),
+    )
+    assert outcome == "partial"
+    assert entries[0]["title"] is None
+    assert entries[0]["summary"] == "Discussed hiring plan."
+    assert entries[0]["error_category"] == "generic_title"
+    assert entries[1]["title"] == "Q3 roadmap"
 
 
 def test_malformed_enrichment_does_not_break_commit(tmp_path: Path, monkeypatch) -> None:

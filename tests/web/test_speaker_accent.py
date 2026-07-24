@@ -39,6 +39,40 @@ def test_speaker_heading_html_includes_swatch_and_accent() -> None:
 
 
 @pytest.mark.unit
+def test_speaker_heading_links_profile_when_resolved() -> None:
+    from transcriptx.web.speaker_accent import (
+        AccentResolveContext,
+        SPEAKER_PROFILE_QUERY_KEY,
+        build_accent_context_from_profiles,
+        resolve_speaker_accent,
+        resolve_speaker_profile_id,
+        speaker_profile_href,
+    )
+
+    profile = type(
+        "P",
+        (),
+        {
+            "status": "active",
+            "profile_id": "p-alice",
+            "display_name": "Alice",
+            "aliases": (),
+            "accent_color": "#AABBCC",
+        },
+    )()
+    ctx = build_accent_context_from_profiles([profile])
+    assert resolve_speaker_profile_id("Alice", context=ctx) == "p-alice"
+    assert resolve_speaker_accent("Alice", context=ctx) == "#AABBCC"
+    html = speaker_heading_html("Alice", context=ctx)
+    assert 'class="tx-speaker-profile-link"' in html
+    assert f"{SPEAKER_PROFILE_QUERY_KEY}=p-alice" in html
+    assert speaker_profile_href("p-alice") == f"?{SPEAKER_PROFILE_QUERY_KEY}=p-alice"
+    # Unlinked speakers stay plain text.
+    plain = speaker_heading_html("Bob", context=AccentResolveContext())
+    assert "tx-speaker-profile-link" not in plain
+
+
+@pytest.mark.unit
 def test_speaker_chip_and_inline_html() -> None:
     chip = speaker_chip_html("Bob")
     assert 'class="tx-speaker-chip"' in chip

@@ -260,11 +260,14 @@ def test_new_agg_ids_registered_uniquely_in_aggregation_registry() -> None:
 
 @pytest.mark.unit
 def test_new_numeric_aggs_have_chart_generators_and_allowlists() -> None:
+    from transcriptx.core.analysis.group_charts.semantic_similarity_charts import (
+        SemanticSimilarityGroupChartGenerator,
+    )
+
     reg = build_group_chart_registry()
     for agg_id in (
         "llm_action_items",
         "insights",
-        "semantic_similarity",
         "voice_mismatch",
         "voice_tension",
         "voice_fingerprint",
@@ -276,6 +279,18 @@ def test_new_numeric_aggs_have_chart_generators_and_allowlists() -> None:
         gen = reg[agg_id]
         assert isinstance(gen, GenericNumericGroupChartGenerator)
         assert gen.allowed_numeric_keys == allow
+
+    # B14: semantic_similarity uses a composite generator + motif_prevalence family
+    assert "semantic_similarity" in reg
+    assert GROUP_AGGREGATE_CHART_FAMILIES["semantic_similarity"] == (
+        "session_bars",
+        "motif_prevalence",
+    )
+    assert isinstance(
+        reg["semantic_similarity"], SemanticSimilarityGroupChartGenerator
+    )
+    allow = allowed_numeric_keys_for_generic_agg("semantic_similarity")
+    assert allow is not None and "motif_count" in allow
 
 
 @pytest.mark.unit

@@ -10,6 +10,16 @@ from transcriptx.web.blocks.implementations import overview_curated as oc
 
 
 @pytest.mark.unit
+def test_format_disk_size_uses_adaptive_units() -> None:
+    from transcriptx.utils.text_utils import format_bytes_display
+
+    assert format_bytes_display(512) == "512 B"
+    assert format_bytes_display(2048) == "2.0 KB"
+    assert format_bytes_display(5 * 1024 * 1024) == "5.0 MB"
+    assert format_bytes_display(3 * 1024 * 1024 * 1024) == "3.00 GB"
+
+
+@pytest.mark.unit
 def test_summary_source_badge_llm_vs_standard() -> None:
     assert oc._summary_source_badge("llm_summary") == "LLM"
     assert oc._summary_source_badge("narrative_summary") == "LLM"

@@ -36,6 +36,14 @@ def _v2_keys() -> set[str]:
         f"{V2_PREFIX}use_lexical_prefilter",
         f"{V2_PREFIX}lexical_prefilter_min_jaccard",
         f"{V2_PREFIX}strict_advanced_inputs",
+        f"{V2_PREFIX}motif_min_cluster_size",
+        f"{V2_PREFIX}cross_session_match_threshold",
+        f"{V2_PREFIX}min_sessions_for_recurring",
+        f"{V2_PREFIX}max_motifs_per_session",
+        f"{V2_PREFIX}max_motifs_per_group",
+        f"{V2_PREFIX}max_centroid_bytes",
+        f"{V2_PREFIX}cluster_eps",
+        f"{V2_PREFIX}cluster_min_samples",
     }
 
 

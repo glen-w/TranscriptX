@@ -157,6 +157,23 @@ MODULE_CONFIG_ALLOWLIST = {
         "analysis.transcript_quality.max_spans",
         "analysis.transcript_quality.max_clusters",
     ],
+    "keyphrases": [
+        "analysis.keyphrases.enabled_methods",
+        "analysis.keyphrases.max_phrases",
+        "analysis.keyphrases.min_phrase_tokens",
+        "analysis.keyphrases.max_phrase_tokens",
+        "analysis.keyphrases.min_occurrences_global",
+        "analysis.keyphrases.min_occurrences_speaker",
+        "analysis.keyphrases.diversity_jaccard_threshold",
+        "analysis.keyphrases.evidence_max_per_phrase",
+        "analysis.keyphrases.evidence_snippet_max_chars",
+        "analysis.keyphrases.keybert_model_id",
+        "analysis.keyphrases.yake_lan",
+        "analysis.keyphrases.yake_n",
+        "analysis.keyphrases.yake_top",
+        "analysis.keyphrases.yake_window_size",
+        "analysis.keyphrases.min_member_sessions",
+    ],
 }
 
 

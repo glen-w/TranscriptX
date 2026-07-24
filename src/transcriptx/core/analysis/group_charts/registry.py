@@ -55,6 +55,9 @@ from transcriptx.core.analysis.group_charts.transcript_quality_charts import (
 from transcriptx.core.analysis.group_charts.topic_shift_charts import (
     TopicShiftGroupChartGenerator,
 )
+from transcriptx.core.analysis.group_charts.semantic_similarity_charts import (
+    SemanticSimilarityGroupChartGenerator,
+)
 from transcriptx.core.analysis.group_charts.topic_modeling_group_charts import (
     TopicModelingGroupChartGenerator,
 )
@@ -112,7 +115,7 @@ GROUP_AGGREGATE_CHART_FAMILIES: Dict[str, Tuple[str, ...]] = {
     "contagion": ("pooled_single_view",),
     "llm_action_items": ("session_bars",),
     "insights": ("session_bars",),
-    "semantic_similarity": ("session_bars",),
+    "semantic_similarity": ("session_bars", "motif_prevalence"),
     "voice_mismatch": ("session_bars",),
     "voice_tension": ("session_bars",),
     "voice_fingerprint": ("session_bars",),
@@ -147,7 +150,6 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
         "echoes",
         "llm_action_items",
         "insights",
-        "semantic_similarity",
         "voice_mismatch",
         "voice_tension",
         "voice_fingerprint",
@@ -180,6 +182,7 @@ def build_group_chart_registry() -> Dict[str, GroupChartGenerator]:
         "politeness": PolitenessGroupChartGenerator(),
         "transcript_quality": TranscriptQualityGroupChartGenerator(),
         "topic_shift": TopicShiftGroupChartGenerator(),
+        "semantic_similarity": SemanticSimilarityGroupChartGenerator(),
     }
     for aid in generic_ids:
         reg[aid] = GenericNumericGroupChartGenerator(

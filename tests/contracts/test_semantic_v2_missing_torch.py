@@ -143,6 +143,7 @@ def test_semantic_v2_advanced_mode_diagnostics_record_requested_and_effective() 
 
 
 def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> None:
+    """B14: timeout after embed still clusters for motif export (partial)."""
     segments = [
         {
             "speaker": "A",
@@ -161,15 +162,9 @@ def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> Non
     ]
     cfg = SemanticSimilarityV2Config()
     cfg.timeout_seconds = 0.0
-    with (
-        patch(
-            "transcriptx.core.analysis.semantic_similarity_v2.pipeline.get_torch",
-            side_effect=ImportError("torch"),
-        ),
-        patch(
-            "transcriptx.core.analysis.semantic_similarity_v2.pipeline.cluster_embeddings",
-            side_effect=AssertionError("cluster should not run after timeout"),
-        ),
+    with patch(
+        "transcriptx.core.analysis.semantic_similarity_v2.pipeline.get_torch",
+        side_effect=ImportError("torch"),
     ):
         results, diag = run_semantic_similarity_v2_pipeline(
             segments,
@@ -182,6 +177,9 @@ def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> Non
     assert results["speaker_repetitions"] == {}
     assert results["cross_speaker_repetitions"] == []
     assert results["segments"] == segments
+    assert results.get("motif_export_status") in ("partial", "timeout", "valid_zero", "ok")
+    assert "motifs" in results
+    assert "schema_version" in results
     json.dumps(results)
 
 

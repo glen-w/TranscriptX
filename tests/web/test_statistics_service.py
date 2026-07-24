@@ -4,8 +4,13 @@ Tests for statistics service.
 
 from unittest.mock import patch, MagicMock
 from datetime import datetime
+from pathlib import Path
 
-from transcriptx.web.services.statistics_service import StatisticsService
+from transcriptx.web.services.statistics_service import (
+    StatisticsService,
+    _manifest_artifact_bytes,
+    _total_artifact_bytes,
+)
 
 
 class TestStatisticsService:
@@ -117,8 +122,10 @@ class TestStatisticsService:
                     assert stats["word_count"] == 0
 
     @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
-    def test_get_all_sessions_statistics(self, mock_list_sessions):
+    @patch("transcriptx.web.services.statistics_service._total_artifact_bytes")
+    def test_get_all_sessions_statistics(self, mock_artifact_bytes, mock_list_sessions):
         """Test getting aggregate statistics."""
+        mock_artifact_bytes.return_value = 4096
         mock_list_sessions.return_value = [
             {
                 "transcript_key": "tk-a",
@@ -147,12 +154,15 @@ class TestStatisticsService:
         assert stats["total_word_count"] == 1500
         assert stats["total_speakers"] == 3  # max of speaker counts
         assert stats["average_completion"] == 62.5  # (50 + 75) / 2
+        assert stats["total_artifact_bytes"] == 4096
 
     @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
+    @patch("transcriptx.web.services.statistics_service._total_artifact_bytes")
     def test_get_all_sessions_statistics_dedupes_by_transcript(
-        self, mock_list_sessions
+        self, mock_artifact_bytes, mock_list_sessions
     ):
         """Multiple runs for one transcript count once in aggregates."""
+        mock_artifact_bytes.return_value = 0
         mock_list_sessions.return_value = [
             {
                 "transcript_key": "tk-a",
@@ -192,8 +202,12 @@ class TestStatisticsService:
         assert stats["average_completion"] == 90.0  # (80 + 100) / 2
 
     @patch("transcriptx.web.services.statistics_service.cached_list_available_sessions")
-    def test_get_all_sessions_statistics_empty(self, mock_list_sessions):
+    @patch("transcriptx.web.services.statistics_service._total_artifact_bytes")
+    def test_get_all_sessions_statistics_empty(
+        self, mock_artifact_bytes, mock_list_sessions
+    ):
         """Test getting statistics when no sessions exist."""
+        mock_artifact_bytes.return_value = 0
         mock_list_sessions.return_value = []
 
         stats = StatisticsService.get_all_sessions_statistics()
@@ -204,3 +218,36 @@ class TestStatisticsService:
         assert stats["total_duration_minutes"] == 0
         assert stats["total_word_count"] == 0
         assert stats["average_completion"] == 0
+        assert stats["total_artifact_bytes"] == 0
+
+    def test_manifest_artifact_bytes_sums_declared_sizes(self, tmp_path: Path):
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+        (run_dir / "manifest.json").write_text(
+            '{"artifacts":[{"bytes":100},{"bytes":"50"},{"bytes":null},{}]}',
+            encoding="utf-8",
+        )
+        assert _manifest_artifact_bytes(run_dir) == 150
+        assert _manifest_artifact_bytes(tmp_path / "missing") == 0
+
+    def test_total_artifact_bytes_includes_sessions_and_groups(
+        self, tmp_path: Path, monkeypatch
+    ):
+        session_run = tmp_path / "slug" / "run-a"
+        session_run.mkdir(parents=True)
+        (session_run / "manifest.json").write_text(
+            '{"artifacts":[{"bytes":1000}]}',
+            encoding="utf-8",
+        )
+        group_run = tmp_path / "groups" / "g1" / "run-b"
+        group_run.mkdir(parents=True)
+        (group_run / "manifest.json").write_text(
+            '{"artifacts":[{"bytes":250}]}',
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            "transcriptx.web.services.statistics_service.GROUP_OUTPUTS_DIR",
+            tmp_path / "groups",
+        )
+        total = _total_artifact_bytes([{"path": str(session_run)}, {"path": None}])
+        assert total == 1250

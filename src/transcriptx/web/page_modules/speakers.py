@@ -41,17 +41,26 @@ from transcriptx.core.speaker_profiles.store_io import (
 from transcriptx.core.speaker_profiles.analytics_pack import (
     build_profile_analytics_pack,
 )
+from transcriptx.core.speaker_profiles.interactions_pack import (
+    build_profile_interactions_pack,
+)
 from transcriptx.core.speaker_profiles.locations_pack import (
     ProfileLocationMention,
     build_profile_locations_pack,
 )
 from transcriptx.core.speaker_profiles.longitudinal import AnalyticsGrain
+from transcriptx.core.speaker_profiles.sentiment_pack import (
+    build_profile_sentiment_pack,
+)
 from transcriptx.core.speaker_profiles.time_series import (
     DirectoryChartSeries,
     build_directory_activity_chart,
 )
 from transcriptx.utils.html_utils import wrap_tooltip_text
-from transcriptx.web.navigation import navigate_highlight_to_transcript
+from transcriptx.web.navigation import (
+    navigate_highlight_to_transcript,
+    navigate_to_transcript_from_path,
+)
 
 _METHODOLOGY_CAPTIONS: dict[str, str] = {
     "share.duration_only": "Speaking share uses duration only (never turn share).",
@@ -59,6 +68,14 @@ _METHODOLOGY_CAPTIONS: dict[str, str] = {
     "turn_length.timing_valid_only": "Turn length uses timing-valid turns only (includes zero-duration).",
     "partial.available_while_reporting_missing": "Partial periods sum available timing and note missing evidence.",
     "partners.co_appearance_only": "Partners are co-appearances in shared sessions, not interaction proof.",
+    "interactions.from_run_summary": (
+        "Interaction and equity metrics come from the newest interactions run "
+        "per linked appearance (speaker_summary), not from co-appearance alone."
+    ),
+    "sentiment.from_run_rows": (
+        "Sentiment means come from the newest sentiment run per appearance "
+        "(segment rows when available; summary fallback for compound)."
+    ),
     "pack.phase16": "Trends are derived from confirmed profile links; not persisted as canonical data.",
     "grain.appearance_date": "Grouped by appearance date.",
     "grain.month": "Grouped by calendar month (YYYY-MM).",
@@ -143,7 +160,6 @@ from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.speaker import parse_speaker_name
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
-from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.speaker_avatar import speaker_heading_with_avatar_html
 from transcriptx.web.speaker_profile_signals import (
     INCLUDE_IGNORED_SESSION_KEY,
@@ -151,7 +167,7 @@ from transcriptx.web.speaker_profile_signals import (
     SHOW_MERGED_SESSION_KEY,
     consume_cache_invalidation_signal,
 )
-from transcriptx.web.state import PAGE_KEY, SELECTBOX_PLACEHOLDER_SPEAKER
+from transcriptx.web.state import SELECTBOX_PLACEHOLDER_SPEAKER
 
 _SPEAKERS_DESCRIPTION = (
     "Longitudinal speaker profiles linked across managed library transcripts. "
@@ -531,14 +547,42 @@ def _render_profile_detail(
         unsafe_allow_html=True,
     )
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Headline words", f"{agg.headline_words:,}")
-    m2.metric("Headline turns", f"{agg.headline_turns:,}")
-    m3.metric(
-        "Headline duration (h)",
-        f"{agg.headline_duration_seconds / 3600:,.1f}",
+    ignored_clause = (
+        "Ignored links are included."
+        if include_ignored
+        else "Ignored links are excluded."
     )
-    m4.metric("Appearances in totals", f"{agg.headline_appearance_count:,}")
+    eligibility_help = (
+        "Sums only eligible linked appearances: excludes needs-review, "
+        f"missing-source, collision, and repair-required. {ignored_clause}"
+    )
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric(
+        "Words",
+        f"{agg.headline_words:,}",
+        help=f"Total words spoken across eligible appearances. {eligibility_help}",
+    )
+    m2.metric(
+        "Turns",
+        f"{agg.headline_turns:,}",
+        help=f"Total speaking turns across eligible appearances. {eligibility_help}",
+    )
+    m3.metric(
+        "Duration (h)",
+        f"{agg.headline_duration_seconds / 3600:,.1f}",
+        help=(
+            "Total speaking duration across eligible appearances, in hours. "
+            f"{eligibility_help}"
+        ),
+    )
+    m4.metric(
+        "Appearances",
+        f"{agg.headline_appearance_count:,}",
+        help=(
+            "Linked appearances included in the word, turn, and duration totals. "
+            f"{eligibility_help} The header count includes all linked appearances."
+        ),
+    )
 
     if (
         agg.pending_review_count
@@ -563,6 +607,16 @@ def _render_profile_detail(
     )
 
     _render_locations_map(
+        snap,
+        profile,
+        include_ignored=include_ignored,
+    )
+    _render_interactions_equity(
+        snap,
+        profile,
+        include_ignored=include_ignored,
+    )
+    _render_sentiment_trends(
         snap,
         profile,
         include_ignored=include_ignored,
@@ -632,7 +686,9 @@ def _render_voice_controls(
         st.caption(
             f"{len(samples)} sample(s) · {eligible} eligible · "
             f"{ineligible} need promotion · enrol cap {bootstrap_max_links} "
-            "link(s) (Settings → Speakers)"
+            "link(s) (Settings → Speakers). Stored under "
+            f"`{snap.root / 'voice'}` — survives Docker rebuild; "
+            "cleared only by revoke or Delete voice evidence."
         )
         enrol_action = f"voice_bootstrap_{profile.profile_id}"
         if st.button(
@@ -725,7 +781,7 @@ def _render_detail_charts(
     """High-churn Trends + partners UI; fragment avoids snapshot rebuild on chart toggle."""
     with st.expander("Trends", expanded=False):
         tip_slot = st.empty()
-        c_chart, c_grain, c_all = st.columns([2, 1, 1])
+        c_chart, c_stat, c_grain, c_all = st.columns([2, 1, 1, 1])
         chart_choice = c_chart.selectbox(
             "Chart",
             [
@@ -737,6 +793,21 @@ def _render_detail_charts(
             ],
             key=f"spk_trend_chart_{profile_id}",
         )
+        # Secondary series/stat filter for charts that expose more than one metric.
+        secondary_options: dict[str, tuple[str, list[str]]] = {
+            "Turn length": ("Stat", ["Mean", "Median"]),
+            "Words & turns": ("Series", ["Words", "Turns"]),
+        }
+        if chart_choice in secondary_options:
+            secondary_label, options = secondary_options[chart_choice]
+            secondary_choice = c_stat.selectbox(
+                secondary_label,
+                options,
+                key=f"spk_trend_secondary_{profile_id}_{chart_choice}",
+            )
+        else:
+            c_stat.empty()
+            secondary_choice = None
         grain_label = c_grain.selectbox(
             "Grain",
             ["By date", "Month", "Quarter"],
@@ -768,16 +839,36 @@ def _render_detail_charts(
         series_map = {
             "Speaking time": ("speaking_minutes", "Speaking minutes"),
             "Speaking share": ("speaking_share", "Speaking share"),
-            "Turn length": ("turn_length", "Turn length (seconds)"),
             "Speaking rate": ("speaking_rate_wpm", "Words per minute"),
         }
-        methodology = _methodology_lines(pack.methodology_codes)
-        if chart_choice in series_map:
-            methodology = [*methodology, f"Headline — {series_map[chart_choice][1]}"]
+        # Resolve the single series shown for multi-metric charts.
+        selected_attr: str | None = None
+        selected_ylabel = ""
+        selected_value_key = "value"
+        if chart_choice == "Turn length":
+            if secondary_choice == "Median":
+                selected_attr = "turn_length_median"
+                selected_ylabel = "Median turn length (seconds)"
+                selected_value_key = "median_seconds"
+            else:
+                selected_attr = "turn_length_avg"
+                selected_ylabel = "Mean turn length (seconds)"
+                selected_value_key = "avg_seconds"
         elif chart_choice == "Words & turns":
-            methodology = [*methodology, "Headline — Words & turns"]
-        elif chart_choice == "Turn length":
-            methodology = [*methodology, "Headline — Turn length"]
+            if secondary_choice == "Turns":
+                selected_attr = "turns"
+                selected_ylabel = "Turns"
+                selected_value_key = "turns"
+            else:
+                selected_attr = "words"
+                selected_ylabel = "Words"
+                selected_value_key = "words"
+        elif chart_choice in series_map:
+            selected_attr, selected_ylabel = series_map[chart_choice]
+
+        methodology = _methodology_lines(pack.methodology_codes)
+        if selected_ylabel:
+            methodology = [*methodology, f"Headline — {selected_ylabel}"]
         tip_html = _methodology_info_html(
             methodology,
             control_id=f"spk-meth-{profile_id}",
@@ -792,95 +883,29 @@ def _render_detail_charts(
             st.caption("No linked appearances to chart yet.")
         else:
             bundle = pack.headline
-
-            if chart_choice == "Words & turns":
-                wdata = _series_points_frame(bundle.words, "words")
-                tdata = _series_points_frame(bundle.turns, "turns")
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.caption("Headline words")
-                    if wdata:
-                        st.bar_chart(wdata, x="period", y="words")
-                    else:
-                        st.caption("No word points.")
-                with c2:
-                    st.caption("Headline turns")
-                    if tdata:
-                        st.bar_chart(tdata, x="period", y="turns")
-                    else:
-                        st.caption("No turn points.")
-                if include_all and pack.all_appearances is not None:
-                    aw = _series_points_frame(pack.all_appearances.words, "words")
-                    at = _series_points_frame(pack.all_appearances.turns, "turns")
-                    st.caption("All appearances")
-                    a1, a2 = st.columns(2)
-                    with a1:
-                        if aw:
-                            st.bar_chart(aw, x="period", y="words")
-                    with a2:
-                        if at:
-                            st.bar_chart(at, x="period", y="turns")
-            elif chart_choice == "Turn length":
-                avg_f = _series_points_frame(bundle.turn_length_avg, "avg_seconds")
-                med_f = _series_points_frame(bundle.turn_length_median, "median_seconds")
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.caption("Average turn length (headline)")
-                    if avg_f:
-                        st.bar_chart(avg_f, x="period", y="avg_seconds")
-                    else:
-                        st.caption("No average turn-length points.")
-                with c2:
-                    st.caption("Median turn length (headline)")
-                    if med_f:
-                        st.bar_chart(med_f, x="period", y="median_seconds")
-                    else:
-                        st.caption("No median turn-length points.")
-                if include_all and pack.all_appearances is not None:
-                    a_avg = _series_points_frame(
-                        pack.all_appearances.turn_length_avg, "avg_seconds"
-                    )
-                    a_med = _series_points_frame(
-                        pack.all_appearances.turn_length_median, "median_seconds"
-                    )
-                    st.caption("All appearances")
-                    a1, a2 = st.columns(2)
-                    with a1:
-                        if a_avg:
-                            st.bar_chart(a_avg, x="period", y="avg_seconds")
-                    with a2:
-                        if a_med:
-                            st.bar_chart(a_med, x="period", y="median_seconds")
+            assert selected_attr is not None
+            points = getattr(bundle, selected_attr)
+            data = _series_points_frame(points, selected_value_key)
+            st.caption(f"{selected_ylabel} (headline)")
+            if data:
+                st.bar_chart(data, x="period", y=selected_value_key)
             else:
-                attr, ylabel = series_map[chart_choice]
-                points = getattr(bundle, attr)
-                data = _series_points_frame(points, "value")
-                if data:
-                    st.bar_chart(data, x="period", y="value")
-                else:
-                    st.caption("No headline points.")
-                unavail = sum(1 for p in points if p.availability == "unavailable")
-                partial = sum(1 for p in points if p.availability == "partial")
-                if unavail or partial:
-                    st.caption(
-                        f"Availability: {partial} partial, "
-                        f"{unavail} unavailable period(s)."
-                    )
-                if include_all and pack.all_appearances is not None:
-                    all_points = getattr(pack.all_appearances, attr)
-                    adata = _series_points_frame(all_points, "value")
-                    st.caption(f"All appearances — {ylabel}")
-                    if adata:
-                        st.bar_chart(adata, x="period", y="value")
+                st.caption("No headline points.")
+            unavail = sum(1 for p in points if p.availability == "unavailable")
+            partial = sum(1 for p in points if p.availability == "partial")
+            if unavail or partial:
+                st.caption(
+                    f"Availability: {partial} partial, "
+                    f"{unavail} unavailable period(s)."
+                )
+            if include_all and pack.all_appearances is not None:
+                all_points = getattr(pack.all_appearances, selected_attr)
+                adata = _series_points_frame(all_points, selected_value_key)
+                st.caption(f"All appearances — {selected_ylabel}")
+                if adata:
+                    st.bar_chart(adata, x="period", y=selected_value_key)
 
-            support_points = (
-                bundle.words
-                if chart_choice == "Words & turns"
-                else bundle.turn_length_avg
-                if chart_choice == "Turn length"
-                else getattr(bundle, series_map[chart_choice][0])
-            )
-            if support_points:
+            if points:
                 rows = [
                     {
                         "period": p.display_label,
@@ -890,7 +915,7 @@ def _render_detail_charts(
                         "n_turns": p.n_valid_turns,
                         "transcripts": len(p.managed_transcript_ids),
                     }
-                    for p in support_points
+                    for p in points
                 ]
                 st.dataframe(rows, hide_index=True, width="stretch")
 
@@ -1055,6 +1080,262 @@ def _render_locations_map(
             st.caption(" · ".join(notes))
 
 
+@st.fragment
+def _render_interactions_equity(
+    snap: AggregationSnapshot,
+    profile: SpeakerProfileV1,
+    *,
+    include_ignored: bool,
+) -> None:
+    """Collapsed interactions / equity table for the selected profile."""
+    with st.expander("Interactions & equity", expanded=False):
+        tip = _info_tooltip_html(
+            [_METHODOLOGY_CAPTIONS["interactions.from_run_summary"]],
+            control_id=f"spk-ix-{profile.profile_id}",
+            aria_label="Interactions methodology notes",
+            test_id="tx-interactions-info",
+        )
+        if tip:
+            st.markdown(
+                f'<div class="tx-section-info-heading">{tip}</div>',
+                unsafe_allow_html=True,
+            )
+
+        agg = snap.aggregates_by_profile.get(profile.profile_id)
+        freshness = agg.freshness_token if agg is not None else ""
+        cache_key = f"spk_ix_pack_{profile.profile_id}_{freshness}_{include_ignored}"
+        pack = st.session_state.get(cache_key)
+        if pack is None:
+            try:
+                pack = build_profile_interactions_pack(
+                    snap,
+                    profile.profile_id,
+                    include_ignored=include_ignored,
+                )
+            except Exception as exc:
+                st.error(f"Could not load interactions metrics: {exc}")
+                return
+            st.session_state[cache_key] = pack
+
+        if pack.status == "empty" or not pack.appearances:
+            st.info("No interactions run data for this profile yet.")
+            if pack.appearances_without_interactions:
+                st.caption(
+                    f"{pack.appearances_without_interactions} appearance(s) had no "
+                    "usable interactions speaker summary."
+                )
+            return
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Interruptions out", f"{pack.total_interruptions_initiated:,}")
+        m2.metric("Interruptions in", f"{pack.total_interruptions_received:,}")
+        m3.metric("Responses out", f"{pack.total_responses_initiated:,}")
+        m4.metric("Responses in", f"{pack.total_responses_received:,}")
+        e1, e2 = st.columns(2)
+        e1.metric(
+            "Mean dominance",
+            (
+                f"{pack.mean_dominance_score:.2f}"
+                if pack.mean_dominance_score is not None
+                else "—"
+            ),
+        )
+        e2.metric(
+            "Mean floor share",
+            (
+                f"{pack.mean_floor_share:.0%}"
+                if pack.mean_floor_share is not None
+                else "—"
+            ),
+        )
+
+        table_rows = [
+            {
+                "Date": (
+                    a.appearance_date.isoformat()
+                    if a.appearance_date is not None
+                    else "Unknown"
+                ),
+                "Transcript": a.transcript_label,
+                "Interruptions out": a.interruptions_initiated,
+                "Interruptions in": a.interruptions_received,
+                "Responses out": a.responses_initiated,
+                "Responses in": a.responses_received,
+                "Dominance": a.dominance_score,
+                "Floor share": a.floor_share,
+                "Interrupt asymmetry": a.interruption_asymmetry,
+                "Response latency (s)": a.response_latency_mean,
+            }
+            for a in pack.appearances
+        ]
+        st.dataframe(table_rows, hide_index=True, width="stretch")
+
+        chart_rows = [
+            {
+                "period": (
+                    a.appearance_date.isoformat()
+                    if a.appearance_date is not None
+                    else "Unknown"
+                ),
+                "floor_share": a.floor_share,
+                "dominance": a.dominance_score,
+            }
+            for a in pack.appearances
+            if a.floor_share is not None or a.dominance_score is not None
+        ]
+        if chart_rows:
+            st.caption("Floor share / dominance by appearance")
+            st.bar_chart(
+                chart_rows,
+                x="period",
+                y=["floor_share", "dominance"],
+            )
+
+        if pack.appearances_without_interactions:
+            st.caption(
+                f"{pack.appearances_without_interactions} appearance(s) without "
+                "interactions data"
+            )
+
+
+@st.fragment
+def _render_sentiment_trends(
+    snap: AggregationSnapshot,
+    profile: SpeakerProfileV1,
+    *,
+    include_ignored: bool,
+) -> None:
+    """Collapsed sentiment means for the selected profile."""
+    with st.expander("Sentiment", expanded=False):
+        tip = _info_tooltip_html(
+            [_METHODOLOGY_CAPTIONS["sentiment.from_run_rows"]],
+            control_id=f"spk-sent-{profile.profile_id}",
+            aria_label="Sentiment methodology notes",
+            test_id="tx-sentiment-info",
+        )
+        if tip:
+            st.markdown(
+                f'<div class="tx-section-info-heading">{tip}</div>',
+                unsafe_allow_html=True,
+            )
+
+        agg = snap.aggregates_by_profile.get(profile.profile_id)
+        freshness = agg.freshness_token if agg is not None else ""
+        cache_key = f"spk_sent_pack_{profile.profile_id}_{freshness}_{include_ignored}"
+        pack = st.session_state.get(cache_key)
+        if pack is None:
+            try:
+                pack = build_profile_sentiment_pack(
+                    snap,
+                    profile.profile_id,
+                    include_ignored=include_ignored,
+                )
+            except Exception as exc:
+                st.error(f"Could not load sentiment metrics: {exc}")
+                return
+            st.session_state[cache_key] = pack
+
+        if pack.status == "empty" or not pack.appearances:
+            st.info("No sentiment run data for this profile yet.")
+            if pack.appearances_without_sentiment:
+                st.caption(
+                    f"{pack.appearances_without_sentiment} appearance(s) had no "
+                    "usable sentiment artifact."
+                )
+            return
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric(
+            "Compound mean",
+            f"{pack.compound_mean:.3f}" if pack.compound_mean is not None else "—",
+        )
+        m2.metric(
+            "Pos mean",
+            f"{pack.pos_mean:.3f}" if pack.pos_mean is not None else "—",
+        )
+        m3.metric(
+            "Neu mean",
+            f"{pack.neu_mean:.3f}" if pack.neu_mean is not None else "—",
+        )
+        m4.metric(
+            "Neg mean",
+            f"{pack.neg_mean:.3f}" if pack.neg_mean is not None else "—",
+        )
+        if (
+            pack.positive_share is not None
+            or pack.neutral_share is not None
+            or pack.negative_share is not None
+        ):
+            s1, s2, s3 = st.columns(3)
+            s1.metric(
+                "Positive share",
+                (
+                    f"{pack.positive_share:.0%}"
+                    if pack.positive_share is not None
+                    else "—"
+                ),
+            )
+            s2.metric(
+                "Neutral share",
+                (
+                    f"{pack.neutral_share:.0%}"
+                    if pack.neutral_share is not None
+                    else "—"
+                ),
+            )
+            s3.metric(
+                "Negative share",
+                (
+                    f"{pack.negative_share:.0%}"
+                    if pack.negative_share is not None
+                    else "—"
+                ),
+            )
+
+        chart_rows = [
+            {
+                "period": (
+                    a.appearance_date.isoformat()
+                    if a.appearance_date is not None
+                    else "Unknown"
+                ),
+                "compound": a.compound_mean,
+            }
+            for a in pack.appearances
+            if a.compound_mean is not None
+        ]
+        if chart_rows:
+            st.caption("Compound sentiment by appearance")
+            st.bar_chart(chart_rows, x="period", y="compound")
+
+        table_rows = [
+            {
+                "Date": (
+                    a.appearance_date.isoformat()
+                    if a.appearance_date is not None
+                    else "Unknown"
+                ),
+                "Transcript": a.transcript_label,
+                "Segments": a.segment_count,
+                "Compound": a.compound_mean,
+                "Pos": a.pos_mean,
+                "Neu": a.neu_mean,
+                "Neg": a.neg_mean,
+                "Pos / Neu / Neg counts": (
+                    f"{a.positive_count}/{a.neutral_count}/{a.negative_count}"
+                ),
+            }
+            for a in pack.appearances
+        ]
+        st.dataframe(table_rows, hide_index=True, width="stretch")
+
+        if pack.appearances_without_sentiment:
+            st.caption(
+                f"{pack.appearances_without_sentiment} appearance(s) without "
+                "sentiment data"
+            )
+
+
 def _series_points_frame(points: tuple[Any, ...], value_key: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for p in points:
@@ -1076,9 +1357,13 @@ def _open_transcript(snap: AggregationSnapshot, row: AppearanceRow) -> None:
     if path is None:
         st.error("Could not resolve transcript path for this appearance.")
         return
-    SubjectService.set_transcript_context_from_path(st.session_state, path)
-    st.session_state[PAGE_KEY] = "Transcript"
-    st.rerun()
+    # Transcript requires subject + run_id; path-only navigation silently
+    # falls back to Home via the page access gate.
+    if not navigate_to_transcript_from_path(path):
+        st.error(
+            "Could not open transcript: no analysis run is linked for this "
+            "appearance. Open it from Library or run analysis first."
+        )
 
 
 @st.fragment

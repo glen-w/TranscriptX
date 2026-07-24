@@ -89,7 +89,7 @@
     "qa_analysis": 11,
     "quality_filtering_profiles": 162,
     "quick_analysis_settings": 10,
-    "semantic_similarity_v2": 17,
+    "semantic_similarity_v2": 25,
     "semantic_similarity_v2_profiles": 22,
     "speaker_exemplars": 26,
     "summary": 13,
@@ -104,6 +104,6 @@
     "workflow": 13
   },
   "pilot_count": 50,
-  "pydantic_owned_keys": 682,
-  "total_registry_keys": 698
+  "pydantic_owned_keys": 690,
+  "total_registry_keys": 706
 }

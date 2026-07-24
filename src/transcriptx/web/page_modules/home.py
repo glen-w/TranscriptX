@@ -7,7 +7,10 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from transcriptx.utils.text_utils import format_duration_display_from_config
+from transcriptx.utils.text_utils import (
+    format_bytes_display,
+    format_duration_display_from_config,
+)
 from transcriptx.web.cache_helpers import (
     cached_list_recent_runs,
     get_cached_count_managed_transcripts,
@@ -42,7 +45,7 @@ def _render_transcript_overview() -> bool:
         st.info("No transcripts found. Add transcripts in Library to get started.")
         return False
 
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
     with col1:
         st.metric(
             "Transcripts",
@@ -72,6 +75,12 @@ def _render_transcript_overview() -> bool:
             "Analysis completion",
             f"{stats.get('average_completion', 0):.0f}%",
             help="Average analysis completion across analysed transcripts",
+        )
+    with col8:
+        st.metric(
+            "Size on disk",
+            format_bytes_display(stats.get("total_artifact_bytes", 0)),
+            help="Total size of produced analysis artifacts across all runs",
         )
     return bool(sessions)
 

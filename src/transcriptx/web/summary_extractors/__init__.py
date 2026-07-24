@@ -80,6 +80,7 @@ def _register_all_extractors():
         "understandability",
         "lexical_diversity",
         "epistemic_markers",
+        "keyphrases",
         "politeness",
         "llm_action_items",
         "llm_custom_qa",

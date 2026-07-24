@@ -73,4 +73,13 @@ def build_nlp_module_definitions(
             "enhancements": [],
             "gate_on_turn_taking_speakers": True,
         },
+        "keyphrases": {
+            "description": "Keyphrase ranking (noun chunks / YAKE / KeyBERT)",
+            "dependencies": ["insight_eligibility"],
+            "category": "medium",
+            "determinism_tier": "T1",
+            "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
+            "enhancements": [],
+            "required_extras": ["nlp"],
+        },
     }

@@ -185,3 +185,66 @@ def test_build_prerequisites_matches_page_specs() -> None:
         assert prereq.required_context == spec.required_context
         assert prereq.allowed_fallback == spec.allowed_fallback
         assert prereq.may_mutate_context == spec.may_mutate_context
+
+
+def test_navigate_to_transcript_from_path_binds_run_when_index_has_empty_runs(
+    monkeypatch, tmp_path
+) -> None:
+    """Appearances Open transcript must not bounce to Home when index lacks runs."""
+    import streamlit as st
+
+    from transcriptx.web import navigation as nav_mod
+    from transcriptx.web.state import PAGE_KEY
+
+    transcript = tmp_path / "interview.json"
+    transcript.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.web.services.transcript_context_resolver.load_index",
+        lambda: {
+            "transcripts": {
+                "key-1": {
+                    "slug": "interview",
+                    "source_path": str(transcript),
+                    "runs": [],
+                }
+            }
+        },
+    )
+    monkeypatch.setattr(
+        nav_mod,
+        "make_session_path_resolver",
+        lambda: (lambda _p: ("interview", "run-42")),
+    )
+    rerun = {"count": 0}
+    monkeypatch.setattr(st, "rerun", lambda: rerun.__setitem__("count", rerun["count"] + 1))
+    st.session_state.clear()
+
+    assert nav_mod.navigate_to_transcript_from_path(transcript) is True
+    assert st.session_state[PAGE_KEY] == "Transcript"
+    assert st.session_state["subject_id"] == "interview"
+    assert st.session_state["run_id"] == "run-42"
+    assert rerun["count"] == 1
+
+
+def test_navigate_to_transcript_from_path_returns_false_without_run(
+    monkeypatch, tmp_path
+) -> None:
+    import streamlit as st
+
+    from transcriptx.web import navigation as nav_mod
+
+    transcript = tmp_path / "orphan.json"
+    transcript.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.web.services.transcript_context_resolver.load_index",
+        lambda: {"transcripts": {}},
+    )
+    monkeypatch.setattr(
+        nav_mod,
+        "make_session_path_resolver",
+        lambda: (lambda _p: None),
+    )
+    st.session_state.clear()
+
+    assert nav_mod.navigate_to_transcript_from_path(transcript) is False
+    assert "page" not in st.session_state or st.session_state.get("page") != "Transcript"

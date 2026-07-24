@@ -73,6 +73,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "understandability",
             "lexical_diversity",
             "epistemic_markers",
+            "keyphrases",
         ),
     ),
     ModuleUIGroup(

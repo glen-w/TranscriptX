@@ -494,11 +494,17 @@ def test_speakers_page_has_trends_not_gallery() -> None:
     src = path.read_text(encoding="utf-8")
     assert 'st.expander("Trends"' in src
     assert 'st.expander("Conversation partners"' in src
+    assert 'st.expander("Interactions & equity"' in src
+    assert 'st.expander("Sentiment"' in src
     assert "@st.fragment" in src
     assert "def _render_detail_charts" in src
+    assert "def _render_interactions_equity" in src
+    assert "def _render_sentiment_trends" in src
     assert "_speakers_browser_fragment" in src
     assert "scope=\"fragment\"" in src or "scope='fragment'" in src
     assert "build_profile_analytics_pack" in src
+    assert "build_profile_interactions_pack" in src
+    assert "build_profile_sentiment_pack" in src
     assert "chart_definitions" not in src
     assert "_evidence_caption" in src
     tree = ast.parse(src)

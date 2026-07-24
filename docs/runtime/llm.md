@@ -284,24 +284,25 @@ The setting **`analysis.llm_action_items.effort`** controls meeting-extract effo
 
 `schema_id`: `transcriptx.llm_action_items.v2`  
 `render_contract_id`: `transcriptx.llm_action_items.render.v2`  
-`module_version`: `2` · `prompt_version`: `6`
+`module_version`: `2` · `prompt_version`: `7`
 
 | Field | Notes |
 |-------|-------|
 | `items[]` | Ordered meeting extracts; empty list is a successful result |
-| `items[].record_type` | `decision` \| `commitment` \| `action_item` \| `proposal` \| `open_question` (missing/null defaults to `action_item`; unknown strings drop the record) |
+| `items[].record_type` | `decision` \| `commitment` \| `action_item` \| `proposal` \| `open_question` (missing/null defaults to `action_item`; common aliases such as `task`/`question` are mapped; unknown strings drop the record) |
 | `items[].text` | Non-empty trimmed description |
 | `items[].owner` / `deadline` | Verbatim transcript wording or `null` |
-| `items[].status` | `open` \| `done` \| `unclear`. For `decision` / `proposal` / `open_question`, `done` requires lexicon evidence in text/quote |
-| `items[].quote` | Exact transcript substring after whitespace normalisation, or `null` |
-| `items[].confidence` | Finite float in `[0, 1]` |
-| `diagnostics` | `items_raw`, `items_parsed_valid`, `record_type_defaulted`, `items_invalid_dropped`, `status_unsupported_dropped`, `items_ungrounded_dropped`, `quotes_nulled`, `items_duplicate_removed`, `items_truncated`, `output_truncated` (1 when the model response was truncated / salvaged from incomplete JSON), `counts_by_type` (all five types), `items_committed` |
+| `items[].status` | `open` \| `done` \| `unclear` (common aliases such as `pending`/`completed` mapped; missing → `unclear`). For `decision` / `proposal` / `open_question`, `done` requires lexicon evidence in text/quote |
+| `items[].quote` | Exact transcript substring after whitespace normalisation, or `null` (ellipsis-joined quotes may be salvaged to a contiguous span) |
+| `items[].confidence` | Finite float in `[0, 1]` (missing defaults to `0.5`; percentages / high-medium-low labels are coerced) |
+| `diagnostics` | Includes `items_raw`, `items_parsed_valid`, coerce counters (`record_type_defaulted` / `record_type_aliased` / `status_aliased` / `confidence_defaulted` / `confidence_coerced` / `extra_fields_stripped`), drop counters (`items_invalid_dropped` / `status_unsupported_dropped` / `items_ungrounded_dropped`), `quotes_nulled`, `quotes_salvaged`, `items_duplicate_removed`, `items_truncated`, `output_truncated` (1 when the model response was truncated / salvaged from incomplete JSON), `counts_by_type` (all five types), `items_committed` |
+| `provenance` | Includes `module_version`, `prompt_version`, `schema_id`, `render_contract_id`, `cache_key`, effort/runtime, input coverage |
 
 When `output_truncated` is set, Insights / Overview show a warning that extracts may be incomplete and that re-running unchanged will usually repeat the failure — raise `analysis.llm_action_items.effort` to `max` and/or pick a stronger JSON-capable model for `llm_action_items`, then re-run only that module. Hard parse failures persist the same remediation text into `run_results` / block availability (instead of a bare “Run the required analysis modules”).
 
-When the artifact has an empty `items` list but `diagnostics.items_raw > 0` (typically `items_invalid_dropped` / status / grounding drops), Insights / Overview show a warning that records were returned then discarded, and steer users away from tiny/small tags (e.g. `llama3.2:3b`) toward mid+ JSON-capable models. A genuine empty model response (`items_raw == 0`) still shows the short “No meeting extracts found” caption.| `provenance` | Includes `module_version`, `prompt_version`, `schema_id`, `render_contract_id`, `cache_key`, effort/runtime, input coverage |
+When the artifact has an empty `items` list but `diagnostics.items_raw > 0` (typically `items_invalid_dropped` / status / grounding drops), Insights / Overview show a warning that records were returned then discarded, and steer users toward mid+ JSON-capable models. A genuine empty model response (`items_raw == 0`) still shows the short “No meeting extracts found” caption. Empty-extract runs also write `{base}_llm_action_items.raw.txt` beside the JSON for parse debugging.
 
-Top-level malformed JSON / unknown top-level keys / oversize raw output fail with `llm_invalid_response`. **Per-record isolation:** invalid items are dropped with diagnostics so sibling valid extracts survive. Grounding is record-type agnostic and never rewrites `record_type` / `text` / `owner` / `deadline` / `status`. Bounds: max **48** total / **16** per type after validation. Markdown uses section labels from `RECORD_TYPE_LABELS` and always includes **AI-generated draft. Human review required.**
+Top-level malformed JSON / missing `items` / oversize raw output fail with `llm_invalid_response`. Unknown wrapper keys around `items` are ignored. **Per-record isolation:** invalid items are dropped with diagnostics so sibling valid extracts survive; unknown per-item keys are stripped rather than dropping the record. Grounding is record-type agnostic and never rewrites `record_type` / `text` / `owner` / `deadline` / `status`. Bounds: max **48** total / **16** per type after validation. Markdown uses section labels from `RECORD_TYPE_LABELS` and always includes **AI-generated draft. Human review required.**
 
 Group aggregation `schema_version`: **2** with fixed `count_<record_type>` and `status_*` session columns.
 

@@ -128,10 +128,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy venv from builder (no pip in this stage)
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-# Numba (librosa): provide a writable cache dir so JIT can resolve a locator when site-packages
-# is not writable and HOME may be unset/wrong under docker compose user: UID:GID overrides.
-ENV NUMBA_CACHE_DIR=/data/.cache/numba
-ENV NUMBA_DISABLE_CACHING=1
+# Numba (librosa): cache must be on a filesystem where TemporaryFile().close() works.
+# Docker Desktop virtiofs bind mounts (e.g. ./data) fail that probe with EIO and then
+# raise "no locator available for file .../librosa/...". Prefer container-local /tmp.
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 ENV NLTK_DATA=/opt/venv/nltk_data
 
 # Data dir override so the app uses /data (mounted volume) instead of under site-packages

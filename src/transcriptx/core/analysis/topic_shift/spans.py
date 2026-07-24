@@ -206,6 +206,7 @@ def build_coverage_and_events(
         hints: list[str] = []
         if keyword_hints_by_span and idx < len(keyword_hints_by_span):
             hints = list(keyword_hints_by_span[idx])
+        text_excerpt = ""
         if analytical_status == "no_shift_detected":
             boundary_status = "no_shift_detected"
             inferred = False
@@ -235,6 +236,7 @@ def build_coverage_and_events(
                 "segment_end_idx": int(seg_end),
                 "label": label,
                 "keyword_hints": hints,
+                "text_excerpt": text_excerpt,
                 "inferred": inferred,
                 "boundary_status": boundary_status,
                 "leading_boundary_id": leading if idx > 0 else None,

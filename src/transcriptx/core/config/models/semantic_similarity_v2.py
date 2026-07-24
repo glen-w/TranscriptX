@@ -130,3 +130,52 @@ class SemanticSimilarityV2SettingsModel(BaseModel):
             "missing instead of degrading to basic."
         ),
     )
+    motif_min_cluster_size: int = Field(
+        default=2,
+        ge=1,
+        description="Minimum DBSCAN cluster members required to export a motif.",
+        json_schema_extra=_ADVANCED,
+    )
+    cross_session_match_threshold: float = Field(
+        default=0.75,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Inclusive cosine threshold for matching motif centroids across sessions."
+        ),
+    )
+    min_sessions_for_recurring: int = Field(
+        default=2,
+        ge=1,
+        description="Minimum comparable sessions for a motif to be labeled recurring.",
+    )
+    max_motifs_per_session: int = Field(
+        default=50,
+        ge=1,
+        description="Hard cap on exported motifs per transcript after deterministic rank.",
+        json_schema_extra=_ADVANCED,
+    )
+    max_motifs_per_group: int = Field(
+        default=40,
+        ge=1,
+        description="Hard cap on group motif rows / chart top-N after deterministic rank.",
+        json_schema_extra=_ADVANCED,
+    )
+    max_centroid_bytes: int = Field(
+        default=65_536,
+        ge=256,
+        description="Maximum serialized centroid JSON bytes per motif before partial export.",
+        json_schema_extra=_ADVANCED,
+    )
+    cluster_eps: float = Field(
+        default=0.35,
+        ge=0.0,
+        description="DBSCAN eps (cosine distance) for motif clustering.",
+        json_schema_extra=_ADVANCED,
+    )
+    cluster_min_samples: int = Field(
+        default=2,
+        ge=1,
+        description="DBSCAN min_samples for motif clustering.",
+        json_schema_extra=_ADVANCED,
+    )

@@ -208,7 +208,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.7.x — current packaging line (**0.7.5**); Wave 0 eng criteria closed; Top-3 eng programs Done; Waves 1–2 product items shipped (through B13 + Speakers 1.5/1.6/voice/locations + analysis presets); Wave 3 open (B5 DB/group remainder, B14, B18/P2); public tags still via release governance evidence
+- **M3:** 0.8.x — current packaging line (**0.8.0**); Wave 0 eng criteria closed; Top-3 eng programs Done; Waves 1–2 product items shipped; Wave 3 in progress (B14 shipped; B16 keyphrases + LLM feedback v1 in 0.8.0; open: B5 DB/group remainder, B18/P2); public tags still via release governance evidence
 
 ---
 

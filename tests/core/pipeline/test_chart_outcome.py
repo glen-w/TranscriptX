@@ -36,4 +36,6 @@ def test_optional_keys_constant_is_frozen_subset() -> None:
     assert "transcript_quality_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "epistemic_markers_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "politeness_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
+    assert "semantic_similarity_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
+    assert "topic_shift_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "mentions_index" not in GROUP_CHART_OUTCOME_OPTIONAL_KEYS

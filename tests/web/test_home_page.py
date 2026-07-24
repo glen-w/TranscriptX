@@ -141,6 +141,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
                 "total_word_count": 100,
                 "total_speakers": 2,
                 "average_completion": 80,
+                "total_artifact_bytes": 3 * 1024 * 1024,
             },
         ),
     )
@@ -189,10 +190,12 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
         "Total words",
         "Speakers (max)",
         "Analysis completion",
+        "Size on disk",
     ]
     metric_values = {args[0]: args[1] for args, _ in metrics if len(args) >= 2}
     assert metric_values["Transcripts"] == 12
     assert metric_values["Analysed transcripts"] == 1
+    assert metric_values["Size on disk"] == "3.0 MB"
     assert frames
     assert list(frames[0]["Session"]) == ["session-a"]
 

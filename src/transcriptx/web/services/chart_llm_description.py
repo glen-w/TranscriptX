@@ -90,6 +90,27 @@ def chart_key_for_gallery_artifact(
     return chart_key_digest(payload)
 
 
+def logical_chart_id_for_gallery_artifact(artifact: Artifact) -> str | None:
+    meta = artifact.meta or {}
+    viz_id = meta.get("viz_id")
+    if not isinstance(viz_id, str) or not viz_id.strip():
+        return None
+    module = str(meta.get("module") or artifact.module or "")
+    scope = str(meta.get("scope") or artifact.scope or "global")
+    if meta.get("speaker") is not None:
+        speaker = str(meta.get("speaker"))
+    else:
+        speaker = artifact.speaker
+    name = str(meta.get("name") or "") or None
+    return build_logical_chart_id(
+        module=module,
+        viz_id=viz_id,
+        scope=scope,
+        speaker_identity=speaker,
+        name=name,
+    )
+
+
 def resolve_chart_llm_description(
     run_root: Path,
     artifact: Artifact,

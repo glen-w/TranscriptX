@@ -28,10 +28,10 @@ _PRESET_LABELS: dict[AnalysisPreset, str] = {
     "custom": "Custom",
 }
 _PRESET_HELP = (
-    "**Quick** — no LLM, no heavy modules (and no modules that require them). "
-    "**Balanced** — limited heavy modules + global LLM summary only. "
-    "**Thorough** — all suitable modules for this target. "
-    "**Custom** — pick modules. "
+    "**Quick** — no LLM, no heavy modules (and no modules that require them).\n"
+    "**Balanced** — limited heavy modules + global LLM summary only.\n"
+    "**Thorough** — all suitable modules for this target.\n"
+    "**Custom** — pick modules.\n"
     "Edit Quick/Balanced/Thorough under Settings → Analysis."
 )
 _CUSTOM_QA_MODULE = "llm_custom_qa"
@@ -181,7 +181,6 @@ def render_analysis_preset_selector(
     if label is None:
         label = st.session_state.get(preset_key) or "Balanced"
     preset = _label_to_preset(str(label))
-    st.caption(_PRESET_HELP)
 
     suitable_thorough = resolve_analysis_preset(
         "thorough",

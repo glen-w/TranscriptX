@@ -44,7 +44,16 @@ from transcriptx.web.services.artifact_service import (
     MAX_FULLSCREEN_HTML_BYTES,
     MAX_INLINE_HTML_BYTES,
 )
-from transcriptx.web.services.chart_llm_description import resolve_chart_llm_description
+from transcriptx.core.llm_feedback.models import (
+    FeedbackSurface,
+    FeedbackTarget,
+)
+from transcriptx.web.components.llm_feedback import render_llm_feedback_controls
+from transcriptx.web.services.chart_llm_description import (
+    logical_chart_id_for_gallery_artifact,
+    resolve_chart_llm_description,
+)
+from transcriptx.web.services.llm_feedback_service import get_llm_feedback_service
 from transcriptx.web.services.chart_view_model_service import (
     ChartGalleryFamily,
     ChartModuleGroupCounts,
@@ -56,7 +65,7 @@ from transcriptx.web.services.chart_view_model_service import (
     resolve_chart_display_description,
 )
 from transcriptx.web.services.export_service import ExportService
-from transcriptx.web.speaker_accent import speaker_expander
+from transcriptx.web.speaker_accent import load_accent_resolve_context, speaker_expander
 from transcriptx.web.state import (
     CHARTS_CHART_TEXT_BOTH,
     CHARTS_CHART_TEXT_DESCRIPTION,
@@ -123,6 +132,40 @@ _SORT_LABELS = {
 }
 
 
+_CHARTS_FB_RUN_ID = "_charts_fb_run_id"
+_CHARTS_FB_SUBJECT_ID = "_charts_fb_subject_id"
+_CHARTS_FB_SUBJECT_TYPE = "_charts_fb_subject_type"
+
+
+def _render_chart_llm_feedback(chart: Artifact, llm_text: str, *, key: str) -> None:
+    run_id = str(st.session_state.get(_CHARTS_FB_RUN_ID) or "").strip()
+    subject_id = str(st.session_state.get(_CHARTS_FB_SUBJECT_ID) or "").strip()
+    subject_type = str(st.session_state.get(_CHARTS_FB_SUBJECT_TYPE) or "transcript")
+    logical_id = logical_chart_id_for_gallery_artifact(chart)
+    if not run_id or not subject_id or not logical_id or not llm_text.strip():
+        return
+    target = FeedbackTarget(
+        surface=FeedbackSurface.CHART_CAPTION.value,
+        block_id=None,
+        placement_id=None,
+        module="chart_descriptions",
+        run_id=run_id,
+        subject_type="group" if subject_type == "group" else "transcript",
+        subject_id=subject_id,
+        artifact_rel_path=str(chart.rel_path or "") or None,
+        question_id=None,
+        questions_hash=None,
+        logical_chart_id=logical_id,
+    )
+    render_llm_feedback_controls(
+        store=get_llm_feedback_service(),
+        target=target,
+        output_text=llm_text,
+        provenance=None,
+        widget_key=key,
+    )
+
+
 def _render_chart_gallery_card(
     run_root: Path,
     chart: Artifact,
@@ -175,6 +218,9 @@ def _render_chart_gallery_card(
             llm_text = resolve_chart_llm_description(run_root, chart)
             if llm_text:
                 st.markdown(llm_text)
+                _render_chart_llm_feedback(
+                    chart, llm_text, key=f"fb_chart_{button_key}"
+                )
 
 
 def _render_chart_card_grid(
@@ -233,6 +279,7 @@ def _render_chart_family_slices(
         )
         return
 
+    accent_ctx = load_accent_resolve_context()
     for sl in family.slices:
         if not sl.label:
             _render_chart_card_grid(
@@ -246,7 +293,10 @@ def _render_chart_family_slices(
         meta = str(len(sl.artifacts))
         if _slice_is_speaker(family, sl.artifacts):
             section = speaker_expander(
-                sl.label, meta=meta, expanded=sections_expanded
+                sl.label,
+                meta=meta,
+                expanded=sections_expanded,
+                context=accent_ctx,
             )
         else:
             section = st.expander(
@@ -738,6 +788,9 @@ def _charts_filters_and_gallery_fragment(
                 llm_text = resolve_chart_llm_description(run_root, selected)
                 if llm_text:
                     st.markdown(llm_text)
+                    _render_chart_llm_feedback(
+                        selected, llm_text, key=f"fb_chart_fs_{selected.id}"
+                    )
         st.divider()
 
     section = _render_section_nav(has_overview=bool(view.overview_slots))
@@ -795,6 +848,9 @@ def _charts_filters_and_gallery_fragment(
 
 def _render_charts_body(ctx: RunScopedPageContext) -> None:
     _ensure_charts_filters_for_run(ctx.subject.subject_id, ctx.run_id)
+    st.session_state[_CHARTS_FB_RUN_ID] = ctx.run_id
+    st.session_state[_CHARTS_FB_SUBJECT_ID] = ctx.subject.subject_id
+    st.session_state[_CHARTS_FB_SUBJECT_TYPE] = ctx.subject.subject_type
 
     run_root = ctx.run_root
     all_artifacts = ArtifactService.list_artifacts(run_root)

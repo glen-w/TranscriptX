@@ -14,6 +14,7 @@ class WordcloudTerm:
     rank: int
     pos: Optional[str] = None
     kind: Optional[str] = None
+    token_count: Optional[int] = None
 
 
 @dataclass
@@ -22,7 +23,7 @@ class WordcloudTerms:
     variant: str
     variant_key: str
     speaker: Optional[str]
-    ngram: int
+    ngram: Optional[int]
     metric: str
     terms: list[WordcloudTerm]
     min_count: Optional[int] = None
@@ -30,6 +31,9 @@ class WordcloudTerms:
     run_id: Optional[str] = None
     transcript_key: Optional[str] = None
     created_at: Optional[str] = None
+    method: Optional[str] = None
+    upstream_schema_id: Optional[str] = None
+    upstream_semantics_version: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)

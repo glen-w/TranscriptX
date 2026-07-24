@@ -75,7 +75,7 @@ Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (refreshed 
 
 **Deps (non-empty):** entity_sentiment→ner; insight_eligibility→tics; pauses→acts; momentum→pauses; affect_tension→emotion+sentiment; contagion→emotion; qa_analysis→acts; moments→pauses+echoes+momentum+qa_analysis; summary→highlights.
 
-**Aliases (one agg, multiple modules):** voice_features / voice_charts_core / prosody_dashboard → `prosody`; semantic_similarity_advanced / semantic_similarity_v2 → `semantic_similarity`.
+**Aliases (one agg, multiple modules):** voice_features / voice_charts_core / prosody_dashboard → `prosody`; semantic_similarity_advanced / semantic_similarity_v2 → `semantic_similarity` (B14: composite charts + `motif_rows` / `semantic_similarity_pooled`; TF-IDF incomparable).
 
 **Notes (post-audit ships):** `transcript_quality` pools only within matching ASR provenance cohorts; emotion-family classifier aggs (`contextual_emotion`, `fine_grained_emotion`) are independent of lexical `emotion` and currently data-only at group chart layer; group LLM synthesis is a finalize-path composite (see [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md)), not a chart registry entry; `llm_custom_qa` group chart deferred pending v2 group loader; Wave 2 lexicons + `topic_shift` have dedicated pooled/temporal chart contracts.
 

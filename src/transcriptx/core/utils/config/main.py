@@ -326,6 +326,7 @@ class TranscriptXConfig:
                 "epistemic_markers": self._config_to_dict(
                     self.analysis.epistemic_markers
                 ),
+                "keyphrases": self._config_to_dict(self.analysis.keyphrases),
                 "politeness": self._config_to_dict(self.analysis.politeness),
                 "topic_shift": self._config_to_dict(self.analysis.topic_shift),
                 "echoes": self._config_to_dict(self.analysis.echoes),

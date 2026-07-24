@@ -28,6 +28,14 @@ def _v2_keys() -> set[str]:
         "analysis.semantic_similarity_v2.use_lexical_prefilter",
         "analysis.semantic_similarity_v2.lexical_prefilter_min_jaccard",
         "analysis.semantic_similarity_v2.strict_advanced_inputs",
+        "analysis.semantic_similarity_v2.motif_min_cluster_size",
+        "analysis.semantic_similarity_v2.cross_session_match_threshold",
+        "analysis.semantic_similarity_v2.min_sessions_for_recurring",
+        "analysis.semantic_similarity_v2.max_motifs_per_session",
+        "analysis.semantic_similarity_v2.max_motifs_per_group",
+        "analysis.semantic_similarity_v2.max_centroid_bytes",
+        "analysis.semantic_similarity_v2.cluster_eps",
+        "analysis.semantic_similarity_v2.cluster_min_samples",
     }
 
 

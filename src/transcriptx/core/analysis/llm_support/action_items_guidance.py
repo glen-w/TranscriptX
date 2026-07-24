@@ -143,8 +143,8 @@ def empty_extracts_user_warning(
     reasons: list[str] = []
     if invalid:
         reasons.append(
-            f"{invalid} failed schema validation (extra fields, unknown "
-            "record_type, empty text, or invalid confidence)"
+            f"{invalid} failed schema validation after coercion "
+            "(empty text, unusable confidence, or unknown record_type)"
         )
     if status_dropped:
         reasons.append(
@@ -159,8 +159,16 @@ def empty_extracts_user_warning(
         reasons.append("none survived filtering")
 
     detail = "; ".join(reasons)
+    schema_heavy = invalid > 0 and status_dropped == 0 and ungrounded == 0
+    guidance = (
+        "Re-running with the same settings will usually fail the same way. "
+        "Prefer a mid/strong JSON-capable model for llm_action_items "
+        "(Settings → LLM model selection), then re-run only that module."
+        if schema_heavy
+        else ACTION_ITEMS_RETRY_GUIDANCE
+    )
     return (
         f"No meeting extracts were published: the model returned {items_raw} "
         f"raw record(s), but {detail}. "
-        f"{ACTION_ITEMS_RETRY_GUIDANCE}"
+        f"{guidance}"
     )

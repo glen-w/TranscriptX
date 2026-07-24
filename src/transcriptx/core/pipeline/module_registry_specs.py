@@ -96,6 +96,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "transcriptx.core.analysis.epistemic_markers",
         "EpistemicMarkersAnalysis",
     ),
+    "keyphrases": (
+        "transcriptx.core.analysis.keyphrases",
+        "KeyphrasesAnalysis",
+    ),
     "politeness": (
         "transcriptx.core.analysis.politeness",
         "PolitenessAnalysis",

@@ -161,3 +161,27 @@ class TestEnsureDataDirs:
     def test_ensure_data_dirs_does_not_raise(self):
         paths_module.ensure_data_dirs()
         # No exception; in tests TRANSCRIPTX_OUTPUT_DIR is often set to .test_outputs
+
+    def test_ensure_data_dirs_creates_voice_layout(self, monkeypatch, tmp_path):
+        """Canonical voice dirs are created under speaker_profiles (durable tree)."""
+        monkeypatch.setenv("TRANSCRIPTX_DATA_DIR", str(tmp_path / "data"))
+        monkeypatch.setenv("TRANSCRIPTX_RECORDINGS_DIR", str(tmp_path / "recordings"))
+        monkeypatch.setenv("TRANSCRIPTX_TRANSCRIPTS_DIR", str(tmp_path / "transcripts"))
+        monkeypatch.setenv("TRANSCRIPTX_OUTPUT_DIR", str(tmp_path / "outputs"))
+        monkeypatch.setenv("TRANSCRIPTX_WAV_BACKUP_DIR", str(tmp_path / "wav"))
+        built = paths_module._build_paths()
+        monkeypatch.setattr(paths_module, "PATHS", built)
+        paths_module.ensure_data_dirs()
+        root = built.speaker_profiles_dir
+        for rel in (
+            "voice",
+            "voice/samples",
+            "voice/embeddings",
+            "voice/vectors",
+            "voice/generations",
+            "profiles",
+            "links",
+            "events",
+            "operations",
+        ):
+            assert (root / rel).is_dir(), rel

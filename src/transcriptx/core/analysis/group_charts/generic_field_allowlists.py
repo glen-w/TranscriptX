@@ -107,7 +107,15 @@ GENERIC_SESSION_FIELD_ALLOWLISTS: Dict[str, FrozenSet[str]] = {
     "insights": frozenset(
         {"theme_count", "recurring_idea_count", "notable_moment_count"}
     ),
-    "semantic_similarity": frozenset({"total_repetitions", "unique_patterns"}),
+    "semantic_similarity": frozenset(
+        {
+            "total_repetitions",
+            "unique_patterns",
+            "motif_count",
+            "recurring_motif_count",
+            "drift_score",
+        }
+    ),
     "voice_mismatch": frozenset(
         {"moments_count", "mismatch_score_mean", "mismatch_score_max"}
     ),

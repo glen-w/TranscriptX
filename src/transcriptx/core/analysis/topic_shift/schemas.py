@@ -75,6 +75,7 @@ class CoverageSpanModel(BaseModel):
     segment_end_idx: int  # inclusive
     label: str
     keyword_hints: list[str] = Field(default_factory=list)
+    text_excerpt: str = ""
     inferred: bool
     boundary_status: BoundaryStatusLiteral
     leading_boundary_id: Optional[str] = None

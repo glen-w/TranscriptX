@@ -10,6 +10,8 @@ from transcriptx.core.speaker_profiles.avatars import DATA_URL_MAX_BYTES
 from transcriptx.web.speaker_accent import (
     AccentResolveContext,
     resolve_speaker_accent,
+    resolve_speaker_profile_id,
+    speaker_profile_href,
 )
 
 _CHIP_PX = 40
@@ -70,6 +72,7 @@ def speaker_heading_with_avatar_html(
     content_type: str = "image/webp",
     context: AccentResolveContext | None = None,
     local_speaker_key: str | None = None,
+    profile_id: str | None = None,
 ) -> str:
     label = str(name or "Speaker").strip() or "Speaker"
     color = resolve_speaker_accent(
@@ -90,10 +93,25 @@ def speaker_heading_with_avatar_html(
             f'<span class="tx-speaker-heading-meta">'
             f"{html.escape(meta)}</span>"
         )
+    resolved_pid = resolve_speaker_profile_id(
+        label,
+        profile_id=profile_id,
+        context=context,
+        local_speaker_key=local_speaker_key,
+    )
+    if resolved_pid:
+        href = html.escape(speaker_profile_href(resolved_pid), quote=True)
+        title = html.escape(f"Open speaker profile: {label}", quote=True)
+        name_html = (
+            f'<a class="tx-speaker-profile-link" href="{href}" title="{title}">'
+            f"<strong>{html.escape(label)}</strong></a>"
+        )
+    else:
+        name_html = f"<strong>{html.escape(label)}</strong>"
     return (
         f'<div class="tx-speaker-heading" style="--speaker-accent: {color}">'
         f"{chip}"
-        f"<strong>{html.escape(label)}</strong>"
+        f"{name_html}"
         f"{meta_html}"
         f"</div>"
     )

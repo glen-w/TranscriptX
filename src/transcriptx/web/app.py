@@ -76,9 +76,33 @@ def _init_defaults() -> None:
     st.session_state.setdefault("analysis_run_in_progress", False)
 
 
+def _consume_speaker_profile_deep_link() -> None:
+    """Honor ``?speaker_profile=<id>`` from Overview / transcript name links."""
+    from transcriptx.web.speaker_accent import SPEAKER_PROFILE_QUERY_KEY
+
+    raw = st.query_params.get(SPEAKER_PROFILE_QUERY_KEY)
+    if raw is None:
+        return
+    if isinstance(raw, (list, tuple)):
+        pid = str(raw[0] if raw else "").strip()
+    else:
+        pid = str(raw).strip()
+    # Drop the query key whether or not the id is usable (avoid sticky loops).
+    try:
+        del st.query_params[SPEAKER_PROFILE_QUERY_KEY]
+    except Exception:
+        pass
+    if not pid:
+        return
+    st.session_state[PAGE_KEY] = "Speakers"
+    st.session_state["speakers_selected_profile"] = pid
+    st.rerun()
+
+
 def main() -> None:
     """Main application entry point."""
     _init_defaults()
+    _consume_speaker_profile_deep_link()
     current_page = st.session_state.get(PAGE_KEY, "Home")
     scenario = st.query_params.get("perf_scenario")
     run_id = start_run(page=current_page, scenario=str(scenario) if scenario else None)

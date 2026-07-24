@@ -200,6 +200,21 @@ def format_duration_display_from_config(seconds: float | int | None) -> str:
         return format_duration_display(seconds)
 
 
+def format_bytes_display(num_bytes: int | float | None) -> str:
+    """Format a byte count with adaptive units (B / KB / MB / GB)."""
+    try:
+        value = int(num_bytes or 0)
+    except (TypeError, ValueError):
+        value = 0
+    if value < 1024:
+        return f"{value} B"
+    if value < 1024 * 1024:
+        return f"{value / 1024:.1f} KB"
+    if value < 1024 * 1024 * 1024:
+        return f"{value / (1024 * 1024):.1f} MB"
+    return f"{value / (1024 * 1024 * 1024):.2f} GB"
+
+
 def compute_word_count_from_segments(segments) -> int:
     """Sum word counts across all segment text using :func:`count_words`."""
     total = 0

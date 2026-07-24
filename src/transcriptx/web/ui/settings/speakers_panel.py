@@ -75,6 +75,12 @@ def render_speakers_panel() -> None:
                 "Voice matching consent is controlled solely by "
                 "privacy.voice_settings.json under speaker_profiles."
             )
+            st.caption(
+                "Enrolled samples live on the host under "
+                f"`{root / 'voice'}` (Docker: `./data` bind mount). "
+                "Image rebuild / recreate keeps them; "
+                "Revoke consent or Delete voice evidence removes them."
+            )
             from transcriptx.core.speaker_profiles.voice.operator import (
                 VoiceOperatorStore,
             )
@@ -131,15 +137,36 @@ def render_speakers_panel() -> None:
                 revoke_key = ensure_idempotency_key(
                     st.session_state, "voice_privacy_revoke"
                 )
-                if st.button("Revoke voice matching consent", key="voice_privacy_revoke"):
+                st.checkbox(
+                    "I understand revoke permanently deletes all enrolled "
+                    "voice samples, embeddings, and vectors",
+                    key="voice_privacy_revoke_confirm",
+                )
+                if st.button(
+                    "Revoke voice matching consent",
+                    key="voice_privacy_revoke",
+                    disabled=not st.session_state.get(
+                        "voice_privacy_revoke_confirm", False
+                    ),
+                    help=(
+                        "Disables voice matching and runs a bounded wipe of "
+                        "speaker_profiles/voice evidence. Does not delete "
+                        "profiles or confirmed links. Docker image rebuild "
+                        "does not wipe voice data — this button does."
+                    ),
+                ):
                     try:
                         VoicePrivacyService().revoke(
                             operation_idempotency_key=revoke_key
                         )
                         st.session_state.pop("voice_privacy_revoke", None)
+                        st.session_state.pop(
+                            "voice_privacy_revoke_confirm", None
+                        )
                         st.warning(
                             "Consent revoked and voice artefacts wiped. "
-                            "Profiles and confirmed links were kept."
+                            "Profiles and confirmed links were kept. "
+                            "Re-enable and re-enrol to restore matching."
                         )
                         st.rerun()
                     except Exception as exc:

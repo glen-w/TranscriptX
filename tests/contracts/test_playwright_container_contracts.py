@@ -47,3 +47,22 @@ def test_runtime_dockerfile_includes_playwright_system_dependencies() -> None:
 def test_compose_sets_playwright_browser_cache_path() -> None:
     compose = (_repo_root() / "docker-compose.yml").read_text(encoding="utf-8")
     assert "PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright" in compose
+
+
+@pytest.mark.unit
+def test_compose_persists_data_dir_for_speaker_voice() -> None:
+    """Trusted-voice artefacts live under speaker_profiles on the ./data bind mount.
+
+    Image rebuild/recreate must not wipe enrolled samples; only an explicit
+    privacy revoke or profile wipe deletes voice/. Compose must keep DATA_DIR
+    on a host bind, not an anonymous/named volume.
+    """
+    compose = (_repo_root() / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "./data:/data" in compose
+    assert "TRANSCRIPTX_DATA_DIR=/data" in compose
+    # Named volume is only for HF/home cache — not project data.
+    assert "transcriptx_cache:/home/transcriptx/.cache" in compose
+    top_volumes = (
+        compose.rsplit("\nvolumes:\n", 1)[-1] if "\nvolumes:\n" in compose else ""
+    )
+    assert "speaker_profiles" not in top_volumes

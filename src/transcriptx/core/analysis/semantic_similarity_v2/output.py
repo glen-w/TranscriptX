@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-SCHEMA_VERSION = "semantic_similarity_v2.1"
+SCHEMA_VERSION = "semantic_similarity_v2.1.1"
 
 SUPPORTED_V2_MAJOR = (1,)
+
+# Embedding semantics version for cross-session provenance (B14).
+EMBEDDING_SEMANTICS_VERSION = "semantic_v2_embed_sem.1"
+
+POOLED_SCHEMA_VERSION = "semantic_similarity_pooled.1"
 
 
 def with_schema(payload: Dict[str, Any]) -> Dict[str, Any]:
