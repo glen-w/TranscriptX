@@ -41,6 +41,8 @@ With no arguments, starts the web interface at http://localhost:8501. Core-only:
 
 > **GPU note:** By default `transcriptx.sh` leaves CUDA visible when present. Opt into CPU-only with `TRANSCRIPTX_FORCE_CPU=1 ./transcriptx.sh` (clears `CUDA_VISIBLE_DEVICES` for that shell).
 
+> **Native Mac (Apple Silicon) MPS:** Status is **supported-with-caveats**, not universally validated. Docker **CPU** is the recommended predictable path (Docker on Mac cannot use host GPU/MPS). Native MPS may work for some torch workloads on a given host, but optional models are **not** guaranteed to initialise or execute on MPS. If MPS initialisation or model execution fails, re-run with `TRANSCRIPTX_FORCE_CPU=1` so the fallback is actionable — do not assume every optional model supports MPS reliably. See [known limitations](../known_limitations.md).
+
 **Manual install (from this repository — not PyPI):**
 
 The package is **not published on PyPI**. Do not use bare `pip install transcriptx` from PyPI. Authoritative cells: [install_verification_matrix.md](install_verification_matrix.md).
@@ -51,7 +53,9 @@ The package is **not published on PyPI**. Do not use bare `pip install transcrip
 - **Native GUI ≈ Docker:** `pip install -e ".[full,web]"` or use `./transcriptx.sh` / `requirements.txt`
 - **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, `pip install -e ".[keyphrases]"` (optional YAKE / KeyBERT for the `keyphrases` module; noun-chunks path works without the extra), `pip install -e ".[speaker_match]"`, etc.
 
-> **Install profiles (honesty):** Runtime markers today are **`core` | `full` only**. Streamlit lives in the **`[web]`** extra and in Docker/`requirements.txt`/`transcriptx.sh` — not in `[full]`. Aspirational names such as `basic` / `llm` as separate install profiles are **not** implemented. Docker images follow the fuller dependency set via `requirements.txt` / image build — that is **not** the same path as `pip install -e ".[full]"`. Treat Docker, `./transcriptx.sh`, and editable extras as related but non-equivalent install stories. See [install_profiles_matrix.md](../dev/install_profiles_matrix.md). BERTopic (`bertopic` / `hdbscan` / `umap-learn`) may ship in the default install so Docker and editable core installs get topic clustering without an extra; the `[bertopic]` extra remains a compatibility alias.
+> **Install profiles (honesty):** Runtime markers today are **`core` | `full` only**. Streamlit lives in the **`[web]`** extra and in Docker/`requirements.txt`/`transcriptx.sh` — not in `[full]`. Aspirational names such as `basic` / `llm` as separate install profiles are **not** implemented. Docker images follow the fuller dependency set via `requirements.txt` / image build — that is **not** the same path as `pip install -e ".[full]"`. Treat Docker, `./transcriptx.sh`, and editable extras as related but non-equivalent install stories. See [install_profiles_matrix.md](../dev/install_profiles_matrix.md).
+>
+> **BERTopic:** The module worked in base for a while. It was moved to **`[bertopic]`** (also in `[full]` / Docker) so **core** wheel / clean-env installs are not blocked by `umap-learn`→`numba`→`llvmlite` source builds on some hosts. Missing packages do not fail the build; runs degrade with `missing_extra:bertopic`. Full story: [bertopic_optional_module.md](../dev/bertopic_optional_module.md).
 
 **Dedicated environment (recommended):** TranscriptX does not use Prefect, Dagster, or other workflow engines. For a clean environment with only project dependencies, use a fresh virtualenv and install from the repo:
 

@@ -28,9 +28,7 @@ IMPORT_A = "550e8400-e29b-41d4-a716-446655440000"
 IMPORT_B = "660e8400-e29b-41d4-a716-446655440001"
 
 
-def _patch_roots(
-    monkeypatch: pytest.MonkeyPatch, transcripts_root: Path
-) -> None:
+def _patch_roots(monkeypatch: pytest.MonkeyPatch, transcripts_root: Path) -> None:
     metadata_dir = transcripts_root / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(
@@ -122,7 +120,9 @@ def test_backfill_merges_same_display_name_across_transcripts(
         transcript_paths=[a, b],
         merge_by_name=True,
     )
-    actions = {(i.transcript_path.name, i.local_speaker_key): i.action for i in plan.items}
+    actions = {
+        (i.transcript_path.name, i.local_speaker_key): i.action for i in plan.items
+    }
     assert actions[("meeting_a.json", "SPEAKER_00")] == "create"
     assert actions[("meeting_a.json", "SPEAKER_01")] == "create"
     assert actions[("meeting_b.json", "SPEAKER_00")] == "link"
@@ -168,9 +168,7 @@ def test_backfill_idempotent_when_already_linked(
     transcripts.mkdir()
     _patch_roots(monkeypatch, transcripts)
     path = _write_managed(transcripts, name="meeting", import_id=IMPORT_A)
-    SpeakerMappingService().bulk_update(
-        str(path), {"SPEAKER_00": "Eve"}, []
-    )
+    SpeakerMappingService().bulk_update(str(path), {"SPEAKER_00": "Eve"}, [])
     svc = _service(tmp_path, monkeypatch, transcripts)
     svc.create_profile_and_link(
         operation_idempotency_key=str(uuid4()),

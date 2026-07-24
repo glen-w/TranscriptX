@@ -57,15 +57,17 @@ def test_unsupported_schema_preserves_file(tmp_path: Path) -> None:
 
     path = tmp_path / "presentation_mode.json"
     path.write_text(
-        json.dumps({"schema_version": 99, "prefs": {"mode": MODE_FULL}, "prefs_hash": "x"}),
+        json.dumps(
+            {"schema_version": 99, "prefs": {"mode": MODE_FULL}, "prefs_hash": "x"}
+        ),
         encoding="utf-8",
     )
     prefs, draft = load_presentation_prefs(path)
     assert draft.recovery is True
     assert prefs.mode == MODE_GUIDED
-    assert "99" in path.read_text(encoding="utf-8") or "schema_version" in path.read_text(
+    assert "99" in path.read_text(
         encoding="utf-8"
-    )
+    ) or "schema_version" in path.read_text(encoding="utf-8")
 
 
 @pytest.mark.unit
@@ -147,7 +149,14 @@ def test_onboarding_dismiss_and_complete(tmp_path: Path, monkeypatch) -> None:
     prefs, draft = load_onboarding_prefs(path)
     assert prefs.dismissed is True
     assert draft.recovery is False
-    for item_id in ("open_library", "import_or_demo", "run_analysis", "open_insights_charts", "export_artifacts", "know_guided_full"):
+    for item_id in (
+        "open_library",
+        "import_or_demo",
+        "run_analysis",
+        "open_insights_charts",
+        "export_artifacts",
+        "know_guided_full",
+    ):
         assert set_item_state(item_id, "completed").ok
     prefs2, _ = load_onboarding_prefs(path)
     assert derived_complete(prefs2) is True
@@ -170,12 +179,15 @@ def test_onboarding_hash_mismatch_recovery(tmp_path: Path) -> None:
     )
     prefs, draft = load_onboarding_prefs(path)
     assert draft.recovery is True
-    assert save_onboarding_prefs(
-        OnboardingDraft(
-            prefs=built_in_prefs(),
-            raw_file_revision=raw_file_revision(b""),
-            recovery=True,
+    assert (
+        save_onboarding_prefs(
+            OnboardingDraft(
+                prefs=built_in_prefs(),
+                raw_file_revision=raw_file_revision(b""),
+                recovery=True,
+                path=path,
+            ),
             path=path,
-        ),
-        path=path,
-    ).ok is False
+        ).ok
+        is False
+    )

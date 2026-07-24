@@ -119,7 +119,7 @@ class SemanticBatchEmbedder:
                 self._mark_tfidf_fallback("missing_transformer_dependency")
             except Exception as exc:
                 log_error(
-                    "SEMANTIC_V2",
+                    "SEMANTIC",
                     f"Transformer embedding inference failed: {exc}",
                     exception=exc,
                 )

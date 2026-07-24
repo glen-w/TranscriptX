@@ -5,9 +5,7 @@ from typing import Any, Dict
 from . import register_extractor
 
 
-def extract_politeness_summary(
-    data: Dict[str, Any], summary: Dict[str, Any]
-) -> None:
+def extract_politeness_summary(data: Dict[str, Any], summary: Dict[str, Any]) -> None:
     global_stats = data.get("politeness_global_stats") or data.get("global_stats", {})
     if not isinstance(global_stats, dict):
         return

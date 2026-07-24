@@ -15,7 +15,10 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_voice_sample_path,
 )
 from transcriptx.core.speaker_profiles.store_io import dumps_model, utc_now_iso
-from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1, VoiceSampleV1
+from transcriptx.core.speaker_profiles.voice.models import (
+    VoiceEmbeddingV1,
+    VoiceSampleV1,
+)
 
 # Cap PlannedWrite entries per continuation journal (sample + embedding rows).
 VOICE_TRANSFER_CHUNK_SIZE = 32

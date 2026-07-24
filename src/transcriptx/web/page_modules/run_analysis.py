@@ -295,9 +295,7 @@ def _run_analysis_config_and_launch_fragment(
         key_prefix="run_analysis_qa",
         always_show=True,
     )
-    plan = apply_custom_qa_to_plan(
-        resolved, custom_qa_execution=custom_qa_execution
-    )
+    plan = apply_custom_qa_to_plan(resolved, custom_qa_execution=custom_qa_execution)
     render_effective_module_summary(
         plan,
         preset=resolved.preset,
@@ -348,8 +346,7 @@ def _run_analysis_config_and_launch_fragment(
     if isinstance(qa_request_questions, list):
         n_questions = len(qa_request_questions)
     q_part = (
-        f"{n_questions} custom question"
-        + ("s" if n_questions != 1 else "")
+        f"{n_questions} custom question" + ("s" if n_questions != 1 else "")
         if custom_qa_execution
         else "custom questions skipped"
     )

@@ -56,12 +56,10 @@ def build_profile_freshness_token(
             }
             for r in sorted(appearance_rows, key=lambda x: x.link_id)
         ],
-        "denominators": {
-            tid: dens.get(tid) for tid in referenced_tids if tid in dens
-        },
+        "denominators": {tid: dens.get(tid) for tid in referenced_tids if tid in dens},
     }
     return hashlib.sha256(
-        json.dumps(payload, separators=(",", ":"), sort_keys=True, allow_nan=False).encode(
-            "utf-8"
-        )
+        json.dumps(
+            payload, separators=(",", ":"), sort_keys=True, allow_nan=False
+        ).encode("utf-8")
     ).hexdigest()

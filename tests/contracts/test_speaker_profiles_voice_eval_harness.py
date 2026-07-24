@@ -14,7 +14,10 @@ from transcriptx.core.speaker_profiles.voice.eval_metrics import (
     evaluate_speaker_profiles_root,
     write_eval_report,
 )
-from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1, VoiceSampleV1
+from transcriptx.core.speaker_profiles.voice.models import (
+    VoiceEmbeddingV1,
+    VoiceSampleV1,
+)
 from transcriptx.core.speaker_profiles.voice.runtime import (
     EMBEDDING_DIM,
     MODEL_ID,
@@ -141,9 +144,9 @@ def test_evaluate_root_and_write_artifact(tmp_path: Path) -> None:
         (root / "voice" / "samples" / f"{sample_id}.voice_sample.json").write_bytes(
             dumps_model(sample)
         )
-        (root / "voice" / "embeddings" / f"{embedding_id}.voice_embedding.json").write_bytes(
-            dumps_model(emb)
-        )
+        (
+            root / "voice" / "embeddings" / f"{embedding_id}.voice_embedding.json"
+        ).write_bytes(dumps_model(emb))
         (root / "voice" / "vectors" / f"{embedding_id}.npy").write_bytes(vec_bytes)
 
     report = evaluate_speaker_profiles_root(root)

@@ -280,9 +280,7 @@ def test_ner_location_maps_soft_skip_without_folium(
 
     assert output_service.artifacts == []
     assert (tmp_path / "ner" / "ner-locations.json").exists()
-    assert any(
-        "Skipping NER location map HTML/PNG" in str(w.message) for w in caught
-    )
+    assert any("Skipping NER location map HTML/PNG" in str(w.message) for w in caught)
 
 
 def test_ner_location_maps_include_segment_refs(tmp_path: Path, monkeypatch) -> None:
@@ -315,4 +313,3 @@ def test_ner_location_maps_include_segment_refs(tmp_path: Path, monkeypatch) -> 
     assert payload["Alice"][0]["segment_index"] == 7
     assert payload["Alice"][0]["start"] == 42.0
     assert payload["Alice"][0]["sentence"] == "Alice mentioned Paris."
-

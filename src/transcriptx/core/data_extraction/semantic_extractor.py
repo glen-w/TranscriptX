@@ -15,19 +15,10 @@ from transcriptx.core.utils.similarity_utils import similarity_calculator
 def pick_semantic_similarity_payload(
     results_by_module: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """
-    Prefer v2 results when present, else legacy basic/advanced.
-
-    ``results_by_module`` maps module id → analysis result dict.
-    """
-    for key in (
-        "semantic_similarity",
-        "semantic_similarity",
-        "semantic_similarity_advanced",
-    ):
-        payload = results_by_module.get(key)
-        if isinstance(payload, dict) and payload:
-            return payload
+    """Prefer the epoch-1 ``semantic_similarity`` result when present."""
+    payload = results_by_module.get("semantic_similarity")
+    if isinstance(payload, dict) and payload:
+        return payload
     return {}
 
 

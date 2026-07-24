@@ -95,7 +95,10 @@ def rank_open_set(
         if len(accepted) >= 1 and (best.score - cand.score) < p.margin:
             # Keep if within margin only for second place documentation —
             # require margin against best for additional candidates.
-            if cand.profile_id != best.profile_id and (best.score - cand.score) < p.margin:
+            if (
+                cand.profile_id != best.profile_id
+                and (best.score - cand.score) < p.margin
+            ):
                 continue
         # Cap confidence when only one query excerpt
         conf = cand.confidence

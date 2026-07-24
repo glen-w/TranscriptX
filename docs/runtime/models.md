@@ -18,7 +18,7 @@ Shipped defaults target CPU-friendly English analysis:
 | spaCy (NER, highlights, …) | `en_core_web_md` |
 | Semantic similarity + echoes | `sentence-transformers/all-MiniLM-L6-v2` |
 | Semantic similarity v2 | `sentence-transformers/all-MiniLM-L6-v2` |
-| BERTopic embeddings | `all-MiniLM-L6-v2` (included in default install; `[bertopic]` is a compat alias) |
+| BERTopic embeddings | `all-MiniLM-L6-v2` (requires `[bertopic]` / `[full]` / Docker stack; see [bertopic_optional_module.md](../dev/bertopic_optional_module.md)) |
 | Keyphrases (KeyBERT optional) | `sentence-transformers/all-MiniLM-L6-v2` via `analysis.keyphrases.keybert_model_id` (`[keyphrases]` extra; noun-chunks need spaCy/NLP, not this model) |
 | Sentiment | `vader` (lexicon) |
 | Emotion (lexical `emotion`) | NRCLex vocabulary association (`emotion_lexical` extra) |
@@ -36,7 +36,7 @@ Set in your **gitignored** `.env` (recommended) or project `config.json`:
 ```bash
 TRANSCRIPTX_SPACY_MODEL=en_core_web_lg
 TRANSCRIPTX_SEMANTIC_MODEL=sentence-transformers/all-mpnet-base-v2
-TRANSCRIPTX_SEMANTIC_V2_MODEL=sentence-transformers/all-mpnet-base-v2
+TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL=sentence-transformers/all-mpnet-base-v2
 TRANSCRIPTX_EMOTION_MODEL=j-hartmann/emotion-english-distilroberta-base
 TRANSCRIPTX_SENTIMENT_BACKEND=transformers
 TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2
@@ -63,7 +63,7 @@ Compose does **not** inject every `TRANSCRIPTX_*` variable automatically—only 
 |----------|---------------|---------|
 | `TRANSCRIPTX_SPACY_MODEL` | spaCy runtime (`get_nlp_model`) | NER, highlights, insight eligibility, shared tokenization |
 | `TRANSCRIPTX_SEMANTIC_MODEL` | `analysis.semantic_model_name` | Legacy semantic similarity, echoes paraphrase embeddings |
-| `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `analysis.semantic_similarity.model_name` | `semantic_similarity` module |
+| `TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL` | `analysis.semantic_similarity.model_name` | `semantic_similarity` module |
 | `TRANSCRIPTX_EMOTION_MODEL` | legacy alias toward contextual profile (prefer `analysis.contextual_emotion.profile_id`) | Deprecated flat key; conflicting new+old values fail validation when both set |
 | `TRANSCRIPTX_SENTIMENT_BACKEND` | `analysis.sentiment_backend` | `vader`, `transformers`, or `textblob` |
 | `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | `analysis.bertopic.embedding_model` | BERTopic embeddings only |
@@ -114,7 +114,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 | Module | Config / env | Upgrade ideas |
 |--------|----------------|---------------|
 | **NER** | `TRANSCRIPTX_SPACY_MODEL` | `en_core_web_lg`, `en_core_web_trf` |
-| **Semantic similarity** (legacy + v2) | `TRANSCRIPTX_SEMANTIC_MODEL`, `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `all-mpnet-base-v2`, other sentence-transformers checkpoints |
+| **Semantic similarity** | `TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL` (module); `TRANSCRIPTX_SEMANTIC_MODEL` (legacy scalar) | `all-mpnet-base-v2`, other sentence-transformers checkpoints |
 
 **B14 cross-session motifs:** group matching requires a shared `provenance_compatibility_key` (backend, model/revision, embedding semantics version `semantic_v2_embed_sem.1`, pooling, truncation, L2, vector dim). TF-IDF fallback is **export-only / incomparable** (per-transcript vocabulary) and is never cross-matched.
 | **Echoes** (semantic paraphrase) | `TRANSCRIPTX_SEMANTIC_MODEL` | Same as semantic model |
@@ -136,7 +136,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 
 ### Profiles vs models
 
-`quick` / `full` analysis mode and `semantic_similarity` profiles (`fast_v2`, `balanced_v2`, `deep_v2`) change **thresholds, timeouts, and candidate limits**—not the embedding model. Pick the model explicitly via env or config.
+`quick` / `full` analysis mode and `semantic_similarity` profiles (`fast`, `balanced`, `deep`) change **thresholds, timeouts, and candidate limits**—not the embedding model. Pick the model explicitly via env or config.
 
 `ner_use_light_model` in quick mode only switches spaCy to `en_core_web_sm` when `TRANSCRIPTX_SPACY_MODEL` is unset (downgrade, not upgrade).
 

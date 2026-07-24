@@ -58,9 +58,11 @@ def run_marker_analysis(
         "language_resolution": lang_tag,
         "language_status": "supported" if english_ok else "unsupported",
         "min_tokens_for_rates": int(min_tokens_for_rates),
-        "enabled_categories": list(enabled_categories)
-        if enabled_categories is not None
-        else list(categories),
+        "enabled_categories": (
+            list(enabled_categories)
+            if enabled_categories is not None
+            else list(categories)
+        ),
     }
 
     if not english_ok:

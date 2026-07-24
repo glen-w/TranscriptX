@@ -30,7 +30,7 @@ Python 3.10–3.12. Core: `pip install -e .`. GUI: `pip install -e ".[web]"`. An
 
 Runtime install markers today are **`core`** and **`full`** only (aspirational `basic`/`llm` profile names are not implemented). Streamlit is the separate **`[web]`** extra.
 
-Details: [installation](docs/runtime/installation.md) · [install verification matrix](docs/runtime/install_verification_matrix.md).
+Details: [installation](docs/runtime/installation.md) · [install verification matrix](docs/runtime/install_verification_matrix.md) · [known limitations](docs/known_limitations.md).
 
 ## How you use it
 

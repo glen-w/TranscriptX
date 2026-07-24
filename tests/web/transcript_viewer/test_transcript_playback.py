@@ -156,7 +156,9 @@ def test_reset_clears_stale_active_absent_from_targets() -> None:
     assert state[transcript_mod._PLAY_KEY] is None
 
 
-def test_either_tab_callback_writes_same_play_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_either_tab_callback_writes_same_play_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     binding = TranscriptPlaybackBinding(
         enabled=True,
         targets={
@@ -209,12 +211,8 @@ def test_trigger_clip_warm_once_per_signature(
     ]
     audio = tmp_path / "a.mp3"
     audio.write_bytes(b"x")
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, None, "owner", "play_key"
-    )
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, None, "owner", "play_key"
-    )
+    trigger_clip_warm(controller, "/t.json", audio, segs, None, "owner", "play_key")
+    trigger_clip_warm(controller, "/t.json", audio, segs, None, "owner", "play_key")
     assert controller.warm_clips.call_count == 1
     # Active at position 1 warms from that segment onward.
     session.clear()
@@ -225,9 +223,7 @@ def test_trigger_clip_warm_once_per_signature(
         already_inflight=0,
         requested=2,
     )
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, 1, "owner", "play_key"
-    )
+    trigger_clip_warm(controller, "/t.json", audio, segs, 1, "owner", "play_key")
     args = controller.warm_clips.call_args[0]
     assert args[1] == [(1.0, 2.0), (2.0, 3.0)]
 
@@ -245,9 +241,7 @@ def test_trigger_clip_warm_does_not_set_sig_on_failure(
     segs = [SegmentInfo(index=0, start=0.0, end=1.0, text="a", speaker="A")]
     audio = tmp_path / "a.mp3"
     audio.write_bytes(b"x")
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, None, "owner", "play_key"
-    )
+    trigger_clip_warm(controller, "/t.json", audio, segs, None, "owner", "play_key")
     assert "play_key_warm_sig" not in session
     # Retry allowed.
     controller.warm_clips.side_effect = None
@@ -260,9 +254,7 @@ def test_trigger_clip_warm_does_not_set_sig_on_failure(
         already_inflight=0,
         requested=1,
     )
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, None, "owner", "play_key"
-    )
+    trigger_clip_warm(controller, "/t.json", audio, segs, None, "owner", "play_key")
     assert "play_key_warm_sig" in session
     assert controller.warm_clips.call_count == 2
 
@@ -289,9 +281,7 @@ def test_trigger_clip_warm_retries_after_transient_result(
     segs = [SegmentInfo(index=0, start=0.0, end=1.0, text="a", speaker="A")]
     audio = tmp_path / "a.mp3"
     audio.write_bytes(b"x")
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, None, "owner", "play_key"
-    )
+    trigger_clip_warm(controller, "/t.json", audio, segs, None, "owner", "play_key")
     assert "play_key_warm_sig" not in session
     controller.warm_clips.return_value = WarmClipsResult(
         accepted=1,
@@ -300,13 +290,13 @@ def test_trigger_clip_warm_retries_after_transient_result(
         already_inflight=0,
         requested=1,
     )
-    trigger_clip_warm(
-        controller, "/t.json", audio, segs, None, "owner", "play_key"
-    )
+    trigger_clip_warm(controller, "/t.json", audio, segs, None, "owner", "play_key")
     assert "play_key_warm_sig" in session
 
 
-def test_render_active_clip_success_and_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_render_active_clip_success_and_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from transcriptx.web.components import playback_panel as panel
 
     audio_calls: list[Any] = []
@@ -465,7 +455,9 @@ def test_availability_enabled_when_path_audio_ffmpeg_ok(tmp_path: Path) -> None:
     assert result.reason is None
 
 
-def test_trigger_clip_warm_noop_on_empty_targets(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_trigger_clip_warm_noop_on_empty_targets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     session: dict[str, Any] = {}
     monkeypatch.setattr(
         "transcriptx.web.components.playback_panel.st.session_state",
@@ -499,9 +491,7 @@ def test_render_active_clip_vanished_audio_after_preflight(
     controller.get_clip_bytes.side_effect = None
     controller.get_clip_bytes.return_value = b"ok"
     audio_calls: list[Any] = []
-    monkeypatch.setattr(
-        panel.st, "audio", lambda *a, **k: audio_calls.append((a, k))
-    )
+    monkeypatch.setattr(panel.st, "audio", lambda *a, **k: audio_calls.append((a, k)))
     other = SegmentInfo(index=1, start=1.0, end=2.0, text="y", speaker="A")
     panel.render_active_clip(controller, "/t.json", other, autoplay=True)
     assert audio_calls

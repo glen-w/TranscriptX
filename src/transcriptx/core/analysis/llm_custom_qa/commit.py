@@ -12,9 +12,7 @@ from typing import Any, Optional
 from transcriptx.core.analysis.llm_custom_qa.errors import CustomQAArtifactCommitError
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
     COMMIT_MARKER_SCHEMA_VERSION,
-    COMMIT_MARKER_SCHEMA_VERSION_V1,
-    COMMIT_MARKER_SCHEMA_VERSION_V2,
-    is_v2_execution_enabled,
+    is_structured_execution_enabled,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_text
 from transcriptx.core.utils.artifact_writer import write_json, write_text
@@ -133,7 +131,7 @@ def promote_generation(
         ) from exc
 
 
-def promote_generation_v2(
+def promote_generation_named(
     *,
     stem: Path,
     generation_id: str,
@@ -141,7 +139,7 @@ def promote_generation_v2(
     md_staging: Path,
     questions_metadata: dict[str, Any] | None = None,
 ) -> tuple[Path, Path, Path | None]:
-    """V2: promote staging → generation-named files, then flip active.
+    """Promote staging → generation-named files, then flip active.
 
     Returns (json_gen, md_gen, metadata_gen_or_none).
     """
@@ -187,9 +185,7 @@ def _best_effort_aliases(
         _fsync_path(json_alias)
     except Exception as exc:
         warnings += 1
-        logger.warning(
-            "custom_qa alias update failed for %s: %s", json_alias.name, exc
-        )
+        logger.warning("custom_qa alias update failed for %s: %s", json_alias.name, exc)
     try:
         write_text(str(md_alias), md_gen.read_text(encoding="utf-8"))
         _fsync_path(md_alias)
@@ -214,8 +210,9 @@ def commit_llm_custom_qa_artifacts(
 ) -> str:
     """Full staging → commit marker → active → promote (+ optional orphan sweep).
 
-    Protocol is selected by activation (or ``force_protocol`` in {"v1","v2"}).
-    Alias failures under v2 are warnings only.
+    Protocol is selected by structured execution (or ``force_protocol`` in
+    ``{"alias", "generational"}``). Alias failures under generational layout
+    are warnings only.
     """
     from transcriptx.core.utils.run_writer_locks import (
         LockAcquisitionError,
@@ -230,10 +227,10 @@ def commit_llm_custom_qa_artifacts(
     if run_dir.name == "global" and run_dir.parent.name == "data":
         lock_root = run_dir.parent.parent.parent
 
-    use_v2 = (
-        force_protocol == "v2"
-        if force_protocol in ("v1", "v2")
-        else is_v2_execution_enabled()
+    use_generational = (
+        force_protocol == "generational"
+        if force_protocol in ("alias", "generational")
+        else is_structured_execution_enabled()
     )
 
     def _commit_body() -> int:
@@ -244,7 +241,7 @@ def commit_llm_custom_qa_artifacts(
             payload=payload,
             markdown=markdown,
         )
-        if use_v2:
+        if use_generational:
             json_gen, md_gen, meta_gen = generation_paths(stem, gid)
             meta_sha: str | None = None
             meta_name: str | None = None
@@ -258,14 +255,14 @@ def commit_llm_custom_qa_artifacts(
                 generation_id=gid,
                 json_staging=json_staging,
                 md_staging=md_staging,
-                commit_marker_schema_version=COMMIT_MARKER_SCHEMA_VERSION_V2,
+                commit_marker_schema_version=COMMIT_MARKER_SCHEMA_VERSION,
                 run_execution_id=run_execution_id,
                 json_name=json_gen.name,
                 md_name=md_gen.name,
                 questions_metadata_name=meta_name,
                 questions_metadata_sha256=meta_sha,
             )
-            json_auth, md_auth, _ = promote_generation_v2(
+            json_auth, md_auth, _ = promote_generation_named(
                 stem=stem,
                 generation_id=gid,
                 json_staging=json_staging,
@@ -286,7 +283,7 @@ def commit_llm_custom_qa_artifacts(
                 generation_id=gid,
                 json_staging=json_staging,
                 md_staging=md_staging,
-                commit_marker_schema_version=COMMIT_MARKER_SCHEMA_VERSION_V1,
+                commit_marker_schema_version=COMMIT_MARKER_SCHEMA_VERSION,
                 run_execution_id=run_execution_id,
             )
             promote_generation(

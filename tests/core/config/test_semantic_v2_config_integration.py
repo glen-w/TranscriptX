@@ -49,8 +49,7 @@ def test_run_override_v2_wins_over_project(config_dir, tmp_path) -> None:
     resolved = resolve_effective_config(run_dir=run_dir)
     assert resolved.effective_config.analysis.semantic_similarity.batch_size == 16
     assert (
-        resolved.sources_by_key.get("analysis.semantic_similarity.batch_size")
-        == "run"
+        resolved.sources_by_key.get("analysis.semantic_similarity.batch_size") == "run"
     )
 
 
@@ -66,14 +65,12 @@ def test_v2_roundtrip_save_load(config_dir) -> None:
 
 
 def test_draft_override_v2_validates() -> None:
-    errors = validate_config(
-        {"analysis": {"semantic_similarity": {"batch_size": 0}}}
-    )
+    errors = validate_config({"analysis": {"semantic_similarity": {"batch_size": 0}}})
     assert "analysis.semantic_similarity.batch_size" in errors
 
 
 def test_env_semantic_v2_model_applies(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TRANSCRIPTX_SEMANTIC_V2_MODEL", "custom/model")
+    monkeypatch.setenv("TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL", "custom/model")
     with patch("transcriptx.core.config.resolver.load_project_config", return_value={}):
         with patch(
             "transcriptx.core.config.resolver.load_draft_override", return_value={}
@@ -83,7 +80,7 @@ def test_env_semantic_v2_model_applies(monkeypatch: pytest.MonkeyPatch) -> None:
         resolved.effective_config.analysis.semantic_similarity.model_name
         == "custom/model"
     )
-    monkeypatch.delenv("TRANSCRIPTX_SEMANTIC_V2_MODEL", raising=False)
+    monkeypatch.delenv("TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL", raising=False)
 
 
 def test_env_target_path_in_pydantic_model() -> None:
@@ -91,11 +88,11 @@ def test_env_target_path_in_pydantic_model() -> None:
 
 
 def test_apply_transcriptx_semantic_v2_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TRANSCRIPTX_SEMANTIC_V2_MODEL", "env/model")
+    monkeypatch.setenv("TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL", "env/model")
     cfg = TranscriptXConfig()
     apply_transcriptx_env(cfg)
     assert cfg.analysis.semantic_similarity.model_name == "env/model"
-    monkeypatch.delenv("TRANSCRIPTX_SEMANTIC_V2_MODEL", raising=False)
+    monkeypatch.delenv("TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL", raising=False)
 
 
 def test_full_default_config_validates_clean() -> None:
@@ -103,8 +100,6 @@ def test_full_default_config_validates_clean() -> None:
     assert "metadata.duration_calculation" not in errors
     assert "dashboard.duration_summary_style" not in errors
     v2_errors = {
-        k: v
-        for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity.")
+        k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}

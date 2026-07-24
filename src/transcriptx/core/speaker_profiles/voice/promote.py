@@ -15,7 +15,11 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_voice_embedding_path,
     relative_voice_sample_path,
 )
-from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, utc_now_iso
+from transcriptx.core.speaker_profiles.store_io import (
+    dumps_model,
+    ensure_layout,
+    utc_now_iso,
+)
 from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
 from transcriptx.core.speaker_profiles.voice.models import (
     VoiceEmbeddingV1,
@@ -55,7 +59,10 @@ class VoicePromotionService:
             sample = VoiceSampleV1.model_validate_json(
                 sample_path.read_text(encoding="utf-8")
             )
-            if sample.trust_level == "promoted" and sample.eligibility_state == "eligible":
+            if (
+                sample.trust_level == "promoted"
+                and sample.eligibility_state == "eligible"
+            ):
                 return ""
 
             now = utc_now_iso()

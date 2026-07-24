@@ -44,6 +44,7 @@ def finite_valid_duration(segment: Mapping[str, Any]) -> float | None:
         return None
     return value
 
+
 SpeakingShareBasis = Literal["duration", "unavailable"]
 AppearanceFlag = Literal[
     "ok",
@@ -346,11 +347,16 @@ def aggregate_profile(
 ) -> ProfileAggregate:
     rows = [
         build_appearance_row(
-            profile=profile, link=link, resolver=resolver, include_ignored=include_ignored
+            profile=profile,
+            link=link,
+            resolver=resolver,
+            include_ignored=include_ignored,
         )
         for link in links
     ]
-    from transcriptx.core.speaker_profiles.freshness import build_profile_freshness_token
+    from transcriptx.core.speaker_profiles.freshness import (
+        build_profile_freshness_token,
+    )
     from transcriptx.core.speaker_profiles.longitudinal import (
         dedupe_to_transcript_contributions,
     )

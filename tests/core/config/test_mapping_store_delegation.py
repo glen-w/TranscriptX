@@ -132,11 +132,11 @@ def test_ss_v2_preset_file_then_resolve(tmp_path: Path) -> None:
         json.dumps(
             {
                 "analysis": {
-                    "active_semantic_similarity_profile": "fast_v2",
+                    "active_semantic_similarity_profile": "fast",
                     "semantic_similarity_profiles": {
                         **cfg.analysis.semantic_similarity_profiles,
-                        "fast_v2": {
-                            **cfg.analysis.semantic_similarity_profiles["fast_v2"],
+                        "fast": {
+                            **cfg.analysis.semantic_similarity_profiles["fast"],
                             "top_k_per_segment": 7,
                         },
                     },
@@ -146,7 +146,7 @@ def test_ss_v2_preset_file_then_resolve(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     load_config_file_into(cfg, str(path))
-    assert cfg.analysis.active_semantic_similarity_profile == "fast_v2"
+    assert cfg.analysis.active_semantic_similarity_profile == "fast"
     resolved, _ = resolve_semantic_similarity_runtime(
         cfg.analysis, modules_in_run=set()
     )
@@ -183,8 +183,8 @@ def test_quick_full_settings_mode_consumer(tmp_path: Path) -> None:
 def test_semantic_v2_presets_vs_adapter_target() -> None:
     with without_transcriptx_env():
         cfg = TranscriptXConfig()
-    # Built-in preset path: active balanced_v2 overlays dataclass defaults (0.7 → 0.72).
-    assert cfg.analysis.active_semantic_similarity_profile == "balanced_v2"
+    # Built-in preset path: active balanced overlays dataclass defaults (0.7 → 0.72).
+    assert cfg.analysis.active_semantic_similarity_profile == "balanced"
     resolved, _ = resolve_semantic_similarity_runtime(
         cfg.analysis, modules_in_run=set()
     )
@@ -195,7 +195,7 @@ def test_semantic_v2_presets_vs_adapter_target() -> None:
     apply_profile_to_config(cfg.analysis.semantic_similarity, {"batch_size": 11})
     assert cfg.analysis.semantic_similarity.batch_size == 11
     # Preset dict unchanged by adapter target apply
-    assert "balanced_v2" in cfg.analysis.semantic_similarity_profiles
+    assert "balanced" in cfg.analysis.semantic_similarity_profiles
 
 
 def test_mapping_store_kwargs_rejected() -> None:

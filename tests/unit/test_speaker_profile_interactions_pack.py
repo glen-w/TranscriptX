@@ -11,7 +11,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from transcriptx.core.speaker_profiles.aggregates import AppearanceRow, OccurrenceMetrics
+from transcriptx.core.speaker_profiles.aggregates import (
+    AppearanceRow,
+    OccurrenceMetrics,
+)
 from transcriptx.core.speaker_profiles.interactions_pack import (
     build_profile_interactions_pack,
     find_interactions_speaker_summary_path,

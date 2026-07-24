@@ -70,8 +70,8 @@ def test_requirements_include_keyphrases_optional_stack() -> None:
 
 
 @pytest.mark.unit
-def test_bertopic_extra_is_compat_alias_for_base_stack() -> None:
-    """``[bertopic]`` remains installable; packages are owned by base for now."""
+def test_bertopic_extra_owns_stack() -> None:
+    """``[bertopic]`` owns bertopic/hdbscan/umap-learn (not base)."""
     reqs = _parse_optional_extra("bertopic")
     joined = " ".join(reqs).lower()
     for forbidden in (
@@ -101,8 +101,8 @@ def test_sentence_transformers_owned_by_base() -> None:
 
 
 @pytest.mark.unit
-def test_bertopic_stack_owned_by_base() -> None:
-    """Temporary default install: bertopic/hdbscan/umap-learn live in base deps."""
+def test_bertopic_stack_not_in_base() -> None:
+    """BERTopic stack lives in [bertopic]/[full], not base (llvmlite/umap gate)."""
     text = PYPROJECT.read_text(encoding="utf-8")
     deps_match = re.search(
         r"(?ms)^dependencies\s*=\s*\[(.*?)\]\s*\n\n\[project",
@@ -110,6 +110,10 @@ def test_bertopic_stack_owned_by_base() -> None:
     )
     assert deps_match, "base dependencies block not found"
     body = deps_match.group(1).lower()
-    assert "bertopic" in body
-    assert "hdbscan" in body
-    assert "umap-learn" in body
+    assert "bertopic" not in body
+    assert "hdbscan" not in body
+    assert "umap-learn" not in body
+    extra = " ".join(_parse_optional_extra("bertopic")).lower()
+    assert "bertopic" in extra
+    assert "hdbscan" in extra
+    assert "umap-learn" in extra

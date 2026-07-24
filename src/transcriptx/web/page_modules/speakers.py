@@ -22,7 +22,9 @@ from transcriptx.core.speaker_profiles.aggregates import (
     ProfileAggregate,
     ProfileListItem,
 )
-from transcriptx.core.speaker_profiles.discovery import discover_occurrences_for_resolved
+from transcriptx.core.speaker_profiles.discovery import (
+    discover_occurrences_for_resolved,
+)
 from transcriptx.core.speaker_profiles.errors import StaleUpdateError
 from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
 from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
@@ -57,10 +59,22 @@ from transcriptx.core.speaker_profiles.time_series import (
     build_directory_activity_chart,
 )
 from transcriptx.utils.html_utils import wrap_tooltip_text
+from transcriptx.core.utils.paths import PATHS
+from transcriptx.core.utils.speaker import parse_speaker_name
+from transcriptx.web.components.empty_state import render_empty_state
+from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_transcript_from_path,
 )
+from transcriptx.web.speaker_avatar import speaker_heading_with_avatar_html
+from transcriptx.web.speaker_profile_signals import (
+    INCLUDE_IGNORED_SESSION_KEY,
+    SHOW_ARCHIVED_SESSION_KEY,
+    SHOW_MERGED_SESSION_KEY,
+    consume_cache_invalidation_signal,
+)
+from transcriptx.web.state import SELECTBOX_PLACEHOLDER_SPEAKER
 
 _METHODOLOGY_CAPTIONS: dict[str, str] = {
     "share.duration_only": "Speaking share uses duration only (never turn share).",
@@ -156,18 +170,6 @@ def _section_heading_with_info_html(title: str, tip_html: str) -> str:
         "</div>"
     )
 
-from transcriptx.core.utils.paths import PATHS
-from transcriptx.core.utils.speaker import parse_speaker_name
-from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_shell
-from transcriptx.web.speaker_avatar import speaker_heading_with_avatar_html
-from transcriptx.web.speaker_profile_signals import (
-    INCLUDE_IGNORED_SESSION_KEY,
-    SHOW_ARCHIVED_SESSION_KEY,
-    SHOW_MERGED_SESSION_KEY,
-    consume_cache_invalidation_signal,
-)
-from transcriptx.web.state import SELECTBOX_PLACEHOLDER_SPEAKER
 
 _SPEAKERS_DESCRIPTION = (
     "Longitudinal speaker profiles linked across managed library transcripts. "
@@ -242,7 +244,9 @@ def _directory_chart_frame(
     frame: dict[str, list[Any]] = {"date": labels}
     for key, points in chart.series_by_key.items():
         col = "Other" if key == "Other" else name_by_id.get(key, key)
-        by_label = {p.display_label: (p.value if p.value is not None else 0.0) for p in points}
+        by_label = {
+            p.display_label: (p.value if p.value is not None else 0.0) for p in points
+        }
         frame[col] = [by_label.get(lab, 0.0) for lab in labels]
     return frame
 
@@ -467,8 +471,7 @@ def _render_directory_overview(
     if not chart_profile_ids:
         return
     headline_words = {
-        pid: int(agg.headline_words)
-        for pid, agg in snap.aggregates_by_profile.items()
+        pid: int(agg.headline_words) for pid, agg in snap.aggregates_by_profile.items()
     }
     chart = build_directory_activity_chart(
         profile_rows=snap.appearances_by_profile,
@@ -491,7 +494,9 @@ def _render_merged_readonly(
 ) -> None:
     target_id = profile.merged_into_profile_id
     target = profiles_by_id.get(target_id) if target_id else None
-    target_name = target.display_name if target is not None else (target_id or "unknown")
+    target_name = (
+        target.display_name if target is not None else (target_id or "unknown")
+    )
     st.info(
         f"Merged redirect: `{profile.profile_id}` → **{target_name}** "
         f"(`{target_id}`)."
@@ -523,9 +528,13 @@ def _render_profile_detail(
     if profile.status == "archived":
         st.warning("This profile is archived. New links are not allowed.")
     if listing_item and listing_item.needs_repair:
-        st.error("Intersecting incomplete operations block some reads for this profile.")
+        st.error(
+            "Intersecting incomplete operations block some reads for this profile."
+        )
     if profile_blocked:
-        st.error("Mutations are disabled while this profile intersects a blocking operation.")
+        st.error(
+            "Mutations are disabled while this profile intersects a blocking operation."
+        )
 
     meta = (
         f"{profile.status} · freshness `{agg.freshness_token[:12]}…` · "
@@ -661,7 +670,9 @@ def _render_voice_controls(
         from transcriptx.core.speaker_profiles.voice.inventory import (
             list_samples_for_profile,
         )
-        from transcriptx.core.speaker_profiles.voice.promote import VoicePromotionService
+        from transcriptx.core.speaker_profiles.voice.promote import (
+            VoicePromotionService,
+        )
         from transcriptx.core.speaker_profiles.voice.wipe import VoiceWipeService
     except Exception:
         return
@@ -680,9 +691,7 @@ def _render_voice_controls(
         ineligible = sum(1 for s in samples if s.eligibility_state != "eligible")
         from transcriptx.core.speaker_profiles.voice.operator import VoiceOperatorStore
 
-        bootstrap_max_links = (
-            VoiceOperatorStore(snap.root).read().bootstrap_max_links
-        )
+        bootstrap_max_links = VoiceOperatorStore(snap.root).read().bootstrap_max_links
         st.caption(
             f"{len(samples)} sample(s) · {eligible} eligible · "
             f"{ineligible} need promotion · enrol cap {bootstrap_max_links} "
@@ -1336,7 +1345,9 @@ def _render_sentiment_trends(
             )
 
 
-def _series_points_frame(points: tuple[Any, ...], value_key: str) -> list[dict[str, Any]]:
+def _series_points_frame(
+    points: tuple[Any, ...], value_key: str
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for p in points:
         if p.value is None:
@@ -1390,7 +1401,9 @@ def _render_appearances_table(
                     if row.appearance_date is not None
                     else "Unknown date"
                 )
-                transcript_label = row.current_relpath or row.observed_transcript_relpath
+                transcript_label = (
+                    row.current_relpath or row.observed_transcript_relpath
+                )
                 share = (
                     f"{floor(row.speaking_share * 100)}%"
                     if row.speaking_share is not None
@@ -1436,7 +1449,9 @@ def _render_appearances_table(
                                         local_speaker_key=row.local_speaker_key,
                                         expected_link_id=row.link_id,
                                     )
-                                    consume_cache_invalidation_signal(result.cache_signal)
+                                    consume_cache_invalidation_signal(
+                                        result.cache_signal
+                                    )
                                     _clear_idempotency(f"unlink_{row.link_id}")
                                     st.session_state.pop(confirm_unlink, None)
                                     st.rerun()
@@ -1555,7 +1570,11 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
         with st.popover("Choose colour"):
             chosen_accent = st.color_picker(
                 "Accent colour",
-                value=default_accent if str(default_accent).startswith("#") else SPEAKER_ACCENTS[0],
+                value=(
+                    default_accent
+                    if str(default_accent).startswith("#")
+                    else SPEAKER_ACCENTS[0]
+                ),
                 key=f"{form_prefix}_color_picker",
                 disabled=clear_accent,
             )
@@ -1634,7 +1653,9 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
             return
 
         aliases = [line.strip() for line in aliases_text.splitlines() if line.strip()]
-        picker_value = st.session_state.get(f"{form_prefix}_color_picker", chosen_accent)
+        picker_value = st.session_state.get(
+            f"{form_prefix}_color_picker", chosen_accent
+        )
         payload = {
             "profile_id": profile.profile_id,
             "expected_content_sha256": sha,
@@ -1758,7 +1779,11 @@ def _render_link_another(
             return
 
         existing = read_live_link(
-            next(o.link_file_key for o in occurrences if o.local_speaker_key == chosen_key),
+            next(
+                o.link_file_key
+                for o in occurrences
+                if o.local_speaker_key == chosen_key
+            ),
             root=snap.root,
         )
         svc = _service()
@@ -1936,7 +1961,8 @@ def _render_lifecycle(
                     "Merge into",
                     options=[i.profile_id for i in active_others],
                     format_func=lambda pid: next(
-                        (i.display_name for i in active_others if i.profile_id == pid), pid
+                        (i.display_name for i in active_others if i.profile_id == pid),
+                        pid,
                     ),
                     key=f"speakers_merge_target_{profile.profile_id}",
                 )

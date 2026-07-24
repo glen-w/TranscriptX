@@ -16,7 +16,9 @@ def topic_shift_module_dir(run_root: Path) -> Path:
 
 
 def topic_shift_spans_path(run_root: Path) -> Path:
-    return topic_shift_module_dir(run_root) / "data" / "global" / "topic_shift.spans.json"
+    return (
+        topic_shift_module_dir(run_root) / "data" / "global" / "topic_shift.spans.json"
+    )
 
 
 def topic_shift_enrichment_path(run_root: Path) -> Path:

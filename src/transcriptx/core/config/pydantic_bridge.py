@@ -21,7 +21,7 @@ from transcriptx.core.utils.config.analysis import (
     MomentumConfig,
     PausesConfig,
     QAAnalysisConfig,
-    SemanticSimilarityV2Config,
+    SemanticSimilarityConfig,
     SpeakerExemplarsConfig,
     SummaryConfig,
     LLMSummaryConfig,
@@ -93,7 +93,7 @@ from .models.quality_filtering_profiles import QualityFilteringProfilesSettingsM
 from .models.quick_analysis_settings import QuickAnalysisSettingsModel
 from .models.semantic_similarity import SemanticSimilaritySettingsModel
 from .models.semantic_similarity_profiles import (
-    SemanticSimilarityV2ProfilesSettingsModel,
+    SemanticSimilarityProfilesSettingsModel,
 )
 from .models.speaker_exemplars import SpeakerExemplarsSettingsModel
 from .models.transcript_quality import TranscriptQualitySettingsModel
@@ -120,7 +120,7 @@ from .pydantic_registry import (
 )
 from .registry import FieldMetadata
 
-SEMANTIC_SIMILARITY_V2_PREFIX = "analysis.semantic_similarity"
+SEMANTIC_SIMILARITY_PREFIX = "analysis.semantic_similarity"
 
 
 @dataclass(frozen=True)
@@ -150,9 +150,9 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
     PydanticPilotSpec(
         pilot_id="semantic_similarity",
         model=SemanticSimilaritySettingsModel,
-        dotpath_prefix=SEMANTIC_SIMILARITY_V2_PREFIX,
+        dotpath_prefix=SEMANTIC_SIMILARITY_PREFIX,
         category="analysis",
-        dataclass_type=SemanticSimilarityV2Config,
+        dataclass_type=SemanticSimilarityConfig,
     ),
     PydanticPilotSpec(
         pilot_id="metadata",
@@ -485,7 +485,7 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
     ),
     PydanticPilotSpec(
         pilot_id="semantic_similarity_profiles",
-        model=SemanticSimilarityV2ProfilesSettingsModel,
+        model=SemanticSimilarityProfilesSettingsModel,
         dotpath_prefix="analysis.semantic_similarity_profiles",
         category="analysis",
         dataclass_type=None,

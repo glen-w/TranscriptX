@@ -68,9 +68,7 @@ def _managed(transcripts: Path) -> Path:
             file_hash="abc",
             file_mtime=0.0,
         ),
-        TranscriptMetadata(
-            duration_seconds=4.0, segment_count=2, speaker_count=2
-        ),
+        TranscriptMetadata(duration_seconds=4.0, segment_count=2, speaker_count=2),
     )
     path = transcripts / "meeting.json"
     path.write_text(json.dumps(doc), encoding="utf-8")
@@ -172,6 +170,7 @@ def test_ignored_linked_excluded_from_headline_unless_include_ignored(
     # Control profile not ignored
     profile2 = svc.get_profile(created2.profile_id)
     links2 = list_profile_links(created2.profile_id, root=svc.root)
+
     # SPEAKER_01 not in ignored list
     class _Only00Ignored:
         def load_mapping(self, transcript_path: str | Path) -> SpeakerMapState:

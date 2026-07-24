@@ -7,7 +7,7 @@ TranscriptX Wave 0 audit gate:
 
 1. **Clean environment** with the **built wheel + core dependencies**: `pip check` + `pip-audit`
 2. **Freshly built Docker production image**: `pip check` inside the image
-3. Host `pip install '.[full]'` is **not** required for Wave 0 when platform blockers (e.g. llvmlite) apply
+3. Host `pip install '.[full]'` / `.[bertopic]` is **not** required for Wave 0 when platform blockers apply (classic: `umap-learn` → `numba` → **llvmlite** source build). **Base/`core` wheel install must not pull that stack** — BERTopic packages live in `[bertopic]` so clean-env stays a credible gate. Docker `image_pip_check` covers the production image (which still includes BERTopic). See [bertopic_optional_module.md](bertopic_optional_module.md).
 
 Scripts:
 

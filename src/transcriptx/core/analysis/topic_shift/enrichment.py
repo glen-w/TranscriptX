@@ -70,7 +70,9 @@ def build_skipped_enrichment(
     }
 
 
-def _ui_mode_for(spans_envelope: Mapping[str, Any], spans: Sequence[Mapping[str, Any]]) -> str:
+def _ui_mode_for(
+    spans_envelope: Mapping[str, Any], spans: Sequence[Mapping[str, Any]]
+) -> str:
     status = spans_envelope.get("analytical_status")
     if status == "no_shift_detected" and len(spans) == 1:
         return "overall_summary"
@@ -160,7 +162,9 @@ def _try_generate_titles(
         return "skipped", [], None
     if not isinstance(parsed, dict):
         return "skipped", [], None
-    known_ids = {str(span.get("span_id") or "") for span in spans if span.get("span_id")}
+    known_ids = {
+        str(span.get("span_id") or "") for span in spans if span.get("span_id")
+    }
     by_id = {
         str(e.get("span_id")): e
         for e in (parsed.get("entries") or [])
@@ -316,7 +320,9 @@ def maybe_run_topic_shift_enrichment(
                     "schema_version": ENRICHMENT_SCHEMA,
                     "prompt_version": PROMPT_VERSION,
                     "outcome": outcome,
-                    "skip_reason": None if outcome != "skipped" else "generation_failed",
+                    "skip_reason": (
+                        None if outcome != "skipped" else "generation_failed"
+                    ),
                     "deterministic_generation_id": det_gid,
                     "deterministic_digest": det_digest,
                     "model": resolved.model,

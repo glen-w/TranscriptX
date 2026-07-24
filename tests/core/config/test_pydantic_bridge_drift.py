@@ -24,6 +24,8 @@ from transcriptx.core.utils.config.env_key_registry import (
     INFRA_ENV_ALLOWLIST,
 )
 
+from .delegation_test_utils import without_transcriptx_env
+
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
@@ -98,23 +100,25 @@ def test_pydantic_pilot_registry_goldens_are_complete() -> None:
 
 
 def test_pydantic_pilot_registry_matches_golden_fixtures() -> None:
-    reg = build_registry()
-    for spec in PYDANTIC_REGISTRY_PILOTS:
-        fixture = FIXTURES / f"{spec.pilot_id}_registry_golden.json"
-        assert fixture.exists(), f"missing golden fixture for {spec.pilot_id}"
-        golden = json.loads(fixture.read_text())
-        for key, expected in golden.items():
-            assert key in reg, key
-            actual = serialize_field_metadata(reg[key])
-            assert actual == expected, f"{key}: {actual!r} != {expected!r}"
+    with without_transcriptx_env():
+        reg = build_registry()
+        for spec in PYDANTIC_REGISTRY_PILOTS:
+            fixture = FIXTURES / f"{spec.pilot_id}_registry_golden.json"
+            assert fixture.exists(), f"missing golden fixture for {spec.pilot_id}"
+            golden = json.loads(fixture.read_text())
+            for key, expected in golden.items():
+                assert key in reg, key
+                actual = serialize_field_metadata(reg[key])
+                assert actual == expected, f"{key}: {actual!r} != {expected!r}"
 
 
 def test_non_pydantic_registry_matches_baseline() -> None:
     baseline = json.loads(
         (FIXTURES / "non_pydantic_registry_baseline.json").read_text()
     )
-    reg = build_registry()
-    actual = serialize_non_pydantic_registry_baseline(reg)
+    with without_transcriptx_env():
+        reg = build_registry()
+        actual = serialize_non_pydantic_registry_baseline(reg)
     for key, expected in baseline.items():
         assert key in actual, key
         assert actual[key] == expected, f"{key}: {actual[key]!r} != {expected!r}"
@@ -167,8 +171,9 @@ def test_pydantic_pilot_defaults_goldens_are_complete() -> None:
 
 
 def test_pydantic_pilot_defaults_match_golden_fixtures() -> None:
-    for spec in PYDANTIC_REGISTRY_PILOTS:
-        fixture = FIXTURES / f"{spec.pilot_id}_defaults_golden.json"
-        golden = json.loads(fixture.read_text())
-        actual = _normalize_for_json(_pilot_defaults_subtree(spec))
-        assert actual == golden, f"{spec.pilot_id}: defaults drift"
+    with without_transcriptx_env():
+        for spec in PYDANTIC_REGISTRY_PILOTS:
+            fixture = FIXTURES / f"{spec.pilot_id}_defaults_golden.json"
+            golden = json.loads(fixture.read_text())
+            actual = _normalize_for_json(_pilot_defaults_subtree(spec))
+            assert actual == golden, f"{spec.pilot_id}: defaults drift"

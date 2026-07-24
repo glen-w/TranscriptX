@@ -102,9 +102,7 @@ def _render_answer_card(
         st.markdown(_escape(answer), unsafe_allow_html=True)
         question_id = str(row.get("question_id") or "").strip()
         qhash = str(
-            questions_hash
-            or (provenance or {}).get("questions_hash")
-            or ""
+            questions_hash or (provenance or {}).get("questions_hash") or ""
         ).strip()
         if (
             ctx is not None
@@ -165,9 +163,13 @@ def _render_answer_card(
                         f"start={_escape(cite.get('start_time'))} "
                         f"end={_escape(cite.get('end_time'))}"
                     )
-                    if allow_jump and segs and st.button(
-                        f"Jump to segment {segs[0]}",
-                        key=f"{key_prefix}_jump_{row.get('question_index')}_{i}",
+                    if (
+                        allow_jump
+                        and segs
+                        and st.button(
+                            f"Jump to segment {segs[0]}",
+                            key=f"{key_prefix}_jump_{row.get('question_index')}_{i}",
+                        )
                     ):
                         st.session_state["transcript_jump_segment_index"] = segs[0]
                         st.toast(f"Jump requested to segment {segs[0]}")
@@ -222,11 +224,7 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
                     continue
                 sid = str(row.get("source_transcript_id") or "")
                 st.caption(f"Session: {_escape(sid)}")
-                owned = (
-                    not member_keys
-                    or sid in member_keys
-                    or sid in member_paths
-                )
+                owned = not member_keys or sid in member_keys or sid in member_paths
                 run_rel = str(row.get("source_run_relpath") or "")
                 run_ok = True
                 if member_runs and run_rel:
@@ -246,9 +244,11 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
                     artifact_rel_path=str(row.get("source_artifact_relpath") or "")
                     or None,
                     questions_hash=str(row.get("questions_hash") or "") or None,
-                    provenance=row.get("provenance")
-                    if isinstance(row.get("provenance"), dict)
-                    else None,
+                    provenance=(
+                        row.get("provenance")
+                        if isinstance(row.get("provenance"), dict)
+                        else None
+                    ),
                 )
         else:
             st.info(
@@ -271,7 +271,11 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
         return
     artifact_rel = _artifact_rel_for_run(Path(run_root))
     qhash = str(payload.get("questions_hash") or "").strip() or None
-    prov = payload.get("provenance") if isinstance(payload.get("provenance"), dict) else None
+    prov = (
+        payload.get("provenance")
+        if isinstance(payload.get("provenance"), dict)
+        else None
+    )
     if not qhash and isinstance(prov, dict):
         qhash = str(prov.get("questions_hash") or "").strip() or None
     for i, row in enumerate(answers):

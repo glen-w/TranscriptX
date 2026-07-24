@@ -52,7 +52,7 @@ def _render_row(lines: list[str], row: dict[str, Any], questions: list[Any]) -> 
                     continue
                 segs = cite.get("segment_indexes") or []
                 quote = str(cite.get("quote") or "").replace("\n", " / ")
-                lines.append(f"- segments {segs}: \"{quote}\"")
+                lines.append(f'- segments {segs}: "{quote}"')
         evidence_used = row.get("evidence_used") or {}
         if isinstance(evidence_used, dict) and evidence_used.get("pack_ids_rendered"):
             lines.append("")

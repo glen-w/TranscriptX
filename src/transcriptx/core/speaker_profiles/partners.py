@@ -61,7 +61,9 @@ def build_conversation_partners(
     for c in dedupe_to_transcript_contributions(eligible_subject):
         dur = c.duration_seconds
         if dur is not None and not math.isfinite(dur):
-            warnings.append(f"non_finite_metric:partner_subject_duration:{c.managed_transcript_id}")
+            warnings.append(
+                f"non_finite_metric:partner_subject_duration:{c.managed_transcript_id}"
+            )
             subject_minutes_by_tid[c.managed_transcript_id] = None
         else:
             subject_minutes_by_tid[c.managed_transcript_id] = dur
@@ -113,9 +115,7 @@ def build_conversation_partners(
                 note = "non_finite_metric:partner_minutes"
             else:
                 avail = "partial" if missing else "available"
-                note = (
-                    f"missing_timing:{missing}/{len(tid_map)}" if missing else None
-                )
+                note = f"missing_timing:{missing}/{len(tid_map)}" if missing else None
         else:
             minutes = None
             avail = "unavailable"

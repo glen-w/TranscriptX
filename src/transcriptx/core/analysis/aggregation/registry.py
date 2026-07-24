@@ -929,7 +929,6 @@ def build_registry() -> List[AggregationEntry]:
     )
     from transcriptx.core.analysis.aggregation.llm import (
         aggregate_llm_action_items_group,
-        aggregate_llm_custom_qa_group,
         aggregate_llm_speaker_summary_group,
         aggregate_llm_summary_blob,
         aggregate_narrative_summary_blob,
@@ -953,7 +952,7 @@ def build_registry() -> List[AggregationEntry]:
         return {
             "schema_id": "transcriptx.llm_custom_qa.group.disabled",
             "disabled": True,
-            "reason": "llm_custom_qa_group_aggregation_disabled_pending_v2",
+            "reason": "llm_custom_qa_group_aggregation_disabled_pending_structured",
             "content_rows": [],
             "content_rows_name": "qa_answer_rows",
             "warnings": [

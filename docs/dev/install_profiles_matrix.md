@@ -41,7 +41,7 @@ Do **not** invent `basic` / `llm` marketing names until the dependency graph mat
 | Speaker match | yes (speechbrain) | yes | yes | no | no |
 | Keyphrases YAKE/KeyBERT | yes (0.9.4+) | yes | yes | no | noun-chunks only if module runs |
 | Maps + Playwright PNG | yes | yes | yes | no | no |
-| BERTopic | yes | yes (base+full) | yes | base may include | base may include |
+| BERTopic | yes | via `[bertopic]` in full | via `[bertopic]` in full | no | **no** (optional extra) |
 
 ## Audit items (0.9.4)
 

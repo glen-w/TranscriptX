@@ -20,19 +20,19 @@ from transcriptx.core.analysis.semantic_similarity.pipeline import (
     run_semantic_similarity_pipeline,
 )
 from transcriptx.core.analysis.semantic_similarity.visualization import (
-    create_visualizations_v2,
+    create_visualizations,
 )
 from transcriptx.core.utils.module_result import build_module_result, now_iso
 from transcriptx.core.utils.speaker_extraction import count_named_speakers
 
 
-class SemanticSimilarityV2Analysis(AnalysisModule):
+class SemanticSimilarityAnalysis(AnalysisModule):
     """Semantic similarity v2 (batched embeddings, vectorized similarity)."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         super().__init__(config)
         self.module_name = "semantic_similarity"
-        self._pending_v2_diag: Any = None
+        self._pending_diag: Any = None
 
     def analyze(
         self,
@@ -162,7 +162,7 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
         except Exception as exc:
             finished_at = now_iso()
             log_error(
-                "SEMANTIC_V2",
+                "SEMANTIC",
                 f"semantic_similarity failed: {exc}",
                 exception=exc,
             )
@@ -202,9 +202,9 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
             run_id=context.get_run_id(),
             runtime_flags=context.get_runtime_flags(),
         )
-        self._pending_v2_diag = diag
+        self._pending_diag = diag
         self.save_results(results, output_service)
-        self._pending_v2_diag = None
+        self._pending_diag = None
         context.store_analysis_result(self.module_name, results)
         log_analysis_complete(self.module_name, context.transcript_path)
         finished_at = now_iso()
@@ -229,7 +229,7 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
         )
 
     def _save_results(self, results: Dict[str, Any], output_service: Any) -> None:
-        diag = self._pending_v2_diag
+        diag = self._pending_diag
         assert diag is not None
         stamped = with_schema(results)
         output_service.save_data(
@@ -248,16 +248,16 @@ class SemanticSimilarityV2Analysis(AnalysisModule):
             format_type="json",
         )
         try:
-            create_visualizations_v2(
+            create_visualizations(
                 results,
                 output_service,
                 output_service.base_name,
-                "SEMANTIC_V2",
+                "SEMANTIC",
             )
         except Exception as exc:
             from transcriptx.core.utils.logger import log_warning
 
-            log_warning("SEMANTIC_V2", f"Failed to create visualizations: {exc}")
+            log_warning("SEMANTIC", f"Failed to create visualizations: {exc}")
 
         global_stats = {
             "total_repetitions": int(results.get("total_repetitions", 0)),

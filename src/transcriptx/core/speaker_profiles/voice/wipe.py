@@ -14,7 +14,11 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_event_path,
 )
 from transcriptx.core.speaker_profiles.path_safety import assert_safe_relpath
-from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, utc_now_iso
+from transcriptx.core.speaker_profiles.store_io import (
+    dumps_model,
+    ensure_layout,
+    utc_now_iso,
+)
 from transcriptx.core.speaker_profiles.voice.caches import VoiceSuggestionCache
 from transcriptx.core.speaker_profiles.voice.excerpt_cache import VoiceExcerptStore
 from transcriptx.core.utils.paths import PATHS
@@ -70,9 +74,10 @@ def list_voice_paths_for_profile(root: Path, profile_id: str) -> list[str]:
                 payload = json.loads(path.read_text(encoding="utf-8"))
             except Exception:
                 continue
-            if payload.get("profile_id") != profile_id and payload.get(
-                "sample_id"
-            ) not in sample_ids:
+            if (
+                payload.get("profile_id") != profile_id
+                and payload.get("sample_id") not in sample_ids
+            ):
                 continue
             rels.append(path.relative_to(root).as_posix())
             emb_id = payload.get("embedding_id")
@@ -239,7 +244,9 @@ class VoiceWipeService:
     ) -> WipeProgress:
         """Run chunks until complete (tests / CLI)."""
         i = 0
-        last = WipeProgress(complete=False, deleted=0, remaining=-1, chunk_operation_id=None)
+        last = WipeProgress(
+            complete=False, deleted=0, remaining=-1, chunk_operation_id=None
+        )
         while True:
             last = self.start_or_resume_global_wipe(
                 operation_idempotency_key=f"{base_idempotency_key}:chunk:{i}",

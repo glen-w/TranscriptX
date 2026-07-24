@@ -7,7 +7,9 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from transcriptx.core.speaker_profiles.errors import SpeakerProfileContractError
-from transcriptx.core.speaker_profiles.identity import canonicalize_managed_transcript_id
+from transcriptx.core.speaker_profiles.identity import (
+    canonicalize_managed_transcript_id,
+)
 from transcriptx.core.speaker_profiles.versioning import (
     EVENT_SCHEMA_ID,
     LINK_SCHEMA_ID,
@@ -161,9 +163,7 @@ class OperationPlanActionV1(BaseModel):
             raise SpeakerProfileContractError("plan action path must be non-empty")
         if self.action == "write":
             if self.after_sha256 is None:
-                raise SpeakerProfileContractError(
-                    "write actions require after_sha256"
-                )
+                raise SpeakerProfileContractError("write actions require after_sha256")
             if self.staging_relpath is None:
                 raise SpeakerProfileContractError(
                     "write actions require staging_relpath"

@@ -1,4 +1,4 @@
-"""Epoch-1 contract identities for llm_custom_qa.
+"""Contract identities for llm_custom_qa.
 
 Public persisted schema id is ``transcriptx.llm_custom_qa.v1`` only.
 Commit markers use integer ``COMMIT_MARKER_SCHEMA_VERSION = 1``.
@@ -6,28 +6,15 @@ Commit markers use integer ``COMMIT_MARKER_SCHEMA_VERSION = 1``.
 
 from __future__ import annotations
 
-from typing import Literal
-
-# Sole live public schema identity (epoch-1).
 SCHEMA_ID = "transcriptx.llm_custom_qa.v1"
 MODULE_VERSION = "1"
 CONTRACT_VERSION = "1"
 COMMIT_MARKER_SCHEMA_VERSION = 1
 
-# Historical aliases retained so older imports resolve; values match epoch-1.
-V1_SCHEMA_ID = SCHEMA_ID
-V1_MODULE_VERSION = MODULE_VERSION
-V1_CONTRACT_VERSION = CONTRACT_VERSION
-COMMIT_MARKER_SCHEMA_VERSION_V1 = COMMIT_MARKER_SCHEMA_VERSION
-V2_SCHEMA_ID = SCHEMA_ID
-V2_MODULE_VERSION = MODULE_VERSION
-V2_CONTRACT_VERSION = CONTRACT_VERSION
-COMMIT_MARKER_SCHEMA_VERSION_V2 = COMMIT_MARKER_SCHEMA_VERSION
-
-CustomQAActivation = Literal["v1_live", "v2_live"]
-
-# Activation is frozen to the sole epoch-1 writer path.
-_ACTIVATION: CustomQAActivation = "v1_live"
+# Structured execution (scopes / packs / question_order) stays off in release
+# builds; see docs/runtime/llm.md ("Live path vs structured path"). Test-only
+# toggle: set_structured_execution_enabled(True).
+_STRUCTURED_EXECUTION = False
 
 SPEAKER_ELIGIBILITY_POLICY_VERSION = "2"
 SCHEDULER_VERSION = "1"
@@ -40,26 +27,14 @@ ANSWER_PROMPT_VERSION = "1"
 REPAIR_PROMPT_VERSION = "1"
 
 
-def get_custom_qa_activation() -> CustomQAActivation:
-    """Return the current activation branch for new execution/writes."""
-    return _ACTIVATION
+def is_structured_execution_enabled() -> bool:
+    return _STRUCTURED_EXECUTION
 
 
-def set_custom_qa_activation(value: CustomQAActivation) -> None:
-    """Set activation (tests only). Epoch-1 always writes the sole live schema."""
-    global _ACTIVATION
-    if value not in ("v1_live", "v2_live"):
-        raise ValueError(f"invalid activation: {value!r}")
-    _ACTIVATION = value
-
-
-def custom_qa_execution_branch() -> Literal["v1", "v2"]:
-    # Epoch-1: single writer path; keep return shape for callers.
-    return "v1"
-
-
-def is_v2_execution_enabled() -> bool:
-    return False
+def set_structured_execution_enabled(value: bool) -> None:
+    """Test-only toggle for the structured writer path."""
+    global _STRUCTURED_EXECUTION
+    _STRUCTURED_EXECUTION = bool(value)
 
 
 def live_schema_id_for_writers() -> str:

@@ -197,6 +197,8 @@ class EnrichmentEnvelopeModel(BaseModel):
         return entries
 
 
-def validate_enrichment_payload(payload: Mapping[str, Any] | dict[str, Any]) -> dict[str, Any]:
+def validate_enrichment_payload(
+    payload: Mapping[str, Any] | dict[str, Any],
+) -> dict[str, Any]:
     """Validate enrichment dict; raises ValidationError on contract breach."""
     return EnrichmentEnvelopeModel.model_validate(payload).model_dump()

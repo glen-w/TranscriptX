@@ -97,9 +97,9 @@ def _seed_profile_and_emb(root: Path, *, profile_id: str, embedding_id: str) -> 
     (root / "voice" / "samples" / f"{sample_id}.voice_sample.json").write_bytes(
         dumps_model(sample)
     )
-    (root / "voice" / "embeddings" / f"{embedding_id}.voice_embedding.json").write_bytes(
-        dumps_model(emb)
-    )
+    (
+        root / "voice" / "embeddings" / f"{embedding_id}.voice_embedding.json"
+    ).write_bytes(dumps_model(emb))
     (root / "voice" / "vectors" / f"{embedding_id}.npy").write_bytes(vec_bytes)
 
 
@@ -108,9 +108,7 @@ def test_ref_index_rebuild_and_hit(tmp_path: Path) -> None:
     _seed_profile_and_emb(root, profile_id="p1", embedding_id="e1")
     _seed_profile_and_emb(root, profile_id="p2", embedding_id="e2")
     digest = reference_corpus_digest(["e1", "e2"])
-    loaded = rebuild_ref_index(
-        root, model_generation_id="gen", corpus_digest=digest
-    )
+    loaded = rebuild_ref_index(root, model_generation_id="gen", corpus_digest=digest)
     assert loaded is not None
     assert loaded.meta.row_count == 2
     refs, ids, source = load_or_rebuild_refs(
@@ -167,7 +165,9 @@ def test_ref_index_store_rejects_corrupt_and_mismatched(tmp_path: Path) -> None:
             matrix=matrix,
         )
     # Corrupt meta → miss.
-    meta_path = store.dir_for(model_generation_id="gen", corpus_digest=digest) / "meta.json"
+    meta_path = (
+        store.dir_for(model_generation_id="gen", corpus_digest=digest) / "meta.json"
+    )
     meta_path.write_text("{not-json", encoding="utf-8")
     assert store.read(model_generation_id="gen", corpus_digest=digest) is None
 
@@ -176,9 +176,7 @@ def test_ref_index_empty_corpus_rebuilds_none(tmp_path: Path) -> None:
     root = tmp_path / "speaker_profiles"
     root.mkdir()
     assert (
-        rebuild_ref_index(
-            root, model_generation_id="gen", corpus_digest="sha256:empty"
-        )
+        rebuild_ref_index(root, model_generation_id="gen", corpus_digest="sha256:empty")
         is None
     )
     refs, ids, source = load_or_rebuild_refs(

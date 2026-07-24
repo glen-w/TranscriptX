@@ -17,7 +17,10 @@ import numpy as np
 
 from transcriptx.core.speaker_profiles.store_io import read_profile, utc_now_iso
 from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1
-from transcriptx.core.speaker_profiles.voice.vectors import EXPECTED_DIM, load_vector_npy
+from transcriptx.core.speaker_profiles.voice.vectors import (
+    EXPECTED_DIM,
+    load_vector_npy,
+)
 from transcriptx.io.atomic_json import strict_json_dumps, write_bytes_atomic
 
 MAX_REFS_PER_SOURCE_LINK = 5
@@ -121,7 +124,10 @@ class VoiceRefIndexStore:
             return None
         if matrix.shape[1] != meta.dimension:
             return None
-        if len(meta.embedding_ids) != meta.row_count or len(meta.profile_ids) != meta.row_count:
+        if (
+            len(meta.embedding_ids) != meta.row_count
+            or len(meta.profile_ids) != meta.row_count
+        ):
             return None
         return LoadedRefIndex(meta=meta, matrix=matrix)
 
@@ -305,7 +311,11 @@ def load_or_rebuild_refs(
         store=store,
     )
     if rebuilt is not None:
-        return rebuilt.as_profile_refs(), list(rebuilt.meta.embedding_ids), "index_rebuild"
+        return (
+            rebuilt.as_profile_refs(),
+            list(rebuilt.meta.embedding_ids),
+            "index_rebuild",
+        )
 
     emb_ids, profile_ids, matrix = scan_eligible_ref_rows(
         root, model_generation_id=model_generation_id

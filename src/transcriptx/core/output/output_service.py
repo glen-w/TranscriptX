@@ -925,7 +925,9 @@ class OutputService:
                     if path.is_file() or path.is_symlink():
                         path.unlink()
                 except OSError:
-                    logger.debug("Failed to remove artifact path %s", path, exc_info=True)
+                    logger.debug(
+                        "Failed to remove artifact path %s", path, exc_info=True
+                    )
 
         self._run_write(_body, lease=lease)
 

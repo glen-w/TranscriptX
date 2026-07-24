@@ -37,9 +37,7 @@ def base_salience(
     return float(occurrence_count) * math.log1p(float(segment_support))
 
 
-def higher_is_better_salience(
-    raw_score: float, direction: ScoreDirection
-) -> float:
+def higher_is_better_salience(raw_score: float, direction: ScoreDirection) -> float:
     if direction == "higher_is_better":
         return float(raw_score)
     return -float(raw_score)

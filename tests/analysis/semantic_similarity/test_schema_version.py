@@ -52,7 +52,9 @@ def test_cluster_insufficient_returns_aligned_noise() -> None:
     assert out["n_clusters"] == 0
 
 
-def test_cluster_failure_never_fabricates_single_cluster(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cluster_failure_never_fabricates_single_cluster(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     e = np.vstack([np.ones(4), np.ones(4) * 0.9, -np.ones(4)]).astype(np.float64)
 
     class Boom:
@@ -85,7 +87,16 @@ def test_cluster_ok_labels_length_matches_rows() -> None:
 
 def _rows(n: int) -> list[SegmentRow]:
     return [
-        SegmentRow(str(i), "a", "A", float(i), float(i) + 1, f"text {i} words here", f"text {i} words here", i)
+        SegmentRow(
+            str(i),
+            "a",
+            "A",
+            float(i),
+            float(i) + 1,
+            f"text {i} words here",
+            f"text {i} words here",
+            i,
+        )
         for i in range(n)
     ]
 

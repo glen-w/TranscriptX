@@ -187,18 +187,21 @@ def test_analysis_presets_panel_reset_reseeds_draft(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _St)
     mod.render_analysis_presets_panel()
-    assert DummyHomeStreamlit.session_state["settings_ui_presets_draft"]["quick"][
-        "allow_llm"
-    ] is False
+    assert (
+        DummyHomeStreamlit.session_state["settings_ui_presets_draft"]["quick"][
+            "allow_llm"
+        ]
+        is False
+    )
     assert DummyHomeStreamlit.session_state["settings_ui_presets_gen"] == 3
     assert reruns["n"] == 1
 
 
 @pytest.mark.unit
 def test_analysis_presets_panel_exposes_policy_knob_widgets() -> None:
-    src = Path(
-        "src/transcriptx/web/ui/settings/analysis_presets_panel.py"
-    ).read_text(encoding="utf-8")
+    src = Path("src/transcriptx/web/ui/settings/analysis_presets_panel.py").read_text(
+        encoding="utf-8"
+    )
     for needle in (
         "Allow LLM modules",
         "Allow heavy modules",
@@ -468,9 +471,7 @@ def test_settings_questions_panel_is_custom_qa_library_surface() -> None:
     assert "Questions" in settings
     assert "render_questions_panel" in settings
     # Panel module must persist saved_questions under llm_custom_qa.
-    questions_panel = Path(
-        "src/transcriptx/web/ui/settings/questions_panel.py"
-    )
+    questions_panel = Path("src/transcriptx/web/ui/settings/questions_panel.py")
     if questions_panel.is_file():
         src = questions_panel.read_text(encoding="utf-8")
         assert "patch_project_config_keys" in src

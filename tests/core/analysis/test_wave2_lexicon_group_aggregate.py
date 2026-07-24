@@ -104,7 +104,9 @@ def test_aggregate_epistemic_markers_pools_categories() -> None:
             run_id="r1",
             order_index=0,
             output_dir="o1",
-            module_results={"epistemic_markers": {"payload": _epi_payload(hedge=2, booster=1)}},
+            module_results={
+                "epistemic_markers": {"payload": _epi_payload(hedge=2, booster=1)}
+            },
         ),
         PerTranscriptResult(
             transcript_path="/x/b.json",
@@ -112,7 +114,9 @@ def test_aggregate_epistemic_markers_pools_categories() -> None:
             run_id="r2",
             order_index=1,
             output_dir="o2",
-            module_results={"epistemic_markers": {"payload": _epi_payload(hedge=1, booster=3)}},
+            module_results={
+                "epistemic_markers": {"payload": _epi_payload(hedge=1, booster=3)}
+            },
         ),
     ]
     out = aggregate_epistemic_markers(results, _cmap(), _ts())
@@ -174,11 +178,7 @@ def test_aggregate_politeness_pools_and_soft_ratio_mean() -> None:
 def test_epistemic_group_chart_can_generate_from_pooled() -> None:
     gen = EpistemicMarkersGroupChartGenerator()
     assert gen.can_generate(
-        {
-            "epistemic_markers_pooled": {
-                "by_category": {"epistemic_hedge": 2}
-            }
-        }
+        {"epistemic_markers_pooled": {"by_category": {"epistemic_hedge": 2}}}
     )
     assert not gen.can_generate({"epistemic_markers_pooled": {"by_category": {}}})
     assert not gen.can_generate({"session_rows": [], "speaker_rows": []})
@@ -187,7 +187,5 @@ def test_epistemic_group_chart_can_generate_from_pooled() -> None:
 @pytest.mark.unit
 def test_politeness_group_chart_can_generate_from_pooled() -> None:
     gen = PolitenessGroupChartGenerator()
-    assert gen.can_generate(
-        {"politeness_pooled": {"by_category": {"gratitude": 1}}}
-    )
+    assert gen.can_generate({"politeness_pooled": {"by_category": {"gratitude": 1}}})
     assert not gen.can_generate({"politeness_pooled": {}})

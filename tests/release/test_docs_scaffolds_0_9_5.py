@@ -113,9 +113,9 @@ def test_sphinx_scaffold_files_and_wiring() -> None:
 
 @pytest.mark.unit
 def test_trust_draft_matrix_covers_builtin_profile_licences() -> None:
-    trust = (
-        ROOT / "docs" / "dev" / "trust_privacy_model_governance_1_0.md"
-    ).read_text(encoding="utf-8")
+    trust = (ROOT / "docs" / "dev" / "trust_privacy_model_governance_1_0.md").read_text(
+        encoding="utf-8"
+    )
     assert "Apache-2.0" in trust
     assert "MIT" in trust
     assert "contextual_hartmann_distilroberta_v1" in trust

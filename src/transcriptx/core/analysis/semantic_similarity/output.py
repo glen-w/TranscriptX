@@ -34,7 +34,7 @@ def parse_schema_major(schema_version: str) -> int | None:
         if parts and parts[0].isdigit():
             return int(parts[0])
         return None
-    # Refuse pre-epoch method stamps (no long-lived dual-accept).
+    # Unsupported method stamps are refused (no dual-accept).
     return None
 
 

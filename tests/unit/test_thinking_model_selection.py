@@ -47,9 +47,9 @@ def test_filter_models_for_json_consumers() -> None:
         "gemma3:12b",
         "qwen2.5:7b",
     )
-    assert filter_models_for_json_consumers(
-        installed, include_thinking=True
-    ) == installed
+    assert (
+        filter_models_for_json_consumers(installed, include_thinking=True) == installed
+    )
 
 
 @pytest.mark.unit
@@ -95,9 +95,7 @@ def test_launch_gate_blocks_thinking_shared_for_json_modules() -> None:
         return_value=SimpleNamespace(requires_llm=True),
     ):
         reasons = launch_gate_reasons(
-            selection=LlmModelSelection(
-                mode="shared", shared_model="qwen3.6:27b"
-            ),
+            selection=LlmModelSelection(mode="shared", shared_model="qwen3.6:27b"),
             selected_modules=["chart_descriptions", "llm_summary"],
             installed=("qwen3.6:27b", "gemma3:12b"),
             list_error=None,
@@ -116,9 +114,7 @@ def test_launch_gate_allows_thinking_for_plain_text_only() -> None:
         return_value=SimpleNamespace(requires_llm=True),
     ):
         reasons = launch_gate_reasons(
-            selection=LlmModelSelection(
-                mode="shared", shared_model="qwen3.6:27b"
-            ),
+            selection=LlmModelSelection(mode="shared", shared_model="qwen3.6:27b"),
             selected_modules=["llm_summary"],
             installed=("qwen3.6:27b", "gemma3:12b"),
             list_error=None,

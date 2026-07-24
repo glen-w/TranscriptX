@@ -16,7 +16,9 @@ from transcriptx.core.analysis.llm_custom_qa.commit import (
     commit_llm_custom_qa_artifacts,
     read_active_generation_id,
 )
-from transcriptx.core.analysis.llm_custom_qa.constants import GROUNDING_SEGMENT_SEPARATOR
+from transcriptx.core.analysis.llm_custom_qa.constants import (
+    GROUNDING_SEGMENT_SEPARATOR,
+)
 from transcriptx.core.analysis.llm_custom_qa.contract import process_raw_answers
 from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAFailureCode,
@@ -213,13 +215,15 @@ def test_commit_marker_protocol(tmp_path: Path) -> None:
 def test_empty_run_coverage_ratio_null() -> None:
     from transcriptx.core.analysis.llm_custom_qa.analyze import _empty_run_payload
 
-    payload = validate_artifact(_empty_run_payload(
-        resolve_effective_custom_qa_questions(
-            request_questions=[],
-            request_field_present=True,
-            settings=_Settings(),
+    payload = validate_artifact(
+        _empty_run_payload(
+            resolve_effective_custom_qa_questions(
+                request_questions=[],
+                request_field_present=True,
+                settings=_Settings(),
+            )
         )
-    ))
+    )
     assert payload["input_coverage"]["input_coverage_ratio"] is None
     assert payload["cache_key"] is None
     assert payload["provenance"]["cache_key"] is None

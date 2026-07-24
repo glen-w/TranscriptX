@@ -58,7 +58,7 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_SENTIMENT_WINDOW_SIZE": ("42", 42),
         "TRANSCRIPTX_EMOTION_MODEL": ("emotion/model", "emotion/model"),
         "TRANSCRIPTX_SEMANTIC_MODEL": ("semantic/model", "semantic/model"),
-        "TRANSCRIPTX_SEMANTIC_V2_MODEL": ("semantic/v2-model", "semantic/v2-model"),
+        "TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL": ("semantic/v2-model", "semantic/v2-model"),
         "TRANSCRIPTX_SENTIMENT_BACKEND": ("transformers", "transformers"),
         "TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL": (
             "sentence-transformers/all-mpnet-base-v2",

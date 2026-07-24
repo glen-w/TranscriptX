@@ -31,8 +31,7 @@ from typing import Any
 # This ensures all modules use the same logger configuration
 _logger: logging.Logger | None = None
 _ANALYSIS_DISPLAY_NAME_OVERRIDES = {
-    "semantic_similarity": "semantic_similarity (legacy)",
-    "semantic_similarity_advanced": "semantic_similarity_advanced (legacy)",
+    "semantic_similarity": "semantic_similarity",
 }
 
 # Default logging configuration values

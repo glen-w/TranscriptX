@@ -12,7 +12,11 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_event_path,
     relative_voice_operator_path,
 )
-from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, utc_now_iso
+from transcriptx.core.speaker_profiles.store_io import (
+    dumps_model,
+    ensure_layout,
+    utc_now_iso,
+)
 from transcriptx.core.speaker_profiles.voice.models import VoiceOperatorSettingsV1
 from transcriptx.core.speaker_profiles.voice.operator import VoiceOperatorStore
 from transcriptx.core.utils.paths import PATHS

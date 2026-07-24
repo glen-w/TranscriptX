@@ -91,7 +91,11 @@ def test_install_is_idempotent() -> None:
         b = install_speechbrain_watcher_noise_filter()
         assert a is b
         assert (
-            sum(1 for f in logger.filters if isinstance(f, SpeechBrainWatcherNoiseFilter))
+            sum(
+                1
+                for f in logger.filters
+                if isinstance(f, SpeechBrainWatcherNoiseFilter)
+            )
             == 1
         )
     finally:

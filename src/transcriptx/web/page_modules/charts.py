@@ -106,9 +106,7 @@ _SECTION_RADIO_KEY = "charts_section_radio"
 
 _CHARTS_CONFIG = RunScopedPageConfig(
     title="Charts Gallery",
-    description=(
-        "Select a subject and run in the sidebar if the gallery is empty."
-    ),
+    description=("Select a subject and run in the sidebar if the gallery is empty."),
     empty_headline="No subject or run selected",
     empty_detail="Pick a transcript or group and a run in the sidebar to view charts.",
     primary_action=("Open Library", "Library"),
@@ -138,7 +136,9 @@ _CHARTS_FB_SUBJECT_ID = "_charts_fb_subject_id"
 _CHARTS_FB_SUBJECT_TYPE = "_charts_fb_subject_type"
 
 
-def _render_chart_llm_description(llm_text: str, *, feedback_key: str, chart: Artifact) -> None:
+def _render_chart_llm_description(
+    llm_text: str, *, feedback_key: str, chart: Artifact
+) -> None:
     """Show Local AI label before chart LLM narrative + optional feedback."""
     render_badge_row([AI_OUTPUT_BADGE])
     st.markdown(llm_text)
@@ -570,9 +570,7 @@ def _seed_section_widget(key: str, current: str, labels: Sequence[str]) -> None:
 
 def _render_section_nav(*, has_overview: bool) -> str:
     labels = list(_CHARTS_SECTIONS)
-    default = (
-        CHARTS_SECTION_OVERVIEW if has_overview else CHARTS_SECTION_BROWSE
-    )
+    default = CHARTS_SECTION_OVERVIEW if has_overview else CHARTS_SECTION_BROWSE
     current = st.session_state.get(CHARTS_KEY_SECTION, default)
     if current not in labels:
         current = default
@@ -640,9 +638,7 @@ def _sync_derived_filter_keys() -> None:
     tab = st.session_state.get(CHARTS_KEY_SUBVIEW_TABS, "All")
     subview = None if not tab or tab == "All" else str(tab)
     slice_choice = st.session_state.get(CHARTS_KEY_SLICE_SELECTOR, "All")
-    slice_id = (
-        None if not slice_choice or slice_choice == "All" else str(slice_choice)
-    )
+    slice_id = None if not slice_choice or slice_choice == "All" else str(slice_choice)
     st.session_state[CHARTS_KEY_FILTER_SUBVIEW] = subview
     st.session_state[CHARTS_KEY_FILTER_SLICE_ID] = slice_id
 

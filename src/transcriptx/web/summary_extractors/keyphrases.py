@@ -5,9 +5,7 @@ from typing import Any, Dict
 from . import register_extractor
 
 
-def extract_keyphrases_summary(
-    data: Dict[str, Any], summary: Dict[str, Any]
-) -> None:
+def extract_keyphrases_summary(data: Dict[str, Any], summary: Dict[str, Any]) -> None:
     if data.get("usable") is False:
         summary.setdefault("highlights", []).append(
             "Keyphrases abstained (unsupported language, skipped methods, or empty usable result)."

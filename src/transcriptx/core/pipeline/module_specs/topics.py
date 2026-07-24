@@ -30,8 +30,8 @@ def build_topics_module_definitions(
         },
         "bertopic": {
             "description": (
-                "BERTopic topic modeling (included in recommended defaults; "
-                "stack in base install — see docs/dev/bertopic_optional_module.md)"
+                "BERTopic topic modeling (optional [bertopic]/[full] stack — "
+                "see docs/dev/bertopic_optional_module.md)"
             ),
             "dependencies": ["insight_eligibility"],
             "category": "heavy",

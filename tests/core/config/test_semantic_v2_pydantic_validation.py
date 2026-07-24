@@ -19,9 +19,7 @@ def test_invalid_mode_choice() -> None:
 
 
 def test_batch_size_below_min() -> None:
-    errors = validate_config(
-        {"analysis": {"semantic_similarity": {"batch_size": 0}}}
-    )
+    errors = validate_config({"analysis": {"semantic_similarity": {"batch_size": 0}}})
     assert V2_BATCH_KEY in errors
 
 
@@ -33,18 +31,14 @@ def test_threshold_above_max() -> None:
 
 
 def test_bool_string_coercion_passes() -> None:
-    errors = validate_config(
-        {"analysis": {"semantic_similarity": {"enabled": "true"}}}
-    )
+    errors = validate_config({"analysis": {"semantic_similarity": {"enabled": "true"}}})
     assert V2_ENABLED_KEY not in errors
 
 
 def test_empty_subtree_no_errors() -> None:
     errors = validate_config({})
     v2_errors = {
-        k: v
-        for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity.")
+        k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}
 
@@ -57,13 +51,9 @@ def test_valid_override_no_errors() -> None:
 
 
 def test_partial_override_only() -> None:
-    errors = validate_config(
-        {"analysis": {"semantic_similarity": {"batch_size": 32}}}
-    )
+    errors = validate_config({"analysis": {"semantic_similarity": {"batch_size": 32}}})
     v2_errors = {
-        k: v
-        for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity.")
+        k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}
 
@@ -91,9 +81,7 @@ def test_no_double_validation_for_v2_field() -> None:
 def test_validate_default_config_has_no_v2_errors() -> None:
     errors = validate_config(get_default_config_dict())
     v2_errors = {
-        k: v
-        for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity.")
+        k: v for k, v in errors.items() if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}
 

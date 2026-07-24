@@ -44,6 +44,7 @@ from transcriptx.web.speaker_accent import (
     resolve_speaker_accent,
     speaker_accent_color,
 )
+
 IMPORT_A = "550e8400-e29b-41d4-a716-446655440000"
 IMPORT_B = "660e8400-e29b-41d4-a716-446655440001"
 
@@ -104,7 +105,9 @@ def _managed(
     return path
 
 
-def _svc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, transcripts: Path) -> SpeakerProfileService:
+def _svc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, transcripts: Path
+) -> SpeakerProfileService:
     from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 
     _patch(monkeypatch, transcripts)
@@ -157,7 +160,13 @@ def _row(
 def test_mixed_eligibility_same_date_separate_series() -> None:
     day = date(2026, 1, 15)
     rows = (
-        _row(link_id="ok", managed_transcript_id="a", appearance_date=day, flag="ok", words=10),
+        _row(
+            link_id="ok",
+            managed_transcript_id="a",
+            appearance_date=day,
+            flag="ok",
+            words=10,
+        ),
         _row(
             link_id="nr",
             managed_transcript_id="b",
@@ -304,7 +313,10 @@ def test_recover_operation_returns_cache_signal(
     write_operation(op, root=svc.root)
     result = svc.recover_operation(op_id)
     assert result.cache_signal.scopes
-    assert "speaker_profiles" in result.cache_signal.scopes or "speaker_links" in result.cache_signal.scopes
+    assert (
+        "speaker_profiles" in result.cache_signal.scopes
+        or "speaker_links" in result.cache_signal.scopes
+    )
     assert result.report.recovery_class in {
         "proven_aborted",
         "complete",
@@ -368,9 +380,7 @@ def test_accent_resolve_precedence_linked_over_name_over_hash() -> None:
         by_local_key={"SPEAKER_00": "#222222"},
     )
     assert (
-        resolve_speaker_accent(
-            "Alice", local_speaker_key="SPEAKER_00", context=ctx
-        )
+        resolve_speaker_accent("Alice", local_speaker_key="SPEAKER_00", context=ctx)
         == "#222222"
     )
     assert resolve_speaker_accent("Alice", context=ctx) == "#111111"

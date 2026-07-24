@@ -178,7 +178,7 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         "TRANSCRIPTX_SEMANTIC_MODEL", ("analysis", "semantic_model_name"), coerce_str
     ),
     _env_key(
-        "TRANSCRIPTX_SEMANTIC_V2_MODEL",
+        "TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL",
         ("analysis", "semantic_similarity", "model_name"),
         coerce_str,
     ),

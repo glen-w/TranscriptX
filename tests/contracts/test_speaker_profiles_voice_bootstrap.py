@@ -121,8 +121,8 @@ def test_bootstrap_model_unavailable_recorded(
     svc = VoiceBootstrapService(root=root, state_dir=tmp_path / "state")
     # Bypass generation pin network/model work.
     svc.generations = MagicMock()
-    svc.generations.ensure_default_generation_and_activate.return_value = SimpleNamespace(
-        model_generation_id="gen"
+    svc.generations.ensure_default_generation_and_activate.return_value = (
+        SimpleNamespace(model_generation_id="gen")
     )
 
     result = svc.enrol_profile_confirmed_links(

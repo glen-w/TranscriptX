@@ -46,8 +46,11 @@ def _parse_created_at(value: str) -> str:
     offset = dt.utcoffset()
     if offset is None or offset.total_seconds() != 0:
         raise LlmFeedbackValidationError("created_at must be UTC (Z / +00:00)")
-    return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace(
-        "+00:00", "Z"
+    return (
+        dt.astimezone(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
     )
 
 
@@ -68,7 +71,11 @@ def validate_rating_reason(rating: str, reason: str) -> tuple[str, str]:
 
 
 def validate_target(target: FeedbackTarget | Mapping[str, Any]) -> FeedbackTarget:
-    t = target if isinstance(target, FeedbackTarget) else FeedbackTarget.from_dict(target)
+    t = (
+        target
+        if isinstance(target, FeedbackTarget)
+        else FeedbackTarget.from_dict(target)
+    )
 
     try:
         surface = FeedbackSurface(t.surface)
@@ -157,9 +164,7 @@ def validate_provenance(
 def validate_event(event: FeedbackEvent | Mapping[str, Any]) -> FeedbackEvent:
     if isinstance(event, Mapping):
         if event.get("schema_id") != EVENT_SCHEMA_ID:
-            raise LlmFeedbackValidationError(
-                f"schema_id must be {EVENT_SCHEMA_ID!r}"
-            )
+            raise LlmFeedbackValidationError(f"schema_id must be {EVENT_SCHEMA_ID!r}")
         ev = FeedbackEvent.from_dict(event)
     else:
         ev = event
@@ -173,14 +178,14 @@ def validate_event(event: FeedbackEvent | Mapping[str, Any]) -> FeedbackEvent:
     if ev.supersedes_feedback_id is not None and not is_uuid_str(
         ev.supersedes_feedback_id
     ):
-        raise LlmFeedbackValidationError("supersedes_feedback_id must be a UUID or null")
+        raise LlmFeedbackValidationError(
+            "supersedes_feedback_id must be a UUID or null"
+        )
     created = _parse_created_at(ev.created_at)
     if not is_sha256_hex(ev.output_sha256):
         raise LlmFeedbackValidationError("output_sha256 must be 64 lowercase hex")
     if not is_sha256_hex(ev.target_instance_id):
-        raise LlmFeedbackValidationError(
-            "target_instance_id must be 64 lowercase hex"
-        )
+        raise LlmFeedbackValidationError("target_instance_id must be 64 lowercase hex")
     rating, reason = validate_rating_reason(ev.rating, ev.reason)
     try:
         note = normalize_note(ev.note)

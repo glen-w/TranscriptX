@@ -115,9 +115,11 @@ class TranscriptQualityAnalysis(AnalysisModule):
             return
         starts = [float(s.get("start") or 0.0) for s in spans]
         means = [
-            float(s["mean_score"])
-            if isinstance(s.get("mean_score"), (int, float))
-            else 0.0
+            (
+                float(s["mean_score"])
+                if isinstance(s.get("mean_score"), (int, float))
+                else 0.0
+            )
             for s in spans
         ]
         x_values, x_label = time_axis_display(starts)

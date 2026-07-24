@@ -23,7 +23,6 @@ from typing import (
     Mapping,
     Sequence,
 )
-
 from transcriptx.core.analysis.emotion_family.cache_validation import (
     validate_classifier_cache_row,
 )
@@ -154,9 +153,7 @@ def resolve_classifier_scores(
         scored_by_sid[item.sid] = {
             "scores": {k: float(v) for k, v in sr.scores.items()},
             "truncated": bool(sr.truncated),
-            "omitted_token_count_lower_bound": int(
-                sr.omitted_token_count_lower_bound
-            ),
+            "omitted_token_count_lower_bound": int(sr.omitted_token_count_lower_bound),
             "scored_text_hash": item.text_hash,
         }
 

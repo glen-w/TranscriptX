@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from transcriptx.web.components.llm_model_selector import render_llm_models_settings_panel
+from transcriptx.web.components.llm_model_selector import (
+    render_llm_models_settings_panel,
+)
 
 
 def render_models_panel() -> None:

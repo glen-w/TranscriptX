@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import numpy as np
 
 from transcriptx.core.analysis.semantic_similarity.models import SemanticModelManager
-from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
+from transcriptx.core.utils.config.analysis import SemanticSimilarityConfig
 from transcriptx.core.utils.lazy_imports import get_torch, get_transformers
 
 from .candidates import generate_candidate_pairs
@@ -51,7 +51,7 @@ def _finalize(
 
 def run_semantic_similarity_pipeline(
     segments: List[Dict[str, Any]],
-    cfg: SemanticSimilarityV2Config,
+    cfg: SemanticSimilarityConfig,
     *,
     resolve_diagnostics: Dict[str, Any],
     repetition_path_skipped: bool = False,
@@ -148,7 +148,7 @@ def run_semantic_similarity_pipeline(
         model_manager = SemanticModelManager(
             config=None,
             model_name=cfg.model_name,
-            log_tag="SEMANTIC_V2",
+            log_tag="SEMANTIC",
         )
         model_manager.initialize()
         if model_manager.model is None or model_manager.tokenizer is None:
@@ -175,9 +175,7 @@ def run_semantic_similarity_pipeline(
         model_revision = getattr(model_manager, "model_revision", None) or getattr(
             model_manager, "revision", None
         )
-    fallback_sig = (
-        _TFIDF_SIGNATURE if embedder.embedding_backend == "tfidf" else None
-    )
+    fallback_sig = _TFIDF_SIGNATURE if embedder.embedding_backend == "tfidf" else None
     provenance = build_provenance(
         embedding_backend=embedder.embedding_backend,
         model_name=cfg.model_name,
@@ -209,9 +207,7 @@ def run_semantic_similarity_pipeline(
             provenance=provenance,
         )
         motif_status = (
-            "partial"
-            if m_status in ("ok", "valid_zero", "partial")
-            else m_status
+            "partial" if m_status in ("ok", "valid_zero", "partial") else m_status
         )
         diag.runtime_seconds_breakdown = {
             "intake": timers.intake_s,
@@ -282,7 +278,9 @@ def run_semantic_similarity_pipeline(
                 max_centroid_bytes=int(cfg.max_centroid_bytes),
                 provenance=provenance,
             )
-            status = "partial" if m_status in ("ok", "valid_zero", "partial") else m_status
+            status = (
+                "partial" if m_status in ("ok", "valid_zero", "partial") else m_status
+            )
             if m_status == "ok" and not motifs:
                 status = "partial"
             return (

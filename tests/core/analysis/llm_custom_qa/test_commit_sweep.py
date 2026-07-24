@@ -24,7 +24,7 @@ def test_sweep_preserves_active_commit_marker(tmp_path: Path) -> None:
         md_final=Path(f"{stem}.md"),
         payload=payload,
         markdown="# hi\n",
-        force_protocol="v1",
+        force_protocol="alias",
     )
     assert read_active_generation_id(stem) == gid
     marker = Path(f"{stem}.commit.{gid}")
@@ -49,7 +49,7 @@ def test_sweep_none_still_preserves_active_pointer(tmp_path: Path) -> None:
         md_final=Path(f"{stem}.md"),
         payload={"ok": True},
         markdown="# hi\n",
-        force_protocol="v1",
+        force_protocol="alias",
     )
     # Even if caller passes None, active generation must be preserved.
     sweep_orphan_staging(stem, keep_generation_id=None)
@@ -68,14 +68,18 @@ def test_v2_commit_writes_generation_named_files(tmp_path: Path) -> None:
         markdown="# hi\n",
         run_execution_id="run-abc",
         questions_metadata={"questions_requested": []},
-        force_protocol="v2",
+        force_protocol="generational",
     )
     assert read_active_generation_id(stem) == gid
     assert Path(f"{stem}.json.{gid}").exists()
     assert Path(f"{stem}.md.{gid}").exists()
     assert Path(f"{stem}.questions_metadata.{gid}.json").exists()
+    from transcriptx.core.analysis.llm_custom_qa.versioning import (
+        COMMIT_MARKER_SCHEMA_VERSION,
+    )
+
     marker = json.loads(Path(f"{stem}.commit.{gid}").read_text(encoding="utf-8"))
-    assert marker["commit_marker_schema_version"] == "2"
+    assert marker["commit_marker_schema_version"] == COMMIT_MARKER_SCHEMA_VERSION
     assert marker["run_execution_id"] == "run-abc"
     # Alias best-effort
     assert Path(f"{stem}.json").exists()

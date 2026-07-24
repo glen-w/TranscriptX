@@ -84,9 +84,7 @@ def _render_speaker_profile_ops() -> None:
                     if rc == "complete":
                         st.success(f"Recovery complete for `{detail.operation_id}`.")
                     elif rc == "proven_aborted":
-                        st.info(
-                            f"Operation `{detail.operation_id}` proven aborted."
-                        )
+                        st.info(f"Operation `{detail.operation_id}` proven aborted.")
                     elif rc == "needs_repair" or result.report.blocking:
                         st.warning(
                             f"Operation `{detail.operation_id}` still needs_repair "

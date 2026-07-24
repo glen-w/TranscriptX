@@ -1,4 +1,4 @@
-"""Resolve ``SemanticSimilarityV2Config`` for a run (presets, mode overlay, cross-field rules)."""
+"""Resolve ``SemanticSimilarityConfig`` for a run (presets, mode overlay, cross-field rules)."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ from typing import Any, Set
 
 from transcriptx.core.utils.config.analysis import (
     AnalysisConfig,
-    SemanticSimilarityV2Config,
+    SemanticSimilarityConfig,
 )
 
-_DEFAULT_V2 = SemanticSimilarityV2Config()
-_ALLOWED_PRESET_KEYS = frozenset(f.name for f in fields(SemanticSimilarityV2Config))
+_DEFAULTS = SemanticSimilarityConfig()
+_ALLOWED_PRESET_KEYS = frozenset(f.name for f in fields(SemanticSimilarityConfig))
 
 
-class SemanticV2StrictAdvancedInputsError(Exception):
+class SemanticStrictAdvancedInputsError(Exception):
     """Raised when advanced mode is requested but integration modules are missing."""
 
     def __init__(self, missing: Set[str]) -> None:
@@ -39,7 +39,7 @@ def resolve_semantic_similarity_runtime(
     *,
     modules_in_run: Set[str],
     embedding_cache_root: Path | None = None,
-) -> tuple[SemanticSimilarityV2Config, dict[str, Any]]:
+) -> tuple[SemanticSimilarityConfig, dict[str, Any]]:
     """
     Merge defaults → active preset → per-field user overrides (values that differ
     from dataclass defaults on ``analysis.semantic_similarity``), then overlay
@@ -64,14 +64,14 @@ def resolve_semantic_similarity_runtime(
     preset_mode_supplied = "mode" in preset_raw
     preset_kwargs = {k: v for k, v in preset_raw.items() if k in _ALLOWED_PRESET_KEYS}
     # Delegated config uses init=False fields; construct then setattr (not replace).
-    cfg = SemanticSimilarityV2Config()
+    cfg = SemanticSimilarityConfig()
     for key, value in preset_kwargs.items():
         setattr(cfg, key, deepcopy(value))
 
     user = analysis.semantic_similarity
-    for f in fields(SemanticSimilarityV2Config):
+    for f in fields(SemanticSimilarityConfig):
         uv = getattr(user, f.name)
-        dv = getattr(_DEFAULT_V2, f.name)
+        dv = getattr(_DEFAULTS, f.name)
         if uv != dv:
             setattr(cfg, f.name, deepcopy(uv))
 
@@ -85,7 +85,7 @@ def resolve_semantic_similarity_runtime(
         missing = required - set(modules_in_run)
         if missing:
             if cfg.strict_advanced_inputs:
-                raise SemanticV2StrictAdvancedInputsError(missing)
+                raise SemanticStrictAdvancedInputsError(missing)
             cfg.mode = "basic"
             diagnostics["config_warnings"].append("advanced_mode_degraded_to_basic")
             diagnostics["advanced_integrations_unavailable"] = sorted(missing)
@@ -115,8 +115,7 @@ def resolve_semantic_similarity_runtime(
     if (
         not cfg.use_lexical_prefilter
         and abs(
-            cfg.lexical_prefilter_min_jaccard
-            - _DEFAULT_V2.lexical_prefilter_min_jaccard
+            cfg.lexical_prefilter_min_jaccard - _DEFAULTS.lexical_prefilter_min_jaccard
         )
         > 1e-9
     ):

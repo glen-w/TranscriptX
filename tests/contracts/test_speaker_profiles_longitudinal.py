@@ -180,9 +180,7 @@ def test_timing_valid_turn_count_includes_zero_duration() -> None:
 
 @pytest.mark.unit
 def test_wpm_unavailable_when_only_zero_duration() -> None:
-    metrics = compute_occurrence_metrics(
-        [{"text": "hi", "start": 1.0, "end": 1.0}]
-    )
+    metrics = compute_occurrence_metrics([{"text": "hi", "start": 1.0, "end": 1.0}])
     assert metrics.timing_valid_turn_count == 1
     assert metrics.duration_seconds == 0.0
     assert metrics.wpm is None
@@ -192,11 +190,17 @@ def test_wpm_unavailable_when_only_zero_duration() -> None:
 def test_series_eligible_flag_matrix() -> None:
     day = date(2026, 1, 1)
     for flag in ("needs_review", "missing_source", "collision", "repair_required"):
-        row = _row(link_id=flag, managed_transcript_id="t", appearance_date=day, flag=flag)
+        row = _row(
+            link_id=flag, managed_transcript_id="t", appearance_date=day, flag=flag
+        )
         assert series_eligible(row, include_ignored=True) is False
         assert series_eligible(row, include_ignored=False) is False
     ignored = _row(
-        link_id="ig", managed_transcript_id="t", appearance_date=day, flag="ignored", ignored=True
+        link_id="ig",
+        managed_transcript_id="t",
+        appearance_date=day,
+        flag="ignored",
+        ignored=True,
     )
     assert series_eligible(ignored, include_ignored=False) is False
     assert series_eligible(ignored, include_ignored=True) is True
@@ -227,8 +231,20 @@ def test_period_identity_unknown_last() -> None:
 def test_numerator_dedupe_same_link_and_key() -> None:
     day = date(2026, 1, 15)
     rows = (
-        _row(link_id="a", managed_transcript_id="t1", appearance_date=day, words=10, duration=2.0),
-        _row(link_id="a", managed_transcript_id="t1", appearance_date=day, words=10, duration=2.0),
+        _row(
+            link_id="a",
+            managed_transcript_id="t1",
+            appearance_date=day,
+            words=10,
+            duration=2.0,
+        ),
+        _row(
+            link_id="a",
+            managed_transcript_id="t1",
+            appearance_date=day,
+            words=10,
+            duration=2.0,
+        ),
         _row(
             link_id="b",
             managed_transcript_id="t1",
@@ -249,8 +265,18 @@ def test_numerator_dedupe_same_link_and_key() -> None:
 def test_speaking_share_helper_partial_and_unavailable() -> None:
     contribs = dedupe_to_transcript_contributions(
         (
-            _row(link_id="a", managed_transcript_id="t1", appearance_date=date(2026, 1, 1), duration=2.0),
-            _row(link_id="b", managed_transcript_id="t2", appearance_date=date(2026, 1, 1), duration=None),
+            _row(
+                link_id="a",
+                managed_transcript_id="t1",
+                appearance_date=date(2026, 1, 1),
+                duration=2.0,
+            ),
+            _row(
+                link_id="b",
+                managed_transcript_id="t2",
+                appearance_date=date(2026, 1, 1),
+                duration=None,
+            ),
         )
     )
     dens = {"t1": 10.0, "t2": 10.0}
@@ -261,7 +287,14 @@ def test_speaking_share_helper_partial_and_unavailable() -> None:
 
     empty = compute_period_speaking_share(
         dedupe_to_transcript_contributions(
-            (_row(link_id="x", managed_transcript_id="t1", appearance_date=None, duration=None),)
+            (
+                _row(
+                    link_id="x",
+                    managed_transcript_id="t1",
+                    appearance_date=None,
+                    duration=None,
+                ),
+            )
         ),
         {"t1": 5.0},
     )
@@ -354,14 +387,20 @@ def test_pack_trends_and_partners(
     pack = build_profile_analytics_pack(
         snap, alice.profile_id, grain="appearance_date", include_all_series=True
     )
-    assert pack.freshness_token == snap.aggregates_by_profile[alice.profile_id].freshness_token
+    assert (
+        pack.freshness_token
+        == snap.aggregates_by_profile[alice.profile_id].freshness_token
+    )
     assert pack.all_appearances is not None
     assert len(pack.headline.speaking_minutes) >= 1
     assert all(p.value is None or p.value >= 0 for p in pack.headline.speaking_minutes)
 
     # Month grain reconciles unknown isolation
     month_pack = build_profile_analytics_pack(snap, alice.profile_id, grain="month")
-    assert all(p.period_id != "unknown" or p.display_label == "Unknown date" for p in month_pack.headline.words)
+    assert all(
+        p.period_id != "unknown" or p.display_label == "Unknown date"
+        for p in month_pack.headline.words
+    )
 
     assert len(pack.partners) == 1
     assert pack.partners[0].partner_id == bob.profile_id
@@ -450,7 +489,9 @@ def test_partners_exclude_self_and_merged_owner() -> None:
     ids = {p.partner_id for p in result.partners}
     assert ids == {"bob"}
     assert any(w.startswith("merged_owner_link:") for w in result.integrity_warnings)
-    assert any(w.startswith("dangling_partner_profile:") for w in result.integrity_warnings)
+    assert any(
+        w.startswith("dangling_partner_profile:") for w in result.integrity_warnings
+    )
 
 
 @pytest.mark.unit
@@ -501,7 +542,7 @@ def test_speakers_page_has_trends_not_gallery() -> None:
     assert "def _render_interactions_equity" in src
     assert "def _render_sentiment_trends" in src
     assert "_speakers_browser_fragment" in src
-    assert "scope=\"fragment\"" in src or "scope='fragment'" in src
+    assert 'scope="fragment"' in src or "scope='fragment'" in src
     assert "build_profile_analytics_pack" in src
     assert "build_profile_interactions_pack" in src
     assert "build_profile_sentiment_pack" in src
@@ -542,7 +583,8 @@ def test_grain_additive_reconcile_and_all_contains_headline(
 
     assert date_pack.all_appearances is not None
     by_period_all = {
-        p.period_id: set(p.source_appearance_ids) for p in date_pack.all_appearances.words
+        p.period_id: set(p.source_appearance_ids)
+        for p in date_pack.all_appearances.words
     }
     for hp in date_pack.headline.words:
         assert set(hp.source_appearance_ids) <= by_period_all.get(hp.period_id, set())
@@ -594,9 +636,7 @@ def test_median_only_uses_subject_segments() -> None:
         appearance_date=date(2026, 1, 1),
         transcript_duration_denominator=50.0,
     )
-    durs, warns = _collect_turn_durations(
-        (subject,), {"t1": bundle, "t2": other}
-    )
+    durs, warns = _collect_turn_durations((subject,), {"t1": bundle, "t2": other})
     assert sorted(durs) == [1.0, 2.0]
     assert warns == []
 
@@ -607,7 +647,13 @@ def test_flag_matrix_headline_vs_all_series() -> None:
 
     day = date(2026, 1, 15)
     rows = (
-        _row(link_id="ok", managed_transcript_id="t1", appearance_date=day, flag="ok", words=10),
+        _row(
+            link_id="ok",
+            managed_transcript_id="t1",
+            appearance_date=day,
+            flag="ok",
+            words=10,
+        ),
         _row(
             link_id="nr",
             managed_transcript_id="t2",
@@ -780,8 +826,12 @@ def test_speaking_minutes_partial_and_no_fabrication() -> None:
 def test_speaking_share_stable_across_grains_same_bucket() -> None:
     day = date(2026, 2, 10)
     rows = (
-        _row(link_id="a", managed_transcript_id="t1", appearance_date=day, duration=2.0),
-        _row(link_id="b", managed_transcript_id="t2", appearance_date=day, duration=3.0),
+        _row(
+            link_id="a", managed_transcript_id="t1", appearance_date=day, duration=2.0
+        ),
+        _row(
+            link_id="b", managed_transcript_id="t2", appearance_date=day, duration=3.0
+        ),
     )
     dens = {"t1": 10.0, "t2": 10.0}
     contribs = dedupe_to_transcript_contributions(rows)
@@ -891,8 +941,20 @@ def test_partner_ranking_ties_and_top_n() -> None:
     tid_b = "550e8400-e29b-41d4-a716-4466554400ab"
     day = date(2026, 1, 1)
     subject = (
-        _row(link_id="s1", managed_transcript_id=tid_a, appearance_date=day, profile_id="alice", duration=60.0),
-        _row(link_id="s2", managed_transcript_id=tid_b, appearance_date=day, profile_id="alice", duration=120.0),
+        _row(
+            link_id="s1",
+            managed_transcript_id=tid_a,
+            appearance_date=day,
+            profile_id="alice",
+            duration=60.0,
+        ),
+        _row(
+            link_id="s2",
+            managed_transcript_id=tid_b,
+            appearance_date=day,
+            profile_id="alice",
+            duration=120.0,
+        ),
     )
     # Two partners each share 1 transcript — tie on count; minutes differ; name tie-break unused
     links = (
@@ -963,8 +1025,12 @@ def test_time_series_share_matches_longitudinal_helper() -> None:
 
     day = date(2026, 1, 15)
     rows = (
-        _row(link_id="a", managed_transcript_id="t1", appearance_date=day, duration=4.0),
-        _row(link_id="b", managed_transcript_id="t2", appearance_date=day, duration=None),
+        _row(
+            link_id="a", managed_transcript_id="t1", appearance_date=day, duration=4.0
+        ),
+        _row(
+            link_id="b", managed_transcript_id="t2", appearance_date=day, duration=None
+        ),
     )
     dens = {"t1": 8.0, "t2": 8.0}
     series = build_time_series(

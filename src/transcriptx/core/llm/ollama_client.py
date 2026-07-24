@@ -169,7 +169,9 @@ def context_length_from_show_payload(payload: Any) -> int | None:
             candidates.append((key, parsed))
     if not candidates:
         return None
-    candidates.sort(key=lambda item: (0 if item[0].startswith("general.") else 1, item[0]))
+    candidates.sort(
+        key=lambda item: (0 if item[0].startswith("general.") else 1, item[0])
+    )
     # Prefer non-general architecture keys when present.
     for key, value in candidates:
         if not key.startswith("general."):

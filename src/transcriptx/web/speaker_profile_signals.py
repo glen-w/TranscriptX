@@ -30,7 +30,11 @@ def consume_cache_invalidation_signal(signal: CacheInvalidationSignal | None) ->
 
         clear_transcript_listing_caches()
 
-    if "speaker_profiles" in scopes or "speaker_links" in scopes or "speaker_voice" in scopes:
+    if (
+        "speaker_profiles" in scopes
+        or "speaker_links" in scopes
+        or "speaker_voice" in scopes
+    ):
         try:
             from transcriptx.web.page_modules.speaker_id import (
                 _transcript_paths_for_speaker_views,

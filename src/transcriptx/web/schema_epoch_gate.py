@@ -104,7 +104,7 @@ def render_schema_epoch_gate() -> bool:
         "`recordings/` or `transcripts/`."
     )
     confirm = st.text_input(
-        'Type RESET DERIVED to confirm',
+        "Type RESET DERIVED to confirm",
         key="schema_epoch_reset_confirm",
     )
     report_path = st.text_input(
@@ -114,7 +114,7 @@ def render_schema_epoch_gate() -> bool:
     )
     if st.button("Reset derived state", key="schema_epoch_reset_derived"):
         if confirm.strip() != "RESET DERIVED":
-            st.error('Confirmation text must be exactly: RESET DERIVED')
+            st.error("Confirmation text must be exactly: RESET DERIVED")
         else:
             report = reset_incompatible_derived_state(
                 Path(assessment.data_root),

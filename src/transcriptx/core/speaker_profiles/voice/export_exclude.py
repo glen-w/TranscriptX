@@ -17,9 +17,7 @@ def is_voice_excluded_relpath(relpath: str) -> bool:
     return False
 
 
-def filter_speaker_profiles_export_paths(
-    root: Path, paths: list[Path]
-) -> list[Path]:
+def filter_speaker_profiles_export_paths(root: Path, paths: list[Path]) -> list[Path]:
     """Drop voice subtree and voice cache paths from a candidate export list."""
     root = Path(root).resolve()
     kept: list[Path] = []

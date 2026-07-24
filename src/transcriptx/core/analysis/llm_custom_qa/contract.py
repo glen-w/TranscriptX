@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from transcriptx.core.analysis.llm_custom_qa.artifact_schema import (
     compute_outcome,
@@ -13,10 +13,9 @@ from transcriptx.core.analysis.llm_custom_qa.constants import (
     PROMPT_VERSION,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    V1_MODULE_VERSION,
-    V1_SCHEMA_ID,
+    MODULE_VERSION,
+    SCHEMA_ID,
 )
-
 from transcriptx.core.analysis.llm_custom_qa.model_schema import (
     extract_question_index,
     try_parse_answer_row,
@@ -127,9 +126,7 @@ def process_raw_answers(
     return answers, diagnostics
 
 
-def _unavailable_row(
-    index: int, question: str, system_reason: str
-) -> dict[str, Any]:
+def _unavailable_row(index: int, question: str, system_reason: str) -> dict[str, Any]:
     return {
         "question_index": index,
         "question": question,
@@ -173,8 +170,8 @@ def build_llm_custom_qa_cache_key(
     llm_request_sha256: str,
     template_hash: str,
     prompt_version: str = PROMPT_VERSION,
-    schema_id: str = V1_SCHEMA_ID,
-    module_version: str = V1_MODULE_VERSION,
+    schema_id: str = SCHEMA_ID,
+    module_version: str = MODULE_VERSION,
     absence_detector_version: str = ABSENCE_DETECTOR_VERSION,
 ) -> str:
     payload = {

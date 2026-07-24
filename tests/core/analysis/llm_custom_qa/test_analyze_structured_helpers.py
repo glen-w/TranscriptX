@@ -1,14 +1,14 @@
-"""Offline unit coverage for llm_custom_qa analyze_v2 helpers."""
+"""Offline unit coverage for llm_custom_qa analyze_structured helpers."""
 
 from __future__ import annotations
 
 import pytest
 
-from transcriptx.core.analysis.llm_custom_qa.analyze_v2 import (
-    _empty_v2_payload,
+from transcriptx.core.analysis.llm_custom_qa.analyze_structured import (
+    _empty_structured_payload,
     _is_retryable,
     _questions_requested_payload,
-    _system_prompt_v2,
+    _structured_system_prompt,
     _unavailable_cell,
 )
 from transcriptx.core.analysis.llm_custom_qa.errors import (
@@ -21,7 +21,7 @@ from transcriptx.core.analysis.llm_custom_qa.question_identity import (
     QuestionScopes,
 )
 from transcriptx.core.analysis.llm_custom_qa.resolve import EffectiveCustomQAQuestions
-from transcriptx.core.analysis.llm_custom_qa.versioning import V2_SCHEMA_ID
+from transcriptx.core.analysis.llm_custom_qa.versioning import SCHEMA_ID
 
 
 def _q(text: str = "Who decided?") -> CanonicalQuestion:
@@ -32,7 +32,9 @@ def _q(text: str = "Who decided?") -> CanonicalQuestion:
     )
 
 
-def _effective(*, structured: tuple[CanonicalQuestion, ...] = ()) -> EffectiveCustomQAQuestions:
+def _effective(
+    *, structured: tuple[CanonicalQuestion, ...] = ()
+) -> EffectiveCustomQAQuestions:
     return EffectiveCustomQAQuestions(
         questions=tuple(q.text for q in structured) or (),
         questions_hash="hash",
@@ -48,11 +50,11 @@ def _effective(*, structured: tuple[CanonicalQuestion, ...] = ()) -> EffectiveCu
 
 
 @pytest.mark.unit
-def test_system_prompt_v2_counts_questions() -> None:
-    prompt = _system_prompt_v2(question_count=3)
+def test_structured_system_prompt_counts_questions() -> None:
+    prompt = _structured_system_prompt(question_count=3)
     assert "exactly 3 answer objects" in prompt
     assert "0 through 2" in prompt
-    assert _system_prompt_v2(question_count=0).count("0 through 0") == 1
+    assert _structured_system_prompt(question_count=0).count("0 through 0") == 1
 
 
 @pytest.mark.unit
@@ -69,14 +71,14 @@ def test_questions_requested_payload_shape() -> None:
 
 
 @pytest.mark.unit
-def test_empty_v2_payload_empty_and_structured() -> None:
-    empty = _empty_v2_payload(_effective())
-    assert empty["schema_id"] == V2_SCHEMA_ID
+def test_empty_structured_payload_empty_and_structured() -> None:
+    empty = _empty_structured_payload(_effective())
+    assert empty["schema_id"] == SCHEMA_ID
     assert empty["outcome"] == "empty_questions"
     assert empty["answers"] == []
     assert empty["provenance"]["empty_run"] is True
 
-    structured = _empty_v2_payload(_effective(structured=(_q(),)))
+    structured = _empty_structured_payload(_effective(structured=(_q(),)))
     assert structured["questions_requested"][0]["question_id"] == "q_test"
     assert structured["question_order"] == ["q_test"]
     assert structured["questions_hash"]

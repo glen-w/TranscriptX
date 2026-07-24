@@ -120,7 +120,10 @@ def test_load_chapters_and_pending_jump(tmp_path: Path) -> None:
     assert len(rows) == 1
     assert rows[0].title == "Opening"
     assert rows[0].viewer_target_source_index == 3
-    state: dict = {"transcript_search": "stale", "transcript_viewer_tab_control": "Chapters"}
+    state: dict = {
+        "transcript_search": "stale",
+        "transcript_viewer_tab_control": "Chapters",
+    }
     queue_chapter_jump(state, source_index=3, play=True)
     assert state["transcript_viewer_chapter_jump"] == 3
     assert state["transcript_viewer_tab"] == "segments"
@@ -299,7 +302,9 @@ def test_chapter_rejects_segment_echo_title_and_keeps_keywords(
 
 
 def test_keyword_hints_drop_discourse_fillers() -> None:
-    from transcriptx.core.analysis.topic_shift.keywords import keyword_hints_for_segments
+    from transcriptx.core.analysis.topic_shift.keywords import (
+        keyword_hints_for_segments,
+    )
     from transcriptx.core.analysis.topic_shift.segments import CanonicalTopicSegment
 
     segs = [
@@ -365,7 +370,9 @@ def test_moments_point_event_seeds_segment_refs() -> None:
 
 
 def test_nearest_renderable_source_index_snaps() -> None:
-    from transcriptx.core.analysis.topic_shift.spans import nearest_renderable_source_index
+    from transcriptx.core.analysis.topic_shift.spans import (
+        nearest_renderable_source_index,
+    )
 
     assert nearest_renderable_source_index(5, renderable=[0, 2, 8, 10]) == 8
     assert nearest_renderable_source_index(2, renderable=[0, 2, 8]) == 2

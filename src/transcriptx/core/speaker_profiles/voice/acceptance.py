@@ -132,10 +132,13 @@ class VoiceAcceptanceOwner:
                 )
                 audio = resolve_managed_transcript_audio(Path(resolved.transcript_path))
             except Exception as exc:
-                raise StaleConfirmationError(f"audio identity unavailable: {exc}") from exc
+                raise StaleConfirmationError(
+                    f"audio identity unavailable: {exc}"
+                ) from exc
             if (
                 request.expected_audio_stat_fingerprint is not None
-                and audio.audio_stat_fingerprint != request.expected_audio_stat_fingerprint
+                and audio.audio_stat_fingerprint
+                != request.expected_audio_stat_fingerprint
             ):
                 raise StaleConfirmationError("expected_audio_stat_fingerprint mismatch")
             if (
@@ -144,9 +147,7 @@ class VoiceAcceptanceOwner:
             ):
                 raise StaleConfirmationError("expected_audio_content_sha256 mismatch")
 
-        key = link_file_key(
-            request.managed_transcript_id, request.local_speaker_key
-        )
+        key = link_file_key(request.managed_transcript_id, request.local_speaker_key)
         existing = read_live_link(key, root=self.root)
 
         if request.create_new_profile:
@@ -161,7 +162,10 @@ class VoiceAcceptanceOwner:
                 raise StaleConfirmationError("expected live link missing")
             return
 
-        if request.expected_link_id is not None and existing.link_id != request.expected_link_id:
+        if (
+            request.expected_link_id is not None
+            and existing.link_id != request.expected_link_id
+        ):
             raise StaleConfirmationError("expected_link_id mismatch")
         if (
             request.expected_owner_profile_id is not None
@@ -233,7 +237,9 @@ class VoiceAcceptanceOwner:
             )
         return excerpts
 
-    def _decision_write(self, request: AcceptSuggestionRequest, decision_id: str) -> PlannedWrite:
+    def _decision_write(
+        self, request: AcceptSuggestionRequest, decision_id: str
+    ) -> PlannedWrite:
         decision = VoiceMatchDecisionV1(
             decision_id=decision_id,
             decision_kind="accept",

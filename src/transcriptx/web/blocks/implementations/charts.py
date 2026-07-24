@@ -22,7 +22,6 @@ from transcriptx.web.state import (
     CHARTS_KEY_FILTER_TAGS,
     CHARTS_KEY_MODULE_SORT,
     CHARTS_KEY_SEARCH,
-    CHARTS_KEY_SOURCE_PRESET,
     CHARTS_SORT_MODULE_FAMILY,
 )
 
@@ -48,7 +47,9 @@ def render_chart_gallery_modules(
     groups = module_group_counts(charts)
     sort_mode = st.session_state.get(CHARTS_KEY_MODULE_SORT, CHARTS_SORT_MODULE_FAMILY)
     ordered = sort_gallery_module_ids(groups.keys(), sort_mode=str(sort_mode))
-    show_registry, show_llm = chart_text_flags(ensure_charts_chart_text(st.session_state))
+    show_registry, show_llm = chart_text_flags(
+        ensure_charts_chart_text(st.session_state)
+    )
 
     for module_id in ordered:
         group = groups[module_id]
@@ -157,7 +158,9 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
         st.caption("No overview slots for the current filters.")
         return
 
-    show_registry, show_llm = chart_text_flags(ensure_charts_chart_text(st.session_state))
+    show_registry, show_llm = chart_text_flags(
+        ensure_charts_chart_text(st.session_state)
+    )
     for slot in view.overview_slots:
         st.markdown(f"**{slot['label']}**")
         slot_description = slot.get("description")

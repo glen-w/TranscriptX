@@ -14,7 +14,6 @@ from transcriptx.core.llm_feedback.validate import validate_event
 from transcriptx.web.blocks.llm_presentation import build_block_feedback_target
 from transcriptx.web.blocks.context import BlockContext, BlockServices
 
-
 FIXTURES = Path(__file__).parent / "fixtures" / "llm_feedback"
 
 

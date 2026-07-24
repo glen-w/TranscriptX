@@ -50,9 +50,7 @@ def _clear_form_state(target_instance_id: str) -> None:
         st.session_state.pop(_state_key(target_instance_id, suffix), None)
 
 
-def _identity_from_target(
-    target: FeedbackTarget, output_sha256: str
-) -> str:
+def _identity_from_target(target: FeedbackTarget, output_sha256: str) -> str:
     return compute_target_instance_id(
         surface=target.surface,
         run_id=target.run_id,
@@ -212,7 +210,11 @@ def render_llm_feedback_controls(
             submission_token=token,
             supersedes_feedback_id=supersedes,
         )
-    except (LlmFeedbackValidationError, LlmFeedbackPersistenceError, LlmFeedbackError) as exc:
+    except (
+        LlmFeedbackValidationError,
+        LlmFeedbackPersistenceError,
+        LlmFeedbackError,
+    ) as exc:
         st.session_state[error_key] = str(exc)
         st.rerun()
         return

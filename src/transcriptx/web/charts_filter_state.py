@@ -78,9 +78,7 @@ def set_charts_open_modules(
     session_state[CHARTS_KEY_OPEN_MODULES] = list(module_ids)
 
 
-def chart_text_from_legacy_toggles(
-    show_descriptions: bool, show_llm: bool
-) -> str:
+def chart_text_from_legacy_toggles(show_descriptions: bool, show_llm: bool) -> str:
     """Map legacy description/LLM booleans to Chart text mode."""
     if show_descriptions and show_llm:
         return CHARTS_CHART_TEXT_BOTH

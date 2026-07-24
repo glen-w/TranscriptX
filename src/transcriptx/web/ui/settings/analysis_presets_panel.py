@@ -8,7 +8,10 @@ import streamlit as st
 
 from transcriptx.core.analysis.selection import is_heavy_module
 from transcriptx.core.config.persistence import patch_project_config_keys
-from transcriptx.core.pipeline.module_registry import get_module_info, get_module_registry
+from transcriptx.core.pipeline.module_registry import (
+    get_module_info,
+    get_module_registry,
+)
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.config.analysis import (
     default_ui_presets_dict,
@@ -95,7 +98,9 @@ def _render_preset_editor(
         draft["llm_module_ids"] = st.multiselect(
             "LLM allowlist (empty = all LLM modules)",
             options=llm_options,
-            default=[m for m in (draft.get("llm_module_ids") or []) if m in llm_options],
+            default=[
+                m for m in (draft.get("llm_module_ids") or []) if m in llm_options
+            ],
             format_func=format_module_option,
             key=f"{prefix}_llm_ids",
         )
@@ -164,7 +169,9 @@ def render_analysis_presets_panel() -> None:
     if "settings_ui_presets_gen" not in st.session_state:
         st.session_state["settings_ui_presets_gen"] = 0
 
-    draft_root: dict[str, dict[str, Any]] = st.session_state["settings_ui_presets_draft"]
+    draft_root: dict[str, dict[str, Any]] = st.session_state[
+        "settings_ui_presets_draft"
+    ]
     gen = int(st.session_state["settings_ui_presets_gen"])
 
     tabs = st.tabs([_PRESET_TITLES[k] for k in _PRESET_KEYS])

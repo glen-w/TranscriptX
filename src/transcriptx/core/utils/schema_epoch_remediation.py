@@ -104,9 +104,7 @@ def inventory_compatible_transcripts(
         Path(transcripts_dir)
         if transcripts_dir is not None
         else (
-            Path(PATHS.transcripts_dir)
-            if data_root is None
-            else root / "transcripts"
+            Path(PATHS.transcripts_dir) if data_root is None else root / "transcripts"
         )
     )
     items: list[TranscriptInventoryItem] = []

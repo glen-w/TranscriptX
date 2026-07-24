@@ -473,20 +473,32 @@ def _render_model_information(installed: Sequence[str]) -> None:
     infos = [
         OllamaModelInfo(
             name=str(row["name"] or name),
-            size_bytes=row.get("size_bytes") if isinstance(row.get("size_bytes"), int) else None,
-            modified_at=row.get("modified_at")
-            if isinstance(row.get("modified_at"), str)
-            else None,
+            size_bytes=(
+                row.get("size_bytes")
+                if isinstance(row.get("size_bytes"), int)
+                else None
+            ),
+            modified_at=(
+                row.get("modified_at")
+                if isinstance(row.get("modified_at"), str)
+                else None
+            ),
             family=row.get("family") if isinstance(row.get("family"), str) else None,
-            parameter_size=row.get("parameter_size")
-            if isinstance(row.get("parameter_size"), str)
-            else None,
-            quantization_level=row.get("quantization_level")
-            if isinstance(row.get("quantization_level"), str)
-            else None,
-            context_length=row.get("context_length")
-            if isinstance(row.get("context_length"), int)
-            else None,
+            parameter_size=(
+                row.get("parameter_size")
+                if isinstance(row.get("parameter_size"), str)
+                else None
+            ),
+            quantization_level=(
+                row.get("quantization_level")
+                if isinstance(row.get("quantization_level"), str)
+                else None
+            ),
+            context_length=(
+                row.get("context_length")
+                if isinstance(row.get("context_length"), int)
+                else None
+            ),
         )
         for name, row in info_payload.items()
     ]
@@ -667,7 +679,9 @@ def render_compact_llm_setup(
 
     installed, list_error = cached_list_ollama_models(llm.base_url)
     if list_error:
-        st.caption(f"Ollama unavailable: {list_error}. Manage models in Settings → Models.")
+        st.caption(
+            f"Ollama unavailable: {list_error}. Manage models in Settings → Models."
+        )
     if not installed and not list_error:
         st.caption(
             "No installed Ollama models found. Pull a model, then open "
@@ -858,9 +872,8 @@ def render_llm_models_settings_panel() -> None:
             st.error(str(exc))
         else:
             profile_name = (name or "").strip()
-            if (
-                not profile_name
-                or ProfileController.is_virtual_default_profile_name(profile_name)
+            if not profile_name or ProfileController.is_virtual_default_profile_name(
+                profile_name
             ):
                 st.error("Enter a non-default preset name.")
             else:

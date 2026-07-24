@@ -83,7 +83,9 @@ def _write_managed(transcripts_root: Path, *, name: str, import_id: str) -> None
     )
 
 
-def _svc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[SpeakerProfileService, Path]:
+def _svc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[SpeakerProfileService, Path]:
     transcripts = tmp_path / "transcripts"
     transcripts.mkdir()
     _patch_roots(monkeypatch, transcripts)
@@ -179,9 +181,7 @@ def test_leave_unlinked_writes_no_decision(
         assert not list(decisions.glob("*.json"))
 
 
-def test_wipe_clears_receipt(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_wipe_clears_receipt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     svc, profiles = _svc(tmp_path, monkeypatch)
     svc.create_profile_and_link(
         operation_idempotency_key=str(uuid4()),
@@ -217,9 +217,7 @@ def test_wipe_clears_receipt(
     assert "wipe_receipt_stale" not in " ".join(report.voice_issues)
 
 
-def test_revoke_chains_wipe(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_revoke_chains_wipe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     svc, profiles = _svc(tmp_path, monkeypatch)
     svc.create_profile_and_link(
         operation_idempotency_key=str(uuid4()),

@@ -219,7 +219,9 @@ def build_grounding_corpus(
             segments_omitted_empty=omitted_empty,
             segments_omitted_invalid=omitted_invalid,
             transcript_fingerprint=fingerprint,
-            bounded_input_fingerprint=sha256_text(corpus_text) if corpus_text else sha256_text(""),
+            bounded_input_fingerprint=(
+                sha256_text(corpus_text) if corpus_text else sha256_text("")
+            ),
         )
 
     if prefer == "head":
@@ -244,11 +246,15 @@ def build_grounding_corpus(
         segments_omitted_empty=omitted_empty,
         segments_omitted_invalid=omitted_invalid,
         transcript_fingerprint=fingerprint,
-        bounded_input_fingerprint=sha256_text(corpus_text) if corpus_text else sha256_text(""),
+        bounded_input_fingerprint=(
+            sha256_text(corpus_text) if corpus_text else sha256_text("")
+        ),
     )
 
 
-def coverage_dict(corpus: BoundedGroundingCorpus, *, empty_run: bool = False) -> dict[str, Any]:
+def coverage_dict(
+    corpus: BoundedGroundingCorpus, *, empty_run: bool = False
+) -> dict[str, Any]:
     ratio = None if empty_run else corpus.coverage_ratio
     if empty_run:
         return {

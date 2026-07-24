@@ -195,18 +195,34 @@ Each named speaker triggers one sequential Ollama call over that speaker's utter
 
 ## `llm_custom_qa` (custom questions)
 
-Answers user-defined questions against routed evidence packs and/or a bounded
-transcript excerpt. Product entry: Settings → Questions (per-question scopes +
-evidence catalog) and Run Analysis / Batch structured picker. Insights:
-global answers under the summary hero (with fallback); per-speaker answers
-under speaker summaries (with fallback). Actions placement removed.
+Answers user-defined questions against a bounded transcript excerpt (and,
+when structured execution is on, routed evidence packs). Product entry:
+Settings → Questions and Run Analysis / Batch question picker. Insights:
+global answers under the summary hero; per-speaker answers under speaker
+summaries when present.
 
-### Activation
+### Live path vs structured path
 
-New execution/writes are gated by `get_custom_qa_activation()` (`v1_live` |
-`v2_live`). Historical reads dispatch by the artifact’s frozen `schema_id`
-(`V1_SCHEMA_ID` / `V2_SCHEMA_ID`), not the live activation branch. Parallel v2
-contracts live in `contracts_v2.py` and must not import live writer aliases.
+There is **one public schema**: `transcriptx.llm_custom_qa.v1`. There are
+**two implementation paths** in code — not two product schemas:
+
+| | **Live (default)** | **Structured (off)** |
+|--|--|--|
+| When it runs | Always, unless structured is explicitly enabled | Only if `is_structured_execution_enabled()` is true (hard-off in release builds; test toggle only today) |
+| Code | `analyze.py` → `_run_live_from_context` | `analyze_structured.py` → `run_structured_from_context` |
+| Questions | Text list projected from the library/picker | Full structured questions (`text` + scopes, `question_order`, packs) |
+| Commit layout | Alias files (`{stem}.json` / `.md`) via `force_protocol="alias"` | Generation-named files (`{stem}.json.{gid}`) via `force_protocol="generational"` |
+| Contract module | `artifact_schema` / live payload shape | `structured_contracts.py` (validates when `question_order` is present) |
+
+**Why structured is off:** the richer path (per-question scopes, evidence-pack
+routing, generation-named commits) is implemented and covered by tests, but it
+is not flipped on for production runs yet. Shipping stays on the live path so
+behavior stays stable. Readers already accept structured-shaped artifacts when
+they appear (e.g. `question_order` present); writers do not produce them until
+the gate is turned on.
+
+Do not invent a second `schema_id` for structured — both paths stamp
+`SCHEMA_ID` / `MODULE_VERSION` from `versioning.py`.
 
 ### Settings
 
@@ -232,8 +248,8 @@ contracts live in `contracts_v2.py` and must not import live writer aliases.
 }
 ```
 
-`saved_questions` is structured (`text` + `scopes`); legacy `list[str]` migrates
-idempotently to global-only. Persisted in project `config.json` under
+`saved_questions` is structured (`text` + `scopes`); plain `list[str]` is
+accepted and treated as global-only. Persisted in project `config.json` under
 `CONFIG_DIR` (Docker: `/data/.transcriptx`, host mount via `HOST_CONFIG_DIR`).
 Prefer `HOST_CONFIG_DIR` outside the git clone so the library survives wiping
 `./data`. The web app hydrates `get_config()` from that file on startup.
@@ -246,20 +262,19 @@ The Run Analysis / Batch picker treats an empty selection as implicit skip
 
 ### Contract
 
-- Live writer (`v2_live`): artifact `schema_id` `transcriptx.llm_custom_qa.v2`
-  with `reasoning`, scopes, `speaker_answers`, `evidence_used`,
-  `V2_CONTRACT_VERSION`; soft quote grounding (no row-kill)
-- Historical v1 artifacts remain readable via frozen `V1_SCHEMA_ID` validators
+- Artifact `schema_id` is `transcriptx.llm_custom_qa.v1`
 - Corpus capped (`MAX_CUSTOM_QA_CORPUS_CHARS`), tail-preferring when truncated
-- Artifacts use immutable generation files `{stem}.json.{gid}` / `.md.{gid}`,
-  marker schema v2 (`run_execution_id`), atomic `.active`, and best-effort
-  bare aliases; readers resolve a canonical stem then active→marker
+- Live commits use bare aliases; structured commits (when enabled) use
+  generation files `{stem}.json.{gid}` / `.md.{gid}`, commit markers
+  (`run_execution_id`), atomic `.active`, and best-effort aliases
+- Readers resolve canonical stem then active→marker; structured payloads with
+  `question_order` are validated via `structured_contracts.py`
 - Empty questions / `no_scheduled_cells` still succeed and commit
 
 ### Artifacts
 
-- Authoritative: `…/{base}_llm_custom_qa.json.{generation_id}` (+ `.md.{gid}`)
-- Compat aliases: `{base}_llm_custom_qa.json` (+ `.md`)
+- Live / alias: `{base}_llm_custom_qa.json` (+ `.md`)
+- Structured / authoritative (when enabled): `…/{base}_llm_custom_qa.json.{generation_id}` (+ `.md.{gid}`)
 - Generation metadata: `{base}_llm_custom_qa.questions_metadata.{gid}.json`
 - Group: `qa_answer_rows.json`, `qa_member_failures.json` (via group content loader)
 

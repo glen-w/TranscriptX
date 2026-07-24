@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from transcriptx.core.analysis.semantic_similarity.analysis import (
-    SemanticSimilarityV2Analysis,
+    SemanticSimilarityAnalysis,
 )
 from transcriptx.core.analysis.semantic_similarity.output import SCHEMA_VERSION
 
@@ -35,7 +35,7 @@ def test_semantic_similarity_single_speaker_skip_envelope_contract(
         "transcriptx.core.output.output_service.create_output_service",
         lambda *a, **k: fake_out,
     )
-    module = SemanticSimilarityV2Analysis()
+    module = SemanticSimilarityAnalysis()
     monkeypatch.setattr(module, "save_results", lambda *a, **k: None)
     result = module.run_from_context(context)
     assert result["module_name"] == "semantic_similarity"

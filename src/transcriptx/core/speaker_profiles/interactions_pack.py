@@ -347,9 +347,7 @@ def build_profile_interactions_pack(
             )
         )
 
-    dominance_vals = [
-        r.dominance_score for r in rows if r.dominance_score is not None
-    ]
+    dominance_vals = [r.dominance_score for r in rows if r.dominance_score is not None]
     floor_vals = [r.floor_share for r in rows if r.floor_share is not None]
 
     return ProfileInteractionsPack(

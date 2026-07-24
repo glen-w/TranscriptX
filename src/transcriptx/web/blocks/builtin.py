@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from transcriptx.web.blocks.implementations import asr_confidence as asr_confidence_blocks
+from transcriptx.web.blocks.implementations import (
+    asr_confidence as asr_confidence_blocks,
+)
 from transcriptx.web.blocks.implementations import charts as charts_blocks
 from transcriptx.web.blocks.implementations import data as data_blocks
 from transcriptx.web.blocks.implementations import insights as insights_blocks

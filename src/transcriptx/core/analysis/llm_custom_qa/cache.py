@@ -12,9 +12,9 @@ from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAFailureCode,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    V2_CONTRACT_VERSION,
-    V2_MODULE_VERSION,
-    V2_SCHEMA_ID,
+    CONTRACT_VERSION,
+    MODULE_VERSION,
+    SCHEMA_ID,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_canonical_json
 
@@ -55,7 +55,7 @@ def try_load_cached_artifact(
         ) from exc
 
 
-def try_load_cached_artifact_v2(
+def try_load_cached_structured_artifact(
     path: Path,
     *,
     cache_key: str,
@@ -78,11 +78,11 @@ def try_load_cached_artifact_v2(
     if list(raw.get("question_order") or []) != list(question_order):
         return None
     try:
-        from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import (
-            validate_artifact_v2,
+        from transcriptx.core.analysis.llm_custom_qa.structured_contracts import (
+            validate_structured_artifact,
         )
 
-        return validate_artifact_v2(raw)
+        return validate_structured_artifact(raw)
     except Exception as exc:
         raise CustomQAError(
             f"Cached v2 artifact failed validation: {exc}",
@@ -106,17 +106,17 @@ def build_routing_cache_key(
 ) -> str:
     payload = {
         "catalog_version": catalog_version,
-        "contract_version": V2_CONTRACT_VERSION,
+        "contract_version": CONTRACT_VERSION,
         "expanded_pack_ids": list(expanded_pack_ids),
         "include_transcript": include_transcript,
         "max_packs_per_question": max_packs_per_question,
-        "module_version": V2_MODULE_VERSION,
+        "module_version": MODULE_VERSION,
         "question_order": list(question_order),
         "questions_hash": questions_hash,
         "router_generation_options": dict(sorted(router_generation_options.items())),
         "router_model": router_model,
         "router_prompt_version": router_prompt_version,
-        "schema_id": V2_SCHEMA_ID,
+        "schema_id": SCHEMA_ID,
         "snapshot_fingerprints": dict(sorted(snapshot_fingerprints.items())),
     }
     return sha256_canonical_json(payload)
@@ -145,17 +145,17 @@ def build_answer_cache_key(
         "answer_model": answer_model,
         "answer_prompt_version": answer_prompt_version,
         "catalog_version": catalog_version,
-        "contract_version": V2_CONTRACT_VERSION,
+        "contract_version": CONTRACT_VERSION,
         "eligibility_policy_version": eligibility_policy_version,
         "materialiser_versions": dict(sorted(materialiser_versions.items())),
-        "module_version": V2_MODULE_VERSION,
+        "module_version": MODULE_VERSION,
         "question_order": list(question_order),
         "questions_hash": questions_hash,
         "rendered_evidence_format_version": rendered_evidence_format_version,
         "repair_prompt_version": repair_prompt_version,
         "routes_hash": routes_hash,
         "scheduler_version": scheduler_version,
-        "schema_id": V2_SCHEMA_ID,
+        "schema_id": SCHEMA_ID,
         "speaker_keys": list(speaker_keys),
         "transcript_global_fingerprint": transcript_global_fingerprint,
         "transcript_speaker_fingerprints": dict(

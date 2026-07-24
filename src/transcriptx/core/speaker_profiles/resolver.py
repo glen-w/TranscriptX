@@ -15,7 +15,9 @@ from transcriptx.core.speaker_profiles.errors import (
     SpeakerProfilePathError,
     UnresolvedManagedTranscriptError,
 )
-from transcriptx.core.speaker_profiles.identity import canonicalize_managed_transcript_id
+from transcriptx.core.speaker_profiles.identity import (
+    canonicalize_managed_transcript_id,
+)
 from transcriptx.core.speaker_profiles.path_safety import (
     assert_path_under_root,
     resolve_real,
@@ -74,7 +76,9 @@ class ManagedTranscriptResolver:
             transcripts_dir if transcripts_dir is not None else PATHS.transcripts_dir
         )
         self._discovery_root = (
-            Path(discovery_root) if discovery_root is not None else self._transcripts_dir
+            Path(discovery_root)
+            if discovery_root is not None
+            else self._transcripts_dir
         )
         self._by_id: dict[str, _IndexEntry] = {}
         self._by_path: dict[Path, str] = {}
@@ -140,7 +144,9 @@ class ManagedTranscriptResolver:
                     self._by_path.pop(resolve_real(p), None)
 
         admitted_count = sum(
-            1 for e in self._by_id.values() if e.resolved is not None and not e.duplicate
+            1
+            for e in self._by_id.values()
+            if e.resolved is not None and not e.duplicate
         )
         self._diagnostics = ResolverDiagnostics(
             admitted_count=admitted_count,
@@ -221,9 +227,7 @@ class ManagedTranscriptResolver:
     ) -> ResolvedManagedTranscript:
         path = Path(transcript_path)
         if not path.exists() or path.suffix.lower() != ".json":
-            raise NotManagedTranscriptError(
-                f"transcript not found or not JSON: {path}"
-            )
+            raise NotManagedTranscriptError(f"transcript not found or not JSON: {path}")
 
         # Reject symlink escape of library roots.
         try:

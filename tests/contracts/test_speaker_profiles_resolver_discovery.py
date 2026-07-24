@@ -20,7 +20,9 @@ from transcriptx.core.speaker_profiles.errors import (
     UnresolvedManagedTranscriptError,
 )
 from transcriptx.core.speaker_profiles.fingerprint import compute_occurrence_fingerprint
-from transcriptx.core.speaker_profiles.identity import canonicalize_managed_transcript_id
+from transcriptx.core.speaker_profiles.identity import (
+    canonicalize_managed_transcript_id,
+)
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.io.import_metadata.persist import load_sidecar, write_json_atomic
 from transcriptx.io.import_metadata_sidecar import (
@@ -112,9 +114,7 @@ def test_resolver_maps_import_id_to_path(
     _patch_import_roots(monkeypatch, root)
     path = _write_managed(root, name="meeting", import_id=IMPORT_A)
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     resolved = resolver.resolve(IMPORT_A)
     assert resolved.managed_transcript_id == IMPORT_A
     assert resolved.transcript_path == path.resolve()
@@ -131,9 +131,7 @@ def test_resolver_canonicalises_hex_import_id(
     _patch_import_roots(monkeypatch, root)
     _write_managed(root, name="meeting", import_id=IMPORT_A.replace("-", "").upper())
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     # Sidecar stores uppercase hex; resolver admits via UUID canonicalisation.
     resolved = resolver.resolve(IMPORT_A)
     assert resolved.managed_transcript_id == IMPORT_A
@@ -149,9 +147,7 @@ def test_duplicate_import_id_fail_closed(
     _write_managed(root, name="a", import_id=IMPORT_A)
     _write_managed(root, name="b", import_id=IMPORT_A)
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     diag = resolver.rebuild()
     assert IMPORT_A in diag.duplicate_import_ids
     assert resolver.list_admitted() == []
@@ -172,9 +168,7 @@ def test_stale_current_json_filename_not_admitted(
     payload["current_json_filename"] = "renamed.json"
     write_json_atomic(sidecar, payload)
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     assert resolver.list_admitted() == []
     with pytest.raises(UnresolvedManagedTranscriptError):
         resolver.resolve(IMPORT_A)
@@ -207,9 +201,7 @@ def test_ad_hoc_json_rejected_for_linking(
         encoding="utf-8",
     )
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     assert resolver.is_managed_path(ad_hoc) is False
     with pytest.raises(NotManagedTranscriptError):
         assert_path_eligible_for_profile_link(ad_hoc, resolver)
@@ -229,9 +221,7 @@ def test_occurrence_discovery_and_fingerprint_stability(
     ]
     _write_managed(root, name="meeting", import_id=IMPORT_A, segments=segments)
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     resolved = resolver.resolve(IMPORT_A)
     occs = discover_occurrences_for_resolved(resolved)
     assert {o.local_speaker_key for o in occs} == {"SPEAKER_00", "SPEAKER_01"}
@@ -267,9 +257,7 @@ def test_occurrence_collision_blocks_linking(
     ]
     _write_managed(root, name="meeting", import_id=IMPORT_B, segments=segments)
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     occs = discover_occurrences_for_resolved(resolver.resolve(IMPORT_B))
     assert len(occs) == 1
     assert occs[0].collision is True
@@ -286,9 +274,7 @@ def test_non_uuid_import_id_skipped_from_admission(
     _patch_import_roots(monkeypatch, root)
     _write_managed(root, name="meeting", import_id="not-a-uuid")
 
-    resolver = ManagedTranscriptResolver(
-        transcripts_dir=root, discovery_root=root
-    )
+    resolver = ManagedTranscriptResolver(transcripts_dir=root, discovery_root=root)
     diag = resolver.rebuild()
     assert diag.admitted_count == 0
     assert diag.skipped_non_uuid_import_id

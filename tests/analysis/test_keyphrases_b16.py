@@ -29,9 +29,9 @@ def test_base_salience_uses_occurrence_and_support() -> None:
 
 
 def test_yake_direction_conversion() -> None:
-    assert higher_is_better_salience(0.1, "lower_is_better") > higher_is_better_salience(
-        0.9, "lower_is_better"
-    )
+    assert higher_is_better_salience(
+        0.1, "lower_is_better"
+    ) > higher_is_better_salience(0.9, "lower_is_better")
 
 
 def test_assign_ranks_deterministic_tiebreak() -> None:
@@ -214,8 +214,12 @@ def test_segment_boundary_store_keys_are_per_segment() -> None:
 
     store: dict = {}
     tokens = [
-        TokenAnnotation(surface="product", lemma="product", pos="NOUN", is_stop=False, ent_type=None),
-        TokenAnnotation(surface="roadmap", lemma="roadmap", pos="NOUN", is_stop=False, ent_type=None),
+        TokenAnnotation(
+            surface="product", lemma="product", pos="NOUN", is_stop=False, ent_type=None
+        ),
+        TokenAnnotation(
+            surface="roadmap", lemma="roadmap", pos="NOUN", is_stop=False, ent_type=None
+        ),
     ]
     _accumulate_chunk(
         store,

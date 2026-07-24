@@ -407,10 +407,9 @@ def test_charts_zip_index_includes_linked_llm_narratives(tmp_path: Path) -> None
         index = zf.read("index.html").decode("utf-8")
 
     missing = [text for text in expected.values() if text not in index]
-    assert not missing, (
-        "ZIP index.html missing LLM narratives (key mismatch?):\n"
-        + "\n".join(missing)
-    )
+    assert (
+        not missing
+    ), "ZIP index.html missing LLM narratives (key mismatch?):\n" + "\n".join(missing)
     assert 'class="chart-narrative"' in index
 
     # Voice folder/module mismatch must still resolve into the export index.

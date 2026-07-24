@@ -40,7 +40,10 @@ from transcriptx.web.blocks.llm_presentation import (
 )
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.module_run_prompt import render_module_required_hint
-from transcriptx.web.speaker_accent import load_accent_resolve_context, speaker_inline_html
+from transcriptx.web.speaker_accent import (
+    load_accent_resolve_context,
+    speaker_inline_html,
+)
 from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_data_artifact,
@@ -852,8 +855,10 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
         )
         return
 
-    rated = cleaned_llm_output_text(md) if md else str(
-        (payload or {}).get(text_field) or ""
+    rated = (
+        cleaned_llm_output_text(md)
+        if md
+        else str((payload or {}).get(text_field) or "")
     )
     rel = resolve_artifact_rel_path(
         loader, module, f"{artifact_stem}.md", instance_id=inst
@@ -1172,7 +1177,9 @@ def _render_action_items_payload(
     )
 
     if payload is not None and is_v1_action_items_payload(payload):
-        st.caption("Legacy v1 action items (not native v2).")
+        st.caption(
+            "Unstamped legacy action items (epoch-1 live path uses stamped schema)."
+        )
         st.caption(HUMAN_REVIEW_BANNER)
     else:
         st.caption(HUMAN_REVIEW_BANNER)
@@ -1604,9 +1611,7 @@ def _render_marker_module_block(
     loader = _loader(ctx)
     run_root = ctx.run_root
     if run_root is None:
-        render_module_required_hint(
-            empty_hint, key=f"{module}_no_loader", ctx=ctx
-        )
+        render_module_required_hint(empty_hint, key=f"{module}_no_loader", ctx=ctx)
         return
 
     if is_group_run(run_root):
@@ -1641,9 +1646,7 @@ def _render_marker_module_block(
         return
 
     if loader is None:
-        render_module_required_hint(
-            empty_hint, key=f"{module}_no_loader", ctx=ctx
-        )
+        render_module_required_hint(empty_hint, key=f"{module}_no_loader", ctx=ctx)
         return
 
     failure_hint = _module_failure_hint(run_root, module)
@@ -1652,15 +1655,11 @@ def _render_marker_module_block(
         if failure_hint:
             st.warning(failure_hint)
         else:
-            render_module_required_hint(
-                empty_hint, key=f"{module}_empty", ctx=ctx
-            )
+            render_module_required_hint(empty_hint, key=f"{module}_empty", ctx=ctx)
         return
 
     _render_marker_module_payload(payload, share_keys=share_keys)
-    _render_view_raw_file_link(
-        ctx, module, json_suffix, link_key=f"{module}_raw"
-    )
+    _render_view_raw_file_link(ctx, module, json_suffix, link_key=f"{module}_raw")
 
 
 def render_epistemic_markers_block(
@@ -1741,9 +1740,7 @@ def _render_keyphrases_payload(payload: dict[str, Any]) -> None:
 
 
 def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> None:
-    title = placement.title_override or str(
-        placement.params.get("title", "Keyphrases")
-    )
+    title = placement.title_override or str(placement.params.get("title", "Keyphrases"))
     empty_hint = str(
         placement.params.get(
             "empty_hint",
@@ -1756,9 +1753,7 @@ def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> Non
     module = "keyphrases"
     json_suffix = "_keyphrases.json"
     if run_root is None:
-        render_module_required_hint(
-            empty_hint, key=f"{module}_no_loader", ctx=ctx
-        )
+        render_module_required_hint(empty_hint, key=f"{module}_no_loader", ctx=ctx)
         return
 
     if is_group_run(run_root):
@@ -1789,9 +1784,7 @@ def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> Non
         return
 
     if loader is None:
-        render_module_required_hint(
-            empty_hint, key=f"{module}_no_loader", ctx=ctx
-        )
+        render_module_required_hint(empty_hint, key=f"{module}_no_loader", ctx=ctx)
         return
 
     failure_hint = _module_failure_hint(run_root, module)
@@ -1800,12 +1793,8 @@ def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> Non
         if failure_hint:
             st.warning(failure_hint)
         else:
-            render_module_required_hint(
-                empty_hint, key=f"{module}_empty", ctx=ctx
-            )
+            render_module_required_hint(empty_hint, key=f"{module}_empty", ctx=ctx)
         return
 
     _render_keyphrases_payload(payload)
-    _render_view_raw_file_link(
-        ctx, module, json_suffix, link_key=f"{module}_raw"
-    )
+    _render_view_raw_file_link(ctx, module, json_suffix, link_key=f"{module}_raw")

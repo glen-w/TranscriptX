@@ -362,4 +362,3 @@ def build_event(
         target=target,
         provenance=provenance or FeedbackProvenance(None, None, None, None, None),
     )
-

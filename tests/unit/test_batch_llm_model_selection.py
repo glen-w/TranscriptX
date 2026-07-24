@@ -29,9 +29,7 @@ def test_batch_forwards_llm_model_selection(tmp_path: Path):
             status="completed",
         )
 
-    with patch(
-        "transcriptx.app.workflows.batch.run_analysis", side_effect=_fake_run
-    ):
+    with patch("transcriptx.app.workflows.batch.run_analysis", side_effect=_fake_run):
         result = run_batch_analysis(
             BatchAnalysisRequest(
                 transcript_paths=[transcript],

@@ -7,7 +7,6 @@ from typing import Any
 from uuid import uuid4
 
 from transcriptx.core.speaker_profiles.fingerprint import compute_occurrence_fingerprint
-from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.core.speaker_profiles.voice.acceptance import (
@@ -22,7 +21,9 @@ from transcriptx.core.speaker_profiles.voice.match_service import (
 from transcriptx.io.speaker_map_resolver import normalize_diarized_id
 
 
-def voice_session_key(managed_transcript_id: str, local_speaker_key: str, kind: str) -> str:
+def voice_session_key(
+    managed_transcript_id: str, local_speaker_key: str, kind: str
+) -> str:
     return f"voice_{kind}_{managed_transcript_id}_{local_speaker_key}"
 
 
@@ -155,7 +156,9 @@ class SpeakerIdVoiceFacade:
         operation_idempotency_key: str,
         profile_id: str,
     ):
-        from transcriptx.core.speaker_profiles.voice.bootstrap import VoiceBootstrapService
+        from transcriptx.core.speaker_profiles.voice.bootstrap import (
+            VoiceBootstrapService,
+        )
 
         return VoiceBootstrapService(root=self.root).enrol_profile_confirmed_links(
             operation_idempotency_key=operation_idempotency_key,

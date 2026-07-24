@@ -455,7 +455,7 @@ def authorization_is_valid(
 def result_as_dict(result: CleanupResult) -> dict[str, Any]:
     """Serialize CleanupResult for journal / handle storage.
 
-    Epoch-1 omits legacy ``root_kind`` (duplicate of ``subject_type``).
+    Omits ``root_kind`` (duplicate of ``subject_type``).
     """
     payload = asdict(result)
     payload["cleanup_result_schema_version"] = CLEANUP_RESULT_SCHEMA_VERSION
@@ -466,7 +466,7 @@ def result_as_dict(result: CleanupResult) -> dict[str, Any]:
 
 
 def _target_result_from_mapping(t: Mapping[str, Any]) -> CleanupTargetResult:
-    """Epoch-1 target reader."""
+    """Deserialize a cleanup target result."""
     fs_dev = t.get("filesystem_dev")
     fs_ino = t.get("filesystem_ino")
     return CleanupTargetResult(
@@ -485,8 +485,10 @@ def _target_result_from_mapping(t: Mapping[str, Any]) -> CleanupTargetResult:
 
 
 def result_from_mapping(data: Mapping[str, Any]) -> CleanupResult:
-    """Deserialize CleanupResult; epoch-1 only."""
-    version = int(data.get("cleanup_result_schema_version") or CLEANUP_RESULT_SCHEMA_VERSION)
+    """Deserialize CleanupResult for the current result schema only."""
+    version = int(
+        data.get("cleanup_result_schema_version") or CLEANUP_RESULT_SCHEMA_VERSION
+    )
     if version != CLEANUP_RESULT_SCHEMA_VERSION:
         raise ValueError(f"unsupported cleanup_result_schema_version: {version}")
     targets = tuple(_target_result_from_mapping(t) for t in data.get("targets", ()))

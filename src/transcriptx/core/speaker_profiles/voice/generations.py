@@ -146,7 +146,9 @@ class VoiceGenerationRegistry:
         self.root = Path(root)
         self.engine = OperationEngine(self.root)
 
-    def read_generation(self, model_generation_id: str) -> Optional[VoiceModelGenerationV1]:
+    def read_generation(
+        self, model_generation_id: str
+    ) -> Optional[VoiceModelGenerationV1]:
         rel = relative_voice_generation_path(model_generation_id)
         assert_safe_relpath(rel)
         path = self.root / rel
@@ -185,7 +187,10 @@ class VoiceGenerationRegistry:
         else:
             # Write-once: existing file must match
             existing = self.read_generation(pin.model_generation_id)
-            if existing is None or existing.model_generation_id != pin.model_generation_id:
+            if (
+                existing is None
+                or existing.model_generation_id != pin.model_generation_id
+            ):
                 raise SpeakerProfileContractError(
                     "generation pin collision or corrupt generation file"
                 )

@@ -21,7 +21,10 @@ from transcriptx.core.speaker_profiles.identity import (
     local_speaker_key_from_raw,
 )
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
-from transcriptx.core.speaker_profiles.service import MutationResult, SpeakerProfileService
+from transcriptx.core.speaker_profiles.service import (
+    MutationResult,
+    SpeakerProfileService,
+)
 from transcriptx.core.speaker_profiles.signals import CacheInvalidationSignal
 from transcriptx.io.speaker_map_resolver import normalize_diarized_id
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
@@ -108,8 +111,7 @@ def create_profile_link_and_name(
         else:
             try:
                 mutation = svc.create_profile_and_link(
-                    operation_idempotency_key=operation_idempotency_key
-                    or str(uuid4()),
+                    operation_idempotency_key=operation_idempotency_key or str(uuid4()),
                     display_name=name,
                     managed_transcript_id=resolved.managed_transcript_id,
                     local_speaker_key=local_key,

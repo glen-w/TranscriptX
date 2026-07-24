@@ -74,7 +74,6 @@ class BalancedPresetPolicyModel(BaseModel):
     heavy_module_ids: list[str] = Field(
         default_factory=lambda: [
             "semantic_similarity",
-            "fine_grained_emotion",
         ],
         description=(
             "When allow_heavy is true: empty means all heavy modules; "

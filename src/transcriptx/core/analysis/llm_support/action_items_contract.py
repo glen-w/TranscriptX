@@ -1,7 +1,7 @@
-"""Meeting-extract feature contract (llm_action_items v2).
+"""Meeting-extract feature contract (llm_action_items).
 
-Schema validation, grounding, dedupe, ordering, bounds, v1 coerce, and cache
-identity. Rendering lives in ``action_items_render``.
+Schema validation, grounding, dedupe, ordering, bounds, legacy coerce, and
+cache identity. Rendering lives in ``action_items_render``.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ logger = get_logger()
 
 __all__ = [
     "LLM_ACTION_ITEMS_SCHEMA_ID",
-    "LLM_ACTION_ITEMS_SCHEMA_ID_V1",
     "LLM_ACTION_ITEMS_RENDER_CONTRACT_ID",
     "LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION",
     "RECORD_TYPES",
@@ -55,7 +54,6 @@ __all__ = [
 ]
 
 LLM_ACTION_ITEMS_SCHEMA_ID = "transcriptx.llm_action_items.v1"
-LLM_ACTION_ITEMS_SCHEMA_ID_V1 = "transcriptx.llm_action_items.v1"
 LLM_ACTION_ITEMS_RENDER_CONTRACT_ID = "transcriptx.llm_action_items.render.v2"
 LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION = 1
 
@@ -780,21 +778,23 @@ def finalize_action_items(
 
 
 def is_v1_action_items_payload(payload: Any) -> bool:
+    """True for unstamped payloads whose items lack ``record_type``.
+
+    Surviving callers: group aggregation
+    (``aggregation/llm.py::_resolve_member_payload``) and Insights caption
+    (``web/blocks/implementations/insights.py``). Epoch-1 stamped
+    ``transcriptx.llm_action_items.v1`` payloads return False.
+    """
     if not isinstance(payload, dict):
         return False
     schema_id = payload.get("schema_id")
-    if schema_id == LLM_ACTION_ITEMS_SCHEMA_ID:
+    if schema_id not in (None, ""):
         return False
-    if schema_id == LLM_ACTION_ITEMS_SCHEMA_ID_V1:
-        return True
-    # Legacy artifacts without schema_id but with items and no record_type.
     items = payload.get("items")
     if not isinstance(items, list):
         return False
-    if schema_id not in (None, "", LLM_ACTION_ITEMS_SCHEMA_ID_V1):
-        return False
     if not items:
-        return schema_id == LLM_ACTION_ITEMS_SCHEMA_ID_V1 or schema_id in (None, "")
+        return True
     for item in items:
         if isinstance(item, dict) and "record_type" in item:
             return False
@@ -802,7 +802,7 @@ def is_v1_action_items_payload(payload: Any) -> bool:
 
 
 def coerce_v1_action_items_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """In-memory coerce v1 → action_item rows; stamp compat, keep original schema."""
+    """In-memory coerce legacy rows → ``action_item``; stamp compat provenance."""
     out = dict(payload)
     items_in = out.get("items") or []
     coerced: List[Dict[str, Any]] = []

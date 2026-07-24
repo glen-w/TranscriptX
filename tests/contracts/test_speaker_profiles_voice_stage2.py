@@ -80,7 +80,5 @@ def test_export_excludes_voice_paths(tmp_path: Path) -> None:
     assert is_voice_excluded_relpath("voice/samples/s.voice_sample.json")
     assert is_voice_excluded_relpath(".cache/voice/excerpts/x.wav")
     assert not is_voice_excluded_relpath("profiles/p.speaker_profile.json")
-    kept = filter_speaker_profiles_export_paths(
-        root, [profile, sample, excerpt]
-    )
+    kept = filter_speaker_profiles_export_paths(root, [profile, sample, excerpt])
     assert kept == [profile]

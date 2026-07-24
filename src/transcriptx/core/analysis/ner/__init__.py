@@ -219,7 +219,9 @@ class NERAnalysis(AnalysisModule):
         label_counts_per_speaker = results["label_counts_per_speaker"]
         location_entities_per_speaker = results["location_entities_per_speaker"]
         entity_sentences_per_speaker = results["entity_sentences_per_speaker"]
-        location_mentions_per_speaker = results.get("location_mentions_per_speaker") or {}
+        location_mentions_per_speaker = (
+            results.get("location_mentions_per_speaker") or {}
+        )
         summary_json = results["summary_json"]
         speaker_csv_rows = results["speaker_csv_rows"]
         all_rows = results["all_rows"]
@@ -423,7 +425,12 @@ class NERAnalysis(AnalysisModule):
 
             per_speaker_coords[display_name] = enriched
 
-            if enriched and folium is not None and html_dir is not None and image_dir is not None:
+            if (
+                enriched
+                and folium is not None
+                and html_dir is not None
+                and image_dir is not None
+            ):
                 # Create per-speaker map
                 fmap = folium.Map(zoom_start=3)
                 for loc in enriched:

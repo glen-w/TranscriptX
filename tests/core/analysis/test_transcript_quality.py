@@ -126,7 +126,9 @@ class TestSpans:
         assert out["spans_total_count"] == 2
 
     def test_breaks_on_timestamp_reversal(self):
-        from transcriptx.core.analysis.transcript_quality.spans import _should_break_span
+        from transcriptx.core.analysis.transcript_quality.spans import (
+            _should_break_span,
+        )
 
         segs = [
             {
@@ -196,13 +198,9 @@ class TestSpans:
 
 class TestCapabilities:
     def test_has_word_confidence(self):
-        caps = TranscriptCapabilities.from_segments(
-            [_seg([_word("x", 0, 0.5, 0.7)])]
-        )
+        caps = TranscriptCapabilities.from_segments([_seg([_word("x", 0, 0.5, 0.7)])])
         assert caps.has_word_confidence is True
-        caps2 = TranscriptCapabilities.from_segments(
-            [_seg([_word("x", 0, 0.5)])]
-        )
+        caps2 = TranscriptCapabilities.from_segments([_seg([_word("x", 0, 0.5)])])
         assert caps2.has_word_confidence is False
 
 

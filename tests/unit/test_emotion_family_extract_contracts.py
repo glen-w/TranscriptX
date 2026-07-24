@@ -42,9 +42,7 @@ def _seg_with_all_projections() -> dict:
 @pytest.mark.unit
 def test_format_fine_grained_failure_warning_exact_strings():
     assert (
-        format_fine_grained_failure_warning(
-            "preflight_failed", {"message": "no model"}
-        )
+        format_fine_grained_failure_warning("preflight_failed", {"message": "no model"})
         == "preflight_failed: no model"
     )
     assert (
@@ -265,7 +263,15 @@ def test_assumed_en_warning_wording_all_producers(tmp_path):
     )
     assert expected in (fg.get("warnings") or [])
     lex = run_lexical(
-        [{"id": "1", "speaker": "Alice", "text": "delighted", "start": 0.0, "end": 1.0}],
+        [
+            {
+                "id": "1",
+                "speaker": "Alice",
+                "text": "delighted",
+                "start": 0.0,
+                "end": 1.0,
+            }
+        ],
         tmp_path=tmp_path / "l",
     )
     assert expected in (lex.get("warnings") or [])
@@ -295,7 +301,9 @@ def test_generation_ids_on_hit_and_miss_distinct_concepts(tmp_path):
 
     miss = run_contextual(segs_success(), tmp_path=tmp_path, uuid_hex=ARTIFACT_ID)
     assert miss["inference_cache_hit"] is False
-    assert miss["artifact_generation_id"] == miss["inference_generation_id"] == ARTIFACT_ID
+    assert (
+        miss["artifact_generation_id"] == miss["inference_generation_id"] == ARTIFACT_ID
+    )
     assert miss["aggregation_cache_key"]  # uses inference id binding
 
     second = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"

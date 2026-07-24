@@ -517,9 +517,7 @@ def render_speaker_id_page() -> None:
                     suggestions = 0
                     no_match = 0
                     other = 0
-                    with st.spinner(
-                        f"Analysing voice for {len(targets)} speakers…"
-                    ):
+                    with st.spinner(f"Analysing voice for {len(targets)} speakers…"):
                         from transcriptx.core.speaker_profiles.voice.match_service import (
                             AnalyseResult as _AnalyseResult,
                         )
@@ -644,7 +642,9 @@ def render_speaker_id_page() -> None:
                                     )
                                     consume_cache_invalidation_signal(ar.cache_signal)
                                     st.session_state.pop(result_key, None)
-                                    st.success("Profile link confirmed from suggestion.")
+                                    st.success(
+                                        "Profile link confirmed from suggestion."
+                                    )
                                     st.rerun()
                                 except Exception as exc:
                                     st.error(str(exc))
@@ -678,7 +678,9 @@ def render_speaker_id_page() -> None:
                                             cand.get("reference_count") or 0
                                         ),
                                     )
-                                    st.info("Suggestion rejected for this evidence set.")
+                                    st.info(
+                                        "Suggestion rejected for this evidence set."
+                                    )
                                     st.session_state.pop(result_key, None)
                                     st.rerun()
                                 except Exception as exc:

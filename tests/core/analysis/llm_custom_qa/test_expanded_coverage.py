@@ -214,9 +214,7 @@ def test_compute_outcome_variants_and_finalize_strips_private() -> None:
         == "answered"
     )
     assert (
-        compute_outcome(
-            [{"status": "abstained"}, {"status": "abstained"}], empty=False
-        )
+        compute_outcome([{"status": "abstained"}, {"status": "abstained"}], empty=False)
         == "all_abstained"
     )
     assert (
@@ -226,9 +224,7 @@ def test_compute_outcome_variants_and_finalize_strips_private() -> None:
         == "all_unavailable"
     )
     assert (
-        compute_outcome(
-            [{"status": "answered"}, {"status": "abstained"}], empty=False
-        )
+        compute_outcome([{"status": "answered"}, {"status": "abstained"}], empty=False)
         == "mixed"
     )
     cleaned, outcome = finalize_outcome_and_strip(

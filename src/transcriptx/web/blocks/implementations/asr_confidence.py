@@ -54,7 +54,9 @@ def _render_span_rows(
                 unsafe_allow_html=True,
             )
         else:
-            st.markdown(f"**{speaker_label or '—'}** · {time_range} · mean score {mean_s}")
+            st.markdown(
+                f"**{speaker_label or '—'}** · {time_range} · mean score {mean_s}"
+            )
         if preview:
             st.write(preview)
         playback = row.get("playback") or {}

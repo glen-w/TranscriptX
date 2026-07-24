@@ -47,8 +47,6 @@ class TestSummaryExtractors:
             "tics",
             "interactions",
             "semantic_similarity",
-            "semantic_similarity_advanced",
-            "semantic_similarity",
             "entity_sentiment",
             "understandability",
             "lexical_diversity",

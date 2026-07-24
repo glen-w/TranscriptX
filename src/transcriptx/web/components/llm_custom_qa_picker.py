@@ -190,9 +190,7 @@ def render_custom_qa_picker(
     if n == 0:
         header.markdown("#### Custom questions · None")
     else:
-        header.markdown(
-            f"#### Custom questions · {n} · {_summary_scopes(combined)}"
-        )
+        header.markdown(f"#### Custom questions · {n} · {_summary_scopes(combined)}")
 
     if not combined:
         return None, None, False
@@ -254,9 +252,7 @@ def _save_one_row_to_library(row: dict[str, Any], *, cfg: Any) -> None:
             scopes={"global": g, "per_speaker": ps},
             max_question_chars=int(cfg.max_question_chars),
             max_library_questions=int(cfg.max_library_questions),
-            max_library_total_question_chars=int(
-                cfg.max_library_total_question_chars
-            ),
+            max_library_total_question_chars=int(cfg.max_library_total_question_chars),
         )
     except Exception as exc:
         st.warning(f"Could not save question to library: {exc}")

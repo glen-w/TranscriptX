@@ -362,12 +362,8 @@ def rollback_partial_to_before(
             write_bytes_under_root(target, backup_path.read_bytes(), root=root)
 
     # Re-classify then mark proven aborted.
-    refreshed = load_operation(
-        Path(root) / "operations" / f"{op.operation_id}.op.json"
-    )
-    return mark_proven_aborted(
-        root, refreshed, reason="rolled_back_partial_to_before"
-    )
+    refreshed = load_operation(Path(root) / "operations" / f"{op.operation_id}.op.json")
+    return mark_proven_aborted(root, refreshed, reason="rolled_back_partial_to_before")
 
 
 def recover_operation(root: Path, operation_id: str) -> OperationRecoveryReport:
@@ -383,8 +379,7 @@ def recover_operation(root: Path, operation_id: str) -> OperationRecoveryReport:
             return classify_operation(root, op)
 
     if report.recovery_class == "proven_aborted" and (
-        op.phase != "failed"
-        or (op.receipt or {}).get("abort_class") != PROVEN_ABORTED
+        op.phase != "failed" or (op.receipt or {}).get("abort_class") != PROVEN_ABORTED
     ):
         mark_proven_aborted(root, op, reason="recovery_never_applied")
         op = load_operation(path)

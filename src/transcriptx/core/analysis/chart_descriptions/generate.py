@@ -86,7 +86,9 @@ def _client_with_request_timeout(client: Any, request_timeout: float) -> Any:
         return client
     if not isinstance(client, OllamaClient):
         return client
-    current = float(getattr(client, "_request_timeout", request_timeout) or request_timeout)
+    current = float(
+        getattr(client, "_request_timeout", request_timeout) or request_timeout
+    )
     if current <= request_timeout:
         return client
     return OllamaClient(

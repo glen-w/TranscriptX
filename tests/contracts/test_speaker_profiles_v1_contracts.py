@@ -118,7 +118,9 @@ def test_local_speaker_key_normalisation_and_collision() -> None:
         (True, None),
     ],
 )
-def test_fingerprint_timestamp_canonicalisation(value: object, expected: str | None) -> None:
+def test_fingerprint_timestamp_canonicalisation(
+    value: object, expected: str | None
+) -> None:
     assert canonicalize_fingerprint_timestamp(value) == expected
 
 
@@ -140,9 +142,9 @@ def test_fingerprint_excludes_timing_invalid_segment() -> None:
         {"start": "bad", "end": 3, "text": "b", "speaker": "S"},
     ]
     only_valid = [{"start": 1, "end": 2, "text": "a", "speaker": "S"}]
-    assert compute_occurrence_fingerprint(with_invalid) == compute_occurrence_fingerprint(
-        only_valid
-    )
+    assert compute_occurrence_fingerprint(
+        with_invalid
+    ) == compute_occurrence_fingerprint(only_valid)
 
 
 @pytest.mark.unit
@@ -239,14 +241,20 @@ def test_operation_plan_write_and_delete_actions() -> None:
 
 @pytest.mark.unit
 def test_appearance_date_precedence() -> None:
-    assert appearance_date_from_sources(
-        transcript_source_imported_at="2026-01-15T10:00:00Z",
-        sidecar_imported_at="2025-01-01T00:00:00Z",
-    ).isoformat() == "2026-01-15"
-    assert appearance_date_from_sources(
-        transcript_source_imported_at=None,
-        sidecar_imported_at="2025-06-01T12:00:00+00:00",
-    ).isoformat() == "2025-06-01"
+    assert (
+        appearance_date_from_sources(
+            transcript_source_imported_at="2026-01-15T10:00:00Z",
+            sidecar_imported_at="2025-01-01T00:00:00Z",
+        ).isoformat()
+        == "2026-01-15"
+    )
+    assert (
+        appearance_date_from_sources(
+            transcript_source_imported_at=None,
+            sidecar_imported_at="2025-06-01T12:00:00+00:00",
+        ).isoformat()
+        == "2025-06-01"
+    )
     assert (
         appearance_date_from_sources(
             transcript_source_imported_at="not-a-date",

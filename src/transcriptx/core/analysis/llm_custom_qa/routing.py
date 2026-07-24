@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
-from transcriptx.core.analysis.llm_custom_qa.evidence_catalog import router_catalog_entries
+from transcriptx.core.analysis.llm_custom_qa.evidence_catalog import (
+    router_catalog_entries,
+)
 from transcriptx.core.analysis.llm_custom_qa.plan import (
     QuestionRoute,
     RoutedCustomQAPlan,
     UnroutedCustomQAPlan,
-    assert_v2_execution_allowed,
+    assert_structured_execution_allowed,
     build_fallback_routes,
     make_routed_plan,
 )
@@ -20,8 +22,8 @@ def route_questions(
     *,
     router_client: Any = None,
 ) -> RoutedCustomQAPlan:
-    """Route or fall back. Production analyze must not call until v2_live."""
-    assert_v2_execution_allowed()
+    """Route or fall back. Production analyze must not call until structured execution is on."""
+    assert_structured_execution_allowed()
     if not unrouted.routing_enabled or router_client is None:
         return make_routed_plan(unrouted, build_fallback_routes(unrouted))
 
@@ -64,11 +66,9 @@ def _parse_router_payload(
         qid = str(row.get("question_id") or "")
         if qid not in by_qid or qid in seen:
             continue
-        packs = [
-            str(p)
-            for p in (row.get("pack_ids") or [])
-            if str(p) in available
-        ][: unrouted.max_packs_per_question]
+        packs = [str(p) for p in (row.get("pack_ids") or []) if str(p) in available][
+            : unrouted.max_packs_per_question
+        ]
         use_tx = bool(row.get("use_transcript", True)) and unrouted.include_transcript
         parsed.append(
             QuestionRoute(

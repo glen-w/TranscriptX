@@ -271,9 +271,7 @@ def reset_transcript_playback_state_if_needed(
         session_state[_VIEW_SIG_KEY] = view_signature
 
     active = session_state.get(_PLAY_KEY)
-    if active is not None and (
-        type(active) is not int or active not in targets
-    ):
+    if active is not None and (type(active) is not int or active not in targets):
         session_state[_PLAY_KEY] = None
         session_state[f"{_PLAY_KEY}{_WARM_SIG_SUFFIX}"] = None
 
@@ -454,6 +452,7 @@ def _render_transcript_tabs(
     elif selected == "chapters":
         _render_chapters_panel(chapter_rows or [])
 
+
 @st.fragment
 def _transcript_interaction_fragment(
     segments: list[dict[str, Any]],
@@ -549,11 +548,7 @@ def _transcript_interaction_fragment(
     if not playback_availability.enabled and playback_availability.reason is not None:
         clear_playback_session_keys(_PLAY_KEY)
         render_playback_unavailable(playback_availability.reason)
-    elif (
-        playback_availability.enabled
-        and display_segments
-        and not targets
-    ):
+    elif playback_availability.enabled and display_segments and not targets:
         clear_playback_session_keys(_PLAY_KEY)
         render_playback_unavailable(PlaybackUnavailableReason.timing_unavailable)
     elif playback_enabled and transcript_path and playback_availability.audio_path:

@@ -148,7 +148,7 @@ def commit_and_activate(
     save_index(staged.root, index)
 
     # Stable convenience copies for discovery (active generation only)
-    active_data = staged.directory.parent.parent  # .topic_shift_generations
+    _ = staged.directory.parent.parent  # .topic_shift_generations
     # Also mirror into module data/global via caller (OutputService)
 
 

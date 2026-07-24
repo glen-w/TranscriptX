@@ -169,9 +169,7 @@ def iter_phrases(
     enabled_categories: Iterable[str] | None,
 ) -> list[MarkerPhrase]:
     enabled = (
-        None
-        if enabled_categories is None
-        else {str(c) for c in enabled_categories}
+        None if enabled_categories is None else {str(c) for c in enabled_categories}
     )
     phrases: list[MarkerPhrase] = []
     for category, items in lexicon.items():
@@ -295,9 +293,7 @@ def _stats_for_scope(
     can_rate = token_count >= min_tokens_for_rates and token_count > 0
     for category in categories:
         count = int(category_counts.get(category, 0))
-        rates[category] = (
-            (count * 100.0 / token_count) if can_rate else None
-        )
+        rates[category] = (count * 100.0 / token_count) if can_rate else None
     return {
         "token_count": int(token_count),
         "total_marker_hits": int(total_hits),

@@ -13,7 +13,11 @@ from transcriptx.core.llm_feedback.models import (
     FeedbackTarget,
     build_event,
 )
-from transcriptx.core.llm_feedback.store import AppendResult, FeedbackStore, IterEventsResult
+from transcriptx.core.llm_feedback.store import (
+    AppendResult,
+    FeedbackStore,
+    IterEventsResult,
+)
 from transcriptx.core.utils.paths import DATA_DIR
 
 

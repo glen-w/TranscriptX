@@ -17,9 +17,7 @@ class KeyphrasesSettingsModel(BaseModel):
     diversity_jaccard_threshold: float = Field(default=0.85, ge=0.0, le=1.0)
     evidence_max_per_phrase: int = Field(default=3, ge=0)
     evidence_snippet_max_chars: int = Field(default=120, ge=0)
-    keybert_model_id: str = Field(
-        default="sentence-transformers/all-MiniLM-L6-v2"
-    )
+    keybert_model_id: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
     yake_lan: str = Field(default="en")
     yake_n: int = Field(default=3, ge=1)
     yake_top: int = Field(default=40, ge=1)

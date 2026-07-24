@@ -7,7 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from transcriptx.services.speaker_studio.clip_service import ClipService, WarmClipsResult
+from transcriptx.services.speaker_studio.clip_service import (
+    ClipService,
+    WarmClipsResult,
+)
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.web.components.playback_panel import (
     sanitize_lines_shown,
@@ -47,7 +50,9 @@ def test_listing_caches_do_not_construct_clip_service(tmp_path: Path) -> None:
         assert SegmentIndexService(data_dir=tmp_path).list_transcripts() == []
 
 
-def test_get_shared_returns_controller_singleton(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_shared_returns_controller_singleton(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from transcriptx.web import speaker_studio_runtime as runtime
 
     created: list[SpeakerStudioController] = []

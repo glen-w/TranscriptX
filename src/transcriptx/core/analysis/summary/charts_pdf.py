@@ -250,7 +250,7 @@ def _module_display_name(module: str) -> str:
     replacements = {
         "entity_sentiment": "Entity sentiment",
         "qa_analysis": "Q&A analysis",
-        "semantic_similarity_advanced": "Semantic similarity",
+        "semantic_similarity": "Semantic similarity",
         "voice": "Voice / prosody",
         "wordclouds": "Word clouds",
         "ner": "Named entities",

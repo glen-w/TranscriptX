@@ -126,7 +126,9 @@ def test_canonicalise_retains_source_index_after_sort():
 
 
 def test_speaker_rename_stable_identity_via_span_builder():
-    from transcriptx.core.analysis.topic_shift.spans import transcript_identity_for_segments
+    from transcriptx.core.analysis.topic_shift.spans import (
+        transcript_identity_for_segments,
+    )
 
     a = [{"start": 0.0, "end": 1.0, "text": "hello world", "speaker": "A"}]
     b = [{"start": 0.0, "end": 1.0, "text": "hello world", "speaker": "Renamed"}]
@@ -283,9 +285,11 @@ def test_tfidf_path_receives_lexical_texts(monkeypatch):
                 return EmbedResult(
                     backend="tfidf",
                     model_name=None,
-                    vectors=np.eye(n, min(n, 4), dtype=np.float64)
-                    if n
-                    else np.zeros((0, 1)),
+                    vectors=(
+                        np.eye(n, min(n, 4), dtype=np.float64)
+                        if n
+                        else np.zeros((0, 1))
+                    ),
                     semantics_version=semantics_version,
                     used_fallback=False,
                     fallback_reason=None,
@@ -323,7 +327,9 @@ def test_tfidf_path_receives_lexical_texts(monkeypatch):
     )
     assert captured, "expected embed call"
     # Lexical channel strips stopwords vs raw window join
-    assert any("the" not in t.lower().split()[:1] or "running" in t for t in captured[0])
+    assert any(
+        "the" not in t.lower().split()[:1] or "running" in t for t in captured[0]
+    )
     assert all(isinstance(t, str) and t.strip() for t in captured[0])
     # Prefer proving lexical != raw for at least one window text
     from transcriptx.core.analysis.topic_shift.segments import lexical_text_from_raw

@@ -485,9 +485,7 @@ def run_group_llm_synthesis(
                         omitted_count=len(omitted),
                         omitted_sample=omitted,
                         request_hash=sha256_text(user),
-                        model_selection_source=getattr(
-                            runtime, "model_source", None
-                        ),
+                        model_selection_source=getattr(runtime, "model_source", None),
                     )
                     art = {
                         "schema_id": SCHEMA_GLOBAL,

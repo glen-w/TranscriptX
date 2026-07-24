@@ -14,18 +14,14 @@ def test_settings_page_includes_analysis_tab() -> None:
 
 
 def test_analysis_presets_panel_persists_ui_presets_key() -> None:
-    src = Path(
-        "src/transcriptx/web/ui/settings/analysis_presets_panel.py"
-    ).read_text()
+    src = Path("src/transcriptx/web/ui/settings/analysis_presets_panel.py").read_text()
     assert "patch_project_config_keys" in src
     assert "ui_presets" in src
     assert "Reset to defaults" in src
 
 
 def test_run_preset_help_points_to_settings_analysis() -> None:
-    src = Path(
-        "src/transcriptx/web/components/analysis_preset_controls.py"
-    ).read_text()
+    src = Path("src/transcriptx/web/components/analysis_preset_controls.py").read_text()
     assert "Settings → Analysis" in src
 
 
@@ -41,7 +37,6 @@ def test_validate_ui_presets_dict_round_trip() -> None:
     assert dumped["balanced"]["llm_module_ids"] == ["llm_summary"]
     assert set(dumped["balanced"]["heavy_module_ids"]) == {
         "semantic_similarity",
-        "fine_grained_emotion",
     }
     assert dumped["thorough"]["include_excluded_from_default"] is True
 

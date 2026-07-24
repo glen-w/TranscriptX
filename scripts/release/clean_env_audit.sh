@@ -31,9 +31,9 @@ python -m pip freeze | tee "$OUT_DIR/pip-freeze-clean-env.txt"
 
 echo "==> pip-audit"
 set +e
-python -m pip-audit --format json -o "$OUT_DIR/pip-audit-clean-env.json"
+pip-audit --format json -o "$OUT_DIR/pip-audit-clean-env.json"
 AUDIT_RC=$?
-python -m pip-audit --format columns | tee "$OUT_DIR/pip-audit-clean-env.txt"
+pip-audit --format columns | tee "$OUT_DIR/pip-audit-clean-env.txt"
 set -e
 
 # Fail on fixable CVEs unless waivers are present (human review of waiver file).

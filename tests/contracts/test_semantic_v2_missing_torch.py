@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from transcriptx.core.analysis.semantic_similarity.analysis import (
-    SemanticSimilarityV2Analysis,
+    SemanticSimilarityAnalysis,
 )
 from transcriptx.core.analysis.semantic_similarity.pipeline import (
     run_semantic_similarity_pipeline,
@@ -16,7 +16,7 @@ from transcriptx.core.analysis.semantic_similarity.config_resolve import (
     resolve_semantic_similarity_runtime,
 )
 from transcriptx.core.utils.config import TranscriptXConfig
-from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
+from transcriptx.core.utils.config.analysis import SemanticSimilarityConfig
 
 
 def test_semantic_v2_import_error_returns_blocked() -> None:
@@ -49,7 +49,7 @@ def test_semantic_v2_import_error_returns_blocked() -> None:
         "transcriptx.core.analysis.semantic_similarity.analysis.run_semantic_similarity_pipeline",
         side_effect=ImportError("torch"),
     ):
-        mod = SemanticSimilarityV2Analysis()
+        mod = SemanticSimilarityAnalysis()
         result = mod.run_from_context(context)
     assert result["status"] == "blocked"
     assert "missing_dependency" in result["metrics"].get("reason", "")
@@ -78,7 +78,7 @@ def test_semantic_v2_pipeline_records_missing_transformer_dependency() -> None:
     ):
         results, diag = run_semantic_similarity_pipeline(
             segments,
-            SemanticSimilarityV2Config(),
+            SemanticSimilarityConfig(),
             resolve_diagnostics={},
         )
 
@@ -100,7 +100,7 @@ def test_semantic_v2_pipeline_records_missing_transformer_dependency() -> None:
 
 def test_semantic_v2_advanced_mode_diagnostics_record_requested_and_effective() -> None:
     cfg = TranscriptXConfig()
-    cfg.analysis.active_semantic_similarity_profile = "deep_v2"
+    cfg.analysis.active_semantic_similarity_profile = "deep"
     cfg.analysis.semantic_similarity.mode = "advanced"
     resolved, resolve_diag = resolve_semantic_similarity_runtime(
         cfg.analysis,
@@ -160,7 +160,7 @@ def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> Non
             "end": 2.0,
         },
     ]
-    cfg = SemanticSimilarityV2Config()
+    cfg = SemanticSimilarityConfig()
     cfg.timeout_seconds = 0.0
     with patch(
         "transcriptx.core.analysis.semantic_similarity.pipeline.get_torch",
@@ -177,7 +177,12 @@ def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> Non
     assert results["speaker_repetitions"] == {}
     assert results["cross_speaker_repetitions"] == []
     assert results["segments"] == segments
-    assert results.get("motif_export_status") in ("partial", "timeout", "valid_zero", "ok")
+    assert results.get("motif_export_status") in (
+        "partial",
+        "timeout",
+        "valid_zero",
+        "ok",
+    )
     assert "motifs" in results
     assert "schema_version" in results
     json.dumps(results)
@@ -213,7 +218,7 @@ def test_semantic_v2_runtime_error_returns_structured_error() -> None:
         "transcriptx.core.analysis.semantic_similarity.analysis.run_semantic_similarity_pipeline",
         side_effect=RuntimeError("bad model state"),
     ):
-        mod = SemanticSimilarityV2Analysis()
+        mod = SemanticSimilarityAnalysis()
         result = mod.run_from_context(context)
     assert result["status"] == "error"
     assert result["metrics"]["reason"] == "bad model state"

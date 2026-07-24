@@ -200,7 +200,9 @@ def build_clusters(
             if isinstance(s.get("mean_score"), (int, float))
         ]
         word_count = sum(int(s.get("word_count") or 0) for s in current)
-        previews = [str(s.get("text_preview") or "") for s in current if s.get("text_preview")]
+        previews = [
+            str(s.get("text_preview") or "") for s in current if s.get("text_preview")
+        ]
         clusters.append(
             {
                 "start": start,

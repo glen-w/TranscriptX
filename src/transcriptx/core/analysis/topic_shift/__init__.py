@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.topic_shift.analyze import run_topic_shift_analysis
@@ -179,7 +179,9 @@ class TopicShiftAnalysis(AnalysisModule):
             return
         starts = [float(s.get("time_start") or 0.0) for s in spans]
         durations = [
-            max(0.0, float(s.get("time_end") or 0.0) - float(s.get("time_start") or 0.0))
+            max(
+                0.0, float(s.get("time_end") or 0.0) - float(s.get("time_start") or 0.0)
+            )
             for s in spans
         ]
         if not starts:

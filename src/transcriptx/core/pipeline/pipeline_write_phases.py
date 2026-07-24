@@ -134,9 +134,7 @@ def persist_canonical_results_and_artifacts(
             skipped = [
                 s
                 for s in skipped
-                if not (
-                    isinstance(s, dict) and s.get("reason") == "pending_finalize"
-                )
+                if not (isinstance(s, dict) and s.get("reason") == "pending_finalize")
             ]
             for mid, mres in fin.module_results.items():
                 mid_s = str(mid)

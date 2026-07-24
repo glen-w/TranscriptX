@@ -136,9 +136,9 @@ def test_visibility_suppresses_failed(tmp_path: Path) -> None:
     run_root = tmp_path / "run"
     run_root.mkdir()
     (run_root / "topic_shift" / "data" / "global").mkdir(parents=True)
-    (run_root / "topic_shift" / "data" / "global" / "topic_shift.spans.json").write_text(
-        "{}", encoding="utf-8"
-    )
+    (
+        run_root / "topic_shift" / "data" / "global" / "topic_shift.spans.json"
+    ).write_text("{}", encoding="utf-8")
     run_results = {
         "run_id": "r1",
         "modules_enabled": ["topic_shift"],
@@ -158,7 +158,9 @@ def test_visibility_suppresses_failed(tmp_path: Path) -> None:
 def test_enrichment_envelope_rejects_duplicate_span_ids() -> None:
     from pydantic import ValidationError
 
-    from transcriptx.core.analysis.topic_shift.schemas import validate_enrichment_payload
+    from transcriptx.core.analysis.topic_shift.schemas import (
+        validate_enrichment_payload,
+    )
 
     payload = {
         "schema_version": "transcriptx.topic_shift_enrichment.v1",
@@ -277,7 +279,9 @@ def test_try_generate_titles_rejects_generic_and_keeps_summary(monkeypatch) -> N
     assert entries[1]["title"] == "Q3 roadmap"
 
 
-def test_malformed_enrichment_does_not_break_commit(tmp_path: Path, monkeypatch) -> None:
+def test_malformed_enrichment_does_not_break_commit(
+    tmp_path: Path, monkeypatch
+) -> None:
     from transcriptx.core.analysis.topic_shift import enrichment as enrich_mod
 
     module_dir = tmp_path / "topic_shift"

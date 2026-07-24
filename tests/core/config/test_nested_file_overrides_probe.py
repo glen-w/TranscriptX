@@ -226,9 +226,7 @@ def test_ui_presets_nested_partial_override(tmp_path: Path) -> None:
         "llm_summary",
         "llm_action_items",
     ]
-    assert cfg.analysis.ui_presets.balanced.heavy_module_ids == [
-        "semantic_similarity"
-    ]
+    assert cfg.analysis.ui_presets.balanced.heavy_module_ids == ["semantic_similarity"]
     # Unspecified presets keep defaults.
     assert cfg.analysis.ui_presets.quick.allow_llm is False
     assert cfg.analysis.ui_presets.thorough.include_excluded_from_default is True

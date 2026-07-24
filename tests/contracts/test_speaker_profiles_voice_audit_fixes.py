@@ -90,7 +90,9 @@ def _write_managed(transcripts_root: Path) -> None:
     )
 
 
-def _svc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[SpeakerProfileService, Path]:
+def _svc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[SpeakerProfileService, Path]:
     transcripts = tmp_path / "transcripts"
     transcripts.mkdir()
     _patch_roots(monkeypatch, transcripts)
@@ -136,9 +138,7 @@ def test_generation_id_content_addressed_and_activate(tmp_path: Path) -> None:
     assert reg.read_active() is not None
     assert reg.read_active().model_generation_id == pin.model_generation_id  # type: ignore[union-attr]
     # Idempotent replay
-    reg.ensure_default_generation_and_activate(
-        operation_idempotency_key=str(uuid4())
-    )
+    reg.ensure_default_generation_and_activate(operation_idempotency_key=str(uuid4()))
 
 
 def test_encode_vector_bytes_no_live_write(tmp_path: Path) -> None:
@@ -201,9 +201,7 @@ def test_accept_stale_profile_status(
     svc.archive_profile(
         operation_idempotency_key=str(uuid4()),
         profile_id=other.profile_id,
-        expected_content_sha256=profile_content_sha256(
-            other.profile_id, root=profiles
-        ),
+        expected_content_sha256=profile_content_sha256(other.profile_id, root=profiles),
     )
     owner = VoiceAcceptanceOwner(root=profiles, state_dir=tmp_path / "state")
     link = svc.get_live_link(link_file_key(IMPORT_A, "SPEAKER_00"))
@@ -246,5 +244,7 @@ def test_reject_suggestion_durable(
         require_activation=False,
     )
     assert result.decision_id is not None
-    path = profiles / "voice" / "decisions" / f"{result.decision_id}.voice_decision.json"
+    path = (
+        profiles / "voice" / "decisions" / f"{result.decision_id}.voice_decision.json"
+    )
     assert path.is_file()

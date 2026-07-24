@@ -122,9 +122,7 @@ class VoiceSuggestionCache:
     def write(self, key: str, payload: dict) -> None:
         path = self.path_for(key)
         path.parent.mkdir(parents=True, exist_ok=True)
-        write_bytes_atomic(
-            path, strict_json_dumps(payload, indent=2).encode("utf-8")
-        )
+        write_bytes_atomic(path, strict_json_dumps(payload, indent=2).encode("utf-8"))
 
     def read(self, key: str) -> dict | None:
         path = self.path_for(key)

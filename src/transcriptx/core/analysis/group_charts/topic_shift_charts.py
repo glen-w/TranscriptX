@@ -35,9 +35,9 @@ def _primary_key(session_rows: List[Dict[str, Any]], pooled: Dict[str, Any]) -> 
     for row in session_rows:
         if not row.get("included_in_comparison"):
             continue
-        by_key.setdefault(str(row.get("provenance_compatibility_key") or ""), []).append(
-            row
-        )
+        by_key.setdefault(
+            str(row.get("provenance_compatibility_key") or ""), []
+        ).append(row)
     if not by_key:
         return ""
     return max(by_key.keys(), key=lambda k: (len(by_key[k]), k))
@@ -220,9 +220,7 @@ class TopicShiftGroupChartGenerator:
                 chart_type="bar",
             )
 
-        if should_emit_temporal_overlay_charts(
-            self.agg_id, ctx.per_transcript_results
-        ):
+        if should_emit_temporal_overlay_charts(self.agg_id, ctx.per_transcript_results):
             generate_group_topic_shift_temporal_overlay(
                 svc,
                 ctx.per_transcript_results,

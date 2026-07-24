@@ -72,13 +72,9 @@ def render_action_items_markdown(
         for index, item in enumerate(typed_items, start=1):
             text = escape_markdown(str(item.get("text", "")))
             lines.append(f"{index}. **{text}**")
-            lines.append(
-                f"   - Status: {escape_markdown(str(item.get('status', '')))}"
-            )
+            lines.append(f"   - Status: {escape_markdown(str(item.get('status', '')))}")
             owner = normalise_render_text(item.get("owner"))
-            lines.append(
-                f"   - Owner: {escape_markdown(owner) if owner else '—'}"
-            )
+            lines.append(f"   - Owner: {escape_markdown(owner) if owner else '—'}")
             deadline = normalise_render_text(item.get("deadline"))
             lines.append(
                 f"   - Deadline: {escape_markdown(deadline) if deadline else '—'}"

@@ -9,6 +9,7 @@ import pytest
 from transcriptx.web.services.run_cleanup import journal
 from transcriptx.web.services.run_cleanup.models import (
     CLEANUP_POLICY_VERSION,
+    JOURNAL_SCHEMA_VERSION,
     CleanupMode,
     CleanupPlan,
     CleanupTarget,
@@ -91,7 +92,7 @@ def test_update_target_state_under_rmw_lock(tmp_path: Path) -> None:
         state,
         oid,
         expected_policy_version=CLEANUP_POLICY_VERSION,
-        expected_schema_version=3,
+        expected_schema_version=JOURNAL_SCHEMA_VERSION,
     )
     assert data is not None
     assert data["targets"][0]["state"] == "staged"

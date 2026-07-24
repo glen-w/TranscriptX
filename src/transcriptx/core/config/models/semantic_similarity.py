@@ -16,7 +16,7 @@ class SemanticSimilaritySettingsModel(BaseModel):
 
     enabled: bool = Field(
         default=True,
-        description="Enable semantic similarity v2 (default semantic path).",
+        description="Enable semantic similarity (default semantic path).",
     )
     mode: Literal["basic", "advanced"] = Field(
         default="basic",
@@ -39,7 +39,7 @@ class SemanticSimilaritySettingsModel(BaseModel):
     min_text_length_words: int = Field(
         default=3,
         ge=1,
-        description="Minimum word count for a segment to enter the v2 pipeline.",
+        description="Minimum word count for a segment to enter the pipeline.",
         json_schema_extra=_ADVANCED,
     )
     self_similarity_threshold: float = Field(
@@ -90,7 +90,7 @@ class SemanticSimilaritySettingsModel(BaseModel):
         default=300.0,
         ge=1.0,
         description=(
-            "Wall-clock budget for the v2 pipeline. On timeout, partial results are "
+            "Wall-clock budget for the pipeline. On timeout, partial results are "
             "returned with diagnostics.timeout_reached=True."
         ),
     )

@@ -87,19 +87,15 @@ class TestFilterModulesByMode:
         result = filter_modules_by_mode(["stats", "sentiment"], "quick")
         assert isinstance(result, list)
 
-    def test_quick_mode_filters_semantic_advanced(self) -> None:
-        """Quick mode filters out semantic_similarity_advanced."""
-        with patch("transcriptx.core.analysis.selection.get_config") as mock_get:
-            mock_config = mock_get.return_value
-            mock_config.analysis.quick_analysis_settings = {
-                "skip_advanced_semantic": True
-            }
-
-            result = filter_modules_by_mode(
-                ["stats", "semantic_similarity_advanced"], "quick"
-            )
-
-            assert "semantic_similarity_advanced" not in result
+    def test_strips_retired_semantic_ids(self) -> None:
+        """Retired public semantic ids are dropped (no sibling rewrite)."""
+        result = filter_modules_by_mode(
+            ["stats", "semantic_similarity_advanced", "semantic_similarity_v2"],
+            "quick",
+        )
+        assert "semantic_similarity_advanced" not in result
+        assert "semantic_similarity_v2" not in result
+        assert "stats" in result
 
     def test_invalid_mode_falls_back_to_quick(self) -> None:
         """Invalid mode falls back to quick."""
@@ -186,10 +182,11 @@ class TestResolveAnalysisPreset:
             mid for mid in balanced.module_ids if is_heavy_module(get_module_info(mid))
         }
         assert llm <= {"llm_summary"}
-        assert heavy <= {"semantic_similarity", "fine_grained_emotion"}
+        assert heavy <= {"semantic_similarity"}
         assert "llm_summary" in balanced.module_ids
         assert "semantic_similarity" in balanced.module_ids
-        assert "fine_grained_emotion" in balanced.module_ids
+        assert "fine_grained_emotion" not in balanced.module_ids
+        assert "contextual_emotion" not in balanced.module_ids
 
     def test_module_override_replaces_policy(self) -> None:
         from transcriptx.core.analysis.selection import resolve_analysis_preset
@@ -246,7 +243,8 @@ class TestResolveAnalysisPreset:
         assert "insights" not in balanced.module_ids
         assert "bertopic" not in balanced.module_ids
         assert "semantic_similarity" in balanced.module_ids
-        assert "fine_grained_emotion" in balanced.module_ids
+        assert "fine_grained_emotion" not in balanced.module_ids
+        assert "contextual_emotion" not in balanced.module_ids
 
     def test_thorough_empty_allowlists_mean_all_llm_and_heavy(self) -> None:
         from transcriptx.core.analysis.selection import (
@@ -330,9 +328,7 @@ class TestResolveAnalysisPreset:
             resolve_analysis_preset,
         )
 
-        base = resolve_analysis_preset(
-            "custom", custom_modules=["stats", "sentiment"]
-        )
+        base = resolve_analysis_preset("custom", custom_modules=["stats", "sentiment"])
         with_qa = compute_effective_modules(base, custom_qa_execution=True)
         assert with_qa.module_ids.count("llm_custom_qa") == 1
         skipped = compute_effective_modules(base, custom_qa_execution=False)
@@ -429,9 +425,7 @@ class TestSelectionHelpersAndFullMode:
                 "max_segments_per_speaker": 50,
                 "max_segments_for_cross_speaker": 100,
             }
-            cfg.analysis.semantic_similarity = type(
-                "V2", (), {"mode": "basic"}
-            )()
+            cfg.analysis.semantic_similarity = type("V2", (), {"mode": "basic"})()
             apply_analysis_mode_settings("full", profile="not-a-profile")
             assert cfg.analysis.analysis_mode == "full"
             assert cfg.analysis.quality_filtering_profile == "balanced"

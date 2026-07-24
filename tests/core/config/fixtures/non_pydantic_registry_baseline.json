@@ -45,7 +45,7 @@
     "advanced": false,
     "category": "analysis",
     "choices": null,
-    "default": "balanced_v2",
+    "default": "balanced",
     "description": "",
     "key": "analysis.active_semantic_similarity_profile",
     "max": null,

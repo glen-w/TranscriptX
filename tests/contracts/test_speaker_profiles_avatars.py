@@ -19,7 +19,10 @@ from transcriptx.core.speaker_profiles.errors import SpeakerProfileContractError
 from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
 from transcriptx.core.speaker_profiles.models import SpeakerProfileV1
 from transcriptx.core.speaker_profiles.service import SpeakerProfileService
-from transcriptx.core.speaker_profiles.store_io import profile_content_sha256, read_profile
+from transcriptx.core.speaker_profiles.store_io import (
+    profile_content_sha256,
+    read_profile,
+)
 from transcriptx.web.speaker_avatar import (
     speaker_avatar_chip_html,
     speaker_initials,
@@ -33,7 +36,9 @@ def _png_bytes(color: tuple[int, int, int] = (10, 20, 30), size: int = 64) -> by
     return buf.getvalue()
 
 
-def _make_service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SpeakerProfileService:
+def _make_service(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> SpeakerProfileService:
     root = tmp_path / "speaker_profiles"
     state = tmp_path / "state"
     root.mkdir()
@@ -108,9 +113,7 @@ def test_avatar_relpath_rejects_traversal_and_mismatch():
     with pytest.raises(SpeakerProfileContractError):
         validate_avatar_relpath(f"profiles/assets/{pid}/Avatar.webp", profile_id=pid)
     with pytest.raises(SpeakerProfileContractError):
-        validate_avatar_relpath(
-            relative_avatar_path(str(uuid4())), profile_id=pid
-        )
+        validate_avatar_relpath(relative_avatar_path(str(uuid4())), profile_id=pid)
 
 
 def test_avatar_fields_coherent_nullable_set():
@@ -142,7 +145,11 @@ def test_set_clear_avatar_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     svc = _make_service(tmp_path, monkeypatch)
     # Minimal create without transcript link: write profile via create needs occurrence.
     # Use model write through set after creating via engine path from phase15 helpers.
-    from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, write_bytes_under_root
+    from transcriptx.core.speaker_profiles.store_io import (
+        dumps_model,
+        ensure_layout,
+        write_bytes_under_root,
+    )
     from transcriptx.core.speaker_profiles.layout import profile_path
     from transcriptx.core.speaker_profiles.store_io import utc_now_iso
 
@@ -189,9 +196,15 @@ def test_set_clear_avatar_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert report.ok
 
 
-def test_failed_upload_is_non_destructive(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_failed_upload_is_non_destructive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     svc = _make_service(tmp_path, monkeypatch)
-    from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, write_bytes_under_root
+    from transcriptx.core.speaker_profiles.store_io import (
+        dumps_model,
+        ensure_layout,
+        write_bytes_under_root,
+    )
     from transcriptx.core.speaker_profiles.layout import profile_path
     from transcriptx.core.speaker_profiles.store_io import utc_now_iso
 
@@ -231,9 +244,15 @@ def test_failed_upload_is_non_destructive(tmp_path: Path, monkeypatch: pytest.Mo
     assert after.updated_at == before.updated_at
 
 
-def test_hash_mismatch_read_unavailable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_hash_mismatch_read_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     svc = _make_service(tmp_path, monkeypatch)
-    from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, write_bytes_under_root
+    from transcriptx.core.speaker_profiles.store_io import (
+        dumps_model,
+        ensure_layout,
+        write_bytes_under_root,
+    )
     from transcriptx.core.speaker_profiles.layout import avatar_path, profile_path
     from transcriptx.core.speaker_profiles.store_io import utc_now_iso
 
@@ -449,9 +468,7 @@ def test_merge_adopt_source_avatar_when_target_empty(
     assert not (svc.root / relative_avatar_path(source_id)).exists()
 
 
-def test_integrity_orphan_and_dangling(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_integrity_orphan_and_dangling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from transcriptx.core.speaker_profiles.layout import avatar_path, profile_path
     from transcriptx.core.speaker_profiles.store_io import (
         dumps_model,

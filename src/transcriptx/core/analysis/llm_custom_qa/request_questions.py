@@ -86,7 +86,9 @@ def structured_library_from_settings(settings: Any) -> list[StructuredQuestion]:
             out.append(
                 {
                     "text": item["text"],
-                    "scopes": dict(item.get("scopes") or {"global": True, "per_speaker": False}),
+                    "scopes": dict(
+                        item.get("scopes") or {"global": True, "per_speaker": False}
+                    ),
                 }
             )
         else:

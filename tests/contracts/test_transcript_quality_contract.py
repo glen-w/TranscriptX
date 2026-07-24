@@ -21,8 +21,20 @@ def _scored_segments():
             "speaker": "A",
             "text": "hello world",
             "words": [
-                {"word": "hello", "start": 0.0, "end": 0.4, "score": 0.2, "speaker": "A"},
-                {"word": "world", "start": 0.4, "end": 1.0, "score": 0.9, "speaker": "A"},
+                {
+                    "word": "hello",
+                    "start": 0.0,
+                    "end": 0.4,
+                    "score": 0.2,
+                    "speaker": "A",
+                },
+                {
+                    "word": "world",
+                    "start": 0.4,
+                    "end": 1.0,
+                    "score": 0.9,
+                    "speaker": "A",
+                },
             ],
         }
     ]

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from transcriptx.core.analysis.llm_custom_qa.versioning import EVIDENCE_CATALOG_VERSION
 
@@ -46,7 +46,12 @@ PACK_SPECS: dict[str, PackSpec] = {
         "summary", "Summary", "Meeting narrative/summary", "summary", "1", False
     ),
     "highlights": PackSpec(
-        "highlights", "Highlights", "Sectioned highlight bullets", "highlights", "1", False
+        "highlights",
+        "Highlights",
+        "Sectioned highlight bullets",
+        "highlights",
+        "1",
+        False,
     ),
     "llm_action_items": PackSpec(
         "llm_action_items",

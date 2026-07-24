@@ -32,8 +32,7 @@
     "category": "analysis",
     "choices": null,
     "default": [
-      "semantic_similarity",
-      "fine_grained_emotion"
+      "semantic_similarity"
     ],
     "description": "When allow_heavy is true: empty means all heavy modules; non-empty is an allowlist.",
     "key": "analysis.ui_presets.balanced.heavy_module_ids",

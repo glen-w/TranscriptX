@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.9.7"
+version = "0.9.8"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -56,14 +56,8 @@ dependencies = [
     "nltk==3.9.4",
     "scikit-learn==1.6.1",
     "networkx==3.4.2",
-    # Owned by base: semantic/echoes/BERTopic embeddings share Sentence Transformers.
+    # Owned by base: semantic/echoes embeddings share Sentence Transformers.
     "sentence-transformers==5.6.0",
-    # BERTopic stack is temporarily in base (default install). For public release,
-    # install profiles will split more clearly (e.g. basic / full / llm) — see
-    # docs/runtime/installation.md.
-    "bertopic>=0.17.0,<0.18",
-    "hdbscan>=0.8.33,<0.9",
-    "umap-learn>=0.5.6,<0.6",
 ]
 
 [project.optional-dependencies]
@@ -137,8 +131,9 @@ keyphrases = [
 web = [
     "streamlit>=1.55.0",
 ]
-# Compat alias: packages are already in base dependencies (temporary default install).
-# Prefer editable `pip install -e .` from git (not PyPI). Kept so `.[bertopic]` still works.
+# Optional BERTopic analysis stack (also in [full] / Docker). Was briefly in base
+# when wheels worked; kept out of core so umap→llvmlite cannot block clean installs.
+# See docs/dev/bertopic_optional_module.md.
 bertopic = [
     "bertopic>=0.17.0,<0.18",
     "hdbscan>=0.8.33,<0.9",

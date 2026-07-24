@@ -117,7 +117,10 @@ def test_action_items_default_effort_resolves_max_output_budget() -> None:
     runtime = resolve_llm_runtime(llm_cfg=_llm_cfg(), effort=effort)
     assert effort == "max"
     assert runtime.max_output_tokens == 16_384
-    assert runtime.max_output_tokens > BUILTIN_LLM_EFFORT_PROFILES["high"].max_output_tokens
+    assert (
+        runtime.max_output_tokens
+        > BUILTIN_LLM_EFFORT_PROFILES["high"].max_output_tokens
+    )
 
 
 @pytest.mark.unit

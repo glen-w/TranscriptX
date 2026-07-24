@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import threading
 from pathlib import Path
@@ -30,7 +29,10 @@ from transcriptx.core.llm_feedback.models import (
 )
 from transcriptx.core.llm_feedback.service import LlmFeedbackService
 from transcriptx.core.llm_feedback.store import FeedbackStore
-from transcriptx.core.llm_feedback.validate import validate_event, validate_rating_reason
+from transcriptx.core.llm_feedback.validate import (
+    validate_event,
+    validate_rating_reason,
+)
 
 
 def _target(**overrides) -> FeedbackTarget:
@@ -58,16 +60,16 @@ def _event(**kwargs):
         note=kwargs.pop("note", ""),
         output_text=kwargs.pop("output_text", "Hello summary"),
         target=kwargs.pop("target", _target()),
-        provenance=kwargs.pop("provenance", FeedbackProvenance(None, None, None, None, None)),
+        provenance=kwargs.pop(
+            "provenance", FeedbackProvenance(None, None, None, None, None)
+        ),
         submission_token=kwargs.pop("submission_token", None),
         **kwargs,
     )
 
 
 def test_rating_reason_matrix() -> None:
-    assert FeedbackReason.HELPFUL in {
-        r for r in reasons_for_rating(FeedbackRating.UP)
-    }
+    assert FeedbackReason.HELPFUL in {r for r in reasons_for_rating(FeedbackRating.UP)}
     assert FeedbackReason.TOO_VAGUE not in set(reasons_for_rating(FeedbackRating.UP))
     validate_rating_reason("up", "other")
     validate_rating_reason("down", "other")
@@ -199,12 +201,19 @@ def test_truncated_tail_preserved(tmp_path: Path) -> None:
     store.append(_event(output_text="first"))
     # Append a truncated line without going through the writer
     with open(store.events_path, "ab") as handle:
-        handle.write(b'{"schema_id":"transcriptx.llm_feedback_event.v1","feedback_id":"broken')
+        handle.write(
+            b'{"schema_id":"transcriptx.llm_feedback_event.v1","feedback_id":"broken'
+        )
     result = store.iter_events()
     assert len(result.events) == 1
     assert result.tail_error is not None
     # New append still works
-    store.append(_event(output_text="second", submission_token="44444444-4444-4444-8444-444444444444"))
+    store.append(
+        _event(
+            output_text="second",
+            submission_token="44444444-4444-4444-8444-444444444444",
+        )
+    )
     result2 = store.iter_events()
     assert len(result2.events) >= 2
     assert result2.events[0].output_sha256 == compute_output_sha256("first")

@@ -253,9 +253,7 @@ def replace_with_built_in_defaults(
             draft.recovery_message = ""
             draft.path = target
     except OSError as exc:
-        return SaveResult(
-            ok=False, error=f"Could not replace presentation mode: {exc}"
-        )
+        return SaveResult(ok=False, error=f"Could not replace presentation mode: {exc}")
 
     invalidate_presentation_cache()
     return SaveResult(ok=True)

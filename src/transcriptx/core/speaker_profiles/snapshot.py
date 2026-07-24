@@ -21,11 +21,6 @@ from transcriptx.core.speaker_profiles.discovery import (
     SpeakerOccurrence,
     discover_occurrences_for_resolved,
 )
-from transcriptx.core.speaker_profiles.errors import (
-    CorruptLinkError,
-    RepairRequiredError,
-    UnresolvedManagedTranscriptError,
-)
 from transcriptx.core.speaker_profiles.freshness import build_profile_freshness_token
 from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
@@ -127,7 +122,9 @@ def _flag_precedence(
     return "ok"
 
 
-def _transcript_duration_denominator(segments: Sequence[Mapping[str, Any]]) -> float | None:
+def _transcript_duration_denominator(
+    segments: Sequence[Mapping[str, Any]],
+) -> float | None:
     total = 0.0
     any_valid = False
     for segment in segments:
@@ -222,7 +219,6 @@ def _appearance_from_bundle(
 ) -> AppearanceRow:
     key = link_file_key(link.managed_transcript_id, link.local_speaker_key)
     repair_required = link_blocked
-    missing_source = False
     collision = False
     needs_review = False
     ignored = False
@@ -249,7 +245,6 @@ def _appearance_from_bundle(
             ignored=False,
         )
     elif bundle.resolve_error or bundle.resolved is None:
-        missing_source = True
         flag = _flag_precedence(
             repair_required=False,
             missing_source=True,
@@ -404,9 +399,7 @@ def build_aggregation_snapshot(
 
     pref = profiles_dir(root)
     lref = links_dir(root)
-    profile_paths = (
-        list(pref.glob("*.speaker_profile.json")) if pref.is_dir() else []
-    )
+    profile_paths = list(pref.glob("*.speaker_profile.json")) if pref.is_dir() else []
     link_paths = list(lref.glob("*.speaker_link.json")) if lref.is_dir() else []
 
     profiles: list[SpeakerProfileV1] = []
@@ -438,9 +431,7 @@ def build_aggregation_snapshot(
         if relpath.startswith("profiles/") and relpath.endswith(
             ".speaker_profile.json"
         ):
-            blocked_profile_ids.add(
-                Path(relpath).name[: -len(".speaker_profile.json")]
-            )
+            blocked_profile_ids.add(Path(relpath).name[: -len(".speaker_profile.json")])
         elif relpath.startswith("links/") and relpath.endswith(".speaker_link.json"):
             blocked_link_keys.add(Path(relpath).name[: -len(".speaker_link.json")])
 

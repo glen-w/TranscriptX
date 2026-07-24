@@ -8,6 +8,7 @@ from transcriptx.core.analysis.llm_support.text_cleanup import (
     strip_llm_summary_preface,
 )
 
+
 def strip_summary_markdown(md: str) -> str:
     """Drop generated top-level titles and provenance footers from markdown bodies."""
     lines = md.splitlines()
@@ -169,9 +170,7 @@ def action_items_markdown(payload: dict[str, Any]) -> str:
     )
 
     lines: list[str] = [HUMAN_REVIEW_BANNER, ""]
-    by_type: dict[str, list[dict[str, Any]]] = {
-        name: [] for name in RECORD_TYPE_ORDER
-    }
+    by_type: dict[str, list[dict[str, Any]]] = {name: [] for name in RECORD_TYPE_ORDER}
     for item in items:
         if not isinstance(item, dict):
             continue

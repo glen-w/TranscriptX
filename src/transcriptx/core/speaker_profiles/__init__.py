@@ -17,7 +17,10 @@ from transcriptx.core.speaker_profiles.resolver import (
     ManagedTranscriptResolver,
     ResolvedManagedTranscript,
 )
-from transcriptx.core.speaker_profiles.service import SpeakerProfileService, MutationResult
+from transcriptx.core.speaker_profiles.service import (
+    SpeakerProfileService,
+    MutationResult,
+)
 from transcriptx.core.speaker_profiles.versioning import (
     EVENT_SCHEMA_ID,
     LINK_SCHEMA_ID,

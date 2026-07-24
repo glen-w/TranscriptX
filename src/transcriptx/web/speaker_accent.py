@@ -249,8 +249,7 @@ def speaker_heading_html(
     meta_html = ""
     if meta:
         meta_html = (
-            f'<span class="tx-speaker-heading-meta">'
-            f"{html.escape(meta)}</span>"
+            f'<span class="tx-speaker-heading-meta">' f"{html.escape(meta)}</span>"
         )
     name_html = _linked_name_html(label, profile_id=resolved_pid, wrap_tag="strong")
     return (
@@ -438,4 +437,3 @@ def load_accent_resolve_context() -> AccentResolveContext | None:
         return build_accent_context_from_profiles(profiles, links=link_items)
     except Exception:
         return None
-

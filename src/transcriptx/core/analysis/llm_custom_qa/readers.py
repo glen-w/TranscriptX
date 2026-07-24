@@ -12,9 +12,8 @@ from transcriptx.core.analysis.llm_custom_qa.commit import (
 )
 from transcriptx.core.analysis.llm_custom_qa.constants import MODULE_NAME
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    COMMIT_MARKER_SCHEMA_VERSION_V1,
-    V1_SCHEMA_ID,
-    V2_SCHEMA_ID,
+    COMMIT_MARKER_SCHEMA_VERSION,
+    SCHEMA_ID,
 )
 
 
@@ -155,8 +154,7 @@ def load_committed_custom_qa_payload(
     if not analytical_artifacts_readable(stem=stem, module_succeeded=True):
         return None
 
-    # Dual-compatible: prefer generation-named file when present (marker v2),
-    # else bare alias validated by v1 marker consistency.
+    # Prefer generation-named file when present; else bare alias.
     gen_json = Path(f"{stem}.json.{gid}")
     alias_json = Path(f"{stem}.json")
     path = gen_json if gen_json.exists() else alias_json
@@ -170,32 +168,30 @@ def load_committed_custom_qa_payload(
         return None
 
     schema_id = str(data.get("schema_id") or "")
-    if schema_id == V2_SCHEMA_ID:
+    if schema_id and schema_id != SCHEMA_ID:
+        return None
+    # Structured artifacts require question_order validation.
+    if "question_order" in data:
         try:
-            from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import (
-                validate_artifact_v2,
+            from transcriptx.core.analysis.llm_custom_qa.structured_contracts import (
+                validate_structured_artifact,
             )
 
-            return validate_artifact_v2(data)
+            return validate_structured_artifact(data)
         except Exception:
             return None
-    if schema_id and schema_id != V1_SCHEMA_ID:
-        # Unknown schema: skip (do not crash, do not silently display)
-        return None
     return data
 
 
 def marker_schema_version(stem: Path, generation_id: str) -> str:
     marker = Path(f"{stem}.commit.{generation_id}")
     if not marker.exists():
-        return COMMIT_MARKER_SCHEMA_VERSION_V1
+        return COMMIT_MARKER_SCHEMA_VERSION
     try:
         data = json.loads(marker.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return COMMIT_MARKER_SCHEMA_VERSION_V1
-    return str(
-        data.get("commit_marker_schema_version") or COMMIT_MARKER_SCHEMA_VERSION_V1
-    )
+        return COMMIT_MARKER_SCHEMA_VERSION
+    return str(data.get("commit_marker_schema_version") or COMMIT_MARKER_SCHEMA_VERSION)
 
 
 def load_group_member_failures(
@@ -207,4 +203,3 @@ def load_group_member_failures(
     from transcriptx.web.blocks.group_content import load_group_content_rows
 
     return load_group_content_rows(Path(run_root), agg_id, "qa_member_failures")
-

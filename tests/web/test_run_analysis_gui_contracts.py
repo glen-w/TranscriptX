@@ -96,13 +96,11 @@ def test_footer_module_count_matches_effective_plan() -> None:
         resolve_analysis_preset,
     )
 
-    resolved = resolve_analysis_preset(
-        "custom", custom_modules=["stats", "sentiment"]
-    )
+    resolved = resolve_analysis_preset("custom", custom_modules=["stats", "sentiment"])
     plan = compute_effective_modules(resolved, custom_qa_execution=True)
-    assert len(plan.module_ids) == plan.module_ids.count("stats") + plan.module_ids.count(
-        "sentiment"
-    ) + plan.module_ids.count("llm_custom_qa")
+    assert len(plan.module_ids) == plan.module_ids.count(
+        "stats"
+    ) + plan.module_ids.count("sentiment") + plan.module_ids.count("llm_custom_qa")
     assert "llm_custom_qa" in plan.module_ids
     # Launch authority must use plan.module_ids length.
     assert len(plan.module_ids) >= 3
@@ -134,7 +132,11 @@ def test_pending_launch_snapshot_is_launch_authority() -> None:
     assert '"started": False' in source or "'started': False" in source
     assert "_execute_pending_launch" in source
     # Button path stores request then reruns; execute uses stored request.
-    assert 'pending["request"]' in source or "pending.get(\"request\")" in source or 'pending["request"]' in source
+    assert (
+        'pending["request"]' in source
+        or 'pending.get("request")' in source
+        or 'pending["request"]' in source
+    )
     assert "st.rerun()" in source
 
 
@@ -317,9 +319,7 @@ def test_compact_llm_degrades_without_ollama(monkeypatch) -> None:
 
     cfg = SimpleNamespace(
         llm=SimpleNamespace(enabled=False, provider="null", model=None, base_url=None),
-        analysis=SimpleNamespace(
-            group_llm_synthesis=SimpleNamespace(enabled=False)
-        ),
+        analysis=SimpleNamespace(group_llm_synthesis=SimpleNamespace(enabled=False)),
     )
     monkeypatch.setattr(mod, "st", fake_st)
     monkeypatch.setattr(mod, "get_config", lambda: cfg)

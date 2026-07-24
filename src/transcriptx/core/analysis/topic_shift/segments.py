@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from transcriptx.core.analysis.topic_shift.semantics import DEFAULT_MIN_TEXT_CHARS
 

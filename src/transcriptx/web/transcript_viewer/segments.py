@@ -46,7 +46,9 @@ def play_button_eligible(
     return bool(binding and binding.enabled and source_index in binding.targets)
 
 
-def play_button_key(binding: TranscriptPlaybackBinding, tab: str, source_index: int) -> str:
+def play_button_key(
+    binding: TranscriptPlaybackBinding, tab: str, source_index: int
+) -> str:
     """Deterministic widget key: owner + tab + source index (never filtered ordinal)."""
     return f"tx_play|{binding.owner_prefix}|{tab}|{source_index}"
 
@@ -146,9 +148,7 @@ def render_plain_segments(
 ) -> None:
     """Render transcript segments in plain reading mode."""
     accent_ctx = (
-        accent_context
-        if accent_context is not None
-        else load_accent_resolve_context()
+        accent_context if accent_context is not None else load_accent_resolve_context()
     )
     copy_chunks: list[str] = []
     for segment_index, segment in display_segments:
@@ -176,9 +176,7 @@ def render_plain_segments(
         body = rendered_text if rendered_text != text else html.escape(text)
         if play_button_eligible(playback, segment_index):
             st.markdown(
-                _turn_block_html(
-                    header_html=header, body_html="", jump=is_jump_target
-                ),
+                _turn_block_html(header_html=header, body_html="", jump=is_jump_target),
                 unsafe_allow_html=True,
             )
             col_text, col_play = st.columns([20, 1])
@@ -188,7 +186,9 @@ def render_plain_segments(
                 else:
                     st.write(text)
             with col_play:
-                _render_play_button(playback, tab="segments", source_index=segment_index)
+                _render_play_button(
+                    playback, tab="segments", source_index=segment_index
+                )
         else:
             st.markdown(
                 _turn_block_html(
@@ -217,9 +217,7 @@ def render_segmented_tab(
 ) -> None:
     """Render contiguous speaker turns with a compact name · time header."""
     accent_ctx = (
-        accent_context
-        if accent_context is not None
-        else load_accent_resolve_context()
+        accent_context if accent_context is not None else load_accent_resolve_context()
     )
     speaker_groups = group_segments_by_speaker(display_segments)
     for speaker_name, group_segments in speaker_groups:
@@ -232,8 +230,7 @@ def render_segmented_tab(
             speaker_name, timestamp=timestamp, context=accent_ctx
         )
         body_parts = [
-            html.escape(str(segment.get("text", "")))
-            for _, segment in group_segments
+            html.escape(str(segment.get("text", ""))) for _, segment in group_segments
         ]
         # Prefer a single markdown block so Streamlit does not insert large gaps.
         has_play = any(

@@ -4,22 +4,35 @@ Authority: self
 # BERTopic module
 
 BERTopic is a first-class topic-modeling path alongside LDA/NMF `topic_modeling`.
+The **module code is always registered**; the **native stack is optional** at install time.
 
-## Install (current)
+## Install posture (read this first)
 
-BERTopic packages (`bertopic`, `hdbscan`, `umap-learn`) are in the **default** install for now:
+**What worked:** For a stretch the BERTopic Python stack (`bertopic` / `hdbscan` / `umap-learn`) lived in **base** deps and ran fine next to the rest of the product — Docker, GUI, and analysis — when that host could install the wheels.
+
+**What broke the release gate:** Clean **core** wheel installs on some hosts (notably macOS without a usable `llvmlite` wheel) try to **build** `umap-learn` → `numba` → `llvmlite` from source and fail. That made “base install” an unreliable release signal even though BERTopic itself was fine where binaries were available.
+
+**Current rule (does not block builds):**
+
+| Path | BERTopic stack? | Notes |
+|------|-----------------|-------|
+| `pip install -e .` / core wheel | **No** | Core builds and clean-env audits must stay green without the stack |
+| `pip install -e '.[bertopic]'` or `'.[full]'` | **Yes** | Same packages as before; may fail on hosts that cannot get `llvmlite` |
+| Docker / `requirements.txt` / `./transcriptx.sh` | **Yes** | Production image still ships the stack |
+
+Runtime behaviour when packages are missing: module stays in the catalogue; runs report `missing_extra:bertopic` / `broken_extra:bertopic` — pipeline continues. This is intentional optional-extra posture, not a broken product.
 
 ```bash
-pip install -e .
-# Compat alias (packages already satisfied from base when present):
-# pip install -e '.[bertopic]'
+pip install -e '.[bertopic]'
+# or
+pip install -e '.[full]'
 ```
+
+Sentence Transformers remains a **base** dependency (shared with semantic/echoes). BERTopic reuses that embedding stack once the optional packages are present.
 
 The package is **not on PyPI**; install from this repository (see [install_verification_matrix.md](../runtime/install_verification_matrix.md)).
 
-Sentence Transformers remains a base dependency (shared with semantic/echoes).
-
-> **Public release:** runtime install markers are **`core` | `full`** only. Heavier re-splits of optional stacks remain a later install-profile audit — see [installation.md](../runtime/installation.md).
+> **Public release:** runtime install markers are **`core` | `full` only**. See [installation.md](../runtime/installation.md) and [dependency_audit.md](dependency_audit.md). Host `.[bertopic]` / `.[full]` is **not** a blocking clean-env proof when `llvmlite` cannot install; Docker `image_pip_check` is the production-image proof for the fuller stack.
 
 ## Lifecycle states
 
@@ -99,4 +112,4 @@ pytest tests/core/analysis/test_bertopic_shaping_helpers.py tests/contracts/test
 | macOS Apple Silicon | 3.11 | Blocking |
 | macOS Intel | any | Non-blocking |
 
-Record wheel vs source compilation (esp. HDBSCAN) per platform run.
+Record wheel vs source compilation (esp. HDBSCAN) per platform run. Hosts that cannot install `llvmlite` skip the optional stack; they must not fail **core** / clean-env gates.

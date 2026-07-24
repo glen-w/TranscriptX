@@ -304,7 +304,7 @@ class BERTopicConfig:
 
 
 @dataclass
-class SemanticSimilarityV2Config:
+class SemanticSimilarityConfig:
     """Tunable settings for semantic_similarity. Defaults owned by SemanticSimilaritySettingsModel."""
 
     enabled: bool = field(init=False, repr=True)
@@ -478,10 +478,10 @@ class AnalysisConfig:
     full_analysis_settings: dict[str, Any] = field(init=False, repr=True)
 
     # Semantic similarity v2 (default semantic path; legacy IDs remain selectable)
-    semantic_similarity: SemanticSimilarityV2Config = field(
-        default_factory=SemanticSimilarityV2Config
+    semantic_similarity: SemanticSimilarityConfig = field(
+        default_factory=SemanticSimilarityConfig
     )
-    active_semantic_similarity_profile: str = "balanced_v2"
+    active_semantic_similarity_profile: str = "balanced"
     semantic_similarity_profiles: dict[str, dict[str, Any]] = field(
         init=False, repr=True
     )
@@ -525,13 +525,9 @@ class AnalysisConfig:
     epistemic_markers: "EpistemicMarkersConfig" = field(
         default_factory=lambda: EpistemicMarkersConfig()
     )
-    keyphrases: "KeyphrasesConfig" = field(
-        default_factory=lambda: KeyphrasesConfig()
-    )
+    keyphrases: "KeyphrasesConfig" = field(default_factory=lambda: KeyphrasesConfig())
     politeness: "PolitenessConfig" = field(default_factory=lambda: PolitenessConfig())
-    topic_shift: "TopicShiftConfig" = field(
-        default_factory=lambda: TopicShiftConfig()
-    )
+    topic_shift: "TopicShiftConfig" = field(default_factory=lambda: TopicShiftConfig())
     echoes: EchoesConfig = field(default_factory=lambda: EchoesConfig())
     momentum: MomentumConfig = field(default_factory=lambda: MomentumConfig())
     moments: MomentsConfig = field(default_factory=lambda: MomentsConfig())
@@ -584,7 +580,7 @@ class AnalysisConfig:
             QualityFilteringProfilesSettingsModel,
         )
         from transcriptx.core.config.models.semantic_similarity_profiles import (
-            SemanticSimilarityV2ProfilesSettingsModel,
+            SemanticSimilarityProfilesSettingsModel,
         )
         from transcriptx.core.config.models.quick_analysis_settings import (
             QuickAnalysisSettingsModel,
@@ -605,7 +601,7 @@ class AnalysisConfig:
         _hydrate_mapping_store(
             self,
             "semantic_similarity_profiles",
-            SemanticSimilarityV2ProfilesSettingsModel(),
+            SemanticSimilarityProfilesSettingsModel(),
         )
         _hydrate_mapping_store(
             self, "quick_analysis_settings", QuickAnalysisSettingsModel()

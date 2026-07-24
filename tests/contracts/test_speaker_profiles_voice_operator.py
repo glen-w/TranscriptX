@@ -17,7 +17,9 @@ from transcriptx.core.speaker_profiles.voice.operator import (
     VoiceOperatorStore,
     default_operator_settings,
 )
-from transcriptx.core.speaker_profiles.voice.operator_service import VoiceOperatorService
+from transcriptx.core.speaker_profiles.voice.operator_service import (
+    VoiceOperatorService,
+)
 from transcriptx.core.speaker_profiles.voice.privacy import VoicePrivacyStore
 from transcriptx.core.speaker_profiles.voice.versioning import (
     BOOTSTRAP_MAX_LINKS_MAX,
@@ -125,7 +127,9 @@ def test_bootstrap_reads_operator_max_links(
 
     def _enrol(self, **kwargs):  # noqa: ANN001
         calls.append(kwargs["link_file_key_value"])
-        from transcriptx.core.speaker_profiles.voice.bootstrap import BootstrapLinkResult
+        from transcriptx.core.speaker_profiles.voice.bootstrap import (
+            BootstrapLinkResult,
+        )
 
         return BootstrapLinkResult(
             link_file_key=kwargs["link_file_key_value"],

@@ -18,6 +18,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [Guided / Full controls](dev/ui_presentation_modes.md) | Presentation modes (shipped 0.9.6) |
 | [Demo project](dev/demo_project.md) | Load / remove demo examples (shipped 0.9.6) |
 | [NOTICE](../NOTICE) | Third-party model / dataset notice (draft) |
+| [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy) |
 
 ## Reference
 

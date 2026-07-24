@@ -31,8 +31,7 @@ ACTION_ITEMS_RETRY_GUIDANCE = (
 
 ACTION_ITEMS_TRUNCATED_WARNING = (
     "Meeting extracts may be incomplete: the model response was truncated "
-    "before the JSON finished. "
-    + ACTION_ITEMS_RETRY_GUIDANCE
+    "before the JSON finished. " + ACTION_ITEMS_RETRY_GUIDANCE
 )
 
 
@@ -152,9 +151,7 @@ def empty_extracts_user_warning(
             "(or done without required evidence)"
         )
     if ungrounded:
-        reasons.append(
-            f"{ungrounded} could not be grounded in the transcript"
-        )
+        reasons.append(f"{ungrounded} could not be grounded in the transcript")
     if not reasons:
         reasons.append("none survived filtering")
 

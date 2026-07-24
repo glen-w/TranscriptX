@@ -10,7 +10,7 @@ import pytest
 from transcriptx.core.analysis.contagion import ContagionAnalysis
 from transcriptx.core.analysis.entity_sentiment import EntitySentimentAnalysis
 from transcriptx.core.analysis.semantic_similarity.analysis import (
-    SemanticSimilarityV2Analysis,
+    SemanticSimilarityAnalysis,
 )
 
 
@@ -132,7 +132,7 @@ def test_entity_sentiment_success_schema_and_summary_invariants() -> None:
 
 def test_semantic_similarity_v2_single_speaker_repetition_skip_contract() -> None:
     """V2 still runs for single speaker but skips the repetition pair path."""
-    module = SemanticSimilarityV2Analysis()
+    module = SemanticSimilarityAnalysis()
     stored: dict[str, dict] = {}
     context = SimpleNamespace(
         transcript_path="/tmp/input.json",
@@ -174,7 +174,7 @@ def test_semantic_similarity_v2_single_speaker_repetition_skip_contract() -> Non
             return_value=(stub_results, stub_diag),
         ) as pipeline,
         patch(
-            "transcriptx.core.analysis.semantic_similarity.analysis.create_visualizations_v2",
+            "transcriptx.core.analysis.semantic_similarity.analysis.create_visualizations",
             return_value=[],
         ),
         patch.object(module, "save_results"),

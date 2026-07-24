@@ -18,7 +18,9 @@ from tests.web.gui_acceptance.harness import (
 pytestmark = [pytest.mark.gui_acceptance, pytest.mark.heavy]
 
 
-def test_group_create_and_run_analysis_group_target(gui_ws, monkeypatch, tmp_path) -> None:
+def test_group_create_and_run_analysis_group_target(
+    gui_ws, monkeypatch, tmp_path
+) -> None:
     ws = seed_managed_transcript(gui_ws)
     assert ws.transcript_path is not None
     scripts = tmp_path / "apptest_scripts"

@@ -90,9 +90,7 @@ def test_seed_empty_workspace_guided(tmp_path: Path) -> None:
     cfg.mkdir()
     out.mkdir()
     path = cfg / "presentation_mode.json"
-    mode = seed_presentation_mode_if_needed(
-        path, config_dir=cfg, outputs_dir=out
-    )
+    mode = seed_presentation_mode_if_needed(path, config_dir=cfg, outputs_dir=out)
     assert mode == MODE_GUIDED
     assert path.exists()
     # Honour existing
@@ -110,9 +108,7 @@ def test_seed_existing_workspace_full(tmp_path: Path) -> None:
     (cfg / "config.json").write_text("{}", encoding="utf-8")
     assert workspace_looks_existing(config_dir=cfg, outputs_dir=out)
     path = cfg / "presentation_mode.json"
-    mode = seed_presentation_mode_if_needed(
-        path, config_dir=cfg, outputs_dir=out
-    )
+    mode = seed_presentation_mode_if_needed(path, config_dir=cfg, outputs_dir=out)
     assert mode == MODE_FULL
 
 

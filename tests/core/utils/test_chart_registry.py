@@ -101,9 +101,7 @@ def test_chart_definitions_json_load_count():
         is not None
     )
     assert (
-        get_chart_definition(
-            "semantic_similarity.speaker_repetition_frequency.global"
-        )
+        get_chart_definition("semantic_similarity.speaker_repetition_frequency.global")
         is not None
     )
 
@@ -141,9 +139,7 @@ def test_group_pooled_single_view_family_sync() -> None:
         "bertopic": ["group.bertopic.pooled.topic_share.global"],
         "emotion": ["group.emotion.pooled.profile.global"],
         "tics": ["group.tics.pooled.by_tic.global"],
-        "epistemic_markers": [
-            "group.epistemic_markers.pooled.by_category.global"
-        ],
+        "epistemic_markers": ["group.epistemic_markers.pooled.by_category.global"],
         "keyphrases": ["keyphrases.phrases.global"],
         "politeness": ["group.politeness.pooled.by_category.global"],
         "stats": ["group.stats.pooled.totals.global"],

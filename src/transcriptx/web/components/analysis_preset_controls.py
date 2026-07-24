@@ -97,9 +97,7 @@ def _pending_review_removal_key(key_prefix: str) -> str:
     return f"{key_prefix}{_PENDING_REVIEW_REMOVAL_SUFFIX}"
 
 
-def apply_pending_review_module_removal(
-    session_state: Any, *, key_prefix: str
-) -> None:
+def apply_pending_review_module_removal(session_state: Any, *, key_prefix: str) -> None:
     """Apply a Review-modules removal queued after widgets already ran last tick."""
     pending = session_state.pop(_pending_review_removal_key(key_prefix), None)
     if not isinstance(pending, dict):
@@ -174,7 +172,10 @@ def render_analysis_preset_selector(
 
     # Presentation must never reset preset / custom-module session keys.
     from transcriptx.web.presentation.prefs import MODE_FULL, MODE_GUIDED
-    from transcriptx.web.presentation.resolve import MODE_LABELS, resolve_presentation_mode
+    from transcriptx.web.presentation.resolve import (
+        MODE_LABELS,
+        resolve_presentation_mode,
+    )
     from transcriptx.web.presentation.resolve import set_presentation_mode
 
     presentation_mode = resolve_presentation_mode()
@@ -183,9 +184,7 @@ def render_analysis_preset_selector(
 
     if presentation_mode == MODE_GUIDED and current_preset == "custom":
         stored = list(st.session_state.get(custom_key) or [])
-        st.info(
-            "Custom module selection is preserved. Edit modules in Full controls."
-        )
+        st.info("Custom module selection is preserved. Edit modules in Full controls.")
         if stored:
             st.caption(
                 "Selected modules: "
@@ -210,12 +209,8 @@ def render_analysis_preset_selector(
             audio_resolver=has_resolvable_audio,
         )
 
-    guided_options = [
-        format_preset_label(p) for p in VALID_PRESETS if p != "custom"
-    ]
-    control_options = (
-        guided_options if presentation_mode == MODE_GUIDED else options
-    )
+    guided_options = [format_preset_label(p) for p in VALID_PRESETS if p != "custom"]
+    control_options = guided_options if presentation_mode == MODE_GUIDED else options
     if presentation_mode == MODE_GUIDED and current_label not in control_options:
         # Do not reset Custom (handled above). For unknown labels, leave key.
         pass
@@ -266,7 +261,9 @@ def render_analysis_preset_selector(
             )
         st.session_state[target_fp_key] = fp
 
-    picker_options = list(available_modules) if available_modules else list(suitable_set)
+    picker_options = (
+        list(available_modules) if available_modules else list(suitable_set)
+    )
     if preset == "custom":
         widget_key = f"{key_prefix}_custom_modules_widget"
         if widget_key not in st.session_state:
@@ -299,9 +296,7 @@ def apply_custom_qa_to_plan(
     custom_qa_execution: bool,
 ) -> EffectiveModulePlan:
     """Fold Custom QA intent into the authoritative effective module plan."""
-    return compute_effective_modules(
-        resolved, custom_qa_execution=custom_qa_execution
-    )
+    return compute_effective_modules(resolved, custom_qa_execution=custom_qa_execution)
 
 
 def render_effective_module_summary(

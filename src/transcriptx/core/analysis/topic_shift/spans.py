@@ -199,7 +199,9 @@ def build_coverage_and_events(
         # For idx>0, leading boundary is the event at this span's start
         if idx > 0:
             leading = event_by_start_src.get(seg_start)
-        viewer_target = nearest_renderable_source_index(seg_start, renderable=renderable)
+        viewer_target = nearest_renderable_source_index(
+            seg_start, renderable=renderable
+        )
         if viewer_target is None:
             viewer_target = seg_start
         label = f"Segment {idx + 1} · {format_hhmm(t0)}–{format_hhmm(t1)}"

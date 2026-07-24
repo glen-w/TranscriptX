@@ -10,40 +10,44 @@ from transcriptx.core.config.models.semantic_similarity import (
     SemanticSimilaritySettingsModel,
 )
 from transcriptx.core.config.pydantic_registry import serialize_field_metadata
-from transcriptx.core.config.registry import build_registry, get_default_config_dict
-from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
+from transcriptx.core.config.registry import (
+    SEMANTIC_SIMILARITY_PREFIX,
+    build_registry,
+    get_default_config_dict,
+)
+from transcriptx.core.utils.config.analysis import SemanticSimilarityConfig
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-V2_PREFIX = "analysis.semantic_similarity."
+PREFIX = f"{SEMANTIC_SIMILARITY_PREFIX}."
 
 
-def _v2_keys() -> set[str]:
+def _semantic_keys() -> set[str]:
     return {
-        f"{V2_PREFIX}enabled",
-        f"{V2_PREFIX}mode",
-        f"{V2_PREFIX}model_name",
-        f"{V2_PREFIX}batch_size",
-        f"{V2_PREFIX}min_text_length_words",
-        f"{V2_PREFIX}self_similarity_threshold",
-        f"{V2_PREFIX}cross_speaker_similarity_threshold",
-        f"{V2_PREFIX}self_time_window_seconds",
-        f"{V2_PREFIX}cross_speaker_time_window_seconds",
-        f"{V2_PREFIX}max_candidate_pairs",
-        f"{V2_PREFIX}top_k_per_segment",
-        f"{V2_PREFIX}timeout_seconds",
-        f"{V2_PREFIX}persist_embeddings",
-        f"{V2_PREFIX}lru_size",
-        f"{V2_PREFIX}use_lexical_prefilter",
-        f"{V2_PREFIX}lexical_prefilter_min_jaccard",
-        f"{V2_PREFIX}strict_advanced_inputs",
-        f"{V2_PREFIX}motif_min_cluster_size",
-        f"{V2_PREFIX}cross_session_match_threshold",
-        f"{V2_PREFIX}min_sessions_for_recurring",
-        f"{V2_PREFIX}max_motifs_per_session",
-        f"{V2_PREFIX}max_motifs_per_group",
-        f"{V2_PREFIX}max_centroid_bytes",
-        f"{V2_PREFIX}cluster_eps",
-        f"{V2_PREFIX}cluster_min_samples",
+        f"{PREFIX}enabled",
+        f"{PREFIX}mode",
+        f"{PREFIX}model_name",
+        f"{PREFIX}batch_size",
+        f"{PREFIX}min_text_length_words",
+        f"{PREFIX}self_similarity_threshold",
+        f"{PREFIX}cross_speaker_similarity_threshold",
+        f"{PREFIX}self_time_window_seconds",
+        f"{PREFIX}cross_speaker_time_window_seconds",
+        f"{PREFIX}max_candidate_pairs",
+        f"{PREFIX}top_k_per_segment",
+        f"{PREFIX}timeout_seconds",
+        f"{PREFIX}persist_embeddings",
+        f"{PREFIX}lru_size",
+        f"{PREFIX}use_lexical_prefilter",
+        f"{PREFIX}lexical_prefilter_min_jaccard",
+        f"{PREFIX}strict_advanced_inputs",
+        f"{PREFIX}motif_min_cluster_size",
+        f"{PREFIX}cross_session_match_threshold",
+        f"{PREFIX}min_sessions_for_recurring",
+        f"{PREFIX}max_motifs_per_session",
+        f"{PREFIX}max_motifs_per_group",
+        f"{PREFIX}max_centroid_bytes",
+        f"{PREFIX}cluster_eps",
+        f"{PREFIX}cluster_min_samples",
     }
 
 
@@ -60,13 +64,14 @@ def test_build_registry_v2_matches_golden_snapshot() -> None:
         assert actual == expected, f"{key} mismatch: {actual!r} != {expected!r}"
 
 
-def test_build_registry_v2_key_set_exact() -> None:
+def test_build_registry_semantic_key_set_exact() -> None:
+    assert SEMANTIC_SIMILARITY_PREFIX == "analysis.semantic_similarity"
     reg = build_registry()
-    v2_keys = {k for k in reg if k.startswith(V2_PREFIX)}
-    assert v2_keys == _v2_keys()
+    keys = {k for k in reg if k.startswith(PREFIX)}
+    assert keys == _semantic_keys()
 
 
-def test_build_registry_non_v2_keys_unchanged() -> None:
+def test_build_registry_non_semantic_keys_unchanged() -> None:
     reg = build_registry()
     spot_checks = {
         "analysis.sentiment_window_size": 10,
@@ -82,7 +87,7 @@ def test_build_registry_non_v2_keys_unchanged() -> None:
 
 def test_pydantic_defaults_match_dataclass_defaults() -> None:
     pydantic_defaults = SemanticSimilaritySettingsModel().model_dump()
-    dataclass_defaults = asdict(SemanticSimilarityV2Config())
+    dataclass_defaults = asdict(SemanticSimilarityConfig())
     assert dataclass_defaults == pydantic_defaults
 
 

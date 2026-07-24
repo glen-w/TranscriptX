@@ -16,7 +16,9 @@ from tests.web.gui_acceptance.harness import (
 pytestmark = [pytest.mark.gui_acceptance, pytest.mark.heavy]
 
 
-def test_default_preset_balanced_and_stubbed_launch(gui_ws, monkeypatch, tmp_path) -> None:
+def test_default_preset_balanced_and_stubbed_launch(
+    gui_ws, monkeypatch, tmp_path
+) -> None:
     ws = seed_managed_transcript(gui_ws)
     assert ws.slug is not None
     assert ws.transcript_path is not None

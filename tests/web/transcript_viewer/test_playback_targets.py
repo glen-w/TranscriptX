@@ -135,7 +135,9 @@ def test_warm_list_position_maps_source_index() -> None:
 
 
 def test_group_timestamp_bounds_uses_valid_finite_only() -> None:
-    from transcriptx.web.transcript_viewer.playback_targets import group_timestamp_bounds
+    from transcriptx.web.transcript_viewer.playback_targets import (
+        group_timestamp_bounds,
+    )
 
     bounds = group_timestamp_bounds(
         [
@@ -170,16 +172,10 @@ def test_format_safe_timestamp_range_omits_invalid() -> None:
     assert format_safe_timestamp_range(1.0, 2.0, "seconds", format_single=_fmt) == (
         "1.0s - 2.0s"
     )
-    assert (
-        format_safe_timestamp_range(None, 2.0, "seconds", format_single=_fmt) is None
-    )
+    assert format_safe_timestamp_range(None, 2.0, "seconds", format_single=_fmt) is None
     assert (
         format_safe_timestamp_range(1.0, math.nan, "seconds", format_single=_fmt)
         is None
     )
-    assert (
-        format_safe_timestamp_range(2.0, 1.0, "seconds", format_single=_fmt) is None
-    )
-    assert (
-        format_safe_timestamp_range(1.0, -1.0, "seconds", format_single=_fmt) is None
-    )
+    assert format_safe_timestamp_range(2.0, 1.0, "seconds", format_single=_fmt) is None
+    assert format_safe_timestamp_range(1.0, -1.0, "seconds", format_single=_fmt) is None

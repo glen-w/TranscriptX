@@ -12,7 +12,11 @@ import pytest
 from transcriptx.core.speaker_profiles.operations import OperationEngine
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.core.speaker_profiles.service import SpeakerProfileService
-from transcriptx.core.speaker_profiles.store_io import dumps_model, profile_content_sha256, utc_now_iso
+from transcriptx.core.speaker_profiles.store_io import (
+    dumps_model,
+    profile_content_sha256,
+    utc_now_iso,
+)
 from transcriptx.core.speaker_profiles.voice.acceptance import (
     AcceptSuggestionRequest,
     VoiceAcceptanceOwner,
@@ -25,7 +29,10 @@ from transcriptx.core.speaker_profiles.voice.merge_transfer import (
     plan_voice_transfer_on_merge,
     voice_chunk_idempotency_key,
 )
-from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1, VoiceSampleV1
+from transcriptx.core.speaker_profiles.voice.models import (
+    VoiceEmbeddingV1,
+    VoiceSampleV1,
+)
 from transcriptx.core.speaker_profiles.voice.promote import VoicePromotionService
 from transcriptx.core.speaker_profiles.voice.runtime import (
     EMBEDDING_DIM,
@@ -172,9 +179,9 @@ def _seed_voice_rows(root: Path, *, profile_id: str, n: int) -> list[str]:
         (root / "voice" / "samples" / f"{sample_id}.voice_sample.json").write_bytes(
             dumps_model(sample)
         )
-        (root / "voice" / "embeddings" / f"{embedding_id}.voice_embedding.json").write_bytes(
-            dumps_model(emb)
-        )
+        (
+            root / "voice" / "embeddings" / f"{embedding_id}.voice_embedding.json"
+        ).write_bytes(dumps_model(emb))
         (root / "voice" / "vectors" / f"{embedding_id}.npy").write_bytes(vec_bytes)
         sample_ids.append(sample_id)
     return sample_ids
@@ -349,13 +356,19 @@ def test_promote_idempotent_and_suggestion_digest_stale_cache(
     sample_path = profiles / "voice" / "samples" / f"{sample_ids[0]}.voice_sample.json"
     sample = VoiceSampleV1.model_validate_json(sample_path.read_text(encoding="utf-8"))
     sample = sample.model_copy(
-        update={"trust_level": "suggestion_assisted", "eligibility_state": "ineligible_trust"}
+        update={
+            "trust_level": "suggestion_assisted",
+            "eligibility_state": "ineligible_trust",
+        }
     )
     sample_path.write_bytes(dumps_model(sample))
     emb_path = next((profiles / "voice" / "embeddings").glob("*.voice_embedding.json"))
     emb = VoiceEmbeddingV1.model_validate_json(emb_path.read_text(encoding="utf-8"))
     emb = emb.model_copy(
-        update={"trust_level": "suggestion_assisted", "eligibility_state": "ineligible_trust"}
+        update={
+            "trust_level": "suggestion_assisted",
+            "eligibility_state": "ineligible_trust",
+        }
     )
     emb_path.write_bytes(dumps_model(emb))
 

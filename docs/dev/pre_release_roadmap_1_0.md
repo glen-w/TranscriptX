@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**; human-testing / RC remain before public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8` (in progress)**; maintainer acceptance → unfamiliar-user → RC remain before public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -26,7 +26,9 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — hosted docs + harden scaffolds** — Sphinx revive + CI docs build; hygiene strict subset; quality-audit registry scaffold; draft model-licence matrix (**cut as 0.9.5**)
 - [x] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs (**cut as 0.9.6**)
 - [x] **0.9.x — harden + public surfaces (automatable)** — audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops draft; Data/Explorer redirects removed (**cut as 0.9.7**). Owner sign-off, RTD slug, and measured Large-library soak may remain soft-cut residuals.
-- [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); mandatory before 1.0
+- [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for owner-gated residuals.
+- [ ] **Maintainer acceptance pass** — executable kit in [manual_acceptance_1_0.md](manual_acceptance_1_0.md); severity-justified fixes after
+- [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
 
 ---
@@ -452,6 +454,8 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 **Cut as `0.9.7` (2026-07-24).** Automatable harden + public surfaces: audit judgements overlay; perf envelope recipe; trust drafts + Local AI labelling + voice privacy notice v2 + NOTICE; website + Pages; release-ops draft + issue templates; Data/Explorer redirect removal; RTD go-live prep (slug still owner-gated).
 
+**Cut as `0.9.8` (2026-07-24).** Hygiene + honesty + human-pass prep: epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits. Owner-gated residuals (RTD slug, Hub/NOTICE sign-off, BMC URL, Large-library soak, cohort execution) remain outside the cut.
+
 **Phase 0A — Repository hygiene and information architecture**
 
 - [x] Documentation inventory
@@ -526,7 +530,7 @@ Focus: first-run product experience (presentation + examples).
 
 ### 0.9.x — Quality hardening, hosted docs, public presentation
 
-Focus: operational tolerance, trust, docs surfaces — split across further 0.9.x cuts if needed. Sphinx scaffold + audit rows + licence draft landed in **0.9.5**; automatable harden + public landing in **0.9.7**; human testing remains after.
+Focus: operational tolerance, trust, docs surfaces — split across further 0.9.x cuts if needed. Sphinx scaffold + audit rows + licence draft landed in **0.9.5**; automatable harden + public landing in **0.9.7**; hygiene + honesty + human-pass kits in **0.9.8**; human testing remains after the tag.
 
 - [ ] Sustained personal/corpus testing; bug fixes; GUI friction removal
 - [x] Deterministic vs AI quality audit judgements (provisional overlay **0.9.7**; owner sign-off open)
@@ -536,8 +540,9 @@ Focus: operational tolerance, trust, docs surfaces — split across further 0.9.
 - [ ] First screenshot-based user guides
 - [ ] RTD navigation polish (usable docs required; polish not a hard blocker) — go-live owner-gated
 - [x] Initial `website/` + GitHub Pages — credible landing (**0.9.7**; modest)
-- [ ] Accessibility and supported-browser acceptance checks
-- [ ] Unfamiliar-user clean-room validation round (may slip to late 0.9.x / pre-RC if product not yet ready)
+- [x] User-facing known-limitations page + maintainer/unfamiliar-user kits (**0.9.8**; measured evidence still open)
+- [ ] Accessibility and supported-browser acceptance checks (kit prepared; execution after 0.9.8)
+- [ ] Unfamiliar-user clean-room validation round (kit prepared **0.9.8**; execution after maintainer pass)
 
 ### RC preparation → 1.0
 
@@ -548,7 +553,7 @@ RC **only when gates pass** — not when a patch number is exhausted.
 - [ ] Unfamiliar-user validation evidence reviewed; blockers triaged
 - [ ] Regenerated version-matched demo data
 - [x] Docs Sphinx build in CI (**0.9.5**); website polish + final screenshots as capacity allows
-- [ ] Schema/compatibility freeze; published known limitations under severity rules
+- [ ] Schema/compatibility freeze; published known limitations under severity rules ([known_limitations.md](../known_limitations.md) drafted **0.9.8**; publish/sign-off still RC)
 - [ ] Performance envelopes and trust gate signed off
 - [ ] Release-ops / support policy published
 - [ ] Release-governance **rehearsal** (not yet the final tag)
@@ -759,7 +764,7 @@ No new modules during 0.9.x unless audit proves a release-critical repair. Map a
 - [x] Scaffold audit rows from `MODULE_REGISTRY_ORDER` (**0.9.5** — [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md))
 - [x] Complete provisional audit columns (meaningfulness deferred; recommendation, severity) for user-visible analyses (**0.9.7** — [analysis_quality_audit_judgements.md](analysis_quality_audit_judgements.md); owner sign-off open)
 - [x] Mandatory scrutiny: deterministic highlights / summaries / action-items vs LLM equivalents (**0.9.7** provisional + Local AI / Deterministic labelling)
-- [ ] Apply retain / improve / relabel / hide / deprecate / remove recommendations (labelling applied; further code changes only if severity demands)
+- [ ] Apply retain / improve / relabel / hide / deprecate / remove recommendations (labelling applied **0.9.7**; experimental emotion off Balanced defaults **0.9.8**; further code only if severity demands; owner sign-off open)
 - [x] Tag each finding as release blocker / must fix / known limitation / post-1.0 (**0.9.7** provisional backlog in judgements doc)
 
 ---
@@ -1061,5 +1066,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 9. [x] Execute **0.9.x hosted docs + harden scaffolds** theme (**0.9.5**)
 10. [x] Execute **0.9.x Guided mode + demo** theme (**0.9.6**) ← **landed**
 11. [x] Execute **0.9.x harden + public surfaces (automatable)** theme (**0.9.7**) ← **landed** (owner Hub-card / RTD slug / Large-library soak may soft-cut)
-12. [ ] **Human-testing wave** — manual acceptance + a11y/browser + unfamiliar-user validation + clean-env soak
-13. [ ] RC evidence when gates pass
+12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (owner Hub/RTD/BMC/Large-library/cohort remain soft residuals)
+13. [ ] **Maintainer acceptance pass** — [manual_acceptance_1_0.md](manual_acceptance_1_0.md); then severity-justified fixes
+14. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
+15. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

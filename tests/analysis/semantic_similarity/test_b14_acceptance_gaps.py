@@ -25,7 +25,7 @@ from transcriptx.core.analysis.semantic_similarity.pipeline import (
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
-from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
+from transcriptx.core.utils.config.analysis import SemanticSimilarityConfig
 
 
 def _ts() -> TranscriptSet:
@@ -50,7 +50,9 @@ def _cmap() -> CanonicalSpeakerMap:
     )
 
 
-def _result(path: str, key: str, order: int, payload: dict, mid: str = "semantic_similarity") -> PerTranscriptResult:
+def _result(
+    path: str, key: str, order: int, payload: dict, mid: str = "semantic_similarity"
+) -> PerTranscriptResult:
     return PerTranscriptResult(
         transcript_path=path,
         transcript_key=key,
@@ -233,7 +235,16 @@ def test_max_motifs_per_session_in_build() -> None:
     from transcriptx.core.analysis.semantic_similarity.intake import SegmentRow
 
     rows = [
-        SegmentRow(str(i), "a", "A", float(i), float(i) + 1, f"t {i} words here", f"t {i} words here", i)
+        SegmentRow(
+            str(i),
+            "a",
+            "A",
+            float(i),
+            float(i) + 1,
+            f"t {i} words here",
+            f"t {i} words here",
+            i,
+        )
         for i in range(6)
     ]
     # three clusters of size 2
@@ -271,7 +282,7 @@ def test_max_motifs_per_session_in_build() -> None:
 
 @pytest.mark.unit
 def test_single_speaker_pipeline_skips_repetition_path() -> None:
-    cfg = SemanticSimilarityV2Config()
+    cfg = SemanticSimilarityConfig()
     cfg.timeout_seconds = 60.0
     cfg.cluster_min_samples = 2
     cfg.motif_min_cluster_size = 2
@@ -311,7 +322,7 @@ def test_single_speaker_pipeline_skips_repetition_path() -> None:
 @pytest.mark.unit
 def test_analysis_stamps_before_store(monkeypatch: Any) -> None:
     from transcriptx.core.analysis.semantic_similarity.analysis import (
-        SemanticSimilarityV2Analysis,
+        SemanticSimilarityAnalysis,
     )
     from transcriptx.core.analysis.semantic_similarity.output import SCHEMA_VERSION
 
@@ -363,7 +374,7 @@ def test_analysis_stamps_before_store(monkeypatch: Any) -> None:
         lambda *a, **k: fake_out,
     )
 
-    mod = SemanticSimilarityV2Analysis()
+    mod = SemanticSimilarityAnalysis()
     # Avoid writing viz/files
     monkeypatch.setattr(mod, "save_results", lambda *a, **k: None)
     result = mod.run_from_context(Ctx())

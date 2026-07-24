@@ -31,8 +31,8 @@ from transcriptx.core.analysis.llm_custom_qa.constants import (
     PROMPT_VERSION,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    V1_MODULE_VERSION,
-    V1_SCHEMA_ID,
+    MODULE_VERSION,
+    SCHEMA_ID,
 )
 from transcriptx.core.analysis.llm_custom_qa.contract import (
     build_llm_custom_qa_cache_key,
@@ -144,7 +144,9 @@ def _build_repair_user_prompt(
         idx = row.get("question_index")
         reason = row.get("system_reason") or "unavailable"
         problems.append(f"- question_index {idx}: {reason}")
-    problem_block = "\n".join(problems) if problems else "- one or more rows unavailable"
+    problem_block = (
+        "\n".join(problems) if problems else "- one or more rows unavailable"
+    )
     last_index = max(0, question_count - 1)
     return (
         f"{base_user_prompt}\n\n"
@@ -218,8 +220,8 @@ def _empty_run_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
     provenance = {
         "module": MODULE_NAME,
         "prompt_version": PROMPT_VERSION,
-        "schema_id": V1_SCHEMA_ID,
-        "module_version": V1_MODULE_VERSION,
+        "schema_id": SCHEMA_ID,
+        "module_version": MODULE_VERSION,
         "provider": None,
         "model": None,
         "seed": None,
@@ -238,9 +240,9 @@ def _empty_run_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
         "model_selection_source": None,
     }
     return {
-        "schema_id": V1_SCHEMA_ID,
+        "schema_id": SCHEMA_ID,
         "module": MODULE_NAME,
-        "module_version": V1_MODULE_VERSION,
+        "module_version": MODULE_VERSION,
         "questions_requested": [],
         "questions_hash": effective.questions_hash,
         "answers": [],
@@ -296,18 +298,18 @@ class LLMCustomQAAnalysis(AnalysisModule):
 
     def run_from_context(self, context: Any) -> Dict[str, Any]:
         from transcriptx.core.analysis.llm_custom_qa.versioning import (
-            is_v2_execution_enabled,
+            is_structured_execution_enabled,
         )
 
-        if is_v2_execution_enabled():
-            from transcriptx.core.analysis.llm_custom_qa.analyze_v2 import (
-                run_v2_from_context,
+        if is_structured_execution_enabled():
+            from transcriptx.core.analysis.llm_custom_qa.analyze_structured import (
+                run_structured_from_context,
             )
 
-            return run_v2_from_context(self, context)
-        return self._run_from_context_v1(context)
+            return run_structured_from_context(self, context)
+        return self._run_live_from_context(context)
 
-    def _run_from_context_v1(self, context: Any) -> Dict[str, Any]:
+    def _run_live_from_context(self, context: Any) -> Dict[str, Any]:
         started_at = now_iso()
         start_time = time.time()
         try:
@@ -334,20 +336,18 @@ class LLMCustomQAAnalysis(AnalysisModule):
             if effective.empty:
                 payload = validate_artifact(_empty_run_payload(effective))
                 markdown = render_custom_qa_markdown(payload)
-                gid = commit_llm_custom_qa_artifacts(
+                commit_llm_custom_qa_artifacts(
                     stem=stem,
                     json_final=json_final,
                     md_final=md_final,
                     payload=payload,
                     markdown=markdown,
-                    force_protocol="v1",
+                    force_protocol="alias",
                 )
                 output_service.record_file(json_final, "json")
                 output_service.record_file(md_final, "md")
                 context.store_analysis_result(self.module_name, payload)
-                _write_questions_metadata_sidecar(
-                    Path(structure.module_dir), effective
-                )
+                _write_questions_metadata_sidecar(Path(structure.module_dir), effective)
                 log_analysis_complete(self.module_name, context.transcript_path)
                 finished_at = now_iso()
                 duration_seconds = time.time() - start_time
@@ -463,14 +463,12 @@ class LLMCustomQAAnalysis(AnalysisModule):
                     md_final=md_final,
                     payload=payload,
                     markdown=markdown,
-                    force_protocol="v1",
+                    force_protocol="alias",
                 )
                 output_service.record_file(json_final, "json")
                 output_service.record_file(md_final, "md")
                 context.store_analysis_result(self.module_name, payload)
-                _write_questions_metadata_sidecar(
-                    Path(structure.module_dir), effective
-                )
+                _write_questions_metadata_sidecar(Path(structure.module_dir), effective)
                 log_analysis_complete(self.module_name, context.transcript_path)
                 finished_at = now_iso()
                 duration_seconds = time.time() - start_time
@@ -537,15 +535,13 @@ class LLMCustomQAAnalysis(AnalysisModule):
             answers = apply_absence_detector(
                 answers, truncated=corpus.truncated, diagnostics=diagnostics
             )
-            answers, outcome = finalize_outcome_and_strip(
-                answers, empty=False
-            )
+            answers, outcome = finalize_outcome_and_strip(answers, empty=False)
 
             provenance = {
                 "module": MODULE_NAME,
                 "prompt_version": PROMPT_VERSION,
-                "schema_id": V1_SCHEMA_ID,
-                "module_version": V1_MODULE_VERSION,
+                "schema_id": SCHEMA_ID,
+                "module_version": MODULE_VERSION,
                 "provider": llm_cfg.provider,
                 "model": getattr(client, "model", llm_cfg.model or ""),
                 "seed": int(llm_cfg.seed),
@@ -564,9 +560,9 @@ class LLMCustomQAAnalysis(AnalysisModule):
                 "model_selection_source": effort_runtime.model_source,
             }
             payload = {
-                "schema_id": V1_SCHEMA_ID,
+                "schema_id": SCHEMA_ID,
                 "module": MODULE_NAME,
-                "module_version": V1_MODULE_VERSION,
+                "module_version": MODULE_VERSION,
                 "questions_requested": list(effective.questions),
                 "questions_hash": effective.questions_hash,
                 "answers": answers,
@@ -588,7 +584,7 @@ class LLMCustomQAAnalysis(AnalysisModule):
                 md_final=md_final,
                 payload=payload,
                 markdown=markdown,
-                force_protocol="v1",
+                force_protocol="alias",
             )
             output_service.record_file(json_final, "json")
             output_service.record_file(md_final, "md")

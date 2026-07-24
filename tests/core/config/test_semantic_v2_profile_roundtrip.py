@@ -23,9 +23,7 @@ def test_profile_target_payload_roundtrip_semantic_v2() -> None:
 
 def test_profile_guided_fields_exist_in_registry() -> None:
     reg = build_registry()
-    guided = PROFILE_TARGET_CONTRACTS[
-        "semantic_similarity"
-    ].edit_support.guided_fields
+    guided = PROFILE_TARGET_CONTRACTS["semantic_similarity"].edit_support.guided_fields
     prefix = "analysis.semantic_similarity."
     for field in guided:
         key = f"{prefix}{field}"

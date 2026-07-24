@@ -16,9 +16,7 @@ from tests.web.gui_acceptance.harness import (
 
 pytestmark = [pytest.mark.gui_acceptance, pytest.mark.heavy]
 
-_SCRIPT = (
-    Path(__file__).resolve().parent / "scripts" / "export_panel_script.py"
-)
+_SCRIPT = Path(__file__).resolve().parent / "scripts" / "export_panel_script.py"
 
 
 def test_export_panel_zip_and_download(gui_ws, monkeypatch) -> None:

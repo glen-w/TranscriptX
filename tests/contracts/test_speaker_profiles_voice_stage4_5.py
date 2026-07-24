@@ -52,7 +52,9 @@ def test_aggregate_uses_top_k_mean() -> None:
     refs = [_unit(2), _unit(3), _unit(4), _unit(5)]
     # Force identical first ref
     refs[0] = q[0].copy()
-    score = aggregate_profile_score(q, refs, policy=ThresholdPolicyV1(top_k_refs_per_query=1))
+    score = aggregate_profile_score(
+        q, refs, policy=ThresholdPolicyV1(top_k_refs_per_query=1)
+    )
     assert score > 0.99
 
 

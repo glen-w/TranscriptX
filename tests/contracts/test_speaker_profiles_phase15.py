@@ -21,12 +21,14 @@ from transcriptx.core.speaker_profiles.errors import (
     SpeakerProfileContractError,
     StaleConfirmationError,
 )
-from transcriptx.core.speaker_profiles.fingerprint import compute_occurrence_fingerprint
 from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
 from transcriptx.core.speaker_profiles.normalize import apply_profile_update
 from transcriptx.core.speaker_profiles.service import SpeakerProfileService
 from transcriptx.core.speaker_profiles.snapshot import build_aggregation_snapshot
-from transcriptx.core.speaker_profiles.store_io import profile_content_sha256, read_profile
+from transcriptx.core.speaker_profiles.store_io import (
+    profile_content_sha256,
+    read_profile,
+)
 from transcriptx.core.speaker_profiles.time_series import (
     DIRECTORY_TOP_N,
     build_directory_activity_chart,
@@ -140,9 +142,7 @@ def test_assign_unused_avoids_used() -> None:
 
 
 def test_flag_precedence_collision_beats_needs_review() -> None:
-    assert (
-        resolve_appearance_flag(collision=True, needs_review=True) == "collision"
-    )
+    assert resolve_appearance_flag(collision=True, needs_review=True) == "collision"
     assert (
         resolve_appearance_flag(
             repair_required=True, missing_source=True, collision=True
@@ -355,9 +355,7 @@ def test_snapshot_scan_bound_and_time_series(
     assert 0 < day_share.value <= 1.0
 
 
-def test_directory_top_n_other(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_directory_top_n_other(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     transcripts = tmp_path / "transcripts"
     transcripts.mkdir()
     _patch(monkeypatch, transcripts)
@@ -467,9 +465,9 @@ def test_replay_cache_signal_includes_merge_target(
 def test_heading_html_uses_assigned_accent() -> None:
     html = speaker_heading_html("Alice", accent="#112233")
     assert "--speaker-accent: #112233" in html
-    assert resolve_speaker_accent("Alice", accent="not-a-color") == resolve_speaker_accent(
-        "Alice"
-    )
+    assert resolve_speaker_accent(
+        "Alice", accent="not-a-color"
+    ) == resolve_speaker_accent("Alice")
 
 
 def test_speakers_page_still_callable() -> None:

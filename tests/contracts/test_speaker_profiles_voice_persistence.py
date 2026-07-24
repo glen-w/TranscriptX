@@ -150,9 +150,7 @@ def test_list_samples_for_profile_filters_and_skips_corrupt(tmp_path: Path) -> N
         "managed_transcript_id": IMPORT_A,
         "local_speaker_key": "SPEAKER_00",
     }
-    (samples / "abc.voice_sample.json").write_text(
-        json.dumps(good), encoding="utf-8"
-    )
+    (samples / "abc.voice_sample.json").write_text(json.dumps(good), encoding="utf-8")
     (samples / "other.voice_sample.json").write_text(
         json.dumps({**good, "sample_id": "other", "profile_id": "p2"}),
         encoding="utf-8",

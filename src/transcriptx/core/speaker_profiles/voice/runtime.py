@@ -81,7 +81,10 @@ def resolve_torch_device(torch_mod: Any) -> tuple[Any, str]:
     except Exception:
         pass
     try:
-        if getattr(torch_mod.backends, "mps", None) and torch_mod.backends.mps.is_available():
+        if (
+            getattr(torch_mod.backends, "mps", None)
+            and torch_mod.backends.mps.is_available()
+        ):
             return torch_mod.device("mps"), "mps"
     except Exception:
         pass
@@ -136,9 +139,14 @@ class SpeakerEmbeddingRuntime:
                 os.environ.setdefault("HF_HUB_OFFLINE", "1")
                 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
-            savedir = self.savedir or Path(
-                os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")
-            ) / "transcriptx_speaker_match" / self.model_revision
+            savedir = (
+                self.savedir
+                or Path(
+                    os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")
+                )
+                / "transcriptx_speaker_match"
+                / self.model_revision
+            )
 
             try:
                 kwargs: dict[str, Any] = {

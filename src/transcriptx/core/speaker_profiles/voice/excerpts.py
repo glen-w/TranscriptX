@@ -118,9 +118,7 @@ def _gap_clear_of_others(
             continue
         if o.start >= gap_end:
             break
-        if _overlap_amount(
-            TimeInterval(start=gap_start, end=gap_end), o
-        ) > 0.0:
+        if _overlap_amount(TimeInterval(start=gap_start, end=gap_end), o) > 0.0:
             return False
     return True
 

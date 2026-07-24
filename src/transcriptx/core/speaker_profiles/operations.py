@@ -140,7 +140,10 @@ class OperationEngine:
                 )
             abs_path = self.root / item.relpath
             before = sha256_file(abs_path)
-            if item.expected_before_sha256 is not None and before != item.expected_before_sha256:
+            if (
+                item.expected_before_sha256 is not None
+                and before != item.expected_before_sha256
+            ):
                 from transcriptx.core.speaker_profiles.errors import StaleUpdateError
 
                 raise StaleUpdateError(

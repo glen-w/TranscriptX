@@ -149,7 +149,9 @@ def status_demo_project(*, ignore_busy: bool = False) -> DemoStatus:
     inv = _read_json(inventory_path())
     journal = _read_json(journal_path())
     if journal and not inv:
-        return DemoStatus(DemoStatusKind.PARTIAL, "Interrupted install/remove journal present")
+        return DemoStatus(
+            DemoStatusKind.PARTIAL, "Interrupted install/remove journal present"
+        )
     if inv is None:
         if inventory_path().exists():
             return DemoStatus(DemoStatusKind.CORRUPT, "Inventory unreadable")
@@ -165,9 +167,13 @@ def status_demo_project(*, ignore_busy: bool = False) -> DemoStatus:
         or inv.get("schema_epoch") != CURRENT_SCHEMA_EPOCH
         or inv.get("pack_version") != pack.pack_version
     ):
-        return DemoStatus(DemoStatusKind.STALE, "Demo pack or schema epoch mismatch", inv)
+        return DemoStatus(
+            DemoStatusKind.STALE, "Demo pack or schema epoch mismatch", inv
+        )
     if inv.get("data_root") != str(Path(paths_mod.PATHS.data_dir).resolve()):
-        return DemoStatus(DemoStatusKind.CORRUPT, "Inventory bound to a different data root", inv)
+        return DemoStatus(
+            DemoStatusKind.CORRUPT, "Inventory bound to a different data root", inv
+        )
     return DemoStatus(DemoStatusKind.INSTALLED, "Demo project installed", inv)
 
 
@@ -258,7 +264,9 @@ def _create_owned_demo_group(name: str, description: str, members: list[str]) ->
     return group.group_id
 
 
-def _generate_demo_run(slug: str, run_id: str, transcript_path: Path, label: str) -> Path:
+def _generate_demo_run(
+    slug: str, run_id: str, transcript_path: Path, label: str
+) -> Path:
     """Write a minimal viewable synthetic run (no network / Ollama)."""
     run_root = Path(paths_mod.OUTPUTS_DIR) / slug / run_id
     run_root.mkdir(parents=True, exist_ok=True)
@@ -334,7 +342,9 @@ def install_demo_project() -> DemoResult:
         try:
             pack = load_and_validate_pack()
         except PackValidationError as exc:
-            return DemoResult(False, DemoStatusKind.CORRUPT, str(exc), errors=[str(exc)])
+            return DemoResult(
+                False, DemoStatusKind.CORRUPT, str(exc), errors=[str(exc)]
+            )
 
         existing = status_demo_project(ignore_busy=True)
         if existing.kind == DemoStatusKind.INSTALLED:
@@ -470,7 +480,10 @@ def install_demo_project() -> DemoResult:
             journal_path().unlink()
         clear_demo_ui_caches()
         return DemoResult(
-            True, DemoStatusKind.INSTALLED, "Demo project installed", inventory=inventory
+            True,
+            DemoStatusKind.INSTALLED,
+            "Demo project installed",
+            inventory=inventory,
         )
     finally:
         try:
@@ -558,7 +571,9 @@ def compare_and_delete_slug(
         return True, "unregistered"
 
 
-def _revalidate_managed_identity(path: Path, expected_identity: str) -> tuple[bool, str]:
+def _revalidate_managed_identity(
+    path: Path, expected_identity: str
+) -> tuple[bool, str]:
     """Confirm on-disk segments still match the inventory identity snapshot."""
     try:
         data = path.read_bytes()
@@ -600,7 +615,10 @@ def refresh_demo_project() -> DemoResult:
         return DemoResult(False, DemoStatusKind.BUSY, "Demo operation busy")
     if status.kind == DemoStatusKind.INSTALLED:
         return DemoResult(
-            True, DemoStatusKind.INSTALLED, "Already installed", inventory=status.inventory
+            True,
+            DemoStatusKind.INSTALLED,
+            "Already installed",
+            inventory=status.inventory,
         )
     if status.kind != DemoStatusKind.MISSING:
         removed = remove_demo_project()

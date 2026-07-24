@@ -37,7 +37,6 @@ from transcriptx.web.blocks.llm_presentation import (
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.module_run_prompt import render_module_required_hint
 from transcriptx.web.speaker_accent import (
-    SPEAKER_ACCENTS as _SPEAKER_ACCENTS,
     speaker_accent_color as _speaker_accent_color,
     speaker_heading_html,
 )
@@ -159,28 +158,28 @@ def render_transcript_summary_hero(
     if loader is not None and primary.kind in {"llm_summary", "narrative_summary"}:
         rel = resolve_artifact_rel_path(
             loader, module, f"{stem}.md"
-        ) or resolve_artifact_rel_path(
-            loader, module, f"{stem}.json", kind="data_json"
-        )
+        ) or resolve_artifact_rel_path(loader, module, f"{stem}.json", kind="data_json")
     if primary.kind in {"llm_summary", "narrative_summary"} and rated and rel:
         render_badge_row_with_feedback(
             _summary_hero_badges(primary, run_results=ctx.run_results),
             ctx=ctx,
             surface=FeedbackSurface.OVERVIEW_HERO,
-            block_id=_placement.block_id if _placement.block_id else "transcript_summary_hero",
+            block_id=(
+                _placement.block_id
+                if _placement.block_id
+                else "transcript_summary_hero"
+            ),
             module=module,
             artifact_rel_path=rel,
             output_text=rated,
-            provenance=(primary.payload or {}).get("provenance")
-            if primary.payload
-            else None,
+            provenance=(
+                (primary.payload or {}).get("provenance") if primary.payload else None
+            ),
             placement_id=_placement.placement_id,
             widget_key=f"fb_hero_{_placement.placement_id}",
         )
     else:
-        render_badge_row(
-            _summary_hero_badges(primary, run_results=ctx.run_results)
-        )
+        render_badge_row(_summary_hero_badges(primary, run_results=ctx.run_results))
     _render_summary_body(primary, strip_heading=True, strip_provenance=True)
     from transcriptx.web.blocks.implementations.custom_qa_presentation import (
         render_global_custom_qa_under_summary,
@@ -558,12 +557,16 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         render_markdown_without_heading_or_provenance(md)
         return
 
-    outcome = module_outcome_state(run_root, "llm_action_items", run_results=ctx.run_results)
+    outcome = module_outcome_state(
+        run_root, "llm_action_items", run_results=ctx.run_results
+    )
     if outcome == "failed" and run_root is not None:
         st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS, outcome=outcome))
         # Prefer guidance from run_results via shared formatter.
         from transcriptx.core.pipeline.manifest_loader import load_run_results
-        from transcriptx.core.pipeline.run_outcome_truth import project_canonical_outcomes
+        from transcriptx.core.pipeline.run_outcome_truth import (
+            project_canonical_outcomes,
+        )
 
         try:
             rr = ctx.run_results

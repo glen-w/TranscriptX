@@ -122,9 +122,7 @@ def render_questions_panel() -> None:
             if not g and not ps:
                 st.error(f"Question needs at least one scope: {text[:40]}")
                 return
-            payload.append(
-                {"text": text, "scopes": {"global": g, "per_speaker": ps}}
-            )
+            payload.append({"text": text, "scopes": {"global": g, "per_speaker": ps}})
         try:
             normalised = normalize_library_questions(payload, settings=cfg)
         except Exception as exc:

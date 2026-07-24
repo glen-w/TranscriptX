@@ -52,9 +52,7 @@ def cluster_embeddings(
         ).fit_predict(e_rows)
         label_list = [int(x) for x in labels.tolist()]
         if len(label_list) != n:
-            return _all_noise(
-                n, status=STATUS_FAILED, reason="label_length_mismatch"
-            )
+            return _all_noise(n, status=STATUS_FAILED, reason="label_length_mismatch")
         n_clusters = len({x for x in label_list if x >= 0})
         return {
             "labels": label_list,
@@ -62,6 +60,4 @@ def cluster_embeddings(
             "status": STATUS_OK,
         }
     except Exception as exc:  # noqa: BLE001 — keep pipeline soft-fail
-        return _all_noise(
-            n, status=STATUS_FAILED, reason=f"{type(exc).__name__}:{exc}"
-        )
+        return _all_noise(n, status=STATUS_FAILED, reason=f"{type(exc).__name__}:{exc}")

@@ -28,7 +28,6 @@ from transcriptx.core.speaker_profiles.layout import (
     link_path,
     profiles_dir,
     speaker_profiles_dir,
-    speaker_profiles_lock_path,
 )
 from transcriptx.core.speaker_profiles.models import (
     SpeakerProfileEventV1,
@@ -139,13 +138,8 @@ def _noop_result(
     profile_id = ids.get("profile_id")
     link_id = ids.get("link_id")
     event_ids = tuple(ids.get("event_ids") or ())
-    profile_ids = tuple(
-        ids.get("profile_ids")
-        or ((profile_id,) if profile_id else ())
-    )
-    link_ids = tuple(
-        ids.get("link_ids") or ((link_id,) if link_id else ())
-    )
+    profile_ids = tuple(ids.get("profile_ids") or ((profile_id,) if profile_id else ()))
+    link_ids = tuple(ids.get("link_ids") or ((link_id,) if link_id else ()))
     managed_transcript_ids = tuple(ids.get("managed_transcript_ids") or ())
     scopes: list[str] = ["speaker_profiles"]
     if link_ids or ids.get("link_file_key") or ids.get("link_id"):
@@ -205,7 +199,9 @@ class SpeakerProfileService:
         self.engine = OperationEngine(self.root)
 
     def _project_lock(self) -> FileLock:
-        from transcriptx.core.speaker_profiles.layout import speaker_profiles_project_lock
+        from transcriptx.core.speaker_profiles.layout import (
+            speaker_profiles_project_lock,
+        )
 
         return speaker_profiles_project_lock(self.state_dir)
 
@@ -796,9 +792,7 @@ class SpeakerProfileService:
                 ),
             )
             scopes = ["speaker_profiles", "speaker_links"] + list(extra_scopes or [])
-            profile_ids = list(
-                dict.fromkeys([previous_profile_id, profile_id])
-            )
+            profile_ids = list(dict.fromkeys([previous_profile_id, profile_id]))
             receipt = {
                 "profile_id": profile_id,
                 "link_id": link_id,
@@ -1078,7 +1072,9 @@ class SpeakerProfileService:
                 pass
 
             now = utc_now_iso()
-            updated = clear_avatar_fields(current).model_copy(update={"updated_at": now})
+            updated = clear_avatar_fields(current).model_copy(
+                update={"updated_at": now}
+            )
             event_id = str(uuid4())
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -1275,9 +1271,7 @@ class SpeakerProfileService:
                     f"found {actual}"
                 )
             now = utc_now_iso()
-            updated = current.model_copy(
-                update={"status": "active", "updated_at": now}
-            )
+            updated = current.model_copy(update={"status": "active", "updated_at": now})
             event_id = str(uuid4())
             event = SpeakerProfileEventV1(
                 event_id=event_id,
@@ -1431,16 +1425,20 @@ class SpeakerProfileService:
                         raise SpeakerProfileContractError(
                             "source avatar hash mismatch; refuse merge adopt"
                         )
-                target_before = profile_content_sha256(target_profile_id, root=self.root)
-                adopted = set_avatar_fields(target, sha256=source.avatar_sha256 or "").model_copy(
-                    update={"updated_at": now}
+                target_before = profile_content_sha256(
+                    target_profile_id, root=self.root
                 )
+                adopted = set_avatar_fields(
+                    target, sha256=source.avatar_sha256 or ""
+                ).model_copy(update={"updated_at": now})
                 writes.append(
                     PlannedWrite(
                         relpath=relative_avatar_path(target_profile_id),
                         data=webp,
                         expected_before_sha256=(
-                            sha256_file(target_asset) if target_asset.is_file() else None
+                            sha256_file(target_asset)
+                            if target_asset.is_file()
+                            else None
                         ),
                     )
                 )
@@ -1490,9 +1488,7 @@ class SpeakerProfileService:
                     "avatar_policy": (
                         "adopt_source"
                         if source_has and not target_has
-                        else "target_wins"
-                        if target_has
-                        else "none"
+                        else "target_wins" if target_has else "none"
                     ),
                 },
             )

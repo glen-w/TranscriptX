@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 from uuid import uuid4
 
 import numpy as np
@@ -16,7 +15,6 @@ from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.core.speaker_profiles.service import SpeakerProfileService
 from transcriptx.core.speaker_profiles.voice.errors import (
     VoiceFeatureDisabled,
-    VoiceFeatureGateClosed,
 )
 from transcriptx.core.speaker_profiles.voice.evidence import (
     EnrolExcerptInput,
@@ -70,9 +68,7 @@ def _write_managed(transcripts_root: Path) -> Path:
             file_hash="abc",
             file_mtime=0.0,
         ),
-        TranscriptMetadata(
-            duration_seconds=2.0, segment_count=2, speaker_count=2
-        ),
+        TranscriptMetadata(duration_seconds=2.0, segment_count=2, speaker_count=2),
     )
     path = transcripts_root / "meeting.json"
     path.write_text(json.dumps(doc), encoding="utf-8")
@@ -87,7 +83,9 @@ def _write_managed(transcripts_root: Path) -> Path:
     return path
 
 
-def _svc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[SpeakerProfileService, Path]:
+def _svc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[SpeakerProfileService, Path]:
     transcripts = tmp_path / "transcripts"
     transcripts.mkdir()
     _patch_roots(monkeypatch, transcripts)
@@ -150,7 +148,6 @@ def test_enrol_gated_by_activation_barrier(
         model_revision="pin",
         model_generation_id="gen-test",
     )
-    from transcriptx.core.speaker_profiles.voice.errors import VoiceFeatureDisabled
 
     # Gate open but privacy default-disabled → processing blocked
     with pytest.raises(VoiceFeatureDisabled):

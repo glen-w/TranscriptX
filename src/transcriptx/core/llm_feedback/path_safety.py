@@ -20,7 +20,9 @@ def assert_not_symlink(path: Path, *, what: str = "path") -> Path:
 
 def assert_safe_artifact_relpath(relpath: str) -> str:
     if not isinstance(relpath, str) or not relpath.strip():
-        raise LlmFeedbackPathError("artifact_rel_path must be a non-empty relative path")
+        raise LlmFeedbackPathError(
+            "artifact_rel_path must be a non-empty relative path"
+        )
     raw = relpath.strip().replace("\\", "/")
     if "\x00" in raw:
         raise LlmFeedbackPathError("artifact_rel_path must not contain NUL")
@@ -33,7 +35,9 @@ def assert_safe_artifact_relpath(relpath: str) -> str:
         raise LlmFeedbackPathError(f"absolute path rejected: {raw!r}")
     parts = pure.parts
     if not parts or parts == (".",):
-        raise LlmFeedbackPathError("artifact_rel_path must be a non-empty relative path")
+        raise LlmFeedbackPathError(
+            "artifact_rel_path must be a non-empty relative path"
+        )
     for part in parts:
         if part in ("", ".", ".."):
             raise LlmFeedbackPathError(f"path traversal rejected: {raw!r}")

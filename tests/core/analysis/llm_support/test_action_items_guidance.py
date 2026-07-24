@@ -45,7 +45,9 @@ def test_oversized_output_error_includes_retry_guidance() -> None:
 @pytest.mark.unit
 def test_parse_unsalvageable_json_raises_guided_error() -> None:
     truncated = '{"items":[{"record_type":"action_item","text":"Only a fragment'
-    with pytest.raises(LLMResponseError, match="same settings will usually fail") as exc:
+    with pytest.raises(
+        LLMResponseError, match="same settings will usually fail"
+    ) as exc:
         parse_action_items_json(truncated)
     assert "not valid JSON" in str(exc.value)
 

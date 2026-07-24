@@ -7,7 +7,6 @@ _GALLERY_MODULE_DISPLAY_NAMES: dict[str, str] = {
     "affect_tension": "Affect tension",
     "entity_sentiment": "Entity sentiment",
     "qa_analysis": "Q&A analysis",
-    "semantic_similarity_advanced": "Semantic similarity",
     "semantic_similarity": "Semantic similarity v2",
     "voice": "Voice / prosody",
     "voice_charts_core": "Voice charts",

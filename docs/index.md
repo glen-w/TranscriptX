@@ -11,6 +11,7 @@ Local-first personal transcript analysis workbench. Start with the product defin
 
 PRODUCT
 USER_INDEX
+known_limitations
 runtime/installation
 runtime/transcription
 runtime/docker

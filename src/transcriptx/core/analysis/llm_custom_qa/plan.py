@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Optional
+from typing import Literal, Mapping, Optional
 
 from transcriptx.core.analysis.llm_custom_qa.evidence_catalog import EvidenceSnapshot
 from transcriptx.core.analysis.llm_custom_qa.question_identity import CanonicalQuestion
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    V2_CONTRACT_VERSION,
-    is_v2_execution_enabled,
+    is_structured_execution_enabled,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_canonical_json
 
@@ -68,11 +67,11 @@ class RoutedCustomQAPlan:
         return None
 
 
-def assert_v2_execution_allowed() -> None:
-    if not is_v2_execution_enabled():
+def assert_structured_execution_allowed() -> None:
+    if not is_structured_execution_enabled():
         raise RuntimeError(
-            "v2 custom QA execution is disabled (activation=v1_live); "
-            "do not build plans, route, or write v2 caches"
+            "structured custom QA execution is disabled; "
+            "do not build plans, route, or write structured caches"
         )
 
 
@@ -94,7 +93,9 @@ def validate_routed_plan(plan: RoutedCustomQAPlan) -> None:
     seen: set[str] = set()
     for route in plan.routes:
         if route.question_id not in qids:
-            raise ValueError(f"route references unknown question_id {route.question_id}")
+            raise ValueError(
+                f"route references unknown question_id {route.question_id}"
+            )
         if route.question_id in seen:
             raise ValueError(f"duplicate route for {route.question_id}")
         seen.add(route.question_id)

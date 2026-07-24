@@ -157,7 +157,11 @@ def test_speakers_incomplete_snapshot_warns_then_lists(monkeypatch, tmp_path) ->
         def metric(self, label, value, **_k):
             metrics.append((str(label), value))
 
-    monkeypatch.setattr(_SpeakersStreamlit, "columns", staticmethod(lambda n, *a, **k: [_Col() for _ in range(int(n))]))
+    monkeypatch.setattr(
+        _SpeakersStreamlit,
+        "columns",
+        staticmethod(lambda n, *a, **k: [_Col() for _ in range(int(n))]),
+    )
 
     mod.render_speakers_page()
 
@@ -188,14 +192,20 @@ def test_speakers_filter_hides_all_when_only_archived(monkeypatch, tmp_path) -> 
     )
     monkeypatch.setattr(mod, "_render_recovery_banners", lambda *_a, **_k: None)
     monkeypatch.setattr(
-        mod, "_speakers_browser_fragment", lambda **_k: (_ for _ in ()).throw(AssertionError("fragment"))
+        mod,
+        "_speakers_browser_fragment",
+        lambda **_k: (_ for _ in ()).throw(AssertionError("fragment")),
     )
 
     class _Col:
         def metric(self, *_a, **_k):
             return None
 
-    monkeypatch.setattr(_SpeakersStreamlit, "columns", staticmethod(lambda n, *a, **k: [_Col() for _ in range(max(int(n), 1))]))
+    monkeypatch.setattr(
+        _SpeakersStreamlit,
+        "columns",
+        staticmethod(lambda n, *a, **k: [_Col() for _ in range(max(int(n), 1))]),
+    )
 
     mod.render_speakers_page()
 
@@ -253,6 +263,7 @@ def test_speakers_browser_opens_detail_for_selected_profile(monkeypatch) -> None
     assert kwargs["profile"] is profile
     assert kwargs["agg"] is agg
     assert kwargs["appearances"] is appearances
+
 
 @pytest.mark.unit
 def test_speakers_browser_missing_profile_errors(monkeypatch) -> None:

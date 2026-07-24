@@ -125,7 +125,10 @@ class WhisperXAdapter:
             words: Optional[List[Dict[str, Any]]]
             if isinstance(raw_words, list):
                 words, score_diag = normalize_words_list(raw_words)
-                if score_diag["invalid_score_count"] or score_diag["out_of_range_score_count"]:
+                if (
+                    score_diag["invalid_score_count"]
+                    or score_diag["out_of_range_score_count"]
+                ):
                     warnings.append(
                         f"Segment {idx}: omitted "
                         f"{score_diag['invalid_score_count']} invalid and "

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import io
 import re
 from typing import Final
@@ -75,9 +74,7 @@ def validate_avatar_field_set(
             f"avatar_content_type must be {AVATAR_CONTENT_TYPE!r}"
         )
     if not re.fullmatch(r"[0-9a-f]{64}", avatar_sha256):
-        raise SpeakerProfileContractError(
-            "avatar_sha256 must be lowercase hex SHA-256"
-        )
+        raise SpeakerProfileContractError("avatar_sha256 must be lowercase hex SHA-256")
 
 
 def clear_avatar_fields(profile: SpeakerProfileV1) -> SpeakerProfileV1:
@@ -90,9 +87,7 @@ def clear_avatar_fields(profile: SpeakerProfileV1) -> SpeakerProfileV1:
     )
 
 
-def set_avatar_fields(
-    profile: SpeakerProfileV1, *, sha256: str
-) -> SpeakerProfileV1:
+def set_avatar_fields(profile: SpeakerProfileV1, *, sha256: str) -> SpeakerProfileV1:
     relpath = relative_avatar_path(profile.profile_id)
     validate_avatar_field_set(
         avatar_relpath=relpath,
@@ -167,9 +162,7 @@ def normalize_avatar_image(raw: bytes) -> tuple[bytes, str]:
     img = ImageOps.exif_transpose(img)
 
     # Colour mode + alpha onto white
-    if img.mode in ("RGBA", "LA") or (
-        img.mode == "P" and "transparency" in img.info
-    ):
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
         rgba = img.convert("RGBA")
         background = Image.new("RGB", rgba.size, (255, 255, 255))
         background.paste(rgba, mask=rgba.split()[-1])

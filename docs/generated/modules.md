@@ -26,7 +26,7 @@ Authority: ../ARCHITECTURE.md
 | keyphrases | Keyphrase ranking (noun chunks / YAKE / KeyBERT) | medium | insight_eligibility | T1 |
 | stats | Statistical Analysis | light | None | T0 |
 | topic_modeling | Topic Modeling | heavy | insight_eligibility | T2 |
-| bertopic | BERTopic topic modeling (included in recommended defaults; stack in base install — see docs/dev/bertopic_optional_module.md) | heavy | insight_eligibility | T2 |
+| bertopic | BERTopic topic modeling (optional [bertopic]/[full] stack — see docs/dev/bertopic_optional_module.md) | heavy | insight_eligibility | T2 |
 | transcript_output | Generate human readable transcripts | light | None | T0 |
 | simplified_transcript | Simplified transcript (tics, agreements, repetitions removed) | light | None | T0 |
 | understandability | Understandability Analysis | medium | None | T0 |

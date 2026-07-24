@@ -147,9 +147,7 @@ def _stub_batch_config_ui(monkeypatch, mod) -> None:
         heavy_count=0,
         custom_qa_execution=False,
     )
-    monkeypatch.setattr(
-        mod, "render_analysis_preset_selector", lambda **_k: resolved
-    )
+    monkeypatch.setattr(mod, "render_analysis_preset_selector", lambda **_k: resolved)
     monkeypatch.setattr(
         mod,
         "render_custom_qa_picker",

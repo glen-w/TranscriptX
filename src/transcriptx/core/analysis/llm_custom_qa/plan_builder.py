@@ -12,7 +12,7 @@ from transcriptx.core.analysis.llm_custom_qa.evidence_catalog import (
 )
 from transcriptx.core.analysis.llm_custom_qa.plan import (
     UnroutedCustomQAPlan,
-    assert_v2_execution_allowed,
+    assert_structured_execution_allowed,
 )
 from transcriptx.core.analysis.llm_custom_qa.question_identity import (
     questions_hash_for_canonical,
@@ -21,7 +21,7 @@ from transcriptx.core.analysis.llm_custom_qa.resolve import EffectiveCustomQAQue
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
     SCHEDULER_VERSION,
     SPEAKER_ELIGIBILITY_POLICY_VERSION,
-    V2_CONTRACT_VERSION,
+    CONTRACT_VERSION,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_text
 from transcriptx.core.analysis.llm_support.speakers import (
@@ -42,7 +42,7 @@ def build_unrouted_plan(
     effort: str = "high",
     global_transcript_text: str = "",
 ) -> UnroutedCustomQAPlan:
-    assert_v2_execution_allowed()
+    assert_structured_execution_allowed()
     expanded = expand_evidence_pack_ids(getattr(settings, "evidence_pack_ids", None))
     snapshots = load_evidence_snapshots(
         enabled_pack_ids=expanded, context=context, run_root=run_root
@@ -89,7 +89,7 @@ def build_unrouted_plan(
         max_reasoning_chars=int(getattr(settings, "max_reasoning_chars", 600)),
         max_answer_chars=int(getattr(settings, "max_answer_chars", 800)),
         catalog_version=catalog_version(),
-        contract_version=V2_CONTRACT_VERSION,
+        contract_version=CONTRACT_VERSION,
         scheduler_version=SCHEDULER_VERSION,
         eligibility_policy_version=SPEAKER_ELIGIBILITY_POLICY_VERSION,
         transcript_global_fingerprint=sha256_text(global_transcript_text),

@@ -22,7 +22,7 @@ Authority: docs/runtime/installation.md
 
 | OS | Status | Notes |
 |----|--------|-------|
-| macOS (Apple Silicon / Intel) | Supported | Prefer Docker CPU torch variant or native venv; Docker cannot use host GPU |
+| macOS (Apple Silicon / Intel) | Supported-with-caveats | Prefer **Docker CPU** for predictable installs. Native Apple **MPS** is not universally validated for every optional model — see [installation.md](installation.md). If MPS init or model execution fails, use `TRANSCRIPTX_FORCE_CPU=1`. Host `.[bertopic]`/`[full]` may fail when `llvmlite` wheels are unavailable; Docker `image_pip_check` remains the fuller-stack image proof. |
 | Linux (x86_64 / aarch64) | Supported | GPU via NVIDIA toolkit when available |
 | Windows | Best-effort | Native Windows is not a primary CI target; WSL2 + Docker recommended |
 
@@ -41,7 +41,7 @@ Authority: docs/runtime/installation.md
 | **voice** | `pip install -e ".[voice]"` | Voice / audio analysis deps |
 | **speaker_match** | `pip install -e ".[speaker_match]"` | Local ECAPA / SpeechBrain speaker-match deps (`import speechbrain`) |
 | **nlp** | `pip install -e ".[nlp]"` then `python -m spacy download en_core_web_md` | NLP + spaCy model |
-| **bertopic** | `pip install -e ".[bertopic]"` | Compatibility alias (BERTopic may already be in core) |
+| **bertopic** | `pip install -e ".[bertopic]"` | Optional BERTopic stack (`bertopic`/`hdbscan`/`umap-learn`); also in `[full]` / Docker |
 | **keyphrases** | `pip install -e ".[keyphrases]"` | Optional YAKE + KeyBERT for `keyphrases` module (noun-chunks path works without this extra) |
 | **maps** | `pip install -e ".[maps]"` | Maps extras; Playwright for optional HTML→PNG (not required for Streamlit GUI) |
 | **visualization** | `pip install -e ".[visualization]"` | Viz extras |

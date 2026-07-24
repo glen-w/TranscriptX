@@ -212,9 +212,7 @@ def render_playback_unavailable(
         st.caption("_Playback unavailable — transcript path could not be resolved._")
         return
     if reason == PlaybackUnavailableReason.timing_unavailable:
-        st.caption(
-            "_Playback unavailable — visible segments lack valid timing data._"
-        )
+        st.caption("_Playback unavailable — visible segments lack valid timing data._")
         return
     st.caption("_Playback unavailable — audio playback could not be initialised._")
 

@@ -97,7 +97,12 @@ def test_parse_ollama_tags_models_extracts_details():
 
     assert (
         context_length_from_show_payload(
-            {"model_info": {"gemma3.context_length": 131072, "general.architecture": "gemma3"}}
+            {
+                "model_info": {
+                    "gemma3.context_length": 131072,
+                    "general.architecture": "gemma3",
+                }
+            }
         )
         == 131072
     )
@@ -200,8 +205,7 @@ def test_per_module_fallback_to_shared_then_global():
     try:
         assert resolve_module_llm_model(cfg, "llm_summary").model == "summary-model"
         assert (
-            resolve_module_llm_model(cfg, "llm_action_items").model
-            == "shared-fallback"
+            resolve_module_llm_model(cfg, "llm_action_items").model == "shared-fallback"
         )
     finally:
         reset_llm_model_selection(token)
@@ -293,23 +297,25 @@ def test_group_readiness_rejects_invalid_selection():
 
     cfg = SimpleNamespace(group_analysis=SimpleNamespace(enabled=True))
     member = SimpleNamespace(file_path="/tmp/does-not-need-to-exist-yet.json")
-    with patch(
-        "transcriptx.app.workflows.analysis.get_config", return_value=cfg
-    ), patch(
-        "transcriptx.app.workflows.analysis.resolve_analysis_target",
-        return_value=("group", [member]),
+    with (
+        patch("transcriptx.app.workflows.analysis.get_config", return_value=cfg),
+        patch(
+            "transcriptx.app.workflows.analysis.resolve_analysis_target",
+            return_value=("group", [member]),
+        ),
     ):
         # Still fails on missing files before selection check when no paths exist
         pass
 
     # Use a real existing path so readiness reaches llm_model_selection validation
-    with patch(
-        "transcriptx.app.workflows.analysis.get_config", return_value=cfg
-    ), patch(
-        "transcriptx.app.workflows.analysis.resolve_analysis_target",
-        return_value=(
-            "group",
-            [SimpleNamespace(file_path=str(Path(__file__).resolve()))],
+    with (
+        patch("transcriptx.app.workflows.analysis.get_config", return_value=cfg),
+        patch(
+            "transcriptx.app.workflows.analysis.resolve_analysis_target",
+            return_value=(
+                "group",
+                [SimpleNamespace(file_path=str(Path(__file__).resolve()))],
+            ),
         ),
     ):
         errors = validate_group_analysis_readiness(
@@ -394,9 +400,7 @@ def test_launch_gate_blocks_empty_tags_and_bad_shared_pick():
 
 def test_launch_gate_group_synthesis_enabled_needs_llm():
     cfg = SimpleNamespace(
-        analysis=SimpleNamespace(
-            group_llm_synthesis=SimpleNamespace(enabled=True)
-        )
+        analysis=SimpleNamespace(group_llm_synthesis=SimpleNamespace(enabled=True))
     )
     with patch(
         "transcriptx.web.components.llm_model_selector.get_config",
@@ -420,9 +424,7 @@ def test_launch_gate_group_synthesis_enabled_needs_llm():
 
 def test_launch_gate_group_synthesis_disabled_skips_consumer():
     cfg = SimpleNamespace(
-        analysis=SimpleNamespace(
-            group_llm_synthesis=SimpleNamespace(enabled=False)
-        )
+        analysis=SimpleNamespace(group_llm_synthesis=SimpleNamespace(enabled=False))
     )
     info_map = {
         "summary": SimpleNamespace(requires_llm=False),
@@ -462,9 +464,7 @@ def test_installed_choice_unsets_unavailable():
 def test_apply_selection_does_not_substitute(monkeypatch):
     session: dict[str, Any] = {}
     fake_st = SimpleNamespace(session_state=session)
-    monkeypatch.setattr(
-        "transcriptx.web.components.llm_model_selector.st", fake_st
-    )
+    monkeypatch.setattr("transcriptx.web.components.llm_model_selector.st", fake_st)
     notes = _apply_selection_to_session(
         "pfx",
         LlmModelSelection(mode="shared", shared_model="missing:9"),
@@ -482,18 +482,18 @@ def test_render_early_return_gates_when_llm_disabled():
     fake_st.warning = MagicMock()
     cfg = SimpleNamespace(
         llm=SimpleNamespace(enabled=False, provider="null", model=None),
-        analysis=SimpleNamespace(
-            group_llm_synthesis=SimpleNamespace(enabled=False)
-        ),
+        analysis=SimpleNamespace(group_llm_synthesis=SimpleNamespace(enabled=False)),
     )
-    with patch(
-        "transcriptx.web.components.llm_model_selector.st", fake_st
-    ), patch(
-        "transcriptx.web.components.llm_model_selector.get_config",
-        return_value=cfg,
-    ), patch(
-        "transcriptx.core.pipeline.module_registry.get_module_info",
-        return_value=SimpleNamespace(requires_llm=True),
+    with (
+        patch("transcriptx.web.components.llm_model_selector.st", fake_st),
+        patch(
+            "transcriptx.web.components.llm_model_selector.get_config",
+            return_value=cfg,
+        ),
+        patch(
+            "transcriptx.core.pipeline.module_registry.get_module_info",
+            return_value=SimpleNamespace(requires_llm=True),
+        ),
     ):
         selection, gates = render_llm_model_selector(
             key_prefix="run_analysis_llm",

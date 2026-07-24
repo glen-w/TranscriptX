@@ -8,7 +8,10 @@ from typing import Any
 from uuid import uuid4
 
 from transcriptx.core.speaker_profiles.hashing import sha256_file
-from transcriptx.core.speaker_profiles.layout import link_path, speaker_profiles_project_lock
+from transcriptx.core.speaker_profiles.layout import (
+    link_path,
+    speaker_profiles_project_lock,
+)
 from transcriptx.core.speaker_profiles.operations import (
     OperationEngine,
     PlannedWrite,

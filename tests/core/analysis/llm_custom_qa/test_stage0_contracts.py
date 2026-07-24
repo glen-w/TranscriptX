@@ -1,10 +1,12 @@
-"""Stage 0: question identity, outcome truth table, v2 contracts, versioning."""
+"""Stage 0: question identity, outcome truth table, contracts, versioning."""
 
 from __future__ import annotations
 
 import pytest
 
-from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import compute_outcome_v2
+import transcriptx.core.analysis.llm_custom_qa.constants as custom_qa_constants
+import transcriptx.core.analysis.llm_custom_qa.versioning as custom_qa_versioning
+from transcriptx.core.analysis.llm_custom_qa.structured_contracts import compute_structured_outcome
 from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAQuestionsValidationError,
 )
@@ -16,18 +18,49 @@ from transcriptx.core.analysis.llm_custom_qa.question_identity import (
     questions_hash_for_canonical,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    V1_SCHEMA_ID,
-    V2_SCHEMA_ID,
-    get_custom_qa_activation,
-    is_v2_execution_enabled,
+    COMMIT_MARKER_SCHEMA_VERSION,
+    CONTRACT_VERSION,
+    MODULE_VERSION,
+    SCHEMA_ID,
+    is_structured_execution_enabled,
+    live_module_version_for_writers,
+    live_schema_id_for_writers,
 )
 
 
 @pytest.mark.unit
-def test_activation_defaults_to_v2_live() -> None:
-    assert get_custom_qa_activation() == "v2_live"
-    assert is_v2_execution_enabled() is True
-    assert V1_SCHEMA_ID != V2_SCHEMA_ID
+def test_activation_defaults_to_live() -> None:
+    """Sole live writer path; schema id is transcriptx.llm_custom_qa.v1."""
+    assert is_structured_execution_enabled() is False
+    assert SCHEMA_ID == "transcriptx.llm_custom_qa.v1"
+    assert live_schema_id_for_writers() == SCHEMA_ID
+    assert live_module_version_for_writers() == MODULE_VERSION
+
+
+@pytest.mark.unit
+def test_sole_identity_constants_no_dual_aliases() -> None:
+    """Public identities are single symbols; dual V1_/V2_ aliases stay gone."""
+    assert MODULE_VERSION == "1"
+    assert CONTRACT_VERSION == "1"
+    assert COMMIT_MARKER_SCHEMA_VERSION == 1
+    removed = (
+        "V1_SCHEMA_ID",
+        "V2_SCHEMA_ID",
+        "V1_MODULE_VERSION",
+        "V2_MODULE_VERSION",
+        "V1_CONTRACT_VERSION",
+        "V2_CONTRACT_VERSION",
+        "COMMIT_MARKER_SCHEMA_VERSION_V1",
+        "COMMIT_MARKER_SCHEMA_VERSION_V2",
+        "get_custom_qa_activation",
+        "set_custom_qa_activation",
+        "is_v2_execution_enabled",
+        "CustomQAActivation",
+    )
+    for name in removed:
+        assert not hasattr(custom_qa_versioning, name), name
+        assert not hasattr(custom_qa_constants, name), name
+        assert name not in custom_qa_constants.__all__
 
 
 @pytest.mark.unit
@@ -96,38 +129,38 @@ def test_canonicalize_scope_union_and_hash_sorted() -> None:
 
 @pytest.mark.unit
 def test_outcome_truth_table() -> None:
-    assert compute_outcome_v2(empty_questions=True, scheduled_statuses=[]) == (
+    assert compute_structured_outcome(empty_questions=True, scheduled_statuses=[]) == (
         "empty_questions"
     )
-    assert compute_outcome_v2(empty_questions=False, scheduled_statuses=[]) == (
+    assert compute_structured_outcome(empty_questions=False, scheduled_statuses=[]) == (
         "no_scheduled_cells"
     )
     assert (
-        compute_outcome_v2(
+        compute_structured_outcome(
             empty_questions=False, scheduled_statuses=["answered", "answered"]
         )
         == "answered"
     )
     assert (
-        compute_outcome_v2(
+        compute_structured_outcome(
             empty_questions=False, scheduled_statuses=["abstained", "abstained"]
         )
         == "all_abstained"
     )
     assert (
-        compute_outcome_v2(
+        compute_structured_outcome(
             empty_questions=False, scheduled_statuses=["unavailable", "unavailable"]
         )
         == "all_unavailable"
     )
     assert (
-        compute_outcome_v2(
+        compute_structured_outcome(
             empty_questions=False, scheduled_statuses=["answered", "abstained"]
         )
         == "mixed"
     )
     assert (
-        compute_outcome_v2(
+        compute_structured_outcome(
             empty_questions=False,
             scheduled_statuses=["answered", "unavailable"],
         )

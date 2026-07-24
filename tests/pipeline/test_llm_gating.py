@@ -234,12 +234,8 @@ def test_execute_single_module_announces_resolved_llm_model() -> None:
         patch(
             "transcriptx.core.pipeline.dag_execution_adapter.notify_user"
         ) as mock_notify,
-        patch(
-            "transcriptx.core.pipeline.dag_execution_adapter.log_analysis_start"
-        ),
-        patch(
-            "transcriptx.core.pipeline.dag_execution_adapter.log_analysis_complete"
-        ),
+        patch("transcriptx.core.pipeline.dag_execution_adapter.log_analysis_start"),
+        patch("transcriptx.core.pipeline.dag_execution_adapter.log_analysis_complete"),
     ):
         outcome = execute_single_module(
             pipeline,

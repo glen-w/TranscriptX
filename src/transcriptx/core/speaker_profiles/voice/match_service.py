@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,7 +11,11 @@ import numpy as np
 
 from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.layout import speaker_profiles_project_lock
-from transcriptx.core.speaker_profiles.store_io import read_live_link, read_profile, utc_now_iso
+from transcriptx.core.speaker_profiles.store_io import (
+    read_live_link,
+    read_profile,
+    utc_now_iso,
+)
 from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
 from transcriptx.core.speaker_profiles.voice.audio_resolve import (
     resolve_managed_transcript_audio,
@@ -29,7 +32,6 @@ from transcriptx.core.speaker_profiles.voice.decisions import (
 )
 from transcriptx.core.speaker_profiles.voice.excerpt_cache import VoiceExcerptStore
 from transcriptx.core.speaker_profiles.voice.excerpts import (
-    ExcerptSelectionResult,
     select_excerpts_v1,
 )
 from transcriptx.core.speaker_profiles.voice.generations import VoiceGenerationRegistry
@@ -409,7 +411,9 @@ class SpeakerMatchService:
                 kept.append(
                     {
                         "profile_id": cand.profile_id,
-                        "display_name": profile.display_name if profile else cand.profile_id,
+                        "display_name": (
+                            profile.display_name if profile else cand.profile_id
+                        ),
                         "confidence": cand.confidence,
                         "reference_count": cand.reference_count,
                         # raw score only for diagnostics payload in cache, not main UI

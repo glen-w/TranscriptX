@@ -12,17 +12,17 @@ from transcriptx.core.analysis.llm_custom_qa.commit import (
     generation_paths,
     read_active_generation_id,
 )
-from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import compute_outcome_v2
+from transcriptx.core.analysis.llm_custom_qa.structured_contracts import compute_structured_outcome
 from transcriptx.core.analysis.llm_custom_qa.readers import (
     load_committed_custom_qa_payload,
     resolve_custom_qa_stem,
 )
-from transcriptx.core.analysis.llm_custom_qa.versioning import V2_SCHEMA_ID
+from transcriptx.core.analysis.llm_custom_qa.versioning import SCHEMA_ID
 
 
 def _minimal_v2_payload() -> dict:
     return {
-        "schema_id": V2_SCHEMA_ID,
+        "schema_id": SCHEMA_ID,
         "module": "llm_custom_qa",
         "module_version": "2",
         "contract_version": "1",
@@ -79,7 +79,7 @@ def _minimal_v2_payload() -> dict:
         "outcome": "empty_questions",
         "provenance": {
             "module": "llm_custom_qa",
-            "schema_id": V2_SCHEMA_ID,
+            "schema_id": SCHEMA_ID,
             "module_version": "2",
             "contract_version": "1",
             "questions_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -107,7 +107,7 @@ def test_reader_loads_v2_generation_named_artifact(tmp_path: Path) -> None:
         payload=payload,
         markdown="# Custom Questions\n",
         run_execution_id="run-deep-test",
-        force_protocol="v2",
+        force_protocol="generational",
     )
     json_gen, _, _ = generation_paths(stem, gid)
     assert json_gen.exists()
@@ -121,7 +121,7 @@ def test_reader_loads_v2_generation_named_artifact(tmp_path: Path) -> None:
     assert resolve_custom_qa_stem(run_root, base_name="demo") == stem
     loaded = load_committed_custom_qa_payload(run_root, base_name="demo")
     assert loaded is not None
-    assert loaded["schema_id"] == V2_SCHEMA_ID
+    assert loaded["schema_id"] == SCHEMA_ID
     assert loaded["outcome"] == "empty_questions"
 
 
@@ -140,7 +140,7 @@ def test_reader_resolves_module_scoped_global_layout(tmp_path: Path) -> None:
         payload=payload,
         markdown="# Custom Questions\n",
         run_execution_id="run-deep-test",
-        force_protocol="v2",
+        force_protocol="generational",
     )
     (run_root / "run_results.json").write_text(
         json.dumps({"modules_run": ["llm_custom_qa"], "modules_failed": []}),
@@ -149,17 +149,17 @@ def test_reader_resolves_module_scoped_global_layout(tmp_path: Path) -> None:
     assert resolve_custom_qa_stem(run_root) == stem
     loaded = load_committed_custom_qa_payload(run_root)
     assert loaded is not None
-    assert loaded["schema_id"] == V2_SCHEMA_ID
+    assert loaded["schema_id"] == SCHEMA_ID
 
 
 @pytest.mark.unit
 def test_outcome_truth_table_no_scheduled_cells() -> None:
     assert (
-        compute_outcome_v2(empty_questions=False, scheduled_statuses=[])
+        compute_structured_outcome(empty_questions=False, scheduled_statuses=[])
         == "no_scheduled_cells"
     )
     assert (
-        compute_outcome_v2(
+        compute_structured_outcome(
             empty_questions=False, scheduled_statuses=["answered", "unavailable"]
         )
         == "partial"

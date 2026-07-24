@@ -11,8 +11,16 @@ ROOT = Path(__file__).resolve().parents[1]
 project = "TranscriptX"
 author = "TranscriptX contributors"
 copyright = f"{date.today().year}, {author}"
-release = "0.9.6"
-version = "0.9"
+
+# Package metadata when installed; neutral development fallback otherwise.
+# Never hard-code a stale shipped patch (e.g. 0.9.6) as the fallback.
+try:
+    from importlib.metadata import version as pkg_version
+
+    release = pkg_version("transcriptx")
+except Exception:
+    release = "0.9.dev0"
+version = ".".join(str(release).split(".")[:2])
 
 extensions = [
     "myst_parser",
@@ -60,12 +68,3 @@ suppress_warnings = ["myst.xref_missing", "misc.highlighting_failure"]
 html_theme = "furo"
 html_title = "TranscriptX"
 html_static_path = ["_static"]
-
-# Prefer package version when installed.
-try:
-    from importlib.metadata import version as pkg_version
-
-    release = pkg_version("transcriptx")
-    version = ".".join(release.split(".")[:2])
-except Exception:
-    pass

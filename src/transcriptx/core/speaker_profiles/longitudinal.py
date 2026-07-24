@@ -188,7 +188,9 @@ def compute_period_speaking_share(
         return ShareResult(
             value=None,
             availability="unavailable",
-            evidence_note="missing_timing:all" if missing_timing else "denom_unavailable",
+            evidence_note=(
+                "missing_timing:all" if missing_timing else "denom_unavailable"
+            ),
             speaking_share_basis="unavailable",
             numerator_seconds=num if any_num else None,
             denominator_seconds=None,
@@ -283,9 +285,7 @@ def _coverage(rows: Sequence[AppearanceRow], *, include_ignored: bool) -> TrendC
             for r in rows
             if (r.ignored or r.flag == "ignored") and not include_ignored
         ),
-        untimed_count=sum(
-            1 for r in rows if r.metrics.duration_seconds is None
-        ),
+        untimed_count=sum(1 for r in rows if r.metrics.duration_seconds is None),
     )
 
 
@@ -299,7 +299,11 @@ def build_trend_bundle(
     bundles: Mapping[str, TranscriptBundle],
 ) -> TrendBundle:
     if inclusion == "headline":
-        rows = [r for r in appearances if series_eligible(r, include_ignored=include_ignored)]
+        rows = [
+            r
+            for r in appearances
+            if series_eligible(r, include_ignored=include_ignored)
+        ]
     else:
         rows = list(appearances)
 
@@ -464,9 +468,11 @@ def build_trend_bundle(
                     display_label=label,
                     value=avg,
                     availability=avail_tl if avg is not None else "unavailable",
-                    evidence_note=note_tl
-                    if avg is not None
-                    else "non_finite_metric:turn_length_avg",
+                    evidence_note=(
+                        note_tl
+                        if avg is not None
+                        else "non_finite_metric:turn_length_avg"
+                    ),
                     source_appearance_ids=ids,
                     managed_transcript_ids=tids,
                     n_valid_turns=n_valid,
@@ -481,9 +487,11 @@ def build_trend_bundle(
                     display_label=label,
                     value=med,
                     availability=avail_tl if med is not None else "unavailable",
-                    evidence_note=note_tl
-                    if med is not None
-                    else "non_finite_metric:turn_length_median",
+                    evidence_note=(
+                        note_tl
+                        if med is not None
+                        else "non_finite_metric:turn_length_median"
+                    ),
                     source_appearance_ids=ids,
                     managed_transcript_ids=tids,
                     n_valid_turns=n_valid,
@@ -519,9 +527,9 @@ def build_trend_bundle(
                     display_label=label,
                     value=wpm,
                     availability=avail_w if wpm is not None else "unavailable",
-                    evidence_note=note_w
-                    if wpm is not None
-                    else "non_finite_metric:wpm",
+                    evidence_note=(
+                        note_w if wpm is not None else "non_finite_metric:wpm"
+                    ),
                     source_appearance_ids=ids,
                     managed_transcript_ids=tids,
                 )

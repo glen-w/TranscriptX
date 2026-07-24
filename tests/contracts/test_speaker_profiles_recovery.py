@@ -132,9 +132,7 @@ def test_complete_op_strips_workdir_keeps_receipt(
     payload = json.loads(op_file.read_text(encoding="utf-8"))
     assert payload["phase"] == "complete"
     assert payload["receipt"] is not None
-    assert retention_allows_cleanup(
-        SpeakerProfileOperationV1.model_validate(payload)
-    )
+    assert retention_allows_cleanup(SpeakerProfileOperationV1.model_validate(payload))
 
 
 @pytest.mark.unit
@@ -327,9 +325,7 @@ def test_state_dir_loss_preserves_portable_ops(
         transcripts_dir=tmp_path / "transcripts",
         discovery_root=tmp_path / "transcripts",
     )
-    svc2 = SpeakerProfileService(
-        root=svc.root, state_dir=state_dir, resolver=resolver
-    )
+    svc2 = SpeakerProfileService(root=svc.root, state_dir=state_dir, resolver=resolver)
     assert svc2.get_profile(created.profile_id).display_name == "Alice"
     link = svc2.get_live_link(link_file_key(IMPORT_A, "SPEAKER_00"))
     assert link is not None

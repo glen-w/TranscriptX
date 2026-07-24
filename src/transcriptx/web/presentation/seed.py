@@ -40,7 +40,9 @@ def workspace_looks_existing(
             import json
 
             payload = json.loads(index.read_text(encoding="utf-8"))
-            transcripts = payload.get("transcripts") if isinstance(payload, dict) else None
+            transcripts = (
+                payload.get("transcripts") if isinstance(payload, dict) else None
+            )
             if isinstance(transcripts, dict) and transcripts:
                 return True
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):

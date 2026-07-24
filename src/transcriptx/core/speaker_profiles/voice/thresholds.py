@@ -28,7 +28,9 @@ class ThresholdPolicyV1:
 PROVISIONAL_THRESHOLDS = ThresholdPolicyV1()
 
 
-def confidence_category(score: float, *, policy: ThresholdPolicyV1 | None = None) -> ConfidenceCategory:
+def confidence_category(
+    score: float, *, policy: ThresholdPolicyV1 | None = None
+) -> ConfidenceCategory:
     p = policy or PROVISIONAL_THRESHOLDS
     if score >= p.strong_min:
         return "strong"

@@ -54,7 +54,9 @@ def consecutive_distances(embeddings: np.ndarray) -> np.ndarray:
     return (1.0 - dots).astype(np.float64)
 
 
-def smooth_centered(series: np.ndarray, width: int = DEFAULT_SMOOTH_WIDTH) -> np.ndarray:
+def smooth_centered(
+    series: np.ndarray, width: int = DEFAULT_SMOOTH_WIDTH
+) -> np.ndarray:
     if series.size == 0:
         return series.copy()
     w = int(width)
@@ -103,9 +105,7 @@ def decision_threshold(
     return float(max(thresholds.absolute_floor, med + thresholds.k_mad * mad))
 
 
-def local_maxima_indices(
-    smoothed: np.ndarray, *, edge_exclude: int
-) -> list[int]:
+def local_maxima_indices(smoothed: np.ndarray, *, edge_exclude: int) -> list[int]:
     n = smoothed.size
     ee = max(0, int(edge_exclude))
     peaks: list[int] = []
@@ -178,9 +178,7 @@ def detect_peaks(
     raw = consecutive_distances(embeddings)
     smoothed = smooth_centered(raw, width=smooth_width)
     # Round smoothed for selection stability
-    smoothed_r = np.array(
-        [round_metric(x) for x in smoothed], dtype=np.float64
-    )
+    smoothed_r = np.array([round_metric(x) for x in smoothed], dtype=np.float64)
     thr = decision_threshold(
         smoothed_r, edge_exclude=edge_exclude, thresholds=thresholds
     )
@@ -209,8 +207,10 @@ def detect_peaks(
                     local_prominence=prom,
                     decision_threshold=thr,
                     normalized_strength=normalized_strength(sm, thr),
-                    time=float(windows[i + 1].start) if i + 1 < len(windows) else float(
-                        windows[i].end
+                    time=(
+                        float(windows[i + 1].start)
+                        if i + 1 < len(windows)
+                        else float(windows[i].end)
                     ),
                     accepted=False,
                     reject_reason="centroid",
@@ -225,8 +225,10 @@ def detect_peaks(
                 local_prominence=prom,
                 decision_threshold=thr,
                 normalized_strength=normalized_strength(sm, thr),
-                time=float(windows[i + 1].start) if i + 1 < len(windows) else float(
-                    windows[i].end
+                time=(
+                    float(windows[i + 1].start)
+                    if i + 1 < len(windows)
+                    else float(windows[i].end)
                 ),
                 accepted=False,
                 reject_reason=None,

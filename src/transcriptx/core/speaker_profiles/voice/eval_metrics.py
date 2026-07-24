@@ -15,7 +15,10 @@ from typing import Any
 import numpy as np
 
 from transcriptx.core.speaker_profiles.voice.matching import cosine_similarity
-from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1, VoiceSampleV1
+from transcriptx.core.speaker_profiles.voice.models import (
+    VoiceEmbeddingV1,
+    VoiceSampleV1,
+)
 from transcriptx.core.speaker_profiles.voice.thresholds import (
     PROVISIONAL_THRESHOLDS,
     ThresholdPolicyV1,

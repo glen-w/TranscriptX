@@ -14,9 +14,7 @@ from streamlit.testing.v1 import AppTest
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _MINI_TRANSCRIPT = _REPO_ROOT / "tests" / "fixtures" / "mini_transcriptx.json"
-_MINIMAL_RUN = (
-    _REPO_ROOT / "tests" / "fixtures" / "composition" / "minimal_run"
-)
+_MINIMAL_RUN = _REPO_ROOT / "tests" / "fixtures" / "composition" / "minimal_run"
 
 
 @dataclass(frozen=True)
@@ -392,10 +390,7 @@ def run_page(
     """
     import tempfile
 
-    body = (
-        f"from {module} import {func_name}\n"
-        f"{func_name}()\n"
-    )
+    body = f"from {module} import {func_name}\n" f"{func_name}()\n"
     if script_dir is not None:
         script_dir.mkdir(parents=True, exist_ok=True)
         script_path = script_dir / f"apptest_{func_name}.py"

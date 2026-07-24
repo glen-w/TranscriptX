@@ -196,9 +196,7 @@ def sort_gallery_module_ids(
             key=lambda mid: (gallery_module_display_name(mid).casefold(), mid),
         )
     # Module family: known ids in presentation order, unknown last by display name.
-    known_ordered = [
-        mid for mid in flattened_spec_module_ids() if mid in want
-    ]
+    known_ordered = [mid for mid in flattened_spec_module_ids() if mid in want]
     unknown = sorted(
         (mid for mid in want if not is_known_spec_module_id(mid)),
         key=lambda mid: (gallery_module_display_name(mid).casefold(), mid),
@@ -206,7 +204,9 @@ def sort_gallery_module_ids(
     return known_ordered + unknown
 
 
-def module_group_counts(charts: Sequence[Artifact]) -> dict[str, ChartModuleGroupCounts]:
+def module_group_counts(
+    charts: Sequence[Artifact],
+) -> dict[str, ChartModuleGroupCounts]:
     """Group filtered charts by module id with static/dynamic totals."""
     buckets: dict[str, list[Artifact]] = {}
     for chart in charts:
@@ -261,9 +261,7 @@ def build_charts_gallery_view(
     )
     # Hide overview section when filtering leaves no usable slots.
     visible_overview = [
-        slot
-        for slot in overview_slots
-        if slot.get("artifacts") or slot.get("missing")
+        slot for slot in overview_slots if slot.get("artifacts") or slot.get("missing")
     ]
     if missing_behavior != "show_placeholder":
         visible_overview = [slot for slot in visible_overview if slot.get("artifacts")]
@@ -271,7 +269,11 @@ def build_charts_gallery_view(
     groups_by_id = module_group_counts(filtered)
     ordered_ids = sort_gallery_module_ids(
         groups_by_id.keys(),
-        sort_mode=sort_mode if sort_mode in {CHARTS_SORT_ALPHA, CHARTS_SORT_MODULE_FAMILY} else CHARTS_SORT_MODULE_FAMILY,
+        sort_mode=(
+            sort_mode
+            if sort_mode in {CHARTS_SORT_ALPHA, CHARTS_SORT_MODULE_FAMILY}
+            else CHARTS_SORT_MODULE_FAMILY
+        ),
     )
     module_groups = [groups_by_id[mid] for mid in ordered_ids if mid in groups_by_id]
     return ChartsGalleryViewModel(

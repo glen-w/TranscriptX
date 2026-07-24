@@ -129,9 +129,7 @@ def render_speakers_panel() -> None:
                         operation_idempotency_key=save_cap_key,
                         bootstrap_max_links=desired,
                     )
-                    st.session_state.pop(
-                        "voice_operator_bootstrap_max_links", None
-                    )
+                    st.session_state.pop("voice_operator_bootstrap_max_links", None)
                     st.success(f"Enrol link cap saved ({desired}).")
                     st.rerun()
                 except Exception as exc:
@@ -164,9 +162,7 @@ def render_speakers_panel() -> None:
                             operation_idempotency_key=revoke_key
                         )
                         st.session_state.pop("voice_privacy_revoke", None)
-                        st.session_state.pop(
-                            "voice_privacy_revoke_confirm", None
-                        )
+                        st.session_state.pop("voice_privacy_revoke_confirm", None)
                         st.warning(
                             "Consent revoked and voice artefacts wiped. "
                             "Profiles and confirmed links were kept. "

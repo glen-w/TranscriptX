@@ -49,9 +49,7 @@ def render_transcribe_audio_page() -> None:
         for path_str in hint_paths:
             st.code(path_str, language=None)
         default_input = hint_paths[0]
-        st.caption(
-            "These paths are prefilled below when present. Adjust as needed."
-        )
+        st.caption("These paths are prefilled below when present. Adjust as needed.")
 
     st.subheader("Command generator")
     st.caption(
@@ -238,8 +236,7 @@ whispermlx-missing""",
         st.rerun()
 
     with st.expander("Host vs Docker boundaries", expanded=False):
-        st.markdown(
-            """
+        st.markdown("""
 | Where | What runs |
 |-------|-----------|
 | Host (Mac terminal) | `whispermlx`, `whispermlx-missing` |
@@ -248,5 +245,4 @@ whispermlx-missing""",
 
 **whispermlx** needs Apple MLX and cannot run inside the Linux analysis image.
 See `docs/runtime/transcription.md` and `docs/recipes/whisperx/README.md`.
-"""
-        )
+""")

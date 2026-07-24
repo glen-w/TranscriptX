@@ -245,9 +245,7 @@ def test_short_duration_shifts_per_hour_null_in_aggregation(tmp_path: Path) -> N
             },
         )
     ]
-    tset = TranscriptSet.create(
-        ["a"], metadata={"transcript_id_map": {path_a: "a"}}
-    )
+    tset = TranscriptSet.create(["a"], metadata={"transcript_id_map": {path_a: "a"}})
     out = aggregate_topic_shift(results, {}, tset)
     assert out is not None
     row = out["session_rows"][0]
@@ -285,9 +283,7 @@ def test_module_save_pipeline_smoke(tmp_path: Path) -> None:
         json.dumps({"segments": _two_topic_segments(20)}), encoding="utf-8"
     )
     out_root = tmp_path / "outputs"
-    svc = OutputService(
-        str(transcript), "topic_shift", output_dir=str(out_root)
-    )
+    svc = OutputService(str(transcript), "topic_shift", output_dir=str(out_root))
     analysis = TopicShiftAnalysis(
         {
             "window_size": 4,
@@ -311,7 +307,9 @@ def test_module_save_pipeline_smoke(tmp_path: Path) -> None:
     assert (data_dir / "topic_shift.enrichment.json").is_file()
 
 
-def test_dual_active_matrix_det_active_enrich_fail_keeps_chapters(tmp_path: Path) -> None:
+def test_dual_active_matrix_det_active_enrich_fail_keeps_chapters(
+    tmp_path: Path,
+) -> None:
     """Deterministic ACTIVE + enrichment skipped → chapters still visible."""
     run_root = tmp_path / "run"
     data = run_root / "topic_shift" / "data" / "global"

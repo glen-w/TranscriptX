@@ -94,7 +94,9 @@ class _FakeController:
         self.calls.append((transcript_path, speaker_id, name))
         if self.fail:
             raise RuntimeError("sidecar write failed")
-        return type("S", (), {"speaker_map": {speaker_id: name}, "ignored_speakers": []})()
+        return type(
+            "S", (), {"speaker_map": {speaker_id: name}, "ignored_speakers": []}
+        )()
 
 
 @pytest.mark.unit
@@ -194,7 +196,9 @@ def test_consume_signal_clears_listing_caches(
         "transcriptx.web.cache_helpers.clear_transcript_listing_caches",
         _clear,
     )
-    from transcriptx.web.speaker_profile_signals import consume_cache_invalidation_signal
+    from transcriptx.web.speaker_profile_signals import (
+        consume_cache_invalidation_signal,
+    )
 
     consume_cache_invalidation_signal(
         CacheInvalidationSignal(scopes=("speaker_profiles", "speaker_links"))

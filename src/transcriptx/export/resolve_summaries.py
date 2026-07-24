@@ -118,19 +118,18 @@ def _load_summary_body(
         if kind == "llm_custom_qa":
             schema_id = str(payload.get("schema_id") or "")
             from transcriptx.core.analysis.llm_custom_qa.versioning import (
-                V1_SCHEMA_ID,
-                V2_SCHEMA_ID,
+                SCHEMA_ID,
             )
 
-            if schema_id and schema_id not in (V1_SCHEMA_ID, V2_SCHEMA_ID):
+            if schema_id and schema_id != SCHEMA_ID:
                 return "", {}
-            if schema_id == V2_SCHEMA_ID:
+            if "question_order" in payload:
                 try:
-                    from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import (
-                        validate_artifact_v2,
+                    from transcriptx.core.analysis.llm_custom_qa.structured_contracts import (
+                        validate_structured_artifact,
                     )
 
-                    payload = validate_artifact_v2(payload)
+                    payload = validate_structured_artifact(payload)
                 except Exception:
                     return "", {}
         body = summary_text_from_payload(payload, kind=kind)

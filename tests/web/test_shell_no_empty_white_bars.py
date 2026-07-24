@@ -45,7 +45,9 @@ def test_empty_markdown_wrapper_classes_have_no_white_background() -> None:
 
     shell_css = _SHELL_PATH.read_text(encoding="utf-8")
     class_rules = {
-        name: body for name, body in _CLASS_RULE.findall(shell_css) if name in wrapper_classes
+        name: body
+        for name, body in _CLASS_RULE.findall(shell_css)
+        if name in wrapper_classes
     }
 
     white_bar_classes = sorted(

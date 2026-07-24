@@ -106,9 +106,7 @@ def test_work_items_assumed_en_and_metadata_once():
 
 @pytest.mark.unit
 def test_work_items_passes_original_sequence_to_speaker_display():
-    segs = (
-        {"id": "1", "speaker": "Alice", "text": "hi", "language": "en"},
-    )
+    segs = ({"id": "1", "speaker": "Alice", "text": "hi", "language": "en"},)
     with patch(
         "transcriptx.core.analysis.emotion_family.work_items.get_speaker_display_name",
         return_value="Alice",
@@ -121,9 +119,7 @@ def test_work_items_passes_original_sequence_to_speaker_display():
 @pytest.mark.unit
 def test_work_items_non_string_text_raises():
     with pytest.raises(AttributeError):
-        build_segment_work_items(
-            [{"id": "1", "text": 12345, "language": "en"}]
-        )
+        build_segment_work_items([{"id": "1", "text": 12345, "language": "en"}])
 
 
 @pytest.mark.unit

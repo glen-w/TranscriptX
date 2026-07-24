@@ -11,7 +11,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from transcriptx.core.speaker_profiles.aggregates import AppearanceRow, OccurrenceMetrics
+from transcriptx.core.speaker_profiles.aggregates import (
+    AppearanceRow,
+    OccurrenceMetrics,
+)
 from transcriptx.core.speaker_profiles.models import SpeakerProfileV1
 from transcriptx.core.speaker_profiles.sentiment_pack import (
     build_profile_sentiment_pack,
@@ -167,9 +170,7 @@ def test_sentiment_pack_from_segment_rows(
             "neg": 0.0,
         },
     ]
-    (sent_dir / "meeting_sentiment.json").write_text(
-        json.dumps(rows), encoding="utf-8"
-    )
+    (sent_dir / "meeting_sentiment.json").write_text(json.dumps(rows), encoding="utf-8")
 
     mid = "550e8400-e29b-41d4-a716-446655440000"
     tx_path = tmp_path / "meeting.json"
@@ -299,9 +300,7 @@ def test_sentiment_pack_weighted_mean_by_segment_count(
             }
             for i, c in enumerate(compounds)
         ]
-        (sent / f"{slug}_sentiment.json").write_text(
-            json.dumps(rows), encoding="utf-8"
-        )
+        (sent / f"{slug}_sentiment.json").write_text(json.dumps(rows), encoding="utf-8")
 
     mid_a = "550e8400-e29b-41d4-a716-446655440000"
     mid_b = "550e8400-e29b-41d4-a716-446655440001"

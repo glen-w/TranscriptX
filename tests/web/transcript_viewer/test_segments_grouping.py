@@ -5,7 +5,6 @@ from __future__ import annotations
 from transcriptx.web.transcript_viewer.segments import (
     TranscriptPlaybackBinding,
     group_segments_by_speaker,
-    play_button_eligible,
     play_button_key,
 )
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo

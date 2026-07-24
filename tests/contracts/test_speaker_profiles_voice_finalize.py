@@ -85,7 +85,9 @@ def _write_managed(transcripts_root: Path, *, name: str, import_id: str) -> None
     )
 
 
-def _svc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[SpeakerProfileService, Path]:
+def _svc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[SpeakerProfileService, Path]:
     transcripts = tmp_path / "transcripts"
     transcripts.mkdir()
     _patch_roots(monkeypatch, transcripts)
@@ -140,7 +142,9 @@ def test_accept_same_owner_supersede_path(
         require_activation=False,
     )
     assert result.decision_id is not None
-    decision = profiles / "voice" / "decisions" / f"{result.decision_id}.voice_decision.json"
+    decision = (
+        profiles / "voice" / "decisions" / f"{result.decision_id}.voice_decision.json"
+    )
     assert decision.is_file()
     updated = svc.get_live_link(link_file_key(IMPORT_A, "SPEAKER_00"))
     assert updated is not None
@@ -277,7 +281,9 @@ def test_lock_released_during_embed(
     """Project lock must be free while embedding runs (mock delayed runtime)."""
     _, profiles = _svc(tmp_path, monkeypatch)
     state = tmp_path / "state"
-    from transcriptx.core.speaker_profiles.voice.privacy_service import VoicePrivacyService
+    from transcriptx.core.speaker_profiles.voice.privacy_service import (
+        VoicePrivacyService,
+    )
 
     VoicePrivacyService(root=profiles, state_dir=state).enable(
         operation_idempotency_key=str(uuid4()),
@@ -340,7 +346,9 @@ def test_lock_released_during_embed(
     match.excerpts = FakeExcerptStore()  # type: ignore[assignment]
 
     # Pre-warm generation under lock so snapshot is short
-    from transcriptx.core.speaker_profiles.voice.generations import VoiceGenerationRegistry
+    from transcriptx.core.speaker_profiles.voice.generations import (
+        VoiceGenerationRegistry,
+    )
 
     VoiceGenerationRegistry(profiles).ensure_default_generation_and_activate(
         operation_idempotency_key=str(uuid4())
@@ -352,9 +360,7 @@ def test_lock_released_during_embed(
         managed_transcript_id=IMPORT_A,
         local_speaker_key="SPEAKER_00",
         transcript_path=tmp_path / "transcripts" / "meeting.json",
-        segments=[
-            {"speaker": "SPEAKER_00", "start": 0.0, "end": 10.0, "text": "x"}
-        ],
+        segments=[{"speaker": "SPEAKER_00", "start": 0.0, "end": 10.0, "text": "x"}],
         occurrence_fingerprint="fp",
         require_activation=True,
     )

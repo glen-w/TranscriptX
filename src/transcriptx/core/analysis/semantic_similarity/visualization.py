@@ -75,7 +75,7 @@ def _bar_spec(
     )
 
 
-def create_visualizations_v2(
+def create_visualizations(
     results: dict[str, Any], output_service: Any, base_name: str, log_tag: str
 ) -> list[str]:
     """Create legacy-equivalent charts for semantic_similarity results."""

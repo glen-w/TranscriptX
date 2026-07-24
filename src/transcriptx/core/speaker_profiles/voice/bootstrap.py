@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from transcriptx.core.speaker_profiles.discovery import discover_occurrences_for_resolved
+from transcriptx.core.speaker_profiles.discovery import (
+    discover_occurrences_for_resolved,
+)
 from transcriptx.core.speaker_profiles.errors import SpeakerProfileContractError
-from transcriptx.core.speaker_profiles.identity import link_file_key
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.core.speaker_profiles.store_io import read_live_link, read_profile
 from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier

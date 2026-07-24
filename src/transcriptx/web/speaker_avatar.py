@@ -90,8 +90,7 @@ def speaker_heading_with_avatar_html(
     meta_html = ""
     if meta:
         meta_html = (
-            f'<span class="tx-speaker-heading-meta">'
-            f"{html.escape(meta)}</span>"
+            f'<span class="tx-speaker-heading-meta">' f"{html.escape(meta)}</span>"
         )
     resolved_pid = resolve_speaker_profile_id(
         label,

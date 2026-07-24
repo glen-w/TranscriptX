@@ -4,33 +4,14 @@ from __future__ import annotations
 
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
     COMMIT_MARKER_SCHEMA_VERSION,
-    COMMIT_MARKER_SCHEMA_VERSION_V1,
-    COMMIT_MARKER_SCHEMA_VERSION_V2,
-    V1_CONTRACT_VERSION,
-    V1_MODULE_VERSION,
-    V1_SCHEMA_ID,
-    V2_CONTRACT_VERSION,
-    V2_MODULE_VERSION,
-    V2_SCHEMA_ID,
-    custom_qa_execution_branch,
-    get_custom_qa_activation,
-    is_v2_execution_enabled,
+    CONTRACT_VERSION,
+    MODULE_VERSION,
+    SCHEMA_ID,
+    is_structured_execution_enabled,
     live_module_version_for_writers,
     live_schema_id_for_writers,
-    set_custom_qa_activation,
+    set_structured_execution_enabled,
 )
-
-# Live writer aliases — selected by activation for *new* runs only.
-# Historical validators must import V1_* / V2_* from versioning, not these.
-
-
-def __getattr__(name: str) -> str:
-    if name == "SCHEMA_ID":
-        return live_schema_id_for_writers()
-    if name == "MODULE_VERSION":
-        return live_module_version_for_writers()
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
 
 PROMPT_VERSION = "2"
 MODULE_NAME = "llm_custom_qa"
@@ -69,9 +50,8 @@ MAX_REASONING_CHARS_DEFAULT = 600
 __all__ = [
     "ABSENCE_DETECTOR_VERSION",
     "COMMIT_MARKER_SCHEMA_VERSION",
-    "COMMIT_MARKER_SCHEMA_VERSION_V1",
-    "COMMIT_MARKER_SCHEMA_VERSION_V2",
     "CONFIG_LOCK_TIMEOUT_SECONDS",
+    "CONTRACT_VERSION",
     "GROUNDING_SEGMENT_SEPARATOR",
     "MAX_ANSWER_CHARS",
     "MAX_CITATIONS_PER_ANSWER",
@@ -90,16 +70,8 @@ __all__ = [
     "MODULE_VERSION",
     "PROMPT_VERSION",
     "SCHEMA_ID",
-    "V1_CONTRACT_VERSION",
-    "V1_MODULE_VERSION",
-    "V1_SCHEMA_ID",
-    "V2_CONTRACT_VERSION",
-    "V2_MODULE_VERSION",
-    "V2_SCHEMA_ID",
-    "custom_qa_execution_branch",
-    "get_custom_qa_activation",
-    "is_v2_execution_enabled",
+    "is_structured_execution_enabled",
     "live_module_version_for_writers",
     "live_schema_id_for_writers",
-    "set_custom_qa_activation",
+    "set_structured_execution_enabled",
 ]

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Literal
 
 from transcriptx.core.analysis.llm_custom_qa.plan import (
-    RoutedCustomQAPlan,
     UnroutedCustomQAPlan,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import SCHEDULER_VERSION

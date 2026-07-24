@@ -28,11 +28,13 @@ def test_summary_source_badge_llm_vs_standard() -> None:
 
 @pytest.mark.unit
 def test_speaker_accent_color_cycles_distinct_palette() -> None:
+    from transcriptx.web.speaker_accent import SPEAKER_ACCENTS
+
     first = oc._speaker_accent_color(0)
     second = oc._speaker_accent_color(1)
     assert first != second
     assert first.startswith("#")
-    assert oc._speaker_accent_color(len(oc._SPEAKER_ACCENTS)) == first
+    assert oc._speaker_accent_color(len(SPEAKER_ACCENTS)) == first
     # Name-stable accents match the shared helper used across the viewer.
     assert oc._speaker_accent_color("Alice") == oc._speaker_accent_color(" alice ")
 
@@ -62,16 +64,17 @@ def test_summary_hero_badges_include_named_analysis_preset() -> None:
     assert oc._summary_hero_badges(
         cand, run_results={"analysis_preset": "balanced"}
     ) == ["Balanced", "Local AI"]
-    assert oc._summary_hero_badges(
-        cand, run_results={"analysis_preset": "quick"}
-    ) == ["Quick", "Local AI"]
+    assert oc._summary_hero_badges(cand, run_results={"analysis_preset": "quick"}) == [
+        "Quick",
+        "Local AI",
+    ]
     assert oc._summary_hero_badges(
         cand, run_results={"analysis_preset": "thorough"}
     ) == ["Thorough", "Local AI"]
     # Custom / missing → no preset badge
-    assert oc._summary_hero_badges(
-        cand, run_results={"analysis_preset": "custom"}
-    ) == ["Local AI"]
+    assert oc._summary_hero_badges(cand, run_results={"analysis_preset": "custom"}) == [
+        "Local AI"
+    ]
     assert oc._summary_hero_badges(cand, run_results={}) == ["Local AI"]
 
 

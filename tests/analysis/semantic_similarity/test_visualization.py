@@ -6,7 +6,7 @@ import json
 
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.analysis.semantic_similarity.visualization import (
-    create_visualizations_v2,
+    create_visualizations,
 )
 
 
@@ -19,7 +19,7 @@ class FakeOutputService:
         return {"static": f"/tmp/{spec.name}.png", "dynamic": None}
 
 
-def test_create_visualizations_v2_emits_legacy_equivalent_chart_specs() -> None:
+def test_create_visualizations_emits_legacy_equivalent_chart_specs() -> None:
     output_service = FakeOutputService()
     results = {
         "speaker_repetitions": {
@@ -51,8 +51,8 @@ def test_create_visualizations_v2_emits_legacy_equivalent_chart_specs() -> None:
         ],
     }
 
-    paths = create_visualizations_v2(
-        results, output_service, "sample_transcript", "SEMANTIC_V2"
+    paths = create_visualizations(
+        results, output_service, "sample_transcript", "SEMANTIC"
     )
 
     assert len(paths) == 6
@@ -69,7 +69,7 @@ def test_create_visualizations_v2_emits_legacy_equivalent_chart_specs() -> None:
     }
 
 
-def test_create_visualizations_v2_records_chart_artifact_metadata(tmp_path) -> None:
+def test_create_visualizations_records_chart_artifact_metadata(tmp_path) -> None:
     transcript_path = tmp_path / "sample.json"
     transcript_path.write_text("{}", encoding="utf-8")
     output_service = create_output_service(
@@ -100,7 +100,7 @@ def test_create_visualizations_v2_records_chart_artifact_metadata(tmp_path) -> N
         ],
     }
 
-    create_visualizations_v2(results, output_service, "sample", "SEMANTIC_V2")
+    create_visualizations(results, output_service, "sample", "SEMANTIC")
 
     # OutputService may redirect transcript_dir into OUTPUTS_DIR; read from there.
     metadata_path = output_service._artifact_metadata_path

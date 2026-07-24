@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -143,10 +142,13 @@ def test_miss_scores_and_store(profile, activation, labels):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("activation,profile,labels", [
-    ("softmax", CONTEXTUAL_HARTMANN_V1, LABELS_SOFT),
-    ("sigmoid", FINE_GRAINED_GOEMOTIONS_V1, LABELS_SIG),
-])
+@pytest.mark.parametrize(
+    "activation,profile,labels",
+    [
+        ("softmax", CONTEXTUAL_HARTMANN_V1, LABELS_SOFT),
+        ("sigmoid", FINE_GRAINED_GOEMOTIONS_V1, LABELS_SIG),
+    ],
+)
 def test_cache_hit_fresh_dicts_and_id(activation, profile, labels):
     loaded = _loaded(profile)
     payload_row = _row(labels)

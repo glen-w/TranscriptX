@@ -155,20 +155,31 @@ def test_alias_collision_merges_grouping_keys() -> None:
 
 @pytest.mark.unit
 def test_speaker_limit_for_cell_cap() -> None:
-    from transcriptx.core.analysis.llm_support.speakers import speaker_limit_for_cell_cap
+    from transcriptx.core.analysis.llm_support.speakers import (
+        speaker_limit_for_cell_cap,
+    )
 
-    assert speaker_limit_for_cell_cap(
-        max_eligible_speakers=12,
-        max_speaker_question_cells=48,
-        per_speaker_question_count=0,
-    ) == 0
-    assert speaker_limit_for_cell_cap(
-        max_eligible_speakers=12,
-        max_speaker_question_cells=48,
-        per_speaker_question_count=5,
-    ) == 9
-    assert speaker_limit_for_cell_cap(
-        max_eligible_speakers=3,
-        max_speaker_question_cells=48,
-        per_speaker_question_count=5,
-    ) == 3
+    assert (
+        speaker_limit_for_cell_cap(
+            max_eligible_speakers=12,
+            max_speaker_question_cells=48,
+            per_speaker_question_count=0,
+        )
+        == 0
+    )
+    assert (
+        speaker_limit_for_cell_cap(
+            max_eligible_speakers=12,
+            max_speaker_question_cells=48,
+            per_speaker_question_count=5,
+        )
+        == 9
+    )
+    assert (
+        speaker_limit_for_cell_cap(
+            max_eligible_speakers=3,
+            max_speaker_question_cells=48,
+            per_speaker_question_count=5,
+        )
+        == 3
+    )

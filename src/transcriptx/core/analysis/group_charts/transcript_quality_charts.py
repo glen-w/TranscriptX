@@ -78,9 +78,8 @@ class TranscriptQualityGroupChartGenerator:
             if pooled.get("incompatible_member_count") is not None
             else max(0, len(session_rows) - len(cohort_rows))
         )
-        cohort_note = (
-            f"provenance={primary_key}"
-            + (f"; excluded incompatible={incompatible}" if incompatible else "")
+        cohort_note = f"provenance={primary_key}" + (
+            f"; excluded incompatible={incompatible}" if incompatible else ""
         )
         prefix = (
             "Group ASR confidence (comparable cohort only; not cross-model quality)"

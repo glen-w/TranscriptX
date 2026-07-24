@@ -70,9 +70,7 @@ def test_char_contextual_cache_miss_then_hit(tmp_path: Path):
     assert miss["inference_cache_hit"] is False
     _freeze("contextual_cache_miss", miss, cache_hit=False)
 
-    hit = run_contextual(
-        segs_success(), tmp_path=tmp_path, uuid_hex=SECOND_ARTIFACT_ID
-    )
+    hit = run_contextual(segs_success(), tmp_path=tmp_path, uuid_hex=SECOND_ARTIFACT_ID)
     assert hit["inference_cache_hit"] is True
     _freeze(
         "contextual_cache_hit",
@@ -232,9 +230,7 @@ def test_char_fine_grained_scorer_cardinality_mismatch(tmp_path: Path):
         return []
 
     raw = run_fine_grained(segs_success(), tmp_path=tmp_path, score_fn=_bad)
-    assert any(
-        "scorer_cardinality_mismatch" in w for w in (raw.get("warnings") or [])
-    )
+    assert any("scorer_cardinality_mismatch" in w for w in (raw.get("warnings") or []))
     _freeze("fine_grained_scorer_cardinality_mismatch", raw, cache_hit=False)
 
 
@@ -288,9 +284,7 @@ def test_char_lexical_cache_miss_then_hit(tmp_path: Path):
     miss = run_lexical(segs_success(), tmp_path=tmp_path, uuid_hex=ARTIFACT_ID)
     assert miss["inference_cache_hit"] is False
     _freeze("lexical_cache_miss", miss, cache_hit=False)
-    hit = run_lexical(
-        segs_success(), tmp_path=tmp_path, uuid_hex=SECOND_ARTIFACT_ID
-    )
+    hit = run_lexical(segs_success(), tmp_path=tmp_path, uuid_hex=SECOND_ARTIFACT_ID)
     assert hit["inference_cache_hit"] is True
     _freeze("lexical_cache_hit", hit, cache_hit=True, cached_id=ARTIFACT_ID)
 

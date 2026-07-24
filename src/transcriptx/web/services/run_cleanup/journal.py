@@ -406,7 +406,7 @@ def decode_journal_schema_1(
     *,
     expected_operation_id: str,
 ) -> dict[str, Any]:
-    """Immutable epoch-1 journal decoder (never mutate this contract)."""
+    """Immutable journal decoder for the current schema (never mutate this contract)."""
     unknown = set(data) - ALLOWED_TOP_LEVEL
     if unknown:
         raise ValueError(f"unknown journal fields: {sorted(unknown)}")
@@ -454,7 +454,7 @@ def decode_journal_schema_1(
     return data
 
 
-# Version-dispatched readers: epoch-1 only after schema reset.
+# Version-dispatched readers: current journal schema only.
 _JOURNAL_DECODERS: dict[int, Any] = {
     JOURNAL_SCHEMA_VERSION: decode_journal_schema_1,
 }

@@ -91,7 +91,9 @@ def find_sentiment_rows_path(run_root: Path) -> Path | None:
     global_dir = sentiment_dir / "data" / "global"
     if global_dir.is_dir():
         matches = sorted(
-            p for p in global_dir.glob("*_sentiment.json") if _is_segment_rows_name(p.name)
+            p
+            for p in global_dir.glob("*_sentiment.json")
+            if _is_segment_rows_name(p.name)
         )
         if matches:
             return matches[-1]

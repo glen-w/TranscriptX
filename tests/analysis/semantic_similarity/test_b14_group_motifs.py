@@ -242,7 +242,9 @@ def test_chart_generator_requires_recurring() -> None:
 
 @pytest.mark.unit
 def test_registry_single_semantic_generator() -> None:
-    from transcriptx.core.analysis.group_charts.registry import build_group_chart_registry
+    from transcriptx.core.analysis.group_charts.registry import (
+        build_group_chart_registry,
+    )
     from transcriptx.core.analysis.group_charts.semantic_similarity_charts import (
         SemanticSimilarityGroupChartGenerator,
     )

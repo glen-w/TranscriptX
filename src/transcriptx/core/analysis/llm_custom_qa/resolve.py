@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Optional, Sequence
+from typing import Any, Literal, Mapping, Optional
 
 from transcriptx.core.analysis.llm_custom_qa.constants import MAX_ANSWER_CHARS
-from transcriptx.core.analysis.llm_custom_qa.normalize import normalize_questions
 from transcriptx.core.analysis.llm_custom_qa.question_identity import (
     CanonicalQuestion,
     canonicalize_questions,
-    project_questions_for_v1_runtime,
-    questions_hash_for_canonical,
+    project_question_texts,
 )
 from transcriptx.core.analysis.llm_custom_qa.request_questions import (
     structured_library_from_settings,
@@ -44,7 +42,11 @@ class EffectiveCustomQAQuestions:
             "resolved_from": self.resolved_from,
             "question_order": list(self.question_order),
             "structured": [
-                {"text": q.text, "scopes": q.scopes.as_dict(), "question_id": q.question_id}
+                {
+                    "text": q.text,
+                    "scopes": q.scopes.as_dict(),
+                    "question_id": q.question_id,
+                }
                 for q in self.structured
             ],
         }
@@ -56,9 +58,7 @@ def questions_hash_for(questions: tuple[str, ...] | list[str]) -> str:
 
 def _limits_from_settings(settings: Any) -> dict[str, int]:
     return {
-        "max_questions_per_run": int(
-            getattr(settings, "max_questions_per_run", 8)
-        ),
+        "max_questions_per_run": int(getattr(settings, "max_questions_per_run", 8)),
         "max_question_chars": int(getattr(settings, "max_question_chars", 500)),
         "max_run_total_question_chars": int(
             getattr(settings, "max_run_total_question_chars", 4000)
@@ -66,9 +66,7 @@ def _limits_from_settings(settings: Any) -> dict[str, int]:
         "max_answer_chars": int(
             getattr(settings, "max_answer_chars", MAX_ANSWER_CHARS)
         ),
-        "max_library_questions": int(
-            getattr(settings, "max_library_questions", 50)
-        ),
+        "max_library_questions": int(getattr(settings, "max_library_questions", 50)),
         "max_library_total_question_chars": int(
             getattr(settings, "max_library_total_question_chars", 20000)
         ),
@@ -97,15 +95,15 @@ def _build_effective(
             question_order=(),
         )
 
-    # Accept legacy list[str] or structured
+    # Accept list[str] or structured question dicts
     canonical, order = canonicalize_questions(
         structured_raw,
         max_questions=limits["max_questions_per_run"],
         max_question_chars=limits["max_question_chars"],
         max_total_question_chars=limits["max_run_total_question_chars"],
     )
-    v1_texts = project_questions_for_v1_runtime(canonical)
-    # v1 hash remains text-list hash for live v1 writer compatibility
+    v1_texts = project_question_texts(canonical)
+    # Text-list hash for the live writer path
     return EffectiveCustomQAQuestions(
         questions=v1_texts,
         questions_hash=questions_hash_for(v1_texts),
@@ -168,16 +166,14 @@ def normalize_library_questions(
 
         settings = get_config().analysis.llm_custom_qa
     limits = _limits_from_settings(settings)
-    # Allow legacy list[str] input from older UI during transition
+    # Accept list[str] input as well as structured question dicts
     canonical, _ = canonicalize_questions(
         raw,
         max_questions=limits["max_library_questions"],
         max_question_chars=limits["max_question_chars"],
         max_total_question_chars=limits["max_library_total_question_chars"],
     )
-    return tuple(
-        {"text": q.text, "scopes": q.scopes.as_dict()} for q in canonical
-    )
+    return tuple({"text": q.text, "scopes": q.scopes.as_dict()} for q in canonical)
 
 
 def resolve_from_mapping(

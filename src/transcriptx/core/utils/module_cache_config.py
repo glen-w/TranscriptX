@@ -65,18 +65,6 @@ MODULE_CONFIG_ALLOWLIST = {
         "analysis.loop_max_gap",
     ],
     "semantic_similarity": [
-        "analysis.semantic_similarity_threshold",
-        "analysis.cross_speaker_similarity_threshold",
-        "analysis.repetition_min_sentence_length",
-        "analysis.repetition_window_size",
-    ],
-    "semantic_similarity_advanced": [
-        "analysis.semantic_similarity_threshold",
-        "analysis.cross_speaker_similarity_threshold",
-        "analysis.repetition_min_sentence_length",
-        "analysis.repetition_window_size",
-    ],
-    "semantic_similarity": [
         "analysis.semantic_similarity.enabled",
         "analysis.semantic_similarity.mode",
         "analysis.semantic_similarity.model_name",

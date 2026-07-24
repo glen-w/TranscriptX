@@ -41,7 +41,7 @@ Judgements live here so `make docs-gen` can regenerate the scaffold without wipi
 | `keyphrases` | retain | — | Shipped 0.8.x; YAKE/KeyBERT optional backends. |
 | `stats` | retain | — | Baseline stats. |
 | `topic_modeling` | retain | known limitation | Heavy; min-data sensitive. |
-| `bertopic` | retain | known limitation | Heavy stack; optional posture documented. |
+| `bertopic` | retain | known limitation | Stack is optional (`[bertopic]`/`[full]`/Docker) after leaving base so core/clean-env is not blocked by llvmlite; module still registered — see bertopic_optional_module.md. |
 | `transcript_output` | retain | — | Human-readable export helper. |
 | `simplified_transcript` | retain | post-1.0 | Convenience. |
 | `understandability` | retain | known limitation | Heuristic readability. |
@@ -76,7 +76,7 @@ Judgements live here so `make docs-gen` can regenerate the scaffold without wipi
 | LLM surfaces without clear AI label | must-fix | Local AI badges on Insights/Overview LLM blocks |
 | Deterministic summary looking like AI | must-fix | Overview badge `Deterministic` |
 | Voice privacy copy missing | must-fix | `VOICE_PRIVACY_USER_NOTICE` + notice v2 |
-| Experimental emotion modules in Guided defaults | known limitation | Prefer Full-only presentation; no module delete |
+| Experimental emotion modules in Guided defaults | known limitation | **Applied 0.9.8:** removed from Balanced heavy allowlist (`fine_grained_emotion` / `contextual_emotion` off Guided defaults); Thorough/Full still may include. No module delete. |
 | Perf envelopes incomplete on large library | known limitation | Recipe ships; fill on human-testing hardware if needed |
 | Chart LLM narratives unlabelled | must-fix | Local AI badge on Charts gallery LLM text (**0.9.7**) |
 | Custom Q&A unlabelled | must-fix | Local AI badge on Insights custom QA block (**0.9.7**) |

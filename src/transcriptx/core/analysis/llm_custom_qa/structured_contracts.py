@@ -1,4 +1,4 @@
-"""Parallel v2 artifact contracts — import only V2_* identities."""
+"""Structured llm_custom_qa artifact contracts (question_order / packs)."""
 
 from __future__ import annotations
 
@@ -10,21 +10,21 @@ from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAArtifactValidationError,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    V2_CONTRACT_VERSION,
-    V2_MODULE_VERSION,
-    V2_SCHEMA_ID,
+    CONTRACT_VERSION,
+    MODULE_VERSION,
+    SCHEMA_ID,
 )
 
 MODULE_NAME = "llm_custom_qa"
 
-ModelAbstainReasonV2 = Literal[
+ModelAbstainReason = Literal[
     "insufficient_evidence",
     "ambiguous",
     "out_of_scope",
     "not_in_provided_excerpt",
 ]
 
-SystemUnavailableReasonV2 = Literal[
+SystemUnavailableReason = Literal[
     "response_incomplete",
     "response_invalid",
     "backend_absent",
@@ -35,9 +35,9 @@ SystemUnavailableReasonV2 = Literal[
     "input_truncated",
 ]
 
-AnswerRowStatusV2 = Literal["answered", "abstained", "unavailable"]
-ScopeV2 = Literal["global", "per_speaker"]
-OutcomeV2 = Literal[
+AnswerRowStatus = Literal["answered", "abstained", "unavailable"]
+AnswerScope = Literal["global", "per_speaker"]
+StructuredOutcome = Literal[
     "empty_questions",
     "no_scheduled_cells",
     "answered",
@@ -46,11 +46,11 @@ OutcomeV2 = Literal[
     "mixed",
     "partial",
 ]
-ResolvedFromV2 = Literal["library", "request", "explicit_empty"]
-RouteSourceV2 = Literal["router", "fallback"]
+ResolvedFrom = Literal["library", "request", "explicit_empty"]
+ArtifactRouteSource = Literal["router", "fallback"]
 
 
-class CitationModelV2(BaseModel):
+class CitationModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     quote: str
@@ -59,7 +59,7 @@ class CitationModelV2(BaseModel):
     end_time: Optional[float] = None
 
 
-class RowGroundingDiagnosticsV2(BaseModel):
+class RowGroundingDiagnostics(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     quotes_requested: int = 0
@@ -70,7 +70,7 @@ class RowGroundingDiagnosticsV2(BaseModel):
     quotes_soft_dropped: int = 0
 
 
-class EvidenceUsedV2(BaseModel):
+class EvidenceUsed(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     pack_ids_rendered: list[str] = Field(default_factory=list)
@@ -83,7 +83,7 @@ class EvidenceUsedV2(BaseModel):
     rendered_format_version: str = "1"
 
 
-class QuestionScopesV2(BaseModel):
+class QuestionScopes(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     global_scope: bool = Field(alias="global")
@@ -108,27 +108,27 @@ class CanonicalQuestionModel(BaseModel):
     scopes: QuestionScopesModel
 
 
-class ArtifactAnswerRowV2(BaseModel):
+class ArtifactAnswerRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question_id: str
     question: str
-    scope: ScopeV2
+    scope: AnswerScope
     speaker_key: Optional[str] = None
-    status: AnswerRowStatusV2
+    status: AnswerRowStatus
     answer: Optional[str] = None
     reasoning: Optional[str] = None
-    abstain_reason: Optional[ModelAbstainReasonV2] = None
-    system_reason: Optional[SystemUnavailableReasonV2] = None
+    abstain_reason: Optional[ModelAbstainReason] = None
+    system_reason: Optional[SystemUnavailableReason] = None
     confidence: Optional[float] = None
-    citations: list[CitationModelV2] = Field(default_factory=list)
-    evidence_used: EvidenceUsedV2 = Field(default_factory=EvidenceUsedV2)
-    grounding: RowGroundingDiagnosticsV2 = Field(
-        default_factory=RowGroundingDiagnosticsV2
+    citations: list[CitationModel] = Field(default_factory=list)
+    evidence_used: EvidenceUsed = Field(default_factory=EvidenceUsed)
+    grounding: RowGroundingDiagnostics = Field(
+        default_factory=RowGroundingDiagnostics
     )
 
     @model_validator(mode="after")
-    def _status_fields(self) -> "ArtifactAnswerRowV2":
+    def _status_fields(self) -> "ArtifactAnswerRow":
         if self.scope == "global" and self.speaker_key is not None:
             raise ValueError("global rows require speaker_key=null")
         if self.scope == "per_speaker" and not self.speaker_key:
@@ -161,28 +161,28 @@ class ArtifactAnswerRowV2(BaseModel):
         return self
 
 
-class SpeakerAnswersBlockV2(BaseModel):
+class SpeakerAnswersBlock(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     speaker: str
     speaker_key: str
     grouping_keys: list[str] = Field(default_factory=list)
-    answers: list[ArtifactAnswerRowV2] = Field(default_factory=list)
+    answers: list[ArtifactAnswerRow] = Field(default_factory=list)
 
 
-class RouteEntryV2(BaseModel):
+class RouteEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question_id: str
     pack_ids: list[str] = Field(default_factory=list)
     use_transcript: bool = True
-    source: RouteSourceV2 = "fallback"
+    source: ArtifactRouteSource = "fallback"
 
 
-class EvidencePlanV2(BaseModel):
+class EvidencePlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    routes: list[RouteEntryV2] = Field(default_factory=list)
+    routes: list[RouteEntry] = Field(default_factory=list)
     routes_hash: str = ""
     packs_available: list[str] = Field(default_factory=list)
     packs_missing: list[str] = Field(default_factory=list)
@@ -190,7 +190,7 @@ class EvidencePlanV2(BaseModel):
     packs_incompatible: list[str] = Field(default_factory=list)
 
 
-class EffectivePlanSummaryV2(BaseModel):
+class EffectivePlanSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     expanded_pack_ids: list[str] = Field(default_factory=list)
@@ -201,7 +201,7 @@ class EffectivePlanSummaryV2(BaseModel):
     fingerprint_refs: dict[str, str] = Field(default_factory=dict)
 
 
-class DiagnosticsModelV2(BaseModel):
+class DiagnosticsModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     answers_over_limit: int = 0
@@ -219,7 +219,7 @@ class DiagnosticsModelV2(BaseModel):
     alias_update_warnings: int = 0
 
 
-class InputCoverageModelV2(BaseModel):
+class InputCoverageModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: int = 1
@@ -236,13 +236,13 @@ class InputCoverageModelV2(BaseModel):
     bounded_input_fingerprint: Optional[str] = None
 
 
-class ProvenanceModelV2(BaseModel):
+class ProvenanceModel(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     module: str = MODULE_NAME
-    schema_id: str = V2_SCHEMA_ID
-    module_version: str = V2_MODULE_VERSION
-    contract_version: str = V2_CONTRACT_VERSION
+    schema_id: str = SCHEMA_ID
+    module_version: str = MODULE_VERSION
+    contract_version: str = CONTRACT_VERSION
     router_prompt_version: Optional[str] = None
     answer_prompt_version: Optional[str] = None
     repair_prompt_version: Optional[str] = None
@@ -254,7 +254,7 @@ class ProvenanceModelV2(BaseModel):
     seed: Optional[int] = None
     questions_hash: str = ""
     question_order: list[str] = Field(default_factory=list)
-    resolved_from: ResolvedFromV2 = "library"
+    resolved_from: ResolvedFrom = "library"
     empty_run: bool = False
     transcriptx_version: Optional[str] = None
     cache_key: Optional[str] = None
@@ -266,33 +266,33 @@ class ProvenanceModelV2(BaseModel):
     http_attempts: int = 0
 
 
-class LLMCustomQAArtifactV2(BaseModel):
+class LLMCustomQAStructuredArtifact(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_id: str = V2_SCHEMA_ID
+    schema_id: str = SCHEMA_ID
     module: str = MODULE_NAME
-    module_version: str = V2_MODULE_VERSION
-    contract_version: str = V2_CONTRACT_VERSION
+    module_version: str = MODULE_VERSION
+    contract_version: str = CONTRACT_VERSION
     questions_requested: list[CanonicalQuestionModel]
     question_order: list[str]
     questions_hash: str
-    answers: list[ArtifactAnswerRowV2] = Field(default_factory=list)
-    speaker_answers: list[SpeakerAnswersBlockV2] = Field(default_factory=list)
-    evidence_plan: EvidencePlanV2 = Field(default_factory=EvidencePlanV2)
-    effective_plan_summary: EffectivePlanSummaryV2 = Field(
-        default_factory=EffectivePlanSummaryV2
+    answers: list[ArtifactAnswerRow] = Field(default_factory=list)
+    speaker_answers: list[SpeakerAnswersBlock] = Field(default_factory=list)
+    evidence_plan: EvidencePlan = Field(default_factory=EvidencePlan)
+    effective_plan_summary: EffectivePlanSummary = Field(
+        default_factory=EffectivePlanSummary
     )
-    diagnostics: DiagnosticsModelV2 = Field(default_factory=DiagnosticsModelV2)
-    input_coverage: InputCoverageModelV2 = Field(default_factory=InputCoverageModelV2)
-    outcome: OutcomeV2
-    provenance: ProvenanceModelV2
+    diagnostics: DiagnosticsModel = Field(default_factory=DiagnosticsModel)
+    input_coverage: InputCoverageModel = Field(default_factory=InputCoverageModel)
+    outcome: StructuredOutcome
+    provenance: ProvenanceModel
     cache_key: Optional[str] = None
 
     @model_validator(mode="after")
-    def _invariants(self) -> "LLMCustomQAArtifactV2":
-        if self.schema_id != V2_SCHEMA_ID:
-            raise ValueError("schema_id must be V2_SCHEMA_ID")
-        if self.contract_version != V2_CONTRACT_VERSION:
+    def _invariants(self) -> "LLMCustomQAStructuredArtifact":
+        if self.schema_id != SCHEMA_ID:
+            raise ValueError("schema_id must be SCHEMA_ID")
+        if self.contract_version != CONTRACT_VERSION:
             raise ValueError("contract_version mismatch")
         ids = [q.question_id for q in self.questions_requested]
         if list(self.question_order) != ids:
@@ -315,11 +315,11 @@ class LLMCustomQAArtifactV2(BaseModel):
         return self
 
 
-def compute_outcome_v2(
+def compute_structured_outcome(
     *,
     empty_questions: bool,
     scheduled_statuses: list[str],
-) -> OutcomeV2:
+) -> StructuredOutcome:
     """Executable outcome truth table (Stage 0 freeze)."""
     if empty_questions:
         return "empty_questions"
@@ -341,13 +341,13 @@ def compute_outcome_v2(
     return "mixed"
 
 
-def validate_artifact_v2(payload: dict[str, Any]) -> dict[str, Any]:
+def validate_structured_artifact(payload: dict[str, Any]) -> dict[str, Any]:
     try:
-        art = LLMCustomQAArtifactV2.model_validate(payload)
+        art = LLMCustomQAStructuredArtifact.model_validate(payload)
     except Exception as exc:
         raise CustomQAArtifactValidationError(
-            f"V2 artifact validation failed: {exc}",
-            error_context={"reason": "schema_v2"},
+            f"Structured artifact validation failed: {exc}",
+            error_context={"reason": "structured_schema"},
         ) from exc
     return art.model_dump(mode="json", by_alias=True)
 

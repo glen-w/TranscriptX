@@ -216,7 +216,9 @@ def test_navigate_to_transcript_from_path_binds_run_when_index_has_empty_runs(
         lambda: (lambda _p: ("interview", "run-42")),
     )
     rerun = {"count": 0}
-    monkeypatch.setattr(st, "rerun", lambda: rerun.__setitem__("count", rerun["count"] + 1))
+    monkeypatch.setattr(
+        st, "rerun", lambda: rerun.__setitem__("count", rerun["count"] + 1)
+    )
     st.session_state.clear()
 
     assert nav_mod.navigate_to_transcript_from_path(transcript) is True
@@ -247,4 +249,6 @@ def test_navigate_to_transcript_from_path_returns_false_without_run(
     st.session_state.clear()
 
     assert nav_mod.navigate_to_transcript_from_path(transcript) is False
-    assert "page" not in st.session_state or st.session_state.get("page") != "Transcript"
+    assert (
+        "page" not in st.session_state or st.session_state.get("page") != "Transcript"
+    )

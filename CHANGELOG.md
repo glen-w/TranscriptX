@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-07-24
+
+### Added
+- User-facing [known limitations](docs/known_limitations.md); linked from README, USER_INDEX, and Sphinx.
+- Executable maintainer acceptance runbook and unfamiliar-user validation run kit (execution remains after the tag).
+- Retired public module/schema-id invariant tests; 0.9.7→current epoch-1 forward-compat open test.
+- BERTopic base-install boundary packaging tests (stack not imported by catalogue load).
+
+### Changed
+- Move BERTopic stack (`bertopic` / `hdbscan` / `umap-learn`) out of base deps into `[bertopic]` (still in `[full]` / Docker `requirements.txt`) so clean core wheel installs avoid `llvmlite` host builds. See `docs/dev/bertopic_optional_module.md`.
+- Balanced preset heavy allowlist: `semantic_similarity` only (experimental `fine_grained_emotion` / `contextual_emotion` off Guided defaults).
+- Epoch-align Custom QA / action-items / semantic-similarity / journal / delegation tests and fixtures to sole live schema ids; strip retired `semantic_similarity_advanced` / `_v2` live lookups.
+- Sphinx `release` uses package metadata with neutral `0.9.dev0` fallback (no stale patch hard-code).
+- Native Mac MPS documented as supported-with-caveats; Docker CPU recommended; `TRANSCRIPTX_FORCE_CPU=1` actionable fallback.
+- `clean_env_audit.sh` invokes `pip-audit` console script (not `python -m pip-audit`).
+- Roadmap: **0.9.8** cut; next sequence maintainer pass → unfamiliar-user → RC.
+
+### Fixed
+- Custom QA committed-payload reader no longer routes epoch-1 artifacts through `validate_artifact_v2` solely because schema constants collided.
+- Insights action-items caption no longer refers to a dual-writer “native v2” world.
+
 ## [0.9.7] - 2026-07-24
 
 ### Added

@@ -30,9 +30,7 @@ IMPORT_A = "550e8400-e29b-41d4-a716-446655440000"
 IMPORT_B = "660e8400-e29b-41d4-a716-446655440001"
 
 
-def _patch_roots(
-    monkeypatch: pytest.MonkeyPatch, transcripts_root: Path
-) -> None:
+def _patch_roots(monkeypatch: pytest.MonkeyPatch, transcripts_root: Path) -> None:
     metadata_dir = transcripts_root / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(

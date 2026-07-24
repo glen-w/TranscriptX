@@ -113,7 +113,9 @@ class FeedbackStore:
                 f"cannot read submission token index: {exc}"
             ) from exc
         if not isinstance(data, dict):
-            raise LlmFeedbackPersistenceError("submission_tokens.json must be an object")
+            raise LlmFeedbackPersistenceError(
+                "submission_tokens.json must be an object"
+            )
         out: dict[str, str] = {}
         for key, value in data.items():
             if isinstance(key, str) and isinstance(value, str):

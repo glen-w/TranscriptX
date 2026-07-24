@@ -51,14 +51,20 @@ def test_failure_code_mapping_table_complete() -> None:
         "CUSTOM_QA_INTERNAL",
     }
     cases = [
-        (CustomQAQuestionsValidationError("bad"), CustomQAFailureCode.CUSTOM_QA_QUESTIONS_INVALID),
+        (
+            CustomQAQuestionsValidationError("bad"),
+            CustomQAFailureCode.CUSTOM_QA_QUESTIONS_INVALID,
+        ),
         (
             CustomQAModelResponseInvalidError("bad json"),
             CustomQAFailureCode.CUSTOM_QA_MODEL_RESPONSE_INVALID,
         ),
         (TimeoutError("timed out"), CustomQAFailureCode.CUSTOM_QA_TIMEOUT),
         (RuntimeError("cancelled by user"), CustomQAFailureCode.CUSTOM_QA_CANCELLED),
-        (RuntimeError("provider unreachable"), CustomQAFailureCode.CUSTOM_QA_PROVIDER_UNAVAILABLE),
+        (
+            RuntimeError("provider unreachable"),
+            CustomQAFailureCode.CUSTOM_QA_PROVIDER_UNAVAILABLE,
+        ),
         (RuntimeError("model not found"), CustomQAFailureCode.CUSTOM_QA_MODEL_MISSING),
         (RuntimeError("unauthorized"), CustomQAFailureCode.CUSTOM_QA_CLIENT_ERROR),
         (ConfigLockTimeoutError(), CustomQAFailureCode.CONFIG_LOCK_TIMEOUT),
@@ -71,7 +77,9 @@ def test_failure_code_mapping_table_complete() -> None:
 
 def test_cache_validate_before_reuse(tmp_path: Path) -> None:
     from transcriptx.core.analysis.llm_custom_qa.analyze import _empty_run_payload
-    from transcriptx.core.analysis.llm_custom_qa.artifact_schema import validate_artifact
+    from transcriptx.core.analysis.llm_custom_qa.artifact_schema import (
+        validate_artifact,
+    )
     from transcriptx.core.analysis.llm_custom_qa.resolve import (
         resolve_effective_custom_qa_questions,
     )
@@ -117,7 +125,9 @@ def test_cache_validate_before_reuse(tmp_path: Path) -> None:
 
 def test_reader_requires_run_results_success(tmp_path: Path) -> None:
     from transcriptx.core.analysis.llm_custom_qa.analyze import _empty_run_payload
-    from transcriptx.core.analysis.llm_custom_qa.artifact_schema import validate_artifact
+    from transcriptx.core.analysis.llm_custom_qa.artifact_schema import (
+        validate_artifact,
+    )
     from transcriptx.core.analysis.llm_custom_qa.resolve import (
         resolve_effective_custom_qa_questions,
     )

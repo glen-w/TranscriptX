@@ -143,7 +143,7 @@ def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
     ]
     out = aggregate_llm_action_items_group(results, _cmap(), _ts())
     assert out is not None
-    assert out["schema_version"] == 2
+    assert out["schema_version"] == 1
     assert out["session_rows"][0]["item_count"] == 1
     assert out["session_rows"][1]["item_count"] == 2
     texts = [row["text"] for row in out["content_rows"]]
@@ -308,16 +308,13 @@ def test_aggregate_llm_summary_blob_skips_empty_members() -> None:
 
 
 @pytest.mark.unit
-def test_aggregate_semantic_similarity_prefers_v2() -> None:
+def test_aggregate_semantic_similarity_from_payload() -> None:
     results = [
         _result(
             "/x/a.json",
             "a",
             0,
             {
-                "semantic_similarity": {
-                    "payload": {"total_repetitions": 1, "unique_patterns": 1}
-                },
                 "semantic_similarity": {
                     "payload": {
                         "total_repetitions": 3,

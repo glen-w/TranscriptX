@@ -148,18 +148,14 @@ class TopicShiftEmbedder:
             return False
         return time.perf_counter() >= float(self.deadline_monotonic)
 
-    def _cache_get(
-        self, backend: str, model: str, text: str
-    ) -> np.ndarray | None:
+    def _cache_get(self, backend: str, model: str, text: str) -> np.ndarray | None:
         key = (backend, model, PREPROCESSING_VERSION, text)
         vec = self._cache.get(key)
         if vec is None:
             return None
         return vec.copy()
 
-    def _cache_put(
-        self, backend: str, model: str, text: str, vec: np.ndarray
-    ) -> None:
+    def _cache_put(self, backend: str, model: str, text: str, vec: np.ndarray) -> None:
         if self.lru_size <= 0:
             return
         key = (backend, model, PREPROCESSING_VERSION, text)

@@ -40,6 +40,7 @@ from tests.web.chart_llm_linking_support import (
     write_single_active as _write_single_active,
 )
 
+
 @pytest.mark.unit
 def test_gallery_key_matches_transcript_inventory_provenance(tmp_path: Path) -> None:
     invalidate_resolver_cache()
@@ -98,7 +99,9 @@ def test_gallery_key_matches_transcript_inventory_provenance(tmp_path: Path) -> 
         artifact, run_target_id=transcript_key, run_kind="transcript"
     )
     assert key == expected_key
-    assert resolve_chart_llm_description(run_root, artifact) == "Momentum rose then fell."
+    assert (
+        resolve_chart_llm_description(run_root, artifact) == "Momentum rose then fell."
+    )
 
 
 @pytest.mark.unit
@@ -303,14 +306,14 @@ def test_artifact_service_gallery_resolves_all_inventoried_charts(
         if a.kind in {"chart_static", "chart_dynamic"}
     ]
     # Folder label vs meta.module must diverge for voice (regression signal).
-    voice = [a for a in gallery if (a.meta or {}).get("viz_id") == "voice.burstiness.speaker"]
+    voice = [
+        a for a in gallery if (a.meta or {}).get("viz_id") == "voice.burstiness.speaker"
+    ]
     assert voice
     assert any(a.module == "voice" for a in voice)
     assert all((a.meta or {}).get("module") == "voice_charts_core" for a in voice)
 
-    linkable = [
-        a for a in gallery if isinstance((a.meta or {}).get("viz_id"), str)
-    ]
+    linkable = [a for a in gallery if isinstance((a.meta or {}).get("viz_id"), str)]
     unmatched: list[str] = []
     for artifact in linkable:
         key = chart_key_for_gallery_artifact(
@@ -337,7 +340,10 @@ def test_artifact_service_gallery_resolves_all_inventoried_charts(
     "broken_kwargs,reason",
     [
         (
-            {"run_target_id": "20260720_link_run", "source_run_id": "20260720_link_run"},
+            {
+                "run_target_id": "20260720_link_run",
+                "source_run_id": "20260720_link_run",
+            },
             "run_folder_id_instead_of_transcript_key",
         ),
         (

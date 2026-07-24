@@ -23,7 +23,7 @@ def test_methodology_lines_skip_partners():
 
 def test_methodology_info_html_escapes_and_is_accessible():
     html_out = speakers._methodology_info_html(
-        ['Grouped by appearance date.', 'Line with <script>"x"'],
+        ["Grouped by appearance date.", 'Line with <script>"x"'],
         control_id="spk-meth-1",
     )
     assert "<script>" not in html_out
@@ -64,7 +64,7 @@ def test_section_heading_with_info_escapes_title():
         control_id="t1",
         aria_label="Notes",
     )
-    html_out = speakers._section_heading_with_info_html('Partners <script>', tip)
+    html_out = speakers._section_heading_with_info_html("Partners <script>", tip)
     assert "<script>" not in html_out
     assert "Partners &lt;script&gt;" in html_out
     assert "tx-section-info-heading" in html_out

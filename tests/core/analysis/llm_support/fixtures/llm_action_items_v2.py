@@ -15,7 +15,6 @@ from transcriptx.core.analysis.llm_support.action_items_contract import (
     LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION,
     LLM_ACTION_ITEMS_RENDER_CONTRACT_ID,
     LLM_ACTION_ITEMS_SCHEMA_ID,
-    LLM_ACTION_ITEMS_SCHEMA_ID_V1,
     MAX_ITEMS_PER_TYPE,
     MAX_ITEMS_TOTAL,
     RECORD_TYPE_LABELS,
@@ -124,6 +123,10 @@ def example_v2_artifact(
 def example_v1_artifact(
     items: list[Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
+    """Legacy unstamped payload: no ``schema_id``, items lack ``record_type``.
+
+    Detected by ``is_v1_action_items_payload``; live stamped artifacts are not.
+    """
     legacy_items = items
     if legacy_items is None:
         legacy_items = [
@@ -137,7 +140,6 @@ def example_v1_artifact(
             }
         ]
     return {
-        "schema_id": LLM_ACTION_ITEMS_SCHEMA_ID_V1,
         "module_version": "1",
         "module": "llm_action_items",
         "items": legacy_items,
@@ -154,7 +156,6 @@ __all__ = [
     "LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION",
     "LLM_ACTION_ITEMS_RENDER_CONTRACT_ID",
     "LLM_ACTION_ITEMS_SCHEMA_ID",
-    "LLM_ACTION_ITEMS_SCHEMA_ID_V1",
     "MAX_ITEMS_PER_TYPE",
     "MAX_ITEMS_TOTAL",
     "RECORD_TYPE_LABELS",

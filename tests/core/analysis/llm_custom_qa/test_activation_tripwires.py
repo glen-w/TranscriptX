@@ -1,4 +1,4 @@
-"""Pre-activation tripwires and Stage 4/5 activation inventory tests."""
+"""Structured-execution tripwires and consumer inventory tests."""
 
 from __future__ import annotations
 
@@ -23,51 +23,54 @@ from transcriptx.core.analysis.llm_custom_qa.resolve import (
     resolve_effective_custom_qa_questions,
 )
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
-    get_custom_qa_activation,
-    is_v2_execution_enabled,
+    MODULE_VERSION,
+    SCHEMA_ID,
+    is_structured_execution_enabled,
     live_module_version_for_writers,
     live_schema_id_for_writers,
-    set_custom_qa_activation,
-    V2_MODULE_VERSION,
-    V2_SCHEMA_ID,
+    set_structured_execution_enabled,
 )
 
 
 @pytest.fixture(autouse=True)
-def _restore_activation():
-    prev = get_custom_qa_activation()
+def _restore_structured_flag():
+    prev = is_structured_execution_enabled()
     yield
-    set_custom_qa_activation(prev)
+    set_structured_execution_enabled(prev)
 
 
 @pytest.mark.unit
-def test_activation_defaults_v2() -> None:
-    # Reset to module default by re-reading; tests may mutate.
-    set_custom_qa_activation("v2_live")
-    assert get_custom_qa_activation() == "v2_live"
-    assert is_v2_execution_enabled() is True
-    assert live_schema_id_for_writers() == V2_SCHEMA_ID
-    assert live_module_version_for_writers() == V2_MODULE_VERSION
+def test_structured_execution_defaults_off() -> None:
+    """Live writer uses the sole schema; structured execution stays off."""
+    assert is_structured_execution_enabled() is False
+    assert live_schema_id_for_writers() == SCHEMA_ID
+    assert live_module_version_for_writers() == MODULE_VERSION
+    set_structured_execution_enabled(True)
+    assert is_structured_execution_enabled() is True
+    set_structured_execution_enabled(False)
+    assert is_structured_execution_enabled() is False
 
 
 @pytest.mark.unit
-def test_v2_plan_constructor_tripwire_under_v1_live() -> None:
-    from transcriptx.core.analysis.llm_custom_qa.plan import assert_v2_execution_allowed
+def test_structured_plan_constructor_tripwire_when_disabled() -> None:
+    from transcriptx.core.analysis.llm_custom_qa.plan import (
+        assert_structured_execution_allowed,
+    )
 
-    set_custom_qa_activation("v1_live")
+    set_structured_execution_enabled(False)
     with pytest.raises(RuntimeError, match="disabled"):
-        assert_v2_execution_allowed()
+        assert_structured_execution_allowed()
 
 
 @pytest.mark.unit
-def test_activation_inventory_requires_v2_safe_blockers() -> None:
+def test_activation_inventory_requires_structured_ready_blockers() -> None:
     blockers = activation_blocking_consumers()
     assert blockers
-    unsafe = [c for c in blockers if not c.v2_safe]
+    unsafe = [c for c in blockers if not c.structured_ready]
     assert unsafe == [], f"Stage 5 blocked by unsafe consumers: {unsafe}"
     assert all(isinstance(c.consumer_id, str) for c in CUSTOM_QA_CONSUMER_REGISTRY)
     agg = next(c for c in CUSTOM_QA_CONSUMER_REGISTRY if c.role == "aggregator")
-    assert agg.v2_safe is True
+    assert agg.structured_ready is True
 
 
 @pytest.mark.unit
@@ -82,17 +85,17 @@ def test_actions_placements_removed_from_presets() -> None:
 
 
 @pytest.mark.unit
-def test_run_from_context_does_not_touch_v2_surfaces_under_v1(monkeypatch) -> None:
-    """Tripwire: monkeypatched v2 constructors must not be called on v1 path."""
-    set_custom_qa_activation("v1_live")
+def test_run_from_context_does_not_touch_structured_surfaces(monkeypatch) -> None:
+    """Tripwire: structured constructors must not be called on the live path."""
+    set_structured_execution_enabled(False)
     calls: list[str] = []
 
     def boom(*_a, **_k):
         calls.append("plan")
-        raise AssertionError("v2 plan touched")
+        raise AssertionError("structured plan touched")
 
     monkeypatch.setattr(
-        "transcriptx.core.analysis.llm_custom_qa.plan.assert_v2_execution_allowed",
+        "transcriptx.core.analysis.llm_custom_qa.plan.assert_structured_execution_allowed",
         boom,
     )
     from transcriptx.core.analysis.llm_custom_qa.analyze import LLMCustomQAAnalysis
@@ -119,8 +122,6 @@ def test_run_from_context_does_not_touch_v2_surfaces_under_v1(monkeypatch) -> No
         )
         ctx.get_run_id.return_value = "run"
         ctx.get_runtime_flags.return_value = {}
-        # Empty questions path should succeed without v2 plan builders
-        # (may still need writable output dir — use tmp via monkeypatch if needed)
         monkeypatch.setattr(
             "transcriptx.core.analysis.llm_custom_qa.analyze.create_output_service",
             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("stop-before-io")),
@@ -145,7 +146,6 @@ def test_bound_questions_visible_in_worker_thread() -> None:
         assert snapshot is not None
 
         def _worker() -> str | None:
-            # Re-bind snapshot inside worker (simulates executor context copy + rebind)
             inner = bind_custom_qa_questions(snapshot)
             try:
                 bound = get_bound_structured_questions()

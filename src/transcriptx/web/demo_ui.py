@@ -76,7 +76,9 @@ def render_home_demo_and_onboarding() -> None:
     if prefs.dismissed or derived_complete(prefs):
         return
     with st.expander("Getting started", expanded=True):
-        st.caption("Lightweight checklist — optional, skippable where marked, non-blocking.")
+        st.caption(
+            "Lightweight checklist — optional, skippable where marked, non-blocking."
+        )
         hints = _workspace_hints()
         for item_id in ALL_ITEM_IDS:
             item = prefs.items.get(item_id)
@@ -89,7 +91,11 @@ def render_home_demo_and_onboarding() -> None:
             cols = st.columns([4, 1, 1, 1])
             with cols[0]:
                 suffix = " (optional)" if optional else ""
-                mark = "✅" if state == "completed" else ("⏭" if state == "skipped" else "○")
+                mark = (
+                    "✅"
+                    if state == "completed"
+                    else ("⏭" if state == "skipped" else "○")
+                )
                 st.write(f"{mark} {label}{suffix} — *{state}*{hint}")
             with cols[1]:
                 if st.button("Go", key=f"onboard_go_{item_id}"):
@@ -108,15 +114,88 @@ def render_home_demo_and_onboarding() -> None:
             st.rerun()
 
 
+_DEMO_TOGGLE_KEY = "settings_demo_project_toggle"
+_DEMO_TOGGLE_PENDING_KEY = "settings_demo_project_toggle_pending"
+
+
 def render_settings_demo_controls() -> None:
+    """Settings backend: simple Demo project on/off plus checklist reopen."""
     status = status_demo_project()
+    present = status.kind in {
+        DemoStatusKind.INSTALLED,
+        DemoStatusKind.STALE,
+        DemoStatusKind.PARTIAL,
+        DemoStatusKind.CORRUPT,
+    }
     with st.expander("Demo project", expanded=False):
         st.caption(
             f"Status: **{status.kind.value}** — {status.detail or '—'}\n\n"
-            "Removes demo transcripts, the owned demo group, and analysis runs still "
-            "attached to those demo transcripts (including later user runs on them)."
+            "On installs the synthetic demo pack. Off removes demo transcripts, the "
+            "owned demo group, and analysis runs still attached to those demo "
+            "transcripts (including later user runs on them)."
         )
-        _render_demo_controls(status)
+        if st.session_state.pop(_DEMO_TOGGLE_PENDING_KEY, False) or (
+            _DEMO_TOGGLE_KEY not in st.session_state
+        ):
+            st.session_state[_DEMO_TOGGLE_KEY] = present
+        desired_on = st.toggle(
+            "Demo project",
+            key=_DEMO_TOGGLE_KEY,
+            help="On: load demo. Off: remove demo.",
+        )
+        if desired_on and status.kind == DemoStatusKind.MISSING:
+            with st.spinner("Installing demo…"):
+                result = install_demo_project()
+            if result.ok:
+                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+                st.success(result.detail)
+                st.rerun()
+            else:
+                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+                st.session_state[_DEMO_TOGGLE_KEY] = False
+                st.error(result.detail)
+                for err in result.errors[:8]:
+                    st.caption(err)
+        elif (not desired_on) and present:
+            with st.spinner("Removing demo…"):
+                result = remove_demo_project()
+            if result.ok:
+                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+                st.success(result.detail)
+                st.rerun()
+            else:
+                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+                st.session_state[_DEMO_TOGGLE_KEY] = True
+                st.error(result.detail)
+                for err in result.errors[:8]:
+                    st.caption(err)
+        if status.kind in {
+            DemoStatusKind.STALE,
+            DemoStatusKind.PARTIAL,
+            DemoStatusKind.CORRUPT,
+        }:
+            label = (
+                "Refresh demo project"
+                if status.kind != DemoStatusKind.CORRUPT
+                else "Repair demo project"
+            )
+            if status.kind == DemoStatusKind.STALE:
+                st.warning("Demo is stale vs pack/schema — refresh removes then reloads.")
+            elif status.kind == DemoStatusKind.PARTIAL:
+                st.warning("Demo install/remove was interrupted — refresh to recover.")
+            else:
+                st.warning("Demo looks corrupt — repair removes then reloads.")
+            if st.button(label, key="demo_refresh_settings"):
+                with st.spinner("Updating demo…"):
+                    result = refresh_demo_project()
+                if result.ok:
+                    st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+                    st.success(result.detail)
+                    st.rerun()
+                else:
+                    st.error(result.detail)
+                    for err in result.errors[:8]:
+                        st.caption(err)
         if st.button("Reopen getting started checklist", key="onboard_reopen"):
             set_dismissed(False)
             st.rerun()

@@ -13,7 +13,11 @@ from transcriptx.core.speaker_profiles.operations import (
     relative_voice_privacy_path,
 )
 from transcriptx.core.speaker_profiles.signals import CacheInvalidationSignal
-from transcriptx.core.speaker_profiles.store_io import dumps_model, ensure_layout, utc_now_iso
+from transcriptx.core.speaker_profiles.store_io import (
+    dumps_model,
+    ensure_layout,
+    utc_now_iso,
+)
 from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
 from transcriptx.core.speaker_profiles.voice.models import VoicePrivacySettingsV1
 from transcriptx.core.speaker_profiles.voice.privacy import (
@@ -139,7 +143,9 @@ class VoicePrivacyService:
             )
 
         if run_wipe:
-            VoiceWipeService(root=self.root, state_dir=self.state_dir).wipe_until_complete(
+            VoiceWipeService(
+                root=self.root, state_dir=self.state_dir
+            ).wipe_until_complete(
                 base_idempotency_key=f"{operation_idempotency_key}:wipe",
                 include_privacy=False,
             )

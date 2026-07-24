@@ -172,7 +172,9 @@ def _match_motifs_across_sessions(
                 sim = _cosine(lvec, gm["centroid"])
                 if not np.isfinite(sim) or sim < float(threshold):
                     continue
-                candidates.append((float(sim), str(gm["group_motif_id"]), local_id, gi, li))
+                candidates.append(
+                    (float(sim), str(gm["group_motif_id"]), local_id, gi, li)
+                )
 
         candidates.sort(key=lambda t: (-t[0], t[1], t[2]))
         for sim, gid, lid, gi, li in candidates:
@@ -277,7 +279,9 @@ def _match_motifs_across_sessions(
                 "presence_slope": slope,
                 "exemplar_text": exemplar,
                 "appearances": apps,
-                "presence_by_order": {str(o): presence_series[i] for i, o in enumerate(orders)},
+                "presence_by_order": {
+                    str(o): presence_series[i] for i, o in enumerate(orders)
+                },
                 "strength_by_order": {
                     str(o): size_series[i] for i, o in enumerate(orders)
                 },
@@ -401,7 +405,11 @@ def aggregate_semantic_similarity_group(
         session_row["semantic_module"] = module_id
 
         inclusion, excl_reason = _session_motif_eligibility(module_id, payload)
-        prov = payload.get("provenance") if isinstance(payload.get("provenance"), dict) else {}
+        prov = (
+            payload.get("provenance")
+            if isinstance(payload.get("provenance"), dict)
+            else {}
+        )
         key = str(
             payload.get("provenance_compatibility_key")
             or prov.get("provenance_compatibility_key")
@@ -430,7 +438,9 @@ def aggregate_semantic_similarity_group(
                 }
             )
         else:
-            motifs_raw = payload.get("motifs") if isinstance(payload.get("motifs"), list) else []
+            motifs_raw = (
+                payload.get("motifs") if isinstance(payload.get("motifs"), list) else []
+            )
             # Validate centroids / dimensions
             valid_locals: List[Dict[str, Any]] = []
             for m in motifs_raw:
@@ -459,8 +469,14 @@ def aggregate_semantic_similarity_group(
                     "order_index": result.order_index,
                     "transcript_id": transcript_id,
                     "provenance_key": key,
-                    "vector_dimension": int(dim) if dim is not None else (
-                        int(valid_locals[0]["centroid_vec"].size) if valid_locals else None
+                    "vector_dimension": (
+                        int(dim)
+                        if dim is not None
+                        else (
+                            int(valid_locals[0]["centroid_vec"].size)
+                            if valid_locals
+                            else None
+                        )
                     ),
                     "motifs": valid_locals,
                     "session_row_ref": session_row,
@@ -597,9 +613,10 @@ def aggregate_semantic_similarity_group(
                 if any(int(a["order_index"]) == order for a in mr["appearances"])
             }
             row["recurring_motif_count"] = len(appearing & recurring_ids)
-            if row.get("motif_count") is None and str(
-                row.get("motif_export_status")
-            ) == "valid_zero":
+            if (
+                row.get("motif_count") is None
+                and str(row.get("motif_export_status")) == "valid_zero"
+            ):
                 row["motif_count"] = 0
 
     pooled["primary_cohort_key"] = primary_key

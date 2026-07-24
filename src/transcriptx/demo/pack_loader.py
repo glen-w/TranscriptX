@@ -7,7 +7,6 @@ import json
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Any
 
 from transcriptx.core.utils.schema_epoch import CURRENT_SCHEMA_EPOCH
 

@@ -11,7 +11,7 @@ import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Mapping, MutableMapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 from unittest.mock import MagicMock, patch
 
 from transcriptx.core.analysis.contextual_emotion import ContextualEmotionAnalysis
@@ -487,13 +487,17 @@ def run_lexical(
     if preflight is None:
         preflight = LexicalPreflightResult(True, "ok", nrclex_version="3.0.0")
 
-    lexicon = {} if force_empty_lexicon else {
-        "delighted": ["joy", "positive"],
-        "furious": ["anger", "negative"],
-        "hello": ["joy"],
-        "bonjour": ["joy"],
-        "ami": [],
-    }
+    lexicon = (
+        {}
+        if force_empty_lexicon
+        else {
+            "delighted": ["joy", "positive"],
+            "furious": ["anger", "negative"],
+            "hello": ["joy"],
+            "bonjour": ["joy"],
+            "ami": [],
+        }
+    )
 
     inf = tmp_path / "cache" / "emotion_family" / "emotion"
     agg = inf / "aggregation"

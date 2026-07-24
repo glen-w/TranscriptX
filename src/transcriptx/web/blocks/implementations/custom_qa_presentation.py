@@ -10,7 +10,7 @@ import streamlit as st
 from transcriptx.core.analysis.llm_custom_qa.readers import (
     load_committed_custom_qa_payload,
 )
-from transcriptx.core.analysis.llm_custom_qa.versioning import V2_SCHEMA_ID
+from transcriptx.core.analysis.llm_custom_qa.versioning import SCHEMA_ID
 from transcriptx.web.blocks.implementations.insights_custom_qa import (
     _render_answer_card,
 )
@@ -31,28 +31,19 @@ def render_global_custom_qa_under_summary(run_root: Optional[Path]) -> None:
     if not payload:
         return
     schema_id = str(payload.get("schema_id") or "")
-    if schema_id and schema_id not in (
-        "transcriptx.llm_custom_qa.v1",
-        V2_SCHEMA_ID,
-    ):
+    if schema_id and schema_id != SCHEMA_ID:
         st.caption("Custom questions artifact schema unsupported for display.")
         return
     answers = [
         row
         for row in (payload.get("answers") or [])
-        if isinstance(row, dict)
-        and row.get("scope", "global") == "global"
+        if isinstance(row, dict) and row.get("scope", "global") == "global"
     ]
-    # v1 rows have no scope field — treat as global
-    if not answers and schema_id.endswith(".v1"):
-        answers = [r for r in (payload.get("answers") or []) if isinstance(r, dict)]
     if not answers:
         return
     st.markdown("#### Custom questions")
     for i, row in enumerate(answers):
-        _render_answer_card(
-            row, key_prefix=f"hero_qa_{i}", show_evidence=False
-        )
+        _render_answer_card(row, key_prefix=f"hero_qa_{i}", show_evidence=False)
 
 
 def render_speaker_custom_qa(

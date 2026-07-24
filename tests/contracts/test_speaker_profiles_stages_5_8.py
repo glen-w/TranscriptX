@@ -120,7 +120,9 @@ def test_occurrence_metrics_words_turns_duration() -> None:
     )
     assert metrics.words == 4
     assert metrics.turns == 3
-    assert metrics.duration_seconds == 2.0  # zero-duration counts; invalid timing excluded
+    assert (
+        metrics.duration_seconds == 2.0
+    )  # zero-duration counts; invalid timing excluded
 
 
 @pytest.mark.unit
@@ -141,7 +143,11 @@ def test_headline_excludes_needs_review_and_ignored(
     # write a bogus fingerprint through supersede then change segments — instead,
     # call aggregate after manually patching link fingerprint via supersede noop:
     from transcriptx.core.speaker_profiles.layout import link_path
-    from transcriptx.core.speaker_profiles.store_io import parse_model, write_bytes_under_root, dumps_model
+    from transcriptx.core.speaker_profiles.store_io import (
+        parse_model,
+        write_bytes_under_root,
+        dumps_model,
+    )
     from transcriptx.core.speaker_profiles.models import SpeakerProfileLinkV1
 
     key = link_file_key(IMPORT_A, "SPEAKER_00")
@@ -222,7 +228,7 @@ def test_migrate_keeps_observed_relpath(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     svc = _svc(tmp_path, monkeypatch)
-    created = svc.create_profile_and_link(
+    svc.create_profile_and_link(
         operation_idempotency_key=str(uuid4()),
         display_name="Alice",
         managed_transcript_id=IMPORT_A,
@@ -278,7 +284,9 @@ def test_supersede_fingerprint_clears_needs_review(
     )
     profile = svc.get_profile(created.profile_id)
     agg_before = aggregate_profile(
-        profile, list_profile_links(created.profile_id, root=svc.root), resolver=svc.resolver
+        profile,
+        list_profile_links(created.profile_id, root=svc.root),
+        resolver=svc.resolver,
     )
     assert agg_before.pending_review_count == 1
     svc.supersede_link_fingerprint(
@@ -287,7 +295,9 @@ def test_supersede_fingerprint_clears_needs_review(
         local_speaker_key="SPEAKER_00",
     )
     agg_after = aggregate_profile(
-        profile, list_profile_links(created.profile_id, root=svc.root), resolver=svc.resolver
+        profile,
+        list_profile_links(created.profile_id, root=svc.root),
+        resolver=svc.resolver,
     )
     assert agg_after.pending_review_count == 0
     assert agg_after.headline_appearance_count == 1

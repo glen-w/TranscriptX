@@ -72,6 +72,8 @@ BACKEND_THRESHOLDS: Final[dict[str, dict[str, float]]] = {
 }
 
 DEFAULT_EN_MODEL: Final = "sentence-transformers/all-MiniLM-L6-v2"
-DEFAULT_MULTI_MODEL: Final = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+DEFAULT_MULTI_MODEL: Final = (
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
 
 ENGLISH_CODES: Final = frozenset({"en", "eng", "en-us", "en-gb", "en_us", "en_gb"})

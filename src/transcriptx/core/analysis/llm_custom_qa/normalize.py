@@ -37,7 +37,10 @@ def _normalize_one(value: Any, *, index: int, max_question_chars: int) -> str | 
         )
     text = unicodedata.normalize("NFC", value)
     for ch in text:
-        if unicodedata.category(ch).startswith("C") and ch not in _ALLOWED_PRE_COLLAPSE_CONTROLS:
+        if (
+            unicodedata.category(ch).startswith("C")
+            and ch not in _ALLOWED_PRE_COLLAPSE_CONTROLS
+        ):
             if _CONTROL_RE.search(ch) or ch not in _ALLOWED_PRE_COLLAPSE_CONTROLS:
                 # Disallow control chars other than \n/\t before collapse
                 if ch not in ("\n", "\t"):
@@ -78,9 +81,7 @@ def normalize_questions(
                 f"Question at index {index} must be a strict str (no coercion)",
                 error_context={"index": index, "type": type(value).__name__},
             )
-        item = _normalize_one(
-            value, index=index, max_question_chars=max_question_chars
-        )
+        item = _normalize_one(value, index=index, max_question_chars=max_question_chars)
         if item is None:
             continue
         key = item.casefold()

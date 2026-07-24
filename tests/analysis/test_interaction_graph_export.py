@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 
 from transcriptx.core.analysis.interactions.events import InteractionEvent
 from transcriptx.core.analysis.interactions.graph_export import (
@@ -48,7 +46,9 @@ def _evt(
 
 def test_asymmetric_directed_edges_and_keys():
     events = [
-        _evt(a="Alice", b="Bob", itype="interruption_gap", a_key="spk_a", b_key="spk_b"),
+        _evt(
+            a="Alice", b="Bob", itype="interruption_gap", a_key="spk_a", b_key="spk_b"
+        ),
         _evt(a="Alice", b="Bob", itype="response", a_key="spk_a", b_key="spk_b"),
         _evt(a="Bob", b="Alice", itype="response", a_key="spk_b", b_key="spk_a"),
     ]

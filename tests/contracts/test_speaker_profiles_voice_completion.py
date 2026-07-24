@@ -86,7 +86,9 @@ def _write_managed(transcripts_root: Path, *, name: str, import_id: str) -> None
     )
 
 
-def _svc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[SpeakerProfileService, Path]:
+def _svc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[SpeakerProfileService, Path]:
     transcripts = tmp_path / "transcripts"
     transcripts.mkdir()
     _patch_roots(monkeypatch, transcripts)
@@ -145,9 +147,7 @@ def test_wipe_until_complete_removes_samples(
     assert svc.get_live_link(key) is not None
 
 
-def test_promote_sample(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_promote_sample(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     svc, profiles = _svc(tmp_path, monkeypatch)
     from transcriptx.core.speaker_profiles.provenance import LinkProvenanceV1
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import Sequence
 
 from transcriptx.core.analysis.topic_shift.segments import CanonicalTopicSegment
 from transcriptx.core.analysis.topic_shift.semantics import (

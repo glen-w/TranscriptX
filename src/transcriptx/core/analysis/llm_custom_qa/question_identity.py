@@ -167,7 +167,9 @@ def canonicalize_questions(
                 error_context={"reason": "entry_type"},
             )
 
-        text = normalize_question_text(item["text"], max_question_chars=max_question_chars)
+        text = normalize_question_text(
+            item["text"], max_question_chars=max_question_chars
+        )
         if "scopes" not in item:
             raise CustomQAQuestionsValidationError(
                 "Question object requires scopes",
@@ -217,7 +219,7 @@ def questions_hash_for_canonical(questions: Sequence[CanonicalQuestion]) -> str:
     return sha256_canonical_json(payload)
 
 
-def project_questions_for_v1_runtime(
+def project_question_texts(
     questions: Sequence[CanonicalQuestion] | Sequence[str],
 ) -> tuple[str, ...]:
     """Project structured questions to v1 text list immediately before v1 analyser."""
@@ -246,9 +248,7 @@ def upsert_library_question(
         max_question_chars=max_question_chars,
         max_total_question_chars=max_library_total_question_chars,
     )
-    return [
-        {"text": q.text, "scopes": q.scopes.as_dict()} for q in questions
-    ]
+    return [{"text": q.text, "scopes": q.scopes.as_dict()} for q in questions]
 
 
 def merge_evidence_pack_ids(

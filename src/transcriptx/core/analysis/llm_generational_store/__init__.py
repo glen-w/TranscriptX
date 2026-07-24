@@ -47,7 +47,9 @@ class StagedGeneration:
     def directory(self) -> Path:
         return self.store_root / "generations" / self.generation_id
 
-    def write_json(self, rel_path: str, payload: Any, *, indent: int | None = 2) -> Path:
+    def write_json(
+        self, rel_path: str, payload: Any, *, indent: int | None = 2
+    ) -> Path:
         dest = self.directory / rel_path
         dest.parent.mkdir(parents=True, exist_ok=True)
         write_json_atomic(dest, payload, indent=indent)
@@ -177,9 +179,7 @@ def read_commit(store_root: Path, generation_id: str) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
-def load_active_artifact(
-    store_root: Path, rel_path: str
-) -> Any | None:
+def load_active_artifact(store_root: Path, rel_path: str) -> Any | None:
     active = read_active(store_root)
     if not active:
         return None
@@ -198,7 +198,9 @@ def load_active_artifact(
         return None
 
 
-def gc_uncommitted(store_root: Path, *, keep_generation_id: str | None = None) -> list[str]:
+def gc_uncommitted(
+    store_root: Path, *, keep_generation_id: str | None = None
+) -> list[str]:
     removed: list[str] = []
     root = Path(store_root) / "generations"
     if not root.is_dir():

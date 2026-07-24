@@ -124,9 +124,12 @@ def run_keybert(
         embedder = SentenceTransformer(model_id, local_files_only=True)
         kw_model = KeyBERT(model=embedder)
         joined = "\n\n".join(texts)
-        raw = kw_model.extract_keywords(
-            joined, keyphrase_ngram_range=(1, 3), top_n=max_phrases
-        ) or []
+        raw = (
+            kw_model.extract_keywords(
+                joined, keyphrase_ngram_range=(1, 3), top_n=max_phrases
+            )
+            or []
+        )
     except OSError as exc:
         msg = str(exc).lower()
         if "out of memory" in msg or "cuda" in msg:
@@ -139,9 +142,12 @@ def run_keybert(
                 )
                 kw_model = _KB(model=embedder)
                 joined = "\n\n".join(texts)
-                raw = kw_model.extract_keywords(
-                    joined, keyphrase_ngram_range=(1, 3), top_n=max_phrases
-                ) or []
+                raw = (
+                    kw_model.extract_keywords(
+                        joined, keyphrase_ngram_range=(1, 3), top_n=max_phrases
+                    )
+                    or []
+                )
             except Exception as exc2:
                 return None, SkippedMethod(
                     method="keybert",

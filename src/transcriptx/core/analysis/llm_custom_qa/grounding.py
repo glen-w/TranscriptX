@@ -61,9 +61,7 @@ def _entries_for_span(
     return hit
 
 
-def _find_matches(
-    corpus: BoundedGroundingCorpus, quote: str
-) -> list[tuple[int, int]]:
+def _find_matches(corpus: BoundedGroundingCorpus, quote: str) -> list[tuple[int, int]]:
     """Return contiguous corpus (start, end) matches using whitespace equivalence."""
     needle = _ws_fold(quote)
     if not needle:
@@ -202,9 +200,9 @@ def apply_grounding(
             diagnostics["grounding_failed_count"] = (
                 int(diagnostics.get("grounding_failed_count", 0)) + 1
             )
-        diagnostics["citations_total"] = int(diagnostics.get("citations_total", 0)) + len(
-            grounded.get("citations") or []
-        )
+        diagnostics["citations_total"] = int(
+            diagnostics.get("citations_total", 0)
+        ) + len(grounded.get("citations") or [])
         diagnostics["cross_segment_citations_total"] = int(
             diagnostics.get("cross_segment_citations_total", 0)
         ) + int((grounded.get("grounding") or {}).get("cross_segment_citations", 0))
@@ -239,9 +237,9 @@ def apply_soft_grounding(
             ) + int(soft_grounding.get("quotes_requested", 0))
             out.append(soft)
             continue
-        diagnostics["citations_total"] = int(diagnostics.get("citations_total", 0)) + len(
-            grounded.get("citations") or []
-        )
+        diagnostics["citations_total"] = int(
+            diagnostics.get("citations_total", 0)
+        ) + len(grounded.get("citations") or [])
         diagnostics["cross_segment_citations_total"] = int(
             diagnostics.get("cross_segment_citations_total", 0)
         ) + int((grounded.get("grounding") or {}).get("cross_segment_citations", 0))

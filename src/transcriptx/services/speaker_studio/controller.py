@@ -16,7 +16,10 @@ from transcriptx.services.speaker_studio.segment_index import (
     TranscriptSummary,
     SegmentInfo,
 )
-from transcriptx.services.speaker_studio.clip_service import ClipService, WarmClipsResult
+from transcriptx.services.speaker_studio.clip_service import (
+    ClipService,
+    WarmClipsResult,
+)
 from transcriptx.services.speaker_studio.mapping_service import (
     SpeakerMappingService,
     SpeakerMapState,

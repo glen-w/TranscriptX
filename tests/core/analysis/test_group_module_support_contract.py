@@ -16,7 +16,6 @@ _COVERED_BY_SELECTOR_ALIAS = {
     "voice_features": "prosody",
     "voice_charts_core": "prosody",
     "prosody_dashboard": "prosody",
-    "semantic_similarity_advanced": "semantic_similarity",
     "semantic_similarity": "semantic_similarity",
 }
 

@@ -19,7 +19,7 @@ from transcriptx.core.analysis.llm_custom_qa.bounded_input import (
 )
 from transcriptx.core.analysis.llm_custom_qa.cache import (
     build_answer_cache_key,
-    try_load_cached_artifact_v2,
+    try_load_cached_structured_artifact,
 )
 from transcriptx.core.analysis.llm_custom_qa.commit import (
     commit_llm_custom_qa_artifacts,
@@ -31,9 +31,9 @@ from transcriptx.core.analysis.llm_custom_qa.constants import (
     MAX_RETRY_ATTEMPTS,
     MODULE_NAME,
 )
-from transcriptx.core.analysis.llm_custom_qa.contracts_v2 import (
-    compute_outcome_v2,
-    validate_artifact_v2,
+from transcriptx.core.analysis.llm_custom_qa.structured_contracts import (
+    compute_structured_outcome,
+    validate_structured_artifact,
 )
 from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAEmptyInputError,
@@ -72,9 +72,9 @@ from transcriptx.core.analysis.llm_custom_qa.versioning import (
     REPAIR_PROMPT_VERSION,
     RENDERED_EVIDENCE_FORMAT_VERSION,
     ROUTER_PROMPT_VERSION,
-    V2_CONTRACT_VERSION,
-    V2_MODULE_VERSION,
-    V2_SCHEMA_ID,
+    CONTRACT_VERSION,
+    MODULE_VERSION,
+    SCHEMA_ID,
 )
 from transcriptx.core.analysis.llm_support.runtime import (
     build_ollama_analysis_client,
@@ -90,13 +90,13 @@ from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.module_result import build_module_result, now_iso
 
-INSTRUCTION_V2 = (
+STRUCTURED_INSTRUCTION = (
     "Answer the questions using only the provided evidence and transcript excerpt. "
     "Include a short reasoning explanation for every answered row."
 )
 
 
-def _system_prompt_v2(*, question_count: int) -> str:
+def _structured_system_prompt(*, question_count: int) -> str:
     last_index = max(0, question_count - 1)
     return (
         "You answer questions about a transcript using provided evidence packs. "
@@ -131,12 +131,12 @@ def _questions_requested_payload(
     ]
 
 
-def _empty_v2_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
+def _empty_structured_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
     provenance = {
         "module": MODULE_NAME,
-        "schema_id": V2_SCHEMA_ID,
-        "module_version": V2_MODULE_VERSION,
-        "contract_version": V2_CONTRACT_VERSION,
+        "schema_id": SCHEMA_ID,
+        "module_version": MODULE_VERSION,
+        "contract_version": CONTRACT_VERSION,
         "router_prompt_version": None,
         "answer_prompt_version": None,
         "repair_prompt_version": None,
@@ -146,9 +146,11 @@ def _empty_v2_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
         "router_generation_options": {},
         "answer_generation_options": {},
         "seed": None,
-        "questions_hash": effective.questions_hash
-        if not effective.structured
-        else effective.questions_hash,
+        "questions_hash": (
+            effective.questions_hash
+            if not effective.structured
+            else effective.questions_hash
+        ),
         "question_order": list(effective.question_order),
         "resolved_from": effective.resolved_from,
         "empty_run": True,
@@ -173,10 +175,10 @@ def _empty_v2_payload(effective: EffectiveCustomQAQuestions) -> dict[str, Any]:
     )
     provenance["questions_hash"] = qhash
     return {
-        "schema_id": V2_SCHEMA_ID,
+        "schema_id": SCHEMA_ID,
         "module": MODULE_NAME,
-        "module_version": V2_MODULE_VERSION,
-        "contract_version": V2_CONTRACT_VERSION,
+        "module_version": MODULE_VERSION,
+        "contract_version": CONTRACT_VERSION,
         "questions_requested": _questions_requested_payload(effective.structured),
         "question_order": list(effective.question_order),
         "questions_hash": qhash,
@@ -424,7 +426,9 @@ def _process_batch_answers(
     # Soft-ground answered rows that have transcript quotes
     grounded = apply_soft_grounding(interim, corpus, diagnostics=diagnostics)
     grounded = apply_absence_detector(
-        grounded, truncated=bool(getattr(corpus, "truncated", False)), diagnostics=diagnostics
+        grounded,
+        truncated=bool(getattr(corpus, "truncated", False)),
+        diagnostics=diagnostics,
     )
     out: list[dict[str, Any]] = []
     for row in grounded:
@@ -549,7 +553,7 @@ def _build_evidence_block(
     return "\n\n".join(parts), evidence_used
 
 
-def _build_user_prompt_v2(
+def _build_structured_user_prompt(
     *,
     questions: list[CanonicalQuestion],
     evidence_text: str,
@@ -561,7 +565,7 @@ def _build_user_prompt_v2(
         ensure_ascii=False,
     )
     blocks = [
-        f"{INSTRUCTION_V2}\n",
+        f"{STRUCTURED_INSTRUCTION}\n",
         f"<<<QUESTIONS_JSON>>>\n{questions_json}\n<<<END QUESTIONS_JSON>>>",
     ]
     if evidence_text.strip():
@@ -595,7 +599,7 @@ def _speaker_corpus(
     return build_grounding_corpus(segs, max_corpus_chars=max_chars, prefer="tail")
 
 
-def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
+def run_structured_from_context(module: Any, context: Any) -> Dict[str, Any]:
     """Execute the v2 custom-QA path and return a module result."""
     started_at = now_iso()
     start_time = time.time()
@@ -651,7 +655,7 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
                 markdown=markdown,
                 run_execution_id=run_execution_id or None,
                 questions_metadata=effective.to_metadata(),
-                force_protocol="v2",
+                force_protocol="generational",
             )
 
         def _record_artifacts(gid: str) -> None:
@@ -672,7 +676,7 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
                 output_service.record_file(md_final, "md", artifact_role="alias")
 
         if effective.empty or not effective.structured:
-            payload = validate_artifact_v2(_empty_v2_payload(effective))
+            payload = validate_structured_artifact(_empty_structured_payload(effective))
             markdown = render_custom_qa_markdown(payload)
             gid = _commit(payload, markdown)
             _record_artifacts(gid)
@@ -705,7 +709,7 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
         )
         require_prompt_budget(
             max_input_chars=int(effort_runtime.max_input_chars),
-            instruction=INSTRUCTION_V2,
+            instruction=STRUCTURED_INSTRUCTION,
             module_name=MODULE_NAME,
         )
 
@@ -771,7 +775,7 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
         # Cache: prefer alias path (compat) then regenerate
         cached: Optional[dict[str, Any]] = None
         try:
-            cached = try_load_cached_artifact_v2(
+            cached = try_load_cached_structured_artifact(
                 json_final,
                 cache_key=cache_key,
                 questions_hash=unrouted.questions_hash,
@@ -848,7 +852,9 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
                     expected_cells.append((q.question_id, "per_speaker", sk))
 
         attempt_index = 0
-        answer_calls = [c for c in primary if c.kind in ("global_answer", "speaker_answer")]
+        answer_calls = [
+            c for c in primary if c.kind in ("global_answer", "speaker_answer")
+        ]
         for call in answer_calls:
             batch = [by_qid[qid] for qid in call.question_ids if qid in by_qid]
             if not batch:
@@ -875,8 +881,8 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
             use_tx = bool(evidence_used.get("use_transcript"))
             if use_tx and not corpus.corpus_text.strip():
                 evidence_used = {**evidence_used, "transcript_fallback": True}
-            system_prompt = _system_prompt_v2(question_count=len(batch))
-            user_prompt = _build_user_prompt_v2(
+            system_prompt = _structured_system_prompt(question_count=len(batch))
+            user_prompt = _build_structured_user_prompt(
                 questions=batch,
                 evidence_text=evidence_text,
                 corpus_text=corpus.corpus_text if use_tx else "",
@@ -997,14 +1003,10 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
         for block in speaker_answers:
             for r in block["answers"]:
                 statuses.append(str(r.get("status")))
-        outcome = compute_outcome_v2(
-            empty_questions=False, scheduled_statuses=statuses
-        )
+        outcome = compute_structured_outcome(empty_questions=False, scheduled_statuses=statuses)
 
         packs_available = [
-            pid
-            for pid, snap in unrouted.snapshots.items()
-            if snap.state == "available"
+            pid for pid, snap in unrouted.snapshots.items() if snap.state == "available"
         ]
         packs_missing = [
             pid for pid, snap in unrouted.snapshots.items() if snap.state == "missing"
@@ -1020,9 +1022,9 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
 
         provenance = {
             "module": MODULE_NAME,
-            "schema_id": V2_SCHEMA_ID,
-            "module_version": V2_MODULE_VERSION,
-            "contract_version": V2_CONTRACT_VERSION,
+            "schema_id": SCHEMA_ID,
+            "module_version": MODULE_VERSION,
+            "contract_version": CONTRACT_VERSION,
             "router_prompt_version": ROUTER_PROMPT_VERSION,
             "answer_prompt_version": ANSWER_PROMPT_VERSION,
             "repair_prompt_version": REPAIR_PROMPT_VERSION,
@@ -1046,10 +1048,10 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
             "http_attempts": accounting.http_attempts,
         }
         payload = {
-            "schema_id": V2_SCHEMA_ID,
+            "schema_id": SCHEMA_ID,
             "module": MODULE_NAME,
-            "module_version": V2_MODULE_VERSION,
-            "contract_version": V2_CONTRACT_VERSION,
+            "module_version": MODULE_VERSION,
+            "contract_version": CONTRACT_VERSION,
             "questions_requested": _questions_requested_payload(unrouted.questions),
             "question_order": list(unrouted.question_order),
             "questions_hash": unrouted.questions_hash,
@@ -1091,7 +1093,7 @@ def run_v2_from_context(module: Any, context: Any) -> Dict[str, Any]:
             "provenance": provenance,
             "cache_key": cache_key,
         }
-        payload = validate_artifact_v2(payload)
+        payload = validate_structured_artifact(payload)
         markdown = render_custom_qa_markdown(payload)
         gid = _commit(payload, markdown)
         _record_artifacts(gid)

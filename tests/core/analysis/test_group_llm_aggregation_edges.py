@@ -179,7 +179,7 @@ class TestActionItemsGroupEdges:
         ]
         out = aggregate_llm_action_items_group(results, _cmap(), _ts())
         assert out is not None
-        assert out["schema_version"] == 2
+        assert out["schema_version"] == 1
         assert out["session_rows"][0]["item_count"] == 1
         assert out["session_rows"][0]["status_open"] == 1
         assert out["session_rows"][0]["count_action_item"] == 1
@@ -228,7 +228,7 @@ class TestActionItemsGroupEdges:
                 {
                     "llm_action_items": {
                         "payload": {
-                            "schema_id": "transcriptx.llm_action_items.v1",
+                            # Unstamped legacy shape (no schema_id / record_type).
                             "items": [
                                 {
                                     "text": "Ship it",
@@ -270,7 +270,6 @@ class TestActionItemsGroupEdges:
                 {
                     "llm_action_items": {
                         "payload": {
-                            "schema_id": "transcriptx.llm_action_items.v1",
                             "items": [
                                 {
                                     "text": "Ship it",

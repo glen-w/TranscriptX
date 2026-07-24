@@ -106,7 +106,7 @@ def build_whispermlx_batch_loop(params: CommandGenParams) -> GeneratedCommand:
     diarize_flag = " \\\n        --diarize" if params.diarize else ""
     # Prefer WHISPERMLX from env; fall back to PATH lookup or explicit binary path.
     if binary == "whispermlx":
-        binary_default = '$(command -v whispermlx)'
+        binary_default = "$(command -v whispermlx)"
     else:
         binary_default = _q(binary)
     shell = f"""set -a

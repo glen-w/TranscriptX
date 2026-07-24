@@ -1,7 +1,7 @@
 {
   "active_acts_profile": "default",
   "active_qa_analysis_profile": "default",
-  "active_semantic_similarity_v2_profile": "balanced_v2",
+  "active_semantic_similarity_profile": "balanced",
   "active_tag_extraction_profile": "default",
   "active_temporal_dynamics_profile": "default",
   "active_topic_modeling_profile": "default",
@@ -224,6 +224,27 @@
   "interaction_overlap_threshold": 0.5,
   "interaction_response_threshold": 2.0,
   "interaction_time_window": 30.0,
+  "keyphrases": {
+    "diversity_jaccard_threshold": 0.85,
+    "enabled_methods": [
+      "noun_chunks",
+      "yake",
+      "keybert"
+    ],
+    "evidence_max_per_phrase": 3,
+    "evidence_snippet_max_chars": 120,
+    "keybert_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "max_phrase_tokens": 6,
+    "max_phrases": 40,
+    "min_member_sessions": 2,
+    "min_occurrences_global": 2,
+    "min_occurrences_speaker": 1,
+    "min_phrase_tokens": 1,
+    "yake_lan": "en",
+    "yake_n": 3,
+    "yake_top": 40,
+    "yake_window_size": 2
+  },
   "llm_action_items": {
     "coerce_v1_artifacts": false,
     "effort": "max"
@@ -844,9 +865,7 @@
   "semantic_batch_size": 64,
   "semantic_model_name": "sentence-transformers/all-MiniLM-L6-v2",
   "semantic_progress_log_interval_seconds": 60.0,
-  "semantic_similarity_method": "simple",
-  "semantic_similarity_threshold": 0.7,
-  "semantic_similarity_v2": {
+  "semantic_similarity": {
     "batch_size": 64,
     "cluster_eps": 0.35,
     "cluster_min_samples": 2,
@@ -873,8 +892,9 @@
     "top_k_per_segment": 50,
     "use_lexical_prefilter": false
   },
-  "semantic_similarity_v2_profiles": {
-    "balanced_v2": {
+  "semantic_similarity_method": "simple",
+  "semantic_similarity_profiles": {
+    "balanced": {
       "cross_speaker_similarity_threshold": 0.62,
       "lexical_prefilter_min_jaccard": 0.05,
       "max_candidate_pairs": 50000,
@@ -883,7 +903,7 @@
       "top_k_per_segment": 50,
       "use_lexical_prefilter": true
     },
-    "deep_v2": {
+    "deep": {
       "cross_speaker_similarity_threshold": 0.55,
       "max_candidate_pairs": 150000,
       "mode": "advanced",
@@ -892,7 +912,7 @@
       "top_k_per_segment": 120,
       "use_lexical_prefilter": false
     },
-    "fast_v2": {
+    "fast": {
       "cross_speaker_similarity_threshold": 0.68,
       "lexical_prefilter_min_jaccard": 0.1,
       "max_candidate_pairs": 15000,
@@ -903,6 +923,7 @@
       "use_lexical_prefilter": true
     }
   },
+  "semantic_similarity_threshold": 0.7,
   "semantic_timeout_seconds": 300,
   "sentiment_backend": "vader",
   "sentiment_min_confidence": 0.1,
@@ -1045,8 +1066,7 @@
       "allow_heavy": true,
       "allow_llm": true,
       "heavy_module_ids": [
-        "semantic_similarity_v2",
-        "fine_grained_emotion"
+        "semantic_similarity"
       ],
       "include_excluded_from_default": false,
       "llm_module_ids": [
@@ -1149,26 +1169,5 @@
     "that",
     "these",
     "those"
-  ],
-  "keyphrases": {
-    "enabled_methods": [
-      "noun_chunks",
-      "yake",
-      "keybert"
-    ],
-    "max_phrases": 40,
-    "min_phrase_tokens": 1,
-    "max_phrase_tokens": 6,
-    "min_occurrences_global": 2,
-    "min_occurrences_speaker": 1,
-    "diversity_jaccard_threshold": 0.85,
-    "evidence_max_per_phrase": 3,
-    "evidence_snippet_max_chars": 120,
-    "keybert_model_id": "sentence-transformers/all-MiniLM-L6-v2",
-    "yake_lan": "en",
-    "yake_n": 3,
-    "yake_top": 40,
-    "yake_window_size": 2,
-    "min_member_sessions": 2
-  }
+  ]
 }

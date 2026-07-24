@@ -110,9 +110,7 @@ def collect_named_speaker_groups_for_llm(
             continue
         if not format_transcript_lines(speaker_segments):
             continue
-        speaker_key = canonical_speaker_key(
-            display_name, grouping_key, runtime_flags
-        )
+        speaker_key = canonical_speaker_key(display_name, grouping_key, runtime_flags)
         bucket = buckets.get(speaker_key)
         if bucket is None:
             buckets[speaker_key] = {

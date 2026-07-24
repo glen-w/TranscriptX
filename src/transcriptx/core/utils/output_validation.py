@@ -125,17 +125,6 @@ MODULE_VALIDATION_RULES = {
         min_files=1,
         file_extensions={".json", ".csv", ".png", ".html"},
     ),
-    "semantic_similarity": ModuleValidationRule(
-        required_files=[
-            "*_semantic_similarity_summary.json"
-        ],  # Actual file pattern used
-        required_dirs=[
-            "data/global",
-            "charts/global",
-        ],  # Check for both data and charts
-        min_files=2,  # At least summary + chart
-        file_extensions={".json", ".png"},
-    ),
     "stats": ModuleValidationRule(
         required_files=["report.json"],  # Canonical stats/report payload at run root
         required_dirs=[],  # No specific directory requirement
@@ -176,12 +165,6 @@ MODULE_VALIDATION_RULES = {
         required_dirs=["data"],
         min_files=1,
         file_extensions={".json", ".csv"},
-    ),
-    "semantic_similarity_advanced": ModuleValidationRule(
-        required_files=["*_semantic_advanced_global.json"],  # Actual file pattern used
-        required_dirs=["data"],  # Just check for data directory
-        min_files=1,  # At least 1 main data file
-        file_extensions={".json", ".png"},
     ),
     "semantic_similarity": ModuleValidationRule(
         required_files=["*_semantic_similarity_summary.json"],

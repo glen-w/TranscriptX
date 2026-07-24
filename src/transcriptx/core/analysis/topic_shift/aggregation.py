@@ -16,7 +16,12 @@ from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 _ZERO_SHIFT_OK = frozenset({"success", "no_shift_detected"})
 # Statuses excluded from numeric comparison (nullable / visible exclude)
 _EXCLUDED = frozenset(
-    {"insufficient_content", "unsupported_language", "backend_unavailable", "invalid_input"}
+    {
+        "insufficient_content",
+        "unsupported_language",
+        "backend_unavailable",
+        "invalid_input",
+    }
 )
 
 
@@ -27,9 +32,7 @@ def _extract_payload(module_results: Dict[str, Any]) -> Optional[Dict[str, Any]]
     if "stats_envelope" in raw or "stats" in raw:
         return raw
     nested = raw.get("results")
-    if isinstance(nested, dict) and (
-        "stats_envelope" in nested or "stats" in nested
-    ):
+    if isinstance(nested, dict) and ("stats_envelope" in nested or "stats" in nested):
         return nested
     return raw
 

@@ -102,7 +102,7 @@ def _build_action_items_system_prompt() -> str:
         "Do not add keys beyond record_type, text, owner, deadline, status, "
         "quote, and confidence. "
         "Use only evidence from the transcript content. "
-        "If nothing qualifies, return {\"items\": []}. "
+        'If nothing qualifies, return {"items": []}. '
         "Emit valid JSON: double quotes only, no trailing commas, "
         "a comma between every array element, "
         "and escape any double quotes inside string values with a backslash."
@@ -312,7 +312,8 @@ def _write_raw_response_dump(output_service: Any, *, raw_text: str) -> None:
         clipped = (
             raw_text
             if len(raw_text) <= _RAW_RESPONSE_DUMP_CHARS
-            else raw_text[:_RAW_RESPONSE_DUMP_CHARS] + "\n\n[truncated for debug dump]\n"
+            else raw_text[:_RAW_RESPONSE_DUMP_CHARS]
+            + "\n\n[truncated for debug dump]\n"
         )
         write_text(str(path), clipped)
         output_service.record_file(path, "txt")

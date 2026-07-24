@@ -168,7 +168,7 @@ def test_semantic_similarity_computes_totals_from_repetition_lists() -> None:
             "a",
             0,
             {
-                "semantic_similarity_advanced": {
+                "semantic_similarity": {
                     "payload": {
                         "speaker_repetitions": {
                             "Alice": [
@@ -195,7 +195,7 @@ def test_semantic_similarity_computes_totals_from_repetition_lists() -> None:
     out = aggregate_semantic_similarity_group(results, _cmap(), _ts())
     assert out is not None
     assert out["session_rows"][0]["total_repetitions"] == 2
-    assert out["session_rows"][0]["semantic_module"] == "semantic_similarity_advanced"
+    assert out["session_rows"][0]["semantic_module"] == "semantic_similarity"
     assert len(out["content_rows"]) == 2
     assert "aggregation_note" in out
 
@@ -286,9 +286,7 @@ def test_new_numeric_aggs_have_chart_generators_and_allowlists() -> None:
         "session_bars",
         "motif_prevalence",
     )
-    assert isinstance(
-        reg["semantic_similarity"], SemanticSimilarityGroupChartGenerator
-    )
+    assert isinstance(reg["semantic_similarity"], SemanticSimilarityGroupChartGenerator)
     allow = allowed_numeric_keys_for_generic_agg("semantic_similarity")
     assert allow is not None and "motif_count" in allow
 

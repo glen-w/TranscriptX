@@ -57,7 +57,9 @@ from transcriptx.core.analysis.topic_shift.windowing import (
 )
 
 
-def _thresholds_for(backend: str, overrides: Mapping[str, Any] | None) -> DetectorThresholds:
+def _thresholds_for(
+    backend: str, overrides: Mapping[str, Any] | None
+) -> DetectorThresholds:
     base = dict(BACKEND_THRESHOLDS.get(backend) or BACKEND_THRESHOLDS["tfidf"])
     if overrides:
         for key in ("k_mad", "absolute_floor", "min_prominence"):
@@ -90,13 +92,15 @@ def _transformers_probe(
     )
 
 
-def _texts_for_backend(
-    windows: Sequence[TopicWindow], backend: str
-) -> list[str]:
+def _texts_for_backend(windows: Sequence[TopicWindow], backend: str) -> list[str]:
     """Transformers use raw_text; TF-IDF paths use lexical_text (raw fallback)."""
     if backend in ("tfidf", "tfidf_char"):
         return [
-            (w.lexical_text.strip() if w.lexical_text and w.lexical_text.strip() else w.raw_text)
+            (
+                w.lexical_text.strip()
+                if w.lexical_text and w.lexical_text.strip()
+                else w.raw_text
+            )
             for w in windows
         ]
     return [w.raw_text for w in windows]
@@ -319,7 +323,7 @@ def run_topic_shift_analysis(
     )
     # Fill keyword hints
     for span in spans:
-        c_segs = [
+        _c_segs = [
             s
             for s in segs
             if span["segment_start_idx"] <= s.source_index <= span["segment_end_idx"]

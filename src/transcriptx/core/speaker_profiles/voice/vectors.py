@@ -43,9 +43,7 @@ def validate_embedding_vector(
     if arr.dtype != VECTOR_DTYPE:
         arr = arr.astype(VECTOR_DTYPE, copy=False)
     if arr.shape != (expected_dim,):
-        raise VoiceVectorError(
-            f"expected shape ({expected_dim},), got {arr.shape}"
-        )
+        raise VoiceVectorError(f"expected shape ({expected_dim},), got {arr.shape}")
     if not np.isfinite(arr).all():
         raise VoiceVectorError("non-finite values in embedding")
     if require_unit_norm:

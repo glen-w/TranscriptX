@@ -18,17 +18,18 @@ from transcriptx.core.speaker_profiles.layout import (
 from transcriptx.core.speaker_profiles.models import (
     SpeakerProfileEventV1,
     SpeakerProfileLinkV1,
-    SpeakerProfileOperationV1,
     SpeakerProfileV1,
 )
-from transcriptx.core.speaker_profiles.operations import relative_link_path, relative_profile_path
+from transcriptx.core.speaker_profiles.operations import (
+    relative_link_path,
+    relative_profile_path,
+)
 from transcriptx.core.speaker_profiles.recovery import (
     affected_relpaths,
     classify_operation,
     list_operations_detailed,
 )
 from transcriptx.core.speaker_profiles.store_io import parse_model
-
 
 RecoveryClass = Literal[
     "complete",
@@ -160,7 +161,9 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
                     if profile.avatar_sha256 and not verify_avatar_bytes(
                         data, expected_sha256=profile.avatar_sha256
                     ):
-                        avatar_issues.append(f"avatar_hash_mismatch:{profile.profile_id}")
+                        avatar_issues.append(
+                            f"avatar_hash_mismatch:{profile.profile_id}"
+                        )
                 except Exception:
                     avatar_issues.append(f"avatar_corrupt:{profile.profile_id}")
 
@@ -206,7 +209,9 @@ def run_integrity_scan(root: Path) -> IntegrityReport:
     if emb_dir.is_dir():
         for path in emb_dir.glob("*.voice_embedding.json"):
             try:
-                from transcriptx.core.speaker_profiles.voice.models import VoiceEmbeddingV1
+                from transcriptx.core.speaker_profiles.voice.models import (
+                    VoiceEmbeddingV1,
+                )
 
                 emb = parse_model(VoiceEmbeddingV1, path)
                 vec = root / "voice" / "vectors" / f"{emb.embedding_id}.npy"

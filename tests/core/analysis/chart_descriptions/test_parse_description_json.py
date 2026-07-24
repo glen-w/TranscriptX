@@ -12,7 +12,9 @@ from transcriptx.core.analysis.chart_descriptions.generate import (
 @pytest.mark.unit
 def test_parse_description_json_accepts_plain_object() -> None:
     assert (
-        _parse_description_json('{"description": "Bars rise mid-meeting."}', max_chars=200)
+        _parse_description_json(
+            '{"description": "Bars rise mid-meeting."}', max_chars=200
+        )
         == "Bars rise mid-meeting."
     )
 

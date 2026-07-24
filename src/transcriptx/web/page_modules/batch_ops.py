@@ -147,9 +147,7 @@ def render_batch_analysis_panel() -> None:
         key_prefix="batch_qa",
         always_show=True,
     )
-    plan = apply_custom_qa_to_plan(
-        resolved, custom_qa_execution=custom_qa_execution
-    )
+    plan = apply_custom_qa_to_plan(resolved, custom_qa_execution=custom_qa_execution)
     render_effective_module_summary(
         plan,
         preset=resolved.preset,

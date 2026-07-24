@@ -8,7 +8,6 @@ import pytest
 
 from transcriptx.core.analysis.llm_support.action_items_contract import (
     LLM_ACTION_ITEMS_SCHEMA_ID,
-    LLM_ACTION_ITEMS_SCHEMA_ID_V1,
     MAX_ITEMS_PER_TYPE,
     MAX_ITEMS_TOTAL,
     RECORD_TYPES,
@@ -69,7 +68,7 @@ def test_build_llm_action_items_cache_key_changes_on_version_bumps() -> None:
     v1 = build_llm_action_items_cache_key(
         module_version="1",
         prompt_version="4",
-        schema_id=LLM_ACTION_ITEMS_SCHEMA_ID_V1,
+        schema_id=LLM_ACTION_ITEMS_SCHEMA_ID,
         **base_kwargs,
     )
     v2 = build_llm_action_items_cache_key(
@@ -168,7 +167,10 @@ def test_parse_coerces_percent_confidence() -> None:
     parsed, diagnostics = parse_action_items_json(
         _raw([_item(confidence=80), _item(confidence="high", text="Other", quote=None)])
     )
-    assert [item["confidence"] for item in parsed] == [pytest.approx(0.8), pytest.approx(0.9)]
+    assert [item["confidence"] for item in parsed] == [
+        pytest.approx(0.8),
+        pytest.approx(0.9),
+    ]
     assert diagnostics["confidence_coerced"] == 2
 
 
@@ -367,7 +369,9 @@ def test_finalize_mistral_missing_confidence_and_ellipsis_quotes() -> None:
     assert diagnostics["status_aliased"] >= 1
     assert diagnostics["quotes_salvaged"] >= 1
     assert diagnostics["items_committed"] == 3
-    assert any("£130 worth of stuff off Amazon" in (item.get("quote") or "") for item in items)
+    assert any(
+        "£130 worth of stuff off Amazon" in (item.get("quote") or "") for item in items
+    )
 
 
 @pytest.mark.unit
@@ -477,8 +481,7 @@ def test_ground_nulls_quote_without_rewriting_fields() -> None:
         _raw([_item(text="send the report by Friday", quote="Fabricated quote.")])
     )
     original = {
-        k: items[0][k]
-        for k in ("record_type", "text", "owner", "deadline", "status")
+        k: items[0][k] for k in ("record_type", "text", "owner", "deadline", "status")
     }
     grounded, diagnostics = ground_action_items(
         items, "Alice: I will send the report by Friday."
@@ -565,7 +568,9 @@ def test_dedupe_keeps_different_record_types() -> None:
 
 @pytest.mark.unit
 def test_order_by_type_then_transcript_strips_internals() -> None:
-    transcript = "Alice: first task here. Bob: second task here. We decided on Postgres."
+    transcript = (
+        "Alice: first task here. Bob: second task here. We decided on Postgres."
+    )
     items = [
         dict(
             _item(record_type="action_item", text="second task here", quote=None),
@@ -694,11 +699,50 @@ def test_finalize_end_to_end_committed_counts() -> None:
 def test_v1_compat_detection_and_coerce() -> None:
     v1 = example_v1_artifact()
     assert is_v1_action_items_payload(v1)
+    # Live stamped schema_id is not legacy-compat.
     assert not is_v1_action_items_payload(example_v2_artifact())
+    stamped_live = dict(v1)
+    stamped_live["schema_id"] = LLM_ACTION_ITEMS_SCHEMA_ID
+    assert not is_v1_action_items_payload(stamped_live)
+    foreign = dict(v1)
+    foreign["schema_id"] = "transcriptx.other.v1"
+    assert not is_v1_action_items_payload(foreign)
+    with_record_type = {
+        "module": "llm_action_items",
+        "items": [{"record_type": "action_item", "text": "x"}],
+    }
+    assert not is_v1_action_items_payload(with_record_type)
+    assert is_v1_action_items_payload({"items": []})
     coerced = coerce_v1_action_items_payload(v1)
-    assert coerced["schema_id"] == LLM_ACTION_ITEMS_SCHEMA_ID_V1
+    assert coerced.get("schema_id") in (None, "")
     assert coerced["items"][0]["record_type"] == "action_item"
     assert coerced["provenance"]["compat"] == "v1_coerced"
+
+
+@pytest.mark.unit
+def test_epoch1_stamped_payload_not_legacy_and_not_coerced() -> None:
+    """Ordinary epoch-1 stamped payloads stay on the live path (no coerce)."""
+    live = example_v2_artifact()
+    assert live.get("schema_id") == LLM_ACTION_ITEMS_SCHEMA_ID
+    assert not is_v1_action_items_payload(live)
+    # Coerce helper is for unstamped legacy only; live payloads must not gain
+    # v1_coerced provenance when left on the live aggregation path.
+    assert (live.get("provenance") or {}).get("compat") != "v1_coerced"
+
+
+@pytest.mark.unit
+def test_malformed_action_items_json_fails() -> None:
+    with pytest.raises(LLMResponseError):
+        parse_action_items_json("{not-json")
+
+
+@pytest.mark.unit
+def test_action_items_schema_id_has_no_v1_alias() -> None:
+    import transcriptx.core.analysis.llm_support.action_items_contract as mod
+
+    assert mod.LLM_ACTION_ITEMS_SCHEMA_ID == "transcriptx.llm_action_items.v1"
+    assert not hasattr(mod, "LLM_ACTION_ITEMS_SCHEMA_ID_V1")
+    assert "LLM_ACTION_ITEMS_SCHEMA_ID_V1" not in mod.__all__
 
 
 @pytest.mark.unit

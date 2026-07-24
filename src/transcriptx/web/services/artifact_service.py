@@ -171,9 +171,7 @@ class ArtifactService:
             suppress_topic_shift_surface_artifacts,
         )
 
-        artifacts = suppress_topic_shift_surface_artifacts(
-            artifacts, run_root=run_root
-        )
+        artifacts = suppress_topic_shift_surface_artifacts(artifacts, run_root=run_root)
         return filter_artifacts(artifacts, filters)
 
     @staticmethod

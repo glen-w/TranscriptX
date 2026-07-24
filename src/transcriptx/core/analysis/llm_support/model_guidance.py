@@ -370,8 +370,7 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
         prefixes=("granite3.3", "granite3.2", "granite3", "granite"),
         family_label="Granite",
         strengths=(
-            "IBM instruct family; non-thinking mid tags with steady JSON "
-            "behaviour."
+            "IBM instruct family; non-thinking mid tags with steady JSON " "behaviour."
         ),
         best_for=(
             "Shared mid alternative (e.g. granite3.3:8b) for llm_summary, "
@@ -607,9 +606,7 @@ def guidance_for_model(
         if rule.by_size and size in rule.by_size:
             strengths, best_for, notes = rule.by_size[size]
 
-    producer = producer_for_model(
-        tag, family=info.family if info is not None else None
-    )
+    producer = producer_for_model(tag, family=info.family if info is not None else None)
     released = released_for_model(tag)
     if library_meta is not None:
         if library_meta.producer:

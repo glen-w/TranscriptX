@@ -27,9 +27,7 @@ def normalize_display_name(display_name: str) -> str:
     return name
 
 
-def normalize_aliases(
-    aliases: list[str] | None, *, display_name: str
-) -> list[str]:
+def normalize_aliases(aliases: list[str] | None, *, display_name: str) -> list[str]:
     """Trim, drop empties, case-insensitive dedupe, drop display-name matches."""
     if aliases is None:
         return []
@@ -50,9 +48,7 @@ def normalize_aliases(
         seen.add(key)
         out.append(alias)
         if len(out) > MAX_ALIASES:
-            raise SpeakerProfileContractError(
-                f"at most {MAX_ALIASES} aliases allowed"
-            )
+            raise SpeakerProfileContractError(f"at most {MAX_ALIASES} aliases allowed")
     return out
 
 
@@ -88,9 +84,7 @@ def apply_profile_update(
 ) -> SpeakerProfileV1:
     """Build a validated updated profile from partial update fields."""
     if clear_notes and notes is not None:
-        raise SpeakerProfileContractError(
-            "cannot pass notes and clear_notes together"
-        )
+        raise SpeakerProfileContractError("cannot pass notes and clear_notes together")
     if clear_accent and accent_color is not None:
         raise SpeakerProfileContractError(
             "cannot pass accent_color and clear_accent together"

@@ -1,5 +1,5 @@
 {
-  "balanced_v2": {
+  "balanced": {
     "cross_speaker_similarity_threshold": 0.62,
     "lexical_prefilter_min_jaccard": 0.05,
     "max_candidate_pairs": 50000,
@@ -8,7 +8,7 @@
     "top_k_per_segment": 50,
     "use_lexical_prefilter": true
   },
-  "deep_v2": {
+  "deep": {
     "cross_speaker_similarity_threshold": 0.55,
     "max_candidate_pairs": 150000,
     "mode": "advanced",
@@ -17,7 +17,7 @@
     "top_k_per_segment": 120,
     "use_lexical_prefilter": false
   },
-  "fast_v2": {
+  "fast": {
     "cross_speaker_similarity_threshold": 0.68,
     "lexical_prefilter_min_jaccard": 0.1,
     "max_candidate_pairs": 15000,

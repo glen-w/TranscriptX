@@ -81,10 +81,6 @@ class EffectiveModulePlan:
     heavy_count: int
     custom_qa_execution: bool
 
-_LEGACY_SEMANTIC_IDS = frozenset(
-    {"semantic_similarity", "semantic_similarity_advanced"}
-)
-
 
 def is_legacy_module(module_id: str) -> bool:
     """Return True if the registry marks this module as legacy."""
@@ -100,6 +96,13 @@ def _dedupe_preserve_order(modules: List[str]) -> List[str]:
             seen.add(m)
             out.append(m)
     return out
+
+
+def _strip_retired_public_module_ids(modules: List[str]) -> List[str]:
+    """Drop retired public module ids (epoch-1); no rewrite to siblings."""
+    from transcriptx.core.pipeline.retired_public_ids import RETIRED_PUBLIC_MODULE_IDS
+
+    return [m for m in modules if m not in RETIRED_PUBLIC_MODULE_IDS]
 
 
 def apply_analysis_mode_settings(
@@ -169,41 +172,12 @@ def filter_modules_by_mode(modules: List[str], mode: str) -> List[str]:
     """
     Filter module list for the given analysis mode.
 
-    Legacy semantic modules (`semantic_similarity`, `semantic_similarity_advanced`)
-    are only kept when they appear explicitly in ``modules`` (user override).
-    Default plans use ``semantic_similarity`` instead (via registry defaults).
-
-    Quick mode: if the list explicitly contained only
-    ``semantic_similarity_advanced``, substitute ``semantic_similarity`` (legacy
-    quick path), matching the historical contract.
+    Retired public module ids (e.g. ``semantic_similarity_advanced``) are
+    always dropped. Epoch-1 public id is ``semantic_similarity`` only.
     """
     if mode not in VALID_MODES:
         mode = "quick"
-    config = get_config()
-    settings = (
-        config.analysis.quick_analysis_settings
-        if mode == "quick"
-        else config.analysis.full_analysis_settings
-    )
-
-    modules = list(modules)
-    explicit_legacy_semantic = bool(_LEGACY_SEMANTIC_IDS.intersection(modules))
-
-    if explicit_legacy_semantic:
-        if mode == "quick" and settings.get("skip_advanced_semantic", True):
-            out: list[str] = []
-            had_advanced_only = "semantic_similarity_advanced" in modules
-            for m in modules:
-                if m == "semantic_similarity_advanced":
-                    continue
-                out.append(m)
-            if had_advanced_only and "semantic_similarity" not in out:
-                out.append("semantic_similarity")
-            return _dedupe_preserve_order(out)
-        return _dedupe_preserve_order(modules)
-
-    # Default path: strip legacy semantic ids (should already be absent from defaults).
-    modules = [m for m in modules if m not in _LEGACY_SEMANTIC_IDS]
+    modules = _strip_retired_public_module_ids(list(modules))
     return _dedupe_preserve_order(modules)
 
 
@@ -344,7 +318,7 @@ def _policy_for_preset(preset_key: AnalysisPreset) -> Any:
             allow_llm=True,
             llm_module_ids=["llm_summary"],
             allow_heavy=True,
-            heavy_module_ids=["semantic_similarity", "fine_grained_emotion"],
+            heavy_module_ids=["semantic_similarity"],
             include_excluded_from_default=False,
             module_ids=None,
         ),

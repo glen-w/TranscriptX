@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence
+from typing import Optional
 
 from transcriptx.core.analysis.llm_custom_qa.question_identity import CanonicalQuestion
 from transcriptx.core.analysis.llm_custom_qa.resolve import (

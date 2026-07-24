@@ -242,7 +242,9 @@ def save_onboarding_prefs(
     draft: OnboardingDraft, *, path: Path | None = None
 ) -> SaveResult:
     if draft.recovery:
-        return SaveResult(ok=False, error="Save disabled while onboarding is in recovery.")
+        return SaveResult(
+            ok=False, error="Save disabled while onboarding is in recovery."
+        )
     target = path or draft.path or onboarding_prefs_path()
     new_bytes = _envelope_bytes(draft.prefs)
     try:
