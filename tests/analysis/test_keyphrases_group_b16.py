@@ -17,26 +17,28 @@ class _DummySet:
     metadata: dict = {}
 
 
-def _ptr(tid: str, phrases: list[dict]) -> PerTranscriptResult:
+def _ptr(tid: str, phrases: list[dict], *, order_index: int = 0) -> PerTranscriptResult:
     return PerTranscriptResult(
         transcript_path=f"/tmp/{tid}.json",
         transcript_key=tid,
         run_id="r1",
-        order_index=0,
+        order_index=order_index,
         output_dir=f"/tmp/{tid}",
         module_results={
             "keyphrases": {
-                "schema_id": SCHEMA_ID,
-                "semantics_version": SEMANTICS_VERSION,
-                "usable": True,
-                "evaluation_state": "scored",
-                "global_by_method": {
-                    "noun_chunks": {
-                        "method": "noun_chunks",
-                        "evaluation_state": "scored",
-                        "phrases": phrases,
-                    }
-                },
+                "payload": {
+                    "schema_id": SCHEMA_ID,
+                    "semantics_version": SEMANTICS_VERSION,
+                    "usable": True,
+                    "evaluation_state": "scored",
+                    "global_by_method": {
+                        "noun_chunks": {
+                            "method": "noun_chunks",
+                            "evaluation_state": "scored",
+                            "phrases": phrases,
+                        }
+                    },
+                }
             }
         },
     )
@@ -77,7 +79,7 @@ def test_group_pool_by_canonical_key_min_sessions() -> None:
         "segment_support": 3,
     }
     out = aggregate_keyphrases(
-        [_ptr("a", [p1, singleton]), _ptr("b", [p2])],
+        [_ptr("a", [p1, singleton], order_index=0), _ptr("b", [p2], order_index=1)],
         _DummyMap(),  # type: ignore[arg-type]
         _DummySet(),  # type: ignore[arg-type]
     )
