@@ -1,0 +1,20 @@
+{
+  "rating": "up",
+  "reason": "helpful",
+  "note": "",
+  "output_text": "A concise transcript summary.",
+  "submission_token": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "target": {
+    "surface": "insights_block",
+    "block_id": "llm_summary_block",
+    "placement_id": "insights.llm_summary",
+    "module": "llm_summary",
+    "run_id": "20260724_110251_83771242",
+    "subject_type": "transcript",
+    "subject_id": "mini_transcript_raw",
+    "artifact_rel_path": "llm_summary/data/global/mini_llm_summary.md",
+    "question_id": null,
+    "questions_hash": null,
+    "logical_chart_id": null
+  }
+}

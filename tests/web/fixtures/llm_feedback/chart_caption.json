@@ -1,0 +1,20 @@
+{
+  "rating": "down",
+  "reason": "wrong_style",
+  "note": "",
+  "output_text": "This chart shows speaking time.",
+  "submission_token": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "target": {
+    "surface": "chart_caption",
+    "block_id": null,
+    "placement_id": null,
+    "module": "chart_descriptions",
+    "run_id": "20260724_110251_83771242",
+    "subject_type": "transcript",
+    "subject_id": "mini_transcript_raw",
+    "artifact_rel_path": "stats/charts/global_speaking_time.png",
+    "question_id": null,
+    "questions_hash": null,
+    "logical_chart_id": "stats|speaking_time|global|"
+  }
+}
