@@ -2190,3 +2190,40 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Default suite after expansion: **7628 passed, 2 skipped, 188 deselected**.
 - **Production code:** none (tests + one docs hygiene rephrase).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 9. Expansion (2026-07-24) – Guided/demo GUI + collection repair
+
+### Backup
+- `transcriptx backup/260724-2140.zip` (~7.5M)
+
+### Review
+- Collection was **broken** by 6 obsolete `semantic_similarity` v1 test modules + one weak-contract import of deleted `SemanticSimilarityAnalysis`.
+- **Fix (tests-only):** `collect_ignore` those 6 files in `tests/conftest.py`; rewrite weak-contract semantic case to `SemanticSimilarityV2Analysis`.
+- Quarantined marker count remains **0** live files; obsolete v1 tests are collect-ignored (update-or-remove candidates).
+- Default addopts still excludes heavy/quarantined/API/model/gui_acceptance lanes.
+- Note: project `.coveragerc` **omits `transcriptx/web/*`** by policy; GUI coverage measured with a temporary non-omitting config.
+- Full default run after repair: **7520 passed / 171 failed / 2 skipped** — residual failures are largely **schema-epoch / layout preset drift** (e.g. layout `schema_version` 2 vs expected 1), not introduced by Guided/demo tests. Not re-enabled or broadly “fixed” in this pass.
+
+### Tests added / extended
+| File | Focus |
+|------|--------|
+| `tests/web/test_presentation_gui_contracts.py` | Mode labels, Guided schema, visibility, unlock banner |
+| `tests/web/test_presentation_onboarding_coverage.py` | Prefs recovery/CAS/cache, switch widget, onboarding dismiss/complete |
+| `tests/web/test_settings_page.py` | Presentation stubs; Guided tab normalisation |
+| `tests/web/test_home_page.py` | Presentation expander ordering |
+| `tests/web/streamlit_doubles.py` | `st.container` double |
+| `tests/demo/test_demo_pack_edges.py` | Pack plans/hashes/status edges |
+| `tests/core/config/test_gui_guided_and_coercion_expansion.py` | Guided⊆Common, coerce, validate, persistence |
+| `tests/analysis/test_stats_and_registry_expansion.py` | Registry + stats offline contracts |
+| `tests/contracts/test_weak_analysis_module_contracts.py` | Contagion/entity + semantic v2 skip path |
+| `tests/analysis/test_base_module_interface.py` | Use epoch-1 `mini_transcript.json` |
+
+### Targeted coverage (measure config allowing web)
+- `presentation/*` + `onboarding/*` + `demo/*` aggregate ≈ **82%** (prefs/resolve/visibility near/above 90%; `demo.service` / `switch` / `seed` still below).
+- `config.coercion` + `gui_support` **100%** on focused runs.
+
+### Quarantine / ignore stance
+- Do **not** re-enable collect-ignored semantic v1 modules until rewritten for v2.
+- Leave layout/manifest schema-drift failures for a dedicated schema-alignment pass.
