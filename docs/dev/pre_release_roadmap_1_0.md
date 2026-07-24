@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**; later themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch implementation **`0.9.3`**; later themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -51,7 +51,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 | Topic | Decision |
 |-------|----------|
 | Public schema epoch | **Option A (disciplined):** public persisted `schema_version` → integer **`1` only** (never dotted `"1.0"` / `"2.0"`); public string IDs → `transcriptx.<domain>.v1`; refuse/isolate pre-epoch stores; data-root epoch marker; **no cosmetic resets** of policy/prompt/cache identity strings |
-| Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory: only `semantic_similarity` embeds a version suffix. **Retire** legacy `semantic_similarity` + `semantic_similarity_advanced`, then **rename** `semantic_similarity` → `semantic_similarity` (package/config/artifacts/presets/docs). Allowed under module freeze as 1.0 journey repair — not a new module. Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; collapse dual live writers as part of epoch. |
+| Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory offender was `semantic_similarity_v2`. **Done in 0.9.3:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`, rename `semantic_similarity_v2` → `semantic_similarity` (package/config/artifacts/presets/docs). Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; dual live writers collapsed as part of epoch. |
 | Product website | **Option A:** `website/` plain HTML/CSS (+ minimal JS), GitHub Pages; separate from hosted user docs. **Not a hard 1.0 blocker** if product gates pass — require a *credible* public landing; first version may be modest |
 | Hosted docs | **Revive Sphinx + Read the Docs** (extras already list Sphinx/MyST/Furo; `docs/conf.py` / Makefile / `docs/requirements.txt` are missing; `scripts/build_docs.sh` is stale; `stale_refs.sh` currently forbids `readthedocs.io` and must be updated when RTD goes live). **Usable hosted documentation is required**; polished breadth is not a hard blocker if task docs complete supported workflows |
 | Mode system | Presentation/config layer only — one execution system; labels prefer **Guided** / **Full controls** (Simple/Advanced acceptable aliases) |
@@ -99,12 +99,12 @@ The output should be a clear **repository information architecture**, not merely
 
 ### Phase 0A sequence
 
-- [ ] Inventory Markdown, reStructuredText and other documentation-like files across the repository
-- [ ] Inventory scripts, shell helpers, one-off migration tools, debug utilities and local developer automation
-- [ ] Classify every item
-- [ ] Consolidate relevant content into the correct live, reference, developer or archived location
-- [ ] Remove or quarantine obsolete material
-- [ ] Add repository checks that prevent ad-hoc files from accumulating again
+- [x] Inventory Markdown, reStructuredText and other documentation-like files across the repository (**0.9.1**)
+- [x] Inventory scripts, shell helpers, one-off migration tools, debug utilities and local developer automation (**0.9.1**)
+- [x] Classify every item (**0.9.1**)
+- [x] Consolidate relevant content into the correct live, reference, developer or archived location (**0.9.1**)
+- [x] Remove or quarantine obsolete material (**0.9.1**)
+- [x] Add repository checks that prevent ad-hoc files from accumulating again (**0.9.1**; warn mode)
 
 ### Documentation classification
 
@@ -322,7 +322,7 @@ Add placeholder files or documentation where needed so contributors know where l
 - [ ] Scripts relying on undeclared environment variables
 - [x] Duplicate install or Docker launch helpers (**removed 0.9.1**)
 - [ ] Transcription helpers with weak quoting, error reporting or resume behaviour
-- [ ] Schema or fixture regeneration scripts that will become invalid after the epoch reset
+- [x] Schema or fixture regeneration scripts that will become invalid after the epoch reset (**addressed with 0.9.3** fixture/golden regen + epoch refuse paths)
 - [ ] Scripts that directly mutate managed storage without going through supported services
 - [ ] Release scripts that duplicate or conflict with release governance
 - [ ] Scripts included in Docker build context or package data accidentally
@@ -437,7 +437,9 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 **Cut as `0.9.1` (2026-07-24).** Phase 0A hygiene + Phase 0B product-doc alignment.
 
-**Cut as `0.9.2` (2026-07-24).** Phase 0B planning stubs + schema-epoch inventory human-approved (integer `1`); schema epoch **implementation** still open.
+**Cut as `0.9.2` (2026-07-24).** Phase 0B planning stubs + schema-epoch inventory human-approved (integer `1`).
+
+**Cut as `0.9.3` (2026-07-24).** Schema epoch implementation: integer-1 public stamps, data-root marker + GUI/typed remediation, compatibility removal, `semantic_similarity` module-id cleanup.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -478,7 +480,7 @@ Focus: one coherent risk surface — public schema epoch (+ related public modul
 - [x] Supported GUI preflight (+ typed Python workflow / internal maintainer utility if needed — **not** a new public analysis CLI); optional inventory/export before reset; explicit fresh data directory path; no automatic deletion; default preserve compatible transcripts/recordings
 - [x] Regenerate fixtures/goldens; refuse pre-epoch stores with remediation UX (see §8)
 - [x] Prove 0.9 epoch-1 store opens unchanged in later 0.9.x / 1.0 candidates (epoch-1 marker + exact schema stamps; forward-compat by construction)
-- [ ] **Versioned module-id cleanup:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`; rename `semantic_similarity` → `semantic_similarity` (package, registry, config keys, UI presets/profiles, artifacts, group-agg preference, docs/tests). No long-lived dual module. Same theme as epoch preferred (clean-slate); split only if risk forces it.
+- [x] **Versioned module-id cleanup:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`; rename `semantic_similarity_v2` → `semantic_similarity` (package, registry, config keys, UI presets/profiles, artifacts, group-agg preference, docs/tests). No long-lived dual module. (**done in 0.9.3**)
 - [x] Collapse `llm_custom_qa` dual V1/V2 writer/marker symbols to a single epoch-1 constant (no `_V2` in names)
 
 ### 0.9.x — Installation and transcription onboarding
@@ -648,21 +650,21 @@ On encounter of a pre-epoch or otherwise incompatible data-root: **fail closed w
 
 Do not let “refuse pre-epoch store” become only an exception message. Keep preflight within **existing public surfaces** — do **not** create a new public analysis CLI solely for the reset.
 
-- [ ] **GUI preflight** that detects incompatible roots before work begins
-- [ ] Plus a **typed Python workflow** and/or clearly **internal maintainer utility** if automation is needed — not a new user-facing analysis CLI
-- [ ] Optional **inventory/export** before any reset path the product offers
-- [ ] Explicit **“create fresh 1.0 data directory”** path
-- [ ] **No automatic deletion** of user data
-- [ ] Precise identification of **which root** is incompatible
-- [ ] **Backup guidance** in GUI/docs
-- [ ] A **reset report** when a supported reset path is used (scoped to incompatible derived state by default; never broaden deletion for neatness)
-- [ ] Tests proving **unrelated source recordings are never touched**
-- [ ] Inventory decision recorded for **whether compatible managed transcripts are retained**
-- [ ] Validation that a **0.9 epoch-1 store opens unchanged in 1.0**
+- [x] **GUI preflight** that detects incompatible roots before work begins (**0.9.3**)
+- [x] Plus a **typed Python workflow** and/or clearly **internal maintainer utility** if automation is needed — not a new user-facing analysis CLI (**0.9.3**)
+- [x] Optional **inventory/export** before any reset path the product offers (**0.9.3**)
+- [x] Explicit **“create fresh 1.0 data directory”** path (**0.9.3**; copy says epoch-1)
+- [x] **No automatic deletion** of user data (**0.9.3**)
+- [x] Precise identification of **which root** is incompatible (**0.9.3**)
+- [x] **Backup guidance** in GUI/docs (**0.9.3**)
+- [x] A **reset report** when a supported reset path is used (scoped to incompatible derived state by default; never broaden deletion for neatness) (**0.9.3**)
+- [x] Tests proving **unrelated source recordings are never touched** (**0.9.3**)
+- [x] Inventory decision recorded for **whether compatible managed transcripts are retained** (retain / reimport; **0.9.2** inventory)
+- [x] Validation that a **0.9 epoch-1 store opens unchanged in 1.0** (epoch-1 marker + exact stamps frozen in **0.9.3**; confirm on 1.0 candidate soak)
 
-- [~] Deliverable: [docs/dev/schema_epoch_inventory.md](schema_epoch_inventory.md) with classified rows + retain/wipe + UX design — drafted; human sign-off before implementation
-- [ ] Inventory + transition-UX sign-off before epoch implementation
-- [ ] After reset: archive or remove obsolete pre-public compatibility/migration helpers per Phase 0A script policy
+- [x] Deliverable: [docs/dev/schema_epoch_inventory.md](schema_epoch_inventory.md) with classified rows + retain/wipe + UX design — human-approved 2026-07-24; implementation cut as **0.9.3**
+- [x] Inventory + transition-UX sign-off before epoch implementation (**0.9.2**)
+- [x] After reset: archive or remove obsolete pre-public compatibility/migration helpers per Phase 0A script policy (**0.9.3**)
 
 ---
 
@@ -938,12 +940,12 @@ Mandatory before the public 1.0 tag. RC may start once product gates pass even i
 **Before 1.0 (only if release risk / severity demands):**
 
 - [ ] Install/config duplication (`setup_env.sh`, extras vs requirements, auto-install hints)
-- [ ] Remove obsolete pre-public schema adapters after wipe
+- [x] Remove obsolete pre-public schema adapters after wipe (**0.9.3**)
 - [ ] Legacy Data/Explorer redirects (already queued)
 - [ ] Error-prone install profile markers
-- [ ] Anything blocking clean-env verification or epoch refusal tests
+- [x] Epoch refusal tests / remediation paths (**0.9.3**; clean-env verification still open under install theme)
 - [ ] Machine-specific or misleading scripts identified in Phase 0A
-- [ ] Epoch transition UX gaps (GUI preflight, typed/internal helper only, fresh dir, no auto-delete, preserve compatible transcripts)
+- [x] Epoch transition UX gaps (GUI preflight, typed/internal helper only, fresh dir, no auto-delete, preserve compatible transcripts) (**0.9.3**)
 
 **After 1.0** refactors and backlog items are tracked in [docs/ROADMAP.md](docs/ROADMAP.md) and the analysis-module backlog — not expanded in this short-term file.
 
@@ -984,7 +986,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 - [ ] **Buy Me a Coffee URL** — placeholder until supplied
 - [ ] **Exact 3–5 demo transcripts / licences** — owner to supply or approve redistributable sources
 - [ ] **Native Mac MPS:** documented supported-with-caveats for 1.0, not a hard GPU gate (default)
-- [ ] **Whether cleanup result schema 2→1** proceeds in same PR as public epoch (recommended yes; journal 3 / policy 7 stay)
+- [x] **Whether cleanup result schema 2→1** proceeds in same PR as public epoch (done in **0.9.3**; journal → 1 / policy 7 kept)
 - [ ] **Final UI copy:** ship **Guided / Full controls**; keep Simple/Advanced only as doc synonyms if needed
 - [ ] **RTD project slug / custom domain** — create when docs build is green
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
@@ -1005,3 +1007,4 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 5. [x] Publish release severity triage rules early so later hardening has a decision system
 6. [x] Schema inventory **and epoch transition UX design** approved in [schema_epoch_inventory.md](schema_epoch_inventory.md) (integer public schemas → `1`; owner clean-slate backup of maps/profiles 2026-07-24)
 7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3**); cut later themes (install ≠ modes); RC only when gates pass
+8. [ ] Execute **0.9.x install + transcription** theme (profiles matrix audit; Transcribe command gen; whispermlx-missing + corpus docs)

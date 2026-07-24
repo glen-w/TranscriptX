@@ -3,10 +3,10 @@ Authority: self
 
 # Schema epoch inventory (1.0)
 
-**Status:** **human-approved for epoch implementation** — public schema targets are integer **`1`** only (no dotted `.x` forms)  
+**Status:** **implemented in 0.9.3** — public schema targets are integer **`1`** only (no dotted `.x` forms); data-root marker + remediation UX shipped  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §8  
 **Package baseline:** 0.9.3 (epoch implementation)  
-**Approved:** 2026-07-24 (owner clean-slate + integer-1 standardisation)
+**Approved:** 2026-07-24 (owner clean-slate + integer-1 standardisation); **cut:** 2026-07-24 as `v0.9.3`
 
 ## Locked convention
 
@@ -169,7 +169,7 @@ Keep within **existing public surfaces** — no new public analysis CLI.
 - [x] Reset report when supported reset path is used
 - [x] Tests proving unrelated source recordings are never touched
 - [x] Retain decision for managed transcripts recorded (retain / reimport OK)
-- [ ] Validation that a 0.9 epoch-1 store opens unchanged later
+- [x] Validation that a 0.9 epoch-1 store opens unchanged later (epoch-1 marker + stamps frozen in **0.9.3**; reconfirm on later 0.9.x / 1.0 candidates)
 
 ## Doc / script locations referencing old versions
 
