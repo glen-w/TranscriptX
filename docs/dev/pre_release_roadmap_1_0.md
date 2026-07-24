@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch implementation **`0.9.3`**; later themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**; later themes (Guided/demo, harden/docs) ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -375,7 +375,7 @@ The schema inventory may begin in parallel with Phase 0B, but **no public schema
 - [x] [docs/ROADMAP.md](../ROADMAP.md) — long-term roadmap + 0.9 themes; 1.0 north star (**0.9.1**)
 - [x] [docs/ARCHITECTURE.md](../ARCHITECTURE.md) — aligned with PRODUCT.md (**0.9.1**)
 - [x] [docs/CONTRACT_INDEX.md](../CONTRACT_INDEX.md) — PRODUCT / surfaces / epoch / severity pointers
-- [x] [docs/public_surfaces.md](../public_surfaces.md) — Guided/Full + command-gen notes (**0.9.1**)
+- [x] [docs/public_surfaces.md](../public_surfaces.md) — Guided/Full notes (**0.9.1**); Transcribe command-gen marked shipped (**0.9.4**)
 - [x] [docs/dev/stocktake_2026-07-17.md](stocktake_2026-07-17.md) — retargeted to 0.9→1.0; Wave 3 demoted
 - [x] [docs/dev/analysis_module_backlog_2026-07-17.md](analysis_module_backlog_2026-07-17.md) — 0.9.x freeze header
 - [x] Install / Docker / transcription / release-governance — version / profile / handoff alignment (**0.9.1**)
@@ -401,7 +401,7 @@ The schema inventory may begin in parallel with Phase 0B, but **no public schema
 
 - [x] README/ROADMAP “credible **beta** toolkit” north star and “Next: richer analysis modules / Ollama integration” (Ollama already shipped)
 - [x] Version bands stuck on 0.6.x/0.7.x “near-term” while package advanced
-- [x] Competing install claims: `.[full]` vs Docker `requirements.txt` vs `./transcriptx.sh` presented as equivalent
+- [x] Competing install claims: `.[full]` vs Docker `requirements.txt` vs `./transcriptx.sh` presented as equivalent (**honesty deepened 0.9.4** — `[web]` ownership + capability matrix)
 - [x] README claim that `scripts/docker-smoke-test.sh` writes an inline transcript (it does not)
 - [x] Aspirational `basic`/`full`/`llm` profile names presented as if implemented (runtime marker is `core`|`full` only)
 - [x] Stocktake “Wave 3 remainder (B5 DB / B18)” as default next capacity during a stabilisation freeze
@@ -441,7 +441,7 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 **Cut as `0.9.3` (2026-07-24).** Schema epoch implementation: integer-1 public stamps, data-root marker + GUI/typed remediation, compatibility removal, `semantic_similarity` module-id cleanup.
 
-**Cut as `0.9.4` (2026-07-24).** Install-profile honesty + Transcribe Audio command generator + whispermlx-missing/corpus docs.
+**Cut as `0.9.4` / tag `v0.9.4` (2026-07-24).** Install-profile honesty + Transcribe Audio command generator + whispermlx-missing/corpus docs.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -470,7 +470,7 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 **Parallel / gated**
 
 - [x] **Schema reset inventory + convention + epoch transition UX design** — [schema_epoch_inventory.md](schema_epoch_inventory.md) human-approved 2026-07-24 (integer `1` only; no dotted `.x`)
-- [x] Supported installation-profile inventory stub ([install_profiles_matrix.md](install_profiles_matrix.md)); clean-env audit remains open
+- [x] Supported installation-profile inventory + capability matrix ([install_profiles_matrix.md](install_profiles_matrix.md); **audited 0.9.4**). Fresh clean-env soak remains an **RC** gate.
 
 ### 0.9.x — Schema epoch and compatibility removal
 
@@ -586,7 +586,7 @@ flowchart LR
   rtd --> gov
 ```
 
-Critical path: **repository inventory and classification → product/docs alignment → schema inventory/reset → install/transcription → modes/demo → quality + performance + trust → unfamiliar-user validation → RC evidence.**
+Critical path: **repository inventory and classification → product/docs alignment → schema inventory/reset → install/transcription (**done through `v0.9.4`**) → modes/demo → quality + performance + trust → unfamiliar-user validation → RC evidence.**
 
 Cut intermediate tags around coherent tested increments; do not force install+schema+modes into one patch.
 
@@ -672,18 +672,21 @@ Do not let “refuse pre-epoch store” become only an exception message. Keep p
 
 ## 9. Installation-profile matrix (derived)
 
-Do **not** invent `basic`/`llm` marketing names until the graph matches. Proposed **user-facing profiles** mapped to real install paths:
+Do **not** invent `basic`/`llm` marketing names until the graph matches. Proposed **user-facing profiles** mapped to real install paths (authoritative living sheet: [install_profiles_matrix.md](install_profiles_matrix.md); verification cells: [install_verification_matrix.md](../runtime/install_verification_matrix.md)):
 
 | Profile | Install path | Capabilities | 1.0 status |
 |---------|--------------|--------------|------------|
-| **Docker full analysis** (recommended) | Compose + image from `requirements.txt` | GUI + full analysis stack; spaCy baked; CPU on Mac override | **Supported** — verify clean |
+| **Docker full analysis** (recommended) | Compose + image from `requirements.txt` | GUI + full analysis stack; spaCy baked; YAKE/KeyBERT; CPU on Mac override | **Supported** — clean-env soak at RC |
 | **Docker + local AI** | Above + host Ollama via `host.docker.internal` | LLM modules / Corrections discovery | **Supported** |
-| **Native full** | `./transcriptx.sh` / requirements.txt + editable | GUI + near-Docker deps; honest CPU/CUDA/MPS matrix | **Candidate supported profile** — confirm through clean-environment matrix (may conclude supported, best-effort, or deferred) |
-| **Native + local AI** | Native full + Ollama | Same + LLM | **Candidate** — follows native-full audit outcome |
-| **Voice / speaker match** | `[voice]` / `[speaker_match]` or Docker image subset | Prosody + local ECAPA match | **Optional supported** |
-| **Core analysis API** | `pip install -e .` | Library/API without assuming Streamlit | **Developer/secondary** — must not claim “full app” |
+| **Native full** | `./transcriptx.sh` / `requirements.txt`, or `pip install -e ".[full,web]"` | GUI + near-Docker deps; CUDA available unless `TRANSCRIPTX_FORCE_CPU=1` | **Candidate** — confirm via RC clean-env matrix |
+| **Native + local AI** | Native full + Ollama | Same + LLM | **Candidate** — follows native-full |
+| **Voice / speaker match** | `[voice]` / `[speaker_match]` or Docker subset | Prosody + local ECAPA match | **Optional supported** |
+| **Core analysis API** | `pip install -e .` | Library/API without Streamlit | **Developer/secondary** — must not claim “full app” |
+| **GUI only** | `pip install -e ".[web]"` | Streamlit without analysis extras | **Secondary** — pair with Docker or `.[full,web]` for real use |
 | **Developer / test** | `.[dev]` (+ `nlp`) | CI lanes | **Contributor** |
 | **Air-gap** | Any + `TRANSCRIPTX_DISABLE_DOWNLOADS=1` + prebaked caches | Offline inference | **Documented profile** |
+
+**Ownership (0.9.4):** Streamlit = `[web]` / Docker / `requirements.txt` / launcher — **not** in `[full]`. Playwright = `[maps]` (optional NER map PNG), not Streamlit GUI.
 
 ### 1.0 install programme must fix
 
@@ -701,15 +704,16 @@ Do **not** invent `basic`/`llm` marketing names until the graph matches. Propose
 
 ## 10. Transcribe Audio and corpus onboarding
 
-Extend [src/transcriptx/web/page_modules/transcribe_audio.py](src/transcriptx/web/page_modules/transcribe_audio.py) into a **parameterised command generator** (copyable only; **never execute** from Streamlit for 1.0).
+**Shipped in 0.9.4** (`v0.9.4`): [src/transcriptx/web/page_modules/transcribe_audio.py](src/transcriptx/web/page_modules/transcribe_audio.py) is a **parameterised command generator** (copyable only; **never executes** from Streamlit). Builder: [src/transcriptx/services/transcription/command_gen.py](src/transcriptx/services/transcription/command_gen.py).
 
-Parameters: input file/folder, output folder, provider/tool, Whisper/WhisperX model, language, diarisation, device/compute, patterns, overwrite/resume, batch options, expected output format.
+Parameters covered: input file/folder, output folder, tool (whispermlx / whispermlx-missing / WhisperX Docker), model, language, diarisation, device/compute, audio glob, overwrite/resume (`--force`), dry-run, fuzzy JSON match, WhisperX batch size + optional min/max speakers, expected output format = WhisperX/whispermlx JSON.
 
-Must cover: shell quoting/spaces; macOS vs Linux vs Docker/host boundaries; dependency/model checks (documented + dry-run flags on scripts); resumability/duplicates; partial failures; dry-run/preview; logs/progress; output compatible with managed import; clear next step → Import Transcript.
+Must-cover checklist for the cut: shell quoting/spaces; macOS vs Linux vs Docker/host boundaries; dependency/model checks (documented + dry-run flags on scripts); resumability/duplicates; partial failures; dry-run/preview; logs/progress (host terminal); output compatible with managed import; clear next step → Import Transcript.
 
 - [x] Parameterised Transcribe Audio command generator (copyable only) (**0.9.4**)
-- [x] Harden [scripts/whispermlx-missing.py](scripts/whispermlx-missing.py) (docs + generator flags; script already had dry-run/resume) (**0.9.4**)
+- [x] Harden [scripts/whispermlx-missing.py](scripts/whispermlx-missing.py) (docs + generator flags; script already had dry-run/resume/`shlex.join`) (**0.9.4**)
 - [x] Update [docs/runtime/transcription.md](docs/runtime/transcription.md) + WhisperX recipe docs for non-technical corpus building (**0.9.4**)
+- [ ] Manual acceptance journey for Transcribe command gen (see §15 — RC / acceptance suite)
 
 ---
 
@@ -723,7 +727,7 @@ Prioritise Insights, default presets, summary surfaces, exports. **Mandatory scr
 
 No new modules during 0.9.x unless audit proves a release-critical repair. Map audit findings into release severity triage (§7).
 
-- [ ] Create analysis-quality audit template
+- [x] Create analysis-quality audit template (**0.9.2** stub — [analysis_quality_audit.md](analysis_quality_audit.md))
 - [ ] Complete audit rows for user-visible analyses
 - [ ] Mandatory scrutiny: deterministic highlights / summaries / action-items vs LLM equivalents
 - [ ] Apply retain / improve / relabel / hide / deprecate / remove recommendations
@@ -797,7 +801,7 @@ Journeys (each with prerequisites, test data, steps, expected UI, expected files
 - [ ] Clean Docker
 - [ ] Clean native where supported
 - [ ] First launch
-- [ ] Transcribe command gen
+- [ ] Transcribe command gen (**implementation shipped 0.9.4**; journey evidence still required)
 - [ ] Single + folder import
 - [ ] Duplicate/malformed
 - [ ] Default preset
@@ -944,8 +948,8 @@ Mandatory before the public 1.0 tag. RC may start once product gates pass even i
 - [x] Install/config duplication (`setup_env.sh` removed; extras vs requirements documented; auto-install hints fixed) (**0.9.4**)
 - [x] Remove obsolete pre-public schema adapters after wipe (**0.9.3**)
 - [ ] Legacy Data/Explorer redirects (already queued)
-- [ ] Error-prone install profile markers
-- [x] Epoch refusal tests / remediation paths (**0.9.3**; clean-env verification still open under install theme)
+- [ ] Error-prone install profile markers (docs honesty **0.9.4**; runtime `install_profile` / marker simplification still open if severity demands)
+- [x] Epoch refusal tests / remediation paths (**0.9.3**). Fresh clean-env soak = **RC** gate (not a 0.9.4 code deliverable)
 - [ ] Machine-specific or misleading scripts identified in Phase 0A
 - [x] Epoch transition UX gaps (GUI preflight, typed/internal helper only, fresh dir, no auto-delete, preserve compatible transcripts) (**0.9.3**)
 
@@ -1004,11 +1008,12 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 
 1. [x] Start **Phase 0A**: create `docs/dev/documentation_inventory_1_0.md` and `docs/dev/script_inventory_1_0.md`; inventory and classify before rewriting product docs
 2. [x] Complete Phase 0A acceptance criteria (authority consolidation, archive banners, script support status, `.gitignore` scratch home, hygiene checks in audit mode)
-3. [x] Apply **Phase 0B** documentation edits (PRODUCT.md, README, ROADMAP restructure, alignment passes) — **cut as 0.9.1**; remaining planning stubs still open
+3. [x] Apply **Phase 0B** documentation edits (PRODUCT.md, README, ROADMAP restructure, alignment passes) — **cut as 0.9.1**; planning stubs completed in **0.9.2**
 4. [x] Freeze analysis-module additions in backlog/stocktake language
 5. [x] Publish release severity triage rules early so later hardening has a decision system
 6. [x] Schema inventory **and epoch transition UX design** approved in [schema_epoch_inventory.md](schema_epoch_inventory.md) (integer public schemas → `1`; owner clean-slate backup of maps/profiles 2026-07-24)
-7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3**); cut later themes (install ≠ modes); RC only when gates pass
-8. [x] Execute **0.9.x install + transcription** theme (profiles matrix audit; Transcribe command gen; whispermlx-missing + corpus docs) (**cut as 0.9.4**)
-9. [ ] Execute **0.9.x Guided mode + demo** theme
+7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3** / `v0.9.3`)
+8. [x] Execute **0.9.x install + transcription** theme (**0.9.4** / `v0.9.4`)
+9. [ ] Execute **0.9.x Guided mode + demo** theme ← **next**
 10. [ ] Execute **0.9.x harden + public surfaces** theme toward RC
+11. [ ] Unfamiliar-user validation → RC evidence when gates pass
