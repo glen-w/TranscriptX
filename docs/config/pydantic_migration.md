@@ -127,7 +127,7 @@ pytest \
 
 ## End state (registry ownership complete)
 
-**41 Pydantic pilots** originally owned **598** flattened registry leaf keys (historical Wave 9 baseline). **Current invariant** (authoritative): see `tests/core/config/test_registry_ownership.py::test_ownership_invariant_counts` — **50 / 690 / 16** (706 total) as of 0.7.x (+B14 motif knobs).
+**41 Pydantic pilots** originally owned **598** flattened registry leaf keys (historical Wave 9 baseline). **Current invariant** (authoritative): see `tests/core/config/test_registry_ownership.py::test_ownership_invariant_counts` — **51 / 705 / 16** (721 total) as of 0.8.0 (+B14 motif knobs + B16 `keyphrases`).
 
 Historical Wave 9 non-pydantic baseline (**10** keys) was:
 
@@ -152,7 +152,7 @@ Registry ownership and runtime dataclass defaults are **separate phases**:
 
 | Phase | Status | Meaning |
 |-------|--------|---------|
-| Registry ownership | Complete (see live invariant **50 / 690 / 16**; historical Wave 9 was **41 / 598 / 10**) | Pydantic models own field definitions, validation, registry metadata |
+| Registry ownership | Complete (see live invariant **51 / 705 / 16**; historical Wave 9 was **41 / 598 / 10**) | Pydantic models own field definitions, validation, registry metadata |
 | Runtime delegation | Partial — see [`config_ownership_collapse_plan.md`](config_ownership_collapse_plan.md) | Thin dataclasses hydrate from Pydantic models; duplicate literals removed per subtree |
 
 Delegated subtrees use hand-written `@dataclass` wrappers in [`analysis.py`](../src/transcriptx/core/utils/config/analysis.py) that call `_hydrate_dataclass_from_pydantic()` in `__post_init__`. Nested dict dumps are reconstructed as nested dataclasses when field annotations require it. Direct programmatic `setattr` on leaf fields does **not** revalidate through Pydantic; profile application via `apply_profile_to_config` may call the target’s `validate()` after applying fields. Validation also remains at `validate_config()` / file-load boundaries.
@@ -183,10 +183,10 @@ Pre-delegation shape snapshots: `tests/core/config/fixtures/delegation_shape_{pa
 
 | Artifact | Purpose |
 |----------|---------|
-| `test_registry_ownership.py` | Ownership inventory snapshot; live invariant **50/690/16** (706 total) |
+| `test_registry_ownership.py` | Ownership inventory snapshot; live invariant **51/705/16** (721 total) |
 | `test_delegation_shape_snapshots.py` | Pre-delegation default shapes |
 | `test_registry_metadata_constraints.py` | Bounded choices/defaults/type agreement |
-| `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all 41 pilots) |
+| `test_pydantic_bridge_drift.py` | Registry + defaults golden completeness (all registry pilots) |
 | `test_pydantic_pilot_parity.py` | Dataclass / partial-analysis defaults parity |
 
 ### Hardening gates (completed)

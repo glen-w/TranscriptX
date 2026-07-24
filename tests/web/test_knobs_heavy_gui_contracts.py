@@ -472,4 +472,6 @@ def test_settings_questions_panel_is_custom_qa_library_surface() -> None:
     )
     if questions_panel.is_file():
         src = questions_panel.read_text(encoding="utf-8")
+        assert "patch_project_config_keys" in src
         assert "llm_custom_qa" in src or "saved_questions" in src
+        assert "HOST_CONFIG_DIR" in src or "CONFIG_DIR" in src

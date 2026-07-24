@@ -28,6 +28,7 @@ GROUP_CHART_OUTCOME_OPTIONAL_KEYS: FrozenSet[str] = frozenset(
         "transcript_quality_pooled",
         "topic_shift_pooled",
         "semantic_similarity_pooled",
+        "keyphrases_pooled",
         "cohort_summaries",
     }
 )

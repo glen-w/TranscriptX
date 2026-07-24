@@ -73,7 +73,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 14 | B8 | **Dialogue-act model upgrade** (re-enable transformer `acts` path) | deepen | Speakers & Interaction | M | model size / core-mode story; keep rules fallback; may move earlier if genuinely small rewire |
 | 15 | B11 | **Claim–evidence / argument mining** (exploratory) | new | Summary & Synthesis or Language & Meaning | L | genres + schema + eval fixtures + UI + abstention before delivery (see §3.2); P2 |
 | 16 | B15 | **Emotion × prosody fusion** (“said vs sounded”) | deepen | Voice & Audio (+ Dynamics) | M | `emotion` + `voice_*` join keys |
-| 17 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new (**shipped** as `keyphrases`; optional `[keyphrases]` extra; group agg + wordcloud/Insights hooks) | Visualisations / Language & Meaning | S | optional dep; group pooled phrases; P1 for language residual |
+| 17 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new (**shipped** as `keyphrases`; optional `[keyphrases]` extra; group noun_chunk pool + `keyphrases.phrases.global`; wordclouds/Insights consumers; deep-test hardened 2026-07-24). Residuals: group YAKE/KeyBERT pool; group per-speaker rows/charts; P1 language routing | Language & Meaning (+ Visualisations) | S | optional dep; group pooled phrases; P1 for language residual |
 | 18 | B17 | **Toxicity / hostility** (optional, labeled) | new | Language & Meaning | S–M | Detoxify or similar; clear ethics/docs |
 | 19 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars |
 | 19 | B19 | **Multilingual-aware NER / entity paths** | deepen | Language & Meaning | M | after P1 |
@@ -137,7 +137,7 @@ Avoid: another free-form summarizer that overlaps `llm_summary` / `narrative_sum
 | **Add** | ~~B3 ASR/transcript quality~~ **shipped** as `transcript_quality` (ASR confidence); B19 speaker-map consistency |
 
 ### Language & Meaning
-*Existing:* `sentiment`, `emotion`, `contextual_emotion`, `fine_grained_emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (default install for now), semantic similarity family, `understandability`, `lexical_diversity`
+*Existing:* `sentiment`, `emotion`, `contextual_emotion`, `fine_grained_emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (default install for now), semantic similarity family, `understandability`, `lexical_diversity`, `epistemic_markers`, **`keyphrases`**
 
 | Prefer | Items |
 |--------|-------|
@@ -176,7 +176,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 
 | Prefer | Items |
 |--------|-------|
-| **Deepen** | B20 pooled variant matrix; ~~optional B16 keyphrase charts~~ **shipped** (consume `keyphrases`) |
+| **Deepen** | B20 pooled variant matrix; ~~B16 keyphrase clouds~~ **shipped** (`wordclouds` consumes `keyphrases`) |
 | **Add** | none required near-term (~~B13 graph viz~~ shipped under Speakers & Interaction / `interactions`) |
 
 ---
@@ -196,10 +196,10 @@ flowchart LR
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
 | **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
 | **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; ~~B13~~ interaction graphs (+ profile avatars) | Interaction depth from existing data + light linguistics |
-| **3** | Phase 3 product (in progress via 0.7.x Speakers) | B5 remainder (**DB views** / group `profile_id` charts; file-backed Speakers/voice/locations **closed**), ~~B14~~ **shipped**, B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
-| **4** | Opportunistic / experimental | B4, B8, B11, B15, B16, B17, B19, B20 | Dependency-heavy and research paths |
+| **3** | Phase 3 product (in progress via 0.7.x–0.8.x) | B5 remainder (**DB views** / group `profile_id` charts; file-backed Speakers/voice/locations **closed**), ~~B14~~ **shipped**, ~~B16~~ **shipped** (`keyphrases` + wordclouds deepen), B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
+| **4** | Opportunistic / experimental | B4, B8, B11, B15, B17, B19, B20 | Dependency-heavy and research paths |
 
-**Next product capacity (ranked open):** Wave 3 items (B5 DB/group `profile_id` remainder, B18 / P2); P1 infrastructure in parallel when eng capacity allows. **Also shipped adjacent to Wave 3:** configurable analysis presets (`analysis.ui_presets`, 0.7.5); Speakers Locations pack (0.7.5); **B14** semantic motifs / concept drift.
+**Next product capacity (ranked open):** Wave 3 remainder (B5 DB/group `profile_id`, B18 / P2); P1 infrastructure in parallel when eng capacity allows. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets (`analysis.ui_presets`, 0.7.5); Speakers Locations pack (0.7.5); **B14** semantic motifs / concept drift; **B16** keyphrases (0.8.0; deep-test hardened 2026-07-24 — see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
 
 **Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
 
@@ -266,6 +266,8 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Competitive inspiration (5 OSS tools vs TX) | [`competitive_inspiration_2026-07-22.md`](competitive_inspiration_2026-07-22.md) |
 | Wave 2 lexicon linguistics (B6/B7) | [`wave2_lexicon_linguistics_2026-07-23.md`](wave2_lexicon_linguistics_2026-07-23.md) |
 | Wave B13 interaction graphs | [`wave_b13_interaction_graphs_2026-07-23.md`](wave_b13_interaction_graphs_2026-07-23.md) |
+| Wave B16 keyphrases | [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md) |
+| Keyphrases runtime | [`../runtime/keyphrases.md`](../runtime/keyphrases.md) |
 | Speaker profiles v1 | [`../contracts/speaker_profiles_v1.md`](../contracts/speaker_profiles_v1.md) |
 | Speaker profiles voice | [`../contracts/speaker_profiles_voice_v1.md`](../contracts/speaker_profiles_voice_v1.md) |
 | Analysis presets (runtime) | [`../runtime/installation.md`](../runtime/installation.md) (Analysis presets) |

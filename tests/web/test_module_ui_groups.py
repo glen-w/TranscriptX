@@ -45,6 +45,7 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "understandability",
     "lexical_diversity",
     "epistemic_markers",
+    "keyphrases",
     "acts",
     "interactions",
     "conversation_loops",

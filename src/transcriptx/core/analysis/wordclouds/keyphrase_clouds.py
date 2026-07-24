@@ -193,7 +193,14 @@ def emit_keyphrase_wordclouds(
                 if isinstance(s, dict)
             }
             methods_run = {str(m) for m in (payload.get("methods_run") or [])}
-            if method in skipped_methods or method not in methods_run:
+            if method in methods_run:
+                skipped.append(
+                    {
+                        "variant_key": variant_key,
+                        "reason": "malformed_upstream_rows",
+                    }
+                )
+            elif method in skipped_methods or method not in methods_run:
                 skipped.append(
                     {
                         "variant_key": variant_key,

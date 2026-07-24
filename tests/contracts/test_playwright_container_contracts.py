@@ -66,3 +66,17 @@ def test_compose_persists_data_dir_for_speaker_voice() -> None:
         compose.rsplit("\nvolumes:\n", 1)[-1] if "\nvolumes:\n" in compose else ""
     )
     assert "speaker_profiles" not in top_volumes
+
+
+@pytest.mark.unit
+def test_compose_persists_config_dir_outside_clone_capable() -> None:
+    """Project settings (saved questions, menus) mount via HOST_CONFIG_DIR.
+
+    Default remains ./data/.transcriptx; operators can point HOST_CONFIG_DIR
+    outside the git clone so wiping ./data does not drop Settings.
+    """
+    compose = (_repo_root() / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "${HOST_CONFIG_DIR:-./data/.transcriptx}:/data/.transcriptx" in compose
+    assert "TRANSCRIPTX_CONFIG_DIR=/data/.transcriptx" in compose
+    app = (_repo_root() / "src/transcriptx/web/app.py").read_text(encoding="utf-8")
+    assert "apply_project_config_to_live_facade" in app

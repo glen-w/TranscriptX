@@ -45,7 +45,7 @@ The package is **not published on PyPI**. Do not use bare `pip install transcrip
 
 - **Core (editable):** `pip install -e .`
 - **Full:** `pip install -e ".[full]"` (all optional modules; core_mode off; may fail on some hosts)
-- **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, etc.
+- **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, `pip install -e ".[keyphrases]"` (optional YAKE / KeyBERT for the `keyphrases` module; noun-chunks path works without the extra), etc.
 
 > **Install profiles:** BERTopic (`bertopic` / `hdbscan` / `umap-learn`) may ship in the default install so Docker and editable core installs get topic clustering without an extra. The `[bertopic]` extra remains a compatibility alias.
 

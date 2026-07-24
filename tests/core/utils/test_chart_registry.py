@@ -59,7 +59,7 @@ class FakeArtifact:
 
 def test_chart_definitions_json_load_count():
     """Packaged JSON must produce the expected number of definitions (regression guard)."""
-    assert len(CHART_DEFINITIONS) == 173
+    assert len(CHART_DEFINITIONS) == 180
     assert get_chart_definition("sentiment.multi_speaker_sentiment.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.global") is not None
     assert get_chart_definition("contextual_emotion.label_counts.speaker") is not None
@@ -124,6 +124,7 @@ def test_group_pooled_single_view_family_sync() -> None:
         "emotion": "group_charts_emotion_pooled_contract.md",
         "tics": "group_charts_tics_pooled_contract.md",
         "epistemic_markers": "group_charts_epistemic_markers_pooled_contract.md",
+        "keyphrases": "group_charts_keyphrases_pooled_contract.md",
         "politeness": "group_charts_politeness_pooled_contract.md",
         "stats": "group_charts_stats_pooled_contract.md",
         "interactions": "group_charts_interactions_pooled_contract.md",
@@ -143,6 +144,7 @@ def test_group_pooled_single_view_family_sync() -> None:
         "epistemic_markers": [
             "group.epistemic_markers.pooled.by_category.global"
         ],
+        "keyphrases": ["keyphrases.phrases.global"],
         "politeness": ["group.politeness.pooled.by_category.global"],
         "stats": ["group.stats.pooled.totals.global"],
         "interactions": [

@@ -1,6 +1,6 @@
 # Install verification matrix
 
-**Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.6.x**. Do not advertise an install command that cannot pass its stated cell.
+**Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.8.1**. Do not advertise an install command that cannot pass its stated cell.
 
 **Distribution reality:** versioned **git tags** + **Docker Compose** image. The package is **not published on PyPI**. Bare `pip install transcriptx` from PyPI will fail and must not be advertised as a primary install path.
 
@@ -38,6 +38,7 @@
 | **voice** | `pip install -e ".[voice]"` | Voice / audio analysis deps |
 | **nlp** | `pip install -e ".[nlp]"` then `python -m spacy download en_core_web_md` | NLP + spaCy model |
 | **bertopic** | `pip install -e ".[bertopic]"` | Compatibility alias (BERTopic may already be in core) |
+| **keyphrases** | `pip install -e ".[keyphrases]"` | Optional YAKE + KeyBERT for `keyphrases` module (noun-chunks path works without this extra) |
 | **maps** | `pip install -e ".[maps]"` | Maps extras |
 | **visualization** | `pip install -e ".[visualization]"` | Viz extras |
 | **plotly** | `pip install -e ".[plotly]"` | Plotly extras |

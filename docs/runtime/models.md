@@ -5,7 +5,7 @@ Authority: runtime/STORAGE.md
 
 Operational guide for choosing NLP/ML models used during analysis. This does not change storage or output contracts.
 
-For Docker-specific wiring, see [docker.md](docker.md). For local LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, `narrative_summary`), see [llm.md](llm.md). For lexical diversity metrics (`lexical_diversity`), see [lexical_diversity.md](lexical_diversity.md). For emotion-family chart viz IDs and gallery captions (`emotion`, `contextual_emotion`, `fine_grained_emotion`), see [emotion_family_contracts_2026-07-18.md](../dev/emotion_family_contracts_2026-07-18.md#charts-gallery). For transcription (upstream of analysis), see [transcription.md](transcription.md).
+For Docker-specific wiring, see [docker.md](docker.md). For local LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, `narrative_summary`), see [llm.md](llm.md). For lexical diversity metrics (`lexical_diversity`), see [lexical_diversity.md](lexical_diversity.md). For keyphrase ranking (`keyphrases`), see [keyphrases.md](keyphrases.md). For emotion-family chart viz IDs and gallery captions (`emotion`, `contextual_emotion`, `fine_grained_emotion`), see [emotion_family_contracts_2026-07-18.md](../dev/emotion_family_contracts_2026-07-18.md#charts-gallery). For transcription (upstream of analysis), see [transcription.md](transcription.md).
 
 ## Quick presets
 
@@ -19,6 +19,7 @@ Shipped defaults target CPU-friendly English analysis:
 | Semantic similarity + echoes | `sentence-transformers/all-MiniLM-L6-v2` |
 | Semantic similarity v2 | `sentence-transformers/all-MiniLM-L6-v2` |
 | BERTopic embeddings | `all-MiniLM-L6-v2` (included in default install; `[bertopic]` is a compat alias) |
+| Keyphrases (KeyBERT optional) | `sentence-transformers/all-MiniLM-L6-v2` via `analysis.keyphrases.keybert_model_id` (`[keyphrases]` extra; noun-chunks need spaCy/NLP, not this model) |
 | Sentiment | `vader` (lexicon) |
 | Emotion (lexical `emotion`) | NRCLex vocabulary association (`emotion_lexical` extra) |
 | Contextual emotion (experimental) | Built-in profile `contextual_hartmann_distilroberta_v1` (`j-hartmann/emotion-english-distilroberta-base`, pinned Hub SHA `0e1cd914e3d46199ed785853e12b57304e04178b`, Apache-2.0) |

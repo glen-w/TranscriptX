@@ -55,7 +55,7 @@ def analyse_candidate(
 
 def quality_adjust(base_score: float, result: PhraseQualityResult) -> float:
     """Keyphrases-named quality adjustment (not theme public API)."""
-    if result.hard_reject:
+    if not result.accepted_for_scoring or result.hard_reject_reason:
         return 0.0
     feats = result.features
     adjusted = float(base_score)

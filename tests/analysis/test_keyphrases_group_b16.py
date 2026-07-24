@@ -84,6 +84,12 @@ def test_group_pool_by_canonical_key_min_sessions() -> None:
         _DummySet(),  # type: ignore[arg-type]
     )
     assert out is not None
+    session_rows = out["session_rows"]
+    assert len(session_rows) == 2
+    assert {row["order_index"] for row in session_rows} == {0, 1}
+    for row in session_rows:
+        assert "transcript_id" in row
+        assert isinstance(row["order_index"], int)
     pool = out["keyphrase_noun_chunk_pool"]
     keys = {row["canonical_key"] for row in pool}
     assert "product roadmap" in keys
@@ -99,3 +105,26 @@ def test_wordclouds_optional_dep_not_hard() -> None:
     wc = get_module_info("wordclouds")
     assert "keyphrases" not in (wc.dependencies or [])
     assert "keyphrases" in (wc.optional_dependencies or [])
+
+
+def test_group_chart_can_generate_requires_nonempty_pool() -> None:
+    from transcriptx.core.analysis.group_charts.keyphrases_group_charts import (
+        KeyphrasesGroupChartGenerator,
+    )
+
+    gen = KeyphrasesGroupChartGenerator()
+    assert not gen.can_generate({})
+    assert not gen.can_generate({"keyphrases_pooled": {"phrases": []}})
+    assert gen.can_generate(
+        {
+            "keyphrases_pooled": {
+                "phrases": [
+                    {
+                        "phrase": "shared topic",
+                        "canonical_key": "shared topic",
+                        "rank_weight": 1.0,
+                    }
+                ]
+            }
+        }
+    )

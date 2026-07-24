@@ -1685,3 +1685,127 @@ def render_politeness_block(ctx: BlockContext, placement: BlockPlacement) -> Non
         json_suffix="_politeness.json",
         share_keys=("soft_request_ratio",),
     )
+
+
+def _render_keyphrases_payload(payload: dict[str, Any]) -> None:
+    usable = payload.get("usable")
+    state = payload.get("evaluation_state")
+    methods_run = payload.get("methods_run") or []
+    skipped = payload.get("skipped_methods") or []
+    if usable is False:
+        reasons = []
+        for item in skipped:
+            if isinstance(item, dict):
+                reasons.append(
+                    f"{item.get('method')}: {item.get('reason_code')}"
+                    + (f" ({item.get('detail')})" if item.get("detail") else "")
+                )
+        st.warning(
+            "Keyphrases abstained"
+            + (f" — evaluation_state={state}" if state else "")
+            + (("; " + "; ".join(reasons)) if reasons else ".")
+        )
+        return
+    if methods_run:
+        st.caption("Methods run: " + ", ".join(str(m) for m in methods_run))
+    if skipped:
+        skip_bits = [
+            f"{s.get('method')}:{s.get('reason_code')}"
+            for s in skipped
+            if isinstance(s, dict)
+        ]
+        if skip_bits:
+            st.caption("Skipped methods: " + ", ".join(skip_bits))
+    gbm = payload.get("global_by_method") or {}
+    nc = gbm.get("noun_chunks") if isinstance(gbm, dict) else None
+    phrases = (nc or {}).get("phrases") if isinstance(nc, dict) else None
+    if not phrases:
+        st.info("No noun-chunk keyphrases ranked for this transcript.")
+        return
+    rows = []
+    for p in phrases[:40]:
+        if not isinstance(p, dict):
+            continue
+        rows.append(
+            {
+                "rank": p.get("rank"),
+                "phrase": p.get("phrase"),
+                "rank_weight": p.get("rank_weight"),
+                "occurrence_count": p.get("occurrence_count"),
+                "segment_support": p.get("segment_support"),
+                "token_count": p.get("token_count"),
+            }
+        )
+    st.caption("Primary method: noun_chunks (method-separated; YAKE/KeyBERT not mixed)")
+    st.dataframe(rows, width="stretch", hide_index=True)
+
+
+def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> None:
+    title = placement.title_override or str(
+        placement.params.get("title", "Keyphrases")
+    )
+    empty_hint = str(
+        placement.params.get(
+            "empty_hint",
+            "Run the `keyphrases` module to populate this view.",
+        )
+    )
+    st.subheader(title)
+    loader = _loader(ctx)
+    run_root = ctx.run_root
+    module = "keyphrases"
+    json_suffix = "_keyphrases.json"
+    if run_root is None:
+        render_module_required_hint(
+            empty_hint, key=f"{module}_no_loader", ctx=ctx
+        )
+        return
+
+    if is_group_run(run_root):
+        session_rows = load_group_session_rows(run_root, module)
+        if session_rows:
+            st.caption("Group rollup — per-session noun_chunk counts")
+            st.dataframe(session_rows, width="stretch", hide_index=True)
+        else:
+            st.info(group_rollup_empty_hint(module, content_name="session_rows"))
+        members = list_group_members(run_root)
+        st.divider()
+        st.caption("Per session (noun_chunks primary)")
+        member = select_group_member(members, key=f"{module}_session_select")
+        if member is None:
+            return
+        payload = load_member_module_json(loader, member, module, json_suffix)
+        if not payload:
+            st.info(member_empty_hint(module))
+            return
+        _render_keyphrases_payload(payload)
+        _render_view_raw_file_link(
+            ctx,
+            module,
+            json_suffix,
+            link_key=f"{module}_member_raw",
+            storage_root=member.storage_root,
+        )
+        return
+
+    if loader is None:
+        render_module_required_hint(
+            empty_hint, key=f"{module}_no_loader", ctx=ctx
+        )
+        return
+
+    failure_hint = _module_failure_hint(run_root, module)
+    payload = loader.load_json(module, json_suffix)
+    if not payload:
+        if failure_hint:
+            st.warning(failure_hint)
+        else:
+            render_module_required_hint(
+                empty_hint, key=f"{module}_empty", ctx=ctx
+            )
+        return
+
+    _render_keyphrases_payload(payload)
+    _render_view_raw_file_link(
+        ctx, module, json_suffix, link_key=f"{module}_raw"
+    )

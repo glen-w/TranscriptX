@@ -13,6 +13,13 @@ from transcriptx._bootstrap import bootstrap
 
 bootstrap()
 
+# Project config (saved questions, presets, …) lives under CONFIG_DIR and must
+# hydrate the live get_config() facade; Settings panels read the facade, not
+# the run resolver.
+from transcriptx.core.config.persistence import apply_project_config_to_live_facade
+
+apply_project_config_to_live_facade()
+
 # Before Streamlit imports speechbrain into sys.modules and the file watcher
 # probes lazy optional integrations (flair/k2/…).
 from transcriptx.web.streamlit_watcher_noise import (

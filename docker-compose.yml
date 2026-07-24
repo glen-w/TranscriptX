@@ -1,7 +1,10 @@
 # TranscriptX: recommended way to run with Docker (primary install route).
 #
 # Volumes:
-#   ./data:/data — project data root (cache, local config copies, etc.)
+#   ./data:/data — project data root (cache, groups, speaker_profiles, …)
+#   HOST_CONFIG_DIR — project settings (config.json, interface menus, profiles);
+#     default ./data/.transcriptx. Prefer an absolute path outside the clone so
+#     saved custom questions and other Settings survive wiping ./data.
 #   HOST_*_DIR mounts — map host folders into TRANSCRIPTX_*_DIR paths (see environment).
 #   HOST_RECORDINGS_DIR is required — point at a folder outside the repo (see .env.example).
 #   Transcripts default to read-only at /mnt/transcripts; use docker-compose.override.yml
@@ -23,6 +26,9 @@ services:
     working_dir: /data
     volumes:
       - ./data:/data
+      # Settings / metadata (config.json includes saved custom questions). More
+      # specific than ./data:/data so HOST_CONFIG_DIR can live outside the clone.
+      - ${HOST_CONFIG_DIR:-./data/.transcriptx}:/data/.transcriptx
       - transcriptx_cache:/home/transcriptx/.cache
       # HOST_*_DIR vars (from .env) set the host-side mount source.
       # TRANSCRIPTX_*_DIR vars in environment: set the container-side paths.
@@ -41,6 +47,7 @@ services:
       # Allow 500 MB per file (matches .streamlit/config.toml; container has no config file)
       - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
       - TRANSCRIPTX_DATA_DIR=/data
+      - TRANSCRIPTX_CONFIG_DIR=/data/.transcriptx
       - TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts
       - TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs
       - TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings

@@ -1149,5 +1149,26 @@
     "that",
     "these",
     "those"
-  ]
+  ],
+  "keyphrases": {
+    "enabled_methods": [
+      "noun_chunks",
+      "yake",
+      "keybert"
+    ],
+    "max_phrases": 40,
+    "min_phrase_tokens": 1,
+    "max_phrase_tokens": 6,
+    "min_occurrences_global": 2,
+    "min_occurrences_speaker": 1,
+    "diversity_jaccard_threshold": 0.85,
+    "evidence_max_per_phrase": 3,
+    "evidence_snippet_max_chars": 120,
+    "keybert_model_id": "sentence-transformers/all-MiniLM-L6-v2",
+    "yake_lan": "en",
+    "yake_n": 3,
+    "yake_top": 40,
+    "yake_window_size": 2,
+    "min_member_sessions": 2
+  }
 }

@@ -50,7 +50,7 @@ Examples operators should expect **only in the gallery** unless you deliberately
 `group.*` definitions are **deliberately not** kept in one contiguous rank block. The split is by chart **role**, so the gallery surfaces group-level summaries in the order operators expect:
 
 - **Ranks 2–50** — overview-eligible group charts that should appear **first**: the pooled acts pie (default-strip anchor), session-based bars (`compound_mean`, `total_words`), temporal overlays (acts, sentiment, pauses, emotion, prosody), and the cross-session-speaker pattern charts.
-- **Ranks 751–760** — **pooled single-view** corpus charts ("if the whole group were one conversation": NER types/top entities, entity sentiment, topic prevalence, mean emotion, tic counts, corpus totals, interruptions, contagion edges). These sit at the **end** of the gallery on purpose, after the per-session/per-speaker single-transcript charts.
+- **Ranks 751–767** — **pooled single-view** corpus charts ("if the whole group were one conversation": NER types/top entities, entity sentiment, topic prevalence, mean emotion, tic counts, corpus totals, interruptions, contagion edges, **keyphrases noun_chunk pool** at `keyphrases.phrases.global` / rank **767**). These sit at the **end** of the gallery on purpose, after the per-session/per-speaker single-transcript charts.
 
 This split is **by design**, not an accident of numbering. When adding a new `group.*` chart, place its `rank_default` in the band that matches its role (overview/session/temporal/cross-session → low band; pooled corpus view → 75x band) rather than forcing all `group.*` ranks adjacent.
 

@@ -332,6 +332,20 @@ def _register_insights_blocks() -> None:
             prerequisites=BlockPrereq.RUN_SCOPED,
             render=insights_blocks.render_politeness_block,
         ),
+        BlockSpec(
+            id="keyphrases_block",
+            title="Keyphrases",
+            group="Insights",
+            description="Ranked multiword keyphrases (noun_chunks primary; YAKE/KeyBERT optional).",
+            module_deps=("keyphrases",),
+            artifact_patterns=(
+                "_keyphrases.json",
+                "_keyphrases.csv",
+                "session_rows.json",
+            ),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=insights_blocks.render_keyphrases_block,
+        ),
     ]
     for spec in specs:
         register_block(spec)

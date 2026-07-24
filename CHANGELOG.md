@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-24
+
+### Fixed
+
+- Group `keyphrases` aggregation session rows now include `order_index` (row writer no longer skips the agg).
+- `keyphrases_pooled` allowlisted on group chart_outcome so `keyphrases.phrases.global` can render.
+- Project `config.json` (including saved custom questions / analysis presets) is hydrated into the live facade on web startup so Settings survive Docker recreate.
+
+### Changed
+
+- Docker Compose mounts `HOST_CONFIG_DIR` (default `./data/.transcriptx`) for durable project settings outside a wiped `./data` tree; document in `.env.example` / docker runtime notes.
+- B16 documentation and ownership snapshots refreshed (runtime `keyphrases` guide, group contracts, install matrix, stocktake/backlog/ROADMAP).
+
+### Added
+
+- Packaging check that `[keyphrases]` extras are included in `[full]`.
+
 ## [0.8.0] - 2026-07-24
 
 ### Added

@@ -268,6 +268,7 @@ def test_save_results_delegates_to_run_all() -> None:
         ["um"],
         transcript_dir="/tmp/out",
         grouped_texts={"A": ["x"]},
+        keyphrases_payload=None,
     )
 
 

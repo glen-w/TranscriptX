@@ -3,7 +3,9 @@ Authority: self
 
 # Wave B16 — Keyphrases module + wordclouds deepen (2026-07-24)
 
-Split B16: new Language & Meaning module `keyphrases` owns ranked salience; `wordclouds` consumes in-memory upstream rows for keyphrase cloud variants (no second ranker).
+**Status:** shipped in packaging line **0.8.0**; deep-test hardened **2026-07-24** (suite green; small/large/group analysis probes green).
+
+Split B16: new Language & Meaning module `keyphrases` owns ranked salience; `wordclouds` consumes in-memory upstream rows for keyphrase cloud variants (no second ranker). Module count **50 → 51**. Config ownership invariant **51 / 705 / 16** (721 total).
 
 ## Contract
 
@@ -24,11 +26,27 @@ Split B16: new Language & Meaning module `keyphrases` owns ranked salience; `wor
 ## Group
 
 - Pool by `canonical_key` (never concat-reparse); min member-session support
+- Session rows via `session_row_from_result` (must include `order_index` — fixed during deep-test)
 - Table: `keyphrases_pooled` / `keyphrase_noun_chunk_pool`
-- Chart: `keyphrases.phrases.global`
+- Chart: `keyphrases.phrases.global` (pooled contract: [`group_charts_keyphrases_pooled_contract.md`](../groups/group_charts_keyphrases_pooled_contract.md); `keyphrases_pooled` allowlisted on chart_outcome)
 - Pooled noun-chunk cloud via explicit pool into `run_group_wordclouds`; YAKE/KeyBERT deferred
 
-## Packaging
+## Speaker policy
 
-- Optional extra `keyphrases` (yake, keybert); noun_chunks uses existing NLP
-- KeyBERT: no implicit downloads (`local_files_only` / offline env)
+Per-speaker keyphrase blocks and keyphrase clouds use the same eligibility helper as wordclouds (`_include_speaker_wordcloud` / `exclude_unidentified_from_speaker_charts`). Global ranks still include text from filtered segments for unidentified speakers when present in `insight_eligibility.filtered_segments` (parity with wordclouds global vs speaker split).
+
+## Group speaker rows
+
+Pooled **per-speaker** group charts/rows for keyphrases are deferred this wave (`speaker_rows` empty); global noun_chunk pool + `keyphrases.phrases.global` chart are the group surfaces.
+
+## Residuals (not this wave)
+
+- Group YAKE / KeyBERT pooling
+- Group per-speaker keyphrase rows/charts
+- P1 multilingual routing adoption for keyphrase methods
+
+## Related
+
+- Runtime: [`docs/runtime/keyphrases.md`](../runtime/keyphrases.md)
+- Group outputs: [`docs/groups/group_analysis_module_outputs.md`](../groups/group_analysis_module_outputs.md)
+- Backlog: [`docs/dev/analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)

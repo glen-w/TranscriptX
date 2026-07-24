@@ -146,6 +146,25 @@ def load_project_config() -> Optional[Dict[str, Any]]:
     return load_config_safe(get_project_config_path())
 
 
+def apply_project_config_to_live_facade() -> bool:
+    """Load ``CONFIG_DIR/config.json`` into the process-global live facade.
+
+    Settings panels (Questions library, analysis presets, …) read
+    ``get_config()`` rather than the resolver. Without this hydrate, values
+    written via :func:`patch_project_config_keys` survive on disk but appear
+    empty after process restart (e.g. Docker recreate).
+
+    Returns True when a project config file was applied.
+    """
+    path = get_project_config_path()
+    if not path.is_file():
+        return False
+    from transcriptx.core.utils.config import load_config
+
+    load_config(str(path))
+    return True
+
+
 def save_project_config(config_dict: Dict[str, Any]) -> None:
     # Compatibility: callers may pass a full on-disk payload
     # {"schema_version": ..., "config": {...}}. Persist the inner config

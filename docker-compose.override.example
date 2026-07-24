@@ -31,6 +31,7 @@ services:
       - TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=${TRANSCRIPTX_CORRECTIONS_LLM_ENABLED:-1}
     volumes:
       - ./data:/data
+      - ${HOST_CONFIG_DIR:-./data/.transcriptx}:/data/.transcriptx
       - transcriptx_cache:/home/transcriptx/.cache
       - ./src/transcriptx:/opt/venv/lib/python3.10/site-packages/transcriptx
       - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts

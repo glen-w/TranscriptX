@@ -138,7 +138,7 @@ class TestRenderHelpers:
         lp.render_markdown_without_heading_or_provenance(
             "# Title\n\nBody\n\n---\nPrompt version: 1\nModel: m\n"
         )
-        assert calls == ["Body\n"]
+        assert calls == ["Body"]
 
     def test_render_markdown_strips_action_items_render_contract(
         self, monkeypatch
@@ -178,7 +178,7 @@ class TestRenderHelpers:
             "The summary of the transcript block is as follows:\n\n"
             "Alice agreed to follow up.\n"
         )
-        assert calls == ["Alice agreed to follow up.\n"]
+        assert calls == ["Alice agreed to follow up."]
 
     def test_render_markdown_skips_empty_body(self, monkeypatch) -> None:
         calls: list = []

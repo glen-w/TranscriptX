@@ -27,6 +27,7 @@ def aggregate_keyphrases(
         _extract_payload,
         _warning_payload_shape,
     )
+    from transcriptx.core.analysis.aggregation.rows import session_row_from_result
     from transcriptx.core.analysis.aggregation.schema import get_transcript_id
     from transcriptx.core.analysis.keyphrases.contract import (
         SCHEMA_ID,
@@ -57,12 +58,13 @@ def aggregate_keyphrases(
         phrases = (nc or {}).get("phrases") if isinstance(nc, dict) else None
         phrase_count = len(phrases) if isinstance(phrases, list) else 0
         session_rows.append(
-            {
-                "transcript_id": member_id,
-                "usable": payload.get("usable"),
-                "evaluation_state": payload.get("evaluation_state"),
-                "noun_chunk_phrase_count": phrase_count,
-            }
+            session_row_from_result(
+                result,
+                transcript_set,
+                usable=payload.get("usable"),
+                evaluation_state=payload.get("evaluation_state"),
+                noun_chunk_phrase_count=phrase_count,
+            )
         )
         if not isinstance(phrases, list):
             continue

@@ -10,6 +10,7 @@ from .registry import (
 from .resolver import ResolvedConfig, resolve_effective_config
 from .persistence import (
     CONFIG_SCHEMA_VERSION,
+    apply_project_config_to_live_facade,
     compute_config_hash,
     get_project_config_path,
     get_draft_override_path,
@@ -46,6 +47,7 @@ __all__ = [
     "ResolvedConfig",
     "ValidationError",
     "CONFIG_SCHEMA_VERSION",
+    "apply_project_config_to_live_facade",
     "build_registry",
     "clear_draft_override",
     "compute_config_hash",

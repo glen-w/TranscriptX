@@ -136,6 +136,7 @@ Compose mounts app working data at `/data` and maps host folders to container pa
 ```yaml
 volumes:
   - ./data:/data
+  - ${HOST_CONFIG_DIR:-./data/.transcriptx}:/data/.transcriptx
   - transcriptx_cache:/home/transcriptx/.cache
   - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
   - ${HOST_TRANSCRIPT_INBOX_DIR:-./data/transcript-inbox}:/mnt/transcript-inbox:ro
@@ -147,9 +148,12 @@ volumes:
 
 `HOST_RECORDINGS_DIR` is **required** in `.env` and must point at a host folder **outside the repository** (your source-audio library). Create `imports/` under that folder for uploads if needed.
 
+Prefer `HOST_CONFIG_DIR` outside the clone as well (same idea as transcripts/outputs): it holds `config.json` (including **saved custom questions**), interface menus, and analysis profiles. Default remains `./data/.transcriptx`.
+
 | Host variable | Container path | App env (`TRANSCRIPTX_*`) | Notes |
 |---------------|----------------|---------------------------|-------|
-| (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, config copies, HF caches. Numba/librosa cache is `NUMBA_CACHE_DIR=/tmp/numba_cache` (not under `/data`) so Docker Desktop virtiofs does not break Numba's cache-dir writability probe. |
+| (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, groups, speaker_profiles, HF caches. Numba/librosa cache is `NUMBA_CACHE_DIR=/tmp/numba_cache` (not under `/data`) so Docker Desktop virtiofs does not break Numba's cache-dir writability probe. |
+| `HOST_CONFIG_DIR` (default `./data/.transcriptx`) | `/data/.transcriptx` | `TRANSCRIPTX_CONFIG_DIR=/data/.transcriptx` | Project settings / metadata (`config.json`, menus, profiles). Prefer absolute path outside the clone |
 | `HOST_TRANSCRIPTS_DIR` (default `./data/transcripts`) | `/mnt/transcripts` | `TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts` | **Read-only** in base compose |
 | `HOST_TRANSCRIPT_INBOX_DIR` (default `./data/transcript-inbox`) | `/mnt/transcript-inbox` | (scan path only) | External inbox for **Import all from folder**; not under managed transcripts |
 | `HOST_OUTPUT_DIR` (default `./data/outputs`) | `/mnt/outputs` | `TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs` | Analysis run outputs |
@@ -166,12 +170,14 @@ Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `HOST_RECORDINGS_DIR` | (required in `.env`) | Host path to source audio library (outside repo) |
+| `HOST_CONFIG_DIR` | `./data/.transcriptx` | Host path mounted at `/data/.transcriptx` (project settings; prefer outside clone) |
 | `HOST_TRANSCRIPTS_DIR` | `./data/transcripts` | Host path mounted at `/mnt/transcripts` |
 | `HOST_TRANSCRIPT_INBOX_DIR` | `./data/transcript-inbox` | Host path mounted at `/mnt/transcript-inbox` (folder-import inbox) |
 | `HOST_OUTPUT_DIR` | `./data/outputs` | Host path mounted at `/mnt/outputs` |
 | `HOST_WAV_BACKUP_DIR` | `./data/backups/wav` | Host path mounted at `/mnt/wav` |
 | `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` | `500` (in compose) | Max upload size in MB per file (Audio Merge, Audio Prep). Set in compose so the container allows 500 MB; without it Streamlit defaults to 200 MB. |
 | `TRANSCRIPTX_DATA_DIR` | `/data` | Base data directory inside container |
+| `TRANSCRIPTX_CONFIG_DIR` | `/data/.transcriptx` (compose) | Project config + menus + profiles (`config.json` holds saved custom questions) |
 | `TRANSCRIPTX_RECORDINGS_DIR` | `/mnt/recordings` (compose) | Source audio |
 | `TRANSCRIPTX_IMPORTS_DIR` | `/mnt/recordings/imports` (compose) | Writable upload staging |
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` | `/mnt/transcripts` (compose) | Transcript JSON files |

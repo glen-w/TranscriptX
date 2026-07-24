@@ -29,9 +29,9 @@ class TestMakeInitialSnapshot:
         snap = make_initial_snapshot(total=3)
         assert snap["status"] == "running"
 
-    def test_phase_is_validating(self):
+    def test_phase_is_running_pipeline(self):
         snap = make_initial_snapshot(total=3)
-        assert snap["phase"] == "validating"
+        assert snap["phase"] == "running_pipeline"
 
     def test_total_is_set(self):
         snap = make_initial_snapshot(total=5)

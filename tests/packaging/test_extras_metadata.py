@@ -45,6 +45,14 @@ def test_bertopic_extra_is_subset_of_full() -> None:
 
 
 @pytest.mark.unit
+def test_keyphrases_extra_is_subset_of_full() -> None:
+    keyphrases = {_normalize_req(r) for r in _parse_optional_extra("keyphrases")}
+    full = {_normalize_req(r) for r in _parse_optional_extra("full")}
+    missing = keyphrases - full
+    assert not missing, f"keyphrases extra deps missing from full: {sorted(missing)}"
+
+
+@pytest.mark.unit
 def test_bertopic_extra_is_compat_alias_for_base_stack() -> None:
     """``[bertopic]`` remains installable; packages are owned by base for now."""
     reqs = _parse_optional_extra("bertopic")

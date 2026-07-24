@@ -373,7 +373,6 @@ def run_group_wordclouds(
                     pooled_view_kind="pooled_keyphrase_noun_chunks_global",
                     pooled_input_basis="canonical_key_sum_rank_weight",
                     pooled_lexicon_scope="named_and_resolved_speakers_only",
-                    classification="safe_for_pooled_global",
                 )
                 _render_keyphrase_cloud(
                     freq,

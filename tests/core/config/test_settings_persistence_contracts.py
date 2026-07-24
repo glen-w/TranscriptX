@@ -83,3 +83,51 @@ def test_resolve_effective_config_run_id_derives_run_dir_from_outputs(
     resolved = resolve_effective_config(run_id=run_id, run_dir=None)
     assert resolved.effective_dict_nested["logging"]["level"] == "WARNING"
     assert resolved.sources_by_key["logging.level"] == "run"
+
+
+def test_apply_project_config_to_live_facade_restores_saved_questions(
+    tmp_path, monkeypatch
+) -> None:
+    """Settings → Questions reads get_config(); hydrate must reload disk library."""
+    from transcriptx.core.utils.config import get_config, reset_config_for_tests
+
+    cfg_dir = tmp_path / ".transcriptx"
+    monkeypatch.setattr(config_persistence, "CONFIG_DIR", cfg_dir)
+    monkeypatch.setattr(config_persistence, "CONFIG_DRAFTS_DIR", cfg_dir / "drafts")
+
+    payload = {
+        "analysis": {
+            "llm_custom_qa": {
+                "saved_questions": [
+                    {
+                        "text": "What was decided?",
+                        "scopes": {"global": True, "per_speaker": False},
+                    }
+                ]
+            }
+        }
+    }
+    save_project_config(payload)
+    reset_config_for_tests()
+    assert get_config().analysis.llm_custom_qa.saved_questions == []
+
+    assert config_persistence.apply_project_config_to_live_facade() is True
+    live = get_config().analysis.llm_custom_qa.saved_questions
+    assert len(live) == 1
+    first = live[0]
+    text = first["text"] if isinstance(first, dict) else first.text
+    assert text == "What was decided?"
+    reset_config_for_tests()
+
+
+def test_apply_project_config_to_live_facade_noop_when_missing(
+    tmp_path, monkeypatch
+) -> None:
+    from transcriptx.core.utils.config import reset_config_for_tests
+
+    cfg_dir = tmp_path / ".transcriptx"
+    monkeypatch.setattr(config_persistence, "CONFIG_DIR", cfg_dir)
+    monkeypatch.setattr(config_persistence, "CONFIG_DRAFTS_DIR", cfg_dir / "drafts")
+    reset_config_for_tests()
+    assert config_persistence.apply_project_config_to_live_facade() is False
+    reset_config_for_tests()

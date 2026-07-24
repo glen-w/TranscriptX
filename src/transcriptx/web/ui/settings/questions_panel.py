@@ -29,7 +29,9 @@ def render_questions_panel() -> None:
     st.subheader("Question library")
     st.caption(
         "Reusable questions for Custom Questions (`llm_custom_qa`). "
-        "Each question can run globally and/or per named speaker."
+        "Each question can run globally and/or per named speaker. "
+        "Saved to project config under `CONFIG_DIR` "
+        "(Docker: `HOST_CONFIG_DIR` → `/data/.transcriptx`)."
     )
     cfg = get_config().analysis.llm_custom_qa
     saved = structured_library_from_settings(cfg)

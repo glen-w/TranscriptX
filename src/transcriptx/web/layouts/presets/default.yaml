@@ -87,6 +87,13 @@ pages:
         params:
           title: Politeness Markers
           empty_hint: Run the `politeness` module to populate this view.
+      - placement_id: insights_keyphrases
+        block_id: keyphrases_block
+        section: analysis
+        visible: true
+        params:
+          title: Keyphrases
+          empty_hint: Run the `keyphrases` module to populate this view.
   charts:
     page_id: charts
     blocks:

@@ -148,10 +148,16 @@ class ProgressSnapshot(TypedDict, total=False):
 
 
 def make_initial_snapshot(total: int) -> ProgressSnapshot:
-    """Return a clean snapshot for the start of a new run."""
+    """Return a clean snapshot for the start of a new run.
+
+    Use ``running_pipeline`` (not ``validating``) so UIs that render once
+    before a blocking spinner do not stay stuck on a "checking inputs"
+    banner for the whole run. Workflows may still enter ``validating``
+    once execution begins.
+    """
     return ProgressSnapshot(
         status="running",
-        phase="validating",
+        phase="running_pipeline",
         current_module="",
         completed=0,
         skipped=0,

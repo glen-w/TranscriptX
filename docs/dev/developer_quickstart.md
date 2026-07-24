@@ -91,6 +91,8 @@ Modules are loosely grouped into light, medium, and heavy. Heavy modules should 
 
 **BERTopic status:** BERTopic ships in the **default** install (`bertopic` / `hdbscan` / `umap-learn` in base deps; Sentence Transformers already base). The `[bertopic]` extra is a compatibility alias. Catalogue / UI detection still uses non-importing distribution metadata; execution distinguishes `missing_extra:bertopic` vs `broken_extra:bertopic` for degraded installs. Group aggregation refits from pooled source segments. For public release, install profiles (basic / full / llm) will re-split heavy stacks — see [installation.md](../runtime/installation.md).
 
+**Keyphrases status:** Module `keyphrases` (B16) ranks noun-chunks always; YAKE/KeyBERT need `pip install -e ".[keyphrases]"` (also in `.[full]`). See [keyphrases.md](../runtime/keyphrases.md) and [wave_b16_keyphrases_2026-07-24.md](wave_b16_keyphrases_2026-07-24.md).
+
 ## 8. Development workflow
 
 Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging.

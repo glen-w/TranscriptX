@@ -38,4 +38,5 @@ def test_optional_keys_constant_is_frozen_subset() -> None:
     assert "politeness_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "semantic_similarity_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "topic_shift_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
+    assert "keyphrases_pooled" in GROUP_CHART_OUTCOME_OPTIONAL_KEYS
     assert "mentions_index" not in GROUP_CHART_OUTCOME_OPTIONAL_KEYS

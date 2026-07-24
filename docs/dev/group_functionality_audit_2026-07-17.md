@@ -7,7 +7,7 @@ Authority: self
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md).  
 > **Non-goals:** serial audio groups, `module_ui_groups` / block taxonomy, `export/grouping.py` speaker segments.
 
-**Verdict:** Core pipeline (identity → finalize → aggregation → charts) is **mature and well-tested**. Release-hygiene items G1/G2/G3/F3 closed 2026-07-17 (README file-backed; manifests documented in STORAGE; `data/groups` untracked). Soft-failure / doc-drift gaps (R1–R2, D1, A3–A4) remain. **2026-07-19:** Insights/Overview group UX gap closed — blocks are dual-aware (group rollup + per-session member browse); `ArtifactContentLoader` honors member `storage_root`. **2026-07-24 refresh:** chart registry includes `topic_shift`, `epistemic_markers`, `politeness` (Wave 1/2 ships); `llm_custom_qa` aggregates without a group chart (v2 group loader pending). No blocker that prevents local beta use of groups.
+**Verdict:** Core pipeline (identity → finalize → aggregation → charts) is **mature and well-tested**. Release-hygiene items G1/G2/G3/F3 closed 2026-07-17 (README file-backed; manifests documented in STORAGE; `data/groups` untracked). Soft-failure / doc-drift gaps (R1–R2, D1, A3–A4) remain. **2026-07-19:** Insights/Overview group UX gap closed — blocks are dual-aware (group rollup + per-session member browse); `ArtifactContentLoader` honors member `storage_root`. **2026-07-24 refresh:** chart registry includes `topic_shift`, `epistemic_markers`, `politeness`, **`keyphrases`** (B16); `llm_custom_qa` aggregates without a group chart (v2 group loader pending). No blocker that prevents local beta use of groups.
 
 ---
 
@@ -31,7 +31,7 @@ Authority: self
 **Follow-up gates 2026-07-19:**
 - Web blocks (incl. group-aware Insights): 52 passed (`tests/web/blocks/`)
 
-**Inventory refresh 2026-07-24:** live `build_registry()` = **45** agg ids; `GROUP_CHART_REGISTRY` = **33** chart generators (see §3).
+**Inventory refresh 2026-07-24 (post-B16):** live `build_registry()` = **46** agg ids; `GROUP_CHART_REGISTRY` = **34** chart generators (see §3).
 
 ---
 
@@ -68,7 +68,7 @@ Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (refreshed 
 
 | Class | agg_ids |
 |-------|---------|
-| **Registry-backed charts** | acts, affect_tension, bertopic, contagion, conversation_loops, echoes, emotion, entity_sentiment, epistemic_markers, highlights, insights, interactions, lexical_diversity, llm_action_items, moments, momentum, ner, pauses, politeness, prosody, qa_analysis, semantic_similarity, sentiment, simplified_transcript, stats, tics, topic_modeling, topic_shift, transcript_quality, understandability, voice_fingerprint, voice_mismatch, voice_tension |
+| **Registry-backed charts** | acts, affect_tension, bertopic, contagion, conversation_loops, echoes, emotion, entity_sentiment, epistemic_markers, highlights, insights, interactions, **keyphrases**, lexical_diversity, llm_action_items, moments, momentum, ner, pauses, politeness, prosody, qa_analysis, semantic_similarity, sentiment, simplified_transcript, stats, tics, topic_modeling, topic_shift, transcript_quality, understandability, voice_fingerprint, voice_mismatch, voice_tension |
 | **Special-path visuals** | wordclouds (`run_group_wordclouds`; not in chart registry) |
 | **Data-only (no chart)** | temporal_dynamics, insight_eligibility, voice_contours, llm_speaker_summary, contextual_emotion, fine_grained_emotion, llm_custom_qa |
 | **Blob-only** | transcript_output, summary, llm_summary, narrative_summary |
@@ -77,13 +77,13 @@ Source: `build_registry()` + `GROUP_CHART_REGISTRY` + four-class doc (refreshed 
 
 **Aliases (one agg, multiple modules):** voice_features / voice_charts_core / prosody_dashboard → `prosody`; semantic_similarity_advanced / semantic_similarity_v2 → `semantic_similarity` (B14: composite charts + `motif_rows` / `semantic_similarity_pooled`; TF-IDF incomparable).
 
-**Notes (post-audit ships):** `transcript_quality` pools only within matching ASR provenance cohorts; emotion-family classifier aggs (`contextual_emotion`, `fine_grained_emotion`) are independent of lexical `emotion` and currently data-only at group chart layer; group LLM synthesis is a finalize-path composite (see [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md)), not a chart registry entry; `llm_custom_qa` group chart deferred pending v2 group loader; Wave 2 lexicons + `topic_shift` have dedicated pooled/temporal chart contracts.
+**Notes (post-audit ships):** `transcript_quality` pools only within matching ASR provenance cohorts; emotion-family classifier aggs (`contextual_emotion`, `fine_grained_emotion`) are independent of lexical `emotion` and currently data-only at group chart layer; group LLM synthesis is a finalize-path composite (see [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md)), not a chart registry entry; `llm_custom_qa` group chart deferred pending v2 group loader; Wave 2 lexicons + `topic_shift` have dedicated pooled/temporal chart contracts; **B16** `keyphrases` pools noun_chunks by `canonical_key` (YAKE/KeyBERT deferred; per-speaker group rows deferred) — see [`group_charts_keyphrases_pooled_contract.md`](../groups/group_charts_keyphrases_pooled_contract.md).
 
 **Allowlists (live):**
 - `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` — 7 viz ids (acts pie, sentiment/stats session, 4 temporal overlays)
 - `POOLED_GROUP_OVERVIEW_ALLOWLIST` — `{group.acts.global_acts_pie.global}`
 - `CROSS_SESSION_SPEAKER_OVERVIEW_ALLOWLIST` — empty (gallery-only)
-- `GROUP_CHART_OUTCOME_OPTIONAL_KEYS` — 8 pooled keys
+- `GROUP_CHART_OUTCOME_OPTIONAL_KEYS` — 16 pooled keys (incl. `keyphrases_pooled`)
 
 **Four-class doc ↔ registry:** no class assignment drift.  
 **Phase-4 table ↔ registry:** incomplete rows for `highlights`, `moments`, `simplified_transcript` (see G-D1).

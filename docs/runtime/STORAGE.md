@@ -59,6 +59,8 @@ Implications:
   - Other subtrees (outputs, preprocessing, cache) remain reconstructable by re-running.
 - **config_dir**: User/app config, persistent, not safe to auto-delete.  
   - `profiles/` lives under config_dir (user-editable config presets).
+  - `config.json` holds project settings including the Custom Questions library (`analysis.llm_custom_qa.saved_questions`).
+  - With Docker Compose, set `HOST_CONFIG_DIR` to a host directory **outside the git clone** (same pattern as `HOST_TRANSCRIPTS_DIR` / `HOST_OUTPUT_DIR`) so Settings survive wiping `./data`. Default remains `./data/.transcriptx`.
 - **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
 - **state_dir**: App state (DB, processing state), persistent, reconstructable in part. Lives under `data_dir/state/`.
 - **wav_backup_dir**: Archive, persistent, not auto-clean unless explicit user action.

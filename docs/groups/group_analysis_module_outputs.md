@@ -20,14 +20,25 @@ All registered pipeline modules support group runs (`supports_group=true`) and h
 
 | Module | Class |
 | --- | --- |
-| stats, sentiment, acts, ner, lexical_diversity, simplified_transcript, transcript_quality, epistemic_markers, politeness, topic_shift, … | Registry-backed group charts (+ row CSV/JSON); **transcript_quality** pools only within matching ASR provenance cohorts (see below) |
-| wordclouds | Module-specific group visuals (special path) |
+| stats, sentiment, acts, ner, lexical_diversity, simplified_transcript, transcript_quality, epistemic_markers, politeness, keyphrases, topic_shift, … | Registry-backed group charts (+ row CSV/JSON); **transcript_quality** pools only within matching ASR provenance cohorts (see below); **keyphrases** pools noun_chunks by `canonical_key` (YAKE/KeyBERT deferred) with chart `keyphrases.phrases.global` |
+| wordclouds | Module-specific group visuals (special path); includes pooled **keyphrase_noun_chunks** cloud when `keyphrase_noun_chunk_pool` is passed (never concat-reparse) |
 | temporal_dynamics, insight_eligibility, voice_contours, llm_speaker_summary, contextual_emotion, fine_grained_emotion, llm_custom_qa | Data outputs only (no group chart registry entry); **llm_speaker_summary** may also feed [group LLM synthesis](group_llm_synthesis_contract.md) |
 | summary, llm_summary, narrative_summary, transcript_output | Blob-only composite; **llm_summary** may also feed [group LLM synthesis](group_llm_synthesis_contract.md) |
 | llm_action_items, insights, semantic_similarity*, voice_mismatch/tension/fingerprint | Rows (+ charts where registered) |
 | prosody (from voice_features / voice_charts_core / prosody_dashboard) | Registry-backed via existing `prosody` agg |
 
 \* `semantic_similarity`, `semantic_similarity_advanced`, and `semantic_similarity_v2` share one aggregation entry. **B14:** v2 motif envelope + group centroid match within a comparable provenance cohort (valid-zero sessions included; TF-IDF incomparable). `repetition_rows` remain `content_rows`; additive `motif_rows` + versioned `semantic_similarity_pooled`. Chart class: composite session bars + motif prevalence ([`group_charts_semantic_motifs_contract.md`](group_charts_semantic_motifs_contract.md)).
+
+## keyphrases group aggregation (B16)
+
+- Pool **per-transcript** noun_chunk ranks by `canonical_key` (never reparse concatenated multi-session text).
+- Aggregate: sum `occurrence_count`, sum member `rank_weight` then re-normalise, `member_session_support`, display = mode.
+- Drop phrases below `min_member_sessions` (default 2).
+- Registry chart: `keyphrases.phrases.global` (top-N pooled rank_weight); requires `keyphrases_pooled` on chart_outcome allowlist.
+- YAKE/KeyBERT: explicitly **deferred** for group pooling this wave.
+- Wordclouds special-path: pooled noun_chunk cloud from explicit `keyphrase_noun_chunk_pool` into `run_group_wordclouds` (see [`pooled_variants.py`](../src/transcriptx/core/analysis/wordclouds/pooled_variants.py)).
+- Runtime note: [`../runtime/keyphrases.md`](../runtime/keyphrases.md).
+- Pooled chart contract: [`group_charts_keyphrases_pooled_contract.md`](group_charts_keyphrases_pooled_contract.md).
 
 ## transcript_quality group aggregation
 
@@ -56,4 +67,6 @@ See [`docs/dev/web_blocks.md`](../dev/web_blocks.md) and [`docs/dev/group_functi
 
 - [Group charts: default overview vs gallery](group_charts_default_overview.md) — session, temporal overlay, cross-session speaker, pooled single view
 - [Phase 4 outcome table](group_charts_phase4_outcome_table.md) — per-`agg_id` chart decisions
+- [Keyphrases pooled contract](group_charts_keyphrases_pooled_contract.md) — B16 noun_chunk group chart
 - [Relational pooling model](group_charts_relational_pooling_model.md) — pooled semantics for interactions / contagion
+- [Runtime keyphrases](../runtime/keyphrases.md) — single-transcript + install extras

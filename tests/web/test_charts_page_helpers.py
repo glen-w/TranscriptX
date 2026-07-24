@@ -218,7 +218,7 @@ def test_render_charts_body_empty_shows_empty_state(monkeypatch, tmp_path) -> No
     empty_calls: list = []
     shell_calls: list = []
     ctx = SimpleNamespace(
-        subject=SimpleNamespace(subject_id="slug-a"),
+        subject=SimpleNamespace(subject_id="slug-a", subject_type="transcript"),
         run_id="run-1",
         run_root=tmp_path,
     )

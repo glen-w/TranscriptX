@@ -231,7 +231,7 @@ def run_analysis(
         snapshot,
         status="running",
         phase="validating",
-        latest_event="Validating inputs…",
+        latest_event="Checking inputs…",
     )
     progress.on_stage_start("validating")
 

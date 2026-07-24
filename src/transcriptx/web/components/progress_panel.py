@@ -70,8 +70,10 @@ def render_progress_panel(
     done = completed + skipped + failed
 
     # 1. Overall status line
+    # Prefer "Checking inputs…" over "Validating…" — the latter reads like a
+    # post-run QA step, especially when the panel is frozen for a long spinner.
     phase_labels: Dict[str, str] = {
-        "validating": "Validating…",
+        "validating": "Checking inputs…",
         "running_pipeline": "Running pipeline…",
         "finalizing": "Finalizing…",
         "completed": "Completed",
@@ -151,7 +153,13 @@ class StreamlitProgressCallback:
         snap = self._snap()
         if snap is not None:
             snap["phase"] = stage_name
-            snap["latest_event"] = stage_name.replace("_", " ").title() + "…"
+            # Prefer a pre-run phrasing; "Validating…" reads like post-analysis QA.
+            stage_labels = {
+                "validating": "Checking inputs…",
+            }
+            snap["latest_event"] = stage_labels.get(
+                stage_name, stage_name.replace("_", " ").title() + "…"
+            )
 
     def on_stage_progress(self, message: str, pct: Optional[float] = None) -> None:
         snap = self._snap()

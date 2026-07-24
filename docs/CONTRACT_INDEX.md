@@ -17,6 +17,11 @@ Concept → Authority:
 - **Terms (index only)** → `docs/TERMS.md`
 - **Local LLM modules** → `docs/runtime/llm.md`
 - **Lexical diversity** → `docs/runtime/lexical_diversity.md`
+- **Keyphrases (B16)** → `docs/runtime/keyphrases.md`
+- **Epistemic markers (B6)** → `docs/runtime/epistemic_markers.md`
+- **Politeness (B7)** → `docs/runtime/politeness.md`
+- **Topic shift (B9)** → `docs/runtime/topic_shift.md`
+- **Transcript quality / ASR confidence (B3)** → `docs/runtime/transcript_quality.md`
 
 All other docs (README, guides, architecture, runtime docs) may only summarize these contracts briefly and must link back here for rules.
 

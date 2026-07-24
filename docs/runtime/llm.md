@@ -233,7 +233,11 @@ contracts live in `contracts_v2.py` and must not import live writer aliases.
 ```
 
 `saved_questions` is structured (`text` + `scopes`); legacy `list[str]` migrates
-idempotently to global-only. `evidence_pack_ids: null` means all present and
+idempotently to global-only. Persisted in project `config.json` under
+`CONFIG_DIR` (Docker: `/data/.transcriptx`, host mount via `HOST_CONFIG_DIR`).
+Prefer `HOST_CONFIG_DIR` outside the git clone so the library survives wiping
+`./data`. The web app hydrates `get_config()` from that file on startup.
+`evidence_pack_ids: null` means all present and
 future catalog packs (expanded only onto the run plan). Request field
 `llm_custom_qa_questions`: omit/`null` → library; `[]` → empty-run success;
 list (str or structured) → request. Resolve/bind only when the module is selected.
