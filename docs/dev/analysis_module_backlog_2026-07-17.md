@@ -3,7 +3,7 @@ Authority: self
 
 # Analysis module backlog (ranked) — 2026-07-17
 
-> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. This backlog remains the ranked post-1.0 / repair-only list. See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md).
+> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. This backlog remains the ranked post-1.0 / repair-only list. **Allowed under freeze:** retire/rename versioned or legacy ids (see [schema_epoch_inventory.md](schema_epoch_inventory.md) — `semantic_similarity_v2` → `semantic_similarity` after removing legacy siblings). See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md).
 
 > Ranked product backlog for **new or deepened** analysis modules, libraries, and approaches.  
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md) and the prior coverage discussion.  
@@ -225,7 +225,7 @@ flowchart LR
 | **4** | Opportunistic / experimental (pre-1.0) | B8, B11, B15, B17, B19, B20 | Dependency-heavy and research paths **excluding** B4 |
 | **Post-1.0** | After TranscriptX 1.0 | **B4** citeable research methods (`fighting_words` first; see §3.2) | Optional sidecar methods; not 1.0 acceptance / deps / presets |
 
-**Next product capacity (ranked open):** Wave 3 remainder (B5 DB/group `profile_id`, B18 / P2); P1 infrastructure in parallel when eng capacity allows. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets (`analysis.ui_presets`, 0.7.5); Speakers Locations pack (0.7.5); **B14** semantic motifs / concept drift; **B16** keyphrases (0.8.0; deep-test hardened 2026-07-24 — see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
+**Post-1.0 ranked open (0.9.x freeze applies):** Wave 3 remainder (B5 DB/group `profile_id`, B18 / P2); P1 infrastructure when eng capacity allows. **Default 0.9.x capacity** is the stabilisation programme, not this backlog. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets; Speakers Locations pack; **B14** motifs/drift; **B16** keyphrases (see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
 
 **Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
 

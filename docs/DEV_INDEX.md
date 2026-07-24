@@ -5,7 +5,7 @@ Authority: docs/dev/CONTRIBUTING.md
 
 Active developer and maintainer docs. Historical material is listed only via [ARCHIVE_INDEX](archive/ARCHIVE_INDEX.md).
 
-## Phase 0A inventories
+## Phase 0A / 0B programme
 
 | Doc | Purpose |
 |-----|---------|
@@ -13,6 +13,18 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [script_inventory_1_0.md](dev/script_inventory_1_0.md) | Script support-status matrix |
 | [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) | 0.9.x → 1.0 programme plan |
 | [local_scratch.md](dev/local_scratch.md) | `.local/` ignored scratch convention |
+| [schema_epoch_inventory.md](dev/schema_epoch_inventory.md) | Schema epoch inventory + transition UX (sign-off before wipe) |
+| [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md) | 1.0 hardening severity rules |
+| [install_profiles_matrix.md](dev/install_profiles_matrix.md) | Install-profile planning matrix |
+| [docs_architecture_1_0.md](dev/docs_architecture_1_0.md) | Docs surface architecture |
+| [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md) | Manual acceptance suite skeleton |
+| [analysis_quality_audit.md](dev/analysis_quality_audit.md) | Analysis quality audit template |
+| [ui_presentation_modes.md](dev/ui_presentation_modes.md) | Guided / Full controls design |
+| [demo_project.md](dev/demo_project.md) | Demo project design |
+| [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelope planning |
+| [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) | Trust / privacy / model gate |
+| [release_ops_support_1_0.md](dev/release_ops_support_1_0.md) | Release ops / support policy |
+| [unfamiliar_user_validation_1_0.md](dev/unfamiliar_user_validation_1_0.md) | Unfamiliar-user validation protocol |
 
 ## Orientation
 

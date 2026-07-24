@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — this hygiene/docs cut is **`0.9.1`**; later themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**; later themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -19,8 +19,8 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Phase 0A script inventory** — Classify all scripts and helpers as supported, maintainer, internal, archived or disposable; clean machine-specific assumptions; define local ignored scratch location
 - [x] **Phase 0A hygiene controls** — Add deliberate `.gitignore` patterns and lightweight checks preventing new ad-hoc root docs/scripts
 - [x] **Phase 0B product docs** — PRODUCT, README, ROADMAP and related alignment after the repository information architecture is agreed (**shipped as 0.9.1**)
-- [ ] **Phase 0B stubs** — Add planning stubs including schema_epoch_inventory, install_profiles_matrix, manual_acceptance_1_0, analysis_quality_audit, docs_architecture_1_0, ui_presentation_modes, demo_project, performance_envelopes_1_0, trust_privacy_model_governance_1_0, release_ops_support_1_0, unfamiliar_user_validation_1_0
-- [ ] **Schema inventory** — Complete classified schema/version inventory, epoch marker design, and data-epoch transition UX before any code reset
+- [x] **Phase 0B stubs** — Add planning stubs including schema_epoch_inventory, install_profiles_matrix, manual_acceptance_1_0, analysis_quality_audit, docs_architecture_1_0, ui_presentation_modes, demo_project, performance_envelopes_1_0, trust_privacy_model_governance_1_0, release_ops_support_1_0, unfamiliar_user_validation_1_0 (+ release_severity_triage_1_0)
+- [x] **Schema inventory** — Classified schema/version inventory + transition UX in [schema_epoch_inventory.md](schema_epoch_inventory.md); **human-approved 2026-07-24** (integer public schemas → `1` only)
 - [ ] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI
 - [ ] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs
 - [ ] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs
@@ -50,13 +50,14 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 
 | Topic | Decision |
 |-------|----------|
-| Public schema epoch | **Option A (disciplined):** numeric public `schema_version` → `1`; `"1.0"` only for intentional transcript-style major/minor; public string IDs → `transcriptx.<domain>.v1`; refuse/isolate pre-epoch stores; data-root epoch marker; **no cosmetic resets** of operational/internal counters |
+| Public schema epoch | **Option A (disciplined):** public persisted `schema_version` → integer **`1` only** (never dotted `"1.0"` / `"2.0"`); public string IDs → `transcriptx.<domain>.v1`; refuse/isolate pre-epoch stores; data-root epoch marker; **no cosmetic resets** of policy/prompt/cache identity strings |
+| Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory: only `semantic_similarity_v2` embeds a version suffix. **Retire** legacy `semantic_similarity` + `semantic_similarity_advanced`, then **rename** `semantic_similarity_v2` → `semantic_similarity` (package/config/artifacts/presets/docs). Allowed under module freeze as 1.0 journey repair — not a new module. Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; collapse dual live writers as part of epoch. |
 | Product website | **Option A:** `website/` plain HTML/CSS (+ minimal JS), GitHub Pages; separate from hosted user docs. **Not a hard 1.0 blocker** if product gates pass — require a *credible* public landing; first version may be modest |
 | Hosted docs | **Revive Sphinx + Read the Docs** (extras already list Sphinx/MyST/Furo; `docs/conf.py` / Makefile / `docs/requirements.txt` are missing; `scripts/build_docs.sh` is stale; `stale_refs.sh` currently forbids `readthedocs.io` and must be updated when RTD goes live). **Usable hosted documentation is required**; polished breadth is not a hard blocker if task docs complete supported workflows |
 | Mode system | Presentation/config layer only — one execution system; labels prefer **Guided** / **Full controls** (Simple/Advanced acceptable aliases) |
 | Onboarding | Lightweight dismissible checklist / coach marks; not a brittle tour framework; elaborate animation **deferrable to 1.1** |
 | Demo data | Explicit “Load demo project”; isolated namespace; one-click remove; prefer **canonical transcripts + scripted generate-demo-runs** over large committed run trees; large bundled completed runs **deferrable to 1.1** if risky |
-| Module freeze | No new analysis modules in 0.9.x unless required to complete/repair the 1.0 journey |
+| Module freeze | No new analysis modules in 0.9.x unless required to complete/repair the 1.0 journey. **Allowed under freeze:** retire/rename versioned or legacy module ids (e.g. semantic similarity cleanup above). |
 | Documentation preservation | Expansive: entry surfaces stay concise; detailed design history, rationale, migration notes, investigation results and operational knowledge are retained when useful for maintenance, debugging, future features or contracts. Do **not** solve clutter by indiscriminately deleting detailed material. |
 | Patch versioning | Prefer thematic **0.9.x** workstreams over fixed patch numbers. Cut releases around coherent, tested increments; never ship unrelated high-risk changes together merely to match a draft patch label |
 | Script archive vs ignore | Tracked obsolete material is archived explicitly (`archive/scripts/` or `docs/archive/`). `.gitignore` is only for future local/generated scratch — not an archive mechanism. |
@@ -199,10 +200,10 @@ Search for documentation embedded in:
 
 Do **not** move authoritative contract files merely to achieve a cosmetically tidy directory tree unless all references and authority rules are safely updated.
 
-- [ ] Create `docs/dev/documentation_inventory_1_0.md` with full classification rows
-- [ ] Classify all tracked documentation-like files
-- [ ] Execute retain / merge / rewrite / move / archive / delete decisions
-- [ ] Create or update curated navigation: user docs index; developer docs index; contract index; archive index
+- [x] Create `docs/dev/documentation_inventory_1_0.md` with full classification rows (**shipped 0.9.1**)
+- [x] Classify all tracked documentation-like files (**shipped 0.9.1**)
+- [x] Execute retain / merge / rewrite / move / archive / delete decisions (**shipped 0.9.1**)
+- [x] Create or update curated navigation: user docs index; developer docs index; contract index; archive index (**shipped 0.9.1**)
 
 ### Documentation consolidation rules
 
@@ -254,9 +255,9 @@ For each script record:
 | public/support status | Supported / maintainer / internal / archived / disposable |
 | action | retain supported / retain internal / rewrite / move / archive / delete |
 
-- [ ] Create `docs/dev/script_inventory_1_0.md` with full classification rows
-- [ ] Classify every tracked script/helper
-- [ ] Execute retain / rewrite / move / archive / delete decisions
+- [x] Create `docs/dev/script_inventory_1_0.md` with full classification rows (**shipped 0.9.1**)
+- [x] Classify every tracked script/helper (**shipped 0.9.1**)
+- [x] Execute retain / rewrite / move / archive / delete decisions (**shipped 0.9.1**)
 
 ### Script classification and destinations
 
@@ -314,12 +315,12 @@ Add placeholder files or documentation where needed so contributors know where l
 
 ### Script cleanup priorities (early checks)
 
-- [ ] Stale `scripts/build_docs.sh`
-- [ ] Stale or misleading environment setup helpers
+- [x] Stale `scripts/build_docs.sh` (**archived 0.9.1** → `archive/scripts/build_docs.sh`)
+- [x] Stale or misleading environment setup helpers (**removed 0.9.1**)
 - [ ] Scripts that imply PyPI installation when releases use Git/Docker
 - [ ] Scripts containing owner-specific absolute paths
 - [ ] Scripts relying on undeclared environment variables
-- [ ] Duplicate install or Docker launch helpers
+- [x] Duplicate install or Docker launch helpers (**removed 0.9.1**)
 - [ ] Transcription helpers with weak quoting, error reporting or resume behaviour
 - [ ] Schema or fixture regeneration scripts that will become invalid after the epoch reset
 - [ ] Scripts that directly mutate managed storage without going through supported services
@@ -330,19 +331,19 @@ Add placeholder files or documentation where needed so contributors know where l
 
 Phase 0A is complete only when:
 
-- [ ] Every tracked documentation file has a classified purpose or an explicit action
-- [ ] Every tracked script/helper has a classified support status
-- [ ] Current documentation has one authority per subject
-- [ ] Historical material has been archived with clear banners and replacement links
-- [ ] Disposable notes have been incorporated or removed
-- [ ] No known owner-machine paths or private corpus assumptions remain in supported tooling
-- [ ] Public scripts have help, validation and documentation
-- [ ] Archived scripts cannot be mistaken for supported product paths
-- [ ] Hosted-doc navigation excludes internal planning noise
-- [ ] Archive and developer indexes make retained detail discoverable
-- [ ] Stale-reference and link checks understand the archive policy
-- [ ] `.gitignore` has a deliberate home for future local scratch material
-- [ ] CI or repository checks flag new ad-hoc root Markdown files and unclassified scripts where practical
+- [x] Every tracked documentation file has a classified purpose or an explicit action (**0.9.1**)
+- [x] Every tracked script/helper has a classified support status (**0.9.1**)
+- [x] Current documentation has one authority per subject (**0.9.1**)
+- [x] Historical material has been archived with clear banners and replacement links (**0.9.1**)
+- [x] Disposable notes have been incorporated or removed (**0.9.1**)
+- [x] No known owner-machine paths or private corpus assumptions remain in supported tooling (**0.9.1**)
+- [x] Public scripts have help, validation and documentation (**0.9.1**)
+- [x] Archived scripts cannot be mistaken for supported product paths (**0.9.1**)
+- [x] Hosted-doc navigation excludes internal planning noise (**0.9.1**; RTD nav still Phase later)
+- [x] Archive and developer indexes make retained detail discoverable (**0.9.1**)
+- [x] Stale-reference and link checks understand the archive policy (**0.9.1**)
+- [x] `.gitignore` has a deliberate home for future local scratch material (**0.9.1**)
+- [x] CI or repository checks flag new ad-hoc root Markdown files and unclassified scripts where practical (**0.9.1**; warn mode)
 
 ### Preventative repository checks
 
@@ -369,43 +370,43 @@ The schema inventory may begin in parallel with Phase 0B, but **no public schema
 
 ### Phase 0B file actions
 
-- [ ] [docs/PRODUCT.md](docs/PRODUCT.md) — **Create** — authoritative short product doc (definition, promise, users, journey, AI philosophy, local-first, surfaces, boundaries, 1.0 criteria, long-term vision)
-- [ ] [README.md](README.md) — **Rewrite opening** — sell the product first; move architecture/limitations later; fix stale claims (beta north-star, “docker-smoke writes transcript”, competing install stories)
-- [ ] [docs/ROADMAP.md](docs/ROADMAP.md) — **Keep as long-term roadmap** (1.x / 2.0 / deferred tracks); point short-term 0.9→1.0 work at this pre-release file; retire “credible beta” as competing north star; refine historical phase dumps under Phase 0A archive policy
-- [ ] [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Align wording with PRODUCT.md; keep non-authoritative; preserve contract hierarchy
-- [ ] [docs/CONTRACT_INDEX.md](docs/CONTRACT_INDEX.md) — Add PRODUCT.md / public surfaces / epoch policy pointers; do not dilute contract authority
-- [ ] [docs/public_surfaces.md](docs/public_surfaces.md) — Align supported surfaces; note Guided/Full as presentation preference (not a new surface); Transcribe command generator as GUI capability; Docker/Pages/docs as operational
-- [ ] [docs/dev/stocktake_2026-07-17.md](docs/dev/stocktake_2026-07-17.md) — Retarget next decisions to 0.9→1.0 **or** archive and replace with a living index per Phase 0A rules; retire “credible beta” as live north star; point to PRODUCT + new ROADMAP
-- [ ] [docs/dev/analysis_module_backlog_2026-07-17.md](docs/dev/analysis_module_backlog_2026-07-17.md) — Header note: 0.9.x freezes new modules; backlog is post-1.0 / repair-only
-- [ ] Install / Docker / transcription / release-governance — Align version language, install-profile framing, transcription handoff promise, and 1.0 evidence expectations
+- [x] [docs/PRODUCT.md](../PRODUCT.md) — authoritative short product doc (**0.9.1**)
+- [x] [README.md](../../README.md) — product-first opening; stale claims fixed (**0.9.1**)
+- [x] [docs/ROADMAP.md](../ROADMAP.md) — long-term roadmap + 0.9 themes; 1.0 north star (**0.9.1**)
+- [x] [docs/ARCHITECTURE.md](../ARCHITECTURE.md) — aligned with PRODUCT.md (**0.9.1**)
+- [x] [docs/CONTRACT_INDEX.md](../CONTRACT_INDEX.md) — PRODUCT / surfaces / epoch / severity pointers
+- [x] [docs/public_surfaces.md](../public_surfaces.md) — Guided/Full + command-gen notes (**0.9.1**)
+- [x] [docs/dev/stocktake_2026-07-17.md](stocktake_2026-07-17.md) — retargeted to 0.9→1.0; Wave 3 demoted
+- [x] [docs/dev/analysis_module_backlog_2026-07-17.md](analysis_module_backlog_2026-07-17.md) — 0.9.x freeze header
+- [x] Install / Docker / transcription / release-governance — version / profile / handoff alignment (**0.9.1**)
 
 ### Phase 0B planning stubs
 
-- [ ] `docs/dev/schema_epoch_inventory.md`
-- [ ] `docs/dev/install_profiles_matrix.md`
-- [ ] `docs/dev/manual_acceptance_1_0.md`
-- [ ] `docs/dev/analysis_quality_audit.md`
-- [ ] `docs/dev/docs_architecture_1_0.md`
-- [ ] `docs/dev/ui_presentation_modes.md`
-- [ ] `docs/dev/demo_project.md`
-- [ ] `docs/dev/performance_envelopes_1_0.md`
-- [ ] `docs/dev/trust_privacy_model_governance_1_0.md`
-- [ ] `docs/dev/release_ops_support_1_0.md`
-- [ ] `docs/dev/unfamiliar_user_validation_1_0.md`
-- [ ] `docs/dev/release_severity_triage_1_0.md` (or fold into release governance / ROADMAP)
+- [x] `docs/dev/schema_epoch_inventory.md` (rows drafted; human sign-off before wipe)
+- [x] `docs/dev/install_profiles_matrix.md`
+- [x] `docs/dev/manual_acceptance_1_0.md`
+- [x] `docs/dev/analysis_quality_audit.md`
+- [x] `docs/dev/docs_architecture_1_0.md`
+- [x] `docs/dev/ui_presentation_modes.md`
+- [x] `docs/dev/demo_project.md`
+- [x] `docs/dev/performance_envelopes_1_0.md`
+- [x] `docs/dev/trust_privacy_model_governance_1_0.md`
+- [x] `docs/dev/release_ops_support_1_0.md`
+- [x] `docs/dev/unfamiliar_user_validation_1_0.md`
+- [x] `docs/dev/release_severity_triage_1_0.md`
 
 (Phase 0A stubs `documentation_inventory_1_0.md` and `script_inventory_1_0.md` are created earlier.)
 
 ### Contradictions / stale claims to remove
 
-- [ ] README/ROADMAP “credible **beta** toolkit” north star and “Next: richer analysis modules / Ollama integration” (Ollama already shipped)
-- [ ] Version bands stuck on 0.6.x/0.7.x “near-term” while package is **0.8.1**
-- [ ] Competing install claims: `.[full]` vs Docker `requirements.txt` vs `./transcriptx.sh` presented as equivalent
-- [ ] README claim that `scripts/docker-smoke-test.sh` writes an inline transcript (it does not)
-- [ ] Aspirational `basic`/`full`/`llm` profile names presented as if implemented (runtime marker is `core`|`full` only)
-- [ ] Stocktake “Wave 3 remainder (B5 DB / B18)” as default next capacity during a stabilisation freeze
+- [x] README/ROADMAP “credible **beta** toolkit” north star and “Next: richer analysis modules / Ollama integration” (Ollama already shipped)
+- [x] Version bands stuck on 0.6.x/0.7.x “near-term” while package advanced
+- [x] Competing install claims: `.[full]` vs Docker `requirements.txt` vs `./transcriptx.sh` presented as equivalent
+- [x] README claim that `scripts/docker-smoke-test.sh` writes an inline transcript (it does not)
+- [x] Aspirational `basic`/`full`/`llm` profile names presented as if implemented (runtime marker is `core`|`full` only)
+- [x] Stocktake “Wave 3 remainder (B5 DB / B18)” as default next capacity during a stabilisation freeze
 - [ ] `stale_refs` “dead ReadTheDocs” once RTD is intentionally revived
-- [ ] Sphinx builder assuming missing `docs/conf.py`
+- [x] Sphinx builder assuming missing `docs/conf.py` (archived / hygiene in 0.9.1)
 
 ---
 
@@ -420,20 +421,23 @@ flowchart TD
   v08[0.8.1 beta toolkit]
   v090[0.9.0 pre-pre-release stabilisation]
   v091[0.9.1 hygiene and product docs]
+  v092[0.9.2 stubs and schema inventory]
   themeSchema[0.9.x schema epoch]
   themeInstall[0.9.x install and transcription]
   themeModes[0.9.x Guided mode and demo]
   themeHarden[0.9.x harden docs presentation]
   rc[1.0.0-rc.N when gates pass]
   v10[1.0.0 public]
-  v08 --> v090 --> v091 --> themeSchema --> themeInstall --> themeModes --> themeHarden --> rc --> v10
+  v08 --> v090 --> v091 --> v092 --> themeSchema --> themeInstall --> themeModes --> themeHarden --> rc --> v10
 ```
 
 After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x themes → 2.0 vision → deferred tracks).
 
 ### 0.9.x — Product and release baseline (hygiene + docs + inventories; feature freeze)
 
-**Cut as `0.9.1` (2026-07-24).** Phase 0A hygiene + Phase 0B product-doc alignment landed here. Remaining 0B stubs and later themes stay open.
+**Cut as `0.9.1` (2026-07-24).** Phase 0A hygiene + Phase 0B product-doc alignment.
+
+**Cut as `0.9.2` (2026-07-24).** Phase 0B planning stubs + schema-epoch inventory human-approved (integer `1`); schema epoch **implementation** still open.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -448,32 +452,34 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 **Phase 0B — Product documentation alignment**
 
 - [x] PRODUCT.md + README/ROADMAP/ARCHITECTURE/surfaces/stocktake alignment
-- [ ] Public surface & compatibility inventory (beyond surfaces alignment already shipped)
-- [ ] Documentation architecture (website vs README vs RTD vs contracts vs dev) built on Phase 0A IA
-- [ ] Guided/Full controls **design**
-- [ ] Demo-project **design**
-- [ ] Manual acceptance-test specification (incl. a11y / browser)
-- [ ] Analysis-quality audit template
-- [ ] Release severity triage rules published
-- [ ] Performance-envelope and trust/governance planning stubs
+- [x] Public surface notes (Guided/Full; command-gen; operational surfaces) — further compatibility inventory may deepen later
+- [x] Documentation architecture stub ([docs_architecture_1_0.md](docs_architecture_1_0.md))
+- [x] Guided/Full controls **design** ([ui_presentation_modes.md](ui_presentation_modes.md))
+- [x] Demo-project **design** ([demo_project.md](demo_project.md))
+- [x] Manual acceptance-test specification ([manual_acceptance_1_0.md](manual_acceptance_1_0.md))
+- [x] Analysis-quality audit template ([analysis_quality_audit.md](analysis_quality_audit.md))
+- [x] Release severity triage rules published ([release_severity_triage_1_0.md](release_severity_triage_1_0.md))
+- [x] Performance-envelope and trust/governance planning stubs
 - [x] Freeze on non-release-critical module additions
-- [ ] Known-limitations draft + model/dependency matrix skeleton
+- [x] Known-limitations draft + model/dependency matrix skeleton (subsection in [trust_privacy_model_governance_1_0.md](trust_privacy_model_governance_1_0.md))
 
 **Parallel / gated**
 
-- [ ] **Schema reset inventory + accepted convention + epoch transition UX design** (no wipe/code reset yet; may start in parallel with 0B once doc/script locations referencing versions are known)
-- [ ] Supported installation-profile inventory (derived from real deps; see §9)
+- [x] **Schema reset inventory + convention + epoch transition UX design** — [schema_epoch_inventory.md](schema_epoch_inventory.md) human-approved 2026-07-24 (integer `1` only; no dotted `.x`)
+- [x] Supported installation-profile inventory stub ([install_profiles_matrix.md](install_profiles_matrix.md)); clean-env audit remains open
 
 ### 0.9.x — Schema epoch and compatibility removal
 
-Focus: one coherent risk surface — public schema epoch.
+Focus: one coherent risk surface — public schema epoch (+ related public module-id hygiene).
 
-- [ ] Execute public schema epoch reset + data-root epoch marker
+- [ ] Execute public schema epoch reset + data-root epoch marker (integer `1` only; no dotted `.x` stamps)
 - [ ] Remove unnecessary pre-public compatibility adapters
 - [ ] Archive or remove obsolete pre-public compatibility and migration helpers (mandatory hygiene after reset)
-- [ ] Supported GUI preflight (+ typed Python workflow / internal maintainer utility if needed — **not** a new public analysis CLI); optional inventory/export before reset; explicit fresh 1.0 data directory path; no automatic deletion; default preserve compatible transcripts/recordings
+- [ ] Supported GUI preflight (+ typed Python workflow / internal maintainer utility if needed — **not** a new public analysis CLI); optional inventory/export before reset; explicit fresh data directory path; no automatic deletion; default preserve compatible transcripts/recordings
 - [ ] Regenerate fixtures/goldens; refuse pre-epoch stores with remediation UX (see §8)
 - [ ] Prove 0.9 epoch-1 store opens unchanged in later 0.9.x / 1.0 candidates
+- [ ] **Versioned module-id cleanup:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`; rename `semantic_similarity_v2` → `semantic_similarity` (package, registry, config keys, UI presets/profiles, artifacts, group-agg preference, docs/tests). No long-lived dual module. Same theme as epoch preferred (clean-slate); split only if risk forces it.
+- [ ] Collapse `llm_custom_qa` dual V1/V2 writer/marker symbols to a single epoch-1 constant (no `_V2` in names)
 
 ### 0.9.x — Installation and transcription onboarding
 
@@ -593,7 +599,7 @@ Without explicit severity, hardening expands indefinitely because every imperfec
 | **May ship as known limitation** | Optional module failure; unsupported language/model/platform combination; specialist UI friction; non-critical performance problem | Document honestly; do not block 1.0 |
 | **Post-1.0** | Aesthetic refactors; experimental analyses; specialist convenience; non-supported configurations | Explicitly out of scope for the release gate |
 
-- [ ] Severity rules written and linked from ROADMAP / release governance
+- [x] Severity rules written and linked from ROADMAP / release governance
 - [ ] Hardening backlog tagged with severity before RC
 - [ ] RC entry requires zero open release blockers and zero open must-fix items
 
@@ -604,24 +610,25 @@ Without explicit severity, hardening expands indefinitely because every imperfec
 ### Convention (locked)
 
 1. Classify every version-like value before changing it.
-2. Public persisted numeric `schema_version` → **`1`**.
-3. Use **`"1.0"`** only where an existing transcript-style contract already uses major/minor (canonical transcript stays `"1.0"` if already intentional).
-4. Public persisted string schema IDs → **`transcriptx.<domain>.v1`** (rename `emotion_result_schema_v2`, live `llm_custom_qa.v2`, action-items `.v2` envelopes, etc.).
-5. Refuse or isolate pre-epoch artifacts; **no long-lived compatibility adapters** for wiped pre-public data.
-6. Write **`schema_epoch` / public-schema epoch marker** at managed data-root; detect early; explain clearly in GUI and supported remediation surfaces (see transition UX below — not a new public analysis CLI).
-7. **Never** renumber, reuse, or reset public schema IDs after 1.0.
+2. Public persisted numeric `schema_version` → integer **`1` only** (never dotted `"1.0"` / `"2.0"`).
+3. Public persisted string schema IDs → **`transcriptx.<domain>.v1`** (rename `emotion_result_schema_v2`, live `llm_custom_qa.v2`, action-items `.v2` envelopes, etc.).
+4. Refuse or isolate pre-epoch artifacts; **no long-lived compatibility adapters** for wiped pre-public data.
+5. Write **`schema_epoch` / public-schema epoch marker** at managed data-root; detect early; explain clearly in GUI and supported remediation surfaces (see transition UX below — not a new public analysis CLI).
+6. **Never** renumber, reuse, or reset public schema IDs after 1.0.
+7. **Public analysis module ids** must not embed `_vN` / version suffixes for 1.0 (see locked decision *Versioned analysis module ids*). Method/algorithm fingerprints may still live in separate semantics constants — prefer names that do not imply a parallel “legacy module” is still the product default.
 
 ### Classification buckets
 
 | Class | Reset? | Examples |
 |-------|--------|----------|
-| Public persisted artifact schema | **Yes → epoch 1** | `RUN_RESULTS_SCHEMA_VERSION` (2→1), cleanup **result** schema (2→1), layout (2→1), config schema, speaker/voice store versions, pooled integer schemas, public string IDs |
-| Input/canonical transcript schema | Keep intentional `"1.0"`; document as public input contract | `CANONICAL_SCHEMA_VERSION`, `io/transcript_schema.SCHEMA_VERSION` |
+| Public persisted artifact schema | **Yes → epoch 1** | `RUN_RESULTS_SCHEMA_VERSION` (2→1), cleanup **result** schema (2→1), layout (2→1), config schema, speaker/voice store versions, pooled integer schemas, public string IDs; dotted stamps like `"2.0"` → `1` |
+| Input/canonical transcript schema | **Yes → integer `1`** | `CANONICAL_SCHEMA_VERSION`, `io/transcript_schema.SCHEMA_VERSION` (today `"1.0"`) |
 | Contract version / schema id strings | Rename to `transcriptx.*.v1` when they identify **persisted public** artifacts | `LLM_ACTION_ITEMS_SCHEMA_ID`, custom QA pack ids |
-| Journal / recovery format | **Exception:** cleanup journal **3** unless redesigned; rename journal stays 1 | cleanup `JOURNAL_SCHEMA_VERSION=3`, rename journal `1` |
+| Journal / recovery format | **→ integer `1`** for public journal envelopes | cleanup `JOURNAL_SCHEMA_VERSION` (3→1), rename journal stays 1 |
 | Policy / behaviour generation | **Do not reset** for cosmetics | cleanup **policy 7**, voice threshold/preprocess policies, admission policy, speaker eligibility policy |
 | Cache identity | **Do not reset** unless invalidating caches deliberately as part of wipe | emotion_family inference/aggregation cache v3, clip cache, voice excerpt cache |
-| Algorithm / analytical semantics | **Do not reset** when version describes method, not envelope | `semantic_similarity_v2.1.1` method identity, `INTERACTIONS_SEMANTICS_VERSION`, emotion `SEMANTICS_VERSION`, embedding semantics |
+| Algorithm / analytical semantics | **Do not reset** when version describes method, not envelope — but **do** drop `_vN` from **public module ids** (separate row) | Keep method fingerprints (e.g. interactions/emotion semantics); rename module id `semantic_similarity_v2` → `semantic_similarity` after retiring legacy siblings; then retarget method string away from implying a second product module |
+| Public analysis module id | **Unversioned for 1.0** | Only current offender: `semantic_similarity_v2` (+ legacy `semantic_similarity`, `semantic_similarity_advanced`) |
 | Prompt IDs / prompt policy versions | **Do not reset** | LLM prompt version constants |
 | Package / API version | Bump via normal release process (`0.9.x` → `1.0.0`) | `pyproject` / `__version__` |
 
@@ -629,7 +636,7 @@ Without explicit severity, hardening expands indefinitely because every imperfec
 
 **Separate canonical source data from incompatible derived state.** Do **not** presume managed transcripts must be wiped.
 
-Because the canonical transcript schema may remain `"1.0"`, the schema/epoch inventory decides whether managed transcripts can be retained.
+Because the canonical transcript schema becomes integer **`1`** with the epoch, the inventory still decides whether managed transcript **files** are retained vs reimported; schema stamp migration is separate from file deletion.
 
 **Default:** preserve **compatible** managed transcripts and **source recordings**; remove or refuse **incompatible** derived state — run outputs, caches, indexes, speaker profiles/voice data, groups, corrections, cleanup journals, run manifests/results, sidecars, and local config overrides as needed. Regenerate fixtures/goldens/tests/docs where they encode pre-epoch assumptions.
 
@@ -653,7 +660,7 @@ Do not let “refuse pre-epoch store” become only an exception message. Keep p
 - [ ] Inventory decision recorded for **whether compatible managed transcripts are retained**
 - [ ] Validation that a **0.9 epoch-1 store opens unchanged in 1.0**
 
-- [ ] Deliverable: [docs/dev/schema_epoch_inventory.md](docs/dev/schema_epoch_inventory.md) with a row per constant (path, value, class, action, tests) **and** explicit retain/wipe decisions for managed transcripts vs derived state
+- [~] Deliverable: [docs/dev/schema_epoch_inventory.md](schema_epoch_inventory.md) with classified rows + retain/wipe + UX design — drafted; human sign-off before implementation
 - [ ] Inventory + transition-UX sign-off before epoch implementation
 - [ ] After reset: archive or remove obsolete pre-public compatibility/migration helpers per Phase 0A script policy
 
@@ -995,6 +1002,6 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 2. [x] Complete Phase 0A acceptance criteria (authority consolidation, archive banners, script support status, `.gitignore` scratch home, hygiene checks in audit mode)
 3. [x] Apply **Phase 0B** documentation edits (PRODUCT.md, README, ROADMAP restructure, alignment passes) — **cut as 0.9.1**; remaining planning stubs still open
 4. [x] Freeze analysis-module additions in backlog/stocktake language
-5. [ ] Publish release severity triage rules early so later hardening has a decision system
-6. [ ] Schema inventory **and epoch transition UX design** may begin once version-referencing doc/script locations are known; do **not** execute schema wipe/code resets until `schema_epoch_inventory.md` is complete and reviewed
-7. [ ] Cut later **0.9.x** releases around coherent themes (schema ≠ install ≠ modes); RC only when gates pass
+5. [x] Publish release severity triage rules early so later hardening has a decision system
+6. [x] Schema inventory **and epoch transition UX design** approved in [schema_epoch_inventory.md](schema_epoch_inventory.md) (integer public schemas → `1`; owner clean-slate backup of maps/profiles 2026-07-24)
+7. [ ] Execute **0.9.x schema epoch** implementation; cut later themes (install ≠ modes); RC only when gates pass

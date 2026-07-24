@@ -5,7 +5,8 @@ Authority: contracts
 
 **Product definition (non-contract):** [PRODUCT.md](PRODUCT.md)  
 **Support / public surfaces:** [public_surfaces.md](public_surfaces.md)  
-**Schema epoch policy:** planned under Phase 0B stubs / 0.9.1 — see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md)
+**Schema epoch policy (planning inventory):** [schema_epoch_inventory.md](dev/schema_epoch_inventory.md)  
+**Release severity (non-contract):** [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)
 
 Concept → Authority:
 

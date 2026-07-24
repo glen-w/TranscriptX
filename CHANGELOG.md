@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-07-24
+
+Phase 0B planning stubs and schema-epoch inventory sign-off ahead of the public schema reset.
+
+### Added
+
+- Twelve Phase 0B planning stubs under `docs/dev/` (schema epoch inventory, install profiles, manual acceptance, analysis quality audit, docs architecture, UI presentation modes, demo project, performance envelopes, trust/privacy/model governance, release ops/support, unfamiliar-user validation, release severity triage).
+- Human-approved [`docs/dev/schema_epoch_inventory.md`](docs/dev/schema_epoch_inventory.md): integer public schemas → `1` only (no dotted `.x`); retain/wipe decisions; transition UX; versioned module-id cleanup plan (`semantic_similarity_v2` → `semantic_similarity` after retiring legacy siblings).
+
+### Changed
+
+- Programme roadmap, ROADMAP, CONTRACT_INDEX, DEV_INDEX, release governance, stocktake, and analysis backlog aligned to stubs + freeze + capacity language.
+- Locked decision: no `_vN` in public analysis module ids for 1.0; schema-epoch theme checklist includes module-id hygiene (implementation still open).
+
 ## [0.9.1] - 2026-07-24
 
 Phase 0A/0B baseline: repository hygiene, documentation information architecture, and product-doc alignment on the 0.9.x → 1.0 programme.

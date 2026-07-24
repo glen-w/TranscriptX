@@ -33,8 +33,9 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Theme | Focus | Status |
 |-------|--------|--------|
 | Pre-pre-release | Stabilisation ahead of the 1.0 programme | **0.9.0** shipped |
-| Hygiene + product docs | Phase 0A/0B inventories, archive, PRODUCT/README/ROADMAP | **0.9.1** (this cut) |
-| Schema epoch | Public schema epoch + compatibility removal; data-epoch transition UX | next 0.9.x |
+| Hygiene + product docs | Phase 0A/0B inventories, archive, PRODUCT/README/ROADMAP | **0.9.1** shipped |
+| Planning stubs + schema inventory | Phase 0B stubs; schema-epoch inventory signed off (integer `1`) | **0.9.2** (this cut) |
+| Schema epoch | Public schema epoch + compatibility removal; data-epoch transition UX; module-id hygiene | next 0.9.x |
 | Install + transcription | Install-profile audit; Transcribe command generation; corpus docs | later 0.9.x |
 | Modes + demo | Guided / Full controls v1; demo project load/remove | later 0.9.x |
 | Harden + public surfaces | Quality audit; performance envelopes; trust/privacy/model gate; hosted docs + modest website; a11y | later 0.9.x |
@@ -47,11 +48,12 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 
 Mandatory themes (detail in the programme plan):
 
-- Unfamiliar-user clean-room validation
-- Release severity triage (blocker / must-fix / known limitation / post-1.0)
-- Performance/resource envelopes as documented expectations
-- Trust / privacy / model-governance gate
-- Release ops and support policy; governance evidence on an exact clean commit
+- Unfamiliar-user clean-room validation — [unfamiliar_user_validation_1_0.md](dev/unfamiliar_user_validation_1_0.md)
+- Release severity triage — [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)
+- Performance/resource envelopes — [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md)
+- Trust / privacy / model-governance — [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md)
+- Release ops and support — [release_ops_support_1_0.md](dev/release_ops_support_1_0.md); governance evidence on an exact clean commit
+- Schema epoch inventory (before reset) — [schema_epoch_inventory.md](dev/schema_epoch_inventory.md)
 - Usable hosted documentation and a credible public landing (may be modest)
 
 Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, highly polished website.
@@ -94,3 +96,5 @@ Historical sprint dumps: [sprint_archive.md](archive/plans/sprint_archive.md) (a
 - [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md)
 - [DEV_INDEX.md](DEV_INDEX.md) · [archive/ARCHIVE_INDEX.md](archive/ARCHIVE_INDEX.md)
 - [release_governance.md](dev/release_governance.md)
+- [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)
+- Phase 0B planning stubs: [docs_architecture_1_0.md](dev/docs_architecture_1_0.md), [install_profiles_matrix.md](dev/install_profiles_matrix.md), [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md), [analysis_quality_audit.md](dev/analysis_quality_audit.md), [ui_presentation_modes.md](dev/ui_presentation_modes.md), [demo_project.md](dev/demo_project.md)

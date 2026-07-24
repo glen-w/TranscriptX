@@ -4,7 +4,7 @@ Authority: self
 # TranscriptX Codebase Stocktake — 2026-07-17
 
 > Living decision foundation for the **0.9.x → 1.0** stabilisation programme. Supersedes the historical assessment in [`docs/archive/assessments/assessment-2026-03-10.md`](../archive/assessments/assessment-2026-03-10.md).  
-> Metrics refreshed **2026-07-24** against package **0.9.1**. Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x / 0.9.0 describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.  
+> Metrics refreshed **2026-07-24** against package **0.9.2**. Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x / 0.9.0 / 0.9.1 describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.  
 > **Product authority:** [PRODUCT.md](../PRODUCT.md) · **Roadmap:** [ROADMAP.md](../ROADMAP.md) · **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md)
 
 ---
@@ -14,7 +14,7 @@ Authority: self
 | Dimension | Verdict | Confidence |
 |-----------|---------|------------|
 | **What it is** | Local-first personal transcript **analysis workbench** (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
-| **Honest stage** | **0.9.x stabilisation toward 1.0** (`0.9.1`, classifier Beta). Strong contracts and test culture; not consumer polish; not multi-user. | High |
+| **Honest stage** | **0.9.x stabilisation toward 1.0** (`0.9.2`, classifier Beta). Strong contracts and test culture; not consumer polish; not multi-user. | High |
 | **OSS local-first public 1.0** | **Conditional go** — Phase 0A hygiene + Phase 0B docs in flight; public 1.0 still requires unfamiliar-user validation, severity triage, and [`release_governance.md`](release_governance.md) evidence. | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
 | **Immediate process focus** | Complete Phase 0A/0B acceptance; then schema epoch inventory — not Wave 3 module sprawl. | High |
@@ -236,7 +236,7 @@ Use these as defaults unless you consciously override them:
 
 1. **Release type (next 1–2 months):** OSS **local-first single-user beta** — not hosted product.
 2. **run_cleanup:** Phase A + Phase B complete (policy 7 / schema 3 / result schema 2). Further behaviour changes need explicit schema/policy decisions; do not mix with Top-3 refactors.
-3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. Product capacity → analysis backlog ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)): **Wave 3 remainder** (B5 DB/group `profile_id`, B18/P2); ~~B14~~ / ~~B16~~ shipped; Waves 1–2 shipped.
+3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → 0.9→1.0 programme** (schema epoch, install/transcription, Guided/demo, hardening) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
 4. **Phase 1 honesty:** ROADMAP reflects 0.7.x + real CI; “no new features” retired.
 5. **Distribution:** Docker + git tags until PyPI decided; install matrix is authoritative.
 6. **Network threat model:** Localhost by default; LAN opt-in via `TRANSCRIPTX_BIND_HOST=0.0.0.0` (unauthenticated).
@@ -267,7 +267,7 @@ Use these as defaults unless you consciously override them:
 
 ### Product (Wave 3 open)
 
-14. Analysis backlog next: Wave 3 remainder — **B5 remainder** (DB analytics views / group gallery keyed by `profile_id`), **B18** / **P2** provenance. ~~B14~~ concept drift and ~~B16~~ `keyphrases` **shipped** (0.8.0; deep-test hardened 2026-07-24). Waves 1–2 shipped (incl. B5 file-backed Speakers + voice + locations). See [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md) and [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md).
+14. **Post-1.0 analysis capacity (not default 0.9.x track):** Wave 3 remainder — **B5 remainder** (DB analytics views / group gallery keyed by `profile_id`), **B18** / **P2** provenance. ~~B14~~ / ~~B16~~ shipped. See [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md).
 15. UX: Corrections Studio / Audio Prep fragment follow-ups (deferred).
 16. Remove legacy Data/Explorer redirect routes after “one more release” (public_surfaces).
 17. User-facing docs thinner than contract corpus — optional researcher guide.
