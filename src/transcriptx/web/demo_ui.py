@@ -116,6 +116,7 @@ def render_home_demo_and_onboarding() -> None:
 
 _DEMO_TOGGLE_KEY = "settings_demo_project_toggle"
 _DEMO_TOGGLE_PENDING_KEY = "settings_demo_project_toggle_pending"
+_DEMO_FLASH_ERROR_KEY = "settings_demo_project_flash_error"
 
 
 def render_settings_demo_controls() -> None:
@@ -134,6 +135,11 @@ def render_settings_demo_controls() -> None:
             "owned demo group, and analysis runs still attached to those demo "
             "transcripts (including later user runs on them)."
         )
+        flash = st.session_state.pop(_DEMO_FLASH_ERROR_KEY, None)
+        if flash:
+            st.error(flash.get("detail") or "Demo update failed.")
+            for err in (flash.get("errors") or [])[:8]:
+                st.caption(err)
         if st.session_state.pop(_DEMO_TOGGLE_PENDING_KEY, False) or (
             _DEMO_TOGGLE_KEY not in st.session_state
         ):
@@ -146,29 +152,23 @@ def render_settings_demo_controls() -> None:
         if desired_on and status.kind == DemoStatusKind.MISSING:
             with st.spinner("Installing demo…"):
                 result = install_demo_project()
-            if result.ok:
-                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
-                st.success(result.detail)
-                st.rerun()
-            else:
-                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
-                st.session_state[_DEMO_TOGGLE_KEY] = False
-                st.error(result.detail)
-                for err in result.errors[:8]:
-                    st.caption(err)
+            st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+            if not result.ok:
+                st.session_state[_DEMO_FLASH_ERROR_KEY] = {
+                    "detail": result.detail,
+                    "errors": list(result.errors or []),
+                }
+            st.rerun()
         elif (not desired_on) and present:
             with st.spinner("Removing demo…"):
                 result = remove_demo_project()
-            if result.ok:
-                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
-                st.success(result.detail)
-                st.rerun()
-            else:
-                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
-                st.session_state[_DEMO_TOGGLE_KEY] = True
-                st.error(result.detail)
-                for err in result.errors[:8]:
-                    st.caption(err)
+            st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+            if not result.ok:
+                st.session_state[_DEMO_FLASH_ERROR_KEY] = {
+                    "detail": result.detail,
+                    "errors": list(result.errors or []),
+                }
+            st.rerun()
         if status.kind in {
             DemoStatusKind.STALE,
             DemoStatusKind.PARTIAL,
@@ -188,14 +188,13 @@ def render_settings_demo_controls() -> None:
             if st.button(label, key="demo_refresh_settings"):
                 with st.spinner("Updating demo…"):
                     result = refresh_demo_project()
-                if result.ok:
-                    st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
-                    st.success(result.detail)
-                    st.rerun()
-                else:
-                    st.error(result.detail)
-                    for err in result.errors[:8]:
-                        st.caption(err)
+                st.session_state[_DEMO_TOGGLE_PENDING_KEY] = True
+                if not result.ok:
+                    st.session_state[_DEMO_FLASH_ERROR_KEY] = {
+                        "detail": result.detail,
+                        "errors": list(result.errors or []),
+                    }
+                st.rerun()
         if st.button("Reopen getting started checklist", key="onboard_reopen"):
             set_dismissed(False)
             st.rerun()

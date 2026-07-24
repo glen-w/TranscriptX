@@ -34,9 +34,9 @@ def render_settings_page() -> None:
         unsafe_allow_html=True,
     )
 
-    # Presentation switch lives outside tabs that Guided may hide.
+    # Guided mode on/off lives outside tabs that Guided may hide.
     with st.container():
-        st.subheader("Presentation")
+        st.subheader("Guided mode")
         render_presentation_mode_switch(location="settings")
 
     from transcriptx.web.demo_ui import render_settings_demo_controls

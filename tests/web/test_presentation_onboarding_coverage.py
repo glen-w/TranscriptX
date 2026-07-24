@@ -96,9 +96,10 @@ def test_presentation_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
 def test_switch_persists_change(monkeypatch) -> None:
     from tests.web.streamlit_doubles import DummyHomeStreamlit
 
-    session: dict = {WIDGET_KEY: "Guided", PENDING_SYNC_KEY: False}
+    session: dict = {WIDGET_KEY: True, PENDING_SYNC_KEY: False}
     DummyHomeStreamlit.session_state = session
     saved: list[str] = []
+    set_modes: list[str] = []
 
     class _St(DummyHomeStreamlit):
         session_state = session
@@ -108,8 +109,8 @@ def test_switch_persists_change(monkeypatch) -> None:
             return None
 
         @staticmethod
-        def segmented_control(*_a, **_k):
-            return "Full controls"
+        def toggle(*_a, **_k):
+            return False  # user turns Guided mode off → Full controls
 
         @staticmethod
         def rerun():
@@ -127,14 +128,51 @@ def test_switch_persists_change(monkeypatch) -> None:
 
     monkeypatch.setattr(switch, "st", _St)
     monkeypatch.setattr(switch, "resolve_presentation_mode", lambda: MODE_GUIDED)
+
+    def _set(mode):
+        set_modes.append(mode)
+        return type("R", (), {"ok": True, "conflict": False, "error": None})()
+
+    monkeypatch.setattr(switch, "set_presentation_mode", _set)
+    render_presentation_mode_switch(location="home")
+    assert set_modes == [MODE_FULL]
+    assert "rerun" in saved
+    assert session.get(PENDING_SYNC_KEY) is True
+
+
+@pytest.mark.unit
+def test_switch_migrates_legacy_string_widget(monkeypatch) -> None:
+    from tests.web.streamlit_doubles import DummyHomeStreamlit
+
+    session: dict = {WIDGET_KEY: "Guided"}
+    DummyHomeStreamlit.session_state = session
+
+    class _St(DummyHomeStreamlit):
+        session_state = session
+
+        @staticmethod
+        def caption(*_a, **_k):
+            return None
+
+        @staticmethod
+        def toggle(*_a, **_k):
+            return True
+
+        @staticmethod
+        def rerun():
+            return None
+
+    import transcriptx.web.presentation.switch as switch
+
+    monkeypatch.setattr(switch, "st", _St)
+    monkeypatch.setattr(switch, "resolve_presentation_mode", lambda: MODE_GUIDED)
     monkeypatch.setattr(
         switch,
         "set_presentation_mode",
-        lambda mode: type("R", (), {"ok": True, "conflict": False, "error": None})(),
+        lambda _mode: type("R", (), {"ok": True, "conflict": False, "error": None})(),
     )
-    render_presentation_mode_switch(location="home")
-    assert "rerun" in saved
-    assert session.get(PENDING_SYNC_KEY) is True
+    render_presentation_mode_switch(location="settings")
+    assert session[WIDGET_KEY] is True
 
 
 @pytest.mark.unit

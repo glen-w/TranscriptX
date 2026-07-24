@@ -26,7 +26,7 @@ Guided / Full are **not** a new public surface.
 - Empty workspace seeds **Guided**; existing workspace (config/index/runs) seeds **Full controls** once
 - Single resolver before sidebar/routing; visibility filter separate from access; Full-only pages banner + unlock
 - Guided Settings tab set + curated `GUIDED_SETTINGS_SCHEMA`; Custom analysis under Guided is read-only with “Edit in Full controls”
-- Mode switch on Home / Settings; presentation never mutates analysis Custom/preset keys
+- Guided mode on/off toggle on Home / Settings (off = Full controls); presentation never mutates analysis Custom/preset keys
 
 ## Design checklist
 

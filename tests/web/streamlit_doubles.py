@@ -258,6 +258,12 @@ class DummyHomeStreamlit:
     def dataframe(*_args, **_kwargs):
         return None
 
+    @classmethod
+    def toggle(cls, _label, *, value=False, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return bool(cls.session_state[key])
+        return value
+
 
 class DummyRenameStreamlit:
     """Class-level session_state for rename service tests."""

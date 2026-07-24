@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.1] - 2026-07-25
+
+### Changed
+- Guided mode on/off toggle on Home / Settings (off = Full controls); Settings subheader renamed from Presentation.
+
+### Fixed
+- Demo project install/remove/refresh always reruns and surfaces failures via a flash error after toggle sync (avoids sticky wrong toggle state).
+
 ## [0.9.8] - 2026-07-24
 
 ### Added

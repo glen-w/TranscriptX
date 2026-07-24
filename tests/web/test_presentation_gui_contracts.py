@@ -70,6 +70,63 @@ def test_demo_ui_helpers_importable() -> None:
 
 
 @pytest.mark.unit
+def test_settings_demo_toggle_installs_when_on(monkeypatch) -> None:
+    from tests.web.streamlit_doubles import DummyHomeStreamlit
+    from transcriptx.demo import DemoStatusKind
+    from transcriptx.web import demo_ui
+
+    session: dict = {}
+    DummyHomeStreamlit.session_state = session
+    installs: list[str] = []
+    reruns: list[str] = []
+
+    class _Status:
+        kind = DemoStatusKind.MISSING
+        detail = "missing"
+
+    class _St(DummyHomeStreamlit):
+        session_state = session
+
+        @staticmethod
+        def expander(*_a, **_k):
+            from tests.web.streamlit_doubles import DummyExpander
+
+            return DummyExpander()
+
+        @staticmethod
+        def toggle(*_a, **_k):
+            return True
+
+        @staticmethod
+        def spinner(*_a, **_k):
+            from contextlib import nullcontext
+
+            return nullcontext()
+
+        @staticmethod
+        def rerun():
+            reruns.append("rerun")
+
+        @staticmethod
+        def button(*_a, **_k):
+            return False
+
+    monkeypatch.setattr(demo_ui, "st", _St)
+    monkeypatch.setattr(demo_ui, "status_demo_project", lambda: _Status())
+    monkeypatch.setattr(
+        demo_ui,
+        "install_demo_project",
+        lambda: (
+            installs.append("install")
+            or type("R", (), {"ok": True, "detail": "ok", "errors": []})()
+        ),
+    )
+    demo_ui.render_settings_demo_controls()
+    assert installs == ["install"]
+    assert "rerun" in reruns
+
+
+@pytest.mark.unit
 def test_unlock_banner_calls_set_mode(monkeypatch) -> None:
     from transcriptx.web.presentation import visibility as vis
 
