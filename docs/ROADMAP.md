@@ -192,15 +192,21 @@ The following are explicitly **not** part of the beta-ready scope; they are plan
 - **Longitudinal speaker tracking / Speakers UI** — Phase 1.5–1.6 Speakers UI/analytics and Phase 2 R2 local voice suggested matches shipped (incl. file-backed residuals: accept query-evidence, eval harness, chunked merge transfer, Stage 9 digest-keyed file matrix under `.cache/voice/indexes/`). Deferred remainder: SQLite/DB analytics views, group gallery keyed by `profile_id`.
 - **Ask-this-transcript (viewer GUI)** — optional chat panel over the loaded run (Ollama + existing prompt budgeting / Search jump). **Not** a Retrievia-style RAG + streaming ReAct product; that remains competitive awareness only ([competitive inspiration W1](dev/competitive_inspiration_2026-07-22.md)). Prefer local stuffed-context or lexical-retrieve-then-LLM with segment citations.
 - **GPU acceleration & first-class native install** — MPS on native Mac; CUDA on Linux Docker/native; documented install parity — see [Runtime acceleration & native install](#runtime-acceleration--native-install-long-term).
-- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, ConvoKit rewire, large export Jinja2/Artifact Protocol follow-ups, optional config **1.9** structural split. **Shipped recently (not eng blockers):** BERTopic; interactions equity; `transcript_quality`; emotion-family classifiers; group LLM synthesis; Waves 1–2 analysis (B6/B7/B9/B10/B12/B13); speaker profiles + voice + locations; configurable analysis presets; **B14** motifs/drift; **B16** `keyphrases` (+ wordclouds deepen). Public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
+- **Eng backlog (not Phase 1):** pooled wordcloud deferred variant matrix, recordings upload retention policy, large export Jinja2/Artifact Protocol follow-ups, optional config **1.9** structural split. **Shipped recently (not eng blockers):** BERTopic; interactions equity; `transcript_quality`; emotion-family classifiers; group LLM synthesis; Waves 1–2 analysis (B6/B7/B9/B10/B12/B13); speaker profiles + voice + locations; configurable analysis presets; **B14** motifs/drift; **B16** `keyphrases` (+ wordclouds deepen). Public release will clarify basic/full/llm install profiles (see [installation.md](runtime/installation.md)).
 
-### ConvoKit analysis (archived)
+### Post-1.0 — optional citeable research methods (B4)
 
-**ConvoKit** coordination/accommodation analysis was archived due to **dependency conflicts** with the current stack. Re-enablement is planned for later once version constraints are resolved.
+Deferred until **after TranscriptX 1.0**. Valuable as an optional research-method family, but dependency isolation, conversational-topology semantics, testing burden, and maintenance cost make it inappropriate for the **1.0 critical path**. Not in 1.0 acceptance criteria, dependency work, presets, or near-term capacity. Detail: [analysis module backlog §3.2](dev/analysis_module_backlog_2026-07-17.md#32-b4--post-10-optional-citeable-research-methods). Historical pin conflict (archived only): [convokit_dependency_conflict.md](archive/convokit_dependency_conflict.md).
 
-**Dependency issues:** convokit 3.5.0 requires `numpy>=2.0.0`, `spacy>=3.8.2`, and `thinc>=8.3.0,<8.4.0`. These conflict with current project pins (e.g. numpy 1.26.4, spacy 3.7.5, thinc 8.2.5) used by NER and other modules.
-
-To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the module under `src/transcriptx/core/analysis/convokit/` and re-wire the pipeline module registry, analysis config, and aggregation registry.
+| Lock | Decision |
+|------|----------|
+| Product objective | Optional **citeable methods**, not “ConvoKit enabled” |
+| Defaults (not replaced) | Native B7 `politeness`, B12 interaction equity, B13 interaction graphs, `keyphrases` / topics |
+| Public module IDs | Method names: `fighting_words`, `linguistic_coordination`, `politeness_strategies`, `hyperconvo`, `conversation_forecaster`. Vendor name/version only in **provenance + method docs** |
+| Architecture | Thin method-specific modules + shared canonical adapter + **isolated subprocess/sidecar**. Do **not** plan an in-process `[convokit]` extra unless this decision is explicitly revisited |
+| Topology gate | Diarised turn adjacency ≠ reply relationship. `linguistic_coordination` and `hyperconvo` must define/expose **relation policy**, **evidence coverage**, and **abstention** |
+| Method order | (1) `fighting_words` (2) `linguistic_coordination` (3) `politeness_strategies` (4) `hyperconvo` (5) `conversation_forecaster` experimental only |
+| First post-1.0 delivery | Infrastructure + **Fighting Words** only: canonical worker I/O protocol; isolated locked env; one explicit two-class comparison surface; JSON/CSV artifacts; method provenance and citation; clean unavailable / insufficient-data outcomes; Linux and macOS arm64 install tests |
 
 ---
 
@@ -208,7 +214,7 @@ To re-enable: resolve convokit/numpy/spacy/thinc versions, then re-implement the
 
 - **M1:** Beta-ready — install, core flows, docs, CI (Phase 1)
 - **M2:** UX v1 — GUI polish and API/docs parity (Phase 2)
-- **M3:** 0.8.x — current packaging line (**0.8.1**); Wave 0 eng criteria closed; Top-3 eng programs Done; Waves 1–2 product items shipped; Wave 3 in progress (~~B14~~ / ~~B16~~ shipped in 0.8.0+ with LLM feedback v1; open: B5 DB/group remainder, B18/P2); public tags still via release governance evidence
+- **M3:** 0.9.x — current packaging line (**0.9.0** pre-pre-release); Wave 0 eng criteria closed; Top-3 eng programs Done; Waves 1–2 product items shipped; Wave 3 in progress (~~B14~~ / ~~B16~~ shipped in 0.8.0+ with LLM feedback v1; open: B5 DB/group remainder, B18/P2); public tags still via release governance evidence
 
 ---
 

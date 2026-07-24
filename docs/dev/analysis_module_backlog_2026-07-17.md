@@ -58,7 +58,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 5 | B6 | **Hedging / certainty / epistemic markers** | new (**shipped** as `epistemic_markers`) | Language & Meaning | S–M | lexicon + optional classifier; group charts |
 | 6 | — | *(P1 routing infrastructure continues; not a ranked module)* | platform | — | M | see §2 |
 | 7 | B10 | **Structured decisions / commitments** — extraction-family deepen (`llm_action_items` v2 meeting extracts) | deepen (**shipped** v2 contract: typed records + sectioned render + group schema 2; residual: broader P2 platform) | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
-| 8 | B7 | **Politeness / formality / power** (lexicon-first) | new (**shipped** as `politeness`; power = lexical directiveness; B12 equity for interactional power) | Speakers & Interaction | M | lexicon path first; ConvoKit optional later |
+| 8 | B7 | **Politeness / formality / power** (lexicon-first) | new (**shipped** as `politeness`; power = lexical directiveness; B12 equity for interactional power) | Speakers & Interaction | M | lexicon path remains default; post-1.0 `politeness_strategies` is a sibling citeable method only (§3.2) |
 | 9 | B14 | **Cross-session concept drift / recurring motifs** | deepen (**shipped**: v2.1.1 motif envelope + group centroid match / transition drift + composite charts) | Language & Meaning (+ Groups) | M | `semantic_similarity_v2` + group finalize |
 | 10 | B13 | **Speaker interaction graphs** (NetworkX artifacts + gallery) | deepen (**shipped**: GraphML/JSON + upgraded `interactions.network_graph.global`) | Speakers & Interaction / Visualisations | M | Phase 3 network mention; B12 primitives help |
 
@@ -69,15 +69,15 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 + 1.6 + R2 voice + Locations pack shipped**: file store, Speakers UX, over-time charts, accents, analytics pack, avatars, voice match/accept/enrol, NER locations map; **file-backed voice residuals shipped** — accept query-evidence co-journal, eval harness, chunked merge transfer, Stage 9 file index; remainder: **DB analytics views**, **group gallery keyed by `profile_id`**) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
 | 12 | B18 | **Insight narratives grounded in module evidence** | deepen | Summary & Synthesis | M | `insights` + LLM; **P2** provenance contracts |
 | — | — | **Group LLM synthesis** (cross-session rollup of member `llm_summary` / `llm_speaker_summary`) | deepen (finalize; no new module ID) | Summary & Synthesis (+ Groups) | M | Shipped contract: [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md) |
-| 13 | B4 | **ConvoKit accommodation / coordination** — implementation option, not product objective | revive (optional) | Speakers & Interaction | L | define desired outputs first; resolve numpy/spaCy/thinc only if still needed |
-| 14 | B8 | **Dialogue-act model upgrade** (re-enable transformer `acts` path) | deepen | Speakers & Interaction | M | model size / core-mode story; keep rules fallback; may move earlier if genuinely small rewire |
-| 15 | B11 | **Claim–evidence / argument mining** (exploratory) | new | Summary & Synthesis or Language & Meaning | L | genres + schema + eval fixtures + UI + abstention before delivery (see §3.2); P2 |
-| 16 | B15 | **Emotion × prosody fusion** (“said vs sounded”) | deepen | Voice & Audio (+ Dynamics) | M | `emotion` + `voice_*` join keys |
-| 17 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new (**shipped** as `keyphrases`; optional `[keyphrases]` extra; group noun_chunk pool + `keyphrases.phrases.global`; wordclouds/Insights consumers; deep-test hardened 2026-07-24). Residuals: group YAKE/KeyBERT pool; group per-speaker rows/charts; P1 language routing | Language & Meaning (+ Visualisations) | S | optional dep; group pooled phrases; P1 for language residual |
-| 18 | B17 | **Toxicity / hostility** (optional, labeled) | new | Language & Meaning | S–M | Detoxify or similar; clear ethics/docs |
-| 19 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars |
-| 19 | B19 | **Multilingual-aware NER / entity paths** | deepen | Language & Meaning | M | after P1 |
-| 20 | B20 | **Pooled wordcloud deferred variant matrix** | deepen | Visualisations | S | eng backlog already listed in ROADMAP |
+| — | B4 | **Optional citeable research methods** (post-1.0) — method IDs, not “ConvoKit enabled” | post-1.0 research | Speakers & Interaction / Language & Meaning | L | **Not** Wave 4 / 1.0 capacity; see §3.2 |
+| 13 | B8 | **Dialogue-act model upgrade** (re-enable transformer `acts` path) | deepen | Speakers & Interaction | M | model size / core-mode story; keep rules fallback; may move earlier if genuinely small rewire |
+| 14 | B11 | **Claim–evidence / argument mining** (exploratory) | new | Summary & Synthesis or Language & Meaning | L | genres + schema + eval fixtures + UI + abstention before delivery (see §3.3); P2 |
+| 15 | B15 | **Emotion × prosody fusion** (“said vs sounded”) | deepen | Voice & Audio (+ Dynamics) | M | `emotion` + `voice_*` join keys |
+| 16 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new (**shipped** as `keyphrases`; optional `[keyphrases]` extra; group noun_chunk pool + `keyphrases.phrases.global`; wordclouds/Insights consumers; deep-test hardened 2026-07-24). Residuals: group YAKE/KeyBERT pool; group per-speaker rows/charts; P1 language routing | Language & Meaning (+ Visualisations) | S | optional dep; group pooled phrases; P1 for language residual |
+| 17 | B17 | **Toxicity / hostility** (optional, labeled) | new | Language & Meaning | S–M | Detoxify or similar; clear ethics/docs |
+| 18 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars |
+| 18 | B19 | **Multilingual-aware NER / entity paths** | deepen | Language & Meaning | M | after P1 |
+| 19 | B20 | **Pooled wordcloud deferred variant matrix** | deepen | Visualisations | S | eng backlog already listed in ROADMAP |
 | — | B21 | **Custom questions at analysis time** (`llm_custom_qa`) — Settings library + Run/Batch picker → Insights citation cards (not viewer chat) | new (**shipped**) | Summary & Synthesis | M | Ollama; frozen envelope/row contract; empty-Q gate |
 
 ### 3.1 B10 — decisions vs action items (required taxonomy)
@@ -94,13 +94,35 @@ B10 is worthwhile only with a strict semantic boundary. Prefer deepening the exi
 
 Without this taxonomy, B10 mostly duplicates `llm_action_items`, summaries, and highlights.
 
-### 3.2 B4 — ConvoKit as option, not objective
+### 3.2 B4 — post-1.0 optional citeable research methods
 
-B4 ranks low relative to dependency surface (NumPy/spaCy/thinc), overlap with B7/B12, optional packaging burden, and uncertain end-user value until outputs are specified.
+B4 is **deferred until after TranscriptX 1.0**. It remains a valuable optional research-method family, but dependency isolation, conversational-topology semantics, testing burden, and maintenance cost make it inappropriate for the **1.0 critical path**. Do not schedule it in Wave 4, presets, dependency bumps, or near-term capacity.
 
-1. Define desired **accommodation** and **coordination** outputs.  
-2. Implement them directly **or** revive only the necessary ConvoKit components.  
-3. Do not treat “ConvoKit re-enabled” as the product goal.
+**Product objective:** optional **citeable methods**, not “ConvoKit enabled.” Public module IDs describe the **method**; vendor name and version belong only in provenance and method documentation. Historical pin conflict (archived only): [`docs/archive/convokit_dependency_conflict.md`](../archive/convokit_dependency_conflict.md). Active roadmap placeholder: [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 — optional citeable research methods).
+
+**Native defaults stay (not replaced):** B7 `politeness`, B12 interaction equity, B13 interaction graphs, `keyphrases` / topics.
+
+**Preferred architecture (locked):** thin method-specific modules + shared canonical adapter + **isolated subprocess/sidecar** environment. Do **not** plan an in-process `[convokit]` extra unless this decision is explicitly revisited.
+
+**Likely future module order:**
+
+1. `fighting_words`
+2. `linguistic_coordination`
+3. `politeness_strategies`
+4. `hyperconvo`
+5. `conversation_forecaster` (experimental only)
+
+**Hard semantic gate** (`linguistic_coordination`, `hyperconvo`): diarised turn adjacency is **not** equivalent to a reply relationship. Any future implementation must define and expose **relation policy**, **evidence coverage**, and **abstention** rules. Turn order alone must not silently imply a reply graph.
+
+**First post-1.0 delivery:** infrastructure + **Fighting Words** only:
+
+- Canonical worker input/output protocol
+- Isolated locked environment
+- One explicit two-class comparison surface
+- JSON/CSV artifacts
+- Method provenance and citation
+- Clean unavailable and insufficient-data outcomes
+- Linux and macOS arm64 install tests
 
 ### 3.3 B11 — argument mining stays exploratory
 
@@ -153,7 +175,7 @@ Avoid: third sentiment backend as a product feature (keep as config only). Emoti
 |--------|-------|
 | **Deepen** | ~~B12 equity~~ shipped; B8 acts ML path; B5 longitudinal speakers (file-backed + locations **shipped**; DB/group `profile_id` remainder); ~~B13 graphs~~ shipped |
 | **Add** | ~~B7 politeness/formality~~ **shipped** as `politeness` |
-| **Optional revive** | B4 ConvoKit only after desired outputs are specified (§3.2) |
+| **Post-1.0** | B4 optional citeable research methods (§3.2) — not near-term add/revive |
 
 ### Dynamics & Flow
 *Existing:* `momentum`, `moments`, `affect_tension`
@@ -189,6 +211,7 @@ flowchart LR
   W1 --> W2[Wave 2: Interaction depth]
   W2 --> W3[Wave 3: Cross-session and synthesis]
   W3 --> W4[Wave 4: Experimental and heavy deps]
+  W4 --> Post10[Post-1.0: B4 citeable research methods]
 ```
 
 | Wave | When | Items | Intent |
@@ -197,7 +220,8 @@ flowchart LR
 | **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
 | **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; ~~B13~~ interaction graphs (+ profile avatars) | Interaction depth from existing data + light linguistics |
 | **3** | Phase 3 product (in progress via 0.7.x–0.8.x) | B5 remainder (**DB views** / group `profile_id` charts; file-backed Speakers/voice/locations **closed**), ~~B14~~ **shipped**, ~~B16~~ **shipped** (`keyphrases` + wordclouds deepen), B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
-| **4** | Opportunistic / experimental | B4, B8, B11, B15, B17, B19, B20 | Dependency-heavy and research paths |
+| **4** | Opportunistic / experimental (pre-1.0) | B8, B11, B15, B17, B19, B20 | Dependency-heavy and research paths **excluding** B4 |
+| **Post-1.0** | After TranscriptX 1.0 | **B4** citeable research methods (`fighting_words` first; see §3.2) | Optional sidecar methods; not 1.0 acceptance / deps / presets |
 
 **Next product capacity (ranked open):** Wave 3 remainder (B5 DB/group `profile_id`, B18 / P2); P1 infrastructure in parallel when eng capacity allows. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets (`analysis.ui_presets`, 0.7.5); Speakers Locations pack (0.7.5); **B14** semantic motifs / concept drift; **B16** keyphrases (0.8.0; deep-test hardened 2026-07-24 — see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
 
@@ -218,7 +242,8 @@ P1 may begin alongside remaining Wave 3 work as infrastructure; do not call “m
 | Plugin marketplace | 6-month out of scope |
 | Realtime / streaming analysis | Out of scope |
 | Heavy model training in-tree | Out of scope |
-| “ConvoKit enabled” as the goal | Outputs first; library is optional (§3.2) |
+| “ConvoKit enabled” / B4 on the 1.0 path | Post-1.0 only; citeable methods; sidecar architecture (§3.2) |
+| In-process `[convokit]` extra (unless decision revisited) | Prefer isolated subprocess/sidecar (§3.2) |
 | Argument mining as Wave 3 anchor | Exploratory until genres/schema/eval/UI/abstention exist (§3.3) |
 
 ---
@@ -259,7 +284,9 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 |-------|------|
 | Current module order | `src/transcriptx/core/pipeline/module_specs/__init__.py` |
 | UI groups | `src/transcriptx/web/module_ui_groups.py` |
-| ConvoKit / BERTopic deferrals | `docs/ROADMAP.md` |
+| B4 post-1.0 citeable research methods | [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 section); this doc §3.2 |
+| Historical ConvoKit pin conflict | [`docs/archive/convokit_dependency_conflict.md`](../archive/convokit_dependency_conflict.md) |
+| BERTopic / other deferrals | `docs/ROADMAP.md` |
 | Model upgrade matrix | `docs/runtime/models.md` |
 | Group output classes | `docs/groups/group_analysis_module_outputs.md` |
 | Stocktake sequencing | `docs/dev/stocktake_2026-07-17.md` |

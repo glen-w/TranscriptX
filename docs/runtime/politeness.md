@@ -15,7 +15,7 @@ Speakers & Interaction module (B7) for **politeness / lexical formality / direct
 
 - Not `affect_tension.polite_tension_index` (affect mismatch).
 - Not `conversation_type` structural “formality” (meeting-likeness).
-- Not ConvoKit accommodation (B4 / out of scope for v1).
+- Not linguistic accommodation / coordination; not post-1.0 `politeness_strategies` (B4 sibling citeable method — see backlog §3.2).
 - Not B12 interaction equity (floor/interruption power) — compose beside this module in UI later; do not recompute here.
 
 ## Language
@@ -35,7 +35,7 @@ Request frames (`could you`, `would you`, …) live only in this lexicon. Bare e
 
 ## Core / extras
 
-Core-mode compatible (T0 lexicon, no ConvoKit, no optional extras). Offline/air-gapped: packaged EN lexicon only.
+Core-mode compatible (T0 lexicon, no research-method sidecar, no optional extras). Offline/air-gapped: packaged EN lexicon only.
 
 ## Related
 

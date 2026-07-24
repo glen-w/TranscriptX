@@ -4,7 +4,7 @@ Authority: self
 # TranscriptX Codebase Stocktake — 2026-07-17
 
 > Living decision foundation for near-term work. Supersedes the historical assessment in [`docs/archive/assessment-2026-03-10.md`](../archive/assessment-2026-03-10.md).  
-> Metrics refreshed **2026-07-24** against package **0.8.1** (beta). Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.0 describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.
+> Metrics refreshed **2026-07-24** against package **0.9.0** (pre-pre-release / beta). Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.
 
 ---
 
@@ -13,7 +13,7 @@ Authority: self
 | Dimension | Verdict | Confidence |
 |-----------|---------|------------|
 | **What it is** | Local-first transcript **analysis** toolkit (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
-| **Honest stage** | **Beta** (`0.8.1`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
+| **Honest stage** | **Beta** (`0.9.0`, classifier `4 - Beta`). Strong contracts and test culture; not consumer polish; not multi-user. | High |
 | **OSS local-first public release** | **Conditional go** — Wave 0 eng criteria closed; next public tag still requires [`release_governance.md`](release_governance.md) evidence (clean tree, green CI on exact commit, evidence bundle). | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
 | **Immediate process blocker** | Manual next-tag checklist / evidence bundle — not missing A1–A10 or Config 1.7 code. | High |
@@ -26,11 +26,11 @@ Authority: self
 
 | Fact | Value / evidence |
 |------|------------------|
-| Version | `0.8.1` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
+| Version | `0.9.0` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
 | License | MIT |
 | Scale | Large `src/transcriptx/` + extensive `tests/` (~4.5k test functions; see Makefile lanes) |
 | Smoke gate | `make test-smoke` (CI matrix 3.10–3.12; Core+dev and NLP smoke lanes) |
-| Coverage (checked-in `coverage.json`) | See latest coverage lane; **entire `web/` omitted** (`.coveragerc`) |
+| Coverage (checked-in `coverage.json`) | See latest coverage lane; **entire `web/` omitted** from `.coveragerc` fail_under (gap-finder only). GUI journey acceptance: `make test-gui-acceptance` |
 | Git remote | `glen-w/TranscriptX` |
 | Package URLs | `https://github.com/glen-w/TranscriptX` |
 | CI workflows | `.github/workflows/ci.yml` (tests matrix + compose-config + release-checks) |
@@ -164,7 +164,7 @@ Authoritative sequencing: [`docs/dev/refactor_top3_index_2026-07-16.md`](refacto
 | Gap | Severity |
 |-----|----------|
 | Next public tag still needs governance evidence bundle + clean worktree + green CI on exact commit | High (process) |
-| `web/` excluded from coverage | Medium–High (primary UX unmeasured) |
+| `web/` excluded from line-coverage gate | Medium | `.coveragerc` omit remains; **acceptance** via `make test-gui-acceptance` + [`gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md) — measurement ≠ journey acceptance |
 | mypy present but heavily softened (many error codes disabled) | Medium |
 | Pre-commit config under `config/.pre-commit-config.yaml` only (not root) | Medium |
 | No aggregated third-party model/license NOTICE | Medium |
@@ -276,7 +276,8 @@ Use these as defaults unless you consciously override them:
 - WhisperX Docker GUI orchestration / host HTTP transcribe.
 - Remote LLM providers.
 - Speaker profiles **DB-backed** analytics views / group `profile_id` gallery (file-backed Speakers + voice + locations **shipped**).
-- Export Jinja2 shells (step 10) / Artifact Protocol; ConvoKit re-enable; plugin marketplace.
+- Export Jinja2 shells (step 10) / Artifact Protocol; plugin marketplace.
+- **Post-1.0 only:** B4 optional citeable research methods (`fighting_words` first; sidecar isolation) — not 1.0 capacity, deps, or presets. See [`ROADMAP.md`](../ROADMAP.md) and [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md) §3.2.
 
 ---
 

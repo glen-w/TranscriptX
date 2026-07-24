@@ -28,10 +28,10 @@ _PRESET_LABELS: dict[AnalysisPreset, str] = {
     "custom": "Custom",
 }
 _PRESET_HELP = (
-    "**Quick** — no LLM, no heavy modules (and no modules that require them).\n"
-    "**Balanced** — limited heavy modules + global LLM summary only.\n"
-    "**Thorough** — all suitable modules for this target.\n"
-    "**Custom** — pick modules.\n"
+    "**Quick** — no LLM, no heavy modules (and no modules that require them).\n\n"
+    "**Balanced** — limited heavy modules + global LLM summary only.\n\n"
+    "**Thorough** — all suitable modules for this target.\n\n"
+    "**Custom** — pick modules.\n\n"
     "Edit Quick/Balanced/Thorough under Settings → Analysis."
 )
 _CUSTOM_QA_MODULE = "llm_custom_qa"

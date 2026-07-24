@@ -193,7 +193,7 @@ class GroupManifestStore:
         groups: List[Group] = []
         for path in self.list_manifest_paths():
             groups.append(self.load(path))
-        groups.sort(key=lambda g: (g.updated_at or "", g.name.lower()))
+        groups.sort(key=lambda g: ((g.name or "").lower(), g.group_id))
         return groups
 
     def list_groups_best_effort(self) -> tuple[List[Group], List[str]]:
@@ -205,7 +205,7 @@ class GroupManifestStore:
                 groups.append(self.load(path))
             except Exception as exc:
                 warnings.append(f"{path.name}: {exc}")
-        groups.sort(key=lambda g: (g.updated_at or "", g.name.lower()))
+        groups.sort(key=lambda g: ((g.name or "").lower(), g.group_id))
         warnings.sort()
         return groups, warnings
 

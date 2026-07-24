@@ -2,13 +2,13 @@
 
 **Date:** 2026-07-18  
 **Scope:** Assess how the Streamlit GUI is tested today; map surfaces to layers; rank residual risk; lock a testing strategy.  
-**Out of scope:** Implementing new AppTest/page tests; core pipeline correctness outside `web/`.
+**Out of scope:** Broad AppTest of every page; Playwright-for-GUI before 1.0; core pipeline correctness outside `web/`.
 
 ---
 
 ## 1. Verdict
 
-TranscriptX has a **mature L1–L3 contract/unit suite** for the Streamlit GUI under `tests/web/`, built on Streamlit doubles, session-state contracts, and source/AST guards. That layer pins navigation, action-menu identity, page orchestration (including Groups, Search, Overview/Insights, Interface prefs, Corrections review, Audio Merge, Diagnostics, and Artifacts section routing after the 2026-07-18 build-out), blocks/layouts, transcript viewer helpers, and web services. It does **not** exercise a live Streamlit runtime: there is **no `AppTest`, Selenium, or Playwright-for-GUI** coverage, and [`.coveragerc`](../../.coveragerc) **omits** `transcriptx/web/*` from the default coverage gate (manual gap-finder documented in §11). Residual risk is mainly full widget/rerun/fragment semantics—not the formerly UI-blind Groups/Search page paths. Settings Configuration/Interface panels now have L3 doubles coverage (hub + save/reset/revert + widgets/forms/diff); Storage cleanup remains covered by existing confirmation-gate suites.
+TranscriptX has a **mature L1–L3 contract/unit suite** for the Streamlit GUI under `tests/web/`, built on Streamlit doubles, session-state contracts, and source/AST guards. **L4 AppTest** covers seven primary acceptance journeys under `tests/web/gui_acceptance/` (`make test-gui-acceptance` / `heavy`); residual AppTest-blind items live in [`gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md). There is **no Playwright-for-GUI** before 1.0. [`.coveragerc`](../../.coveragerc) still **omits** `transcriptx/web/*` from the default coverage gate (manual gap-finder documented in §11).
 
 ---
 
@@ -79,7 +79,7 @@ Public contract: [`docs/public_surfaces.md`](../public_surfaces.md) — Streamli
 | **L1 Service** | Pure web services, no Streamlit | Yes — dense (`tests/web/services/*`, search, rename, group delegation) |
 | **L2 Contract** | Session keys, source bans, import laziness, deep links | Yes — sidebar/nav/router/state/settings draft contracts |
 | **L3 Page glue** | Render helpers via `DummyStreamlit` / monkeypatch | Yes — home, library, speaker_id, upload, transcribe, run_analysis, batch_ops, audio_prep, corrections pending-generate, charts helpers, action-menu navigation |
-| **L4 Runtime** | Live Streamlit `AppTest` / browser E2E | **None** (`rg AppTest\|streamlit.testing` → docs mentions only) |
+| **L4 Runtime** | Live Streamlit `AppTest` / browser E2E | **Partial** — seven primary journeys under `tests/web/gui_acceptance/` (`make test-gui-acceptance`); no Playwright-for-GUI before 1.0 |
 
 Shared doubles: [`tests/web/streamlit_doubles.py`](../../tests/web/streamlit_doubles.py).  
 Gate placement: unmarked / `@pytest.mark.unit` web tests ride **`make test-fast`**. Coverage measurement via `make test-coverage` **does not include** `web/` (`.coveragerc` omit). No in-repo GitHub Actions workflows; PR order is documented Make convention only.
@@ -105,12 +105,12 @@ Confidence: **Strong** = dedicated tests that assert the surface’s contracts; 
 | Corrections Studio | L3 | Thin–Strong | `test_corrections_studio_pending_generate.py`, selectbox index in `test_action_menu_navigation.py`; accept/reject/fragment UI not fully covered |
 | Run Analysis | L3 | Thin–Strong | `test_run_analysis_page.py` (empty / in-progress); group target via action-menu nav; full module-pick + launch thinner |
 | Batch Ops | L3 | Thin | `test_batch_ops_page.py` |
-| Groups | L1 | **None (page)** | `test_group_service.py` + core GroupService — **no** `page_modules.groups` tests (E4 still open) |
-| Overview | L1–L2 | Thin | blocks/helpers (`test_overview_run_results.py`, curated helpers) — **no** dedicated `render_overview` page suite |
-| Transcript | L2–L3 | Thin–Strong | tooltip/refactor contracts + `transcript_viewer/*`; page orchestration partial |
-| Insights | L1 | **None (page)** | blocks/LLM presentation only — **no** `page_modules.insights` tests |
-| Charts | L3 | Thin | `test_charts_page_helpers.py` (helpers + thin render glue) |
-| Artifacts | L2 | Thin–Strong | nav/deep-link + artifact services; page render thinner |
+| Insights | L3 | Strong | `test_insights_page.py` (+ AppTest journey) |
+| Charts | L3 | Thin–Strong | `test_charts_page_helpers.py` (+ AppTest journey) |
+| Speakers | L3 | Strong | `test_speakers_page.py` (empty/listing/detail glue) + methodology helpers; AppTest journey |
+| Artifacts | L2–L3 | Thin–Strong | nav/deep-link + `test_artifacts_page.py`; page render thinner |
+| Groups | L3 | Strong | `test_groups_page.py` (+ AppTest journey) |
+| Overview | L3 | Strong | `test_overview_page.py` (+ AppTest partial/failed status journey) |
 | Data / Explorer (legacy) | L2 | Strong (redirect) | `test_artifacts_navigation.py` |
 | Audio Prep | L3 | Thin | `test_audio_prep_page.py` (labels/empty path) |
 | Audio Merge | — | **None** | rename/serial mentions only — **no** page tests |
@@ -169,23 +169,24 @@ Scale: Impact / Likelihood / Gap each 1–5; **Risk** ≈ product of the three (
 
 ## 6. Strategy decision
 
-**Stay doubles-first (L2/L3).** Do not introduce browser E2E as a first-line strategy. Do not add a broad AppTest suite to the fast lane.
+**Stay doubles-first (L2/L3) for the fast lane.** Targeted AppTest covers the seven primary acceptance journeys behind `make test-gui-acceptance` / `heavy`. Do not add AppTest to the fast lane. Do not introduce browser E2E (Playwright/Selenium for GUI) before 1.0.
 
 ### Rationale
 
-1. The repo already has a large, working doubles + contract culture; prior assessments explicitly preferred it over AppTest.
-2. Fast-lane budget (`make test-fast` ≤ ~8–12 min) and lack of in-repo CI make a heavy runtime suite a liability unless gated.
-3. Highest ROI gaps are still closable with L3 doubles (Groups page, Search/Insights page glue, Interface panel, Run Analysis group gate)—same pattern as `test_action_menu_navigation.py` / `test_run_analysis_page.py`.
-4. L4 Runtime remains empty; introduce **only** if doubles cannot catch a proven widget/key/rerun class of bugs.
+1. The repo already has a large, working doubles + contract culture for page glue; fast-lane budget must stay lean.
+2. Stocktake gap: GUI is the primary surface while `web/` is omitted from coverage measurement — acceptance of critical journeys is the corrective, not flipping `.coveragerc` `fail_under` over `web/`.
+3. AppTest validates navigation, state transitions, validation/success/error rendering, service call boundaries, and persistence into an isolated data dir without browser orchestration.
+4. Residual AppTest-blind behaviours (file picker, browser download, hover/focus, popovers, visual alignment) stay on a short manual checklist: [`gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md).
 
 ### Locked policy
 
 | Approach | Decision |
 |----------|----------|
-| Streamlit doubles + session/source contracts | **Default** for page glue, nav, action menus, settings prefs logic |
-| Targeted `AppTest` | **Deferred optional:** at most 1–3 golden flows under `heavy` / dedicated Make target if doubles fail a concrete need (e.g. widget key collision, fragment rerun). Never on default fast addopts |
-| Browser E2E (Playwright/Selenium for GUI) | **Reject** unless AppTest cannot cover a proven flake class |
-| `web/` coverage measurement | **Adopt as gap-finder only:** optional report or temporary include without raising `fail_under` until a baseline exists. Do not flip `.coveragerc` omit + fail_under in one step |
+| Streamlit doubles + session/source contracts | **Default** for page glue, nav, action menus, settings prefs logic (fast lane) |
+| Targeted `AppTest` | **Adopted** for the seven journeys in `tests/web/gui_acceptance/` — marker `gui_acceptance` + `heavy`; `make test-gui-acceptance`. Not on default fast addopts |
+| Browser E2E (Playwright/Selenium for GUI) | **Reject until post-1.0 reconsideration** — only if the residual checklist stays release-critical or repeatedly catches regressions |
+| `web/` coverage measurement | **Gap-finder only:** optional report without raising `fail_under` until a baseline exists. Do not flip `.coveragerc` omit + fail_under in one step |
+| Residual manual checklist | **Adopted** — AppTest-blind items only; recommended release-evidence pointer in [`release_governance.md`](release_governance.md) |
 
 ---
 
@@ -213,18 +214,18 @@ Status updated **2026-07-18** after doubles-first suite build-out. AppTest (item
 10. ~~**L3 Diagnostics page**~~ **Closed** — `tests/web/test_diagnostics_page.py`
 11. ~~**L3 Artifacts page**~~ **Closed** — `tests/web/test_artifacts_page.py`
 12. ~~**Optional web coverage report**~~ **Documented** — see §11 (gap-finder command; default `.coveragerc` still omits `web/`; no `fail_under`)
-13. **If doubles miss a real bug class:** one `heavy`-marked AppTest smoke — **still deferred** (no proven doubles miss yet)
+13. ~~**If doubles miss a real bug class:** one `heavy`-marked AppTest smoke~~ **Closed / superseded** — seven-journey AppTest acceptance lane (`make test-gui-acceptance`) + residual checklist; not broad page AppTest
 
 ---
 
 ## 8. Explicit non-goals
 
-- Full browser E2E of the Streamlit GUI.
-- Broad AppTest coverage of every page.
+- Full browser E2E of the Streamlit GUI (Playwright/Selenium) before 1.0.
+- Broad AppTest coverage of every page (only the seven acceptance journeys).
 - Measuring `web/` under the default `fail_under = 70` gate without a separate baseline phase.
 - Replacing L1 run-cleanup characterisation with UI tests (already strong; size is debt, not missing coverage).
 - Visual/accessibility snapshot testing.
-- Testing core analysis pipelines via Streamlit (belongs in core/integration lanes).
+- Testing core analysis pipelines via Streamlit (belongs in core/integration lanes; AppTest stubs the controller).
 
 ---
 
@@ -235,9 +236,10 @@ Status updated **2026-07-18** after doubles-first suite build-out. AppTest (item
 | `page_modules/*.py` (excl. `__init__`) | 23 modules |
 | `tests/web` `test_*.py` (after build-out) | ~140+ |
 | New/extended page tests this build-out | Groups, Search, Insights, Overview, Interface, Corrections review, Audio Merge, Diagnostics, Artifacts; Run Analysis group gate |
-| `AppTest` / `streamlit.testing` in `tests/` or `src/` | **Absent** (docs only) |
+| `AppTest` / `streamlit.testing` in `tests/` | **Present** — `tests/web/gui_acceptance/` (seven journeys; `make test-gui-acceptance`) |
 | `.coveragerc` omits `*/transcriptx/web/*` | **Yes** (unchanged; gap-finder uses a separate cov config) |
 | Groups page E4 | **Closed** (page + Run Analysis gate + search-under-group contract) |
+| Residual manual GUI checklist | [`gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md) |
 
 ---
 

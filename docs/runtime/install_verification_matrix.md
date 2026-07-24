@@ -1,6 +1,6 @@
 # Install verification matrix
 
-**Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.8.1**. Do not advertise an install command that cannot pass its stated cell.
+**Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.9.0**. Do not advertise an install command that cannot pass its stated cell.
 
 **Distribution reality:** versioned **git tags** + **Docker Compose** image. The package is **not published on PyPI**. Bare `pip install transcriptx` from PyPI will fail and must not be advertised as a primary install path.
 

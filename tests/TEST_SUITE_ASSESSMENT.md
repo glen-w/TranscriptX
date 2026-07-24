@@ -2123,3 +2123,28 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - **Unrelated failures (dirty tree / WIP):** config ownership + pydantic pilot goldens, module-registry snapshot contracts, LLM presentation heading/footer strip, module UI group pin order, plus prior `audit_guardrails` keyphrases env access. Outside this expansion scope — not fixed here.
 - **Production code in this #tests pass:** none (tests-only expansion; packs landed in prior agent turn).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## GUI core pages coverage (# tests, 2026-07-24)
+
+### Review
+- Default fast suite baseline: **7612 passed**, 2 skipped, 188 deselected (green).
+- Collected default: **7614/7802** (188 deselected by markers including `gui_acceptance`).
+- Quarantined marker collect: **0 selected** under `-m quarantined` (no active quarantined collection in this env).
+- Cleanup: disabled (per command).
+
+### Gap (GUI core pages)
+- Speakers page had methodology helpers only — **no** `render_speakers_page` L3 glue (directory empty / listing / detail).
+- Home, Library, Import, Overview, Insights, Charts, Groups, Artifacts already had L3 page tests; seven AppTest journeys live under `tests/web/gui_acceptance/` (heavy).
+
+### Expansion (tests-only)
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_speakers_page.py` | **new (+6)** | Empty state; incomplete snapshot warning + Active metric; archived-only filter clears selection; browser fragment → detail; missing profile error; surname sort |
+
+### Validation
+- `pytest -q tests/web/test_speakers_page.py` → **6 passed**.
+- Streamlit assessment matrix updated for Speakers / Groups / Insights / Overview / Charts.
+- Production code: **none**.
+- Quarantined tests: **not re-enabled**.

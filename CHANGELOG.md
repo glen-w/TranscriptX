@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-24
+
+Pre-pre-release. Stabilising ahead of the pre-release programme, targeting 1.0.
+
+### Added
+
+- Streamlit AppTest GUI acceptance lane (`make test-gui-acceptance`, marker `gui_acceptance`) with journey coverage and residual AppTest-blind checklist.
+- Speakers page thin orchestration unit coverage.
+- Pre-release roadmap for the path from 0.9 toward 1.0.
+
+### Changed
+
+- Group manifest listing sorts by name / `group_id` (stable, case-insensitive).
+- Analysis preset help copy uses clearer paragraph breaks.
+- Release governance recommends GUI acceptance + residual checklist notes at tag time.
+- Docs/backlog alignment for post-1.0 optional citeable research methods (B4) and GUI test assessment.
+
 ## [0.8.1] - 2026-07-24
 
 ### Fixed

@@ -1,12 +1,13 @@
 # TranscriptX tests: how to run locally
 
-**Streamlit GUI test assessment:** see [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, risk-ranked journeys, doubles-first strategy (no AppTest in the fast lane), and the optional `web/` coverage gap-finder (§11).
+**Streamlit GUI test assessment:** see [`docs/dev/streamlit_ui_test_assessment_2026-07-18.md`](../docs/dev/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). No Playwright for the Streamlit GUI before 1.0.
 
 ## Quick commands (single source of truth)
 
-- `pytest` (or `make test-fast`) — **default**: fast lane only (excludes smoke, release_only, integration, integration_core, integration_extended, slow, and requires_* capability markers)
+- `pytest` (or `make test-fast`) — **default**: fast lane only (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, and requires_* capability markers)
 - `make test-smoke` — CI gate (smoke tests only)
 - `make test-fast` — same as default `pytest` (fast core)
+- `make test-gui-acceptance` — Streamlit AppTest GUI acceptance journeys (seven primary flows; heavy)
 - `make test-heavy` — heavy profile, excludes quarantined by default
 - `make test-heavy-all` — heavy profile including quarantined
 - `make test-contracts` — offline contract tests (output shape only)
@@ -46,6 +47,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 - `smoke` — fast, deterministic, CI gate
 - `unit` — unit tests for individual functions/classes
 - `heavy` — excluded from fast local profile due to runtime cost, setup burden, or dependency surface
+- `gui_acceptance` — Streamlit AppTest acceptance journeys; excluded from fast; run via `make test-gui-acceptance` (also selected by `make test-heavy` when marked `heavy`)
 - `integration` — workflow/pipeline integration tests
 - `integration_core` — stable integration subset for nightly
 - `integration_extended` — extended integration suite (nightly/manual)
@@ -70,7 +72,8 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 ## Marker policy matrix
 
-- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`.
+- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`, `gui_acceptance`.
+- **GUI acceptance (`make test-gui-acceptance`)**: `gui_acceptance` marker; residual manual items in [`docs/dev/gui_acceptance_residual_checklist.md`](../docs/dev/gui_acceptance_residual_checklist.md).
 - **Smoke lane (`make test-smoke`)**: `tests/smoke` only, requires `smoke` marker, excludes `release_only` and external-capability markers.
 - **Integration lane (`make test-integration`)**: `tests/integration` only, includes `integration` or `integration_core` or `integration_extended`, excludes `release_only` and external-capability markers.
 - **Release-only lane (`make test-release-only`)**: `tests/release` only, includes `release_only`.

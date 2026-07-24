@@ -19,6 +19,7 @@ Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curate
 7. Release-evidence bundle complete (see below).
 8. Fixable CVEs cleared **or** exceptional waiver fully filled + approved in `docs/dev/dependency_audit.md`.
 9. No denylist violations; `scripts/secrets_check.sh` green.
+10. **Recommended (GUI primary surface):** `make test-gui-acceptance` green on the intended commit, and the residual AppTest-blind items in [`gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md) recorded as pass/fail/skip in the evidence notes.
 
 Humans (or an explicit user instruction outside the pre-release command) perform tag/push after this checklist is satisfied.
 
@@ -35,6 +36,7 @@ Attach (machine- or human-readable) at tag time:
 - Canonical Compose assertions (`scripts/release/assert_compose_bind.sh`)
 - Docker smoke result after fresh build
 - Config 1.7 inventory / parity evidence
+- (Recommended) GUI acceptance: `make test-gui-acceptance` result + residual checklist notes ([`gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md))
 
 ## Local evidence runbook (checklist item 7)
 

@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only docker-smoke run clean-test-artifacts
+.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance docker-smoke run clean-test-artifacts
 
 help:
 	@echo "TranscriptX Makefile"
@@ -26,6 +26,7 @@ help:
 	@echo "  test-coverage    Default fast suite + coverage (fail_under from .coveragerc)"
 	@echo "  test-config-coverage  Config package coverage gate (≥85% on core.config + utils.config)"
 	@echo "  test-release-only  Run release-only packaging/install smoke"
+	@echo "  test-gui-acceptance  Streamlit AppTest GUI acceptance journeys (heavy)"
 	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
 	@echo "Maintenance:"
@@ -64,7 +65,11 @@ test-smoke-nlp:
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow"
+	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
+
+test-gui-acceptance:
+	@echo "Running Streamlit AppTest GUI acceptance journeys..."
+	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "gui_acceptance and not quarantined"
 
 test-heavy:
 	@echo "Running heavy profile (excluding quarantined)..."
@@ -97,7 +102,7 @@ test-all:
 test-coverage:
 	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
 	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
-		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow"
+		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
 
 test-config-coverage:
 	@echo "Running config-scoped coverage gate (≥85% on transcriptx.core.config + utils.config)..."
