@@ -7,7 +7,7 @@ These files are **optional standalone reference examples** for running WhisperX 
 
 Use them to generate diarized transcript JSON that you can then **canonicalize** and **analyze** with TranscriptX:
 
-1. Generate transcript JSON (e.g. with WhisperX Docker).
+1. Generate transcript JSON (e.g. with WhisperX Docker, or via the Transcribe Audio **command generator** → WhisperX Docker option).
 2. **Import / canonicalize (optional)** — from the repo root with your environment active:
 
 ```python
@@ -25,7 +25,14 @@ print(result.sidecar_path)
 
 3. **Analyze** — open the web UI or call `run_analysis(AnalysisRequest(...))` (see [transcription.md](../../transcription.md)).
 
-## Configure WhisperX
+## Non-technical path (via TranscriptX GUI)
+
+1. Open **Transcribe Audio** in TranscriptX.
+2. Choose **WhisperX Docker (external recipe)**, set input/output folders, model, language, device, and optional min/max speakers.
+3. Copy the generated `docker run` command and execute it on a Linux/GPU host (not inside `transcriptx-web`).
+4. Import the resulting **WhisperX JSON** via **Import Transcript**.
+
+## Configure WhisperX (advanced / compose)
 
 1. Copy the env example and set your values:
    ```bash

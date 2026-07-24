@@ -285,7 +285,10 @@ def test_optional_dep_blocked_result_shape() -> None:
     result = build_optional_dep_blocked_result(
         module_name="bertopic",
         reason=missing_extra_reason("bertopic"),
-        install_hint="pip install 'transcriptx[bertopic]'",
+        install_hint=(
+            "pip install -e '.[bertopic]' "
+            "(from a TranscriptX git checkout; not on PyPI)"
+        ),
     )
     assert result["status"] == "blocked"
     assert result["metrics"]["reason"] == "missing_extra:bertopic"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transcriptx"
-version = "0.9.3"
+version = "0.9.4"
 description = "Advanced transcript analysis and visualization toolkit"
 authors = [
     {name = "TranscriptX Team"}
@@ -133,6 +133,10 @@ keyphrases = [
     "yake>=0.4.8",
     "keybert>=0.8.0",
 ]
+# GUI only — Streamlit is not in base or [full]. Docker / transcriptx.sh install via requirements.txt.
+web = [
+    "streamlit>=1.55.0",
+]
 # Compat alias: packages are already in base dependencies (temporary default install).
 # Prefer editable `pip install -e .` from git (not PyPI). Kept so `.[bertopic]` still works.
 bertopic = [
@@ -140,6 +144,7 @@ bertopic = [
     "hdbscan>=0.8.33,<0.9",
     "umap-learn>=0.5.6,<0.6",
 ]
+# Playwright is for optional NER map HTML→PNG (not Streamlit GUI).
 maps = [
     "folium==0.14.0",
     "geopy==2.3.0",

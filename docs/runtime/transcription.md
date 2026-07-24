@@ -3,11 +3,11 @@ Authority: runtime/STORAGE.md
 
 # Transcription (external workflow)
 
-TranscriptX is **analysis-first**: transcription produces JSON elsewhere; the web app **imports** it. The **Transcribe Audio** page is an **instruction hub** today (shell examples, `whispermlx-missing`); **Import Transcript** is the GUI admission gate. A stronger in-app **command-generation** handoff is part of the 0.9.x programme ([ROADMAP.md](../ROADMAP.md)). WhisperX Docker is documented as an external recipe, not orchestrated from Streamlit.
+TranscriptX is **analysis-first**: transcription produces JSON elsewhere; the web app **imports** it. The **Transcribe Audio** page is a **parameterised command generator** (copyable shell only — Streamlit never executes transcription). **Import Transcript** is the GUI admission gate. WhisperX Docker remains an external recipe, not orchestrated from Streamlit.
 
 ## Design: why transcription stays outside the GUI
 
-We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, or WhisperX Docker); the GUI only documents the steps and imports the result.
+We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, or WhisperX Docker); the GUI only **generates copyable commands**, documents boundaries, and imports the result.
 
 **Docker vs macOS venv.** The recommended install runs `transcriptx-web` in a **Linux** container. **whispermlx** typically lives in a **macOS** Python venv and depends on Apple MLX. That venv binary cannot be run reliably from inside the container: different OS, no MLX in Linux images, and paths like `~/venvs/whispermlx/bin/whispermlx` refer to the host—not the container filesystem. Mounting the venv or sourcing `whisperx.env` inside `transcriptx-web` does not fix this; at best you get “file not found” or an incompatible executable.
 
@@ -22,12 +22,28 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 
 **Future (optional):** a **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) could let the GUI orchestrate jobs without executing MLX inside Linux. Built-in transcription remains **non-near-term** — see [ROADMAP.md](../ROADMAP.md).
 
-## Transcribe Audio page (external workflow)
+## Transcribe Audio page (command generator)
 
-1. Open **Transcribe Audio** in the web UI for copy-paste shell examples and links to `scripts/whispermlx-missing.py`.
-2. On macOS, source `whisperx.env` at the repo root and run **whispermlx** against your audio files (see examples on that page).
-3. For batches where some files already have JSON transcripts, use **whispermlx-missing** (see script `--help`).
-4. Open **Import Transcript** and upload the resulting JSON (and optionally attach the source recording).
+1. Open **Transcribe Audio** in the web UI.
+2. Choose a tool: **whispermlx** (macOS host), **whispermlx-missing** (skip existing JSON), or **WhisperX Docker** (external recipe).
+3. Set input path, output folder, model, language, diarize, and (for the bulk helper) dry-run / force / fuzzy-match flags.
+4. **Copy** the generated shell snippet. Paths with spaces are shell-quoted. Do **not** expect Streamlit to run it.
+5. Run the command on the appropriate host (macOS for whispermlx; Linux/GPU for WhisperX Docker).
+6. Open **Import Transcript** and upload the resulting JSON (optionally attach the source recording).
+
+### Non-technical corpus path (short)
+
+| Step | Action |
+|------|--------|
+| 1 | Put audio files in one folder on your computer |
+| 2 | Open Transcribe Audio → pick **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
+| 3 | Re-run without dry-run; already-transcribed stems are skipped (resume-friendly) |
+| 4 | Import Transcript → upload JSON → optionally attach recordings |
+| 5 | Run a Balanced or Quick analysis preset |
+
+**Spaces in folder names:** use the generator (quoting is automatic) or wrap paths in quotes yourself.
+
+**Docker analysis vs transcription:** keep analysis in Docker if you like; still run whispermlx on the Mac host. WhisperX Docker is a separate container recipe — see [docs/recipes/whisperx/README.md](../recipes/whisperx/README.md).
 
 ### Finding whispermlx
 
@@ -53,6 +69,14 @@ Copy `docs/recipes/whisperx/whisperx.env.example` to `whisperx.env` and configur
 ### whispermlx-missing bulk script
 
 Install `scripts/whispermlx-missing.py` as `whispermlx-missing` (see script header). It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
+
+**Resume / duplicates:** stems with matching JSON are skipped by default. Use `--force` / `--rerun` to replace after a valid new JSON is produced. `--fuzzy-json-match` also treats `foo-….json` / `foo_….json` / `foo.….json` as already done.
+
+**Dry-run:** `--dry-run` previews work without requiring HF_TOKEN or a working whispermlx binary.
+
+**Partial failures:** failed items leave temps under `transcripts/.whispermlx-missing/tmp/`; no partial JSON is written to the transcripts root. `--clean-failed` removes those temps.
+
+**Spaces:** pass paths via quoted CLI args (the Transcribe Audio generator does this) or via the JSON config file.
 
 **Local config (gitignored):** copy [`config/whispermlx-missing.example.json`](../config/whispermlx-missing.example.json) to `.transcriptx/whispermlx-missing.json` and set your paths. For standalone use outside the repo, pass `--config /path/to/config.json` or set `WHISPERMLX_MISSING_CONFIG`.
 

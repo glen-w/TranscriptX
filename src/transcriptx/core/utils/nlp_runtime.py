@@ -119,7 +119,9 @@ def ensure_spacy_model(model_name: Optional[str] = None) -> None:
     if _core_mode():
         raise OSError(
             f"spaCy model '{resolved}' is not installed. "
-            f"Install NLP extra and download the model: pip install 'transcriptx[nlp]' && python -m spacy download {resolved}"
+            f"Install NLP extra and download the model: "
+            f"pip install -e '.[nlp]' && python -m spacy download {resolved} "
+            f"(from a TranscriptX git checkout; not on PyPI)"
         )
 
     if _spacy_download_disabled():
@@ -176,7 +178,9 @@ def _ensure_spacy_model(model_name: Optional[str] = None) -> None:
     if _core_mode():
         raise OSError(
             f"spaCy model '{resolved}' is not installed. "
-            f"Install NLP extra and download the model: pip install 'transcriptx[nlp]' && python -m spacy download {resolved}"
+            f"Install NLP extra and download the model: "
+            f"pip install -e '.[nlp]' && python -m spacy download {resolved} "
+            f"(from a TranscriptX git checkout; not on PyPI)"
         )
 
     if _spacy_download_disabled():

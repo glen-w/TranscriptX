@@ -51,7 +51,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
 
 ### 1.6 Transcription command generation (GUI capability)
 
-- Generating shell/CLI commands for **external** transcription tools (e.g. whispermlx helpers) is a planned/in-progress **GUI capability**, not a built-in transcription engine.
+- Generating shell/CLI commands for **external** transcription tools (whispermlx, whispermlx-missing, WhisperX Docker recipe) is a shipped **GUI capability** (**0.9.4**): copyable only; Streamlit does not execute transcription.
 - Supported product path remains: external transcript → managed import → analysis.
 - Corpus helpers such as `scripts/whispermlx-missing.py` are documented user-facing scripts when referenced from runtime docs; they are not a replacement for managed import.
 

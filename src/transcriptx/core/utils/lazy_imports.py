@@ -81,15 +81,16 @@ def _try_install_package(
     Uses sys.executable so the package is installed into the current interpreter (e.g. active venv).
 
     Args:
-        package_name: Name of the package to install (e.g., "convokit")
-        module_name: Name of the module to import (e.g., "convokit")
+        package_name: Name of the package to install (e.g., "librosa")
+        module_name: Name of the module to import (e.g., "librosa")
         purpose: Description of what the package is used for
-        extra: Optional extra name for pip install transcriptx[extra]
+        extra: Optional TranscriptX extra name (documentation only; not used for pip target)
 
     Returns:
         (True, "") if installation succeeded and module can be imported,
         (False, error_detail) otherwise (error_detail is pip stderr or exception message).
     """
+    del purpose, extra  # documented for callers; install targets the underlying package
     try:
         # Try importing first to see if it's already available
         importlib.import_module(module_name)
@@ -120,25 +121,9 @@ def _try_install_package(
         except Exception as e:
             return (False, str(e))
 
-    # Prefer transcriptx[extra] so we use project-pinned optional deps
-    if extra:
-        install_target = f"transcriptx[{extra}]"
-    else:
-        install_target = package_name
-
-    print(f"Installing {install_target} into current environment ({sys.executable})...")
-    ok, err = _run_install(install_target)
-    if ok:
-        return (True, "")
-    # If extra was used and install "succeeded" but import failed, transcriptx may already
-    # be installed (e.g. editable) and pip may not install the extra. Fallback to package name.
-    if extra and "Import after install failed" in err:
-        print(f"Retrying with pip install {package_name}...")
-        ok2, err2 = _run_install(package_name)
-        if ok2:
-            return (True, "")
-        return (False, err2 or err)
-    return (False, err)
+    # Install the underlying package. Never pip-install ``transcriptx[extra]`` from PyPI.
+    print(f"Installing {package_name} into current environment ({sys.executable})...")
+    return _run_install(package_name)
 
 
 def _core_mode() -> bool:
@@ -163,13 +148,13 @@ def optional_import(
     """
     Optional import with a consistent error message and install hint.
 
-    When auto_install=True, extra must be provided so the install command is transcriptx[extra].
+    When auto_install=True, extra must be provided so error hints can name ``.[extra]``.
     When core_mode is True (or TRANSCRIPTX_CORE=1), auto_install is never performed.
 
     Args:
         module_name: Name of the module to import
         purpose: Description of what the module is used for
-        extra: Extra name for pip install transcriptx[extra]; required when auto_install=True
+        extra: Extra name for editable install hints (``.[extra]``); required when auto_install=True
         auto_install: If True and not core_mode, attempt to install the package if import fails
 
     Returns:
@@ -185,7 +170,8 @@ def optional_import(
         if auto_install:
             if not extra:
                 raise ValueError(
-                    "optional_import(..., auto_install=True) requires extra= so the install command is transcriptx[extra]"
+                    "optional_import(..., auto_install=True) requires extra= so the "
+                    "install hint can name .[extra] from a TranscriptX git checkout"
                 ) from exc
             if _core_mode():
                 extra_install_msg = " (core mode: auto-install disabled)"
@@ -210,7 +196,11 @@ def optional_import(
                         pass
                 elif install_err:
                     extra_install_msg = f" Auto-install failed: {install_err}"
-        extra_msg = f" Install with: pip install transcriptx[{extra}]" if extra else ""
+        from transcriptx.core.pipeline.optional_dep_outcomes import (
+            install_hint_for_extra,
+        )
+
+        extra_msg = f" Install with: {install_hint_for_extra(extra)}" if extra else ""
         raise ImportError(
             f"{module_name} is required for {purpose}.{extra_msg}{extra_install_msg}"
         ) from exc

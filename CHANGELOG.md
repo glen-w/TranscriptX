@@ -10,6 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-07-24
+
+Install-profile honesty and Transcribe Audio command-generation handoff.
+
+### Added
+
+- `[web]` optional extra owning Streamlit (GUI is not part of `[full]`).
+- Parameterised Transcribe Audio **command generator** (copyable shell only; never executed from Streamlit) for whispermlx, whispermlx-missing, and WhisperX Docker.
+- Install capability matrix and `speaker_match` / `web` verification cells.
+
+### Changed
+
+- Optional-dep install hints use editable `pip install -e '.[extra]'` from a git checkout (not PyPI).
+- Runtime auto-install targets the underlying package name instead of `transcriptx[extra]` from PyPI.
+- `transcriptx.sh` leaves CUDA visible by default; `TRANSCRIPTX_FORCE_CPU=1` opts into clearing `CUDA_VISIBLE_DEVICES`.
+- Docker / `requirements.txt` includes `yake` and `keybert` for keyphrases parity with `[full]`.
+- Transcription docs: non-technical corpus path, resume/dry-run/spaces, host vs Docker boundaries.
+
+### Fixed
+
+- Misleading PyPI-style install strings in voice/NLP/BERTopic/semantic-similarity hints and packaging tests.
+
 ## [0.9.3] - 2026-07-24
 
 Public schema epoch-1 reset and compatibility removal.

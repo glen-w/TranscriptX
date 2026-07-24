@@ -26,9 +26,9 @@ Open http://localhost:8501.
 
 ### Local install (from git — not PyPI)
 
-Python 3.10–3.12. Core: `pip install -e .`. Broader stack: `pip install -e ".[full]"`. Helper: `./transcriptx.sh` (creates a `.transcriptx` venv; currently forces `CUDA_VISIBLE_DEVICES=""` — see [installation](docs/runtime/installation.md)).
+Python 3.10–3.12. Core: `pip install -e .`. GUI: `pip install -e ".[web]"`. Analysis extras: `pip install -e ".[full]"` (Streamlit is **not** in `[full]` — use `.[full,web]` or `./transcriptx.sh` for a native GUI). Helper: `./transcriptx.sh` (creates a `.transcriptx` venv; CUDA left available unless `TRANSCRIPTX_FORCE_CPU=1` — see [installation](docs/runtime/installation.md)).
 
-Runtime install markers today are **`core`** and **`full`** only (aspirational `basic`/`llm` profile names are not implemented).
+Runtime install markers today are **`core`** and **`full`** only (aspirational `basic`/`llm` profile names are not implemented). Streamlit is the separate **`[web]`** extra.
 
 Details: [installation](docs/runtime/installation.md) · [install verification matrix](docs/runtime/install_verification_matrix.md).
 

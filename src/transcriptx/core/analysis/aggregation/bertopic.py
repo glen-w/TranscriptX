@@ -266,7 +266,8 @@ def aggregate_bertopic_group(
             "warning": build_warning(
                 code="MISSING_DEP",
                 message=(
-                    f"{dep_reason}. Install with: pip install 'transcriptx[{EXTRA_NAME}]'"
+                    f"{dep_reason}. Install with: pip install -e '.[{EXTRA_NAME}]' "
+                    "(from a TranscriptX git checkout; not on PyPI)"
                 ),
                 aggregation_key="bertopic",
                 missing_deps=[EXTRA_NAME],

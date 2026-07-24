@@ -66,6 +66,21 @@ else
   echo "OK: no bare pip install transcriptx hits"
 fi
 
+# PyPI-style extras (pip install transcriptx[extra]) — prefer editable .[extra] from checkout
+hits_extra="$(_rg -n -e "pip install ['\"]?transcriptx\[" --glob '!archive/**' || true)"
+if [[ -n "$hits_extra" ]]; then
+  filtered_extra="$(echo "$hits_extra" | grep -viE 'not on PyPI|pip install -e|editable|from a TranscriptX git checkout|matrix|Not supported' || true)"
+  if [[ -n "$filtered_extra" ]]; then
+    echo "ERROR: PyPI-style pip install transcriptx[extra] without editable/git caveat:"
+    echo "$filtered_extra"
+    fail=1
+  else
+    echo "OK: pip install transcriptx[extra] mentions are caveated"
+  fi
+else
+  echo "OK: no pip install transcriptx[extra] hits"
+fi
+
 # TODO/FIXME under src must be zero
 todo_hits="$(rg -n -e 'TODO|FIXME' src/ 2>/dev/null || true)"
 if [[ -n "$todo_hits" ]]; then

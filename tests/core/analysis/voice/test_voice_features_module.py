@@ -39,7 +39,9 @@ def test_voice_features_skips_when_optional_deps_missing(
     mock_deps.return_value = {
         "ok": False,
         "missing_optional_deps": ["librosa"],
-        "install_hint": "pip install transcriptx[voice]",
+        "install_hint": (
+            "pip install -e '.[voice]' (from a TranscriptX git checkout; not on PyPI)"
+        ),
     }
 
     out_svc = MagicMock()

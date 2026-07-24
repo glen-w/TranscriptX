@@ -25,8 +25,20 @@ def test_transcribe_audio_page_is_instruction_only():
     source = Path(page.__file__).read_text(encoding="utf-8")
     assert "whispermlx-missing" in source
     assert "Import Transcript" in source
+    assert "generate_transcription_command" in source
     assert "st.file_uploader" not in source
     assert "TranscriptionController" not in source
+    assert "subprocess" not in source
+    assert "Popen" not in source
+
+
+@pytest.mark.unit
+def test_transcribe_audio_page_does_not_execute_shell():
+    import transcriptx.web.page_modules.transcribe_audio as page
+
+    source = Path(page.__file__).read_text(encoding="utf-8")
+    for forbidden in ("os.system", "subprocess.", "shell=True"):
+        assert forbidden not in source
 
 
 @pytest.mark.unit

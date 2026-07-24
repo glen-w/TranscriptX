@@ -44,7 +44,9 @@ class SemanticModelManager:
             log_warning(
                 self.log_tag,
                 "PyTorch not installed; semantic similarity will use TF-IDF fallback. "
-                "For transformer-based similarity, install with: pip install transcriptx[emotion]",
+                "For transformer-based similarity, install with: "
+                "pip install -e '.[emotion]' "
+                "(from a TranscriptX git checkout; not on PyPI)",
             )
             log_error(self.log_tag, f"PyTorch unavailable: {exc}", exception=exc)
             self.model = None
@@ -90,7 +92,8 @@ class SemanticModelManager:
                 log_warning(
                     self.log_tag,
                     "PyTorch not available; using TF-IDF fallback. "
-                    "Install with: pip install transcriptx[emotion]",
+                    "Install with: pip install -e '.[emotion]' "
+                    "(from a TranscriptX git checkout; not on PyPI)",
                 )
             log_error(
                 self.log_tag, f"Failed to load semantic model: {exc}", exception=exc

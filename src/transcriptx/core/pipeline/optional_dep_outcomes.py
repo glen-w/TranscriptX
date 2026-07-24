@@ -59,4 +59,8 @@ def broken_extra_reason(extra_name: str) -> str:
 
 
 def install_hint_for_extra(extra_name: str) -> str:
-    return f"pip install 'transcriptx[{extra_name}]'"
+    """Editable install from a git checkout (package is not on PyPI)."""
+    return (
+        f"pip install -e '.[{extra_name}]' "
+        "(from a TranscriptX git checkout; not on PyPI)"
+    )

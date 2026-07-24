@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only. Transcription remains external, with command-generation handoff planned for the 0.9.x programme.
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**.
 
 ---
 
@@ -36,7 +36,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Hygiene + product docs | Phase 0A/0B inventories, archive, PRODUCT/README/ROADMAP | **0.9.1** shipped |
 | Planning stubs + schema inventory | Phase 0B stubs; schema-epoch inventory signed off (integer `1`) | **0.9.2** (this cut) |
 | Schema epoch | Public schema epoch + compatibility removal; data-epoch transition UX; module-id hygiene | next 0.9.x |
-| Install + transcription | Install-profile audit; Transcribe command generation; corpus docs | later 0.9.x |
+| Install + transcription | Install-profile audit; Transcribe command generation; corpus docs | **0.9.4** |
 | Modes + demo | Guided / Full controls v1; demo project load/remove | later 0.9.x |
 | Harden + public surfaces | Quality audit; performance envelopes; trust/privacy/model gate; hosted docs + modest website; a11y | later 0.9.x |
 

@@ -53,6 +53,23 @@ def test_keyphrases_extra_is_subset_of_full() -> None:
 
 
 @pytest.mark.unit
+def test_web_extra_owns_streamlit_not_full() -> None:
+    """GUI Streamlit lives in [web]; [full] remains analysis extras only."""
+    web = _parse_optional_extra("web")
+    assert any(r.startswith("streamlit") for r in web)
+    full_joined = " ".join(_parse_optional_extra("full")).lower()
+    assert "streamlit" not in full_joined
+
+
+@pytest.mark.unit
+def test_requirements_include_keyphrases_optional_stack() -> None:
+    req = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
+    assert "yake" in req
+    assert "keybert" in req
+    assert "streamlit" in req
+
+
+@pytest.mark.unit
 def test_bertopic_extra_is_compat_alias_for_base_stack() -> None:
     """``[bertopic]`` remains installable; packages are owned by base for now."""
     reqs = _parse_optional_extra("bertopic")

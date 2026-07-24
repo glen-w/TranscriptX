@@ -22,7 +22,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | path | purpose | intended user | current callers | documented | tested | risk | platform | deps | validity | support status | action |
 |------|---------|---------------|-----------------|------------|--------|------|----------|------|----------|----------------|--------|
 | `transcriptx` (`pyproject` console) | Launch Streamlit web app | end user | README, install docs, Docker ENTRYPOINT | yes | yes (indirect) | read-only | any | package | valid | supported | retain supported |
-| `transcriptx.sh` | Native venv install + launch (`.transcriptx`; forces `CUDA_VISIBLE_DEVICES=""`) | end user | README, installation.md | yes | partial | mutates venv | macOS/Linux | requirements.txt | valid (document GPU caveat) | supported | retain supported |
+| `transcriptx.sh` | Native venv install + launch (`.transcriptx`; CUDA left available unless `TRANSCRIPTX_FORCE_CPU=1`) | end user | README, installation.md | yes | partial | mutates venv | macOS/Linux | requirements.txt | valid | supported | retain supported |
 | `scripts/whispermlx-missing.py` | Batch whispermlx for MP3s missing JSON | end user | transcription.md; tests/scripts | yes | yes | writes transcripts | Apple Silicon typical | whispermlx (external) | valid | supported | retain supported |
 | `scripts/release/assert_compose_bind.sh` | Canonical compose bind/port asserts | maintainer | CI | yes (release_governance) | CI | read-only | Docker | compose | valid | maintainer | retain internal |
 | `scripts/release/stale_refs.sh` | Forbidden stale refs + TODO gate | maintainer | CI | yes | CI | read-only | any | ripgrep-like | valid | maintainer | retain internal |
@@ -53,8 +53,8 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `archive/scripts/validate_dependencies.py` | Historical dependency validator | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
 | `archive/scripts/validate_transcript_storage.py` | Historical storage layout check | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
 | `archive/scripts/run_tests_with_timeout.py` | Historical timeout test runner | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
-| `activate_env.sh` | Activate `.venv` (conflicts with `.transcriptx`) | developer | setup_env | stale | no | env mutate | any | — | **stale** | disposable | delete |
-| `scripts/setup_env.sh` | Interactive venv/Docker menu; dead compose refs | developer | activate_env | stale | no | env mutate | any | — | **stale** | disposable | delete |
+| `activate_env.sh` | Activate `.venv` (conflicts with `.transcriptx`) | developer | setup_env | stale | no | env mutate | any | — | **removed 0.9.1** | disposable | deleted |
+| `scripts/setup_env.sh` | Interactive venv/Docker menu; dead compose refs | developer | activate_env | stale | no | env mutate | any | — | **removed 0.9.1** | disposable | deleted |
 | `scripts/build_docs.sh` | Sphinx builder; `docs/conf.py` missing | maintainer | Makefile docs (noop) | stale | no | writes `_build` | any | Sphinx missing | **stale** | disposable | archive → `archive/scripts/build_docs.sh` |
 | `scripts/docker-data-setup.sh` | Data download via wrong image / missing helpers | developer | none | stale | no | Docker mutate | Docker | missing peers | **stale** | disposable | delete |
 | `scripts/docker-clean.sh` | `compose down` + unscoped system/volume prune | developer | none | no | no | **destructive** | Docker | — | stale | disposable | delete |
@@ -66,7 +66,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 
 ## Early cleanup priorities (execution order)
 
-1. Delete stale setup: `scripts/setup_env.sh`, `activate_env.sh`
+1. ~~Delete stale setup: `scripts/setup_env.sh`, `activate_env.sh`~~ (**done 0.9.1**)
 2. Archive broken `scripts/build_docs.sh` → `archive/scripts/build_docs.sh` with `[ARCHIVED]` banner
 3. Delete misleading/destructive Docker helpers: `docker-data-setup.sh`, `docker-clean.sh`, `cleanup.sh`, `manage_dependencies.sh`
 4. Delete orphan `scripts/README_test_analysis_assess.md`

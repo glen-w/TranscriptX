@@ -5,7 +5,9 @@ from __future__ import annotations
 import importlib.util
 from typing import Iterable
 
-INSTALL_HINT = "pip install transcriptx[voice]"
+INSTALL_HINT = (
+    "pip install -e '.[voice]' (from a TranscriptX git checkout; not on PyPI)"
+)
 
 
 def _missing_specs(packages: Iterable[str]) -> list[str]:

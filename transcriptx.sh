@@ -4,7 +4,11 @@
 
 set -e  # Exit on any error
 
-export CUDA_VISIBLE_DEVICES=""
+# Opt-in CPU-only: TRANSCRIPTX_FORCE_CPU=1 clears CUDA visibility for this shell.
+# Default leaves CUDA available when present (honest GPU path).
+if [ "${TRANSCRIPTX_FORCE_CPU:-}" = "1" ]; then
+    export CUDA_VISIBLE_DEVICES=""
+fi
 
 # Move to the script's directory (project root)
 cd "$(dirname "$0")"
@@ -27,6 +31,10 @@ print_status() { echo -e "${BLUE}[TranscriptX]${NC} $1"; }
 print_success() { echo -e "${GREEN}[TranscriptX]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[TranscriptX]${NC} $1"; }
 print_error() { echo -e "${RED}[TranscriptX]${NC} $1"; }
+
+if [ "${TRANSCRIPTX_FORCE_CPU:-}" = "1" ]; then
+    print_warning "TRANSCRIPTX_FORCE_CPU=1: CUDA_VISIBLE_DEVICES cleared for this shell"
+fi
 
 write_install_profile() {
     local profile="$1"

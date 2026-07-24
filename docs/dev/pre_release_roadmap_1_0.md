@@ -22,7 +22,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Phase 0B stubs** — Add planning stubs including schema_epoch_inventory, install_profiles_matrix, manual_acceptance_1_0, analysis_quality_audit, docs_architecture_1_0, ui_presentation_modes, demo_project, performance_envelopes_1_0, trust_privacy_model_governance_1_0, release_ops_support_1_0, unfamiliar_user_validation_1_0 (+ release_severity_triage_1_0)
 - [x] **Schema inventory** — Classified schema/version inventory + transition UX in [schema_epoch_inventory.md](schema_epoch_inventory.md); **human-approved 2026-07-24** (integer public schemas → `1` only)
 - [x] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI (**cut as 0.9.3**)
-- [ ] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs
+- [x] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs (**cut as 0.9.4**)
 - [ ] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs
 - [ ] **0.9.x — harden + public surfaces** — Quality audit; performance envelopes; trust/privacy/model gate; onboarding; hosted docs + modest website; accessibility acceptance
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); mandatory before 1.0
@@ -317,11 +317,11 @@ Add placeholder files or documentation where needed so contributors know where l
 
 - [x] Stale `scripts/build_docs.sh` (**archived 0.9.1** → `archive/scripts/build_docs.sh`)
 - [x] Stale or misleading environment setup helpers (**removed 0.9.1**)
-- [ ] Scripts that imply PyPI installation when releases use Git/Docker
+- [x] Scripts that imply PyPI installation when releases use Git/Docker (**0.9.4** — hints + stale_refs guard)
 - [ ] Scripts containing owner-specific absolute paths
 - [ ] Scripts relying on undeclared environment variables
 - [x] Duplicate install or Docker launch helpers (**removed 0.9.1**)
-- [ ] Transcription helpers with weak quoting, error reporting or resume behaviour
+- [x] Transcription helpers with weak quoting, error reporting or resume behaviour (**0.9.4** — `whispermlx-missing` already had dry-run/resume/`shlex.join`; Transcribe command generator quotes paths)
 - [x] Schema or fixture regeneration scripts that will become invalid after the epoch reset (**addressed with 0.9.3** fixture/golden regen + epoch refuse paths)
 - [ ] Scripts that directly mutate managed storage without going through supported services
 - [ ] Release scripts that duplicate or conflict with release governance
@@ -423,7 +423,7 @@ flowchart TD
   v091[0.9.1 hygiene and product docs]
   v092[0.9.2 stubs and schema inventory]
   themeSchema[0.9.3 schema epoch]
-  themeInstall[0.9.x install and transcription]
+  themeInstall[0.9.4 install and transcription]
   themeModes[0.9.x Guided mode and demo]
   themeHarden[0.9.x harden docs presentation]
   rc[1.0.0-rc.N when gates pass]
@@ -440,6 +440,8 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 **Cut as `0.9.2` (2026-07-24).** Phase 0B planning stubs + schema-epoch inventory human-approved (integer `1`).
 
 **Cut as `0.9.3` (2026-07-24).** Schema epoch implementation: integer-1 public stamps, data-root marker + GUI/typed remediation, compatibility removal, `semantic_similarity` module-id cleanup.
+
+**Cut as `0.9.4` (2026-07-24).** Install-profile honesty + Transcribe Audio command generator + whispermlx-missing/corpus docs.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -487,10 +489,10 @@ Focus: one coherent risk surface — public schema epoch (+ related public modul
 
 Focus: getting users onto a working analysis environment and building corpora.
 
-- [ ] Installation clean-environment fixes (`requirements.txt` ↔ extras ↔ Streamlit ownership; kill/rewrite stale `scripts/setup_env.sh`; fix auto-install PyPI hints; CUDA/`transcriptx.sh` honesty)
-- [ ] Capability matrix per supported profile; clean-env verification
-- [ ] Transcribe Audio parameterised **command generator** (no Streamlit shell execution)
-- [ ] Harden `whispermlx-missing` + transcription docs (spaces, dry-run, resume, OS/Docker boundaries, import next step)
+- [x] Installation clean-environment fixes (`requirements.txt` ↔ extras ↔ Streamlit `[web]` ownership; `setup_env.sh` already removed; editable/non-PyPI install hints; CUDA via `TRANSCRIPTX_FORCE_CPU=1` opt-in) (**0.9.4**)
+- [x] Capability matrix per supported profile; verification matrix cells (**0.9.4**). **Clean-env soak** (fresh Docker + native proof on release hardware) remains an RC gate, not a 0.9.4 code deliverable.
+- [x] Transcribe Audio parameterised **command generator** (no Streamlit shell execution) (**0.9.4**)
+- [x] Harden `whispermlx-missing` + transcription docs (spaces, dry-run, resume, OS/Docker boundaries, import next step) (**0.9.4**)
 
 ### 0.9.x — Guided mode and demo project
 
@@ -685,15 +687,15 @@ Do **not** invent `basic`/`llm` marketing names until the graph matches. Propose
 
 ### 1.0 install programme must fix
 
-- [ ] Streamlit ownership (not in `[full]`)
-- [ ] Clarify `.[full]` ≠ Docker
-- [ ] Missing `keyphrases` in Docker
-- [ ] `speaker_match` matrix cell
-- [ ] Stale `setup_env.sh`
-- [ ] Auto-install hints using PyPI name
-- [ ] `transcriptx.sh` forcing `CUDA_VISIBLE_DEVICES=""`
-- [ ] Playwright: clarify whether dependencies are required only for website/docs checks; remove them from product installation profiles unless a supported runtime feature needs them
-- [ ] Capability matrix per profile
+- [x] Streamlit ownership (`[web]`; not in `[full]`) (**0.9.4**)
+- [x] Clarify `.[full]` ≠ Docker (**0.9.4**)
+- [x] Missing `keyphrases` in Docker (**0.9.4** — yake/keybert in `requirements.txt`)
+- [x] `speaker_match` matrix cell (**0.9.4**)
+- [x] Stale `setup_env.sh` (**removed 0.9.1**; checklist closed 0.9.4)
+- [x] Auto-install hints using PyPI name (**0.9.4** — editable git checkout wording)
+- [x] `transcriptx.sh` forcing `CUDA_VISIBLE_DEVICES=""` (**0.9.4** — opt-in `TRANSCRIPTX_FORCE_CPU=1`)
+- [x] Playwright: clarify whether dependencies are required only for website/docs checks; remove them from product installation profiles unless a supported runtime feature needs them (**0.9.4** — `[maps]` / Docker PNG only; not Streamlit)
+- [x] Capability matrix per profile (**0.9.4**)
 
 ---
 
@@ -705,9 +707,9 @@ Parameters: input file/folder, output folder, provider/tool, Whisper/WhisperX mo
 
 Must cover: shell quoting/spaces; macOS vs Linux vs Docker/host boundaries; dependency/model checks (documented + dry-run flags on scripts); resumability/duplicates; partial failures; dry-run/preview; logs/progress; output compatible with managed import; clear next step → Import Transcript.
 
-- [ ] Parameterised Transcribe Audio command generator (copyable only)
-- [ ] Harden [scripts/whispermlx-missing.py](scripts/whispermlx-missing.py)
-- [ ] Update [docs/runtime/transcription.md](docs/runtime/transcription.md) + WhisperX recipe docs for non-technical corpus building
+- [x] Parameterised Transcribe Audio command generator (copyable only) (**0.9.4**)
+- [x] Harden [scripts/whispermlx-missing.py](scripts/whispermlx-missing.py) (docs + generator flags; script already had dry-run/resume) (**0.9.4**)
+- [x] Update [docs/runtime/transcription.md](docs/runtime/transcription.md) + WhisperX recipe docs for non-technical corpus building (**0.9.4**)
 
 ---
 
@@ -939,7 +941,7 @@ Mandatory before the public 1.0 tag. RC may start once product gates pass even i
 
 **Before 1.0 (only if release risk / severity demands):**
 
-- [ ] Install/config duplication (`setup_env.sh`, extras vs requirements, auto-install hints)
+- [x] Install/config duplication (`setup_env.sh` removed; extras vs requirements documented; auto-install hints fixed) (**0.9.4**)
 - [x] Remove obsolete pre-public schema adapters after wipe (**0.9.3**)
 - [ ] Legacy Data/Explorer redirects (already queued)
 - [ ] Error-prone install profile markers
@@ -1007,4 +1009,6 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 5. [x] Publish release severity triage rules early so later hardening has a decision system
 6. [x] Schema inventory **and epoch transition UX design** approved in [schema_epoch_inventory.md](schema_epoch_inventory.md) (integer public schemas → `1`; owner clean-slate backup of maps/profiles 2026-07-24)
 7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3**); cut later themes (install ≠ modes); RC only when gates pass
-8. [ ] Execute **0.9.x install + transcription** theme (profiles matrix audit; Transcribe command gen; whispermlx-missing + corpus docs)
+8. [x] Execute **0.9.x install + transcription** theme (profiles matrix audit; Transcribe command gen; whispermlx-missing + corpus docs) (**cut as 0.9.4**)
+9. [ ] Execute **0.9.x Guided mode + demo** theme
+10. [ ] Execute **0.9.x harden + public surfaces** theme toward RC

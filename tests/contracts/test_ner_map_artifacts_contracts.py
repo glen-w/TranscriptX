@@ -251,7 +251,8 @@ def test_ner_location_maps_soft_skip_without_folium(
         lambda: (_ for _ in ()).throw(
             ImportError(
                 "folium is required for map visualization. "
-                "Install with: pip install transcriptx[maps]"
+                "Install with: pip install -e '.[maps]' "
+                "(from a TranscriptX git checkout; not on PyPI)"
             )
         ),
     )

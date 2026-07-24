@@ -3,7 +3,7 @@ Authority: docs/runtime/installation.md
 
 # Install verification matrix
 
-**Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.9.2**. Do not advertise an install command that cannot pass its stated cell.
+**Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.9.4**. Do not advertise an install command that cannot pass its stated cell.
 
 **Distribution reality:** versioned **git tags** + **Docker Compose** image. The package is **not published on PyPI**. Bare `pip install transcriptx` from PyPI will fail and must not be advertised as a primary install path.
 
@@ -39,14 +39,17 @@ Authority: docs/runtime/installation.md
 | **emotion_transformers** | `pip install -e ".[emotion_transformers]"` | Transformer emotion deps |
 | **emotion** | `pip install -e ".[emotion]"` | Combined emotion extras |
 | **voice** | `pip install -e ".[voice]"` | Voice / audio analysis deps |
+| **speaker_match** | `pip install -e ".[speaker_match]"` | Local ECAPA / SpeechBrain speaker-match deps (`import speechbrain`) |
 | **nlp** | `pip install -e ".[nlp]"` then `python -m spacy download en_core_web_md` | NLP + spaCy model |
 | **bertopic** | `pip install -e ".[bertopic]"` | Compatibility alias (BERTopic may already be in core) |
 | **keyphrases** | `pip install -e ".[keyphrases]"` | Optional YAKE + KeyBERT for `keyphrases` module (noun-chunks path works without this extra) |
-| **maps** | `pip install -e ".[maps]"` | Maps extras |
+| **maps** | `pip install -e ".[maps]"` | Maps extras; Playwright for optional HTML→PNG (not required for Streamlit GUI) |
 | **visualization** | `pip install -e ".[visualization]"` | Viz extras |
 | **plotly** | `pip install -e ".[plotly]"` | Plotly extras |
-| **full** | `pip install -e ".[full]"` | All optional extras; may fail on some hosts (e.g. llvmlite) — not a Wave 0 host gate |
-| **Docker production image** | `docker compose -f docker-compose.yml build` then `make docker-smoke` | **Production-image installation proof** (wheel + `requirements.txt` under `constraints.txt`). This is **not** `pip install '.[full]'` unless inventories are verified equal |
+| **web** | `pip install -e ".[web]"` | Streamlit GUI only (not included in `[full]`) |
+| **full** | `pip install -e ".[full]"` | All optional **analysis** extras; may fail on some hosts (e.g. llvmlite) — does **not** install Streamlit |
+| **full + web (native GUI)** | `pip install -e ".[full,web]"` | Analysis extras + Streamlit; closest editable match to Docker GUI |
+| **Docker production image** | `docker compose -f docker-compose.yml build` then `make docker-smoke` | **Production-image installation proof** (wheel + `requirements.txt` under `constraints.txt`). This is **not** `pip install -e '.[full]'` unless inventories are verified equal |
 | **PyPI bare** | `pip install transcriptx` | **Not supported** — package is not on PyPI |
 
 ## Fresh-clone evidence (release bundle)
