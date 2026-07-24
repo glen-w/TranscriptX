@@ -63,10 +63,9 @@ class TestRunFromContextContract:
 
     def test_run_from_context_returns_dict(self, tmp_path, monkeypatch):
         fixture_path = (
-            __import__("pathlib").Path(__file__).resolve().parents[2]
-            / "tests"
+            __import__("pathlib").Path(__file__).resolve().parents[1]
             / "fixtures"
-            / "mini_transcriptx.json"
+            / "mini_transcript.json"
         )
         if not fixture_path.exists():
             pytest.skip("mini_transcriptx.json not found")

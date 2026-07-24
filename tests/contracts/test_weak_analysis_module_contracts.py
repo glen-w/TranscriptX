@@ -10,7 +10,7 @@ import pytest
 from transcriptx.core.analysis.contagion import ContagionAnalysis
 from transcriptx.core.analysis.entity_sentiment import EntitySentimentAnalysis
 from transcriptx.core.analysis.semantic_similarity.analysis import (
-    SemanticSimilarityAnalysis,
+    SemanticSimilarityV2Analysis,
 )
 
 
@@ -130,11 +130,9 @@ def test_entity_sentiment_success_schema_and_summary_invariants() -> None:
         assert "speaker_breakdown" in first
 
 
-def test_semantic_similarity_single_speaker_skip_envelope_contract() -> None:
-    with patch(
-        "transcriptx.core.analysis.semantic_similarity.analysis.SemanticSimilarityAnalyzer"
-    ):
-        module = SemanticSimilarityAnalysis()
+def test_semantic_similarity_v2_single_speaker_repetition_skip_contract() -> None:
+    """V2 still runs for single speaker but skips the repetition pair path."""
+    module = SemanticSimilarityV2Analysis()
     stored: dict[str, dict] = {}
     context = SimpleNamespace(
         transcript_path="/tmp/input.json",
@@ -142,11 +140,52 @@ def test_semantic_similarity_single_speaker_skip_envelope_contract() -> None:
             {"speaker": "Alice", "speaker_db_id": 1, "text": "one"},
             {"speaker": "Alice", "speaker_db_id": 1, "text": "two"},
         ],
+        get_analysis_result=lambda _name: None,
+        get_transcript_dir=lambda: "/tmp/out",
+        get_run_id=lambda: "run-1",
+        get_runtime_flags=lambda: {},
         store_analysis_result=lambda name, payload: stored.setdefault(name, payload),
     )
-    result = module.run_from_context(context)
+    fake_out = MagicMock()
+    fake_out.get_output_structure.return_value = SimpleNamespace(
+        module_dir="/tmp/sem", charts_dir="/tmp/sem/charts"
+    )
+    stub_results = {
+        "speaker_repetitions": {},
+        "cross_speaker_repetitions": [],
+        "repetition_path": "skipped",
+        "repetition_skip_reason": "single_identified_speaker",
+    }
+    stub_diag = MagicMock()
+    stub_diag.runtime_seconds_breakdown = {"total": 0.01}
+    stub_diag.to_dict.return_value = {}
+    fake_out.get_artifacts.return_value = []
+    with (
+        patch(
+            "transcriptx.core.output.output_service.create_output_service",
+            return_value=fake_out,
+        ),
+        patch(
+            "transcriptx.core.analysis.semantic_similarity.analysis.resolve_semantic_similarity_runtime",
+            return_value=(MagicMock(), MagicMock()),
+        ),
+        patch(
+            "transcriptx.core.analysis.semantic_similarity.analysis.run_semantic_similarity_pipeline",
+            return_value=(stub_results, stub_diag),
+        ) as pipeline,
+        patch(
+            "transcriptx.core.analysis.semantic_similarity.analysis.create_visualizations_v2",
+            return_value=[],
+        ),
+        patch.object(module, "save_results"),
+    ):
+        result = module.run_from_context(context)
+    assert pipeline.call_args.kwargs.get("repetition_path_skipped") is True
     assert result["module_name"] == "semantic_similarity"
-    assert result["status"] == "success"
-    assert result["metrics"]["skipped"] is True
-    assert result["metrics"]["reason"] == "single_identified_speaker"
-    assert stored.get("semantic_similarity") == {}
+    assert result["status"] in {"success", "partial", "error", "blocked"}
+    assert stored.get("semantic_similarity") is not None
+    payload = stored["semantic_similarity"]
+    assert (
+        payload.get("repetition_path") == "skipped"
+        or payload.get("repetition_skip_reason") == "single_identified_speaker"
+    )

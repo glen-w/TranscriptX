@@ -23,6 +23,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+# Obsolete semantic_similarity v1 modules removed in schema epoch / 0.9.3 cleanup.
+# These files import deleted APIs at module level, so markers cannot deselect them.
+# Keep collect-ignored until rewritten against semantic_similarity v2 or deleted.
+collect_ignore = [
+    "analysis/test_semantic_similarity_advanced_legacy.py",
+    "analysis/test_semantic_similarity_analyzer_helpers.py",
+    "analysis/test_semantic_similarity_clustering.py",
+    "analysis/test_semantic_similarity_legacy.py",
+    "analysis/test_semantic_similarity_quality_scoring.py",
+    "analysis/test_semantic_similarity_repetition_detection.py",
+]
+
 # Ensure local repo paths win for imports.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:

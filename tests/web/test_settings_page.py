@@ -32,6 +32,18 @@ def _seven_tabs():
     return (_Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs())
 
 
+def _patch_settings_presentation(monkeypatch, mod) -> None:
+    """Force Full controls so all Settings tabs remain visible in unit doubles."""
+    from transcriptx.web.presentation.prefs import MODE_FULL
+
+    monkeypatch.setattr(mod, "resolve_presentation_mode", lambda: MODE_FULL)
+    monkeypatch.setattr(mod, "render_presentation_mode_switch", lambda **_k: None)
+    monkeypatch.setattr(
+        "transcriptx.web.demo_ui.render_settings_demo_controls",
+        lambda: None,
+    )
+
+
 @pytest.mark.unit
 def test_settings_page_invokes_all_panels(monkeypatch) -> None:
     import transcriptx.web.page_modules.settings as mod
@@ -54,6 +66,7 @@ def test_settings_page_invokes_all_panels(monkeypatch) -> None:
             return None
 
     monkeypatch.setattr(mod, "st", _St)
+    _patch_settings_presentation(monkeypatch, mod)
     monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
     monkeypatch.setattr(
         mod,
@@ -121,6 +134,7 @@ def test_settings_page_passes_resolved_run_dir(monkeypatch, tmp_path) -> None:
         display=SimpleNamespace(name="Meeting"),
     )
     monkeypatch.setattr(mod, "st", _St)
+    _patch_settings_presentation(monkeypatch, mod)
     monkeypatch.setattr(
         mod.SubjectService, "resolve_current_subject", lambda _ss: subject
     )
@@ -166,6 +180,7 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
             errors.append(str(msg))
 
     monkeypatch.setattr(mod, "st", _St)
+    _patch_settings_presentation(monkeypatch, mod)
     monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
 
     def _boom(**_k):
@@ -184,3 +199,53 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
     assert errors
     assert "Could not load Configuration" in errors[0]
     assert "cfg boom" in errors[0]
+
+
+@pytest.mark.unit
+def test_settings_page_guided_hides_advanced_tabs(monkeypatch) -> None:
+    import transcriptx.web.page_modules.settings as mod
+    from transcriptx.web.presentation.prefs import MODE_GUIDED
+
+    DummyHomeStreamlit.session_state = {"settings_hub_selected_tab": "Interface"}
+    seen_labels: list[list[str]] = []
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+        @staticmethod
+        def tabs(labels):
+            seen_labels.append(list(labels))
+            return tuple(_Tabs() for _ in labels)
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "resolve_presentation_mode", lambda: MODE_GUIDED)
+    monkeypatch.setattr(mod, "render_presentation_mode_switch", lambda **_k: None)
+    monkeypatch.setattr(
+        "transcriptx.web.demo_ui.render_settings_demo_controls",
+        lambda: None,
+    )
+    monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
+    for name in (
+        "render_configuration_panel",
+        "render_analysis_presets_panel",
+        "render_storage_panel",
+        "render_speakers_panel",
+        "render_interface_panel",
+        "render_models_panel",
+        "render_questions_panel",
+    ):
+        monkeypatch.setattr(mod, name, lambda **_k: None)
+
+    mod.render_settings_page()
+    assert seen_labels
+    assert seen_labels[0] == [
+        "Configuration",
+        "Analysis",
+        "Storage",
+        "Speakers",
+    ]
+    assert "Interface" not in seen_labels[0]
+    assert "Models" not in seen_labels[0]
+    assert "Questions" not in seen_labels[0]

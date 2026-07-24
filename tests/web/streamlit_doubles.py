@@ -235,6 +235,10 @@ class DummyHomeStreamlit:
         return DummyExpander()
 
     @staticmethod
+    def container(*_args, **_kwargs):
+        return DummyExpander()
+
+    @staticmethod
     def warning(*_args, **_kwargs):
         return None
 
