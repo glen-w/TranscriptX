@@ -14,6 +14,8 @@ USER_INDEX
 runtime/installation
 runtime/transcription
 runtime/docker
+dev/ui_presentation_modes
+dev/demo_project
 ```
 
 ```{toctree}

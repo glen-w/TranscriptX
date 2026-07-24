@@ -21,9 +21,9 @@ def test_format_disk_size_uses_adaptive_units() -> None:
 
 @pytest.mark.unit
 def test_summary_source_badge_llm_vs_standard() -> None:
-    assert oc._summary_source_badge("llm_summary") == "LLM"
-    assert oc._summary_source_badge("narrative_summary") == "LLM"
-    assert oc._summary_source_badge("executive_summary") == "Standard"
+    assert oc._summary_source_badge("llm_summary") == "Local AI"
+    assert oc._summary_source_badge("narrative_summary") == "Local AI"
+    assert oc._summary_source_badge("executive_summary") == "Deterministic"
 
 
 @pytest.mark.unit
@@ -50,10 +50,10 @@ def test_summary_hero_badges_include_provenance(
         kind="llm_summary",
         payload={"provenance": {"provider": "ollama"}},
     )
-    assert oc._summary_hero_badges(cand) == ["LLM", "Ollama", "low"]
+    assert oc._summary_hero_badges(cand) == ["Local AI", "Ollama", "low"]
 
     cand2 = SimpleNamespace(kind="executive_summary", payload={})
-    assert oc._summary_hero_badges(cand2) == ["Standard"]
+    assert oc._summary_hero_badges(cand2) == ["Deterministic"]
 
 
 @pytest.mark.unit
@@ -61,18 +61,18 @@ def test_summary_hero_badges_include_named_analysis_preset() -> None:
     cand = SimpleNamespace(kind="llm_summary", payload={})
     assert oc._summary_hero_badges(
         cand, run_results={"analysis_preset": "balanced"}
-    ) == ["Balanced", "LLM"]
+    ) == ["Balanced", "Local AI"]
     assert oc._summary_hero_badges(
         cand, run_results={"analysis_preset": "quick"}
-    ) == ["Quick", "LLM"]
+    ) == ["Quick", "Local AI"]
     assert oc._summary_hero_badges(
         cand, run_results={"analysis_preset": "thorough"}
-    ) == ["Thorough", "LLM"]
+    ) == ["Thorough", "Local AI"]
     # Custom / missing → no preset badge
     assert oc._summary_hero_badges(
         cand, run_results={"analysis_preset": "custom"}
-    ) == ["LLM"]
-    assert oc._summary_hero_badges(cand, run_results={}) == ["LLM"]
+    ) == ["Local AI"]
+    assert oc._summary_hero_badges(cand, run_results={}) == ["Local AI"]
 
 
 @pytest.mark.unit

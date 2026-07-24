@@ -10,11 +10,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-07-24
+
+### Added
+- Modest public `website/` landing + GitHub Pages workflow (Buy Me a Coffee placeholder).
+- Release ops / support policy draft; GitHub Issue templates; root `NOTICE` draft for third-party models.
+- Analysis-quality provisional judgements overlay; performance envelope sizes + measurement recipe.
+- RTD go-live checklist (hostname still denylisted until owner slug).
+- Local AI badges on Insights/Overview LLM surfaces; Overview badges deterministic summaries as `Deterministic`.
+- Local AI badges on Charts LLM descriptions and Custom Questions block.
+- Voice privacy user notice (`voice_privacy_notice.v2`) in Settings → Speakers.
+- Maintainer `make perf-envelopes` / `scripts/release/perf_envelope_recipe.py` recipe printer.
+
+### Changed
+- Removed legacy GUI page aliases `Data` / `Explorer` (use Artifacts Preview / Browse).
+- Trust / privacy governance drafts marked review-ready for owner sign-off.
+- Align voice Pydantic `schema_id` Literals with epoch `transcriptx.*.v1` constants (privacy round-trip).
+- Docs/roadmap: Guided/demo marked **shipped (0.9.6)** with human-acceptance residual; §20 owner judgements updated for UI copy + synthetic demo pack.
+
 ### Fixed
 - Demo same-members group collision uses canonical group paths (not cwd-resolved relatives).
 - Demo remove revalidates managed identity and takes per-run writer locks; `refresh_demo_project` recovers stale/partial installs.
 - Home empty-library primary CTA for demo load; plan-coverage tests for guard, allowlist, collisions, symlink escape.
-
+- Align layout preset `default.yaml` and speaker-profile Pydantic `schema_id` Literals with public schema epoch-1 (`schema_version: 1`, `transcriptx.*.v1`).
+- Emotion-family / contagion characterisation fixtures use `transcriptx.contextual_emotion_result.v1` / `transcriptx.fine_grained_emotion_result.v1` (not pre-epoch prefixed ids).
+- Epoch-aligned contract expects for run_results / dashboard / import / speaker-map / corrections-studio schema `1`; drop obsolete `semantic_similarity_advanced` from module UI groups; collect-ignore removed v1 semantic viz helpers.
 ## [0.9.6] - 2026-07-24
 
 ### Added

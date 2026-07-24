@@ -35,3 +35,4 @@ Explicit **Load demo project** / **Explore examples**; isolated demo ownership i
 - v1 generate writes **synthetic placeholder runs** (manifest `base_install_modules` may be empty) — not a live analysis-module fan-out; still network-free and provenance-labelled.
 - Interrupted-install **automatic journal resume** is manual via Refresh (remove+install), not step-replay.
 - Onboarding auto-hints are display-only; they do not auto-commit item state.
+- Optional later owner swap from synthetic pack to redistributable real-world transcripts (voice pack) remains open; not required for 0.9.6.

@@ -22,7 +22,7 @@ def test_load_config_rejects_legacy_overview_chart_types(tmp_path):
     assert exc_info.value.code == "unsupported_legacy_shape"
 
 
-def test_load_config_accepts_dashboard_v2(tmp_path):
+def test_load_config_accepts_dashboard_v1(tmp_path):
     config_path = tmp_path / "config.json"
     payload = {
         "dashboard": {
@@ -38,4 +38,4 @@ def test_load_config_accepts_dashboard_v2(tmp_path):
     assert (
         "sentiment.multi_speaker_sentiment.global" in config.dashboard.overview_charts
     )
-    assert config.dashboard.schema_version == 2
+    assert config.dashboard.schema_version == 1

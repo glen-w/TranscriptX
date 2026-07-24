@@ -77,8 +77,8 @@ def test_try_install_extra_fallback_to_package() -> None:
 
     def _import(name):
         calls["import"] += 1
-        # first check fails; after first install import still fails; after package ok
-        if calls["import"] <= 2:
+        # Pre-install probe fails; post-install import succeeds.
+        if calls["import"] <= 1:
             raise ImportError("missing")
         return types.ModuleType(name)
 
@@ -95,7 +95,8 @@ def test_try_install_extra_fallback_to_package() -> None:
             "pkg_name", "pkg_name", "testing", extra="viz"
         )
     assert ok is True
-    assert calls["run"] == 2
+    # Installs the underlying package only (never transcriptx[extra] from PyPI).
+    assert calls["run"] == 1
 
 
 @pytest.mark.unit

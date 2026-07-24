@@ -3,10 +3,11 @@ Authority: self
 
 # Analysis quality audit (1.0)
 
-**Status:** scaffolded (**0.9.5**) — registry rows generated; human judgements open  
+**Status:** scaffolded (**0.9.5**) — registry rows generated; provisional judgements in [analysis_quality_audit_judgements.md](analysis_quality_audit_judgements.md) (**0.9.7**); owner sign-off open  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §11  
 **Related:** [release_severity_triage_1_0.md](release_severity_triage_1_0.md), [analysis_module_backlog_2026-07-17.md](analysis_module_backlog_2026-07-17.md)  
-**Scaffold:** [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md) (`make docs-gen`)
+**Scaffold:** [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md) (`make docs-gen`)  
+**Judgements:** [analysis_quality_audit_judgements.md](analysis_quality_audit_judgements.md) (human/agent overlay — not wiped by docs-gen)
 
 Living sheet — one row per user-visible analysis. Prefer real corpora over fixtures alone.
 
@@ -39,4 +40,4 @@ Deterministic highlights, summaries, and action-item extraction vs LLM equivalen
 
 ## Rows
 
-Machine-generated registry scaffold (module id, description, category, dependencies, determinism) lives in [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md). Fill Recommendation / Severity / Notes there during the quality theme; keep this file as the column authority and scrutiny checklist.
+Machine-generated registry scaffold (module id, description, category, dependencies, determinism) lives in [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md). Provisional Recommendation / Severity / Notes for **0.9.7** live in [analysis_quality_audit_judgements.md](analysis_quality_audit_judgements.md) (owner sign-off still required).

@@ -256,7 +256,7 @@ def test_retry_reimports_raw_json_missing_schema_version(
     result = mod.run_managed_import_workflow(staging, overwrite=False)
 
     doc = json.loads(target_json.read_text(encoding="utf-8"))
-    assert doc.get("schema_version") == "1.0"
+    assert doc.get("schema_version") == 1
     assert isinstance(doc.get("source"), dict)
     assert doc["source"].get("original_path") == result.archived_original_relpath
     assert result.sidecar_path.exists()

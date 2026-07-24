@@ -67,21 +67,6 @@ def fallback_for_page(page: str) -> str | None:
     return mapping.get(prereq.allowed_fallback)
 
 
-def _redirect_legacy_data() -> None:
-    """Thin alias for bookmarked Data sessions."""
-    st.session_state[PAGE_KEY] = "Artifacts"
-    if not st.session_state.get(ARTIFACTS_KEY_SECTION):
-        st.session_state[ARTIFACTS_KEY_SECTION] = "Preview"
-    _render_artifacts()
-
-
-def _redirect_legacy_explorer() -> None:
-    """Thin alias for bookmarked File List / Explorer sessions."""
-    st.session_state[PAGE_KEY] = "Artifacts"
-    st.session_state[ARTIFACTS_KEY_SECTION] = "Browse"
-    _render_artifacts()
-
-
 def _redirect_legacy_batch_ops() -> None:
     """Thin alias for bookmarked Batch Ops sessions → Run Analysis (Batch target).
 
@@ -110,8 +95,6 @@ def build_page_renderers(
         "Charts": _lazy_renderer("charts", "render_charts"),
         "Performance": _lazy_renderer("performance", "render_performance"),
         "Artifacts": _render_artifacts,
-        "Data": _redirect_legacy_data,
-        "Explorer": _redirect_legacy_explorer,
         "Run Analysis": _lazy_renderer("run_analysis", "render_run_analysis_page"),
         "Transcribe Audio": _lazy_renderer(
             "transcribe_audio", "render_transcribe_audio_page"

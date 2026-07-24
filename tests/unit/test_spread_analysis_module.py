@@ -28,7 +28,7 @@ def _seg(speaker: str, text: str, start: float, **extra):
 def _contextual_artifact(segments, **overrides):
     artifact = {
         "module_id": "contextual_emotion",
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "run_status": "complete",
         "usable_output": True,

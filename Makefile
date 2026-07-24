@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance docker-smoke run clean-test-artifacts
+.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -10,6 +10,7 @@ help:
 	@echo "  docs-gen     Regenerate module catalog + quality-audit scaffold from registry"
 	@echo "  docs         Build Sphinx HTML into docs/_build/html (requires .[docs])"
 	@echo "  docs-clean   Remove Sphinx build artifacts (keeps docs/generated/)"
+	@echo "  perf-envelopes  Print performance-envelope measurement recipe (0.9.7)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  run            Streamlit web app in Docker (full TTY)"
@@ -43,6 +44,9 @@ run:
 docs-gen:
 	@echo "Regenerating module catalog and analysis-quality audit scaffold..."
 	@python3 scripts/release/regen_module_docs.py
+
+perf-envelopes:
+	@python3 scripts/release/perf_envelope_recipe.py
 
 docs:
 	@bash scripts/release/build_docs.sh

@@ -19,7 +19,7 @@ Without explicit severity, hardening expands indefinitely because every imperfec
 ## Gate rules
 
 - [x] Severity rules written and linked from ROADMAP / release governance
-- [ ] Hardening backlog tagged with severity before RC
+- [x] Hardening backlog tagged with severity before RC (provisional — [analysis_quality_audit_judgements.md](analysis_quality_audit_judgements.md) **0.9.7**; owner confirm)
 - [ ] RC entry requires zero open release blockers and zero open must-fix items
 
 Tag each hardening finding with one severity before scheduling work. Known limitations must be listed in release notes or a known-limitations section when shipping under that class.

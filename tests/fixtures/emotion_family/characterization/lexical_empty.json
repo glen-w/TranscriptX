@@ -14,9 +14,9 @@
     "surprise": 0.0,
     "trust": 0.0
   },
-  "cache_fingerprint": "0b92fc987bfb0512c02fc526772088d747062d66e7da4fb10d08ff57229c39df",
+  "cache_fingerprint": "dbe091e1cf58dab0fa796a86fe104cb8c5270ceb168a69673f1c61ff9ac398e5",
   "combined_rows": [],
-  "compatibility_fingerprint": "52e23a5a045a6f6eb3c5b8963dc66ae727db63ccd8786a6c6923c20669913aef",
+  "compatibility_fingerprint": "1efb1909fdbedf37348ffa62406c3c7ecbafff01462b10e0b18231c6e03f0cbd",
   "contextual_all": {},
   "contextual_examples": {},
   "emotions": {
@@ -73,7 +73,7 @@
     "zero_hit_segments": 0
   },
   "inference_cache_hit": false,
-  "inference_cache_key": "d1cb22c1adfdd2a0154a7a167dac9791ec5283554e7b7b9cef7fa2304fff1ffc",
+  "inference_cache_key": "010202e83c8bc3bb14dd2dc88a11272aeb7c76da13f50f0a0f64a127760250c8",
   "lexicon_digest": "3cf238056cde91a807e698160c5191b44da06bdb175dd4ea83653b47abfcd001",
   "method": "nrc_lexical",
   "module_id": "emotion",

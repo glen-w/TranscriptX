@@ -20,14 +20,13 @@ def test_statistics_page_removed_from_nav_and_renderers() -> None:
 
 
 def test_view_pages_use_flat_nav_grouping() -> None:
-    # Legacy Data/Explorer keep subsection="legacy" for redirect aliases but are
-    # excluded from sidebar via pages_in_section().
+    # View section is flat; only Batch Ops (workflow) retains subsection="legacy".
     subsections = {
         spec.subsection
         for spec in PAGE_SPECS
         if spec.section == "view" and spec.subsection
     }
-    assert subsections <= {"legacy"}
+    assert subsections == set()
     from transcriptx.web.navigation import pages_in_section
 
     assert all(s.subsection is None for s in pages_in_section("view"))
@@ -35,6 +34,6 @@ def test_view_pages_use_flat_nav_grouping() -> None:
 
 def test_sidebar_uses_registry_driven_view_sections() -> None:
     text = Path("src/transcriptx/web/sidebar.py").read_text(encoding="utf-8")
-    assert "pages_in_section" in text
-    assert 'pages_in_section("view")' in text
+    assert "visible_pages_in_section" in text
+    assert 'visible_pages_in_section("view"' in text
     assert "_VIEW_SUBSECTION_ORDER" not in text

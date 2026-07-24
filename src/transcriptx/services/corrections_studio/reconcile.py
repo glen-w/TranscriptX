@@ -45,7 +45,7 @@ class _ReplayState:
 def _replay_session_started(state: _ReplayState, env: StudioEventEnvelope) -> None:
     payload = env.payload or {}
     state.doc = {
-        "studio_schema_version": 2,
+        "studio_schema_version": 1,
         "session_id": env.session_id,
         "transcript_path": payload.get("transcript_path", ""),
         "recorded_transcript_identity_hash": payload.get(

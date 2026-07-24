@@ -44,7 +44,7 @@
           "integrity_checksum": "6ce19fe47899f3b9bb7fee98a7c7ec8531cede6b3d8b32c526af3b0828c9804f",
           "module_id": "contextual_emotion",
           "row_key": "1",
-          "schema_version": "contextual_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.contextual_emotion_result.v1",
           "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -56,7 +56,7 @@
           "integrity_checksum": "6ce19fe47899f3b9bb7fee98a7c7ec8531cede6b3d8b32c526af3b0828c9804f",
           "module_id": "contextual_emotion",
           "row_key": "1",
-          "schema_version": "contextual_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.contextual_emotion_result.v1",
           "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -77,7 +77,7 @@
           "integrity_checksum": "a0917740123cb2e3edf0e5e57fe3b75cdf5e9535d406827af8d68241ab7335db",
           "module_id": "contextual_emotion",
           "row_key": "2",
-          "schema_version": "contextual_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.contextual_emotion_result.v1",
           "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -89,7 +89,7 @@
           "integrity_checksum": "a0917740123cb2e3edf0e5e57fe3b75cdf5e9535d406827af8d68241ab7335db",
           "module_id": "contextual_emotion",
           "row_key": "2",
-          "schema_version": "contextual_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.contextual_emotion_result.v1",
           "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -106,8 +106,8 @@
   ],
   "aggregation_cache_hit": false,
   "aggregation_cache_key": "c9cef43a6980e9297fd6f61e4544fb6b1638bd8f447ea301cff3452431048b7d",
-  "cache_fingerprint": "57da585c8e07b421f31db58c6d76a5900e532e61685458bca1ccb6ce07ca43c0",
-  "compatibility_fingerprint": "6107e35abac29761d1691529d4bda20e72737fd72a8389b974a2bd836f6414c8",
+  "cache_fingerprint": "04dbb9d70d20b459d967f6ea14f9a1010e11e7cc214e91225a06d082871adadc",
+  "compatibility_fingerprint": "3d9a5f525f49f73ede92f1c13f4deddcac818de71866790d7e6e091d463a2219",
   "confidence_summary": {
     "max": 0.88,
     "mean": 0.88,
@@ -131,7 +131,7 @@
     "neutral_rate": 0.0
   },
   "inference_cache_hit": false,
-  "inference_cache_key": "27a4cdc3136659c6e189aa628daa5e95058759253162f08fb75e8d892e65ef3c",
+  "inference_cache_key": "f48fdbee674ef8b6aa8d001cf2a5e328115a806a49e4c50c54042a1d3a9fb816",
   "label_counts": {
     "joy": 1
   },
@@ -197,7 +197,7 @@
       "integrity_checksum": "6ce19fe47899f3b9bb7fee98a7c7ec8531cede6b3d8b32c526af3b0828c9804f",
       "module_id": "contextual_emotion",
       "row_key": "1",
-      "schema_version": "contextual_transcriptx.emotion_result.v1",
+      "schema_version": "transcriptx.contextual_emotion_result.v1",
       "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
       "semantics_version": "contextual_emotion_v1"
     },
@@ -207,7 +207,7 @@
     "segment_id": "1",
     "truncated": false
   },
-  "schema_version": "contextual_transcriptx.emotion_result.v1",
+  "schema_version": "transcriptx.contextual_emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 1,

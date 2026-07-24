@@ -99,7 +99,7 @@ MODULE_SPECS = (
     },
     {
         "module_id": "contextual_emotion",
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "ref_field": "contextual_emotion_canonical_ref",
         "owned_fields": CONTEXTUAL_PROJECTION_SEGMENT_FIELDS,
@@ -109,7 +109,7 @@ MODULE_SPECS = (
     },
     {
         "module_id": "fine_grained_emotion",
-        "schema_version": "fine_grained_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.fine_grained_emotion_result.v1",
         "semantics_version": "fine_grained_emotion_v1",
         "ref_field": "fine_grained_emotion_canonical_ref",
         "owned_fields": FINE_GRAINED_PROJECTION_SEGMENT_FIELDS,
@@ -338,7 +338,7 @@ def test_04_failure_generation_consistency(tmp_path, run_status):
         generation_id=gid,
         run_status=run_status,
         usable_output=False,
-        schema_version="contextual_transcriptx.emotion_result.v1",
+        schema_version="transcriptx.contextual_emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         canonical_rows=[],
         expected_segment_ids=[],
@@ -461,7 +461,7 @@ def test_06_no_owned_fields_before_canonical_persist(tmp_path):
         "run_status": "complete",
         "usable_output": True,
         "artifact_generation_id": _gid("t06"),
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "segments_scored": 1,
         "_canonical_rows": [_scored_row("s1")],
@@ -1030,14 +1030,14 @@ def test_17_canonical_reference_rejects_mismatches(tmp_path, mutate):
         tmp_path,
         module_id="contextual_emotion",
         generation_id=gid,
-        schema_version="contextual_transcriptx.emotion_result.v1",
+        schema_version="transcriptx.contextual_emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         rows=[row],
     )
     good = build_canonical_ref(
         module_id="contextual_emotion",
         artifact_generation_id=gid,
-        schema_version="contextual_transcriptx.emotion_result.v1",
+        schema_version="transcriptx.contextual_emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         row_key="s1",
         row=row,
@@ -1674,7 +1674,7 @@ def test_25_affect_tension_null_metrics_with_reasons(tmp_path):
         tmp_path,
         module_id="contextual_emotion",
         generation_id=gid,
-        schema_version="contextual_transcriptx.emotion_result.v1",
+        schema_version="transcriptx.contextual_emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         rows=[row],
     )
@@ -1693,7 +1693,7 @@ def test_25_affect_tension_null_metrics_with_reasons(tmp_path):
         }
     ]
     artifact = {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",

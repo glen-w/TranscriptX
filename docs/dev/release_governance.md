@@ -9,7 +9,7 @@ This document is the **authoritative release gate** for public version tags. It 
 
 ## Wave 0 eng criteria (closed)
 
-Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed for **0.9.2**). Remaining work before a public **1.0** tag is this checklist + evidence runbook, plus programme gates in [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) (unfamiliar-user validation, [severity triage](release_severity_triage_1_0.md), performance/trust gates) — not missing Wave 0 code.
+Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed for **0.9.7**). Remaining work before a public **1.0** tag is this checklist + evidence runbook, plus programme gates in [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) (human-testing wave, unfamiliar-user validation, [severity triage](release_severity_triage_1_0.md), performance/trust owner sign-off, RTD go-live) — not missing Wave 0 code.
 
 **Hardening triage:** classify findings with [release_severity_triage_1_0.md](release_severity_triage_1_0.md) before scheduling RC work.
 

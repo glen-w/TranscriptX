@@ -20,11 +20,13 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md) | Manual acceptance suite skeleton |
 | [analysis_quality_audit.md](dev/analysis_quality_audit.md) | Analysis quality audit template |
 | [analysis_quality_audit_scaffold.md](dev/analysis_quality_audit_scaffold.md) | Generated registry rows (`make docs-gen`) |
-| [ui_presentation_modes.md](dev/ui_presentation_modes.md) | Guided / Full controls design |
-| [demo_project.md](dev/demo_project.md) | Demo project design |
+| [analysis_quality_audit_judgements.md](dev/analysis_quality_audit_judgements.md) | Provisional Recommendation / Severity overlay |
+| [ui_presentation_modes.md](dev/ui_presentation_modes.md) | Guided / Full controls (shipped 0.9.6) |
+| [demo_project.md](dev/demo_project.md) | Demo project (shipped 0.9.6) |
 | [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelope planning |
 | [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) | Trust / privacy / model gate |
 | [release_ops_support_1_0.md](dev/release_ops_support_1_0.md) | Release ops / support policy |
+| [rtd_go_live_checklist.md](dev/rtd_go_live_checklist.md) | Read the Docs go-live flip steps |
 | [unfamiliar_user_validation_1_0.md](dev/unfamiliar_user_validation_1_0.md) | Unfamiliar-user validation protocol |
 
 ## Orientation

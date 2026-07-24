@@ -1,16 +1,19 @@
 {
-  "schema_version": "1.0",
+  "schema_version": 1,
   "source": {
     "type": "vtt",
     "original_path": "/Users/89298/Documents/transcriptx/tests/fixtures/vtt/simple.vtt",
-    "imported_at": "2026-03-29T18:08:33.699822+00:00",
+    "imported_at": "2026-07-24T20:08:42.769228+00:00",
     "file_hash": "sha256:61c0887f916baa61b610e162f50285ff0ed595892aa8112617a19f8c0196452b",
     "file_mtime": 1769584952.0
   },
   "metadata": {
     "duration_seconds": 15.75,
     "segment_count": 3,
-    "speaker_count": 1
+    "speaker_count": 1,
+    "word_count": 11,
+    "language": "en",
+    "language_resolution": "assumed_en_missing_metadata"
   },
   "segments": [
     {
@@ -33,5 +36,5 @@
     }
   ],
   "_last_modified_by": "import",
-  "_last_modified_at": "2026-03-29T18:08:33.701663+00:00"
+  "_last_modified_at": "2026-07-24T20:08:42.769644+00:00"
 }

@@ -24,9 +24,10 @@ from transcriptx.web.state import (
 )
 
 
-def test_legacy_data_and_explorer_redirect_map() -> None:
-    assert migrate_legacy_page_key("Data") == ("Artifacts", "Preview")
-    assert migrate_legacy_page_key("Explorer") == ("Artifacts", "Browse")
+def test_legacy_data_and_explorer_aliases_removed() -> None:
+    # Data / Explorer no longer migrate (0.9.7); Statistics still maps to Home.
+    assert migrate_legacy_page_key("Data") == ("Data", None)
+    assert migrate_legacy_page_key("Explorer") == ("Explorer", None)
     assert migrate_legacy_page_key("Statistics") == ("Home", None)
     assert migrate_legacy_page_key("Overview") == ("Overview", None)
     # Batch Ops must NOT migrate here — router applies Batch target first.

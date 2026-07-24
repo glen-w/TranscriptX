@@ -311,7 +311,7 @@ class ConflictSet(BaseModel):
 class StudioSessionDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    studio_schema_version: int = 2
+    studio_schema_version: int = 1
     session_id: str
     transcript_path: str
     recorded_transcript_identity_hash: str

@@ -4,7 +4,7 @@ Authority: self
 # TranscriptX Codebase Stocktake — 2026-07-17
 
 > Living decision foundation for the **0.9.x → 1.0** stabilisation programme. Supersedes the historical assessment in [`docs/archive/assessments/assessment-2026-03-10.md`](../archive/assessments/assessment-2026-03-10.md).  
-> Metrics refreshed **2026-07-24** against package **0.9.2**. Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x / 0.9.0 / 0.9.1 describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.  
+> Metrics refreshed **2026-07-24** against package **0.9.7**. Historical findings below that still say 0.4.4 / 0.6.x / 0.7.x / 0.8.x / 0.9.0–0.9.6 describe earlier snapshots; treat the header/snapshot tables as authoritative for current packaging.  
 > **Product authority:** [PRODUCT.md](../PRODUCT.md) · **Roadmap:** [ROADMAP.md](../ROADMAP.md) · **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md)
 
 ---
@@ -14,12 +14,12 @@ Authority: self
 | Dimension | Verdict | Confidence |
 |-----------|---------|------------|
 | **What it is** | Local-first personal transcript **analysis workbench** (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
-| **Honest stage** | **0.9.x stabilisation toward 1.0** (`0.9.2`, classifier Beta). Strong contracts and test culture; not consumer polish; not multi-user. | High |
-| **OSS local-first public 1.0** | **Conditional go** — Phase 0A hygiene + Phase 0B docs in flight; public 1.0 still requires unfamiliar-user validation, severity triage, and [`release_governance.md`](release_governance.md) evidence. | High |
+| **Honest stage** | **0.9.x stabilisation toward 1.0** (`0.9.7`, classifier Beta). Strong contracts and test culture; not consumer polish; not multi-user. | High |
+| **OSS local-first public 1.0** | **Conditional go** — automatable harden + public surfaces landed in **0.9.7**; public 1.0 still requires unfamiliar-user validation, owner trust/RTD sign-off, and [`release_governance.md`](release_governance.md) evidence. | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
-| **Immediate process focus** | Complete Phase 0A/0B acceptance; then schema epoch inventory — not Wave 3 module sprawl. | High |
+| **Immediate process focus** | Human-testing wave (manual acceptance, unfamiliar users, clean-env soak) → RC — not Wave 3 module sprawl. | High |
 
-**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; **default next capacity is 0.9→1.0 stabilisation** — through **0.9.5** (hosted docs + harden scaffolds); **Guided/demo datasets deferred**; continue harden judgements / RTD go-live / website toward RC — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
+**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; programme through **0.9.7** (automatable harden + public surfaces) landed; **default next capacity is human testing → RC** (owner Hub-card / RTD slug / Large-library soak residuals) — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
 
 ---
 
@@ -27,18 +27,18 @@ Authority: self
 
 | Fact | Value / evidence |
 |------|------------------|
-| Version | `0.9.1` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
+| Version | `0.9.7` (`pyproject.toml`, `src/transcriptx/__init__.py`, CHANGELOG) |
 | License | MIT |
 | Scale | Large `src/transcriptx/` + extensive `tests/` (~4.5k test functions; see Makefile lanes) |
 | Smoke gate | `make test-smoke` (CI matrix 3.10–3.12; Core+dev and NLP smoke lanes) |
 | Coverage (checked-in `coverage.json`) | See latest coverage lane; **entire `web/` omitted** from `.coveragerc` fail_under (gap-finder only). GUI journey acceptance: `make test-gui-acceptance` |
 | Git remote | `glen-w/TranscriptX` |
 | Package URLs | `https://github.com/glen-w/TranscriptX` |
-| CI workflows | `.github/workflows/ci.yml` (tests matrix + compose-config + release-checks) |
+| CI workflows | `.github/workflows/ci.yml` (tests matrix + compose-config + release-checks); `.github/workflows/pages.yml` (website) |
 | SECURITY.md / CoC | `SECURITY.md` present (private vuln reporting) |
 | Distribution reality | Docker + git tags; **not on PyPI** — see install verification matrix |
 | Wave 0 eng gate | Closed 2026-07-22 (hygiene A1–A10 + Config 1.7/1.8 + docs/inventory parity) |
-| Recent product line (0.6.6→0.8.0) | `llm_custom_qa`, B10 meeting extracts, speaker profiles v1 + Phase 1.5/1.6 + avatars + voice R2 + locations pack, Wave 2 lexicons (B6/B7), B13 graphs, analysis presets, **B14** motifs/drift, **B16** keyphrases, LLM feedback v1 |
+| Recent product line (0.6.6→0.9.7) | `llm_custom_qa`, B10 meeting extracts, speaker profiles v1 + Phase 1.5/1.6 + avatars + voice R2 + locations pack, Wave 2 lexicons (B6/B7), B13 graphs, analysis presets, **B14** motifs/drift, **B16** keyphrases, LLM feedback v1; **0.9.x** schema epoch → install/transcribe → Sphinx scaffolds → Guided/demo → harden + public surfaces |
 
 ```mermaid
 flowchart LR
@@ -69,7 +69,7 @@ flowchart LR
 | Issue | Detail |
 |-------|--------|
 | Historical Phase 1 vs shipping | Older ROADMAP/stocktake language said “no new features” while 0.3.x→0.7.x shipped continuously — **reconciled** in ROADMAP (language retired). |
-| Historical version bands | Older docs said “v0.42 current” / stocktake once said **0.6.5** — **reconciled**; package is **0.8.0**. |
+| Historical version bands | Older docs said “v0.42 current” / stocktake once said **0.6.5** — **reconciled**; package is **0.9.7**. |
 | Groups story | ~~README “DB-backed”~~ **Fixed** (file-backed). Storage contract is file-first; DB-backed **speaker** analytics views remain Phase 3 remainder. |
 | Sprint archive | [`docs/archive/plans/sprint_archive.md`](../archive/plans/sprint_archive.md) is historical backlog only — not live. |
 | Identity | ~~`pyproject` URLs ≠ remote~~ **Fixed** → `glen-w/TranscriptX`. |
@@ -236,7 +236,7 @@ Use these as defaults unless you consciously override them:
 
 1. **Release type (next 1–2 months):** OSS **local-first single-user beta** — not hosted product.
 2. **run_cleanup:** Phase A + Phase B complete (policy 7 / schema 3 / result schema 2). Further behaviour changes need explicit schema/policy decisions; do not mix with Top-3 refactors.
-3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → 0.9→1.0 programme** (schema/install/transcription/`0.9.5` scaffolds done; Guided/demo deferred; harden judgements + RTD/website next) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
+3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → human-testing wave → RC** (programme through **0.9.7** automatable harden + public surfaces landed; owner Hub-card / RTD slug / Large-library soak may soft-cut) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
 4. **Phase 1 honesty:** ROADMAP reflects 0.7.x + real CI; “no new features” retired.
 5. **Distribution:** Docker + git tags until PyPI decided; install matrix is authoritative.
 6. **Network threat model:** Localhost by default; LAN opt-in via `TRANSCRIPTX_BIND_HOST=0.0.0.0` (unauthenticated).
@@ -258,6 +258,7 @@ Use these as defaults unless you consciously override them:
 8. ~~Remove stale `src/setup.py`~~ **Done**; prefer `v`-prefixed tags going forward.
 9. ~~Reconcile README `pip install` claim with Docker+tag policy~~ **Done** (install matrix + caveats).
 10. **Still open for tagging:** execute [`release_governance.md`](release_governance.md) evidence runbook on a **clean** commit with green CI on that SHA.
+11. **Suite residual (non-Guided):** after Guided/demo deep-test, a small cluster of epoch-1 / LLM custom-QA + group aggregation + config-delegation snapshot tests may still fail under `make test-fast` — treat as contract-test drift to clear before RC, not as missing Guided/demo product work.
 
 ### Engineering (after Wave 0)
 
@@ -269,7 +270,7 @@ Use these as defaults unless you consciously override them:
 
 14. **Post-1.0 analysis capacity (not default 0.9.x track):** Wave 3 remainder — **B5 remainder** (DB analytics views / group gallery keyed by `profile_id`), **B18** / **P2** provenance. ~~B14~~ / ~~B16~~ shipped. See [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md).
 15. UX: Corrections Studio / Audio Prep fragment follow-ups (deferred).
-16. Remove legacy Data/Explorer redirect routes after “one more release” (public_surfaces).
+16. ~~Remove legacy Data/Explorer redirect routes after “one more release”~~ **Done** (**0.9.7**).
 17. User-facing docs thinner than contract corpus — optional researcher guide.
 
 ### Explicit deferrals

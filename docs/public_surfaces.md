@@ -15,7 +15,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - Running analysis on individual transcripts and groups.
   - Viewing results via **Transcript → Overview → Insights → Charts → Artifacts**.
   - Managing basic settings exposed in the UI.
-- Legacy GUI routes `Data` and `Explorer` (File List) redirect to **Artifacts**; these redirect routes will be removed after one more release.
+- Use **Artifacts** (Browse / Preview / Export). Legacy `Data` / `Explorer` (File List) page keys are no longer supported (removed in 0.9.7).
 - Built-in layout profile id `default` is displayed as **Standard** and is immutable; clone via Dashboard Builder.
 ### 1.2 Python API
 
@@ -43,11 +43,12 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Compose mounts and environment variables are operational configuration only; storage layout, output layout, and run-truth rules are defined in the contracts linked from §1.
 - See `docs/runtime/docker.md` for build commands, volume mounts, and container-specific pitfalls.
 
-### 1.5 Presentation modes (not a new surface)
+### 1.5 Presentation modes and demo project (not new entrypoints)
 
-- **Guided** / **Full controls** (aliases Simple / Advanced) are a **presentation and configuration layer** only.
+- **Guided** / **Full controls** (aliases Simple / Advanced) are a **presentation and configuration layer** only (**0.9.6**).
 - They do not introduce a second execution system or a separate public API surface.
 - Prefer documenting them as UI/config behaviour, not as additional supported entrypoints.
+- **Demo project** load/remove is a supported GUI capability (**0.9.6**): isolated ownership inventory, one-click remove, synthetic pack + `scripts/generate_demo_runs.py`. It is not a second library or API surface.
 
 ### 1.6 Transcription command generation (GUI capability)
 

@@ -6,7 +6,9 @@ Authority: contracts
 **Product definition (non-contract):** [PRODUCT.md](PRODUCT.md)  
 **Support / public surfaces:** [public_surfaces.md](public_surfaces.md)  
 **Schema epoch policy (planning inventory):** [schema_epoch_inventory.md](dev/schema_epoch_inventory.md)  
-**Release severity (non-contract):** [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)
+**Release severity (non-contract):** [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)  
+**Trust / privacy / models (gate, non-contract):** [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) · [NOTICE](../NOTICE)  
+**Release ops (non-contract):** [release_ops_support_1_0.md](dev/release_ops_support_1_0.md)
 
 Concept → Authority:
 

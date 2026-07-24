@@ -97,7 +97,7 @@ def commit_generation_batch(
             "candidates": cands,
             "review_records": review_records,
             "updated_at": now,
-            "studio_schema_version": 2,
+            "studio_schema_version": 1,
         }
     )
     if not doc.created_at:

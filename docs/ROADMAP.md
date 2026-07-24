@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full controls + demo project shipped in **0.9.6**.
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full controls + demo project shipped in **0.9.6**. Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**.
 
 ---
 
@@ -39,7 +39,8 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Install + transcription | Install-profile audit; Transcribe command generation; corpus docs | **0.9.4** |
 | Hosted docs + harden scaffolds | Sphinx revive; hygiene strict subset; quality-audit scaffold; draft model-licence matrix | **0.9.5** |
 | Modes + demo | Guided / Full controls v1; demo project load/remove; onboarding checklist | **0.9.6** |
-| Harden + public surfaces | Audit judgements; performance envelopes; trust gate evidence; RTD go-live + modest website; a11y | later 0.9.x |
+| Harden + public surfaces (automatable) | Audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops; Data/Explorer redirects removed | **0.9.7** |
+| Human testing → RC | Manual acceptance + a11y/browser; unfamiliar-user validation; clean-env soak; owner Hub-card / RTD slug; Large-library soak | next (pre-RC) |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
@@ -55,7 +56,7 @@ Mandatory themes (detail in the programme plan):
 - Trust / privacy / model-governance — [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md)
 - Release ops and support — [release_ops_support_1_0.md](dev/release_ops_support_1_0.md); governance evidence on an exact clean commit
 - Schema epoch inventory (before reset) — [schema_epoch_inventory.md](dev/schema_epoch_inventory.md)
-- Usable hosted documentation and a credible public landing (may be modest)
+- Usable hosted documentation and a credible public landing (may be modest) — website + Pages landed in **0.9.7**; RTD project go-live still owner-gated
 
 Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, highly polished website.
 

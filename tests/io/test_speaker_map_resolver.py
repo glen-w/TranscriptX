@@ -60,7 +60,7 @@ def test_loads_sidecar_and_computes_properties(tmp_path) -> None:
     state = SpeakerMapResolver().load_mapping(transcript)
 
     assert state.has_sidecar is True
-    assert state.schema_version == "1.0"
+    assert state.schema_version == "1"
     assert state.provenance == {"method": "web"}
     assert state.speaker_map["SPEAKER_00"] == "Alice"
     assert state.speaker_map["SPEAKER_01"] == ""

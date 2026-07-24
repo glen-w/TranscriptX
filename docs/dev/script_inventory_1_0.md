@@ -12,7 +12,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | Status | Count |
 |--------|------:|
 | supported | 3 |
-| maintainer | 18 |
+| maintainer | 19 |
 | internal | 8 |
 | archived | 3 |
 | disposable | 8 |
@@ -49,7 +49,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/log_code_size.py` | Append LOC to code_size.log | developer | none | no | no | writes log | any | — | valid | internal | retain internal |
 | `scripts/install_llvm_macos.sh` | Homebrew LLVM for llvmlite | developer | install docs (macOS) | partial | no | mutates brew | Darwin | Homebrew | valid | internal | retain internal |
 | `scripts/install_librosa_macos.sh` | macOS librosa+LLVM helper | developer | install docs (macOS) | partial | no | mutates env | Darwin | Homebrew | valid | internal | retain internal |
-| `Makefile` targets (`test-*`, `docker-smoke`, `clean-test-artifacts`) | Dev/CI lanes wrapping scripts | maintainer | CONTRIBUTING / tests README | yes | CI | varies | any | pytest | valid | maintainer | retain internal |
+| `Makefile` targets (`test-*`, `docker-smoke`, `docs*`, `perf-envelopes`, `clean-test-artifacts`) | Dev/CI lanes wrapping scripts | maintainer | CONTRIBUTING / tests README | yes | CI | varies | any | pytest | valid | maintainer | retain internal |
 | `archive/scripts/validate_dependencies.py` | Historical dependency validator | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
 | `archive/scripts/validate_transcript_storage.py` | Historical storage layout check | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
 | `archive/scripts/run_tests_with_timeout.py` | Historical timeout test runner | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
@@ -58,6 +58,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/release/repo_hygiene_audit.py` | Phase 0A hygiene checks (allowlist, paths, banners, …) | maintainer | CI release-checks | yes | warn + strict subset | read-only | any | — | valid | maintainer | retain; `--checks` subset (**0.9.5**) |
 | `scripts/release/build_docs.sh` | Sphinx HTML build wrapper | maintainer | `make docs` / CI docs | yes | CI | writes `_build` | any | `[docs]` | valid | maintainer | retain (**0.9.5**) |
 | `scripts/release/regen_module_docs.py` | Regen module catalog + quality-audit scaffold | maintainer | `make docs-gen` | yes | no | writes docs | any | package import | valid | maintainer | retain (**0.9.5**) |
+| `scripts/release/perf_envelope_recipe.py` | Print perf-envelope measurement recipe | maintainer | `make perf-envelopes` | yes | release unit | read-only | any | package import | valid | maintainer | retain (**0.9.7**) |
 | `scripts/generate_demo_runs.py` | Validate/install bundled demo pack | maintainer | demo_project.md | yes | optional | writes data root on `--install` | any | package import | valid | maintainer | retain (**0.9.6**) |
 | `archive/scripts/build_docs.sh` | Historical Sphinx builder (pre-revive) | historical | none | archived banner | no | writes `_build` | any | — | archived | archived | retain (archived); live builder is `scripts/release/build_docs.sh` |
 | `scripts/docker-data-setup.sh` | Data download via wrong image / missing helpers | developer | none | stale | no | Docker mutate | Docker | missing peers | **stale** | disposable | delete |

@@ -24,6 +24,7 @@ from transcriptx.core.speaker_profiles.voice.export_exclude import (
 )
 from transcriptx.core.speaker_profiles.voice.privacy import (
     PRIVACY_NOTICE_VERSION,
+    VOICE_PRIVACY_USER_NOTICE,
     VoicePrivacyStore,
     default_privacy_settings,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "PRIVACY_SETTINGS_FILENAME",
     "PRIVACY_SETTINGS_SCHEMA_ID",
     "PrivacyConsentRequired",
+    "VOICE_PRIVACY_USER_NOTICE",
     "VOICE_SUBTREE",
     "VoiceEvidenceService",
     "VoiceFeatureDisabled",

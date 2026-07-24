@@ -23,7 +23,7 @@
           "integrity_checksum": "d076f5465bee83ef69fd24bfbb5fa30e8d8c9179ed2f941f6750e2c1ef1b6848",
           "module_id": "contextual_emotion",
           "row_key": "1",
-          "schema_version": "contextual_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.contextual_emotion_result.v1",
           "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -35,7 +35,7 @@
           "integrity_checksum": "d076f5465bee83ef69fd24bfbb5fa30e8d8c9179ed2f941f6750e2c1ef1b6848",
           "module_id": "contextual_emotion",
           "row_key": "1",
-          "schema_version": "contextual_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.contextual_emotion_result.v1",
           "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -52,8 +52,8 @@
   ],
   "aggregation_cache_hit": true,
   "aggregation_cache_key": "d1c4a7d4df5f08df1bc9fc460fa5c4f97e6e5b1a72de8148573dc38d78388349",
-  "cache_fingerprint": "4d3a64de240ed87152d4a21941ad2d35d82c789b615848fdf6daecd504eb334e",
-  "compatibility_fingerprint": "6107e35abac29761d1691529d4bda20e72737fd72a8389b974a2bd836f6414c8",
+  "cache_fingerprint": "a23d14981b98c35dae796c353b86c916d7b255737da63f033a4d5c3d041a93f8",
+  "compatibility_fingerprint": "3d9a5f525f49f73ede92f1c13f4deddcac818de71866790d7e6e091d463a2219",
   "confidence_summary": {
     "max": 0.0,
     "mean": 0.0,
@@ -75,7 +75,7 @@
     "neutral_rate": 0.0
   },
   "inference_cache_hit": false,
-  "inference_cache_key": "1b0283803b0a5dfcc5c5feb386589d6029b0fa897a9fde3f141f460558787d0c",
+  "inference_cache_key": "cbd6433b30e0d6823e7297a2faf16481a89de62bee8687da3ba1f0f2ac8dd4cf",
   "label_counts": {},
   "module_id": "contextual_emotion",
   "ordered_segment_ids": [
@@ -122,7 +122,7 @@
     "transformers_version": "4.53.2"
   },
   "sample_projection": null,
-  "schema_version": "contextual_transcriptx.emotion_result.v1",
+  "schema_version": "transcriptx.contextual_emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

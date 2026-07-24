@@ -20,9 +20,9 @@ Approachable to any thoughtful user with transcripts. Researchers and analysts a
 | Primary | Streamlit GUI (`transcriptx` / `python -m transcriptx.web`) |
 | Secondary | Typed Python API (`transcriptx.app.workflows`, managed import) |
 | Transcription | External to the analysis runtime, with an in-app **command-generation** handoff (not a built-in engine) |
-| Operational | Docker Compose; future hosted docs / modest website |
+| Operational | Docker Compose; modest `website/` (GitHub Pages); hosted docs pending RTD go-live |
 
-Presentation modes (**Guided** / **Full controls**, aliases Simple/Advanced) are a config/presentation layer only — one execution system. See [public surfaces](public_surfaces.md).
+Presentation modes (**Guided** / **Full controls**, aliases Simple/Advanced) are a config/presentation layer only — one execution system. An optional **demo project** (synthetic pack + one-click remove) ships for first-run exploration. See [public surfaces](public_surfaces.md), [ui_presentation_modes.md](dev/ui_presentation_modes.md), and [demo_project.md](dev/demo_project.md).
 
 ## AI position
 

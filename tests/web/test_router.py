@@ -45,7 +45,21 @@ def test_build_page_renderers_includes_corrections_studio_when_available() -> No
 @pytest.mark.unit
 def test_batch_ops_not_in_legacy_page_redirects() -> None:
     assert "Batch Ops" not in LEGACY_PAGE_REDIRECTS
+    assert "Data" not in LEGACY_PAGE_REDIRECTS
+    assert "Explorer" not in LEGACY_PAGE_REDIRECTS
     assert migrate_legacy_page_key("Batch Ops") == ("Batch Ops", None)
+
+
+@pytest.mark.unit
+def test_data_and_explorer_not_in_renderers() -> None:
+    renderers = build_page_renderers(
+        corrections_studio_available=False,
+        render_corrections_studio=None,
+    )
+    assert "Data" not in renderers
+    assert "Explorer" not in renderers
+    assert "Data" not in PAGE_PREREQUISITES
+    assert "Explorer" not in PAGE_PREREQUISITES
 
 
 @pytest.mark.unit

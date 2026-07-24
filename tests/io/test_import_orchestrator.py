@@ -18,7 +18,7 @@ def test_orchestrator_returns_structured_import_result() -> None:
 
     assert result.selected_adapter_id in {"zoom", "vtt"}
     assert result.normalized_segments
-    assert result.canonical_document["schema_version"] == "1.0"
+    assert result.canonical_document["schema_version"] == 1
     assert result.outcome == ImportOutcome.SUPPORTED_IMPORTABLE
     assert result.normalization_summary.output_segment_count == len(
         result.normalized_segments
@@ -35,5 +35,5 @@ def test_orchestrator_recognizes_transcriptx_canonical_artifact(tmp_path: Path) 
     result = run_import_orchestration(source_path=copied, registry=registry)
 
     assert result.outcome == ImportOutcome.RECOGNIZED_TRANSCRIPTX_CANONICAL
-    assert result.canonical_document["schema_version"] == "1.0"
+    assert result.canonical_document["schema_version"] == 1
     assert isinstance(json.dumps(result.canonical_document), str)

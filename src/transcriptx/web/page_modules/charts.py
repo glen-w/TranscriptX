@@ -26,6 +26,7 @@ from transcriptx.web.charts_filter_state import (
     set_charts_open_modules,
     sync_kind_toggles_from_pills,
 )
+from transcriptx.web.blocks.llm_presentation import AI_OUTPUT_BADGE, render_badge_row
 from transcriptx.web.components.action_links import (
     render_action_link,
     render_download_link,
@@ -137,6 +138,13 @@ _CHARTS_FB_SUBJECT_ID = "_charts_fb_subject_id"
 _CHARTS_FB_SUBJECT_TYPE = "_charts_fb_subject_type"
 
 
+def _render_chart_llm_description(llm_text: str, *, feedback_key: str, chart: Artifact) -> None:
+    """Show Local AI label before chart LLM narrative + optional feedback."""
+    render_badge_row([AI_OUTPUT_BADGE])
+    st.markdown(llm_text)
+    _render_chart_llm_feedback(chart, llm_text, key=feedback_key)
+
+
 def _render_chart_llm_feedback(chart: Artifact, llm_text: str, *, key: str) -> None:
     run_id = str(st.session_state.get(_CHARTS_FB_RUN_ID) or "").strip()
     subject_id = str(st.session_state.get(_CHARTS_FB_SUBJECT_ID) or "").strip()
@@ -217,9 +225,10 @@ def _render_chart_gallery_card(
         if show_llm_summary:
             llm_text = resolve_chart_llm_description(run_root, chart)
             if llm_text:
-                st.markdown(llm_text)
-                _render_chart_llm_feedback(
-                    chart, llm_text, key=f"fb_chart_{button_key}"
+                _render_chart_llm_description(
+                    llm_text,
+                    feedback_key=f"fb_chart_{button_key}",
+                    chart=chart,
                 )
 
 
@@ -787,9 +796,10 @@ def _charts_filters_and_gallery_fragment(
             if show_llm_summary:
                 llm_text = resolve_chart_llm_description(run_root, selected)
                 if llm_text:
-                    st.markdown(llm_text)
-                    _render_chart_llm_feedback(
-                        selected, llm_text, key=f"fb_chart_fs_{selected.id}"
+                    _render_chart_llm_description(
+                        llm_text,
+                        feedback_key=f"fb_chart_fs_{selected.id}",
+                        chart=selected,
                     )
         st.divider()
 

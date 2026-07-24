@@ -34,7 +34,7 @@ class SpeakerProfileV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = SCHEMA_VERSION
-    schema_id: Literal["speaker_profile.v1"] = PROFILE_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.speaker_profile.v1"] = PROFILE_SCHEMA_ID
     profile_id: str
     display_name: str
     aliases: list[str] = Field(default_factory=list)
@@ -79,7 +79,7 @@ class SpeakerProfileLinkV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = SCHEMA_VERSION
-    schema_id: Literal["speaker_profile_link.v1"] = LINK_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.speaker_profile_link.v1"] = LINK_SCHEMA_ID
     link_id: str
     managed_transcript_id: str
     observed_transcript_relpath: str
@@ -123,7 +123,7 @@ class SpeakerProfileEventV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = SCHEMA_VERSION
-    schema_id: Literal["speaker_profile_event.v1"] = EVENT_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.speaker_profile_event.v1"] = EVENT_SCHEMA_ID
     event_id: str
     idempotency_id: str
     operation_idempotency_key: str
@@ -190,7 +190,7 @@ class SpeakerProfileOperationV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal[1] = SCHEMA_VERSION
-    schema_id: Literal["speaker_profile_operation.v1"] = OPERATION_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.speaker_profile_operation.v1"] = OPERATION_SCHEMA_ID
     operation_id: str
     operation_idempotency_key: str
     op_type: str

@@ -31,7 +31,7 @@ from transcriptx.web.blocks.group_content import (
 from transcriptx.core.llm_feedback.models import FeedbackSurface
 from transcriptx.web.blocks.llm_presentation import (
     cleaned_llm_output_text,
-    provenance_badges,
+    llm_surface_badges,
     render_badge_row,
     render_badge_row_with_feedback,
     render_markdown_without_heading_or_provenance,
@@ -865,7 +865,7 @@ def render_llm_summary_block(ctx: BlockContext, placement: BlockPlacement) -> No
         instance_id=inst,
     )
     render_badge_row_with_feedback(
-        provenance_badges((payload or {}).get("provenance") if payload else None),
+        llm_surface_badges((payload or {}).get("provenance") if payload else None),
         ctx=ctx,
         surface=FeedbackSurface.INSIGHTS_BLOCK,
         block_id=placement.block_id,
@@ -973,7 +973,7 @@ def render_llm_speaker_summary_block(
                         else None
                     )
                     render_badge_row(
-                        provenance_badges(
+                        llm_surface_badges(
                             (payload or {}).get("provenance") if payload else None
                         )
                     )
@@ -1021,7 +1021,7 @@ def render_llm_speaker_summary_block(
                 md = load_member_module_text(loader, member, module, suffix_md)
                 payload = load_member_module_json(loader, member, module, suffix_json)
                 render_badge_row(
-                    provenance_badges(
+                    llm_surface_badges(
                         (payload or {}).get("provenance") if payload else None
                     )
                 )
@@ -1103,7 +1103,7 @@ def render_llm_speaker_summary_block(
                 loader, module, suffix_json, kind="data_json"
             )
             render_badge_row_with_feedback(
-                provenance_badges(
+                llm_surface_badges(
                     (payload or {}).get("provenance") if payload else None
                 ),
                 ctx=ctx,
@@ -1299,7 +1299,7 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
         )
         md = load_member_module_text(loader, member, module, f"{artifact_stem}.md")
         render_badge_row(
-            provenance_badges((payload or {}).get("provenance") if payload else None)
+            llm_surface_badges((payload or {}).get("provenance") if payload else None)
         )
         if not _render_action_items_payload(payload, md):
             st.info(member_empty_hint(module))
@@ -1336,7 +1336,7 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
         loader, module, f"{artifact_stem}.json", kind="data_json"
     )
     render_badge_row_with_feedback(
-        provenance_badges((payload or {}).get("provenance") if payload else None),
+        llm_surface_badges((payload or {}).get("provenance") if payload else None),
         ctx=ctx,
         surface=FeedbackSurface.INSIGHTS_BLOCK,
         block_id=placement.block_id,

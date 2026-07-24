@@ -9,7 +9,6 @@ from transcriptx.web.navigation import (
     PageSpec,
     context_readiness,
     evaluate_page_access,
-    pages_in_section,
 )
 from transcriptx.web.presentation.resolve import resolve_presentation_mode
 from transcriptx.web.presentation.visibility import visible_pages_in_section

@@ -104,9 +104,10 @@ def test_aggregate_group_module_lists_skip_precedence_blocked_over_skipped() -> 
 
 
 @pytest.mark.unit
-def test_assert_run_results_schema_supported_requires_exact_v2() -> None:
+def test_assert_run_results_schema_supported_requires_exact_v1() -> None:
+    assert_run_results_schema_supported({"schema_version": 1})
     with pytest.raises(ValueError, match="Unsupported run_results"):
-        assert_run_results_schema_supported({"schema_version": 1})
+        assert_run_results_schema_supported({"schema_version": 2})
     with pytest.raises(ValueError, match="Unsupported run_results"):
         assert_run_results_schema_supported({"schema_version": 3})
 
@@ -128,7 +129,7 @@ def test_build_canonical_rows_blocked_vs_failed() -> None:
 
 @pytest.mark.unit
 def test_schema_version_constant() -> None:
-    assert RUN_RESULTS_SCHEMA_VERSION == 2
+    assert RUN_RESULTS_SCHEMA_VERSION == 1
 
 
 @pytest.mark.unit

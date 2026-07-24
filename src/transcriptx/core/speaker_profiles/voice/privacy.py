@@ -23,7 +23,18 @@ from transcriptx.core.speaker_profiles.voice.versioning import (
 from transcriptx.io.atomic_json import strict_json_dumps, write_bytes_atomic
 
 # Bump when user-facing privacy notice text changes → require re-consent.
-PRIVACY_NOTICE_VERSION = "voice_privacy_notice.v1"
+PRIVACY_NOTICE_VERSION = "voice_privacy_notice.v2"
+
+# Shown in Settings before enable / while enabled. Keep in sync with
+# PRIVACY_NOTICE_VERSION (bump version when this text changes materially).
+VOICE_PRIVACY_USER_NOTICE = (
+    "Local voice matching stores speaker-identity embeddings and audio "
+    "excerpts on this machine only (under speaker_profiles/voice). "
+    "Embeddings can identify a speaker across transcripts. Nothing is "
+    "uploaded unless you separately configure a remote model download. "
+    "Revoking consent deletes enrolled samples, embeddings, and vectors; "
+    "profiles and confirmed links are kept."
+)
 
 # Local/dev only: when privacy.voice_settings.json is absent, treat voice as
 # enabled. Never overrides an existing settings file (sole authority).

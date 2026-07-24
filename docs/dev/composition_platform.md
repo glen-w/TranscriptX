@@ -12,7 +12,7 @@ Transcript → Overview → Insights → Charts → Artifacts
 - **Overview / Insights** use the active layout profile (default id `default`, display title **Standard**). Ordinary pages do **not** show a layout picker.
 - **Insights** uses conditional section navigation (`insights_section`), not `st.tabs`.
 - **Artifacts** merges former Data, File List, and Overview Export (`Browse | Preview | Export` via `artifacts_section`).
-- Legacy `Data` / `Explorer` page keys redirect to Artifacts **before** prerequisite evaluation.
+- Legacy `Data` / `Explorer` page keys were removed in **0.9.7** (use Artifacts Preview / Browse). `Statistics` still migrates to Home; `Batch Ops` remains a router-owned redirect to Run Analysis (Batch).
 
 ## Layout profiles
 

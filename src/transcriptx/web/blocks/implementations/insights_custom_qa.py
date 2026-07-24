@@ -18,7 +18,11 @@ from transcriptx.core.llm_feedback.models import (
     FeedbackTarget,
 )
 from transcriptx.web.blocks.context import BlockContext
-from transcriptx.web.blocks.llm_presentation import feedback_subject_type
+from transcriptx.web.blocks.llm_presentation import (
+    AI_OUTPUT_BADGE,
+    feedback_subject_type,
+    render_badge_row,
+)
 from transcriptx.web.blocks.placement import BlockPlacement
 from transcriptx.web.components.llm_feedback import render_llm_feedback_controls
 from transcriptx.web.services.llm_feedback_service import get_llm_feedback_service
@@ -189,6 +193,8 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
     if run_root is None:
         st.info(empty_hint)
         return
+
+    render_badge_row([AI_OUTPUT_BADGE])
 
     from transcriptx.web.blocks.group_content import (
         group_rollup_empty_hint,

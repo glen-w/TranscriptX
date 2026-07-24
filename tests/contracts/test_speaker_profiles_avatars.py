@@ -266,7 +266,7 @@ def test_pre_avatar_profile_reads_defaults():
     # Simulate old JSON without avatar keys via model_construct then validation
     raw = {
         "version": 1,
-        "schema_id": "speaker_profile.v1",
+        "schema_id": "transcriptx.speaker_profile.v1",
         "profile_id": pid,
         "display_name": "Legacy",
         "aliases": [],

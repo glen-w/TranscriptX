@@ -26,7 +26,7 @@ def test_preset_layout_yaml_loads() -> None:
         assert spec.schema_version in (1, 2)
     default = LayoutProfileStore.load_layout("default")
     assert default.title == "Standard"
-    assert default.schema_version == 2
+    assert default.schema_version == 1
     overview_ids = [b.block_id for b in default.pages["overview"].blocks]
     assert overview_ids[0] == "transcript_summary_hero"
     assert "export_panel" not in overview_ids

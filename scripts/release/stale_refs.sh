@@ -14,6 +14,7 @@ _rg() {
   # Exclude archive + CHANGELOG + policy docs that intentionally quote forbidden strings
   rg "$@" \
     --glob '!docs/archive/**' \
+    --glob '!docs/_build/**' \
     --glob '!CHANGELOG.md' \
     --glob '!docs/dev/stocktake_*.md' \
     --glob '!docs/dev/pre_release_roadmap_1_0.md' \

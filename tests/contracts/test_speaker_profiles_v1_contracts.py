@@ -57,10 +57,10 @@ from transcriptx.core.speaker_profiles.versioning import (
 @pytest.mark.unit
 def test_schema_ids_frozen() -> None:
     assert SCHEMA_VERSION == 1
-    assert PROFILE_SCHEMA_ID == "speaker_profile.v1"
-    assert LINK_SCHEMA_ID == "speaker_profile_link.v1"
-    assert EVENT_SCHEMA_ID == "speaker_profile_event.v1"
-    assert OPERATION_SCHEMA_ID == "speaker_profile_operation.v1"
+    assert PROFILE_SCHEMA_ID == "transcriptx.speaker_profile.v1"
+    assert LINK_SCHEMA_ID == "transcriptx.speaker_profile_link.v1"
+    assert EVENT_SCHEMA_ID == "transcriptx.speaker_profile_event.v1"
+    assert OPERATION_SCHEMA_ID == "transcriptx.speaker_profile_operation.v1"
 
 
 @pytest.mark.unit

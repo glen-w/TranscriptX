@@ -19,7 +19,7 @@
   ],
   "release_channel": "experimental",
   "run_status": "failed",
-  "schema_version": "contextual_transcriptx.emotion_result.v1",
+  "schema_version": "transcriptx.contextual_emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

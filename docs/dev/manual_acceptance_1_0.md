@@ -3,9 +3,9 @@ Authority: self
 
 # Manual acceptance suite (1.0)
 
-**Status:** planning  
+**Status:** skeleton for human-testing wave (implementation for Guided/demo/onboarding shipped **0.9.6** — items below remain unchecked until clean-room pass)  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §15  
-**Related:** [gui_acceptance_residual_checklist.md](gui_acceptance_residual_checklist.md), [release_severity_triage_1_0.md](release_severity_triage_1_0.md)
+**Related:** [gui_acceptance_residual_checklist.md](gui_acceptance_residual_checklist.md), [release_severity_triage_1_0.md](release_severity_triage_1_0.md), [ui_presentation_modes.md](ui_presentation_modes.md), [demo_project.md](demo_project.md)
 
 Authoritative human acceptance checklist for principal journeys. Automated GUI acceptance (`make test-gui-acceptance`) remains complementary, not a substitute.
 

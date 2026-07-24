@@ -16,7 +16,7 @@ def test_assign_speaker(tmp_path) -> None:
     svc = SpeakerMappingService()
     state = svc.assign_speaker(str(path), "SPEAKER_00", "Alice", method="web")
     assert state.speaker_map.get("SPEAKER_00") == "Alice"
-    assert state.schema_version == "1.0"
+    assert state.schema_version == "1"
     assert state.provenance is not None
     assert state.provenance.get("method") == "web"
     assert json.loads(path.read_text()) == original

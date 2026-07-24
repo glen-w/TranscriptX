@@ -75,8 +75,9 @@ or backup (`assert_safe_relpath`). Same symlink / containment rules as Phase 1.
 | Suggestion cache | `transcriptx.voice_match_suggestion.v1` |
 | Profile voice summary | `transcriptx.profile_voice_summary.v1` |
 
-Privacy notice version (user-facing copy pin): `voice_privacy_notice.v1`.
-Bump requires re-consent.
+Privacy notice version (user-facing copy pin): `voice_privacy_notice.v2`.
+Bump requires re-consent. Authoritative user-facing text:
+`VOICE_PRIVACY_USER_NOTICE` in `transcriptx.core.speaker_profiles.voice.privacy`.
 
 ---
 

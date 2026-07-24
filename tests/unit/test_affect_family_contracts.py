@@ -74,7 +74,7 @@ def test_segment_text_hash_nfc():
 @pytest.mark.unit
 def test_optional_producer_complete_zero_scored_not_applicable():
     artifact = {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",
@@ -91,7 +91,7 @@ def test_optional_producer_complete_zero_scored_not_applicable():
 @pytest.mark.unit
 def test_optional_producer_partial_skipped():
     artifact = {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "partial",
@@ -106,7 +106,7 @@ def test_optional_producer_partial_skipped():
 
 def _usable_contextual_artifact(segments):
     return {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",
@@ -220,7 +220,7 @@ def test_affect_tension_contextual_active_when_contract_satisfied(tmp_path):
         generation_id=gid,
         run_status="complete",
         usable_output=True,
-        schema_version="contextual_transcriptx.emotion_result.v1",
+        schema_version="transcriptx.contextual_emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         segments_scored=1,
         canonical_rows=[row],
@@ -307,7 +307,7 @@ def test_affect_tension_abstained_ineligible():
 @pytest.mark.unit
 def test_optional_producer_missing_projection_evidence_fails_closed():
     artifact = {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "run_status": "complete",
         "usable_output": True,
@@ -326,7 +326,7 @@ def test_optional_producer_missing_projection_evidence_fails_closed():
 @pytest.mark.unit
 def test_optional_producer_wrong_module_id_incompatible():
     artifact = {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "run_status": "complete",
         "usable_output": True,
@@ -346,7 +346,7 @@ def test_optional_producer_wrong_module_id_incompatible():
 @pytest.mark.unit
 def test_optional_producer_missing_module_id_fails_closed():
     artifact = {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "run_status": "complete",
         "usable_output": True,

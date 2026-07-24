@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TranscriptX — local-first transcript analysis</title>
+    <meta
+      name="description"
+      content="TranscriptX is a local-first personal transcript analysis workbench for people who want to think with transcripts."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="./">TranscriptX</a>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="site-nav"
+          data-nav-toggle
+        >
+          Menu
+        </button>
+        <nav id="site-nav" class="site-nav" data-nav>
+          <a href="#install">Install</a>
+          <a href="https://github.com/glen-w/TranscriptX">GitHub</a>
+          <a href="https://github.com/glen-w/TranscriptX/blob/main/docs/USER_INDEX.md"
+            >Docs</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="hero-atmosphere" aria-hidden="true"></div>
+        <div class="wrap hero-copy">
+          <p class="brand-mark">TranscriptX</p>
+          <h1>Think with your transcripts — on your machine.</h1>
+          <p class="lede">
+            A local-first personal transcript analysis workbench: import,
+            explore language and speakers, run structured analyses with optional
+            local AI, and export results you keep.
+          </p>
+          <div class="cta-row">
+            <a class="btn primary" href="#install">Get started</a>
+            <a
+              class="btn ghost"
+              href="https://github.com/glen-w/TranscriptX"
+              >View on GitHub</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="install">
+        <div class="wrap narrow">
+          <h2>Install</h2>
+          <p>
+            Recommended path: Docker full analysis. Native install is documented
+            in the repository. TranscriptX does not transcribe audio in-app —
+            use the Transcribe Audio command generator, then import.
+          </p>
+          <pre class="code"><code>git clone https://github.com/glen-w/TranscriptX.git
+cd TranscriptX
+docker compose up</code></pre>
+          <p class="fine">
+            Details:
+            <a
+              href="https://github.com/glen-w/TranscriptX/blob/main/README.md"
+              >README</a
+            >
+            ·
+            <a
+              href="https://github.com/glen-w/TranscriptX/blob/main/docs/USER_INDEX.md"
+              >User docs index</a
+            >
+            · Hosted Read the Docs URL pending project go-live.
+          </p>
+        </div>
+      </section>
+
+      <section class="section muted">
+        <div class="wrap narrow">
+          <h2>Local-first</h2>
+          <p>
+            Source material and analysis outputs stay on your machine. Optional
+            local AI via Ollama. No hosted SaaS analysis path in 1.0 scope.
+          </p>
+          <p class="status">
+            Current public series: <strong>0.9.7</strong> toward a credible
+            <strong>1.0</strong>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <p>© TranscriptX contributors. Local-first software.</p>
+        <p>
+          <a href="https://github.com/glen-w/TranscriptX">GitHub</a>
+          ·
+          <span class="bmc-placeholder" title="Buy Me a Coffee URL pending"
+            >Support (link pending)</span
+          >
+        </p>
+      </div>
+    </footer>
+    <script src="nav.js" defer></script>
+  </body>
+</html>

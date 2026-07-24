@@ -30,7 +30,7 @@ def _seg(speaker: str, **extra):
 
 def _usable_contextual_artifact(segments, *, generation_id: str) -> dict:
     return {
-        "schema_version": "contextual_transcriptx.emotion_result.v1",
+        "schema_version": "transcriptx.contextual_emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",
@@ -69,7 +69,7 @@ def test_analyze_with_default_thresholds_and_named_speakers(tmp_path) -> None:
         generation_id=gid,
         run_status="complete",
         usable_output=True,
-        schema_version="contextual_transcriptx.emotion_result.v1",
+        schema_version="transcriptx.contextual_emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         segments_scored=2,
         canonical_rows=[

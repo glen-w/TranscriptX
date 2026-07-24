@@ -137,7 +137,7 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         allowed_fallback="overview",
         presentation="full_only",
     ),
-    # Legacy keys retained for redirect aliases (not shown in sidebar — filtered out).
+    # Legacy Batch Ops retained for redirect (not shown in sidebar — filtered out).
     # Batch Ops is intentionally NOT in LEGACY_PAGE_REDIRECTS: the router must apply
     # run_analysis_target=Batch before rewriting the page key.
     _spec(
@@ -146,22 +146,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "workflow",
         subsection="legacy",
         may_mutate_context=False,
-    ),
-    _spec(
-        "Data",
-        "Data",
-        "view",
-        subsection="legacy",
-        required_context="run_scoped",
-        allowed_fallback="overview",
-    ),
-    _spec(
-        "Explorer",
-        "File List",
-        "view",
-        subsection="legacy",
-        required_context="run_scoped",
-        allowed_fallback="overview",
     ),
     _spec("Audio Prep", "Audio Pre-processing", "tools", presentation="full_only"),
     _spec("Audio Merge", "Audio Merge", "tools", presentation="full_only"),
@@ -225,8 +209,7 @@ def pages_in_section(section: NavSection) -> list[PageSpec]:
 
 LEGACY_PAGE_REDIRECTS: dict[str, tuple[str, str | None]] = {
     # page_key -> (target_page, artifacts_section or None)
-    "Data": ("Artifacts", "Preview"),
-    "Explorer": ("Artifacts", "Browse"),
+    # Data / Explorer aliases removed in 0.9.7 — use Artifacts Preview / Browse.
     "Statistics": ("Home", None),
 }
 

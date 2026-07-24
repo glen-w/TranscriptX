@@ -178,7 +178,7 @@ class TestLoadRunResults:
 
     def test_unsupported_schema_version_raises(self, tmp_path):
         path = tmp_path / "run_results.json"
-        _write_json(path, _valid_run_results(schema_version=1))
+        _write_json(path, _valid_run_results(schema_version=999))
         with pytest.raises(ValueError, match="schema_version"):
             load_run_results(path)
 

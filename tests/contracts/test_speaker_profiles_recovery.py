@@ -156,7 +156,7 @@ def test_partial_unlink_blocks_reads_until_recovery(
     # Simulate crash mid-unlink: event after-image applied, link delete not yet.
     op_id = str(uuid4())
     event_rel = f"events/{uuid4()}.speaker_event.json"
-    event_bytes = b'{"version":1,"schema_id":"speaker_profile_event.v1",'
+    event_bytes = b'{"version":1,"schema_id":"transcriptx.speaker_profile_event.v1",'
     event_bytes += (
         b'"event_id":"11111111-1111-1111-1111-111111111111",'
         b'"idempotency_id":"11111111-1111-1111-1111-111111111111",'

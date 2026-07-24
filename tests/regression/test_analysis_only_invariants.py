@@ -48,7 +48,13 @@ def test_no_docker_invocation_strings():
     root = os.path.join(os.path.dirname(__file__), "..", "..", "src", "transcriptx")
     exclude = frozenset({"__pycache__", ".mypy_cache", "vendored"})
     # User-facing help text that shows example docker run for users (no orchestration)
-    allowlist = frozenset({"web/page_modules/audio_prep.py"})
+    allowlist = frozenset(
+        {
+            "web/page_modules/audio_prep.py",
+            # Host-side WhisperX helper emits example `docker run` command strings.
+            "services/transcription/command_gen.py",
+        }
+    )
     patterns = [
         "docker exec",
         "docker cp",

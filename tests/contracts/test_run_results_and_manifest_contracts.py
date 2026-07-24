@@ -84,7 +84,7 @@ def test_golden_run_stats_produces_valid_manifest_and_run_results(
     assert summary.run_id
     assert summary.transcript_key
     assert "stats" in summary.modules_run or "stats" in summary.modules_enabled
-    assert summary.schema_version >= 2
+    assert summary.schema_version == 1
 
     # .transcriptx/manifest.json: run manifest with manifest_type
     run_manifest_path = output_dir / ".transcriptx" / "manifest.json"

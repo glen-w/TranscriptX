@@ -33,6 +33,8 @@ collect_ignore = [
     "analysis/test_semantic_similarity_legacy.py",
     "analysis/test_semantic_similarity_quality_scoring.py",
     "analysis/test_semantic_similarity_repetition_detection.py",
+    # Removed v1 viz entrypoints (create_visualizations_advanced/basic); v2 only.
+    "analysis/test_semantic_similarity_viz_helpers.py",
 ]
 
 # Ensure local repo paths win for imports.

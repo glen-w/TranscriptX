@@ -3,8 +3,8 @@
   "_pending_projections": [],
   "aggregation_cache_hit": false,
   "aggregation_cache_key": "822f1843972a57e11151b7b397f54e503407200464201755d49b2f980580b107",
-  "cache_fingerprint": "8e3949cf531bef58d54b2e82eaebad7f5e4eaf26fe6853721cabdb83e08f56c1",
-  "compatibility_fingerprint": "6107e35abac29761d1691529d4bda20e72737fd72a8389b974a2bd836f6414c8",
+  "cache_fingerprint": "e3083c62b46f8bfcce5bc8ee512b3e3088b14458adb84f0422650a50de588fc8",
+  "compatibility_fingerprint": "3d9a5f525f49f73ede92f1c13f4deddcac818de71866790d7e6e091d463a2219",
   "confidence_summary": {
     "max": 0.0,
     "mean": 0.0,
@@ -26,7 +26,7 @@
     "neutral_rate": 0.0
   },
   "inference_cache_hit": false,
-  "inference_cache_key": "47515a2dc844df765095a6b33e735c23afb08ee2d29811bd7ce01d3e6013f56f",
+  "inference_cache_key": "ecec33f6eed5b263c31f82d4aa0648c6612c6f37f8bf07ebb7c87647d3f0ea28",
   "label_counts": {},
   "module_id": "contextual_emotion",
   "ordered_segment_ids": [],
@@ -71,7 +71,7 @@
     "transformers_version": "4.53.2"
   },
   "sample_projection": null,
-  "schema_version": "contextual_transcriptx.emotion_result.v1",
+  "schema_version": "transcriptx.contextual_emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

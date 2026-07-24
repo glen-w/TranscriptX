@@ -41,7 +41,9 @@ class VoiceModelGenerationV1(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_model_generation.v1"] = MODEL_GENERATION_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_model_generation.v1"] = (
+        MODEL_GENERATION_SCHEMA_ID
+    )
     model_generation_id: str
     model_id: str
     model_revision: str
@@ -78,7 +80,9 @@ class VoiceActiveGenerationV1(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_active_generation.v1"] = ACTIVE_GENERATION_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_active_generation.v1"] = (
+        ACTIVE_GENERATION_SCHEMA_ID
+    )
     model_generation_id: str
     activated_at: str
 

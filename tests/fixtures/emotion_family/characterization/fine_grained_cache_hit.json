@@ -119,7 +119,7 @@
           "integrity_checksum": "7ed03558839bba33ebb9958d103e8a6121cfacef23341ac300a53fe2f9d5ef9d",
           "module_id": "fine_grained_emotion",
           "row_key": "1",
-          "schema_version": "fine_grained_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.fine_grained_emotion_result.v1",
           "scored_text_hash": "41d803257003a492e138f88cce791acdbf4a3167a6516f5b3cc58ea2235de928",
           "semantics_version": "fine_grained_emotion_v1"
         },
@@ -149,7 +149,7 @@
           "integrity_checksum": "5cec2a29c520e5eb6c82e1d533668b9fe3e2d02345a4c1b8d7f6c0cad27d85a6",
           "module_id": "fine_grained_emotion",
           "row_key": "2",
-          "schema_version": "fine_grained_transcriptx.emotion_result.v1",
+          "schema_version": "transcriptx.fine_grained_emotion_result.v1",
           "scored_text_hash": "f8a1e9f5eb06c33bc1800daa9fe864badecc7d3e6b374023c832725a0a42eadc",
           "semantics_version": "fine_grained_emotion_v1"
         },
@@ -173,8 +173,8 @@
   ],
   "aggregation_cache_hit": true,
   "aggregation_cache_key": "49f5f3d100314fb3c89fbc14d1d47989d806c0e1d05ee8c9509284a74dd313ae",
-  "cache_fingerprint": "93ba6d938a27bc9eea6d9a449c00047f2446af554619279419702ef5e3e40d43",
-  "compatibility_fingerprint": "ed26f29542649fcf4e2c22c857b103853534d0f6cc180412c51d12a1da694bd7",
+  "cache_fingerprint": "afef361d2ac5ff955f94470933fa04f1614c3dc26e19740921e2b74c564b1541",
+  "compatibility_fingerprint": "6ba624ca626bc6319a17d0bdde353f1e6595d9e2976485cb2a58c85c3c5dddd4",
   "confidence_summary": {
     "max": 0.8,
     "mean": 0.8,
@@ -201,7 +201,7 @@
     "no_label_rate": 0.0
   },
   "inference_cache_hit": true,
-  "inference_cache_key": "7089cee8422bacbb42b84032bae2d769ef38388c9d535e4be5813ea4d00b20b0",
+  "inference_cache_key": "deeef9dcfb88b39cee2ba677f1301b1f914dcf8a5c2d5828c13e5733f194e397",
   "label_threshold": 0.3,
   "max_labels_per_segment": 3,
   "module_id": "fine_grained_emotion",
@@ -258,7 +258,7 @@
     "torch_version": "2.2.2",
     "transformers_version": "4.53.2"
   },
-  "schema_version": "fine_grained_transcriptx.emotion_result.v1",
+  "schema_version": "transcriptx.fine_grained_emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 2,

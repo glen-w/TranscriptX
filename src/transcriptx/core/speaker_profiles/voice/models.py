@@ -42,7 +42,9 @@ class VoicePrivacySettingsV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_privacy_settings.v1"] = PRIVACY_SETTINGS_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_privacy_settings.v1"] = (
+        PRIVACY_SETTINGS_SCHEMA_ID
+    )
     enabled: bool = False
     consent_at: Optional[str] = None
     consent_actor: Optional[str] = None
@@ -81,7 +83,9 @@ class VoiceOperatorSettingsV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_operator_settings.v1"] = OPERATOR_SETTINGS_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_operator_settings.v1"] = (
+        OPERATOR_SETTINGS_SCHEMA_ID
+    )
     bootstrap_max_links: int = DEFAULT_BOOTSTRAP_MAX_LINKS
     updated_at: Optional[str] = None
     updated_by: Optional[str] = None
@@ -110,7 +114,7 @@ class VoiceSampleV1(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_sample.v1"] = VOICE_SAMPLE_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_sample.v1"] = VOICE_SAMPLE_SCHEMA_ID
     sample_id: str
     profile_id: str
     source_link_id: str
@@ -147,7 +151,7 @@ class VoiceEmbeddingV1(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_embedding.v1"] = VOICE_EMBEDDING_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_embedding.v1"] = VOICE_EMBEDDING_SCHEMA_ID
     embedding_id: str
     sample_id: str
     profile_id: str
@@ -187,7 +191,7 @@ class VoiceMatchDecisionV1(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     version: Literal[1] = VOICE_SCHEMA_VERSION
-    schema_id: Literal["voice_match_decision.v1"] = VOICE_DECISION_SCHEMA_ID  # type: ignore[assignment]
+    schema_id: Literal["transcriptx.voice_match_decision.v1"] = VOICE_DECISION_SCHEMA_ID
     decision_id: str
     decision_kind: DecisionKind
     scope: DecisionScope

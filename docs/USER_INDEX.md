@@ -10,10 +10,14 @@ Curated entry points for people using TranscriptX (not repository historians).
 | Doc | Purpose |
 |-----|---------|
 | [README.md](../README.md) | Product landing and quickstart |
+| [Website](../website/index.html) | Modest public landing (GitHub Pages) |
 | [PRODUCT.md](PRODUCT.md) | Product definition |
 | [Installation](runtime/installation.md) | Install profiles and configuration |
 | [Transcription](runtime/transcription.md) | External transcription workflows |
 | [Docker](runtime/docker.md) | Compose-based runtime |
+| [Guided / Full controls](dev/ui_presentation_modes.md) | Presentation modes (shipped 0.9.6) |
+| [Demo project](dev/demo_project.md) | Load / remove demo examples (shipped 0.9.6) |
+| [NOTICE](../NOTICE) | Third-party model / dataset notice (draft) |
 
 ## Reference
 

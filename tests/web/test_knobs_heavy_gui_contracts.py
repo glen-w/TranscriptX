@@ -31,7 +31,8 @@ def test_analysis_presets_panel_catalogue_filters_legacy() -> None:
 
     catalogue = _catalogue_module_ids()
     assert "stats" in catalogue
-    assert "semantic_similarity" not in catalogue  # legacy
+    assert "semantic_similarity" in catalogue  # current (v2 impl)
+    assert "semantic_similarity_advanced" not in catalogue
     llm = _llm_module_ids(catalogue)
     heavy = _heavy_module_ids(catalogue)
     assert "llm_summary" in llm or "llm_custom_qa" in llm

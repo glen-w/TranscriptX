@@ -49,7 +49,10 @@ def render_speakers_panel() -> None:
 
         from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
         from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
-        from transcriptx.core.speaker_profiles.voice.privacy import VoicePrivacyStore
+        from transcriptx.core.speaker_profiles.voice.privacy import (
+            VOICE_PRIVACY_USER_NOTICE,
+            VoicePrivacyStore,
+        )
         from transcriptx.core.speaker_profiles.voice.privacy_service import (
             VoicePrivacyService,
         )
@@ -71,6 +74,7 @@ def render_speakers_panel() -> None:
             )
         else:
             privacy = VoicePrivacyStore(root).read()
+            st.info(VOICE_PRIVACY_USER_NOTICE)
             st.caption(
                 "Voice matching consent is controlled solely by "
                 "privacy.voice_settings.json under speaker_profiles."

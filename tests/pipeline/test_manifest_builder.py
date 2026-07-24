@@ -184,7 +184,7 @@ class TestBuildRunResultsSummary:
             skipped_modules=[],
             errors=[],
         )
-        assert payload["schema_version"] == 2
+        assert payload["schema_version"] == 1
         assert "module_outcomes" in payload
         assert isinstance(payload["module_outcomes"], list)
         assert payload["run_id"] == "run-1"
@@ -292,7 +292,7 @@ def test_write_run_results_summary_creates_file(tmp_path: Path) -> None:
     assert path.exists()
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["run_id"] == "run-1"
-    assert data["schema_version"] == 2
+    assert data["schema_version"] == 1
 
     # Contract: written payload validates with RunResultsSummary
     from transcriptx.core.pipeline.run_schema import RunResultsSummary

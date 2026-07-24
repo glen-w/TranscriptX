@@ -1,0 +1,27 @@
+NOTICE
+======
+
+TranscriptX third-party model and dataset notice (draft for 0.9.7 → 1.0).
+Not legal advice. Verify Hub / upstream cards before public 1.0 publication.
+See also: docs/dev/trust_privacy_model_governance_1_0.md
+
+This product may download or bundle the following categories of third-party
+components when the corresponding install profile or feature is enabled:
+
+1. spaCy English models (en_core_web_sm / md / lg / trf) — spaCy model licences
+2. sentence-transformers embedding models (e.g. all-MiniLM-L6-v2, all-mpnet-base-v2)
+   — typically Apache-2.0 on Hugging Face Hub (verify card)
+3. Optional Hugging Face text-classification profiles pinned in-tree
+   (emotion / sentiment) — see profile `licence=` fields and Hub cards
+4. NRCLex / NRC emotion lexicon terms (emotion lexical path)
+5. NLTK / VADER data for default sentiment
+6. Optional BERTopic / UMAP / HDBSCAN stack and their transitive licences
+7. Optional SpeechBrain / ECAPA voice embedding models for speaker match
+8. Optional user-selected Ollama models (licence depends on the model the user pulls)
+
+TranscriptX itself does not claim ownership of these weights or lexicons.
+Local-first operation: analysis runs on the user’s machine; model downloads
+occur only when a feature that needs them is enabled.
+
+Voice / speaker-identity embeddings are privacy-sensitive; see Settings → Speakers
+and VOICE_PRIVACY_USER_NOTICE (privacy notice version voice_privacy_notice.v2).

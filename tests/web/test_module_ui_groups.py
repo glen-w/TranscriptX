@@ -40,8 +40,6 @@ EXPECTED_PINNED_SPEC_ORDER: tuple[str, ...] = (
     "topic_modeling",
     "bertopic",
     "semantic_similarity",
-    "semantic_similarity_advanced",
-    "semantic_similarity",
     "understandability",
     "lexical_diversity",
     "epistemic_markers",

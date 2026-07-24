@@ -22,7 +22,9 @@ from transcriptx.web.blocks.group_content import (
 )
 from transcriptx.core.llm_feedback.models import FeedbackSurface
 from transcriptx.web.blocks.llm_presentation import (
+    AI_OUTPUT_BADGE,
     cleaned_llm_output_text,
+    llm_surface_badges,
     provenance_badges,
     render_badge_row,
     render_badge_row_with_feedback,
@@ -54,8 +56,8 @@ def _loader(ctx: BlockContext):
 
 def _summary_source_badge(kind: SummaryKind) -> str:
     if kind in {"llm_summary", "narrative_summary"}:
-        return "LLM"
-    return "Standard"
+        return AI_OUTPUT_BADGE
+    return "Deterministic"
 
 
 def _analysis_preset_badge(run_results: dict | None) -> str | None:
@@ -515,7 +517,7 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         loader, "llm_action_items", "_llm_action_items.json", kind="data_json"
     )
     render_badge_row_with_feedback(
-        provenance_badges((payload or {}).get("provenance") if payload else None),
+        llm_surface_badges((payload or {}).get("provenance") if payload else None),
         ctx=ctx,
         surface=FeedbackSurface.INSIGHTS_BLOCK,
         block_id=_placement.block_id or "action_items_compact",

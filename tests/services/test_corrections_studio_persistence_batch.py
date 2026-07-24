@@ -206,7 +206,7 @@ def test_rule_state_changed_replays(iso_root: Path) -> None:
 
 
 @pytest.mark.unit
-def test_schema_v1_upgrades_to_v2() -> None:
+def test_schema_v1_normalize_fills_derived_fields() -> None:
     raw = {
         "studio_schema_version": 1,
         "session_id": "legacy",
@@ -232,6 +232,6 @@ def test_schema_v1_upgrades_to_v2() -> None:
         "status": "active",
     }
     doc = normalize_cutover_session_blob(raw)
-    assert doc.studio_schema_version == 2
+    assert doc.studio_schema_version == 1
     assert doc.candidates[0].sources
     assert doc.candidates[0].semantic_identity_key
