@@ -2,16 +2,18 @@
 """Repository hygiene audit (Phase 0A) — reporting mode by default.
 
 Checks (warn by default; exit 0 unless --strict):
-  1. Root markdown allowlist (scripts/release/root_docs_allowlist.toml)
-  2. Owner absolute paths (/Users/...) in tracked scripts/tools/docs (archive warn-only)
-  3. Archive banners under docs/archive/ and archive/scripts/
-  4. Live docs under docs/ (excl. archive) missing Type: header
-  5. Dated docs/dev/*_20*.md not mentioned in docs/DEV_INDEX.md
-  6. Supported public scripts mentioned in user-facing docs
+  1. root_md — Root markdown allowlist (scripts/release/root_docs_allowlist.toml)
+  2. owner_paths — Owner absolute paths (/Users/...) in tracked scripts/tools/docs
+     (archive hits are expected; live hits must stay clean)
+  3. archive_banners — Archive banners under docs/archive/ and archive/scripts/
+  4. type_headers — Live docs under docs/ (excl. archive) missing Type: header
+  5. dated_dev_index — Dated docs/dev/*_20*.md not mentioned in docs/DEV_INDEX.md
+  6. supported_scripts — Supported public scripts mentioned in user-facing docs
 
 Usage:
   python scripts/release/repo_hygiene_audit.py
   python scripts/release/repo_hygiene_audit.py --strict
+  python scripts/release/repo_hygiene_audit.py --strict --checks root_md,archive_banners
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ import argparse
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 try:
@@ -102,7 +105,6 @@ def check_owner_paths() -> list[str]:
             continue
         path = ROOT / rel
         if not path.is_file():
-            # Stale index entry (moved/deleted but not yet git-rm'd) — skip content scan
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         hits = pat.findall(text)
@@ -118,7 +120,9 @@ def check_owner_paths() -> list[str]:
         if not real:
             continue
         level = "archive" if rel.startswith("docs/archive/") else "live"
-        warns.append(f"{level} absolute path(s) in {rel}: {', '.join(sorted(set(real))[:3])}")
+        warns.append(
+            f"{level} absolute path(s) in {rel}: {', '.join(sorted(set(real))[:3])}"
+        )
     return warns
 
 
@@ -185,22 +189,52 @@ def check_supported_scripts_documented() -> list[str]:
     return warns
 
 
+CHECKS: dict[str, Callable[[], list[str]]] = {
+    "root_md": check_root_md,
+    "owner_paths": check_owner_paths,
+    "archive_banners": check_archive_banners,
+    "type_headers": check_type_headers,
+    "dated_dev_index": check_dated_dev_index,
+    "supported_scripts": check_supported_scripts_documented,
+}
+
+CHECK_TITLES = {
+    "root_md": "root markdown allowlist",
+    "owner_paths": "owner absolute paths",
+    "archive_banners": "archive banners",
+    "type_headers": "Type: headers",
+    "dated_dev_index": "dated plans in DEV_INDEX",
+    "supported_scripts": "supported scripts in user docs",
+}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Exit non-zero when any warning is present (default: report-only).",
+        help="Exit non-zero when any selected warning is present (default: report-only).",
+    )
+    parser.add_argument(
+        "--checks",
+        default="",
+        help=(
+            "Comma-separated check ids to run "
+            f"(default: all). Known: {','.join(CHECKS)}"
+        ),
     )
     args = parser.parse_args()
 
+    if args.checks.strip():
+        selected = [c.strip() for c in args.checks.split(",") if c.strip()]
+        unknown = [c for c in selected if c not in CHECKS]
+        if unknown:
+            raise SystemExit(f"unknown --checks id(s): {', '.join(unknown)}")
+    else:
+        selected = list(CHECKS)
+
     sections: list[tuple[str, list[str]]] = [
-        ("root markdown allowlist", check_root_md()),
-        ("owner absolute paths", check_owner_paths()),
-        ("archive banners", check_archive_banners()),
-        ("Type: headers", check_type_headers()),
-        ("dated plans in DEV_INDEX", check_dated_dev_index()),
-        ("supported scripts in user docs", check_supported_scripts_documented()),
+        (CHECK_TITLES[cid], CHECKS[cid]()) for cid in selected
     ]
 
     total = 0

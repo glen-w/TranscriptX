@@ -10,7 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.4] - 2026-07-24
+## [0.9.5] - 2026-07-24
+
+### Added
+- Sphinx revive (`docs/conf.py`, MyST/Furo), `make docs`, CI `docs` job, and `.readthedocs.yml` scaffold (RTD hostname still denylisted until go-live).
+- Maintainer `scripts/release/regen_module_docs.py` regenerates `docs/generated/modules.md` and analysis-quality audit scaffold rows from `MODULE_REGISTRY_ORDER`.
+- Draft model/licence matrix in trust/privacy governance planning doc.
+- Hygiene audit `--checks` subset; CI promotes root MD allowlist + archive banners to strict.
+- Release unit tests for hygiene subset, generated module-catalog/scaffold drift, Sphinx scaffold wiring, and optional Sphinx HTML smoke.
+
+### Changed
+- Pre-release programme: Guided/demo/example datasets deferred past 0.9.5; hosted-docs + harden scaffolds are the current cut.
+- `docs-clean` no longer deletes tracked `docs/generated/`.
 
 Install-profile honesty and Transcribe Audio command-generation handoff.
 

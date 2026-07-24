@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**; later themes (Guided/demo, harden/docs) ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**; Guided/demo datasets and remaining harden themes ship as further 0.9.x tags as capacity allows. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -23,8 +23,9 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Schema inventory** — Classified schema/version inventory + transition UX in [schema_epoch_inventory.md](schema_epoch_inventory.md); **human-approved 2026-07-24** (integer public schemas → `1` only)
 - [x] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI (**cut as 0.9.3**)
 - [x] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs (**cut as 0.9.4**)
-- [ ] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs
-- [ ] **0.9.x — harden + public surfaces** — Quality audit; performance envelopes; trust/privacy/model gate; onboarding; hosted docs + modest website; accessibility acceptance
+- [x] **0.9.x — hosted docs + harden scaffolds** — Sphinx revive + CI docs build; hygiene strict subset; quality-audit registry scaffold; draft model-licence matrix (**cut as 0.9.5**)
+- [ ] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs (**deferred past 0.9.5** — example datasets need owner design)
+- [ ] **0.9.x — harden + public surfaces** — Complete quality audit judgements; performance envelopes; trust/privacy/model gate evidence; onboarding; RTD go-live + modest website; accessibility acceptance
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
 
@@ -53,7 +54,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 | Public schema epoch | **Option A (disciplined):** public persisted `schema_version` → integer **`1` only** (never dotted `"1.0"` / `"2.0"`); public string IDs → `transcriptx.<domain>.v1`; refuse/isolate pre-epoch stores; data-root epoch marker; **no cosmetic resets** of policy/prompt/cache identity strings |
 | Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory offender was `semantic_similarity_v2`. **Done in 0.9.3:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`, rename `semantic_similarity_v2` → `semantic_similarity` (package/config/artifacts/presets/docs). Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; dual live writers collapsed as part of epoch. |
 | Product website | **Option A:** `website/` plain HTML/CSS (+ minimal JS), GitHub Pages; separate from hosted user docs. **Not a hard 1.0 blocker** if product gates pass — require a *credible* public landing; first version may be modest |
-| Hosted docs | **Revive Sphinx + Read the Docs** (extras already list Sphinx/MyST/Furo; `docs/conf.py` / Makefile / `docs/requirements.txt` are missing; `scripts/build_docs.sh` is stale; `stale_refs.sh` currently forbids `readthedocs.io` and must be updated when RTD goes live). **Usable hosted documentation is required**; polished breadth is not a hard blocker if task docs complete supported workflows |
+| Hosted docs | **Revive Sphinx + Read the Docs.** Sphinx tree revived in **0.9.5** (`docs/conf.py`, `make docs`, CI docs job, `.readthedocs.yml` scaffold). `stale_refs.sh` still forbids `readthedocs.io` until an intentional RTD project URL exists. **Usable hosted documentation is required**; polished breadth is not a hard blocker if task docs complete supported workflows |
 | Mode system | Presentation/config layer only — one execution system; labels prefer **Guided** / **Full controls** (Simple/Advanced acceptable aliases) |
 | Onboarding | Lightweight dismissible checklist / coach marks; not a brittle tour framework; elaborate animation **deferrable to 1.1** |
 | Demo data | Explicit “Load demo project”; isolated namespace; one-click remove; prefer **canonical transcripts + scripted generate-demo-runs** over large committed run trees; large bundled completed runs **deferrable to 1.1** if risky |
@@ -318,7 +319,7 @@ Add placeholder files or documentation where needed so contributors know where l
 - [x] Stale `scripts/build_docs.sh` (**archived 0.9.1** → `archive/scripts/build_docs.sh`)
 - [x] Stale or misleading environment setup helpers (**removed 0.9.1**)
 - [x] Scripts that imply PyPI installation when releases use Git/Docker (**0.9.4** — hints + stale_refs guard)
-- [ ] Scripts containing owner-specific absolute paths
+- [x] Scripts containing owner-specific absolute paths (**0.9.1** supported tooling; live docs cleaned + hygiene gate **0.9.5**; archive historical hits expected)
 - [ ] Scripts relying on undeclared environment variables
 - [x] Duplicate install or Docker launch helpers (**removed 0.9.1**)
 - [x] Transcription helpers with weak quoting, error reporting or resume behaviour (**0.9.4** — `whispermlx-missing` already had dry-run/resume/`shlex.join`; Transcribe command generator quotes paths)
@@ -339,26 +340,26 @@ Phase 0A is complete only when:
 - [x] No known owner-machine paths or private corpus assumptions remain in supported tooling (**0.9.1**)
 - [x] Public scripts have help, validation and documentation (**0.9.1**)
 - [x] Archived scripts cannot be mistaken for supported product paths (**0.9.1**)
-- [x] Hosted-doc navigation excludes internal planning noise (**0.9.1**; RTD nav still Phase later)
+- [x] Hosted-doc navigation excludes internal planning noise (**0.9.1**; Sphinx `exclude_patterns` for archive/planning in **0.9.5**; RTD go-live still owner-gated)
 - [x] Archive and developer indexes make retained detail discoverable (**0.9.1**)
 - [x] Stale-reference and link checks understand the archive policy (**0.9.1**)
 - [x] `.gitignore` has a deliberate home for future local scratch material (**0.9.1**)
-- [x] CI or repository checks flag new ad-hoc root Markdown files and unclassified scripts where practical (**0.9.1**; warn mode)
+- [x] CI or repository checks flag new ad-hoc root Markdown files and unclassified scripts where practical (**0.9.1** warn mode; **0.9.5** strict subset for root allowlist + archive banners)
 
 ### Preventative repository checks
 
-Plan lightweight checks rather than a complex documentation CMS. Start in reporting/audit mode; promote only stable checks to blocking status.
+Plan lightweight checks rather than a complex documentation CMS. Start in reporting/audit mode; promote only stable checks to blocking status. Implemented in [scripts/release/repo_hygiene_audit.py](../../scripts/release/repo_hygiene_audit.py).
 
-- [ ] Allowlist expected root-level documentation files
-- [ ] Fail or warn when new root `.md` files appear without classification
-- [ ] Validate archived banners
-- [ ] Ensure archived plans do not claim to be current
-- [ ] Check that active dated plans appear in the developer index
+- [x] Allowlist expected root-level documentation files (**0.9.1**; **CI strict in 0.9.5**)
+- [x] Fail or warn when new root `.md` files appear without classification (**0.9.1**; **CI strict in 0.9.5**)
+- [x] Validate archived banners (**0.9.1**; **CI strict in 0.9.5**)
+- [ ] Ensure archived plans do not claim to be current (beyond banner presence)
+- [x] Check that active dated plans appear in the developer index (**0.9.1**; warn mode)
 - [ ] Identify unreferenced live docs
-- [ ] Detect absolute paths such as `/Users/...`
+- [x] Detect absolute paths such as `/Users/...` (**0.9.1**; warn mode — archive hits expected; live hits must stay clean)
 - [ ] Detect scripts without shebang/help or classification metadata where relevant
-- [ ] Confirm public scripts are mentioned in documentation
-- [ ] Exclude intentionally archived references from current-version wording checks while retaining ordinary link validation
+- [x] Confirm public scripts are mentioned in documentation (**0.9.1**; warn mode)
+- [x] Exclude intentionally archived references from current-version wording checks while retaining ordinary link validation (**0.9.1** stale_refs / archive policy)
 
 ---
 
@@ -406,7 +407,7 @@ The schema inventory may begin in parallel with Phase 0B, but **no public schema
 - [x] Aspirational `basic`/`full`/`llm` profile names presented as if implemented (runtime marker is `core`|`full` only)
 - [x] Stocktake “Wave 3 remainder (B5 DB / B18)” as default next capacity during a stabilisation freeze
 - [ ] `stale_refs` “dead ReadTheDocs” once RTD is intentionally revived
-- [x] Sphinx builder assuming missing `docs/conf.py` (archived / hygiene in 0.9.1)
+- [x] Sphinx builder assuming missing `docs/conf.py` (archived 0.9.1; **revived 0.9.5**)
 
 ---
 
@@ -424,11 +425,12 @@ flowchart TD
   v092[0.9.2 stubs and schema inventory]
   themeSchema[0.9.3 schema epoch]
   themeInstall[0.9.4 install and transcription]
+  themeDocsScaffolds[0.9.5 hosted docs and harden scaffolds]
   themeModes[0.9.x Guided mode and demo]
   themeHarden[0.9.x harden docs presentation]
   rc[1.0.0-rc.N when gates pass]
   v10[1.0.0 public]
-  v08 --> v090 --> v091 --> v092 --> themeSchema --> themeInstall --> themeModes --> themeHarden --> rc --> v10
+  v08 --> v090 --> v091 --> v092 --> themeSchema --> themeInstall --> themeDocsScaffolds --> themeModes --> themeHarden --> rc --> v10
 ```
 
 After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x themes → 2.0 vision → deferred tracks).
@@ -442,6 +444,8 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 **Cut as `0.9.3` (2026-07-24).** Schema epoch implementation: integer-1 public stamps, data-root marker + GUI/typed remediation, compatibility removal, `semantic_similarity` module-id cleanup.
 
 **Cut as `0.9.4` / tag `v0.9.4` (2026-07-24).** Install-profile honesty + Transcribe Audio command generator + whispermlx-missing/corpus docs.
+
+**Cut as `0.9.5` (2026-07-24).** Hosted docs revive (Sphinx) + CI docs build; hygiene strict subset; analysis-quality audit registry scaffold; draft model-licence matrix; light release tests. Guided/demo/example datasets deferred.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -494,9 +498,22 @@ Focus: getting users onto a working analysis environment and building corpora.
 - [x] Transcribe Audio parameterised **command generator** (no Streamlit shell execution) (**0.9.4**)
 - [x] Harden `whispermlx-missing` + transcription docs (spaces, dry-run, resume, OS/Docker boundaries, import next step) (**0.9.4**)
 
+### 0.9.x — Hosted docs + hardening scaffolds (**0.9.5**)
+
+Focus: mechanical foundations for usable hosted docs and later human hardening — **before** Guided/demo datasets.
+
+- [x] Sphinx revive + `make docs` + CI docs build (user-task first; excludes internal planning noise) (**0.9.5**)
+- [x] Hygiene strict subset in CI (root MD allowlist + archive banners) (**0.9.5**)
+- [x] Analysis-quality audit **registry scaffold** + regenerated module catalog (**0.9.5**)
+- [x] Draft model/dataset licence matrix from existing model metadata (**0.9.5**)
+- [x] Light release tests for hygiene subset, catalog/scaffold drift, Sphinx scaffold wiring (**0.9.5**)
+- [ ] RTD project go-live (owner slug / domain — §20); flip `stale_refs` denylist when URL is intentional
+- [ ] Human completion of audit recommendations / severity tags
+- [ ] Trust gate evidence sign-off (privacy wording, telemetry confirmation, NOTICE polish)
+
 ### 0.9.x — Guided mode and demo project
 
-Focus: first-run product experience (presentation + examples).
+Focus: first-run product experience (presentation + examples). **Deferred past 0.9.5** — example datasets need thought; quality-audit scaffold may still inform Guided hide/relabel later.
 
 - [ ] Initial Guided/Full controls (presentation/defaults only)
 - [ ] Demo project launcher + one-click removal
@@ -504,15 +521,15 @@ Focus: first-run product experience (presentation + examples).
 
 ### 0.9.x — Quality hardening, hosted docs, public presentation
 
-Focus: operational tolerance, trust, docs surfaces — split across further 0.9.x cuts if needed.
+Focus: operational tolerance, trust, docs surfaces — split across further 0.9.x cuts if needed. Sphinx scaffold + audit rows + licence draft landed in **0.9.5**; remaining items below.
 
 - [ ] Sustained personal/corpus testing; bug fixes; GUI friction removal
-- [ ] Deterministic vs AI quality audit (prioritise highlights, summaries, action-items)
+- [ ] Deterministic vs AI quality audit judgements (prioritise highlights, summaries, action-items)
 - [ ] Prompt/model-output tuning; failure-state improvements
 - [ ] Performance and resource envelope measurements documented
 - [ ] Trust / privacy / model-governance gate evidence
 - [ ] First screenshot-based user guides
-- [ ] Sphinx revive + RTD navigation (user-task first; excludes internal planning noise) — usable docs required; polish not a hard blocker
+- [ ] RTD navigation polish (usable docs required; polish not a hard blocker)
 - [ ] Initial `website/` + GitHub Pages — credible landing required; first version may be modest
 - [ ] Accessibility and supported-browser acceptance checks
 - [ ] Unfamiliar-user clean-room validation round (may slip to late 0.9.x / pre-RC if product not yet ready)
@@ -525,7 +542,7 @@ RC **only when gates pass** — not when a patch number is exhausted.
 - [ ] AppTest + manual journey passes (incl. a11y / browser)
 - [ ] Unfamiliar-user validation evidence reviewed; blockers triaged
 - [ ] Regenerated version-matched demo data
-- [ ] Docs link/build CI; website polish + final screenshots as capacity allows
+- [x] Docs Sphinx build in CI (**0.9.5**); website polish + final screenshots as capacity allows
 - [ ] Schema/compatibility freeze; published known limitations under severity rules
 - [ ] Performance envelopes and trust gate signed off
 - [ ] Release-ops / support policy published
@@ -550,6 +567,7 @@ flowchart LR
   schemaReset[Schema epoch]
   installFix[Install profiles]
   transcribeUX[Transcribe command gen]
+  docsScaffolds[Hosted docs and harden scaffolds]
   modes[Guided Full controls]
   demo[Demo project]
   audit[Quality audit]
@@ -568,13 +586,18 @@ flowchart LR
   inventories --> installFix
   schemaReset --> demo
   schemaReset --> audit
+  installFix --> docsScaffolds
+  transcribeUX --> docsScaffolds
   installFix --> manual
   transcribeUX --> manual
-  modes --> onboard
-  demo --> onboard
+  docsScaffolds --> rtd
+  docsScaffolds --> modes
+  docsScaffolds --> trust
   audit --> modes
   audit --> perf
   audit --> trust
+  modes --> onboard
+  demo --> onboard
   perf --> users
   trust --> users
   onboard --> users
@@ -586,7 +609,7 @@ flowchart LR
   rtd --> gov
 ```
 
-Critical path: **repository inventory and classification → product/docs alignment → schema inventory/reset → install/transcription (**done through `v0.9.4`**) → modes/demo → quality + performance + trust → unfamiliar-user validation → RC evidence.**
+Critical path: **repository inventory and classification → product/docs alignment → schema inventory/reset → install/transcription → hosted-docs + harden scaffolds (**0.9.5**) → modes/demo (when datasets designed) → quality judgements + performance + trust evidence → unfamiliar-user validation → RC evidence.**
 
 Cut intermediate tags around coherent tested increments; do not force install+schema+modes into one patch.
 
@@ -728,7 +751,8 @@ Prioritise Insights, default presets, summary surfaces, exports. **Mandatory scr
 No new modules during 0.9.x unless audit proves a release-critical repair. Map audit findings into release severity triage (§7).
 
 - [x] Create analysis-quality audit template (**0.9.2** stub — [analysis_quality_audit.md](analysis_quality_audit.md))
-- [ ] Complete audit rows for user-visible analyses
+- [x] Scaffold audit rows from `MODULE_REGISTRY_ORDER` (**0.9.5** — [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md))
+- [ ] Complete human audit columns (meaningfulness, recommendation, severity) for user-visible analyses
 - [ ] Mandatory scrutiny: deterministic highlights / summaries / action-items vs LLM equivalents
 - [ ] Apply retain / improve / relabel / hide / deprecate / remove recommendations
 - [ ] Tag each finding as release blocker / must fix / known limitation / post-1.0
@@ -760,12 +784,12 @@ These become **documented expectations and regression indicators**. Non-critical
 
 Dedicated gate (stocktake already flags the missing aggregated third-party model/licence notice as a release gap). Deliverable: [docs/dev/trust_privacy_model_governance_1_0.md](docs/dev/trust_privacy_model_governance_1_0.md).
 
-- [ ] Third-party model and dataset **licence inventory**
+- [x] Third-party model and dataset **licence inventory** (draft matrix in trust stub — **0.9.5**; Hub-card confirmations still open)
 - [ ] Model download origins and **gated-model** requirements
 - [ ] Voice embedding and speaker-identity **privacy wording**
 - [ ] Confirmation that **no telemetry or remote processing** occurs unless explicitly configured
-- [ ] Secrets and **absolute-path** audit
-- [ ] Dependency **vulnerability and licence** checks
+- [x] Secrets and **absolute-path** audit (secrets_check + hygiene owner-path scan; live paths cleaned **0.9.5**; archive historical hits expected)
+- [x] Dependency **vulnerability** checks (`pip-audit` / clean-env / image pip-check in release CI — ongoing); dependency **licence** NOTICE polish still open
 - [ ] **AI output labelling**
 - [ ] Model, prompt and analytical-semantics identity in artifacts where needed
 - [ ] Explicit definition of what **“reproducible”** means for stochastic LLM output
@@ -886,16 +910,16 @@ Acceptance:
 
 ### Hosted docs — Sphinx + RTD (usable required; polish desirable)
 
-- [ ] Stand up missing Sphinx project (`docs/conf.py`, toctrees, MyST, Furo from `[docs]` extra)
-- [ ] Curated **user** navigation (tasks first, reference second)
-- [ ] Contracts/dev material reachable but not undifferentiated top-level
-- [ ] Archive index discoverable but excluded from primary user journey
+- [x] Stand up missing Sphinx project (`docs/conf.py`, toctrees, MyST, Furo from `[docs]` extra) (**0.9.5**)
+- [x] Curated **user** navigation (tasks first, reference second) (**0.9.5** — `docs/index.md`)
+- [x] Contracts/dev material reachable but not undifferentiated top-level (**0.9.5** secondary toctrees)
+- [x] Archive index discoverable but excluded from primary user journey (**0.9.5** Sphinx `exclude_patterns`; ARCHIVE_INDEX remains in-repo)
 - [ ] Versioned docs for 1.0+; search; screenshots; install-profile pages as capacity allows
 - [ ] Autodoc **only** for supported Python surfaces (`app.workflows`, managed import)
-- [ ] CI build + linkcheck; RTD preview builds
+- [x] CI Sphinx HTML build (**0.9.5**); linkcheck + RTD preview builds still open until project go-live
 - [ ] Remove/update `readthedocs.io` denylist when live
-- [ ] Single source of truth — website/README summarise and link, do not fork content
-- [ ] Stale-reference checks understand archive policy (exclude archived from current-version assertions; keep ordinary link validation)
+- [x] Single source of truth for docs IA — README/Sphinx summarise and link, do not fork content (**0.9.5** scaffold; `website/` still separate later cut)
+- [x] Stale-reference checks understand archive policy (exclude archived from current-version assertions; keep ordinary link validation) (**0.9.1**)
 
 **Gate:** documentation can complete supported workflows. Do **not** block 1.0 solely for incomplete polish if usable hosted docs exist.
 
@@ -950,7 +974,7 @@ Mandatory before the public 1.0 tag. RC may start once product gates pass even i
 - [ ] Legacy Data/Explorer redirects (already queued)
 - [ ] Error-prone install profile markers (docs honesty **0.9.4**; runtime `install_profile` / marker simplification still open if severity demands)
 - [x] Epoch refusal tests / remediation paths (**0.9.3**). Fresh clean-env soak = **RC** gate (not a 0.9.4 code deliverable)
-- [ ] Machine-specific or misleading scripts identified in Phase 0A
+- [x] Machine-specific or misleading scripts identified in Phase 0A (**0.9.1** inventory; live absolute-path clean reinforced **0.9.5**)
 - [x] Epoch transition UX gaps (GUI preflight, typed/internal helper only, fresh dir, no auto-delete, preserve compatible transcripts) (**0.9.3**)
 
 **After 1.0** refactors and backlog items are tracked in [docs/ROADMAP.md](docs/ROADMAP.md) and the analysis-module backlog — not expanded in this short-term file.
@@ -994,7 +1018,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 - [ ] **Native Mac MPS:** documented supported-with-caveats for 1.0, not a hard GPU gate (default)
 - [x] **Whether cleanup result schema 2→1** proceeds in same PR as public epoch (done in **0.9.3**; journal → 1 / policy 7 kept)
 - [ ] **Final UI copy:** ship **Guided / Full controls**; keep Simple/Advanced only as doc synonyms if needed
-- [ ] **RTD project slug / custom domain** — create when docs build is green
+- [ ] **RTD project slug / custom domain** — create when docs build is green (**Sphinx CI green in 0.9.5**; slug/domain still owner judgement)
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
 - [x] **Exact archive subcategory names** — `docs/archive/{assessments,plans,investigations,migrations}/` from inventory
 - [ ] **Unfamiliar-user cohort** — who / when / consent and recording method
@@ -1014,6 +1038,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 6. [x] Schema inventory **and epoch transition UX design** approved in [schema_epoch_inventory.md](schema_epoch_inventory.md) (integer public schemas → `1`; owner clean-slate backup of maps/profiles 2026-07-24)
 7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3** / `v0.9.3`)
 8. [x] Execute **0.9.x install + transcription** theme (**0.9.4** / `v0.9.4`)
-9. [ ] Execute **0.9.x Guided mode + demo** theme ← **next**
-10. [ ] Execute **0.9.x harden + public surfaces** theme toward RC
-11. [ ] Unfamiliar-user validation → RC evidence when gates pass
+9. [x] Execute **0.9.x hosted docs + harden scaffolds** theme (**0.9.5**)
+10. [ ] Execute **0.9.x Guided mode + demo** theme when example datasets are designed ← **next product UX**
+11. [ ] Continue **0.9.x harden + public surfaces** (audit judgements, perf envelopes, trust evidence, RTD go-live, website) toward RC
+12. [ ] Unfamiliar-user validation → RC evidence when gates pass

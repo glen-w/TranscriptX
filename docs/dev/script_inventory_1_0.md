@@ -55,7 +55,10 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `archive/scripts/run_tests_with_timeout.py` | Historical timeout test runner | historical | none | archived banner | no | n/a | n/a | n/a | stale | archived | retain (archived) |
 | `activate_env.sh` | Activate `.venv` (conflicts with `.transcriptx`) | developer | setup_env | stale | no | env mutate | any | — | **removed 0.9.1** | disposable | deleted |
 | `scripts/setup_env.sh` | Interactive venv/Docker menu; dead compose refs | developer | activate_env | stale | no | env mutate | any | — | **removed 0.9.1** | disposable | deleted |
-| `scripts/build_docs.sh` | Sphinx builder; `docs/conf.py` missing | maintainer | Makefile docs (noop) | stale | no | writes `_build` | any | Sphinx missing | **stale** | disposable | archive → `archive/scripts/build_docs.sh` |
+| `scripts/release/repo_hygiene_audit.py` | Phase 0A hygiene checks (allowlist, paths, banners, …) | maintainer | CI release-checks | yes | warn + strict subset | read-only | any | — | valid | maintainer | retain; `--checks` subset (**0.9.5**) |
+| `scripts/release/build_docs.sh` | Sphinx HTML build wrapper | maintainer | `make docs` / CI docs | yes | CI | writes `_build` | any | `[docs]` | valid | maintainer | retain (**0.9.5**) |
+| `scripts/release/regen_module_docs.py` | Regen module catalog + quality-audit scaffold | maintainer | `make docs-gen` | yes | no | writes docs | any | package import | valid | maintainer | retain (**0.9.5**) |
+| `archive/scripts/build_docs.sh` | Historical Sphinx builder (pre-revive) | historical | none | archived banner | no | writes `_build` | any | — | archived | archived | retain (archived); live builder is `scripts/release/build_docs.sh` |
 | `scripts/docker-data-setup.sh` | Data download via wrong image / missing helpers | developer | none | stale | no | Docker mutate | Docker | missing peers | **stale** | disposable | delete |
 | `scripts/docker-clean.sh` | `compose down` + unscoped system/volume prune | developer | none | no | no | **destructive** | Docker | — | stale | disposable | delete |
 | `scripts/cleanup.sh` | Broad temp/cache wipe | developer | none | no | no | **destructive** | any | — | stale | disposable | delete |
@@ -67,7 +70,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 ## Early cleanup priorities (execution order)
 
 1. ~~Delete stale setup: `scripts/setup_env.sh`, `activate_env.sh`~~ (**done 0.9.1**)
-2. Archive broken `scripts/build_docs.sh` → `archive/scripts/build_docs.sh` with `[ARCHIVED]` banner
+2. ~~Archive broken `scripts/build_docs.sh` → `archive/scripts/build_docs.sh`~~ (**done 0.9.1**; live builder revived as `scripts/release/build_docs.sh` in **0.9.5**)
 3. Delete misleading/destructive Docker helpers: `docker-data-setup.sh`, `docker-clean.sh`, `cleanup.sh`, `manage_dependencies.sh`
 4. Delete orphan `scripts/README_test_analysis_assess.md`
 5. Fix `.cursor/commands/backup.md` absolute paths

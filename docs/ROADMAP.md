@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**.
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5** (Guided/demo datasets deferred).
 
 ---
 
@@ -34,11 +34,12 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 |-------|--------|--------|
 | Pre-pre-release | Stabilisation ahead of the 1.0 programme | **0.9.0** shipped |
 | Hygiene + product docs | Phase 0A/0B inventories, archive, PRODUCT/README/ROADMAP | **0.9.1** shipped |
-| Planning stubs + schema inventory | Phase 0B stubs; schema-epoch inventory signed off (integer `1`) | **0.9.2** (this cut) |
-| Schema epoch | Public schema epoch + compatibility removal; data-epoch transition UX; module-id hygiene | next 0.9.x |
+| Planning stubs + schema inventory | Phase 0B stubs; schema-epoch inventory signed off (integer `1`) | **0.9.2** |
+| Schema epoch | Public schema epoch + compatibility removal; data-epoch transition UX; module-id hygiene | **0.9.3** |
 | Install + transcription | Install-profile audit; Transcribe command generation; corpus docs | **0.9.4** |
-| Modes + demo | Guided / Full controls v1; demo project load/remove | later 0.9.x |
-| Harden + public surfaces | Quality audit; performance envelopes; trust/privacy/model gate; hosted docs + modest website; a11y | later 0.9.x |
+| Hosted docs + harden scaffolds | Sphinx revive; hygiene strict subset; quality-audit scaffold; draft model-licence matrix | **0.9.5** |
+| Modes + demo | Guided / Full controls v1; demo project load/remove | later 0.9.x (deferred past 0.9.5) |
+| Harden + public surfaces | Audit judgements; performance envelopes; trust gate evidence; RTD go-live + modest website; a11y | later 0.9.x |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 

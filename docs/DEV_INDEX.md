@@ -19,6 +19,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [docs_architecture_1_0.md](dev/docs_architecture_1_0.md) | Docs surface architecture |
 | [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md) | Manual acceptance suite skeleton |
 | [analysis_quality_audit.md](dev/analysis_quality_audit.md) | Analysis quality audit template |
+| [analysis_quality_audit_scaffold.md](dev/analysis_quality_audit_scaffold.md) | Generated registry rows (`make docs-gen`) |
 | [ui_presentation_modes.md](dev/ui_presentation_modes.md) | Guided / Full controls design |
 | [demo_project.md](dev/demo_project.md) | Demo project design |
 | [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelope planning |

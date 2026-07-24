@@ -3,7 +3,7 @@ Authority: self
 
 # Documentation architecture (1.0)
 
-**Status:** planning  
+**Status:** Sphinx revived (**0.9.5**); RTD project go-live still owner-gated  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md); Phase 0A inventories  
 **Inventories:** [documentation_inventory_1_0.md](documentation_inventory_1_0.md), [script_inventory_1_0.md](script_inventory_1_0.md)
 
@@ -19,7 +19,7 @@ Authority: self
 | `docs/runtime/` | Task-oriented user guides | Guide (link contracts) |
 | `docs/dev/` | Developer / programme | Developer |
 | `docs/archive/` | Historical (banners) | Historical |
-| Read the Docs (planned) | Hosted user/dev nav | Built from docs; revive Sphinx |
+| Read the Docs (scaffold) | Hosted user/dev nav | Built from docs; Sphinx + `.readthedocs.yml` |
 | `website/` (planned) | Modest public landing | Marketing; not contract |
 
 ## Indexes
@@ -30,12 +30,16 @@ Authority: self
 
 ## Hosted docs / Sphinx
 
-- Sphinx extras exist in `pyproject.toml` (`[docs]`); live `docs/conf.py` / Makefile may still be missing or partial after 0.9.1 hygiene.
-- `scripts/build_docs.sh` was archived/stale — do not treat as supported until revived.
-- `scripts/release/stale_refs.sh` currently denylists the ReadTheDocs hostname — **update when RTD goes live**.
+- [x] Revive Sphinx tree (`docs/conf.py`, MyST, Furo) rooted on curated user/runtime pages + DEV index
+- [x] Wire `make docs` → [scripts/release/build_docs.sh](../../scripts/release/build_docs.sh); CI `docs` job
+- [x] Add `.readthedocs.yml` scaffold (install `.[docs]`)
+- [ ] Confirm RTD project + nav when owner supplies slug/domain (§20)
+- [ ] Flip `scripts/release/stale_refs.sh` readthedocs.io denylist when a live URL is intentional
+- Keep entry surfaces concise; detail stays in contracts/runtime/dev
+- Archive excluded from hosted navigation (`exclude_patterns`)
 
 ## Open
 
-- [ ] Confirm RTD project + nav rooted on USER/DEV indexes
-- [ ] Revive Sphinx tree when hosted-docs theme starts
-- [ ] Keep entry surfaces concise; detail stays in contracts/runtime/dev
+- [ ] RTD project go-live + hostname allowlist update
+- [ ] Modest `website/` / GitHub Pages (separate cut)
+- [ ] Screenshot-based user guides

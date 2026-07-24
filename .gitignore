@@ -89,8 +89,9 @@ htmlcov/
 *.tmp
 *.temp
 
-# Local developer scratch (not an archive — see docs/dev/local_scratch.md)
-.local/
+# Sphinx HTML build output
+docs/_build/
+
 
 # Local reports archive (run dumps; docs archive is tracked under docs/archive/)
 reports/archive/

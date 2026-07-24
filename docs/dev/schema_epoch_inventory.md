@@ -32,9 +32,10 @@ Authority: self
 
 ### Backup location (2026-07-24)
 
-`/Users/89298/Documents/transcriptx backup/epoch_clean_slate_2026-07-24/`
+Owner-local clean-slate backup (outside the git worktree; path not recorded in-repo):
 
-- `library_transcripts_speaker_maps/` — from `/Users/89298/Documents/transcripts/metadata/speaker_maps` (168 files)
+- Directory name: `epoch_clean_slate_2026-07-24/`
+- `library_transcripts_speaker_maps/` — from the live library speaker-maps tree (168 files)
 - `working_tree_speaker_maps/` — from repo `data/transcripts/**/*.speaker_map.json`
 - `working_tree_speaker_profiles/` — from repo `data/speaker_profiles`
 

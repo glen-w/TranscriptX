@@ -7,9 +7,9 @@ help:
 	@echo "TranscriptX Makefile"
 	@echo ""
 	@echo "Documentation targets:"
-	@echo "  docs-gen     No-op; CLI docs in docs/generated/ are maintained manually (see CONTRIBUTING.md)"
-	@echo "  docs         Same as docs-gen (Sphinx build deferred; see docs/ROADMAP.md)"
-	@echo "  docs-clean   Remove generated docs and build artifacts"
+	@echo "  docs-gen     Regenerate module catalog + quality-audit scaffold from registry"
+	@echo "  docs         Build Sphinx HTML into docs/_build/html (requires .[docs])"
+	@echo "  docs-clean   Remove Sphinx build artifacts (keeps docs/generated/)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  run            Streamlit web app in Docker (full TTY)"
@@ -34,21 +34,23 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make run          # Docker Streamlit web app"
-	@echo "  make docs        # Generate docs from code"
+	@echo "  make docs        # Build Sphinx HTML (requires pip install -e '.[docs]')"
 	@echo "  make docker-smoke  # Docker smoke test (requires docker compose build)"
 
 run:
 	docker compose run -it --rm transcriptx-web
 
 docs-gen:
-	@echo "CLI docs are in docs/generated/ and maintained manually. Run transcriptx --help and transcriptx <command> --help, then update docs/generated/cli.md when commands change (see docs/CONTRIBUTING.md)."
+	@echo "Regenerating module catalog and analysis-quality audit scaffold..."
+	@python3 scripts/release/regen_module_docs.py
 
-docs: docs-gen
+docs:
+	@bash scripts/release/build_docs.sh
 
 docs-clean:
-	@echo "Cleaning documentation build and generated files..."
-	@rm -rf docs/_build docs/generated docs/api/generated
-	@echo "Documentation cleaned!"
+	@echo "Cleaning Sphinx build artifacts..."
+	@rm -rf docs/_build docs/api/generated
+	@echo "Documentation build cleaned (docs/generated/ preserved)."
 
 clean-test-artifacts:
 	@echo "Clearing test artifact slugs (test__*) from outputs and index..."

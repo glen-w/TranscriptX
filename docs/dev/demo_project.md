@@ -3,7 +3,7 @@ Authority: self
 
 # Demo project (1.0)
 
-**Status:** planning  
+**Status:** planning (design only — deferred past **0.9.5**; example datasets need owner design)  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) demo section  
 **Related:** [ui_presentation_modes.md](ui_presentation_modes.md), [schema_epoch_inventory.md](schema_epoch_inventory.md)
 

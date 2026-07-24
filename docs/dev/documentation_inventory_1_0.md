@@ -18,7 +18,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | archive | 29 |
 | delete | 2 |
 | move | 0 |
-| retain | 91 |
+| retain | 95 |
 | rewrite | 1 |
 
 ## High-priority authority conflicts
@@ -155,6 +155,10 @@ Planning matrix for repository documentation classification. Created under Phase
 | tests/quarantine/README.md | Quarantined tests | live | developer | current | — | retain | — | DEV_INDEX | tests/README.md | no |
 | tests/fixtures/emotion_family/characterization/README.md | Emotion-family characterization fixtures | live | developer | current | — | retain | — | DEV_INDEX | tests/README.md | no |
 | .cursor/commands/*.md (11 files) | Maintainer agent playbooks | live | developer | current | Not user nav; backup.md has machine paths | retain | — | — | maintainer | no |
+| docs/index.md | Sphinx landing + curated toctrees | live | entry | current | Hosted docs root (**0.9.5**) | retain | — | conf.py | docs/PRODUCT.md | yes |
+| docs/dev/analysis_quality_audit_scaffold.md | Generated quality-audit registry rows | live | developer | current | Regen via `make docs-gen` | retain | — | analysis_quality_audit.md | analysis_quality_audit.md | no |
+| docs/requirements.txt | Sphinx/RTD install pins | live | developer | current | Mirrors `[docs]` extras | retain | — | .readthedocs.yml | docs_architecture_1_0.md | no |
+| .readthedocs.yml | RTD build scaffold | live | developer | current | Hostname denylist until go-live | retain | — | docs_architecture | docs_architecture_1_0.md | no |
 
 ## Execution notes
 

@@ -3,7 +3,7 @@ Authority: self
 
 # UI presentation modes (Guided / Full controls)
 
-**Status:** planning (design only — not implemented in 0.9.1)  
+**Status:** planning (design only — not implemented; deferred past **0.9.5**)  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) locked decisions + Guided section  
 **Surfaces:** [public_surfaces.md](../public_surfaces.md)
 

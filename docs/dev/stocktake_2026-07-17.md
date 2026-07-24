@@ -19,7 +19,7 @@ Authority: self
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
 | **Immediate process focus** | Complete Phase 0A/0B acceptance; then schema epoch inventory — not Wave 3 module sprawl. | High |
 
-**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; **default next capacity is 0.9→1.0 stabilisation** (docs, schema epoch, install/transcription handoff, Guided/Full, demo, hardening) — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
+**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; **default next capacity is 0.9→1.0 stabilisation** — through **0.9.5** (hosted docs + harden scaffolds); **Guided/demo datasets deferred**; continue harden judgements / RTD go-live / website toward RC — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
 
 ---
 
@@ -236,7 +236,7 @@ Use these as defaults unless you consciously override them:
 
 1. **Release type (next 1–2 months):** OSS **local-first single-user beta** — not hosted product.
 2. **run_cleanup:** Phase A + Phase B complete (policy 7 / schema 3 / result schema 2). Further behaviour changes need explicit schema/policy decisions; do not mix with Top-3 refactors.
-3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → 0.9→1.0 programme** (schema epoch, install/transcription, Guided/demo, hardening) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
+3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → 0.9→1.0 programme** (schema/install/transcription/`0.9.5` scaffolds done; Guided/demo deferred; harden judgements + RTD/website next) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
 4. **Phase 1 honesty:** ROADMAP reflects 0.7.x + real CI; “no new features” retired.
 5. **Distribution:** Docker + git tags until PyPI decided; install matrix is authoritative.
 6. **Network threat model:** Localhost by default; LAN opt-in via `TRANSCRIPTX_BIND_HOST=0.0.0.0` (unauthenticated).
