@@ -194,6 +194,108 @@ def test_execute_single_module_skips_llm_module_when_disabled() -> None:
 
 
 @pytest.mark.unit
+def test_execute_single_module_announces_resolved_llm_model() -> None:
+    from transcriptx.core.analysis.llm_support.model_selection import LlmModelSelection
+    from transcriptx.core.pipeline.dag_execution_adapter import execute_single_module
+    from transcriptx.core.pipeline.module_registry import get_module_info
+
+    class _OkModule:
+        def run_from_context(self, _context):
+            return {
+                "status": "success",
+                "artifacts": [],
+                "metrics": {},
+                "payload": {},
+            }
+
+    info = get_module_info("llm_custom_qa")
+    assert info is not None
+    pipeline = SimpleNamespace(
+        logger=MagicMock(),
+        _module_progress_heartbeat=lambda *_a, **_k: None,
+    )
+    node = SimpleNamespace(
+        function=_OkModule,
+        description=info.description,
+        requirements=info.requirements,
+        timeout_seconds=600,
+    )
+    cfg = TranscriptXConfig()
+    cfg.llm.enabled = True
+    cfg.llm.provider = "ollama"
+    cfg.llm.model = "fallback-tag"
+    cfg.llm.model_selection = LlmModelSelection(
+        mode="shared",
+        shared_model="mistral-nemo",
+    )
+
+    with (
+        patch("transcriptx.core.utils.config.get_config", return_value=cfg),
+        patch(
+            "transcriptx.core.pipeline.dag_execution_adapter.notify_user"
+        ) as mock_notify,
+        patch(
+            "transcriptx.core.pipeline.dag_execution_adapter.log_analysis_start"
+        ),
+        patch(
+            "transcriptx.core.pipeline.dag_execution_adapter.log_analysis_complete"
+        ),
+    ):
+        outcome = execute_single_module(
+            pipeline,
+            module_name="llm_custom_qa",
+            node=node,
+            transcript_path="t.json",
+            context=MagicMock(),
+            requirements_resolver=None,
+            named_speaker_count=2,
+        )
+
+    assert outcome.status == "success"
+    start_calls = [
+        c.args[0]
+        for c in mock_notify.call_args_list
+        if c.args and "Running" in str(c.args[0])
+    ]
+    assert start_calls
+    assert "model: mistral-nemo" in start_calls[0]
+    pipeline.logger.info.assert_any_call(
+        "Running llm_custom_qa analysis (model=mistral-nemo)"
+    )
+
+
+@pytest.mark.unit
+def test_resolve_running_llm_model_skips_empty_custom_qa() -> None:
+    from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
+        bind_custom_qa_questions,
+        reset_custom_qa_questions,
+    )
+    from transcriptx.core.analysis.llm_custom_qa.resolve import (
+        EffectiveCustomQAQuestions,
+    )
+    from transcriptx.core.pipeline.dag_execution_adapter import (
+        _resolve_running_llm_model,
+    )
+
+    effective = EffectiveCustomQAQuestions(
+        questions=(),
+        questions_hash="x",
+        empty=True,
+        resolved_from="explicit_empty",
+        max_questions_per_run=8,
+        max_question_chars=500,
+        max_run_total_question_chars=4000,
+        max_answer_chars=800,
+    )
+    token = bind_custom_qa_questions(effective)
+    try:
+        assert _resolve_running_llm_model("llm_custom_qa") is None
+        assert _resolve_running_llm_model("stats") is None
+    finally:
+        reset_custom_qa_questions(token)
+
+
+@pytest.mark.unit
 def test_execute_single_module_preserves_error_code_on_raise() -> None:
     from transcriptx.core.pipeline.dag_execution_adapter import execute_single_module
     from transcriptx.core.llm.errors import LLM_UNAVAILABLE, LLMUnavailableError

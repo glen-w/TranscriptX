@@ -21,6 +21,38 @@ def _elapsed_ms(start: float) -> float:
     return (time.perf_counter() - start) * 1000.0
 
 
+def _resolve_running_llm_model(module_name: str) -> Optional[str]:
+    """Best-effort Ollama tag for the user-facing module start banner.
+
+    Returns ``None`` for non-LLM modules, empty custom-QA runs (no live call),
+    or when resolution fails — the run itself still proceeds.
+    """
+    from transcriptx.core.analysis.llm_support.model_selection import (
+        LLM_MODEL_CONSUMER_ID_SET,
+        resolve_module_llm_model,
+    )
+
+    if module_name not in LLM_MODEL_CONSUMER_ID_SET:
+        return None
+    try:
+        from transcriptx.core.analysis.llm_custom_qa.gating import (
+            consumer_requires_live_llm,
+        )
+
+        if not consumer_requires_live_llm(module_name):
+            return None
+    except Exception:
+        pass
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        resolved = resolve_module_llm_model(get_config().llm, module_name)
+        model = str(resolved.model or "").strip()
+        return model or None
+    except Exception:
+        return None
+
+
 def _resolve_module_timeout_seconds(module_name: str, node: Any) -> int:
     """Wall-clock budget for a module. ``<= 0`` means no limit."""
     raw = getattr(node, "timeout_seconds", 600)
@@ -187,10 +219,19 @@ def execute_single_module(
         pass
 
     module_run = None
-    pipeline.logger.info(f"Running {module_name} analysis")
-    notify_user(
-        f"🔍 Running {node.description}...", technical=False, section=module_name
-    )
+    llm_model = _resolve_running_llm_model(module_name)
+    if llm_model:
+        pipeline.logger.info(f"Running {module_name} analysis (model={llm_model})")
+        notify_user(
+            f"🔍 Running {node.description} (model: {llm_model})...",
+            technical=False,
+            section=module_name,
+        )
+    else:
+        pipeline.logger.info(f"Running {module_name} analysis")
+        notify_user(
+            f"🔍 Running {node.description}...", technical=False, section=module_name
+        )
     log_analysis_start(module_name, transcript_path)
     module_start = time.perf_counter()
     module_started_at = now_iso()
