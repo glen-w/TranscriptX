@@ -13,7 +13,7 @@ from transcriptx.io.atomic_json import write_json_atomic
 
 INDEX_NAME = "artifact_index.json"
 GENERATIONS = "generations"
-INDEX_SCHEMA = "topic_shift_artifact_index_v1"
+INDEX_SCHEMA = "transcriptx.topic_shift_artifact_index.v1"
 
 
 @dataclass

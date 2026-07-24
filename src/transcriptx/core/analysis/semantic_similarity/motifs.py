@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Sequence
 
 import numpy as np
 
-from transcriptx.core.analysis.semantic_similarity_v2.intake import SegmentRow
-from transcriptx.core.analysis.semantic_similarity_v2.output import (
+from transcriptx.core.analysis.semantic_similarity.intake import SegmentRow
+from transcriptx.core.analysis.semantic_similarity.output import (
     EMBEDDING_SEMANTICS_VERSION,
     SCHEMA_VERSION,
     parse_schema_major,

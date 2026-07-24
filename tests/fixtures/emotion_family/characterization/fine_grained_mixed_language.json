@@ -76,7 +76,7 @@
           "integrity_checksum": "eede5e3f02b9150192d72e876a5494d37d1c6bad44f7d2d9c7880bf248214907",
           "module_id": "fine_grained_emotion",
           "row_key": "1",
-          "schema_version": "fine_grained_emotion_result_schema_v2",
+          "schema_version": "fine_grained_transcriptx.emotion_result.v1",
           "scored_text_hash": "4e47826698bb4630fb4451010062fadbf85d61427cbdfaed7ad0f23f239bed89",
           "semantics_version": "fine_grained_emotion_v1"
         },
@@ -106,7 +106,7 @@
           "integrity_checksum": "cfdf654b8aaa0442c3df671561319b76acba8cde676a4bc999863b3535c068c0",
           "module_id": "fine_grained_emotion",
           "row_key": "2",
-          "schema_version": "fine_grained_emotion_result_schema_v2",
+          "schema_version": "fine_grained_transcriptx.emotion_result.v1",
           "scored_text_hash": "a83a6f94a78efb9141ce687c02958cfa8622c5a13732139a3f0ef6292f0504d3",
           "semantics_version": "fine_grained_emotion_v1"
         },
@@ -203,7 +203,7 @@
     "torch_version": "2.2.2",
     "transformers_version": "4.53.2"
   },
-  "schema_version": "fine_grained_emotion_result_schema_v2",
+  "schema_version": "fine_grained_transcriptx.emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 1,

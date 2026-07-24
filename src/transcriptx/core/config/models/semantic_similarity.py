@@ -1,4 +1,4 @@
-"""Pydantic schema for analysis.semantic_similarity_v2 settings."""
+"""Pydantic schema for analysis.semantic_similarity settings."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 _ADVANCED = {"advanced": True}
 
 
-class SemanticSimilarityV2SettingsModel(BaseModel):
-    """Canonical field definitions for semantic_similarity_v2 configuration."""
+class SemanticSimilaritySettingsModel(BaseModel):
+    """Canonical field definitions for semantic_similarity configuration."""
 
     model_config = ConfigDict(protected_namespaces=())
 

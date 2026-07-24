@@ -74,7 +74,7 @@ def test_create_transcript_document_normalises_word_count_from_segments() -> Non
 @pytest.mark.unit
 def test_refresh_document_metadata_preserves_custom_fields() -> None:
     doc = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "metadata": {
             "title": "Meeting notes",
             "language": "en",

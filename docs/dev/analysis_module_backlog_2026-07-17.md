@@ -3,7 +3,7 @@ Authority: self
 
 # Analysis module backlog (ranked) — 2026-07-17
 
-> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. This backlog remains the ranked post-1.0 / repair-only list. **Allowed under freeze:** retire/rename versioned or legacy ids (see [schema_epoch_inventory.md](schema_epoch_inventory.md) — `semantic_similarity_v2` → `semantic_similarity` after removing legacy siblings). See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md).
+> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. This backlog remains the ranked post-1.0 / repair-only list. **Allowed under freeze:** retire/rename versioned or legacy ids (see [schema_epoch_inventory.md](schema_epoch_inventory.md) — `semantic_similarity` → `semantic_similarity` after removing legacy siblings). See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md).
 
 > Ranked product backlog for **new or deepened** analysis modules, libraries, and approaches.  
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md) and the prior coverage discussion.  
@@ -61,7 +61,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 6 | — | *(P1 routing infrastructure continues; not a ranked module)* | platform | — | M | see §2 |
 | 7 | B10 | **Structured decisions / commitments** — extraction-family deepen (`llm_action_items` v2 meeting extracts) | deepen (**shipped** v2 contract: typed records + sectioned render + group schema 2; residual: broader P2 platform) | Summary & Synthesis | M | Ollama; taxonomy vs `llm_action_items` (see §3.1); P2 provenance |
 | 8 | B7 | **Politeness / formality / power** (lexicon-first) | new (**shipped** as `politeness`; power = lexical directiveness; B12 equity for interactional power) | Speakers & Interaction | M | lexicon path remains default; post-1.0 `politeness_strategies` is a sibling citeable method only (§3.2) |
-| 9 | B14 | **Cross-session concept drift / recurring motifs** | deepen (**shipped**: v2.1.1 motif envelope + group centroid match / transition drift + composite charts) | Language & Meaning (+ Groups) | M | `semantic_similarity_v2` + group finalize |
+| 9 | B14 | **Cross-session concept drift / recurring motifs** | deepen (**shipped**: v2.1.1 motif envelope + group centroid match / transition drift + composite charts) | Language & Meaning (+ Groups) | M | `semantic_similarity` + group finalize |
 | 10 | B13 | **Speaker interaction graphs** (NetworkX artifacts + gallery) | deepen (**shipped**: GraphML/JSON + upgraded `interactions.network_graph.global`) | Speakers & Interaction / Visualisations | M | Phase 3 network mention; B12 primitives help |
 
 ### Later / lower in the same global list

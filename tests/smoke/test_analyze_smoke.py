@@ -20,7 +20,7 @@ def test_analyze_smoke_outputs(tmp_path: Path) -> None:
     sidecar_path.write_text(
         json.dumps(
             {
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
                 "speaker_map": {
                     "SPEAKER_00": "Speaker 1",
                     "SPEAKER_01": "Speaker 2",

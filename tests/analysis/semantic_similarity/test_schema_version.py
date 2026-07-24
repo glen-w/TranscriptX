@@ -1,27 +1,27 @@
-"""B14 motif export, clustering harden, schema 1.1.1."""
+"""B14 motif export, clustering harden, epoch method fingerprint."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from transcriptx.core.analysis.semantic_similarity_v2.cluster import (
+from transcriptx.core.analysis.semantic_similarity.cluster import (
     STATUS_FAILED,
     STATUS_INSUFFICIENT,
     STATUS_OK,
     cluster_embeddings,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.intake import (
+from transcriptx.core.analysis.semantic_similarity.intake import (
     SegmentRow,
     segment_rows_from_dicts,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.motifs import (
+from transcriptx.core.analysis.semantic_similarity.motifs import (
     build_motifs_from_clusters,
     build_provenance,
     deserialize_centroid,
     serialize_centroid,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.output import (
+from transcriptx.core.analysis.semantic_similarity.output import (
     SCHEMA_VERSION,
     parse_schema_major,
     reader_accepts_schema,
@@ -29,13 +29,15 @@ from transcriptx.core.analysis.semantic_similarity_v2.output import (
 )
 
 
-def test_schema_constant_is_1_1_1() -> None:
-    assert SCHEMA_VERSION == "semantic_similarity_v2.1.1"
+def test_schema_constant_is_epoch_semantics() -> None:
+    assert SCHEMA_VERSION == "transcriptx.semantic_similarity.semantics.1.1"
     assert parse_schema_major(SCHEMA_VERSION) == 1
     assert reader_accepts_schema(SCHEMA_VERSION)
-    assert reader_accepts_schema("semantic_similarity_v2.1")
-    assert not reader_accepts_schema("semantic_similarity_v2.2")
-    assert parse_schema_major("semantic_similarity_v2.2") == 2
+    assert reader_accepts_schema("transcriptx.semantic_similarity.semantics.1")
+    assert not reader_accepts_schema("transcriptx.semantic_similarity.semantics.2")
+    assert parse_schema_major("transcriptx.semantic_similarity.semantics.2") == 2
+    assert not reader_accepts_schema("semantic_similarity_v2.1.1")
+    assert parse_schema_major("semantic_similarity_v2.1.1") is None
 
 
 def test_with_schema_stamps_constant() -> None:

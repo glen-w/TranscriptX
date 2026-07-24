@@ -272,7 +272,7 @@ def seed_partial_run(ws: GuiWorkspace) -> GuiWorkspace:
     write_run_results(
         ws.run_root,
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": ws.run_id,
             "transcript_key": ws.slug or "mini_transcriptx",
             "modules_enabled": ["stats", "summary"],
@@ -296,7 +296,7 @@ def seed_failed_run(ws: GuiWorkspace) -> GuiWorkspace:
     write_run_results(
         ws.run_root,
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": ws.run_id,
             "transcript_key": ws.slug or "mini_transcriptx",
             "modules_enabled": ["stats", "summary"],

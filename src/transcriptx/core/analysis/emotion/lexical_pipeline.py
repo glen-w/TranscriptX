@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 NRC_LEXICAL_PIPELINE_V1 = "nrc_lexical_pipeline_v1"
-SCHEMA_VERSION = "emotion_result_schema_v2"
+SCHEMA_VERSION = "transcriptx.emotion_result.v1"
 SEMANTICS_VERSION = "emotion_lexical_v2"
 
 PLUTCHIK_EIGHT = (

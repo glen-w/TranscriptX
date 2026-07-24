@@ -5,7 +5,7 @@ Authority: self
 
 **Status:** **human-approved for epoch implementation** — public schema targets are integer **`1`** only (no dotted `.x` forms)  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §8  
-**Package baseline:** 0.9.2  
+**Package baseline:** 0.9.3 (epoch implementation)  
 **Approved:** 2026-07-24 (owner clean-slate + integer-1 standardisation)
 
 ## Locked convention
@@ -71,12 +71,12 @@ Paths abbreviated under `src/transcriptx/`.
 | `core/analysis/llm_support/action_items_contract.py` `LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION` | `2` | public_persisted | **→ 1** | group LLM tests | |
 | `core/analysis/llm_custom_qa/versioning.py` `COMMIT_MARKER_SCHEMA_VERSION_V1` / `_V2` | `"1"` / `"2"` | public_persisted | **Rename** to a single `COMMIT_MARKER_SCHEMA_VERSION = 1` (integer); delete `_V1`/`_V2` symbol names | custom QA tests | Dual live markers + `V2` in the name are confusing once everything is epoch-1; collapse writers/readers to one constant |
 | Speaker-map wire `speaker_map_schema_version` | `"1.0"` | public_persisted | **→ `1`** | mapping service / fixtures | Written by `SpeakerMappingService` |
-| `core/analysis/emotion/lexical_pipeline.py` `SCHEMA_VERSION` | `emotion_result_schema_v2` | public_persisted | **→ `transcriptx.emotion_result.v1`** | emotion fixtures | |
-| `core/analysis/contextual_emotion/__init__.py` `SCHEMA_VERSION` | `contextual_emotion_result_schema_v2` | public_persisted | **→ `transcriptx.contextual_emotion_result.v1`** | | |
-| `core/analysis/fine_grained_emotion/__init__.py` `SCHEMA_VERSION` | `fine_grained_emotion_result_schema_v2` | public_persisted | **→ `transcriptx.fine_grained_emotion_result.v1`** | | |
-| `core/analysis/topic_shift/semantics.py` `SCHEMA_VERSION` | `topic_shift_result_schema_v1` | public_persisted | **→ `transcriptx.topic_shift_result.v1`** | | |
-| `core/analysis/topic_shift/enrichment.py` `ENRICHMENT_SCHEMA` | `topic_shift_enrichment_schema_v1` | public_persisted | **→ `transcriptx.topic_shift_enrichment.v1`** | | |
-| `core/analysis/topic_shift/store.py` `INDEX_SCHEMA` | `topic_shift_artifact_index_v1` | public_persisted | **→ `transcriptx.topic_shift_artifact_index.v1`** | | |
+| `core/analysis/emotion/lexical_pipeline.py` `SCHEMA_VERSION` | `transcriptx.emotion_result.v1` | public_persisted | **→ `transcriptx.emotion_result.v1`** | emotion fixtures | |
+| `core/analysis/contextual_emotion/__init__.py` `SCHEMA_VERSION` | `contextual_transcriptx.emotion_result.v1` | public_persisted | **→ `transcriptx.contextual_emotion_result.v1`** | | |
+| `core/analysis/fine_grained_emotion/__init__.py` `SCHEMA_VERSION` | `fine_grained_transcriptx.emotion_result.v1` | public_persisted | **→ `transcriptx.fine_grained_emotion_result.v1`** | | |
+| `core/analysis/topic_shift/semantics.py` `SCHEMA_VERSION` | `transcriptx.topic_shift_result.v1` | public_persisted | **→ `transcriptx.topic_shift_result.v1`** | | |
+| `core/analysis/topic_shift/enrichment.py` `ENRICHMENT_SCHEMA` | `transcriptx.topic_shift_enrichment.v1` | public_persisted | **→ `transcriptx.topic_shift_enrichment.v1`** | | |
+| `core/analysis/topic_shift/store.py` `INDEX_SCHEMA` | `transcriptx.topic_shift_artifact_index.v1` | public_persisted | **→ `transcriptx.topic_shift_artifact_index.v1`** | | |
 | `core/analysis/emotion_family/generational_store.py` index/manifest | `emotion_family_*_v1` | public_persisted | **→ `transcriptx.emotion_family_*.v1`** | | |
 
 ### Canonical transcript → integer `1`
@@ -93,7 +93,7 @@ Paths abbreviated under `src/transcriptx/`.
 | `llm_support/action_items_contract.py` `LLM_ACTION_ITEMS_SCHEMA_ID` | `transcriptx.llm_action_items.v2` | **→ `.v1`**; remove v1 coerce after wipe |
 | `llm_custom_qa/versioning.py` `V2_SCHEMA_ID` | `transcriptx.llm_custom_qa.v2` | **→ `.v1`** as sole live ID |
 | Already-`transcriptx.*.v1` IDs | `…v1` | keep |
-| `llm_feedback/models.py` `EVENT_SCHEMA_ID` | `llm_feedback_event_v1` | **→ `transcriptx.llm_feedback_event.v1`** |
+| `llm_feedback/models.py` `EVENT_SCHEMA_ID` | `transcriptx.llm_feedback_event.v1` | **→ `transcriptx.llm_feedback_event.v1`** |
 | `speaker_profiles/versioning.py` `*_SCHEMA_ID` | `speaker_profile*.v1` | **→ `transcriptx.speaker_profile*.v1`** |
 | `speaker_profiles/voice/versioning.py` voice schema ids | `voice_*.v1` | **→ `transcriptx.voice_*.v1`** |
 
@@ -111,20 +111,20 @@ Paths abbreviated under `src/transcriptx/`.
 
 ### Public analysis module ids (not schema envelopes)
 
-Registry scan: **`semantic_similarity_v2` is the only public module id / package that embeds a `_vN` suffix.** Older siblings still exist as unversioned legacy ids (not named `_v1`).
+Registry scan: **`semantic_similarity` is the only public module id / package that embeds a `_vN` suffix.** Older siblings still exist as unversioned legacy ids (not named `_v1`).
 
 | Module id | Package | Status today | Epoch / 1.0 action |
 |-----------|---------|--------------|--------------------|
-| `semantic_similarity_v2` | `core/analysis/semantic_similarity_v2/` | Default / current product path; `SCHEMA_VERSION = "semantic_similarity_v2.1.1"` is method identity | **Rename** → `semantic_similarity` after legacy retirement (registry, package dir, config `analysis.semantic_similarity_v2*`, UI presets, profile ids `*_v2`, artifact basenames, docs). Retarget method string so it does not imply a second live module (e.g. keep a semantics fingerprint without requiring `_v2` in the **module id**). |
+| `semantic_similarity` | `core/analysis/semantic_similarity/` | Default / current product path; `SCHEMA_VERSION = "semantic_similarity.1.1"` is method identity | **Rename** → `semantic_similarity` after legacy retirement (registry, package dir, config `analysis.semantic_similarity*`, UI presets, profile ids `*_v2`, artifact basenames, docs). Retarget method string so it does not imply a second live module (e.g. keep a semantics fingerprint without requiring `_v2` in the **module id**). |
 | `semantic_similarity` | `core/analysis/semantic_similarity/` | `legacy: True` | **Retire / remove** from public registry (no reason to keep a parallel legacy module for 1.0) |
 | `semantic_similarity_advanced` | same legacy package | `legacy: True` | **Retire / remove** |
 | `llm_custom_qa` | `…/llm_custom_qa/` (`analyze_v2.py` internal) | Public id already unversioned | **Keep module id**; collapse dual commit-marker / schema-id writer symbols (see row above) |
 
-**Why not “keep `_v2` as method identity” forever:** same naming smell as `COMMIT_MARKER_SCHEMA_VERSION_V2` — the product default should not look like a temporary upgrade path. Group aggregation already uses unversioned agg id `semantic_similarity` while preferring `semantic_similarity_v2` payloads — rename aligns those.
+**Why not “keep `_v2` as method identity” forever:** same naming smell as `COMMIT_MARKER_SCHEMA_VERSION_V2` — the product default should not look like a temporary upgrade path. Group aggregation already uses unversioned agg id `semantic_similarity` while preferring `semantic_similarity` payloads — rename aligns those.
 
 **Breakage surface if renamed without retiring legacy:** config/presets collision on id `semantic_similarity`; must delete or archive legacy modules first. Owner clean-slate / pre-public wipe means **no long-lived module-id alias map** is required.
 
-**Near misses (not public module ids):** artifact schema strings (`emotion_result_schema_v2`), profile keys (`fast_v2`), voice output path `voice/v1/` — handled under schema-id / layout rules, not module rename.
+**Near misses (not public module ids):** artifact schema strings (`transcriptx.emotion_result.v1`), profile keys (`fast_v2`), voice output path `voice/v1/` — handled under schema-id / layout rules, not module rename.
 
 ## Compatibility helpers to archive/remove after reset
 
@@ -138,7 +138,7 @@ Registry scan: **`semantic_similarity_v2` is the only public module id / package
 | `core/utils/state_schema.migrate_state_entry` | Replace with refuse/remediate for pre-epoch |
 | Readers accepting `"1.0"` / `"2.0"` dotted schema stamps | Accept integer `1` only after migration |
 | Emotion/corrections legacy payload builders | Remove or quarantine post-wipe |
-| Legacy semantic modules + `semantic_similarity_v2` id | Retire legacy; rename v2 → unversioned `semantic_similarity` (see Public module ids) |
+| Legacy semantic modules + `semantic_similarity` id | Retire legacy; rename v2 → unversioned `semantic_similarity` (see Public module ids) |
 | `llm_custom_qa` `COMMIT_MARKER_SCHEMA_VERSION_V1`/`_V2` | Single `COMMIT_MARKER_SCHEMA_VERSION = 1` |
 
 ## Transition UX design
@@ -159,15 +159,15 @@ Keep within **existing public surfaces** — no new public analysis CLI.
 
 ### Checklist
 
-- [ ] GUI preflight detects incompatible roots before work begins
-- [ ] Typed Python workflow and/or internal maintainer utility
-- [ ] Optional inventory/export before reset path
-- [ ] Explicit “create fresh data directory” path
-- [ ] No automatic deletion of user data
-- [ ] Precise identification of which root is incompatible
-- [ ] Backup guidance in GUI/docs
-- [ ] Reset report when supported reset path is used
-- [ ] Tests proving unrelated source recordings are never touched
+- [x] GUI preflight detects incompatible roots before work begins
+- [x] Typed Python workflow and/or internal maintainer utility
+- [x] Optional inventory/export before reset path
+- [x] Explicit “create fresh data directory” path
+- [x] No automatic deletion of user data
+- [x] Precise identification of which root is incompatible
+- [x] Backup guidance in GUI/docs
+- [x] Reset report when supported reset path is used
+- [x] Tests proving unrelated source recordings are never touched
 - [x] Retain decision for managed transcripts recorded (retain / reimport OK)
 - [ ] Validation that a 0.9 epoch-1 store opens unchanged later
 

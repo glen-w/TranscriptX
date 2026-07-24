@@ -9,7 +9,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-CANONICAL_SCHEMA_VERSION = "1.0"
+CANONICAL_SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -90,7 +90,7 @@ class CanonicalTranscript:
     content_hash: str
     segments: List[Dict[str, Any]]
     capabilities: TranscriptCapabilities
-    schema_version: str = CANONICAL_SCHEMA_VERSION
+    schema_version: int = CANONICAL_SCHEMA_VERSION
 
     @classmethod
     def from_segments(

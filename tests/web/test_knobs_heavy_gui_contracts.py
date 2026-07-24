@@ -119,7 +119,7 @@ def test_analysis_presets_panel_save_persists_ui_presets(monkeypatch) -> None:
                         allow_llm=True,
                         llm_module_ids=["llm_summary"],
                         allow_heavy=True,
-                        heavy_module_ids=["semantic_similarity_v2"],
+                        heavy_module_ids=["semantic_similarity"],
                         include_excluded_from_default=False,
                         module_ids=None,
                     ),

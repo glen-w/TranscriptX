@@ -48,7 +48,7 @@ class TestSummaryExtractors:
             "interactions",
             "semantic_similarity",
             "semantic_similarity_advanced",
-            "semantic_similarity_v2",
+            "semantic_similarity",
             "entity_sentiment",
             "understandability",
             "lexical_diversity",
@@ -112,9 +112,9 @@ class TestSummaryExtractors:
         assert "Top vocabulary categories" in summary["key_metrics"]
         assert any("Lexical emotion" in h for h in summary["highlights"])
 
-    def test_semantic_similarity_v2_extractor(self):
-        """Test semantic_similarity_v2 extractor against v2 output shape."""
-        extractor = get_extractor("semantic_similarity_v2")
+    def test_semantic_similarity_extractor(self):
+        """Test semantic_similarity extractor against v2 output shape."""
+        extractor = get_extractor("semantic_similarity")
         assert extractor is not None
 
         data = {

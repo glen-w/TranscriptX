@@ -69,7 +69,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "bertopic",
             "semantic_similarity",
             "semantic_similarity_advanced",
-            "semantic_similarity_v2",
+            "semantic_similarity",
             "understandability",
             "lexical_diversity",
             "epistemic_markers",

@@ -105,7 +105,7 @@ def test_load_chapters_and_pending_jump(tmp_path: Path) -> None:
     }
     (data / "topic_shift.spans.json").write_text(json.dumps(spans), encoding="utf-8")
     rr = {
-        "schema_version": 2,
+        "schema_version": 1,
         "run_id": "r1",
         "transcript_key": "sess",
         "modules_enabled": ["topic_shift"],
@@ -168,7 +168,7 @@ def test_chapter_titles_prefer_hints_and_rewrite_segment_label(tmp_path: Path) -
     (run_root / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "sess",
                 "modules_enabled": ["topic_shift"],
@@ -222,7 +222,7 @@ def test_chapter_titles_prefer_llm_enrichment(tmp_path: Path) -> None:
     (run_root / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "sess",
                 "modules_enabled": ["topic_shift"],
@@ -279,7 +279,7 @@ def test_chapter_rejects_segment_echo_title_and_keeps_keywords(
     (run_root / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "sess",
                 "modules_enabled": ["topic_shift"],

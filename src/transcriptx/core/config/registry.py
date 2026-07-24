@@ -9,7 +9,7 @@ import copy
 
 from transcriptx.core.utils.config import TranscriptXConfig  # type: ignore[import-untyped]
 
-SEMANTIC_SIMILARITY_V2_PREFIX = "analysis.semantic_similarity_v2"
+SEMANTIC_SIMILARITY_V2_PREFIX = "analysis.semantic_similarity"
 
 
 @dataclass(frozen=True)

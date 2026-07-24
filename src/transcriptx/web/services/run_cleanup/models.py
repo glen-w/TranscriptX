@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 CLEANUP_POLICY_VERSION = 7
-JOURNAL_SCHEMA_VERSION = 3
-CLEANUP_RESULT_SCHEMA_VERSION = 2
+JOURNAL_SCHEMA_VERSION = 1
+CLEANUP_RESULT_SCHEMA_VERSION = 1
 STAGING_DIR_NAME = ".cleanup_staging"
 CONFIRM_DELETE_ALL = "DELETE ALL"
 CONFIRM_DELETE_OLD = "DELETE OLD RUNS"
@@ -455,21 +455,18 @@ def authorization_is_valid(
 def result_as_dict(result: CleanupResult) -> dict[str, Any]:
     """Serialize CleanupResult for journal / handle storage.
 
-    Schema ≥ 2 omits legacy ``root_kind`` (duplicate of ``subject_type``).
+    Epoch-1 omits legacy ``root_kind`` (duplicate of ``subject_type``).
     """
     payload = asdict(result)
     payload["cleanup_result_schema_version"] = CLEANUP_RESULT_SCHEMA_VERSION
-    if CLEANUP_RESULT_SCHEMA_VERSION >= 2:
-        for t in payload.get("targets", []):
-            if isinstance(t, dict):
-                t.pop("root_kind", None)
+    for t in payload.get("targets", []):
+        if isinstance(t, dict):
+            t.pop("root_kind", None)
     return payload
 
 
-def _target_result_from_mapping_v1(t: Mapping[str, Any]) -> CleanupTargetResult:
-    """Schema-1 target reader: restores identity fields when present."""
-    root_kind_raw = t.get("root_kind")
-    root_kind = SubjectType(root_kind_raw) if root_kind_raw is not None else None
+def _target_result_from_mapping(t: Mapping[str, Any]) -> CleanupTargetResult:
+    """Epoch-1 target reader."""
     fs_dev = t.get("filesystem_dev")
     fs_ino = t.get("filesystem_ino")
     return CleanupTargetResult(
@@ -483,44 +480,16 @@ def _target_result_from_mapping_v1(t: Mapping[str, Any]) -> CleanupTargetResult:
         staging_path=t.get("staging_path"),
         filesystem_dev=int(fs_dev) if fs_dev is not None else None,
         filesystem_ino=int(fs_ino) if fs_ino is not None else None,
-        root_kind=root_kind,
+        root_kind=None,
     )
 
 
-def _target_result_from_mapping_v2(t: Mapping[str, Any]) -> CleanupTargetResult:
-    """Schema-2: identity fields required when present; root_kind ignored if set."""
-    result = _target_result_from_mapping_v1(t)
-    if result.root_kind is not None:
-        # Accept legacy field but do not treat it as authoritative.
-        return CleanupTargetResult(
-            subject_type=result.subject_type,
-            subject_id=result.subject_id,
-            run_id=result.run_id,
-            root_relative_path=result.root_relative_path,
-            canonical_path=result.canonical_path,
-            status=result.status,
-            message=result.message,
-            staging_path=result.staging_path,
-            filesystem_dev=result.filesystem_dev,
-            filesystem_ino=result.filesystem_ino,
-            root_kind=None,
-        )
-    return result
-
-
-_RESULT_TARGET_READERS: dict[int, Any] = {
-    1: _target_result_from_mapping_v1,
-    2: _target_result_from_mapping_v2,
-}
-
-
 def result_from_mapping(data: Mapping[str, Any]) -> CleanupResult:
-    """Deserialize CleanupResult; version defaults to 1 for legacy payloads."""
-    version = int(data.get("cleanup_result_schema_version") or 1)
-    reader = _RESULT_TARGET_READERS.get(version)
-    if reader is None:
+    """Deserialize CleanupResult; epoch-1 only."""
+    version = int(data.get("cleanup_result_schema_version") or CLEANUP_RESULT_SCHEMA_VERSION)
+    if version != CLEANUP_RESULT_SCHEMA_VERSION:
         raise ValueError(f"unsupported cleanup_result_schema_version: {version}")
-    targets = tuple(reader(t) for t in data.get("targets", ()))
+    targets = tuple(_target_result_from_mapping(t) for t in data.get("targets", ()))
     return CleanupResult(
         operation_id=str(data["operation_id"]),
         plan_id=str(data["plan_id"]),

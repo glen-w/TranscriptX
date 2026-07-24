@@ -54,10 +54,10 @@ __all__ = [
     "build_llm_action_items_cache_key",
 ]
 
-LLM_ACTION_ITEMS_SCHEMA_ID = "transcriptx.llm_action_items.v2"
+LLM_ACTION_ITEMS_SCHEMA_ID = "transcriptx.llm_action_items.v1"
 LLM_ACTION_ITEMS_SCHEMA_ID_V1 = "transcriptx.llm_action_items.v1"
 LLM_ACTION_ITEMS_RENDER_CONTRACT_ID = "transcriptx.llm_action_items.render.v2"
-LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION = 2
+LLM_ACTION_ITEMS_GROUP_SCHEMA_VERSION = 1
 
 RECORD_TYPES = (
     "decision",

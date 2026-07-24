@@ -51,7 +51,7 @@ def test_discover_managed_transcript_paths_filters_invalid(tmp_path: Path, monke
     transcripts_dir.mkdir(parents=True)
     good = transcripts_dir / "good.json"
     bad = transcripts_dir / "bad.json"
-    payload = '{"schema_version": "1.0", "source": {"type": "manual", "original_path": "good.json", "imported_at": "2020-01-01T00:00:00+00:00"}, "segments": []}'
+    payload = '{"schema_version": 1, "source": {"type": "manual", "original_path": "good.json", "imported_at": "2020-01-01T00:00:00+00:00"}, "segments": []}'
     good.write_text(payload, encoding="utf-8")
     bad.write_text("{}", encoding="utf-8")
 

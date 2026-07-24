@@ -102,7 +102,7 @@ def test_chart_definitions_json_load_count():
     )
     assert (
         get_chart_definition(
-            "semantic_similarity_v2.speaker_repetition_frequency.global"
+            "semantic_similarity.speaker_repetition_frequency.global"
         )
         is not None
     )
@@ -314,7 +314,7 @@ def test_registry_stability_core_viz_ids():
         assert get_chart_definition(viz_id) is not None
 
 
-def test_semantic_similarity_v2_chart_definitions_match_artifacts():
+def test_semantic_similarity_chart_definitions_match_artifacts():
     expected = {
         "speaker_repetition_frequency",
         "agreement_disagreement_breakdown",
@@ -324,16 +324,16 @@ def test_semantic_similarity_v2_chart_definitions_match_artifacts():
         "speaker_similarity",
     }
     for slug in expected:
-        viz_id = f"semantic_similarity_v2.{slug}.global"
+        viz_id = f"semantic_similarity.{slug}.global"
         chart_def = get_chart_definition(viz_id)
         assert chart_def is not None
         artifact = FakeArtifact(
             id=f"{slug}_png",
             kind="chart_static",
-            module="semantic_similarity_v2",
+            module="semantic_similarity",
             scope="global",
             speaker=None,
-            rel_path=f"semantic_similarity_v2/charts/global/static/base_{slug}.png",
+            rel_path=f"semantic_similarity/charts/global/static/base_{slug}.png",
             meta={"viz_id": viz_id},
         )
         assert chart_def.match.matches(artifact, chart_def) is True

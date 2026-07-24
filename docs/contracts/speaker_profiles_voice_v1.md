@@ -4,7 +4,7 @@ Authority: self
 # Speaker profiles — voice phase v1 (R2)
 
 Local voice fingerprinting and suggested speaker matches. Confirmed
-`speaker_profile_link.v1` records remain the **sole** cross-transcript identity
+`transcriptx.speaker_profile_link.v1` records remain the **sole** cross-transcript identity
 authority. Voice artefacts are suggestive evidence only.
 
 Companion to [`speaker_profiles_v1.md`](speaker_profiles_v1.md). Same
@@ -65,15 +65,15 @@ or backup (`assert_safe_relpath`). Same symlink / containment rules as Phase 1.
 
 | Artifact | `schema_id` |
 |----------|-------------|
-| Privacy settings | `voice_privacy_settings.v1` |
-| Operator settings | `voice_operator_settings.v1` |
-| Active generation pointer | `voice_active_generation.v1` |
-| Model generation pin | `voice_model_generation.v1` |
-| Voice sample | `voice_sample.v1` |
-| Embedding metadata | `voice_embedding.v1` |
-| Match decision | `voice_match_decision.v1` |
-| Suggestion cache | `voice_match_suggestion.v1` |
-| Profile voice summary | `profile_voice_summary.v1` |
+| Privacy settings | `transcriptx.voice_privacy_settings.v1` |
+| Operator settings | `transcriptx.voice_operator_settings.v1` |
+| Active generation pointer | `transcriptx.voice_active_generation.v1` |
+| Model generation pin | `transcriptx.voice_model_generation.v1` |
+| Voice sample | `transcriptx.voice_sample.v1` |
+| Embedding metadata | `transcriptx.voice_embedding.v1` |
+| Match decision | `transcriptx.voice_match_decision.v1` |
+| Suggestion cache | `transcriptx.voice_match_suggestion.v1` |
+| Profile voice summary | `transcriptx.profile_voice_summary.v1` |
 
 Privacy notice version (user-facing copy pin): `voice_privacy_notice.v1`.
 Bump requires re-consent.

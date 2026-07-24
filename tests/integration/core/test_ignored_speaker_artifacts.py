@@ -16,7 +16,7 @@ from transcriptx.core.utils import transcript_output as transcript_output_module
 
 def _write_transcript(path: Path) -> None:
     payload = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "originals/ignored_transcript.json",

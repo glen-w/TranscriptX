@@ -41,16 +41,16 @@
     "sensitivity": "normal",
     "type": "str"
   },
-  "analysis.active_semantic_similarity_v2_profile": {
+  "analysis.active_semantic_similarity_profile": {
     "advanced": false,
     "category": "analysis",
     "choices": null,
     "default": "balanced_v2",
     "description": "",
-    "key": "analysis.active_semantic_similarity_v2_profile",
+    "key": "analysis.active_semantic_similarity_profile",
     "max": null,
     "min": null,
-    "path": "analysis.active_semantic_similarity_v2_profile",
+    "path": "analysis.active_semantic_similarity_profile",
     "scope": "project",
     "sensitivity": "normal",
     "type": "str"

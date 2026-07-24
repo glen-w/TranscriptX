@@ -210,7 +210,7 @@ def test_resolve_summary_payload_invalid_run_results_falls_through(tmp_path) -> 
 def test_resolve_summary_payload_from_run_results_projection(tmp_path) -> None:
     _write_summary_artifact(tmp_path, {"overview": {"paragraph": "via run_results"}})
     run_results = {
-        "schema_version": 2,
+        "schema_version": 1,
         "run_id": "r1",
         "transcript_key": "mini",
         "modules_enabled": ["summary"],
@@ -231,7 +231,7 @@ def test_resolve_summary_payload_from_run_results_projection(tmp_path) -> None:
 def test_resolve_summary_payload_run_results_without_summary_run(tmp_path) -> None:
     _write_summary_artifact(tmp_path, {"overview": {"paragraph": "stale"}})
     run_results = {
-        "schema_version": 2,
+        "schema_version": 1,
         "run_id": "r1",
         "transcript_key": "mini",
         "modules_enabled": ["summary"],

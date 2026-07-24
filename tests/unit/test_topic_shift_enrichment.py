@@ -161,7 +161,7 @@ def test_enrichment_envelope_rejects_duplicate_span_ids() -> None:
     from transcriptx.core.analysis.topic_shift.schemas import validate_enrichment_payload
 
     payload = {
-        "schema_version": "topic_shift_enrichment_schema_v1",
+        "schema_version": "transcriptx.topic_shift_enrichment.v1",
         "prompt_version": "topic_shift_enrichment_prompt_v1",
         "outcome": "success",
         "skip_reason": None,
@@ -285,7 +285,7 @@ def test_malformed_enrichment_does_not_break_commit(tmp_path: Path, monkeypatch)
     spans = {
         "deterministic_generation_id": "det1",
         "analytical_status": "success",
-        "schema_version": "topic_shift_result_schema_v1",
+        "schema_version": "transcriptx.topic_shift_result.v1",
         "semantics_version": "topic_shift_semantics_v1",
         "backend": "tfidf",
         "coverage_spans": [

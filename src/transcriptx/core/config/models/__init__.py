@@ -4,7 +4,7 @@ from .acts import ActsSettingsModel
 from .dashboard_display import DashboardDisplaySettingsModel
 from .llm import LLMModelSelectionSettingsModel, LLMSettingsModel
 from .metadata import MetadataSettingsModel
-from .semantic_similarity_v2 import SemanticSimilarityV2SettingsModel
+from .semantic_similarity import SemanticSimilaritySettingsModel
 
 __all__ = [
     "ActsSettingsModel",
@@ -12,5 +12,5 @@ __all__ = [
     "LLMModelSelectionSettingsModel",
     "LLMSettingsModel",
     "MetadataSettingsModel",
-    "SemanticSimilarityV2SettingsModel",
+    "SemanticSimilaritySettingsModel",
 ]

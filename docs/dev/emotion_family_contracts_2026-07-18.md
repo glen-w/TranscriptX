@@ -15,9 +15,9 @@ No silent cross-method fallback. Legacy NRC-filled `context_emotion_*` is UI/rep
 
 ## Dual versioning
 
-- `schema_version` — wire/shape (`emotion_result_schema_v2`, `contextual_emotion_result_schema_v2`, `fine_grained_emotion_result_schema_v2`)
+- `schema_version` — wire/shape (`transcriptx.emotion_result.v1`, `contextual_transcriptx.emotion_result.v1`, `fine_grained_transcriptx.emotion_result.v1`)
 - `semantics_version` — analytical meaning (`emotion_lexical_v2`, `contextual_emotion_v1`, `fine_grained_emotion_v1`); no bump for identity/persistence hardening
-- Store schemas: `emotion_family_artifact_index_v1`, `emotion_family_generation_manifest_v1`
+- Store schemas: `transcriptx.emotion_family_artifact_index.v1`, `transcriptx.emotion_family_generation_manifest.v1`
 - Cache schemas: `emotion_family_inference_cache_v3`, `emotion_family_aggregation_cache_v3` (reject older versions without aliasing)
 
 ## Generation identity

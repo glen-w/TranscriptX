@@ -1,6 +1,6 @@
 {
   "cleanup_policy_version": 7,
-  "journal_schema_version": 3,
+  "journal_schema_version": 1,
   "mode": "DELETE_ALL",
   "operation_id": "<OPERATION_ID>",
   "plan_id": "<PLAN_ID>",

@@ -305,7 +305,7 @@ class BERTopicConfig:
 
 @dataclass
 class SemanticSimilarityV2Config:
-    """Tunable settings for semantic_similarity_v2. Defaults owned by SemanticSimilarityV2SettingsModel."""
+    """Tunable settings for semantic_similarity. Defaults owned by SemanticSimilaritySettingsModel."""
 
     enabled: bool = field(init=False, repr=True)
     mode: str = field(init=False, repr=True)
@@ -334,11 +334,11 @@ class SemanticSimilarityV2Config:
     cluster_min_samples: int = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
-        from transcriptx.core.config.models.semantic_similarity_v2 import (
-            SemanticSimilarityV2SettingsModel,
+        from transcriptx.core.config.models.semantic_similarity import (
+            SemanticSimilaritySettingsModel,
         )
 
-        _hydrate_dataclass_from_pydantic(self, SemanticSimilarityV2SettingsModel())
+        _hydrate_dataclass_from_pydantic(self, SemanticSimilaritySettingsModel())
 
 
 @dataclass
@@ -478,11 +478,11 @@ class AnalysisConfig:
     full_analysis_settings: dict[str, Any] = field(init=False, repr=True)
 
     # Semantic similarity v2 (default semantic path; legacy IDs remain selectable)
-    semantic_similarity_v2: SemanticSimilarityV2Config = field(
+    semantic_similarity: SemanticSimilarityV2Config = field(
         default_factory=SemanticSimilarityV2Config
     )
-    active_semantic_similarity_v2_profile: str = "balanced_v2"
-    semantic_similarity_v2_profiles: dict[str, dict[str, Any]] = field(
+    active_semantic_similarity_profile: str = "balanced_v2"
+    semantic_similarity_profiles: dict[str, dict[str, Any]] = field(
         init=False, repr=True
     )
 
@@ -583,7 +583,7 @@ class AnalysisConfig:
         from transcriptx.core.config.models.quality_filtering_profiles import (
             QualityFilteringProfilesSettingsModel,
         )
-        from transcriptx.core.config.models.semantic_similarity_v2_profiles import (
+        from transcriptx.core.config.models.semantic_similarity_profiles import (
             SemanticSimilarityV2ProfilesSettingsModel,
         )
         from transcriptx.core.config.models.quick_analysis_settings import (
@@ -604,7 +604,7 @@ class AnalysisConfig:
         )
         _hydrate_mapping_store(
             self,
-            "semantic_similarity_v2_profiles",
+            "semantic_similarity_profiles",
             SemanticSimilarityV2ProfilesSettingsModel(),
         )
         _hydrate_mapping_store(

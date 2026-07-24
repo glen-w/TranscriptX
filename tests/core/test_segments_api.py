@@ -20,7 +20,7 @@ def test_get_segments_empty_target_returns_empty() -> None:
 def test_get_segments_cache_false_loads_via_io(tmp_path: Path) -> None:
     p = tmp_path / "t.json"
     payload = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "test.json",
@@ -40,7 +40,7 @@ def test_get_segments_cache_true_uses_transcript_service(tmp_path: Path) -> None
     p.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": {
                     "type": "manual",
                     "original_path": "test.json",

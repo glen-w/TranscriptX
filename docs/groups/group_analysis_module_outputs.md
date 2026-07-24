@@ -27,7 +27,7 @@ All registered pipeline modules support group runs (`supports_group=true`) and h
 | llm_action_items, insights, semantic_similarity*, voice_mismatch/tension/fingerprint | Rows (+ charts where registered) |
 | prosody (from voice_features / voice_charts_core / prosody_dashboard) | Registry-backed via existing `prosody` agg |
 
-\* `semantic_similarity`, `semantic_similarity_advanced`, and `semantic_similarity_v2` share one aggregation entry. **B14:** v2 motif envelope + group centroid match within a comparable provenance cohort (valid-zero sessions included; TF-IDF incomparable). `repetition_rows` remain `content_rows`; additive `motif_rows` + versioned `semantic_similarity_pooled`. Chart class: composite session bars + motif prevalence ([`group_charts_semantic_motifs_contract.md`](group_charts_semantic_motifs_contract.md)).
+\* `semantic_similarity`, `semantic_similarity_advanced`, and `semantic_similarity` share one aggregation entry. **B14:** v2 motif envelope + group centroid match within a comparable provenance cohort (valid-zero sessions included; TF-IDF incomparable). `repetition_rows` remain `content_rows`; additive `motif_rows` + versioned `semantic_similarity_pooled`. Chart class: composite session bars + motif prevalence ([`group_charts_semantic_motifs_contract.md`](group_charts_semantic_motifs_contract.md)).
 
 ## keyphrases group aggregation (B16)
 

@@ -32,7 +32,7 @@ def test_truth_path_fixture_cross_consumer_consistency(tmp_path: Path) -> None:
     _write_json(
         run_dir / "run_results.json",
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": "run_001",
             "transcript_key": "tk_001",
             "modules_enabled": [

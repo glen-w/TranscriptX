@@ -186,9 +186,9 @@ class TestResolveAnalysisPreset:
             mid for mid in balanced.module_ids if is_heavy_module(get_module_info(mid))
         }
         assert llm <= {"llm_summary"}
-        assert heavy <= {"semantic_similarity_v2", "fine_grained_emotion"}
+        assert heavy <= {"semantic_similarity", "fine_grained_emotion"}
         assert "llm_summary" in balanced.module_ids
-        assert "semantic_similarity_v2" in balanced.module_ids
+        assert "semantic_similarity" in balanced.module_ids
         assert "fine_grained_emotion" in balanced.module_ids
 
     def test_module_override_replaces_policy(self) -> None:
@@ -245,7 +245,7 @@ class TestResolveAnalysisPreset:
         assert "topic_modeling" not in balanced.module_ids
         assert "insights" not in balanced.module_ids
         assert "bertopic" not in balanced.module_ids
-        assert "semantic_similarity_v2" in balanced.module_ids
+        assert "semantic_similarity" in balanced.module_ids
         assert "fine_grained_emotion" in balanced.module_ids
 
     def test_thorough_empty_allowlists_mean_all_llm_and_heavy(self) -> None:
@@ -429,11 +429,11 @@ class TestSelectionHelpersAndFullMode:
                 "max_segments_per_speaker": 50,
                 "max_segments_for_cross_speaker": 100,
             }
-            cfg.analysis.semantic_similarity_v2 = type(
+            cfg.analysis.semantic_similarity = type(
                 "V2", (), {"mode": "basic"}
             )()
             apply_analysis_mode_settings("full", profile="not-a-profile")
             assert cfg.analysis.analysis_mode == "full"
             assert cfg.analysis.quality_filtering_profile == "balanced"
-            assert cfg.analysis.semantic_similarity_v2.mode == "advanced"
+            assert cfg.analysis.semantic_similarity.mode == "advanced"
             assert cfg.analysis.max_segments_per_speaker == 50

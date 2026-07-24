@@ -34,7 +34,7 @@ from transcriptx.services.corrections_studio.semantic_identity import (
     sources_from_kind,
 )
 
-STUDIO_SCHEMA_VERSION = 2
+STUDIO_SCHEMA_VERSION = 1
 
 
 def _now_iso() -> str:

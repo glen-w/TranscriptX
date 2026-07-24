@@ -341,7 +341,7 @@ def test_dual_active_matrix_det_active_enrich_fail_keeps_chapters(tmp_path: Path
         json.dumps(enrich), encoding="utf-8"
     )
     rr = {
-        "schema_version": 2,
+        "schema_version": 1,
         "run_id": "r1",
         "transcript_key": "sess",
         "modules_enabled": ["topic_shift"],

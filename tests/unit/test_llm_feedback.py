@@ -199,7 +199,7 @@ def test_truncated_tail_preserved(tmp_path: Path) -> None:
     store.append(_event(output_text="first"))
     # Append a truncated line without going through the writer
     with open(store.events_path, "ab") as handle:
-        handle.write(b'{"schema_id":"llm_feedback_event_v1","feedback_id":"broken')
+        handle.write(b'{"schema_id":"transcriptx.llm_feedback_event.v1","feedback_id":"broken')
     result = store.iter_events()
     assert len(result.events) == 1
     assert result.tail_error is not None

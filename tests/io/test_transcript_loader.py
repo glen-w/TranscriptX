@@ -11,7 +11,11 @@ from unittest.mock import patch
 import pytest
 
 from transcriptx.io import load_transcript_data
-from transcriptx.io.transcript_loader import load_segments, load_transcript
+from transcriptx.io.transcript_loader import (
+    load_canonical_transcript,
+    load_segments,
+    load_transcript,
+)
 
 
 def _v1_source(path: str = "test.json") -> dict:
@@ -24,7 +28,7 @@ def _v1_source(path: str = "test.json") -> dict:
 
 def _v1_doc(segments: list, *, source_path: str = "test.json") -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": _v1_source(source_path),
         "segments": segments,
     }
@@ -167,6 +171,73 @@ class TestLoadSegments:
         with pytest.raises(ValueError, match="schema_version|schema v1.0"):
             load_segments(str(test_file), data=bad)
 
+    def test_rejects_non_json_suffix(self, tmp_path):
+        path = tmp_path / "note.txt"
+        path.write_text("not json")
+        with pytest.raises(ValueError, match=r"only accepts \.json"):
+            load_segments(str(path))
+
+    def test_rejects_segments_not_list(self, tmp_path):
+        data = _v1_doc([])
+        data["segments"] = {"speaker": "A", "text": "x"}
+        with pytest.raises(ValueError, match="segments' must be a list"):
+            load_segments(str(tmp_path / "x.json"), data=data)
+
+    def test_resolves_missing_path_via_path_resolution(self, tmp_path):
+        real = tmp_path / "resolved.json"
+        real.write_text(
+            json.dumps(
+                _v1_doc(
+                    [
+                        {
+                            "speaker": "SPEAKER_00",
+                            "text": "Hello",
+                            "start": 0.0,
+                            "end": 1.0,
+                        }
+                    ]
+                )
+            )
+        )
+        missing = str(tmp_path / "missing.json")
+        with patch(
+            "transcriptx.core.utils._path_resolution.resolve_file_path",
+            return_value=str(real),
+        ):
+            segments = load_segments(missing)
+        assert len(segments) == 1
+        assert segments[0]["speaker"] == "SPEAKER_00"
+
+
+class TestLoadCanonicalTranscript:
+    """Tests for load_canonical_transcript."""
+
+    def test_builds_canonical_from_v1_file(self, tmp_path):
+        path = tmp_path / "canon.json"
+        path.write_text(
+            json.dumps(
+                _v1_doc(
+                    [
+                        {
+                            "speaker": "SPEAKER_00",
+                            "text": "Hello",
+                            "start": 0.0,
+                            "end": 1.0,
+                        }
+                    ]
+                )
+            )
+        )
+        canon = load_canonical_transcript(str(path))
+        assert len(canon.segments) == 1
+        assert canon.segments[0]["speaker"] == "SPEAKER_00"
+
+    def test_empty_segments_raises(self, tmp_path):
+        path = tmp_path / "empty.json"
+        path.write_text(json.dumps(_v1_doc([])))
+        with pytest.raises(ValueError, match="No segments found"):
+            load_canonical_transcript(str(path))
+
 
 class TestLoadTranscript:
     """Tests for load_transcript function."""
@@ -174,7 +245,7 @@ class TestLoadTranscript:
     def test_loads_complete_transcript(self, tmp_path):
         test_file = tmp_path / "test.json"
         data = {
-            "schema_version": "1.0",
+            "schema_version": 1,
             "source": _v1_source(),
             "segments": [
                 {"speaker": "SPEAKER_00", "text": "Hello", "start": 0, "end": 1}
@@ -191,7 +262,7 @@ class TestLoadTranscript:
     def test_preserves_all_fields(self, tmp_path):
         test_file = tmp_path / "test.json"
         data = {
-            "schema_version": "1.0",
+            "schema_version": 1,
             "source": _v1_source(),
             "segments": [
                 {"speaker": "SPEAKER_00", "text": "Hello", "start": 0, "end": 1}
@@ -216,6 +287,34 @@ class TestLoadTranscript:
 
         with pytest.raises(json.JSONDecodeError):
             load_transcript(str(test_file))
+
+    def test_rejects_non_json_suffix(self, tmp_path):
+        path = tmp_path / "clip.vtt"
+        path.write_text("WEBVTT\n")
+        with pytest.raises(ValueError, match="only handles JSON"):
+            load_transcript(str(path))
+
+    def test_json_decode_error_includes_near_position_snippet(self, tmp_path):
+        path = tmp_path / "broken.json"
+        # Valid prefix then a clear breakage so pos is past the start.
+        path.write_text('{"ok": true, "bad": }')
+        with pytest.raises(json.JSONDecodeError, match="Near position") as exc_info:
+            load_transcript(str(path))
+        assert "line" in str(exc_info.value).lower() or "Near position" in str(
+            exc_info.value
+        )
+
+    def test_resolves_missing_path_via_path_resolution(self, tmp_path):
+        real = tmp_path / "resolved.json"
+        payload = {"schema_version": 1, "source": _v1_source(), "segments": []}
+        real.write_text(json.dumps(payload))
+        missing = str(tmp_path / "gone.json")
+        with patch(
+            "transcriptx.core.utils._path_resolution.resolve_file_path",
+            return_value=str(real),
+        ):
+            loaded = load_transcript(missing)
+        assert loaded == payload
 
 
 class TestLoadTranscriptData:

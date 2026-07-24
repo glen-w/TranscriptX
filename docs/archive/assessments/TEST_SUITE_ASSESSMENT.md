@@ -2150,3 +2150,43 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Streamlit assessment matrix updated for Speakers / Groups / Insights / Overview / Charts.
 - Production code: **none**.
 - Quarantined tests: **not re-enabled**.
+
+---
+
+## 73. Expansion (2026-07-24) – loader + atomic JSON + validation edges
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260724-1539.zip` (5.9M); `custom-commands/` mirrored.
+- **Collection (default filter):** `7608/7796` selected (`188` deselected) before expansion; full `-m ""` = `7796`.
+- **Baseline before expansion:** `7605 passed, 1 failed, 2 skipped, 188 deselected`.
+  - Sole failure: `test_stale_refs_script_exits_zero` — WIP `docs/dev/docs_architecture_1_0.md` quoted the denylist literal `readthedocs.io`. Classified as docs self-reference, not core suite health. Rephrased hostname wording (docs-only).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; `-m quarantined` selects nothing); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance).
+- **Structure:** `tests/{analysis,app,contracts,core,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}`.
+- **Targeted coverage (core/pipeline/contracts slice):** ~57% overall; high-leverage gaps called out: `io/transcript_loader` (~50% in that slice), `io/atomic_json` (no dedicated unit file).
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| `load_segments` / `load_transcript` | Non-`.json`, non-list `segments`, path-resolution success, enriched JSONDecodeError | Extended `tests/io/test_transcript_loader.py` |
+| `load_canonical_transcript` | No default-lane unit coverage (only integration mocks) | Happy path + empty raises |
+| `atomic_json` | Shared crash-safe write primitive only covered incidentally | New `tests/io/test_atomic_json.py` |
+| `validate_transcript_file` | High-leverage file only covered empty-path | Missing / non-JSON / valid v1 accept |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/io/test_transcript_loader.py` | **+8** | suffix gates, segments type, resolve_file_path, canonical loader, decode snippet |
+| `tests/io/test_atomic_json.py` | **new (+11)** | strict dumps rejects; atomic write/replace/locked roundtrips |
+| `tests/unit/test_high_leverage.py` | **+3** | validate_transcript_file missing / non-json / accept v1 |
+| `docs/dev/docs_architecture_1_0.md` | wording | remove denylist self-hit for stale_refs |
+
+### Validation
+- Focused slice: **55 passed**.
+- Default suite after expansion: **7628 passed, 2 skipped, 188 deselected**.
+- **Production code:** none (tests + one docs hygiene rephrase).
+- **Quarantined tests:** not re-enabled.

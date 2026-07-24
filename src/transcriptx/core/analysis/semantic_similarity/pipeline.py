@@ -1,4 +1,4 @@
-"""Orchestrate semantic_similarity_v2 stages."""
+"""Orchestrate semantic_similarity stages."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def _finalize(
     return with_schema(results)
 
 
-def run_semantic_similarity_v2_pipeline(
+def run_semantic_similarity_pipeline(
     segments: List[Dict[str, Any]],
     cfg: SemanticSimilarityV2Config,
     *,
@@ -81,9 +81,9 @@ def run_semantic_similarity_v2_pipeline(
         diag.runtime_seconds_breakdown = {"total": 0.0}
         return (
             _finalize(
-                {"skipped": True, "reason": "semantic_similarity_v2_disabled"},
+                {"skipped": True, "reason": "semantic_similarity_disabled"},
                 motif_export_status="skipped",
-                reason="semantic_similarity_v2_disabled",
+                reason="semantic_similarity_disabled",
                 provenance=empty_prov,
                 eligible_segment_count=0,
             ),

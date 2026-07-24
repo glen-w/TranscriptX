@@ -26,7 +26,7 @@ from transcriptx.io.transcript_service import (
 def _fixture_transcript(tmp_path: Path) -> tuple[str, list, dict]:
     """Create a v1.0 artifact JSON and return (path, segments, full_data)."""
     data = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "meeting.json",
@@ -132,7 +132,7 @@ class TestPathResolutionContract:
         """When path does not exist, load_segments uses resolve_file_path; if resolution returns existing file, segments from that file are returned."""
         resolved_file = tmp_path / "resolved.json"
         data = {
-            "schema_version": "1.0",
+            "schema_version": 1,
             "source": {
                 "type": "manual",
                 "original_path": str(resolved_file),

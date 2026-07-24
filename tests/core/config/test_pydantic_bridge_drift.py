@@ -141,7 +141,7 @@ def _pilot_defaults_subtree(spec) -> dict:
         return asdict(spec.dataclass_type())
     if spec.pilot_id in {
         "quality_filtering_profiles",
-        "semantic_similarity_v2_profiles",
+        "semantic_similarity_profiles",
         "quick_analysis_settings",
         "full_analysis_settings",
     }:

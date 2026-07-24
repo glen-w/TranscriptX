@@ -28,7 +28,7 @@ def _seg(speaker: str, text: str, start: float, **extra):
 def _contextual_artifact(segments, **overrides):
     artifact = {
         "module_id": "contextual_emotion",
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "run_status": "complete",
         "usable_output": True,
@@ -51,7 +51,7 @@ def _contextual_artifact(segments, **overrides):
 def _lexical_artifact(segments, **overrides):
     artifact = {
         "module_id": "emotion",
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "run_status": "complete",
         "usable_output": True,
@@ -98,7 +98,7 @@ def _with_lexical_projection(seg: dict) -> dict:
         {
             "module_id": "emotion",
             "artifact_generation_id": "a" * 32,
-            "schema_version": "emotion_result_schema_v2",
+            "schema_version": "transcriptx.emotion_result.v1",
             "semantics_version": "emotion_lexical_v2",
             "row_key": str(out.get("id") or ""),
             "scored_text_hash": out["emotion_scored_text_hash"],

@@ -273,14 +273,14 @@ class TranscriptXConfig:
                 "include_legacy_modules": self.analysis.include_legacy_modules,
                 "quick_analysis_settings": self.analysis.quick_analysis_settings,
                 "full_analysis_settings": self.analysis.full_analysis_settings,
-                "semantic_similarity_v2": self._config_to_dict(
-                    self.analysis.semantic_similarity_v2
+                "semantic_similarity": self._config_to_dict(
+                    self.analysis.semantic_similarity
                 ),
-                "active_semantic_similarity_v2_profile": (
-                    self.analysis.active_semantic_similarity_v2_profile
+                "active_semantic_similarity_profile": (
+                    self.analysis.active_semantic_similarity_profile
                 ),
-                "semantic_similarity_v2_profiles": (
-                    self.analysis.semantic_similarity_v2_profiles
+                "semantic_similarity_profiles": (
+                    self.analysis.semantic_similarity_profiles
                 ),
                 # Module-specific configs
                 "topic_modeling": self._config_to_dict(self.analysis.topic_modeling),

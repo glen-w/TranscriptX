@@ -73,7 +73,7 @@ class BalancedPresetPolicyModel(BaseModel):
     )
     heavy_module_ids: list[str] = Field(
         default_factory=lambda: [
-            "semantic_similarity_v2",
+            "semantic_similarity",
             "fine_grained_emotion",
         ],
         description=(

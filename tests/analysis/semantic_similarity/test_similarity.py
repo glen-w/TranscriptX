@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-from transcriptx.core.analysis.semantic_similarity_v2.similarity import score_pairs
+from transcriptx.core.analysis.semantic_similarity.similarity import score_pairs
 
 
 def test_dot_equals_sklearn_cosine_for_normalized_rows() -> None:

@@ -1,4 +1,4 @@
-"""Profile adapter round-trip for semantic_similarity_v2."""
+"""Profile adapter round-trip for semantic_similarity."""
 
 from __future__ import annotations
 
@@ -10,10 +10,10 @@ from transcriptx.core.utils.config import TranscriptXConfig
 
 def test_profile_target_payload_roundtrip_semantic_v2() -> None:
     cfg = TranscriptXConfig()
-    cfg.analysis.semantic_similarity_v2.self_similarity_threshold = 0.81
-    cfg.analysis.semantic_similarity_v2.batch_size = 32
+    cfg.analysis.semantic_similarity.self_similarity_threshold = 0.81
+    cfg.analysis.semantic_similarity.batch_size = 32
     adapter = ProfileTargetAdapter(
-        contract=PROFILE_TARGET_CONTRACTS["semantic_similarity_v2"]
+        contract=PROFILE_TARGET_CONTRACTS["semantic_similarity"]
     )
     obj = adapter.get_target_config_obj(cfg)
     assert obj is not None
@@ -24,9 +24,9 @@ def test_profile_target_payload_roundtrip_semantic_v2() -> None:
 def test_profile_guided_fields_exist_in_registry() -> None:
     reg = build_registry()
     guided = PROFILE_TARGET_CONTRACTS[
-        "semantic_similarity_v2"
+        "semantic_similarity"
     ].edit_support.guided_fields
-    prefix = "analysis.semantic_similarity_v2."
+    prefix = "analysis.semantic_similarity."
     for field in guided:
         key = f"{prefix}{field}"
         assert key in reg, key

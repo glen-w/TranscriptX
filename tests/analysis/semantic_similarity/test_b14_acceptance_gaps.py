@@ -13,14 +13,14 @@ from transcriptx.core.analysis.aggregation.semantic_similarity import (
     _match_motifs_across_sessions,
     aggregate_semantic_similarity_group,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.motifs import (
+from transcriptx.core.analysis.semantic_similarity.motifs import (
     build_motifs_from_clusters,
     build_provenance,
     serialize_centroid,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.output import SCHEMA_VERSION
-from transcriptx.core.analysis.semantic_similarity_v2.pipeline import (
-    run_semantic_similarity_v2_pipeline,
+from transcriptx.core.analysis.semantic_similarity.output import SCHEMA_VERSION
+from transcriptx.core.analysis.semantic_similarity.pipeline import (
+    run_semantic_similarity_pipeline,
 )
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
@@ -50,7 +50,7 @@ def _cmap() -> CanonicalSpeakerMap:
     )
 
 
-def _result(path: str, key: str, order: int, payload: dict, mid: str = "semantic_similarity_v2") -> PerTranscriptResult:
+def _result(path: str, key: str, order: int, payload: dict, mid: str = "semantic_similarity") -> PerTranscriptResult:
     return PerTranscriptResult(
         transcript_path=path,
         transcript_key=key,
@@ -229,8 +229,8 @@ def test_wrong_dimension_centroid_skipped(monkeypatch: Any) -> None:
 
 @pytest.mark.unit
 def test_max_motifs_per_session_in_build() -> None:
-    from transcriptx.core.analysis.semantic_similarity_v2.cluster import STATUS_OK
-    from transcriptx.core.analysis.semantic_similarity_v2.intake import SegmentRow
+    from transcriptx.core.analysis.semantic_similarity.cluster import STATUS_OK
+    from transcriptx.core.analysis.semantic_similarity.intake import SegmentRow
 
     rows = [
         SegmentRow(str(i), "a", "A", float(i), float(i) + 1, f"t {i} words here", f"t {i} words here", i)
@@ -289,7 +289,7 @@ def test_single_speaker_pipeline_skips_repetition_path() -> None:
     # Force near-duplicate texts so TF-IDF/transformer can cluster
     segments[1]["text"] = "alpha beta gamma delta zeta"
     segments[2]["text"] = "alpha beta gamma delta eta"
-    results, diag = run_semantic_similarity_v2_pipeline(
+    results, diag = run_semantic_similarity_pipeline(
         segments,
         cfg,
         resolve_diagnostics={"mode_requested": "basic", "mode_effective": "basic"},
@@ -310,10 +310,10 @@ def test_single_speaker_pipeline_skips_repetition_path() -> None:
 
 @pytest.mark.unit
 def test_analysis_stamps_before_store(monkeypatch: Any) -> None:
-    from transcriptx.core.analysis.semantic_similarity_v2.analysis import (
+    from transcriptx.core.analysis.semantic_similarity.analysis import (
         SemanticSimilarityV2Analysis,
     )
-    from transcriptx.core.analysis.semantic_similarity_v2.output import SCHEMA_VERSION
+    from transcriptx.core.analysis.semantic_similarity.output import SCHEMA_VERSION
 
     stored: list = []
 

@@ -54,7 +54,7 @@ def test_project_fine_grained_segment_shape_and_display_families():
     proj = project_fine_grained_segment(
         row,
         artifact_generation_id="gen123",
-        schema_version="fine_grained_emotion_result_schema_v2",
+        schema_version="fine_grained_transcriptx.emotion_result.v1",
     )
     assert proj["segment_id"] == "s1"
     assert proj["evaluation_state"] == "scored"
@@ -73,7 +73,7 @@ def test_project_fine_grained_segment_shape_and_display_families():
     ref = proj["fine_grained_emotion_canonical_ref"]
     assert ref["module_id"] == "fine_grained_emotion"
     assert ref["artifact_generation_id"] == "gen123"
-    assert ref["schema_version"] == "fine_grained_emotion_result_schema_v2"
+    assert ref["schema_version"] == "fine_grained_transcriptx.emotion_result.v1"
     assert ref["semantics_version"] == "fine_grained_emotion_v1"
     assert ref["row_key"] == "s1"
     assert "integrity_checksum" in ref
@@ -92,7 +92,7 @@ def test_project_fine_grained_segment_empty_display_defaults():
     proj = project_fine_grained_segment(
         row,
         artifact_generation_id="g",
-        schema_version="fine_grained_emotion_result_schema_v2",
+        schema_version="fine_grained_transcriptx.emotion_result.v1",
     )
     assert proj["fine_grained_emotion_labels"] == []
     assert proj["fine_grained_emotion_families"] == {}

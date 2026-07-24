@@ -111,7 +111,7 @@ def test_resolve_report_inputs_with_run_results_and_valid_file(tmp_path: Path) -
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment"],
@@ -142,7 +142,7 @@ def test_resolve_report_inputs_zero_byte_file_does_not_trigger_full_section(
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["tics"],
@@ -180,7 +180,7 @@ def test_load_run_results_valid(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_run": ["sentiment"],
@@ -208,7 +208,7 @@ def test_resolve_report_inputs_skipped_module_omitted(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["contagion"],
@@ -233,7 +233,7 @@ def test_resolve_report_inputs_blocked_module_omitted(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["contagion"],
@@ -262,7 +262,7 @@ def test_resolve_report_inputs_failed_module_omitted(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["topic_modeling"],
@@ -284,7 +284,7 @@ def test_resolve_report_inputs_preferred_path_over_fallback(tmp_path: Path) -> N
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["acts"],
@@ -311,7 +311,7 @@ def test_resolve_report_inputs_multiple_modules_mixed_status(tmp_path: Path) -> 
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment", "acts", "contagion"],

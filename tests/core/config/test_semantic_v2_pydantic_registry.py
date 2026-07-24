@@ -1,4 +1,4 @@
-"""Registry parity tests for Pydantic-backed semantic_similarity_v2."""
+"""Registry parity tests for Pydantic-backed semantic_similarity."""
 
 from __future__ import annotations
 
@@ -6,15 +6,15 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from transcriptx.core.config.models.semantic_similarity_v2 import (
-    SemanticSimilarityV2SettingsModel,
+from transcriptx.core.config.models.semantic_similarity import (
+    SemanticSimilaritySettingsModel,
 )
 from transcriptx.core.config.pydantic_registry import serialize_field_metadata
 from transcriptx.core.config.registry import build_registry, get_default_config_dict
 from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
-V2_PREFIX = "analysis.semantic_similarity_v2."
+V2_PREFIX = "analysis.semantic_similarity."
 
 
 def _v2_keys() -> set[str]:
@@ -81,7 +81,7 @@ def test_build_registry_non_v2_keys_unchanged() -> None:
 
 
 def test_pydantic_defaults_match_dataclass_defaults() -> None:
-    pydantic_defaults = SemanticSimilarityV2SettingsModel().model_dump()
+    pydantic_defaults = SemanticSimilaritySettingsModel().model_dump()
     dataclass_defaults = asdict(SemanticSimilarityV2Config())
     assert dataclass_defaults == pydantic_defaults
 
@@ -98,5 +98,5 @@ def test_metadata_config_runtime_defaults_unchanged() -> None:
 
 def test_default_config_subtree_matches_golden() -> None:
     golden = json.loads((FIXTURES / "semantic_v2_defaults_golden.json").read_text())
-    defaults = get_default_config_dict()["analysis"]["semantic_similarity_v2"]
+    defaults = get_default_config_dict()["analysis"]["semantic_similarity"]
     assert defaults == golden

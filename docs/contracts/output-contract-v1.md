@@ -57,8 +57,8 @@ Authority boundary:
 
 ### 4.3 Run results (`run_results.json`)
 
-- **Current:** `schema_version: 2` — includes `module_outcomes` (canonical execution rows) and `modules_skipped[]` entries with optional `execution_status` (`skipped` \| `blocked`). Legacy `schema_version: 1` is out of scope for the canonical consumption path; strict loaders may use `transcriptx.core.pipeline.module_outcomes.assert_run_results_schema_supported`.
-- **Typed load path:** `transcriptx.core.pipeline.manifest_loader.load_run_results` rejects `schema_version < 2` via `assert_run_results_schema_supported` **before** applying any default-filling for missing keys. Use that loader (or `load_run_outcome_context`) rather than raw `json.load` for truth-path consumption.
+- **Current:** `schema_version: 1` — includes `module_outcomes` (canonical execution rows) and `modules_skipped[]` entries with optional `execution_status` (`skipped` \| `blocked`). Pre-epoch `schema_version` values are refused; strict loaders use `transcriptx.core.pipeline.module_outcomes.assert_run_results_schema_supported`.
+- **Typed load path:** `transcriptx.core.pipeline.manifest_loader.load_run_results` rejects non-epoch-1 `schema_version` via `assert_run_results_schema_supported` **before** applying any default-filling for missing keys. Use that loader (or `load_run_outcome_context`) rather than raw `json.load` for truth-path consumption.
 - **Semantics:** Placement and schema shape for `run_results.json` live here; status meanings, precedence, and truth rules live in `docs/run_outcome_contract.md`.
 
 ## 5. Speaker exclusion (unidentified)
@@ -70,7 +70,7 @@ Authority boundary:
 ## 6. Schema stamps (transcript JSON)
 
 - **Speaker mapping:** After any mapping write, transcript JSON must include:
-  - `speaker_map_schema_version` (e.g. `"1.0"`).
+  - `speaker_map_schema_version` (integer `1`).
   - `speaker_map_provenance` (tool, version, timestamp, method) when written via `SpeakerMappingService` / `TranscriptStore`.
 
 ## 7. Exceptions and versioning

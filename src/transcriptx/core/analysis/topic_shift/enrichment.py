@@ -24,7 +24,7 @@ from transcriptx.io import save_json
 
 logger = get_logger()
 
-ENRICHMENT_SCHEMA = "topic_shift_enrichment_schema_v1"
+ENRICHMENT_SCHEMA = "transcriptx.topic_shift_enrichment.v1"
 PROMPT_VERSION = "topic_shift_enrichment_prompt_v2"
 STORE_DIRNAME = ".topic_shift_enrichment"
 ARTIFACT_NAME = "topic_shift.enrichment.json"

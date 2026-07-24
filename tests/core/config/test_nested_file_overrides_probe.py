@@ -213,7 +213,7 @@ def test_ui_presets_nested_partial_override(tmp_path: Path) -> None:
                         "balanced": {
                             "allow_llm": True,
                             "llm_module_ids": ["llm_summary", "llm_action_items"],
-                            "heavy_module_ids": ["semantic_similarity_v2"],
+                            "heavy_module_ids": ["semantic_similarity"],
                         }
                     }
                 }
@@ -227,7 +227,7 @@ def test_ui_presets_nested_partial_override(tmp_path: Path) -> None:
         "llm_action_items",
     ]
     assert cfg.analysis.ui_presets.balanced.heavy_module_ids == [
-        "semantic_similarity_v2"
+        "semantic_similarity"
     ]
     # Unspecified presets keep defaults.
     assert cfg.analysis.ui_presets.quick.allow_llm is False

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from transcriptx.core.analysis.semantic_similarity_v2.candidates import (
+from transcriptx.core.analysis.semantic_similarity.candidates import (
     generate_candidate_pairs,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.intake import SegmentRow
+from transcriptx.core.analysis.semantic_similarity.intake import SegmentRow
 
 
 def test_time_window_stops_forward_scan() -> None:

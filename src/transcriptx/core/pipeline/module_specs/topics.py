@@ -12,27 +12,7 @@ def build_topics_module_definitions(
 ) -> Dict[str, Dict]:
     return {
         "semantic_similarity": {
-            "description": "Semantic Similarity Analysis (Legacy)",
-            "dependencies": [],
-            "category": "heavy",
-            "determinism_tier": "T1",
-            "requirements": default_requirements,
-            "enhancements": [],
-            "requires_multiple_speakers": True,
-            "legacy": True,
-        },
-        "semantic_similarity_advanced": {
-            "description": "Advanced Semantic Similarity with Analysis Integration (Legacy)",
-            "dependencies": [],
-            "category": "heavy",
-            "determinism_tier": "T1",
-            "requirements": default_requirements,
-            "enhancements": [],
-            "requires_multiple_speakers": True,
-            "legacy": True,
-        },
-        "semantic_similarity_v2": {
-            "description": "Semantic similarity v2 (batched embeddings, vectorized similarity)",
+            "description": "Semantic similarity (batched embeddings, vectorized similarity)",
             "dependencies": [],
             "category": "heavy",
             "determinism_tier": "T1",

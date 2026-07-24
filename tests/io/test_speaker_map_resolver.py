@@ -44,7 +44,7 @@ def test_loads_sidecar_and_computes_properties(tmp_path) -> None:
     sidecar.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "speaker_map": {
                     "SPEAKER_00": "Alice",
                     "SPEAKER_01": "",

@@ -44,7 +44,7 @@ def _svc(tmp_path: Path, **kwargs) -> RunCleanupService:
 @pytest.mark.unit
 def test_phase_b_versions_match_package_exports() -> None:
     assert CLEANUP_POLICY_VERSION == 7
-    assert JOURNAL_SCHEMA_VERSION == 3
+    assert JOURNAL_SCHEMA_VERSION == 1
 
 
 @pytest.mark.unit

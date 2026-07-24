@@ -251,7 +251,7 @@ def test_contagion_emits_both_named_branches():
         },
     ]
     contextual = {
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",
@@ -541,7 +541,7 @@ def test_affect_tension_loads_scores_from_disk_generation(tmp_path):
         generation_id="3b3f7911169881ccb19cd238717e9ae9",
         run_status="complete",
         usable_output=True,
-        schema_version="contextual_emotion_result_schema_v2",
+        schema_version="contextual_transcriptx.emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         segments_scored=1,
         canonical_rows=[
@@ -571,7 +571,7 @@ def test_affect_tension_loads_scores_from_disk_generation(tmp_path):
         }
     ]
     artifact = {
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",
@@ -629,7 +629,7 @@ def test_affect_tension_neutral_eligible_abstained_not(tmp_path):
             run_status="complete",
             usable_output=True,
             canonical_rows=[row],
-            schema_version="contextual_emotion_result_schema_v2",
+            schema_version="contextual_transcriptx.emotion_result.v1",
             semantics_version="contextual_emotion_v1",
             segments_scored=1,
         )
@@ -649,7 +649,7 @@ def test_affect_tension_neutral_eligible_abstained_not(tmp_path):
             }
         ]
         artifact = {
-            "schema_version": "contextual_emotion_result_schema_v2",
+            "schema_version": "contextual_transcriptx.emotion_result.v1",
             "semantics_version": "contextual_emotion_v1",
             "module_id": "contextual_emotion",
             "run_status": "complete",
@@ -828,7 +828,7 @@ def test_enriched_projection_failure_keeps_generation_complete(tmp_path):
         "usable_output": True,
         "artifact_generation_id": "3bea7d6b104f900981c4bf2a9660ac5a",
         "inference_generation_id": "9daed04d4ac0f1cd520a92f0d8f99d44",
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "compatibility_fingerprint": "fp",
         "segments_scored": 1,
@@ -1246,7 +1246,7 @@ def test_after_enrich_failure_keeps_canonical_complete(tmp_path):
         "run_status": "complete",
         "usable_output": True,
         "artifact_generation_id": "f" * 32,
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "segments_scored": 1,
         "_canonical_rows": [

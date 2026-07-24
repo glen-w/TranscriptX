@@ -27,7 +27,7 @@ def test_validate_canonical_transcript_rejects_bad_extension(tmp_path: Path) -> 
 def test_validate_canonical_transcript_accepts_minimal_valid(tmp_path: Path) -> None:
     path = tmp_path / "t.json"
     path.write_text(
-        '{"schema_version": "1.0", "source": {"type": "manual", "original_path": "t.json", "imported_at": "2020-01-01T00:00:00+00:00"}, "segments": []}',
+        '{"schema_version": 1, "source": {"type": "manual", "original_path": "t.json", "imported_at": "2020-01-01T00:00:00+00:00"}, "segments": []}',
         encoding="utf-8",
     )
     result = validate_canonical_transcript(path)

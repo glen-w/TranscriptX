@@ -3,7 +3,7 @@ Authority: self
 
 # Topic-shift (`topic_shift`) contracts — Wave 1
 
-Schema: `topic_shift_result_schema_v1`. Semantics per backend: see `SEMANTICS_BY_BACKEND` in `src/transcriptx/core/analysis/topic_shift/semantics.py`.
+Schema: `transcriptx.topic_shift_result.v1`. Semantics per backend: see `SEMANTICS_BY_BACKEND` in `src/transcriptx/core/analysis/topic_shift/semantics.py`.
 
 ## Analytical vs pipeline status
 

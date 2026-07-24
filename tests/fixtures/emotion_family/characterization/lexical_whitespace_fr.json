@@ -49,7 +49,7 @@
           "integrity_checksum": "1f3e9f0fb3054b336fe263c0ae05f58f2ef1c98b5103f6df917199a466b0c113",
           "module_id": "emotion",
           "row_key": "1",
-          "schema_version": "emotion_result_schema_v2",
+          "schema_version": "transcriptx.emotion_result.v1",
           "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "semantics_version": "emotion_lexical_v2"
         },
@@ -193,7 +193,7 @@
       "integrity_checksum": "1f3e9f0fb3054b336fe263c0ae05f58f2ef1c98b5103f6df917199a466b0c113",
       "module_id": "emotion",
       "row_key": "1",
-      "schema_version": "emotion_result_schema_v2",
+      "schema_version": "transcriptx.emotion_result.v1",
       "scored_text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "semantics_version": "emotion_lexical_v2"
     },
@@ -212,7 +212,7 @@
     "nrc_emotion_coverage": 0.0,
     "segment_id": "1"
   },
-  "schema_version": "emotion_result_schema_v2",
+  "schema_version": "transcriptx.emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

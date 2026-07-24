@@ -11,8 +11,6 @@
     "interactions",
     "ner",
     "semantic_similarity",
-    "semantic_similarity_advanced",
-    "semantic_similarity_v2",
     "sentiment",
     "epistemic_markers",
     "keyphrases",
@@ -474,31 +472,7 @@
     "semantic_similarity": {
       "category": "heavy",
       "dependencies": [],
-      "description": "Semantic Similarity Analysis (Legacy)",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "legacy": true,
-      "requirements": [
-        "segments"
-      ],
-      "requires_multiple_speakers": true
-    },
-    "semantic_similarity_advanced": {
-      "category": "heavy",
-      "dependencies": [],
-      "description": "Advanced Semantic Similarity with Analysis Integration (Legacy)",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "legacy": true,
-      "requirements": [
-        "segments"
-      ],
-      "requires_multiple_speakers": true
-    },
-    "semantic_similarity_v2": {
-      "category": "heavy",
-      "dependencies": [],
-      "description": "Semantic similarity v2 (batched embeddings, vectorized similarity)",
+      "description": "Semantic similarity (batched embeddings, vectorized similarity)",
       "determinism_tier": "T1",
       "enhancements": [],
       "requirements": [

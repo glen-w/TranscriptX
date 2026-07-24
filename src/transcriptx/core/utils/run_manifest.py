@@ -172,7 +172,7 @@ def get_transcriptx_version() -> str:
 
 def create_run_manifest(
     transcript_hash: Optional[str] = None,
-    canonical_schema_version: str = "1.0",
+    canonical_schema_version: int = 1,
     selected_modules: Optional[List[str]] = None,
     artifact_index: Optional[List[Dict[str, Any]]] = None,
     transcript_file_hash: Optional[str] = None,

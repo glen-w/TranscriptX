@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-07-24
+
+Public schema epoch-1 reset and compatibility removal.
+
+### Added
+
+- Data-root `schema_epoch.json` marker (`CURRENT_SCHEMA_EPOCH = 1`) with assess/ensure APIs.
+- GUI preflight gate and typed remediation helpers (fresh data directory, transcript inventory/export, derived-state reset + report). Never auto-deletes; recordings and transcripts preserved by default.
+
+### Changed
+
+- Public persisted `schema_version` values → integer `1` only; public string IDs → `transcriptx.<domain>.v1`.
+- Cleanup journal / result envelopes → epoch-1; layout dual-accept dropped; custom QA dual V1/V2 writer symbols collapsed to a single epoch-1 constant.
+- Retired legacy `semantic_similarity` / `semantic_similarity_advanced`; renamed former `semantic_similarity_v2` package and public module id to `semantic_similarity`.
+- Fixtures, goldens, and outcome/output contracts aligned to epoch-1.
+
+### Removed
+
+- Pre-public dual-accept / coerce paths for wiped schema generations (fail closed with remediation UX).
+
 ## [0.9.2] - 2026-07-24
 
 Phase 0B planning stubs and schema-epoch inventory sign-off ahead of the public schema reset.

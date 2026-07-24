@@ -19,7 +19,7 @@ from transcriptx.io.transcript_service import (
 
 def _v1_doc(segments: list) -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "test.json",

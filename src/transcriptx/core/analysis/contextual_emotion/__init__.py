@@ -69,7 +69,7 @@ from transcriptx.utils.text_utils import is_named_speaker
 
 logger = get_logger()
 
-SCHEMA_VERSION = "contextual_emotion_result_schema_v2"
+SCHEMA_VERSION = "transcriptx.contextual_emotion_result.v1"
 SEMANTICS_VERSION = "contextual_emotion_v1"
 AGGREGATION_SEMANTICS_V1 = "contextual_emotion_aggregation_v1"
 PROVISIONAL_CONFIDENCE_THRESHOLD = 0.45

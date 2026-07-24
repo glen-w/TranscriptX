@@ -7,13 +7,13 @@ for the processing_state.json file.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 
-# Schema version
-STATE_SCHEMA_VERSION = "2.0"
+# Schema version (public epoch-1 integer)
+STATE_SCHEMA_VERSION = 1
 
 # Required fields in state entries (always required)
 REQUIRED_FIELDS = ["processed_at", "status"]
@@ -129,18 +129,31 @@ def validate_state_entry(entry: Dict[str, Any]) -> Tuple[bool, List[str]]:
 
 
 def migrate_state_entry(
-    entry: Dict[str, Any], from_version: str = "1.0"
+    entry: Dict[str, Any], from_version: Any = None
 ) -> Dict[str, Any]:
     """
-    Migrate state entry to current schema version.
+    Normalize a state entry for the current epoch schema.
 
-    Args:
-        entry: State entry to migrate
-        from_version: Version to migrate from (default: "1.0")
-
-    Returns:
-        Migrated state entry
+    Fills missing optional defaults. Refuses entries that explicitly stamp a
+    pre-epoch ``schema_version`` (dotted strings or non-1 integers).
     """
+    explicit = entry.get("schema_version", from_version)
+    if explicit is not None and explicit != STATE_SCHEMA_VERSION:
+        # Absent stamp is OK (historical entries without envelope version).
+        if "schema_version" in entry or from_version is not None:
+            if explicit in ("1.0", "2.0", 2, "2", "1"):
+                # "1" string and dotted forms are pre-epoch public stamps.
+                if explicit != STATE_SCHEMA_VERSION:
+                    raise ValueError(
+                        f"Refusing pre-epoch processing state schema_version={explicit!r}; "
+                        f"expected integer {STATE_SCHEMA_VERSION}. Remediate via schema-epoch UX."
+                    )
+            elif explicit != STATE_SCHEMA_VERSION:
+                raise ValueError(
+                    f"Refusing incompatible processing state schema_version={explicit!r}; "
+                    f"expected integer {STATE_SCHEMA_VERSION}."
+                )
+
     migrated = entry.copy()
 
     # Add defaults for new optional fields if missing

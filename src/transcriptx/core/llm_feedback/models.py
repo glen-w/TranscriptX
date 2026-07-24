@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Mapping
 
-EVENT_SCHEMA_ID = "llm_feedback_event_v1"
+EVENT_SCHEMA_ID = "transcriptx.llm_feedback_event.v1"
 NOTE_MAX_CODEPOINTS = 2000
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _UUID_RE = re.compile(

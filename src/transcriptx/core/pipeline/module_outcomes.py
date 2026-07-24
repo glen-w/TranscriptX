@@ -15,7 +15,7 @@ from transcriptx.core.pipeline.module_registry import canonical_module_id
 
 ExecutionStatus = Literal["run", "skipped", "failed", "not_requested", "blocked"]
 
-RUN_RESULTS_SCHEMA_VERSION = 2
+RUN_RESULTS_SCHEMA_VERSION = 1
 
 # Valid combinations for raw outcomes (documentation / validation aid)
 # decision: selected → may run; skipped → intentional non-run; blocked → precondition/deps

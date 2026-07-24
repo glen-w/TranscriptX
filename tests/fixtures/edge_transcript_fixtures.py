@@ -17,7 +17,7 @@ _SOURCE = {
 
 def _v1_doc(segments: list) -> Dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": dict(_SOURCE),
         "segments": segments,
     }

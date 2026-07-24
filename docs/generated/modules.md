@@ -22,7 +22,7 @@ Authority: ../ARCHITECTURE.md
 | ner | Named Entity Recognition | medium | None | T1 |
 | semantic_similarity | Semantic Similarity Analysis (Legacy) | heavy | None | T1 |
 | semantic_similarity_advanced | Advanced Semantic Similarity with Analysis Integration (Legacy) | heavy | None | T1 |
-| semantic_similarity_v2 | Semantic similarity v2 (batched embeddings, vectorized similarity) | heavy | None | T1 |
+| semantic_similarity | Semantic similarity v2 (batched embeddings, vectorized similarity) | heavy | None | T1 |
 | sentiment | Sentiment Analysis | medium | None | T1 |
 | stats | Statistical Analysis | light | None | T0 |
 | topic_modeling | Topic Modeling | heavy | insight_eligibility | T2 |

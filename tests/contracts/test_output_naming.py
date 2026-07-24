@@ -51,7 +51,7 @@ def test_output_dir_naming_slug_run_id_pattern(
     sidecar_path.write_text(
         json.dumps(
             {
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
                 "speaker_map": {"SPEAKER_00": "Speaker 1"},
                 "ignored_speakers": [],
                 "speaker_id_to_db_id": {},

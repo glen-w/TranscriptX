@@ -228,7 +228,7 @@ class TestTranscriptImporter:
     def test_ensure_json_artifact_json(self):
         """Test ensure_json_artifact returns a schema v1.0 artifact as-is."""
         artifact = {
-            "schema_version": "1.0",
+            "schema_version": 1,
             "source": {
                 "type": "vtt",
                 "original_path": "/tmp/test.vtt",

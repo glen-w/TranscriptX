@@ -37,7 +37,7 @@ _DELEGATION_SUBTREES = (
     "topic_modeling",
     "speaker_exemplars",
     "bertopic",
-    "semantic_similarity_v2",
+    "semantic_similarity",
     "vectorization",
     "tag_extraction",
     "qa_analysis",

@@ -26,7 +26,7 @@ from transcriptx.core.pipeline.run_schema import (
 
 def _valid_run_results(**overrides):
     payload = {
-        "schema_version": 2,
+        "schema_version": 1,
         "run_id": "r1",
         "transcript_key": "t1",
         "modules_enabled": ["stats"],

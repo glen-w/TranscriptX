@@ -203,7 +203,7 @@ def test_incomplete_unrepairable_without_backfill(monkeypatch, tmp_path: Path) -
     target.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": {"type": "srt", "imported_at": "2026-01-01T00:00:00+00:00"},
                 "segments": [
                     {"speaker": "SPEAKER_00", "text": "Hello", "start": 0.0, "end": 1.0}

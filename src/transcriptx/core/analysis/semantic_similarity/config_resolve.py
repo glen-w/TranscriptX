@@ -26,15 +26,15 @@ class SemanticV2StrictAdvancedInputsError(Exception):
 
 
 def _validate_registered_presets(analysis: AnalysisConfig) -> None:
-    for name, preset in analysis.semantic_similarity_v2_profiles.items():
+    for name, preset in analysis.semantic_similarity_profiles.items():
         for key in preset:
             if key not in _ALLOWED_PRESET_KEYS:
                 raise ValueError(
-                    f"Unknown field {key!r} in semantic_similarity_v2_profiles[{name!r}]"
+                    f"Unknown field {key!r} in semantic_similarity_profiles[{name!r}]"
                 )
 
 
-def resolve_semantic_similarity_v2_runtime(
+def resolve_semantic_similarity_runtime(
     analysis: AnalysisConfig,
     *,
     modules_in_run: Set[str],
@@ -42,15 +42,15 @@ def resolve_semantic_similarity_v2_runtime(
 ) -> tuple[SemanticSimilarityV2Config, dict[str, Any]]:
     """
     Merge defaults → active preset → per-field user overrides (values that differ
-    from dataclass defaults on ``analysis.semantic_similarity_v2``), then overlay
+    from dataclass defaults on ``analysis.semantic_similarity``), then overlay
     ``mode`` from ``analysis_mode`` when the preset dict omits ``mode``.
     """
     _validate_registered_presets(analysis)
 
-    profile_name = analysis.active_semantic_similarity_v2_profile
-    if profile_name not in analysis.semantic_similarity_v2_profiles:
+    profile_name = analysis.active_semantic_similarity_profile
+    if profile_name not in analysis.semantic_similarity_profiles:
         raise ValueError(
-            f"Unknown active_semantic_similarity_v2_profile: {profile_name!r}"
+            f"Unknown active_semantic_similarity_profile: {profile_name!r}"
         )
 
     diagnostics: dict[str, Any] = {
@@ -60,7 +60,7 @@ def resolve_semantic_similarity_v2_runtime(
         "mode_effective": None,
     }
 
-    preset_raw = dict(analysis.semantic_similarity_v2_profiles[profile_name])
+    preset_raw = dict(analysis.semantic_similarity_profiles[profile_name])
     preset_mode_supplied = "mode" in preset_raw
     preset_kwargs = {k: v for k, v in preset_raw.items() if k in _ALLOWED_PRESET_KEYS}
     # Delegated config uses init=False fields; construct then setattr (not replace).
@@ -68,7 +68,7 @@ def resolve_semantic_similarity_v2_runtime(
     for key, value in preset_kwargs.items():
         setattr(cfg, key, deepcopy(value))
 
-    user = analysis.semantic_similarity_v2
+    user = analysis.semantic_similarity
     for f in fields(SemanticSimilarityV2Config):
         uv = getattr(user, f.name)
         dv = getattr(_DEFAULT_V2, f.name)

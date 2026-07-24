@@ -27,7 +27,7 @@ def _member_run(
     _write(
         out / "run_results.json",
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": f"r_{member_id}",
             "transcript_key": f"tk_{member_id}",
             "modules_enabled": modules_enabled,
@@ -55,7 +55,7 @@ def _group_run(
     _write(
         run_dir / "run_results.json",
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": "group_r1",
             "transcript_key": "group_tk",
             "modules_enabled": group_modules_enabled,

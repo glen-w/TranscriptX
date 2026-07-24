@@ -10,11 +10,11 @@ import pytest
 from transcriptx.core.analysis.aggregation.semantic_similarity import (
     aggregate_semantic_similarity_group,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.motifs import (
+from transcriptx.core.analysis.semantic_similarity.motifs import (
     build_provenance,
     serialize_centroid,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.output import SCHEMA_VERSION
+from transcriptx.core.analysis.semantic_similarity.output import SCHEMA_VERSION
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
 from transcriptx.core.pipeline.speaker_normalizer import CanonicalSpeakerMap
@@ -121,7 +121,7 @@ def test_matching_one_to_one_and_recurring() -> None:
             "a",
             0,
             {
-                "semantic_similarity_v2": {
+                "semantic_similarity": {
                     "payload": _v2_payload(motifs=[_motif("a", v), _motif("b", other)])
                 }
             },
@@ -130,7 +130,7 @@ def test_matching_one_to_one_and_recurring() -> None:
             "/x/b.json",
             "b",
             1,
-            {"semantic_similarity_v2": {"payload": _v2_payload(motifs=[_motif("c", v2)])}},
+            {"semantic_similarity": {"payload": _v2_payload(motifs=[_motif("c", v2)])}},
             output_dir="o2",
         ),
         _result(
@@ -138,7 +138,7 @@ def test_matching_one_to_one_and_recurring() -> None:
             "c",
             2,
             {
-                "semantic_similarity_v2": {
+                "semantic_similarity": {
                     "payload": _v2_payload(motifs=[], status="valid_zero")
                 }
             },
@@ -168,14 +168,14 @@ def test_tfidf_excluded_from_cohort() -> None:
             "/x/a.json",
             "a",
             0,
-            {"semantic_similarity_v2": {"payload": _v2_payload(motifs=[_motif("a", v)])}},
+            {"semantic_similarity": {"payload": _v2_payload(motifs=[_motif("a", v)])}},
         ),
         _result(
             "/x/b.json",
             "b",
             1,
             {
-                "semantic_similarity_v2": {
+                "semantic_similarity": {
                     "payload": _v2_payload(motifs=[_motif("b", v)], backend="tfidf")
                 }
             },

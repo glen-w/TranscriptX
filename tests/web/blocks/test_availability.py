@@ -129,7 +129,7 @@ def test_action_items_unavailable_uses_failure_guidance_not_rerun_hint() -> None
     spec = get_block("llm_action_items_block")
     assert spec is not None
     run_results = {
-        "schema_version": 2,
+        "schema_version": 1,
         "modules_enabled": ["llm_action_items"],
         "modules_run": [],
         "modules_failed": ["llm_action_items"],

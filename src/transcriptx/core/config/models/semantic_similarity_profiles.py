@@ -1,4 +1,4 @@
-"""Pydantic schema for analysis.semantic_similarity_v2_profiles."""
+"""Pydantic schema for analysis.semantic_similarity_profiles."""
 
 from pydantic import BaseModel, Field
 

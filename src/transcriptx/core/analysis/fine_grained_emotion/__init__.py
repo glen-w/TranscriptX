@@ -71,7 +71,7 @@ from transcriptx.utils.text_utils import is_named_speaker
 
 logger = get_logger()
 
-SCHEMA_VERSION = "fine_grained_emotion_result_schema_v2"
+SCHEMA_VERSION = "transcriptx.fine_grained_emotion_result.v1"
 SEMANTICS_VERSION = "fine_grained_emotion_v1"
 PROVISIONAL_LABEL_THRESHOLD = 0.28
 DEFAULT_MAX_LABELS = 3

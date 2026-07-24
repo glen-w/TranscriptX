@@ -43,7 +43,7 @@ class TestWhisperXAdapterDetect:
     def test_zero_on_transcriptx_artifact(self):
         adapter = WhisperXAdapter()
         artifact = {
-            "schema_version": "1.0",
+            "schema_version": 1,
             "source": {
                 "type": "vtt",
                 "original_path": "/tmp/x.vtt",

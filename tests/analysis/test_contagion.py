@@ -17,7 +17,7 @@ pytestmark = pytest.mark.unit
 
 def _contextual_artifact(segments):
     return {
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",

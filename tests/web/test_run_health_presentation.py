@@ -130,7 +130,7 @@ def test_module_outcome_state_not_run_and_match(tmp_path: Path) -> None:
     assert module_outcome_state(run, "stats") == "not_run"
 
     payload = {
-        "schema_version": 2,
+        "schema_version": 1,
         "modules_enabled": ["stats", "summary"],
         "modules_run": ["stats"],
         "modules_failed": ["summary"],

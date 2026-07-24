@@ -6,14 +6,14 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from transcriptx.core.analysis.semantic_similarity_v2.analysis import (
+from transcriptx.core.analysis.semantic_similarity.analysis import (
     SemanticSimilarityV2Analysis,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.pipeline import (
-    run_semantic_similarity_v2_pipeline,
+from transcriptx.core.analysis.semantic_similarity.pipeline import (
+    run_semantic_similarity_pipeline,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.config_resolve import (
-    resolve_semantic_similarity_v2_runtime,
+from transcriptx.core.analysis.semantic_similarity.config_resolve import (
+    resolve_semantic_similarity_runtime,
 )
 from transcriptx.core.utils.config import TranscriptXConfig
 from transcriptx.core.utils.config.analysis import SemanticSimilarityV2Config
@@ -46,7 +46,7 @@ def test_semantic_v2_import_error_returns_blocked() -> None:
         get_analysis_result=lambda _n: {"dummy": True},
     )
     with patch(
-        "transcriptx.core.analysis.semantic_similarity_v2.analysis.run_semantic_similarity_v2_pipeline",
+        "transcriptx.core.analysis.semantic_similarity.analysis.run_semantic_similarity_pipeline",
         side_effect=ImportError("torch"),
     ):
         mod = SemanticSimilarityV2Analysis()
@@ -73,10 +73,10 @@ def test_semantic_v2_pipeline_records_missing_transformer_dependency() -> None:
         },
     ]
     with patch(
-        "transcriptx.core.analysis.semantic_similarity_v2.pipeline.get_torch",
+        "transcriptx.core.analysis.semantic_similarity.pipeline.get_torch",
         side_effect=ImportError("torch"),
     ):
-        results, diag = run_semantic_similarity_v2_pipeline(
+        results, diag = run_semantic_similarity_pipeline(
             segments,
             SemanticSimilarityV2Config(),
             resolve_diagnostics={},
@@ -100,9 +100,9 @@ def test_semantic_v2_pipeline_records_missing_transformer_dependency() -> None:
 
 def test_semantic_v2_advanced_mode_diagnostics_record_requested_and_effective() -> None:
     cfg = TranscriptXConfig()
-    cfg.analysis.active_semantic_similarity_v2_profile = "deep_v2"
-    cfg.analysis.semantic_similarity_v2.mode = "advanced"
-    resolved, resolve_diag = resolve_semantic_similarity_v2_runtime(
+    cfg.analysis.active_semantic_similarity_profile = "deep_v2"
+    cfg.analysis.semantic_similarity.mode = "advanced"
+    resolved, resolve_diag = resolve_semantic_similarity_runtime(
         cfg.analysis,
         modules_in_run={"sentiment"},
     )
@@ -128,10 +128,10 @@ def test_semantic_v2_advanced_mode_diagnostics_record_requested_and_effective() 
         },
     ]
     with patch(
-        "transcriptx.core.analysis.semantic_similarity_v2.pipeline.get_torch",
+        "transcriptx.core.analysis.semantic_similarity.pipeline.get_torch",
         side_effect=ImportError("torch"),
     ):
-        _results, diag = run_semantic_similarity_v2_pipeline(
+        _results, diag = run_semantic_similarity_pipeline(
             segments,
             resolved,
             resolve_diagnostics=resolve_diag,
@@ -163,10 +163,10 @@ def test_semantic_v2_timeout_returns_structurally_valid_partial_results() -> Non
     cfg = SemanticSimilarityV2Config()
     cfg.timeout_seconds = 0.0
     with patch(
-        "transcriptx.core.analysis.semantic_similarity_v2.pipeline.get_torch",
+        "transcriptx.core.analysis.semantic_similarity.pipeline.get_torch",
         side_effect=ImportError("torch"),
     ):
-        results, diag = run_semantic_similarity_v2_pipeline(
+        results, diag = run_semantic_similarity_pipeline(
             segments,
             cfg,
             resolve_diagnostics={},
@@ -210,7 +210,7 @@ def test_semantic_v2_runtime_error_returns_structured_error() -> None:
         get_analysis_result=lambda _n: {"dummy": True},
     )
     with patch(
-        "transcriptx.core.analysis.semantic_similarity_v2.analysis.run_semantic_similarity_v2_pipeline",
+        "transcriptx.core.analysis.semantic_similarity.analysis.run_semantic_similarity_pipeline",
         side_effect=RuntimeError("bad model state"),
     ):
         mod = SemanticSimilarityV2Analysis()

@@ -213,7 +213,7 @@ def test_sidecar_write_failure_is_optional(
     (run_dir / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "g1",
                 "transcript_key": "gk",
                 "modules_enabled": ["stats"],
@@ -345,7 +345,7 @@ def test_sidecar_helper_does_not_acquire_nested_run_lock(
     (run_dir / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "g1",
                 "transcript_key": "gk",
                 "modules_enabled": ["stats"],
@@ -454,7 +454,7 @@ def test_sidecar_refuses_run_id_mismatch(tmp_path: Path) -> None:
     (run_dir / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "canonical-id",
                 "transcript_key": "gk",
                 "modules_enabled": ["stats"],

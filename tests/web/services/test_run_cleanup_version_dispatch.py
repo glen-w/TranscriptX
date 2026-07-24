@@ -53,15 +53,15 @@ def _target(tmp_path: Path) -> CleanupTarget:
 @pytest.mark.unit
 def test_versions_phase_b1() -> None:
     assert CLEANUP_POLICY_VERSION == 7
-    assert JOURNAL_SCHEMA_VERSION == 3
-    assert CLEANUP_RESULT_SCHEMA_VERSION == 2
+    assert JOURNAL_SCHEMA_VERSION == 1
+    assert CLEANUP_RESULT_SCHEMA_VERSION == 1
 
 
 @pytest.mark.unit
-def test_schema3_staging_path_matches_intended(tmp_path: Path) -> None:
+def test_schema1_staging_path_matches_intended(tmp_path: Path) -> None:
     t = _target(tmp_path)
     a = intended_staging_path(tmp_path / "outputs", "1_abcdefabcdef", t)
-    b = staging_path_for_journal_schema(3, tmp_path / "outputs", "1_abcdefabcdef", t)
+    b = staging_path_for_journal_schema(1, tmp_path / "outputs", "1_abcdefabcdef", t)
     assert a == b
 
 
@@ -73,7 +73,7 @@ def test_recovery_prefers_stored_staging_path(tmp_path: Path) -> None:
         output_root=tmp_path / "outputs",
         operation_id="1_abcdefabcdef",
         target=t,
-        journal_schema_version=3,
+        journal_schema_version=1,
         stored_staging_path=str(stored),
     )
     assert resolved == stored
@@ -81,7 +81,7 @@ def test_recovery_prefers_stored_staging_path(tmp_path: Path) -> None:
         output_root=tmp_path / "outputs",
         operation_id="1_abcdefabcdef",
         target=t,
-        journal_schema_version=3,
+        journal_schema_version=1,
         stored_staging_path=None,
     )
     assert derived == intended_staging_path(tmp_path / "outputs", "1_abcdefabcdef", t)
@@ -120,7 +120,7 @@ def test_result_as_dict_includes_schema_version() -> None:
         physically_deleted_count=1,
     )
     payload = result_as_dict(result)
-    assert payload["cleanup_result_schema_version"] == 2
+    assert payload["cleanup_result_schema_version"] == 1
     assert "root_kind" not in payload["targets"][0]
     roundtrip = result_from_mapping(payload)
     assert roundtrip.targets[0].filesystem_dev == 1
@@ -178,7 +178,7 @@ def test_load_typed_incompatible_for_unknown_schema(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_load_typed_decodes_schema3_when_expected_none(tmp_path: Path) -> None:
+def test_load_typed_decodes_schema1_when_expected_none(tmp_path: Path) -> None:
     from transcriptx.web.services.run_cleanup.models import CleanupPlan, RootIdentity
 
     state = tmp_path / "state"
@@ -212,4 +212,4 @@ def test_load_typed_decodes_schema3_when_expected_none(tmp_path: Path) -> None:
     loaded = journal.load_operation_typed(state, oid)
     assert loaded.kind is journal.JournalLoadKind.RETRYABLE
     assert loaded.data is not None
-    assert loaded.data["journal_schema_version"] == 3
+    assert loaded.data["journal_schema_version"] == 1

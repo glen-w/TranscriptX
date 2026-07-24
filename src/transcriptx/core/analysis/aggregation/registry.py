@@ -1221,8 +1221,6 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(
                 [
                     "semantic_similarity",
-                    "semantic_similarity_advanced",
-                    "semantic_similarity_v2",
                 ]
             ),
             deps=[],

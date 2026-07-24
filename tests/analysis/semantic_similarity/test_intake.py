@@ -1,8 +1,8 @@
-"""Intake and dedupe tests for semantic_similarity_v2."""
+"""Intake and dedupe tests for semantic_similarity."""
 
 from __future__ import annotations
 
-from transcriptx.core.analysis.semantic_similarity_v2.intake import (
+from transcriptx.core.analysis.semantic_similarity.intake import (
     dedupe_text_index,
     segment_rows_from_dicts,
 )

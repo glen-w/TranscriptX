@@ -33,7 +33,7 @@ _NEW_NESTED = (
     "topic_modeling",
     "speaker_exemplars",
     "bertopic",
-    "semantic_similarity_v2",
+    "semantic_similarity",
     "vectorization",
     "tag_extraction",
     "qa_analysis",
@@ -42,7 +42,7 @@ _NEW_NESTED = (
 
 # Adapter-owned analysis targets skip raw nested setattr in load_config_file_into,
 # then apply via profile adapters when target payloads exist (acts, qa_analysis,
-# semantic_similarity_v2, tag_extraction, temporal_dynamics, topic_modeling,
+# semantic_similarity, tag_extraction, temporal_dynamics, topic_modeling,
 # vectorization).
 
 

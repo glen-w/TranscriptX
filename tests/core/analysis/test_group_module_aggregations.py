@@ -104,7 +104,7 @@ def test_aggregate_llm_action_items_dedupes_across_sessions() -> None:
 
     def _payload(items: list) -> dict:
         return {
-            "schema_id": "transcriptx.llm_action_items.v2",
+            "schema_id": "transcriptx.llm_action_items.v1",
             "module_version": "2",
             "items": items,
         }
@@ -318,7 +318,7 @@ def test_aggregate_semantic_similarity_prefers_v2() -> None:
                 "semantic_similarity": {
                     "payload": {"total_repetitions": 1, "unique_patterns": 1}
                 },
-                "semantic_similarity_v2": {
+                "semantic_similarity": {
                     "payload": {
                         "total_repetitions": 3,
                         "unique_patterns": 2,
@@ -348,7 +348,7 @@ def test_aggregate_semantic_similarity_prefers_v2() -> None:
     out = aggregate_semantic_similarity_group(results, _cmap(), _ts())
     assert out is not None
     assert out["session_rows"][0]["total_repetitions"] == 3
-    assert out["session_rows"][0]["semantic_module"] == "semantic_similarity_v2"
+    assert out["session_rows"][0]["semantic_module"] == "semantic_similarity"
     assert len(out["content_rows"]) == 1
     assert out["content_rows"][0]["similarity"] == 0.91
 

@@ -52,7 +52,7 @@ def _member_payloads(order: int) -> dict:
                 "notable_moments": [],
             }
         },
-        "semantic_similarity_v2": {
+        "semantic_similarity": {
             "payload": {
                 "total_repetitions": order + 1,
                 "unique_patterns": 1,
@@ -118,7 +118,7 @@ def test_finalize_group_analysis_new_modules_write_blobs_rows_and_charts(
         "llm_summary",
         "llm_action_items",
         "insights",
-        "semantic_similarity_v2",
+        "semantic_similarity",
         "voice_mismatch",
     ]
     per_results = [

@@ -17,6 +17,7 @@ data/state/
 data/recordings/
 data/.cache/
 data/cache/
+data/schema_epoch.json
 outputs/
 .transcriptx/
 

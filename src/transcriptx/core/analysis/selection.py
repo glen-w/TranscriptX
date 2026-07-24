@@ -3,7 +3,7 @@ Analysis mode, profile, and module selection logic (core policy).
 
 This module holds the single source of truth for:
 - Applying analysis mode (quick/full) and profile to config
-- Filtering modules by mode (e.g. semantic_similarity_v2 basic vs advanced)
+- Filtering modules by mode (e.g. semantic_similarity basic vs advanced)
 - Recommended/default module list policy
 - UI analysis presets (quick / balanced / thorough / custom)
 
@@ -158,9 +158,9 @@ def apply_analysis_mode_settings(
             profile_choice = "balanced"
         config.analysis.quality_filtering_profile = profile_choice
 
-    # Drive semantic_similarity_v2.mode from the same semantic_method knob.
+    # Drive semantic_similarity.mode from the same semantic_method knob.
     method = settings.get("semantic_method", "simple")
-    config.analysis.semantic_similarity_v2.mode = (
+    config.analysis.semantic_similarity.mode = (
         "advanced" if method == "advanced" else "basic"
     )
 
@@ -171,7 +171,7 @@ def filter_modules_by_mode(modules: List[str], mode: str) -> List[str]:
 
     Legacy semantic modules (`semantic_similarity`, `semantic_similarity_advanced`)
     are only kept when they appear explicitly in ``modules`` (user override).
-    Default plans use ``semantic_similarity_v2`` instead (via registry defaults).
+    Default plans use ``semantic_similarity`` instead (via registry defaults).
 
     Quick mode: if the list explicitly contained only
     ``semantic_similarity_advanced``, substitute ``semantic_similarity`` (legacy
@@ -344,7 +344,7 @@ def _policy_for_preset(preset_key: AnalysisPreset) -> Any:
             allow_llm=True,
             llm_module_ids=["llm_summary"],
             allow_heavy=True,
-            heavy_module_ids=["semantic_similarity_v2", "fine_grained_emotion"],
+            heavy_module_ids=["semantic_similarity", "fine_grained_emotion"],
             include_excluded_from_default=False,
             module_ids=None,
         ),

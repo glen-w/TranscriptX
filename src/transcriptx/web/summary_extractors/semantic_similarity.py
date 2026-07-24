@@ -63,4 +63,4 @@ def extract_semantic_similarity_summary(
 # Register for both semantic_similarity and semantic_similarity_advanced
 register_extractor("semantic_similarity", extract_semantic_similarity_summary)
 register_extractor("semantic_similarity_advanced", extract_semantic_similarity_summary)
-register_extractor("semantic_similarity_v2", extract_semantic_similarity_summary)
+register_extractor("semantic_similarity", extract_semantic_similarity_summary)

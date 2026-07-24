@@ -1,40 +1,40 @@
-"""Pydantic validation tests for semantic_similarity_v2 config subtree."""
+"""Pydantic validation tests for semantic_similarity config subtree."""
 
 from __future__ import annotations
 
 from transcriptx.core.config import get_default_config_dict, validate_config
 from transcriptx.core.config.validation import ValidationError
 
-V2_MODE_KEY = "analysis.semantic_similarity_v2.mode"
-V2_BATCH_KEY = "analysis.semantic_similarity_v2.batch_size"
-V2_THRESHOLD_KEY = "analysis.semantic_similarity_v2.self_similarity_threshold"
-V2_ENABLED_KEY = "analysis.semantic_similarity_v2.enabled"
+V2_MODE_KEY = "analysis.semantic_similarity.mode"
+V2_BATCH_KEY = "analysis.semantic_similarity.batch_size"
+V2_THRESHOLD_KEY = "analysis.semantic_similarity.self_similarity_threshold"
+V2_ENABLED_KEY = "analysis.semantic_similarity.enabled"
 
 
 def test_invalid_mode_choice() -> None:
     errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"mode": "experimental"}}}
+        {"analysis": {"semantic_similarity": {"mode": "experimental"}}}
     )
     assert V2_MODE_KEY in errors
 
 
 def test_batch_size_below_min() -> None:
     errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"batch_size": 0}}}
+        {"analysis": {"semantic_similarity": {"batch_size": 0}}}
     )
     assert V2_BATCH_KEY in errors
 
 
 def test_threshold_above_max() -> None:
     errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"self_similarity_threshold": 1.5}}}
+        {"analysis": {"semantic_similarity": {"self_similarity_threshold": 1.5}}}
     )
     assert V2_THRESHOLD_KEY in errors
 
 
 def test_bool_string_coercion_passes() -> None:
     errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"enabled": "true"}}}
+        {"analysis": {"semantic_similarity": {"enabled": "true"}}}
     )
     assert V2_ENABLED_KEY not in errors
 
@@ -44,26 +44,26 @@ def test_empty_subtree_no_errors() -> None:
     v2_errors = {
         k: v
         for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity_v2.")
+        if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}
 
 
 def test_valid_override_no_errors() -> None:
     errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"self_similarity_threshold": 0.81}}}
+        {"analysis": {"semantic_similarity": {"self_similarity_threshold": 0.81}}}
     )
     assert V2_THRESHOLD_KEY not in errors
 
 
 def test_partial_override_only() -> None:
     errors = validate_config(
-        {"analysis": {"semantic_similarity_v2": {"batch_size": 32}}}
+        {"analysis": {"semantic_similarity": {"batch_size": 32}}}
     )
     v2_errors = {
         k: v
         for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity_v2.")
+        if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}
 
@@ -72,7 +72,7 @@ def test_multiple_invalid_fields() -> None:
     errors = validate_config(
         {
             "analysis": {
-                "semantic_similarity_v2": {
+                "semantic_similarity": {
                     "mode": "bad",
                     "batch_size": 0,
                 }
@@ -84,7 +84,7 @@ def test_multiple_invalid_fields() -> None:
 
 
 def test_no_double_validation_for_v2_field() -> None:
-    errors = validate_config({"analysis": {"semantic_similarity_v2": {"mode": "bad"}}})
+    errors = validate_config({"analysis": {"semantic_similarity": {"mode": "bad"}}})
     assert len(errors[V2_MODE_KEY]) == 1
 
 
@@ -93,13 +93,13 @@ def test_validate_default_config_has_no_v2_errors() -> None:
     v2_errors = {
         k: v
         for k, v in errors.items()
-        if k.startswith("analysis.semantic_similarity_v2.")
+        if k.startswith("analysis.semantic_similarity.")
     }
     assert v2_errors == {}
 
 
 def test_pydantic_validation_error_shape() -> None:
-    errors = validate_config({"analysis": {"semantic_similarity_v2": {"mode": "bad"}}})
+    errors = validate_config({"analysis": {"semantic_similarity": {"mode": "bad"}}})
     assert V2_MODE_KEY in errors
     err = errors[V2_MODE_KEY][0]
     assert isinstance(err, ValidationError)
@@ -110,7 +110,7 @@ def test_pydantic_validation_error_shape() -> None:
 def test_validate_config_non_pilot_errors_unchanged() -> None:
     config = get_default_config_dict()
     config["dashboard"] = {"overview_missing_behavior": "unexpected"}
-    config["analysis"]["semantic_similarity_v2"] = {"mode": "bad"}
+    config["analysis"]["semantic_similarity"] = {"mode": "bad"}
     errors = validate_config(config)
     assert "dashboard.overview_missing_behavior" in errors
     assert V2_MODE_KEY in errors

@@ -24,7 +24,7 @@ from transcriptx.core.utils.validation import (
 
 def _v1(segments: list) -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "t.json",
@@ -97,7 +97,7 @@ class TestValidateTranscriptFile:
         test_file.write_text(
             json.dumps(
                 {
-                    "schema_version": "1.0",
+                    "schema_version": 1,
                     "source": {
                         "type": "manual",
                         "original_path": "x",

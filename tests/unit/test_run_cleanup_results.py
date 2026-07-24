@@ -243,4 +243,4 @@ def test_status_from_loaded_operation_success_vector(tmp_path: Path) -> None:
 @pytest.mark.unit
 def test_phase_b_policy_and_schema() -> None:
     assert CLEANUP_POLICY_VERSION == 7
-    assert JOURNAL_SCHEMA_VERSION == 3
+    assert JOURNAL_SCHEMA_VERSION == 1

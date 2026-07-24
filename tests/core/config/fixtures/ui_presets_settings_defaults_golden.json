@@ -3,7 +3,7 @@
     "allow_heavy": true,
     "allow_llm": true,
     "heavy_module_ids": [
-      "semantic_similarity_v2",
+      "semantic_similarity",
       "fine_grained_emotion"
     ],
     "include_excluded_from_default": false,

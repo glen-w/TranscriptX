@@ -65,7 +65,7 @@
     "torch_version": "2.2.2",
     "transformers_version": "4.53.2"
   },
-  "schema_version": "fine_grained_emotion_result_schema_v2",
+  "schema_version": "fine_grained_transcriptx.emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

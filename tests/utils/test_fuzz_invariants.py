@@ -29,7 +29,7 @@ def test_fuzz_transcript_hash_idempotent(tmp_path):
         current_time += duration + random.uniform(0.0, 0.3)
 
     transcript = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "fuzz.json",
@@ -69,7 +69,7 @@ def test_fuzz_segment_ordering_invariant(tmp_path):
     transcript_path.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": {
                     "type": "manual",
                     "original_path": "ordered.json",

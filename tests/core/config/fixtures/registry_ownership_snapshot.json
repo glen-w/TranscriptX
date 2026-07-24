@@ -9,7 +9,7 @@
     "analysis.active_qa_analysis_profile": {
       "reason": "profile activation selector"
     },
-    "analysis.active_semantic_similarity_v2_profile": {
+    "analysis.active_semantic_similarity_profile": {
       "reason": "profile activation selector"
     },
     "analysis.active_tag_extraction_profile": {
@@ -90,8 +90,8 @@
     "qa_analysis": 11,
     "quality_filtering_profiles": 162,
     "quick_analysis_settings": 10,
-    "semantic_similarity_v2": 25,
-    "semantic_similarity_v2_profiles": 22,
+    "semantic_similarity": 25,
+    "semantic_similarity_profiles": 22,
     "speaker_exemplars": 26,
     "summary": 13,
     "tag_extraction": 3,

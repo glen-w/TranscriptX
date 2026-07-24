@@ -228,7 +228,7 @@ def merge_contextual_projection(
 # Frozen consumer contracts used by contagion / affect_tension
 CONTEXTUAL_EMOTION_FOR_CONTAGION = OptionalProducerContract(
     producer_module_id="contextual_emotion",
-    accepted_schema_versions=("contextual_emotion_result_schema_v2",),
+    accepted_schema_versions=("transcriptx.contextual_emotion_result.v1",),
     accepted_semantics_versions=("contextual_emotion_v1",),
     required_projection_fields=(
         "segment_id",
@@ -245,7 +245,7 @@ CONTEXTUAL_EMOTION_FOR_AFFECT_TENSION = CONTEXTUAL_EMOTION_FOR_CONTAGION
 
 LEXICAL_EMOTION_FOR_CONTAGION = OptionalProducerContract(
     producer_module_id="emotion",
-    accepted_schema_versions=("emotion_result_schema_v2",),
+    accepted_schema_versions=("transcriptx.emotion_result.v1",),
     accepted_semantics_versions=("emotion_lexical_v2",),
     required_projection_fields=(
         "segment_id",

@@ -119,6 +119,14 @@ def main() -> None:
         elapsed_ms=(time.perf_counter() - _APP_IMPORT_STARTED_AT) * 1000,
         extra={"current_page": current_page},
     )
+
+    # Fail closed on pre-epoch / unmarked occupied data roots before principal work.
+    from transcriptx.web.schema_epoch_gate import render_schema_epoch_gate
+
+    if render_schema_epoch_gate():
+        finish_run(notes=f"page={current_page};schema_epoch_blocked")
+        return
+
     load_error = None
     should_hydrate = page_requires_workspace_hydration(current_page)
     if should_hydrate:

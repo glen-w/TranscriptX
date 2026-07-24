@@ -72,8 +72,8 @@ _INVALID_PILOT_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "semantic_v2_mode",
-        "payload": {"analysis": {"semantic_similarity_v2": {"mode": "legacy"}}},
-        "dotpath": "analysis.semantic_similarity_v2.mode",
+        "payload": {"analysis": {"semantic_similarity": {"mode": "legacy"}}},
+        "dotpath": "analysis.semantic_similarity.mode",
     },
     {
         "id": "audio_target_lufs",

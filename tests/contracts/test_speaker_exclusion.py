@@ -81,7 +81,7 @@ def test_unidentified_present_in_transcript_output(
     sidecar_path.write_text(
         json.dumps(
             {
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
                 "speaker_map": {
                     "SPEAKER_00": "Alice",
                     "SPEAKER_01": "Bob",

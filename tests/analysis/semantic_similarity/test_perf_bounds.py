@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from transcriptx.core.analysis.semantic_similarity_v2.candidates import (
+from transcriptx.core.analysis.semantic_similarity.candidates import (
     generate_candidate_pairs,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.intake import SegmentRow
+from transcriptx.core.analysis.semantic_similarity.intake import SegmentRow
 
 
 @pytest.mark.semantic_v2_slow

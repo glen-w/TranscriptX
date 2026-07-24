@@ -91,8 +91,8 @@ from .models.pauses import PausesSettingsModel
 from .models.qa_analysis import QAAnalysisSettingsModel
 from .models.quality_filtering_profiles import QualityFilteringProfilesSettingsModel
 from .models.quick_analysis_settings import QuickAnalysisSettingsModel
-from .models.semantic_similarity_v2 import SemanticSimilarityV2SettingsModel
-from .models.semantic_similarity_v2_profiles import (
+from .models.semantic_similarity import SemanticSimilaritySettingsModel
+from .models.semantic_similarity_profiles import (
     SemanticSimilarityV2ProfilesSettingsModel,
 )
 from .models.speaker_exemplars import SpeakerExemplarsSettingsModel
@@ -120,7 +120,7 @@ from .pydantic_registry import (
 )
 from .registry import FieldMetadata
 
-SEMANTIC_SIMILARITY_V2_PREFIX = "analysis.semantic_similarity_v2"
+SEMANTIC_SIMILARITY_V2_PREFIX = "analysis.semantic_similarity"
 
 
 @dataclass(frozen=True)
@@ -148,8 +148,8 @@ def _category_for(spec: PydanticPilotSpec) -> str:
 
 PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
     PydanticPilotSpec(
-        pilot_id="semantic_similarity_v2",
-        model=SemanticSimilarityV2SettingsModel,
+        pilot_id="semantic_similarity",
+        model=SemanticSimilaritySettingsModel,
         dotpath_prefix=SEMANTIC_SIMILARITY_V2_PREFIX,
         category="analysis",
         dataclass_type=SemanticSimilarityV2Config,
@@ -484,9 +484,9 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dataclass_type=None,
     ),
     PydanticPilotSpec(
-        pilot_id="semantic_similarity_v2_profiles",
+        pilot_id="semantic_similarity_profiles",
         model=SemanticSimilarityV2ProfilesSettingsModel,
-        dotpath_prefix="analysis.semantic_similarity_v2_profiles",
+        dotpath_prefix="analysis.semantic_similarity_profiles",
         category="analysis",
         dataclass_type=None,
     ),

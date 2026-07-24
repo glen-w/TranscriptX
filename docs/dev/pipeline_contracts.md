@@ -70,19 +70,19 @@ Cleanup must execute via `try/finally` for:
 - Users may still run legacy modules by **explicitly** naming them in the module list, or
   by setting `analysis.include_legacy_modules=True` to pull them back into default-style
   plans without listing IDs.
-- Default semantic analysis uses `semantic_similarity_v2`. Legacy IDs
+- Default semantic analysis uses `semantic_similarity`. Legacy IDs
   `semantic_similarity` / `semantic_similarity_advanced` remain stable for outputs and
   backward compatibility.
 
 ## Semantic similarity v2
 
-- Module id: `semantic_similarity_v2`. Outputs use `*_semantic_similarity_v2_*.json` with
-  top-level `schema_version: semantic_similarity_v2.1.1` (major still `1` under
+- Module id: `semantic_similarity`. Outputs use `*_semantic_similarity_*.json` with
+  top-level `schema_version: semantic_similarity.1.1` (major still `1` under
   `parse_schema_major`). Motif envelope fields: `motifs`, `motif_export_status`,
   `provenance`, `eligible_segment_count`, `comparability` (TF-IDF incomparable).
-- Presets: `analysis.active_semantic_similarity_v2_profile` selects
-  `analysis.semantic_similarity_v2_profiles` (`fast_v2`, `balanced_v2`, `deep_v2`).
+- Presets: `analysis.active_semantic_similarity_profile` selects
+  `analysis.semantic_similarity_profiles` (`fast_v2`, `balanced_v2`, `deep_v2`).
   Runtime merge: dataclass defaults → preset dict → per-field user overrides (values that
-  differ from defaults on `analysis.semantic_similarity_v2`) → when the preset omits
+  differ from defaults on `analysis.semantic_similarity`) → when the preset omits
   `mode`, `analysis.analysis_mode` (`quick`/`full`) sets `mode` to `basic`/`advanced`.
 

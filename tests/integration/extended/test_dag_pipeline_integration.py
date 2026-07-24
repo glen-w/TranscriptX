@@ -25,7 +25,7 @@ class TestDAGPipelineIntegration:
         transcript_file.write_text(
             json.dumps(
                 {
-                    "schema_version": "1.0",
+                    "schema_version": 1,
                     "source": {
                         "type": "manual",
                         "original_path": "test_transcript.json",

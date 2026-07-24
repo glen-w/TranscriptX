@@ -33,8 +33,8 @@ ORPHANED_DIRNAME = "orphaned"
 CANONICAL_ROWS_FILENAME = "canonical_rows.json"
 GENERATION_MANIFEST_FILENAME = "generation_manifest.json"
 
-INDEX_SCHEMA_VERSION = "emotion_family_artifact_index_v1"
-MANIFEST_SCHEMA_VERSION = "emotion_family_generation_manifest_v1"
+INDEX_SCHEMA_VERSION = "transcriptx.emotion_family_artifact_index.v1"
+MANIFEST_SCHEMA_VERSION = "transcriptx.emotion_family_generation_manifest.v1"
 ATTEMPT_HISTORY_CAP = 50
 GENERATION_KEEP_RECENT = 50
 ORPHAN_GRACE_SECONDS = 60.0

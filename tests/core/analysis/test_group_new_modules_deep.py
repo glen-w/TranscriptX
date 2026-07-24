@@ -124,7 +124,7 @@ def test_llm_action_items_ignores_non_dict_items_and_counts_status() -> None:
             {
                 "llm_action_items": {
                     "payload": {
-                        "schema_id": "transcriptx.llm_action_items.v2",
+                        "schema_id": "transcriptx.llm_action_items.v1",
                         "module_version": "2",
                         "items": [
                             "bad",

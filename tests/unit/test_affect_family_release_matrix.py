@@ -89,7 +89,7 @@ from transcriptx.io.atomic_json import strict_json_dumps
 MODULE_SPECS = (
     {
         "module_id": "emotion",
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "ref_field": "emotion_canonical_ref",
         "owned_fields": LEXICAL_PROJECTION_SEGMENT_FIELDS,
@@ -99,7 +99,7 @@ MODULE_SPECS = (
     },
     {
         "module_id": "contextual_emotion",
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "ref_field": "contextual_emotion_canonical_ref",
         "owned_fields": CONTEXTUAL_PROJECTION_SEGMENT_FIELDS,
@@ -109,7 +109,7 @@ MODULE_SPECS = (
     },
     {
         "module_id": "fine_grained_emotion",
-        "schema_version": "fine_grained_emotion_result_schema_v2",
+        "schema_version": "fine_grained_transcriptx.emotion_result.v1",
         "semantics_version": "fine_grained_emotion_v1",
         "ref_field": "fine_grained_emotion_canonical_ref",
         "owned_fields": FINE_GRAINED_PROJECTION_SEGMENT_FIELDS,
@@ -252,7 +252,7 @@ def test_02_fresh_generation_identity_propagates(tmp_path):
             tmp_path / f"m{i}",
             module_id="emotion",
             generation_id=gid,
-            schema_version="emotion_result_schema_v2",
+            schema_version="transcriptx.emotion_result.v1",
             semantics_version="emotion_lexical_v2",
             rows=rows,
         )
@@ -266,7 +266,7 @@ def test_02_fresh_generation_identity_propagates(tmp_path):
         ref = build_canonical_ref(
             module_id="emotion",
             artifact_generation_id=gid,
-            schema_version="emotion_result_schema_v2",
+            schema_version="transcriptx.emotion_result.v1",
             semantics_version="emotion_lexical_v2",
             row_key="s1",
             row=rows_loaded[0],
@@ -338,7 +338,7 @@ def test_04_failure_generation_consistency(tmp_path, run_status):
         generation_id=gid,
         run_status=run_status,
         usable_output=False,
-        schema_version="contextual_emotion_result_schema_v2",
+        schema_version="contextual_transcriptx.emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         canonical_rows=[],
         expected_segment_ids=[],
@@ -423,7 +423,7 @@ def test_05_activation_state_matrix(tmp_path, run_status, usable, expect_active)
         generation_id=gid,
         run_status=run_status,
         usable_output=usable,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         canonical_rows=rows,
         expected_segment_ids=[r["segment_id"] for r in rows],
@@ -461,7 +461,7 @@ def test_06_no_owned_fields_before_canonical_persist(tmp_path):
         "run_status": "complete",
         "usable_output": True,
         "artifact_generation_id": _gid("t06"),
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "segments_scored": 1,
         "_canonical_rows": [_scored_row("s1")],
@@ -547,7 +547,7 @@ def test_07_canonical_persist_failure_rollback(tmp_path, fail_at, monkeypatch):
         "run_status": "complete",
         "usable_output": True,
         "artifact_generation_id": gid,
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "segments_scored": 1,
         "_canonical_rows": [_scored_row("s1")],
@@ -583,7 +583,7 @@ def test_08_enriched_write_failure_keeps_canonical(tmp_path):
         "run_status": "complete",
         "usable_output": True,
         "artifact_generation_id": gid,
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "segments_scored": 1,
         "_canonical_rows": [_scored_row("s1")],
@@ -621,7 +621,7 @@ def test_09_secondary_output_failure_isolation(tmp_path, fail_name):
         "run_status": "complete",
         "usable_output": True,
         "artifact_generation_id": gid,
-        "schema_version": "emotion_result_schema_v2",
+        "schema_version": "transcriptx.emotion_result.v1",
         "semantics_version": "emotion_lexical_v2",
         "segments_scored": 1,
         "_canonical_rows": [_scored_row("s1")],
@@ -664,7 +664,7 @@ def test_10_idempotent_retry_and_conflict(tmp_path):
         generation_id=gid,
         run_status="complete",
         usable_output=True,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         canonical_rows=[_scored_row("s1")],
         segments_scored=1,
@@ -696,7 +696,7 @@ def test_11_concurrent_writers_keep_valid_index(tmp_path):
                 generation_id=_gid(seed),
                 run_status="complete",
                 usable_output=True,
-                schema_version="emotion_result_schema_v2",
+                schema_version="transcriptx.emotion_result.v1",
                 semantics_version="emotion_lexical_v2",
                 canonical_rows=[_scored_row("s1", text=seed)],
                 segments_scored=1,
@@ -743,7 +743,7 @@ def test_12_crash_point_atomicity(tmp_path, crash_point, monkeypatch):
         tmp_path,
         module_id="emotion",
         generation_id=prior,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         rows=[_scored_row("s1", text="prior")],
     )
@@ -778,7 +778,7 @@ def test_12_crash_point_atomicity(tmp_path, crash_point, monkeypatch):
             generation_id=new_gid,
             run_status="complete",
             usable_output=True,
-            schema_version="emotion_result_schema_v2",
+            schema_version="transcriptx.emotion_result.v1",
             semantics_version="emotion_lexical_v2",
             canonical_rows=[_scored_row("s1", text="new")],
             segments_scored=1,
@@ -804,7 +804,7 @@ def test_13_abandoned_generation_recovery(tmp_path):
         tmp_path,
         module_id="emotion",
         generation_id=active,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         rows=[_scored_row("s1")],
     )
@@ -915,7 +915,7 @@ def test_15_integrity_corruption_fails_closed(tmp_path, tamper):
         tmp_path,
         module_id="emotion",
         generation_id=gid,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         rows=rows,
     )
@@ -964,7 +964,7 @@ def test_15_integrity_corruption_fails_closed(tmp_path, tamper):
             validate_generation_integrity(
                 tmp_path,
                 gid,
-                expected_manifest={"schema_version": "emotion_result_schema_v2"},
+                expected_manifest={"schema_version": "transcriptx.emotion_result.v1"},
             )
         return
     elif tamper == "generation_id":
@@ -1030,14 +1030,14 @@ def test_17_canonical_reference_rejects_mismatches(tmp_path, mutate):
         tmp_path,
         module_id="contextual_emotion",
         generation_id=gid,
-        schema_version="contextual_emotion_result_schema_v2",
+        schema_version="contextual_transcriptx.emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         rows=[row],
     )
     good = build_canonical_ref(
         module_id="contextual_emotion",
         artifact_generation_id=gid,
-        schema_version="contextual_emotion_result_schema_v2",
+        schema_version="contextual_transcriptx.emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         row_key="s1",
         row=row,
@@ -1674,7 +1674,7 @@ def test_25_affect_tension_null_metrics_with_reasons(tmp_path):
         tmp_path,
         module_id="contextual_emotion",
         generation_id=gid,
-        schema_version="contextual_emotion_result_schema_v2",
+        schema_version="contextual_transcriptx.emotion_result.v1",
         semantics_version="contextual_emotion_v1",
         rows=[row],
     )
@@ -1693,7 +1693,7 @@ def test_25_affect_tension_null_metrics_with_reasons(tmp_path):
         }
     ]
     artifact = {
-        "schema_version": "contextual_emotion_result_schema_v2",
+        "schema_version": "contextual_transcriptx.emotion_result.v1",
         "semantics_version": "contextual_emotion_v1",
         "module_id": "contextual_emotion",
         "run_status": "complete",
@@ -1766,7 +1766,7 @@ def test_repair_enriched_projections_from_current_complete(tmp_path):
         tmp_path,
         module_id="emotion",
         generation_id=gid,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         rows=[row],
     )
@@ -1796,7 +1796,7 @@ def test_index_lock_timeout_does_not_corrupt(tmp_path, monkeypatch):
         tmp_path,
         module_id="emotion",
         generation_id=prior,
-        schema_version="emotion_result_schema_v2",
+        schema_version="transcriptx.emotion_result.v1",
         semantics_version="emotion_lexical_v2",
         rows=[_scored_row("s1")],
     )
@@ -1822,7 +1822,7 @@ def test_index_lock_timeout_does_not_corrupt(tmp_path, monkeypatch):
             generation_id=_gid("lock-new"),
             run_status="complete",
             usable_output=True,
-            schema_version="emotion_result_schema_v2",
+            schema_version="transcriptx.emotion_result.v1",
             semantics_version="emotion_lexical_v2",
             segments_scored=1,
             canonical_rows=[_scored_row("s2")],

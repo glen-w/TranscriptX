@@ -10,7 +10,7 @@ from transcriptx.io.speaker_map_resolver import sidecar_path_for
 
 def _v1(segments: list) -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "t.json",
@@ -76,7 +76,7 @@ def test_completeness_partial(tmp_path) -> None:
                 "speaker_map": {"SPEAKER_00": "Alice"},
                 "ignored_speakers": [],
                 "speaker_id_to_db_id": {},
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
             }
         )
     )
@@ -109,7 +109,7 @@ def test_pick_counts_partial_with_ignored(tmp_path) -> None:
                 "speaker_map": {"SPEAKER_00": "Alice"},
                 "ignored_speakers": ["SPEAKER_01"],
                 "speaker_id_to_db_id": {},
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
             }
         )
     )
@@ -141,7 +141,7 @@ def test_completeness_complete_when_segment_uses_variant_diarized_id(tmp_path) -
                 "speaker_map": {"SPEAKER_01": "Alice", "SPEAKER_02": "Bob"},
                 "ignored_speakers": [],
                 "speaker_id_to_db_id": {},
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
             }
         )
     )
@@ -173,7 +173,7 @@ def test_pick_counts_complete_with_ignored_only(tmp_path) -> None:
                 "speaker_map": {"SPEAKER_00": "Alice"},
                 "ignored_speakers": ["SPEAKER_01"],
                 "speaker_id_to_db_id": {},
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
             }
         )
     )
@@ -205,7 +205,7 @@ def test_self_mapping_placeholder_counts_as_unidentified(tmp_path) -> None:
                 "speaker_map": {"SPEAKER_00": "SPEAKER_00"},
                 "ignored_speakers": [],
                 "speaker_id_to_db_id": {},
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
             }
         )
     )
@@ -241,7 +241,7 @@ def test_completeness_complete(tmp_path) -> None:
                 "speaker_map": {"SPEAKER_00": "Alice"},
                 "ignored_speakers": [],
                 "speaker_id_to_db_id": {},
-                "speaker_map_schema_version": "1.0",
+                "speaker_map_schema_version": 1,
             }
         )
     )

@@ -60,7 +60,7 @@ _ITEM = {
 }
 
 _V2_PAYLOAD = {
-    "schema_id": "transcriptx.llm_action_items.v2",
+    "schema_id": "transcriptx.llm_action_items.v1",
     "module_version": "2",
     "items": [_ITEM],
 }
@@ -163,7 +163,7 @@ class TestActionItemsGroupEdges:
                 {
                     "llm_action_items": {
                         "payload": {
-                            "schema_id": "transcriptx.llm_action_items.v2",
+                            "schema_id": "transcriptx.llm_action_items.v1",
                             "items": [_ITEM, "junk"],
                         },
                         "artifacts": [
@@ -201,7 +201,7 @@ class TestActionItemsGroupEdges:
                 {
                     "llm_action_items": {
                         "payload": {
-                            "schema_id": "transcriptx.llm_action_items.v2",
+                            "schema_id": "transcriptx.llm_action_items.v1",
                             "items": ["junk", 42],
                         }
                     }

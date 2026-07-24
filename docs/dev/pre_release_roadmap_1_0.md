@@ -21,7 +21,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Phase 0B product docs** — PRODUCT, README, ROADMAP and related alignment after the repository information architecture is agreed (**shipped as 0.9.1**)
 - [x] **Phase 0B stubs** — Add planning stubs including schema_epoch_inventory, install_profiles_matrix, manual_acceptance_1_0, analysis_quality_audit, docs_architecture_1_0, ui_presentation_modes, demo_project, performance_envelopes_1_0, trust_privacy_model_governance_1_0, release_ops_support_1_0, unfamiliar_user_validation_1_0 (+ release_severity_triage_1_0)
 - [x] **Schema inventory** — Classified schema/version inventory + transition UX in [schema_epoch_inventory.md](schema_epoch_inventory.md); **human-approved 2026-07-24** (integer public schemas → `1` only)
-- [ ] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI
+- [x] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI (**cut as 0.9.3**)
 - [ ] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs
 - [ ] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs
 - [ ] **0.9.x — harden + public surfaces** — Quality audit; performance envelopes; trust/privacy/model gate; onboarding; hosted docs + modest website; accessibility acceptance
@@ -51,7 +51,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 | Topic | Decision |
 |-------|----------|
 | Public schema epoch | **Option A (disciplined):** public persisted `schema_version` → integer **`1` only** (never dotted `"1.0"` / `"2.0"`); public string IDs → `transcriptx.<domain>.v1`; refuse/isolate pre-epoch stores; data-root epoch marker; **no cosmetic resets** of policy/prompt/cache identity strings |
-| Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory: only `semantic_similarity_v2` embeds a version suffix. **Retire** legacy `semantic_similarity` + `semantic_similarity_advanced`, then **rename** `semantic_similarity_v2` → `semantic_similarity` (package/config/artifacts/presets/docs). Allowed under module freeze as 1.0 journey repair — not a new module. Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; collapse dual live writers as part of epoch. |
+| Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory: only `semantic_similarity` embeds a version suffix. **Retire** legacy `semantic_similarity` + `semantic_similarity_advanced`, then **rename** `semantic_similarity` → `semantic_similarity` (package/config/artifacts/presets/docs). Allowed under module freeze as 1.0 journey repair — not a new module. Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; collapse dual live writers as part of epoch. |
 | Product website | **Option A:** `website/` plain HTML/CSS (+ minimal JS), GitHub Pages; separate from hosted user docs. **Not a hard 1.0 blocker** if product gates pass — require a *credible* public landing; first version may be modest |
 | Hosted docs | **Revive Sphinx + Read the Docs** (extras already list Sphinx/MyST/Furo; `docs/conf.py` / Makefile / `docs/requirements.txt` are missing; `scripts/build_docs.sh` is stale; `stale_refs.sh` currently forbids `readthedocs.io` and must be updated when RTD goes live). **Usable hosted documentation is required**; polished breadth is not a hard blocker if task docs complete supported workflows |
 | Mode system | Presentation/config layer only — one execution system; labels prefer **Guided** / **Full controls** (Simple/Advanced acceptable aliases) |
@@ -422,7 +422,7 @@ flowchart TD
   v090[0.9.0 pre-pre-release stabilisation]
   v091[0.9.1 hygiene and product docs]
   v092[0.9.2 stubs and schema inventory]
-  themeSchema[0.9.x schema epoch]
+  themeSchema[0.9.3 schema epoch]
   themeInstall[0.9.x install and transcription]
   themeModes[0.9.x Guided mode and demo]
   themeHarden[0.9.x harden docs presentation]
@@ -472,14 +472,14 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 Focus: one coherent risk surface — public schema epoch (+ related public module-id hygiene).
 
-- [ ] Execute public schema epoch reset + data-root epoch marker (integer `1` only; no dotted `.x` stamps)
-- [ ] Remove unnecessary pre-public compatibility adapters
-- [ ] Archive or remove obsolete pre-public compatibility and migration helpers (mandatory hygiene after reset)
-- [ ] Supported GUI preflight (+ typed Python workflow / internal maintainer utility if needed — **not** a new public analysis CLI); optional inventory/export before reset; explicit fresh data directory path; no automatic deletion; default preserve compatible transcripts/recordings
-- [ ] Regenerate fixtures/goldens; refuse pre-epoch stores with remediation UX (see §8)
-- [ ] Prove 0.9 epoch-1 store opens unchanged in later 0.9.x / 1.0 candidates
-- [ ] **Versioned module-id cleanup:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`; rename `semantic_similarity_v2` → `semantic_similarity` (package, registry, config keys, UI presets/profiles, artifacts, group-agg preference, docs/tests). No long-lived dual module. Same theme as epoch preferred (clean-slate); split only if risk forces it.
-- [ ] Collapse `llm_custom_qa` dual V1/V2 writer/marker symbols to a single epoch-1 constant (no `_V2` in names)
+- [x] Execute public schema epoch reset + data-root epoch marker (integer `1` only; no dotted `.x` stamps)
+- [x] Remove unnecessary pre-public compatibility adapters
+- [x] Archive or remove obsolete pre-public compatibility and migration helpers (mandatory hygiene after reset)
+- [x] Supported GUI preflight (+ typed Python workflow / internal maintainer utility if needed — **not** a new public analysis CLI); optional inventory/export before reset; explicit fresh data directory path; no automatic deletion; default preserve compatible transcripts/recordings
+- [x] Regenerate fixtures/goldens; refuse pre-epoch stores with remediation UX (see §8)
+- [x] Prove 0.9 epoch-1 store opens unchanged in later 0.9.x / 1.0 candidates (epoch-1 marker + exact schema stamps; forward-compat by construction)
+- [ ] **Versioned module-id cleanup:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`; rename `semantic_similarity` → `semantic_similarity` (package, registry, config keys, UI presets/profiles, artifacts, group-agg preference, docs/tests). No long-lived dual module. Same theme as epoch preferred (clean-slate); split only if risk forces it.
+- [x] Collapse `llm_custom_qa` dual V1/V2 writer/marker symbols to a single epoch-1 constant (no `_V2` in names)
 
 ### 0.9.x — Installation and transcription onboarding
 
@@ -611,7 +611,7 @@ Without explicit severity, hardening expands indefinitely because every imperfec
 
 1. Classify every version-like value before changing it.
 2. Public persisted numeric `schema_version` → integer **`1` only** (never dotted `"1.0"` / `"2.0"`).
-3. Public persisted string schema IDs → **`transcriptx.<domain>.v1`** (rename `emotion_result_schema_v2`, live `llm_custom_qa.v2`, action-items `.v2` envelopes, etc.).
+3. Public persisted string schema IDs → **`transcriptx.<domain>.v1`** (rename `transcriptx.emotion_result.v1`, live `llm_custom_qa.v2`, action-items `.v2` envelopes, etc.).
 4. Refuse or isolate pre-epoch artifacts; **no long-lived compatibility adapters** for wiped pre-public data.
 5. Write **`schema_epoch` / public-schema epoch marker** at managed data-root; detect early; explain clearly in GUI and supported remediation surfaces (see transition UX below — not a new public analysis CLI).
 6. **Never** renumber, reuse, or reset public schema IDs after 1.0.
@@ -627,8 +627,8 @@ Without explicit severity, hardening expands indefinitely because every imperfec
 | Journal / recovery format | **→ integer `1`** for public journal envelopes | cleanup `JOURNAL_SCHEMA_VERSION` (3→1), rename journal stays 1 |
 | Policy / behaviour generation | **Do not reset** for cosmetics | cleanup **policy 7**, voice threshold/preprocess policies, admission policy, speaker eligibility policy |
 | Cache identity | **Do not reset** unless invalidating caches deliberately as part of wipe | emotion_family inference/aggregation cache v3, clip cache, voice excerpt cache |
-| Algorithm / analytical semantics | **Do not reset** when version describes method, not envelope — but **do** drop `_vN` from **public module ids** (separate row) | Keep method fingerprints (e.g. interactions/emotion semantics); rename module id `semantic_similarity_v2` → `semantic_similarity` after retiring legacy siblings; then retarget method string away from implying a second product module |
-| Public analysis module id | **Unversioned for 1.0** | Only current offender: `semantic_similarity_v2` (+ legacy `semantic_similarity`, `semantic_similarity_advanced`) |
+| Algorithm / analytical semantics | **Do not reset** when version describes method, not envelope — but **do** drop `_vN` from **public module ids** (separate row) | Keep method fingerprints (e.g. interactions/emotion semantics); rename module id `semantic_similarity` → `semantic_similarity` after retiring legacy siblings; then retarget method string away from implying a second product module |
+| Public analysis module id | **Unversioned for 1.0** | Only current offender: `semantic_similarity` (+ legacy `semantic_similarity`, `semantic_similarity_advanced`) |
 | Prompt IDs / prompt policy versions | **Do not reset** | LLM prompt version constants |
 | Package / API version | Bump via normal release process (`0.9.x` → `1.0.0`) | `pyproject` / `__version__` |
 
@@ -1004,4 +1004,4 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 4. [x] Freeze analysis-module additions in backlog/stocktake language
 5. [x] Publish release severity triage rules early so later hardening has a decision system
 6. [x] Schema inventory **and epoch transition UX design** approved in [schema_epoch_inventory.md](schema_epoch_inventory.md) (integer public schemas → `1`; owner clean-slate backup of maps/profiles 2026-07-24)
-7. [ ] Execute **0.9.x schema epoch** implementation; cut later themes (install ≠ modes); RC only when gates pass
+7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3**); cut later themes (install ≠ modes); RC only when gates pass

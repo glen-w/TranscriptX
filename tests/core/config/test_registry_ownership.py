@@ -134,7 +134,7 @@ def _build_ownership_snapshot() -> dict:
         "active_workflow_profile": "profile activation selector",
         "analysis.active_acts_profile": "profile activation selector",
         "analysis.active_qa_analysis_profile": "profile activation selector",
-        "analysis.active_semantic_similarity_v2_profile": "profile activation selector",
+        "analysis.active_semantic_similarity_profile": "profile activation selector",
         "analysis.active_tag_extraction_profile": "profile activation selector",
         "analysis.active_temporal_dynamics_profile": "profile activation selector",
         "analysis.active_topic_modeling_profile": "profile activation selector",

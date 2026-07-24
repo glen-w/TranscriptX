@@ -6,7 +6,7 @@
   "ordered_segment_ids": [],
   "release_channel": "experimental",
   "run_status": "failed",
-  "schema_version": "fine_grained_emotion_result_schema_v2",
+  "schema_version": "fine_grained_transcriptx.emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

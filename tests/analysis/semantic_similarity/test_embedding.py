@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from transcriptx.core.analysis.semantic_similarity_v2.embedding import (
+from transcriptx.core.analysis.semantic_similarity.embedding import (
     LRUEmbeddingCache,
     SemanticBatchEmbedder,
 )

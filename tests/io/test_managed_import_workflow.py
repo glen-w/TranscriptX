@@ -164,7 +164,7 @@ def test_retry_backfills_missing_source_original_path(
     target_json.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": {
                     "type": "srt",
                     "imported_at": "2026-01-01T00:00:00+00:00",
@@ -204,7 +204,7 @@ def test_retry_backfills_when_source_key_missing(monkeypatch, tmp_path: Path) ->
     target_json.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "segments": [
                     {
                         "speaker": "SPEAKER_00",
@@ -273,7 +273,7 @@ def test_retry_backfills_when_source_is_legacy_string(
     target_json.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": "legacy/path/to/file.srt",
                 "segments": [
                     {

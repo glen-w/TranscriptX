@@ -269,7 +269,7 @@ def test_invalid_run_results_payload_not_exported(tmp_path: Path) -> None:
     run_root = outputs / "s" / "x"
     run_root.mkdir(parents=True)
     (run_root / "run_results.json").write_text(
-        json.dumps({"schema_version": 2, "run_id": ""}), encoding="utf-8"
+        json.dumps({"schema_version": 1, "run_id": ""}), encoding="utf-8"
     )
     result = scan_committed_runs(outputs_dir=outputs)
     assert result.runs == ()

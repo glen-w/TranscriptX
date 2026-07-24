@@ -29,8 +29,6 @@ MODULE_REGISTRY_ORDER: tuple[str, ...] = (
     "interactions",
     "ner",
     "semantic_similarity",
-    "semantic_similarity_advanced",
-    "semantic_similarity_v2",
     "sentiment",
     "epistemic_markers",
     "keyphrases",

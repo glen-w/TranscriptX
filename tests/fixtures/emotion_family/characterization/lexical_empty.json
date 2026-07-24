@@ -119,7 +119,7 @@
     "nrc_emotion_coverage": 0.0,
     "segment_id": null
   },
-  "schema_version": "emotion_result_schema_v2",
+  "schema_version": "transcriptx.emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 0,

@@ -20,7 +20,7 @@ from transcriptx.services.corrections_studio.schema import StudioSessionDocument
 
 def _v1_transcript(segments: list) -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "test.json",

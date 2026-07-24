@@ -125,7 +125,7 @@ def test_module_status_truth_table(
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "t1",
                 "modules_enabled": ["sentiment"],
@@ -200,7 +200,7 @@ def test_stats_payload_module_statuses_use_canonical_vocabulary(tmp_path: Path) 
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "t1",
                 "modules_enabled": ["sentiment"],

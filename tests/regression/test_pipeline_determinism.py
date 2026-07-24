@@ -28,7 +28,7 @@ from transcriptx.core.pipeline.pipeline_context import (
 
 def _v1_transcript_dict(segments: list) -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "test.json",

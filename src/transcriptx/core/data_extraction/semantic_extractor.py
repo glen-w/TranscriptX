@@ -21,7 +21,7 @@ def pick_semantic_similarity_payload(
     ``results_by_module`` maps module id → analysis result dict.
     """
     for key in (
-        "semantic_similarity_v2",
+        "semantic_similarity",
         "semantic_similarity",
         "semantic_similarity_advanced",
     ):

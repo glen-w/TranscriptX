@@ -401,19 +401,21 @@ def write_operation(
     return path
 
 
-def decode_journal_schema_3(
+def decode_journal_schema_1(
     data: dict[str, Any],
     *,
     expected_operation_id: str,
 ) -> dict[str, Any]:
-    """Immutable schema-3 journal decoder (Phase B0; never mutate this contract)."""
+    """Immutable epoch-1 journal decoder (never mutate this contract)."""
     unknown = set(data) - ALLOWED_TOP_LEVEL
     if unknown:
         raise ValueError(f"unknown journal fields: {sorted(unknown)}")
     if data.get("operation_id") != expected_operation_id:
         raise ValueError("journal operation_id mismatch")
-    if data.get("journal_schema_version") != 3:
-        raise ValueError("decode_journal_schema_3 requires journal_schema_version=3")
+    if data.get("journal_schema_version") != JOURNAL_SCHEMA_VERSION:
+        raise ValueError(
+            f"decode_journal_schema_1 requires journal_schema_version={JOURNAL_SCHEMA_VERSION}"
+        )
     targets = data.get("targets")
     if not isinstance(targets, list):
         raise ValueError("targets must be a list")
@@ -452,10 +454,13 @@ def decode_journal_schema_3(
     return data
 
 
-# Version-dispatched readers: register new schemas here; keep schema-3 immutable.
+# Version-dispatched readers: epoch-1 only after schema reset.
 _JOURNAL_DECODERS: dict[int, Any] = {
-    3: decode_journal_schema_3,
+    JOURNAL_SCHEMA_VERSION: decode_journal_schema_1,
 }
+
+# Backward-compatible alias for imports/tests that still name schema-3.
+decode_journal_schema_3 = decode_journal_schema_1
 
 
 def _validate_journal_payload(

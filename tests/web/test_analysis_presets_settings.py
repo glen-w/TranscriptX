@@ -40,7 +40,7 @@ def test_validate_ui_presets_dict_round_trip() -> None:
     assert dumped["quick"]["allow_llm"] is False
     assert dumped["balanced"]["llm_module_ids"] == ["llm_summary"]
     assert set(dumped["balanced"]["heavy_module_ids"]) == {
-        "semantic_similarity_v2",
+        "semantic_similarity",
         "fine_grained_emotion",
     }
     assert dumped["thorough"]["include_excluded_from_default"] is True
@@ -105,10 +105,10 @@ def test_resolve_reads_mutated_ui_presets_policy() -> None:
 
     cfg = get_config()
     original_heavy = list(cfg.analysis.ui_presets.balanced.heavy_module_ids)
-    cfg.analysis.ui_presets.balanced.heavy_module_ids = ["semantic_similarity_v2"]
+    cfg.analysis.ui_presets.balanced.heavy_module_ids = ["semantic_similarity"]
     try:
         resolved = resolve_analysis_preset("balanced")
-        assert "semantic_similarity_v2" in resolved.module_ids
+        assert "semantic_similarity" in resolved.module_ids
         assert "fine_grained_emotion" not in resolved.module_ids
     finally:
         cfg.analysis.ui_presets.balanced.heavy_module_ids = original_heavy

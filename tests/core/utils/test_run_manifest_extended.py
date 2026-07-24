@@ -59,7 +59,7 @@ class TestRunManifest:
         """from_dict creates RunManifest from dict."""
         d = {
             "manifest_type": "run_manifest",
-            "schema_version": "1.0",
+            "schema_version": 1,
             "transcript_hash": "sha256:xyz",
             "canonical_schema_version": "1.0",
             "config_hash": None,
@@ -74,7 +74,7 @@ class TestRunManifest:
     def test_from_dict_requires_manifest_type(self) -> None:
         """from_dict rejects dicts without manifest_type on disk."""
         d = {
-            "schema_version": "1.0",
+            "schema_version": 1,
             "transcript_hash": "sha256:a",
             "canonical_schema_version": "1.0",
             "config_hash": None,
@@ -91,7 +91,7 @@ class TestRunManifest:
         s = json.dumps(
             {
                 "manifest_type": "run_manifest",
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "transcript_hash": "sha256:def",
                 "canonical_schema_version": "1.0",
                 "config_hash": None,

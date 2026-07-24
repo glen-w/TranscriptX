@@ -11,8 +11,8 @@ from transcriptx.web.blocks.placement import BlockPlacement
 SUPPORTED_LAYOUT_PAGES = frozenset(
     {"overview", "insights", "charts", "dashboard_builder"}
 )
-# Bumped for optional placement.section field (Insights local navigation).
-CURRENT_LAYOUT_SCHEMA_VERSION = 2
+# Public layout envelope is schema epoch-1 (integer 1 only).
+CURRENT_LAYOUT_SCHEMA_VERSION = 1
 
 INSIGHTS_SECTIONS = frozenset(
     {"summary", "speakers", "actions", "highlights", "analysis"}
@@ -75,10 +75,9 @@ class LayoutSpec(BaseModel):
     @field_validator("schema_version")
     @classmethod
     def supported_version(cls, value: int) -> int:
-        # Accept v1 (no section) and v2 (section field).
-        if value not in (1, CURRENT_LAYOUT_SCHEMA_VERSION):
+        if value != CURRENT_LAYOUT_SCHEMA_VERSION:
             raise ValueError(
-                f"Unsupported schema_version {value}; expected 1 or {CURRENT_LAYOUT_SCHEMA_VERSION}"
+                f"Unsupported schema_version {value}; expected {CURRENT_LAYOUT_SCHEMA_VERSION}"
             )
         return value
 

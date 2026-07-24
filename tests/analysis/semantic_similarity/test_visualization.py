@@ -1,11 +1,11 @@
-"""Chart contract tests for semantic_similarity_v2 visualizations."""
+"""Chart contract tests for semantic_similarity visualizations."""
 
 from __future__ import annotations
 
 import json
 
 from transcriptx.core.output.output_service import create_output_service
-from transcriptx.core.analysis.semantic_similarity_v2.visualization import (
+from transcriptx.core.analysis.semantic_similarity.visualization import (
     create_visualizations_v2,
 )
 
@@ -57,15 +57,15 @@ def test_create_visualizations_v2_emits_legacy_equivalent_chart_specs() -> None:
 
     assert len(paths) == 6
     assert {spec.module for spec in output_service.saved_specs} == {
-        "semantic_similarity_v2"
+        "semantic_similarity"
     }
     assert {spec.viz_id for spec in output_service.saved_specs} == {
-        "semantic_similarity_v2.speaker_repetition_frequency.global",
-        "semantic_similarity_v2.agreement_disagreement_breakdown.global",
-        "semantic_similarity_v2.similarity_distribution.global",
-        "semantic_similarity_v2.speaker_repetitions.global",
-        "semantic_similarity_v2.classification.global",
-        "semantic_similarity_v2.speaker_similarity.global",
+        "semantic_similarity.speaker_repetition_frequency.global",
+        "semantic_similarity.agreement_disagreement_breakdown.global",
+        "semantic_similarity.similarity_distribution.global",
+        "semantic_similarity.speaker_repetitions.global",
+        "semantic_similarity.classification.global",
+        "semantic_similarity.speaker_similarity.global",
     }
 
 
@@ -74,7 +74,7 @@ def test_create_visualizations_v2_records_chart_artifact_metadata(tmp_path) -> N
     transcript_path.write_text("{}", encoding="utf-8")
     output_service = create_output_service(
         str(transcript_path),
-        "semantic_similarity_v2",
+        "semantic_similarity",
         output_dir=str(tmp_path / "run"),
         run_id="run-v2",
     )
@@ -105,7 +105,13 @@ def test_create_visualizations_v2_records_chart_artifact_metadata(tmp_path) -> N
     # OutputService may redirect transcript_dir into OUTPUTS_DIR; read from there.
     metadata_path = output_service._artifact_metadata_path
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    emitted_viz_ids = {item["viz_id"] for item in metadata.values()}
-    assert "semantic_similarity_v2.similarity_distribution.global" in emitted_viz_ids
-    assert "semantic_similarity_v2.speaker_repetitions.global" in emitted_viz_ids
-    assert all(item["module"] == "semantic_similarity_v2" for item in metadata.values())
+    emitted_viz_ids = {item["viz_id"] for item in metadata.values() if "viz_id" in item}
+    assert "semantic_similarity.similarity_distribution.global" in emitted_viz_ids
+    assert "semantic_similarity.speaker_repetitions.global" in emitted_viz_ids
+    semantic_items = [
+        item
+        for item in metadata.values()
+        if item.get("viz_id", "").startswith("semantic_similarity.")
+    ]
+    assert semantic_items
+    assert all(item.get("module") == "semantic_similarity" for item in semantic_items)

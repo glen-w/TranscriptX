@@ -1,7 +1,7 @@
 [
   {
     "viz_id": "group.acts.global_acts_pie.global",
-    "label": "Group aggregate — Dialogue Acts filtered bar (all speakers)",
+    "label": "Group aggregate \u2014 Dialogue Acts filtered bar (all speakers)",
     "rank_default": 2,
     "kind": "chart",
     "module": "acts",
@@ -23,7 +23,7 @@
   },
   {
     "viz_id": "group.sentiment.session.compound_mean",
-    "label": "Group aggregate — Sentiment compound by session",
+    "label": "Group aggregate \u2014 Sentiment compound by session",
     "rank_default": 3,
     "kind": "chart",
     "module": "sentiment",
@@ -45,7 +45,7 @@
   },
   {
     "viz_id": "group.stats.session.total_words",
-    "label": "Group aggregate — Total words by session",
+    "label": "Group aggregate \u2014 Total words by session",
     "rank_default": 4,
     "kind": "chart",
     "module": "stats",
@@ -67,7 +67,7 @@
   },
   {
     "viz_id": "group.acts.temporal_overlay.global",
-    "label": "Group aggregate — Acts over time (cross-session overlay)",
+    "label": "Group aggregate \u2014 Acts over time (cross-session overlay)",
     "rank_default": 5,
     "kind": "chart",
     "module": "acts",
@@ -89,7 +89,7 @@
   },
   {
     "viz_id": "group.sentiment.temporal_overlay.global",
-    "label": "Group aggregate — Sentiment cross-session overlay",
+    "label": "Group aggregate \u2014 Sentiment cross-session overlay",
     "rank_default": 6,
     "kind": "chart",
     "module": "sentiment",
@@ -111,7 +111,7 @@
   },
   {
     "viz_id": "group.pauses.temporal_overlay.global",
-    "label": "Group aggregate — Pauses cross-session overlay",
+    "label": "Group aggregate \u2014 Pauses cross-session overlay",
     "rank_default": 7,
     "kind": "chart",
     "module": "pauses",
@@ -133,7 +133,7 @@
   },
   {
     "viz_id": "group.emotion.temporal_overlay.global",
-    "label": "Group aggregate — Emotion cross-session overlay",
+    "label": "Group aggregate \u2014 Emotion cross-session overlay",
     "rank_default": 8,
     "kind": "chart",
     "module": "emotion",
@@ -155,7 +155,7 @@
   },
   {
     "viz_id": "group.prosody.temporal_overlay.global",
-    "label": "Group aggregate — Prosody RMS cross-session overlay",
+    "label": "Group aggregate \u2014 Prosody RMS cross-session overlay",
     "rank_default": 9,
     "kind": "chart",
     "module": "prosody",
@@ -177,7 +177,7 @@
   },
   {
     "viz_id": "group.sentiment.cross_session_speaker.pattern",
-    "label": "Group aggregate — Sentiment compound across sessions (per speaker)",
+    "label": "Group aggregate \u2014 Sentiment compound across sessions (per speaker)",
     "rank_default": 48,
     "kind": "chart",
     "module": "sentiment",
@@ -199,7 +199,7 @@
   },
   {
     "viz_id": "group.stats.cross_session_speaker.pattern",
-    "label": "Group aggregate — Stats word count across sessions (per speaker)",
+    "label": "Group aggregate \u2014 Stats word count across sessions (per speaker)",
     "rank_default": 49,
     "kind": "chart",
     "module": "stats",
@@ -221,7 +221,7 @@
   },
   {
     "viz_id": "group.stats.cross_session_speaker.segment_count.pattern",
-    "label": "Group aggregate — Stats segment count across sessions (per speaker)",
+    "label": "Group aggregate \u2014 Stats segment count across sessions (per speaker)",
     "rank_default": 50,
     "kind": "chart",
     "module": "stats",
@@ -287,7 +287,7 @@
   },
   {
     "viz_id": "emotion.radar.global",
-    "label": "Emotion Profile – All Speakers",
+    "label": "Emotion Profile \u2013 All Speakers",
     "rank_default": 30,
     "kind": "chart",
     "module": "emotion",
@@ -331,7 +331,7 @@
   },
   {
     "viz_id": "emotion.radar_polar.global",
-    "label": "Emotion Radar (Polar) – Global",
+    "label": "Emotion Radar (Polar) \u2013 Global",
     "rank_default": 42,
     "kind": "chart",
     "module": "emotion",
@@ -353,7 +353,7 @@
   },
   {
     "viz_id": "emotion.radar_polar.speaker",
-    "label": "Emotion Radar (Polar) – Per Speaker",
+    "label": "Emotion Radar (Polar) \u2013 Per Speaker",
     "rank_default": 43,
     "kind": "chart",
     "module": "emotion",
@@ -639,7 +639,7 @@
   },
   {
     "viz_id": "ner.entity_types.global",
-    "label": "Entity Types – Global",
+    "label": "Entity Types \u2013 Global",
     "rank_default": 52,
     "kind": "chart",
     "module": "ner",
@@ -683,7 +683,7 @@
   },
   {
     "viz_id": "ner.locations.global",
-    "label": "Locations Map – Global",
+    "label": "Locations Map \u2013 Global",
     "rank_default": 70,
     "kind": "map",
     "module": "ner",
@@ -831,7 +831,7 @@
       "by_chart_slug_regex": "/dominance\\\\.(png|html)$",
       "by_filename_glob": null
     },
-    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses (actor→target roles). The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
+    "description": "Dominance score per speaker: (interactions initiated minus interactions received) divided by total interactions, counting both interruptions and responses (actor\u2192target roles). The y-axis runs from -1 (mostly received) to +1 (mostly initiated). Taller positive bars mark speakers who drove more exchanges.",
     "family_id": null,
     "variant": null
   },
@@ -875,7 +875,7 @@
       "by_chart_slug_regex": "equity_summary",
       "by_filename_glob": null
     },
-    "description": "Session turn-taking equity indices on a 0–1 axis. Floor equity and response-latency fairness: higher is fairer. Interruption inequity: higher is more asymmetric; interruption balance (1 − inequity) is presentation-only.",
+    "description": "Session turn-taking equity indices on a 0\u20131 axis. Floor equity and response-latency fairness: higher is fairer. Interruption inequity: higher is more asymmetric; interruption balance (1 \u2212 inequity) is presentation-only.",
     "family_id": null,
     "variant": null
   },
@@ -1079,7 +1079,7 @@
   },
   {
     "viz_id": "temporal_dynamics.temporal_dashboard_speaking_rate.global",
-    "label": "Temporal Dynamics – Speaking Rate",
+    "label": "Temporal Dynamics \u2013 Speaking Rate",
     "rank_default": 192,
     "kind": "chart",
     "module": "temporal_dynamics",
@@ -1447,7 +1447,7 @@
       "by_chart_slug_regex": "asr_score_hist",
       "by_filename_glob": null
     },
-    "description": "Histogram of accepted word-level ASR confidence scores in [0, 1]. Model uncertainty evidence — not word error rate.",
+    "description": "Histogram of accepted word-level ASR confidence scores in [0, 1]. Model uncertainty evidence \u2014 not word error rate.",
     "family_id": null,
     "variant": null
   },
@@ -1716,138 +1716,6 @@
     "variant": null
   },
   {
-    "viz_id": "semantic_similarity_v2.speaker_repetition_frequency.global",
-    "label": "Speaker Repetition Frequency (v2)",
-    "rank_default": 385,
-    "kind": "chart",
-    "module": "semantic_similarity_v2",
-    "scope": "global",
-    "cardinality": "single",
-    "prefer_formats": [
-      "html",
-      "png"
-    ],
-    "match": {
-      "by_viz_id": "semantic_similarity_v2.speaker_repetition_frequency.global",
-      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "speaker_repetition_frequency",
-      "by_filename_glob": null
-    },
-    "description": "How often each speaker repeats their own earlier content (v2 embedding-based engine). Taller bars mean more self-repetition.",
-    "family_id": null,
-    "variant": null
-  },
-  {
-    "viz_id": "semantic_similarity_v2.agreement_disagreement_breakdown.global",
-    "label": "Agreement/Disagreement Breakdown (v2)",
-    "rank_default": 386,
-    "kind": "chart",
-    "module": "semantic_similarity_v2",
-    "scope": "global",
-    "cardinality": "single",
-    "prefer_formats": [
-      "html",
-      "png"
-    ],
-    "match": {
-      "by_viz_id": "semantic_similarity_v2.agreement_disagreement_breakdown.global",
-      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "agreement_disagreement_breakdown",
-      "by_filename_glob": null
-    },
-    "description": "Counts of cross-speaker exchanges the model labelled as agreement versus disagreement (v2 embedding-based engine). Bars compare the label counts. These are automatic classifications and may be noisy, not a direct measure of consensus.",
-    "family_id": null,
-    "variant": null
-  },
-  {
-    "viz_id": "semantic_similarity_v2.similarity_distribution.global",
-    "label": "Similarity Distribution (v2)",
-    "rank_default": 387,
-    "kind": "chart",
-    "module": "semantic_similarity_v2",
-    "scope": "global",
-    "cardinality": "single",
-    "prefer_formats": [
-      "html",
-      "png"
-    ],
-    "match": {
-      "by_viz_id": "semantic_similarity_v2.similarity_distribution.global",
-      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "similarity_distribution",
-      "by_filename_glob": null
-    },
-    "description": "Distribution of semantic-similarity scores between utterances (v2 embedding-based engine). The x-axis is similarity (0 unrelated to 1 near-identical); high mass indicates repeated or shared content.",
-    "family_id": null,
-    "variant": null
-  },
-  {
-    "viz_id": "semantic_similarity_v2.speaker_repetitions.global",
-    "label": "Repetitions by Speaker (v2)",
-    "rank_default": 388,
-    "kind": "chart",
-    "module": "semantic_similarity_v2",
-    "scope": "global",
-    "cardinality": "single",
-    "prefer_formats": [
-      "html",
-      "png"
-    ],
-    "match": {
-      "by_viz_id": "semantic_similarity_v2.speaker_repetitions.global",
-      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "speaker_repetitions",
-      "by_filename_glob": null
-    },
-    "description": "Count of repeated content per speaker (v2 embedding-based engine). Taller bars mean more reiteration by that speaker.",
-    "family_id": null,
-    "variant": null
-  },
-  {
-    "viz_id": "semantic_similarity_v2.classification.global",
-    "label": "Repetition Classification (v2)",
-    "rank_default": 389,
-    "kind": "chart",
-    "module": "semantic_similarity_v2",
-    "scope": "global",
-    "cardinality": "single",
-    "prefer_formats": [
-      "html",
-      "png"
-    ],
-    "match": {
-      "by_viz_id": "semantic_similarity_v2.classification.global",
-      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "classification\\.(png|html)$",
-      "by_filename_glob": null
-    },
-    "description": "Classification of detected repetitions by type (v2 embedding-based engine). Each bar is a category's share of all repetitions.",
-    "family_id": null,
-    "variant": null
-  },
-  {
-    "viz_id": "semantic_similarity_v2.speaker_similarity.global",
-    "label": "Average Similarity by Speaker (v2)",
-    "rank_default": 390,
-    "kind": "chart",
-    "module": "semantic_similarity_v2",
-    "scope": "global",
-    "cardinality": "single",
-    "prefer_formats": [
-      "html",
-      "png"
-    ],
-    "match": {
-      "by_viz_id": "semantic_similarity_v2.speaker_similarity.global",
-      "by_artifact_key_prefix": "semantic_similarity_v2/charts/",
-      "by_chart_slug_regex": "speaker_similarity",
-      "by_filename_glob": null
-    },
-    "description": "Average semantic similarity of each speaker to the rest of the conversation (v2 embedding-based engine). Higher bars mean more alignment with others' content.",
-    "family_id": null,
-    "variant": null
-  },
-  {
     "viz_id": "topic_modeling.diagnostic_plots.global",
     "label": "Topic Modeling Diagnostics",
     "rank_default": 392,
@@ -2025,7 +1893,7 @@
   },
   {
     "viz_id": "acts.acts_pie.speaker",
-    "label": "Dialogue Acts – Filtered Bar (Per Speaker)",
+    "label": "Dialogue Acts \u2013 Filtered Bar (Per Speaker)",
     "rank_default": 470,
     "kind": "chart",
     "module": "acts",
@@ -2047,7 +1915,7 @@
   },
   {
     "viz_id": "acts.acts_bar.speaker",
-    "label": "Dialogue Acts – Bar (Per Speaker)",
+    "label": "Dialogue Acts \u2013 Bar (Per Speaker)",
     "rank_default": 480,
     "kind": "chart",
     "module": "acts",
@@ -2069,7 +1937,7 @@
   },
   {
     "viz_id": "acts.global_acts_pie.global",
-    "label": "Dialogue Acts – Global Filtered Bar",
+    "label": "Dialogue Acts \u2013 Global Filtered Bar",
     "rank_default": 490,
     "kind": "chart",
     "module": "acts",
@@ -2091,7 +1959,7 @@
   },
   {
     "viz_id": "acts.global_acts_bar.global",
-    "label": "Dialogue Acts – Global Bar",
+    "label": "Dialogue Acts \u2013 Global Bar",
     "rank_default": 500,
     "kind": "chart",
     "module": "acts",
@@ -2113,7 +1981,7 @@
   },
   {
     "viz_id": "acts.acts_temporal_all.global",
-    "label": "Dialogue Acts Over Time – All Speakers",
+    "label": "Dialogue Acts Over Time \u2013 All Speakers",
     "rank_default": 510,
     "kind": "chart",
     "module": "acts",
@@ -2223,7 +2091,7 @@
   },
   {
     "viz_id": "voice.pauses_distribution.global",
-    "label": "Pauses Distribution (Voice) – Global",
+    "label": "Pauses Distribution (Voice) \u2013 Global",
     "rank_default": 552,
     "kind": "chart",
     "module": "voice",
@@ -2245,7 +2113,7 @@
   },
   {
     "viz_id": "voice.pauses_distribution.speaker",
-    "label": "Pauses Distribution (Voice) – Per Speaker",
+    "label": "Pauses Distribution (Voice) \u2013 Per Speaker",
     "rank_default": 553,
     "kind": "chart",
     "module": "voice",
@@ -2751,7 +2619,7 @@
   },
   {
     "viz_id": "lexical_diversity.ttr.speaker",
-    "label": "Lexical Diversity — TTR (All Speakers)",
+    "label": "Lexical Diversity \u2014 TTR (All Speakers)",
     "rank_default": 762,
     "kind": "chart",
     "module": "lexical_diversity",
@@ -2773,7 +2641,7 @@
   },
   {
     "viz_id": "lexical_diversity.mtld.speaker",
-    "label": "Lexical Diversity — MTLD (All Speakers)",
+    "label": "Lexical Diversity \u2014 MTLD (All Speakers)",
     "rank_default": 763,
     "kind": "chart",
     "module": "lexical_diversity",
@@ -2795,7 +2663,7 @@
   },
   {
     "viz_id": "lexical_diversity.hapax_rate.speaker",
-    "label": "Lexical Diversity — Hapax Rate (All Speakers)",
+    "label": "Lexical Diversity \u2014 Hapax Rate (All Speakers)",
     "rank_default": 764,
     "kind": "chart",
     "module": "lexical_diversity",
@@ -2838,7 +2706,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.basic",
-    "label": "Word Cloud – All Speakers",
+    "label": "Word Cloud \u2013 All Speakers",
     "rank_default": 610,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2880,7 +2748,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.bigrams",
-    "label": "Word Cloud Bigrams – All Speakers",
+    "label": "Word Cloud Bigrams \u2013 All Speakers",
     "rank_default": 630,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2922,7 +2790,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.tfidf",
-    "label": "Word Cloud TF-IDF – All Speakers",
+    "label": "Word Cloud TF-IDF \u2013 All Speakers",
     "rank_default": 650,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -2964,7 +2832,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.tfidf_bigrams",
-    "label": "Word Cloud TF-IDF Bigrams – All Speakers",
+    "label": "Word Cloud TF-IDF Bigrams \u2013 All Speakers",
     "rank_default": 670,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3027,7 +2895,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.noun",
-    "label": "Word Cloud Nouns – All Speakers",
+    "label": "Word Cloud Nouns \u2013 All Speakers",
     "rank_default": 700,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3069,7 +2937,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.verb",
-    "label": "Word Cloud Verbs – All Speakers",
+    "label": "Word Cloud Verbs \u2013 All Speakers",
     "rank_default": 720,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3111,7 +2979,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.adj",
-    "label": "Word Cloud Adjectives – All Speakers",
+    "label": "Word Cloud Adjectives \u2013 All Speakers",
     "rank_default": 740,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3132,7 +3000,7 @@
   },
   {
     "viz_id": "group.ner.pooled.entity_types.global",
-    "label": "Group pooled — NER entity types (full corpus)",
+    "label": "Group pooled \u2014 NER entity types (full corpus)",
     "rank_default": 751,
     "kind": "chart",
     "module": "ner",
@@ -3154,7 +3022,7 @@
   },
   {
     "viz_id": "group.ner.pooled.top_entities.global",
-    "label": "Group pooled — NER top entities",
+    "label": "Group pooled \u2014 NER top entities",
     "rank_default": 752,
     "kind": "chart",
     "module": "ner",
@@ -3176,7 +3044,7 @@
   },
   {
     "viz_id": "group.entity_sentiment.pooled.top_entities.global",
-    "label": "Group pooled — entity sentiment top entities",
+    "label": "Group pooled \u2014 entity sentiment top entities",
     "rank_default": 753,
     "kind": "chart",
     "module": "entity_sentiment",
@@ -3198,7 +3066,7 @@
   },
   {
     "viz_id": "group.topic_modeling.pooled.topic_share.global",
-    "label": "Group pooled — topic prevalence (group LDA)",
+    "label": "Group pooled \u2014 topic prevalence (group LDA)",
     "rank_default": 754,
     "kind": "chart",
     "module": "topic_modeling",
@@ -3220,7 +3088,7 @@
   },
   {
     "viz_id": "group.bertopic.pooled.topic_share.global",
-    "label": "Group pooled — topic prevalence (group BERTopic)",
+    "label": "Group pooled \u2014 topic prevalence (group BERTopic)",
     "rank_default": 755,
     "kind": "chart",
     "module": "bertopic",
@@ -3242,7 +3110,7 @@
   },
   {
     "viz_id": "group.emotion.pooled.profile.global",
-    "label": "Group pooled — mean emotion profile",
+    "label": "Group pooled \u2014 mean emotion profile",
     "rank_default": 756,
     "kind": "chart",
     "module": "emotion",
@@ -3264,7 +3132,7 @@
   },
   {
     "viz_id": "group.tics.pooled.by_tic.global",
-    "label": "Group pooled — tic counts (full corpus)",
+    "label": "Group pooled \u2014 tic counts (full corpus)",
     "rank_default": 757,
     "kind": "chart",
     "module": "tics",
@@ -3286,7 +3154,7 @@
   },
   {
     "viz_id": "group.epistemic_markers.pooled.by_category.global",
-    "label": "Group pooled — epistemic marker counts",
+    "label": "Group pooled \u2014 epistemic marker counts",
     "rank_default": 765,
     "kind": "chart",
     "module": "epistemic_markers",
@@ -3308,7 +3176,7 @@
   },
   {
     "viz_id": "group.politeness.pooled.by_category.global",
-    "label": "Group pooled — politeness marker counts",
+    "label": "Group pooled \u2014 politeness marker counts",
     "rank_default": 766,
     "kind": "chart",
     "module": "politeness",
@@ -3330,7 +3198,7 @@
   },
   {
     "viz_id": "group.stats.pooled.totals.global",
-    "label": "Group pooled — corpus totals",
+    "label": "Group pooled \u2014 corpus totals",
     "rank_default": 758,
     "kind": "chart",
     "module": "stats",
@@ -3352,7 +3220,7 @@
   },
   {
     "viz_id": "group.interactions.pooled.interruptions_initiated.global",
-    "label": "Group pooled — interactions interruptions initiated",
+    "label": "Group pooled \u2014 interactions interruptions initiated",
     "rank_default": 759,
     "kind": "chart",
     "module": "interactions",
@@ -3374,7 +3242,7 @@
   },
   {
     "viz_id": "group.interactions.pooled.interruptions_received.global",
-    "label": "Group pooled — interactions interruptions received",
+    "label": "Group pooled \u2014 interactions interruptions received",
     "rank_default": 760,
     "kind": "chart",
     "module": "interactions",
@@ -3396,7 +3264,7 @@
   },
   {
     "viz_id": "group.contagion.pooled.top_directed_edges.global",
-    "label": "Group pooled — contagion top directed edges",
+    "label": "Group pooled \u2014 contagion top directed edges",
     "rank_default": 761,
     "kind": "chart",
     "module": "contagion",
@@ -3792,7 +3660,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.keyphrases_noun_chunks",
-    "label": "Keyphrase Cloud (noun_chunks) – All Speakers",
+    "label": "Keyphrase Cloud (noun_chunks) \u2013 All Speakers",
     "rank_default": 701,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3813,7 +3681,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.keyphrases_noun_chunks",
-    "label": "Keyphrase Cloud (noun_chunks) – Per Speaker",
+    "label": "Keyphrase Cloud (noun_chunks) \u2013 Per Speaker",
     "rank_default": 702,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3834,7 +3702,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.keyphrases_yake",
-    "label": "Keyphrase Cloud (yake) – All Speakers",
+    "label": "Keyphrase Cloud (yake) \u2013 All Speakers",
     "rank_default": 703,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3855,7 +3723,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.keyphrases_yake",
-    "label": "Keyphrase Cloud (yake) – Per Speaker",
+    "label": "Keyphrase Cloud (yake) \u2013 Per Speaker",
     "rank_default": 704,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3876,7 +3744,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.global.keyphrases_keybert",
-    "label": "Keyphrase Cloud (keybert) – All Speakers",
+    "label": "Keyphrase Cloud (keybert) \u2013 All Speakers",
     "rank_default": 705,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3897,7 +3765,7 @@
   },
   {
     "viz_id": "wordcloud.wordcloud.speaker.keyphrases_keybert",
-    "label": "Keyphrase Cloud (keybert) – Per Speaker",
+    "label": "Keyphrase Cloud (keybert) \u2013 Per Speaker",
     "rank_default": 706,
     "kind": "wordcloud",
     "module": "wordclouds",
@@ -3918,7 +3786,7 @@
   },
   {
     "viz_id": "keyphrases.phrases.global",
-    "label": "Group pooled — keyphrases (noun_chunks)",
+    "label": "Group pooled \u2014 keyphrases (noun_chunks)",
     "rank_default": 767,
     "kind": "chart",
     "module": "keyphrases",

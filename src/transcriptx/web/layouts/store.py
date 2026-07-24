@@ -147,7 +147,7 @@ class LayoutProfileStore:
 
     @staticmethod
     def validate_layout(spec: LayoutSpec) -> None:
-        if spec.schema_version not in (1, CURRENT_LAYOUT_SCHEMA_VERSION):
+        if spec.schema_version != CURRENT_LAYOUT_SCHEMA_VERSION:
             raise LayoutValidationError(
                 f"schema_version mismatch: {spec.schema_version}"
             )

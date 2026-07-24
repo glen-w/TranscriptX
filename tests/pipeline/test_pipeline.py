@@ -160,11 +160,11 @@ class TestGetDefaultModules:
 
         with patch(
             "transcriptx.core.pipeline.pipeline.get_default_modules_from_registry",
-            return_value=["semantic_similarity_v2"],
+            return_value=["semantic_similarity"],
         ) as mock_get:
             result = get_default_modules(["/tmp/t.json"], include_legacy=True)
 
-        assert result == ["semantic_similarity_v2"]
+        assert result == ["semantic_similarity"]
         assert mock_get.call_args.kwargs["include_legacy"] is True
 
 

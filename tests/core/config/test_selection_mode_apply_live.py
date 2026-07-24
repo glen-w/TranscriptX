@@ -41,7 +41,7 @@ def test_quick_mode_applies_presets_and_ss_v2_mode(tmp_path: Path) -> None:
     assert live.analysis.max_segments_for_semantic == 321
     assert live.analysis.ner_max_segments == 111
     assert live.analysis.quality_filtering_profile == "academic"
-    assert live.analysis.semantic_similarity_v2.mode == "advanced"
+    assert live.analysis.semantic_similarity.mode == "advanced"
 
 
 def test_full_mode_applies_presets_profile_and_ss_v2_mode(tmp_path: Path) -> None:
@@ -72,4 +72,4 @@ def test_full_mode_applies_presets_profile_and_ss_v2_mode(tmp_path: Path) -> Non
     assert live.analysis.max_segments_for_semantic == 777
     assert live.analysis.max_segments_per_speaker == 333
     assert live.analysis.quality_filtering_profile == "technical"
-    assert live.analysis.semantic_similarity_v2.mode == "basic"
+    assert live.analysis.semantic_similarity.mode == "basic"

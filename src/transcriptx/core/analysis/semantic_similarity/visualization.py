@@ -1,195 +1,234 @@
-"""
-Visualization utilities for semantic similarity analysis.
-"""
+"""Visualization utilities for semantic_similarity outputs."""
 
 from __future__ import annotations
 
-from typing import Any
+from collections import Counter, defaultdict
+from typing import Any, Iterable
 
 import numpy as np
 
 from transcriptx.core.utils.logger import log_error, log_info
 from transcriptx.core.viz.specs import BarCategoricalSpec
 
+MODULE_ID = "semantic_similarity"
 
-def create_visualizations_advanced(
+
+def _all_repetitions(results: dict[str, Any]) -> list[dict[str, Any]]:
+    repetitions: list[dict[str, Any]] = []
+    speaker_repetitions = results.get("speaker_repetitions", {})
+    if isinstance(speaker_repetitions, dict):
+        for reps in speaker_repetitions.values():
+            if isinstance(reps, list):
+                repetitions.extend(r for r in reps if isinstance(r, dict))
+
+    cross_speaker = results.get("cross_speaker_repetitions", [])
+    if isinstance(cross_speaker, list):
+        repetitions.extend(r for r in cross_speaker if isinstance(r, dict))
+    return repetitions
+
+
+def _similarity_values(repetitions: Iterable[dict[str, Any]]) -> list[float]:
+    values: list[float] = []
+    for rep in repetitions:
+        try:
+            values.append(float(rep.get("similarity", 0.0)))
+        except (TypeError, ValueError):
+            continue
+    return values
+
+
+def _speaker_from_segment(rep: dict[str, Any], segment_key: str) -> str | None:
+    segment = rep.get(segment_key)
+    if not isinstance(segment, dict):
+        return None
+    speaker = segment.get("speaker")
+    return str(speaker) if speaker else None
+
+
+def _record_saved_path(saved: dict[str, Any], chart_paths: list[str]) -> None:
+    static_path = saved.get("static")
+    if static_path:
+        chart_paths.append(str(static_path))
+
+
+def _bar_spec(
+    *,
+    viz_id: str,
+    name: str,
+    title: str,
+    x_label: str,
+    y_label: str,
+    categories: list[str],
+    values: list[float],
+) -> BarCategoricalSpec:
+    return BarCategoricalSpec(
+        viz_id=viz_id,
+        module=MODULE_ID,
+        name=name,
+        scope="global",
+        chart_intent="bar_categorical",
+        title=title,
+        x_label=x_label,
+        y_label=y_label,
+        categories=categories,
+        values=values,
+    )
+
+
+def create_visualizations_v2(
     results: dict[str, Any], output_service: Any, base_name: str, log_tag: str
 ) -> list[str]:
-    """Create simplified visualizations for advanced analyzer results."""
-    try:
-        created_files: list[str] = []
-
-        speaker_stats = results.get("summary", {}).get("speaker_statistics", {})
-        if speaker_stats:
-            speakers = list(speaker_stats.keys())
-            repetition_counts = [
-                stats["repetitions"] for stats in speaker_stats.values()
-            ]
-            avg_similarities = [
-                stats["average_similarity"] for stats in speaker_stats.values()
-            ]
-
-            rep_spec = BarCategoricalSpec(
-                viz_id="semantic_similarity.speaker_repetitions.global",
-                module="semantic_similarity",
-                name="speaker_repetitions",
-                scope="global",
-                chart_intent="bar_categorical",
-                title="Repetitions by Speaker",
-                x_label="Speaker",
-                y_label="Number of Repetitions",
-                categories=speakers,
-                values=repetition_counts,
-            )
-            created_files.append(output_service.save_chart(rep_spec)["static"])
-
-            sim_spec = BarCategoricalSpec(
-                viz_id="semantic_similarity.speaker_similarity.global",
-                module="semantic_similarity",
-                name="speaker_similarity",
-                scope="global",
-                chart_intent="bar_categorical",
-                title="Average Similarity by Speaker",
-                x_label="Speaker",
-                y_label="Average Similarity Score",
-                categories=speakers,
-                values=avg_similarities,
-            )
-            created_files.append(output_service.save_chart(sim_spec)["static"])
-
-        breakdown = results.get("summary", {}).get(
-            "agreement_disagreement_breakdown", {}
-        )
-        if breakdown:
-            categories = list(breakdown.keys())
-            counts = list(breakdown.values())
-            spec = BarCategoricalSpec(
-                viz_id="semantic_similarity.classification.global",
-                module="semantic_similarity",
-                name="classification",
-                scope="global",
-                chart_intent="bar_categorical",
-                title="Cross-Speaker Repetition Classification",
-                x_label="Category",
-                y_label="Count",
-                categories=categories,
-                values=counts,
-            )
-            created_files.append(output_service.save_chart(spec)["static"])
-
-        all_similarities: list[float] = []
-        for reps in results.get("speaker_repetitions", {}).values():
-            all_similarities.extend([rep.get("similarity", 0) for rep in reps])
-        all_similarities.extend(
-            [
-                rep.get("similarity", 0)
-                for rep in results.get("cross_speaker_repetitions", [])
-            ]
-        )
-        if all_similarities:
-            counts, bin_edges = np.histogram(all_similarities, bins=20)
-            categories = [
-                f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(counts))
-            ]
-            spec = BarCategoricalSpec(
-                viz_id="semantic_similarity.similarity_distribution.global",
-                module="semantic_similarity",
-                name="similarity_distribution",
-                scope="global",
-                chart_intent="bar_categorical",
-                title="Distribution of Similarity Scores",
-                x_label="Similarity Score",
-                y_label="Frequency",
-                categories=categories,
-                values=counts.tolist(),
-            )
-            created_files.append(output_service.save_chart(spec)["static"])
-
-        log_info(log_tag, f"Created {len(created_files)} visualizations")
-        return [str(p) for p in created_files if p]
-    except Exception as exc:
-        log_error(log_tag, f"Visualization creation failed: {exc}", exception=exc)
-        return []
-
-
-def create_visualizations_basic(
-    results: dict[str, Any], output_service: Any, base_name: str, log_tag: str
-) -> list[str]:
-    """Create simplified visualizations for basic analyzer results."""
+    """Create legacy-equivalent charts for semantic_similarity results."""
     chart_paths: list[str] = []
-    summary = results.get("summary", {})
 
     try:
-        speaker_frequency = summary.get("speaker_repetition_frequency", {})
-        if speaker_frequency:
-            actual_speakers = set(results.get("speaker_repetitions", {}).keys())
-            actual_speakers = {s for s in actual_speakers if s and s != "Unknown"}
-            filtered = {
-                s: speaker_frequency[s]
-                for s in speaker_frequency
-                if s in actual_speakers
+        speaker_repetitions = results.get("speaker_repetitions", {})
+        if isinstance(speaker_repetitions, dict):
+            speaker_counts = {
+                str(speaker): len(reps)
+                for speaker, reps in speaker_repetitions.items()
+                if speaker and isinstance(reps, list) and len(reps) > 0
             }
-            speakers = sorted(filtered.keys())
-            frequencies = [filtered[s] for s in speakers]
-            if speakers:
-                spec = BarCategoricalSpec(
-                    viz_id="semantic_similarity.speaker_repetition_frequency.global",
-                    module="semantic_similarity",
-                    name="speaker_repetition_frequency",
-                    scope="global",
-                    chart_intent="bar_categorical",
-                    title=f"Speaker Repetition Frequency - {base_name}",
-                    x_label="Speaker",
-                    y_label="Number of Repetitions",
-                    categories=speakers,
-                    values=frequencies,
+        else:
+            speaker_counts = {}
+
+        if speaker_counts:
+            speakers = sorted(speaker_counts)
+            counts = [float(speaker_counts[speaker]) for speaker in speakers]
+            for name, viz_id, title in (
+                (
+                    "speaker_repetition_frequency",
+                    "semantic_similarity.speaker_repetition_frequency.global",
+                    f"Speaker Repetition Frequency - {base_name}",
+                ),
+                (
+                    "speaker_repetitions",
+                    "semantic_similarity.speaker_repetitions.global",
+                    "Repetitions by Speaker",
+                ),
+            ):
+                _record_saved_path(
+                    output_service.save_chart(
+                        _bar_spec(
+                            viz_id=viz_id,
+                            name=name,
+                            title=title,
+                            x_label="Speaker",
+                            y_label="Number of Repetitions",
+                            categories=speakers,
+                            values=counts,
+                        )
+                    ),
+                    chart_paths,
                 )
-                chart_paths.append(output_service.save_chart(spec)["static"])
 
-        agreement_breakdown = summary.get("agreement_breakdown", {})
-        if agreement_breakdown:
-            agreement_types = list(agreement_breakdown.keys())
-            counts = list(agreement_breakdown.values())
-            spec = BarCategoricalSpec(
-                viz_id="semantic_similarity.agreement_disagreement_breakdown.global",
-                module="semantic_similarity",
-                name="agreement_disagreement_breakdown",
-                scope="global",
-                chart_intent="bar_categorical",
-                title=f"Cross-Speaker Interaction Types - {base_name}",
-                x_label="Interaction Type",
-                y_label="Count",
-                categories=agreement_types,
-                values=counts,
+        all_reps = _all_repetitions(results)
+        speaker_similarity: dict[str, list[float]] = defaultdict(list)
+        for rep in all_reps:
+            try:
+                similarity = float(rep.get("similarity", 0.0))
+            except (TypeError, ValueError):
+                continue
+            for segment_key in ("segment1", "segment2"):
+                speaker = _speaker_from_segment(rep, segment_key)
+                if speaker:
+                    speaker_similarity[speaker].append(similarity)
+
+        if speaker_similarity:
+            speakers = sorted(speaker_similarity)
+            avg_similarity = [
+                float(np.mean(speaker_similarity[speaker])) for speaker in speakers
+            ]
+            _record_saved_path(
+                output_service.save_chart(
+                    _bar_spec(
+                        viz_id="semantic_similarity.speaker_similarity.global",
+                        name="speaker_similarity",
+                        title="Average Similarity by Speaker",
+                        x_label="Speaker",
+                        y_label="Average Similarity Score",
+                        categories=speakers,
+                        values=avg_similarity,
+                    )
+                ),
+                chart_paths,
             )
-            chart_paths.append(output_service.save_chart(spec)["static"])
 
-        similarities: list[float] = []
-        for reps in results["speaker_repetitions"].values():
-            similarities.extend([rep["similarity"] for rep in reps])
-        for rep in results["cross_speaker_repetitions"]:
-            similarities.append(rep["similarity"])
+        cross_speaker = results.get("cross_speaker_repetitions", [])
+        agreement_counts: Counter[str] = Counter()
+        if isinstance(cross_speaker, list):
+            for rep in cross_speaker:
+                if not isinstance(rep, dict):
+                    continue
+                label = rep.get("agreement_type") or rep.get("type") or "cross"
+                agreement_counts[str(label)] += 1
 
+        if agreement_counts:
+            categories = sorted(agreement_counts)
+            values = [float(agreement_counts[c]) for c in categories]
+            _record_saved_path(
+                output_service.save_chart(
+                    _bar_spec(
+                        viz_id=(
+                            "semantic_similarity."
+                            "agreement_disagreement_breakdown.global"
+                        ),
+                        name="agreement_disagreement_breakdown",
+                        title=f"Cross-Speaker Interaction Types - {base_name}",
+                        x_label="Interaction Type",
+                        y_label="Count",
+                        categories=categories,
+                        values=values,
+                    )
+                ),
+                chart_paths,
+            )
+
+        classification_counts: Counter[str] = Counter()
+        if speaker_counts:
+            classification_counts["self_repetition"] = sum(speaker_counts.values())
+        classification_counts.update(agreement_counts)
+        if classification_counts:
+            categories = sorted(classification_counts)
+            values = [float(classification_counts[c]) for c in categories]
+            _record_saved_path(
+                output_service.save_chart(
+                    _bar_spec(
+                        viz_id="semantic_similarity.classification.global",
+                        name="classification",
+                        title="Cross-Speaker Repetition Classification",
+                        x_label="Category",
+                        y_label="Count",
+                        categories=categories,
+                        values=values,
+                    )
+                ),
+                chart_paths,
+            )
+
+        similarities = _similarity_values(all_reps)
         if similarities:
             counts, bin_edges = np.histogram(similarities, bins=20)
             categories = [
                 f"{bin_edges[i]:.2f}-{bin_edges[i + 1]:.2f}" for i in range(len(counts))
             ]
-            spec = BarCategoricalSpec(
-                viz_id="semantic_similarity.similarity_distribution.global",
-                module="semantic_similarity",
-                name="similarity_distribution",
-                scope="global",
-                chart_intent="bar_categorical",
-                title=f"Semantic Similarity Distribution - {base_name}",
-                x_label="Similarity Score",
-                y_label="Frequency",
-                categories=categories,
-                values=counts.tolist(),
+            _record_saved_path(
+                output_service.save_chart(
+                    _bar_spec(
+                        viz_id="semantic_similarity.similarity_distribution.global",
+                        name="similarity_distribution",
+                        title=f"Semantic Similarity Distribution - {base_name}",
+                        x_label="Similarity Score",
+                        y_label="Frequency",
+                        categories=categories,
+                        values=[float(v) for v in counts.tolist()],
+                    )
+                ),
+                chart_paths,
             )
-            chart_paths.append(output_service.save_chart(spec)["static"])
 
+        log_info(log_tag, f"Created {len(chart_paths)} v2 visualizations")
+        return chart_paths
     except Exception as exc:
-        log_error(log_tag, f"Failed to create visualizations: {exc}")
-
-    return [str(p) for p in chart_paths if p]
+        log_error(log_tag, f"Visualization creation failed: {exc}", exception=exc)
+        return []

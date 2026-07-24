@@ -70,7 +70,7 @@ def test_build_registry_expected_dep_edges() -> None:
 @pytest.mark.unit
 def test_build_registry_selectors_for_alias_modules() -> None:
     by_id = {e.agg_id: e for e in build_registry()}
-    assert by_id["semantic_similarity"].selector(["semantic_similarity_v2"]) is True
+    assert by_id["semantic_similarity"].selector(["semantic_similarity"]) is True
     assert by_id["semantic_similarity"].selector(["stats"]) is False
     assert by_id["prosody"].selector(["voice_features"]) is True
     assert by_id["prosody"].selector(["voice_mismatch"]) is False

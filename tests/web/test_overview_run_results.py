@@ -21,7 +21,7 @@ def test_load_run_results_uses_typed_loader(tmp_path: Path) -> None:
     _write_run_results(
         run_root / "run_results.json",
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": "r1",
             "transcript_key": "t1",
             "modules_enabled": ["stats"],
@@ -43,7 +43,7 @@ def test_overview_canonical_skip_and_blocked_projection(tmp_path: Path) -> None:
     _write_run_results(
         run_root / "run_results.json",
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": "r2",
             "transcript_key": "t2",
             "modules_enabled": ["emotion", "contagion", "wordclouds"],

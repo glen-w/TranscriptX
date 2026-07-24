@@ -1,8 +1,6 @@
-"""Registry legacy flag and default module selection for semantic modules."""
+"""Registry: semantic_similarity is the sole non-legacy public module id."""
 
 from __future__ import annotations
-
-import warnings
 
 from transcriptx.core.pipeline.module_registry import (
     get_default_modules,
@@ -10,25 +8,16 @@ from transcriptx.core.pipeline.module_registry import (
 )
 
 
-def test_semantic_modules_marked_legacy() -> None:
-    assert get_module_info("semantic_similarity") is not None
-    assert get_module_info("semantic_similarity").legacy is True
-    assert get_module_info("semantic_similarity_advanced").legacy is True
-    assert get_module_info("semantic_similarity_v2").legacy is False
+def test_semantic_similarity_is_current_not_legacy() -> None:
+    info = get_module_info("semantic_similarity")
+    assert info is not None
+    assert info.legacy is False
+    assert get_module_info("semantic_similarity_advanced") is None
+    assert get_module_info("semantic_similarity_v2") is None
 
 
-def test_default_modules_exclude_legacy_semantic_when_include_legacy_false() -> None:
+def test_default_modules_include_semantic_similarity() -> None:
     mods = get_default_modules(include_legacy=False)
-    assert "semantic_similarity" not in mods
-    assert "semantic_similarity_advanced" not in mods
-    assert "semantic_similarity_v2" in mods
-
-
-def test_default_modules_include_legacy_semantic_when_include_legacy_true() -> None:
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        mods = get_default_modules(include_legacy=True)
-    assert any(item.category is DeprecationWarning for item in caught)
     assert "semantic_similarity" in mods
-    assert "semantic_similarity_advanced" in mods
-    assert "semantic_similarity_v2" in mods
+    assert "semantic_similarity_advanced" not in mods
+    assert "semantic_similarity_v2" not in mods

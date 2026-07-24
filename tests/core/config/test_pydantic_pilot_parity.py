@@ -42,7 +42,7 @@ def test_partial_analysis_pilot_defaults_match(spec) -> None:
     "pilot_id,payload_attr",
     [
         ("quality_filtering_profiles", "quality_filtering_profiles"),
-        ("semantic_similarity_v2_profiles", "semantic_similarity_v2_profiles"),
+        ("semantic_similarity_profiles", "semantic_similarity_profiles"),
         ("quick_analysis_settings", "quick_analysis_settings"),
         ("full_analysis_settings", "full_analysis_settings"),
     ],

@@ -873,7 +873,7 @@ class QAAnalysis(AnalysisModule):
 
             # Get semantic similarity results (optional)
             semantic_similarity_result = (
-                context.get_analysis_result("semantic_similarity_v2")
+                context.get_analysis_result("semantic_similarity")
                 or context.get_analysis_result("semantic_similarity")
                 or context.get_analysis_result("semantic_similarity_advanced")
             )

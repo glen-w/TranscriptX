@@ -165,7 +165,7 @@ def _make_transcript(path: Path, speakers: list[dict]) -> None:
     path.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": {
                     "type": "manual",
                     "original_path": path.name,
@@ -602,7 +602,7 @@ def test_speaker_id_named_and_remaining_counts_with_variant_diarized_ids(
     path.write_text(
         json.dumps(
             {
-                "schema_version": "1.0",
+                "schema_version": 1,
                 "source": {
                     "type": "manual",
                     "original_path": path.name,

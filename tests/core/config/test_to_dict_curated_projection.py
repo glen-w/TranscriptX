@@ -58,7 +58,7 @@ def test_asdict_analysis_exposes_use_dag_pipeline_but_to_dict_does_not() -> None
 
 
 _CURATED_ANALYSIS_NESTED_KEYS = (
-    "semantic_similarity_v2",
+    "semantic_similarity",
     "topic_modeling",
     "acts",
     "tag_extraction",
@@ -83,7 +83,7 @@ _CURATED_ANALYSIS_NESTED_KEYS = (
 
 _ADAPTER_ANALYSIS_ACTIVE_KEYS = (
     "active_topic_modeling_profile",
-    "active_semantic_similarity_v2_profile",
+    "active_semantic_similarity_profile",
     "active_acts_profile",
     "active_tag_extraction_profile",
     "active_qa_analysis_profile",

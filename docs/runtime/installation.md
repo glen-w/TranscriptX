@@ -97,7 +97,7 @@ If you install the NLP extra but never download the model, analyses that need it
 When you run analysis, choose a **Preset** that determines which modules run:
 
 - **Quick** — no LLM modules and no heavy modules (fast local path). Modules that hard-depend on excluded heavy/LLM modules are omitted so the DAG cannot pull them back in.
-- **Balanced** — recommended default: non-heavy modules plus a limited heavy allowlist (`semantic_similarity_v2`, `fine_grained_emotion`) and **global transcript LLM summary only** (`llm_summary`).
+- **Balanced** — recommended default: non-heavy modules plus a limited heavy allowlist (`semantic_similarity`, `fine_grained_emotion`) and **global transcript LLM summary only** (`llm_summary`).
 - **Thorough** — all suitable modules for the target (including LLM and heavy).
 - **Custom** — pick exactly which modules to run for this launch.
 

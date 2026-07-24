@@ -19,9 +19,9 @@ def test_apply_full_mode_sets_v2_mode_advanced() -> None:
             "skip_advanced_semantic": False,
             "skip_geocoding": False,
         }
-        mock_config.analysis.semantic_similarity_v2.mode = "basic"
+        mock_config.analysis.semantic_similarity.mode = "basic"
         apply_analysis_mode_settings("full", "balanced")
-        assert mock_config.analysis.semantic_similarity_v2.mode == "advanced"
+        assert mock_config.analysis.semantic_similarity.mode == "advanced"
 
 
 def test_apply_quick_mode_sets_v2_mode_basic() -> None:
@@ -37,6 +37,6 @@ def test_apply_quick_mode_sets_v2_mode_basic() -> None:
             "skip_geocoding": False,
             "semantic_profile": "balanced",
         }
-        mock_config.analysis.semantic_similarity_v2.mode = "advanced"
+        mock_config.analysis.semantic_similarity.mode = "advanced"
         apply_analysis_mode_settings("quick")
-        assert mock_config.analysis.semantic_similarity_v2.mode == "basic"
+        assert mock_config.analysis.semantic_similarity.mode == "basic"

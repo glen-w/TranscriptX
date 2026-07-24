@@ -21,7 +21,7 @@ from transcriptx.core.speaker_profiles.voice.vectors import EXPECTED_DIM, load_v
 from transcriptx.io.atomic_json import strict_json_dumps, write_bytes_atomic
 
 MAX_REFS_PER_SOURCE_LINK = 5
-INDEX_SCHEMA_ID = "voice_ref_index.v1"
+INDEX_SCHEMA_ID = "transcriptx.voice_ref_index.v1"
 
 
 def _digest_dirname(corpus_digest: str) -> str:

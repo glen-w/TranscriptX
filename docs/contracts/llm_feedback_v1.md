@@ -44,7 +44,7 @@ Readers must tolerate and **report** a malformed final line (`tail_error`).
 
 | Artifact | `schema_id` |
 |----------|-------------|
-| Feedback event | `llm_feedback_event_v1` |
+| Feedback event | `transcriptx.llm_feedback_event.v1` |
 
 Top-level `schema_id` is **only** the feedback event schema. Artifact/response
 schema is `provenance.output_schema_id` — never a sibling field named `schema_id`

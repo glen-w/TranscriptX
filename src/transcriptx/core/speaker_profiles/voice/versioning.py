@@ -6,10 +6,10 @@ VOICE_SCHEMA_VERSION = 1
 
 VOICE_SUBTREE = "voice"
 
-PRIVACY_SETTINGS_SCHEMA_ID = "voice_privacy_settings.v1"
+PRIVACY_SETTINGS_SCHEMA_ID = "transcriptx.voice_privacy_settings.v1"
 PRIVACY_SETTINGS_FILENAME = "privacy.voice_settings.json"
 
-OPERATOR_SETTINGS_SCHEMA_ID = "voice_operator_settings.v1"
+OPERATOR_SETTINGS_SCHEMA_ID = "transcriptx.voice_operator_settings.v1"
 OPERATOR_SETTINGS_FILENAME = "operator.voice_settings.json"
 # Bootstrap enrol walks confirmed links in deterministic path order up to this
 # cap (overridable via Settings → Speakers). Match-time still caps refs per link.
@@ -17,15 +17,15 @@ DEFAULT_BOOTSTRAP_MAX_LINKS = 40
 BOOTSTRAP_MAX_LINKS_MIN = 1
 BOOTSTRAP_MAX_LINKS_MAX = 200
 
-ACTIVE_GENERATION_SCHEMA_ID = "voice_active_generation.v1"
+ACTIVE_GENERATION_SCHEMA_ID = "transcriptx.voice_active_generation.v1"
 ACTIVE_GENERATION_FILENAME = "active_generation.json"
 
-MODEL_GENERATION_SCHEMA_ID = "voice_model_generation.v1"
-VOICE_SAMPLE_SCHEMA_ID = "voice_sample.v1"
-VOICE_EMBEDDING_SCHEMA_ID = "voice_embedding.v1"
-VOICE_DECISION_SCHEMA_ID = "voice_match_decision.v1"
-VOICE_SUGGESTION_SCHEMA_ID = "voice_match_suggestion.v1"
-PROFILE_VOICE_SUMMARY_SCHEMA_ID = "profile_voice_summary.v1"
+MODEL_GENERATION_SCHEMA_ID = "transcriptx.voice_model_generation.v1"
+VOICE_SAMPLE_SCHEMA_ID = "transcriptx.voice_sample.v1"
+VOICE_EMBEDDING_SCHEMA_ID = "transcriptx.voice_embedding.v1"
+VOICE_DECISION_SCHEMA_ID = "transcriptx.voice_match_decision.v1"
+VOICE_SUGGESTION_SCHEMA_ID = "transcriptx.voice_match_suggestion.v1"
+PROFILE_VOICE_SUMMARY_SCHEMA_ID = "transcriptx.profile_voice_summary.v1"
 
 VOICE_SAMPLE_FILE_SUFFIX = ".voice_sample.json"
 VOICE_EMBEDDING_FILE_SUFFIX = ".voice_embedding.json"

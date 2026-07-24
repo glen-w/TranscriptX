@@ -63,7 +63,7 @@ Compose does **not** inject every `TRANSCRIPTX_*` variable automatically—only 
 |----------|---------------|---------|
 | `TRANSCRIPTX_SPACY_MODEL` | spaCy runtime (`get_nlp_model`) | NER, highlights, insight eligibility, shared tokenization |
 | `TRANSCRIPTX_SEMANTIC_MODEL` | `analysis.semantic_model_name` | Legacy semantic similarity, echoes paraphrase embeddings |
-| `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `analysis.semantic_similarity_v2.model_name` | `semantic_similarity_v2` module |
+| `TRANSCRIPTX_SEMANTIC_V2_MODEL` | `analysis.semantic_similarity.model_name` | `semantic_similarity` module |
 | `TRANSCRIPTX_EMOTION_MODEL` | legacy alias toward contextual profile (prefer `analysis.contextual_emotion.profile_id`) | Deprecated flat key; conflicting new+old values fail validation when both set |
 | `TRANSCRIPTX_SENTIMENT_BACKEND` | `analysis.sentiment_backend` | `vader`, `transformers`, or `textblob` |
 | `TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL` | `analysis.bertopic.embedding_model` | BERTopic embeddings only |
@@ -81,7 +81,7 @@ LLM variables (`TRANSCRIPTX_LLM_*`) are documented in [llm.md](llm.md).
 
 ## Config file / UI alternatives
 
-Nested settings can also live in project config (`CONFIG_DIR/config.json`, typically under your data dir) or Streamlit **Settings** for keys exposed in the GUI (`analysis.semantic_model_name`, `analysis.emotion_model_name`, `analysis.semantic_similarity_v2.model_name`, etc.).
+Nested settings can also live in project config (`CONFIG_DIR/config.json`, typically under your data dir) or Streamlit **Settings** for keys exposed in the GUI (`analysis.semantic_model_name`, `analysis.emotion_model_name`, `analysis.semantic_similarity.model_name`, etc.).
 
 Environment variables override file settings when both are set.
 
@@ -100,7 +100,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
       "label_words": 3,
       "calculate_probabilities": false
     },
-    "semantic_similarity_v2": {
+    "semantic_similarity": {
       "model_name": "sentence-transformers/all-mpnet-base-v2"
     }
   }
@@ -136,7 +136,7 @@ Example `config.json` fragment for sentiment + BERTopic without env vars:
 
 ### Profiles vs models
 
-`quick` / `full` analysis mode and `semantic_similarity_v2` profiles (`fast_v2`, `balanced_v2`, `deep_v2`) change **thresholds, timeouts, and candidate limits**—not the embedding model. Pick the model explicitly via env or config.
+`quick` / `full` analysis mode and `semantic_similarity` profiles (`fast_v2`, `balanced_v2`, `deep_v2`) change **thresholds, timeouts, and candidate limits**—not the embedding model. Pick the model explicitly via env or config.
 
 `ner_use_light_model` in quick mode only switches spaCy to `en_core_web_sm` when `TRANSCRIPTX_SPACY_MODEL` is unset (downgrade, not upgrade).
 

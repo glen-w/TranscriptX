@@ -21,7 +21,7 @@ from transcriptx.web.transcript_viewer.chapters import (
 
 def _write_run_results(run_root: Path, *, modules_run: list[str] | None = None) -> None:
     payload = {
-        "schema_version": 2,
+        "schema_version": 1,
         "run_id": "r1",
         "transcript_key": "sess",
         "modules_enabled": modules_run or ["topic_shift"],

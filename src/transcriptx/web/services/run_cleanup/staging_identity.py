@@ -77,7 +77,7 @@ def staging_path_for_journal_schema(
     target: CleanupTarget,
 ) -> Path:
     """Derive staging path with the algorithm frozen for ``schema_version``."""
-    if schema_version == 3:
+    if schema_version == JOURNAL_SCHEMA_VERSION:
         return intended_staging_path_schema_3(output_root, operation_id, target)
     raise ValueError(
         f"unsupported journal schema for staging derivation: {schema_version}"

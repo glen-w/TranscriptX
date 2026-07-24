@@ -88,6 +88,41 @@ class TestValidationHighLeverage:
         with pytest.raises(ValueError, match="cannot be empty"):
             validate_transcript_file("")
 
+    def test_validate_transcript_file_missing_raises(self, tmp_path):
+        missing = tmp_path / "gone.json"
+        with pytest.raises(FileNotFoundError, match="Transcript file not found"):
+            validate_transcript_file(str(missing))
+
+    def test_validate_transcript_file_non_json_raises(self, tmp_path):
+        path = tmp_path / "note.txt"
+        path.write_text("hello")
+        with pytest.raises(ValueError, match="must be JSON"):
+            validate_transcript_file(str(path))
+
+    def test_validate_transcript_file_accepts_v1_artifact(self, tmp_path):
+        path = tmp_path / "ok.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "source": {
+                        "type": "manual",
+                        "original_path": "ok.json",
+                        "imported_at": "2026-01-01T00:00:00Z",
+                    },
+                    "segments": [
+                        {
+                            "speaker": "A",
+                            "text": "hi",
+                            "start": 0.0,
+                            "end": 1.0,
+                        }
+                    ],
+                }
+            )
+        )
+        assert validate_transcript_file(str(path)) is True
+
     def test_validate_segment_missing_text_raises(self):
         """Segment missing 'text' raises ValueError."""
         with pytest.raises(ValueError, match="required field"):
@@ -143,7 +178,7 @@ class TestTranscriptLoaderHighLeverage:
         path.write_text(
             json.dumps(
                 {
-                    "schema_version": "1.0",
+                    "schema_version": 1,
                     "source": {
                         "type": "manual",
                         "original_path": "empty.json",

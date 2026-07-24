@@ -1,5 +1,5 @@
 """
-Group aggregation for semantic similarity modules (legacy + advanced + v2).
+Group aggregation for semantic similarity.
 
 B14: centroid motif matching within a comparable provenance cohort.
 ``repetition_rows`` remain the ``content_rows`` contract; ``motif_rows`` and
@@ -17,8 +17,8 @@ import numpy as np
 from transcriptx.core.analysis.aggregation.common import extract_payload
 from transcriptx.core.analysis.aggregation.rows import _session_row_base
 from transcriptx.core.analysis.aggregation.schema import get_transcript_id
-from transcriptx.core.analysis.semantic_similarity_v2.motifs import deserialize_centroid
-from transcriptx.core.analysis.semantic_similarity_v2.output import (
+from transcriptx.core.analysis.semantic_similarity.motifs import deserialize_centroid
+from transcriptx.core.analysis.semantic_similarity.output import (
     POOLED_SCHEMA_VERSION,
     reader_accepts_schema,
 )
@@ -31,11 +31,7 @@ from transcriptx.core.utils.logger import get_logger
 
 logger = get_logger()
 
-_SEMANTIC_MODULE_PREFERENCE = (
-    "semantic_similarity_v2",
-    "semantic_similarity_advanced",
-    "semantic_similarity",
-)
+_SEMANTIC_MODULE_PREFERENCE = ("semantic_similarity",)
 
 
 def _pick_semantic_payload(
@@ -110,7 +106,7 @@ def _session_motif_eligibility(
     module_id: str, payload: Dict[str, Any]
 ) -> Tuple[str, str | None]:
     """Return (inclusion_status, exclude_reason)."""
-    if module_id != "semantic_similarity_v2":
+    if module_id != "semantic_similarity":
         return "excluded", "legacy_module"
     schema = str(payload.get("schema_version") or "")
     if not reader_accepts_schema(schema):
@@ -379,7 +375,7 @@ def aggregate_semantic_similarity_group(
     """
     del canonical_speaker_map
     try:
-        cfg = get_config().analysis.semantic_similarity_v2
+        cfg = get_config().analysis.semantic_similarity
         match_threshold = float(cfg.cross_session_match_threshold)
         min_recurring = int(cfg.min_sessions_for_recurring)
         max_group = int(cfg.max_motifs_per_group)

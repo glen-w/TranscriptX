@@ -19,7 +19,7 @@ logger = get_logger()
 DurationCalculation = Literal["max_end", "span"]
 
 # Current schema version
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = 1
 
 # Permitted source.type values (one per adapter source_id, plus "manual").
 # This list grows as new adapters are introduced.  Validation is permissive:
@@ -159,14 +159,16 @@ def validate_schema_version(data: dict) -> bool:
     if "schema_version" not in data:
         raise ValueError(
             "Transcript document missing required key 'schema_version'. "
-            "Use import_transcript() / ensure_json_artifact() to produce a v1.0 artifact."
+            "Use import_transcript() / ensure_json_artifact() to produce an epoch-1 artifact."
         )
 
     version = data["schema_version"]
-    if version == "1.0":
+    if version == SCHEMA_VERSION:
         return True
 
-    raise ValueError(f"Unsupported schema version: {version}. Supported: 1.0")
+    raise ValueError(
+        f"Unsupported schema version: {version!r}. Supported: {SCHEMA_VERSION}"
+    )
 
 
 def create_transcript_document(

@@ -69,7 +69,7 @@ class SpeakerMappingService:
                 normalize_diarized_id(s) for s in data.get("ignored_speakers") or []
             ]
             data["ignored_speakers"] = list(dict.fromkeys([s for s in ignored if s]))
-            data["speaker_map_schema_version"] = "1.0"
+            data["speaker_map_schema_version"] = 1
             data["speaker_map_provenance"] = _sidecar_provenance(method)
             if "speaker_id_to_db_id" not in data:
                 data["speaker_id_to_db_id"] = {}
@@ -98,7 +98,7 @@ class SpeakerMappingService:
                 dict.fromkeys([normalize_diarized_id(s) for s in ignored if s])
             )
             data["speaker_map"] = dict(data.get("speaker_map") or {})
-            data["speaker_map_schema_version"] = "1.0"
+            data["speaker_map_schema_version"] = 1
             data["speaker_map_provenance"] = _sidecar_provenance(method)
             data.setdefault("speaker_id_to_db_id", {})
 
@@ -124,7 +124,7 @@ class SpeakerMappingService:
             ]
             data["ignored_speakers"] = [s for s in ignored if s and s != did]
             data["speaker_map"] = dict(data.get("speaker_map") or {})
-            data["speaker_map_schema_version"] = "1.0"
+            data["speaker_map_schema_version"] = 1
             data["speaker_map_provenance"] = _sidecar_provenance(method)
             data.setdefault("speaker_id_to_db_id", {})
 
@@ -159,7 +159,7 @@ class SpeakerMappingService:
             data["ignored_speakers"] = list(
                 dict.fromkeys([s for s in normalized_ignored if s])
             )
-            data["speaker_map_schema_version"] = "1.0"
+            data["speaker_map_schema_version"] = 1
             data["speaker_map_provenance"] = _sidecar_provenance(method)
             data["speaker_id_to_db_id"] = {
                 normalize_diarized_id(k): int(v)

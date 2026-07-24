@@ -18,7 +18,7 @@ from transcriptx.core.analysis.llm_support.action_items_render import (
 
 def _payload() -> dict:
     return {
-        "schema_id": "transcriptx.llm_action_items.v2",
+        "schema_id": "transcriptx.llm_action_items.v1",
         "render_contract_id": LLM_ACTION_ITEMS_RENDER_CONTRACT_ID,
         "items": [
             {

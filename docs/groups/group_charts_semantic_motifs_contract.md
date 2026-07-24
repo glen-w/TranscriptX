@@ -6,7 +6,7 @@ Authority: self
 ## Scope
 
 Cross-session recurring motifs and drift for aggregation id `semantic_similarity`
-(prefer member `semantic_similarity_v2` payloads).
+(prefer member `semantic_similarity` payloads).
 
 ## Inputs
 

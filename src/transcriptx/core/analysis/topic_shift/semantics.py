@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-SCHEMA_VERSION: Final = "topic_shift_result_schema_v1"
+SCHEMA_VERSION: Final = "transcriptx.topic_shift_result.v1"
 PREPROCESSING_VERSION: Final = "topic_shift_preprocess_v1"
 
 AnalyticalStatus = Literal[

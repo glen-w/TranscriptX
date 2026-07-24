@@ -80,7 +80,7 @@ except Exception:
 def sample_transcript_data() -> Dict[str, Any]:
     """Minimal valid transcript data for testing with segment-based speaker identification."""
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "test_transcript.json",
@@ -116,7 +116,7 @@ def sample_transcript_data() -> Dict[str, Any]:
 def multi_speaker_transcript_data() -> Dict[str, Any]:
     """Transcript data with multiple speakers using segment-based identification."""
     return {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "multi_speaker.json",
@@ -267,7 +267,7 @@ def pipeline_context_factory(mock_transcript_service, temp_transcript_file):
                         "speaker_map": speaker_map,
                         "ignored_speakers": [],
                         "speaker_id_to_db_id": {},
-                        "speaker_map_schema_version": "1.0",
+                        "speaker_map_schema_version": 1,
                     }
                 )
             )

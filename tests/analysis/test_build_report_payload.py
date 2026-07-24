@@ -72,7 +72,7 @@ def test_build_report_payload_schema_version_report_v1(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": [],
@@ -100,7 +100,7 @@ def test_build_report_payload_modules_have_status_and_contribution(
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment"],
@@ -138,7 +138,7 @@ def test_build_report_payload_report_summary_index_structure(tmp_path: Path) -> 
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment"],
@@ -176,7 +176,7 @@ def test_build_report_payload_no_outputs_index(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": [],
@@ -202,7 +202,7 @@ def test_build_report_payload_warnings_key_present(tmp_path: Path) -> None:
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment"],
@@ -236,7 +236,7 @@ def test_build_report_payload_resolver_warnings_merged_when_contract_fails(
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment"],
@@ -274,7 +274,7 @@ def test_build_report_payload_omitted_and_mention_only_preserved(
     (tmp_path / "run_results.json").write_text(
         json.dumps(
             {
-                "schema_version": 2,
+                "schema_version": 1,
                 "run_id": "r1",
                 "transcript_key": "tk",
                 "modules_enabled": ["sentiment", "tics", "contagion"],

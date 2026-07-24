@@ -127,7 +127,7 @@ def test_list_recent_runs_prefers_run_results_status_over_manifest(
     _write_json(
         run_dir / "run_results.json",
         {
-            "schema_version": 2,
+            "schema_version": 1,
             "run_id": "run1",
             "transcript_key": "tk",
             "modules_enabled": ["stats"],

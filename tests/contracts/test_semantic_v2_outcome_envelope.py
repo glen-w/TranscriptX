@@ -1,17 +1,17 @@
-"""Single-speaker motif-only envelope for semantic_similarity_v2 (B14)."""
+"""Single-speaker motif-only envelope for semantic_similarity (B14)."""
 
 from __future__ import annotations
 
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from transcriptx.core.analysis.semantic_similarity_v2.analysis import (
+from transcriptx.core.analysis.semantic_similarity.analysis import (
     SemanticSimilarityV2Analysis,
 )
-from transcriptx.core.analysis.semantic_similarity_v2.output import SCHEMA_VERSION
+from transcriptx.core.analysis.semantic_similarity.output import SCHEMA_VERSION
 
 
-def test_semantic_similarity_v2_single_speaker_skip_envelope_contract(
+def test_semantic_similarity_single_speaker_skip_envelope_contract(
     monkeypatch,
 ) -> None:
     """B14: single speaker skips repetition path but still exports motif envelope."""
@@ -38,11 +38,11 @@ def test_semantic_similarity_v2_single_speaker_skip_envelope_contract(
     module = SemanticSimilarityV2Analysis()
     monkeypatch.setattr(module, "save_results", lambda *a, **k: None)
     result = module.run_from_context(context)
-    assert result["module_name"] == "semantic_similarity_v2"
+    assert result["module_name"] == "semantic_similarity"
     assert result["status"] == "success"
     assert result["metrics"].get("repetition_path_skipped") is True
     assert result["metrics"].get("motif_export_status")
-    payload = stored.get("semantic_similarity_v2") or result["payload"]
+    payload = stored.get("semantic_similarity") or result["payload"]
     assert payload.get("schema_version") == SCHEMA_VERSION
     assert payload.get("repetition_path") == "skipped"
     assert "motif_export_status" in payload

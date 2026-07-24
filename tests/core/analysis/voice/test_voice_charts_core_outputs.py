@@ -11,7 +11,7 @@ from transcriptx.core.utils import paths as paths_module
 
 def _write_transcript(path: Path) -> None:
     data = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "source": {
             "type": "manual",
             "original_path": "sample.json",

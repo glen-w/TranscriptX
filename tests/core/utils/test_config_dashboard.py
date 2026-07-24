@@ -26,7 +26,7 @@ def test_load_config_accepts_dashboard_v2(tmp_path):
     config_path = tmp_path / "config.json"
     payload = {
         "dashboard": {
-            "schema_version": 2,
+            "schema_version": 1,
             "overview_charts": ["sentiment.multi_speaker_sentiment.global"],
             "overview_missing_behavior": "skip",
         },

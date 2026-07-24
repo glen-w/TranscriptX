@@ -64,10 +64,10 @@ under the canonical root.
 
 | Artifact | `schema_id` | Filename suffix |
 |----------|-------------|-----------------|
-| Profile | `speaker_profile.v1` | `.speaker_profile.json` |
-| Live link | `speaker_profile_link.v1` | `.speaker_link.json` |
-| Event | `speaker_profile_event.v1` | `.speaker_event.json` |
-| Operation | `speaker_profile_operation.v1` | `.op.json` |
+| Profile | `transcriptx.speaker_profile.v1` | `.speaker_profile.json` |
+| Live link | `transcriptx.speaker_profile_link.v1` | `.speaker_link.json` |
+| Event | `transcriptx.speaker_profile_event.v1` | `.speaker_event.json` |
+| Operation | `transcriptx.speaker_profile_operation.v1` | `.op.json` |
 
 Wire `version` / `schema_version` fields are integers frozen at `1` for Phase 1.
 
@@ -179,14 +179,14 @@ Supersession is a separate journalled op.
 
 ### Profile `accent_color`
 
-Optional `accent_color` on `speaker_profile.v1`: uppercase `#RRGGBB` or null
+Optional `accent_color` on `transcriptx.speaker_profile.v1`: uppercase `#RRGGBB` or null
 (auto name-hash at display time). Create without an accent assigns an unused
 palette colour (then freeform `#RRGGBB` if the palette is exhausted). Update
 supports `clear_accent`. GUI may pick any validated hex via colour wheel.
 
 ### Profile avatar (optional photo)
 
-Additive optional fields on the same `speaker_profile.v1` (no schema_id bump):
+Additive optional fields on the same `transcriptx.speaker_profile.v1` (no schema_id bump):
 
 | Field | Rule |
 |-------|------|

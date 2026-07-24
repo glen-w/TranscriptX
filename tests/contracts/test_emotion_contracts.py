@@ -42,7 +42,7 @@ class TestEmotionLexicalContracts:
         emotion_module = EmotionAnalysis()
         result = emotion_module.analyze(sample_segments)
 
-        assert result["schema_version"] == "emotion_result_schema_v2"
+        assert result["schema_version"] == "transcriptx.emotion_result.v1"
         assert result["semantics_version"] == "emotion_lexical_v2"
         assert "run_status" in result
         assert "usable_output" in result

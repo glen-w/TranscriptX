@@ -11,6 +11,7 @@ from typing import Any, Optional
 
 from transcriptx.core.analysis.llm_custom_qa.errors import CustomQAArtifactCommitError
 from transcriptx.core.analysis.llm_custom_qa.versioning import (
+    COMMIT_MARKER_SCHEMA_VERSION,
     COMMIT_MARKER_SCHEMA_VERSION_V1,
     COMMIT_MARKER_SCHEMA_VERSION_V2,
     is_v2_execution_enabled,
@@ -80,7 +81,7 @@ def write_commit_marker(
     generation_id: str,
     json_staging: Path,
     md_staging: Path,
-    commit_marker_schema_version: str = COMMIT_MARKER_SCHEMA_VERSION_V1,
+    commit_marker_schema_version: int = COMMIT_MARKER_SCHEMA_VERSION,
     run_execution_id: str | None = None,
     json_name: str | None = None,
     md_name: str | None = None,
@@ -339,24 +340,26 @@ def commit_marker_consistent(stem: Path, generation_id: str) -> bool:
         marker = json.loads(commit_marker.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    version = str(
-        marker.get("commit_marker_schema_version") or COMMIT_MARKER_SCHEMA_VERSION_V1
-    )
+    version = marker.get("commit_marker_schema_version")
+    if version is None:
+        version = COMMIT_MARKER_SCHEMA_VERSION
+    try:
+        version_int = int(version)
+    except (TypeError, ValueError):
+        return False
     json_gen, md_gen, _ = generation_paths(stem, generation_id)
-    if version == COMMIT_MARKER_SCHEMA_VERSION_V2:
-        candidates_json = [json_gen, json_staging]
-        candidates_md = [md_gen, md_staging]
-    else:
-        candidates_json = [
-            Path(f"{stem}.json"),
-            json_gen,
-            json_staging,
-        ]
-        candidates_md = [
-            Path(f"{stem}.md"),
-            md_gen,
-            md_staging,
-        ]
+    if version_int != COMMIT_MARKER_SCHEMA_VERSION:
+        return False
+    candidates_json = [
+        Path(f"{stem}.json"),
+        json_gen,
+        json_staging,
+    ]
+    candidates_md = [
+        Path(f"{stem}.md"),
+        md_gen,
+        md_staging,
+    ]
     # Prefer names listed in marker when present
     json_name = marker.get("json_name")
     md_name = marker.get("md_name")

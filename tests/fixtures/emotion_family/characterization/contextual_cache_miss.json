@@ -51,7 +51,7 @@
           "integrity_checksum": "e7fea73577f5ba7e5a6aa7305644fdb5892a46075fc9ce4225ca1d366e13dd04",
           "module_id": "contextual_emotion",
           "row_key": "1",
-          "schema_version": "contextual_emotion_result_schema_v2",
+          "schema_version": "contextual_transcriptx.emotion_result.v1",
           "scored_text_hash": "41d803257003a492e138f88cce791acdbf4a3167a6516f5b3cc58ea2235de928",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -63,7 +63,7 @@
           "integrity_checksum": "e7fea73577f5ba7e5a6aa7305644fdb5892a46075fc9ce4225ca1d366e13dd04",
           "module_id": "contextual_emotion",
           "row_key": "1",
-          "schema_version": "contextual_emotion_result_schema_v2",
+          "schema_version": "contextual_transcriptx.emotion_result.v1",
           "scored_text_hash": "41d803257003a492e138f88cce791acdbf4a3167a6516f5b3cc58ea2235de928",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -84,7 +84,7 @@
           "integrity_checksum": "917ad1b804fe620640a6c58e24c2540df6a894218baa41c766c447b06c51662e",
           "module_id": "contextual_emotion",
           "row_key": "2",
-          "schema_version": "contextual_emotion_result_schema_v2",
+          "schema_version": "contextual_transcriptx.emotion_result.v1",
           "scored_text_hash": "f8a1e9f5eb06c33bc1800daa9fe864badecc7d3e6b374023c832725a0a42eadc",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -96,7 +96,7 @@
           "integrity_checksum": "917ad1b804fe620640a6c58e24c2540df6a894218baa41c766c447b06c51662e",
           "module_id": "contextual_emotion",
           "row_key": "2",
-          "schema_version": "contextual_emotion_result_schema_v2",
+          "schema_version": "contextual_transcriptx.emotion_result.v1",
           "scored_text_hash": "f8a1e9f5eb06c33bc1800daa9fe864badecc7d3e6b374023c832725a0a42eadc",
           "semantics_version": "contextual_emotion_v1"
         },
@@ -214,7 +214,7 @@
       "integrity_checksum": "e7fea73577f5ba7e5a6aa7305644fdb5892a46075fc9ce4225ca1d366e13dd04",
       "module_id": "contextual_emotion",
       "row_key": "1",
-      "schema_version": "contextual_emotion_result_schema_v2",
+      "schema_version": "contextual_transcriptx.emotion_result.v1",
       "scored_text_hash": "41d803257003a492e138f88cce791acdbf4a3167a6516f5b3cc58ea2235de928",
       "semantics_version": "contextual_emotion_v1"
     },
@@ -224,7 +224,7 @@
     "segment_id": "1",
     "truncated": false
   },
-  "schema_version": "contextual_emotion_result_schema_v2",
+  "schema_version": "contextual_transcriptx.emotion_result.v1",
   "segments_empty": 0,
   "segments_failed": 0,
   "segments_scored": 2,

@@ -56,7 +56,7 @@ def test_transcript_store_write_creates_parent_dirs(tmp_path) -> None:
 def test_transcript_store_refreshes_derived_metadata(tmp_path) -> None:
     path = tmp_path / "t.json"
     data = {
-        "schema_version": "1.0",
+        "schema_version": 1,
         "metadata": {"title": "keep me"},
         "segments": [
             {"start": 0, "end": 1, "speaker": "A", "text": "hello world"},

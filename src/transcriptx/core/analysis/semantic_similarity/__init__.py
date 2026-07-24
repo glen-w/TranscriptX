@@ -1,3 +1,7 @@
-from .analysis import SemanticSimilarityAnalysis, SemanticSimilarityAdvancedAnalysis
+"""Semantic similarity v2 (batched embeddings, vectorized cosine, diagnostics)."""
 
-__all__ = ["SemanticSimilarityAnalysis", "SemanticSimilarityAdvancedAnalysis"]
+from __future__ import annotations
+
+from .analysis import SemanticSimilarityV2Analysis
+
+__all__ = ["SemanticSimilarityV2Analysis"]

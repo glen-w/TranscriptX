@@ -7,8 +7,8 @@ from typing import Annotated, Literal, Optional
 import pytest
 from pydantic import BaseModel, Field, ValidationError
 
-from transcriptx.core.config.models.semantic_similarity_v2 import (
-    SemanticSimilarityV2SettingsModel,
+from transcriptx.core.config.models.semantic_similarity import (
+    SemanticSimilaritySettingsModel,
 )
 from transcriptx.core.config.pydantic_registry import pydantic_model_to_field_metadata
 
@@ -67,23 +67,23 @@ def test_json_schema_extra_advanced_flag() -> None:
 
 def test_dotpath_prefix_and_category() -> None:
     meta = pydantic_model_to_field_metadata(
-        SemanticSimilarityV2SettingsModel,
-        dotpath_prefix="analysis.semantic_similarity_v2",
+        SemanticSimilaritySettingsModel,
+        dotpath_prefix="analysis.semantic_similarity",
         category="analysis",
     )
-    assert "analysis.semantic_similarity_v2.enabled" in meta
-    assert meta["analysis.semantic_similarity_v2.enabled"].category == "analysis"
+    assert "analysis.semantic_similarity.enabled" in meta
+    assert meta["analysis.semantic_similarity.enabled"].category == "analysis"
 
 
 def test_defaults_match_model_dump() -> None:
     meta = pydantic_model_to_field_metadata(
-        SemanticSimilarityV2SettingsModel,
-        dotpath_prefix="analysis.semantic_similarity_v2",
+        SemanticSimilaritySettingsModel,
+        dotpath_prefix="analysis.semantic_similarity",
         category="analysis",
     )
-    expected = SemanticSimilarityV2SettingsModel().model_dump()
+    expected = SemanticSimilaritySettingsModel().model_dump()
     for name, value in expected.items():
-        key = f"analysis.semantic_similarity_v2.{name}"
+        key = f"analysis.semantic_similarity.{name}"
         assert meta[key].default == value
 
 
