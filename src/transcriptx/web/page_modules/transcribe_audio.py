@@ -271,7 +271,8 @@ whispermlx-missing""",
         "When transcription finishes, open **Import Transcript** and upload the JSON "
         "(WhisperX / whispermlx output, SRT, VTT, and other supported formats). "
         "Optionally attach the source recording on that page for speaker ID and "
-        "audio-derived features."
+        "audio-derived features; same-stem audio in the mounted recordings folder "
+        "will be linked."
     )
     if st.button(
         "Go to Import Transcript →", type="primary", key="transcribe_goto_import"

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 from transcriptx.web.sidebar_hydration import (
     hydrate_sidebar_state,
@@ -34,6 +37,48 @@ def test_selected_transcript_still_exists() -> None:
 def test_selected_transcript_missing_returns_none() -> None:
     ss = {"subject_id": "gone"}
     assert resolve_selected_transcript(ss, ["a"]) is None
+
+
+def test_selected_transcript_bridges_slug_to_path_option(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    transcript = tmp_path / "R20241025-162403.json"
+    transcript.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.load_index",
+        lambda: {
+            "transcripts": {
+                "k": {
+                    "slug": "R20241025-162403",
+                    "source_path": str(transcript),
+                    "runs": [],
+                }
+            }
+        },
+    )
+    ss = {"subject_id": "R20241025-162403"}
+    assert resolve_selected_transcript(ss, [str(transcript)]) == str(transcript)
+
+
+def test_selected_transcript_bridges_path_to_slug_option(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.load_index",
+        lambda: {
+            "transcripts": {
+                "k": {
+                    "slug": "meeting-slug",
+                    "source_path": str(transcript),
+                    "runs": [],
+                }
+            }
+        },
+    )
+    ss = {"subject_id": str(transcript)}
+    assert resolve_selected_transcript(ss, ["meeting-slug"]) == "meeting-slug"
 
 
 def test_selected_run_still_exists() -> None:

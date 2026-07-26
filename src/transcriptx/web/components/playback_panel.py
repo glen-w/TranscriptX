@@ -23,7 +23,8 @@ controls only UI behaviour and warm triggers, not clip ownership.
 
 Architecture invariant: ``render_playback_panel`` is the only ``@st.fragment``
 in this module. Shared helpers below must remain undecorated so callers that
-already run inside a fragment (e.g. Transcript) never nest fragments.
+already run inside a fragment (e.g. Transcript, Speaker ID workspace) never
+nest fragments. Prefer ``render_playback_panel_body`` from an outer fragment.
 
 ``audio_path`` is resolved once for UI gating and warm signatures only.
 ``get_clip_bytes`` re-resolves audio through the controller, so extraction must
@@ -353,8 +354,7 @@ def _render_fallback_segment_rows(
             st.write(seg.text or "_(empty)_")
 
 
-@st.fragment
-def render_playback_panel(
+def render_playback_panel_body(
     controller: SpeakerStudioController,
     transcript_path: str,
     audio_path: Optional[Path],
@@ -367,35 +367,10 @@ def render_playback_panel(
     include_segment_rows: bool = True,
 ) -> None:
     """
-    Fragment-scoped playback panel.
+    Undecorated playback panel body for use inside an outer ``@st.fragment``.
 
-    Parameters
-    ----------
-    controller:
-        SpeakerStudioController instance (passed in; no data work done here).
-    transcript_path:
-        Path string for the active transcript.
-    audio_path:
-        Resolved audio file path, or None if not found.
-        Used for UI gating and warm signatures only; clip extraction re-resolves.
-    all_segs:
-        Pre-computed segment list for the current view.  Do not do heavy
-        computation inside this fragment — pass results in from the parent.
-    active_id:
-        Current speaker/group identifier used to namespace widget keys.
-    play_key:
-        Session state key holding the currently-playing segment list index (int|None).
-    lines_key:
-        Session state key holding the lines_shown count (int).
-    max_lines:
-        Default number of lines per page (used when lines_key is unset).
-    autoplay:
-        Whether st.audio should autoplay on load.
-    include_segment_rows:
-        If True (default), renders segment rows with play buttons.
-        Set False for pages that render their own custom rows (e.g. Speaker ID
-        with additional assign widgets); the fragment then manages only the audio
-        player and warm trigger.
+    Same parameters and behaviour as ``render_playback_panel``. Callers that are
+    not already inside a fragment should use ``render_playback_panel`` instead.
     """
     # ── ffmpeg / audio guard ───────────────────────────────────────────────────
     if not audio_path or not Path(audio_path).is_file():
@@ -488,3 +463,61 @@ def render_playback_panel(
             on_click=_increment_lines_shown,
             args=(lines_key, n_more),
         )
+
+
+@st.fragment
+def render_playback_panel(
+    controller: SpeakerStudioController,
+    transcript_path: str,
+    audio_path: Optional[Path],
+    all_segs: List[SegmentInfo],
+    active_id: str,
+    play_key: str,
+    lines_key: str,
+    max_lines: int,
+    autoplay: bool = False,
+    include_segment_rows: bool = True,
+) -> None:
+    """
+    Fragment-scoped playback panel.
+
+    Parameters
+    ----------
+    controller:
+        SpeakerStudioController instance (passed in; no data work done here).
+    transcript_path:
+        Path string for the active transcript.
+    audio_path:
+        Resolved audio file path, or None if not found.
+        Used for UI gating and warm signatures only; clip extraction re-resolves.
+    all_segs:
+        Pre-computed segment list for the current view.  Do not do heavy
+        computation inside this fragment — pass results in from the parent.
+    active_id:
+        Current speaker/group identifier used to namespace widget keys.
+    play_key:
+        Session state key holding the currently-playing segment list index (int|None).
+    lines_key:
+        Session state key holding the lines_shown count (int).
+    max_lines:
+        Default number of lines per page (used when lines_key is unset).
+    autoplay:
+        Whether st.audio should autoplay on load.
+    include_segment_rows:
+        If True (default), renders segment rows with play buttons.
+        Set False for pages that render their own custom rows (e.g. Speaker ID
+        with additional assign widgets); the fragment then manages only the audio
+        player and warm trigger.
+    """
+    render_playback_panel_body(
+        controller,
+        transcript_path,
+        audio_path,
+        all_segs,
+        active_id,
+        play_key,
+        lines_key,
+        max_lines,
+        autoplay=autoplay,
+        include_segment_rows=include_segment_rows,
+    )

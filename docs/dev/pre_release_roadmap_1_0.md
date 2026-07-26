@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8` (in progress)**; maintainer acceptance → unfamiliar-user → RC remain before public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8`**, then **maintainer acceptance** → **`0.9.9` Overview/results presentation polish** → unfamiliar-user → RC → public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -28,6 +28,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — harden + public surfaces (automatable)** — audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops draft; Data/Explorer redirects removed (**cut as 0.9.7**). Owner sign-off, RTD slug, and measured Large-library soak may remain soft-cut residuals.
 - [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for owner-gated residuals.
 - [ ] **Maintainer acceptance pass** — executable kit in [manual_acceptance_1_0.md](manual_acceptance_1_0.md); severity-justified fixes after
+- [ ] **0.9.9 — Overview / results presentation polish** — organisation & presentation of Overview Actions/Highlights/Analysis (and related); list in [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md); **after** maintainer findings, **before** unfamiliar-user round
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
 
@@ -1015,5 +1016,6 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 11. [x] Execute **0.9.x harden + public surfaces (automatable)** theme (**0.9.7**) ← **landed** (owner Hub-card / RTD slug / Large-library soak may soft-cut)
 12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (owner Hub/RTD/BMC/Large-library/cohort remain soft residuals)
 13. [ ] **Maintainer acceptance pass** — [manual_acceptance_1_0.md](manual_acceptance_1_0.md); then severity-justified fixes
-14. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
-15. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**
+14. [ ] **0.9.9 Overview / results presentation polish** — [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md) (after maintainer findings; before unfamiliar-user)
+15. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
+16. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

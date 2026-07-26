@@ -162,6 +162,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/ui_presentation_modes.md | Guided / Full (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/manual_acceptance_1_0.md | Human acceptance checklist skeleton | live | product | current | Human-testing wave | retain | — | pre_release_roadmap | release_severity_triage_1_0.md | no |
+| docs/dev/overview_presentation_0_9_9.md | 0.9.9 Overview/results presentation polish backlog | live | product | current | After maintainer; before unfamiliar-user | retain | — | pre_release_roadmap, ROADMAP | manual_acceptance_1_0.md | no |
 | website/ | Modest public landing + Pages | live | entry | current | Marketing; BMC placeholder | retain | — | README, ROADMAP | PRODUCT.md | no |
 | NOTICE | Third-party model/dataset notice draft | live | entry | current | Hub-card owner-verify open | retain | — | trust_privacy, README | trust_privacy_model_governance_1_0.md | no |
 | docs/requirements.txt | Sphinx/RTD install pins | live | developer | current | Mirrors `[docs]` extras | retain | — | .readthedocs.yml | docs_architecture_1_0.md | no |

@@ -68,16 +68,18 @@ Record each row in the evidence table (§6). Class defaults assume Docker Compos
 
 ### 3.2 Import and Library — **required**
 
-- [ ] Single-file import into managed library
+- [x] Single-file import into managed library — **pass** 2026-07-26 (individual two-speaker `R20241026-121652`)
 - [ ] Folder import (multi-file) when profile supports it
-- [ ] Library shows new transcript(s) with expected identity
+- [x] Library shows new transcript(s) with expected identity — **pass** (action menu → Speaker Identification landed on correct transcript)
+- [x] Related: **Delete all runs** (Settings / storage) — **pass** 2026-07-26 (works as expected)
 
-### 3.3 Guided Balanced analysis — **required**
+### 3.3 Analysis run — **required** (adapted: Guided UI removed post-0.9.6)
 
-- [ ] Presentation mode **Guided**
-- [ ] Run analysis with **Balanced** (default policy)
-- [ ] Confirm experimental emotion modules are **not** required for the default path (`fine_grained_emotion` / `contextual_emotion` absent from Balanced defaults)
-- [ ] Overview, Insights, Charts, Artifacts each open for the run without crash
+- [x] ~~Presentation mode Guided~~ — **N/A** (Guided/Full presentation layer removed; docs + clear GUI)
+- [~] Default **Balanced** path — **not this pass**; maintainer ran **Thorough** instead (see stubs). Balanced defaults / experimental-emotion absence still needs a dedicated pass or explicit skip+severity
+- [~] Overview, Insights, Charts, Artifacts each open for the run without crash — **Overview pass** 2026-07-26 (nav OK; summaries look good; Actions/Highlights/Analysis work). **Charts pass** 2026-07-26 (filters; open/close; fullscreen; search — robust). Insights/Artifacts still open. Presentation organisation debt → **[0.9.9](overview_presentation_0_9_9.md)** (after maintainer pass, before unfamiliar-user)
+- [x] Related: Speaker Identification → ignore one speaker; name speakers; create profile; identify all — **pass** before Run Analysis
+- [x] Related: Thorough + custom Qs + mixed LLM models + saved profile — **complete (partial)** run `20260726_015208_30728241` · wall **~44.7 min** · 46 RUN / 2 FAIL (`llm_action_items`, `llm_custom_qa` timed out at 600s) · see `run_R20241026-121652_thorough.md`
 
 ### 3.4 Failure recovery — **required** (at least two cases)
 
@@ -91,16 +93,16 @@ Deliberate failures — expected recovery / severity:
 | Cancelled operation | Cancel acknowledged; no corrupt half-committed demo/run ownership | must-fix |
 | Partial module failure | Run outcomes honest; other modules usable | must-fix |
 
-- [ ] Exercise ≥2 cases above; record outcomes
+- [~] Exercise ≥2 cases above; record outcomes — **1/2:** partial module failure observed on Thorough run (`llm_action_items` + `llm_custom_qa` 600s timeout → FAIL; pipeline continued; `final_status=partial`). Need ≥1 more case.
 
 ### 3.5 Export — **required**
 
-- [ ] Create export / download artifacts (see also residual **R2**)
+- [x] Create export / download artifacts (see also residual **R2**) — **pass** 2026-07-26 (export visible → zip; HTML index looks good)
 
 ### 3.6 Transcribe command generation — **required**
 
-- [ ] Command generator shows copyable commands; **no** Streamlit shell execution
-- [ ] Dry-run / docs honesty matches [transcription.md](../runtime/transcription.md)
+- [x] Command generator shows copyable commands; **no** Streamlit shell execution — **pass** 2026-07-26 (whispermlx-missing “transcribe all remaining”; host run succeeded)
+- [x] Dry-run / docs honesty matches [transcription.md](../runtime/transcription.md) — **pass** (generator handoff; Streamlit did not execute transcription)
 
 ### 3.7 Residual AppTest-blind (R1–R6) — **required**
 
@@ -115,7 +117,7 @@ Incorporate by **stable IDs** from [gui_acceptance_residual_checklist.md](gui_ac
 | R5 | Popovers / expanders | Critical expanders readable |
 | R6 | Visual alignment | Overview/Insights/Charts first paint aligned |
 
-- [ ] R1 … R6 recorded
+- [~] R1 … R6 recorded — **R1 pass**; **R2 pass** (browser zip / HTML index good); R3–R6 still open (R6 partial: Overview+Charts)
 
 ### 3.11 Accessibility / browsers — **required**
 
@@ -128,8 +130,9 @@ Incorporate by **stable IDs** from [gui_acceptance_residual_checklist.md](gui_ac
 
 ### 3.12 Performance — **conditional / strongly expected**
 
-- [ ] **Medium** corpus: run [performance envelope recipe](performance_envelopes_1_0.md) when hardware allows (**strongly expected**)
-- [ ] **Large-library**: record **pass** / **fail** / **approved soft-cut** — never silently omit
+- [x] Opportunistic **Thorough** single-transcript timings recorded for `R20241026-121652` (~44.7 min wall, partial; see `run_R20241026-121652_thorough.md`)
+- [ ] **Medium** corpus Balanced recipe — still owed
+- [ ] **Large-library**: record **pass** / **fail** / **approved soft-cut** — never silently omit (Home previously showed ~168 library transcripts — soak still open)
 
 ---
 

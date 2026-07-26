@@ -11,6 +11,8 @@ from transcriptx.web.services.run_cleanup.models import (
     CLEANUP_POLICY_VERSION,
     CLEANUP_RESULT_SCHEMA_VERSION,
     JOURNAL_SCHEMA_VERSION,
+    LEGACY_JOURNAL_SCHEMA_VERSION,
+    READABLE_JOURNAL_SCHEMA_VERSIONS,
     CleanupMode,
     CleanupResult,
     CleanupStatus,
@@ -54,6 +56,8 @@ def _target(tmp_path: Path) -> CleanupTarget:
 def test_versions_phase_b1() -> None:
     assert CLEANUP_POLICY_VERSION == 7
     assert JOURNAL_SCHEMA_VERSION == 1
+    assert LEGACY_JOURNAL_SCHEMA_VERSION == 3
+    assert READABLE_JOURNAL_SCHEMA_VERSIONS == frozenset({1, 3})
     assert CLEANUP_RESULT_SCHEMA_VERSION == 1
 
 
@@ -63,6 +67,9 @@ def test_schema1_staging_path_matches_intended(tmp_path: Path) -> None:
     a = intended_staging_path(tmp_path / "outputs", "1_abcdefabcdef", t)
     b = staging_path_for_journal_schema(1, tmp_path / "outputs", "1_abcdefabcdef", t)
     assert a == b
+    # Pre-epoch schema 3 shares the same frozen basename algorithm.
+    c = staging_path_for_journal_schema(3, tmp_path / "outputs", "1_abcdefabcdef", t)
+    assert c == a
 
 
 @pytest.mark.unit
@@ -213,3 +220,75 @@ def test_load_typed_decodes_schema1_when_expected_none(tmp_path: Path) -> None:
     assert loaded.kind is journal.JournalLoadKind.RETRYABLE
     assert loaded.data is not None
     assert loaded.data["journal_schema_version"] == 1
+
+
+@pytest.mark.unit
+def test_load_typed_accepts_pre_epoch_schema3_when_expecting_current(
+    tmp_path: Path,
+) -> None:
+    state = tmp_path / "state"
+    ops = state / "cleanup" / "operations"
+    ops.mkdir(parents=True)
+    oid = "1784242139_dc293373ec16"
+    (ops / f"{oid}.json").write_text(
+        f'{{"journal_schema_version": {LEGACY_JOURNAL_SCHEMA_VERSION},'
+        f' "cleanup_policy_version": {CLEANUP_POLICY_VERSION},'
+        f' "operation_id": "{oid}", "plan_id": "p", "mode": "DELETE_ALL",'
+        f' "policy_version": {CLEANUP_POLICY_VERSION}, "created_at": 1,'
+        ' "roots": [], "targets": [], "status": "SUCCESS"}\n',
+        encoding="utf-8",
+    )
+    loaded = journal.load_operation_typed(
+        state,
+        oid,
+        expected_policy_version=CLEANUP_POLICY_VERSION,
+        expected_schema_version=JOURNAL_SCHEMA_VERSION,
+    )
+    assert loaded.kind is journal.JournalLoadKind.TERMINAL
+    assert loaded.data is not None
+    assert loaded.data["journal_schema_version"] == LEGACY_JOURNAL_SCHEMA_VERSION
+
+
+@pytest.mark.unit
+def test_list_pending_hides_terminal_pre_epoch_schema3(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    ops = state / "cleanup" / "operations"
+    ops.mkdir(parents=True)
+    oid = "1784242139_dc293373ec16"
+    (ops / f"{oid}.json").write_text(
+        f'{{"journal_schema_version": {LEGACY_JOURNAL_SCHEMA_VERSION},'
+        f' "cleanup_policy_version": {CLEANUP_POLICY_VERSION},'
+        f' "operation_id": "{oid}", "plan_id": "p", "mode": "DELETE_ALL",'
+        f' "policy_version": {CLEANUP_POLICY_VERSION}, "created_at": 1,'
+        ' "roots": [], "targets": ['
+        '{"subject_type": "transcript", "subject_id": "s", "run_id": "r",'
+        ' "canonical_path": "/abs/s/r", "state": "physical_deleted"}'
+        '], "status": "SUCCESS"}\n',
+        encoding="utf-8",
+    )
+    pending = journal.list_pending_staging(state)
+    assert pending == []
+
+
+@pytest.mark.unit
+def test_list_pending_recovers_interrupted_pre_epoch_schema3(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    ops = state / "cleanup" / "operations"
+    ops.mkdir(parents=True)
+    oid = "1784242139_dc293373ec16"
+    (ops / f"{oid}.json").write_text(
+        f'{{"journal_schema_version": {LEGACY_JOURNAL_SCHEMA_VERSION},'
+        f' "cleanup_policy_version": {CLEANUP_POLICY_VERSION},'
+        f' "operation_id": "{oid}", "plan_id": "p", "mode": "DELETE_ALL",'
+        f' "policy_version": {CLEANUP_POLICY_VERSION}, "created_at": 1,'
+        ' "roots": [], "targets": ['
+        '{"subject_type": "transcript", "subject_id": "s", "run_id": "r",'
+        ' "canonical_path": "/abs/s/r", "state": "staged"}'
+        '], "status": "interrupted"}\n',
+        encoding="utf-8",
+    )
+    pending = journal.list_pending_staging(state)
+    assert len(pending) == 1
+    assert pending[0]["recoverable"] is True
+    assert pending[0]["detected_schema_version"] == LEGACY_JOURNAL_SCHEMA_VERSION
+    assert pending[0]["blocked_reason"] is None

@@ -40,7 +40,10 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Hosted docs + harden scaffolds | Sphinx revive; hygiene strict subset; quality-audit scaffold; draft model-licence matrix | **0.9.5** |
 | Modes + demo (trial) | Guided / Full + demo + onboarding checklist — **trialled then removed** (docs + clear GUI) | **0.9.6** (removed later) |
 | Harden + public surfaces (automatable) | Audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops; Data/Explorer redirects removed | **0.9.7** |
-| Human testing → RC | Manual acceptance + a11y/browser; unfamiliar-user validation; clean-env soak; owner Hub-card / RTD slug; Large-library soak | next (pre-RC) |
+| Hygiene + honesty + human-pass prep | Epoch/deps cleanup; BERTopic-out-of-base; Balanced emotion honesty; known-limitations; acceptance kits | **0.9.8** |
+| Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **in progress** |
+| Overview / results presentation | Organisation & presentation (Actions/Highlights/Analysis, etc.) — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (after maintainer; before unfamiliar-user) |
+| Unfamiliar-user → RC | Clean-room validation; clean-env soak; owner Hub-card / RTD slug; Large-library soak | next (pre-RC) |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
@@ -68,18 +71,33 @@ Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, 
 - Large bundled completed demo runs (if risky at 1.0)
 - Archive taxonomy refinements; aesthetic polish
 - Specialist convenience and non-supported configurations
+- **Broader local transcription command generation** — Transcribe Audio already generates copyable host commands for **whispermlx** / **whispermlx-missing** (Apple **MLX**, macOS / Apple Silicon) and a WhisperX Docker recipe. Extend working templates for other Whisper stacks/platforms (e.g. CUDA Linux, CPU-only) and other **local** transcription CLIs, still copy/run-on-host only (no in-container MLX; no built-in orchestration — that stays deferred). Keep import as the GUI admission gate.
 - **Transcript tagging** — library visibility / kind labels so users can surface certain transcripts (e.g. `meeting`, `voice note`, `lone speaker` for one-sided phone recordings). Tags are organisation metadata, not an analysis module.
 
   **Design before build — interaction with Groups:** tags and groups must stay distinct. Tags find/filter/surface individual transcripts; Groups are analysis cohorts for cross-session runs. Tagging must not create or imply group membership. Tags may act as **filters** in the group member picker, but must not auto-materialise a Group without an explicit user action. Decide whether “more visible” means facet filters, optional pin/favourite, or both — without overlapping Groups as the named-collection surface. Kind tags like `lone speaker` may later feed soft suitability hints (e.g. interaction modules), but must remain optional metadata, not silent default changes. Prefer transcript-local / library storage; keep tags out of group run schemas unless a deliberate filter snapshot is needed.
 
-## 1.2 – audio helpers (consider removal)
+## 1.2 – audio / transcript merge (product decision)
 
-Audio **pre-processing** and **merge** are **not core** to the analysis-first product (import → analyze). GUI pages were removed from the nav; capability lives in helper scripts:
+Recorder devices often cut long sessions into chunks. Today:
 
-- `scripts/audio_preprocess.py` — assess / preprocess before external transcription
-- `scripts/audio_merge.py` — concatenate split recorder parts into one MP3
+- Host helper `scripts/audio_merge.py` concatenates parts → one MP3 (ffmpeg; documented in [transcription.md](runtime/transcription.md))
+- `scripts/audio_preprocess.py` remains a separate pre-transcribe helper
+- GUI merge/preprocess pages were removed (not core); Library/serial-group copy still points people at the merge script **before** transcription
+- Manual “merge audio first, then transcribe/import” is a real pain for the personal-recording workflow
 
-**1.2 decision:** consider deleting these helpers (and related workflows/config) if usage stays niche — they are convenience around external transcription, not TranscriptX analysis. Until then, keep them documented as **helper / non-core**, not as GUI or supported public surfaces.
+**Desired direction (design before build):** a simple **inline merge** in the product surface that:
+
+1. Merges the **audio** parts in order into one managed recording, and
+2. Optionally / correspondingly **stitches transcripts** (timestamp rebase, segment continuity, canonical + sidecars) when parts were already transcribed separately
+
+**Why this is hard (expect a real design spike):** ordered part selection UX; ffmpeg/path honesty under Docker vs host; backup/overwrite policy; partial failure; matching audio duration to transcript times; speaker-id continuity across parts; managed-library admission for the merged artifact; whether merge happens pre-transcription only, post-transcription only, or both. Do not ship a half-merge that corrupts library identity.
+
+**1.2 decision fork:**
+
+- **Invest** — first-class merge (audio ± transcript stitch) as a supported library/import workflow; keep or fold the scripts into that path
+- **Defer / remove** — if usage stays niche, delete the helpers and keep “merge outside TranscriptX” as the documented escape hatch
+
+Until that decision: helpers stay **non-core** (not GUI nav / not public surfaces). Not a 1.0 gate; not a casual 1.1 polish item.
 
 ---
 

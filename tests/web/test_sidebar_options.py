@@ -33,3 +33,32 @@ def test_slug_display_labels_from_index(monkeypatch) -> None:
     )
     labels = mod._slug_display_labels_from_index()
     assert labels["slug1"] == "file"
+
+
+def test_cached_dropdown_options_prefers_registered_slug_for_library_only(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Imports with no runs must list slug (not only path) so nav subject survives."""
+    transcript = tmp_path / "R20241025-162403.json"
+    transcript.write_text("{}", encoding="utf-8")
+    resolved = str(transcript.resolve())
+
+    monkeypatch.setattr(
+        mod,
+        "_slug_display_labels_from_index",
+        lambda: {"R20241025-162403": "R20241025-162403"},
+    )
+    monkeypatch.setattr(
+        mod,
+        "_resolved_source_path_to_slug_from_index",
+        lambda: {resolved: "R20241025-162403"},
+    )
+    monkeypatch.setattr(mod, "_cached_session_path_index", lambda _names: (set(), set()))
+
+    options, _labels = mod._cached_dropdown_options.__wrapped__(
+        (),
+        (resolved,),
+        None,
+    )
+    assert "R20241025-162403" in options
+    assert resolved not in options

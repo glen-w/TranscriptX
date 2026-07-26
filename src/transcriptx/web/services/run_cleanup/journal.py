@@ -20,6 +20,7 @@ from transcriptx.web.services.run_cleanup import fd_ops
 from transcriptx.web.services.run_cleanup.models import (
     CLEANUP_POLICY_VERSION,
     JOURNAL_SCHEMA_VERSION,
+    LEGACY_JOURNAL_SCHEMA_VERSION,
     CleanupMode,
     CleanupPlan,
     CleanupTarget,
@@ -407,14 +408,40 @@ def decode_journal_schema_1(
     expected_operation_id: str,
 ) -> dict[str, Any]:
     """Immutable journal decoder for the current schema (never mutate this contract)."""
+    return _decode_journal_envelope(
+        data,
+        expected_operation_id=expected_operation_id,
+        required_schema_version=JOURNAL_SCHEMA_VERSION,
+    )
+
+
+def decode_journal_schema_3(
+    data: dict[str, Any],
+    *,
+    expected_operation_id: str,
+) -> dict[str, Any]:
+    """Decoder for pre-epoch schema-3 journals (format-identical to schema 1)."""
+    return _decode_journal_envelope(
+        data,
+        expected_operation_id=expected_operation_id,
+        required_schema_version=LEGACY_JOURNAL_SCHEMA_VERSION,
+    )
+
+
+def _decode_journal_envelope(
+    data: dict[str, Any],
+    *,
+    expected_operation_id: str,
+    required_schema_version: int,
+) -> dict[str, Any]:
     unknown = set(data) - ALLOWED_TOP_LEVEL
     if unknown:
         raise ValueError(f"unknown journal fields: {sorted(unknown)}")
     if data.get("operation_id") != expected_operation_id:
         raise ValueError("journal operation_id mismatch")
-    if data.get("journal_schema_version") != JOURNAL_SCHEMA_VERSION:
+    if data.get("journal_schema_version") != required_schema_version:
         raise ValueError(
-            f"decode_journal_schema_1 requires journal_schema_version={JOURNAL_SCHEMA_VERSION}"
+            f"decode requires journal_schema_version={required_schema_version}"
         )
     targets = data.get("targets")
     if not isinstance(targets, list):
@@ -454,14 +481,29 @@ def decode_journal_schema_1(
     return data
 
 
-# Version-dispatched readers: current journal schema only.
+def journal_schema_matches_expected(
+    actual: Any, expected: int | None
+) -> bool:
+    """True when ``actual`` satisfies an optional expected schema constraint.
+
+    ``expected=JOURNAL_SCHEMA_VERSION`` also accepts the pre-epoch envelope
+    ``LEGACY_JOURNAL_SCHEMA_VERSION`` (same format, renumbered at epoch).
+    """
+    if expected is None:
+        return True
+    if actual == expected:
+        return True
+    return (
+        expected == JOURNAL_SCHEMA_VERSION
+        and actual == LEGACY_JOURNAL_SCHEMA_VERSION
+    )
+
+
+# Version-dispatched readers: current + pre-epoch envelope (format-identical).
 _JOURNAL_DECODERS: dict[int, Any] = {
     JOURNAL_SCHEMA_VERSION: decode_journal_schema_1,
+    LEGACY_JOURNAL_SCHEMA_VERSION: decode_journal_schema_3,
 }
-
-# Backward-compatible alias for imports/tests that still name schema-3.
-decode_journal_schema_3 = decode_journal_schema_1
-
 
 def _validate_journal_payload(
     data: dict[str, Any],
@@ -473,7 +515,7 @@ def _validate_journal_payload(
     """Compatibility wrapper: version checks then schema-dispatched decode."""
     schema = data.get("journal_schema_version")
     policy = data.get("cleanup_policy_version", data.get("policy_version"))
-    if expected_schema_version is not None and schema != expected_schema_version:
+    if not journal_schema_matches_expected(schema, expected_schema_version):
         raise ValueError("incompatible journal schema version")
     if expected_policy_version is not None and policy != expected_policy_version:
         raise ValueError("incompatible cleanup policy version")
@@ -550,7 +592,7 @@ def load_operation_typed(
         )
     schema = data.get("journal_schema_version")
     policy = data.get("cleanup_policy_version", data.get("policy_version"))
-    if expected_schema_version is not None and schema != expected_schema_version:
+    if not journal_schema_matches_expected(schema, expected_schema_version):
         return JournalLoadResult(
             JournalLoadKind.INCOMPATIBLE,
             message="incompatible journal schema version",

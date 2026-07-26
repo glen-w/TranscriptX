@@ -111,16 +111,19 @@ def get_cached_count_managed_transcripts() -> int:
 
 
 def _list_transcript_summaries_for_paths(paths: list[str]) -> list:
-    """Read-only listing via SegmentIndexService (no ClipService / executors)."""
+    """Aggregate per-path summaries (path-addressable cache entries)."""
     from pathlib import Path
 
-    from transcriptx.services.speaker_studio.segment_index import SegmentIndexService
-
-    index = SegmentIndexService()
     summaries = []
     seen: set[str] = set()
     for path in paths:
-        summary = index.summary_for_path(path)
+        try:
+            path_str = str(Path(path).resolve())
+        except OSError:
+            path_str = str(path)
+        summary = cached_transcript_summary_for_path(
+            path_str, transcript_summary_signature(path_str)
+        )
         if summary is None:
             continue
         key = str(Path(summary.path).resolve())
@@ -131,10 +134,128 @@ def _list_transcript_summaries_for_paths(paths: list[str]) -> list:
     return sorted(summaries, key=lambda s: s.path)
 
 
+def transcript_summary_signature(path) -> tuple[int, int, int]:
+    """(mtime_ns, size, sidecar mtime_ns) for per-path summary cache keys."""
+    import os
+    from pathlib import Path
+
+    path_obj = Path(path)
+    try:
+        file_stat = os.stat(path_obj)
+        mtime_ns, size = int(file_stat.st_mtime_ns), int(file_stat.st_size)
+    except OSError:
+        mtime_ns, size = 0, 0
+    sidecar_mtime_ns = 0
+    try:
+        from transcriptx.io.speaker_map_resolver import speaker_map_sidecar_candidates
+
+        for candidate in speaker_map_sidecar_candidates(path_obj):
+            try:
+                sidecar_mtime_ns = int(candidate.stat().st_mtime_ns)
+                break
+            except OSError:
+                continue
+    except Exception:
+        pass
+    return mtime_ns, size, sidecar_mtime_ns
+
+
+def transcript_segments_signature(path) -> tuple[int, int]:
+    """(mtime_ns, size) for segments-only cache — excludes sidecar."""
+    import os
+    from pathlib import Path
+
+    try:
+        file_stat = os.stat(Path(path))
+        return int(file_stat.st_mtime_ns), int(file_stat.st_size)
+    except OSError as exc:
+        raise FileNotFoundError(f"Transcript unavailable: {path}") from exc
+
+
 @st.cache_data(ttl=120, show_spinner=False)
+def cached_transcript_summary_for_path(
+    path_str: str, signature: tuple[int, int, int]
+):
+    """Per-transcript picker summary; invalidate with ``.clear(path, sig)``."""
+    mark_cache_miss("cached_transcript_summary_for_path")
+    from pathlib import Path
+
+    from transcriptx.services.speaker_studio.segment_index import SegmentIndexService
+
+    return SegmentIndexService().summary_for_path(Path(path_str))
+
+
+@st.cache_data(ttl=300, max_entries=64, show_spinner=False)
+def cached_speaker_id_segments(
+    path_str: str, signature: tuple[int, int]
+) -> list:
+    """Parse transcript segments without applying the speaker-map sidecar.
+
+    Sidecar naming must stay out of this cache so Save/Ignore never force a
+    full transcript reparse — the workspace reads mapping fresh each run.
+    """
+    mark_cache_miss("cached_speaker_id_segments")
+    import re
+
+    from transcriptx.io.speaker_map_resolver import normalize_diarized_id
+    from transcriptx.io.transcript_loader import load_segments
+    from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+
+    diarized_re = re.compile(r"^SPEAKER_\d+$", re.IGNORECASE)
+    raw = load_segments(path_str)
+    result: list = []
+    for i, seg in enumerate(raw):
+        start = seg.get("start") or seg.get("start_time") or 0.0
+        end = seg.get("end") or seg.get("end_time") or 0.0
+        if "start_ms" in seg and "end_ms" in seg:
+            start = seg["start_ms"] / 1000.0
+            end = seg["end_ms"] / 1000.0
+        text = (seg.get("text") or "").strip()
+        sp = str(seg.get("speaker") or "").strip()
+        diarized_id = None
+        if sp and diarized_re.match(sp):
+            diarized_id = normalize_diarized_id(sp)
+        result.append(
+            SegmentInfo(
+                index=i,
+                start=float(start),
+                end=float(end),
+                text=text,
+                speaker=sp,
+                speaker_diarized_id=diarized_id,
+            )
+        )
+    return result
+
+
+def invalidate_transcript_summary_for_path(
+    path, *, signature: tuple[int, int, int] | None = None
+) -> None:
+    """Drop the cached picker summary for one transcript (specific args when known)."""
+    from pathlib import Path
+
+    candidates = [str(path)]
+    try:
+        resolved = str(Path(path).resolve())
+        if resolved not in candidates:
+            candidates.append(resolved)
+    except OSError:
+        pass
+    sig = signature if signature is not None else transcript_summary_signature(path)
+    cleared = False
+    for path_str in candidates:
+        try:
+            cached_transcript_summary_for_path.clear(path_str, sig)  # type: ignore[attr-defined]
+            cleared = True
+        except TypeError:
+            cached_transcript_summary_for_path.clear()  # type: ignore[attr-defined]
+            return
+    if not cleared:
+        cached_transcript_summary_for_path.clear()  # type: ignore[attr-defined]
+
+
 def cached_get_transcript_summaries_for_paths(paths_key: tuple[str, ...]) -> list:
-    """Return transcript summaries (segment_count, speaker_map_status) for given paths."""
-    mark_cache_miss("cached_get_transcript_summaries_for_paths")
+    """Aggregate per-path summaries (no single all-paths cache entry)."""
     if not paths_key:
         return []
     return _list_transcript_summaries_for_paths(list(paths_key))
@@ -196,6 +317,69 @@ def cached_resolve_transcript_path(session_name: str) -> str | None:
     )
 
 
+# Non-transcript JSON names under run dirs (skip when scanning outputs).
+_RUN_DIR_JSON_SKIP = frozenset(
+    {"manifest.json", "run_results.json", "processing_state.json"}
+)
+
+
+def transcript_paths_for_speaker_views_impl() -> list:
+    """Discover managed + session + run-dir transcript paths (Docker-friendly)."""
+    from pathlib import Path
+
+    from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
+    from transcriptx.core.utils.paths import OUTPUTS_DIR
+    from transcriptx.web.services.file_service import FileService
+
+    paths: list = []
+    seen: set[str] = set()
+
+    def add(p: Path) -> None:
+        key = str(p.resolve())
+        if key not in seen and p.exists():
+            seen.add(key)
+            paths.append(p)
+
+    for p in discover_managed_transcript_paths(None):
+        add(Path(p))
+
+    for session in cached_list_available_sessions():
+        name = session.get("name", "")
+        if "/" not in name:
+            continue
+        resolved = FileService.resolve_transcript_path(name)
+        if resolved:
+            add(Path(resolved))
+
+    # Docker: manifest transcript_path is often host-only; scan run dirs for
+    # transcript-like JSON so Speaker ID / Speakers still list sessions.
+    outputs_dir = Path(OUTPUTS_DIR)
+    if outputs_dir.is_dir():
+        for slug_dir in outputs_dir.iterdir():
+            if not slug_dir.is_dir() or slug_dir.name.startswith("."):
+                continue
+            for run_dir in slug_dir.iterdir():
+                if not run_dir.is_dir() or run_dir.name.startswith("."):
+                    continue
+                for j in run_dir.glob("*.json"):
+                    if (
+                        j.name in _RUN_DIR_JSON_SKIP
+                        or j.parent.name == ".transcriptx"
+                        or j.name == "report.json"
+                    ):
+                        continue
+                    add(j)
+
+    return sorted(paths, key=lambda p: str(p.resolve()))
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def cached_transcript_paths_for_speaker_views() -> list:
+    """Cached discovery for Speaker ID / Speakers transcript pickers."""
+    mark_cache_miss("cached_transcript_paths_for_speaker_views")
+    return transcript_paths_for_speaker_views_impl()
+
+
 def clear_transcript_listing_caches() -> None:
     """
     Clear only transcript-listing related caches.
@@ -205,10 +389,12 @@ def clear_transcript_listing_caches() -> None:
     cached_list_available_sessions.clear()  # type: ignore[attr-defined]
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
     cached_count_managed_transcripts.clear()  # type: ignore[attr-defined]
-    cached_get_transcript_summaries_for_paths.clear()  # type: ignore[attr-defined]
+    cached_transcript_summary_for_path.clear()  # type: ignore[attr-defined]
+    cached_speaker_id_segments.clear()  # type: ignore[attr-defined]
     cached_list_all_transcript_summaries.clear()  # type: ignore[attr-defined]
     _cached_resolve_transcript_path.clear()  # type: ignore[attr-defined]
     _cached_transcript_metadata.clear()  # type: ignore[attr-defined]
+    cached_transcript_paths_for_speaker_views.clear()  # type: ignore[attr-defined]
 
 
 def clear_rename_related_caches() -> None:

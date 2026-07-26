@@ -11,6 +11,13 @@ from typing import Any, Mapping, Sequence
 
 CLEANUP_POLICY_VERSION = 7
 JOURNAL_SCHEMA_VERSION = 1
+# Pre-epoch envelope number for the same journal format (renumbered 3→1 at
+# schema epoch). Writers emit JOURNAL_SCHEMA_VERSION; readers still recover
+# leftover schema-3 journals without manual stamp edits.
+LEGACY_JOURNAL_SCHEMA_VERSION = 3
+READABLE_JOURNAL_SCHEMA_VERSIONS = frozenset(
+    {JOURNAL_SCHEMA_VERSION, LEGACY_JOURNAL_SCHEMA_VERSION}
+)
 CLEANUP_RESULT_SCHEMA_VERSION = 1
 STAGING_DIR_NAME = ".cleanup_staging"
 CONFIRM_DELETE_ALL = "DELETE ALL"

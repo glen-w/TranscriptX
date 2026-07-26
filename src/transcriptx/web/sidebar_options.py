@@ -107,6 +107,24 @@ def _slug_display_labels_from_index() -> dict[str, str]:
     return labels
 
 
+def _resolved_source_path_to_slug_from_index() -> dict[str, str]:
+    """Map resolved source_path -> registered slug (import-only transcripts included)."""
+    from transcriptx.core.utils.slug_manager import load_index
+
+    mapping: dict[str, str] = {}
+    for _tk, entry in load_index().get("transcripts", {}).items():
+        slug = entry.get("slug")
+        source_path = entry.get("source_path")
+        if not slug or not source_path:
+            continue
+        try:
+            resolved = str(Path(source_path).expanduser().resolve())
+        except (OSError, RuntimeError):
+            resolved = str(source_path)
+        mapping[resolved] = str(slug)
+    return mapping
+
+
 def _slug_index_mtime() -> float | None:
     """Slug index file mtime; used as a cache key so label caches stay fresh."""
     from transcriptx.core.utils.slug_manager import INDEX_FILE
@@ -136,6 +154,7 @@ def _cached_dropdown_options(
     """Assemble sorted dropdown options + slug labels (cached across reruns)."""
     mark_cache_miss("transcript_dropdown_options")
     slug_labels = _slug_display_labels_from_index()
+    path_to_slug = _resolved_source_path_to_slug_from_index()
     paths, inode_keys = _cached_session_path_index(session_names)
 
     options: list[str] = sorted({name.split("/", 1)[0] for name in session_names})
@@ -145,8 +164,12 @@ def _cached_dropdown_options(
         except (OSError, RuntimeError):
             continue
         if not _path_covered(tp, paths, inode_keys):
-            options.append(str(tp))
+            # Prefer registered slug so action-menu navigation (subject_id=slug)
+            # survives sidebar hydration for imports that have no runs yet.
+            options.append(path_to_slug.get(str(tp), str(tp)))
 
+    # De-dupe while preserving sort below.
+    options = list(dict.fromkeys(options))
     formatter = _make_option_formatter(slug_labels)
     options.sort(key=lambda value: (formatter(value).lower(), str(value)))
     return options, slug_labels

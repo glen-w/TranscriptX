@@ -29,7 +29,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 3. Set input path, output folder, model, language, diarize, and (for the bulk helper) dry-run / force / fuzzy-match flags.
 4. **Copy** the generated shell snippet. Paths with spaces are shell-quoted. Do **not** expect Streamlit to run it.
 5. Run the command on the appropriate host (macOS for whispermlx; Linux/GPU for WhisperX Docker).
-6. Open **Import Transcript** and upload the resulting JSON (optionally attach the source recording).
+6. Open **Import Transcript** and upload the resulting JSON (optionally attach the source recording; same-stem audio in the mounted recordings folder will be linked).
 
 ### Non-technical corpus path (short)
 
@@ -38,7 +38,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 | 1 | Put audio files in one folder on your computer |
 | 2 | Install `whispermlx-missing` once (see below) if needed → Transcribe Audio → pick **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
 | 3 | Re-run without dry-run; already-transcribed stems are skipped (resume-friendly) |
-| 4 | Import Transcript → upload JSON → optionally attach recordings |
+| 4 | Import Transcript → upload JSON → optionally attach recordings (same-stem audio in the mounted recordings folder is linked) |
 | 5 | Run a Balanced or Quick analysis preset |
 
 **Spaces in folder names:** use the generator (quoting is automatic) or wrap paths in quotes yourself.

@@ -39,6 +39,7 @@ from transcriptx.web.state import (
     RUN_SELECTOR_KEY,
     SUBJECT_ID_SELECTOR_KEY,
     SUBJECT_TYPE_SELECTOR_KEY,
+    WORKFLOW_NAV_TRANSCRIPT_PATH,
 )
 
 
@@ -157,6 +158,7 @@ def test_navigate_with_identity_transcript_no_run_presets_subject_and_pickers(
     assert ss[SUBJECT_ID_SELECTOR_KEY] == transcript_env.slug
     assert RUN_SELECTOR_KEY not in ss
     assert ss[SUBJECT_TYPE_SELECTOR_KEY] == "Transcript"
+    assert ss[WORKFLOW_NAV_TRANSCRIPT_PATH] == str(transcript_env.transcript)
 
 
 @pytest.mark.unit

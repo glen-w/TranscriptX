@@ -18,6 +18,8 @@ NAV_REQUEST_KEY = "nav_request"
 # One-shot: Home (etc.) sets this before navigating to Library rename workflow.
 LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
+# One-shot: action-menu identity navigation → workflow picker pages (Speaker ID, etc.).
+WORKFLOW_NAV_TRANSCRIPT_PATH = "_workflow_nav_transcript_path"
 
 # Sidebar workspace widget keys (must stay in sync with canonical subject/run keys)
 SUBJECT_TYPE_SELECTOR_KEY = "subject_type_selector"

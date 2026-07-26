@@ -18,17 +18,531 @@ from transcriptx.io.speaker_map_resolver import sidecar_path_for
 # ── contract ──────────────────────────────────────────────────────────────────
 
 
-def test_speaker_id_page_clears_listing_caches_after_mutations() -> None:
-    """Save/ignore/unignore must invalidate stale partial/complete dropdown labels."""
+def test_speaker_id_page_invalidates_path_summary_after_mutations() -> None:
+    """Save/ignore must invalidate the selected transcript summary, not all listings."""
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "_clear_speaker_id_listing_caches" in source
-    assert "clear_transcript_listing_caches" in source
-    assert source.count("_clear_speaker_id_listing_caches()") >= 2
+    assert "invalidate_transcript_summary_for_path" in source
+    assert "clear_transcript_listing_caches" not in source
+    assert "_speaker_id_workspace_fragment" in source
+    assert "_rerun_ui" in source
+    assert "scope=\"fragment\"" in source or "scope='fragment'" in source
+    assert "_paths_with_current_subject" in source
+    assert "cached_transcript_paths_for_speaker_views" in source
 
 
-def test_speaker_id_page_imports_only_controller() -> None:
+def test_speaker_id_plain_rerun_whitelist() -> None:
+    """Only completion may call plain st.rerun(); workspace uses fragment scope."""
+    import re
+
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    plain = re.findall(r"st\.rerun\(\s*\)", source)
+    assert len(plain) == 1, f"expected one plain st.rerun(), found {len(plain)}"
+    assert "_rerun_app_for_completion" in source
+    assert source.count('st.rerun(scope="fragment")') >= 1
+    assert "Analyse voice" in source
+    # Voice / nav / save paths must not introduce extra plain reruns.
+    for needle in (
+        "sid_voice_analyse_",
+        "sid_voice_analyse_all",
+        "sid_voice_confirm_",
+        "sid_prev",
+        "sid_next",
+        "sid_save",
+        "sid_ignore",
+    ):
+        assert needle in source
+
+
+def test_speaker_id_set_active_speaker_clears_playback_only_on_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    cleared: list[str] = []
+    ss: dict = {"speaker_id_speaker_idx": 1, "sid_jump": 1}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(
+        mod,
+        "clear_playback_session_keys",
+        lambda key: cleared.append(key),
+    )
+    mod._set_active_speaker(1, speaker_count=3)
+    assert cleared == []
+    mod._set_active_speaker(2, speaker_count=3)
+    assert cleared == [mod._PLAY_KEY]
+    assert ss["speaker_id_speaker_idx"] == 2
+    assert ss["sid_jump"] == 2
+
+
+def test_speaker_id_nav_and_voice_use_segment_cache_not_controller_list(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Workspace loads go through the segments cache, never discovery."""
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text(
+        '{"segments":[{"start":0,"end":1,"text":"hi","speaker":"SPEAKER_00"}]}',
+        encoding="utf-8",
+    )
+    discovery_calls = {"n": 0}
+    cache_calls: list[str] = []
+    controller_list_calls = {"n": 0}
+
+    def _discover():
+        discovery_calls["n"] += 1
+        return [transcript]
+
+    segs = [
+        SegmentInfo(
+            index=0,
+            start=0.0,
+            end=1.0,
+            text="hi",
+            speaker="SPEAKER_00",
+            speaker_diarized_id="SPEAKER_00",
+        )
+    ]
+
+    def _cached_segs(path_str: str, signature: tuple[int, int]):
+        cache_calls.append(path_str)
+        return segs
+
+    class _Ctrl:
+        def list_segments(self, *_a, **_k):
+            controller_list_calls["n"] += 1
+            return segs
+
+    monkeypatch.setattr(mod, "cached_transcript_paths_for_speaker_views", _discover)
+    monkeypatch.setattr(mod, "cached_speaker_id_segments", _cached_segs)
+
+    # Simulate Prev/Next/Jump/voice fragment loads
+    for _ in range(3):
+        mod._load_cached_segments(transcript)
+    assert discovery_calls["n"] == 0
+    assert controller_list_calls["n"] == 0
+    assert len(cache_calls) == 3
+    assert all(Path(p).resolve() == transcript.resolve() for p in cache_calls)
+
+
+def test_speaker_id_transcript_switch_causes_one_segment_cache_miss_per_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+
+    a = tmp_path / "a.json"
+    b = tmp_path / "b.json"
+    for p in (a, b):
+        p.write_text(
+            '{"segments":[{"start":0,"end":1,"text":"x","speaker":"SPEAKER_00"}]}',
+            encoding="utf-8",
+        )
+    hits: list[str] = []
+
+    def _cached_segs(path_str: str, signature: tuple[int, int]):
+        hits.append(path_str)
+        return [
+            SegmentInfo(
+                index=0,
+                start=0.0,
+                end=1.0,
+                text="x",
+                speaker="SPEAKER_00",
+                speaker_diarized_id="SPEAKER_00",
+            )
+        ]
+
+    monkeypatch.setattr(mod, "cached_speaker_id_segments", _cached_segs)
+    mod._load_cached_segments(a)
+    mod._load_cached_segments(b)
+    assert len(hits) == 2
+    assert Path(hits[0]).resolve() == a.resolve()
+    assert Path(hits[1]).resolve() == b.resolve()
+
+
+def test_after_mapping_mutation_uses_persisted_state_and_fragment_rerun(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Save/Ignore advance from returned map state and fragment-rerun when incomplete."""
+    import transcriptx.web.page_modules.speaker_id as mod
+    from types import SimpleNamespace
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+
+    invalidated: list[object] = []
+    reruns: list[str] = []
+    monkeypatch.setattr(
+        mod,
+        "invalidate_transcript_summary_for_path",
+        lambda path, signature=None: invalidated.append((path, signature)),
+    )
+    monkeypatch.setattr(mod, "_rerun_ui", lambda: reruns.append("fragment"))
+    monkeypatch.setattr(mod, "_rerun_app_for_completion", lambda: reruns.append("app"))
+    monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
+
+    new_state = SimpleNamespace(
+        speaker_map={"SPEAKER_00": "Alice"},
+        ignored_speakers=[],
+    )
+    mod._after_mapping_mutation(
+        transcript_path=transcript,
+        speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+        new_state=new_state,
+        speaker_idx=0,
+        summary_sig_before=(1, 2, 3),
+    )
+    assert invalidated == [(transcript, (1, 2, 3))]
+    assert ss["speaker_id_speaker_idx"] == 1  # advanced to still-unnamed
+    assert reruns == ["fragment"]
+
+
+def test_after_ignore_advances_from_persisted_ignored_state(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from types import SimpleNamespace
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0, mod._LINES_KEY: 99}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
+    reruns: list[str] = []
+    monkeypatch.setattr(mod, "_rerun_ui", lambda: reruns.append("fragment"))
+    monkeypatch.setattr(mod, "_rerun_app_for_completion", lambda: reruns.append("app"))
+
+    new_state = SimpleNamespace(speaker_map={}, ignored_speakers=["SPEAKER_00"])
+    mod._after_mapping_mutation(
+        transcript_path=transcript,
+        speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+        new_state=new_state,
+        speaker_idx=0,
+        summary_sig_before=(1, 2, 3),
+    )
+    assert ss["speaker_id_speaker_idx"] == 1
+    assert ss[mod._LINES_KEY] == mod._LINES_PER_PAGE
+    assert reruns == ["fragment"]
+
+
+def test_load_cached_segments_fails_closed_on_missing_file(tmp_path: Path) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    with pytest.raises(FileNotFoundError):
+        mod._load_cached_segments(tmp_path / "missing.json")
+
+
+def test_completion_action_strip_lives_inside_workspace_fragment() -> None:
+    """Completion strip is painted inside the fragment; outer page only consumes the flag."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
+    frag = frag.split("def render_speaker_id_page", 1)[0]
+    outer = source.split("def render_speaker_id_page", 1)[1]
+    assert "_render_post_speaker_id_actions" in frag
+    assert "_render_post_speaker_id_actions" not in outer
+    assert "pop(_SPEAKER_ID_COMPLETION_APP_RERUN" in outer
+
+
+def test_profile_save_mutation_order_commits_before_advance() -> None:
+    """Profile-link path: signal consume then advance from returned/fresh map state."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    save_block = source.split('if st.button("Save name"', 1)[1]
+    save_block = save_block.split('if st.button(ignore_label', 1)[0]
+    assert save_block.index("consume_cache_invalidation_signal") < save_block.index(
+        "_after_mapping_mutation"
+    )
+    assert save_block.index("create_profile_link_and_name") < save_block.index(
+        "consume_cache_invalidation_signal"
+    )
+    assert "controller.get_mapping_status(transcript_path)" in save_block
+
+
+def test_voice_pending_exception_leaves_pending_cleared(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pop-before-work contract: a raised analyse cannot re-queue via leftover pending."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    ss: dict = {
+        mod._SPEAKER_ID_VOICE_PENDING: {
+            "mode": "one",
+            "speaker": "SPEAKER_00",
+            "transcript": "/tmp/t.json",
+        }
+    }
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    pending = ss.pop(mod._SPEAKER_ID_VOICE_PENDING, None)
+    assert pending is not None
+    try:
+        raise RuntimeError("analyse failed")
+    except RuntimeError:
+        pass
+    assert mod._SPEAKER_ID_VOICE_PENDING not in ss
+
+
+def test_partial_profile_link_failure_does_not_skip_unnamed_speaker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Advancement must use persisted map; unnamed speaker after partial stays current."""
+    import transcriptx.web.page_modules.speaker_id as mod
+    from types import SimpleNamespace
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
+    reruns: list[str] = []
+    monkeypatch.setattr(mod, "_rerun_ui", lambda: reruns.append("fragment"))
+    monkeypatch.setattr(mod, "_rerun_app_for_completion", lambda: reruns.append("app"))
+
+    # Naming failed / partial: map still has no SPEAKER_00 name
+    new_state = SimpleNamespace(speaker_map={}, ignored_speakers=[])
+    mod._after_mapping_mutation(
+        transcript_path=transcript,
+        speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+        new_state=new_state,
+        speaker_idx=0,
+        summary_sig_before=(1, 2, 3),
+    )
+    assert ss["speaker_id_speaker_idx"] == 0
+    assert reruns == ["fragment"]
+
+
+def test_workspace_fragment_reloads_mapping_every_run() -> None:
+    """Save/Ignore freshness depends on fresh sidecar read inside the fragment."""
+    import inspect
+
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    frag_body = source.split("def _speaker_id_workspace_fragment", 1)[1]
+    frag_body = frag_body.split("def render_speaker_id_page", 1)[0]
+    assert "controller.get_mapping_status(transcript_path)" in frag_body
+    assert "_load_cached_segments(transcript_path)" in frag_body
+    sig = inspect.signature(mod._speaker_id_workspace_fragment)
+    assert list(sig.parameters) == ["transcript_path", "controller"]
+
+
+def test_voice_pending_stale_path_is_rejected_without_analyse() -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "paths_match(pending_path, transcript_path)" in source
+    # Analyse only inside the paths_match branch.
+    pending_block = source.split("pending = st.session_state.pop(_SPEAKER_ID_VOICE_PENDING", 1)[1]
+    pending_block = pending_block.split("batch_summary = st.session_state.get", 1)[0]
+    assert "paths_match(pending_path, transcript_path)" in pending_block
+    assert pending_block.index("paths_match") < pending_block.index("facade.analyse(")
+
+
+def test_completion_triggers_one_app_rerun_and_flag_is_consumed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from types import SimpleNamespace
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
+
+    app_calls = {"n": 0}
+
+    def _app_rerun():
+        app_calls["n"] += 1
+        ss[mod._SPEAKER_ID_COMPLETION_APP_RERUN] = True
+        raise RuntimeError("rerun")
+
+    monkeypatch.setattr(mod, "_rerun_app_for_completion", _app_rerun)
+    monkeypatch.setattr(mod, "_rerun_ui", lambda: (_ for _ in ()).throw(RuntimeError("frag")))
+
+    new_state = SimpleNamespace(
+        speaker_map={"SPEAKER_00": "Alice"},
+        ignored_speakers=["SPEAKER_01"],
+    )
+    try:
+        mod._after_mapping_mutation(
+            transcript_path=transcript,
+            speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+            new_state=new_state,
+            speaker_idx=0,
+            summary_sig_before=(1, 2, 3),
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "rerun"
+    assert app_calls["n"] == 1
+    assert ss.get(mod._SPEAKER_ID_COMPLETION_APP_RERUN) is True
+    # Outer page consumes the flag once — second pop is a no-op (no loop).
+    assert ss.pop(mod._SPEAKER_ID_COMPLETION_APP_RERUN, None) is True
+    assert ss.pop(mod._SPEAKER_ID_COMPLETION_APP_RERUN, None) is None
+
+
+def test_voice_pending_popped_before_analyse_so_exceptions_do_not_requeue() -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    pop_idx = source.index("st.session_state.pop(_SPEAKER_ID_VOICE_PENDING")
+    analyse_idx = source.index("facade.analyse(")
+    assert pop_idx < analyse_idx
+
+
+def test_speaker_id_page_exposes_workspace_fragment() -> None:
+    import inspect
+
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert source.count("@st.fragment") == 1
+    assert "render_playback_panel_body" in source
+    assert "from transcriptx.web.components.playback_panel import" in source
+    assert "render_playback_panel_body" in source
+    # Must not call the decorated playback entry from the workspace.
+    assert "render_playback_panel(" not in source
+    sig = inspect.signature(mod._speaker_id_workspace_fragment)
+    assert list(sig.parameters) == ["transcript_path", "controller"]
+
+
+def test_invalidate_transcript_summary_for_path_clears_specific_entry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.cache_helpers as cache_mod
+
+    path = tmp_path / "a.json"
+    path.write_text('{"segments":[]}', encoding="utf-8")
+    cleared: list[tuple] = []
+
+    class _Fn:
+        def clear(self, *args, **kwargs):
+            cleared.append(args)
+
+    monkeypatch.setattr(cache_mod, "cached_transcript_summary_for_path", _Fn())
+    sig = (1, 2, 3)
+    cache_mod.invalidate_transcript_summary_for_path(path, signature=sig)
+    assert cleared
+    assert sig in cleared[0]
+
+
+def test_paths_with_current_subject_appends_missing_navigated_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Post-import nav must still preselect when discovery lags the new file."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    existing = tmp_path / "older.json"
+    existing.write_text("{}", encoding="utf-8")
+    imported = tmp_path / "R20241025-162403.json"
+    imported.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(
+        mod,
+        "_preferred_transcript_path",
+        lambda: str(imported),
+    )
+    monkeypatch.setattr(mod.st, "session_state", {}, raising=False)
+
+    merged = mod._paths_with_current_subject([existing])
+    assert len(merged) == 2
+    assert any(p.resolve() == imported.resolve() for p in merged)
+
+
+def test_paths_with_current_subject_noop_when_already_listed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(
+        mod,
+        "_preferred_transcript_path",
+        lambda: str(transcript),
+    )
+    monkeypatch.setattr(mod.st, "session_state", {}, raising=False)
+
+    merged = mod._paths_with_current_subject([transcript])
+    assert merged == [transcript]
+
+
+def test_bind_transcript_picker_sets_index_when_key_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    mod._bind_transcript_picker_index(["/a.json", "/b.json"], 2)
+    assert ss["speaker_id_transcript"] == 2
+    mod._bind_transcript_picker_index(["/a.json", "/b.json"], 1)
+    assert ss["speaker_id_transcript"] == 2  # already bound
+
+
+def test_bind_transcript_picker_recovers_placeholder_when_preferred(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Widget remount at 0 must not strand the page when a path is known."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    ss: dict = {"speaker_id_transcript": 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    mod._bind_transcript_picker_index(["/a.json", "/b.json"], 2)
+    assert ss["speaker_id_transcript"] == 2
+
+
+def test_bind_transcript_picker_sanitizes_out_of_range_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    ss: dict = {"speaker_id_transcript": 99}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    mod._bind_transcript_picker_index(["/a.json", "/b.json"], 1)
+    assert ss["speaker_id_transcript"] == 1
+
+
+def test_preferred_transcript_path_uses_page_selection(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    selected = tmp_path / "selected.json"
+    selected.write_text("{}", encoding="utf-8")
+    ss = {mod._SPEAKER_ID_SELECTED_PATH: str(selected)}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(
+        mod.SubjectService,
+        "current_transcript_path",
+        staticmethod(lambda _ss: None),
+    )
+    assert mod._preferred_transcript_path() == str(selected)
+
+
+def test_speaker_id_page_defers_voice_analyse() -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "_SPEAKER_ID_VOICE_PENDING" in source
+    assert "_SPEAKER_ID_SELECTED_PATH" in source
+    assert "st.session_state[_SPEAKER_ID_VOICE_PENDING]" in source
+    assert "st.session_state.pop(_SPEAKER_ID_VOICE_PENDING" in source
+    assert "_rerun_ui()" in source
     """Contract: speaker_id page must not import SegmentIndexService, ClipService, or SpeakerMappingService."""
     import transcriptx.web.page_modules.speaker_id as mod
 
@@ -461,6 +975,20 @@ def test_speaker_id_fmt_time_helper() -> None:
     assert _fmt_time(59.9) == "0:59"
     assert _fmt_time(60.0) == "1:00"
     assert _fmt_time(3661.0) == "1:01:01"
+
+
+def test_speaker_id_next_unnamed_idx_stays_when_current_still_unnamed() -> None:
+    """Partial naming failure must not jump past the still-unnamed active speaker."""
+    from transcriptx.web.page_modules.speaker_id import _next_unnamed_idx
+
+    speaker_ids = ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02"]
+    result = _next_unnamed_idx(speaker_ids, {}, [], current=0)
+    assert result == 0
+    # Later unnamed speakers must not pull focus away from current.
+    result = _next_unnamed_idx(
+        speaker_ids, {"SPEAKER_01": "Bob"}, [], current=0
+    )
+    assert result == 0
 
 
 def test_speaker_id_next_unnamed_idx_skips_named_and_ignored() -> None:

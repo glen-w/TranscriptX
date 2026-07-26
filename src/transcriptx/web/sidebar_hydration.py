@@ -25,12 +25,45 @@ class HydratedSidebarState:
 def resolve_selected_transcript(
     session_state: dict[str, Any], options: list[str]
 ) -> str | None:
-    """Return validated transcript subject_id or None for placeholder selection."""
+    """Return validated transcript subject_id or None for placeholder selection.
+
+    Action-menu navigation often stores a registered slug while the sidebar
+    inventory may still list the managed path (or vice versa) for imports with
+    no runs yet. Bridge those forms so hydration does not clear the subject.
+    """
     if not options:
         return None
     current = session_state.get("subject_id")
-    if current and current in options:
+    if not current:
+        return None
+    if current in options:
         return current
+
+    from transcriptx.web.services.transcript_context_resolver import paths_match
+
+    source_for_current: str | None = None
+    try:
+        from transcriptx.core.utils.slug_manager import load_index
+
+        for entry in load_index().get("transcripts", {}).values():
+            if entry.get("slug") == current:
+                source_for_current = entry.get("source_path") or None
+                break
+            source = entry.get("source_path")
+            if source and paths_match(source, current):
+                source_for_current = source
+                slug = entry.get("slug")
+                if slug and slug in options:
+                    return str(slug)
+                break
+    except Exception:
+        source_for_current = None
+
+    for opt in options:
+        if paths_match(opt, current):
+            return opt
+        if source_for_current and paths_match(opt, source_for_current):
+            return opt
     return None
 
 

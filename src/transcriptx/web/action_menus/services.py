@@ -16,7 +16,12 @@ from transcriptx.web.services.artifact_service import ArtifactService
 from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
-from transcriptx.web.state import PAGE_KEY, SUBJECT_ID_KEY, apply_subject_context
+from transcriptx.web.state import (
+    PAGE_KEY,
+    SUBJECT_ID_KEY,
+    WORKFLOW_NAV_TRANSCRIPT_PATH,
+    apply_subject_context,
+)
 
 # Page destinations from navigation registry keys (single source of truth).
 PAGE_OVERVIEW = "Overview"
@@ -94,6 +99,9 @@ def apply_identity_to_session(
             subject_id=hydrated_subject_id,
             run_id=None,
         )
+    if identity.transcript_path is not None:
+        # Survives sidebar slug/path bridging so picker pages can force-select.
+        session_state[WORKFLOW_NAV_TRANSCRIPT_PATH] = str(identity.transcript_path)
     _sync_destination_pickers(session_state, identity)
 
 

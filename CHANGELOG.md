@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.4] - 2026-07-26
+
+### Changed
+- Speaker Identification: fragment workspace, action-menu transcript handoff, per-path listing/segment caches, and clearer voice-suggestion rendering.
+- Transcript picker caches: path-addressable summary/segment signatures instead of one all-paths cache entry.
+- Roadmap: slot **0.9.9** Overview/results presentation polish after maintainer acceptance; expand **1.2** toward an inline audio±transcript merge decision (helpers remain non-core until then).
+- Maintainer acceptance kit progress recorded; Transcribe → Import copy clarifies same-stem recording link in the mounted folder.
+
+### Fixed
+- Run-cleanup journal readers recover leftover schema-3 envelopes after epoch renumber (writers remain schema 1).
+- Sidebar / Speakers picker path resolution for Docker-friendly discovery and identity navigation.
+
 ## [0.9.8.3] - 2026-07-26
 
 ### Removed

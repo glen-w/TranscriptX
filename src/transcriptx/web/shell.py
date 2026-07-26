@@ -664,18 +664,23 @@ def inject_global_styles() -> None:
         width: 100% !important;
         text-align: left !important;
     }
+    /* Match Streamlit expander chrome: always-visible border (not hover-only). */
     [class*="st-key-charts_module_toggle_"] [data-testid="stButton"] > button,
     [class*="st-key-charts_module_toggle_"] [data-testid="stBaseButton-secondary"],
     [class*="st-key-charts_module_toggle_"] button {
-        background: transparent;
-        border: 1px solid transparent;
-        box-shadow: none;
-        color: inherit;
+        background: transparent !important;
+        border: 1px solid rgba(120, 130, 145, 0.28) !important;
+        border-radius: 0.5rem !important;
+        box-shadow: none !important;
+        color: inherit !important;
         font-weight: 500;
+        min-height: 2.5rem;
+        padding: 0.5rem 0.75rem !important;
         width: 100% !important;
         display: inline-flex !important;
         justify-content: flex-start !important;
         text-align: left !important;
+        transition: background 0.12s ease, border-color 0.12s ease;
     }
     /* Streamlit BaseButton nests a full-width flex row with justify-content:center. */
     [class*="st-key-charts_module_toggle_"] button div,
@@ -690,8 +695,8 @@ def inject_global_styles() -> None:
     [class*="st-key-charts_module_toggle_"] [data-testid="stButton"] > button:hover,
     [class*="st-key-charts_module_toggle_"] [data-testid="stBaseButton-secondary"]:hover,
     [class*="st-key-charts_module_toggle_"] button:hover {
-        background: rgba(120, 130, 145, 0.08);
-        border-color: rgba(120, 130, 145, 0.18);
+        background: rgba(120, 130, 145, 0.08) !important;
+        border-color: rgba(120, 130, 145, 0.42) !important;
     }
     /* Chart family / slice expanders — keep summary labels left-aligned */
     .main [data-testid="stExpander"] details summary,

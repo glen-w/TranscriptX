@@ -361,6 +361,8 @@ def test_no_nested_fragment_in_playback_helpers() -> None:
         line for line in source.splitlines() if line.strip() == "@st.fragment"
     ]
     assert len(decorator_lines) == 1
+    assert inspect.isfunction(panel.render_playback_panel_body)
+    assert getattr(panel.render_playback_panel_body, "__wrapped__", None) is None
     assert inspect.isfunction(panel.render_active_clip)
     assert inspect.isfunction(panel.trigger_clip_warm)
     assert inspect.isfunction(panel.set_active_clip)

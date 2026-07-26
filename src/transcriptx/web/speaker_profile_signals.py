@@ -36,10 +36,10 @@ def consume_cache_invalidation_signal(signal: CacheInvalidationSignal | None) ->
         or "speaker_voice" in scopes
     ):
         try:
-            from transcriptx.web.page_modules.speaker_id import (
-                _transcript_paths_for_speaker_views,
+            from transcriptx.web.cache_helpers import (
+                cached_transcript_paths_for_speaker_views,
             )
 
-            _transcript_paths_for_speaker_views.clear()  # type: ignore[attr-defined]
+            cached_transcript_paths_for_speaker_views.clear()  # type: ignore[attr-defined]
         except Exception:
             pass

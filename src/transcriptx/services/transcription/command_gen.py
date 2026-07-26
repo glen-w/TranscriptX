@@ -110,7 +110,8 @@ class GeneratedCommand:
     notes: tuple[str, ...]
     next_step: str = (
         "When WhisperX/whispermlx JSON is ready, open Import Transcript and upload "
-        "the output (optionally attach the source recording)."
+        "the output (optionally attach the source recording; same-stem audio in the "
+        "mounted recordings folder will be linked)."
     )
 
 

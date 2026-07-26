@@ -53,7 +53,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Generating shell/CLI commands for **external** transcription tools (whispermlx, whispermlx-missing, WhisperX Docker recipe) is a shipped **GUI capability** (**0.9.4**): copyable only; Streamlit does not execute transcription.
 - Supported product path remains: external transcript → managed import → analysis.
 - Corpus helpers such as `scripts/whispermlx-missing.py` are documented user-facing scripts when referenced from runtime docs; they are not a replacement for managed import.
-- Audio **preprocess** / **merge** helpers (`scripts/audio_preprocess.py`, `scripts/audio_merge.py`) are **non-core** host utilities (GUI pages removed). Documented in transcription docs; candidates for removal in **1.2** ([ROADMAP.md](ROADMAP.md)).
+- Audio **preprocess** / **merge** helpers (`scripts/audio_preprocess.py`, `scripts/audio_merge.py`) are **non-core** host utilities (GUI pages removed). Documented in transcription docs; **1.2** decides invest in inline audio±transcript merge vs remove helpers ([ROADMAP.md](ROADMAP.md)).
 
 ## 2. Not supported surfaces / patterns
 
