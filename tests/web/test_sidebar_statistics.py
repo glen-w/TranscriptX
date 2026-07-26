@@ -34,6 +34,6 @@ def test_view_pages_use_flat_nav_grouping() -> None:
 
 def test_sidebar_uses_registry_driven_view_sections() -> None:
     text = Path("src/transcriptx/web/sidebar.py").read_text(encoding="utf-8")
-    assert "visible_pages_in_section" in text
-    assert 'visible_pages_in_section("view"' in text
+    assert "pages_in_section" in text
+    assert 'pages_in_section("view")' in text
     assert "_VIEW_SUBSECTION_ORDER" not in text

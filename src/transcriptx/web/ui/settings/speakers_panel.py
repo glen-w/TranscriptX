@@ -72,6 +72,32 @@ def render_speakers_panel() -> None:
                 "Consent will be recorded only in privacy.voice_settings.json "
                 "once the lifecycle gate opens — there is no separate config flag."
             )
+        elif status.block_reason == "privacy_settings_invalid":
+            st.warning(
+                status.detail
+                or (
+                    "privacy.voice_settings.json is incompatible with the "
+                    "current schema epoch. Re-enable below to replace it."
+                )
+            )
+            st.info(VOICE_PRIVACY_USER_NOTICE)
+            enable_key = ensure_idempotency_key(
+                st.session_state, "voice_privacy_enable_replace"
+            )
+            if st.button(
+                "Replace settings and enable voice matching",
+                key="voice_privacy_enable_replace",
+                type="primary",
+            ):
+                try:
+                    VoicePrivacyService().enable(
+                        operation_idempotency_key=enable_key
+                    )
+                    st.session_state.pop("voice_privacy_enable_replace", None)
+                    st.success("Voice matching enabled with current privacy settings.")
+                    st.rerun()
+                except Exception as exc:
+                    st.error(str(exc))
         else:
             privacy = VoicePrivacyStore(root).read()
             st.info(VOICE_PRIVACY_USER_NOTICE)

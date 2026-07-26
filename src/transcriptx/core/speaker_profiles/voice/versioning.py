@@ -25,6 +25,7 @@ VOICE_SAMPLE_SCHEMA_ID = "transcriptx.voice_sample.v1"
 VOICE_EMBEDDING_SCHEMA_ID = "transcriptx.voice_embedding.v1"
 VOICE_DECISION_SCHEMA_ID = "transcriptx.voice_match_decision.v1"
 VOICE_SUGGESTION_SCHEMA_ID = "transcriptx.voice_match_suggestion.v1"
+VOICE_WIPE_RECEIPT_SCHEMA_ID = "transcriptx.voice_wipe_receipt.v1"
 PROFILE_VOICE_SUMMARY_SCHEMA_ID = "transcriptx.profile_voice_summary.v1"
 
 VOICE_SAMPLE_FILE_SUFFIX = ".voice_sample.json"

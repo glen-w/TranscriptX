@@ -9,9 +9,8 @@ from transcriptx.web.navigation import (
     PageSpec,
     context_readiness,
     evaluate_page_access,
+    pages_in_section,
 )
-from transcriptx.web.presentation.resolve import resolve_presentation_mode
-from transcriptx.web.presentation.visibility import visible_pages_in_section
 from transcriptx.web.services import SubjectService
 from transcriptx.web.sidebar_hydration import hydrate_sidebar_state
 from transcriptx.web.sidebar_state import (
@@ -239,7 +238,6 @@ def render_sidebar(
 ) -> None:
     """Sidebar: static grouped nav with always-visible workspace pickers."""
     session_state = st.session_state
-    mode = resolve_presentation_mode()
 
     from transcriptx.web.shell import brand_logo_path
 
@@ -288,16 +286,16 @@ def render_sidebar(
             disabled=not access.allowed,
         )
 
-    for spec in visible_pages_in_section("primary", mode):
+    for spec in pages_in_section("primary"):
         _render_nav_spec(spec)
 
     # tx_sidebar_workflow_nav (order asserted in tests/web/test_upload_transcript_page.py)
     _nav_section(_SECTION_TITLES["workflow"])
-    for spec in visible_pages_in_section("workflow", mode):
+    for spec in pages_in_section("workflow"):
         _render_nav_spec(spec)
 
     _nav_section(_SECTION_TITLES["view"])
-    view_specs = visible_pages_in_section("view", mode)
+    view_specs = pages_in_section("view")
     browse_specs = [s for s in view_specs if s.required_context == "none"]
     context_page_specs = [s for s in view_specs if s.required_context != "none"]
     for spec in browse_specs:
@@ -309,12 +307,12 @@ def render_sidebar(
         _render_nav_spec(spec, key_suffix="_subject")
 
     # tx_sidebar_tools_group (test anchor: workflow nav must appear above this)
-    tools = visible_pages_in_section("tools", mode)
+    tools = pages_in_section("tools")
     if tools:
         _nav_section(_SECTION_TITLES["tools"])
         for spec in tools:
             _render_nav_spec(spec)
 
     _nav_section(_SECTION_TITLES["settings"])
-    for spec in visible_pages_in_section("settings", mode):
+    for spec in pages_in_section("settings"):
         _render_nav_spec(spec)

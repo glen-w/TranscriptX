@@ -21,6 +21,9 @@ from transcriptx.core.speaker_profiles.store_io import (
 )
 from transcriptx.core.speaker_profiles.voice.caches import VoiceSuggestionCache
 from transcriptx.core.speaker_profiles.voice.excerpt_cache import VoiceExcerptStore
+from transcriptx.core.speaker_profiles.voice.versioning import (
+    VOICE_WIPE_RECEIPT_SCHEMA_ID,
+)
 from transcriptx.core.utils.paths import PATHS
 
 WIPE_RECEIPT_REL = "voice/wipe_receipt.json"
@@ -179,7 +182,7 @@ class VoiceWipeService:
             ]
             # Update wipe receipt as after-image
             new_receipt = {
-                "schema_id": "voice_wipe_receipt.v1",
+                "schema_id": VOICE_WIPE_RECEIPT_SCHEMA_ID,
                 "pending_paths": rest,
                 "updated_at": utc_now_iso(),
                 "include_privacy": include_privacy,

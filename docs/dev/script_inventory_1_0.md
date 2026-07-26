@@ -61,7 +61,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/release/build_docs.sh` | Sphinx HTML build wrapper | maintainer | `make docs` / CI docs | yes | CI | writes `_build` | any | `[docs]` | valid | maintainer | retain (**0.9.5**) |
 | `scripts/release/regen_module_docs.py` | Regen module catalog + quality-audit scaffold | maintainer | `make docs-gen` | yes | no | writes docs | any | package import | valid | maintainer | retain (**0.9.5**) |
 | `scripts/release/perf_envelope_recipe.py` | Print perf-envelope measurement recipe | maintainer | `make perf-envelopes` | yes | release unit | read-only | any | package import | valid | maintainer | retain (**0.9.7**) |
-| `scripts/generate_demo_runs.py` | Validate/install bundled demo pack | maintainer | demo_project.md | yes | optional | writes data root on `--install` | any | package import | valid | maintainer | retain (**0.9.6**) |
+| `scripts/generate_demo_runs.py` | Bundled demo pack installer (0.9.6 trial) | maintainer | — | n/a | n/a | n/a | n/a | n/a | **removed** (Guided/demo trial ended) | disposable | deleted |
 | `archive/scripts/build_docs.sh` | Historical Sphinx builder (pre-revive) | historical | none | archived banner | no | writes `_build` | any | — | archived | archived | retain (archived); live builder is `scripts/release/build_docs.sh` |
 | `scripts/docker-data-setup.sh` | Data download via wrong image / missing helpers | developer | none | stale | no | Docker mutate | Docker | missing peers | **stale** | disposable | delete |
 | `scripts/docker-clean.sh` | `compose down` + unscoped system/volume prune | developer | none | no | no | **destructive** | Docker | — | stale | disposable | delete |

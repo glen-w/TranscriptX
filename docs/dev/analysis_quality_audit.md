@@ -31,7 +31,7 @@ Living sheet — one row per user-visible analysis. Prefer real corpora over fix
 | Group semantics | If applicable |
 | Test quality | Coverage notes |
 | Performance | Cost class |
-| **Recommendation** | retain / improve / relabel / hide under Full / deprecate / remove |
+| **Recommendation** | retain / improve / relabel / document as experimental / deprecate / remove |
 | **Severity** | blocker / must-fix / known limitation / post-1.0 |
 
 ## Mandatory scrutiny

@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from pydantic import ValidationError
+
+from transcriptx.core.speaker_profiles.errors import SpeakerProfileContractError
 from transcriptx.core.speaker_profiles.voice.errors import (
     PrivacyConsentRequired,
     VoiceFeatureDisabled,
@@ -21,6 +24,7 @@ ActivationBlockReason = Literal[
     "feature_gate_closed",
     "privacy_disabled",
     "privacy_consent_required",
+    "privacy_settings_invalid",
     "wipe_required",
 ]
 
@@ -66,7 +70,23 @@ class ActivationBarrier:
                 ),
             )
 
-        settings = self._privacy.read()
+        try:
+            settings = self._privacy.read()
+        except (ValidationError, SpeakerProfileContractError, ValueError, OSError) as exc:
+            # Refuse pre-epoch / corrupt privacy docs; do not crash Speakers UX.
+            return ActivationStatus(
+                allowed=False,
+                feature_gate_complete=True,
+                privacy_enabled=False,
+                notice_current=False,
+                wipe_required=False,
+                block_reason="privacy_settings_invalid",
+                detail=(
+                    "privacy.voice_settings.json is incompatible or unreadable "
+                    f"({exc}). Re-enable voice matching in Settings → Speakers "
+                    "after removing or replacing the pre-epoch settings file."
+                ),
+            )
         notice_current = settings.privacy_notice_version == PRIVACY_NOTICE_VERSION
         if settings.wipe_required:
             return ActivationStatus(
@@ -116,6 +136,10 @@ class ActivationBarrier:
             raise VoiceFeatureGateClosed(status.detail or "feature gate closed")
         if status.block_reason == "privacy_consent_required":
             raise PrivacyConsentRequired(status.detail or "re-consent required")
+        if status.block_reason == "privacy_settings_invalid":
+            raise VoiceFeatureDisabled(
+                status.detail or "privacy settings incompatible"
+            )
         raise VoiceFeatureDisabled(status.detail or "voice matching disabled")
 
     def assert_settings_enablement_allowed(self) -> None:

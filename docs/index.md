@@ -15,10 +15,7 @@ known_limitations
 runtime/installation
 runtime/transcription
 runtime/docker
-dev/ui_presentation_modes
-dev/demo_project
 ```
-
 ```{toctree}
 :maxdepth: 2
 :caption: Reference

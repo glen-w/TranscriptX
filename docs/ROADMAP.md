@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full controls + demo project shipped in **0.9.6**. Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**.
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**.
 
 ---
 
@@ -38,7 +38,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Schema epoch | Public schema epoch + compatibility removal; data-epoch transition UX; module-id hygiene | **0.9.3** |
 | Install + transcription | Install-profile audit; Transcribe command generation; corpus docs | **0.9.4** |
 | Hosted docs + harden scaffolds | Sphinx revive; hygiene strict subset; quality-audit scaffold; draft model-licence matrix | **0.9.5** |
-| Modes + demo | Guided / Full controls v1; demo project load/remove; onboarding checklist | **0.9.6** |
+| Modes + demo (trial) | Guided / Full + demo + onboarding checklist — **trialled then removed** (docs + clear GUI) | **0.9.6** (removed later) |
 | Harden + public surfaces (automatable) | Audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops; Data/Explorer redirects removed | **0.9.7** |
 | Human testing → RC | Manual acceptance + a11y/browser; unfamiliar-user validation; clean-env soak; owner Hub-card / RTD slug; Large-library soak | next (pre-RC) |
 
@@ -108,4 +108,4 @@ Historical sprint dumps: [sprint_archive.md](archive/plans/sprint_archive.md) (a
 - [DEV_INDEX.md](DEV_INDEX.md) · [archive/ARCHIVE_INDEX.md](archive/ARCHIVE_INDEX.md)
 - [release_governance.md](dev/release_governance.md)
 - [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)
-- Phase 0B planning stubs: [docs_architecture_1_0.md](dev/docs_architecture_1_0.md), [install_profiles_matrix.md](dev/install_profiles_matrix.md), [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md), [analysis_quality_audit.md](dev/analysis_quality_audit.md), [ui_presentation_modes.md](dev/ui_presentation_modes.md), [demo_project.md](dev/demo_project.md)
+- Phase 0B planning stubs: [docs_architecture_1_0.md](dev/docs_architecture_1_0.md), [install_profiles_matrix.md](dev/install_profiles_matrix.md), [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md), [analysis_quality_audit.md](dev/analysis_quality_audit.md) (Guided/demo design stubs retired after trial)

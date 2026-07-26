@@ -1,4 +1,4 @@
-"""Config lifecycle / GUI guided allowlist expansion."""
+"""Config lifecycle / GUI common-settings coercion helpers."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from transcriptx.core.config.coercion import coerce
 from transcriptx.core.config.gui_support import COMMON_SETTINGS_SCHEMA
 from transcriptx.core.config.registry import FieldMetadata
 from transcriptx.core.config.validation import validate_config
-from transcriptx.web.presentation.guided_settings import GUIDED_SETTINGS_SCHEMA
 
 
 @pytest.mark.unit
@@ -37,12 +36,8 @@ def test_coerce_bool_and_int_via_field_metadata() -> None:
 
 
 @pytest.mark.unit
-def test_guided_keys_subset_of_common_or_registry() -> None:
-    common = {f.key for f in COMMON_SETTINGS_SCHEMA}
-    guided = {f.key for f in GUIDED_SETTINGS_SCHEMA}
-    assert guided
-    # Prefer Common allowlist; registry may use alternate key forms.
-    assert guided <= common
+def test_common_settings_schema_nonempty() -> None:
+    assert {f.key for f in COMMON_SETTINGS_SCHEMA}
 
 
 @pytest.mark.unit

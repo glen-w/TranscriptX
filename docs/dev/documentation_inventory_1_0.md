@@ -159,8 +159,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/analysis_quality_audit_scaffold.md | Generated quality-audit registry rows | live | developer | current | Regen via `make docs-gen` | retain | — | analysis_quality_audit.md | analysis_quality_audit.md | no |
 | docs/dev/analysis_quality_audit_judgements.md | Provisional Recommendation / Severity overlay (**0.9.7**) | live | developer | current | Owner sign-off open | retain | — | analysis_quality_audit.md, release_severity | analysis_quality_audit.md | no |
 | docs/dev/rtd_go_live_checklist.md | RTD go-live flip steps | live | developer | current | Hostname denylist until slug | retain | — | docs_architecture | docs_architecture_1_0.md | no |
-| docs/dev/ui_presentation_modes.md | Guided / Full controls (shipped **0.9.6**) | live | product | current | Human acceptance open | retain | — | public_surfaces, USER_INDEX | public_surfaces.md | yes |
-| docs/dev/demo_project.md | Demo project load/remove (shipped **0.9.6**) | live | product | current | Soft gaps documented | retain | — | public_surfaces, USER_INDEX | public_surfaces.md | yes |
+| docs/dev/ui_presentation_modes.md | Guided / Full (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
+| docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/manual_acceptance_1_0.md | Human acceptance checklist skeleton | live | product | current | Human-testing wave | retain | — | pre_release_roadmap | release_severity_triage_1_0.md | no |
 | website/ | Modest public landing + Pages | live | entry | current | Marketing; BMC placeholder | retain | — | README, ROADMAP | PRODUCT.md | no |
 | NOTICE | Third-party model/dataset notice draft | live | entry | current | Hub-card owner-verify open | retain | — | trust_privacy, README | trust_privacy_model_governance_1_0.md | no |

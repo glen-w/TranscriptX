@@ -36,7 +36,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 | Step | Action |
 |------|--------|
 | 1 | Put audio files in one folder on your computer |
-| 2 | Open Transcribe Audio → pick **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
+| 2 | Install `whispermlx-missing` once (see below) if needed → Transcribe Audio → pick **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
 | 3 | Re-run without dry-run; already-transcribed stems are skipped (resume-friendly) |
 | 4 | Import Transcript → upload JSON → optionally attach recordings |
 | 5 | Run a Balanced or Quick analysis preset |
@@ -68,7 +68,22 @@ Copy `docs/recipes/whisperx/whisperx.env.example` to `whisperx.env` and configur
 
 ### whispermlx-missing bulk script
 
-Install `scripts/whispermlx-missing.py` as `whispermlx-missing` (see script header). It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
+Install once from the repo root (not shipped as a package entrypoint):
+
+```bash
+mkdir -p ~/.local/bin
+install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing
+# ensure ~/.local/bin is on PATH (new shell, or: export PATH="$HOME/.local/bin:$PATH")
+which whispermlx-missing
+```
+
+If `command not found`, either PATH is missing `~/.local/bin` or the install step was skipped. You can also run without installing:
+
+```bash
+python3 scripts/whispermlx-missing.py --dry-run …
+```
+
+It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
 
 **Resume / duplicates:** stems with matching JSON are skipped by default. Use `--force` / `--rerun` to replace after a valid new JSON is produced. `--fuzzy-json-match` also treats `foo-….json` / `foo_….json` / `foo.….json` as already done.
 

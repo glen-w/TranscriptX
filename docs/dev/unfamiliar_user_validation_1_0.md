@@ -54,10 +54,10 @@ Goal path: **install → first useful result → export**. Timing starts at firs
 
 1. Hand participant the README / website landing (or printed quickstart). Do **not** narrate steps.
 2. Ask them to install and open the UI.
-3. Ask them to import a provided sample transcript (demo pack OK if already in product).
+3. Ask them to import a provided sample transcript (facilitator-supplied file; no in-app demo pack).
 4. Ask them to run an analysis and find something useful in Overview / Insights / Charts.
 5. Ask them to export or download results.
-6. Optional: switch Guided / Full; load/remove demo — only if time remains and no distress.
+6. Optional: explore Settings / advanced pages — only if time remains and no distress.
 
 **Permitted facilitator prompts** (examples)
 

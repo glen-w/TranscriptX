@@ -10,6 +10,7 @@ from __future__ import annotations
 import shlex
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Sequence
 
 
@@ -19,6 +20,60 @@ class TranscriptionTool(str, Enum):
     WHISPERX_DOCKER = "whisperx_docker"
 
 
+# Common Whisper / whispermlx / WhisperX model ids for the command generator.
+# Engines may accept additional names; the UI selectbox allows custom entry.
+DEFAULT_TRANSCRIPTION_MODEL = "large-v3"
+TRANSCRIPTION_MODEL_OPTIONS: tuple[str, ...] = (
+    "tiny",
+    "tiny.en",
+    "base",
+    "base.en",
+    "small",
+    "small.en",
+    "medium",
+    "medium.en",
+    "large-v2",
+    "large-v3",
+    "large-v3-turbo",
+)
+
+# Relative defaults for host terminals when Streamlit runs from a Docker install
+# (PATHS.project_root resolves under /opt/venv/.../site-packages, not the git clone).
+_HOST_ENV_FILE_RELATIVE = "whisperx.env"
+_HOST_SCRIPT_RELATIVE = "scripts/whispermlx-missing.py"
+
+
+def looks_like_container_install_path(path: str | Path) -> bool:
+    """True for Docker/venv install paths that are not usable on the Mac host."""
+    text = str(path).replace("\\", "/")
+    return text == "/opt/venv" or text.startswith("/opt/venv/")
+
+
+def is_host_repo_root(root: Path) -> bool:
+    """True when root looks like the TranscriptX git clone (not a site-packages parent)."""
+    return (root / "pyproject.toml").is_file() or (
+        root / "scripts" / "whispermlx-missing.py"
+    ).is_file()
+
+
+def default_host_env_file(project_root: Path) -> str:
+    """Host path for --env-file / source whisperx.env in generated commands."""
+    if looks_like_container_install_path(project_root):
+        return _HOST_ENV_FILE_RELATIVE
+    if is_host_repo_root(project_root):
+        return str(project_root / _HOST_ENV_FILE_RELATIVE)
+    return _HOST_ENV_FILE_RELATIVE
+
+
+def default_host_script_ref(project_root: Path) -> str:
+    """Host path/ref for scripts/whispermlx-missing.py in page copy."""
+    if looks_like_container_install_path(project_root):
+        return _HOST_SCRIPT_RELATIVE
+    if is_host_repo_root(project_root):
+        return str(project_root / _HOST_SCRIPT_RELATIVE)
+    return _HOST_SCRIPT_RELATIVE
+
+
 @dataclass(frozen=True)
 class CommandGenParams:
     """Parameters for a copyable transcription command."""
@@ -26,7 +81,7 @@ class CommandGenParams:
     tool: TranscriptionTool
     input_path: str
     output_dir: str
-    model: str = "large-v3"
+    model: str = DEFAULT_TRANSCRIPTION_MODEL
     language: str = "en"
     diarize: bool = True
     env_file: str = "whisperx.env"
@@ -88,7 +143,7 @@ mkdir -p {_q(params.output_dir)}
 """
     notes = (
         "Run on the macOS host (Apple MLX). Do not run whispermlx inside the Linux analysis container.",
-        "Set HF_TOKEN in whisperx.env when diarization is enabled.",
+        "Set HF_TOKEN in the host repo whisperx.env when diarization is enabled.",
         "If whispermlx is not on PATH, set WHISPERMLX in whisperx.env or change the binary field.",
         "Expected output: WhisperX/whispermlx JSON for Import Transcript.",
     )
@@ -173,9 +228,11 @@ def build_whispermlx_missing(params: CommandGenParams) -> GeneratedCommand:
     shell = " ".join(parts) + "\n"
     notes = (
         "Install once: install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing",
+        "Requires ~/.local/bin on PATH (or run: python3 scripts/whispermlx-missing.py …).",
         "Skips stems that already have matching JSON (resume-friendly). Use --force to re-run.",
         "Preview safely with --dry-run (no HF_TOKEN / binary required for preview).",
         "Paths with spaces are shell-quoted. Run on the macOS host, not inside transcriptx-web.",
+        "--env-file must be the host repo whisperx.env (not a container path under /opt/venv).",
         "Live runs stream whispermlx logs; --quiet captures output and shows stderr tails on failure.",
         "Expected output: WhisperX/whispermlx JSON for Import Transcript.",
     )

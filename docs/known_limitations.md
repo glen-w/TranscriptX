@@ -7,7 +7,7 @@ Concise user-facing limits for TranscriptX **0.9.x → 1.0**. Deeper audit rows 
 
 ## Experimental analyses
 
-Some modules are experimental classifiers or heuristics (notably **contextual emotion** and **fine-grained emotion**). They are kept off Guided / Balanced defaults; use **Full controls** / Thorough if you opt in. Outputs are not definitive affect labels.
+Some modules are experimental classifiers or heuristics (notably **contextual emotion** and **fine-grained emotion**). They are kept off Balanced defaults; opt in via Thorough / Custom presets if you want them. Outputs are not definitive affect labels.
 
 ## Optional BERTopic and compiled dependencies
 

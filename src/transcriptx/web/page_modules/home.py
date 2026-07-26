@@ -117,14 +117,6 @@ def render_home() -> None:
     """Render the home/dashboard page."""
     render_page_shell("Home")
 
-    from transcriptx.web.presentation.switch import render_presentation_mode_switch
-    from transcriptx.web.demo_ui import render_home_demo_and_onboarding
-
-    with st.expander("Presentation", expanded=False):
-        render_presentation_mode_switch(location="home")
-
-    render_home_demo_and_onboarding()
-
     try:
         if _render_transcript_overview():
             _render_sessions_table()

@@ -6,13 +6,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-from transcriptx.web.presentation.prefs import MODE_GUIDED
-from transcriptx.web.presentation.resolve import resolve_presentation_mode
-from transcriptx.web.presentation.switch import render_presentation_mode_switch
-from transcriptx.web.presentation.visibility import (
-    FULL_SETTINGS_TABS,
-    GUIDED_SETTINGS_TABS,
-)
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import (
     render_analysis_presets_panel,
@@ -26,6 +19,16 @@ from transcriptx.web.ui.settings import (
 
 _SETTINGS_TAB_KEY = "settings_hub_selected_tab"
 
+_SETTINGS_TABS: tuple[str, ...] = (
+    "Configuration",
+    "Analysis",
+    "Storage",
+    "Speakers",
+    "Interface",
+    "Models",
+    "Questions",
+)
+
 
 def render_settings_page() -> None:
     """Render the settings page (hub)."""
@@ -33,15 +36,6 @@ def render_settings_page() -> None:
         '<div class="main-header">Settings</div>',
         unsafe_allow_html=True,
     )
-
-    # Guided mode on/off lives outside tabs that Guided may hide.
-    with st.container():
-        st.subheader("Guided mode")
-        render_presentation_mode_switch(location="settings")
-
-    from transcriptx.web.demo_ui import render_settings_demo_controls
-
-    render_settings_demo_controls()
 
     subject = SubjectService.resolve_current_subject(st.session_state)
     run_id = st.session_state.get("run_id")
@@ -55,11 +49,7 @@ def render_settings_page() -> None:
         subject_display = subject.display.name
         run_display = run_id
 
-    mode = resolve_presentation_mode()
-    tab_labels = list(
-        GUIDED_SETTINGS_TABS if mode == MODE_GUIDED else FULL_SETTINGS_TABS
-    )
-    # Normalise stale selected-tab state when Full-only tabs disappear.
+    tab_labels = list(_SETTINGS_TABS)
     selected = st.session_state.get(_SETTINGS_TAB_KEY)
     if selected not in tab_labels:
         st.session_state[_SETTINGS_TAB_KEY] = tab_labels[0]

@@ -7,7 +7,7 @@ Authority: self
 
 **Long-term home:** [docs/ROADMAP.md](docs/ROADMAP.md) owns 1.x themes, 2.0 vision, deferred platform tracks, and everything after the 1.0 gate.
 
-Documentation-first alignment of TranscriptX as a local-first personal transcript analysis workbench, then a stabilisation-focused 0.9.x programme that lands a clean public schema epoch, install profiles, quality audits, Transcribe Audio command generation, Simple/Advanced presentation, demo project, hosted docs, and a static website — culminating in a credible 1.0 governed by **release evidence and explicit severity rules**, not feature count or fixed patch assignments.
+Documentation-first alignment of TranscriptX as a local-first personal transcript analysis workbench, then a stabilisation-focused 0.9.x programme that lands a clean public schema epoch, install profiles, quality audits, Transcribe Audio command generation, hosted docs, and a static website — culminating in a credible 1.0 governed by **release evidence and explicit severity rules**, not feature count or fixed patch assignments.
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
@@ -24,7 +24,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — schema epoch** — Epoch-1 reset + compatibility removal; GUI/typed-workflow preflight and fresh-data-dir UX; default preserve compatible transcripts; no automatic deletion; no new public analysis CLI (**cut as 0.9.3**)
 - [x] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs (**cut as 0.9.4**)
 - [x] **0.9.x — hosted docs + harden scaffolds** — Sphinx revive + CI docs build; hygiene strict subset; quality-audit registry scaffold; draft model-licence matrix (**cut as 0.9.5**)
-- [x] **0.9.x — modes + demo** — Guided/Full controls v1 + demo project load/remove with generate-demo-runs (**cut as 0.9.6**)
+- [x] **0.9.x — modes + demo (trial)** — Guided/Full controls v1 + demo project + onboarding checklist (**cut as 0.9.6**; **later removed** — prefer docs + clear GUI; see §16)
 - [x] **0.9.x — harden + public surfaces (automatable)** — audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops draft; Data/Explorer redirects removed (**cut as 0.9.7**). Owner sign-off, RTD slug, and measured Large-library soak may remain soft-cut residuals.
 - [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for owner-gated residuals.
 - [ ] **Maintainer acceptance pass** — executable kit in [manual_acceptance_1_0.md](manual_acceptance_1_0.md); severity-justified fixes after
@@ -57,9 +57,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 | Versioned analysis module ids | **No `_vN` in public module ids for 1.0.** Inventory offender was `semantic_similarity_v2`. **Done in 0.9.3:** retire legacy `semantic_similarity` + `semantic_similarity_advanced`, rename `semantic_similarity_v2` → `semantic_similarity` (package/config/artifacts/presets/docs). Do **not** keep a parallel legacy module unless a written exception says otherwise. Internal file names like `llm_custom_qa/analyze_v2.py` are not public module ids; dual live writers collapsed as part of epoch. |
 | Product website | **Option A:** `website/` plain HTML/CSS (+ minimal JS), GitHub Pages; separate from hosted user docs. **Not a hard 1.0 blocker** if product gates pass — require a *credible* public landing; first version may be modest |
 | Hosted docs | **Revive Sphinx + Read the Docs.** Sphinx tree revived in **0.9.5** (`docs/conf.py`, `make docs`, CI docs job, `.readthedocs.yml` scaffold). `stale_refs.sh` still forbids `readthedocs.io` until an intentional RTD project URL exists. **Usable hosted documentation is required**; polished breadth is not a hard blocker if task docs complete supported workflows |
-| Mode system | Presentation/config layer only — one execution system; labels prefer **Guided** / **Full controls** (Simple/Advanced acceptable aliases) |
-| Onboarding | Lightweight dismissible checklist / coach marks; not a brittle tour framework; elaborate animation **deferrable to 1.1** |
-| Demo data | Explicit “Load demo project”; isolated namespace; one-click remove; prefer **canonical transcripts + scripted generate-demo-runs** over large committed run trees; large bundled completed runs **deferrable to 1.1** if risky |
+| Mode system / onboarding / demo | **Trialled in 0.9.6; decided against.** Prefer excellent task docs and a clear, always-complete GUI over Guided/Full presentation modes, in-app Getting started checklist, and bundled demo-project load/remove. Do not reintroduce before 1.0. |
 | Module freeze | No new analysis modules in 0.9.x unless required to complete/repair the 1.0 journey. **Allowed under freeze:** retire/rename versioned or legacy module ids (e.g. semantic similarity cleanup above). |
 | Documentation preservation | Expansive: entry surfaces stay concise; detailed design history, rationale, migration notes, investigation results and operational knowledge are retained when useful for maintenance, debugging, future features or contracts. Do **not** solve clutter by indiscriminately deleting detailed material. |
 | Patch versioning | Prefer thematic **0.9.x** workstreams over fixed patch numbers. Cut releases around coherent, tested increments; never ship unrelated high-risk changes together merely to match a draft patch label |
@@ -76,13 +74,13 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 A perfect historical archive taxonomy is **not** required for 1.0. A simple, documented archive structure is acceptable initially, provided current and historical material are clearly distinguished.
 
 **Strongly desirable for 1.0**
-- Guided/Full controls + explicit demo project (**shipped 0.9.6** — residual is human acceptance); polished Read the Docs navigation and screenshots (Sphinx scaffold **0.9.5**; RTD go-live owner-gated); polished static `website/` + GitHub Pages (**landed 0.9.7** — modest; further polish optional).
+- Excellent task-oriented documentation and a clear, complete GUI (presentation modes / demo / in-app checklist **trialled in 0.9.6 and removed**); polished Read the Docs navigation and screenshots (Sphinx scaffold **0.9.5**; RTD go-live owner-gated); polished static `website/` + GitHub Pages (**landed 0.9.7** — modest; further polish optional).
 
 **Not hard blockers if product gates pass**
 - Elaborate website effects; exhaustive RTD autodoc; a highly polished first public site — provided usable docs and a credible landing exist.
 
 **Safe to defer to 1.1**
-- Elaborate guided coach-mark tour; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; SQLite speaker analytics; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; built-in/orchestrated transcription engine; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — design must clarify interaction with Groups (tags ≠ analysis cohorts); tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.1.
+- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; SQLite speaker analytics; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; built-in/orchestrated transcription engine; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — design must clarify interaction with Groups (tags ≠ analysis cohorts); tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.1.
 
 ---
 
@@ -390,8 +388,8 @@ The schema inventory may begin in parallel with Phase 0B, but **no public schema
 - [x] `docs/dev/manual_acceptance_1_0.md`
 - [x] `docs/dev/analysis_quality_audit.md`
 - [x] `docs/dev/docs_architecture_1_0.md`
-- [x] `docs/dev/ui_presentation_modes.md`
-- [x] `docs/dev/demo_project.md`
+- [x] `docs/dev/ui_presentation_modes.md` (later **removed** after trial — §16)
+- [x] `docs/dev/demo_project.md` (later **removed** after trial — §16)
 - [x] `docs/dev/performance_envelopes_1_0.md`
 - [x] `docs/dev/trust_privacy_model_governance_1_0.md`
 - [x] `docs/dev/release_ops_support_1_0.md`
@@ -450,7 +448,7 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 **Cut as `0.9.5` (2026-07-24).** Hosted docs revive (Sphinx) + CI docs build; hygiene strict subset; analysis-quality audit registry scaffold; draft model-licence matrix; light release tests.
 
-**Cut as `0.9.6` (2026-07-24).** Guided/Full controls presentation mode; demo project pack + transactional load/remove; lightweight onboarding checklist.
+**Cut as `0.9.6` (2026-07-24).** Guided/Full controls presentation mode; demo project pack + transactional load/remove; lightweight onboarding checklist. **Later removed** (prefer docs + clear GUI; see §16).
 
 **Cut as `0.9.7` (2026-07-24).** Automatable harden + public surfaces: audit judgements overlay; perf envelope recipe; trust drafts + Local AI labelling + voice privacy notice v2 + NOTICE; website + Pages; release-ops draft + issue templates; Data/Explorer redirect removal; RTD go-live prep (slug still owner-gated).
 
@@ -471,8 +469,8 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 - [x] PRODUCT.md + README/ROADMAP/ARCHITECTURE/surfaces/stocktake alignment
 - [x] Public surface notes (Guided/Full; command-gen; operational surfaces) — further compatibility inventory may deepen later
 - [x] Documentation architecture stub ([docs_architecture_1_0.md](docs_architecture_1_0.md))
-- [x] Guided/Full controls **design** ([ui_presentation_modes.md](ui_presentation_modes.md))
-- [x] Demo-project **design** ([demo_project.md](demo_project.md))
+- [x] Guided/Full controls **design** (trial docs; later removed — §16)
+- [x] Demo-project **design** (trial docs; later removed — §16)
 - [x] Manual acceptance-test specification ([manual_acceptance_1_0.md](manual_acceptance_1_0.md))
 - [x] Analysis-quality audit template ([analysis_quality_audit.md](analysis_quality_audit.md))
 - [x] Release severity triage rules published ([release_severity_triage_1_0.md](release_severity_triage_1_0.md))
@@ -520,13 +518,14 @@ Focus: mechanical foundations for usable hosted docs and later human hardening �
 - [x] Provisional audit recommendations / severity tags (**0.9.7** judgements overlay; owner sign-off open)
 - [x] Trust gate evidence drafts (privacy wording, telemetry statement, NOTICE, AI labelling — **0.9.7**; owner Hub-card sign-off open)
 
-### 0.9.x — Guided mode and demo project (**0.9.6**)
+### 0.9.x — Guided mode and demo project (**0.9.6**; later removed)
 
 Focus: first-run product experience (presentation + examples).
 
 - [x] Initial Guided/Full controls (presentation/defaults only) (**0.9.6**)
 - [x] Demo project launcher + one-click removal (**0.9.6**)
 - [x] Lightweight onboarding checklist (not elaborate tour) (**0.9.6**)
+- [x] **Removed after trial** — prefer excellent docs + clear complete GUI (§16)
 
 ### 0.9.x — Quality hardening, hosted docs, public presentation
 
@@ -754,7 +753,7 @@ Must-cover checklist for the cut: shell quoting/spaces; macOS vs Linux vs Docker
 
 New living sheet: [docs/dev/analysis_quality_audit.md](docs/dev/analysis_quality_audit.md) — one row per user-visible analysis:
 
-intended question; output type; algorithm/model; meaningfulness on real transcripts; languages; min data; confidence/abstention; failure modes; overlap; GUI presentation; group semantics; test quality; performance; **recommendation:** retain / improve / relabel / hide under Full controls / deprecate / remove.
+intended question; output type; algorithm/model; meaningfulness on real transcripts; languages; min data; confidence/abstention; failure modes; overlap; GUI presentation; group semantics; test quality; performance; **recommendation:** retain / improve / relabel / document as experimental / deprecate / remove.
 
 Prioritise Insights, default presets, summary surfaces, exports. **Mandatory scrutiny:** deterministic highlights, summaries, action-item extraction vs LLM equivalents — improve, restrict claims, reduce prominence, or remove misleading fallbacks. Use real corpora, not only fixtures.
 
@@ -856,9 +855,6 @@ Journeys (each with prerequisites, test data, steps, expected UI, expected files
 - [ ] Offline/downloads disabled
 - [ ] Spaces/non-ASCII paths
 - [ ] Empty/short/long/multilingual
-- [ ] Guided/Full switch (code shipped **0.9.6** — human verify)
-- [ ] Demo load/remove (code shipped **0.9.6** — human verify)
-- [ ] Onboarding skip/complete/reopen (code shipped **0.9.6** — human verify)
 
 ### Accessibility and browser checks (GUI primary surface)
 
@@ -878,60 +874,11 @@ Automation split: keep expanding `make test-gui-acceptance` / AppTest for struct
 
 ## 16. Product-experience features (0.9.x)
 
-Implementation for Guided/Full, onboarding, and demo project **shipped in 0.9.6** ([ui_presentation_modes.md](ui_presentation_modes.md), [demo_project.md](demo_project.md)). Checkboxes below that remain open are **human-testing / RC acceptance**, not missing code.
+### Guided / Full, demo project, Getting started — **trialled and decided against**
 
-### Guided / Full controls (shipped **0.9.6**)
+Shipped in **0.9.6** (Guided/Full controls presentation mode, bundled demo project load/remove, lightweight Getting started checklist). After trial use, **removed before 1.0** in favour of **really good documentation** and a **clear, always-complete GUI** (no reduced “Guided” surface, no in-app tour/checklist, no bundled demo pack).
 
-Presentation + defaults layer only:
-
-- **Guided:** principal workflow, recommended presets, reduced registry complexity, plain AI requirements, actionable errors, import→results path
-- **Full controls:** module selection, detailed model/analysis settings, dependency/capability info, specialist group/voice/artifact controls, diagnostics
-
-Implementation:
-
-- [x] Visible switch; persistent preference; no irreversible hiding (**0.9.6**)
-- [x] Tests prove presentation/defaults only (**0.9.6** plan-coverage / GUI contracts)
-- [x] Docs use Guided/Full; Simple/Advanced as synonyms only
-
-Human acceptance (human-testing wave):
-
-- [ ] Guided materially reduces first-run complexity
-- [ ] Full preserves supported controls
-- [ ] Identical analytical meaning for equivalent settings
-- [ ] Deep links/routes valid in clean-room install
-
-Defer to 1.1 if implementation starts duplicating page logic.
-
-### Onboarding checklist (shipped **0.9.6**; elaborate tour deferrable)
-
-First-run checklist: Library → Import → Analyse → Insights/Charts → Export; Guided/Full; external transcription + command gen; optional Ollama; offer demo; skippable; reopen from Help/Settings; local completion flag; non-blocking if UI changes.
-
-Implementation:
-
-- [x] Optional, dismissible checklist prefs (`onboarding.json`) (**0.9.6**)
-- [x] No fragile CSS-selector critical path (prefs + Home UI)
-
-Human acceptance:
-
-- [ ] Optional, repeatable, non-blocking in clean-room
-- [ ] Survives missing optional capabilities
-- [ ] Links to real actions
-
-### Demo project (shipped **0.9.6**)
-
-Explicit “Load demo project” / “Explore examples” on first launch and Home. **v1 ships 3 synthetic `demo__*` transcripts + owned group** (meeting/decisions; interview; multi-speaker) with PROVENANCE. Isolated ownership inventory; one-click remove; **transcripts + `scripts/generate_demo_runs.py` (deterministic placeholders)**; detect stale demo vs schema epoch/pack hash; label synthetic outputs; keep image/repo size small. Optional voice / larger redistributable real-world packs remain owner judgement (§20).
-
-Implementation:
-
-- [x] Licence/provenance documented (pack `PROVENANCE.md`)
-- [x] Isolation; safe deletion (ownership inventory + bounded delete)
-- [x] Epoch / pack-hash staleness detection
-- [x] Regeneration scripted and tested (`generate_demo_runs.py`, demo plan-coverage tests)
-
-Human acceptance:
-
-- [ ] Load/remove copy and isolation verified on clean Docker / native install
-- [ ] Soft gaps accepted for 1.0 (synthetic placeholder runs; refresh≠journal replay) — see [demo_project.md](demo_project.md)
+Do **not** treat reintroduction as a 1.0 residual. Historical design notes from the trial are obsolete; prefer [USER_INDEX.md](../USER_INDEX.md), [PRODUCT.md](../PRODUCT.md), and hosted/task docs.
 
 ### Hosted docs — Sphinx + RTD (usable required; polish desirable)
 
@@ -1017,7 +964,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 | Demo size / licence | Transcripts + generate script; document provenance; optional voice |
 | Sphinx revive larger than expected | Curated toctree first; defer full autodoc breadth; usable docs gate not polish gate |
 | Install matrix never green on all hosts | Explicit supported vs best-effort cells; no false “full” claims |
-| Quality audit removes popular but weak modules mid-freeze | Relabel/hide under Full controls before hard delete when uncertain; severity triage |
+| Quality audit removes popular but weak modules mid-freeze | Relabel / document as experimental or known limitation before hard delete when uncertain; severity triage |
 | Docs drift across README/website/RTD | Single source + link summaries; CI linkcheck |
 | Useful engineering rationale lost during cleanup | Archive by default when future maintenance value is plausible; require destination/replacement before deletion |
 | Archive becomes a second cluttered live-doc tree | Structured archive categories, archived banners, current-authority links, excluded from primary navigation |
@@ -1039,10 +986,10 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 ## 20. Unresolved owner judgements (non-blocking defaults set)
 
 - [ ] **Buy Me a Coffee URL** — placeholder until supplied
-- [x] **Demo pack for 0.9.6** — synthetic 3-transcript pack + PROVENANCE shipped; optional later swap to owner-approved redistributable real-world sources
+- [x] **Demo pack / Guided UI for 0.9.6** — trialled in **0.9.6**; **removed** (prefer docs + clear GUI; see §16)
 - [ ] **Native Mac MPS:** documented supported-with-caveats for 1.0, not a hard GPU gate (default)
 - [x] **Whether cleanup result schema 2→1** proceeds in same PR as public epoch (done in **0.9.3**; journal → 1 / policy 7 kept)
-- [x] **Final UI copy:** **Guided / Full controls** shipped (**0.9.6**); Simple/Advanced remain doc synonyms only
+- [x] **Final UI copy:** Guided/Full / demo / Getting started **removed** after trial; single complete GUI + docs
 - [ ] **RTD project slug / custom domain** — create when docs build is green (**Sphinx CI green in 0.9.5**; slug/domain still owner judgement)
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
 - [x] **Exact archive subcategory names** — `docs/archive/{assessments,plans,investigations,migrations}/` from inventory
@@ -1064,7 +1011,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 7. [x] Execute **0.9.x schema epoch** implementation (**0.9.3** / `v0.9.3`)
 8. [x] Execute **0.9.x install + transcription** theme (**0.9.4** / `v0.9.4`)
 9. [x] Execute **0.9.x hosted docs + harden scaffolds** theme (**0.9.5**)
-10. [x] Execute **0.9.x Guided mode + demo** theme (**0.9.6**) ← **landed**
+10. [x] Execute **0.9.x Guided mode + demo** theme (**0.9.6**) ← **landed**; later **removed** (docs + clear GUI preferred; §16)
 11. [x] Execute **0.9.x harden + public surfaces (automatable)** theme (**0.9.7**) ← **landed** (owner Hub-card / RTD slug / Large-library soak may soft-cut)
 12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (owner Hub/RTD/BMC/Large-library/cohort remain soft residuals)
 13. [ ] **Maintainer acceptance pass** — [manual_acceptance_1_0.md](manual_acceptance_1_0.md); then severity-justified fixes

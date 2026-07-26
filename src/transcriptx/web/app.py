@@ -127,11 +127,6 @@ def main() -> None:
         finish_run(notes=f"page={current_page};schema_epoch_blocked")
         return
 
-    # Seed / resolve presentation mode before sidebar and routing.
-    from transcriptx.web.presentation.resolve import resolve_presentation_mode
-
-    resolve_presentation_mode()
-
     load_error = None
     should_hydrate = page_requires_workspace_hydration(current_page)
     if should_hydrate:

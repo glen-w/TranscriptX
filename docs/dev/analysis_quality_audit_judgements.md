@@ -29,8 +29,8 @@ Judgements live here so `make docs-gen` can regenerate the scaffold without wipi
 | `conversation_loops` | retain | post-1.0 | Light T0; niche. |
 | `contagion` | retain | known limitation | Depends on emotion; experimental-ish interpretation. |
 | `emotion` | retain | known limitation | NRC lexicon association — not neural affect. |
-| `contextual_emotion` | hide under Full / experimental | known limitation | Experimental classifier; keep off Guided defaults. |
-| `fine_grained_emotion` | hide under Full / experimental | known limitation | Experimental; Full controls. |
+| `contextual_emotion` | experimental / known limitation | known limitation | Experimental classifier; keep off Balanced defaults. |
+| `fine_grained_emotion` | experimental / known limitation | known limitation | Experimental; opt in via Thorough / Custom. |
 | `entity_sentiment` | retain | known limitation | Needs NER+sentiment; sparse transcripts weak. |
 | `affect_tension` | retain | post-1.0 | Derived indices. |
 | `interactions` | retain | — | Core interaction analysis. |

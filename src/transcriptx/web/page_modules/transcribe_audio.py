@@ -10,17 +10,21 @@ import streamlit as st
 
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.services.transcription.command_gen import (
+    DEFAULT_TRANSCRIPTION_MODEL,
+    TRANSCRIPTION_MODEL_OPTIONS,
     CommandGenParams,
     TranscriptionTool,
+    default_host_env_file,
+    default_host_script_ref,
     generate_preview_lines,
     generate_transcription_command,
+    looks_like_container_install_path,
 )
 from transcriptx.web.navigation import consume_transcription_nav_paths
 from transcriptx.web.state import PAGE_KEY
 
-_REPO_ROOT = PATHS.project_root
-_ENV_FILE = _REPO_ROOT / "whisperx.env"
-_SCRIPT = _REPO_ROOT / "scripts" / "whispermlx-missing.py"
+_ENV_FILE_DEFAULT = default_host_env_file(PATHS.project_root)
+_SCRIPT_REF = default_host_script_ref(PATHS.project_root)
 
 _TOOL_LABELS = {
     TranscriptionTool.WHISPERMLX_SINGLE: "whispermlx (macOS host)",
@@ -63,6 +67,14 @@ def render_transcribe_audio_page() -> None:
         key="tx_cmdgen_tool",
     )
     tool = next(t for t, label in _TOOL_LABELS.items() if label == tool_label)
+    if tool is TranscriptionTool.WHISPERMLX_MISSING:
+        st.caption(
+            "Host install once: "
+            "`install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing` "
+            "(needs `~/.local/bin` on PATH). Or run "
+            "`python3 scripts/whispermlx-missing.py …`. "
+            "See Bulk helper below / `docs/runtime/transcription.md`."
+        )
 
     col_a, col_b = st.columns(2)
     with col_a:
@@ -77,11 +89,27 @@ def render_transcribe_audio_page() -> None:
             value="/path/to/transcript/output",
             key="tx_cmdgen_output",
         )
+        # Drop stale session values that pointed at the Docker install tree.
+        existing_env = st.session_state.get("tx_cmdgen_env")
+        if isinstance(existing_env, str) and looks_like_container_install_path(
+            existing_env
+        ):
+            st.session_state["tx_cmdgen_env"] = _ENV_FILE_DEFAULT
         env_file = st.text_input(
-            "Env file",
-            value=str(_ENV_FILE),
+            "Env file (host)",
+            value=_ENV_FILE_DEFAULT,
             key="tx_cmdgen_env",
+            help=(
+                "Host path to repo-root whisperx.env for the Mac terminal command. "
+                "Do not use container paths under /opt/venv — those do not exist on the host. "
+                "Relative whisperx.env works when you run the command from the git clone."
+            ),
         )
+        if looks_like_container_install_path(env_file):
+            st.warning(
+                "Env file looks like a Docker/venv path. Use the host repo "
+                "`whisperx.env` (absolute host path, or `whisperx.env` from the clone)."
+            )
         audio_glob = st.text_input(
             "Audio glob (folder loop)",
             value="*.mp3",
@@ -89,7 +117,17 @@ def render_transcribe_audio_page() -> None:
             disabled=tool is not TranscriptionTool.WHISPERMLX_SINGLE,
         )
     with col_b:
-        model = st.text_input("Model", value="large-v3", key="tx_cmdgen_model")
+        model = st.selectbox(
+            "Model",
+            options=list(TRANSCRIPTION_MODEL_OPTIONS),
+            index=TRANSCRIPTION_MODEL_OPTIONS.index(DEFAULT_TRANSCRIPTION_MODEL),
+            key="tx_cmdgen_model",
+            accept_new_options=True,
+            help=(
+                "Whisper model size for the host command. "
+                "Pick a listed option or type another engine-supported name."
+            ),
+        )
         language = st.text_input("Language", value="en", key="tx_cmdgen_language")
         diarize = st.checkbox("Diarize", value=True, key="tx_cmdgen_diarize")
         dry_run = st.checkbox(
@@ -181,7 +219,7 @@ def render_transcribe_audio_page() -> None:
         tool=tool,
         input_path=input_path.strip(),
         output_dir=output_dir.strip(),
-        model=model.strip() or "large-v3",
+        model=(str(model).strip() if model else "") or DEFAULT_TRANSCRIPTION_MODEL,
         language=language.strip() or "en",
         diarize=bool(diarize),
         env_file=env_file.strip() or "whisperx.env",
@@ -211,11 +249,17 @@ def render_transcribe_audio_page() -> None:
 
     st.subheader("Bulk helper reference")
     st.markdown(
-        f"The [`scripts/whispermlx-missing.py`]({_SCRIPT}) helper is also installable as "
-        "`whispermlx-missing`. First-time config:"
+        f"`whispermlx-missing` is **not** on PATH until you install "
+        f"`{_SCRIPT_REF}` once from the **host** git clone. "
+        "Or run `python3 scripts/whispermlx-missing.py …` from the repo root."
     )
     st.code(
-        """cp config/whispermlx-missing.example.json .transcriptx/whispermlx-missing.json
+        """mkdir -p ~/.local/bin
+install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing
+# ensure ~/.local/bin is on PATH, then:
+which whispermlx-missing
+
+cp config/whispermlx-missing.example.json .transcriptx/whispermlx-missing.json
 # edit paths, then:
 whispermlx-missing --dry-run
 whispermlx-missing""",

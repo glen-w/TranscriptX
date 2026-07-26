@@ -391,7 +391,7 @@ def test_promote_idempotent_and_suggestion_digest_stale_cache(
     cache.write(
         "deadbeef" * 8,
         {
-            "schema_id": "voice_match_suggestion.v1",
+            "schema_id": "transcriptx.voice_match_suggestion.v1",
             "suggestion_digest": "old",
             "reference_corpus_digest": "stale",
             "outcome": "SuggestionAvailable",

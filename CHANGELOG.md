@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.3] - 2026-07-26
+
+### Removed
+- Guided / Full controls presentation mode, Getting started checklist, and bundled demo project (Home/Settings CTAs, `transcriptx.demo`, `scripts/generate_demo_runs.py`). Trialled in **0.9.6**; decided against in favour of documentation and a clear complete GUI ([pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md) §16).
+
+### Changed
+- Transcribe Audio command generator: shared model option list; host-safe defaults for `whisperx.env` / `whispermlx-missing` when the app runs from a Docker/venv install path; clearer whispermlx-missing install docs.
+
+### Fixed
+- Voice Speakers UX: pre-epoch / corrupt `privacy.voice_settings.json` no longer crashes the panel; surfaces `privacy_settings_invalid` with replace-and-enable recovery.
+
 ## [0.9.8.2] - 2026-07-25
 
 ### Changed

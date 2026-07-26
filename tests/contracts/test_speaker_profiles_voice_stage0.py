@@ -85,6 +85,32 @@ def test_env_default_does_not_override_existing_file(
 
 
 @pytest.mark.unit
+def test_activation_barrier_refuses_pre_epoch_privacy_schema(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "speaker_profiles"
+    voice = root / "voice"
+    voice.mkdir(parents=True)
+    (voice / "privacy.voice_settings.json").write_text(
+        (
+            '{"version":1,'
+            '"schema_id":"voice_privacy_settings.v1",'
+            '"enabled":true,'
+            '"consent_at":"2026-07-24T00:00:00Z",'
+            '"consent_actor":"user",'
+            '"privacy_notice_version":"voice_privacy_notice.v2",'
+            '"revoked_at":null,'
+            '"wipe_required":false}\n'
+        ),
+        encoding="utf-8",
+    )
+    status = ActivationBarrier(root).status()
+    assert status.allowed is False
+    assert status.block_reason == "privacy_settings_invalid"
+    assert status.detail is not None
+
+
+@pytest.mark.unit
 def test_privacy_store_round_trip(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

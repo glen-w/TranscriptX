@@ -13,16 +13,18 @@ Authoritative **maintainer** acceptance checklist. Automated GUI acceptance (`ma
 
 ## 0. Prerequisites (before day-of)
 
-| Check | Criterion |
-|-------|-----------|
-| Candidate identity | Record **package version** + **exact git SHA** under test |
-| Clean worktree intent | Prefer a tagged/candidate commit; note dirty files if any |
-| Backup | Owner backup of personal data roots before using shared machines |
-| Disposable data root | Use a fresh / disposable managed data directory (do not contaminate production corpora) |
-| Install profile | Choose from [install_verification_matrix.md](../runtime/install_verification_matrix.md): Docker Compose (recommended) and/or native `core`/`full`/`web` as claimed |
-| Automated GUI acceptance | `make test-gui-acceptance` **passed on the same SHA** (record exit + date) |
-| Streamlit version | Record installed Streamlit version (`python -c "import streamlit; print(streamlit.__version__)"`) |
-| Supported browsers | Record Streamlit’s **officially supported browser set** for that Streamlit version (from Streamlit docs for that release). Test those browsers — do not leave “supported browsers” as a floating phrase |
+**§0 status (2026-07-26):** done for Docker Compose maintainer pass start. Scratch evidence: `.local/release_evidence/bb6b8fe3fed5171187240ca74a9097277d82bcb4/prerequisites_section0.md` (gitignored; not signed-off RC evidence).
+
+| Check | Criterion | Recorded |
+|-------|-----------|----------|
+| Candidate identity | Record **package version** + **exact git SHA** under test | **done** — package `0.9.8.2` (`pyproject` / Compose container); git `bb6b8fe3fed5171187240ca74a9097277d82bcb4` (`v0.9.8.2`); Compose bind-mounts live `src/` so UI reflects dirty worktree |
+| Clean worktree intent | Prefer a tagged/candidate commit; note dirty files if any | **noted** — worktree **dirty** vs that SHA (docs + demo/presentation removals and related test churn among other local edits). Journeys are against dirty tree + Compose mounts, not a clean tag checkout |
+| Backup | Owner backup of personal data roots before using shared machines | **owner** — assumed before shared-machine use; not re-verified in this pass log |
+| Disposable data root | Use a fresh / disposable managed data directory (do not contaminate production corpora) | **noted** — Compose `/data` ← host `./data` (contains deep-test probe artifacts). Prefer a fresh disposable root before required journeys if this tree is not disposable |
+| Install profile | Choose from [install_verification_matrix.md](../runtime/install_verification_matrix.md): Docker Compose (recommended) and/or native `core`/`full`/`web` as claimed | **done** — Docker Compose (`transcriptx-web` healthy; UI up) |
+| Automated GUI acceptance | `make test-gui-acceptance` **passed on the same SHA** (record exit + date) | **done** — 2026-07-26; exit **0**; **7 passed** / 7837 deselected (~12s). Ran on host Python against tree at that SHA tip (dirty worktree present) |
+| Streamlit version | Record installed Streamlit version (`python -c "import streamlit; print(streamlit.__version__)"`) | **done** — Compose container **1.60.0** (authoritative for this profile); host test env **1.52.2** (AppTest only) |
+| Supported browsers | Record Streamlit’s **officially supported browser set** for that Streamlit version (from Streamlit docs for that release). Test those browsers — do not leave “supported browsers” as a floating phrase | **noted** — Streamlit docs: two most recent of **Chrome, Firefox, Edge, Safari** ([supported browsers](https://docs.streamlit.io/knowledge-base/using-streamlit/supported-browsers)). Maintainer smoke (compose UI): **Safari 26.5**, **Firefox 152.0.4 (aarch64)**, **Waterfox 6.6.17 (aarch64)**. Waterfox is not on Streamlit’s official list (Firefox-family). **Chrome** and **Edge** not yet recorded for §3.11 |
 
 ---
 
@@ -57,10 +59,12 @@ Before each major journey (and after demo remove / Full↔Guided flips):
 
 Record each row in the evidence table (§6). Class defaults assume Docker Compose GUI + core analysis.
 
+**This pass stubs (2026-07-26):** `.local/release_evidence/bb6b8fe3fed5171187240ca74a9097277d82bcb4/journeys_section3_stubs.md` — one §6 table per journey below; fill outcomes as you go (prepared ≠ measured ≠ signed-off).
+
 ### 3.1 Installation and launch — **required**
 
-- [ ] Install / launch web UI per chosen profile
-- [ ] Home loads without traceback; schema-epoch gate allows the disposable root
+- [x] Install / launch web UI per chosen profile — **pass** 2026-07-26 (Compose)
+- [x] Home loads without traceback; schema-epoch gate allows the disposable root — **pass** (existing `/data` bind; not a fresh disposable root — see stubs)
 
 ### 3.2 Import and Library — **required**
 
@@ -93,28 +97,12 @@ Deliberate failures — expected recovery / severity:
 
 - [ ] Create export / download artifacts (see also residual **R2**)
 
-### 3.6 Guided / Full controls — **required**
-
-- [ ] Switch Guided ↔ Full on Home/Settings
-- [ ] Full-only page shows unlock banner in Guided; switching to Full loads page content
-- [ ] Custom selection preserved across Full → Guided → Full (no silent wipe)
-
-### 3.7 Demo lifecycle — **required** (when demo pack shipped)
-
-- [ ] Load demo project (transactional success)
-- [ ] Remove demo project; ownership cleanup copy accurate; no leftover demo-owned inventory
-
-### 3.8 Onboarding lifecycle — **required**
-
-- [ ] Checklist visible for new disposable root
-- [ ] Dismiss / skip / complete / reopen from Help/Settings behave independently
-
-### 3.9 Transcribe command generation — **required**
+### 3.6 Transcribe command generation — **required**
 
 - [ ] Command generator shows copyable commands; **no** Streamlit shell execution
 - [ ] Dry-run / docs honesty matches [transcription.md](../runtime/transcription.md)
 
-### 3.10 Residual AppTest-blind (R1–R6) — **required**
+### 3.7 Residual AppTest-blind (R1–R6) — **required**
 
 Incorporate by **stable IDs** from [gui_acceptance_residual_checklist.md](gui_acceptance_residual_checklist.md). If that checklist adds R7+, update this section in the same change.
 

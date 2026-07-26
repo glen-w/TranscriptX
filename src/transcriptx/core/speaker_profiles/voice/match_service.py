@@ -57,6 +57,7 @@ from transcriptx.core.speaker_profiles.voice.thresholds import PROVISIONAL_THRES
 from transcriptx.core.speaker_profiles.voice.versioning import (
     PREPROCESSING_POLICY_ID,
     QUALITY_POLICY_ID,
+    VOICE_SUGGESTION_SCHEMA_ID,
 )
 from transcriptx.core.utils.file_lock import FileLock
 from transcriptx.core.utils.paths import PATHS
@@ -435,7 +436,7 @@ class SpeakerMatchService:
                     candidate_profile_ids=[c["profile_id"] for c in kept],
                 )
             payload = {
-                "schema_id": "voice_match_suggestion.v1",
+                "schema_id": VOICE_SUGGESTION_SCHEMA_ID,
                 "suggestion_id": suggestion_id,
                 "suggestion_digest": digest,
                 "outcome": outcome,

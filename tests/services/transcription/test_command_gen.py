@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from transcriptx.services.transcription.command_gen import (
@@ -65,6 +67,32 @@ def test_whispermlx_missing_flags() -> None:
     assert "--whisper-args" in cmd.shell
     assert "medium" in cmd.shell
     assert "de" in cmd.shell
+    assert any("~/.local/bin" in note for note in cmd.notes)
+    assert any("PATH" in note for note in cmd.notes)
+    assert any("/opt/venv" in note for note in cmd.notes)
+
+
+@pytest.mark.unit
+def test_default_host_env_file_avoids_container_install_tree(tmp_path: Path) -> None:
+    from transcriptx.services.transcription.command_gen import (
+        default_host_env_file,
+        default_host_script_ref,
+        looks_like_container_install_path,
+    )
+
+    container_root = Path("/opt/venv/lib/python3.10")
+    assert looks_like_container_install_path(container_root)
+    assert default_host_env_file(container_root) == "whisperx.env"
+    assert default_host_script_ref(container_root) == "scripts/whispermlx-missing.py"
+
+    repo = tmp_path / "transcriptx"
+    (repo / "scripts").mkdir(parents=True)
+    (repo / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (repo / "scripts" / "whispermlx-missing.py").write_text("# stub\n", encoding="utf-8")
+    assert default_host_env_file(repo) == str(repo / "whisperx.env")
+    assert default_host_script_ref(repo) == str(
+        repo / "scripts" / "whispermlx-missing.py"
+    )
 
 
 @pytest.mark.unit

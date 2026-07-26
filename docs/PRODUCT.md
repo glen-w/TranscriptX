@@ -22,7 +22,7 @@ Approachable to any thoughtful user with transcripts. Researchers and analysts a
 | Transcription | External to the analysis runtime, with an in-app **command-generation** handoff (not a built-in engine) |
 | Operational | Docker Compose; modest `website/` (GitHub Pages); hosted docs pending RTD go-live |
 
-Presentation modes (**Guided** / **Full controls**, aliases Simple/Advanced) are a config/presentation layer only — one execution system. An optional **demo project** (synthetic pack + one-click remove) ships for first-run exploration. See [public surfaces](public_surfaces.md), [ui_presentation_modes.md](dev/ui_presentation_modes.md), and [demo_project.md](dev/demo_project.md).
+First-run experience relies on **task documentation** and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled in **0.9.6** and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).
 
 ## AI position
 

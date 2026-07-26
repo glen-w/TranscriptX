@@ -43,12 +43,10 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Compose mounts and environment variables are operational configuration only; storage layout, output layout, and run-truth rules are defined in the contracts linked from §1.
 - See `docs/runtime/docker.md` for build commands, volume mounts, and container-specific pitfalls.
 
-### 1.5 Presentation modes and demo project (not new entrypoints)
+### 1.5 First-run experience (not extra entrypoints)
 
-- **Guided** / **Full controls** (aliases Simple / Advanced) are a **presentation and configuration layer** only (**0.9.6**).
-- They do not introduce a second execution system or a separate public API surface.
-- Prefer documenting them as UI/config behaviour, not as additional supported entrypoints.
-- **Demo project** load/remove is a supported GUI capability (**0.9.6**): isolated ownership inventory, one-click remove, synthetic pack + `scripts/generate_demo_runs.py`. It is not a second library or API surface.
+- Prefer **task documentation** and a **clear, complete GUI** over reduced presentation modes or in-app tours.
+- Guided / Full controls, Getting started checklist, and bundled demo-project load/remove were **trialled in 0.9.6 and removed** (see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). They are not supported product surfaces.
 
 ### 1.6 Transcription command generation (GUI capability)
 

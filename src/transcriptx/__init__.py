@@ -24,4 +24,4 @@ Package structure (high level):
 - preprocessing/: Static resources (stopwords, lexicon data)
 """
 
-__version__ = "0.9.8.2"
+__version__ = "0.9.8.3"

@@ -60,7 +60,6 @@ More: [generated CLI / API notes](docs/generated/cli.md) · [public surfaces](do
 - Speaker, interaction, sentiment, emotion, NER, topics, similarity, voice/prosody
 - Groups: analyse multiple transcripts together (file-backed); optional local LLM synthesis
 - File-first by default — groups, corrections, speaker maps, and discovery use files/sidecars
-- **Guided / Full controls** presentation modes and an optional **demo project** for first-run exploration (0.9.6)
 
 ## Architecture (brief)
 
@@ -68,7 +67,7 @@ More: [generated CLI / API notes](docs/generated/cli.md) · [public surfaces](do
 
 ## Direction
 
-Stabilisation toward a credible **1.0** (schema epoch through Guided/demo **0.9.6**, automatable harden + public landing **0.9.7**, then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion. See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
+Stabilisation toward a credible **1.0** (schema epoch; Guided/demo trialled in **0.9.6** then removed; automatable harden + public landing **0.9.7**; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion. See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
 
 ## Links
 

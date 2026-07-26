@@ -21,8 +21,6 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [analysis_quality_audit.md](dev/analysis_quality_audit.md) | Analysis quality audit template |
 | [analysis_quality_audit_scaffold.md](dev/analysis_quality_audit_scaffold.md) | Generated registry rows (`make docs-gen`) |
 | [analysis_quality_audit_judgements.md](dev/analysis_quality_audit_judgements.md) | Provisional Recommendation / Severity overlay |
-| [ui_presentation_modes.md](dev/ui_presentation_modes.md) | Guided / Full controls (shipped 0.9.6) |
-| [demo_project.md](dev/demo_project.md) | Demo project (shipped 0.9.6) |
 | [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelope planning |
 | [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) | Trust / privacy / model gate |
 | [release_ops_support_1_0.md](dev/release_ops_support_1_0.md) | Release ops / support policy |
