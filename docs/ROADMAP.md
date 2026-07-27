@@ -65,13 +65,35 @@ Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, 
 
 ---
 
-## 1.1 – 1.x
+## 1.1 – 1.x (early post-1.0)
+
+Prefer a short **corrections** wave, a **deeper performance** wave, and an **Insights / analysis quality** wave soon after 1.0, then other 1.x themes as capacity allows.
+
+- **Corrections strengthen (early 1.x wave)** — Corrections Studio is usable for 1.0 but results are **mixed**; do not treat it as finished. Dedicated wave:
+
+  - Free-read the transcript and propose corrections at **word level** (not only current studio flows)
+  - Prefer building word-level propose/apply into the **Transcript viewer** page (read → select word/span → propose correction) so correction is part of reading, not a separate dead-end
+  - Keep Corrections Studio as the batch / review surface or fold it into viewer workflows after design
+  - Honesty: mixed auto/assist quality must stay labelled; no silent overwrite of canonical text without clear apply/review
+
+- **Deeper performance features (early 1.x wave)** — beyond 1.0 resource envelopes: help users plan and choose runs on *their* machine. Examples:
+
+  - Realistic **time estimates** for analysis runs given detected hardware (CPU/GPU/memory, install profile)
+  - **Smarter model recommendations** (which backend/size/settings fit this hardware and workload without over-promising)
+  - Keep estimates labelled as guidance; do not block runs on uncertain forecasts
+
+- **Insights & analysis enhance (early 1.x wave)** — Insights (and related analysis presentation) work for 1.0; do not freeze quality here. Dedicated wave:
+
+  - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise)
+  - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
+  - Align with Overview presentation polish from **0.9.9** where patterns overlap; keep LLM insights honestly labelled
+  - Revisit module-level insight eligibility / empty states so partial runs stay trustworthy
 
 - Elaborate guided coach-mark tour (if needed)
 - Large bundled completed demo runs (if risky at 1.0)
 - Archive taxonomy refinements; aesthetic polish
 - Specialist convenience and non-supported configurations
-- **Broader local transcription command generation** — Transcribe Audio already generates copyable host commands for **whispermlx** / **whispermlx-missing** (Apple **MLX**, macOS / Apple Silicon) and a WhisperX Docker recipe. Extend working templates for other Whisper stacks/platforms (e.g. CUDA Linux, CPU-only) and other **local** transcription CLIs, still copy/run-on-host only (no in-container MLX; no built-in orchestration — that stays deferred). Keep import as the GUI admission gate.
+- **Broader local transcription command generation** — Transcribe Audio already generates copyable host commands for **whispermlx** / **whispermlx-missing** (Apple **MLX**, macOS / Apple Silicon), a WhisperX Docker recipe, and **jhj0517/Whisper-WebUI** Gradio deploy (SRT/VTT → import). Extend further for other Whisper stacks/platforms (e.g. more CUDA Linux / CPU-only CLIs) as needed, still copy/run-on-host only (no in-container MLX; no built-in orchestration — that stays deferred). Keep import as the GUI admission gate.
 - **Transcript tagging** — library visibility / kind labels so users can surface certain transcripts (e.g. `meeting`, `voice note`, `lone speaker` for one-sided phone recordings). Tags are organisation metadata, not an analysis module.
 
   **Design before build — interaction with Groups:** tags and groups must stay distinct. Tags find/filter/surface individual transcripts; Groups are analysis cohorts for cross-session runs. Tagging must not create or imply group membership. Tags may act as **filters** in the group member picker, but must not auto-materialise a Group without an explicit user action. Decide whether “more visible” means facet filters, optional pin/favourite, or both — without overlapping Groups as the named-collection surface. Kind tags like `lone speaker` may later feed soft suitability hints (e.g. interaction modules), but must remain optional metadata, not silent default changes. Prefer transcript-local / library storage; keep tags out of group run schemas unless a deliberate filter snapshot is needed.
@@ -101,6 +123,29 @@ Until that decision: helpers stay **non-core** (not GUI nav / not public surface
 
 ---
 
+## 1.5 – DB backing (local analytics layer)
+
+1.0 stays **file-backed** (managed library + sidecars). **1.5** is the first deliberate DB wave: a **local** query/analytics layer so longitudinal and cross-session views stop paying full-scan / ad-hoc JSON costs — without abandoning local-first or turning TranscriptX into a hosted multi-tenant product.
+
+**Desired direction (design before build):**
+
+- Start with **SQLite** (or equivalent embedded) as an **optional / derived** analytics store, not a second source of truth for canonical transcripts
+- First product slice: **speaker-profile analytics views** and related B5 remainder (DB views; group gallery keyed by `profile_id`) — see [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md)
+- Keep file/sidecar layout as the durable library contract; DB is rebuildable from files (or explicitly journalled) so wipe/rebuild stays honest
+- Define sync/invalidation on import, profile edits, run finalize, and wipe paths before expanding beyond Speakers
+
+**Out of scope for 1.5 unless redesign says otherwise:** remote Postgres/SaaS, multi-user auth, replacing the entire managed-file library with ORM rows, or making SQLite mandatory on day one of 1.0.
+
+**1.5 decision fork:**
+
+- **Invest** — ship Speakers (then Groups) analytics on SQLite views with clear rebuild/migration UX; document file = durable, DB = query cache/index
+- **Narrow** — only indexes needed for Speakers charts; leave broader library search/file stores as-is until a later 1.x cut
+- **Defer again** — if file-backed scale stays acceptable, keep SQLite off the default path and leave this theme parked
+
+Not a 1.0 gate; not a casual 1.1 polish item. Depends on post-1.0 capacity after corrections / performance / merge decisions.
+
+---
+
 ## 2.0 vision
 
 Personal audio intelligence companion: personal recordings, voice-note workflows, deeper conversational analytics, stronger local AI — still local-first and modular.
@@ -110,11 +155,11 @@ Personal audio intelligence companion: personal recordings, voice-note workflows
 ## Non-near-term / deferred
 
 - Built-in or orchestrated transcription engine
-- SQLite speaker analytics as default
 - Multilingual routing beyond a small reliable subset
 - B4 ConvoKit-family methods as product defaults
 - Mode systems that duplicate page logic
 - Elaborate interactive website effects
+- Broader “everything in the DB” library migration (beyond the 1.5 analytics layer)
 
 Historical sprint dumps: [sprint_archive.md](archive/plans/sprint_archive.md) (archived).
 

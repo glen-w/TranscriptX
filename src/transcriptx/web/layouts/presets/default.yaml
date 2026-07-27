@@ -28,11 +28,7 @@ pages:
     page_id: insights
     blocks:
       - placement_id: insights_primary_summary
-        block_id: transcript_summary_hero
-        section: summary
-        visible: true
-      - placement_id: insights_other_summaries
-        block_id: other_summaries
+        block_id: insights_summary_panel
         section: summary
         visible: true
       - placement_id: insights_llm_speaker_summary
@@ -57,14 +53,6 @@ pages:
       - placement_id: insights_highlights
         block_id: highlights
         section: highlights
-        visible: true
-      - placement_id: insights_contract
-        block_id: insights_contract
-        section: analysis
-        visible: true
-      - placement_id: insights_exec_summary
-        block_id: executive_summary
-        section: analysis
         visible: true
       - placement_id: insights_lexical_diversity
         block_id: lexical_diversity_block
@@ -94,6 +82,10 @@ pages:
         params:
           title: Keyphrases
           empty_hint: Run the `keyphrases` module to populate this view.
+      - placement_id: insights_contract
+        block_id: insights_contract
+        section: analysis
+        visible: true
   charts:
     page_id: charts
     blocks:

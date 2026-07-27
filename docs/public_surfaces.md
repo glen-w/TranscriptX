@@ -50,7 +50,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
 
 ### 1.6 Transcription command generation (GUI capability)
 
-- Generating shell/CLI commands for **external** transcription tools (whispermlx, whispermlx-missing, WhisperX Docker recipe) is a shipped **GUI capability** (**0.9.4**): copyable only; Streamlit does not execute transcription.
+- Generating shell/CLI commands for **external** transcription tools (whispermlx, whispermlx-missing, WhisperX Docker, Whisper-WebUI Gradio deploy) is a shipped **GUI capability** (**0.9.4**+): copyable only; Streamlit does not execute transcription. Whisper-WebUI is an **optional interoperability recipe** only — ownership disclaimer and smoke-test limits: [recipes/whisper-webui/README.md](recipes/whisper-webui/README.md).
 - Supported product path remains: external transcript → managed import → analysis.
 - Corpus helpers such as `scripts/whispermlx-missing.py` are documented user-facing scripts when referenced from runtime docs; they are not a replacement for managed import.
 - Audio **preprocess** / **merge** helpers (`scripts/audio_preprocess.py`, `scripts/audio_merge.py`) are **non-core** host utilities (GUI pages removed). Documented in transcription docs; **1.2** decides invest in inline audio±transcript merge vs remove helpers ([ROADMAP.md](ROADMAP.md)).

@@ -154,6 +154,17 @@ def test_default_insights_commitments_live_in_actions() -> None:
     assert by_id["insights_commitments"].section == "actions"
     assert by_id["insights_llm_action_items"].section == "actions"
     assert by_id["insights_primary_summary"].section == "summary"
+    assert by_id["insights_primary_summary"].block_id == "insights_summary_panel"
+    assert by_id["insights_keyphrases"].section == "analysis"
+    analysis_ids = [b.block_id for b in insights if b.section == "analysis"]
+    assert analysis_ids == [
+        "lexical_diversity_block",
+        "epistemic_markers_block",
+        "politeness_block",
+        "keyphrases_block",
+        "insights_contract",
+    ]
+    assert "executive_summary" not in {b.block_id for b in insights}
     assert "commitments_table" not in {
         b.block_id for b in insights if b.section == "summary"
     }

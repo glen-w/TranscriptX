@@ -2227,3 +2227,43 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 ### Quarantine / ignore stance
 - Do **not** re-enable collect-ignored semantic v1 modules until rewritten for v2.
 - Leave layout/manifest schema-drift failures for a dedicated schema-alignment pass.
+---
+
+## 76. Expansion (2026-07-27) – transcript viewer + Insights GUI
+
+### Trigger
+`/tests` focused on **transcript viewer and Insights GUI**.
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/260727.zip` (6.0M); `custom-commands/` mirrored.
+
+### Review
+- Full collection (`-m ""`): **7917** → **7931** after expansion (deselected under default addopts ≈ **178**).
+- Default baseline before expansion: **7735 passed / 1 failed / 3 skipped / 178 deselected**.
+  - Failure: `test_no_docker_invocation_strings` hit help copy in `web/page_modules/transcribe_audio.py` (`docker compose` / `docker run`). Classified as **allowlist drift** (same class as `command_gen.py`); tests-only allowlist update.
+- Cleanup: disabled (per command).
+- Quarantined: **0** active (`tests/quarantine/COUNT`; `-m quarantined` collects nothing); not re-enabled.
+- Markers / addopts: unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance).
+- Structure: `tests/{analysis,app,contracts,core,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` + `tests/web/transcript_viewer/`, `tests/web/gui_acceptance/`.
+- Note: Insights presentation helpers currently pin density to **Full** (`is_insights_guided()` → False); Guided-path unit tests still monkeypatch for residual progressive-disclosure coverage.
+
+### Expansion (tests-only; Insights + transcript viewer)
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_insights_transcript_gui_expansion.py` | **new (~12)** | Highlight card collect/dedupe/unthemed; filter→cap; section nav; analysis group headings; keyphrases/markers Guided stubs; transcript jump from highlights; chrome = section nav only; always-Full mode contract |
+| `tests/web/transcript_viewer/test_highlight.py` | **+2** | Multi-match highlight HTML; prefix/suffix preservation |
+| `tests/regression/test_analysis_only_invariants.py` | allowlist | Transcribe page docker help strings |
+| `tests/web/test_insights_presentation*.py` | prior/new | Summary replace, Analysis cap, provenance, highlight cap (monkeypatched Guided) |
+| `tests/web/gui_acceptance/test_insights_charts.py` | extended | Analysis section must not show Executive Summary |
+
+### Validation
+- Focused Insights/transcript slice: **44 passed** (+ AppTest Insights **1 passed** under `-m gui_acceptance`).
+- Default suite after expansion: **7749 passed, 1 failed, 3 skipped, 178 deselected**.
+  - Residual failure: `tests/web/services/test_run_cleanup_acceptance.py::TestCleanupRaces::test_concurrent_handle_claim` — classified as **unrelated race flake**, not introduced by this expansion; not “fixed” here.
+- Production code in this `#tests` pass: **none** for the expansion itself (Insights presentation already on tree; allowlist is tests-only).
+- Quarantined tests: **not re-enabled**.
+
+### Coverage gaps still open (follow-up)
+- Streamlit AppTest for Highlights filter expander + Show more interaction.
+- Narrow-viewport nav (AppTest-blind).
+- Full in-browser playback wiring from Insights Play (still navigates to Transcript).

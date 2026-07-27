@@ -92,6 +92,7 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
             "minutes_only",
             "minutes_only",
         ),
+        "TRANSCRIPTX_DASHBOARD_TRANSCRIPT_EXCLUDE_UNNAMED_SPEAKERS": ("0", False),
         "TRANSCRIPTX_AUDIO_PREPROCESSING_MODE": ("auto", "auto"),
         "TRANSCRIPTX_AUDIO_CONVERT_TO_MONO": ("true", "auto"),
         "TRANSCRIPTX_AUDIO_DOWNSAMPLE": ("0", "off"),

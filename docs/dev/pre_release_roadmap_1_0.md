@@ -80,8 +80,8 @@ A perfect historical archive taxonomy is **not** required for 1.0. A simple, doc
 **Not hard blockers if product gates pass**
 - Elaborate website effects; exhaustive RTD autodoc; a highly polished first public site — provided usable docs and a credible landing exist.
 
-**Safe to defer to 1.1**
-- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; SQLite speaker analytics; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; built-in/orchestrated transcription engine; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — design must clarify interaction with Groups (tags ≠ analysis cohorts); tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.1.
+**Safe to defer to 1.1+**
+- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; built-in/orchestrated transcription engine; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — design must clarify interaction with Groups (tags ≠ analysis cohorts); tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.1. **SQLite / DB-backed speaker analytics** — tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.5 (not a 1.0 gate).
 
 ---
 
@@ -837,11 +837,11 @@ Journeys (each with prerequisites, test data, steps, expected UI, expected files
 - [ ] First launch
 - [ ] Transcribe command gen (**implementation shipped 0.9.4**; journey evidence still required)
 - [ ] Single + folder import
-- [ ] Duplicate/malformed
-- [ ] Default preset
+- [x] Duplicate/malformed — folder-import path rejects (empty/relative/missing/file-not-dir); clear errors; no admit (2026-07-27; [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.4)
+- [x] Default preset — experimental `contextual_emotion` / `fine_grained_emotion` off Balanced defaults (verified 2026-07-27; see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.3)
 - [ ] Optional AI
 - [ ] Missing Ollama
-- [ ] Partial module failure
+- [x] Partial module failure — Thorough `llm_action_items` + `llm_custom_qa` 600s timeout → FAIL; pipeline continued; `final_status=partial` (2026-07-26; [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.4)
 - [ ] Insights source nav
 - [ ] Charts/artifacts
 - [ ] Speakers/profiles

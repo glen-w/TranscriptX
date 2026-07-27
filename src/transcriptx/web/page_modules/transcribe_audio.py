@@ -30,7 +30,11 @@ _TOOL_LABELS = {
     TranscriptionTool.WHISPERMLX_SINGLE: "whispermlx (macOS host)",
     TranscriptionTool.WHISPERMLX_MISSING: "whispermlx-missing (skip existing JSON)",
     TranscriptionTool.WHISPERX_DOCKER: "WhisperX Docker (external recipe)",
+    TranscriptionTool.WHISPER_WEBUI_DOCKER: "Whisper-WebUI Docker (Gradio)",
 }
+
+_DEFAULT_WEBUI_IMAGE = "jhj0517/whisper-webui:v1.0.8-4def223"
+_DEFAULT_WHISPERX_IMAGE = "ghcr.io/m-bain/whisperx:latest"
 
 
 def render_transcribe_audio_page() -> None:
@@ -75,41 +79,64 @@ def render_transcribe_audio_page() -> None:
             "`python3 scripts/whispermlx-missing.py …`. "
             "See Bulk helper below / `docs/runtime/transcription.md`."
         )
+    if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
+        st.caption(
+            "Optional third-party recipe: "
+            "[jhj0517/Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) "
+            "(Apache-2.0). TranscriptX does not own or guarantee the service — see "
+            "`docs/recipes/whisper-webui/README.md`. "
+            "**Apple Silicon: expect CPU inference** (prefer whispermlx for MLX speed). "
+            "Export **SRT/VTT** → **Import Transcript**."
+        )
 
     col_a, col_b = st.columns(2)
     with col_a:
+        input_help = (
+            "Not used for Whisper-WebUI deploy (upload audio in the Gradio UI). "
+            "Kept for navigation hints."
+            if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER
+            else "Absolute path preferred. Spaces are quoted in the generated command."
+        )
         input_path = st.text_input(
             "Input file or folder",
             value=default_input or "/path/to/audio",
             key="tx_cmdgen_input",
-            help="Absolute path preferred. Spaces are quoted in the generated command.",
+            help=input_help,
+            disabled=tool is TranscriptionTool.WHISPER_WEBUI_DOCKER,
+        )
+        output_label = (
+            "Output folder (SRT/VTT downloads)"
+            if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER
+            else "Output folder (JSON)"
         )
         output_dir = st.text_input(
-            "Output folder (JSON)",
+            output_label,
             value="/path/to/transcript/output",
             key="tx_cmdgen_output",
         )
-        # Drop stale session values that pointed at the Docker install tree.
-        existing_env = st.session_state.get("tx_cmdgen_env")
-        if isinstance(existing_env, str) and looks_like_container_install_path(
-            existing_env
-        ):
-            st.session_state["tx_cmdgen_env"] = _ENV_FILE_DEFAULT
-        env_file = st.text_input(
-            "Env file (host)",
-            value=_ENV_FILE_DEFAULT,
-            key="tx_cmdgen_env",
-            help=(
-                "Host path to repo-root whisperx.env for the Mac terminal command. "
-                "Do not use container paths under /opt/venv — those do not exist on the host. "
-                "Relative whisperx.env works when you run the command from the git clone."
-            ),
-        )
-        if looks_like_container_install_path(env_file):
-            st.warning(
-                "Env file looks like a Docker/venv path. Use the host repo "
-                "`whisperx.env` (absolute host path, or `whisperx.env` from the clone)."
+        env_file = _ENV_FILE_DEFAULT
+        if tool is not TranscriptionTool.WHISPER_WEBUI_DOCKER:
+            # Drop stale session values that pointed at the Docker install tree.
+            existing_env = st.session_state.get("tx_cmdgen_env")
+            if isinstance(existing_env, str) and looks_like_container_install_path(
+                existing_env
+            ):
+                st.session_state["tx_cmdgen_env"] = _ENV_FILE_DEFAULT
+            env_file = st.text_input(
+                "Env file (host)",
+                value=_ENV_FILE_DEFAULT,
+                key="tx_cmdgen_env",
+                help=(
+                    "Host path to repo-root whisperx.env for the Mac terminal command. "
+                    "Do not use container paths under /opt/venv — those do not exist on the host. "
+                    "Relative whisperx.env works when you run the command from the git clone."
+                ),
             )
+            if looks_like_container_install_path(env_file):
+                st.warning(
+                    "Env file looks like a Docker/venv path. Use the host repo "
+                    "`whisperx.env` (absolute host path, or `whisperx.env` from the clone)."
+                )
         audio_glob = st.text_input(
             "Audio glob (folder loop)",
             value="*.mp3",
@@ -117,16 +144,22 @@ def render_transcribe_audio_page() -> None:
             disabled=tool is not TranscriptionTool.WHISPERMLX_SINGLE,
         )
     with col_b:
+        model_help = (
+            "Suggested Gradio UI model (written as a comment in the deploy snippet). "
+            "Actual selection is in the browser after launch."
+            if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER
+            else (
+                "Whisper model size for the host command. "
+                "Pick a listed option or type another engine-supported name."
+            )
+        )
         model = st.selectbox(
             "Model",
             options=list(TRANSCRIPTION_MODEL_OPTIONS),
             index=TRANSCRIPTION_MODEL_OPTIONS.index(DEFAULT_TRANSCRIPTION_MODEL),
             key="tx_cmdgen_model",
             accept_new_options=True,
-            help=(
-                "Whisper model size for the host command. "
-                "Pick a listed option or type another engine-supported name."
-            ),
+            help=model_help,
         )
         language = st.text_input("Language", value="en", key="tx_cmdgen_language")
         diarize = st.checkbox("Diarize", value=True, key="tx_cmdgen_diarize")
@@ -156,6 +189,10 @@ def render_transcribe_audio_page() -> None:
     batch_size = 16
     min_speakers: int | None = None
     max_speakers: int | None = None
+    docker_image = _DEFAULT_WHISPERX_IMAGE
+    webui_port = 7860
+    webui_clone_dir = "$HOME/Whisper-WebUI"
+    expected_output_format = "whisperx_json"
     if tool is TranscriptionTool.WHISPERMLX_SINGLE:
         whispermlx_binary = st.text_input(
             "whispermlx binary",
@@ -209,11 +246,47 @@ def render_transcribe_audio_page() -> None:
                     key="tx_cmdgen_max_spk",
                 )
             )
+    if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
+        expected_output_format = "srt_vtt"
+        docker_image = st.text_input(
+            "Docker image",
+            value=_DEFAULT_WEBUI_IMAGE,
+            key="tx_cmdgen_webui_image",
+            help="Pre-built Hub image, or build from the clone with docker compose.",
+        )
+        webui_port = int(
+            st.number_input(
+                "Host port",
+                min_value=1,
+                max_value=65535,
+                value=7860,
+                key="tx_cmdgen_webui_port",
+            )
+        )
+        webui_clone_dir = st.text_input(
+            "Clone directory (host)",
+            value="$HOME/Whisper-WebUI",
+            key="tx_cmdgen_webui_clone",
+            help="Where to git clone jhj0517/Whisper-WebUI for models/configs volumes.",
+        )
+        device = st.selectbox(
+            "Device",
+            options=["cpu", "cuda"],
+            index=0,
+            key="tx_cmdgen_webui_device",
+            help="cuda adds --gpus all to docker run.",
+        )
 
-    st.caption(
-        "Expected output format: **WhisperX / whispermlx JSON** "
-        "(Import Transcript). Alternate formats are not generated here."
-    )
+    if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
+        st.caption(
+            "Expected output format: **SRT / WebVTT** "
+            "(Import Transcript). Configure model/language/diarization in the Gradio UI."
+        )
+    else:
+        st.caption(
+            "Expected output format: **WhisperX / whispermlx JSON** "
+            "(Import Transcript). Alternate formats are not generated here."
+        )
 
     params = CommandGenParams(
         tool=tool,
@@ -233,6 +306,15 @@ def render_transcribe_audio_page() -> None:
         batch_size=batch_size,
         min_speakers=min_speakers,
         max_speakers=max_speakers,
+        docker_image=docker_image.strip()
+        or (
+            _DEFAULT_WEBUI_IMAGE
+            if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER
+            else _DEFAULT_WHISPERX_IMAGE
+        ),
+        webui_port=webui_port,
+        webui_clone_dir=webui_clone_dir.strip() or "$HOME/Whisper-WebUI",
+        expected_output_format=expected_output_format,
     )
 
     generated = generate_transcription_command(params)
@@ -268,8 +350,8 @@ whispermlx-missing""",
 
     st.subheader("Import into TranscriptX")
     st.markdown(
-        "When transcription finishes, open **Import Transcript** and upload the JSON "
-        "(WhisperX / whispermlx output, SRT, VTT, and other supported formats). "
+        "When transcription finishes, open **Import Transcript** and upload the result "
+        "(WhisperX / whispermlx JSON, Whisper-WebUI **SRT/VTT**, and other supported formats). "
         "Optionally attach the source recording on that page for speaker ID and "
         "audio-derived features; same-stem audio in the mounted recordings folder "
         "will be linked."
@@ -285,9 +367,10 @@ whispermlx-missing""",
 | Where | What runs |
 |-------|-----------|
 | Host (Mac terminal) | `whispermlx`, `whispermlx-missing` |
-| Host (Linux/GPU) | WhisperX Docker recipe |
+| Host (Linux/GPU or Docker Desktop) | WhisperX Docker; Whisper-WebUI Gradio |
 | `transcriptx-web` (Docker or native) | Import, library, analysis only |
 
 **whispermlx** needs Apple MLX and cannot run inside the Linux analysis image.
-See `docs/runtime/transcription.md` and `docs/recipes/whisperx/README.md`.
+See `docs/runtime/transcription.md`, `docs/recipes/whisperx/README.md`, and
+`docs/recipes/whisper-webui/README.md`.
 """)

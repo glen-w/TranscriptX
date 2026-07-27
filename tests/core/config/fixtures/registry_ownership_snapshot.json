@@ -64,7 +64,7 @@
     "bertopic": 7,
     "contextual_emotion": 4,
     "corrections": 23,
-    "dashboard_display": 2,
+    "dashboard_display": 3,
     "dashboard_overview": 4,
     "echoes": 12,
     "emotion_lexical": 2,
@@ -105,6 +105,6 @@
     "workflow": 13
   },
   "pilot_count": 51,
-  "pydantic_owned_keys": 705,
-  "total_registry_keys": 721
+  "pydantic_owned_keys": 706,
+  "total_registry_keys": 722
 }

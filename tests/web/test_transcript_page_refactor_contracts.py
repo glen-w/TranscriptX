@@ -54,6 +54,7 @@ def test_navigate_to_segment_sets_canonical_state_and_reruns(monkeypatch) -> Non
 def test_render_transcript_controls_contract(monkeypatch) -> None:
     markdown_calls: list[str] = []
     state = {"timestamp_format": "seconds"}
+    checkbox_keys: list[str] = []
 
     class _DummySt:
         session_state = state
@@ -68,15 +69,17 @@ def test_render_transcript_controls_contract(monkeypatch) -> None:
             return "needle"
 
         @staticmethod
-        def checkbox(_label, key):
-            assert key == "show_timestamps"
-            return True
+        def checkbox(_label, key, help=None):
+            checkbox_keys.append(key)
+            return key == "show_timestamps"
 
     monkeypatch.setattr(mod, "st", _DummySt)
     result = mod._render_transcript_controls()
     assert result.search_text == "needle"
     assert result.show_timestamps is True
+    assert result.show_unnamed_speakers is False
     assert result.format_key == "seconds"
+    assert checkbox_keys == ["show_timestamps", "show_unnamed_speakers"]
     # Empty markdown wrappers cannot contain Streamlit widgets and paint as a
     # thick white bar under dark chrome — controls must not emit them.
     assert markdown_calls == []

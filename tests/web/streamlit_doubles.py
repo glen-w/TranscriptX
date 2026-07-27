@@ -18,6 +18,30 @@ class DummyColumn:
     def __exit__(self, exc_type, exc, tb):
         return False
 
+    def metric(self, *_args, **_kwargs):
+        return None
+
+    def markdown(self, *_args, **_kwargs):
+        return None
+
+    def write(self, *_args, **_kwargs):
+        return None
+
+    def caption(self, *_args, **_kwargs):
+        return None
+
+    def button(self, *_args, **_kwargs):
+        return False
+
+    def dataframe(self, *_args, **_kwargs):
+        return None
+
+    def expander(self, *_args, **_kwargs):
+        return DummyExpander()
+
+    def json(self, *_args, **_kwargs):
+        return None
+
 
 class DummyForm:
     def __enter__(self):
@@ -33,6 +57,22 @@ class DummyExpander:
 
     def __exit__(self, exc_type, exc, tb):
         return False
+
+
+class DummyEmpty:
+    """st.empty() stand-in; supports ``with slot.container():`` live panel refresh."""
+
+    def container(self, *_args, **_kwargs):
+        return DummyExpander()
+
+    def markdown(self, *_args, **_kwargs):
+        return None
+
+    def info(self, *_args, **_kwargs):
+        return None
+
+    def empty(self):
+        return self
 
 
 class DummyStreamlit:
@@ -211,6 +251,10 @@ class DummyHomeStreamlit:
         return None
 
     @staticmethod
+    def write(*_args, **_kwargs):
+        return None
+
+    @staticmethod
     def divider():
         return None
 
@@ -239,6 +283,10 @@ class DummyHomeStreamlit:
         return DummyExpander()
 
     @staticmethod
+    def empty(*_args, **_kwargs):
+        return DummyEmpty()
+
+    @staticmethod
     def warning(*_args, **_kwargs):
         return None
 
@@ -257,6 +305,48 @@ class DummyHomeStreamlit:
     @staticmethod
     def dataframe(*_args, **_kwargs):
         return None
+
+    @staticmethod
+    def json(*_args, **_kwargs):
+        return None
+
+    @staticmethod
+    def radio(_label, options, index=0, **_kwargs):
+        return options[index]
+
+    @classmethod
+    def segmented_control(cls, _label, options, *, key=None, default=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if current in options:
+                return current
+        if default in options:
+            return default
+        return options[0] if options else None
+
+    @classmethod
+    def selectbox(cls, _label, options, index=0, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if current in options:
+                return current
+        if options:
+            return options[index]
+        return None
+
+    @classmethod
+    def multiselect(cls, _label, options, default=None, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return list(cls.session_state[key] or [])
+        return list(default or [])
+
+    @classmethod
+    def slider(cls, _label, min_value=0.0, max_value=1.0, value=None, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return cls.session_state[key]
+        if value is not None:
+            return value
+        return min_value
 
     @classmethod
     def toggle(cls, _label, *, value=False, key=None, **_kwargs):

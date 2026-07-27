@@ -31,7 +31,11 @@ def test_insights_and_charts_pages_render(gui_ws, tmp_path) -> None:
     at_insights = run_page(
         "transcriptx.web.page_modules.insights",
         "render_insights",
-        session={**_run_session(ws), "page": "Insights"},
+        session={
+            **_run_session(ws),
+            "page": "Insights",
+            "insights_section": "summary",
+        },
         script_dir=scripts,
         default_timeout=60.0,
     )
@@ -39,6 +43,22 @@ def test_insights_and_charts_pages_render(gui_ws, tmp_path) -> None:
     insights_blob = markdown_blob(at_insights)
     assert "Insights" in insights_blob
     assert "Select a subject" not in insights_blob
+
+    at_analysis = run_page(
+        "transcriptx.web.page_modules.insights",
+        "render_insights",
+        session={
+            **_run_session(ws),
+            "page": "Insights",
+            "insights_section": "analysis",
+        },
+        script_dir=scripts,
+        default_timeout=60.0,
+    )
+    assert_no_exception(at_analysis)
+    analysis_blob = markdown_blob(at_analysis)
+    # Executive Summary belongs on Summary, not Analysis.
+    assert "Executive Summary" not in analysis_blob
 
     at_charts = run_page(
         "transcriptx.web.page_modules.charts",

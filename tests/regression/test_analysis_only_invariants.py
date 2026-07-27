@@ -52,6 +52,8 @@ def test_no_docker_invocation_strings():
         {
             # Host-side WhisperX helper emits example `docker run` command strings.
             "services/transcription/command_gen.py",
+            # Transcribe page help copy mentions docker compose / docker run (no orchestration).
+            "web/page_modules/transcribe_audio.py",
         }
     )
     patterns = [

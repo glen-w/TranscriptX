@@ -119,6 +119,55 @@ def test_whisperx_docker_recipe() -> None:
 
 
 @pytest.mark.unit
+def test_whisper_webui_docker_deploy() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPER_WEBUI_DOCKER,
+        input_path="/unused",
+        output_dir="/Users/me/My Outputs",
+        model="medium",
+        language="fr",
+        diarize=True,
+        device="cuda",
+        docker_image="jhj0517/whisper-webui:v1.0.8-4def223",
+        webui_port=7861,
+        webui_clone_dir="$HOME/Whisper-WebUI",
+        expected_output_format="srt_vtt",
+    )
+    cmd = generate_transcription_command(params)
+    assert "Whisper-WebUI" in cmd.title or "whisper-webui" in cmd.shell.lower()
+    assert "docker run" in cmd.shell
+    assert "jhj0517/whisper-webui:v1.0.8-4def223" in cmd.shell
+    assert "--gpus all" in cmd.shell
+    assert "127.0.0.1:$PORT:7860" in cmd.shell or "127.0.0.1:$PORT" in cmd.shell
+    assert "7861" in cmd.shell
+    assert "'/Users/me/My Outputs'" in cmd.shell
+    assert "git clone" in cmd.shell
+    assert "127.0.0.1" in cmd.shell
+    assert "medium" in cmd.shell
+    assert "fr" in cmd.shell
+    assert any("Apple Silicon" in n for n in cmd.notes)
+    assert any("does not own" in n.lower() or "interoperability" in n.lower() for n in cmd.notes)
+    assert any("SRT" in n or "VTT" in n for n in cmd.notes)
+    assert "srt_vtt" in "\n".join(generate_preview_lines(params))
+    assert "Import Transcript" in cmd.next_step
+
+
+@pytest.mark.unit
+def test_whisper_webui_cpu_omits_gpus() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPER_WEBUI_DOCKER,
+        input_path="/a",
+        output_dir="/b",
+        device="cpu",
+        expected_output_format="srt_vtt",
+    )
+    cmd = generate_transcription_command(params)
+    assert "--gpus" not in cmd.shell
+    assert "127.0.0.1" in cmd.shell
+    assert any("Apple Silicon" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
 def test_expected_output_format_is_whisperx_json() -> None:
     params = CommandGenParams(
         tool=TranscriptionTool.WHISPERMLX_MISSING,

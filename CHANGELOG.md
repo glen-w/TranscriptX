@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Transcribe Audio command generator + docs: **jhj0517/Whisper-WebUI** Docker/Gradio deploy option (SRT/VTT → Import Transcript); recipe under `docs/recipes/whisper-webui/` with ownership disclaimer, Apple Silicon CPU caveat, localhost bind, pinned image tag, removal, and tiny maintainer smoke obligation.
+
 ## [0.9.8.4] - 2026-07-26
 
 ### Changed

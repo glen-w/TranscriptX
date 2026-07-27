@@ -54,6 +54,21 @@ def _loader(ctx: BlockContext):
     return ctx.services.content_loader
 
 
+def _load_analysis_json(loader, module: str, suffix: str) -> Dict[str, Any] | None:
+    """Prefer the Analysis-section cache so each artifact loads once per render."""
+    from transcriptx.web.insights_presentation import load_cached_analysis_json
+
+    if st.session_state.get("_insights_analysis_consolidating_provenance"):
+        return load_cached_analysis_json(loader, module, suffix)
+    if loader is None:
+        return None
+    try:
+        payload = loader.load_json(module, suffix)
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def _module_failure_hint(run_root: Path, module_id: str) -> str | None:
     rr_path = run_root / "run_results.json"
     if not rr_path.exists():
@@ -117,6 +132,8 @@ def _render_view_raw_file_link(
     storage_root: str | None = None,
     prefer_group_root: bool = False,
 ) -> None:
+    if st.session_state.get("_insights_analysis_consolidating_provenance"):
+        return
     loader = _loader(ctx)
     if loader is None:
         return
@@ -166,26 +183,166 @@ def _render_quiet_module_empty(
 
 
 def _render_insights_payload(insights: Dict[str, Any]) -> None:
+    from transcriptx.web.insights_presentation import (
+        GUIDED_RANKED_ROW_CAP,
+        MODULE_PLAIN_DESCRIPTIONS,
+        is_insights_guided,
+    )
+
+    guided = is_insights_guided()
+    st.caption(MODULE_PLAIN_DESCRIPTIONS.get("insights", ""))
     key_themes = insights.get("key_themes") or []
     recurring_ideas = insights.get("recurring_ideas") or []
     style_markers = insights.get("style_markers") or {}
-    st.caption("Key themes (content)")
-    if not key_themes:
-        st.write("No key themes available.")
-    for row in key_themes[:8]:
-        phrase = str(row.get("phrase") or "").strip()
-        total = float((row.get("score") or {}).get("total", 0.0))
-        if phrase:
-            st.write(f"- {phrase} ({total:.3f})")
-    st.caption("Recurring ideas (content recurrence)")
-    if recurring_ideas:
-        for row in recurring_ideas[:8]:
+    if not isinstance(key_themes, list):
+        key_themes = []
+    if not isinstance(recurring_ideas, list):
+        recurring_ideas = []
+    if not isinstance(style_markers, dict):
+        style_markers = {}
+
+    theme_cap = GUIDED_RANKED_ROW_CAP if guided else 8
+    idea_cap = GUIDED_RANKED_ROW_CAP if guided else 8
+
+    has_themes = any(
+        str(row.get("phrase") or "").strip()
+        for row in key_themes
+        if isinstance(row, dict)
+    )
+    has_ideas = any(
+        str(row.get("phrase") or "").strip()
+        for row in recurring_ideas
+        if isinstance(row, dict)
+    )
+    style_rows: list[tuple[str, str]] = []
+    if isinstance(style_markers, dict):
+        for key, value in style_markers.items():
+            if value is None or value == "" or value == {} or value == []:
+                continue
+            if isinstance(value, (int, float)):
+                style_rows.append((str(key).replace("_", " ").title(), f"{float(value):.3f}"))
+            elif isinstance(value, str) and value.strip():
+                style_rows.append((str(key).replace("_", " ").title(), value.strip()))
+            elif isinstance(value, dict):
+                # Flatten one level of labelled counts — never dump raw dict text.
+                for sub_k, sub_v in list(value.items())[:5]:
+                    if isinstance(sub_v, (int, float)):
+                        style_rows.append(
+                            (
+                                f"{str(key).replace('_', ' ').title()}: "
+                                f"{str(sub_k).replace('_', ' ')}",
+                                f"{float(sub_v):.3f}",
+                            )
+                        )
+            if len(style_rows) >= (GUIDED_RANKED_ROW_CAP if guided else 12):
+                break
+
+    if not has_themes and not has_ideas and not style_rows:
+        st.info("No meaningful content-vs-style rows for this transcript.")
+        return
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("**Content terms**")
+        shown = 0
+        for row in key_themes:
+            if not isinstance(row, dict):
+                continue
             phrase = str(row.get("phrase") or "").strip()
-            recurrence = float((row.get("score") or {}).get("recurrence", 0.0))
-            if phrase:
-                st.write(f"- {phrase} (recurrence {recurrence:.3f})")
-    st.caption("How people spoke (style markers)")
-    st.json(style_markers)
+            if not phrase:
+                continue
+            if guided:
+                st.write(f"- {phrase}")
+            else:
+                total = float((row.get("score") or {}).get("total", 0.0))
+                st.write(f"- {phrase} ({total:.3f})")
+            shown += 1
+            if shown >= theme_cap:
+                break
+        if shown == 0:
+            st.caption("No key themes.")
+        if has_ideas:
+            st.markdown("**Recurring ideas**")
+            shown_i = 0
+            for row in recurring_ideas:
+                if not isinstance(row, dict):
+                    continue
+                phrase = str(row.get("phrase") or "").strip()
+                if not phrase:
+                    continue
+                if guided:
+                    st.write(f"- {phrase}")
+                else:
+                    recurrence = float((row.get("score") or {}).get("recurrence", 0.0))
+                    st.write(f"- {phrase} (recurrence {recurrence:.3f})")
+                shown_i += 1
+                if shown_i >= idea_cap:
+                    break
+    with col_b:
+        st.markdown("**Style indicators**")
+        if style_rows:
+            for label, value in style_rows[: GUIDED_RANKED_ROW_CAP if guided else 12]:
+                st.write(f"- {label}: {value}")
+        else:
+            st.caption("No style indicators.")
+
+    if guided and (
+        len(key_themes) > theme_cap
+        or len(recurring_ideas) > idea_cap
+        or (isinstance(style_markers, dict) and style_markers)
+    ):
+        with st.expander("Explore details", expanded=False):
+            if key_themes:
+                st.caption("All key themes")
+                rows = []
+                for row in key_themes[:40]:
+                    if not isinstance(row, dict):
+                        continue
+                    rows.append(
+                        {
+                            "phrase": row.get("phrase"),
+                            "score": (row.get("score") or {}).get("total"),
+                        }
+                    )
+                if rows:
+                    st.dataframe(rows, width="stretch", hide_index=True)
+            if recurring_ideas:
+                st.caption("All recurring ideas")
+                rows = []
+                for row in recurring_ideas[:40]:
+                    if not isinstance(row, dict):
+                        continue
+                    rows.append(
+                        {
+                            "phrase": row.get("phrase"),
+                            "recurrence": (row.get("score") or {}).get("recurrence"),
+                        }
+                    )
+                if rows:
+                    st.dataframe(rows, width="stretch", hide_index=True)
+            if isinstance(style_markers, dict) and style_markers:
+                st.caption("Style markers")
+                flat = []
+                for key, value in style_markers.items():
+                    if isinstance(value, (int, float, str)):
+                        flat.append({"marker": key, "value": value})
+                    elif isinstance(value, dict):
+                        for sk, sv in value.items():
+                            flat.append({"marker": f"{key}.{sk}", "value": sv})
+                if flat:
+                    st.dataframe(flat, width="stretch", hide_index=True)
+    elif not guided and isinstance(style_markers, dict) and style_markers:
+        with st.expander("Explore details", expanded=False):
+            st.caption("Style markers (full)")
+            flat = []
+            for key, value in style_markers.items():
+                if isinstance(value, (int, float, str)):
+                    flat.append({"marker": key, "value": value})
+                elif isinstance(value, dict):
+                    for sk, sv in value.items():
+                        flat.append({"marker": f"{key}.{sk}", "value": sv})
+            if flat:
+                st.dataframe(flat, width="stretch", hide_index=True)
 
 
 def _render_insight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
@@ -218,7 +375,10 @@ def _render_insight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
 
 
 def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> None:
-    st.subheader("Content vs Style")
+    if st.session_state.get("_insights_analysis_consolidating_provenance"):
+        st.markdown("#### Content vs Style")
+    else:
+        st.subheader("Content vs Style")
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None and run_root is None:
@@ -270,7 +430,7 @@ def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> N
             ctx=ctx,
         )
         return
-    insights = loader.load_json("insights", "_insights.json")
+    insights = _load_analysis_json(loader, "insights", "_insights.json")
     if not insights:
         render_module_required_hint(
             "Run the `insights` module to populate this view.",
@@ -289,66 +449,265 @@ def _highlights_theme_visible(theme: Dict[str, Any]) -> bool:
     return has_q or has_e
 
 
-def _render_highlights_theme_body(
-    theme: Dict[str, Any],
-    quotes_map: Dict[str, Dict[str, Any]],
-    events_by_id: Dict[str, Dict[str, Any]],
+def _section_display_label(section: str) -> str:
+    mapping = {
+        "cold_open": "Cold open",
+        "conflict_points": "Tension",
+        "notable_moments": "Notable moment",
+        "peak_moments": "Peak moment",
+    }
+    return mapping.get(section, section.replace("_", " ").title())
+
+
+def _collect_highlight_cards(
+    highlights: Dict[str, Any],
+) -> list:
+    """Flatten themes + sections into dedupe-ready cards (load once)."""
+    from transcriptx.web.insights_presentation import (
+        HighlightCardModel,
+        theme_label_for_user,
+    )
+
+    tk = str(highlights.get("transcript_key") or "unknown")
+    quotes_map = {
+        stable_quote_id(q, tk): q for q in collect_highlight_quotes(highlights)
+    }
+    quote_to_theme: dict[str, str] = {}
+    event_to_theme: dict[str, str] = {}
+    themes = highlights.get("themes") or []
+    for theme in themes:
+        if not isinstance(theme, dict) or not _highlights_theme_visible(theme):
+            continue
+        label = theme_label_for_user(
+            theme.get("label"),
+            is_unthemed=bool(theme.get("is_unthemed")),
+        )
+        for qid in theme.get("quote_ids") or []:
+            quote_to_theme[str(qid)] = label
+        for eid in theme.get("conflict_event_ids") or []:
+            event_to_theme[str(eid)] = label
+
+    cards: list[HighlightCardModel] = []
+    seen_keys: set[str] = set()
+
+    # Theme-linked quotes first (prefer themed labels)
+    for qid, item in quotes_map.items():
+        if not isinstance(item, dict):
+            continue
+        quote = str(item.get("quote") or "").strip()
+        start = float(item.get("start") or 0.0)
+        end = float(item.get("end") or start)
+        score_obj = item.get("score") or {}
+        score = float(score_obj.get("total") or 0.0) if isinstance(score_obj, dict) else 0.0
+        key = f"quote:{qid}"
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        speaker = str(item.get("speaker") or "").strip()
+        cards.append(
+            HighlightCardModel(
+                event_key=key,
+                theme_label=quote_to_theme.get(
+                    str(qid), _section_display_label("notable_moments")
+                ),
+                speakers=(speaker,) if speaker else (),
+                start=start,
+                end=end,
+                quote=quote,
+                section=str(item.get("section") or "quotes"),
+                score=score,
+                breakdown=(score_obj.get("breakdown") if isinstance(score_obj, dict) else None),
+                segment_index=_segment_index_from_refs(item),
+                raw_event=item,
+            )
+        )
+
+    sections = highlights.get("sections") or {}
+    for section_name, payload in sections.items():
+        if not isinstance(payload, dict):
+            continue
+        entries = (
+            payload.get("items", [])
+            if section_name == "cold_open"
+            else payload.get("events", [])
+        )
+        for index, item in enumerate(entries or []):
+            if not isinstance(item, dict):
+                continue
+            if section_name == "conflict_points":
+                eid = str(item.get("event_id") or f"conflict_{index}")
+                key = f"conflict:{eid}"
+                if key in seen_keys:
+                    continue
+                # Skip if already represented via theme quote linkage with same event
+                if eid in event_to_theme and any(
+                    c.event_key == key for c in cards
+                ):
+                    continue
+                seen_keys.add(key)
+                anchor = item.get("anchor_quote") or {}
+                quote = str(anchor.get("quote") or "").strip()
+                start = float(anchor.get("start") or item.get("start") or 0.0)
+                end = float(anchor.get("end") or item.get("end") or start)
+                parts = [
+                    p.get("speaker_display")
+                    for p in item.get("participants", []) or []
+                    if isinstance(p, dict) and p.get("speaker_display")
+                ]
+                speakers = tuple(dict.fromkeys(str(p) for p in parts if p))
+                if not speakers and anchor.get("speaker"):
+                    speakers = (str(anchor.get("speaker")),)
+                score = (
+                    item.get("score_breakdown", {})
+                    .get("window_spike_score", {})
+                    .get("raw_window_score", 0.0)
+                )
+                try:
+                    score_f = float(score or 0.0)
+                except (TypeError, ValueError):
+                    score_f = 0.0
+                cards.append(
+                    HighlightCardModel(
+                        event_key=key,
+                        theme_label=event_to_theme.get(
+                            eid, _section_display_label("conflict_points")
+                        ),
+                        speakers=speakers,
+                        start=start,
+                        end=end,
+                        quote=quote,
+                        section=section_name,
+                        score=score_f,
+                        breakdown=item.get("score_breakdown") or {},
+                        segment_index=_segment_index_from_refs(anchor)
+                        if isinstance(anchor, dict)
+                        else None,
+                        raw_event=item,
+                    )
+                )
+            else:
+                # Avoid duplicating quotes already collected via collect_highlight_quotes
+                seg = _segment_index_from_refs(item)
+                start = float(item.get("start") or 0.0)
+                end = float(item.get("end") or start)
+                quote = str(item.get("quote") or "").strip()
+                key = f"{section_name}:{seg}:{start:.2f}:{quote[:40]}"
+                # Skip if an equivalent quote card already exists
+                duplicate = False
+                for existing in cards:
+                    if (
+                        abs(existing.start - start) < 0.05
+                        and existing.quote == quote
+                    ):
+                        duplicate = True
+                        break
+                if duplicate or key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                score_obj = item.get("score") or {}
+                score = (
+                    float(score_obj.get("total") or 0.0)
+                    if isinstance(score_obj, dict)
+                    else 0.0
+                )
+                speaker = str(item.get("speaker") or "").strip()
+                cards.append(
+                    HighlightCardModel(
+                        event_key=key,
+                        theme_label=_section_display_label(section_name),
+                        speakers=(speaker,) if speaker else (),
+                        start=start,
+                        end=end,
+                        quote=quote,
+                        section=section_name,
+                        score=score,
+                        breakdown=(
+                            score_obj.get("breakdown")
+                            if isinstance(score_obj, dict)
+                            else None
+                        ),
+                        segment_index=seg,
+                        raw_event=item,
+                    )
+                )
+    return cards
+
+
+def _render_highlight_card(
+    card,
     *,
     session_slug: str | None,
     run_id: str | None,
-    key_prefix: str,
+    index: int,
+    guided: bool,
+    accent_ctx,
+    audio_available: bool = False,
 ) -> None:
-    accent_ctx = load_accent_resolve_context()
-    for qid in theme.get("quote_ids") or []:
-        item = quotes_map.get(qid)
-        if not item:
-            continue
-        score = float((item.get("score") or {}).get("total") or 0.0)
-        breakdown = (item.get("score") or {}).get("breakdown") or {}
-        start = float(item.get("start") or 0.0)
-        end = float(item.get("end") or 0.0)
-        time_range = f"{format_time_detailed(start)}-{format_time_detailed(end)}"
-        speaker = item.get("speaker") or ""
-        speaker_html = speaker_inline_html(speaker, context=accent_ctx)
-        if speaker_html:
-            st.markdown(
-                f"{speaker_html} · {time_range} · score {score:.3f}",
-                unsafe_allow_html=True,
-            )
+    from transcriptx.web.insights_presentation import is_insights_full
+
+    time_range = (
+        f"{format_time_detailed(card.start)}–{format_time_detailed(card.end)}"
+    )
+    speakers_html = []
+    for sp in card.speakers:
+        html = speaker_inline_html(sp, context=accent_ctx)
+        if html:
+            speakers_html.append(html)
         else:
-            st.markdown(f"{time_range} · score {score:.3f}")
-        st.write(item.get("quote") or "")
-        _render_open_in_transcript_button(
-            session_slug=session_slug,
-            run_id=run_id,
-            segment_index=_segment_index_from_refs(item),
-            start_time=start,
-            quote=str(item.get("quote") or ""),
-            button_key=f"{key_prefix}_theme_quote_{qid}",
+            speakers_html.append(sp)
+    speakers_bit = ", ".join(speakers_html) if speakers_html else "Speaker"
+    strength = ""
+    if not guided and card.score is not None:
+        strength = f" · {card.score:.2f}"
+    elif guided and card.score is not None and card.score >= 0.75:
+        strength = " · Strong"
+    elif guided and card.score is not None and card.score >= 0.45:
+        strength = " · Notable"
+
+    with st.container(border=True):
+        st.markdown(f"**{card.theme_label}**")
+        st.markdown(
+            f"{speakers_bit} · {time_range}{strength}",
+            unsafe_allow_html=True,
         )
-        with st.expander("Score breakdown"):
-            st.json(breakdown)
-    for eid in theme.get("conflict_event_ids") or []:
-        ev = events_by_id.get(str(eid))
-        if not ev:
-            continue
-        parts = [
-            p.get("speaker_display")
-            for p in ev.get("participants", []) or []
-            if p.get("speaker_display")
-        ]
-        unique = list(dict.fromkeys(parts))
-        part_text = ", ".join(unique) if unique else "speakers"
-        st.caption(f"Tension ({part_text})")
-        with st.expander("Event detail"):
-            st.json(
-                {
-                    "event_id": ev.get("event_id"),
-                    "start": ev.get("start"),
-                    "end": ev.get("end"),
-                    "score_breakdown": ev.get("score_breakdown"),
-                }
+        st.write(card.quote)
+        actions = st.columns(2 if audio_available else 1)
+        with actions[0]:
+            _render_open_in_transcript_button(
+                session_slug=session_slug,
+                run_id=run_id,
+                segment_index=card.segment_index,
+                start_time=card.start,
+                quote=card.quote,
+                button_key=f"hl_jump_{index}_{card.event_key}",
             )
+        if audio_available and len(actions) > 1:
+            with actions[1]:
+                # Reuse transcript jump — Transcript page owns playback.
+                if (
+                    session_slug
+                    and run_id
+                    and card.segment_index is not None
+                    and st.button("Play", key=f"hl_play_{index}_{card.event_key}")
+                ):
+                    navigate_highlight_to_transcript(
+                        session_slug=session_slug,
+                        run_id=run_id,
+                        segment_index=card.segment_index,
+                        start_time=card.start,
+                        highlight_query=(card.quote or "")[:120] or None,
+                    )
+        if is_insights_full():
+            with st.expander("Diagnostics", expanded=False):
+                st.caption(f"Event: {card.event_key}")
+                st.caption(f"Section: {card.section}")
+                if card.score is not None:
+                    st.caption(f"Score: {card.score:.3f}")
+                if card.breakdown:
+                    st.json(card.breakdown)
+                if card.raw_event is not None:
+                    with st.expander("Raw event"):
+                        st.json(card.raw_event)
 
 
 @st.fragment
@@ -357,147 +716,134 @@ def _highlights_browser_fragment(
     *,
     session_slug: str | None,
     run_id: str | None,
+    audio_available: bool = False,
 ) -> None:
-    visible: list[Dict[str, Any]] = []
-    themes = highlights.get("themes")
-    if themes:
-        visible = [t for t in themes if _highlights_theme_visible(t)]
-        if visible:
-            tk = str(highlights.get("transcript_key") or "unknown")
-            quotes_map = {
-                stable_quote_id(q, tk): q for q in collect_highlight_quotes(highlights)
-            }
-            conflict = highlights.get("sections", {}).get("conflict_points", {})
-            events_by_id = {
-                str(ev.get("event_id") or ""): ev
-                for ev in conflict.get("events", []) or []
-                if ev.get("event_id")
-            }
-            st.caption("Key themes and moments")
-            if len(visible) <= 5:
-                labels = [str(t.get("label") or "Theme") for t in visible]
-                tabs = st.tabs(labels)
-                for tab, theme in zip(tabs, visible):
-                    with tab:
-                        _render_highlights_theme_body(
-                            theme,
-                            quotes_map,
-                            events_by_id,
-                            session_slug=session_slug,
-                            run_id=run_id,
-                            key_prefix="hl_tab",
-                        )
-            else:
-                choice = st.selectbox(
-                    "Theme",
-                    options=list(range(len(visible))),
-                    format_func=lambda i: str(visible[i].get("label") or "Theme"),
-                    key="highlights_theme_select",
-                )
-                theme = visible[int(choice)]
-                _render_highlights_theme_body(
-                    theme,
-                    quotes_map,
-                    events_by_id,
-                    session_slug=session_slug,
-                    run_id=run_id,
-                    key_prefix="hl_sel",
-                )
-            st.divider()
-
-    items = []
-    sections = highlights.get("sections", {})
-    for section_name, payload in sections.items():
-        for item in (
-            payload.get("items", [])
-            if section_name == "cold_open"
-            else payload.get("events", [])
-        ):
-            if section_name == "conflict_points":
-                anchor = item.get("anchor_quote", {})
-                items.append(
-                    {
-                        "section": "conflict_points",
-                        "speaker": anchor.get("speaker", ""),
-                        "start": anchor.get("start", 0.0),
-                        "end": anchor.get("end", 0.0),
-                        "quote": anchor.get("quote", ""),
-                        "score": item.get("score_breakdown", {})
-                        .get("window_spike_score", {})
-                        .get("raw_window_score", 0.0),
-                        "breakdown": item.get("score_breakdown", {}),
-                    }
-                )
-            else:
-                segment_index = _segment_index_from_refs(item)
-                items.append(
-                    {
-                        "section": section_name,
-                        "speaker": item.get("speaker", ""),
-                        "start": item.get("start", 0.0),
-                        "end": item.get("end", 0.0),
-                        "quote": item.get("quote", ""),
-                        "score": (item.get("score") or {}).get("total", 0.0),
-                        "breakdown": (item.get("score") or {}).get("breakdown", {}),
-                        "segment_index": segment_index,
-                    }
-                )
-
-    if themes and visible:
-        st.caption("All highlights (by section)")
-
-    sections_available = sorted({item["section"] for item in items})
-    speakers_available = sorted({item["speaker"] for item in items if item["speaker"]})
-    section_filter = st.selectbox(
-        "Section", options=["All"] + sections_available, key="highlights_section_filter"
+    from transcriptx.web.insights_presentation import (
+        GUIDED_HIGHLIGHT_CARD_CAP,
+        dedupe_overlapping_highlights,
+        highlight_quote_eligible,
+        is_insights_guided,
     )
-    speaker_filter = st.multiselect(
-        "Speakers", options=speakers_available, key="highlights_speaker_filter"
+
+    guided = is_insights_guided()
+    cards = _collect_highlight_cards(highlights)
+    if not cards:
+        st.info("No highlights available for this run.")
+        return
+
+    sections_available = sorted({c.section for c in cards if c.section})
+    speakers_available = sorted(
+        {sp for c in cards for sp in c.speakers if sp}
     )
-    min_score = st.slider(
-        "Minimum score",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.0,
-        step=0.05,
-        key="highlights_min_score",
+
+    # Filters — collapsed unless active
+    section_filter = st.session_state.get("highlights_section_filter", "All")
+    speaker_filter = st.session_state.get("highlights_speaker_filter") or []
+    min_score = float(st.session_state.get("highlights_min_score", 0.0) or 0.0)
+    filters_active = (
+        section_filter != "All"
+        or bool(speaker_filter)
+        or min_score > 0.0
     )
+    filter_summary_parts = []
+    if section_filter != "All":
+        filter_summary_parts.append(f"section={section_filter}")
+    if speaker_filter:
+        filter_summary_parts.append(f"speakers={len(speaker_filter)}")
+    if min_score > 0.0:
+        filter_summary_parts.append(f"min score≥{min_score:.2f}")
+    filter_label = (
+        f"Filter highlights ({', '.join(filter_summary_parts)})"
+        if filters_active
+        else "Filter highlights"
+    )
+    with st.expander(filter_label, expanded=filters_active):
+        st.selectbox(
+            "Section",
+            options=["All"] + sections_available,
+            key="highlights_section_filter",
+        )
+        st.multiselect(
+            "Speakers",
+            options=speakers_available,
+            key="highlights_speaker_filter",
+        )
+        st.slider(
+            "Minimum score",
+            min_value=0.0,
+            max_value=1.0,
+            step=0.05,
+            key="highlights_min_score",
+        )
+
+    section_filter = st.session_state.get("highlights_section_filter", "All")
+    speaker_filter = st.session_state.get("highlights_speaker_filter") or []
+    min_score = float(st.session_state.get("highlights_min_score", 0.0) or 0.0)
+
     filtered = []
-    for item in items:
-        if section_filter != "All" and item["section"] != section_filter:
+    for card in cards:
+        if section_filter != "All" and card.section != section_filter:
             continue
-        if speaker_filter and item["speaker"] not in speaker_filter:
+        if speaker_filter and not any(sp in speaker_filter for sp in card.speakers):
             continue
-        if item["score"] < min_score:
+        if (card.score or 0.0) < min_score:
             continue
-        filtered.append(item)
-    if not filtered:
+        filtered.append(card)
+
+    if guided:
+        eligible = [
+            c for c in filtered if highlight_quote_eligible(c.quote)
+        ]
+        # Full controls still sees ineligible via unfiltered path when mode flips;
+        # Guided promotes only usable excerpts.
+        eligible = dedupe_overlapping_highlights(eligible)
+        page_size = GUIDED_HIGHLIGHT_CARD_CAP
+        shown_count = int(
+            st.session_state.get("highlights_guided_shown", page_size) or page_size
+        )
+        shown_count = max(page_size, shown_count)
+        display = eligible[:shown_count]
+        if not display:
+            st.caption("No eligible highlights for Guided view.")
+            if filtered and is_insights_guided():
+                st.caption("Switch to Full controls to browse all events.")
+            return
+        accent_ctx = load_accent_resolve_context()
+        for index, card in enumerate(display):
+            _render_highlight_card(
+                card,
+                session_slug=session_slug,
+                run_id=run_id,
+                index=index,
+                guided=True,
+                accent_ctx=accent_ctx,
+                audio_available=audio_available,
+            )
+        if len(eligible) > shown_count:
+            if st.button(
+                f"Show more ({len(eligible) - shown_count} remaining)",
+                key="highlights_show_more",
+            ):
+                st.session_state["highlights_guided_shown"] = shown_count + page_size
+                st.rerun()
+        return
+
+    # Full controls — complete list, no eligibility cull (still dedupe overlaps)
+    display = dedupe_overlapping_highlights(filtered)
+    if not display:
         st.caption("No highlights match the current filters.")
         return
     accent_ctx = load_accent_resolve_context()
-    for index, item in enumerate(filtered):
-        time_range = (
-            f"{format_time_detailed(item['start'])}-{format_time_detailed(item['end'])}"
+    for index, card in enumerate(display):
+        _render_highlight_card(
+            card,
+            session_slug=session_slug,
+            run_id=run_id,
+            index=index,
+            guided=False,
+            accent_ctx=accent_ctx,
+            audio_available=audio_available,
         )
-        st.markdown(
-            (
-                f"{speaker_inline_html(item['speaker'], context=accent_ctx)} · "
-                f"{time_range} · score {item['score']:.3f}"
-            ),
-            unsafe_allow_html=True,
-        )
-        st.write(item["quote"])
-        if item["section"] != "conflict_points":
-            _render_open_in_transcript_button(
-                session_slug=session_slug,
-                run_id=run_id,
-                segment_index=item.get("segment_index"),
-                start_time=float(item.get("start") or 0.0),
-                quote=str(item.get("quote") or ""),
-                button_key=f"hl_row_{index}_{item['section']}",
-            )
-        with st.expander("Score breakdown"):
-            st.json(item["breakdown"])
 
 
 def _render_highlight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
@@ -526,7 +872,9 @@ def _render_highlight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
 
 
 def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
-    st.subheader("Highlights")
+    from transcriptx.web.insights_presentation import is_insights_guided
+
+    st.markdown("## Highlights")
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None and run_root is None:
@@ -536,6 +884,8 @@ def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
             ctx=ctx,
         )
         return
+
+    audio_available = _highlights_audio_available(ctx)
 
     if run_root is not None and is_group_run(run_root):
         rows = load_group_content_rows(run_root, "highlights", "highlight_rows")
@@ -562,14 +912,25 @@ def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
             highlights,
             session_slug=Path(member.transcript_path).stem or ctx.subject_id,
             run_id=member.run_id or ctx.run_id,
+            audio_available=audio_available,
         )
-        _render_view_raw_file_link(
-            ctx,
-            "highlights",
-            "_highlights.json",
-            link_key="highlights_member_raw",
-            storage_root=member.storage_root,
-        )
+        if is_insights_guided():
+            with st.expander("Data and provenance", expanded=False):
+                _render_view_raw_file_link(
+                    ctx,
+                    "highlights",
+                    "_highlights.json",
+                    link_key="highlights_member_raw",
+                    storage_root=member.storage_root,
+                )
+        else:
+            _render_view_raw_file_link(
+                ctx,
+                "highlights",
+                "_highlights.json",
+                link_key="highlights_member_raw",
+                storage_root=member.storage_root,
+            )
         return
 
     if loader is None:
@@ -591,7 +952,44 @@ def render_highlights(ctx: BlockContext, _placement: BlockPlacement) -> None:
         highlights,
         session_slug=ctx.subject_id,
         run_id=ctx.run_id,
+        audio_available=audio_available,
     )
+    if is_insights_guided():
+        with st.expander("Data and provenance", expanded=False):
+            _render_view_raw_file_link(
+                ctx, "highlights", "_highlights.json", link_key="highlights_raw"
+            )
+    else:
+        _render_view_raw_file_link(
+            ctx, "highlights", "_highlights.json", link_key="highlights_raw"
+        )
+
+
+def _highlights_audio_available(ctx: BlockContext) -> bool:
+    """Cheap gate for Play — Transcript page still owns actual playback."""
+    try:
+        from transcriptx.web.components.playback_panel import (
+            resolve_playback_availability,
+        )
+        from transcriptx.services.speaker_studio.controller import (
+            SpeakerStudioController,
+        )
+
+        subject_id = getattr(ctx, "subject_id", None) or st.session_state.get(
+            "subject_id"
+        )
+        # Prefer an explicit transcript path from session when present.
+        path = st.session_state.get("transcript_path")
+        if not path and subject_id:
+            # Without a resolved path, avoid expensive discovery — hide Play.
+            return False
+        if not path:
+            return False
+        controller = SpeakerStudioController()
+        availability = resolve_playback_availability(str(path), controller)
+        return bool(availability.enabled)
+    except Exception:
+        return False
 
 
 def _render_executive_summary_body(
@@ -1375,6 +1773,14 @@ def render_llm_action_items_block(ctx: BlockContext, placement: BlockPlacement) 
 
 
 def _render_lexical_diversity_payload(payload: Dict[str, Any]) -> None:
+    from transcriptx.web.insights_presentation import (
+        GUIDED_RANKED_ROW_CAP,
+        MODULE_PLAIN_DESCRIPTIONS,
+        is_insights_guided,
+    )
+
+    guided = is_insights_guided()
+    st.caption(MODULE_PLAIN_DESCRIPTIONS.get("lexical_diversity", ""))
     global_stats = payload.get("global_stats") or {}
     if isinstance(global_stats, dict) and global_stats:
         cols = st.columns(3)
@@ -1388,17 +1794,18 @@ def _render_lexical_diversity_payload(payload: Dict[str, Any]) -> None:
                 col.metric(label, "n/a")
             else:
                 col.metric(label, f"{float(value):.3f}")
+        st.caption("TTR is length-sensitive — compare speakers of similar talk time.")
 
     speaker_stats = payload.get("speaker_stats") or {}
+    speaker_rows = []
     if isinstance(speaker_stats, dict) and speaker_stats:
-        rows = []
         for speaker in sorted(speaker_stats):
             if not is_named_speaker(str(speaker)):
                 continue
             stats = speaker_stats[speaker]
             if not isinstance(stats, dict):
                 continue
-            rows.append(
+            speaker_rows.append(
                 {
                     "speaker": speaker,
                     "token_count": stats.get("token_count"),
@@ -1408,13 +1815,26 @@ def _render_lexical_diversity_payload(payload: Dict[str, Any]) -> None:
                     "hapax_rate": stats.get("hapax_rate"),
                 }
             )
-        if rows:
-            st.caption(
-                "Per-speaker metrics (TTR is length-sensitive; interpret in context)."
-            )
-            st.dataframe(rows, width="stretch", hide_index=True)
+
+    if speaker_rows and guided:
+        st.caption("Top speakers by MTLD")
+        ranked = sorted(
+            speaker_rows,
+            key=lambda r: float(r.get("mtld") or 0.0),
+            reverse=True,
+        )[:GUIDED_RANKED_ROW_CAP]
+        for row in ranked:
+            mtld = row.get("mtld")
+            mtld_s = f"{float(mtld):.3f}" if mtld is not None else "n/a"
+            st.write(f"- {row['speaker']}: MTLD {mtld_s}")
+    elif speaker_rows and not guided:
+        st.caption(
+            "Per-speaker metrics (TTR is length-sensitive; interpret in context)."
+        )
+        st.dataframe(speaker_rows, width="stretch", hide_index=True)
 
     time_buckets = payload.get("time_buckets") or []
+    bucket_rows = []
     if isinstance(time_buckets, list) and time_buckets:
         bucket_rows = [
             {
@@ -1427,9 +1847,23 @@ def _render_lexical_diversity_payload(payload: Dict[str, Any]) -> None:
             for bucket in time_buckets
             if isinstance(bucket, dict)
         ]
-        if bucket_rows:
-            with st.expander("Time buckets"):
+
+    detail_needed = bool(speaker_rows) or bool(bucket_rows)
+    if detail_needed and (guided or bucket_rows):
+        with st.expander("Explore details", expanded=False):
+            if speaker_rows:
+                st.caption("Per-speaker metrics")
+                st.dataframe(speaker_rows, width="stretch", hide_index=True)
+            if bucket_rows:
+                st.caption("Time buckets")
                 st.dataframe(bucket_rows, width="stretch", hide_index=True)
+
+
+def _analysis_module_heading(title: str) -> None:
+    if st.session_state.get("_insights_analysis_consolidating_provenance"):
+        st.markdown(f"#### {title}")
+    else:
+        st.subheader(title)
 
 
 def render_lexical_diversity_block(
@@ -1446,7 +1880,7 @@ def render_lexical_diversity_block(
         )
     )
 
-    st.subheader(title)
+    _analysis_module_heading(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
     if run_root is None:
@@ -1495,7 +1929,7 @@ def render_lexical_diversity_block(
         return
 
     failure_hint = _module_failure_hint(run_root, module)
-    payload = loader.load_json(module, "_lexical_diversity.json")
+    payload = _load_analysis_json(loader, module, "_lexical_diversity.json")
     if not payload:
         if failure_hint:
             st.warning(failure_hint)
@@ -1515,7 +1949,18 @@ def _render_marker_module_payload(
     payload: Dict[str, Any],
     *,
     share_keys: tuple[str, ...],
+    module: str = "",
 ) -> None:
+    from transcriptx.web.insights_presentation import (
+        GUIDED_RANKED_ROW_CAP,
+        MODULE_PLAIN_DESCRIPTIONS,
+        is_insights_guided,
+    )
+
+    guided = is_insights_guided()
+    if module and MODULE_PLAIN_DESCRIPTIONS.get(module):
+        st.caption(MODULE_PLAIN_DESCRIPTIONS[module])
+
     if payload.get("usable") is False:
         meta = payload.get("metadata") or {}
         st.info(
@@ -1537,24 +1982,44 @@ def _render_marker_module_payload(
         )
         for col, key in zip(cols[1:], share_keys):
             value = global_stats.get(key)
-            label = key.replace("_", " ").title()
+            if key == "hedge_share":
+                label = "Hedge share"
+            elif key == "booster_share":
+                label = "Booster share"
+            elif key == "soft_request_ratio":
+                label = "Soft-request ratio"
+            else:
+                label = key.replace("_", " ").title()
             if value is None:
                 col.metric(label, "n/a")
             else:
                 col.metric(label, f"{float(value):.3f}")
 
-        counts = global_stats.get("category_counts") or {}
-        if isinstance(counts, dict) and counts:
-            st.caption("Global category counts")
-            st.dataframe(
-                [{"category": k, "count": v} for k, v in sorted(counts.items())],
-                width="stretch",
-                hide_index=True,
-            )
+        if (
+            guided
+            and "hedge_share" in share_keys
+            and "booster_share" in share_keys
+            and global_stats.get("hedge_share") is not None
+            and global_stats.get("booster_share") is not None
+        ):
+            h = float(global_stats["hedge_share"])
+            b = float(global_stats["booster_share"])
+            if h + b > 0:
+                if h > b * 1.25:
+                    st.caption("Hedges outweigh boosters — wording leans cautious.")
+                elif b > h * 1.25:
+                    st.caption("Boosters outweigh hedges — wording leans assertive.")
+                else:
+                    st.caption("Hedge and booster use looks roughly balanced.")
 
+    counts = (
+        (global_stats.get("category_counts") or {})
+        if isinstance(global_stats, dict)
+        else {}
+    )
     speaker_stats = payload.get("speaker_stats") or {}
+    speaker_rows = []
     if isinstance(speaker_stats, dict) and speaker_stats:
-        rows = []
         for speaker in sorted(speaker_stats):
             stats = speaker_stats[speaker]
             if not isinstance(stats, dict):
@@ -1567,14 +2032,62 @@ def _render_marker_module_payload(
             }
             for key in share_keys:
                 row[key] = stats.get(key)
-            rows.append(row)
-        if rows:
-            st.caption("Per-speaker marker rates")
-            st.dataframe(rows, width="stretch", hide_index=True)
+            speaker_rows.append(row)
 
     hits = payload.get("hits") or []
-    if isinstance(hits, list) and hits:
-        with st.expander(f"Marker hits ({len(hits)})"):
+    if not guided:
+        if isinstance(counts, dict) and counts:
+            st.caption("Global category counts")
+            st.dataframe(
+                [{"category": k, "count": v} for k, v in sorted(counts.items())],
+                width="stretch",
+                hide_index=True,
+            )
+        if speaker_rows:
+            st.caption("Per-speaker marker rates")
+            st.dataframe(speaker_rows, width="stretch", hide_index=True)
+        if isinstance(hits, list) and hits:
+            with st.expander(f"Marker hits ({len(hits)})"):
+                preview = [
+                    {
+                        "speaker": h.get("speaker"),
+                        "category": h.get("category"),
+                        "surface": h.get("surface"),
+                        "segment_index": h.get("segment_index"),
+                    }
+                    for h in hits[:80]
+                    if isinstance(h, dict)
+                ]
+                if preview:
+                    st.dataframe(preview, width="stretch", hide_index=True)
+        return
+
+    # Guided: top speakers only, details collapsed
+    if speaker_rows:
+        st.caption("Speakers with the highest marker rates")
+        ranked = sorted(
+            speaker_rows,
+            key=lambda r: float(r.get("hits_per_100_tokens") or 0.0),
+            reverse=True,
+        )[:GUIDED_RANKED_ROW_CAP]
+        for row in ranked:
+            rate = row.get("hits_per_100_tokens")
+            rate_s = f"{float(rate):.2f}" if rate is not None else "n/a"
+            st.write(f"- {row['speaker']}: {rate_s} hits / 100 tokens")
+
+    with st.expander("Explore details", expanded=False):
+        if isinstance(counts, dict) and counts:
+            st.caption("Category counts")
+            st.dataframe(
+                [{"category": k, "count": v} for k, v in sorted(counts.items())],
+                width="stretch",
+                hide_index=True,
+            )
+        if speaker_rows:
+            st.caption("Per-speaker marker rates")
+            st.dataframe(speaker_rows, width="stretch", hide_index=True)
+        if isinstance(hits, list) and hits:
+            st.caption(f"Marker hits ({len(hits)})")
             preview = [
                 {
                     "speaker": h.get("speaker"),
@@ -1607,7 +2120,7 @@ def _render_marker_module_block(
             f"Run the `{module}` module to populate this view.",
         )
     )
-    st.subheader(title)
+    _analysis_module_heading(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
     if run_root is None:
@@ -1635,7 +2148,9 @@ def _render_marker_module_block(
         if not payload:
             st.info(member_empty_hint(module))
             return
-        _render_marker_module_payload(payload, share_keys=share_keys)
+        _render_marker_module_payload(
+            payload, share_keys=share_keys, module=module
+        )
         _render_view_raw_file_link(
             ctx,
             module,
@@ -1650,7 +2165,7 @@ def _render_marker_module_block(
         return
 
     failure_hint = _module_failure_hint(run_root, module)
-    payload = loader.load_json(module, json_suffix)
+    payload = _load_analysis_json(loader, module, json_suffix)
     if not payload:
         if failure_hint:
             st.warning(failure_hint)
@@ -1658,7 +2173,9 @@ def _render_marker_module_block(
             render_module_required_hint(empty_hint, key=f"{module}_empty", ctx=ctx)
         return
 
-    _render_marker_module_payload(payload, share_keys=share_keys)
+    _render_marker_module_payload(
+        payload, share_keys=share_keys, module=module
+    )
     _render_view_raw_file_link(ctx, module, json_suffix, link_key=f"{module}_raw")
 
 
@@ -1687,6 +2204,14 @@ def render_politeness_block(ctx: BlockContext, placement: BlockPlacement) -> Non
 
 
 def _render_keyphrases_payload(payload: dict[str, Any]) -> None:
+    from transcriptx.web.insights_presentation import (
+        GUIDED_RANKED_ROW_CAP,
+        MODULE_PLAIN_DESCRIPTIONS,
+        is_insights_guided,
+    )
+
+    guided = is_insights_guided()
+    st.caption(MODULE_PLAIN_DESCRIPTIONS.get("keyphrases", ""))
     usable = payload.get("usable")
     state = payload.get("evaluation_state")
     methods_run = payload.get("methods_run") or []
@@ -1705,16 +2230,17 @@ def _render_keyphrases_payload(payload: dict[str, Any]) -> None:
             + (("; " + "; ".join(reasons)) if reasons else ".")
         )
         return
-    if methods_run:
-        st.caption("Methods run: " + ", ".join(str(m) for m in methods_run))
-    if skipped:
-        skip_bits = [
-            f"{s.get('method')}:{s.get('reason_code')}"
-            for s in skipped
-            if isinstance(s, dict)
-        ]
-        if skip_bits:
-            st.caption("Skipped methods: " + ", ".join(skip_bits))
+    if not guided:
+        if methods_run:
+            st.caption("Methods run: " + ", ".join(str(m) for m in methods_run))
+        if skipped:
+            skip_bits = [
+                f"{s.get('method')}:{s.get('reason_code')}"
+                for s in skipped
+                if isinstance(s, dict)
+            ]
+            if skip_bits:
+                st.caption("Skipped methods: " + ", ".join(skip_bits))
     gbm = payload.get("global_by_method") or {}
     nc = gbm.get("noun_chunks") if isinstance(gbm, dict) else None
     phrases = (nc or {}).get("phrases") if isinstance(nc, dict) else None
@@ -1722,21 +2248,39 @@ def _render_keyphrases_payload(payload: dict[str, Any]) -> None:
         st.info("No noun-chunk keyphrases ranked for this transcript.")
         return
     rows = []
-    for p in phrases[:40]:
+    for p in phrases:
         if not isinstance(p, dict):
+            continue
+        phrase = str(p.get("phrase") or "").strip()
+        if not phrase:
             continue
         rows.append(
             {
                 "rank": p.get("rank"),
-                "phrase": p.get("phrase"),
+                "phrase": phrase,
                 "rank_weight": p.get("rank_weight"),
                 "occurrence_count": p.get("occurrence_count"),
                 "segment_support": p.get("segment_support"),
                 "token_count": p.get("token_count"),
             }
         )
+    if not rows:
+        st.info("No noun-chunk keyphrases ranked for this transcript.")
+        return
+
+    if guided:
+        for row in rows[:GUIDED_RANKED_ROW_CAP]:
+            st.write(f"- {row['phrase']}")
+        with st.expander("Explore details", expanded=False):
+            st.caption(
+                "Primary method: noun_chunks "
+                "(method-separated; YAKE/KeyBERT not mixed)"
+            )
+            st.dataframe(rows[:40], width="stretch", hide_index=True)
+        return
+
     st.caption("Primary method: noun_chunks (method-separated; YAKE/KeyBERT not mixed)")
-    st.dataframe(rows, width="stretch", hide_index=True)
+    st.dataframe(rows[:40], width="stretch", hide_index=True)
 
 
 def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> None:
@@ -1747,7 +2291,7 @@ def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> Non
             "Run the `keyphrases` module to populate this view.",
         )
     )
-    st.subheader(title)
+    _analysis_module_heading(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
     module = "keyphrases"
@@ -1788,7 +2332,7 @@ def render_keyphrases_block(ctx: BlockContext, placement: BlockPlacement) -> Non
         return
 
     failure_hint = _module_failure_hint(run_root, module)
-    payload = loader.load_json(module, json_suffix)
+    payload = _load_analysis_json(loader, module, json_suffix)
     if not payload:
         if failure_hint:
             st.warning(failure_hint)

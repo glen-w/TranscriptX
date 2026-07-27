@@ -30,6 +30,11 @@ def test_shell_defines_llm_feedback_hover_css() -> None:
     assert "opacity: 0;" not in fb_css
     assert "focus-within" in fb_css
     assert "focus-visible" in fb_css
+    # Thumbs styling must be scoped to the wrap container — not ancestor
+    # column grids (Charts gallery cards would otherwise center-align).
+    assert "st-key-llm_fb_wrap_" in fb_css
+    assert ":has(.tx-chart-card-meta)" in source
+    assert "align-items: flex-start" in source
 
 
 def test_feedback_widget_not_under_cache_data() -> None:
@@ -38,6 +43,7 @@ def test_feedback_widget_not_under_cache_data() -> None:
     )
     assert "st.cache_data" not in source
     assert "@st.cache_resource" not in source
+    assert 'key=f"llm_fb_wrap_{key_base}"' in source
 
 
 def test_surface_fixtures_validate(tmp_path: Path) -> None:

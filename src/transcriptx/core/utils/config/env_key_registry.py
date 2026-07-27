@@ -297,6 +297,11 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         invalid_policy="warn_skip",
     ),
     _env_key(
+        "TRANSCRIPTX_DASHBOARD_TRANSCRIPT_EXCLUDE_UNNAMED_SPEAKERS",
+        ("dashboard", "transcript_exclude_unnamed_speakers"),
+        coerce_bool_on_off,
+    ),
+    _env_key(
         "TRANSCRIPTX_AUDIO_PREPROCESSING_MODE",
         ("audio_preprocessing", "preprocessing_mode"),
         coerce_lower_strip,

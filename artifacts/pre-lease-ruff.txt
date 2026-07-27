@@ -1,0 +1,49 @@
+[1m[91mF401 [0m[[1m[96m*[0m] [1m`os` imported but unused[0m
+ [1m[94m-->[0m src/transcriptx/core/observability/run_performance/io.py:6:8
+  [1m[94m|[0m
+[1m[94m5 |[0m import json
+[1m[94m6 |[0m import os
+  [1m[94m|[0m        [1m[91m^^[0m
+[1m[94m7 |[0m from dataclasses import dataclass
+[1m[94m8 |[0m from enum import Enum
+  [1m[94m|[0m
+[1m[96mhelp[0m: [1mRemove unused import: `os`[0m
+
+[1m[91mF401 [0m[[1m[96m*[0m] [1m`typing.Any` imported but unused[0m
+  [1m[94m-->[0m src/transcriptx/core/observability/run_performance/io.py:10:20
+   [1m[94m|[0m
+[1m[94m 8 |[0m from enum import Enum
+[1m[94m 9 |[0m from pathlib import Path
+[1m[94m10 |[0m from typing import Any, Optional
+   [1m[94m|[0m                    [1m[91m^^^[0m
+[1m[94m11 |[0m
+[1m[94m12 |[0m from transcriptx.core.observability.run_performance.schema import (
+   [1m[94m|[0m
+[1m[96mhelp[0m: [1mRemove unused import: `typing.Any`[0m
+
+[1m[91mF401 [0m[[1m[96m*[0m] [1m`dataclasses.field` imported but unused[0m
+  [1m[94m-->[0m src/transcriptx/core/observability/run_performance/recorder.py:8:36
+   [1m[94m|[0m
+[1m[94m 6 |[0m import time
+[1m[94m 7 |[0m from contextvars import ContextVar, Token
+[1m[94m 8 |[0m from dataclasses import dataclass, field
+   [1m[94m|[0m                                    [1m[91m^^^^^[0m
+[1m[94m 9 |[0m from enum import Enum
+[1m[94m10 |[0m from typing import Any, Dict, List, Optional, Tuple
+   [1m[94m|[0m
+[1m[96mhelp[0m: [1mRemove unused import: `dataclasses.field`[0m
+
+[1m[91mF401 [0m[[1m[96m*[0m] [1m`typing.Tuple` imported but unused[0m
+  [1m[94m-->[0m src/transcriptx/core/observability/run_performance/recorder.py:10:47
+   [1m[94m|[0m
+[1m[94m 8 |[0m from dataclasses import dataclass, field
+[1m[94m 9 |[0m from enum import Enum
+[1m[94m10 |[0m from typing import Any, Dict, List, Optional, Tuple
+   [1m[94m|[0m                                               [1m[91m^^^^^[0m
+[1m[94m11 |[0m
+[1m[94m12 |[0m from transcriptx.core.observability.run_performance.schema import (
+   [1m[94m|[0m
+[1m[96mhelp[0m: [1mRemove unused import: `typing.Tuple`[0m
+
+Found 4 errors.
+[[36m*[0m] 4 fixable with the `--fix` option.

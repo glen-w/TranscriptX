@@ -207,6 +207,40 @@ def render_plain_segments(
         )
 
 
+def scroll_jump_target_into_view() -> None:
+    """Scroll the main pane to ``.tx-turn--jump`` after a one-shot jump.
+
+    Retries briefly because Streamlit may still be painting the segment list
+    when this component iframe first runs.
+    """
+    import streamlit.components.v1 as components
+
+    components.html(
+        """
+        <script>
+        (function() {
+          const doc = window.parent.document;
+          let tries = 0;
+          const go = function() {
+            const el = doc.querySelector('.tx-turn--jump');
+            if (el) {
+              el.scrollIntoView({behavior: 'smooth', block: 'center'});
+              return;
+            }
+            tries += 1;
+            if (tries < 45) {
+              window.requestAnimationFrame(go);
+            }
+          };
+          window.requestAnimationFrame(go);
+        })();
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
+
 def render_segmented_tab(
     display_segments: list[tuple[int, dict[str, Any]]],
     *,

@@ -129,6 +129,7 @@ def test_load_chapters_and_pending_jump(tmp_path: Path) -> None:
     assert state["transcript_viewer_tab"] == "segments"
     # Widget keys deferred until apply_deferred_chapter_jump (post-instantiate safe).
     assert state["transcript_viewer_force_segments_tab"] is True
+    assert state["transcript_viewer_scroll_to_jump"] is True
     assert state["transcript_viewer_tab_control"] == "Chapters"
     assert state["transcript_search"] == "stale"
     apply_deferred_chapter_jump(state)

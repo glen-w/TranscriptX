@@ -99,29 +99,30 @@ def render_llm_feedback_controls(
     note_key = _state_key(instance_id, "note")
     reason_key = _state_key(instance_id, "reason")
 
-    up_col, down_col = st.columns(2)
-    with up_col:
-        if st.button(
-            ":material/thumb_up:",
-            key=f"llm_fb_up_{key_base}",
-            help="Rate this model output helpful",
-            type="tertiary",
-        ):
-            st.session_state[rating_key] = FeedbackRating.UP.value
-            st.session_state[open_key] = True
-            st.session_state.pop(error_key, None)
-            _ensure_submission_token(instance_id)
-    with down_col:
-        if st.button(
-            ":material/thumb_down:",
-            key=f"llm_fb_down_{key_base}",
-            help="Rate this model output not helpful",
-            type="tertiary",
-        ):
-            st.session_state[rating_key] = FeedbackRating.DOWN.value
-            st.session_state[open_key] = True
-            st.session_state.pop(error_key, None)
-            _ensure_submission_token(instance_id)
+    with st.container(key=f"llm_fb_wrap_{key_base}"):
+        up_col, down_col = st.columns(2)
+        with up_col:
+            if st.button(
+                ":material/thumb_up:",
+                key=f"llm_fb_up_{key_base}",
+                help="Rate this model output helpful",
+                type="tertiary",
+            ):
+                st.session_state[rating_key] = FeedbackRating.UP.value
+                st.session_state[open_key] = True
+                st.session_state.pop(error_key, None)
+                _ensure_submission_token(instance_id)
+        with down_col:
+            if st.button(
+                ":material/thumb_down:",
+                key=f"llm_fb_down_{key_base}",
+                help="Rate this model output not helpful",
+                type="tertiary",
+            ):
+                st.session_state[rating_key] = FeedbackRating.DOWN.value
+                st.session_state[open_key] = True
+                st.session_state.pop(error_key, None)
+                _ensure_submission_token(instance_id)
 
     last = st.session_state.get(last_key)
     if last in (FeedbackRating.UP.value, FeedbackRating.DOWN.value):

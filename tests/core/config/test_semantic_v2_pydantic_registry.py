@@ -79,6 +79,7 @@ def test_build_registry_non_semantic_keys_unchanged() -> None:
         "dashboard.overview_max_items": None,
         "dashboard.duration_hours_threshold_seconds": 3600,
         "dashboard.duration_summary_style": "compact",
+        "dashboard.transcript_exclude_unnamed_speakers": True,
     }
     for key, default in spot_checks.items():
         assert key in reg, key

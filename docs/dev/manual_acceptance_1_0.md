@@ -72,12 +72,13 @@ Record each row in the evidence table (§6). Class defaults assume Docker Compos
 - [ ] Folder import (multi-file) when profile supports it
 - [x] Library shows new transcript(s) with expected identity — **pass** (action menu → Speaker Identification landed on correct transcript)
 - [x] Related: **Delete all runs** (Settings / storage) — **pass** 2026-07-26 (works as expected)
+- [x] Related: **Corrections Studio** — **pass (usable)** 2026-07-27; quality/results **mixed**. Not a 1.0 blocker; dedicated strengthen wave → [ROADMAP.md](../ROADMAP.md) §1.1 (word-level propose from Transcript viewer)
 
 ### 3.3 Analysis run — **required** (adapted: Guided UI removed post-0.9.6)
 
 - [x] ~~Presentation mode Guided~~ — **N/A** (Guided/Full presentation layer removed; docs + clear GUI)
-- [~] Default **Balanced** path — **not this pass**; maintainer ran **Thorough** instead (see stubs). Balanced defaults / experimental-emotion absence still needs a dedicated pass or explicit skip+severity
-- [~] Overview, Insights, Charts, Artifacts each open for the run without crash — **Overview pass** 2026-07-26 (nav OK; summaries look good; Actions/Highlights/Analysis work). **Charts pass** 2026-07-26 (filters; open/close; fullscreen; search — robust). Insights/Artifacts still open. Presentation organisation debt → **[0.9.9](overview_presentation_0_9_9.md)** (after maintainer pass, before unfamiliar-user)
+- [x] Default **Balanced** path (experimental emotion off defaults) — **pass** 2026-07-27. Builtin `analysis.ui_presets.balanced.heavy_module_ids` = `semantic_similarity` only; `resolve_analysis_preset("balanced")` excludes `contextual_emotion` / `fine_grained_emotion` (lexical `emotion` remains). Covered by `test_balanced_llm_and_heavy_allowlists` + golden defaults. Full Balanced wall-clock GUI run not this pass (Thorough used for §3.3 runtime); Medium Balanced recipe still §3.12
+- [x] Overview, Insights, Charts, Artifacts each open for the run without crash — **Overview** / **Charts** / **Artifacts** / **Insights** all **pass** (Insights working well, 2026-07-27). Presentation organisation debt → **[0.9.9](overview_presentation_0_9_9.md)**; deeper Insights/analysis enhance → [ROADMAP.md](../ROADMAP.md) §1.1
 - [x] Related: Speaker Identification → ignore one speaker; name speakers; create profile; identify all — **pass** before Run Analysis
 - [x] Related: Thorough + custom Qs + mixed LLM models + saved profile — **complete (partial)** run `20260726_015208_30728241` · wall **~44.7 min** · 46 RUN / 2 FAIL (`llm_action_items`, `llm_custom_qa` timed out at 600s) · see `run_R20241026-121652_thorough.md`
 
@@ -93,7 +94,7 @@ Deliberate failures — expected recovery / severity:
 | Cancelled operation | Cancel acknowledged; no corrupt half-committed demo/run ownership | must-fix |
 | Partial module failure | Run outcomes honest; other modules usable | must-fix |
 
-- [~] Exercise ≥2 cases above; record outcomes — **1/2:** partial module failure observed on Thorough run (`llm_action_items` + `llm_custom_qa` 600s timeout → FAIL; pipeline continued; `final_status=partial`). Need ≥1 more case.
+- [x] Exercise ≥2 cases above; record outcomes — **2/2** 2026-07-27: (1) partial module failure on Thorough run (`llm_action_items` + `llm_custom_qa` 600s timeout → FAIL; pipeline continued; `final_status=partial`); (2) malformed/missing path — folder-import scan rejects empty/relative/missing/file-not-dir with clear `AdmissionError` / scan banner text; no admit; no corrupt index. Evidence: `.local/release_evidence/bb6b8fe3fed5171187240ca74a9097277d82bcb4/failure_recovery_3_4.md`
 
 ### 3.5 Export — **required**
 
@@ -117,7 +118,7 @@ Incorporate by **stable IDs** from [gui_acceptance_residual_checklist.md](gui_ac
 | R5 | Popovers / expanders | Critical expanders readable |
 | R6 | Visual alignment | Overview/Insights/Charts first paint aligned |
 
-- [~] R1 … R6 recorded — **R1 pass**; **R2 pass** (browser zip / HTML index good); R3–R6 still open (R6 partial: Overview+Charts)
+- [~] R1 … R6 recorded — **R1 pass**; **R2 pass**; **R4 pass**; **R6 pass** (Overview/Insights/Charts/Artifacts first paint). R3, R5 still open
 
 ### 3.11 Accessibility / browsers — **required**
 

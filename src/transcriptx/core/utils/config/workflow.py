@@ -209,6 +209,7 @@ class DashboardConfig:
     duration_summary_style: Literal["compact", "minutes_only"] = field(
         init=False, repr=True
     )
+    transcript_exclude_unnamed_speakers: bool = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
         from transcriptx.core.config.models.dashboard_display import (

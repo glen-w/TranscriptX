@@ -1,0 +1,25 @@
+# Optional interoperability compose for jhj0517/Whisper-WebUI.
+# Not part of the TranscriptX runtime. See README.md in this directory.
+#
+# Defaults: localhost-only bind, CPU (no NVIDIA deploy), pinned image tag.
+# Validate without pulling: docker compose -f docker-compose.whisper-webui.yml config
+
+name: transcriptx-whisper-webui-recipe
+
+services:
+  whisper-webui:
+    image: jhj0517/whisper-webui:v1.0.8-4def223
+    container_name: whisper-webui
+    ports:
+      # Localhost only — do not publish on 0.0.0.0 by default.
+      - "127.0.0.1:${PORT:-7860}:7860"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - ${CLONE_DIR:-${HOME}/Whisper-WebUI}/models:/Whisper-WebUI/models
+      - ${OUTDIR:-${HOME}/whisper-webui-outputs}:/Whisper-WebUI/outputs
+      - ${CLONE_DIR:-${HOME}/Whisper-WebUI}/configs:/Whisper-WebUI/configs
+    # CPU by default (including Apple Silicon / Docker Desktop Mac).
+    # On NVIDIA Linux hosts you may add a deploy.resources.reservations.devices
+    # GPU block or run with --gpus all — see upstream docs. Not Metal/MLX.
+    restart: unless-stopped

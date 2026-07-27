@@ -132,6 +132,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/groups/group_llm_synthesis_contract.md | Group LLM synthesis contract | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_llm_synthesis_contract.md | yes |
 | docs/public_surfaces.md | Public surfaces contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/public_surfaces.md | yes |
 | docs/recipes/whisperx/README.md | WhisperX standalone (optional reference recipe) | live | user | current | — | retain | — | transcription.md | docs/runtime/transcription.md | yes |
+| docs/recipes/whisper-webui/README.md | Whisper-WebUI Gradio (optional interoperability recipe) | live | user | current | — | retain | — | transcription.md | docs/runtime/transcription.md | yes |
+| docs/recipes/whisper-webui/docker-compose.whisper-webui.yml | Whisper-WebUI recipe compose (localhost/CPU) | live | user | current | — | retain | — | whisper-webui README | docs/recipes/whisper-webui/README.md | yes |
 | docs/run_outcome_contract.md | Run outcome contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/run_outcome_contract.md | yes |
 | docs/runtime/STORAGE.md | TranscriptX Storage Policy | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/runtime/STORAGE.md | yes |
 | docs/runtime/corrections-llm.md | Corrections Studio LLM discovery | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | docs/runtime/STORAGE.md | yes |

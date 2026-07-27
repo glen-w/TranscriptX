@@ -12,6 +12,21 @@ from transcriptx.web.components.run_scoped_page import (
 from transcriptx.web.services.run_performance_service import build_run_performance_view
 
 
+def _format_metric_duration_ms(duration_ms: float | None) -> str:
+    """Format metric durations: sub-minute as seconds, else mins/secs (hours if needed)."""
+    if duration_ms is None:
+        return "—"
+    seconds = float(duration_ms) / 1000.0
+    if seconds < 60:
+        return f"{seconds:.2f}s"
+    total = int(seconds)
+    minutes, secs = divmod(total, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h {minutes}m {secs}s"
+    return f"{minutes}m {secs}s"
+
+
 def render_performance() -> None:
     render_run_scoped_page(
         RunScopedPageConfig(
@@ -37,20 +52,14 @@ def _render_body(ctx: RunScopedPageContext) -> None:
         st.caption(note)
 
     cols = st.columns(4)
-    wall = vm.wall_clock_duration_ms
-    cols[0].metric(
-        "Wall clock",
-        f"{wall / 1000.0:.2f}s" if wall is not None else "—",
-    )
-    cum = vm.derived.module_duration_sum_ms
+    cols[0].metric("Wall clock", _format_metric_duration_ms(vm.wall_clock_duration_ms))
     cols[1].metric(
         "Cumulative modules",
-        f"{cum / 1000.0:.2f}s" if cum is not None else "—",
+        _format_metric_duration_ms(vm.derived.module_duration_sum_ms),
     )
-    unattr = vm.derived.unattributed_duration_ms
     cols[2].metric(
         "Unattributed",
-        f"{unattr / 1000.0:.2f}s" if unattr is not None else "—",
+        _format_metric_duration_ms(vm.derived.unattributed_duration_ms),
     )
     cols[3].metric("Sidecar", vm.performance_status.value)
 

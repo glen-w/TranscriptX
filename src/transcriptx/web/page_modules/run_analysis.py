@@ -116,6 +116,7 @@ def _run_summary_from_last_success(payload: dict) -> RunSummary | None:
         run_id=str(run_id),
         created_at=created_at,
         selected_modules=list(modules) if isinstance(modules, list) else [],
+        status="completed",
     )
 
 
@@ -163,14 +164,25 @@ def _truncate_label(text: str, *, max_chars: int = 28) -> str:
     return text[: max_chars - 1] + "…"
 
 
-def _execute_pending_launch(pending: dict[str, Any]) -> None:
-    """Execute a snapshotted request; sole launch authority after Run click."""
+def _execute_pending_launch(
+    pending: dict[str, Any],
+    *,
+    progress: StreamlitProgressCallback | None = None,
+) -> None:
+    """Execute a snapshotted request; sole launch authority after Run click.
+
+    Prefer a bound ``StreamlitProgressCallback`` (with ``render_slot``) so the
+    progress panel updates live during the blocking run. A spinner alone would
+    hide the module count / bar that users expect to watch.
+    """
     analysis_ctrl = AnalysisController()
     target_type = pending["target_type"]
     modules = list(pending["modules"])
     st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(modules))
-    progress = StreamlitProgressCallback()
+    if progress is None:
+        progress = StreamlitProgressCallback()
     snapshot = st.session_state[SNAPSHOT_KEY]
+    progress.refresh_panel()
 
     request = pending["request"]
     selected_group = pending.get("selected_group")
@@ -187,15 +199,17 @@ def _execute_pending_launch(pending: dict[str, Any]) -> None:
             request, progress=progress, snapshot=snapshot
         )
 
-    with st.spinner("Running analysis…"):
-        try:
-            with capture_output() as (stdout_buf, stderr_buf):
-                result = run_fn()
-        finally:
-            st.session_state["analysis_run_in_progress"] = False
-            st.session_state.pop(_PENDING_LAUNCH_KEY, None)
+    # No st.spinner: the progress panel is the run affordance. A spinner would
+    # dominate the viewport while the bar/count stayed frozen at 0 / N.
+    try:
+        with capture_output() as (stdout_buf, stderr_buf):
+            result = run_fn()
+    finally:
+        st.session_state["analysis_run_in_progress"] = False
+        st.session_state.pop(_PENDING_LAUNCH_KEY, None)
+        progress.refresh_panel()
 
-        captured = stdout_buf.getvalue() + stderr_buf.getvalue()
+    captured = stdout_buf.getvalue() + stderr_buf.getvalue()
 
     if result.success:
         from transcriptx.web.cache_helpers import clear_run_listing_caches
@@ -417,6 +431,7 @@ def _run_analysis_config_and_launch_fragment(
             st.error(e)
         return
 
+    st.session_state.pop(_KEY_LAST_SUCCESS, None)
     st.session_state[_PENDING_LAUNCH_KEY] = {
         "target_type": target_type,
         "modules": list(selected_modules),
@@ -448,7 +463,12 @@ def render_run_analysis_page() -> None:
         actions=None,
     )
 
-    if st.session_state.get(_RUN_ANALYSIS_TARGET_KEY) != "Batch":
+    # Post-run strip is for the completed run only — hide while a launch is active
+    # so links never point at a stale prior run_id mid-pipeline.
+    if (
+        st.session_state.get(_RUN_ANALYSIS_TARGET_KEY) != "Batch"
+        and not st.session_state.get("analysis_run_in_progress", False)
+    ):
         _render_post_analysis_actions()
 
     target_options = ["Transcript"]
@@ -497,15 +517,19 @@ def render_run_analysis_page() -> None:
                 f'<div class="tx-run-analysis-footer-summary">{summary}</div>',
                 unsafe_allow_html=True,
             )
+            progress_slot = st.empty()
             snapshot = st.session_state.get(SNAPSHOT_KEY)
             if snapshot is not None:
-                render_progress_panel(snapshot)
+                with progress_slot.container():
+                    render_progress_panel(snapshot)
             else:
-                st.info("Analysis is running…")
+                with progress_slot.container():
+                    st.info("Analysis is running…")
         if not pending.get("started"):
             pending["started"] = True
             st.session_state[_PENDING_LAUNCH_KEY] = pending
-            _execute_pending_launch(pending)
+            progress = StreamlitProgressCallback(render_slot=progress_slot)
+            _execute_pending_launch(pending, progress=progress)
         return
 
     if st.session_state.get("analysis_run_in_progress", False):

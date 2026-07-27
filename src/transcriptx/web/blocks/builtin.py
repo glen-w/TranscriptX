@@ -47,6 +47,17 @@ def _register_curated_overview_blocks() -> None:
             render=curated_blocks.render_other_summaries,
         ),
         BlockSpec(
+            id="insights_summary_panel",
+            title="Summary",
+            group="Insights",
+            description=(
+                "Single selectable summary body (Transcript / Narrative / Executive) "
+                "with collapsed generation details."
+            ),
+            prerequisites=BlockPrereq.RUN_SCOPED,
+            render=curated_blocks.render_insights_summary_panel,
+        ),
+        BlockSpec(
             id="at_a_glance",
             title="At a glance",
             group="Overview",

@@ -1,0 +1,15 @@
+{
+  "profile_count": 500,
+  "refs_per_profile": 5,
+  "row_count": 2500,
+  "dimension": 192,
+  "query_count": 3,
+  "full_scan_matmul_ms": 0.425,
+  "index_resident_matmul_ms": 0.28,
+  "estimated_matrix_rss_mb": 1.83,
+  "advisory_full_scan_p95_ms": 500,
+  "advisory_analyse_p95_ms": 2000,
+  "advisory_peak_rss_mb": 512,
+  "breaches_full_scan_advisory": false,
+  "note": "Synthetic in-process matmul; tree I/O overhead is additional on scan path. File index avoids repeated .npy opens when digest-fresh."
+}

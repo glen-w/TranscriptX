@@ -11,7 +11,9 @@ renders five things:
 
 No state is inferred from logs. No state is stored inside this class.
 StreamlitProgressCallback bridges the ProgressCallback protocol and
-on_event to the snapshot stored in st.session_state.
+on_event to the snapshot stored in st.session_state. When given an
+``st.empty()`` render_slot, it re-paints the panel on each event so the
+bar and module count stay live during a blocking run.
 """
 
 from __future__ import annotations
@@ -137,13 +139,42 @@ class StreamlitProgressCallback:
 
     Pass a custom snapshot_key to isolate concurrent panels (e.g. audio prep
     uses PREPROCESS_SNAPSHOT_KEY while analysis uses SNAPSHOT_KEY).
+
+    When ``render_slot`` is an ``st.empty()`` (or compatible) placeholder,
+    the panel is re-painted after snapshot mutations so the bar and module
+    counts update during a blocking run instead of staying frozen under a
+    spinner.
     """
 
-    def __init__(self, snapshot_key: str = SNAPSHOT_KEY) -> None:
+    def __init__(
+        self,
+        snapshot_key: str = SNAPSHOT_KEY,
+        *,
+        render_slot: Any | None = None,
+        unit_label: str = "modules",
+        current_label: str = "Current module",
+    ) -> None:
         self._snapshot_key = snapshot_key
+        self._render_slot = render_slot
+        self._unit_label = unit_label
+        self._current_label = current_label
 
     def _snap(self) -> Optional[MutableMapping[str, Any]]:
         return st.session_state.get(self._snapshot_key)
+
+    def refresh_panel(self) -> None:
+        """Re-render the progress panel into ``render_slot`` when one is bound."""
+        if self._render_slot is None:
+            return
+        snap = self._snap()
+        if snap is None:
+            return
+        with self._render_slot.container():
+            render_progress_panel(
+                snap,  # type: ignore[arg-type]
+                unit_label=self._unit_label,
+                current_label=self._current_label,
+            )
 
     # ------------------------------------------------------------------
     # ProgressCallback protocol
@@ -160,6 +191,7 @@ class StreamlitProgressCallback:
             snap["latest_event"] = stage_labels.get(
                 stage_name, stage_name.replace("_", " ").title() + "…"
             )
+            self.refresh_panel()
 
     def on_stage_progress(self, message: str, pct: Optional[float] = None) -> None:
         snap = self._snap()
@@ -167,6 +199,7 @@ class StreamlitProgressCallback:
             snap["latest_event"] = message
             if pct is not None:
                 snap["pct"] = min(100.0, float(pct))
+            self.refresh_panel()
 
     def on_stage_complete(self, stage_name: str) -> None:
         pass  # run-level completion is handled via on_event
@@ -182,12 +215,14 @@ class StreamlitProgressCallback:
         if len(logs) > 100:
             logs = logs[-100:]
         snap["recent_logs"] = logs
+        # Logs alone should not thrash the panel; stage/event paths refresh.
 
     def on_event(self, event: ProgressEvent) -> None:
         """Update the snapshot from a structured pipeline event."""
         snap = self._snap()
         if snap is not None:
             update_snapshot_from_event(snap, event)  # type: ignore[arg-type]
+            self.refresh_panel()
 
     def get_log_text(self) -> str:
         """Return all recent logs as a single string (for legacy callers)."""

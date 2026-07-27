@@ -12,6 +12,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web.components.action_links import render_action_link
@@ -79,6 +80,7 @@ class TranscriptControlsState:
     search_text: str
     show_timestamps: bool
     format_key: str
+    show_unnamed_speakers: bool
 
 
 def navigate_to_segment(
@@ -217,11 +219,20 @@ def _render_transcript_controls() -> TranscriptControlsState:
     """
     search_text = st.text_input("🔍 Search in transcript", key="transcript_search")
     show_timestamps = st.checkbox("Show timestamps", key="show_timestamps")
+    show_unnamed_speakers = st.checkbox(
+        "Show unnamed speakers",
+        key="show_unnamed_speakers",
+        help=(
+            "Include diarization placeholders such as SPEAKER_02. "
+            "Default comes from dashboard.transcript_exclude_unnamed_speakers."
+        ),
+    )
     format_key = st.session_state.get("timestamp_format", "seconds")
     return TranscriptControlsState(
         search_text=search_text,
         show_timestamps=show_timestamps,
         format_key=format_key,
+        show_unnamed_speakers=show_unnamed_speakers,
     )
 
 
@@ -379,7 +390,7 @@ def _render_chapters_panel(chapter_rows: list[Any]) -> None:
         st.caption("No topic-shift chapters for this run.")
         return
     st.caption(
-        "Topic-shift chapters. Jump opens the matching transcript context; "
+        "Topic-shift chapters. Jump highlights that spot in the full transcript; "
         "Play also starts that clip."
     )
     for row in chapter_rows:
@@ -472,42 +483,34 @@ def _transcript_interaction_fragment(
         apply_deferred_chapter_jump,
         clear_chapter_jump,
         consume_chapter_pending,
+        consume_scroll_to_jump,
         load_chapter_rows,
         sticky_chapter_jump,
     )
+    from transcriptx.web.transcript_viewer.segments import scroll_jump_target_into_view
 
     # Jump/Play deferred widget writes must land before search/tab instantiate.
     apply_deferred_chapter_jump(st.session_state)
     controls = _render_transcript_controls()
     pending = consume_chapter_pending(st.session_state)
     sticky = sticky_chapter_jump(st.session_state)
-    # Typing a search query takes over; drop the sticky chapter filter.
+    # Typing a search query takes over; drop the sticky chapter highlight.
     if controls.search_text and sticky is not None:
         clear_chapter_jump(st.session_state)
         sticky = None
     effective_jump = sticky if sticky is not None else jump_index
     if pending and isinstance(pending.get("jump_index"), int):
         effective_jump = int(pending["jump_index"])
+    should_scroll = consume_scroll_to_jump(st.session_state)
 
     display_segments, filter_caption = filtered_display_segments(
         segments=segments,
         search_text=controls.search_text,
         jump_index=effective_jump,
+        exclude_unnamed_speakers=not controls.show_unnamed_speakers,
     )
     if filter_caption:
-        cap_cols = st.columns([5, 1])
-        with cap_cols[0]:
-            st.caption(filter_caption)
-        if sticky is not None and not controls.search_text:
-            with cap_cols[1]:
-                if st.button(
-                    "Show all",
-                    key="tx_clear_chapter_jump",
-                    use_container_width=True,
-                    help="Clear chapter jump and show the full transcript",
-                ):
-                    clear_chapter_jump(st.session_state)
-                    st.rerun(scope="fragment")
+        st.caption(filter_caption)
     owner = _playback_owner_identity(
         session_slug=session_slug,
         run_id=run_id,
@@ -605,6 +608,8 @@ def _transcript_interaction_fragment(
         playback=binding,
         chapter_rows=chapter_rows,
     )
+    if should_scroll and effective_jump is not None:
+        scroll_jump_target_into_view()
 
 
 def render_transcript_viewer() -> None:
@@ -620,6 +625,10 @@ def render_transcript_viewer() -> None:
     )
     st.session_state.setdefault("show_timestamps", True)
     st.session_state.setdefault("timestamp_format", "seconds")
+    exclude_unnamed = bool(
+        get_config().dashboard.transcript_exclude_unnamed_speakers
+    )
+    st.session_state.setdefault("show_unnamed_speakers", not exclude_unnamed)
     if st.session_state.get("timestamp_format") == "real_time":
         st.session_state["timestamp_format"] = "seconds"
     try:
@@ -678,6 +687,12 @@ def render_transcript_viewer() -> None:
         nav_state = consume_nav_request(st.session_state)
         if nav_state.clear_nav_request:
             st.session_state[NAV_REQUEST_KEY] = None
+        if nav_state.jump_index is not None:
+            from transcriptx.web.transcript_viewer.chapters import (
+                TRANSCRIPT_SCROLL_TO_JUMP_KEY,
+            )
+
+            st.session_state[TRANSCRIPT_SCROLL_TO_JUMP_KEY] = True
 
         canonical_path = _resolve_canonical_transcript_path(
             loaded_path, artifacts.json_file

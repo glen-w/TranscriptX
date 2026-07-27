@@ -1,4 +1,4 @@
-"""Pydantic schema for dashboard duration display settings."""
+"""Pydantic schema for dashboard / transcript display settings."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class DashboardDisplaySettingsModel(BaseModel):
-    """Canonical field definitions for dashboard duration display knobs."""
+    """Canonical field definitions for dashboard and transcript display knobs."""
 
     duration_hours_threshold_seconds: int = Field(
         default=3600,
@@ -18,4 +18,11 @@ class DashboardDisplaySettingsModel(BaseModel):
     duration_summary_style: Literal["compact", "minutes_only"] = Field(
         default="compact",
         description="Duration summary formatting style for library and statistics views.",
+    )
+    transcript_exclude_unnamed_speakers: bool = Field(
+        default=True,
+        description=(
+            "When true, the Transcript viewer hides segments whose speaker label is "
+            "still a diarization placeholder (e.g. SPEAKER_02) rather than a mapped name."
+        ),
     )

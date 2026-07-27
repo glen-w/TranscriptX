@@ -181,11 +181,14 @@ def test_run_analysis_page_renders_post_success_action_links() -> None:
     assert "batch" in mod._RUN_ANALYSIS_DESCRIPTION.lower()
     # Post-actions sit directly under the page-shell flash, before Target;
     # Batch is skipped via session-state guard (not via early-return placement).
+    # In-progress runs also skip so the strip only appears after completion.
     shell_call = source.index("render_page_shell(")
     post_actions = source.index("_render_post_analysis_actions()", shell_call)
     target_ctrl = source.index('st.segmented_control(\n        "Target"', shell_call)
     assert shell_call < post_actions < target_ctrl
     assert '_RUN_ANALYSIS_TARGET_KEY) != "Batch"' in source
+    assert 'analysis_run_in_progress", False)' in source
+    assert "st.session_state.pop(_KEY_LAST_SUCCESS, None)" in source
 
 
 @pytest.mark.unit
@@ -214,6 +217,7 @@ def test_run_summary_from_last_success_builds_run(
     assert summary.run_id == "20260718_093828_67580744"
     assert summary.run_dir == run_dir
     assert summary.selected_modules == ["stats"]
+    assert summary.status == "completed"
     assert isinstance(summary.created_at, datetime)
 
 
@@ -327,6 +331,82 @@ def test_run_analysis_transcript_path_invokes_post_actions(monkeypatch) -> None:
 
     assert post_calls == [True]
     assert _St.target_options_seen[0] == ["Transcript", "Batch"]
+
+
+@pytest.mark.unit
+def test_run_analysis_in_progress_hides_post_actions(monkeypatch) -> None:
+    """Action strip must wait until completion so links target the new run_id."""
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    DummyHomeStreamlit.session_state = {
+        "analysis_run_in_progress": True,
+        mod.SNAPSHOT_KEY: {"status": "running", "pct": 0},
+        mod._PENDING_LAUNCH_KEY: {
+            "started": True,
+            "footer_summary": "Running…",
+            "modules": ["stats"],
+        },
+        mod._KEY_LAST_SUCCESS: {
+            "run_dir": "/tmp/out/slug/old-run",
+            "run_id": "old-run",
+            "transcript_path": "/tmp/t.json",
+            "subject_type": "transcript",
+            "modules": ["stats"],
+        },
+    }
+    post_calls: list[bool] = []
+    progress_calls: list = []
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def segmented_control(_label, options, index=0, **_kwargs):
+            return options[index]
+
+        @staticmethod
+        def fragment(fn=None, **_kwargs):
+            if fn is None:
+
+                def _decorator(f):
+                    return f
+
+                return _decorator
+            return fn
+
+        @staticmethod
+        def caption(*_a, **_k):
+            return None
+
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+        @staticmethod
+        def container():
+            return DummyHomeStreamlit.expander()
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod, "_render_post_analysis_actions", lambda: post_calls.append(True)
+    )
+    monkeypatch.setattr(
+        mod,
+        "get_config",
+        lambda: SimpleNamespace(group_analysis=SimpleNamespace(enabled=False)),
+    )
+    monkeypatch.setattr(
+        mod,
+        "render_progress_panel",
+        lambda snap: progress_calls.append(snap),
+    )
+    monkeypatch.setattr(
+        mod, "_run_analysis_config_and_launch_fragment", lambda *_a, **_k: None
+    )
+
+    mod.render_run_analysis_page()
+
+    assert post_calls == []
+    assert progress_calls
 
 
 @pytest.mark.unit

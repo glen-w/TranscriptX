@@ -207,6 +207,234 @@ def render_other_summaries(ctx: BlockContext, _placement: BlockPlacement) -> Non
                 st.caption(quiet_unavailable_message(cand.title, outcome=cand.outcome))
 
 
+def _insights_summary_candidates(ctx: BlockContext) -> list:
+    """All available summary kinds for Insights type selector (stable order)."""
+    from transcriptx.web.insights_presentation import SUMMARY_TYPE_LABELS
+    from transcriptx.web.summary_precedence import SummaryCandidate
+
+    result = resolve_primary_summary(
+        _loader(ctx),
+        run_root=ctx.run_root,
+        run_results=ctx.run_results,
+    )
+    by_kind: dict[str, SummaryCandidate] = {}
+    for cand in (result.primary, *result.others):
+        if cand is None:
+            continue
+        if cand.available or cand.markdown or cand.payload:
+            by_kind[cand.kind] = cand
+    ordered: list[SummaryCandidate] = []
+    for kind in SUMMARY_TYPE_LABELS:
+        cand = by_kind.get(kind)
+        if cand is not None and (cand.available or cand.markdown or cand.payload):
+            ordered.append(cand)
+    return ordered
+
+
+def render_insights_summary_panel(
+    ctx: BlockContext, placement: BlockPlacement
+) -> None:
+    """Insights Summary: one selectable summary body (Full controls)."""
+    from transcriptx.web.insights_presentation import (
+        SUMMARY_TYPE_LABELS,
+        compact_metadata_chips,
+        is_insights_guided,
+        truncate_for_preview,
+    )
+
+    candidates = _insights_summary_candidates(ctx)
+    if not candidates:
+        result = resolve_primary_summary(
+            _loader(ctx),
+            run_root=ctx.run_root,
+            run_results=ctx.run_results,
+        )
+        if result.unavailable_message:
+            st.info(result.unavailable_message)
+        else:
+            render_module_required_hint(
+                "Run a summary module to populate this view.",
+                key="insights_summary_panel_empty",
+                ctx=ctx,
+            )
+        from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+            render_global_custom_qa_under_summary,
+        )
+
+        render_global_custom_qa_under_summary(ctx.run_root)
+        return
+
+    labels = [
+        SUMMARY_TYPE_LABELS.get(c.kind, c.title) for c in candidates
+    ]
+    by_label = {SUMMARY_TYPE_LABELS.get(c.kind, c.title): c for c in candidates}
+    # Prefer Transcript Summary when present; else first available.
+    default_label = labels[0]
+    for preferred in (
+        SUMMARY_TYPE_LABELS["llm_summary"],
+        SUMMARY_TYPE_LABELS["narrative_summary"],
+        SUMMARY_TYPE_LABELS["executive_summary"],
+    ):
+        if preferred in by_label:
+            default_label = preferred
+            break
+
+    state_key = f"insights_summary_type_{placement.placement_id}"
+    if state_key not in st.session_state or st.session_state[state_key] not in by_label:
+        st.session_state[state_key] = default_label
+
+    if len(labels) > 1:
+        try:
+            choice = st.segmented_control(
+                "Summary type",
+                options=labels,
+                default=st.session_state[state_key],
+                key=f"{state_key}_control",
+            )
+        except Exception:
+            choice = st.radio(
+                "Summary type",
+                labels,
+                index=labels.index(st.session_state[state_key]),
+                horizontal=True,
+                key=f"{state_key}_radio",
+            )
+        if choice in by_label:
+            st.session_state[state_key] = choice
+    else:
+        choice = labels[0]
+        st.session_state[state_key] = choice
+
+    selected = by_label[st.session_state[state_key]]
+    title = SUMMARY_TYPE_LABELS.get(selected.kind, selected.title)
+    st.markdown(f"## {title}")
+
+    guided = is_insights_guided()
+    badge_labels = compact_metadata_chips(
+        _summary_hero_badges(selected, run_results=ctx.run_results)
+    )
+    rated = ""
+    if selected.markdown:
+        rated = cleaned_llm_output_text(selected.markdown)
+    elif selected.payload and selected.payload.get(selected.text_field):
+        rated = str(selected.payload[selected.text_field])
+
+    loader = _loader(ctx)
+    module = str(getattr(selected, "module", None) or selected.kind or "llm_summary")
+    stem = {
+        "llm_summary": "_llm_summary",
+        "narrative_summary": "_narrative_summary",
+        "executive_summary": "_summary",
+    }.get(str(selected.kind), "_llm_summary")
+    rel = None
+    if loader is not None:
+        rel = resolve_artifact_rel_path(
+            loader, module, f"{stem}.md"
+        ) or resolve_artifact_rel_path(
+            loader, module, f"{stem}.json", kind="data_json"
+        )
+
+    if selected.kind in {"llm_summary", "narrative_summary"} and rated and rel:
+        render_badge_row_with_feedback(
+            badge_labels,
+            ctx=ctx,
+            surface=FeedbackSurface.INSIGHTS_BLOCK,
+            block_id=placement.block_id or "insights_summary_panel",
+            module=module,
+            artifact_rel_path=rel,
+            output_text=rated,
+            provenance=(
+                (selected.payload or {}).get("provenance") if selected.payload else None
+            ),
+            placement_id=placement.placement_id,
+            widget_key=f"fb_insights_sum_{placement.placement_id}_{selected.kind}",
+        )
+    else:
+        render_badge_row(badge_labels)
+
+    # Build display body once (no duplicate headings / stacked summaries).
+    body_md = ""
+    if selected.markdown:
+        body_md = selected.markdown
+        if selected.kind == "executive_summary":
+            body_md = strip_commitments_section(body_md)
+        body_md = strip_leading_markdown_heading(body_md)
+        body_md = strip_provenance_footer(body_md)
+        if selected.kind in {"llm_summary", "narrative_summary"}:
+            body_md = strip_llm_summary_preface(body_md)
+    elif selected.payload and selected.payload.get(selected.text_field):
+        body_md = str(selected.payload[selected.text_field])
+        if selected.kind in {"llm_summary", "narrative_summary"}:
+            body_md = strip_llm_summary_preface(body_md)
+
+    expand_key = f"insights_summary_full_{placement.placement_id}_{selected.kind}"
+    if body_md:
+        if guided:
+            preview, truncated = truncate_for_preview(body_md)
+            show_full = st.session_state.get(expand_key, False)
+            if truncated and not show_full:
+                st.markdown(preview)
+                if st.button("Read full summary", key=f"{expand_key}_btn"):
+                    st.session_state[expand_key] = True
+                    st.rerun()
+            else:
+                st.markdown(body_md)
+                if truncated and show_full:
+                    if st.button("Show preview", key=f"{expand_key}_collapse"):
+                        st.session_state[expand_key] = False
+                        st.rerun()
+        else:
+            st.markdown(body_md)
+    elif selected.payload and not guided:
+        # Full controls only: structured JSON fallback (never in Guided).
+        payload = selected.payload
+        if selected.kind == "executive_summary" and "commitments" in payload:
+            payload = {k: v for k, v in payload.items() if k != "commitments"}
+        st.json(payload)
+    elif selected.payload and guided:
+        st.info("Summary text is unavailable; open Full controls for structured data.")
+
+    # Generation details — collapsed; one raw-file control inside.
+    prov = (selected.payload or {}).get("provenance") if selected.payload else None
+    with st.expander("Generation details", expanded=False):
+        if isinstance(prov, dict) and prov:
+            model = prov.get("model")
+            provider = prov.get("provider")
+            prompt_version = prov.get("prompt_version")
+            if model:
+                st.caption(f"Model: {model}")
+            if provider:
+                st.caption(f"Provider: {provider}")
+            if prompt_version:
+                st.caption(f"Prompt version: {prompt_version}")
+            if not guided:
+                st.json(prov)
+        else:
+            st.caption("No generation provenance recorded for this summary.")
+        if loader is not None:
+            from transcriptx.web.navigation import navigate_to_data_artifact
+
+            artifact = loader.find_artifact(
+                module, kind="data_json", suffix=f"{stem}.json"
+            )
+            if artifact is None:
+                artifact = loader.find_artifact(
+                    module, kind="data_txt", suffix=f"{stem}.md"
+                )
+            if artifact is not None:
+                if st.button(
+                    "View raw file",
+                    key=f"insights_sum_raw_{placement.placement_id}_{selected.kind}",
+                ):
+                    navigate_to_data_artifact(artifact_id=artifact.id)
+
+    from transcriptx.web.blocks.implementations.custom_qa_presentation import (
+        render_global_custom_qa_under_summary,
+    )
+
+    render_global_custom_qa_under_summary(ctx.run_root)
+
+
 def _load_run_overview_payload(ctx: BlockContext) -> dict | None:
     """Prefer report.json overview; fall back to legacy stats artifacts."""
     if ctx.run_root is not None:

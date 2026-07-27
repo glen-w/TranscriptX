@@ -24,6 +24,8 @@ TRANSCRIPT_TAB_CONTROL_KEY = "transcript_viewer_tab_control"
 # must be written on the next fragment run (see apply_deferred_chapter_jump).
 TRANSCRIPT_FORCE_SEGMENTS_KEY = "transcript_viewer_force_segments_tab"
 TRANSCRIPT_SEARCH_KEY = "transcript_search"
+# One-shot: scroll the main pane to the highlighted jump segment after render.
+TRANSCRIPT_SCROLL_TO_JUMP_KEY = "transcript_viewer_scroll_to_jump"
 
 _TAB_LABELS = {
     "turns": "Turns",
@@ -222,7 +224,7 @@ def queue_chapter_jump(
     source_index: int,
     play: bool = True,
 ) -> None:
-    """Queue chapter navigation: switch to Segments, filter, optional play.
+    """Queue chapter navigation: switch to Segments, highlight, optional play.
 
     Logical keys are written immediately. Keyed widgets (tab control, search)
     are already instantiated when Jump/Play fires, so their writes are deferred
@@ -236,6 +238,7 @@ def queue_chapter_jump(
     session_state[CHAPTER_JUMP_KEY] = idx
     session_state[TRANSCRIPT_TAB_KEY] = "segments"
     session_state[TRANSCRIPT_FORCE_SEGMENTS_KEY] = True
+    session_state[TRANSCRIPT_SCROLL_TO_JUMP_KEY] = True
 
 
 def apply_deferred_chapter_jump(session_state: dict[str, Any]) -> None:
@@ -244,8 +247,15 @@ def apply_deferred_chapter_jump(session_state: dict[str, Any]) -> None:
         return
     session_state[TRANSCRIPT_TAB_KEY] = "segments"
     session_state[TRANSCRIPT_TAB_CONTROL_KEY] = _TAB_LABELS["segments"]
-    # Search wins over jump in filtered_display_segments — clear it.
+    # Search wins over jump highlight — clear it.
     session_state[TRANSCRIPT_SEARCH_KEY] = ""
+
+
+def consume_scroll_to_jump(session_state: dict[str, Any]) -> bool:
+    """True once when a jump should scroll the selected segment into view."""
+    if not session_state.pop(TRANSCRIPT_SCROLL_TO_JUMP_KEY, None):
+        return False
+    return True
 
 
 def consume_chapter_pending(

@@ -636,6 +636,11 @@ def inject_global_styles() -> None:
         margin-bottom: 0.4rem;
         line-height: 1.35;
     }
+    /* Keep gallery cards top-aligned when nested widgets (e.g. LLM thumbs)
+       would otherwise match broader horizontal-block center-align rules. */
+    div[data-testid="stHorizontalBlock"]:has(.tx-chart-card-meta) {
+        align-items: flex-start !important;
+    }
     .tx-chart-family-shell {
         border-left: 3px solid rgba(31, 119, 180, 0.25);
         padding: 0.15rem 0 0.15rem 0.55rem;
@@ -756,8 +761,9 @@ def inject_global_styles() -> None:
         color: #e8b4b4 !important;
         background: rgba(180, 90, 90, 0.12) !important;
     }
-    /* LLM feedback — quiet thumbs; persistent low opacity + hover/focus */
-    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="llm_fb_"]) {
+    /* LLM feedback — quiet thumbs; scoped to the thumbs wrapper only so
+       ancestor column grids (e.g. Charts gallery) stay top-aligned. */
+    [class*="st-key-llm_fb_wrap_"] div[data-testid="stHorizontalBlock"] {
         gap: 0.2rem !important;
         align-items: center !important;
         margin: 0 !important;
@@ -776,10 +782,8 @@ def inject_global_styles() -> None:
         background: transparent !important;
         border: none !important;
     }
-    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="llm_fb_"]):hover
-        [class*="llm_fb_"] button,
-    div[data-testid="stHorizontalBlock"]:has([class*="st-key-"][class*="llm_fb_"]):focus-within
-        [class*="llm_fb_"] button,
+    [class*="st-key-llm_fb_wrap_"]:hover [class*="llm_fb_"] button,
+    [class*="st-key-llm_fb_wrap_"]:focus-within [class*="llm_fb_"] button,
     [class*="st-key-"][class*="llm_fb_up_"] button:focus-visible,
     [class*="st-key-"][class*="llm_fb_down_"] button:focus-visible,
     [class*="st-key-"][class*="llm_fb_up_"] button:hover,
@@ -898,8 +902,9 @@ def inject_global_styles() -> None:
         });
     });
 
-    // Keep reading position when ▶ / Play triggers a fragment redraw that
+    // Keep reading position when ▶ triggers a fragment redraw that
     // would otherwise scroll the newly focused audio player into view.
+    // Chapter "Play" is excluded so jump-to-segment scroll can run.
     (function() {
         if (window.__txPlayScrollPreserve) return;
         window.__txPlayScrollPreserve = true;
@@ -908,7 +913,7 @@ def inject_global_styles() -> None:
             const btn = el && el.closest ? el.closest('button') : null;
             if (!btn) return false;
             const text = (btn.innerText || btn.textContent || '').trim();
-            return text === '▶' || text.indexOf('Play') === 0;
+            return text === '▶';
         };
         const restore = function() {
             const raw = sessionStorage.getItem(KEY);

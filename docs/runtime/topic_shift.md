@@ -60,7 +60,7 @@ Optional sidecar under `.topic_shift_enrichment/` (shared `llm_generational_stor
 
 ## Viewer
 
-Chapters tab in Transcript viewer (`_transcript_interaction_fragment`). Jump/Play uses pending chapter action so playback is re-applied after view-signature reset.
+Chapters tab in Transcript viewer (`_transcript_interaction_fragment`). Jump/Play highlights the target segment in the full transcript (scroll-into-view) and uses pending chapter action so playback is re-applied after view-signature reset.
 
 ## Group
 

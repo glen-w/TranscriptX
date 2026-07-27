@@ -29,5 +29,19 @@
     "scope": "project",
     "sensitivity": "normal",
     "type": "str"
+  },
+  "dashboard.transcript_exclude_unnamed_speakers": {
+    "advanced": false,
+    "category": "dashboard",
+    "choices": null,
+    "default": true,
+    "description": "When true, the Transcript viewer hides segments whose speaker label is still a diarization placeholder (e.g. SPEAKER_02) rather than a mapped name.",
+    "key": "dashboard.transcript_exclude_unnamed_speakers",
+    "max": null,
+    "min": null,
+    "path": "dashboard.transcript_exclude_unnamed_speakers",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
   }
 }

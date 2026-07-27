@@ -3,11 +3,11 @@ Authority: runtime/STORAGE.md
 
 # Transcription (external workflow)
 
-TranscriptX is **analysis-first**: transcription produces JSON elsewhere; the web app **imports** it. The **Transcribe Audio** page is a **parameterised command generator** (copyable shell only — Streamlit never executes transcription). **Import Transcript** is the GUI admission gate. WhisperX Docker remains an external recipe, not orchestrated from Streamlit.
+TranscriptX is **analysis-first**: transcription produces JSON (or SRT/VTT) elsewhere; the web app **imports** it. The **Transcribe Audio** page is a **parameterised command generator** (copyable shell only — Streamlit never executes transcription). **Import Transcript** is the GUI admission gate. WhisperX Docker and Whisper-WebUI remain external recipes, not orchestrated from Streamlit.
 
 ## Design: why transcription stays outside the GUI
 
-We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, or WhisperX Docker); the GUI only **generates copyable commands**, documents boundaries, and imports the result.
+We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, WhisperX Docker, or Whisper-WebUI Gradio); the GUI only **generates copyable commands**, documents boundaries, and imports the result.
 
 **Docker vs macOS venv.** The recommended install runs `transcriptx-web` in a **Linux** container. **whispermlx** typically lives in a **macOS** Python venv and depends on Apple MLX. That venv binary cannot be run reliably from inside the container: different OS, no MLX in Linux images, and paths like `~/venvs/whispermlx/bin/whispermlx` refer to the host—not the container filesystem. Mounting the venv or sourcing `whisperx.env` inside `transcriptx-web` does not fix this; at best you get “file not found” or an incompatible executable.
 
@@ -15,7 +15,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 
 | Where | What runs |
 |-------|-----------|
-| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, optional WhisperX Docker |
+| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, optional WhisperX / Whisper-WebUI Docker |
 | `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts |
 
 **Why not merge stacks?** Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
@@ -25,11 +25,11 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 ## Transcribe Audio page (command generator)
 
 1. Open **Transcribe Audio** in the web UI.
-2. Choose a tool: **whispermlx** (macOS host), **whispermlx-missing** (skip existing JSON), or **WhisperX Docker** (external recipe).
-3. Set input path, output folder, model, language, diarize, and (for the bulk helper) dry-run / force / fuzzy-match flags.
+2. Choose a tool: **whispermlx** (macOS host), **whispermlx-missing** (skip existing JSON), **WhisperX Docker** (CLI JSON recipe), or **Whisper-WebUI Docker** (Gradio UI → SRT/VTT).
+3. Set input path, output folder, model, language, diarize, and (for the bulk helper) dry-run / force / fuzzy-match flags. For Whisper-WebUI, set outputs folder, port, and CPU/CUDA.
 4. **Copy** the generated shell snippet. Paths with spaces are shell-quoted. Do **not** expect Streamlit to run it.
-5. Run the command on the appropriate host (macOS for whispermlx; Linux/GPU for WhisperX Docker).
-6. Open **Import Transcript** and upload the resulting JSON (optionally attach the source recording; same-stem audio in the mounted recordings folder will be linked).
+5. Run the command on the appropriate host (macOS for whispermlx; Docker host for WhisperX / Whisper-WebUI).
+6. Open **Import Transcript** and upload the result (WhisperX/whispermlx JSON, or Whisper-WebUI SRT/VTT; optionally attach the source recording; same-stem audio in the mounted recordings folder will be linked).
 
 ### Non-technical corpus path (short)
 
@@ -43,7 +43,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 
 **Spaces in folder names:** use the generator (quoting is automatic) or wrap paths in quotes yourself.
 
-**Docker analysis vs transcription:** keep analysis in Docker if you like; still run whispermlx on the Mac host. WhisperX Docker is a separate container recipe — see [docs/recipes/whisperx/README.md](../recipes/whisperx/README.md).
+**Docker analysis vs transcription:** keep analysis in Docker if you like; still run whispermlx on the Mac host. WhisperX Docker and Whisper-WebUI are separate container recipes — see [docs/recipes/whisperx/README.md](../recipes/whisperx/README.md) and [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md).
 
 ### Finding whispermlx
 
@@ -164,13 +164,13 @@ Filenames ending with `*_transcriptx.json` (or `*_canonical.json`) match project
 
 ## Generate transcript JSON
 
-You can produce compatible JSON with any tool: WhisperX, AssemblyAI, Deepgram, Otter, Google, Colab, or manual edits. TranscriptX does not run any transcription engine; it consumes JSON you provide.
+You can produce compatible JSON with any tool: WhisperX, AssemblyAI, Deepgram, Otter, Google, Colab, or manual edits. Subtitle exports (**SRT** / **WebVTT**) from tools such as Whisper-WebUI are also importable. TranscriptX does not run any transcription engine; it consumes files you provide.
 
 ### WhisperX (optional reference example)
 
 WhisperX is one example of an external transcription workflow. The recipe below is a **standalone reference** — optional, not required. Run WhisperX yourself (Docker or local), then feed the output into TranscriptX.
 
-**Docker (copy-paste):** Use the reference recipe in [docs/recipes/whisperx/](recipes/whisperx/README.md). From that directory:
+**Docker (copy-paste):** Use the reference recipe in [docs/recipes/whisperx/](../recipes/whisperx/README.md). From that directory:
 
 ```bash
 cp whisperx.env.example whisperx.env
@@ -193,6 +193,20 @@ docker run --rm \
 ```
 
 WhisperX writes JSON with segments (often with `words` arrays). TranscriptX can load that format, but for managed library admission use the managed workflow API (below) so sidecar + archive are created.
+
+### Whisper-WebUI (optional Gradio example)
+
+[jhj0517/Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) is a third-party Gradio UI (faster-whisper + optional diarization). **Ownership, Apple Silicon CPU caveat, pinned image tag, removal, and smoke-test limits** live in [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md) — read that disclaimer before deploying. TranscriptX does not distribute or guarantee the service; hand-off is **SRT/VTT → Import Transcript**. The Transcribe Audio page can generate a copyable localhost-bound deploy snippet (**Whisper-WebUI Docker** tool).
+
+```bash
+# Prefer the recipe compose (localhost bind + pinned tag):
+cd docs/recipes/whisper-webui
+docker compose -f docker-compose.whisper-webui.yml config
+docker compose -f docker-compose.whisper-webui.yml up -d
+# Open http://127.0.0.1:7860 — download SRT/VTT → Import Transcript
+```
+
+**Apple Silicon:** the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
 
 ## Canonical validation and import (Python API)
 
@@ -275,7 +289,7 @@ You can produce compatible JSON from other engines (e.g. AssemblyAI, Deepgram, G
 
 ## Golden path
 
-1. **Get JSON** — Use any tool that produces compatible JSON: WhisperX, AssemblyAI, Deepgram, Otter, Colab, or manual export. See `docs/recipes/whisperx/README.md` for an optional WhisperX reference recipe.
+1. **Get transcript files** — Use any tool that produces compatible JSON or subtitles: WhisperX, Whisper-WebUI (SRT/VTT), AssemblyAI, Deepgram, Otter, Colab, or manual export. See `docs/recipes/whisperx/README.md` and `docs/recipes/whisper-webui/README.md` for optional recipes.
 2. **Managed import (required for library admission)** — run the managed import workflow (or use the web Import Transcript page) to produce canonical JSON + sidecar + archived original under the managed storage contract (see `docs/runtime/STORAGE.md`).
 3. **Analyze** — open the web interface and select the transcript, or use the Python API (`AnalysisRequest` + `run_analysis`).
 

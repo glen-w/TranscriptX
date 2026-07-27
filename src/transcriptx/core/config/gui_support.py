@@ -111,6 +111,11 @@ COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
         group="Output",
         label="Dynamic view generation mode",
     ),
+    CommonSettingField(
+        key="dashboard.transcript_exclude_unnamed_speakers",
+        group="Display",
+        label="Exclude unnamed speakers from Transcript view",
+    ),
     # Semantic Similarity v2 (grouped UX strings)
     CommonSettingField(
         key="analysis.semantic_similarity.enabled",

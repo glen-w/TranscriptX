@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "import_id": "550e8400-e29b-41d4-a716-446655440000",
+  "imported_at": "2026-01-15T10:00:00+00:00",
+  "adapter_source_id": "srt",
+  "source_upload_basename": "a.srt",
+  "archived_original_relpath": "originals/a.srt",
+  "current_json_filename": "a.json",
+  "rename_history": []
+}

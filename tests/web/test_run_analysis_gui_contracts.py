@@ -138,6 +138,9 @@ def test_pending_launch_snapshot_is_launch_authority() -> None:
         or 'pending["request"]' in source
     )
     assert "st.rerun()" in source
+    # Live panel (not spinner) is the in-run progress affordance.
+    assert "render_slot=progress_slot" in source
+    assert 'with st.spinner("Running analysis…")' not in source
 
 
 @pytest.mark.unit

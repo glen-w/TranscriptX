@@ -240,7 +240,7 @@ def _render_chart_card_grid(
     show_registry_description: bool = True,
     show_llm_summary: bool = True,
 ) -> None:
-    cols = st.columns(3)
+    cols = st.columns(3, vertical_alignment="top")
     for idx, chart in enumerate(artifacts):
         with cols[idx % 3]:
             _render_chart_gallery_card(

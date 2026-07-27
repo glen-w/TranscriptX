@@ -2,7 +2,7 @@
 Copyable transcription command generation (no execution).
 
 Used by the Transcribe Audio page to hand off shell commands for host-side
-whispermlx / whispermlx-missing / WhisperX Docker workflows.
+whispermlx / whispermlx-missing / WhisperX Docker / Whisper-WebUI workflows.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ class TranscriptionTool(str, Enum):
     WHISPERMLX_SINGLE = "whispermlx_single"
     WHISPERMLX_MISSING = "whispermlx_missing"
     WHISPERX_DOCKER = "whisperx_docker"
+    WHISPER_WEBUI_DOCKER = "whisper_webui_docker"
 
 
 # Common Whisper / whispermlx / WhisperX model ids for the command generator.
@@ -97,7 +98,10 @@ class CommandGenParams:
     min_speakers: int | None = None
     max_speakers: int | None = None
     docker_image: str = "ghcr.io/m-bain/whisperx:latest"
-    # Import expects WhisperX / whispermlx JSON (not a selectable alternate format for 1.0)
+    # Whisper-WebUI (jhj0517) Gradio deployment
+    webui_port: int = 7860
+    webui_clone_dir: str = "$HOME/Whisper-WebUI"
+    # Import format hint for operator notes / preview
     expected_output_format: str = "whisperx_json"
 
 
@@ -286,6 +290,66 @@ docker run --rm \\
     )
 
 
+def build_whisper_webui_docker(params: CommandGenParams) -> GeneratedCommand:
+    """Deploy jhj0517/Whisper-WebUI (Gradio) via Docker — copyable only."""
+    out_mount = params.output_dir.rstrip("/") or "./outputs"
+    image = params.docker_image.strip() or "jhj0517/whisper-webui:v1.0.8-4def223"
+    port = int(params.webui_port) if params.webui_port else 7860
+    clone_dir = params.webui_clone_dir.strip() or "$HOME/Whisper-WebUI"
+    gpu_flag = " \\\n  --gpus all" if params.device == "cuda" else ""
+    diarize_hint = "on" if params.diarize else "off"
+    shell = f"""# Whisper-WebUI (jhj0517) — optional third-party Gradio recipe.
+# TranscriptX does not distribute, embed, fork, or guarantee this service.
+# See docs/recipes/whisper-webui/README.md (ownership disclaimer).
+# Apple Silicon: container is CPU inference — prefer whispermlx for Metal/MLX speed.
+# Expected output: SRT / WebVTT → Import Transcript. Port binds to 127.0.0.1 only.
+
+CLONE_DIR={_q(clone_dir) if not clone_dir.startswith("$") else clone_dir}
+OUTDIR={_q(out_mount)}
+PORT={port}
+
+if [ ! -d "$CLONE_DIR/.git" ]; then
+  git clone --depth 1 https://github.com/jhj0517/Whisper-WebUI.git "$CLONE_DIR"
+fi
+mkdir -p "$OUTDIR" "$CLONE_DIR/outputs" "$CLONE_DIR/models" "$CLONE_DIR/configs"
+
+# Prefer the pinned Hub tag. Compose alternative: docs/recipes/whisper-webui/
+docker run --rm -d \\
+  --name whisper-webui \\
+  -p "127.0.0.1:$PORT:7860"{gpu_flag} \\
+  -v "$CLONE_DIR/models:/Whisper-WebUI/models" \\
+  -v "$OUTDIR:/Whisper-WebUI/outputs" \\
+  -v "$CLONE_DIR/configs:/Whisper-WebUI/configs" \\
+  -e HF_TOKEN \\
+  {_q(image)}
+
+echo "Open http://127.0.0.1:$PORT"
+echo "In the Gradio UI set model={_q(params.model)} language={_q(params.language)} diarization={diarize_hint}"
+echo "Download SRT/VTT from outputs, then Import Transcript in TranscriptX."
+echo "Stop: docker stop whisper-webui"
+"""
+    notes = (
+        "Optional interoperability recipe — TranscriptX does not own or guarantee Whisper-WebUI.",
+        "Apple Silicon: expect CPU inference in Docker; native MLX (whispermlx) is usually faster.",
+        "Port binds to 127.0.0.1 only (not 0.0.0.0). Open http://127.0.0.1:<port>.",
+        "Upload audio in Gradio; exports land in the mounted outputs folder (SRT/VTT preferred).",
+        "Models cache under the clone's models/ directory (multi-GB). TranscriptX does not prune it.",
+        "Diarization: you supply HF_TOKEN and accept pyannote terms; quality ≠ WhisperX JSON path.",
+        "Upstream updates may break this recipe; pin the documented image tag.",
+        "Removal: docker stop whisper-webui; optional rm of clone/outputs/image — see recipe README.",
+    )
+    return GeneratedCommand(
+        title="Whisper-WebUI Docker (Gradio)",
+        shell=shell.strip() + "\n",
+        notes=notes,
+        next_step=(
+            "When SRT/VTT (or other supported export) is ready in the outputs folder, "
+            "open Import Transcript and upload it (optionally attach the source recording; "
+            "same-stem audio in the mounted recordings folder will be linked)."
+        ),
+    )
+
+
 def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand:
     """Build a copyable command for the selected tool."""
     if params.tool is TranscriptionTool.WHISPERMLX_SINGLE:
@@ -299,6 +363,8 @@ def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand
         return build_whispermlx_missing(params)
     if params.tool is TranscriptionTool.WHISPERX_DOCKER:
         return build_whisperx_docker(params)
+    if params.tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
+        return build_whisper_webui_docker(params)
     raise ValueError(f"Unknown transcription tool: {params.tool!r}")
 
 

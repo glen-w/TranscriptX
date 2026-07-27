@@ -27,7 +27,8 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [Module catalog](generated/modules.md) | Generated module list |
 | [Web launcher / Python API](generated/cli.md) | Supported entry flags and API |
 | [Terminology](TERMS.md) | Non-authoritative term index |
-| [WhisperX recipe](recipes/whisperx/README.md) | Optional standalone recipe |
+| [WhisperX recipe](recipes/whisperx/README.md) | Optional standalone WhisperX Docker recipe |
+| [Whisper-WebUI recipe](recipes/whisper-webui/README.md) | Optional third-party Gradio recipe (ownership disclaimer; SRT/VTT → import) |
 
 ## Contracts (rules, not tutorials)
 

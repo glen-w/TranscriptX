@@ -10,8 +10,10 @@ import pytest
 from transcriptx.web.transcript_viewer.chapters import (
     CHAPTER_JUMP_KEY,
     CHAPTER_PENDING_KEY,
+    TRANSCRIPT_SCROLL_TO_JUMP_KEY,
     apply_deferred_chapter_jump,
     clear_chapter_jump,
+    consume_scroll_to_jump,
     format_chapter_time_range,
     load_chapter_rows,
     queue_chapter_jump,
@@ -201,6 +203,9 @@ def test_queue_chapter_jump_play_false_and_deferred_noop() -> None:
     queue_chapter_jump(state, source_index=4, play=False)
     assert state[CHAPTER_PENDING_KEY] == {"jump_index": 4, "play": False}
     assert state["transcript_viewer_force_segments_tab"] is True
+    assert state[TRANSCRIPT_SCROLL_TO_JUMP_KEY] is True
+    assert consume_scroll_to_jump(state) is True
+    assert consume_scroll_to_jump(state) is False
     # No-op when force flag already consumed / absent.
     del state["transcript_viewer_force_segments_tab"]
     apply_deferred_chapter_jump(state)

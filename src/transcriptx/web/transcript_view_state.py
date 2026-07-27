@@ -7,7 +7,14 @@ from pathlib import Path
 from typing import Any
 
 from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+from transcriptx.utils.text_utils import is_named_speaker
 from transcriptx.web.models.search import NavRequest
+
+
+def segment_has_named_speaker(segment: dict[str, Any]) -> bool:
+    """True when the segment's display/raw speaker label is a mapped human name."""
+    label = str(segment.get("speaker_display") or segment.get("speaker") or "").strip()
+    return is_named_speaker(label)
 
 
 @dataclass(frozen=True)
@@ -138,8 +145,28 @@ def filtered_display_segments(
     segments: list[dict[str, Any]],
     search_text: str,
     jump_index: int | None,
+    exclude_unnamed_speakers: bool = True,
 ) -> tuple[list[tuple[int, dict[str, Any]]], str | None]:
-    display_segments: list[tuple[int, dict[str, Any]]] = list(enumerate(segments))
+    """Return ``(index, segment)`` pairs for the transcript list.
+
+    When ``exclude_unnamed_speakers`` is true, diarization placeholders such as
+    ``SPEAKER_02`` are omitted. An explicit ``jump_index`` target is always kept
+    so deep-links still land even if that speaker is unnamed. Jump does not
+    narrow the list — callers highlight/scroll to the target in full context.
+    """
+
+    def _keep(idx: int, segment: dict[str, Any]) -> bool:
+        if not exclude_unnamed_speakers:
+            return True
+        if segment_has_named_speaker(segment):
+            return True
+        return jump_index is not None and idx == jump_index
+
+    display_segments: list[tuple[int, dict[str, Any]]] = [
+        (idx, segment)
+        for idx, segment in enumerate(segments)
+        if _keep(idx, segment)
+    ]
     if search_text:
         filtered = [
             (idx, segment)
@@ -147,9 +174,10 @@ def filtered_display_segments(
             if search_text.lower() in str(segment.get("text", "")).lower()
         ]
         return filtered, f"Showing {len(filtered)} of {len(segments)} segments"
-    if jump_index is not None:
-        start_idx = max(0, jump_index - 2)
-        end_idx = min(len(segments) - 1, jump_index + 2)
-        context = [(idx, segments[idx]) for idx in range(start_idx, end_idx + 1)]
-        return context, "Showing context around selected segment."
-    return display_segments, None
+    caption = None
+    if exclude_unnamed_speakers:
+        hidden = len(segments) - len(display_segments)
+        if hidden:
+            unit = "segment" if hidden == 1 else "segments"
+            caption = f"Hiding {hidden} {unit} from unnamed speakers"
+    return display_segments, caption
