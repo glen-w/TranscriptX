@@ -22,7 +22,7 @@ def test_website_landing_scaffold() -> None:
     # Forbidden public RTD hostname must stay out of marketing copy until go-live.
     forbidden = "readthedocs" + ".io"
     assert forbidden not in html
-    assert "Buy Me a Coffee URL pending" in html or "Support (link pending)" in html
+    assert "ko-fi.com/C0C1XK8G" in html
     assert "website" in pages.read_text(encoding="utf-8")
 
 

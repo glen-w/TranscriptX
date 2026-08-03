@@ -216,3 +216,48 @@ def test_highlights_compact_shows_themed_labels(
     monkeypatch.setattr(oc, "st", _St)
     oc.render_highlights_compact(ctx, SimpleNamespace())
     assert writes == ["- Hiring plan"]
+
+
+@pytest.mark.unit
+def test_duration_seconds_from_overview_prefers_nested_and_positive() -> None:
+    assert oc._duration_seconds_from_overview(None) is None
+    assert oc._duration_seconds_from_overview("bad") is None  # type: ignore[arg-type]
+    assert (
+        oc._duration_seconds_from_overview(
+            {"overview": {"total_duration_sec": 90}, "duration_seconds": 10}
+        )
+        == 90.0
+    )
+    assert (
+        oc._duration_seconds_from_overview({"overview": {"total_duration_sec": 0}})
+        is None
+    )
+    assert oc._duration_seconds_from_overview({"duration_seconds": 12.5}) == 12.5
+
+
+@pytest.mark.unit
+def test_speaker_count_from_overview_prefers_named_then_list() -> None:
+    assert oc._speaker_count_from_overview(None) is None
+    assert (
+        oc._speaker_count_from_overview(
+            {"overview": {"speaker_count_named": 3}, "speakers": [{}, {}]}
+        )
+        == 3
+    )
+    assert oc._speaker_count_from_overview({"speakers": [{"n": 1}, {"n": 2}]}) == 2
+    assert oc._speaker_count_from_overview({"speakers": []}) is None
+
+
+@pytest.mark.unit
+def test_speaker_fourth_stat_priority_order() -> None:
+    assert oc._speaker_fourth_stat({"tic_rate": 0.05}) == ("Tics", "5%")
+    assert oc._speaker_fourth_stat({"tic_rate": 0.01, "sentiment": {"compound": 0.4}}) == (
+        "Tone",
+        "+0.40",
+    )
+    assert oc._speaker_fourth_stat({"pct_total_words": 0.25}) == ("Words", "25%")
+    assert oc._speaker_fourth_stat({"duration_hhmmss": "00:01:02"}) == (
+        "Talk time",
+        "00:01:02",
+    )
+    assert oc._speaker_fourth_stat({}) == ("Words", "—")

@@ -69,7 +69,7 @@ Record each row in the evidence table (§6). Class defaults assume Docker Compos
 ### 3.2 Import and Library — **required**
 
 - [x] Single-file import into managed library — **pass** 2026-07-26 (individual two-speaker `R20241026-121652`)
-- [ ] Folder import (multi-file) when profile supports it
+- [x] Folder import (multi-file) when profile supports it — **pass** 2026-07-28 (import all from folder)
 - [x] Library shows new transcript(s) with expected identity — **pass** (action menu → Speaker Identification landed on correct transcript)
 - [x] Related: **Delete all runs** (Settings / storage) — **pass** 2026-07-26 (works as expected)
 - [x] Related: **Corrections Studio** — **pass (usable)** 2026-07-27; quality/results **mixed**. Not a 1.0 blocker; dedicated strengthen wave → [ROADMAP.md](../ROADMAP.md) §1.1 (word-level propose from Transcript viewer)
@@ -118,16 +118,16 @@ Incorporate by **stable IDs** from [gui_acceptance_residual_checklist.md](gui_ac
 | R5 | Popovers / expanders | Critical expanders readable |
 | R6 | Visual alignment | Overview/Insights/Charts first paint aligned |
 
-- [~] R1 … R6 recorded — **R1 pass**; **R2 pass**; **R4 pass**; **R6 pass** (Overview/Insights/Charts/Artifacts first paint). R3, R5 still open
+- [x] R1 … R6 recorded — **all pass** 2026-07-28 (R1 import picker; R2 export download; R3 open-on-disk; R4 hover/focus; R5 expanders; R6 Overview/Insights/Charts first paint)
 
 ### 3.11 Accessibility / browsers — **required**
 
-- [ ] Keyboard reachability of principal controls (Home, Import, Run, Insights, Settings)
-- [ ] Visible focus indicators
-- [ ] Text / control contrast spot-check
-- [ ] Narrow-window usability (mobile-ish width) for Home + Run
-- [ ] Chart readability + downloadable alternative for important visual outputs
-- [ ] Each browser in the recorded Streamlit-supported set smoked
+- [x] Keyboard reachability of principal controls (Home, Import, Run, Insights, Settings)
+- [x] Visible focus indicators
+- [x] Text / control contrast spot-check
+- [x] Narrow-window usability (mobile-ish width) for Home + Run
+- [x] Chart readability + downloadable alternative for important visual outputs
+- [x] Each browser in the recorded Streamlit-supported set smoked
 
 ### 3.12 Performance — **conditional / strongly expected**
 

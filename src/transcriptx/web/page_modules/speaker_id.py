@@ -153,15 +153,30 @@ def _cached_fallback_transcripts() -> list:
     return cached_list_all_transcript_summaries()
 
 
+def _rerun_app() -> None:
+    """Full-app rerun (completion, or fragment-scope fallback)."""
+    st.rerun()
+
+
 def _rerun_ui() -> None:
-    """Rerun only the Speaker ID workspace fragment."""
-    st.rerun(scope="fragment")
+    """Rerun the workspace fragment when allowed; otherwise full-app rerun.
+
+    Streamlit rejects ``scope="fragment"`` while the fragment is executing as
+    part of a full-app run (even inside a fragment-decorated function). Voice
+    deferral, jump sync, and confirm/reject can hit that path — fall back
+    instead of surfacing a StreamlitAPIException as "Voice suggestions
+    unavailable".
+    """
+    try:
+        st.rerun(scope="fragment")
+    except st.errors.StreamlitAPIException:
+        _rerun_app()
 
 
 def _rerun_app_for_completion() -> None:
-    """Single allowed full-app rerun: completion paint + picker label refresh."""
+    """Single intentional full-app rerun: completion paint + picker label refresh."""
     st.session_state[_SPEAKER_ID_COMPLETION_APP_RERUN] = True
-    st.rerun()
+    _rerun_app()
 
 
 def _load_cached_segments(transcript_path: str | Path) -> List[SegmentInfo]:
@@ -755,13 +770,12 @@ def _render_voice_suggestions(
                                 no_match += 1
                             else:
                                 other += 1
-                    st.session_state["sid_voice_analyse_all_summary"] = (
+                    st.info(
                         f"Analysed {len(targets)} speakers: "
                         f"{suggestions} suggestion(s), "
                         f"{no_match} no match, "
                         f"{other} other."
                     )
-                    _rerun_ui()
 
             batch_summary = st.session_state.pop(
                 "sid_voice_analyse_all_summary", None
@@ -913,6 +927,8 @@ def _render_voice_suggestions(
                 st.warning(f"Voice analyse: {result.outcome}")
                 if result.detail:
                     st.caption(result.detail)
+    except st.errors.StreamlitAPIException:
+        raise
     except Exception as exc:
         st.warning(f"Voice suggestions unavailable: {exc}")
 

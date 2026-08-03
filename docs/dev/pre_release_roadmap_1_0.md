@@ -903,7 +903,7 @@ Do **not** treat reintroduction as a 1.0 residual. Historical design notes from 
 - [x] Initial `website/` content (credible public landing) (**0.9.7**)
 - [x] GitHub Pages workflow (**0.9.7**)
 - [ ] Screenshots / example outputs as capacity allows
-- [x] Buy Me a Coffee placeholder (URL when supplied) (**0.9.7**)
+- [x] Ko-fi support link on website (**0.9.7** placeholder; live URL **2026-07-28**)
 
 **Gate:** credible public landing exists. Do **not** make website polish or elaborate RTD a hard blocker if the product itself is ready.
 
@@ -986,7 +986,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 
 ## 20. Unresolved owner judgements (non-blocking defaults set)
 
-- [ ] **Buy Me a Coffee URL** — placeholder until supplied
+- [x] **Buy Me a Coffee URL** — Ko-fi [ko-fi.com/C0C1XK8G](https://ko-fi.com/C0C1XK8G) (website footer **2026-07-28**)
 - [x] **Demo pack / Guided UI for 0.9.6** — trialled in **0.9.6**; **removed** (prefer docs + clear GUI; see §16)
 - [ ] **Native Mac MPS:** documented supported-with-caveats for 1.0, not a hard GPU gate (default)
 - [x] **Whether cleanup result schema 2→1** proceeds in same PR as public epoch (done in **0.9.3**; journal → 1 / policy 7 kept)

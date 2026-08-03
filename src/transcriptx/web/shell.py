@@ -6,6 +6,7 @@ Kept separate from ``app.py`` so the entry module focuses on routing and pages.
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import streamlit as st
@@ -33,6 +34,26 @@ def brand_logo_path(*, for_dark_chrome: bool = True) -> Path | None:
     if _LOGO_ICON.is_file():
         return _LOGO_ICON
     return None
+
+
+def render_brand_logo(*, width: int = 200) -> None:
+    """Sidebar brand mark without Streamlit's st.image fullscreen toolbar."""
+    logo = brand_logo_path()
+    if logo is None:
+        return
+    raw = logo.read_bytes()
+    b64 = base64.b64encode(raw).decode("ascii")
+    suffix = logo.suffix.lower()
+    mime = "image/png" if suffix == ".png" else "image/jpeg"
+    st.markdown(
+        (
+            f'<div class="tx-sidebar-brand">'
+            f'<img src="data:{mime};base64,{b64}" width="{width}" '
+            f'alt="TranscriptX" />'
+            f"</div>"
+        ),
+        unsafe_allow_html=True,
+    )
 
 
 def configure_streamlit_page() -> None:
@@ -65,6 +86,14 @@ def inject_global_styles() -> None:
     }
     section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
         padding-top: 0 !important;
+    }
+    .tx-sidebar-brand {
+        margin: 0 0 0.5rem 0;
+    }
+    .tx-sidebar-brand img {
+        display: block;
+        max-width: 100%;
+        height: auto;
     }
     section[data-testid="stSidebar"] * {
         overflow-wrap: anywhere;

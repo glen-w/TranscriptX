@@ -274,9 +274,15 @@ def test_suppress_surface_artifacts_on_failed() -> None:
     assert filtered[0].module == "moments"
 
 
-def test_module_save_pipeline_smoke(tmp_path: Path) -> None:
+def test_module_save_pipeline_smoke(tmp_path: Path, monkeypatch) -> None:
     """End-to-end save through TopicShiftAnalysis + OutputService (offline tfidf)."""
     from transcriptx.core.analysis.topic_shift import TopicShiftAnalysis
+
+    # Keep enrichment offline: host LLM config must not trigger a live Ollama call.
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.topic_shift.enrichment.get_config",
+        lambda: SimpleNamespace(llm=SimpleNamespace(enabled=False)),
+    )
 
     transcript = tmp_path / "mini.json"
     transcript.write_text(
@@ -305,6 +311,11 @@ def test_module_save_pipeline_smoke(tmp_path: Path) -> None:
     assert (data_dir / "topic_shift.stats.json").is_file()
     # Enrichment sidecar present (skipped when llm off)
     assert (data_dir / "topic_shift.enrichment.json").is_file()
+    enrich = json.loads(
+        (data_dir / "topic_shift.enrichment.json").read_text(encoding="utf-8")
+    )
+    assert enrich.get("outcome") == "skipped"
+    assert enrich.get("skip_reason") == "llm_disabled"
 
 
 def test_dual_active_matrix_det_active_enrich_fail_keeps_chapters(

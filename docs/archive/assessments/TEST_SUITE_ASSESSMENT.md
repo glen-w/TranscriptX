@@ -2267,3 +2267,57 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Streamlit AppTest for Highlights filter expander + Show more interaction.
 - Narrow-viewport nav (AppTest-blind).
 - Full in-browser playback wiring from Insights Play (still navigates to Transcript).
+
+
+## 77. Expansion (2026-07-27) – deep-test / Insights layout + offline topic_shift
+
+- **Backup:** skipped (already completed in `/deep-test` §0).
+- **Baseline blocker fixed:** `test_module_save_pipeline_smoke` hung on live Ollama when host LLM was enabled — forced `llm_enabled=False` via monkeypatch; asserts enrichment `skipped`/`llm_disabled`.
+- **Hygiene:** allowlisted already-tracked deep-test probe paths under `data/**` in `tracked_data_allowlist.toml`.
+- **Insights expansion:** keyphrases moved to Analysis (`default.yaml` + `ANALYSIS_GROUP_ORDER`); layout/order tests updated.
+- **Guided/Full toggle:** waived (product §16 — do not reintroduce before 1.0); density remains always-Full with progressive-disclosure helpers.
+
+---
+
+## 78. Expansion (2026-07-31) – Speaker ID paths, transcript artifacts, Overview extractors, optional-dep contracts
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260731.zip` (7.7M); `custom-commands/` mirrored.
+- **Collection (default filter):** `7758/7936` selected (`178` deselected).
+- **Baseline before expansion:** `7756 passed, 3 skipped, 178 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; `-m quarantined` selects nothing); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance).
+- **Structure:** `tests/{analysis,app,contracts,core,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ `tests/web/transcript_viewer/`, `tests/web/gui_acceptance/`).
+- **Skipped-at-collection:** no import failures; historical `tests/analysis/test_rules.py` imports live `acts.rules` (not skip-at-collection). Collect-ignored obsolete semantic v1 modules remain ignored (update-or-remove candidates; not re-enabled).
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Speaker ID path discovery (0.9.8.4) | `transcript_paths_for_speaker_views_impl` untested; `start_ms`/`end_ms` preference uncovered | Extend `tests/web/test_cache_helpers.py` |
+| Transcript artifact / nav helpers | Manifest stem + corrupt fallback, `consume_nav_request`, context session glue only mocked in page tests | Extend `tests/web/test_transcript_view_state.py` |
+| Overview curated extractors (0.9.9) | Duration / speaker count / fourth-stat priority pure helpers untested | Extend `tests/web/blocks/test_overview_curated_helpers.py` |
+| Optional-dep blocked results | Reason/hint helpers + envelope only partially covered via BERTopic shaping | New `tests/core/pipeline/test_optional_dep_outcomes.py` |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_cache_helpers.py` | **+3** | `start_ms` preference; run-dir scan skip list; managed+run-dir dedupe |
+| `tests/web/test_transcript_view_state.py` | **+4** | context session glue; nav consume; manifest artifact stem; corrupt-manifest fallback |
+| `tests/web/blocks/test_overview_curated_helpers.py` | **+3** | duration/speaker-count extractors; fourth-stat priority |
+| `tests/core/pipeline/test_optional_dep_outcomes.py` | **new (+4)** | reason formats; install hint; blocked envelope; extra_metrics merge |
+
+### Validation
+- Focused slice: **34 passed**.
+- Default suite after expansion: **7770 passed, 3 skipped, 178 deselected**.
+- Optional `integration_core`: **55 passed, 3 failed** — pre-existing / unrelated to this expansion (e.g. `.run_finalization.lock.lock` listed as missing artifact path; VTT managed-import and group-finalize failures). Not fixed here (would need production or integration-test alignment outside tests-only scope).
+- **Production code:** none (this `#tests` pass).
+- **Quarantined tests:** not re-enabled.
+
+### Recommendations
+1. Keep optional-dep reason strings (`missing_extra:` / `broken_extra:`) stable; contract tests guard the format.
+2. Continue Overview 0.9.9 polish with pure-helper unit tests before AppTest journeys.
+3. Do not re-enable collect-ignored semantic v1 modules until rewritten for current semantic similarity APIs.

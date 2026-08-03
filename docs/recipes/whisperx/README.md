@@ -53,7 +53,7 @@ Every former `TranscriptionConfig` field is mapped below; if you add a new knob,
 | `language`                | `TRANSCRIPTX_LANGUAGE`          | `WHISPERX_LANGUAGE` env var   | `en`                        | Set in `whisperx.env`                                                 |
 | `compute_type`            | `TRANSCRIPTX_COMPUTE_TYPE`      | `WHISPERX_COMPUTE_TYPE` env   | `float16`                   | `float16` for GPU, `int8` for CPU                                     |
 | `diarize`                 | (config only)                    | `WHISPERX_DIARIZE` env var    | `true`                      | Requires `HF_TOKEN`                                                    |
-| `huggingface_token`       | `HF_TOKEN` / `TRANSCRIPTX_HUGGINGFACE_TOKEN` | `HF_TOKEN` env var | (none)                      | Required for diarization + gated models                               |
+| `huggingface_token`       | `HF_TOKEN`                       | `HF_TOKEN` env var | (none)                      | Required for diarization + gated models                               |
 | `batch_size`              | (config only)                    | WhisperX CLI: `--batch_size 16` | `16`                     | Not env-configurable; pass via docker exec command                    |
 | `min_speakers`            | (config only)                    | WhisperX CLI: `--min_speakers 1` | `1`                      | Not env-configurable; pass via docker exec command                   |
 | `max_speakers`            | (config only)                    | WhisperX CLI: `--max_speakers 20` | `20` (or omit)           | Not env-configurable; pass via docker exec command                    |

@@ -33,7 +33,7 @@ def test_speaker_id_page_invalidates_path_summary_after_mutations() -> None:
 
 
 def test_speaker_id_plain_rerun_whitelist() -> None:
-    """Only completion may call plain st.rerun(); workspace uses fragment scope."""
+    """Plain st.rerun() lives only in _rerun_app; workspace prefers fragment scope."""
     import re
 
     import transcriptx.web.page_modules.speaker_id as mod
@@ -41,8 +41,10 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     plain = re.findall(r"st\.rerun\(\s*\)", source)
     assert len(plain) == 1, f"expected one plain st.rerun(), found {len(plain)}"
+    assert "_rerun_app" in source
     assert "_rerun_app_for_completion" in source
     assert source.count('st.rerun(scope="fragment")') >= 1
+    assert "StreamlitAPIException" in source
     assert "Analyse voice" in source
     # Voice / nav / save paths must not introduce extra plain reruns.
     for needle in (
@@ -55,6 +57,33 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
         "sid_ignore",
     ):
         assert needle in source
+
+
+def test_rerun_ui_falls_back_to_app_when_fragment_scope_illegal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Full-app embedding of the fragment cannot use scope=fragment."""
+    from streamlit import errors as st_errors
+
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    calls: list[str] = []
+
+    def _rerun(*, scope: str = "app") -> None:
+        if scope == "fragment":
+            raise st_errors.StreamlitAPIException(
+                'scope="fragment" can only be specified from '
+                "`@st.fragment`-decorated functions during fragment reruns."
+            )
+        calls.append(scope)
+        raise RuntimeError("app-rerun")
+
+    monkeypatch.setattr(mod.st, "rerun", _rerun)
+    try:
+        mod._rerun_ui()
+    except RuntimeError as exc:
+        assert str(exc) == "app-rerun"
+    assert calls == ["app"]
 
 
 def test_speaker_id_set_active_speaker_clears_playback_only_on_change(

@@ -137,7 +137,7 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 
 | Variable | Purpose |
 |----------|---------|
-| `TRANSCRIPTX_HUGGINGFACE_TOKEN` / `HF_TOKEN` | Hugging Face token for diarization and model access. Set one or both; `TRANSCRIPTX_HUGGINGFACE_TOKEN` takes precedence. |
+| `HF_TOKEN` | Hugging Face token for diarization and gated models. Set in `whisperx.env` (see [WhisperX recipe](../recipes/whisperx/README.md)); passed to the whispermlx subprocess, not stored in TranscriptX config. |
 | `TRANSCRIPTX_DISABLE_DOWNLOADS` | Unset/`0` (default) — allow model/data downloads. `1` — disable downloads (sentiment, emotion). Does not affect spaCy; use `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD` for that. |
 | `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD` | `1` — disable spaCy model auto-download (CI/offline). Unset — allow. When disabled, install manually: `python -m spacy download en_core_web_md`. |
 | `TRANSCRIPTX_SPACY_MODEL` | Override default spaCy model (default `en_core_web_md`). |

@@ -239,11 +239,9 @@ def render_sidebar(
     """Sidebar: static grouped nav with always-visible workspace pickers."""
     session_state = st.session_state
 
-    from transcriptx.web.shell import brand_logo_path
+    from transcriptx.web.shell import render_brand_logo
 
-    logo = brand_logo_path()
-    if logo is not None:
-        st.image(str(logo), width=200)
+    render_brand_logo()
 
     def _apply_navigation(page_key: str) -> None:
         session_state[PAGE_KEY] = page_key

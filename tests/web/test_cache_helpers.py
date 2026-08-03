@@ -283,3 +283,102 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
         "metadata",
         "speaker_paths",
     ]
+
+
+def test_cached_speaker_id_segments_prefers_start_ms_end_ms(tmp_path: Path) -> None:
+    """Millisecond fields override second-based start/end when both are present."""
+    transcript = tmp_path / "ms.json"
+    transcript.write_text(
+        json.dumps(
+            _v1_doc(
+                [
+                    {
+                        "speaker": "SPEAKER_00",
+                        "text": "Hello",
+                        "start": 99.0,
+                        "end": 100.0,
+                        "start_ms": 1500,
+                        "end_ms": 2750,
+                    }
+                ]
+            )
+        ),
+        encoding="utf-8",
+    )
+    try:
+        mod.cached_speaker_id_segments.clear()
+    except Exception:
+        pass
+    path_str = str(transcript.resolve())
+    segs = mod.cached_speaker_id_segments(
+        path_str, mod.transcript_segments_signature(path_str)
+    )
+    assert len(segs) == 1
+    assert segs[0].start == pytest.approx(1.5)
+    assert segs[0].end == pytest.approx(2.75)
+
+
+def test_transcript_paths_for_speaker_views_scans_run_dirs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run-dir scan finds transcript JSON and skips manifest/state/report names."""
+    outputs = tmp_path / "outputs"
+    run_dir = outputs / "meeting-slug" / "run-001"
+    run_dir.mkdir(parents=True)
+    transcript = run_dir / "meeting-slug-transcript.json"
+    transcript.write_text(json.dumps(_v1_doc([])), encoding="utf-8")
+    for skip_name in (
+        "manifest.json",
+        "run_results.json",
+        "processing_state.json",
+        "report.json",
+    ):
+        (run_dir / skip_name).write_text("{}", encoding="utf-8")
+    nested = run_dir / ".transcriptx"
+    nested.mkdir()
+    (nested / "should-skip.json").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.paths.OUTPUTS_DIR",
+        outputs,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.file_discovery.discover_managed_transcript_paths",
+        lambda _cfg: [],
+    )
+    monkeypatch.setattr(mod, "cached_list_available_sessions", lambda: [])
+
+    found = mod.transcript_paths_for_speaker_views_impl()
+    names = {p.name for p in found}
+    assert "meeting-slug-transcript.json" in names
+    assert names.isdisjoint(
+        {
+            "manifest.json",
+            "run_results.json",
+            "processing_state.json",
+            "report.json",
+            "should-skip.json",
+        }
+    )
+
+
+def test_transcript_paths_for_speaker_views_dedupes_managed_and_run_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Same resolved path from managed discovery and run-dir scan is listed once."""
+    outputs = tmp_path / "outputs"
+    run_dir = outputs / "slug" / "run-a"
+    run_dir.mkdir(parents=True)
+    transcript = run_dir / "session.json"
+    transcript.write_text(json.dumps(_v1_doc([])), encoding="utf-8")
+
+    monkeypatch.setattr("transcriptx.core.utils.paths.OUTPUTS_DIR", outputs)
+    monkeypatch.setattr(
+        "transcriptx.core.utils.file_discovery.discover_managed_transcript_paths",
+        lambda _cfg: [transcript],
+    )
+    monkeypatch.setattr(mod, "cached_list_available_sessions", lambda: [])
+
+    found = mod.transcript_paths_for_speaker_views_impl()
+    assert len(found) == 1
+    assert found[0].resolve() == transcript.resolve()
