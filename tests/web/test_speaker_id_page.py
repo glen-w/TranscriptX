@@ -26,14 +26,20 @@ def test_speaker_id_page_invalidates_path_summary_after_mutations() -> None:
     assert "invalidate_transcript_summary_for_path" in source
     assert "clear_transcript_listing_caches" not in source
     assert "_speaker_id_workspace_fragment" in source
-    assert "_rerun_ui" in source
-    assert "scope=\"fragment\"" in source or "scope='fragment'" in source
+    assert "_cb_save_name" in source
+    assert "_cb_ignore_toggle" in source
+    assert "on_click=_cb_save_name" in source
     assert "_paths_with_current_subject" in source
     assert "cached_transcript_paths_for_speaker_views" in source
+    # Ordinary action paths must not call _rerun_ui (natural fragment rerun only).
+    save_cb = source.split("def _cb_save_name", 1)[1].split("def _cb_", 1)[0]
+    assert "_rerun_ui()" not in save_cb
+    ignore_cb = source.split("def _cb_ignore_toggle", 1)[1].split("def _cb_", 1)[0]
+    assert "_rerun_ui()" not in ignore_cb
 
 
 def test_speaker_id_plain_rerun_whitelist() -> None:
-    """Plain st.rerun() lives only in _rerun_app; workspace prefers fragment scope."""
+    """Plain st.rerun() lives only in _rerun_app; completion may full-app rerun."""
     import re
 
     import transcriptx.web.page_modules.speaker_id as mod
@@ -43,20 +49,22 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
     assert len(plain) == 1, f"expected one plain st.rerun(), found {len(plain)}"
     assert "_rerun_app" in source
     assert "_rerun_app_for_completion" in source
-    assert source.count('st.rerun(scope="fragment")') >= 1
-    assert "StreamlitAPIException" in source
     assert "Analyse voice" in source
-    # Voice / nav / save paths must not introduce extra plain reruns.
     for needle in (
-        "sid_voice_analyse_",
-        "sid_voice_analyse_all",
-        "sid_voice_confirm_",
-        "sid_prev",
-        "sid_next",
-        "sid_save",
-        "sid_ignore",
+        "_cb_voice_analyse_one",
+        "_cb_voice_analyse_all",
+        "_cb_voice_confirm",
+        "_cb_prev",
+        "_cb_next",
+        "_cb_save_name",
+        "_cb_ignore_toggle",
     ):
         assert needle in source
+        block = source.split(f"def {needle}", 1)[1].split("\ndef ", 1)[0]
+        assert "_rerun_ui()" not in block
+    assert "_apply_mapping_advance" in source.split("def _cb_save_name", 1)[1].split(
+        "def _cb_", 1
+    )[0]
 
 
 def test_rerun_ui_falls_back_to_app_when_fragment_scope_illegal(
@@ -198,13 +206,17 @@ def test_speaker_id_transcript_switch_causes_one_segment_cache_miss_per_path(
 def test_after_mapping_mutation_uses_persisted_state_and_fragment_rerun(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Save/Ignore advance from returned map state and fragment-rerun when incomplete."""
+    """Save/Ignore advance from returned map state without a second _rerun_ui."""
     import transcriptx.web.page_modules.speaker_id as mod
     from types import SimpleNamespace
 
     transcript = tmp_path / "t.json"
     transcript.write_text("{}", encoding="utf-8")
-    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0}
+    ss: dict = {
+        "speaker_id_speaker_idx": 0,
+        mod.speaker_idx_key(transcript): 0,
+        mod.jump_key(transcript): 0,
+    }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
 
     invalidated: list[object] = []
@@ -231,7 +243,8 @@ def test_after_mapping_mutation_uses_persisted_state_and_fragment_rerun(
     )
     assert invalidated == [(transcript, (1, 2, 3))]
     assert ss["speaker_id_speaker_idx"] == 1  # advanced to still-unnamed
-    assert reruns == ["fragment"]
+    assert ss[mod.speaker_idx_key(transcript)] == 1
+    assert reruns == []  # natural fragment rerun only — no explicit _rerun_ui
 
 
 def test_after_ignore_advances_from_persisted_ignored_state(
@@ -242,7 +255,13 @@ def test_after_ignore_advances_from_persisted_ignored_state(
 
     transcript = tmp_path / "t.json"
     transcript.write_text("{}", encoding="utf-8")
-    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0, mod._LINES_KEY: 99}
+    l_key = mod.lines_key(transcript)
+    ss: dict = {
+        "speaker_id_speaker_idx": 0,
+        mod.speaker_idx_key(transcript): 0,
+        mod.jump_key(transcript): 0,
+        l_key: 99,
+    }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
     monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
@@ -259,8 +278,8 @@ def test_after_ignore_advances_from_persisted_ignored_state(
         summary_sig_before=(1, 2, 3),
     )
     assert ss["speaker_id_speaker_idx"] == 1
-    assert ss[mod._LINES_KEY] == mod._LINES_PER_PAGE
-    assert reruns == ["fragment"]
+    assert ss[l_key] == mod._LINES_PER_PAGE
+    assert reruns == []
 
 
 def test_load_cached_segments_fails_closed_on_missing_file(tmp_path: Path) -> None:
@@ -288,10 +307,10 @@ def test_profile_save_mutation_order_commits_before_advance() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    save_block = source.split('if st.button("Save name"', 1)[1]
-    save_block = save_block.split('if st.button(ignore_label', 1)[0]
+    save_block = source.split("def _cb_save_name", 1)[1]
+    save_block = save_block.split("def _cb_ignore_toggle", 1)[0]
     assert save_block.index("consume_cache_invalidation_signal") < save_block.index(
-        "_after_mapping_mutation"
+        "_apply_mapping_advance"
     )
     assert save_block.index("create_profile_link_and_name") < save_block.index(
         "consume_cache_invalidation_signal"
@@ -300,26 +319,29 @@ def test_profile_save_mutation_order_commits_before_advance() -> None:
 
 
 def test_voice_pending_exception_leaves_pending_cleared(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Pop-before-work contract: a raised analyse cannot re-queue via leftover pending."""
     import transcriptx.web.page_modules.speaker_id as mod
 
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    pending_key = mod.voice_pending_key(transcript)
     ss: dict = {
-        mod._SPEAKER_ID_VOICE_PENDING: {
+        pending_key: {
             "mode": "one",
             "speaker": "SPEAKER_00",
-            "transcript": "/tmp/t.json",
+            "transcript": str(transcript),
         }
     }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
-    pending = ss.pop(mod._SPEAKER_ID_VOICE_PENDING, None)
+    pending = ss.pop(pending_key, None)
     assert pending is not None
     try:
         raise RuntimeError("analyse failed")
     except RuntimeError:
         pass
-    assert mod._SPEAKER_ID_VOICE_PENDING not in ss
+    assert pending_key not in ss
 
 
 def test_partial_profile_link_failure_does_not_skip_unnamed_speaker(
@@ -331,7 +353,11 @@ def test_partial_profile_link_failure_does_not_skip_unnamed_speaker(
 
     transcript = tmp_path / "t.json"
     transcript.write_text("{}", encoding="utf-8")
-    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0}
+    ss: dict = {
+        "speaker_id_speaker_idx": 0,
+        mod.speaker_idx_key(transcript): 0,
+        mod.jump_key(transcript): 0,
+    }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
     monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
@@ -349,7 +375,7 @@ def test_partial_profile_link_failure_does_not_skip_unnamed_speaker(
         summary_sig_before=(1, 2, 3),
     )
     assert ss["speaker_id_speaker_idx"] == 0
-    assert reruns == ["fragment"]
+    assert reruns == []
 
 
 def test_workspace_fragment_reloads_mapping_every_run() -> None:
@@ -362,7 +388,7 @@ def test_workspace_fragment_reloads_mapping_every_run() -> None:
     frag_body = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag_body = frag_body.split("def render_speaker_id_page", 1)[0]
     assert "controller.get_mapping_status(transcript_path)" in frag_body
-    assert "_load_cached_segments(transcript_path)" in frag_body
+    assert "load_speaker_identification_index(transcript_path)" in frag_body
     sig = inspect.signature(mod._speaker_id_workspace_fragment)
     assert list(sig.parameters) == ["transcript_path", "controller"]
 
@@ -372,9 +398,9 @@ def test_voice_pending_stale_path_is_rejected_without_analyse() -> None:
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "paths_match(pending_path, transcript_path)" in source
-    # Analyse only inside the paths_match branch.
-    pending_block = source.split("pending = st.session_state.pop(_SPEAKER_ID_VOICE_PENDING", 1)[1]
-    pending_block = pending_block.split("batch_summary = st.session_state.get", 1)[0]
+    assert "voice_pending_key" in source
+    pending_block = source.split("pending = st.session_state.pop(pending_key", 1)[1]
+    pending_block = pending_block.split("batch_summary = st.session_state.pop", 1)[0]
     assert "paths_match(pending_path, transcript_path)" in pending_block
     assert pending_block.index("paths_match") < pending_block.index("facade.analyse(")
 
@@ -387,7 +413,11 @@ def test_completion_triggers_one_app_rerun_and_flag_is_consumed(
 
     transcript = tmp_path / "t.json"
     transcript.write_text("{}", encoding="utf-8")
-    ss: dict = {"speaker_id_speaker_idx": 0, "sid_jump": 0}
+    ss: dict = {
+        "speaker_id_speaker_idx": 0,
+        mod.speaker_idx_key(transcript): 0,
+        mod.jump_key(transcript): 0,
+    }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
     monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
@@ -427,7 +457,7 @@ def test_voice_pending_popped_before_analyse_so_exceptions_do_not_requeue() -> N
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    pop_idx = source.index("st.session_state.pop(_SPEAKER_ID_VOICE_PENDING")
+    pop_idx = source.index("pending = st.session_state.pop(pending_key")
     analyse_idx = source.index("facade.analyse(")
     assert pop_idx < analyse_idx
 
@@ -567,15 +597,14 @@ def test_speaker_id_page_defers_voice_analyse() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "_SPEAKER_ID_VOICE_PENDING" in source
+    assert "voice_pending_key" in source
     assert "_SPEAKER_ID_SELECTED_PATH" in source
-    assert "st.session_state[_SPEAKER_ID_VOICE_PENDING]" in source
-    assert "st.session_state.pop(_SPEAKER_ID_VOICE_PENDING" in source
-    assert "_rerun_ui()" in source
-    """Contract: speaker_id page must not import SegmentIndexService, ClipService, or SpeakerMappingService."""
-    import transcriptx.web.page_modules.speaker_id as mod
-
-    source = Path(mod.__file__).read_text()
+    assert "_cb_voice_analyse_one" in source
+    assert "Load voice suggestions" in source
+    assert "on_click=_cb_voice_analyse_one" in source
+    # Voice analyse callbacks must not explicitly fragment-rerun.
+    analyse_cb = source.split("def _cb_voice_analyse_one", 1)[1].split("def _cb_", 1)[0]
+    assert "_rerun_ui()" not in analyse_cb
     assert "get_shared_speaker_studio_controller" in source
     assert "SpeakerStudioController()" not in source
     assert "SegmentIndexService" not in source
@@ -600,6 +629,9 @@ def test_speaker_id_page_renders_post_completion_action_links() -> None:
     assert "render_recent_run_actions" in source
     assert "SectionId.SPEAKER_ID_COMPLETE" in source
     assert "render_configured_actions" in source
+    # Fragment-scoped ON_CLICK cannot navigate; completion strip must CLICK_RERUN.
+    assert "NavStyle.CLICK_RERUN" in source
+    assert source.count("nav_style=NavStyle.CLICK_RERUN") >= 2
 
 
 def test_latest_run_summary_for_transcript_builds_run_when_outputs_exist(
@@ -640,11 +672,14 @@ def test_render_post_speaker_id_actions_uses_recent_run_strip(
 
     called: dict[str, object] = {}
 
-    def _fake_actions(run, *, row_index=0, key_prefix="home_run", section=None):
+    def _fake_actions(
+        run, *, row_index=0, key_prefix="home_run", section=None, nav_style=None
+    ):
         called["run"] = run
         called["key_prefix"] = key_prefix
         called["row_index"] = row_index
         called["section"] = section
+        called["nav_style"] = nav_style
 
     monkeypatch.setattr(mod, "render_recent_run_actions", _fake_actions)
     monkeypatch.setattr(
@@ -663,6 +698,9 @@ def test_render_post_speaker_id_actions_uses_recent_run_strip(
     assert called["key_prefix"] == "speaker_id_run"
     assert called["row_index"] == 0
     assert getattr(called["run"], "run_id") == "run1"
+    from transcriptx.web.action_menus.ids import NavStyle
+
+    assert called["nav_style"] == NavStyle.CLICK_RERUN
 
 
 def test_speaker_id_transcript_label_partial_shows_counts() -> None:
@@ -1206,3 +1244,209 @@ def test_speaker_id_named_and_remaining_counts_with_variant_diarized_ids(
 
     transcripts = controller.list_transcripts(data_dir=transcript_dir)
     assert transcripts[0].speaker_map_status == "complete"
+
+
+def test_transcript_scoped_keys_isolate_same_speaker_across_paths(tmp_path: Path) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    a = tmp_path / "a.json"
+    b = tmp_path / "b.json"
+    a.write_text("{}", encoding="utf-8")
+    b.write_text("{}", encoding="utf-8")
+    assert mod.name_widget_key(a, "SPEAKER_00") != mod.name_widget_key(b, "SPEAKER_00")
+    assert mod.play_key(a) != mod.play_key(b)
+    assert mod.flash_key(a) != mod.flash_key(b)
+
+
+def test_jump_callback_does_not_rewrite_jump_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    j_key = mod.jump_key(transcript)
+    idx_key = mod.speaker_idx_key(transcript)
+    ss: dict = {j_key: 2, idx_key: 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
+
+    index = SpeakerIdentificationIndex(
+        segments_by_speaker={
+            "SPEAKER_00": (),
+            "SPEAKER_01": (),
+            "SPEAKER_02": (),
+        },
+        ordered_speaker_ids=("SPEAKER_00", "SPEAKER_01", "SPEAKER_02"),
+        segment_counts=(0, 0, 0),
+        durations=(0.0, 0.0, 0.0),
+    )
+    monkeypatch.setattr(mod, "load_speaker_identification_index", lambda *_a, **_k: index)
+    mod._cb_jump_change(str(transcript))
+    assert ss[j_key] == 2  # jump widget key untouched
+    assert ss[idx_key] == 2
+
+
+def test_validate_callback_identity_rejects_stale_speaker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    idx_key = mod.speaker_idx_key(transcript)
+    ss: dict = {idx_key: 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    index = SpeakerIdentificationIndex(
+        segments_by_speaker={"SPEAKER_00": (), "SPEAKER_01": ()},
+        ordered_speaker_ids=("SPEAKER_00", "SPEAKER_01"),
+        segment_counts=(0, 0),
+        durations=(0.0, 0.0),
+    )
+    monkeypatch.setattr(mod, "load_speaker_identification_index", lambda *_a, **_k: index)
+    assert (
+        mod._validate_callback_identity(
+            str(transcript), expected_speaker_id="SPEAKER_01"
+        )
+        is None
+    )
+    flash = ss.get(mod.flash_key(transcript))
+    assert flash is not None
+    assert flash["level"] == "warning"
+
+
+def test_ordinary_action_callbacks_do_not_call_rerun_ui() -> None:
+    """Exactly one fragment paint: callbacks must not invoke _rerun_ui."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    for name in (
+        "_cb_save_name",
+        "_cb_ignore_toggle",
+        "_cb_prev",
+        "_cb_next",
+        "_cb_jump_change",
+        "_cb_voice_analyse_one",
+        "_cb_voice_analyse_all",
+        "_cb_voice_confirm",
+        "_cb_voice_reject",
+        "_cb_voice_leave",
+    ):
+        block = source.split(f"def {name}", 1)[1].split("\ndef ", 1)[0]
+        assert "_rerun_ui()" not in block, name
+    advance = source.split("def _apply_mapping_advance", 1)[1].split("\ndef ", 1)[0]
+    assert "_rerun_ui()" not in advance
+
+
+def test_flash_consume_is_one_shot(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    errors: list[str] = []
+    monkeypatch.setattr(mod.st, "error", lambda msg: errors.append(str(msg)))
+    mod._set_flash(transcript, level="error", message="boom")
+    mod._consume_flash(transcript)
+    assert errors == ["boom"]
+    mod._consume_flash(transcript)
+    assert errors == ["boom"]
+
+
+def test_play_hot_path_does_not_construct_voice_services() -> None:
+    """Playback/workspace body must not instantiate voice facades unless voice loaded."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
+    frag = frag.split("def render_speaker_id_page", 1)[0]
+    # Workspace resolves profile context but must not construct the facade.
+    assert "SpeakerIdVoiceFacade()" not in frag.split("def _render_voice_suggestions", 1)[0]
+    assert "resolve_playback_context" in frag
+    voice = source.split("def _render_voice_suggestions", 1)[1]
+    assert "voice_display_key" in voice
+    assert "Load voice suggestions" in voice
+    # Facade only when processing pending analyse work.
+    assert voice.index('if not st.session_state.get(loaded_key)') < voice.index(
+        "SpeakerIdVoiceFacade()"
+    )
+    assert voice.index("pending_peek") < voice.index("SpeakerIdVoiceFacade()")
+
+
+def test_save_ignore_nav_callbacks_require_expected_speaker_id() -> None:
+    import inspect
+
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    for name in ("_cb_save_name", "_cb_ignore_toggle", "_cb_prev", "_cb_next"):
+        params = list(inspect.signature(getattr(mod, name)).parameters)
+        assert params == ["transcript_path", "expected_speaker_id"], name
+
+
+def test_cb_save_rejects_stale_expected_speaker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    idx_key = mod.speaker_idx_key(transcript)
+    ss: dict = {idx_key: 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    index = SpeakerIdentificationIndex(
+        segments_by_speaker={"SPEAKER_00": (), "SPEAKER_01": ()},
+        ordered_speaker_ids=("SPEAKER_00", "SPEAKER_01"),
+        segment_counts=(0, 0),
+        durations=(0.0, 0.0),
+    )
+    monkeypatch.setattr(mod, "load_speaker_identification_index", lambda *_a, **_k: index)
+    called: list[str] = []
+    monkeypatch.setattr(
+        mod,
+        "get_shared_speaker_studio_controller",
+        lambda: (_ for _ in ()).throw(AssertionError("should not mutate")),
+    )
+    mod._cb_save_name(str(transcript), "SPEAKER_01")
+    flash = ss.get(mod.flash_key(transcript))
+    assert flash is not None
+    assert flash["level"] == "warning"
+    assert called == []
+
+
+def test_profile_context_cache_keyed_by_resolved_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text("{}", encoding="utf-8")
+    calls = {"n": 0}
+
+    def _fake(path_str: str):
+        calls["n"] += 1
+        return mod.TranscriptProfileContext(is_managed=False)
+
+    monkeypatch.setattr(mod, "_cached_transcript_profile_context", _fake)
+    a = mod._resolve_profile_context(transcript)
+    b = mod._resolve_profile_context(str(transcript.resolve()))
+    assert a.is_managed is False and b.is_managed is False
+    # Two calls to the thin wrapper; cache function itself is what Streamlit memoizes.
+    assert calls["n"] == 2
+
+
+def test_voice_unmounted_until_loaded_contract() -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    voice = source.split("def _render_voice_suggestions", 1)[1]
+    early = voice.split("if not st.session_state.get(loaded_key)", 1)[1]
+    early = early.split("return", 1)[0]
+    assert "ActivationBarrier" not in early
+    assert "SpeakerIdVoiceFacade" not in early
+    assert "SpeakerProfileService" not in early

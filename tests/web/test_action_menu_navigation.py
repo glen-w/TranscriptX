@@ -11,7 +11,7 @@ import pytest
 from transcriptx.app.models.metadata import TranscriptMetadata
 from transcriptx.web.action_menus.context import build_canonical_identity
 from transcriptx.web.action_menus.handlers import HANDLERS
-from transcriptx.web.action_menus.ids import ActionId
+from transcriptx.web.action_menus.ids import ActionId, SectionId
 from transcriptx.web.action_menus.services import (
     ACTION_NAV_PAGES,
     PAGE_ARTIFACTS,
@@ -349,6 +349,82 @@ def test_apply_identity_does_not_regress_slug_to_stem(transcript_env) -> None:
     apply_identity_to_session(ss, identity)
     assert identity.subject_id == transcript_env.transcript.stem
     assert ss["subject_id"] == "meeting-slug"
+
+
+@pytest.mark.unit
+def test_action_menu_gui_sites_can_full_app_reload() -> None:
+    """Every GUI action-menu strip must be able to navigate off-page.
+
+    Fragment-hosted strips must use ``NavStyle.CLICK_RERUN`` (or equivalent
+    explicit app ``st.rerun``). Non-fragment strips may use ``ON_CLICK``;
+    handlers also force ``st.rerun()`` in the on_click path as defense in depth.
+    """
+    from pathlib import Path
+
+    import transcriptx.web.action_menus.handlers as handlers_mod
+    import transcriptx.web.page_modules.batch_ops as batch_mod
+    import transcriptx.web.page_modules.home as home_mod
+    import transcriptx.web.page_modules.library as library_mod
+    import transcriptx.web.page_modules.run_analysis as run_mod
+    import transcriptx.web.page_modules.speaker_id as speaker_mod
+    import transcriptx.web.page_modules.upload_transcript as import_mod
+
+    # Defense in depth: ON_CLICK callbacks must still force full-app rerun.
+    handler_src = Path(handlers_mod.__file__).read_text(encoding="utf-8")
+    on_click_block = handler_src.split("if ctx.nav_style == NavStyle.ON_CLICK:", 1)[1]
+    on_click_block = on_click_block.split("else:", 1)[0]
+    assert "st.rerun()" in on_click_block
+    assert "on_activate()" in on_click_block
+
+    # Library — strip lives inside ``_library_browser_fragment``.
+    library_src = Path(library_mod.__file__).read_text(encoding="utf-8")
+    lib_frag = library_src.split("def _library_browser_fragment", 1)[1]
+    lib_frag = lib_frag.split("\ndef render_library", 1)[0]
+    assert "render_configured_actions" in lib_frag
+    assert "NavStyle.CLICK_RERUN" in lib_frag
+
+    # Speaker ID — completion strip inside workspace fragment.
+    speaker_src = Path(speaker_mod.__file__).read_text(encoding="utf-8")
+    sid_frag = speaker_src.split("def _speaker_id_workspace_fragment", 1)[1]
+    sid_frag = sid_frag.split("\ndef render_speaker_id_page", 1)[0]
+    assert "_render_post_speaker_id_actions" in sid_frag
+    post_fn = speaker_src.split("def _render_post_speaker_id_actions", 1)[1]
+    post_fn = post_fn.split("\ndef ", 1)[0]
+    assert post_fn.count("NavStyle.CLICK_RERUN") >= 2
+
+    # Home — recent-run rows are outside any fragment (ON_CLICK ok).
+    home_src = Path(home_mod.__file__).read_text(encoding="utf-8")
+    assert "@st.fragment" not in home_src
+    assert "render_recent_run_row" in home_src
+
+    # Import — post-import strip is outside any fragment.
+    import_src = Path(import_mod.__file__).read_text(encoding="utf-8")
+    assert "@st.fragment" not in import_src
+    assert "NavStyle.ON_CLICK" in import_src
+    assert "SectionId.IMPORT_SUCCESS" in import_src
+
+    # Run Analysis — post-run strip is outside the config fragment.
+    run_src = Path(run_mod.__file__).read_text(encoding="utf-8")
+    frag_start = run_src.index("def _run_analysis_config_and_launch_fragment")
+    post_call = run_src.index("_render_post_analysis_actions()")
+    assert post_call < frag_start
+    assert "NavStyle.ON_CLICK" in run_src
+
+    # Batch results — recent-run rows are outside the selection fragment.
+    batch_src = Path(batch_mod.__file__).read_text(encoding="utf-8")
+    batch_frag = batch_src.split("def _batch_ops_selection_fragment", 1)[1]
+    batch_frag = batch_frag.split("\ndef ", 1)[0]
+    assert "render_recent_run_row" not in batch_frag
+    assert "render_recent_run_row" in batch_src
+
+    # Catalogue sections covered by the sites above.
+    assert set(SectionId) == {
+        SectionId.HOME_RECENT_RUNS,
+        SectionId.LIBRARY_SELECTED,
+        SectionId.IMPORT_SUCCESS,
+        SectionId.SPEAKER_ID_COMPLETE,
+        SectionId.RUN_ANALYSIS_COMPLETE,
+    }
 
 
 @pytest.mark.unit

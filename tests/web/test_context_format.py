@@ -134,3 +134,27 @@ def test_format_context_line_no_type_token_or_raw_primary():
     )
     assert opaque.primary_text == "Team sync / Run selected"
     assert opaque.raw_run_id == "opaque"
+
+
+def test_format_context_line_empty_when_nothing_selected():
+    empty = format_context_line(
+        subject_type="transcript",
+        subject_label="No transcript",
+        run_id=None,
+    )
+    assert empty.primary_text == ""
+    assert empty.raw_run_id is None
+
+    empty_group = format_context_line(
+        subject_type="group",
+        subject_label="No group",
+    )
+    assert empty_group.primary_text == ""
+
+    # Partial empty still shows placeholders.
+    subject_only = format_context_line(
+        subject_type="transcript",
+        subject_label="Suzanne",
+        run_id=None,
+    )
+    assert subject_only.primary_text == "Suzanne / No run"

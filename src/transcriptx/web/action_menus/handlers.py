@@ -96,6 +96,10 @@ def _button(
 
         def _cb() -> None:
             on_activate()
+            # Fragment widgets auto-rerun only the fragment after on_click.
+            # Page-changing actions must force a full-app rerun or navigation
+            # appears to do nothing. Harmless outside fragments.
+            st.rerun()
 
         render_action_link(label, key=key, icon=icon, help=help_text, on_click=_cb)
     else:

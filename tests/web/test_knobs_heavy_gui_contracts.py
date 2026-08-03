@@ -411,15 +411,21 @@ def test_speaker_id_page_wires_voice_match_knobs() -> None:
     for needle in (
         "ActivationBarrier",
         "voice_session_key",
-        "sid_voice_analyse_",
-        "sid_voice_analyse_all",
-        "sid_voice_confirm_",
-        "sid_voice_reject_",
-        "sid_voice_leave_",
+        "_cb_voice_analyse_one",
+        "_cb_voice_analyse_all",
+        "_cb_voice_confirm",
+        "_cb_voice_reject",
+        "_cb_voice_leave",
+        "voice_analyse_",
+        "voice_analyse_all",
+        "voice_confirm_",
+        "voice_reject_",
+        "voice_leave_",
         "query_cache_key",
         "facade.accept(",
         "facade.reject(",
         "SpeakerIdVoiceFacade",
+        "Load voice suggestions",
     ):
         assert needle in src, needle
 

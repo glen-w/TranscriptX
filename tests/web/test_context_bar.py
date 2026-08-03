@@ -79,4 +79,8 @@ def test_context_bar_group_and_empty_states(monkeypatch):
     )
     context_bar.render_context_bar({"subject_type": "transcript", "subject_id": None})
     joined2 = "\n".join(fake2.markdown_calls)
-    assert "No transcript / No run" in joined2
+    assert 'tx-context-line">' in joined2
+    assert "No transcript" not in joined2
+    assert "No run" not in joined2
+    # Empty selection → blank primary text inside the context line span.
+    assert '<span class="tx-context-line"></span>' in joined2

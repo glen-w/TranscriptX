@@ -383,6 +383,51 @@ class FileService:
         return charts
 
     @staticmethod
+    def _iter_output_transcript_dirs():
+        """Yield slug output dirs under OUTPUTS_DIR, skipping groups and hidden."""
+        outputs_dir = Path(OUTPUTS_DIR)
+        if not outputs_dir.exists():
+            return
+        group_root = Path(GROUP_OUTPUTS_DIR)
+        for transcript_dir in outputs_dir.iterdir():
+            if not transcript_dir.is_dir() or transcript_dir.name.startswith("."):
+                continue
+            # outputs/groups/<uuid>/<run_id> is not slug/run transcript sessions.
+            try:
+                if transcript_dir.resolve() == group_root.resolve():
+                    continue
+            except (OSError, ValueError):
+                if transcript_dir.name == "groups":
+                    continue
+            yield transcript_dir
+
+    @staticmethod
+    def list_viewable_session_names() -> List[str]:
+        """Return ``slug/run_id`` for viewable runs only (no modules/stats/parse).
+
+        Used by the sidebar transcript dropdown cold path so first paint does not
+        pay for rich session metadata.
+        """
+        with section(
+            "file_service.list_viewable_session_names", bucket="session_discovery"
+        ):
+            names: List[str] = []
+            outputs_dir = Path(OUTPUTS_DIR)
+            if not outputs_dir.exists():
+                logger.warning(f"Outputs directory does not exist: {outputs_dir}")
+                return names
+
+            for transcript_dir in FileService._iter_output_transcript_dirs():
+                for run_dir in transcript_dir.iterdir():
+                    if not run_dir.is_dir() or run_dir.name.startswith("."):
+                        continue
+                    increment_count("output_run_dirs")
+                    if not FileService._is_viewable_run(run_dir):
+                        continue
+                    names.append(f"{transcript_dir.name}/{run_dir.name}")
+            return sorted(names)
+
+    @staticmethod
     def list_available_sessions() -> List[Dict[str, Any]]:
         """
         Scan data/outputs/<slug>/<run_id> for available runs.
@@ -406,7 +451,6 @@ class FileService:
             from transcriptx.core.utils.slug_manager import get_transcript_key_for_slug
             from transcriptx.web.module_registry import get_total_module_count
 
-            group_root = Path(GROUP_OUTPUTS_DIR)
             total_modules = get_total_module_count()
             stats_cache: dict[str, dict] = {}
             with section(
@@ -414,19 +458,7 @@ class FileService:
                 bucket="session_discovery",
                 extra={"outputs_dir": str(outputs_dir)},
             ):
-                for transcript_dir in outputs_dir.iterdir():
-                    if not transcript_dir.is_dir() or transcript_dir.name.startswith(
-                        "."
-                    ):
-                        continue
-                    # outputs/groups/<uuid>/<run_id> is not slug/run transcript sessions; skip entirely.
-                    try:
-                        if transcript_dir.resolve() == group_root.resolve():
-                            continue
-                    except (OSError, ValueError):
-                        if transcript_dir.name == "groups":
-                            continue
-
+                for transcript_dir in FileService._iter_output_transcript_dirs():
                     # Prefer transcript_key from index; use slug as fallback so runs still appear in dropdown
                     # (e.g. when index wasn't updated or run was created in Docker with different paths)
                     transcript_key = get_transcript_key_for_slug(transcript_dir.name)

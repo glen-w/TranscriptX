@@ -87,17 +87,20 @@ class SpeakerStudioController:
         end: float,
         *,
         format: str = "mp3",
+        audio_path: Optional[Path] = None,
     ) -> bytes:
         """Return bytes of the segment clip for playback (e.g. st.audio). Raises if no audio or extract fails."""
         if self._closed:
             raise RuntimeError("SpeakerStudioController is closed")
-        audio_path = self._segment_index.get_transcript_audio_path(transcript_path)
-        if not audio_path:
+        resolved = audio_path or self._segment_index.get_transcript_audio_path(
+            transcript_path
+        )
+        if not resolved:
             raise FileNotFoundError(
                 f"No audio file found for transcript: {transcript_path}"
             )
         return self._clip_service.get_clip_bytes(
-            audio_path,
+            resolved,
             start,
             end,
             format=format,
@@ -175,10 +178,14 @@ class SpeakerStudioController:
         segments: List[Tuple[float, float]],
         *,
         format: str = "mp3",
+        audio_path: Optional[Path] = None,
     ) -> WarmClipsResult:
         """
         Best-effort fire-and-forget: enqueue background clip generation for the
         given (start_s, end_s) pairs. Returns a structured result immediately.
+
+        When ``audio_path`` is provided, skips transcript→audio re-resolution
+        (ClipService still validates the file before extraction).
         """
         if self._closed:
             return WarmClipsResult(
@@ -189,8 +196,10 @@ class SpeakerStudioController:
                 requested=len(segments),
                 stopped_reason="closed",
             )
-        audio_path = self._segment_index.get_transcript_audio_path(transcript_path)
-        if not audio_path:
+        resolved = audio_path or self._segment_index.get_transcript_audio_path(
+            transcript_path
+        )
+        if not resolved:
             return WarmClipsResult(
                 accepted=0,
                 enqueued=0,
@@ -199,7 +208,7 @@ class SpeakerStudioController:
                 requested=len(segments),
                 stopped_reason="audio_missing",
             )
-        return self._clip_service.warm_clips(audio_path, segments, format=format)
+        return self._clip_service.warm_clips(resolved, segments, format=format)
 
     def ffmpeg_available(self) -> bool:
         """Return True if ffmpeg is installed and usable."""

@@ -470,9 +470,10 @@ def test_speaker_id_page_imports_only_controller() -> None:
 
 
 def test_speaker_id_page_uses_render_playback_panel() -> None:
-    """speaker_id.py must call render_playback_panel from the shared component."""
+    """speaker_id.py must call render_playback_panel_body from the shared component."""
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text()
-    assert "render_playback_panel" in source
+    assert "render_playback_panel_body" in source
     assert "playback_panel" in source
+    assert "resolve_playback_context" in source

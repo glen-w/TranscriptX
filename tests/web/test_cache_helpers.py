@@ -231,6 +231,16 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
     )
     monkeypatch.setattr(
         mod,
+        "cached_list_viewable_session_names",
+        MagicMock(clear=_track_clear("session_names")),
+    )
+    monkeypatch.setattr(
+        mod,
+        "cached_home_light_summary",
+        MagicMock(clear=_track_clear("home_summary")),
+    )
+    monkeypatch.setattr(
+        mod,
         "cached_list_transcripts",
         MagicMock(clear=_track_clear("transcripts")),
     )
@@ -269,11 +279,17 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
         "cached_transcript_paths_for_speaker_views",
         MagicMock(clear=_track_clear("speaker_paths")),
     )
+    monkeypatch.setattr(
+        "transcriptx.web.sidebar_options.clear_transcript_dropdown_caches",
+        _track_clear("dropdown"),
+    )
 
     mod.clear_transcript_listing_caches()
 
     assert cleared == [
         "sessions",
+        "session_names",
+        "home_summary",
         "transcripts",
         "transcript_count",
         "per_path_summaries",
@@ -282,6 +298,7 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
         "resolve",
         "metadata",
         "speaker_paths",
+        "dropdown",
     ]
 
 
@@ -382,3 +399,57 @@ def test_transcript_paths_for_speaker_views_dedupes_managed_and_run_dir(
     found = mod.transcript_paths_for_speaker_views_impl()
     assert len(found) == 1
     assert found[0].resolve() == transcript.resolve()
+
+
+def test_speaker_identification_index_is_mapping_independent(tmp_path: Path) -> None:
+    from transcriptx.io.speaker_map_resolver import sidecar_path_for
+
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text(
+        json.dumps(
+            _v1_doc(
+                [
+                    {"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "a"},
+                    {"start": 1.0, "end": 2.0, "speaker": "SPEAKER_01", "text": "b"},
+                ]
+            )
+        ),
+        encoding="utf-8",
+    )
+    mod.cached_speaker_identification_index.clear()
+    first = mod.load_speaker_identification_index(transcript)
+    sidecar = sidecar_path_for(transcript)
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    sidecar.write_text(
+        json.dumps(
+            {
+                "speaker_map_schema_version": 1,
+                "speaker_map": {"SPEAKER_00": "Alice"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    second = mod.load_speaker_identification_index(transcript)
+    assert first.ordered_speaker_ids == second.ordered_speaker_ids == (
+        "SPEAKER_00",
+        "SPEAKER_01",
+    )
+    assert first.segment_counts == second.segment_counts == (1, 1)
+
+
+def test_voice_segment_payload_lazy_and_separate(tmp_path: Path) -> None:
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text(
+        json.dumps(
+            _v1_doc(
+                [{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "hi"}]
+            )
+        ),
+        encoding="utf-8",
+    )
+    mod.cached_speaker_identification_index.clear()
+    mod.cached_voice_segment_payload.clear()
+    idx = mod.load_speaker_identification_index(transcript)
+    assert not hasattr(idx, "voice_segment_payload")
+    payload = mod.load_voice_segment_payload(transcript)
+    assert payload[0]["speaker"] == "SPEAKER_00"

@@ -169,3 +169,41 @@ class TestFileService:
         assert sessions[0]["segment_count"] == 10
         assert sessions[0]["word_count"] == 5
         assert sessions[1]["duration_minutes"] == 10.0
+
+    def test_list_viewable_session_names_filters_empty_and_groups(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        """Light listing includes viewable runs only and skips groups/."""
+        outputs = tmp_path / "outputs"
+        groups = outputs / "groups" / "g1" / "run1"
+        groups.mkdir(parents=True)
+        (groups / "manifest.json").write_text(
+            '{"manifest_type": "artifact_manifest", "artifacts": [{"rel_path": "chart.png"}]}',
+            encoding="utf-8",
+        )
+
+        viewable = outputs / "slug-a" / "run-ok"
+        viewable.mkdir(parents=True)
+        (viewable / "manifest.json").write_text(
+            '{"manifest_type": "artifact_manifest", "artifacts": [{"rel_path": "overview.json"}]}',
+            encoding="utf-8",
+        )
+
+        empty = outputs / "slug-b" / "run-empty"
+        empty.mkdir(parents=True)
+        (empty / "manifest.json").write_text(
+            '{"manifest_type": "artifact_manifest", "artifacts": []}',
+            encoding="utf-8",
+        )
+
+        monkeypatch.setattr(
+            "transcriptx.web.services.file_service.OUTPUTS_DIR", str(outputs)
+        )
+        monkeypatch.setattr(
+            "transcriptx.web.services.file_service.GROUP_OUTPUTS_DIR",
+            str(outputs / "groups"),
+        )
+
+        names = FileService.list_viewable_session_names()
+        assert names == ["slug-a/run-ok"]
+        assert all(not n.startswith("groups/") for n in names)

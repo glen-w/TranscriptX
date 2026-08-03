@@ -28,6 +28,15 @@ class ActionId(str, Enum):
 
 
 class NavStyle(str, Enum):
+    """How action links commit navigation.
+
+    ``ON_CLICK``: Streamlit ``on_click`` callback (handlers force ``st.rerun()``
+    so page changes still work inside ``@st.fragment``).
+
+    ``CLICK_RERUN``: Prefer this when the strip is painted inside a fragment —
+    activate on click return value, then explicit full-app ``st.rerun()``.
+    """
+
     ON_CLICK = "on_click"
     CLICK_RERUN = "click_rerun"
 

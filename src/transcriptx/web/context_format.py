@@ -126,6 +126,9 @@ def format_run_display(
     return "No run"
 
 
+_EMPTY_SUBJECT_LABELS = frozenset({"No transcript", "No group", "No subject"})
+
+
 def format_context_line(
     *,
     subject_type: str | None,
@@ -133,8 +136,12 @@ def format_context_line(
     run_id: str | None = None,
     fallback_dt: datetime | None = None,
 ) -> ContextPresentation:
-    """Build primary context text without repeating Transcript/Group tokens."""
-    label = _clean_label(subject_label) or (
+    """Build primary context text without repeating Transcript/Group tokens.
+
+    When nothing is selected (empty subject and no run), primary text is blank.
+    """
+    cleaned_label = _clean_label(subject_label)
+    label = cleaned_label or (
         "No transcript"
         if subject_type == "transcript"
         else "No group" if subject_type == "group" else "No subject"
@@ -142,7 +149,9 @@ def format_context_line(
     run_display = format_run_display(
         run_id, fallback_dt=fallback_dt, allow_raw_fallback=False
     )
-    primary = f"{label} / {run_display}"
+    subject_empty = label in _EMPTY_SUBJECT_LABELS
+    run_empty = run_display == "No run"
+    primary = "" if subject_empty and run_empty else f"{label} / {run_display}"
     raw = _clean_label(run_id)
     tooltip = (
         f"Full run identifier: {raw}" if raw else "Full run identifier unavailable"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -19,6 +20,16 @@ def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
 
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(Path, "exists", lambda _self: True)
+    monkeypatch.setattr(
+        mod,
+        "get_cached_home_light_summary",
+        lambda: {
+            "library_transcript_count": 0,
+            "analysed_transcript_count": 0,
+            "session_count": 0,
+            "has_any": False,
+        },
+    )
     monkeypatch.setattr(mod, "_cached_sessions_and_stats", lambda: ([], {}))
     monkeypatch.setattr(mod, "st", st_double)
     monkeypatch.setattr(action_links, "st", st_double)
@@ -28,13 +39,43 @@ def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
     monkeypatch.setattr(am_services, "st", st_double)
 
 
-def test_home_initial_render_loads_recent_runs_without_groups(
-    monkeypatch,
-) -> None:
+def test_home_initial_render_skips_recent_runs_and_rich_stats(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {}
     _patch_home_common(monkeypatch, mod)
+    slug_label_calls = {"count": 0}
+    monkeypatch.setattr(
+        mod,
+        "_slug_display_labels_from_index",
+        lambda: slug_label_calls.__setitem__("count", slug_label_calls["count"] + 1)
+        or {},
+    )
+    rich = MagicMock(side_effect=AssertionError("rich stats should not run"))
+    monkeypatch.setattr(mod, "_cached_sessions_and_stats", rich)
+    calls = {"recent_runs": 0}
+
+    def _fake_instrument(name, fn, *args, **kwargs):
+        if name == "cached_list_recent_runs":
+            calls["recent_runs"] += 1
+            return []
+        return fn(*args, **kwargs)
+
+    monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
+
+    mod.render_home()
+
+    assert calls["recent_runs"] == 0
+    assert slug_label_calls["count"] == 0
+    rich.assert_not_called()
+
+
+def test_home_loads_recent_runs_when_toggle_on(monkeypatch) -> None:
+    import transcriptx.web.page_modules.home as mod
+
+    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
+    _patch_home_common(monkeypatch, mod)
+    monkeypatch.setattr(mod, "render_empty_state", lambda *_args, **_kwargs: None)
     slug_label_calls = {"count": 0}
     monkeypatch.setattr(
         mod,
@@ -71,7 +112,7 @@ def test_home_initial_render_loads_recent_runs_without_groups(
 def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {}
+    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
     _patch_home_common(monkeypatch, mod)
     monkeypatch.setattr(mod, "render_empty_state", lambda *_args, **_kwargs: None)
     slug_label_calls = {"count": 0}
@@ -94,28 +135,26 @@ def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
     assert slug_label_calls["count"] == 0
 
 
-def test_home_renders_transcript_overview_with_sessions_and_expanders(
-    monkeypatch,
-) -> None:
+def test_home_renders_light_overview_and_detail_when_toggled(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {}
+    DummyHomeStreamlit.session_state = {mod._HOME_DETAIL_STATS_KEY: True}
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
-
-    class _Run:
-        created_at = datetime(2026, 3, 25, 10, 0)
-        run_id = "run-1"
-        run_dir = Path("/tmp/slug-1/run-1")
-        transcript_path = Path("/tmp/slug-1.json")
-        selected_modules = ["overview"]
-        status = "completed"
-        duration_seconds = 12.0
-        profile_name = "balanced"
+    monkeypatch.setattr(
+        mod,
+        "get_cached_home_light_summary",
+        lambda: {
+            "library_transcript_count": 12,
+            "analysed_transcript_count": 1,
+            "session_count": 1,
+            "has_any": True,
+        },
+    )
 
     def _fake_instrument(name, fn, *args, **kwargs):
         if name == "cached_list_recent_runs":
-            return [_Run()]
+            return []
         return fn(*args, **kwargs)
 
     monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
@@ -134,9 +173,6 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
                 }
             ],
             {
-                "library_transcript_count": 12,
-                "total_transcripts": 1,
-                "total_sessions": 1,
                 "total_duration_seconds": 90,
                 "total_word_count": 100,
                 "total_speakers": 2,
@@ -148,7 +184,6 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
 
     metrics: list[tuple] = []
     frames: list[object] = []
-    subheaders: list[str] = []
     expanders: list[str] = []
 
     class _StatsHomeStreamlit(DummyHomeStreamlit):
@@ -159,10 +194,6 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
         @staticmethod
         def dataframe(df, **_kwargs):
             frames.append(df)
-
-        @staticmethod
-        def subheader(label, **_kwargs):
-            subheaders.append(str(label))
 
         @staticmethod
         def expander(label, **_kwargs):
@@ -177,11 +208,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
     monkeypatch.setattr(recent_run_row, "st", _StatsHomeStreamlit)
     mod.render_home()
 
-    assert "Transcript overview" not in subheaders
-    assert "Per-session statistics" not in subheaders
-    assert "Recent Runs" not in subheaders
     assert "Sessions" in expanders
-    assert "Recent runs" in expanders
     metric_labels = [args[0] for args, _ in metrics if args]
     assert metric_labels == [
         "Transcripts",
@@ -204,7 +231,7 @@ def test_home_renders_transcript_overview_with_sessions_and_expanders(
 def test_home_export_zip_prepares_download(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {}
+    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
 
     class _ExportHomeStreamlit(DummyHomeStreamlit):
         downloads: list[dict[str, object]] = []
@@ -266,6 +293,7 @@ def test_home_recent_run_open_updates_session_state(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {
+        mod._HOME_RECENT_RUNS_KEY: True,
         "subject_id_selector": "",
         "run_selector": "stale-run",
         "subject_type_selector": "Group",
@@ -341,6 +369,7 @@ def test_home_recent_run_action_links_navigate_to_target_page(
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {
+        mod._HOME_RECENT_RUNS_KEY: True,
         "subject_id_selector": "",
         "run_selector": "other-run",
     }
@@ -445,7 +474,7 @@ def test_apply_subject_context_pops_widgets_when_locked() -> None:
 def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {}
+    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
     _patch_home_common(monkeypatch, mod)
     monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
 
@@ -475,6 +504,32 @@ def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
     monkeypatch.setattr(am_services.FileService, "resolve_transcript_path", _boom)
 
     mod.render_home()
+
+
+def test_cached_home_light_summary_skips_missing_paths(monkeypatch, tmp_path: Path) -> None:
+    import transcriptx.web.cache_helpers as mod
+
+    present = tmp_path / "ok.json"
+    present.write_text("{}", encoding="utf-8")
+    missing = tmp_path / "gone.json"
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.list_all_transcripts",
+        lambda: [
+            {"slug": "present", "source_path": str(present)},
+            {"slug": "missing", "source_path": str(missing)},
+            {"slug": "no-path"},
+        ],
+    )
+
+    summary = mod.cached_home_light_summary.__wrapped__(
+        ("slug-a/run1", "slug-a/run2", "slug-b/run1"),
+        None,
+    )
+    assert summary["library_transcript_count"] == 2
+    assert summary["analysed_transcript_count"] == 2
+    assert summary["session_count"] == 3
+    assert summary["has_any"] is True
 
 
 def test_streamlit_min_declares_segmented_control_floor() -> None:

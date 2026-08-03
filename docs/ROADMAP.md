@@ -67,7 +67,15 @@ Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, 
 
 ## 1.1 – 1.x (early post-1.0)
 
-Prefer a short **corrections** wave, a **deeper performance** wave, and an **Insights / analysis quality** wave soon after 1.0, then other 1.x themes as capacity allows.
+Prefer a short **corrections** wave, a **deeper performance** wave, an **Insights / analysis quality** wave, and a **high-interaction workspace (Components v2)** experiment soon after 1.0, then other 1.x themes as capacity allows.
+
+- **High-interaction workspaces via Streamlit Components v2 (near-term 1.x)** — Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole is not. Streamlit remains a strong fit for analysis pages (select files, launch modules, tables/charts, compare runs, review artefacts) where a brief rerender is fine. Speaker Identification is becoming a stateful media-annotation workstation — rapid playback, editing, navigation, background clip prep, keyboard-like interaction, persistent local state, partial UI updates — exactly where Streamlit’s rerun model fights you. Fragments shrink the rerun boundary; they do not make Streamlit continuously reactive. The warning is not mere slowness: straightforward behaviour now needs callback ordering rules, transcript-namespaced widget keys, flash-message state, stale-identity guards, multiple cache layers, careful fragment boundaries, warm queues, explicit rerun accounting, and special completion reruns. Each fix is defensible; together they show the framework abstraction no longer matches the screen.
+
+  **Pre-1.0 stop line:** finish current low-risk Speaker ID fixes until naming/navigation feel acceptably immediate, playback no longer visibly disrupts the whole app, writes are robust and tested, and cold clips have a tolerable fallback. Do **not** pursue endless nested fragments, cross-fragment signalling, elaborate Session State protocols, or speculative cache layers merely to remove the last flicker. Do **not** rewrite TranscriptX or abandon Streamlit before 1.0.
+
+  **1.x plan:** keep Streamlit as the application shell and the main implementation for most pages. Declare a small category of high-interaction workspaces allowed to escape ordinary Streamlit widget trees: **Speaker Identification**, **Corrections Studio**, and possibly rich transcript editing later. Prototype a **Streamlit Components v2** Speaker ID surface against the existing controller (Components v2 is the recommended component model: integrated frontend rendering, persistent state, event triggers, multiple callbacks, bidirectional communication). The component owns the persistent audio player, play/pause/seek, sample-row paging, active-speaker selection, name input, keyboard shortcuts, optimistic navigation, and loading/disabled states. Python keeps transcript/sidecar reading, mapping mutations, profile creation, voice analysis, clip extraction, validation/locking, and domain services — not a frontend rewrite; replace one troublesome page body with a specialised UI surface. Meaningful actions still cause Python reruns; routine browser-side interactions can stay local. If it works, migrate only interaction-heavy workspaces. Only if that becomes restrictive, consider a proper local frontend + Python API (later, much larger). Avoid wholesale jumps to Gradio/NiceGUI — months swapping one framework’s limits for another’s while rewriting stable pages.
+
+  **Trajectory to preserve:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions. Conclusion: TranscriptX has **not** outgrown Streamlit; a few workflows should no longer be ordinary Streamlit widget trees.
 
 - **Corrections strengthen (early 1.x wave)** — Corrections Studio is usable for 1.0 but results are **mixed**; do not treat it as finished. Dedicated wave:
 
@@ -160,6 +168,8 @@ Personal audio intelligence companion: personal recordings, voice-note workflows
 - Mode systems that duplicate page logic
 - Elaborate interactive website effects
 - Broader “everything in the DB” library migration (beyond the 1.5 analytics layer)
+- Wholesale GUI rewrite or migration to Gradio/NiceGUI (prefer Components v2 workspaces first — see §1.1)
+- Full local frontend + Python API (only after Components v2 for workstation pages proves insufficient)
 
 Historical sprint dumps: [sprint_archive.md](archive/plans/sprint_archive.md) (archived).
 

@@ -225,7 +225,94 @@ def test_trigger_clip_warm_once_per_signature(
     )
     trigger_clip_warm(controller, "/t.json", audio, segs, 1, "owner", "play_key")
     args = controller.warm_clips.call_args[0]
-    assert args[1] == [(1.0, 2.0), (2.0, 3.0)]
+    # Priority: clicked (1), nearby (0 then 2).
+    assert args[1] == [(1.0, 2.0), (0.0, 1.0), (2.0, 3.0)]
+
+
+def test_trigger_clip_warm_visible_count_is_deterministic(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from transcriptx.services.speaker_studio.clip_service import WarmClipsResult
+
+    session: dict[str, Any] = {}
+    monkeypatch.setattr(
+        "transcriptx.web.components.playback_panel.st.session_state",
+        session,
+    )
+    controller = MagicMock()
+    controller.warm_clips.return_value = WarmClipsResult(
+        accepted=5,
+        enqueued=5,
+        already_cached=0,
+        already_inflight=0,
+        requested=5,
+    )
+    segs = [
+        SegmentInfo(index=i, start=float(i), end=float(i) + 1, text=str(i), speaker="A")
+        for i in range(10)
+    ]
+    audio = tmp_path / "a.mp3"
+    audio.write_bytes(b"x")
+    result = trigger_clip_warm(
+        controller,
+        "/t.json",
+        audio,
+        segs,
+        None,
+        "owner",
+        "play_key",
+        visible_count=5,
+    )
+    assert result is not None
+    assert result.requested == 5
+    assert result.accepted == 5
+    assert controller.warm_clips.call_args[0][1] == [
+        (float(i), float(i) + 1) for i in range(5)
+    ]
+
+
+def test_trigger_clip_warm_ten_row_smoke_records_accepted_counts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Representative 10-row warm: assert WarmClipsResult counts, not wall-clock."""
+    from transcriptx.services.speaker_studio.clip_service import WarmClipsResult
+
+    session: dict[str, Any] = {}
+    monkeypatch.setattr(
+        "transcriptx.web.components.playback_panel.st.session_state",
+        session,
+    )
+    controller = MagicMock()
+    controller.warm_clips.return_value = WarmClipsResult(
+        accepted=8,
+        enqueued=6,
+        already_cached=1,
+        already_inflight=1,
+        requested=10,
+        stopped_reason="backpressure",
+    )
+    segs = [
+        SegmentInfo(index=i, start=float(i), end=float(i) + 1, text=str(i), speaker="A")
+        for i in range(10)
+    ]
+    audio = tmp_path / "a.mp3"
+    audio.write_bytes(b"x")
+    result = trigger_clip_warm(
+        controller,
+        "/t.json",
+        audio,
+        segs,
+        None,
+        "owner",
+        "play_key",
+        visible_count=10,
+    )
+    assert result is not None
+    assert result.requested == 10
+    assert result.accepted == 8
+    assert result.stopped_reason == "backpressure"
+    # Backpressure → signature not stored so next render can retry.
+    assert "play_key_warm_sig" not in session
 
 
 def test_trigger_clip_warm_does_not_set_sig_on_failure(
@@ -595,3 +682,120 @@ def test_revision_change_clears_playback_state(tmp_path: Path) -> None:
         targets={0: object()},
     )
     assert state[transcript_mod._PLAY_KEY] is None
+
+
+def test_prioritized_warm_indices_active_then_nearby() -> None:
+    from transcriptx.web.components.playback_panel import prioritized_warm_indices
+
+    assert prioritized_warm_indices(10, play_seg_idx=None, visible_count=4) == [
+        0,
+        1,
+        2,
+        3,
+    ]
+    assert prioritized_warm_indices(10, play_seg_idx=2, visible_count=5) == [
+        2,
+        1,
+        3,
+        0,
+        4,
+    ]
+
+
+def test_resolve_playback_context_caches_valid_audio(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from transcriptx.web.components.playback_panel import (
+        resolve_playback_context,
+    )
+
+    audio = tmp_path / "a.wav"
+    audio.write_bytes(b"abcd")
+    session: dict[str, Any] = {}
+    monkeypatch.setattr(
+        "transcriptx.web.components.playback_panel.st.session_state",
+        session,
+    )
+    controller = MagicMock()
+    controller.get_audio_path.return_value = audio
+    controller.ffmpeg_available.return_value = True
+    first = resolve_playback_context(controller, str(tmp_path / "t.json"))
+    second = resolve_playback_context(controller, str(tmp_path / "t.json"))
+    assert first.audio_path == audio
+    assert second.audio_path == audio
+    assert controller.get_audio_path.call_count == 1
+
+
+def test_trigger_clip_warm_pending_queue_on_backpressure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from transcriptx.services.speaker_studio.clip_service import WarmClipsResult
+
+    session: dict[str, Any] = {}
+    monkeypatch.setattr(
+        "transcriptx.web.components.playback_panel.st.session_state",
+        session,
+    )
+    controller = MagicMock()
+    controller.warm_clips.return_value = WarmClipsResult(
+        accepted=2,
+        enqueued=2,
+        already_cached=0,
+        already_inflight=0,
+        requested=5,
+        stopped_reason="backpressure",
+    )
+    segs = [
+        SegmentInfo(index=i, start=float(i), end=float(i) + 1, text=str(i), speaker="A")
+        for i in range(5)
+    ]
+    audio = tmp_path / "a.mp3"
+    audio.write_bytes(b"x")
+    result = trigger_clip_warm(
+        controller,
+        "/t.json",
+        audio,
+        segs,
+        None,
+        "owner",
+        "play_key",
+        visible_count=5,
+    )
+    assert result is not None
+    assert result.stopped_reason == "backpressure"
+    assert "play_key_warm_sig" not in session
+    assert session.get("play_key_warm_pending") == [
+        (float(i), float(i) + 1) for i in range(5)
+    ]
+    # Second pass fully accepts → clears pending.
+    controller.warm_clips.return_value = WarmClipsResult(
+        accepted=5,
+        enqueued=0,
+        already_cached=5,
+        already_inflight=0,
+        requested=5,
+    )
+    result2 = trigger_clip_warm(
+        controller,
+        "/t.json",
+        audio,
+        segs,
+        None,
+        "owner",
+        "play_key",
+        visible_count=5,
+    )
+    assert result2 is not None
+    assert result2.fully_accepted
+    assert "play_key_warm_pending" not in session
+    assert "play_key_warm_sig" in session
+
+
+def test_playback_panel_docs_mention_speaker_id_body_embed() -> None:
+    from pathlib import Path
+
+    import transcriptx.web.components.playback_panel as panel
+
+    text = Path(panel.__file__).read_text(encoding="utf-8")
+    assert "Speaker Identification embeds undecorated" in text
+    assert "render_playback_panel_body" in text

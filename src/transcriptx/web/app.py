@@ -60,7 +60,7 @@ from transcriptx.web.perf import (
 from transcriptx.web.router import PAGE_PREREQUISITES, route_current_page
 from transcriptx.web.shell import configure_streamlit_page, inject_global_styles
 from transcriptx.web.sidebar import render_sidebar
-from transcriptx.web.sidebar_options import get_cached_session_data
+from transcriptx.web.cache_helpers import cached_list_viewable_session_names
 from transcriptx.web.state import PAGE_KEY
 
 logger = get_logger()
@@ -132,8 +132,8 @@ def main() -> None:
     if should_hydrate:
         try:
             instrument_cached_call(
-                "cached_list_available_sessions",
-                get_cached_session_data,
+                "cached_list_viewable_session_names",
+                cached_list_viewable_session_names,
                 bucket="deferred_workspace_hydration",
             )
         except Exception as exc:

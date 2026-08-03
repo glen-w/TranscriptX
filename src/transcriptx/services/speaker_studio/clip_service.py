@@ -15,6 +15,7 @@ Key design points:
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import os
 import subprocess
@@ -75,7 +76,9 @@ class WarmClipsResult:
 # ── ffmpeg helpers ────────────────────────────────────────────────────────────
 
 
+@functools.lru_cache(maxsize=1)
 def _find_ffmpeg() -> Optional[str]:
+    """Locate ffmpeg once per process (PATH then common absolute paths)."""
     import shutil
 
     p = shutil.which("ffmpeg")

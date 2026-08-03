@@ -10,9 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.5] - 2026-08-04
+
 ### Added
 
 - Transcribe Audio command generator + docs: **jhj0517/Whisper-WebUI** Docker/Gradio deploy option (SRT/VTT → Import Transcript); recipe under `docs/recipes/whisper-webui/` with ownership disclaimer, Apple Silicon CPU caveat, localhost bind, pinned image tag, removal, and tiny maintainer smoke obligation.
+- Home light-summary caches and optional detailed statistics / recent-runs panels (faster first paint).
+- Speaker Identification index cache and playback audio-resolve session cache with fingerprint validation.
+
+### Changed
+
+- Speaker Identification: workspace-fragment playback (no nested playback fragment), clearer warm-queue / cold-clip behaviour, and further naming/navigation hardening toward the pre-1.0 stop line.
+- Sidebar session listing uses a lighter cached name list; file-service listing helpers support that path.
+- Roadmap / pre-release notes: declare **Streamlit Components v2** high-interaction workspaces (Speaker ID / Corrections Studio) as a near-term 1.x experiment after the Speaker ID stop line—not a pre-1.0 rewrite.
+
+### Fixed
+
+- Playback panel resolves audio without sticky-caching missing paths; prefer body renderer inside outer fragments.
 
 ## [0.9.8.4] - 2026-07-26
 

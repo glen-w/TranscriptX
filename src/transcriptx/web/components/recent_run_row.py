@@ -98,9 +98,16 @@ def render_recent_run_actions(
     row_index: int = 0,
     key_prefix: str = "home_run",
     section: SectionId = SectionId.HOME_RECENT_RUNS,
+    nav_style: NavStyle = NavStyle.ON_CLICK,
 ) -> None:
-    """Render the configured action strip for a recent / post-run row."""
-    ctx = _context_for_run(run, row_index=row_index, key_prefix=key_prefix)
+    """Render the configured action strip for a recent / post-run row.
+
+    Use ``NavStyle.CLICK_RERUN`` when the strip is painted inside ``@st.fragment``
+    so page-changing actions (Rename, Open, …) trigger a full-app rerun.
+    """
+    ctx = _context_for_run(
+        run, row_index=row_index, key_prefix=key_prefix, nav_style=nav_style
+    )
     render_configured_actions(section, ctx)
 
 

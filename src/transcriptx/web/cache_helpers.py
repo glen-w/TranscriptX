@@ -10,6 +10,8 @@ Cache policy tiers (implementation stays distributed until a later pass):
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import streamlit as st
 
 from transcriptx.web.perf import mark_cache_miss
@@ -27,6 +29,64 @@ def cached_list_available_sessions() -> list[dict]:
 
     return FileService.list_available_sessions()
 
+
+@st.cache_data(ttl=120, show_spinner=False)
+def cached_list_viewable_session_names() -> list[str]:
+    """Cached ``slug/run_id`` names for sidebar dropdown (no rich metadata)."""
+    mark_cache_miss("cached_list_viewable_session_names")
+    from transcriptx.web.services.file_service import FileService
+
+    return FileService.list_viewable_session_names()
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def cached_home_light_summary(
+    session_names: tuple[str, ...],
+    index_mtime: float | None,
+) -> dict[str, int | bool]:
+    """Home first-paint counts without rich session stats or managed discovery.
+
+    ``session_names`` and ``index_mtime`` are cache keys so import/rename
+    invalidate via listing clears + slug-index mtime changes.
+    """
+    mark_cache_miss("cached_home_light_summary")
+    from pathlib import Path
+
+    from transcriptx.core.utils.slug_manager import list_all_transcripts
+
+    library_count = 0
+    for entry in list_all_transcripts():
+        source_path = entry.get("source_path")
+        if source_path:
+            try:
+                if not Path(source_path).expanduser().exists():
+                    continue
+            except OSError:
+                continue
+        library_count += 1
+
+    analysed_slugs = {
+        name.split("/", 1)[0] for name in session_names if "/" in name
+    }
+    session_count = len(session_names)
+    return {
+        "library_transcript_count": library_count,
+        "analysed_transcript_count": len(analysed_slugs),
+        "session_count": session_count,
+        "has_any": bool(library_count or session_count),
+    }
+
+
+def get_cached_home_light_summary() -> dict[str, int | bool]:
+    """Assemble Home light summary with stable cache keys."""
+    from transcriptx.core.utils.slug_manager import INDEX_FILE
+
+    session_names = tuple(cached_list_viewable_session_names())
+    try:
+        index_mtime = INDEX_FILE.stat().st_mtime
+    except OSError:
+        index_mtime = None
+    return cached_home_light_summary(session_names, index_mtime)
 
 def _transcript_metadata_signature(path) -> tuple[float, int, float]:
     """(file mtime, size, speaker-map sidecar mtime) for metadata cache keying."""
@@ -228,6 +288,108 @@ def cached_speaker_id_segments(
     return result
 
 
+@dataclass(frozen=True)
+class SpeakerIdentificationIndex:
+    """Immutable, mapping-independent speaker grouping for Speaker ID UI."""
+
+    segments_by_speaker: dict[str, tuple]
+    ordered_speaker_ids: tuple[str, ...]
+    segment_counts: tuple[int, ...]
+    durations: tuple[float, ...]
+
+
+def _build_speaker_identification_index(segments: list) -> SpeakerIdentificationIndex:
+    from collections import defaultdict
+
+    groups: dict[str, list] = defaultdict(list)
+    seen_order: list[str] = []
+    for seg in segments:
+        did = getattr(seg, "speaker_diarized_id", None) or getattr(seg, "speaker", None)
+        if did and did not in groups:
+            seen_order.append(did)
+        if did:
+            groups[did].append(seg)
+    ordered = tuple(seen_order)
+    by_speaker = {sid: tuple(groups[sid]) for sid in ordered}
+    counts = tuple(len(by_speaker[sid]) for sid in ordered)
+    durations = tuple(
+        sum(max(0.0, float(s.end) - float(s.start)) for s in by_speaker[sid])
+        for sid in ordered
+    )
+    return SpeakerIdentificationIndex(
+        segments_by_speaker=by_speaker,
+        ordered_speaker_ids=ordered,
+        segment_counts=counts,
+        durations=durations,
+    )
+
+
+@st.cache_data(ttl=300, max_entries=64, show_spinner=False)
+def cached_speaker_identification_index(
+    path_str: str, signature: tuple[int, int]
+) -> SpeakerIdentificationIndex:
+    """Group segments by diarized id; keyed like ``cached_speaker_id_segments``."""
+    mark_cache_miss("cached_speaker_identification_index")
+    segments = cached_speaker_id_segments(path_str, signature)
+    return _build_speaker_identification_index(segments)
+
+
+def load_speaker_identification_index(path) -> SpeakerIdentificationIndex:
+    """Load index with one retry if the file changes between stat and parse."""
+    from pathlib import Path
+
+    path_obj = Path(path)
+    try:
+        path_str = str(path_obj.resolve())
+    except OSError as exc:
+        raise FileNotFoundError(f"Transcript unavailable: {path}") from exc
+    signature = transcript_segments_signature(path_str)
+    index = cached_speaker_identification_index(path_str, signature)
+    signature2 = transcript_segments_signature(path_str)
+    if signature2 != signature:
+        index = cached_speaker_identification_index(path_str, signature2)
+    return index
+
+
+@st.cache_data(ttl=300, max_entries=64, show_spinner=False)
+def cached_voice_segment_payload(
+    path_str: str, signature: tuple[int, int]
+) -> tuple[dict, ...]:
+    """Lazy voice-analyse segment dicts; not part of the eager speaker index."""
+    mark_cache_miss("cached_voice_segment_payload")
+    segments = cached_speaker_id_segments(path_str, signature)
+    out: list[dict] = []
+    for s in segments:
+        did = getattr(s, "speaker_diarized_id", None) or getattr(s, "speaker", None)
+        out.append(
+            {
+                "speaker": did,
+                "speaker_diarized_id": did,
+                "start": s.start,
+                "end": s.end,
+                "text": s.text or "",
+            }
+        )
+    return tuple(out)
+
+
+def load_voice_segment_payload(path) -> list[dict]:
+    """Load voice payload with one retry on signature/read race."""
+    from pathlib import Path
+
+    path_obj = Path(path)
+    try:
+        path_str = str(path_obj.resolve())
+    except OSError as exc:
+        raise FileNotFoundError(f"Transcript unavailable: {path}") from exc
+    signature = transcript_segments_signature(path_str)
+    payload = cached_voice_segment_payload(path_str, signature)
+    signature2 = transcript_segments_signature(path_str)
+    if signature2 != signature:
+        payload = cached_voice_segment_payload(path_str, signature2)
+    return list(payload)
+
+
 def invalidate_transcript_summary_for_path(
     path, *, signature: tuple[int, int, int] | None = None
 ) -> None:
@@ -387,14 +549,25 @@ def clear_transcript_listing_caches() -> None:
     This avoids expensive global cache invalidation on simple file rename/import actions.
     """
     cached_list_available_sessions.clear()  # type: ignore[attr-defined]
+    cached_list_viewable_session_names.clear()  # type: ignore[attr-defined]
+    cached_home_light_summary.clear()  # type: ignore[attr-defined]
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
     cached_count_managed_transcripts.clear()  # type: ignore[attr-defined]
     cached_transcript_summary_for_path.clear()  # type: ignore[attr-defined]
     cached_speaker_id_segments.clear()  # type: ignore[attr-defined]
+    cached_speaker_identification_index.clear()  # type: ignore[attr-defined]
+    cached_voice_segment_payload.clear()  # type: ignore[attr-defined]
     cached_list_all_transcript_summaries.clear()  # type: ignore[attr-defined]
     _cached_resolve_transcript_path.clear()  # type: ignore[attr-defined]
     _cached_transcript_metadata.clear()  # type: ignore[attr-defined]
     cached_transcript_paths_for_speaker_views.clear()  # type: ignore[attr-defined]
+    # Dropdown assembler lives in sidebar_options; clear lazily to avoid import cycles.
+    try:
+        from transcriptx.web.sidebar_options import clear_transcript_dropdown_caches
+
+        clear_transcript_dropdown_caches()
+    except Exception:
+        pass
 
 
 def clear_rename_related_caches() -> None:

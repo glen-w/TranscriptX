@@ -1,11 +1,15 @@
 """
 Shared playback panel component for speaker identification pages.
 
-Decorated with @st.fragment so only this region reruns on play-button clicks —
-the rest of the page (header, metrics, name assignment, navigation) does not dim
-or re-execute.
+``render_playback_panel`` is decorated with ``@st.fragment`` so play-button
+clicks can rerun only this region when the decorated entry is used as a
+**sibling** surface. Speaker Identification embeds undecorated
+``render_playback_panel_body`` inside ``_speaker_id_workspace_fragment`` (no
+nested fragments), so play clicks there rerun the larger workspace fragment;
+isolation comes from callbacks, caching, and avoiding heavy voice work on the
+playback hot path—not from a nested playback fragment.
 
-Fragment rerun semantics:
+Fragment rerun semantics (decorated entry):
   Widget interactions inside the fragment naturally trigger a fragment-scoped
   rerun.  Do NOT call st.rerun() for play events; the on_click callback sets
   session state and the fragment rerenders automatically.  Only call
@@ -14,9 +18,7 @@ Fragment rerun semantics:
   full-page rerun, defeating the purpose of the fragment.
 
 Cold foreground generation remains synchronous by design: if a pre-warm job
-has not finished yet, get_clip_bytes() blocks until ffmpeg completes.  This is
-now isolated to the playback fragment rather than the full page — the rest of
-the UI stays interactive.
+has not finished yet, get_clip_bytes() blocks until ffmpeg completes.
 
 Cache is disk-backed and cross-session/process-agnostic.  Session state
 controls only UI behaviour and warm triggers, not clip ownership.
@@ -26,9 +28,10 @@ in this module. Shared helpers below must remain undecorated so callers that
 already run inside a fragment (e.g. Transcript, Speaker ID workspace) never
 nest fragments. Prefer ``render_playback_panel_body`` from an outer fragment.
 
-``audio_path`` is resolved once for UI gating and warm signatures only.
-``get_clip_bytes`` re-resolves audio through the controller, so extraction must
-tolerate the recording disappearing or changing after preflight.
+``audio_path`` / ``PlaybackContext`` are resolved for UI gating and warm
+signatures. Prefer passing ``playback_context`` so callers do not re-resolve
+audio or FFmpeg on every play click. Clip extraction still validates file
+existence/stat before ffmpeg.
 """
 
 from __future__ import annotations
@@ -48,8 +51,123 @@ from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 
 logger = get_logger()
 
-# Number of clips to pre-warm on initial panel load / after a click.
+# Number of clips to pre-warm when visible_count is not provided
 _WARM_WINDOW = 3
+# Session cache of resolved audio for workspace reruns (validated each use).
+_AUDIO_RESOLVE_CACHE_PREFIX = "_tx_playback_audio_resolve:"
+
+
+@dataclass(frozen=True)
+class PlaybackContext:
+    """Resolved playback prerequisites for one render (do not cache missing audio)."""
+
+    audio_path: Optional[Path]
+    audio_fingerprint: Optional[tuple[str, int, int]]
+    ffmpeg_available: bool
+
+
+def _audio_resolve_cache_key(transcript_path: str) -> str:
+    try:
+        resolved = str(Path(transcript_path).resolve())
+    except OSError:
+        resolved = str(transcript_path)
+    return f"{_AUDIO_RESOLVE_CACHE_PREFIX}{resolved}"
+
+
+def _fingerprint_audio(path: Path) -> Optional[tuple[str, int, int]]:
+    try:
+        if not path.is_file():
+            return None
+        st_ = path.stat()
+        return (
+            str(path.resolve()),
+            int(st_.st_size),
+            int(st_.st_mtime_ns),
+        )
+    except OSError:
+        return None
+
+
+def resolve_playback_context(
+    controller: SpeakerStudioController,
+    transcript_path: str,
+) -> PlaybackContext:
+    """Resolve audio + ffmpeg; reuse session cache when path+fingerprint still valid.
+
+    Missing audio is never sticky-cached. FFmpeg availability is read from the
+    shared ClipService (process-memoized ``_find_ffmpeg``).
+    """
+    cache_key = _audio_resolve_cache_key(transcript_path)
+    cached = st.session_state.get(cache_key)
+    audio_path: Optional[Path] = None
+    fingerprint: Optional[tuple[str, int, int]] = None
+
+    if isinstance(cached, dict) and cached.get("path"):
+        try:
+            candidate = Path(str(cached["path"]))
+            fp = _fingerprint_audio(candidate)
+            if fp is not None and fp == cached.get("fingerprint"):
+                audio_path = candidate
+                fingerprint = fp
+            else:
+                st.session_state.pop(cache_key, None)
+        except (TypeError, OSError):
+            st.session_state.pop(cache_key, None)
+
+    if audio_path is None:
+        try:
+            raw = controller.get_audio_path(transcript_path)
+            if raw is not None:
+                candidate = Path(raw)
+                fp = _fingerprint_audio(candidate)
+                if fp is not None:
+                    audio_path = candidate
+                    fingerprint = fp
+                    st.session_state[cache_key] = {
+                        "path": str(candidate),
+                        "fingerprint": fp,
+                    }
+        except OSError:
+            audio_path = None
+            fingerprint = None
+
+    return PlaybackContext(
+        audio_path=audio_path,
+        audio_fingerprint=fingerprint,
+        ffmpeg_available=bool(controller.ffmpeg_available()),
+    )
+
+
+def prioritized_warm_indices(
+    length: int,
+    *,
+    play_seg_idx: Optional[int],
+    visible_count: int,
+) -> list[int]:
+    """Order warm targets: active/clicked, then nearby visible, then remainder."""
+    if length <= 0 or visible_count <= 0:
+        return []
+    n = min(int(visible_count), length)
+    visible = list(range(n))
+    play_idx = sanitize_play_index(play_seg_idx, length)
+    if play_idx is None:
+        return visible
+    ordered: list[int] = []
+    seen: set[int] = set()
+
+    def _add(idx: int) -> None:
+        if 0 <= idx < n and idx not in seen:
+            ordered.append(idx)
+            seen.add(idx)
+
+    _add(play_idx)
+    for dist in range(1, n + 1):
+        _add(play_idx - dist)
+        _add(play_idx + dist)
+    for idx in visible:
+        _add(idx)
+    return ordered
+
 
 # Tiny silent MP3 kept mounted when no segment is selected so the first ▶ click
 # updates an existing ``st.audio`` widget instead of inserting one above the
@@ -226,47 +344,58 @@ def trigger_clip_warm(
     play_seg_idx: Optional[int],
     active_id: str,
     play_key: str,
-) -> None:
+    *,
+    visible_count: Optional[int] = None,
+    playback_context: Optional[PlaybackContext] = None,
+) -> Optional[WarmClipsResult]:
     """
-    Enqueue background clip pre-warming for the likely next-played segments.
+    Enqueue background clip pre-warming with priority + pending queue.
 
-    Warm window:
-      - If nothing is playing: first _WARM_WINDOW segments.
-      - If a segment is playing: that list position + next (_WARM_WINDOW - 1).
-
-    ``play_seg_idx`` is a position into ``ordered_segs`` (not a source index).
-    Callers that key state by source index must resolve the list position first.
-
-    The warm signature is stored only when every target in the window was
-    accepted (enqueued, already cached, or already in flight). Transient
-    unavailability, backpressure, and closed executors leave the signature
-    unset so the next render can retry. The signature includes audio path
-    revision (size + mtime_ns) so replaced recordings invalidate warming.
+    Order: active/clicked clip, nearby visible clips, then remaining visible.
+    When ClipService hits in-flight backpressure, remaining targets stay in a
+    session pending queue and are retried on later renders so all visible clips
+    eventually warm. Synchronous ``get_clip_bytes`` remains the correctness
+    fallback for an uncached click.
     """
     if not ordered_segs:
-        return
+        return None
 
-    warm_start = 0
-    play_idx = sanitize_play_index(play_seg_idx, len(ordered_segs))
-    if play_idx is not None:
-        warm_start = play_idx
-    warm_targets = list(ordered_segs[warm_start : warm_start + _WARM_WINDOW])
+    target_count = (
+        _WARM_WINDOW if visible_count is None else max(0, int(visible_count))
+    )
+    target_count = min(target_count, len(ordered_segs))
+    if target_count <= 0:
+        return None
+
+    indices = prioritized_warm_indices(
+        len(ordered_segs),
+        play_seg_idx=play_seg_idx,
+        visible_count=target_count,
+    )
+    warm_targets = [ordered_segs[i] for i in indices]
     if not warm_targets:
-        return
+        return None
 
     try:
         audio = Path(audio_path)
         if not audio.is_file():
-            return
-        audio_stat = audio.stat()
-        audio_revision = (
-            str(audio.resolve()),
-            int(audio_stat.st_size),
-            int(audio_stat.st_mtime_ns),
-        )
+            return None
+        if (
+            playback_context is not None
+            and playback_context.audio_fingerprint is not None
+        ):
+            audio_revision = playback_context.audio_fingerprint
+        else:
+            audio_stat = audio.stat()
+            audio_revision = (
+                str(audio.resolve()),
+                int(audio_stat.st_size),
+                int(audio_stat.st_mtime_ns),
+            )
     except OSError:
-        return
+        return None
 
+    pending_key = f"{play_key}_warm_pending"
     warm_sig_key = f"{play_key}_warm_sig"
     window_sig = (
         active_id,
@@ -274,10 +403,39 @@ def trigger_clip_warm(
         audio_revision,
     )
     if st.session_state.get(warm_sig_key) == window_sig:
-        return
+        st.session_state.pop(pending_key, None)
+        return None
+
+    # Merge prior pending pairs (bounded) ahead of the current priority list.
+    pending_raw = st.session_state.get(pending_key)
+    pending_pairs: list[tuple[float, float]] = []
+    if isinstance(pending_raw, (list, tuple)):
+        for item in pending_raw:
+            if (
+                isinstance(item, (list, tuple))
+                and len(item) == 2
+                and isinstance(item[0], (int, float))
+                and isinstance(item[1], (int, float))
+            ):
+                pending_pairs.append((float(item[0]), float(item[1])))
+
+    desired_pairs = [(float(s.start), float(s.end)) for s in warm_targets]
+    seen_pairs: set[tuple[float, float]] = set()
+    merged: list[tuple[float, float]] = []
+    for pair in [*desired_pairs, *pending_pairs]:
+        key = (round(pair[0], 3), round(pair[1], 3))
+        if key in seen_pairs:
+            continue
+        seen_pairs.add(key)
+        merged.append(pair)
+    # Cap pending merge so a huge backlog cannot grow without bound.
+    merged = merged[: max(target_count * 2, target_count)]
+
     try:
         result = controller.warm_clips(
-            transcript_path, [(s.start, s.end) for s in warm_targets]
+            transcript_path,
+            merged,
+            audio_path=audio,
         )
     except Exception:
         logger.warning(
@@ -286,9 +444,19 @@ def trigger_clip_warm(
             play_key,
             exc_info=True,
         )
-        return
-    if isinstance(result, WarmClipsResult) and result.fully_accepted:
+        return None
+
+    if not isinstance(result, WarmClipsResult):
+        return None
+
+    if result.fully_accepted:
         st.session_state[warm_sig_key] = window_sig
+        st.session_state.pop(pending_key, None)
+    else:
+        # Keep the full desired window pending so later renders drain it.
+        st.session_state[pending_key] = desired_pairs
+        st.session_state.pop(warm_sig_key, None)
+    return result
 
 
 # Backward-compatible alias.
@@ -308,6 +476,7 @@ def render_active_clip(
     segment: Optional[SegmentInfo],
     *,
     autoplay: bool = False,
+    playback_context: Optional[PlaybackContext] = None,
 ) -> None:
     """
     Render ``st.audio`` for one segment, or a sanitised warning on failure.
@@ -323,11 +492,15 @@ def render_active_clip(
         st.audio(_IDLE_CLIP_MP3, format="audio/mpeg", autoplay=False)
         return
     try:
+        resolved_audio = (
+            playback_context.audio_path if playback_context is not None else None
+        )
         clip_bytes = controller.get_clip_bytes(
             transcript_path,
             segment.start,
             segment.end,
             format="mp3",
+            audio_path=resolved_audio,
         )
         st.audio(clip_bytes, format="audio/mpeg", autoplay=autoplay)
     except Exception:
@@ -365,6 +538,7 @@ def render_playback_panel_body(
     max_lines: int,
     autoplay: bool = False,
     include_segment_rows: bool = True,
+    playback_context: Optional[PlaybackContext] = None,
 ) -> None:
     """
     Undecorated playback panel body for use inside an outer ``@st.fragment``.
@@ -372,8 +546,16 @@ def render_playback_panel_body(
     Same parameters and behaviour as ``render_playback_panel``. Callers that are
     not already inside a fragment should use ``render_playback_panel`` instead.
     """
+    ctx = playback_context
+    effective_audio = (
+        ctx.audio_path if ctx is not None else audio_path
+    )
+    ffmpeg_ok = (
+        ctx.ffmpeg_available if ctx is not None else controller.ffmpeg_available()
+    )
+
     # ── ffmpeg / audio guard ───────────────────────────────────────────────────
-    if not audio_path or not Path(audio_path).is_file():
+    if not effective_audio or not Path(effective_audio).is_file():
         clear_playback_session_keys(play_key)
         render_playback_unavailable(PlaybackUnavailableReason.audio_missing)
         if include_segment_rows:
@@ -385,7 +567,7 @@ def render_playback_panel_body(
             _render_fallback_segment_rows(all_segs, lines_shown)
         return
 
-    if not controller.ffmpeg_available():
+    if not ffmpeg_ok:
         clear_playback_session_keys(play_key)
         render_playback_unavailable(PlaybackUnavailableReason.ffmpeg_missing)
         if include_segment_rows:
@@ -409,15 +591,17 @@ def render_playback_panel_body(
     visible_segs = all_segs[:lines_shown]
 
     # ── pre-warm trigger ───────────────────────────────────────────────────────
-    # Runs before the audio player so warm jobs start as early as possible.
+    # Warm all currently visible lines; ClipService applies bounded backpressure.
     trigger_clip_warm(
         controller,
         transcript_path,
-        audio_path,
+        Path(effective_audio),
         all_segs,
         play_seg_idx,
         active_id,
         play_key,
+        visible_count=lines_shown,
+        playback_context=ctx,
     )
 
     # ── audio player (always mounted when playback is available) ───────────────
@@ -427,14 +611,13 @@ def render_playback_panel_body(
         transcript_path,
         seg_to_play,
         autoplay=autoplay,
+        playback_context=ctx,
     )
 
     if not include_segment_rows:
         return
 
     # ── segment rows ───────────────────────────────────────────────────────────
-    # All widget keys are namespaced by active_id + index to prevent key
-    # collisions and state drift across speaker changes.
     for i, seg in enumerate(visible_segs):
         col_time, col_text, col_play = st.columns([1, 5, 0.5])
         with col_time:
@@ -442,24 +625,20 @@ def render_playback_panel_body(
         with col_text:
             st.write(seg.text or "_(empty)_")
         with col_play:
-            # on_click sets state before the natural fragment rerun —
-            # no explicit st.rerun() needed.
             st.button(
                 "▶",
-                key=f"play_{active_id}_{i}",
+                key=f"{play_key}_btn_{active_id}_{i}",
                 help="Play this clip",
                 on_click=set_active_clip,
                 args=(play_key, i),
             )
 
-    # ── show more lines ────────────────────────────────────────────────────────
     if lines_shown < len(all_segs):
         remaining = len(all_segs) - lines_shown
         n_more = min(max_lines, remaining)
         st.button(
             f"Show {n_more} more lines",
-            key=f"more_lines_{active_id}",
-            # on_click sets state before rerun so the first click renders more.
+            key=f"{lines_key}_more_{active_id}",
             on_click=_increment_lines_shown,
             args=(lines_key, n_more),
         )
@@ -477,6 +656,7 @@ def render_playback_panel(
     max_lines: int,
     autoplay: bool = False,
     include_segment_rows: bool = True,
+    playback_context: Optional[PlaybackContext] = None,
 ) -> None:
     """
     Fragment-scoped playback panel.
@@ -489,7 +669,7 @@ def render_playback_panel(
         Path string for the active transcript.
     audio_path:
         Resolved audio file path, or None if not found.
-        Used for UI gating and warm signatures only; clip extraction re-resolves.
+        Used for UI gating and warm signatures only when playback_context omitted.
     all_segs:
         Pre-computed segment list for the current view.  Do not do heavy
         computation inside this fragment — pass results in from the parent.
@@ -508,6 +688,8 @@ def render_playback_panel(
         Set False for pages that render their own custom rows (e.g. Speaker ID
         with additional assign widgets); the fragment then manages only the audio
         player and warm trigger.
+    playback_context:
+        Optional pre-resolved audio/ffmpeg context for the current render.
     """
     render_playback_panel_body(
         controller,
@@ -520,4 +702,5 @@ def render_playback_panel(
         max_lines,
         autoplay=autoplay,
         include_segment_rows=include_segment_rows,
+        playback_context=playback_context,
     )
